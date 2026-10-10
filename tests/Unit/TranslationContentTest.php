@@ -32,6 +32,23 @@ class TranslationContentTest extends TestCase
         $this->assertSame(['en' => 'English', 'id' => 'Bahasa Indonesia'], config('user_preferences.locales'));
     }
 
+    public function test_indonesian_copy_keeps_supplier_and_vendor_terms_in_english(): void
+    {
+        $offenders = [];
+
+        foreach (glob(lang_path('id/*.php')) as $file) {
+            $messages = require $file;
+            array_walk_recursive($messages, function (mixed $value) use (&$offenders, $file): void {
+                if (is_string($value) && preg_match('/\b(pemasok|rekanan)\b/i', $value)) {
+                    $offenders[] = basename($file).': '.$value;
+                }
+            });
+        }
+
+        // Approved glossary (AGENTS.md, UI Language Policy): Supplier/Vendor terms stay in English in lang/id.
+        $this->assertSame([], $offenders);
+    }
+
     public function test_indonesian_finance_admin_registration_and_accessibility_labels_are_localized(): void
     {
         $this->assertSame('Dashboard Keuangan dan Utang Usaha - ADASI', __('finance.dashboard.title', [], 'id'));
@@ -43,9 +60,9 @@ class TranslationContentTest extends TestCase
         $this->assertSame('Impor GR', __('local_procurement.import.gr', [], 'id'));
         $this->assertSame('Legalitas, PIC & Bank', __('registration.js.step2', [], 'id'));
         $this->assertSame('Ketebalan minimal', __('materials.a11y.minimum', ['dimension' => 'Ketebalan'], 'id'));
-        $this->assertSame('Pendaftaran Pemasok', __('terms.supplier_registration', [], 'id'));
-        $this->assertSame('Pemasok Impor', __('terms.import_supplier', [], 'id'));
-        $this->assertSame('Pemasok Lokal', __('terms.local_supplier', [], 'id'));
+        $this->assertSame('Supplier Registration', __('terms.supplier_registration', [], 'id'));
+        $this->assertSame('Import Supplier', __('terms.import_supplier', [], 'id'));
+        $this->assertSame('Local Supplier', __('terms.local_supplier', [], 'id'));
         $this->assertSame('Kode HS', __('common.fields.hs_code', [], 'id'));
         $this->assertSame('Bentuk', __('purchasing.copy.shape', [], 'id'));
         $this->assertSame('Perkiraan Kedatangan', __('purchasing.copy.estimated_arrival', [], 'id'));
@@ -283,7 +300,7 @@ class TranslationContentTest extends TestCase
                 'local_invoice.history.partial_payment' => 'Pembayaran parsial sebesar Rp 10 dicatat (referensi: REF-1). Total terbayar: Rp 100. Sisa tagihan: Rp 50.',
                 'local_invoice.history.partial_payment_with_reason' => 'Pembayaran parsial sebesar Rp 10 dicatat (referensi: REF-1). Total terbayar: Rp 100. Sisa tagihan: Rp 50. Alasan: Short transfer.',
                 'local_invoice.history.settlement_finalized' => 'Penyelesaian pembayaran invoice telah difinalisasi.',
-                'local_invoice.history.overpaid' => 'Kelebihan pembayaran sebesar Rp 10 dicatat sebagai piutang pengembalian dana pemasok.',
+                'local_invoice.history.overpaid' => 'Kelebihan pembayaran sebesar Rp 10 dicatat sebagai piutang pengembalian dana supplier.',
                 'local_invoice.history.expired' => 'Invoice kedaluwarsa setelah dua kali melewatkan jadwal penyerahan dokumen fisik.',
                 'local_invoice.history.delivery_missed' => 'Penyerahan dokumen fisik terlewat pada tanggal yang dijadwalkan. Jadwal perlu diatur ulang.',
                 'local_invoice.history.rescheduled' => 'Jadwal penyerahan dokumen fisik diubah ke hari Rabu, 2026-10-07.',

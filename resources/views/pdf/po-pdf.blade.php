@@ -1,381 +1,120 @@
+@php
+    $document ??= \App\Support\PurchaseOrderPdf::data($po);
+    $label = fn (string $key) => trans('documents.po.'.$key, [], 'en');
+@endphp
 <!DOCTYPE html>
-<html lang="{{ app()->getLocale() === 'id' ? 'id' : 'en' }}">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>{{ __('purchasing.copy.purchase_order') }} - {{ $po->po_number }}</title>
+    <title>{{ $label('title') }} - {{ $po->po_number }}</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'DejaVu Sans', Arial, sans-serif;
-            font-size: 11px;
-            color: #1e293b;
-            line-height: 1.5;
-        }
-
-        .page {
-            padding: 25px 30px;
-        }
-
-        /* ── Header ── */
-        .header {
-            border-bottom: 3px solid #1F5FA6;
-            padding-bottom: 15px;
-            margin-bottom: 20px;
-        }
-
-        .header-top {
-            display: table;
-            width: 100%;
-        }
-
-        .header-left {
-            display: table-cell;
-            vertical-align: middle;
-            width: 60%;
-        }
-
-        .header-right {
-            display: table-cell;
-            vertical-align: middle;
-            width: 40%;
-            text-align: right;
-        }
-
-        .company-name {
-            font-size: 18px;
-            font-weight: 700;
-            color: #1F5FA6;
-            letter-spacing: 0.5px;
-        }
-
-        .company-subtitle {
-            font-size: 10px;
-            color: #64748b;
-            margin-top: 2px;
-        }
-
-        .doc-title {
-            font-size: 22px;
-            font-weight: 700;
-            color: #C0392B;
-            letter-spacing: 1px;
-        }
-
-        .doc-number {
-            font-size: 12px;
-            color: #475569;
-            margin-top: 2px;
-        }
-
-        /* ── Info Section ── */
-        .info-section {
-            display: table;
-            width: 100%;
-            margin-bottom: 20px;
-        }
-
-        .info-box {
-            display: table-cell;
-            width: 50%;
-            vertical-align: top;
-        }
-
-        .info-box-right {
-            padding-left: 20px;
-        }
-
-        .info-label {
-            font-size: 9px;
-            text-transform: uppercase;
-            font-weight: 700;
-            color: #94a3b8;
-            letter-spacing: 0.5px;
-            margin-bottom: 2px;
-        }
-
-        .info-value {
-            font-size: 11px;
-            color: #1e293b;
-            margin-bottom: 8px;
-        }
-
-        .info-value strong {
-            font-weight: 700;
-        }
-
-        /* ── Table ── */
-        .items-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-
-        .items-table thead th {
-            background-color: #1F5FA6;
-            color: #ffffff;
-            font-size: 9px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            padding: 8px 6px;
-            text-align: left;
-            border: 1px solid #1a5290;
-        }
-
-        .items-table thead th.text-right {
-            text-align: right;
-        }
-
-        .items-table thead th.text-center {
-            text-align: center;
-        }
-
-        .items-table tbody td {
-            padding: 7px 6px;
-            font-size: 10px;
-            border: 1px solid #cbd5e1;
-            vertical-align: middle;
-        }
-
-        .items-table tbody tr:nth-child(even) {
-            background-color: #f8fafc;
-        }
-
-        .text-right {
-            text-align: right;
-        }
-
-        .text-center {
-            text-align: center;
-        }
-
-        /* ── Totals ── */
-        .totals-section {
-            display: table;
-            width: 100%;
-            margin-bottom: 25px;
-        }
-
-        .totals-spacer {
-            display: table-cell;
-            width: 55%;
-        }
-
-        .totals-box {
-            display: table-cell;
-            width: 45%;
-        }
-
-        .totals-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .totals-table td {
-            padding: 5px 8px;
-            font-size: 11px;
-        }
-
-        .totals-table .grand-total td {
-            background-color: #1F5FA6;
-            color: #ffffff;
-            font-weight: 700;
-            font-size: 12px;
-            padding: 8px;
-        }
-
-        /* ── Signatures ── */
-        .signature-section {
-            display: table;
-            width: 100%;
-            margin-top: 40px;
-            page-break-inside: avoid;
-        }
-
-        .signature-box {
-            display: table-cell;
-            width: 33.33%;
-            text-align: center;
-            vertical-align: top;
-            padding: 0 10px;
-        }
-
-        .signature-title {
-            font-size: 10px;
-            font-weight: 700;
-            color: #475569;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-            margin-bottom: 60px;
-        }
-
-        .signature-line {
-            border-top: 1px solid #1e293b;
-            padding-top: 5px;
-            font-size: 10px;
-            color: #475569;
-        }
-
-        /* ── Footer ── */
-        .footer {
-            margin-top: 30px;
-            padding-top: 10px;
-            border-top: 1px solid #e2e8f0;
-            font-size: 8px;
-            color: #94a3b8;
-            text-align: center;
-        }
+        @font-face { font-family: 'PO Noto Sans'; font-weight: normal; src: url('{{ $document['font_regular'] }}') format('truetype'); }
+        @font-face { font-family: 'PO Noto Sans'; font-weight: bold; src: url('{{ $document['font_bold'] }}') format('truetype'); }
+        body, div, table, td, th { margin: 0; padding: 0; }
+        @page { size: A4 portrait; margin: 10mm; }
+        body { font-family: 'PO Noto Sans', sans-serif; font-size: 9pt; line-height: 4.1mm; color: #000; }
+        .sheet { position: relative; width: 190mm; height: 276mm; page-break-after: always; }
+        .sheet:last-child { page-break-after: auto; }
+        .company-header { position: absolute; left: 0; top: 0; width: 98.69mm; height: 21.9mm; }
+        .barcode { position: absolute; left: 105mm; top: 0; width: 41.8mm; text-align: center; }
+        .barcode img { display: block; margin: 0 auto; height: 8.8mm; }
+        .barcode-caption { font-size: 6pt; height: 3mm; line-height: 3mm; margin-top: 0.3mm; }
+        .copy { position: absolute; right: 0; top: -2mm; text-align: right; font-weight: normal; }
+        .form-code { position: absolute; right: 0; top: 7mm; }
+        .po-heading { position: absolute; left: 0; top: 25.5mm; width: 55mm; font-weight: normal; }
+        .po-number { position: absolute; left: 55.5mm; top: 25.5mm; }
+        .supplier { position: absolute; top: 31.8mm; left: 0; width: 112mm; }
+        .page-number { position: absolute; top: 31.8mm; right: 0; text-align: right; white-space: pre; }
+        .dates { position: absolute; top: 40.5mm; right: 0; width: 55.5mm; border-collapse: collapse; }
+        .dates td { padding: 0; line-height: 4.1mm; white-space: nowrap; }
+        .dates .date-value { text-align: right; }
+        .introduction { position: absolute; left: 0; font-size: 9pt; }
+        .items { position: absolute; left: 0.7mm; width: 188.6mm; border-collapse: collapse; table-layout: fixed; }
+        .items th { border: 0.35pt solid #555; height: 8.3mm; font-weight: normal; text-align: center; padding: 0; }
+        .items td { border-left: 0.35pt solid #555; border-right: 0.35pt solid #555; padding: 1mm 2mm; vertical-align: top; }
+        .items .row-number { padding-left: 0; padding-right: 0; text-align: center; }
+        .items .numeric { text-align: right; }
+        .cell-line { height: 4.1mm; line-height: 4.1mm; white-space: pre; }
+        .totals { position: absolute; left: 0.7mm; width: 188.6mm; height: 17mm; border: 0.35pt solid #555; border-collapse: collapse; }
+        .totals td { padding: 0; line-height: 4.2mm; }
+        .totals .total-label { vertical-align: top; padding-left: 8mm; padding-top: 1.5mm; }
+        .totals .amount-label { width: 17mm; text-align: right; }
+        .totals .amount { width: 28mm; text-align: right; padding-right: 1mm; }
+        .closing-notes { position: absolute; left: 0; width: 190mm; font-size: 8pt; }
+        .closing-notes table { width: 190mm; border-collapse: collapse; table-layout: fixed; }
+        .closing-notes td { vertical-align: top; line-height: 3.8mm; }
+        .closing-notes .note-label { width: 12%; }
+        .note-line { height: 3.8mm; line-height: 3.8mm; white-space: pre; }
+        .ship-to { position: absolute; top: 232.3mm; left: 0; width: 88.1mm; height: 30.5mm; border: 0.35pt solid #555; text-align: center; }
+        .ship-title { border-bottom: 0.35pt solid #555; height: 6mm; line-height: 3.2mm; font-weight: normal; }
+        .ship-body { padding-top: 0.5mm; font-size: 9pt; line-height: 4.1mm; }
+        .ship-line { height: 6.3mm; line-height: 4.1mm; }
+        .signatures { position: absolute; top: 232.3mm; right: 0; width: 98.1mm; height: 30.5mm; border-collapse: collapse; table-layout: fixed; }
+        .signatures th, .signatures td { border: 1pt solid #000; padding: 0; text-align: center; font-weight: normal; }
+        .signatures th { line-height: 3.8mm; font-size: 8pt; }
+        .signature-title { height: 5.3mm; line-height: 3.8mm; }
+        .signatures td { height: 24.5mm; }
+        .sign-hint { color: #bbb; font-size: 8pt; font-style: italic; }
+        .continuation-title { font-size: 9pt; margin-bottom: 3mm; }
     </style>
 </head>
 <body>
-    <div class="page">
-        <!-- Header -->
-        <div class="header">
-            <div class="header-top">
-                <div class="header-left">
-                    <div class="company-name">PT. ASTRA DAIDO STEEL INDONESIA</div>
-                    <div class="company-subtitle">Kawasan Industri Suryacipta, Karawang, Jawa Barat 41363</div>
-                </div>
-                <div class="header-right">
-                    <div class="doc-title">{{ __('documents.copy.purchase_order') }}</div>
-                    <div class="doc-number">{{ $po->po_number }}</div>
-                </div>
-            </div>
+@foreach($document['pages'] as $page)
+    @php $lastPage = $loop->last; @endphp
+    <div class="sheet">
+        <img class="company-header" src="{{ $document['company_header'] }}" alt="ASTRA DAIDO STEEL INDONESIA">
+        <div class="barcode">
+            <img src="{{ $document['barcode'] }}" style="width: {{ $document['barcode_width'] }}mm" alt="{{ $po->po_number }}">
+            <div class="barcode-caption">{{ $po->po_number }}</div>
         </div>
-
-        <!-- Info Section -->
-        <div class="info-section">
-            <div class="info-box">
-                <div class="info-label">{{ __('documents.copy.date_po') }}</div>
-                <div class="info-value"><strong>{{ \App\Support\BusinessTime::toBusiness($po->created_at)->locale(app()->getLocale())->translatedFormat('d F Y') }}</strong></div>
-
-                <div class="info-label">{{ __('documents.copy.pr_no') }}</div>
-                <div class="info-value">
-                    @php $prs = $po->purchaseRequisitions(); @endphp
-                    {{ $prs->map(fn($pr) => $pr->pr_number ?? '-')->implode(', ') }}
-                    @if($prs->count() > 1)
-                        ({{ trans_choice('documents.copy.combined_prs', $prs->count(), ['count' => $prs->count()]) }})
-                    @endif
-                </div>
-
-                <div class="info-label">{{ __('documents.copy.period') }}</div>
-                <div class="info-value">{{ $prs->map(fn($pr) => $pr->period->display_label ?? $pr->period->name ?? '-')->unique()->implode(', ') }}</div>
-
-                <div class="info-label">{{ __('documents.copy.created_by') }}</div>
-                <div class="info-value">{{ $po->creator->name ?? '-' }}</div>
-            </div>
-            <div class="info-box info-box-right">
-                <div class="info-label">{{ __('documents.copy.supplier') }}</div>
-                <div class="info-value"><strong>{{ $po->supplier->name ?? '-' }}</strong></div>
-
-                <div class="info-label">{{ __('documents.copy.currency') }}</div>
-                <div class="info-value">{{ $po->currency ?? 'USD' }}</div>
-
-                <div class="info-label">{{ __('documents.copy.estimated_arrival') }}</div>
-                <div class="info-value">{{ $po->estimated_arrival ? $po->estimated_arrival->locale(app()->getLocale())->translatedFormat('d F Y') : '-' }}</div>
-            </div>
-        </div>
-
-        <!-- Items Table -->
-        <table class="items-table">
-            <thead>
-                <tr>
-                    <th scope="col" class="text-center" style="width: 30px;">{{ __('documents.copy.no') }}</th>
-                    <th scope="col">{{ __('documents.copy.material') }}</th>
-                    <th scope="col" class="text-center">HS Code</th>
-                    <th scope="col" class="text-center">{{ __('documents.copy.specification') }}</th>
-                    <th scope="col" class="text-center">{{ __('documents.copy.qty') }}</th>
-                    <th scope="col" class="text-right">{{ __('documents.copy.weight_unit') }}</th>
-                    <th scope="col" class="text-right">{{ __('documents.copy.total_weight') }}</th>
-                    <th scope="col" class="text-right">{{ __('documents.copy.price_kg') }}</th>
-                    <th scope="col" class="text-right">{{ __('documents.copy.total') }} ({{ $po->currency ?? 'USD' }})</th>
-                    <th scope="col" class="text-right">{{ __('documents.copy.total_idr') }}</th>
-                </tr>
-            </thead>
-            <tbody>
-                @php $grandTotalFx = 0; $grandTotalIdr = 0; $globalNo = 1; @endphp
-                @foreach($po->commercialQuotations() as $quotation)
-                    @php $rate = $quotationRates[$quotation->id] ?? null; @endphp
-                    @if($po->quotations->count() > 1)
-                        <tr>
-                            <td colspan="10" style="background-color: #eef2f7; font-weight: 700; font-size: 10px; padding: 6px;">
-                                {{ $quotation->purchaseRequisition->pr_number ?? 'PR -' }}
-                                @if($rate)
-                                    <span style="color: #64748b; font-weight: 400; margin-left: 8px;">
-                                        {{ __('common.final_review.exchange_rate', ['currency' => $quotation->currency, 'amount' => number_format($rate->rate_to_idr, 0, ',', '.')]) }}
-                                    </span>
-                                @endif
-                            </td>
-                        </tr>
-                    @endif
-                    @foreach($quotation->items as $item)
-                        @php
-                            $totalFx = $item->resolved_amount;
-                            $totalIdr = $totalFx * ($rate ? $rate->rate_to_idr : 1);
-                            $grandTotalFx += $totalFx;
-                            $grandTotalIdr += $totalIdr;
-
-                            $spec = $item->prItem->dimension_label;
-                        @endphp
-                        <tr>
-                            <td class="text-center">{{ $globalNo++ }}</td>
-                            <td><strong>{{ $item->prItem->material_name }}</strong><br><small style="color:#64748b;">{{ $item->prItem->shape ?? '-' }}</small></td>
-                            <td class="text-center">{{ $item->prItem->hs_code ?? '-' }}</td>
-                            <td class="text-center" style="font-size:9px;">{{ $spec }}</td>
-                            <td class="text-center">{{ number_format($item->prItem->quantity_value, 0, ',', '.') }}</td>
-                            <td class="text-right">{{ \App\Support\NumberFormat::maxDecimals($item->prItem->weight_needed) }}</td>
-                            <td class="text-right">{{ \App\Support\NumberFormat::maxDecimals($item->prItem->total_weight) }}</td>
-                            <td class="text-right">{{ $item->price_per_kg === null ? '-' : \App\Support\NumberFormat::maxDecimals($item->price_per_kg, 4) }}</td>
-                            <td class="text-right">{{ number_format($totalFx, 2, ',', '.') }}</td>
-                            <td class="text-right">Rp {{ number_format($totalIdr, 0, ',', '.') }}</td>
-                        </tr>
-                    @endforeach
-                @endforeach
-            </tbody>
+        <div class="copy">{{ $label('original') }}</div>
+        <div class="form-code">F-PC-01-01-01:00</div>
+        <div class="po-heading">{{ $label('number') }}</div>
+        <div class="po-number">@foreach($document['po_number_lines'] as $line)<div class="cell-line">{{ $line }}</div>@endforeach</div>
+        <div class="supplier">@foreach($document['supplier_lines'] as $line)<div class="cell-line">{{ $line }}</div>@endforeach</div>
+        <div class="page-number">{{ trans('documents.po.page', ['current' => $loop->iteration, 'total' => count($document['pages'])], 'en') }}</div>
+        <table class="dates">
+            <tr><td><div class="cell-line">{{ $label('date') }}</div></td><td><div class="cell-line">:</div></td><td class="date-value"><div class="cell-line">{{ $document['date'] }}</div></td></tr>
+            <tr><td><div class="cell-line">{{ $label('receipt_date') }}</div></td><td><div class="cell-line">:</div></td><td class="date-value"><div class="cell-line">{{ $document['receipt_date'] }}</div></td></tr>
+            <tr><td><div class="cell-line">{{ $label('currency') }}</div></td><td><div class="cell-line">:</div></td><td class="date-value"><div class="cell-line">{{ $document['currency'] }}</div></td></tr>
         </table>
-
-        <!-- Totals -->
-        <div class="totals-section">
-            <div class="totals-spacer"></div>
-            <div class="totals-box">
-                <table class="totals-table">
-                    <tr>
-                        <td>{{ __('documents.copy.total') }} ({{ $po->currency ?? 'USD' }})</td>
-                        <td class="text-right"><strong>{{ number_format($grandTotalFx, 2, ',', '.') }}</strong></td>
-                    </tr>
-                    <tr class="grand-total">
-                        <td>{{ __('documents.copy.grand_total_idr') }}</td>
-                        <td class="text-right">Rp {{ number_format($grandTotalIdr, 0, ',', '.') }}</td>
-                    </tr>
-                </table>
+        @if($page['note_lines'] !== [])
+            <div class="closing-notes" style="top: {{ $document['table_top'] }}mm">
+                <div class="continuation-title">{{ $label('note_continued') }}</div>
+                <table><tbody>@foreach($page['note_lines'] as $line)<tr><td class="note-label"><div class="note-line">{{ $line['label'] }}</div></td><td style="width: 88%"><div class="note-line">{{ $line['text'] }}</div></td></tr>@endforeach</tbody></table>
             </div>
-        </div>
-
-        <!-- Signatures -->
-        <div class="signature-section">
-            <div class="signature-box">
-                <div class="signature-title">{{ __('documents.copy.created_by') }}</div>
-                <div class="signature-line">{{ $po->creator->name ?? '_______________' }}<br>{{ __('documents.copy.purchasing') }}</div>
+        @else
+            <div class="introduction" style="top: {{ $document['table_top'] - 8.1 }}mm">{{ $label('introduction') }}</div>
+            <table class="items" style="top: {{ $document['table_top'] }}mm">
+                <thead><tr><th style="width: 3.7116%">{{ $label('no') }}</th><th style="width: 51.2195%">{{ $label('description') }}</th><th style="width: 15.9067%">{{ $label('quantity') }}</th><th style="width: 14.5811%">{{ $label('unit_price') }}</th><th style="width: 14.5811%">{{ $label('total_price') }}</th></tr></thead>
+                <tbody>
+                @forelse($page['rows'] as $row)
+                    <tr>@foreach($row['cells'] as $column => $lines)<td class="{{ $column === 0 ? 'row-number' : ($column > 1 ? 'numeric' : '') }}" style="height: {{ $row['height'] - 2 }}mm">@foreach($lines as $line)<div class="cell-line">{{ $line }}</div>@endforeach</td>@endforeach</tr>
+                @empty
+                    <tr><td colspan="5" style="height: 0; padding: 0; border: 0"></td></tr>
+                @endforelse
+                </tbody>
+            </table>
+        @endif
+        @if($lastPage)
+            <table class="totals" style="top: {{ $document['table_top'] + 8.5 + $page['height'] + 4 }}mm">
+                <tr><td class="total-label" rowspan="3">{{ $label('total') }}</td><td class="amount-label">{{ $document['currency'] }}</td><td class="amount">{{ $document['total'] }}</td></tr>
+                <tr><td class="amount-label">{{ $label('ppn') }}</td><td class="amount">-</td></tr>
+                <tr><td class="amount-label">{{ $label('total') }}</td><td class="amount">{{ $document['total'] }}</td></tr>
+            </table>
+            <div class="closing-notes" style="top: {{ $document['note_top'] }}mm">
+                <table><tbody>@foreach($document['footer_lines'] as $line)<tr><td class="note-label"><div class="note-line">{{ $line['label'] }}</div></td><td style="width: 88%"><div class="note-line">{{ $line['text'] }}</div></td></tr>@endforeach</tbody></table>
             </div>
-            <div class="signature-box">
-                <div class="signature-title">{{ __('documents.copy.approved_by') }}</div>
-                <div class="signature-line">_______________<br>{{ __('documents.copy.manager_purchasing') }}</div>
+            <div class="ship-to">
+                <div class="ship-title">{{ $label('ship_to') }}</div>
+                <div class="ship-body"><div class="ship-line">PT ASTRA DAIDO STEEL INDONESIA</div><div class="ship-line">Kawasan Industri Green Land Cluster Batavia Blok AG/12</div><div class="ship-line">Delta Mas Cikarang Pusat - Phone : 021-899 73 241,242</div></div>
             </div>
-            <div class="signature-box">
-                <div class="signature-title">{{ __('documents.copy.received_by') }}</div>
-                <div class="signature-line">_______________<br>{{ __('documents.copy.supplier') }}</div>
-            </div>
-        </div>
-
-        <!-- Footer -->
-        <div class="footer">
-            {{ __('documents.pdf.generated', ['date' => \App\Support\BusinessTime::now()->locale(app()->getLocale())->translatedFormat('d F Y, H:i').' '.\App\Support\BusinessTime::label()]) }}
-        </div>
+            <table class="signatures">
+                <thead><tr><th colspan="2"><div class="signature-title">{{ $label('ordered_by') }}</div></th><th style="width: 33.3333%"><div class="signature-title">{{ $label('supplier_confirmation') }}</div></th></tr></thead>
+                <tbody><tr><td></td><td></td><td><span class="sign-hint">{{ $label('sign_stamp') }}</span></td></tr></tbody>
+            </table>
+        @endif
     </div>
+@endforeach
 </body>
 </html>

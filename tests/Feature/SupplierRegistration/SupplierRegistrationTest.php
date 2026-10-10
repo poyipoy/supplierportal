@@ -10,10 +10,13 @@ use App\Models\SupplierRegistrationAttempt;
 use App\Models\SupplierRegistrationAudit;
 use App\Models\User;
 use App\Services\SupplierRegistrationService;
+use App\Support\SupplierComplianceQuestionnaire;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
+use Tests\Support\NativeFileFixtures;
 use Tests\TestCase;
 
 class SupplierRegistrationTest extends TestCase
@@ -46,15 +49,22 @@ class SupplierRegistrationTest extends TestCase
             'email' => 'procurement@bajabersama.com',
             'password' => 'Password123!',
             'password_confirmation' => 'Password123!',
-            'nib_file' => UploadedFile::fake()->create('nib.pdf', 500, 'application/pdf'),
-            'npwp_file' => UploadedFile::fake()->create('npwp.jpg', 400, 'image/jpeg'),
-            'sknr_file' => UploadedFile::fake()->create('sknr.pdf', 600, 'application/pdf'),
+            'nib_file' => NativeFileFixtures::upload('nib.pdf', 500),
+            'npwp_file' => UploadedFile::fake()->image('npwp.jpg', 20, 20),
+            'sknr_file' => NativeFileFixtures::upload('sknr.pdf', 600),
+            'questionnaire' => self::expectedAnswers(),
         ], $overrides);
+    }
+
+    /** Answers that match every expected value (nothing flagged). */
+    private static function expectedAnswers(): array
+    {
+        return SupplierComplianceQuestionnaire::QUESTIONS;
     }
 
     public function test_registration_notifications_render_each_reviewer_locale_and_preserve_scope_values(): void
     {
-        \Illuminate\Support\Facades\Queue::fake();
+        Queue::fake();
         $english = User::factory()->create(['role' => 'admin']);
         $indonesian = User::factory()->create(['role' => 'finance']);
         $indonesian->preference()->create([...config('user_preferences.defaults'), 'locale' => 'id']);
@@ -66,7 +76,7 @@ class SupplierRegistrationTest extends TestCase
         ]);
         $submitted = $english->notifications()->where('data->event', 'supplier_registration.submitted')->sole();
         $this->assertSame('New Supplier Registration', $submitted->data['title']);
-        $this->assertSame('Pendaftaran Pemasok Baru', $indonesian->notifications()->where('data->event', 'supplier_registration.submitted')->sole()->data['title']);
+        $this->assertSame('New Supplier Registration', $indonesian->notifications()->where('data->event', 'supplier_registration.submitted')->sole()->data['title']);
         $this->assertStringContainsString($payload['company_name'], $submitted->data['message']);
         $this->assertStringContainsString($result['reference'], $submitted->data['message']);
         $this->assertSame('id', app()->getLocale());
@@ -74,7 +84,7 @@ class SupplierRegistrationTest extends TestCase
         $en = $english->notifications()->where('data->event', 'supplier_registration.approved')->sole();
         $id = $indonesian->notifications()->where('data->event', 'supplier_registration.approved')->sole();
         $this->assertStringContainsString('Material Procurement, Local Supplier', $en->data['message']);
-        $this->assertStringContainsString('Pengadaan Material, Pemasok Lokal', $id->data['message']);
+        $this->assertStringContainsString('Pengadaan Material, Local Supplier', $id->data['message']);
         $this->assertEqualsCanonicalizing(['import', 'local'], $result['attempt']->user->supplierScopes()->pluck('scope')->all());
         $this->assertSame('New Supplier Registration', $submitted->fresh()->data['title']);
     }
@@ -164,7 +174,7 @@ class SupplierRegistrationTest extends TestCase
     public function test_registration_enforces_5mb_max_file_size_and_mimes(): void
     {
         $payload = $this->validRegistrationPayload([
-            'nib_file' => UploadedFile::fake()->create('huge.pdf', 6000, 'application/pdf'), // > 5MB
+            'nib_file' => NativeFileFixtures::upload('huge.pdf', 6000), // > 5MB
             'npwp_file' => UploadedFile::fake()->create('malicious.exe', 100, 'application/x-msdownload'),
         ]);
 
@@ -180,9 +190,9 @@ class SupplierRegistrationTest extends TestCase
         $result = $service->submitInitialRegistration(
             data: $this->validRegistrationPayload(),
             files: [
-                'nib_file' => UploadedFile::fake()->create('nib.pdf', 500, 'application/pdf'),
-                'npwp_file' => UploadedFile::fake()->create('npwp.jpg', 400, 'image/jpeg'),
-                'sknr_file' => UploadedFile::fake()->create('sknr.pdf', 600, 'application/pdf'),
+                'nib_file' => NativeFileFixtures::upload('nib.pdf', 500),
+                'npwp_file' => UploadedFile::fake()->image('npwp.jpg', 20, 20),
+                'sknr_file' => NativeFileFixtures::upload('sknr.pdf', 600),
             ],
         );
 
@@ -214,9 +224,9 @@ class SupplierRegistrationTest extends TestCase
         $result = $service->submitInitialRegistration(
             data: $this->validRegistrationPayload(),
             files: [
-                'nib_file' => UploadedFile::fake()->create('nib.pdf', 500, 'application/pdf'),
-                'npwp_file' => UploadedFile::fake()->create('npwp.jpg', 400, 'image/jpeg'),
-                'sknr_file' => UploadedFile::fake()->create('sknr.pdf', 600, 'application/pdf'),
+                'nib_file' => NativeFileFixtures::upload('nib.pdf', 500),
+                'npwp_file' => UploadedFile::fake()->image('npwp.jpg', 20, 20),
+                'sknr_file' => NativeFileFixtures::upload('sknr.pdf', 600),
             ],
         );
 
@@ -272,9 +282,9 @@ class SupplierRegistrationTest extends TestCase
         $result = $service->submitInitialRegistration(
             data: $this->validRegistrationPayload(),
             files: [
-                'nib_file' => UploadedFile::fake()->create('nib.pdf', 500, 'application/pdf'),
-                'npwp_file' => UploadedFile::fake()->create('npwp.jpg', 400, 'image/jpeg'),
-                'sknr_file' => UploadedFile::fake()->create('sknr.pdf', 600, 'application/pdf'),
+                'nib_file' => NativeFileFixtures::upload('nib.pdf', 500),
+                'npwp_file' => UploadedFile::fake()->image('npwp.jpg', 20, 20),
+                'sknr_file' => NativeFileFixtures::upload('sknr.pdf', 600),
             ],
         );
 
@@ -318,5 +328,182 @@ class SupplierRegistrationTest extends TestCase
         $response->assertSee('nib_file');
         $response->assertSee('npwp_file');
         $response->assertSee('sknr_file');
+        $response->assertSee('company_profile_file');
+        $response->assertSee('data-async-submit', false);
+        $response->assertSee(__('registration.questionnaire.title', [], 'en'));
+        foreach (SupplierComplianceQuestionnaire::keys() as $key) {
+            $response->assertSee('name="questionnaire['.$key.']"', false);
+            $response->assertSee(__('registration.questionnaire.questions.'.$key, [], 'en'));
+        }
+        $response->assertSee(__('registration.email', [], 'en'));
+        $response->assertDontSee('Official Company Email Address');
+    }
+
+    public function test_registration_password_requires_min_8_mixed_case_number_and_symbol(): void
+    {
+        foreach (['abcdef1!', 'ABCDEF1!', 'Abcdefg!', 'Abcdefg1', 'Abc1!xy'] as $weak) {
+            $this->post(route('supplier.register.store'), $this->validRegistrationPayload([
+                'password' => $weak,
+                'password_confirmation' => $weak,
+            ]))->assertSessionHasErrors('password');
+        }
+        $this->assertSame(0, User::where('email', 'procurement@bajabersama.com')->count());
+
+        // Exactly 8 characters with upper, lower, number and symbol is accepted (internal default stays min 12).
+        $this->post(route('supplier.register.store'), $this->validRegistrationPayload([
+            'password' => 'Abcdef1!',
+            'password_confirmation' => 'Abcdef1!',
+        ]))->assertRedirect(route('supplier.registration.success'));
+
+        $this->assertTrue(Hash::check('Abcdef1!', User::where('email', 'procurement@bajabersama.com')->sole()->password));
+    }
+
+    public function test_questionnaire_is_required_for_every_question(): void
+    {
+        $missing = $this->validRegistrationPayload(['questionnaire' => ['quality_standard' => 'yes', 'msds' => 'maybe']]);
+
+        $this->post(route('supplier.register.store'), $missing)->assertSessionHasErrors([
+            'questionnaire.quality_pic',
+            'questionnaire.msds',
+            'questionnaire.product_safe',
+            'questionnaire.child_labor',
+            'questionnaire.minimum_wage',
+        ]);
+        $this->assertSame(0, User::count());
+    }
+
+    public function test_risky_questionnaire_answers_do_not_block_and_are_stored_on_supplier_and_snapshot(): void
+    {
+        $answers = array_merge(self::expectedAnswers(), [
+            'child_labor' => SupplierComplianceQuestionnaire::YES,
+            'minimum_wage' => SupplierComplianceQuestionnaire::NO,
+        ]);
+
+        $this->post(route('supplier.register.store'), $this->validRegistrationPayload([
+            'questionnaire' => $answers + ['injected_key' => 'yes'],
+        ]))->assertRedirect(route('supplier.registration.success'));
+
+        $user = User::where('email', 'procurement@bajabersama.com')->sole();
+        $stored = $user->supplier->compliance_questionnaire;
+        $this->assertSame(SupplierComplianceQuestionnaire::VERSION, $stored['version']);
+        // MySQL JSON columns do not preserve key order, so compare key/value pairs only.
+        $this->assertEquals($answers, $stored['answers']);
+        $this->assertArrayNotHasKey('injected_key', $stored['answers']);
+        $this->assertNotEmpty($stored['answered_at']);
+        $this->assertSame($answers, SupplierComplianceQuestionnaire::answersFrom($stored), 'Reading back restores canonical order');
+
+        $attempt = $user->registrationAttempts()->sole();
+        $this->assertEquals($answers, $attempt->snapshot['questionnaire']);
+        $this->assertSame(['child_labor', 'minimum_wage'], SupplierComplianceQuestionnaire::flagged($attempt->snapshot['questionnaire']));
+    }
+
+    public function test_company_profile_is_optional_stored_with_its_own_type_and_limited_to_10mb(): void
+    {
+        $this->post(route('supplier.register.store'), $this->validRegistrationPayload([
+            'company_profile_file' => UploadedFile::fake()->create('profile.pdf', 10241, 'application/pdf'),
+        ]))->assertSessionHasErrors('company_profile_file');
+
+        $this->post(route('supplier.register.store'), $this->validRegistrationPayload([
+            'company_profile_file' => NativeFileFixtures::upload('profile.pdf', 9000),
+        ]))->assertRedirect(route('supplier.registration.success'));
+
+        $user = User::where('email', 'procurement@bajabersama.com')->sole();
+        $profile = SupplierMasterDocument::where('supplier_id', $user->id)
+            ->where('document_type', SupplierMasterDocument::TYPE_COMPANY_PROFILE)
+            ->sole();
+        $this->assertSame('profile.pdf', $profile->original_filename);
+        Storage::disk('private')->assertExists($profile->file_path);
+        $this->assertArrayHasKey(SupplierMasterDocument::TYPE_COMPANY_PROFILE, $user->registrationAttempts()->sole()->snapshot['documents']);
+    }
+
+    public function test_async_submit_with_invalid_data_returns_422_json_and_stores_nothing(): void
+    {
+        $response = $this->withHeaders(['Accept' => 'application/json'])
+            ->post(route('supplier.register.store'), $this->validRegistrationPayload(['nib' => '', 'questionnaire' => []]));
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(['nib', 'questionnaire']);
+
+        $this->assertSame(0, User::count());
+        $this->assertSame([], Storage::disk('private')->allFiles());
+    }
+
+    public function test_async_submit_returns_same_origin_redirect_and_keeps_access_key_out_of_json(): void
+    {
+        $response = $this->withHeaders(['Accept' => 'application/json'])
+            ->post(route('supplier.register.store'), $this->validRegistrationPayload());
+
+        $response->assertOk()->assertExactJson(['redirect' => route('supplier.registration.success')]);
+
+        $accessKey = session('registration_access_key');
+        $reference = session('registration_reference');
+        $this->assertIsString($accessKey);
+        $this->assertStringNotContainsString($accessKey, $response->getContent());
+
+        // The one-time credentials are still delivered through the flashed session on the success page.
+        $this->get(route('supplier.registration.success'))->assertOk()->assertSee($reference)->assertSee($accessKey);
+    }
+
+    public function test_async_resubmit_updates_questionnaire_and_company_profile(): void
+    {
+        $service = app(SupplierRegistrationService::class);
+        $result = $service->submitInitialRegistration(
+            data: $this->validRegistrationPayload(),
+            files: [
+                'nib_file' => NativeFileFixtures::upload('nib.pdf', 500),
+                'npwp_file' => UploadedFile::fake()->image('npwp.jpg', 20, 20),
+                'sknr_file' => NativeFileFixtures::upload('sknr.pdf', 600),
+            ],
+        );
+        $reviewer = User::factory()->create(['role' => 'purchasing', 'is_active' => true]);
+        $service->requestRevision($result['attempt'], $reviewer, 'Please attach your company profile.');
+
+        $this->post(route('supplier.registration.access'), [
+            'reference' => $result['reference'],
+            'access_key' => $result['access_key'],
+        ]);
+
+        $edit = $this->get(route('supplier.registration.edit'))->assertOk();
+        $edit->assertSee('data-async-submit', false);
+        $edit->assertSee('name="questionnaire[child_labor]"', false);
+        $edit->assertSee('company_profile_file');
+
+        $revisedAnswers = array_merge(self::expectedAnswers(), ['msds' => SupplierComplianceQuestionnaire::NO]);
+        $payload = array_merge($this->validRegistrationPayload(['questionnaire' => $revisedAnswers]), [
+            'nib_file' => null,
+            'npwp_file' => null,
+            'sknr_file' => null,
+            'company_profile_file' => NativeFileFixtures::upload('company-profile.pdf', 2000),
+        ]);
+
+        $this->withHeaders(['Accept' => 'application/json'])
+            ->post(route('supplier.registration.resubmit'), $payload)
+            ->assertOk()
+            ->assertExactJson(['redirect' => route('supplier.registration.status')]);
+
+        $user = $result['attempt']->user->fresh();
+        $this->assertEquals($revisedAnswers, $user->supplier->compliance_questionnaire['answers']);
+        $newAttempt = $user->registrationAttempts()->orderByDesc('attempt_number')->first();
+        $this->assertSame(2, $newAttempt->attempt_number);
+        $this->assertEquals($revisedAnswers, $newAttempt->snapshot['questionnaire']);
+        $this->assertArrayHasKey(SupplierMasterDocument::TYPE_COMPANY_PROFILE, $newAttempt->snapshot['documents']);
+        $this->assertArrayHasKey(SupplierMasterDocument::TYPE_NIB, $newAttempt->snapshot['documents'], 'Existing documents are preserved');
+    }
+
+    public function test_reviewer_sees_questionnaire_answers_with_attention_flags(): void
+    {
+        $this->post(route('supplier.register.store'), $this->validRegistrationPayload([
+            'questionnaire' => array_merge(self::expectedAnswers(), ['child_labor' => SupplierComplianceQuestionnaire::YES]),
+        ]))->assertRedirect(route('supplier.registration.success'));
+
+        $attempt = User::where('email', 'procurement@bajabersama.com')->sole()->registrationAttempts()->sole();
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+
+        $this->actingAs($admin)->get(route('supplier-registrations.show', $attempt->hash))
+            ->assertOk()
+            ->assertSee(__('local_procurement.registration.questionnaire', [], 'en'))
+            ->assertSee(__('registration.questionnaire.questions.child_labor', [], 'en'))
+            ->assertSee(__('registration.questionnaire.needs_attention', [], 'en'))
+            ->assertSee(trans_choice('local_procurement.registration.questionnaire_flagged', 1, ['count' => 1], 'en'));
     }
 }

@@ -68,7 +68,7 @@ class ExportController extends Controller
                 $filters['status'] ?? null,
                 $filters['search'] ?? null,
             ],
-            'rekap_po_supplier_'.now()->format('Ymd_His').'.xlsx', // biz-time:ignore instant filename
+            'summary_po_supplier_'.now()->format('Ymd_His').'.xlsx', // biz-time:ignore instant filename
             $request->exportOptions('supplier.po'),
         );
 

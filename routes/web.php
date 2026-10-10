@@ -33,7 +33,9 @@ use App\Http\Controllers\Finance\FinanceGaClaimController;
 use App\Http\Controllers\Finance\FinanceInvoiceController;
 use App\Http\Controllers\Finance\FinanceVendorController;
 use App\Http\Controllers\Finance\LocalInvoiceSettlementController;
+use App\Http\Controllers\Finance\LocalPoDocumentBatchController;
 use App\Http\Controllers\Finance\LocalProcurementController;
+use App\Http\Controllers\Finance\LocalProcurementImportController;
 use App\Http\Controllers\Ga\EmployeeController;
 use App\Http\Controllers\Ga\GaController;
 use App\Http\Controllers\GaClaimDocumentController;
@@ -43,6 +45,7 @@ use App\Http\Controllers\LocalInvoiceReceiptController;
 use App\Http\Controllers\LocalSupplier\InformationController;
 use App\Http\Controllers\LocalSupplier\InvoiceController as LocalSupplierInvoiceController;
 use App\Http\Controllers\LocalSupplier\PurchaseOrderController as LocalSupplierPurchaseOrderController;
+use App\Http\Controllers\LocalSupplier\SupplierAuditController as LocalSupplierAuditController;
 use App\Http\Controllers\LocalSupplier\VendorProfileController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
@@ -65,6 +68,7 @@ use App\Http\Controllers\Purchasing\PurchasingLocalVendorController;
 use App\Http\Controllers\Purchasing\QuotationListController;
 use App\Http\Controllers\Purchasing\ReportController;
 use App\Http\Controllers\Purchasing\ShipmentController;
+use App\Http\Controllers\Purchasing\SupplierAuditController as PurchasingSupplierAuditController;
 use App\Http\Controllers\Qc\DashboardController;
 use App\Http\Controllers\Qc\QcExportController;
 use App\Http\Controllers\Qc\QcInspectionController;
@@ -111,6 +115,12 @@ Route::middleware(['auth', 'role:supplier', 'supplier.scope:local'])->prefix('lo
     Route::post('/vendor-profile/change-requests', [VendorProfileController::class, 'storeChangeRequest'])->name('vendor-profile.change-requests.store');
     Route::post('/vendor-profile/documents', [VendorProfileController::class, 'uploadDocument'])->name('vendor-profile.documents.upload');
     Route::get('/information', [InformationController::class, 'index'])->name('information');
+    // Supplier Audit
+    Route::get('/supplier-audits', [LocalSupplierAuditController::class, 'index'])->name('supplier-audits.index');
+    Route::get('/supplier-audits/{supplierAudit}', [LocalSupplierAuditController::class, 'show'])->name('supplier-audits.show');
+    Route::get('/supplier-audits/{supplierAudit}/edit', [LocalSupplierAuditController::class, 'edit'])->name('supplier-audits.edit');
+    Route::put('/supplier-audits/{supplierAudit}', [LocalSupplierAuditController::class, 'update'])->middleware('throttle:30,1')->name('supplier-audits.update');
+    Route::patch('/supplier-audits/{supplierAudit}/answers', [LocalSupplierAuditController::class, 'autosave'])->middleware('throttle:120,1')->name('supplier-audits.autosave');
 });
 Route::get('/local-invoice-documents/{document}', [LocalInvoiceDocumentController::class, 'show'])->middleware(['auth', 'role:supplier,accounting,finance,admin,purchasing'])->name('local-invoice-documents.show');
 Route::get('/supplier-master-documents/{document}', [SupplierMasterDocumentController::class, 'show'])->middleware(['auth', 'role:supplier,finance,purchasing,admin'])->name('supplier-master-documents.show');
@@ -194,6 +204,11 @@ Route::middleware(['auth', 'role:finance,admin'])->prefix('finance')->name('fina
     Route::prefix('local-procurement')->name('local-procurement.')->group(function () {
         Route::get('/', [LocalProcurementController::class, 'index'])->name('index');
         Route::get('/create', [LocalProcurementController::class, 'create'])->name('create');
+        Route::get('/imports', [LocalProcurementImportController::class, 'index'])->name('imports.index');
+        Route::get('/imports/{procurementImport}', [LocalProcurementImportController::class, 'status'])->name('imports.status');
+        Route::get('/imports/{procurementImport}/records', [LocalProcurementImportController::class, 'records'])->name('imports.records');
+        Route::get('/imports/{procurementImport}/errors', [LocalProcurementImportController::class, 'errors'])->name('imports.errors');
+        Route::post('/imports/{procurementImport}/cancel', [LocalProcurementImportController::class, 'cancel'])->middleware('throttle:15,1')->name('imports.cancel');
         Route::post('/', [LocalProcurementController::class, 'store'])->name('store');
         Route::get('/import/po/template', [LocalProcurementController::class, 'poTemplate'])->name('import.po.template');
         Route::post('/import/po/preview', [LocalProcurementController::class, 'poPreview'])->middleware('throttle:15,1')->name('import.po.preview');
@@ -201,10 +216,9 @@ Route::middleware(['auth', 'role:finance,admin'])->prefix('finance')->name('fina
         Route::get('/import/gr/template', [LocalProcurementController::class, 'grTemplate'])->name('import.gr.template');
         Route::post('/import/gr/preview', [LocalProcurementController::class, 'grPreview'])->middleware('throttle:15,1')->name('import.gr.preview');
         Route::post('/import/gr/confirm', [LocalProcurementController::class, 'grConfirm'])->middleware('throttle:15,1')->name('import.gr.confirm');
-        Route::get('/import/template', [LocalProcurementController::class, 'template'])->name('import.template');
-        Route::post('/import/preview', [LocalProcurementController::class, 'preview'])->middleware('throttle:15,1')->name('import.preview');
-        Route::post('/import/confirm', [LocalProcurementController::class, 'confirm'])->middleware('throttle:15,1')->name('import.confirm');
         Route::post('/upload-po', [LocalProcurementController::class, 'uploadPo'])->name('upload-po');
+        Route::get('/po-documents/{poDocumentBatch}', [LocalPoDocumentBatchController::class, 'status'])->name('po-documents.status');
+        Route::post('/po-documents/{poDocumentBatch}/retry', [LocalPoDocumentBatchController::class, 'retry'])->middleware('throttle:15,1')->name('po-documents.retry');
         Route::get('/{purchaseOrder}', [LocalProcurementController::class, 'show'])->name('show');
         Route::get('/{purchaseOrder}/edit', [LocalProcurementController::class, 'edit'])->name('edit');
         Route::put('/{purchaseOrder}', [LocalProcurementController::class, 'update'])->name('update');
@@ -507,6 +521,16 @@ Route::middleware(['auth', 'role:purchasing', 'purchasing.navigation'])->prefix(
     Route::match(['get', 'post'], '/export/quotations', [ExportController::class, 'quotations'])->name('export.quotations');
     Route::get('/export/quotations/{quotation}', [ExportController::class, 'quotationDetail'])->name('export.quotations.detail');
     Route::match(['get', 'post'], '/export/shipments', [ExportController::class, 'shipments'])->name('export.shipments');
+    Route::get('/export/supplier-audits/{supplierAudit}', [ExportController::class, 'supplierAuditDetail'])->name('export.supplier-audits.detail');
+    // Supplier Audit (Supplier Local)
+    Route::get('/supplier-audits', [PurchasingSupplierAuditController::class, 'index'])->name('supplier-audits.index');
+    Route::get('/supplier-audits/create', [PurchasingSupplierAuditController::class, 'create'])->name('supplier-audits.create');
+    Route::post('/supplier-audits', [PurchasingSupplierAuditController::class, 'store'])->middleware('throttle:30,1')->name('supplier-audits.store');
+    Route::get('/supplier-audits/{supplierAudit}', [PurchasingSupplierAuditController::class, 'show'])->name('supplier-audits.show');
+    Route::post('/supplier-audits/{supplierAudit}/deadline', [PurchasingSupplierAuditController::class, 'changeDeadline'])->middleware('throttle:30,1')->name('supplier-audits.deadline');
+    Route::post('/supplier-audits/{supplierAudit}/revision', [PurchasingSupplierAuditController::class, 'requestRevision'])->middleware('throttle:30,1')->name('supplier-audits.request-revision');
+    Route::post('/supplier-audits/{supplierAudit}/cancel', [PurchasingSupplierAuditController::class, 'cancel'])->middleware('throttle:30,1')->name('supplier-audits.cancel');
+    Route::post('/supplier-audits/{supplierAudit}/result', [PurchasingSupplierAuditController::class, 'uploadResult'])->middleware('throttle:30,1')->name('supplier-audits.result');
     // Local Vendors & Read-Only Invoices
     Route::get('/local-vendors', [PurchasingLocalVendorController::class, 'index'])->name('local-vendors.index');
     Route::get('/local-vendors/{vendor}', [PurchasingLocalVendorController::class, 'show'])->name('local-vendors.show');
@@ -515,6 +539,11 @@ Route::middleware(['auth', 'role:purchasing', 'purchasing.navigation'])->prefix(
     Route::get('/local-invoices/{invoice}', [PurchasingLocalVendorController::class, 'showInvoice'])->name('local-invoices.show');
 
     Route::prefix('local-procurement')->name('local-procurement.')->controller(LocalProcurementController::class)->group(function () {
+        Route::get('/imports', [LocalProcurementImportController::class, 'index'])->name('imports.index');
+        Route::get('/imports/{procurementImport}', [LocalProcurementImportController::class, 'status'])->name('imports.status');
+        Route::get('/imports/{procurementImport}/records', [LocalProcurementImportController::class, 'records'])->name('imports.records');
+        Route::get('/imports/{procurementImport}/errors', [LocalProcurementImportController::class, 'errors'])->name('imports.errors');
+        Route::post('/imports/{procurementImport}/cancel', [LocalProcurementImportController::class, 'cancel'])->middleware('throttle:15,1')->name('imports.cancel');
         Route::get('/', 'index')->name('index');
         Route::get('/create', 'create')->name('create');
         Route::post('/', 'store')->name('store');
@@ -524,10 +553,9 @@ Route::middleware(['auth', 'role:purchasing', 'purchasing.navigation'])->prefix(
         Route::get('/import/gr/template', 'grTemplate')->name('import.gr.template');
         Route::post('/import/gr/preview', 'grPreview')->middleware('throttle:15,1')->name('import.gr.preview');
         Route::post('/import/gr/confirm', 'grConfirm')->middleware('throttle:15,1')->name('import.gr.confirm');
-        Route::get('/import/template', 'template')->name('import.template');
-        Route::post('/import/preview', 'preview')->middleware('throttle:15,1')->name('import.preview');
-        Route::post('/import/confirm', 'confirm')->middleware('throttle:15,1')->name('import.confirm');
         Route::post('/upload-po', 'uploadPo')->name('upload-po');
+        Route::get('/po-documents/{poDocumentBatch}', [LocalPoDocumentBatchController::class, 'status'])->name('po-documents.status');
+        Route::post('/po-documents/{poDocumentBatch}/retry', [LocalPoDocumentBatchController::class, 'retry'])->middleware('throttle:15,1')->name('po-documents.retry');
         Route::get('/{purchaseOrder}', 'show')->name('show');
         Route::get('/{purchaseOrder}/edit', 'edit')->name('edit');
         Route::put('/{purchaseOrder}', 'update')->name('update');

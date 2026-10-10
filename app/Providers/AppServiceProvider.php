@@ -3,13 +3,16 @@
 namespace App\Providers;
 
 use App\Listeners\ApplyNotificationPreferences;
+use App\Models\SupplierAudit;
 use App\Models\User;
 use App\Notifications\SystemNotification;
+use App\Services\FileSecurity\FileInspectionService;
 use App\Services\LocalInvoice\Contracts\LocalPoProviderInterface;
 use App\Services\LocalInvoice\Providers\DatabaseLocalPoProvider;
 use App\Services\NotificationPreferenceService;
 use App\Services\QuickAccessService;
 use App\Services\RegionalDisplayFormatter;
+use App\Services\SupplierAudit\SupplierAuditInvoiceGate;
 use App\Services\UserPreferenceService;
 use Illuminate\Broadcasting\BroadcastEvent;
 use Illuminate\Console\Events\CommandStarting;
@@ -32,6 +35,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->scoped(NotificationPreferenceService::class);
+        $this->app->scoped(FileInspectionService::class);
 
         $this->app->scoped(RegionalDisplayFormatter::class, function (): RegionalDisplayFormatter {
             $user = auth()->user();
@@ -43,6 +47,8 @@ class AppServiceProvider extends ServiceProvider
             LocalPoProviderInterface::class,
             DatabaseLocalPoProvider::class
         );
+
+        $this->app->scoped(SupplierAuditInvoiceGate::class);
     }
 
     /**
@@ -104,12 +110,12 @@ class AppServiceProvider extends ServiceProvider
 
         View::composer([
             'local-invoices.detail', 'finance.invoices.show', 'purchasing.local-vendors.invoice-show',
-            'supplier-registrations.index', 'supplier-registrations.show',
+            'supplier-registrations.index', 'supplier-registrations._attempts_content', 'supplier-registrations.show',
         ], function ($view): void {
             $view->with('regionalFormatter', app(RegionalDisplayFormatter::class));
         });
 
-        View::composer('exports.index', function ($view): void {
+        View::composer(['exports.index', 'profile.edit'], function ($view): void {
             $view->with('regionalFormatter', app(RegionalDisplayFormatter::class));
         });
 
@@ -130,6 +136,34 @@ class AppServiceProvider extends ServiceProvider
             'supplier.announcements.index', 'supplier.announcements.show', 'supplier.claims.show',
         ], function ($view): void {
             $view->with('regionalFormatter', app(RegionalDisplayFormatter::class));
+        });
+
+        View::composer([
+            'purchasing.supplier-audits.index', 'purchasing.supplier-audits._queue_content',
+            'purchasing.supplier-audits.create', 'purchasing.supplier-audits.show',
+            'local-supplier.supplier-audits.index', 'local-supplier.supplier-audits.show', 'local-supplier.supplier-audits.edit',
+        ], function ($view): void {
+            $view->with('regionalFormatter', app(RegionalDisplayFormatter::class));
+        });
+
+        // D13: menu/tombol Kirim Invoice nonaktif selama Supplier Audit melewati deadline.
+        View::composer([
+            'partials.sidebar', 'local-supplier.dashboard', 'local-supplier.invoices.index',
+            'local-supplier.purchase-orders.index', 'local-supplier.purchase-orders.show',
+        ], function ($view): void {
+            $user = auth()->user();
+            $view->with('supplierAuditInvoiceBlock', $user instanceof User
+                ? app(SupplierAuditInvoiceGate::class)->blockingAudit($user)
+                : null);
+        });
+
+        // U8: badge menu Supplier Audit selama ada audit yang perlu diisi supplier.
+        View::composer('partials.sidebar', function ($view): void {
+            $user = auth()->user();
+            $pending = $user instanceof User && $user->isSupplier() && $user->hasSupplierScope('local')
+                ? SupplierAudit::query()->ownedBy($user)->whereIn('status', SupplierAudit::SUPPLIER_EDITABLE_STATUSES)->first(['id', 'status', 'due_date'])
+                : null;
+            $view->with('supplierAuditPending', $pending);
         });
 
         View::composer('layouts.app', function ($view): void {

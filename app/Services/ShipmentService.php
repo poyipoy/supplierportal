@@ -11,6 +11,7 @@ use App\Models\Shipment;
 use App\Models\ShipmentDocument;
 use App\Models\ShipmentItem;
 use App\Models\User;
+use App\Services\FileSecurity\FileInspectionService;
 use App\Support\BusinessTime;
 use App\Support\NotificationCategory;
 use Illuminate\Http\UploadedFile;
@@ -601,31 +602,11 @@ class ShipmentService
 
         $path = 'attachments/'.now()->format('Y/m').'/'.$file->hashName(); // biz-time:ignore storage path
 
-        $stream = fopen($file->getPathname(), 'r');
-        if (! is_resource($stream)) {
-            throw new \RuntimeException(__('shipments.copy.the_uploaded_document_could_not_be_read'));
-        }
-
         $disk = Storage::disk('private');
-        try {
-            $stored = $disk->put($path, $stream);
-        } catch (Throwable $exception) {
-            $disk->delete($path);
-
-            throw $exception;
-        } finally {
-            if (is_resource($stream)) {
-                fclose($stream);
-            }
-        }
-
-        if (! $stored) {
-            $disk->delete($path);
-            throw new \RuntimeException(__('shipments.copy.the_shipment_document_could_not_be_stored_on_the_private_disk'));
-        }
+        $stored = app(FileInspectionService::class)->storeUpload($file, 'shipment', $path, 'file');
 
         try {
-            return DB::transaction(function () use ($document, $documentNumber, $file, $path, $user) {
+            return DB::transaction(function () use ($document, $documentNumber, $stored, $user) {
                 $lockedDocument = ShipmentDocument::query()
                     ->with('shipment')
                     ->whereKey($document->id)
@@ -637,9 +618,10 @@ class ShipmentService
                 }
 
                 $attachment = $lockedDocument->attachments()->create([
-                    'file_path' => $path,
-                    'file_name' => $file->getClientOriginalName(),
-                    'file_type' => $file->getMimeType(),
+                    'file_path' => $stored['file_path'],
+                    'file_name' => $stored['file_name'],
+                    'file_type' => $stored['file_type'],
+                    'file_inspection_id' => $stored['file_inspection_id'],
                     'uploaded_by' => $user->id,
                 ]);
 

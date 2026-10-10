@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
 use Maatwebsite\Excel\Excel as ExcelFormat;
 use Maatwebsite\Excel\Facades\Excel;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
@@ -205,5 +206,36 @@ class AdvancedPurchaseOrderExportTest extends TestCase
         $this->assertSame(1, substr_count($contents, "\xEF\xBB\xBF"));
         $this->assertStringContainsString('PO/08/2026/911', $contents);
         $this->assertStringNotContainsString('PO/08/2026/912', $contents);
+    }
+
+    public function test_advanced_xlsx_queue_preserves_normal_widths_and_compact_header(): void
+    {
+        config(['queue.default' => 'sync']);
+        Storage::fake('private');
+        Event::fake([ExportProgressUpdated::class]);
+        $this->actingAs($this->supplier)->postJson(route('supplier.export.purchase-orders'), [
+            'options' => ['columns' => ['remark', 'po_number', 'currency'], 'format' => 'xlsx'],
+        ])->assertAccepted();
+        $record = ExportJob::sole();
+        $this->assertSame('completed', $record->status);
+        $book = IOFactory::load(Storage::disk('private')->path($record->file_path));
+        try {
+            $sheet = $book->getActiveSheet();
+            $this->assertSame(['Remark', 'PO Number', 'Currency'], $sheet->toArray()[0]);
+            $this->assertSame('PO/08/2026/911', $sheet->getCell('B2')->getValue());
+            $this->assertEquals(24, $sheet->getRowDimension(1)->getRowHeight('px'));
+            $this->assertEquals(-1, $sheet->getRowDimension(2)->getRowHeight());
+            foreach (['A' => 24, 'B' => 18, 'C' => 10] as $column => $width) {
+                $this->assertEquals($width, $sheet->getColumnDimension($column)->getWidth());
+                $header = $sheet->getStyle($column.'1');
+                $this->assertSame('9C4A0F', $header->getFill()->getStartColor()->getRGB());
+                $this->assertFalse($header->getAlignment()->getWrapText());
+                $this->assertTrue($header->getAlignment()->getShrinkToFit());
+            }
+            $this->assertTrue($sheet->getStyle('A2')->getAlignment()->getWrapText());
+            $this->assertSame(2, $sheet->getHighestDataRow());
+        } finally {
+            $book->disconnectWorksheets();
+        }
     }
 }

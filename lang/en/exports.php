@@ -156,6 +156,7 @@ return [
     ],
     'history' => ['po_date' => 'PO Date', 'price_kg' => 'Price/Kg', 'sheet_title' => 'Price History - :material'],
     'feedback' => [
+        'transfer_template_unavailable' => 'The transfer workbook template is missing or incompatible. Contact an administrator.',
         'not_ready' => 'The export file was not found or has not finished processing.',
         'unavailable' => 'The export file is unavailable or has expired.',
         'unknown_status' => 'The export status is not recognized.',

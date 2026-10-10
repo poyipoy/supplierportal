@@ -244,7 +244,7 @@ class MissionFourExportTest extends TestCase
 
             $queued = ExportJob::query()->latest('id')->firstOrFail();
             $this->assertSame(QuotationsExport::class, $queued->export_class);
-            $this->assertSame('rekap_quotations_20260803_101112.xlsx', $queued->file_name);
+            $this->assertSame('summary_quotations_20260803_101112.xlsx', $queued->file_name);
             $this->assertSame($this->supplierA->id, $queued->export_args[0]['supplier_id']);
             Queue::assertPushed(ProcessExportJob::class, fn (ProcessExportJob $job) => $job->exportJobId === $queued->id);
         } finally {

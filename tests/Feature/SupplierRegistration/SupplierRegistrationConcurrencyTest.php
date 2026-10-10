@@ -9,6 +9,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use Tests\Support\NativeFileFixtures;
 use Tests\TestCase;
 
 class SupplierRegistrationConcurrencyTest extends TestCase
@@ -44,9 +45,9 @@ class SupplierRegistrationConcurrencyTest extends TestCase
                 'password' => 'Password123!',
             ],
             files: [
-                'nib_file' => UploadedFile::fake()->create('nib.pdf', 500, 'application/pdf'),
-                'npwp_file' => UploadedFile::fake()->create('npwp.jpg', 400, 'image/jpeg'),
-                'sknr_file' => UploadedFile::fake()->create('sknr.pdf', 600, 'application/pdf'),
+                'nib_file' => NativeFileFixtures::upload('nib.pdf', 500),
+                'npwp_file' => UploadedFile::fake()->image('npwp.jpg', 20, 20),
+                'sknr_file' => NativeFileFixtures::upload('sknr.pdf', 600),
             ],
         );
 
@@ -101,9 +102,9 @@ class SupplierRegistrationConcurrencyTest extends TestCase
         ];
 
         $files = [
-            'nib_file' => UploadedFile::fake()->create('nib.pdf', 500, 'application/pdf'),
-            'npwp_file' => UploadedFile::fake()->create('npwp.jpg', 400, 'image/jpeg'),
-            'sknr_file' => UploadedFile::fake()->create('sknr.pdf', 600, 'application/pdf'),
+            'nib_file' => NativeFileFixtures::upload('nib.pdf', 500),
+            'npwp_file' => UploadedFile::fake()->image('npwp.jpg', 20, 20),
+            'sknr_file' => NativeFileFixtures::upload('sknr.pdf', 600),
         ];
 
         // First registration succeeds

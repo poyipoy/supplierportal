@@ -8,10 +8,10 @@ use App\Models\User;
 use App\Services\Ga\GaClaimService;
 use App\Services\Ga\GaVerificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
+use Tests\Support\NativeFileFixtures;
 use Tests\TestCase;
 
 class GaClaimWorkflowTest extends TestCase
@@ -58,7 +58,7 @@ class GaClaimWorkflowTest extends TestCase
                 'description' => 'Dinner with client PT Krakatau',
             ],
             [
-                'supporting' => UploadedFile::fake()->create('receipts.pdf', 150),
+                'supporting' => NativeFileFixtures::upload('receipts.pdf', 150),
             ]
         );
 
@@ -96,7 +96,7 @@ class GaClaimWorkflowTest extends TestCase
                 'amount' => 750000,
             ],
             [
-                'supporting' => UploadedFile::fake()->create('upd_evidence.pdf', 150),
+                'supporting' => NativeFileFixtures::upload('upd_evidence.pdf', 150),
             ]
         );
 
@@ -127,7 +127,7 @@ class GaClaimWorkflowTest extends TestCase
                 'amount' => 500000,
             ],
             [
-                'supporting' => UploadedFile::fake()->create('receipts.pdf', 150),
+                'supporting' => NativeFileFixtures::upload('receipts.pdf', 150),
             ]
         );
 
@@ -214,7 +214,7 @@ class GaClaimWorkflowTest extends TestCase
                 'description' => 'Revisi nominal setelah potong diskon',
             ],
             [
-                'supporting' => UploadedFile::fake()->create('revisi_kwitansi.pdf', 100),
+                'supporting' => NativeFileFixtures::upload('revisi_kwitansi.pdf', 100),
             ]
         );
 
@@ -341,7 +341,7 @@ class GaClaimWorkflowTest extends TestCase
                 'claim_date' => '2026-09-10',
                 'amount' => 1200000,
             ],
-            ['supporting' => UploadedFile::fake()->create('receipt.pdf', 100)]
+            ['supporting' => NativeFileFixtures::upload('receipt.pdf', 100)]
         );
         $this->claimService->basicVerify($claim, $gaUser);
 
@@ -375,7 +375,7 @@ class GaClaimWorkflowTest extends TestCase
                 'amount' => 500000,
             ],
             [
-                'supporting' => UploadedFile::fake()->create('doc.pdf', 100),
+                'supporting' => NativeFileFixtures::upload('doc.pdf', 100),
             ]
         );
     }

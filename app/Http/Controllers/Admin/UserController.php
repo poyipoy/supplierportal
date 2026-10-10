@@ -189,7 +189,7 @@ class UserController extends Controller
         }
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+            'email' => ['sometimes', 'bail', 'string', Rule::in([$user->email])],
             'password' => ['nullable', 'string', Password::defaults(), 'confirmed'],
             'role' => 'required|in:admin,purchasing,supplier,qc,accounting,finance,ga',
             'is_active' => 'boolean',
@@ -204,7 +204,7 @@ class UserController extends Controller
             'supplier_scopes' => ['required_if:role,supplier', 'array', 'min:1'],
             'supplier_scopes.*' => ['required', 'in:import,local', 'distinct'],
             'payment_term_days' => [Rule::requiredIf($request->role === 'supplier' && in_array('local', (array) $request->input('supplier_scopes', []), true)), 'nullable', 'integer', 'between:1,365'],
-        ]);
+        ], ['email.in' => __('profile.email_immutable')]);
 
         try {
             DB::beginTransaction();
@@ -216,7 +216,6 @@ class UserController extends Controller
             $passwordChanged = $request->filled('password');
             $data = [
                 'name' => $request->name,
-                'email' => Str::lower(trim($request->email)),
                 'role' => $request->role,
                 'is_active' => $request->has('is_active') ? true : false,
             ];

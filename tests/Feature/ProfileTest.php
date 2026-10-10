@@ -22,7 +22,7 @@ class ProfileTest extends TestCase
             ->assertSeeText('My Profile')
             ->assertSee('Account Information')
             ->assertDontSeeText('Change Password')
-            ->assertDontSeeText('Two-Factor Authentication')
+            ->assertSeeText('Two-Factor Authentication')
             ->assertDontSeeText('Active Sessions')
             ->assertDontSeeText('Log Out Other Devices')
             ->assertDontSeeText('Delete Account')
@@ -36,12 +36,13 @@ class ProfileTest extends TestCase
     public function test_profile_information_can_be_updated(): void
     {
         $user = User::factory()->create();
+        $email = $user->email;
+        $verifiedAt = $user->email_verified_at;
 
         $response = $this
             ->actingAs($user)
             ->patch('/profile', [
                 'name' => 'Test User',
-                'email' => 'test@example.com',
             ]);
 
         $response
@@ -51,8 +52,8 @@ class ProfileTest extends TestCase
         $user->refresh();
 
         $this->assertSame('Test User', $user->name);
-        $this->assertSame('test@example.com', $user->email);
-        $this->assertNull($user->email_verified_at);
+        $this->assertSame($email, $user->email);
+        $this->assertTrue($verifiedAt->equalTo($user->email_verified_at));
     }
 
     public function test_email_verification_status_is_unchanged_when_the_email_address_is_unchanged(): void

@@ -16,6 +16,7 @@ class UploadLocalPoDocumentRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'request_key' => ['nullable', 'uuid'],
             'supplier_id' => [
                 'required',
                 'integer',
@@ -31,7 +32,8 @@ class UploadLocalPoDocumentRequest extends FormRequest
                 'required',
                 'file',
                 'mimes:pdf,zip',
-                'max:51200', // 50 MB
+                'extensions:pdf,zip',
+                'max:'.intdiv((int) config('native_file_security.zip.max_upload_bytes', 50 * 1024 * 1024), 1024),
             ],
         ];
     }

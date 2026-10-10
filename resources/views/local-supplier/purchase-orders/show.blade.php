@@ -23,7 +23,7 @@
             @endif
 
             @if($purchaseOrder->status === 'OPEN')
-                <x-ui.button :href="route('local-supplier.invoices.create')" variant="primary" size="sm">
+                <x-ui.button :href="route('local-supplier.invoices.create')" :disabled="(bool) ($supplierAuditInvoiceBlock ?? null)" :title="($supplierAuditInvoiceBlock ?? null) ? __('supplier_audit.invoice_block.short') : null" variant="primary" size="sm">
                     <x-ui.icon name="plus" size="sm" />
                     <span>{{ __('local_invoice.actions.submit') }}</span>
                 </x-ui.button>

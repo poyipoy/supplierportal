@@ -3,6 +3,7 @@
 namespace App\Services\Employee;
 
 use App\Models\Employee;
+use App\Services\FileSecurity\FileInspectionService;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -42,6 +43,7 @@ class EmployeeExcelImportService
             throw new InvalidArgumentException("File [{$path}] tidak ditemukan.");
         }
 
+        app(FileInspectionService::class)->inspectPath($path, basename($path), 'employee_spreadsheet', 'import_file');
         $spreadsheet = IOFactory::load($path);
 
         // Find sheet: prioritize "Form Responses 1" or "Form Response 1"

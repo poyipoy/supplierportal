@@ -4,6 +4,7 @@ namespace App\Http\Requests\Auth;
 
 use App\Enums\TurnstileStatus;
 use App\Services\Auth\TurnstileVerifier;
+use App\Support\SupplierComplianceQuestionnaire;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
@@ -13,6 +14,27 @@ class SupplierRegistrationRequest extends FormRequest
     public function authorize(): bool
     {
         return true;
+    }
+
+    /**
+     * Registration-only password policy (min 8, mixed case, number, symbol).
+     *
+     * Deliberately separate from Password::defaults() (min 12) which governs internal
+     * accounts and later password changes; breached-password check mirrors production defaults.
+     */
+    public static function registrationPasswordRule(): Password
+    {
+        $rule = Password::min(8)
+            ->max(255)
+            ->mixedCase()
+            ->numbers()
+            ->symbols();
+
+        if (app()->environment('production') && config('auth_security.password.uncompromised_in_production', true)) {
+            $rule->uncompromised((int) config('auth_security.password.uncompromised_threshold', 3));
+        }
+
+        return $rule;
     }
 
     public function rules(): array
@@ -45,7 +67,7 @@ class SupplierRegistrationRequest extends FormRequest
 
             // Account credentials
             'email' => ['required', 'string', 'email', 'max:255'],
-            'password' => ['required', 'string', Password::defaults(), 'confirmed'],
+            'password' => ['required', 'string', self::registrationPasswordRule(), 'confirmed'],
 
             // Mandatory Documents (Max 5MB = 5120 KB)
             'nib_file' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
@@ -55,10 +77,16 @@ class SupplierRegistrationRequest extends FormRequest
             // Optional Documents
             'sppkp_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
             'skd_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
+            'company_profile_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
 
             // Bot protection
             'cf-turnstile-response' => ['nullable', 'string', 'max:2048'],
-        ];
+        ] + SupplierComplianceQuestionnaire::rules();
+    }
+
+    public function attributes(): array
+    {
+        return SupplierComplianceQuestionnaire::attributes();
     }
 
     /**
@@ -99,6 +127,7 @@ class SupplierRegistrationRequest extends FormRequest
             'account_holder_name',
             'email',
             'password',
+            'questionnaire',
         ]);
     }
 }

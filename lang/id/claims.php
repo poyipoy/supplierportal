@@ -50,7 +50,7 @@ return [
         'submit_official_response' => 'Kirim Tanggapan Resmi',
         'submitted_by' => 'Diajukan Oleh',
         'submitted_date' => 'Tanggal Diajukan',
-        'supplier' => 'Pemasok',
+        'supplier' => 'Supplier',
         'supplier_attachments' => 'Lampiran Supplier',
         'supplier_response_and_resolution' => 'Tanggapan dan Penyelesaian Supplier',
         'supplier_response_deadline' => 'Batas Waktu Tanggapan Supplier',

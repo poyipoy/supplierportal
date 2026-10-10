@@ -77,7 +77,7 @@ class UserDashboardCustomizationTest extends TestCase
             'hidden' => ['admin.rates', 'admin.notifications', 'admin.notifications', 'finance.batches'],
             'order' => ['admin.summary', 'admin.removed', 'admin.summary', 'finance.batches'],
         ]]);
-        $this->assertSame(['admin.summary', 'admin.rates', 'admin.notifications', 'admin.shortcuts'], array_column($widgets, 'key'));
+        $this->assertSame(['admin.summary', 'admin.rates', 'admin.shortcuts', 'admin.notifications'], array_column($widgets, 'key'));
         $byKey = array_column($widgets, null, 'key');
         $this->assertTrue($byKey['admin.rates']['visible']);
         $this->assertFalse($byKey['admin.notifications']['visible']);
@@ -277,7 +277,7 @@ class UserDashboardCustomizationTest extends TestCase
         $this->assertSame(['admin.users'], $saved->quick_access);
         $this->assertSame([], $saved->dashboard_preferences['admin']['hidden']);
         $this->assertSame(
-            ['admin.rates', 'admin.notifications', 'admin.shortcuts', 'admin.summary'],
+            ['admin.summary', 'admin.rates', 'admin.shortcuts', 'admin.notifications'],
             $saved->dashboard_preferences['admin']['order']
         );
         $this->assertSame(4, $saved->revision);

@@ -9,6 +9,7 @@ use App\Exports\QuotationDetailExport;
 use App\Exports\QuotationsExport;
 use App\Exports\RequisitionsExport;
 use App\Exports\ShipmentsExport;
+use App\Exports\SupplierAuditExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Export\AdvancedExportRequest;
 use App\Http\Requests\Export\Filters\PurchaseOrderExportFilters;
@@ -19,9 +20,12 @@ use App\Models\ExportJob;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
+use App\Models\SupplierAudit;
 use App\Models\User;
 use App\Support\ExportDispatcher;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 
 class ExportController extends Controller
 {
@@ -37,7 +41,7 @@ class ExportController extends Controller
                 $filters['status'] ?? null,
                 $filters['search'] ?? null,
             ],
-            'rekap_requisitions_'.now()->format('Ymd_His').'.xlsx', // biz-time:ignore instant filename
+            'summary_requisitions_'.now()->format('Ymd_His').'.xlsx', // biz-time:ignore instant filename
             $request->exportOptions('purchasing.pr'),
         );
 
@@ -59,7 +63,7 @@ class ExportController extends Controller
                 $filters['status'] ?? null,
                 $filters['search'] ?? null,
             ],
-            'rekap_po_'.now()->format('Ymd_His').'.xlsx', // biz-time:ignore instant filename
+            'summary_po_'.now()->format('Ymd_His').'.xlsx', // biz-time:ignore instant filename
             $request->exportOptions('purchasing.po'),
         );
 
@@ -81,7 +85,7 @@ class ExportController extends Controller
                 $filters['end_date'] ?? null,
                 ...($request->input('options') !== null ? [$filters['shipment_number'] ?? null] : []),
             ],
-            'rekap_shipments_'.now()->format('Ymd_His').'.xlsx', // biz-time:ignore instant filename
+            'summary_shipments_'.now()->format('Ymd_His').'.xlsx', // biz-time:ignore instant filename
             $request->exportOptions('purchasing.shipments'),
         );
 
@@ -108,7 +112,7 @@ class ExportController extends Controller
             __('exports.job_labels.quotation_summary'),
             QuotationsExport::class,
             [$filters],
-            'rekap_quotations_'.now()->format('Ymd_His').'.xlsx', // biz-time:ignore instant filename
+            'summary_quotations_'.now()->format('Ymd_His').'.xlsx', // biz-time:ignore instant filename
             $request->exportOptions('purchasing.quotations'),
         );
 
@@ -134,6 +138,23 @@ class ExportController extends Controller
             PurchaseOrderDetailExport::class,
             [(int) $purchaseOrder->getKey()],
             'detail_po_'.$purchaseOrder->getKey().'_'.now()->format('Ymd_His').'.xlsx', // biz-time:ignore instant filename
+        );
+
+        return $this->dispatchResponse($request, $exportJob);
+    }
+
+    public function supplierAuditDetail(Request $request, SupplierAudit $supplierAudit)
+    {
+        Gate::authorize('export', $supplierAudit);
+        $supplierAudit->loadMissing('supplier.supplier');
+
+        $fileName = 'Supplier-Audit-'.Str::slug($supplierAudit->supplierName()).'-'.Str::slug($supplierAudit->period_label)
+            .'-'.now()->format('Ymd-His').'.xlsx'; // biz-time:ignore instant filename
+        $exportJob = ExportDispatcher::dispatch(
+            __('supplier_audit.export.label', ['supplier' => $supplierAudit->supplierName(), 'period' => $supplierAudit->period_label]),
+            SupplierAuditExport::class,
+            [(int) auth()->id(), (int) $supplierAudit->getKey()],
+            $fileName,
         );
 
         return $this->dispatchResponse($request, $exportJob);

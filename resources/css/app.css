@@ -227,6 +227,7 @@
         --ui-table-header-bg: var(--md-surface-container);
         --ui-table-row-hover-bg: var(--md-surface-container-low);
         --ui-dialog-bg: var(--md-surface);
+        --ui-menu-bg: var(--md-surface);
         --ui-dialog-scrim: rgba(var(--md-scrim-rgb), var(--md-scrim-opacity));
         --ui-workspace-bg: #E9EEF4;
         --ui-workspace-bg-rgb: 233, 238, 244;
@@ -362,6 +363,14 @@
         --md-scrim-opacity: .62;
         --ui-workspace-bg: #0B1220;
         --ui-workspace-bg-rgb: 11, 18, 32;
+        /* Dark elevation is tonal: workspace < card (surface) < menu < dialog. Shadows only separate floating layers. */
+        --ui-dialog-bg: var(--md-surface-container-high);
+        --ui-menu-bg: var(--md-surface-container);
+        --ui-shadow-1: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+        --ui-shadow-2: 0 6px 16px -2px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
+        /* Chart series need 3:1 against the dark surface (WCAG 1.4.11); the light-mode brand blue and amber do not. */
+        --md-chart-primary: #5B93D1;
+        --md-chart-warning: #D9A441;
         --ui-input-border: var(--md-outline-strong);
         --ui-input-focus: #8FB9EA;
         --ui-calendar-range-bg: var(--md-primary-container);
@@ -651,6 +660,80 @@
     :root[data-theme="dark"] .text-bg-danger { color: var(--md-on-error) !important; }
     :root[data-theme="dark"] .text-bg-warning { color: var(--md-on-warning) !important; }
 
+    /* Dark elevation ladder. Bootstrap overlays default to --bs-body-bg, the lowest tone; lift them tonally instead. */
+    :root[data-theme="dark"] .card {
+        --bs-card-bg: var(--ui-card-bg);
+        --bs-card-border-color: var(--md-outline-variant);
+    }
+
+    :root[data-theme="dark"] .modal-content {
+        --bs-modal-bg: var(--ui-dialog-bg);
+        --bs-modal-border-color: var(--md-outline);
+        --bs-modal-header-border-color: var(--md-outline-variant);
+        --bs-modal-footer-border-color: var(--md-outline-variant);
+    }
+
+    :root[data-theme="dark"] .dropdown-menu {
+        --bs-dropdown-bg: var(--ui-menu-bg);
+        --bs-dropdown-border-color: var(--md-outline);
+        --bs-dropdown-divider-bg: var(--md-outline-variant);
+        --bs-dropdown-link-color: var(--md-on-surface);
+        --bs-dropdown-link-hover-color: var(--md-on-surface);
+        --bs-dropdown-link-hover-bg: var(--md-surface-container-high);
+    }
+
+    :root[data-theme="dark"] .popover {
+        --bs-popover-bg: var(--ui-menu-bg);
+        --bs-popover-border-color: var(--md-outline);
+    }
+
+    /* Bootstrap "light" utilities stay light in dark mode and leave light text on a light fill (about 1.1:1). */
+    :root[data-theme="dark"] :is(.bg-light, .bg-white) {
+        background-color: var(--md-surface-container) !important;
+    }
+
+    :root[data-theme="dark"] .table-light {
+        --bs-table-color: var(--md-on-surface);
+        --bs-table-bg: var(--md-surface-container-low);
+        --bs-table-border-color: var(--md-outline-variant);
+    }
+
+    :root[data-theme="dark"] .btn-outline-secondary {
+        --bs-btn-color: var(--md-on-surface-variant);
+        --bs-btn-border-color: var(--md-outline-strong);
+        --bs-btn-hover-color: var(--md-on-surface);
+        --bs-btn-hover-bg: var(--md-surface-container-high);
+        --bs-btn-hover-border-color: var(--md-outline-strong);
+        --bs-btn-active-color: var(--md-on-surface);
+        --bs-btn-active-bg: var(--md-surface-container-highest);
+        --bs-btn-active-border-color: var(--md-outline-strong);
+        --bs-btn-disabled-color: var(--md-on-surface-variant);
+        --bs-btn-disabled-border-color: var(--md-outline-strong);
+        --bs-btn-focus-shadow-rgb: var(--md-on-surface-variant-rgb);
+    }
+
+    /* The four non-brand accents already map this above; the brand accent kept Bootstrap's #0d6efd (4.2:1 on dark). */
+    :root[data-theme="dark"][data-accent="brand"] .btn-outline-primary {
+        --bs-btn-color: var(--ui-primary-text);
+        --bs-btn-border-color: var(--ui-primary-text);
+        --bs-btn-hover-color: var(--md-on-primary);
+        --bs-btn-hover-bg: var(--md-primary);
+        --bs-btn-hover-border-color: var(--md-primary);
+        --bs-btn-active-color: var(--md-on-primary);
+        --bs-btn-active-bg: var(--md-primary);
+        --bs-btn-active-border-color: var(--md-primary);
+        --bs-btn-disabled-color: var(--ui-primary-text);
+        --bs-btn-disabled-border-color: var(--ui-primary-text);
+        --bs-btn-focus-shadow-rgb: var(--ui-primary-text-rgb);
+    }
+
+    /* Raw Bootstrap badges (Import status chips use x-ui.status-chip): the dark fills leave white at 1.9:1 and #212529 at 2.4:1. */
+    :root[data-theme="dark"] .badge.bg-secondary { color: var(--md-on-secondary); }
+    :root[data-theme="dark"] .badge.bg-warning { color: var(--md-on-warning) !important; }
+
+    /* Notes and other .text-dark text sit on theme-aware surfaces; keep them readable when the surface is dark. */
+    :root[data-theme="dark"] .text-dark:not(.badge):not(.btn) { color: var(--md-on-surface) !important; }
+
     .ui-preference-option:focus-within {
         outline: var(--ui-focus-ring-width) solid var(--ui-input-focus);
         outline-offset: var(--ui-focus-ring-offset);
@@ -807,6 +890,10 @@
     .auth-mobile-brand img,
     .auth-brand-panel__image img {
         pointer-events: none;
+    }
+
+    body {
+        overflow-x: clip;
     }
 }
 
@@ -1190,6 +1277,16 @@ html[data-sidebar-motion-ready="true"] {
         width: 3px;
     }
 
+    .sidebar-link--disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+
+    .sidebar-link--disabled:hover {
+        background-color: transparent;
+        color: var(--md-on-surface-variant);
+    }
+
     .sidebar-link-icon {
         align-items: center;
         display: inline-flex;
@@ -1235,15 +1332,20 @@ html[data-sidebar-motion-ready="true"] {
         margin-left: var(--sidebar-width);
         min-height: 100vh;
         min-width: 0;
-        max-width: 100%;
+        max-width: calc(100% - var(--sidebar-width));
+        width: calc(100% - var(--sidebar-width));
         display: flex;
         flex-direction: column;
-        transition: margin-left var(--ui-sidebar-motion-duration) var(--ui-easing-sidebar);
+        transition: margin-left var(--ui-sidebar-motion-duration) var(--ui-easing-sidebar),
+            max-width var(--ui-sidebar-motion-duration) var(--ui-easing-sidebar),
+            width var(--ui-sidebar-motion-duration) var(--ui-easing-sidebar);
         background-color: var(--ui-workspace-bg);
     }
 
     html[data-sidebar-collapsed="true"] .main-wrapper {
         margin-left: var(--sidebar-width-collapsed);
+        max-width: calc(100% - var(--sidebar-width-collapsed));
+        width: calc(100% - var(--sidebar-width-collapsed));
     }
 
     .sidebar-nav-tooltip .tooltip-inner {
@@ -1566,6 +1668,111 @@ html[data-sidebar-motion-ready="true"] {
         font-size: var(--ui-font-size-sm);
         color: var(--md-on-surface-variant);
         margin: 0;
+    }
+
+    /* Customization page — segmented control and accent swatch picker */
+    .ui-segmented {
+        display: inline-flex;
+        flex-wrap: wrap;
+        gap: 2px;
+        padding: 2px;
+        background-color: var(--md-surface-container);
+        border: 1px solid var(--md-outline-variant);
+        border-radius: var(--md-shape-sm);
+    }
+
+    .ui-segmented__option {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 2.25rem;
+        padding: 0 0.875rem;
+        font-size: var(--ui-font-size-sm);
+        font-weight: 500;
+        color: var(--md-on-surface-variant);
+        border-radius: var(--md-shape-xs);
+        cursor: pointer;
+        transition-property: background-color, color;
+        transition-duration: var(--ui-motion-standard, 150ms);
+        transition-timing-function: var(--ui-easing-standard, cubic-bezier(.2, 0, 0, 1));
+    }
+
+    .ui-segmented__option input {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .ui-segmented__option:has(input:checked) {
+        background-color: var(--md-surface);
+        color: var(--md-primary);
+        font-weight: 600;
+        box-shadow: inset 0 0 0 1px var(--md-outline);
+    }
+
+    .ui-segmented__option:has(input:focus-visible) {
+        outline: var(--ui-focus-ring-width, 2px) solid var(--md-focus-ring, var(--ui-input-focus));
+        outline-offset: var(--ui-focus-ring-offset, 2px);
+    }
+
+    .ui-swatch-option {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        min-height: 2.5rem;
+        padding: 0.25rem 0.75rem 0.25rem 0.375rem;
+        border: 1px solid var(--md-outline-variant);
+        border-radius: var(--md-shape-full);
+        cursor: pointer;
+        transition-property: border-color, background-color;
+        transition-duration: var(--ui-motion-standard, 150ms);
+        transition-timing-function: var(--ui-easing-standard, cubic-bezier(.2, 0, 0, 1));
+    }
+
+    .ui-swatch-option input {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .ui-swatch {
+        display: inline-block;
+        width: 1.5rem;
+        height: 1.5rem;
+        border-radius: 9999px;
+        border: 2px solid var(--md-surface);
+        box-shadow: 0 0 0 1px var(--md-outline-variant);
+    }
+
+    .ui-swatch-option:has(input:checked) {
+        border-color: var(--md-primary);
+        background-color: var(--md-primary-container);
+    }
+
+    .ui-swatch-option:has(input:checked) .ui-swatch {
+        box-shadow: 0 0 0 2px var(--md-primary);
+    }
+
+    .ui-swatch-option:has(input:focus-visible) {
+        outline: var(--ui-focus-ring-width, 2px) solid var(--md-focus-ring, var(--ui-input-focus));
+        outline-offset: var(--ui-focus-ring-offset, 2px);
+    }
+
+    /* Account settings shell — section anchors and active-link marker shared by the
+       desktop rail and the mobile section-jump tabs (see components/account/shell.blade.php) */
+    [data-settings-section] {
+        scroll-margin-top: calc(var(--topbar-height) + 1rem);
+    }
+
+    [data-section-nav-link][aria-current="location"] {
+        color: var(--md-primary);
+        font-weight: 600;
     }
 
     /* Sticky Action Bar Foundation */
@@ -2056,6 +2263,12 @@ html[data-sidebar-motion-ready="true"] {
         border-radius: var(--md-shape-md);
         border: 1px solid var(--ui-surface-border);
         background: var(--md-surface);
+    }
+
+    .ui-data-table .table-responsive {
+        border: 0;
+        border-radius: 0;
+        background: transparent;
     }
 
     .ui-data-table table {
@@ -3202,6 +3415,8 @@ table.dataTable thead > tr > :is(th, td):is(.sorting, .sorting_asc, .sorting_des
 
     .main-wrapper {
         margin-left: 0 !important;
+        max-width: 100% !important;
+        width: 100% !important;
     }
 
     .content-area {
@@ -3360,22 +3575,22 @@ table.dataTable thead > tr > :is(th, td):is(.sorting, .sorting_asc, .sorting_des
 /* ── ADASI Full-Screen Loader Overlay ── */
 .adasi-loader-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
+    inset: 0;
     background: rgba(var(--md-scrim-rgb), 0.45);
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
-    display: none;
+    display: flex;
     align-items: center;
     justify-content: center;
     z-index: 9999;
-    transition: opacity 0.2s ease;
+    visibility: hidden;
+    opacity: 0;
+    transition-property: opacity, visibility;
+    transition-duration: 150ms;
+    transition-timing-function: ease-out;
 }
 
 .adasi-loader-overlay.active {
-    display: flex;
+    visibility: visible;
+    opacity: 1;
 }
 
 .adasi-loader-card {
@@ -3388,12 +3603,15 @@ table.dataTable thead > tr > :is(th, td):is(.sorting, .sorting_asc, .sorting_des
     flex-direction: column;
     align-items: center;
     gap: 14px;
-    animation: loaderFadeIn 0.2s ease-out;
+    max-width: min(24rem, calc(100vw - 2rem));
+    text-align: center;
+    outline: none;
+    transform: scale(0.97);
+    transition: transform 150ms ease-out;
 }
 
-@keyframes loaderFadeIn {
-    from { opacity: 0; transform: scale(0.95); }
-    to { opacity: 1; transform: scale(1); }
+.adasi-loader-overlay.active .adasi-loader-card {
+    transform: none;
 }
 
 .adasi-loader-ring {
@@ -3419,7 +3637,7 @@ table.dataTable thead > tr > :is(th, td):is(.sorting, .sorting_asc, .sorting_des
 .adasi-loader-logo {
     width: 28px;
     height: 28px;
-    background-image: url('/assets/images/logo-adasi.png');
+    background-image: var(--adasi-loader-logo);
     background-size: contain;
     background-position: center;
     background-repeat: no-repeat;
@@ -3432,10 +3650,61 @@ table.dataTable thead > tr > :is(th, td):is(.sorting, .sorting_asc, .sorting_des
     font-weight: 700;
     color: var(--md-primary);
     letter-spacing: 0.5px;
+    text-wrap: balance;
+}
+
+.adasi-loader-dismiss {
+    min-height: 2.5rem;
+    padding-inline: 1rem;
 }
 
 @keyframes adasiSpin {
     to { transform: rotate(360deg); }
+}
+
+@keyframes adasiTableBar {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(250%); }
+}
+
+/* Server-side DataTables: busy state stays on the table (toggled by adasi-loader.js via processing.dt). */
+.dataTables_wrapper {
+    position: relative;
+}
+
+.dataTables_wrapper.is-loading::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 40%;
+    height: 2px;
+    background: var(--md-primary);
+    z-index: 2;
+    animation: adasiTableBar 1.1s ease-in-out infinite;
+}
+
+.dataTables_wrapper.is-loading table.dataTable tbody {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .adasi-loader-overlay,
+    .adasi-loader-card {
+        transition: none;
+    }
+
+    .adasi-loader-ring::before {
+        animation: none;
+        border-right-color: var(--md-primary);
+    }
+
+    .dataTables_wrapper.is-loading::before {
+        animation: none;
+        width: 100%;
+        opacity: 0.5;
+    }
 }
 
 /* Hide DataTables default processing indicator */
@@ -3794,20 +4063,51 @@ div.dataTables_wrapper div.dataTables_processing {
 }
 
 /* Language selector pills & flag badge */
-.lang-pill-btn {
-    transition: background-color var(--ui-motion-fast) var(--ui-easing-standard),
-                color var(--ui-motion-fast) var(--ui-easing-standard),
-                box-shadow var(--ui-motion-fast) var(--ui-easing-standard),
-                transform var(--ui-motion-fast) var(--ui-easing-standard);
-    cursor: pointer;
-    border: none;
-    outline: none;
-    background: transparent;
+.lang-toggle-track {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem;
+    border-radius: var(--md-shape-full);
+    background: var(--md-surface-container-high);
+    border: 1px solid var(--md-outline-strong);
+    box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
 }
 
+.lang-pill-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.75rem;
+    min-height: 2rem;
+    border-radius: var(--md-shape-full);
+    font-size: var(--ui-font-size-xs);
+    font-weight: 700;
+    border: 1px solid transparent;
+    color: var(--md-on-surface-variant);
+    background: transparent;
+    cursor: pointer;
+    outline: none;
+    transition: background-color var(--ui-motion-fast) var(--ui-easing-standard),
+                color var(--ui-motion-fast) var(--ui-easing-standard),
+                border-color var(--ui-motion-fast) var(--ui-easing-standard),
+                box-shadow var(--ui-motion-fast) var(--ui-easing-standard),
+                transform var(--ui-motion-fast) var(--ui-easing-standard);
+}
+
+.lang-pill-btn.is-active,
 .lang-pill-btn:disabled,
 .lang-pill-btn[aria-pressed="true"] {
+    background: var(--md-surface);
+    color: var(--md-primary);
+    border-color: var(--md-outline);
+    box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.1), 0 1px 2px -1px rgba(15, 23, 42, 0.08);
     cursor: default;
+}
+
+.lang-pill-btn:not(.is-active):not(:disabled):not([aria-pressed="true"]):hover {
+    color: var(--md-on-surface);
+    background: rgba(255, 255, 255, 0.65);
+    border-color: rgba(203, 213, 225, 0.5);
 }
 
 .lang-pill-btn:not(:disabled):active {
@@ -3822,7 +4122,7 @@ div.dataTables_wrapper div.dataTables_processing {
     height: 14px;
     border-radius: 2.5px;
     overflow: hidden;
-    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
     flex-shrink: 0;
 }
 
@@ -3835,4 +4135,5 @@ div.dataTables_wrapper div.dataTables_processing {
         transform: none !important;
     }
 }
+
 

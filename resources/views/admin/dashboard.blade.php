@@ -12,8 +12,36 @@
     </x-ui.page-header>
 
     <x-ui.dashboard-layout audience="admin">
+        <x-slot:summary class="lg:tw-col-span-12">
+            <section class="tw-rounded-ui-sm tw-border tw-border-outline tw-bg-surface-container tw-overflow-hidden" aria-labelledby="admin-summary-title">
+                <h2 id="admin-summary-title" class="tw-sr-only">{{ __('admin.copy.operational_summary') }}</h2>
+                <dl class="tw-m-0 tw-grid tw-grid-cols-2 lg:tw-grid-cols-4">
+                    <div class="tw-border-b tw-border-r tw-border-outline-variant tw-p-4 lg:tw-border-b-0">
+                        <dt class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wide tw-text-on-surface-variant">{{ __('admin.copy.active_accounts') }}</dt>
+                        <dd class="ui-tabular-nums tw-m-0 tw-mt-1 tw-text-xl tw-font-semibold">{{ $regionalFormatter->number(number_format($totalUsersActive), 'international') }}</dd>
+                        <div class="tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">{{ collect($usersByRole)->map(fn ($count, $role) => (in_array($role, ['admin', 'purchasing', 'supplier', 'qc', 'finance', 'accounting', 'ga'], true) ? __('navigation.roles.'.$role) : $role) . ' ' . $regionalFormatter->number((string) $count, 'plain'))->implode(' / ') }}</div>
+                    </div>
+                    <div class="tw-border-b tw-border-outline-variant tw-p-4 lg:tw-border-b-0 lg:tw-border-r">
+                        <dt class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wide tw-text-on-surface-variant">{{ __('admin.copy.registered_suppliers') }}</dt>
+                        <dd class="ui-tabular-nums tw-m-0 tw-mt-1 tw-text-xl tw-font-semibold">{{ $regionalFormatter->number(number_format($supplierCount), 'international') }}</dd>
+                        <a href="{{ route('admin.users.index') }}" class="ui-focus-ring tw-mt-1 tw-inline-block tw-rounded-ui-xs tw-text-ui-xs tw-font-semibold tw-text-primary tw-no-underline hover:tw-underline">{{ __('admin.copy.review_supplier_accounts') }}</a>
+                    </div>
+                    <div class="tw-border-r tw-border-outline-variant tw-p-4">
+                        <dt class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wide tw-text-on-surface-variant">{{ __('admin.copy.pos_created_this_month') }}</dt>
+                        <dd class="ui-tabular-nums tw-m-0 tw-mt-1 tw-text-xl tw-font-semibold">{{ $regionalFormatter->number(number_format($transaksiBulanIni), 'international') }}</dd>
+                        <div class="tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">{{ __('admin.copy.current_calendar_month') }}</div>
+                    </div>
+                    <div class="tw-p-4">
+                        <dt class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wide tw-text-on-surface-variant">{{ __('admin.copy.active_claims') }}</dt>
+                        <dd class="ui-tabular-nums tw-m-0 tw-mt-1 tw-text-xl tw-font-semibold">{{ $regionalFormatter->number(number_format($klaimAktif), 'international') }}</dd>
+                        <div class="tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">{{ __('admin.copy.pending_or_supplier_response_recorded') }}</div>
+                    </div>
+                </dl>
+            </section>
+        </x-slot:summary>
+
         <x-slot:rates class="lg:tw-col-span-8">
-<x-ui.data-table :title="__('admin.copy.administrative_attention')" :description="__('admin.copy.current_exchange_rate_readiness_from_the_configured_currency_set')">
+            <x-ui.data-table :title="__('admin.copy.administrative_attention')" :description="__('admin.copy.current_exchange_rate_readiness_from_the_configured_currency_set')">
                 <x-slot:toolbar>
                     <x-ui.button type="button" size="sm" data-bs-toggle="modal" data-bs-target="#kursModal"><x-ui.icon name="plus" /> {{ __('admin.copy.add_effective_rate') }}</x-ui.button>
                 </x-slot:toolbar>
@@ -40,8 +68,32 @@
             </x-ui.data-table>
         </x-slot:rates>
 
-        <x-slot:notifications class="lg:tw-col-span-8">
-<x-ui.data-table :title="__('admin.copy.recent_administrative_activity')" :description="__('admin.copy.latest_notifications_available_to_the_signed_in_administrator')">
+        <x-slot:shortcuts class="lg:tw-col-span-4">
+            <section class="tw-border tw-border-outline tw-bg-surface" aria-labelledby="admin-shortcuts-title">
+                <header class="tw-border-b tw-border-outline-variant tw-bg-surface-container tw-px-4 tw-py-3">
+                    <h2 id="admin-shortcuts-title" class="tw-m-0 tw-text-ui-sm tw-font-semibold">{{ __('admin.copy.administration_shortcuts_220ef8') }}</h2>
+                    <p class="tw-m-0 tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">{{ __('admin.copy.open_a_maintenance_workspace_directly') }}</p>
+                </header>
+                <nav class="tw-divide-y tw-divide-outline-variant" aria-label="{{ __('admin.copy.administration_shortcuts') }}">
+                    @foreach([
+                        ['route' => route('admin.users.index'), 'icon' => 'users', 'label' => __('admin.copy.users'), 'description' => __('admin.dashboard.account_shortcut')],
+                        ['route' => route('admin.material-hs-code.index'), 'icon' => 'boxes', 'label' => __('admin.copy.materials_hs_code'), 'description' => __('admin.copy.material_mappings_rules_and_data_quality')],
+                        ['route' => route('admin.exchange-rates.index'), 'icon' => 'badge-dollar-sign', 'label' => __('admin.copy.exchange_rates'), 'description' => __('admin.copy.effective_rate_history_by_currency')],
+                        ['route' => route('admin.announcements.index'), 'icon' => 'megaphone', 'label' => __('admin.copy.announcements'), 'description' => __('admin.copy.portal_wide_notices_and_publication_state')],
+                        ['route' => route('admin.auth-audit-logs.index'), 'icon' => 'shield-check', 'label' => __('admin.copy.authentication_audit'), 'description' => __('admin.copy.account_and_authentication_security_events')],
+                    ] as $shortcut)
+                        <a href="{{ $shortcut['route'] }}" class="ui-focus-ring tw-flex tw-items-start tw-gap-3 tw-p-4 tw-text-on-surface tw-no-underline hover:tw-bg-surface-low">
+                            <x-ui.icon :name="$shortcut['icon']" class="tw-mt-0.5 tw-shrink-0 tw-text-primary" />
+                            <span class="tw-min-w-0 tw-flex-1"><span class="tw-block tw-text-ui-sm tw-font-semibold">{{ $shortcut['label'] }}</span><span class="tw-mt-0.5 tw-block tw-text-ui-xs tw-text-on-surface-variant">{{ $shortcut['description'] }}</span></span>
+                            <x-ui.icon name="chevron-right" class="tw-mt-0.5 tw-shrink-0 tw-text-on-surface-variant" />
+                        </a>
+                    @endforeach
+                </nav>
+            </section>
+        </x-slot:shortcuts>
+
+        <x-slot:notifications class="lg:tw-col-span-12">
+            <x-ui.data-table :title="__('admin.copy.recent_administrative_activity')" :description="__('admin.copy.latest_notifications_available_to_the_signed_in_administrator')">
                 <div class="tw-divide-y tw-divide-outline-variant">
                     @forelse($recentActivities as $act)
                         @php($activityUrl = $act->data['url'] ?? null)
@@ -61,58 +113,6 @@
                 </div>
             </x-ui.data-table>
         </x-slot:notifications>
-
-        <x-slot:shortcuts class="lg:tw-col-span-4">
-        <section class="tw-border tw-border-outline tw-bg-surface" aria-labelledby="admin-shortcuts-title">
-            <header class="tw-border-b tw-border-outline-variant tw-bg-surface-container tw-px-4 tw-py-3">
-                <h2 id="admin-shortcuts-title" class="tw-m-0 tw-text-ui-sm tw-font-semibold">{{ __('admin.copy.administration_shortcuts_220ef8') }}</h2>
-                <p class="tw-m-0 tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">{{ __('admin.copy.open_a_maintenance_workspace_directly') }}</p>
-            </header>
-            <nav class="tw-divide-y tw-divide-outline-variant" aria-label="{{ __('admin.copy.administration_shortcuts') }}">
-                @foreach([
-                    ['route' => route('admin.users.index'), 'icon' => 'users', 'label' => __('admin.copy.users'), 'description' => __('admin.dashboard.account_shortcut')],
-                    ['route' => route('admin.material-hs-code.index'), 'icon' => 'boxes', 'label' => __('admin.copy.materials_hs_code'), 'description' => __('admin.copy.material_mappings_rules_and_data_quality')],
-                    ['route' => route('admin.exchange-rates.index'), 'icon' => 'badge-dollar-sign', 'label' => __('admin.copy.exchange_rates'), 'description' => __('admin.copy.effective_rate_history_by_currency')],
-                    ['route' => route('admin.announcements.index'), 'icon' => 'megaphone', 'label' => __('admin.copy.announcements'), 'description' => __('admin.copy.portal_wide_notices_and_publication_state')],
-                    ['route' => route('admin.auth-audit-logs.index'), 'icon' => 'shield-check', 'label' => __('admin.copy.authentication_audit'), 'description' => __('admin.copy.account_and_authentication_security_events')],
-                ] as $shortcut)
-                    <a href="{{ $shortcut['route'] }}" class="ui-focus-ring tw-flex tw-items-start tw-gap-3 tw-p-4 tw-text-on-surface tw-no-underline hover:tw-bg-surface-low">
-                        <x-ui.icon :name="$shortcut['icon']" class="tw-mt-0.5 tw-shrink-0 tw-text-primary" />
-                        <span class="tw-min-w-0 tw-flex-1"><span class="tw-block tw-text-ui-sm tw-font-semibold">{{ $shortcut['label'] }}</span><span class="tw-mt-0.5 tw-block tw-text-ui-xs tw-text-on-surface-variant">{{ $shortcut['description'] }}</span></span>
-                        <x-ui.icon name="chevron-right" class="tw-mt-0.5 tw-shrink-0 tw-text-on-surface-variant" />
-                    </a>
-                @endforeach
-            </nav>
-        </section>
-        </x-slot:shortcuts>
-
-        <x-slot:summary>
-    <section class="tw-border-y tw-border-outline tw-bg-surface-container" aria-labelledby="admin-summary-title">
-        <h2 id="admin-summary-title" class="tw-sr-only">{{ __('admin.copy.operational_summary') }}</h2>
-        <dl class="tw-m-0 tw-grid tw-grid-cols-2 lg:tw-grid-cols-4">
-            <div class="tw-border-b tw-border-r tw-border-outline-variant tw-p-4 lg:tw-border-b-0">
-                <dt class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wide tw-text-on-surface-variant">{{ __('admin.copy.active_accounts') }}</dt>
-                <dd class="ui-tabular-nums tw-m-0 tw-mt-1 tw-text-xl tw-font-semibold">{{ $regionalFormatter->number(number_format($totalUsersActive), 'international') }}</dd>
-                <div class="tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">{{ collect($usersByRole)->map(fn ($count, $role) => (in_array($role, ['admin', 'purchasing', 'supplier', 'qc', 'finance', 'accounting', 'ga'], true) ? __('navigation.roles.'.$role) : $role) . ' ' . $regionalFormatter->number((string) $count, 'plain'))->implode(' / ') }}</div>
-            </div>
-            <div class="tw-border-b tw-border-outline-variant tw-p-4 lg:tw-border-b-0 lg:tw-border-r">
-                <dt class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wide tw-text-on-surface-variant">{{ __('admin.copy.registered_suppliers') }}</dt>
-                <dd class="ui-tabular-nums tw-m-0 tw-mt-1 tw-text-xl tw-font-semibold">{{ $regionalFormatter->number(number_format($supplierCount), 'international') }}</dd>
-                <a href="{{ route('admin.users.index') }}" class="ui-focus-ring tw-mt-1 tw-inline-block tw-rounded-ui-xs tw-text-ui-xs tw-font-semibold tw-text-primary tw-no-underline hover:tw-underline">{{ __('admin.copy.review_supplier_accounts') }}</a>
-            </div>
-            <div class="tw-border-r tw-border-outline-variant tw-p-4">
-                <dt class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wide tw-text-on-surface-variant">{{ __('admin.copy.pos_created_this_month') }}</dt>
-                <dd class="ui-tabular-nums tw-m-0 tw-mt-1 tw-text-xl tw-font-semibold">{{ $regionalFormatter->number(number_format($transaksiBulanIni), 'international') }}</dd>
-                <div class="tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">{{ __('admin.copy.current_calendar_month') }}</div>
-            </div>
-            <div class="tw-p-4">
-                <dt class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wide tw-text-on-surface-variant">{{ __('admin.copy.active_claims') }}</dt>
-                <dd class="ui-tabular-nums tw-m-0 tw-mt-1 tw-text-xl tw-font-semibold">{{ $regionalFormatter->number(number_format($klaimAktif), 'international') }}</dd>
-                <div class="tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">{{ __('admin.copy.pending_or_supplier_response_recorded') }}</div>
-            </div>
-        </dl>
-    </section>
-        </x-slot:summary>
     </x-ui.dashboard-layout>
 </div>
 

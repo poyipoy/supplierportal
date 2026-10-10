@@ -16,6 +16,27 @@
         align-items: center;
         gap: 0.5rem;
     }
+    @media (min-width: 768px) {
+        .reg-tax-grid {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            grid-template-rows: auto auto auto !important;
+            column-gap: 1rem !important;
+            row-gap: 0.375rem !important;
+            align-items: start !important;
+        }
+        .reg-tax-col {
+            display: grid !important;
+            grid-row: span 3 !important;
+            grid-template-rows: subgrid !important;
+            row-gap: 0.375rem !important;
+        }
+        .reg-tax-header-sync {
+            min-height: 48px !important;
+            display: flex !important;
+            align-items: flex-start !important;
+        }
+    }
 </style>
 
 <header class="tw-mb-4">
@@ -43,22 +64,37 @@
     </div>
 </div>
 
+@php
+    $questionnaireKeys = \App\Support\SupplierComplianceQuestionnaire::keys();
+    $questionnaireAnswers = \App\Support\SupplierComplianceQuestionnaire::normalize(
+        old('questionnaire', \App\Support\SupplierComplianceQuestionnaire::answersFrom($supplier?->compliance_questionnaire))
+    );
+@endphp
+
 @if ($errors->any())
-    <div class="tw-rounded-ui-sm tw-bg-error-container tw-p-3.5 tw-text-on-error-container tw-mb-4" role="alert">
-        <div class="tw-flex tw-items-center tw-gap-2 tw-font-semibold tw-text-ui-sm tw-mb-1">
+    <div class="tw-rounded-ui-sm tw-border tw-border-error/40 tw-bg-error-container tw-p-3.5 tw-text-on-error-container tw-mb-4" role="alert" tabindex="-1" data-error-summary="supplierRegistrationReviseForm">
+        <div class="tw-flex tw-items-center tw-gap-2 tw-font-semibold tw-text-ui-sm">
             <x-ui.icon name="alert-triangle" size="sm" />
             <span>{{ __('registration.correct_errors') }}</span>
         </div>
-        <ul class="tw-m-0 tw-pl-5 tw-text-ui-xs tw-space-y-0.5">
-            @foreach ($errors->all() as $error)
-                <li>{{ $error }}</li>
+        <p class="tw-m-0 tw-mt-0.5 tw-text-ui-xs">{{ __('registration.errors_jump_help') }}</p>
+        <ul class="tw-m-0 tw-mt-2 tw-ps-5 tw-text-ui-xs tw-space-y-1">
+            @foreach ($errors->messages() as $field => $messages)
+                <li>
+                    <button type="button" class="ui-focus-ring tw-border-0 tw-bg-transparent tw-p-0 tw-text-start tw-font-medium tw-text-on-error-container tw-underline tw-underline-offset-2" data-error-field="{{ $field }}">
+                        {{ $messages[0] }}
+                    </button>
+                </li>
             @endforeach
         </ul>
     </div>
 @endif
 
-<form method="POST" action="{{ route('supplier.registration.resubmit') }}" enctype="multipart/form-data" class="tw-grid tw-gap-6" x-data="{ companyTitle: '{{ old('company_title', $supplier?->company_title ?? 'PT') }}', isOtherTitle: {{ in_array(old('company_title', $supplier?->company_title), ['PT', 'CV', 'UD', 'PD', 'VPD', 'Firma', 'Koperasi', 'Yayasan', 'Company']) ? 'false' : 'true' }} }">
+<form id="supplierRegistrationReviseForm" method="POST" action="{{ route('supplier.registration.resubmit') }}" enctype="multipart/form-data" class="tw-grid tw-gap-6" data-async-submit x-data="{ companyTitle: '{{ old('company_title', $supplier?->company_title ?? 'PT') }}', isOtherTitle: {{ in_array(old('company_title', $supplier?->company_title), ['PT', 'CV', 'UD', 'PD', 'VPD', 'Firma', 'Koperasi', 'Yayasan', 'Company']) ? 'false' : 'true' }} }">
     @csrf
+
+    {{-- Async (file-preserving) validation summary is rendered here by async-form-submit.js --}}
+    <div data-async-error-summary hidden></div>
 
     {{-- SECTION 1: COMPANY INFORMATION --}}
     <div class="tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-4">
@@ -67,8 +103,8 @@
             <span>{{ __('registration.steps.company_edit') }}</span>
         </div>
 
-        <div class="tw-grid tw-gap-4 md:tw-grid-cols-2">
-            <div class="tw-grid tw-gap-1.5">
+        <div class="tw-grid tw-gap-4 md:tw-grid-cols-2 tw-items-start">
+            <div class="tw-grid tw-content-start tw-gap-1.5">
                 <label for="company_title_select" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.legal_form') }} <span class="tw-text-error">*</span></label>
                 <select
                     id="company_title_select"
@@ -90,7 +126,7 @@
                 <input type="hidden" name="company_title" :value="companyTitle">
             </div>
 
-            <div class="tw-grid tw-gap-1.5" x-show="isOtherTitle" style="display: none;">
+            <div class="tw-grid tw-content-start tw-gap-1.5" x-show="isOtherTitle" style="display: none;">
                 <label for="custom_company_title" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.entity_title') }}</label>
                 <input
                     id="custom_company_title"
@@ -103,7 +139,7 @@
                 >
             </div>
 
-            <div class="tw-grid tw-gap-1.5" :class="isOtherTitle ? 'md:tw-col-span-2' : ''">
+            <div class="tw-grid tw-content-start tw-gap-1.5" :class="isOtherTitle ? 'md:tw-col-span-2' : ''">
                 <label for="company_name" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.company') }} <span class="tw-text-error">*</span></label>
                 <input
                     id="company_name"
@@ -116,7 +152,7 @@
                 @error('company_name')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
             </div>
 
-            <div class="tw-grid tw-gap-1.5 md:tw-col-span-2">
+            <div class="tw-grid tw-content-start tw-gap-1.5 md:tw-col-span-2">
                 <label for="address" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.address') }} <span class="tw-text-error">*</span></label>
                 <textarea
                     id="address"
@@ -128,7 +164,7 @@
                 @error('address')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
             </div>
 
-            <div class="tw-grid tw-gap-1.5">
+            <div class="tw-grid tw-content-start tw-gap-1.5">
                 <label for="phone" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.phone') }} <span class="tw-text-error">*</span></label>
                 <input
                     id="phone"
@@ -141,7 +177,7 @@
                 @error('phone')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
             </div>
 
-            <div class="tw-grid tw-gap-1.5">
+            <div class="tw-grid tw-content-start tw-gap-1.5">
                 <label for="category" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.category') }}</label>
                 <input
                     id="category"
@@ -152,7 +188,7 @@
                 >
             </div>
 
-            <div class="tw-grid tw-gap-1.5 md:tw-col-span-2">
+            <div class="tw-grid tw-content-start tw-gap-1.5 md:tw-col-span-2">
                 <label class="tw-flex tw-items-center tw-gap-2.5 tw-cursor-pointer" for="is_pkp">
                     <input type="checkbox" name="is_pkp" id="is_pkp" value="1" class="form-check-input tw-mt-0" {{ old('is_pkp', $supplier?->is_pkp) ? 'checked' : '' }}>
                     <span class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.pkp_edit') }}</span>
@@ -161,16 +197,55 @@
         </div>
     </div>
 
-    {{-- SECTION 2: TAX & LEGAL IDENTIFICATION --}}
+    {{-- SECTION 2: QUALITY & COMPLIANCE QUESTIONNAIRE --}}
+    <div class="tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-4">
+        <div class="form-section-title">
+            <x-ui.icon name="clipboard-check" size="sm" />
+            <span>{{ __('registration.steps.questionnaire_edit') }}</span>
+        </div>
+        <p class="tw-m-0 tw-mb-3 tw-text-ui-xs tw-text-on-surface-variant tw-text-pretty">{{ __('registration.questionnaire.help') }}</p>
+
+        <div class="tw-grid tw-gap-3">
+            @foreach ($questionnaireKeys as $index => $questionKey)
+                <fieldset class="tw-m-0 tw-min-w-0 tw-rounded-ui-sm tw-border tw-bg-surface tw-px-4 tw-py-3 {{ $errors->has('questionnaire.'.$questionKey) ? 'tw-border-error' : 'tw-border-outline-variant' }}">
+                    <legend class="tw-float-left tw-m-0 tw-w-full tw-p-0 tw-text-ui-sm tw-font-medium tw-text-on-surface tw-text-pretty">
+                        <span class="tw-tabular-nums tw-text-on-surface-variant">{{ $index + 1 }}.</span>
+                        {{ __('registration.questionnaire.questions.'.$questionKey) }}
+                        <span class="tw-text-error">*</span>
+                    </legend>
+                    <div class="tw-clear-both tw-mt-2 tw-flex tw-flex-wrap tw-gap-2">
+                        @foreach ([\App\Support\SupplierComplianceQuestionnaire::YES => __('registration.questionnaire.yes'), \App\Support\SupplierComplianceQuestionnaire::NO => __('registration.questionnaire.no')] as $answerValue => $answerLabel)
+                            <label class="tw-inline-flex tw-min-h-10 tw-cursor-pointer tw-items-center tw-gap-2 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-px-3.5 tw-text-ui-sm tw-text-on-surface hover:tw-bg-surface-container has-[:checked]:tw-border-primary has-[:checked]:tw-bg-primary/5 has-[:checked]:tw-font-semibold">
+                                <input
+                                    type="radio"
+                                    name="questionnaire[{{ $questionKey }}]"
+                                    value="{{ $answerValue }}"
+                                    class="form-check-input tw-m-0 tw-h-4 tw-w-4"
+                                    @checked(($questionnaireAnswers[$questionKey] ?? null) === $answerValue)
+                                    required
+                                >
+                                <span>{{ $answerLabel }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                    @error('questionnaire.'.$questionKey)<p class="tw-m-0 tw-mt-1.5 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
+                </fieldset>
+            @endforeach
+        </div>
+    </div>
+
+    {{-- SECTION 3: TAX & LEGAL IDENTIFICATION --}}
     <div class="tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-4">
         <div class="form-section-title">
             <x-ui.icon name="file-badge" size="sm" />
             <span>{{ __('registration.steps.tax_edit') }}</span>
         </div>
 
-        <div class="tw-grid tw-gap-4 md:tw-grid-cols-2">
-            <div class="tw-grid tw-gap-1.5">
-                <label for="nib" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.nib') }} <span class="tw-text-error">*</span></label>
+        <div class="reg-tax-grid tw-grid tw-gap-4 md:tw-grid-cols-2 tw-items-start">
+            <div class="reg-tax-col tw-grid tw-content-start tw-gap-1.5">
+                <div class="tw-flex tw-items-start tw-justify-between tw-gap-2 reg-tax-header-sync" style="min-height: 48px;">
+                    <label for="nib" class="tw-text-ui-sm tw-font-medium tw-text-on-surface" style="text-wrap: balance;">{{ __('registration.nib') }} <span class="tw-text-error">*</span></label>
+                </div>
                 <input
                     id="nib"
                     type="text"
@@ -179,11 +254,15 @@
                     value="{{ old('nib', $supplier?->nib) }}"
                     required
                 >
-                @error('nib')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
+                <div class="tw-min-h-0">
+                    @error('nib')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
+                </div>
             </div>
 
-            <div class="tw-grid tw-gap-1.5">
-                <label for="npwp" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.npwp') }} <span class="tw-text-error">*</span></label>
+            <div class="reg-tax-col tw-grid tw-content-start tw-gap-1.5">
+                <div class="tw-flex tw-items-start tw-justify-between tw-gap-2 reg-tax-header-sync" style="min-height: 48px;">
+                    <label for="npwp" class="tw-text-ui-sm tw-font-medium tw-text-on-surface" style="text-wrap: balance;">{{ __('registration.npwp') }} <span class="tw-text-error">*</span></label>
+                </div>
                 <input
                     id="npwp"
                     type="text"
@@ -192,7 +271,9 @@
                     value="{{ old('npwp', $supplier?->npwp) }}"
                     required
                 >
-                @error('npwp')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
+                <div class="tw-min-h-0">
+                    @error('npwp')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
+                </div>
             </div>
         </div>
     </div>
@@ -204,8 +285,8 @@
             <span>{{ __('registration.steps.pic_edit') }}</span>
         </div>
 
-        <div class="tw-grid tw-gap-4 md:tw-grid-cols-3">
-            <div class="tw-grid tw-gap-1.5">
+        <div class="tw-grid tw-gap-4 md:tw-grid-cols-3 tw-items-start">
+            <div class="tw-grid tw-content-start tw-gap-1.5">
                 <label for="pic_name" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.pic') }} <span class="tw-text-error">*</span></label>
                 <input
                     id="pic_name"
@@ -218,7 +299,7 @@
                 @error('pic_name')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
             </div>
 
-            <div class="tw-grid tw-gap-1.5">
+            <div class="tw-grid tw-content-start tw-gap-1.5">
                 <label for="pic_email" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.pic_email') }} <span class="tw-text-error">*</span></label>
                 <input
                     id="pic_email"
@@ -231,7 +312,7 @@
                 @error('pic_email')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
             </div>
 
-            <div class="tw-grid tw-gap-1.5">
+            <div class="tw-grid tw-content-start tw-gap-1.5">
                 <label for="pic_phone" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.pic_phone') }} <span class="tw-text-error">*</span></label>
                 <input
                     id="pic_phone"
@@ -274,7 +355,7 @@
         </div>
 
         <div
-            class="tw-grid tw-gap-4 md:tw-grid-cols-3"
+            class="tw-grid tw-gap-4 md:tw-grid-cols-3 tw-items-start"
             x-data="{
                 bankSelect: @js(old('bank_select', $initialBankSelect)),
                 otherBankName: @js(old('other_bank_name', $initialOtherBankName)),
@@ -291,9 +372,8 @@
                 }
             }"
         >
-            <input type="hidden" name="bank_name" :value="finalBankName">
-
-            <div class="tw-grid tw-gap-1.5">
+            <div class="tw-grid tw-content-start tw-gap-1.5">
+                <input type="hidden" name="bank_name" :value="finalBankName">
                 <x-ui.searchable-select
                     name="bank_select"
                     id="bank_select"
@@ -303,12 +383,13 @@
                     :options="$bankOptions"
                     :value="old('bank_select', $initialBankSelect)"
                     :error="$errors->first('bank_name')"
+                    :show-sublabel-on-trigger="false"
                     required
                     x-on:change="onBankChange($event)"
                 />
             </div>
 
-            <div class="tw-grid tw-gap-1.5">
+            <div class="tw-grid tw-content-start tw-gap-1.5">
                 <label for="account_number" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.account_number') }} <span class="tw-text-error">*</span></label>
                 <input
                     id="account_number"
@@ -321,7 +402,7 @@
                 @error('account_number')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
             </div>
 
-            <div class="tw-grid tw-gap-1.5">
+            <div class="tw-grid tw-content-start tw-gap-1.5">
                 <label for="account_holder_name" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.account_holder') }} <span class="tw-text-error">*</span></label>
                 <input
                     id="account_holder_name"
@@ -344,7 +425,7 @@
                 x-transition:leave="ui-motion tw-transition-all tw-ease-in tw-duration-150"
                 x-transition:leave-start="tw-opacity-100 tw-translate-y-0"
                 x-transition:leave-end="tw-opacity-0 tw--translate-y-2"
-                class="md:tw-col-span-3 tw-grid tw-gap-1.5 tw-p-3.5 tw-rounded-ui-sm tw-border tw-border-primary/25 tw-bg-primary/5"
+                class="md:tw-col-span-3 tw-grid tw-content-start tw-gap-1.5 tw-p-3.5 tw-rounded-ui-sm tw-border tw-border-primary/25 tw-bg-primary/5"
             >
                 <label for="other_bank_name" class="tw-text-ui-xs tw-font-semibold tw-text-primary tw-flex tw-items-center tw-gap-1.5">
                     <x-ui.icon name="landmark" size="xs" />
@@ -377,9 +458,9 @@
             {{ __('registration.new_files_help') }}
         </p>
 
-        <div class="tw-grid tw-gap-4 md:tw-grid-cols-2">
+        <div class="tw-grid tw-gap-4 md:tw-grid-cols-2 tw-items-start">
             {{-- NIB File --}}
-            <div class="tw-grid tw-gap-1.5">
+            <div class="tw-grid tw-content-start tw-gap-1.5">
                 <div class="tw-flex tw-items-center tw-justify-between">
                     <label for="nib_file" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.nib_file') }}</label>
                     @if (isset($documents['NIB']))
@@ -391,7 +472,7 @@
             </div>
 
             {{-- NPWP File --}}
-            <div class="tw-grid tw-gap-1.5">
+            <div class="tw-grid tw-content-start tw-gap-1.5">
                 <div class="tw-flex tw-items-center tw-justify-between">
                     <label for="npwp_file" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.npwp_file') }}</label>
                     @if (isset($documents['NPWP']))
@@ -403,7 +484,7 @@
             </div>
 
             {{-- SKNR File --}}
-            <div class="tw-grid tw-gap-1.5 md:tw-col-span-2">
+            <div class="tw-grid tw-content-start tw-gap-1.5 md:tw-col-span-2">
                 <div class="tw-flex tw-items-center tw-justify-between">
                     <label for="sknr_file" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.sknr_file') }}</label>
                     @if (isset($documents['SURAT_PERNYATAAN_REKENING']))
@@ -415,7 +496,7 @@
             </div>
 
             {{-- SPPKP File --}}
-            <div class="tw-grid tw-gap-1.5">
+            <div class="tw-grid tw-content-start tw-gap-1.5">
                 <div class="tw-flex tw-items-center tw-justify-between">
                     <label for="sppkp_file" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.sppkp_optional') }}</label>
                     @if (isset($documents['SPPKP']))
@@ -427,7 +508,7 @@
             </div>
 
             {{-- SKD File --}}
-            <div class="tw-grid tw-gap-1.5">
+            <div class="tw-grid tw-content-start tw-gap-1.5">
                 <div class="tw-flex tw-items-center tw-justify-between">
                     <label for="skd_file" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.skd_optional') }}</label>
                     @if (isset($documents['SKD']))
@@ -436,6 +517,19 @@
                 </div>
                 <input id="skd_file" type="file" name="skd_file" accept=".pdf,.jpg,.jpeg,.png" class="ui-motion tw-block tw-w-full tw-text-ui-xs tw-text-on-surface-variant file:tw-mr-3 file:tw-py-2 file:tw-px-3 file:tw-rounded-ui-xs file:tw-border-0 file:tw-text-ui-xs file:tw-font-semibold file:tw-bg-surface-container-high file:tw-text-on-surface hover:file:tw-bg-surface-container-highest">
                 @error('skd_file')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
+            </div>
+
+            {{-- Company Profile File (optional, max 10 MB) --}}
+            <div class="tw-grid tw-content-start tw-gap-1.5 md:tw-col-span-2">
+                <div class="tw-flex tw-items-center tw-justify-between tw-gap-2">
+                    <label for="company_profile_file" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.company_profile_optional') }}</label>
+                    @if (isset($documents['COMPANY_PROFILE']))
+                        <span class="tw-min-w-0 tw-truncate tw-text-[11px] tw-text-success tw-font-semibold">{{ __('common.review.current_file') }} {{ $documents['COMPANY_PROFILE']->original_filename }}</span>
+                    @endif
+                </div>
+                <input id="company_profile_file" type="file" name="company_profile_file" accept=".pdf,.jpg,.jpeg,.png" aria-describedby="company_profile_file_help" class="ui-motion tw-block tw-w-full tw-text-ui-xs tw-text-on-surface-variant file:tw-mr-3 file:tw-py-2 file:tw-px-3 file:tw-rounded-ui-xs file:tw-border-0 file:tw-text-ui-xs file:tw-font-semibold file:tw-bg-surface-container-high file:tw-text-on-surface hover:file:tw-bg-surface-container-highest">
+                <p id="company_profile_file_help" class="tw-m-0 tw-text-[11px] tw-text-on-surface-variant">{{ __('registration.company_profile_help') }}</p>
+                @error('company_profile_file')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
             </div>
         </div>
     </div>

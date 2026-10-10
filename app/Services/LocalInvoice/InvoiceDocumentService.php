@@ -5,6 +5,8 @@ namespace App\Services\LocalInvoice;
 use App\Models\LocalInvoiceDocument;
 use App\Models\LocalInvoiceRevision;
 use App\Models\User;
+use App\Services\FileSecurity\FileAccessGuard;
+use App\Services\FileSecurity\FileInspectionService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -41,6 +43,7 @@ class InvoiceDocumentService
                 'original_filename' => $doc->original_filename,
                 'mime_type' => $doc->mime_type,
                 'file_size' => $doc->file_size,
+                'file_inspection_id' => app(FileAccessGuard::class)->inheritedInspection($doc),
                 'uploaded_by' => $doc->uploaded_by,
             ]);
         }
@@ -92,25 +95,16 @@ class InvoiceDocumentService
 
                 $path = 'local-invoices/'.$revision->local_invoice_id.'/revisions/'.$revision->revision_number.'/'.$file->hashName();
                 $written[] = $path;
-                $stream = fopen($file->getPathname(), 'r');
-                if ($stream === false) {
-                    throw new RuntimeException(__('local_invoice.validation.document_read'));
-                }
-                try {
-                    if (! Storage::disk('private')->put($path, $stream)) {
-                        throw new RuntimeException(__('local_invoice.validation.document_store'));
-                    }
-                } finally {
-                    fclose($stream);
-                }
+                $stored = app(FileInspectionService::class)->storeUpload($file, 'invoice', $path, $type);
 
                 $revision->documents()->create([
                     'local_invoice_id' => $revision->local_invoice_id,
                     'document_type' => $type,
-                    'file_path' => $path,
-                    'original_filename' => mb_substr(basename(str_replace('\\', '/', $file->getClientOriginalName())), 0, 255),
-                    'mime_type' => $file->getMimeType(),
-                    'file_size' => $file->getSize(),
+                    'file_path' => $stored['file_path'],
+                    'original_filename' => $stored['file_name'],
+                    'mime_type' => $stored['file_type'],
+                    'file_size' => $stored['file_size'],
+                    'file_inspection_id' => $stored['file_inspection_id'],
                     'uploaded_by' => $actor->id,
                 ]);
             }

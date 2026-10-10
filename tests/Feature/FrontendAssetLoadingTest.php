@@ -68,6 +68,73 @@ class FrontendAssetLoadingTest extends TestCase
         $this->assertCount(15, $initializers);
     }
 
+    public function test_every_view_that_loads_the_app_bundle_includes_the_loader_logo_partial(): void
+    {
+        $viewRoot = resource_path('views');
+        $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($viewRoot));
+        $bundleViews = [];
+
+        foreach ($files as $file) {
+            if (! $file->isFile() || $file->getExtension() !== 'php') {
+                continue;
+            }
+
+            $contents = file_get_contents($file->getPathname());
+            if (! preg_match('/@vite\([^)]*resources\/js\/app\.js/', $contents)) {
+                continue;
+            }
+
+            $relativePath = str_replace('\\', '/', substr($file->getPathname(), strlen($viewRoot) + 1));
+            $bundleViews[] = $relativePath;
+
+            $this->assertStringContainsString(
+                "@include('partials.loader-logo')",
+                $contents,
+                "{$relativePath} loads app.js but does not include the loader logo partial.",
+            );
+        }
+
+        foreach (['layouts/app.blade.php', 'layouts/auth.blade.php', 'layouts/guest.blade.php'] as $layout) {
+            $this->assertContains($layout, $bundleViews);
+        }
+    }
+
+    public function test_loader_logo_variable_is_defined_only_by_the_shared_partial(): void
+    {
+        $viewRoot = resource_path('views');
+        $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($viewRoot));
+        $definitions = [];
+
+        foreach ($files as $file) {
+            if (! $file->isFile() || $file->getExtension() !== 'php') {
+                continue;
+            }
+
+            if (preg_match('/--adasi-loader-logo\s*:/', file_get_contents($file->getPathname()))) {
+                $definitions[] = str_replace('\\', '/', substr($file->getPathname(), strlen($viewRoot) + 1));
+            }
+        }
+
+        $this->assertSame(['partials/loader-logo.blade.php'], $definitions);
+    }
+
+    public function test_loader_logo_variable_renders_on_guest_and_app_layouts(): void
+    {
+        $this->get(route('login'))
+            ->assertOk()
+            ->assertSee('--adasi-loader-logo: url(', false);
+
+        $purchasing = User::factory()->create([
+            'role' => 'purchasing',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($purchasing)
+            ->get(route('purchasing.dashboard'))
+            ->assertOk()
+            ->assertSee('--adasi-loader-logo: url(', false);
+    }
+
     public function test_unused_axios_runtime_and_dependency_are_removed(): void
     {
         $this->assertStringNotContainsString('axios', file_get_contents(base_path('package.json')));

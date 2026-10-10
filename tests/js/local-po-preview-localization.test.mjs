@@ -1,90 +1,194 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { execFileSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
+import { installI18n } from './i18n-fixture.mjs';
 
-const root = fileURLToPath(new URL('../../', import.meta.url));
-const source = readFileSync(new URL('../../resources/views/finance/local-procurement/_import_po_modal.blade.php', import.meta.url), 'utf8');
-function functionSource(name, viewSource = source) {
-    const start = viewSource.indexOf(`function ${name}(`);
-    assert.notEqual(start, -1);
-    let depth = 0;
-    for (let index = viewSource.indexOf('{', start); index < viewSource.length; index++) {
-        if (viewSource[index] === '{') depth++;
-        if (viewSource[index] === '}' && --depth === 0) return viewSource.slice(start, index + 1);
-    }
-    throw new Error(`Incomplete ${name} function`);
-}
-// A browser text node's innerHTML escapes markup, but does not escape quotes.
-const escape = value => String(value).replace(/[&<>]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;'}[c]));
+const source = readFileSync(new URL('../../resources/js/local-procurement-import.js', import.meta.url), 'utf8')
+    .replace("import { t } from './i18n.js';", "const t = (...args) => window.AdasiI18n.t(...args);")
+    .replace('export function bootLocalProcurementImports', 'function bootLocalProcurementImports');
 class Element {
-    children = [];
-    classList = { add() {}, remove() {} };
-    _text = '';
-    _html = '';
-    set textContent(value) { this._text = String(value); this._html = escape(value); }
-    get textContent() { return this._text; }
-    set innerHTML(value) { this._html = String(value); this.children = []; }
-    get innerHTML() { return this._html; }
-    get outerHTML() { return `<span class="${this.className || ''}">${this._html}</span>`; }
-    appendChild(element) { this.children.push(element); }
+    children = []; dataset = {}; listeners = {}; value = ''; textContent = ''; disabled = false;
+    classes = new Set();
+    classList = {
+        add: (...names) => names.forEach(name => this.classes.add(name)),
+        remove: (...names) => names.forEach(name => this.classes.delete(name)),
+        toggle: (name, force) => { if (force) this.classes.add(name); else this.classes.delete(name); },
+        contains: name => this.classes.has(name),
+    };
+    setAttribute(name, value) { this[name] = value; }
+    append(...children) { this.children.push(...children); }
+    prepend(...children) { this.children.unshift(...children); }
+    replaceChildren(...children) { this.children = children; }
+    addEventListener(name, listener) { this.listeners[name] = listener; }
+    cloneNode() { const clone = new Element(); clone.textContent = this.textContent; return clone; }
+    async fire(name) { return this.listeners[name]?.({ preventDefault() {} }); }
 }
-
-for (const locale of ['en', 'id']) {
-    test(`${locale} PO preview translates actions while escaping business values and retaining token/row cap`, () => {
-        const pattern = /@js\(__\('([a-z0-9_.]+)'\)\)/g;
-        const renderer = ['escapeHtml', 'formatRupiah', 'renderPreview'].map(name => functionSource(name)).join('\n');
-        const keys = [...new Set([...renderer.matchAll(pattern)].map(m => m[1]))];
-        const php = "require 'vendor/autoload.php'; $result=[]; foreach(json_decode($argv[1],true) as $key){[$domain,$item]=explode('.',$key,2);$lines=require 'lang/'.$argv[2].'/'.$domain.'.php';$result[$key]=Illuminate\\Support\\Arr::get($lines,$item,$key);}echo json_encode($result,JSON_THROW_ON_ERROR);";
-        const copy = JSON.parse(execFileSync('php', ['-r', php, JSON.stringify(keys), locale], {cwd: root, encoding: 'utf8'}));
-        const elements = Object.fromEntries(['resultPanel', 'errorsPanel', 'errorsList', 'previewPanel', 'previewBody', 'rowCountLabel', 'tokenInput', 'confirmBtn'].map(name => [name, new Element()]));
-        const document = {createElement: () => new Element(), getElementById: () => new Element()};
-        const context = {...elements, document};
-        vm.runInNewContext(renderer.replace(pattern, (_, key) => JSON.stringify(copy[key])), context);
-        const raw = '<img src=x onerror=alert(1)>';
-        const row = {_row: 7, action: 'NEW', po_number: raw, supplier_name: raw, po_date: '2026-10-05', po_amount: '1000.00'};
-        context.renderPreview({success: true, rows: Array.from({length: 101}, () => row)}, 'opaque-import-token');
-        assert.equal(elements.previewBody.children.length, 100);
-        assert.equal(elements.tokenInput.value, 'opaque-import-token');
-        assert.equal(elements.confirmBtn.disabled, false);
-        const html = elements.previewBody.children[0].innerHTML;
-        assert.ok(html.includes('&lt;img src=x onerror=alert(1)&gt;'));
-        assert.ok(!html.includes(raw));
-        assert.ok(html.includes(locale === 'en' ? 'New PO' : 'PO Baru'));
-        assert.ok(html.includes('2026-10-05'));
-        assert.ok(html.includes('Rp 1.000'));
-        assert.equal(row.po_number, raw);
-        assert.equal(row.action, 'NEW');
-        context.renderPreview({success: false, errors: [{row: 8, column: 'Order', message: raw}], rows: []}, null);
-        assert.equal(elements.confirmBtn.disabled, true);
-        assert.equal(elements.errorsList.children[0].textContent, `${locale === 'en' ? 'Row' : 'Baris'} 8 [Order]: ${raw}`);
+function boot(locale, kind = 'PO', jobs = null) {
+    const name = kind === 'PO' ? 'Po' : 'Gr';
+    const elements = new Map();
+    const created = [];
+    const body = new Element();
+    const requests = [];
+    const timers = [];
+    const responseWaits = new Map();
+    let status = 'QUEUED';
+    let reloads = 0;
+    const get = id => { if (!elements.has(id)) elements.set(id, new Element()); return elements.get(id); };
+    const modal = get(`local${name}ImportModal`); modal.querySelector = () => body;
+    modal.querySelectorAll = () => [...elements.entries()].filter(([id]) => id.startsWith(`kpi${name}`)).map(([, element]) => element);
+    const form = get(`local${name}ImportConfirmForm`); form.querySelector = () => ({ value: 'csrf-token' });
+    get(`local${name}ImportFile`).files = [{ name: 'sample.xlsx' }];
+    const dropzone = { stagedFiles: ['sample.xlsx'], clientError: 'old error', clearAll() {
+        this.stagedFiles = []; this.clientError = '';
+        get(`local${name}ImportFile`).files = []; get(`local${name}ImportFile`).value = '';
+    } };
+    get(`local${name}ImportFile`).closest = () => dropzone;
+    const config = new Element();
+    config.dataset = { localImport: kind, modalId: `local${name}ImportModal`, importPreview: '/preview', importIndex: '/imports', previous: 'Previous', next: 'Next', cancel: 'Cancel' };
+    const document = { readyState: 'loading', hidden: false, addEventListener() {}, querySelectorAll: () => [config], getElementById: get,
+        createElement: tag => { const element = new Element(); element.tag = tag; created.push(element); return element; },
+        createTextNode: text => ({ textContent: text }) };
+    const window = installI18n({ location: { reload() { reloads++; } } }, locale);
+    window.Alpine = { $data: element => element };
+    const malicious = '<img src=x onerror=alert(1)>';
+    let recentJobs = jobs ?? [
+        { kind: kind === 'PO' ? 'GR' : 'PO', filename: 'Other kind.xlsx', status: 'READY', status_url: '/imports/other-kind' },
+        { kind, filename: malicious, status: 'READY', status_url: '/imports/current' },
+        { kind, filename: 'Older file.xlsx', status: 'READY', status_url: '/imports/older' },
+    ];
+    const row = { _row: 2, po_number: malicious, supplier_name: malicious, po_date: '2026-10-01', po_amount: '1000.00',
+        gr_number: malicious, description: 'x" onmouseover="alert(1)', qty: '10.125', uom: 'kg', source_rows_count: 2, action: 'NEW',
+        action_label: locale === 'en' ? `New ${kind}` : `${kind} Baru` };
+    const payload = () => ({ status, token: status === 'READY' ? 'opaque-token' : null, processed_rows: 70000,
+        confirm_url: '/confirm', records_url: '/records', records_total: 70000, errors_total: 1, errors_url: '/errors',
+        warnings: [{ message: malicious }], preview: { summary: { source_rows: 70000 }, rows: Array.from({ length: 101 }, () => row), errors: [{ row: 8, column: 'qty', message: malicious }] } });
+    const context = { window, document, Set, URLSearchParams, setTimeout: fn => { timers.push(fn); return timers.length; }, clearTimeout() {},
+        FormData: class { values = new Map(); constructor(value) { if (value) { this.values.set('token', get(`local${name}ImportToken`).value); this.values.set('_token', 'csrf-token'); } } append(k, v) { this.values.set(k, v); } },
+        fetch: async (url, options) => {
+            requests.push({ url, options });
+            const wait = responseWaits.get(url);
+            if (wait) { responseWaits.delete(url); await wait; }
+            const response = url === '/preview' ? { status_url: '/imports/current' }
+                : url === '/confirm' ? (status = 'IMPORTING', { status_url: '/imports/current' })
+                    : url === '/imports' ? recentJobs
+                        : payload();
+            return { ok: true, json: async () => response };
+        } };
+    vm.runInNewContext(source, context);
+    context.bootLocalProcurementImports(document);
+    return { get, created, requests, modal, form, row, timers, malicious, dropzone, setStatus: value => { status = value; }, setJobs: value => { recentJobs = value; }, reloads: () => reloads,
+        holdNextResponse: url => { let release; responseWaits.set(url, new Promise(resolve => { release = resolve; })); return release; } };
+}
+for (const locale of ['en', 'id']) for (const kind of ['PO', 'GR']) {
+    test(`${locale} ${kind}: queue progress, safe text, bounded preview and explicit confirmation`, async () => {
+        const app = boot(locale, kind);
+        const name = kind === 'PO' ? 'Po' : 'Gr';
+        await app.get(`btnParseLocal${name}Import`).fire('click');
+        assert.equal(app.get(`btnConfirmLocal${name}Import`).disabled, true);
+        assert.equal(app.get(`local${name}ImportToken`).value, '');
+        app.setStatus('READY'); await app.timers.at(-1)();
+        assert.equal(app.get(`btnConfirmLocal${name}Import`).disabled, false);
+        assert.equal(app.get(`local${name}ImportToken`).value, 'opaque-token');
+        const rows = app.get(`local${name}ImportPreviewBody`).children;
+        assert.equal(rows.length, 100);
+        assert.equal(rows[0].children[1].textContent, app.malicious);
+        assert.equal(rows[0].children.at(-1).textContent, locale === 'en' ? `New ${kind}` : `${kind} Baru`);
+        assert.ok(rows[0].children.every(cell => !Object.hasOwn(cell, 'innerHTML')));
+        assert.equal(app.get(`local${name}ImportErrorsList`).children[0].textContent, `${locale === 'en' ? 'Row' : 'Baris'} 8 [qty]: ${app.malicious}`);
+        assert.equal(app.row.action, 'NEW'); assert.equal(app.row.qty, '10.125');
+        await app.form.fire('submit');
+        const confirmation = app.requests.find(request => request.url === '/confirm');
+        assert.equal(confirmation.options.body.values.get('token'), 'opaque-token');
+        assert.equal(app.get(`btnConfirmLocal${name}Import`).disabled, true);
+        app.setStatus('COMPLETED'); await app.timers.at(-1)();
+        const reload = app.created.find(element => element.textContent === (locale === 'en' ? 'Reload register' : 'Muat ulang daftar'));
+        assert.equal(reload.hidden, false); await reload.fire('click'); assert.equal(app.reloads(), 1);
     });
 
-    test(`${locale} GR preview protects description attributes and date/qty text while retaining action and token`, () => {
-        const grSource = readFileSync(new URL('../../resources/views/finance/local-procurement/_import_gr_modal.blade.php', import.meta.url), 'utf8');
-        const renderer = ['escapeHtml', 'formatQty', 'renderPreview'].map(name => functionSource(name, grSource)).join('\n');
-        const pattern = /@js\(__\('([a-z0-9_.]+)'\)\)/g;
-        const keys = [...new Set([...renderer.matchAll(pattern)].map(m => m[1]))];
-        const php = "require 'vendor/autoload.php';$result=[];foreach(json_decode($argv[1],true) as $key){[$domain,$item]=explode('.',$key,2);$lines=require 'lang/'.$argv[2].'/'.$domain.'.php';$result[$key]=Illuminate\\Support\\Arr::get($lines,$item,$key);}echo json_encode($result,JSON_THROW_ON_ERROR);";
-        const copy = JSON.parse(execFileSync('php', ['-r', php, JSON.stringify(keys), locale], {cwd: root, encoding: 'utf8'}));
-        const elements = Object.fromEntries(['resultPanel', 'errorsPanel', 'errorsList', 'previewPanel', 'previewBody', 'rowCountLabel', 'tokenInput', 'confirmBtn'].map(name => [name, new Element()]));
-        const context = {...elements, document: {createElement: () => new Element(), getElementById: () => new Element()}};
-        vm.runInNewContext(renderer.replace(pattern, (_, key) => JSON.stringify(copy[key])), context);
-        const raw = '<img src=x onerror=alert(1)>';
-        const description = 'x" onmouseover="alert(1)';
-        const row = {_row: raw, action: 'NEW', gr_number: raw, po_number: raw, description, gr_date: raw, qty: raw, source_rows_count: 2};
-        context.renderPreview({success: true, source_row_count: 2, rows: [row]}, 'opaque-gr-token');
-        const html = elements.previewBody.children[0].innerHTML;
-        assert.ok(!html.includes(raw));
-        assert.ok(!html.includes('title="x" onmouseover='));
-        assert.ok(html.includes('title="x&quot; onmouseover=&quot;alert(1)"'));
-        assert.ok(html.includes(locale === 'en' ? 'New GR' : 'GR Baru'));
-        assert.equal(elements.tokenInput.value, 'opaque-gr-token');
-        assert.equal(elements.confirmBtn.disabled, false);
-        assert.equal(row.description, description);
-        assert.equal(row.action, 'NEW');
-        assert.equal(row.qty, raw);
+    test(`${locale} ${kind}: opening is fresh without loading previous imports`, async () => {
+        const app = boot(locale, kind);
+        const name = kind === 'PO' ? 'Po' : 'Gr';
+        app.setStatus('READY');
+        await app.modal.fire('show.bs.modal');
+        assert.equal(app.created.some(element => element.tag === 'select' || element.tag === 'option'), false);
+        assert.deepEqual(app.requests, []);
+        assert.equal(app.get(`btnConfirmLocal${name}Import`).disabled, true);
+        assert.equal(app.get(`local${name}ImportToken`).value, '');
+        assert.equal(app.dropzone.clientError, '');
+        assert.deepEqual(app.get(`local${name}ImportFile`).files, []);
+    });
+
+    test(`${locale} ${kind}: reopening discards the previous active UI without cancelling the backend batch`, async () => {
+        const app = boot(locale, kind);
+        const name = kind === 'PO' ? 'Po' : 'Gr';
+        await app.get(`btnParseLocal${name}Import`).fire('click');
+        app.setJobs([{ kind, filename: 'Newer.xlsx', status_url: '/imports/newer' }]);
+        const requestCount = app.requests.length;
+        await app.modal.fire('hidden.bs.modal');
+        await app.modal.fire('show.bs.modal');
+        await app.timers.at(-1)();
+        assert.equal(app.requests.length, requestCount);
+        assert.equal(app.requests.some(request => request.url.endsWith('/cancel')), false);
+        assert.equal(app.get(`btnParseLocal${name}Import`).disabled, false);
+        assert.equal(app.get(`btnConfirmLocal${name}Import`).disabled, true);
+        assert.equal(app.get(`local${name}ImportResult`).classList.contains('d-none'), true);
+    });
+
+    test(`${locale} ${kind}: no recent batch leaves new upload available without a dropdown`, async () => {
+        const app = boot(locale, kind, []);
+        const name = kind === 'PO' ? 'Po' : 'Gr';
+        await app.modal.fire('show.bs.modal');
+        assert.equal(app.created.some(element => element.tag === 'select'), false);
+        assert.deepEqual(app.requests, []);
+        assert.equal(app.get(`btnParseLocal${name}Import`).disabled, false);
+        app.get(`local${name}ImportFile`).files = [{ name: 'new.xlsx' }];
+        await app.get(`btnParseLocal${name}Import`).fire('click');
+        assert.ok(app.requests.some(request => request.url === '/preview'));
+        assert.equal(app.get(`btnConfirmLocal${name}Import`).disabled, true);
     });
 }
+
+test('closing and reopening clears a READY preview, token, messages, counters and selected file', async () => {
+    const app = boot('en');
+    await app.get('btnParseLocalPoImport').fire('click');
+    app.setStatus('READY'); await app.timers.at(-1)();
+    assert.equal(app.get('localPoImportToken').value, 'opaque-token');
+    await app.modal.fire('hidden.bs.modal');
+    await app.modal.fire('show.bs.modal');
+    assert.equal(app.get('localPoImportToken').value, '');
+    assert.equal(app.get('localPoImportPreviewBody').children.length, 0);
+    assert.equal(app.get('localPoImportErrorsList').children.length, 0);
+    assert.equal(app.get('kpiPoTotalRows').textContent, '0');
+    assert.equal(app.created.find(element => element.role === 'status').textContent, '');
+    assert.equal(app.get('btnConfirmLocalPoImport').disabled, true);
+    const requests = app.requests.length;
+    await app.form.fire('submit');
+    assert.equal(app.requests.length, requests);
+});
+
+test('a stale poll response cannot restore the old preview after the modal is reset', async () => {
+    const app = boot('en');
+    await app.get('btnParseLocalPoImport').fire('click');
+    app.setStatus('READY');
+    const release = app.holdNextResponse('/imports/current');
+    const pending = app.timers.at(-1)();
+    await app.modal.fire('hidden.bs.modal');
+    await app.modal.fire('show.bs.modal');
+    release(); await pending;
+    assert.equal(app.get('localPoImportToken').value, '');
+    assert.equal(app.get('btnConfirmLocalPoImport').disabled, true);
+    assert.equal(app.get('localPoImportPreviewBody').children.length, 0);
+});
+
+test('a stale upload response cannot attach its batch to a newly opened modal', async () => {
+    const app = boot('id', 'GR');
+    const release = app.holdNextResponse('/preview');
+    const pending = app.get('btnParseLocalGrImport').fire('click');
+    await app.modal.fire('hidden.bs.modal');
+    await app.modal.fire('show.bs.modal');
+    release(); await pending;
+    assert.deepEqual(app.requests.map(request => request.url), ['/preview']);
+    assert.equal(app.get('btnParseLocalGrImport').disabled, false);
+    assert.equal(app.get('btnConfirmLocalGrImport').disabled, true);
+});

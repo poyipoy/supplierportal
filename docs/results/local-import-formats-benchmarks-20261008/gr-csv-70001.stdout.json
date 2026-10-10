@@ -1,0 +1,28 @@
+{"phase":"prepare","rows":70001,"kind":"GR"}
+
+In Connection.php line 838:
+                                                                                                                       
+  SQLSTATE[42S02]: Base table or view not found: 1146 Table 'adasi_portal_test.local_procurement_imports' doesn't exi  
+  st (Connection: mysql, Host: 127.0.0.1, Port: 3306, Database: adasi_portal_test, SQL: select * from `local_procurem  
+  ent_imports` where `user_id` = 61)                                                                                   
+                                                                                                                       
+
+In Connection.php line 420:
+                                                                                                                       
+  SQLSTATE[42S02]: Base table or view not found: 1146 Table 'adasi_portal_test.local_procurement_imports' doesn't exi  
+  st                                                                                                                   
+                                                                                                                       
+
+In Connection.php line 838:
+                                                                                                                       
+  SQLSTATE[42S02]: Base table or view not found: 1146 Table 'adasi_portal_test.local_procurement_imports' doesn't exi  
+  st (Connection: mysql, Host: 127.0.0.1, Port: 3306, Database: adasi_portal_test, SQL: select * from `local_procurem  
+  ent_imports` where `id` = 38 limit 1)                                                                                
+                                                                                                                       
+
+In Connection.php line 420:
+                                                                                                                       
+  SQLSTATE[42S02]: Base table or view not found: 1146 Table 'adasi_portal_test.local_procurement_imports' doesn't exi  
+  st                                                                                                                   
+                                                                                                                       
+

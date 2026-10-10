@@ -1,0 +1,29 @@
+{
+  "po-reference-layout": {
+    "pages": 1,
+    "closing_last_only": true,
+    "page_numbering": true,
+    "quantity_unit": "pcs",
+    "unit_price_basis": "per pcs",
+    "weight_in_description": true,
+    "content_checks": "passed"
+  },
+  "po-multiple-pages": {
+    "pages": 6,
+    "closing_last_only": true,
+    "page_numbering": true,
+    "quantity_unit": "pcs",
+    "unit_price_basis": "per pcs",
+    "weight_in_description": true,
+    "content_checks": "passed"
+  },
+  "po-long-content": {
+    "pages": 5,
+    "closing_last_only": true,
+    "page_numbering": true,
+    "quantity_unit": "pcs",
+    "unit_price_basis": "per pcs",
+    "weight_in_description": true,
+    "content_checks": "passed"
+  }
+}

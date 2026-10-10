@@ -1,0 +1,251 @@
+{"phase":"prepare","rows":20000,"kind":"PO"}
+{"phase":"preview","seconds":7.212,"status":"READY"}
+{
+    "kind": "PO",
+    "format": "csv",
+    "rows": 20000,
+    "existing_gr": 0,
+    "database": "adasi_portal_test",
+    "commit_budget_seconds": 60,
+    "scenario": "new",
+    "file_bytes": 1608911,
+    "accept_seconds": 0.112,
+    "payload_bytes": 897,
+    "preview_deliveries": [
+        {
+            "attempt": 1,
+            "seconds": 7.209,
+            "status": "READY"
+        }
+    ],
+    "preview_seconds": 7.212,
+    "confirm_deliveries": [
+        {
+            "attempt": 1,
+            "seconds": 37.445,
+            "status": "COMPLETED"
+        }
+    ],
+    "confirm_seconds": 37.448,
+    "final_status": "COMPLETED",
+    "failure": null,
+    "summary": {
+        "newGr": 0,
+        "newPo": 20000,
+        "total": 20000,
+        "new_gr": 0,
+        "new_po": 20000,
+        "invalid": 0,
+        "conflicts": 0,
+        "existingGr": 0,
+        "existingPo": 0,
+        "sourceRows": 20000,
+        "total_rows": 20000,
+        "unique_pos": 20000,
+        "existing_gr": 0,
+        "existing_po": 0,
+        "source_rows": 20000,
+        "unmatched_po": 0,
+        "consolidated_gr": 0,
+        "totalConsolidated": 0
+    },
+    "peak_php_mb": 54,
+    "phases": {
+        "dispatch": {
+            "queries": 10,
+            "sql_ms": 13.489999999999998,
+            "query_shapes": {
+                "select users": {
+                    "count": 1,
+                    "sql_ms": 1.55,
+                    "max_ms": 1.55
+                },
+                "select local_procurement_imports": {
+                    "count": 2,
+                    "sql_ms": 1.76,
+                    "max_ms": 1.07
+                },
+                "insert into local_procurement_imports": {
+                    "count": 1,
+                    "sql_ms": 0.79,
+                    "max_ms": 0.79
+                },
+                "update local_procurement_imports": {
+                    "count": 2,
+                    "sql_ms": 1.0899999999999999,
+                    "max_ms": 0.61
+                },
+                "insert into attachments": {
+                    "count": 1,
+                    "sql_ms": 0.69,
+                    "max_ms": 0.69
+                },
+                "insert into jobs": {
+                    "count": 1,
+                    "sql_ms": 0.68,
+                    "max_ms": 0.68
+                },
+                "select jobs": {
+                    "count": 1,
+                    "sql_ms": 0.89,
+                    "max_ms": 0.89
+                }
+            }
+        },
+        "preview": {
+            "queries": 673,
+            "sql_ms": 4035.88,
+            "query_shapes": {
+                "select local_procurement_imports": {
+                    "count": 86,
+                    "sql_ms": 45.050000000000004,
+                    "max_ms": 1.38
+                },
+                "select jobs": {
+                    "count": 3,
+                    "sql_ms": 2.05,
+                    "max_ms": 0.82
+                },
+                "update jobs": {
+                    "count": 1,
+                    "sql_ms": 0.34,
+                    "max_ms": 0.34
+                },
+                "update local_procurement_imports": {
+                    "count": 124,
+                    "sql_ms": 135.26999999999998,
+                    "max_ms": 22.13
+                },
+                "select users": {
+                    "count": 82,
+                    "sql_ms": 75.88999999999999,
+                    "max_ms": 2.48
+                },
+                "select attachments": {
+                    "count": 1,
+                    "sql_ms": 0.29,
+                    "max_ms": 0.29
+                },
+                "select suppliers": {
+                    "count": 80,
+                    "sql_ms": 36.10999999999999,
+                    "max_ms": 1.35
+                },
+                "select local_purchase_orders": {
+                    "count": 80,
+                    "sql_ms": 274.71000000000004,
+                    "max_ms": 5.98
+                },
+                "insert into local_procurement_import_rows": {
+                    "count": 40,
+                    "sql_ms": 829.7699999999998,
+                    "max_ms": 41.1
+                },
+                "select local_procurement_import_rows": {
+                    "count": 43,
+                    "sql_ms": 373.86,
+                    "max_ms": 59
+                },
+                "insert into local_procurement_import_records": {
+                    "count": 80,
+                    "sql_ms": 1898.739999999999,
+                    "max_ms": 64.5
+                },
+                "select local_procurement_import_records": {
+                    "count": 49,
+                    "sql_ms": 360.43,
+                    "max_ms": 64.06
+                },
+                "insert into local_finance_audit_logs": {
+                    "count": 1,
+                    "sql_ms": 1.28,
+                    "max_ms": 1.28
+                },
+                "delete from jobs": {
+                    "count": 1,
+                    "sql_ms": 0.32,
+                    "max_ms": 0.32
+                },
+                "insert into jobs": {
+                    "count": 1,
+                    "sql_ms": 0.31,
+                    "max_ms": 0.31
+                }
+            }
+        },
+        "confirm": {
+            "queries": 500,
+            "sql_ms": 34635.76000000002,
+            "query_shapes": {
+                "select local_procurement_imports": {
+                    "count": 9,
+                    "sql_ms": 4.16,
+                    "max_ms": 1.21
+                },
+                "select jobs": {
+                    "count": 3,
+                    "sql_ms": 1.52,
+                    "max_ms": 0.68
+                },
+                "update jobs": {
+                    "count": 1,
+                    "sql_ms": 0.34,
+                    "max_ms": 0.34
+                },
+                "select users": {
+                    "count": 81,
+                    "sql_ms": 74.30999999999999,
+                    "max_ms": 2.82
+                },
+                "select local_procurement_import_rows": {
+                    "count": 41,
+                    "sql_ms": 248.55,
+                    "max_ms": 11.97
+                },
+                "select local_purchase_orders": {
+                    "count": 160,
+                    "sql_ms": 30309.520000000004,
+                    "max_ms": 1393.2
+                },
+                "select local_procurement_import_records": {
+                    "count": 42,
+                    "sql_ms": 136.66000000000003,
+                    "max_ms": 6.48
+                },
+                "select suppliers": {
+                    "count": 40,
+                    "sql_ms": 18.679999999999996,
+                    "max_ms": 1.92
+                },
+                "select supplier_scopes": {
+                    "count": 40,
+                    "sql_ms": 20.749999999999993,
+                    "max_ms": 2.87
+                },
+                "insert into local_purchase_orders": {
+                    "count": 40,
+                    "sql_ms": 2051.66,
+                    "max_ms": 503.5
+                },
+                "insert into local_finance_audit_logs": {
+                    "count": 41,
+                    "sql_ms": 1768.5399999999997,
+                    "max_ms": 572.79
+                },
+                "update local_procurement_imports": {
+                    "count": 1,
+                    "sql_ms": 0.85,
+                    "max_ms": 0.85
+                },
+                "delete from jobs": {
+                    "count": 1,
+                    "sql_ms": 0.22,
+                    "max_ms": 0.22
+                }
+            }
+        }
+    },
+    "created_gr": 0,
+    "created_po": 20000,
+    "creation_audits": 20000
+}

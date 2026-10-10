@@ -16,7 +16,7 @@ const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select
 const instances = new WeakMap();
 let activeController = null;
 let engineReady = false;
-let bootStarted = false;
+let bootPromise = null;
 let mobileScrim = null;
 
 const asIsoDate = (value) => {
@@ -1021,15 +1021,20 @@ window.AdasiCalendar = Object.freeze({
     closeActive: closeActiveCalendar,
 });
 
-export async function bootAdasiCalendars() {
-    if (bootStarted) return;
-    bootStarted = true;
-    try {
-        await import('cally');
-        engineReady = true;
-        initializeAdasiCalendars();
-    } catch (error) {
-        engineReady = true;
-        initializeAdasiCalendars();
-    }
+export function bootAdasiCalendars() {
+    // Every caller shares the one in-flight load. A bare early return settled immediately, so
+    // initializeAdasiCalendars() re-queued itself on every microtask while 'cally' was still downloading,
+    // which starved the event loop and froze any page that initialized calendars on DOMContentLoaded.
+    bootPromise ??= (async () => {
+        try {
+            await import('cally');
+            engineReady = true;
+            initializeAdasiCalendars();
+        } catch (error) {
+            engineReady = true;
+            initializeAdasiCalendars();
+        }
+    })();
+
+    return bootPromise;
 }

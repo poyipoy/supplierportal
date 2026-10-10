@@ -22,10 +22,10 @@ use App\Services\Payment\LocalInvoicePaymentService;
 use App\Services\Payment\LocalInvoiceVoucherService;
 use App\Services\Payment\SupplierOverpaymentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use Tests\Support\NativeFileFixtures;
 use Tests\TestCase;
 
 class LocalSupplierOverpaymentTransparencyTest extends TestCase
@@ -92,7 +92,7 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
             'invoice_amount' => '1000.00',
             'tax_amount' => '0.00',
             'ppn_scheme' => '0%',
-        ], ['invoice' => UploadedFile::fake()->create('invoice.pdf', 10, 'application/pdf')]);
+        ], ['invoice' => NativeFileFixtures::upload('invoice.pdf', 10)]);
 
         app(LocalGrReservationService::class)->consume($invoice, $this->finance);
         $invoice->update(['status' => LocalInvoice::STATUS_READY_TO_PAY]);
@@ -194,7 +194,7 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
     {
         [$invoice, $payment, $refund] = $this->createInvoiceWithOverpayment('INV-SETTLE-001', '75.00');
 
-        $proof = UploadedFile::fake()->create('bukti_refund.pdf', 100, 'application/pdf');
+        $proof = NativeFileFixtures::upload('bukti_refund.pdf', 100);
         $settled = app(SupplierOverpaymentService::class)->settle($refund, [
             'refund_amount' => '75.00',
 
@@ -219,7 +219,7 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
     {
         [$invoice, $payment, $refund] = $this->createInvoiceWithOverpayment('INV-PROOF-001', '25.00');
 
-        $proof = UploadedFile::fake()->create('settlement_proof.pdf', 50, 'application/pdf');
+        $proof = NativeFileFixtures::upload('settlement_proof.pdf', 50);
         $settled = app(SupplierOverpaymentService::class)->settle($refund, [
             'refund_amount' => '25.00',
 
@@ -239,7 +239,7 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
     {
         [$invoice, $payment, $refund] = $this->createInvoiceWithOverpayment('INV-IDOR-001', '30.00');
 
-        $proof = UploadedFile::fake()->create('secret_proof.pdf', 50, 'application/pdf');
+        $proof = NativeFileFixtures::upload('secret_proof.pdf', 50);
         $settled = app(SupplierOverpaymentService::class)->settle($refund, [
             'refund_amount' => '30.00',
 
@@ -287,7 +287,7 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
             'invoice_amount' => '500.00',
             'tax_amount' => '0.00',
             'ppn_scheme' => '0%',
-        ], ['invoice' => UploadedFile::fake()->create('invoice.pdf', 10, 'application/pdf')]);
+        ], ['invoice' => NativeFileFixtures::upload('invoice.pdf', 10)]);
 
         app(LocalGrReservationService::class)->consume($settledInvoice, $this->finance);
         $settledInvoice->update(['status' => LocalInvoice::STATUS_READY_TO_PAY]);
@@ -343,7 +343,7 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
             'refund_amount' => '60.00',
 
             'refund_date' => '2026-09-16',
-        ], UploadedFile::fake()->create('proof.pdf', 10, 'application/pdf'), $this->finance);
+        ], NativeFileFixtures::upload('proof.pdf', 10), $this->finance);
 
         $response = $this->actingAs($this->supplier)
             ->get(route('local-supplier.invoices.index'));
@@ -358,7 +358,7 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
         app()->setLocale('id');
         [$invoice, $payment, $refund] = $this->createInvoiceWithOverpayment('INV-NOTIF-001', '80.00');
 
-        $proof = UploadedFile::fake()->create('proof_notif.pdf', 20, 'application/pdf');
+        $proof = NativeFileFixtures::upload('proof_notif.pdf', 20);
         $settled = app(SupplierOverpaymentService::class)->settle($refund, [
             'refund_amount' => '80.00',
 
@@ -395,7 +395,7 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
         foreach ([[], ['refund_date' => '2026-02-30']] as $dateData) {
             try {
                 app(SupplierOverpaymentService::class)->settle($refund, array_merge(['refund_amount' => '80.00'], $dateData),
-                    UploadedFile::fake()->create('proof.pdf', 10, 'application/pdf'), $this->finance);
+                    NativeFileFixtures::upload('proof.pdf', 10), $this->finance);
                 $this->fail('Missing or invalid refund date must be rejected.');
             } catch (ValidationException $e) {
                 $this->assertArrayHasKey('refund_date', $e->errors());
@@ -433,7 +433,7 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
             'invoice_amount' => '500.00',
             'tax_amount' => '0.00',
             'ppn_scheme' => '0%',
-        ], ['invoice' => UploadedFile::fake()->create('invoice.pdf', 10, 'application/pdf')]);
+        ], ['invoice' => NativeFileFixtures::upload('invoice.pdf', 10)]);
 
         app(LocalGrReservationService::class)->consume($settledInvoice, $this->finance);
         $settledInvoice->update(['status' => LocalInvoice::STATUS_READY_TO_PAY]);
@@ -489,7 +489,7 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
             'refund_amount' => '40.00',
 
             'refund_date' => '2026-09-16',
-        ], UploadedFile::fake()->create('proof.pdf', 10, 'application/pdf'), $this->finance);
+        ], NativeFileFixtures::upload('proof.pdf', 10), $this->finance);
 
         // Filter OPEN
         $resOpen = $this->actingAs($this->supplier)
@@ -523,7 +523,7 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
     {
         [$invoice, $payment, $refund] = $this->createInvoiceWithOverpayment('INV-IDEMP-001', '10.00');
 
-        $proof1 = UploadedFile::fake()->create('proof1.pdf', 10, 'application/pdf');
+        $proof1 = NativeFileFixtures::upload('proof1.pdf', 10);
         $settled = app(SupplierOverpaymentService::class)->settle($refund, [
             'refund_amount' => '10.00',
 
@@ -535,7 +535,7 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
 
         // Attempt second settlement
         $this->expectException(ValidationException::class);
-        $proof2 = UploadedFile::fake()->create('proof2.pdf', 10, 'application/pdf');
+        $proof2 = NativeFileFixtures::upload('proof2.pdf', 10);
         app(SupplierOverpaymentService::class)->settle($settled, [
             'refund_amount' => '10.00',
 

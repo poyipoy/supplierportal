@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Support\PurchasingNavigation;
+use App\Support\ServerTabsResponse;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -16,9 +17,11 @@ class RememberPurchasingListUrl
      */
     public function handle(Request $request, Closure $next): Response
     {
+        // Server-tabs fragments are the page the user is looking at (pushState mirrors this URL), so they count;
+        // other JSON (DataTables feeds, chart payloads) must not replace the remembered list.
         if (
             $request->isMethod('GET')
-            && ! $request->expectsJson()
+            && (! $request->expectsJson() || ServerTabsResponse::wants($request))
             && $request->input('view') !== 'json'
             && $request->user()?->role === 'purchasing'
         ) {

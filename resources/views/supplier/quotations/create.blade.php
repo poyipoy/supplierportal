@@ -680,7 +680,7 @@
     </x-ui.page-header>
 
     {{-- Main Sectioned Form --}}
-    <form id="quotationForm" class="quotation-form" action="{{ route('supplier.quotations.store', $pr) }}" method="POST" enctype="multipart/form-data">
+    <form id="quotationForm" class="quotation-form" action="{{ route('supplier.quotations.store', $pr) }}" method="POST" enctype="multipart/form-data" data-async-submit>
         @csrf
         <input type="hidden" name="action" id="formAction" value="draft">
 

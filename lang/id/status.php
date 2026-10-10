@@ -162,4 +162,12 @@ return [
         'rejected' => 'Ditolak',
         'active' => 'Aktif',
     ],
+    'supplier_audit' => [
+        'assigned' => 'Ditugaskan',
+        'draft' => 'Draf',
+        'submitted' => 'Disubmit',
+        'revision_requested' => 'Perlu Revisi',
+        'result_published' => 'Hasil Terbit',
+        'cancelled' => 'Dibatalkan',
+    ],
 ];

@@ -5,7 +5,7 @@ Apply only after reviewing Gate 2 and testing a restored staging database. No ap
 1. Back up the database. Pause web/queue GA writes during deployment: old writers must not insert legacy enum values between mapping and contraction. Deploy code and run the three new migrations together before reopening traffic.
 2. UOM columns are nullable for existing records. Do not guess `pcs` or derive a historical invoice snapshot from a mutable GR master. New manual/import writes require the canonical dropdown/whitelist. Existing null values display as unavailable.
 3. Infor import reads quantity from P and unit from Q (blank header in the supplied workbook). A mixed-unit receipt is rejected as a group. The single-row whole-GR model cannot represent its lines safely; accepting such data requires a separately approved GR line model with invoice snapshots per line. Do not sum quantities across units.
-4. Download the revised combined PO/GR template. Its GR columns are `gr_number`, `gr_date`, `qty`, `uom`, `gr_remarks`. Old nominal `gr_amount` rows must not be converted to a synthetic quantity. PO-only rows remain supported.
+4. Download the separate Infor PO and GR XLSX templates. Imports accept XLSX, CSV and binary XLS with the same column positions, including blank columns; upload PO first, then GR referencing registered POs. The combined import workflow has been removed. See [Local PO/GR background imports](LOCAL-PROCUREMENT-IMPORTS.md) for limits, preview/confirm and worker deployment. Old nominal `gr_amount` rows must not be converted to a synthetic quantity.
 5. Preflight legacy reservations:
 
    ```powershell

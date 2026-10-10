@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\SupplierRegistration;
 
+use App\Support\SupplierComplianceQuestionnaire;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ResubmitRegistrationRequest extends FormRequest
@@ -45,9 +46,15 @@ class ResubmitRegistrationRequest extends FormRequest
             'sknr_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
             'sppkp_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
             'skd_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
+            'company_profile_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
 
             'revision_notes' => ['nullable', 'string', 'max:1000'],
-        ];
+        ] + SupplierComplianceQuestionnaire::rules();
+    }
+
+    public function attributes(): array
+    {
+        return SupplierComplianceQuestionnaire::attributes();
     }
 
     public function safeResubmitData(): array
@@ -69,6 +76,7 @@ class ResubmitRegistrationRequest extends FormRequest
             'account_number',
             'account_holder_name',
             'revision_notes',
+            'questionnaire',
         ]);
     }
 }

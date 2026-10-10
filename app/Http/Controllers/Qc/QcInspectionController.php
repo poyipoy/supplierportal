@@ -11,6 +11,7 @@ use App\Models\QcItem;
 use App\Models\Shipment;
 use App\Models\ShipmentItem;
 use App\Models\User;
+use App\Services\FileSecurity\FileInspectionService;
 use App\Services\NotificationService;
 use App\Services\RegionalDisplayFormatter;
 use App\Support\BusinessTime;
@@ -23,6 +24,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Yajra\DataTables\Facades\DataTables;
 
 class QcInspectionController extends Controller
@@ -377,11 +379,25 @@ class QcInspectionController extends Controller
                 ['po' => $po->po_number],
             );
 
+            if ($request->expectsJson()) {
+                $request->session()->flash('success', __('qc.copy.inspection_result_successfully_saved'));
+
+                return response()->json(['redirect' => route('qc.inspections.show', $inspection)]);
+            }
+
             return redirect()->route('qc.inspections.show', $inspection)->with('success', __('qc.copy.inspection_result_successfully_saved'));
 
+        } catch (ValidationException $e) {
+            DB::rollBack();
+            $this->cleanupStagedAttachments($stagedAttachments);
+            throw $e;
         } catch (\RuntimeException $e) {
             DB::rollBack();
             $this->cleanupStagedAttachments($stagedAttachments);
+
+            if ($request->expectsJson()) {
+                throw ValidationException::withMessages(['attachments' => $e->getMessage()]);
+            }
 
             return back()->withInput()->with('error', $e->getMessage());
         } catch (\Exception $e) {
@@ -393,6 +409,10 @@ class QcInspectionController extends Controller
                 'exception' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+
+            if ($request->expectsJson()) {
+                throw $e;
+            }
 
             return back()->withInput()->with('error', __('qc.copy.an_error_occurred_while_saving_the_inspection_please_try_again'));
         }
@@ -502,6 +522,9 @@ class QcInspectionController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
             $this->cleanupStagedAttachments($stagedAttachments);
+            if ($e instanceof ValidationException || $request->expectsJson()) {
+                throw $e;
+            }
             Log::error('QC Inspection storeAttachments failed', [
                 'inspection_id' => $id,
                 'exception' => $e->getMessage(),
@@ -510,29 +533,26 @@ class QcInspectionController extends Controller
             return back()->with('error', __('qc.copy.failed_to_save_evidence_photos_please_try_again'));
         }
 
+        if ($request->expectsJson()) {
+            $request->session()->flash('success', __('qc.copy.qc_evidence_photos_successfully_added'));
+
+            return response()->json(['redirect' => route('qc.inspections.show', $inspection)]);
+        }
+
         return back()->with('success', __('qc.copy.qc_evidence_photos_successfully_added'));
     }
 
     private function saveAttachment(UploadedFile $file, Model $attachable): string
     {
         $path = 'attachments/'.now()->format('Y/m').'/'.$file->hashName(); // biz-time:ignore storage path
-        $stream = fopen($file->getPathname(), 'r');
-
-        if (! $stream) {
-            throw new \RuntimeException(__('qc.copy.file_cannot_be_read_please_upload_the_file_again'));
-        }
-
-        try {
-            Storage::disk('private')->put($path, $stream);
-        } finally {
-            fclose($stream);
-        }
+        $stored = app(FileInspectionService::class)->storeUpload($file, 'qc', $path, 'attachments');
 
         try {
             $attachable->attachments()->create([
-                'file_path' => $path,
-                'file_name' => $file->getClientOriginalName(),
-                'file_type' => $file->getMimeType(),
+                'file_path' => $stored['file_path'],
+                'file_name' => $stored['file_name'],
+                'file_type' => $stored['file_type'],
+                'file_inspection_id' => $stored['file_inspection_id'],
                 'uploaded_by' => auth()->id(),
             ]);
         } catch (\Throwable $e) {

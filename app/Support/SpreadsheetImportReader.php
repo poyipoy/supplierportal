@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Services\FileSecurity\FileInspectionService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
@@ -12,6 +13,7 @@ final class SpreadsheetImportReader
 {
     public static function import(object $import, UploadedFile $uploadedFile): void
     {
+        app(FileInspectionService::class)->inspectUpload($uploadedFile, 'spreadsheet_preview');
         $sourcePath = $uploadedFile->getPathname();
 
         if ($sourcePath === '' || ! is_file($sourcePath) || ! is_readable($sourcePath)) {

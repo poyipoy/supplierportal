@@ -244,6 +244,45 @@ test('on-surface variant copy meets normal-text contrast on light and dark work 
     assert.ok(ratio(value(dark, '--md-on-surface-variant'), value(dark, '--md-surface-container')) >= 4.5, 'dark muted text on container surfaces');
 });
 
+test('dark overlays form a tonal elevation ladder and dark chart series stay perceivable', async () => {
+    const css = await readFile(new URL('../../resources/css/app.css', import.meta.url), 'utf8');
+    const body = selector => {
+        const index = css.indexOf(selector + ' {');
+        assert.notEqual(index, -1, 'selector ' + selector + ' exists');
+        return css.slice(index, css.indexOf('}', index));
+    };
+    const value = (text, token) => text.match(new RegExp(token + ':\\s*(#[0-9a-fA-F]{6})'))?.[1];
+    const luminance = hex => {
+        assert.ok(hex, 'token has an explicit server-owned palette value');
+        return [1, 3, 5].map(index => parseInt(hex.slice(index, index + 2), 16) / 255)
+            .map(channel => channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4)
+            .reduce((sum, channel, index) => sum + channel * [0.2126, 0.7152, 0.0722][index], 0);
+    };
+    const ratio = (a, b) => (Math.max(luminance(a), luminance(b)) + 0.05) / (Math.min(luminance(a), luminance(b)) + 0.05);
+
+    const dark = body(':root[data-theme="dark"]');
+    assert.match(dark, /--ui-menu-bg:\s*var\(--md-surface-container\);/);
+    assert.match(dark, /--ui-dialog-bg:\s*var\(--md-surface-container-high\);/);
+
+    // workspace < card (surface) < menu (container) < dialog (container-high): each tier is strictly lighter.
+    const tones = ['--ui-workspace-bg', '--md-surface', '--md-surface-container', '--md-surface-container-high']
+        .map(token => luminance(value(dark, token)));
+    tones.slice(1).forEach((tone, index) => assert.ok(tone > tones[index], 'overlay tier ' + (index + 1) + ' is lighter than the tier below'));
+
+    const dialog = value(dark, '--md-surface-container-high');
+    assert.ok(ratio(value(dark, '--md-on-surface'), dialog) >= 4.5, 'primary text on dialogs');
+    assert.ok(ratio(value(dark, '--md-on-surface-variant'), dialog) >= 4.5, 'muted text on dialogs');
+
+    for (const token of ['--md-chart-primary', '--md-chart-warning']) {
+        assert.ok(ratio(value(dark, token), value(dark, '--md-surface')) >= 3, token + ' is a graphical object and needs 3:1 on the dark surface');
+    }
+
+    for (const selector of ['.card', '.modal-content', '.dropdown-menu', '.popover', '.table-light', '.btn-outline-secondary', ':is(.bg-light, .bg-white)', '.badge.bg-secondary', '.badge.bg-warning', '.text-dark:not(.badge):not(.btn)']) {
+        assert.ok(css.includes(':root[data-theme="dark"] ' + selector + ' {'), 'dark adapter exists for ' + selector);
+    }
+    assert.ok(css.includes(':root[data-theme="dark"][data-accent="brand"] .btn-outline-primary {'), 'brand outline-primary adapter exists in dark');
+});
+
 test('history restoration synchronizes appearance radios with saved preference values', async () => {
     const { bindBackForwardRestoration } = await import('../../resources/js/preferences.js');
     const groups = {

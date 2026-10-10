@@ -11,6 +11,7 @@ use App\Models\QcInspection;
 use App\Models\Quotation;
 use App\Models\QuotationItem;
 use App\Models\ShipmentDocument;
+use App\Models\SupplierAudit;
 use App\Models\SupplierOverpaymentRefund;
 use App\Models\User;
 
@@ -79,6 +80,12 @@ class AttachmentPolicy
                 SupplierOverpaymentRefund::class => (int) $attachable->supplier_id === (int) $user->id,
 
                 LocalPurchaseOrder::class => (int) $attachable->supplier_id === (int) $user->id,
+
+                // Supplier hanya boleh mengunduh file hasil terbaru dari audit miliknya (D9).
+                SupplierAudit::class => (int) $attachable->supplier_id === (int) $user->id
+                    && $user->hasSupplierScope('local')
+                    && $attachable->status === SupplierAudit::STATUS_RESULT_PUBLISHED
+                    && (int) $attachable->resultAttachments()->value('id') === (int) $attachment->id,
 
                 default => false,
             };

@@ -9,9 +9,11 @@ use App\Models\SupplierRegistrationAccess;
 use App\Models\SupplierRegistrationAttempt;
 use App\Models\SupplierRegistrationAudit;
 use App\Models\User;
+use App\Services\FileSecurity\FileInspectionService;
 use App\Support\BusinessTime;
 use App\Support\NotificationCategory;
 use App\Support\NotificationDomain;
+use App\Support\SupplierComplianceQuestionnaire;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -104,51 +106,214 @@ class SupplierRegistrationService
      */
     public function submitInitialRegistration(array $data, array $files, ?string $ip = null, ?string $userAgent = null): array
     {
-        return DB::transaction(function () use ($data, $files, $ip, $userAgent) {
-            $normalizedEmail = Str::lower(trim($data['email']));
-            $nibFingerprint = $this->normalizeFingerprint($data['nib']);
-            $taxFingerprint = $this->normalizeFingerprint($data['npwp']);
+        $written = [];
+        try {
+            return DB::transaction(function () use ($data, $files, $ip, $userAgent, &$written) {
+                $normalizedEmail = Str::lower(trim($data['email']));
+                $nibFingerprint = $this->normalizeFingerprint($data['nib']);
+                $taxFingerprint = $this->normalizeFingerprint($data['npwp']);
 
-            // Lock potential existing user for safe re-registration if rejected
-            $existingUser = User::query()
-                ->where('email', $normalizedEmail)
-                ->lockForUpdate()
-                ->first();
+                // Lock potential existing user for safe re-registration if rejected
+                $existingUser = User::query()
+                    ->where('email', $normalizedEmail)
+                    ->lockForUpdate()
+                    ->first();
 
-            if ($existingUser) {
-                if ($existingUser->account_status !== User::ACCOUNT_STATUS_REJECTED) {
-                    throw ValidationException::withMessages([
-                        'email' => __('local_procurement.registration.unprocessed'),
+                if ($existingUser) {
+                    if ($existingUser->account_status !== User::ACCOUNT_STATUS_REJECTED) {
+                        throw ValidationException::withMessages([
+                            'email' => __('local_procurement.registration.unprocessed'),
+                        ]);
+                    }
+                    $this->checkDuplicates($data['email'], $data['nib'], $data['npwp'], $existingUser->id);
+                } else {
+                    $this->checkDuplicates($data['email'], $data['nib'], $data['npwp'], null);
+                }
+
+                if ($existingUser && $existingUser->account_status === User::ACCOUNT_STATUS_REJECTED) {
+                    $user = $existingUser;
+                    $user->update([
+                        'name' => $data['company_name'],
+                        'password' => Hash::make($data['password']),
+                        'account_status' => User::ACCOUNT_STATUS_PENDING,
+                        'is_active' => false,
+                    ]);
+                } else {
+                    $user = User::create([
+                        'name' => $data['company_name'],
+                        'email' => $normalizedEmail,
+                        'password' => Hash::make($data['password']),
+                        'role' => 'supplier',
+                        'is_active' => false,
+                        'account_status' => User::ACCOUNT_STATUS_PENDING,
                     ]);
                 }
-                $this->checkDuplicates($data['email'], $data['nib'], $data['npwp'], $existingUser->id);
-            } else {
-                $this->checkDuplicates($data['email'], $data['nib'], $data['npwp'], null);
-            }
 
-            if ($existingUser && $existingUser->account_status === User::ACCOUNT_STATUS_REJECTED) {
-                $user = $existingUser;
-                $user->update([
-                    'name' => $data['company_name'],
-                    'password' => Hash::make($data['password']),
-                    'account_status' => User::ACCOUNT_STATUS_PENDING,
-                    'is_active' => false,
-                ]);
-            } else {
-                $user = User::create([
-                    'name' => $data['company_name'],
-                    'email' => $normalizedEmail,
-                    'password' => Hash::make($data['password']),
-                    'role' => 'supplier',
-                    'is_active' => false,
-                    'account_status' => User::ACCOUNT_STATUS_PENDING,
-                ]);
-            }
+                // Create or update Supplier master
+                $supplier = Supplier::updateOrCreate(
+                    ['user_id' => $user->id],
+                    [
+                        'company_title' => $data['company_title'] ?? null,
+                        'company_name' => $data['company_name'],
+                        'address' => $data['address'],
+                        'phone' => $data['phone'],
+                        'nib' => $data['nib'],
+                        'nib_fingerprint' => $nibFingerprint,
+                        'npwp' => $data['npwp'],
+                        'tax_identity_fingerprint' => $taxFingerprint,
+                        'category' => $data['category'] ?? 'Supplier',
+                        'vendor_category' => $data['vendor_category'] ?? null,
+                        'is_pkp' => ! empty($data['is_pkp']),
+                        'pic_name' => $data['pic_name'],
+                        'pic_email' => $data['pic_email'],
+                        'pic_phone' => $data['pic_phone'],
+                        'compliance_questionnaire' => SupplierComplianceQuestionnaire::payload($data['questionnaire'] ?? []),
+                    ]
+                );
 
-            // Create or update Supplier master
-            $supplier = Supplier::updateOrCreate(
-                ['user_id' => $user->id],
-                [
+                // Bank Account
+                $bankAccount = SupplierBankAccount::create([
+                    'supplier_id' => $user->id,
+                    'bank_name' => $data['bank_name'],
+                    'account_number' => $data['account_number'],
+                    'account_holder_name' => $data['account_holder_name'],
+                    'status' => SupplierBankAccount::STATUS_PENDING,
+                ]);
+
+                // Save Documents
+                $documentMetadata = $this->storeRegistrationDocuments($user, $bankAccount, $files, written: $written);
+
+                // Determine attempt number
+                $previousAttemptCount = SupplierRegistrationAttempt::where('user_id', $user->id)->count();
+                $attemptNumber = $previousAttemptCount + 1;
+
+                // Build submission snapshot (strictly excluding sensitive credentials)
+                $snapshot = [
+                    'company' => [
+                        'company_title' => $data['company_title'] ?? null,
+                        'company_name' => $data['company_name'],
+                        'address' => $data['address'],
+                        'phone' => $data['phone'],
+                        'category' => $data['category'] ?? 'Supplier',
+                        'vendor_category' => $data['vendor_category'] ?? null,
+                        'is_pkp' => ! empty($data['is_pkp']),
+                    ],
+                    'pic' => [
+                        'pic_name' => $data['pic_name'],
+                        'pic_email' => $data['pic_email'],
+                        'pic_phone' => $data['pic_phone'],
+                    ],
+                    'tax' => [
+                        'nib' => $data['nib'],
+                        'npwp' => $data['npwp'],
+                    ],
+                    'bank' => [
+                        'bank_name' => $data['bank_name'],
+                        'account_number' => $data['account_number'],
+                        'account_holder_name' => $data['account_holder_name'],
+                    ],
+                    'documents' => $documentMetadata,
+                    'questionnaire' => SupplierComplianceQuestionnaire::normalize($data['questionnaire'] ?? []),
+                ];
+
+                $checksum = hash('sha256', json_encode($snapshot));
+
+                $attempt = SupplierRegistrationAttempt::create([
+                    'user_id' => $user->id,
+                    'attempt_number' => $attemptNumber,
+                    'status' => SupplierRegistrationAttempt::STATUS_PENDING,
+                    'submission_snapshot' => $snapshot,
+                    'submission_checksum' => $checksum,
+                    'submitted_at' => now(),
+                ]);
+
+                // Generate registration access credentials
+                $reference = $this->generateRegistrationReference();
+                $plainAccessKey = Str::random(32);
+                $tokenHash = hash('sha256', $plainAccessKey);
+                $ttlDays = $this->accessTtlDays();
+
+                $access = SupplierRegistrationAccess::updateOrCreate(
+                    ['user_id' => $user->id],
+                    [
+                        'registration_reference' => $reference,
+                        'token_hash' => $tokenHash,
+                        'issued_at' => now(),
+                        'expires_at' => now()->addDays($ttlDays),
+                        'revoked_at' => null,
+                        'last_used_at' => null,
+                    ]
+                );
+
+                // Record audit trail
+                SupplierRegistrationAudit::record(
+                    attemptId: $attempt->id,
+                    userId: $user->id,
+                    event: 'registration_submitted',
+                    actorId: $user->id,
+                    actorRole: 'applicant',
+                    notes: 'Initial supplier registration submitted.',
+                    metadata: [
+                        'ip' => $ip,
+                        'user_agent' => $userAgent,
+                        'reference' => $reference,
+                        'attempt_number' => $attemptNumber,
+                    ],
+                );
+
+                // Send notification to reviewers (Admin, Finance, Purchasing)
+                $this->notifyReviewers(
+                    event: 'supplier_registration.submitted',
+                    eventKey: "supplier_reg_{$attempt->id}_submitted",
+                    title: 'notifications.registration.submitted.title',
+                    message: 'notifications.registration.submitted.message',
+                    replace: ['company' => $data['company_name'], 'reference' => $reference],
+                    url: route('supplier-registrations.show', $attempt->hash),
+                    attempt: $attempt,
+                );
+
+                return [
+                    'attempt' => $attempt,
+                    'reference' => $reference,
+                    'access_key' => $plainAccessKey,
+                ];
+            });
+        } catch (\Throwable $exception) {
+            foreach ($written as $path) {
+                Storage::disk('private')->delete($path);
+            }
+            throw $exception;
+        }
+    }
+
+    /**
+     * Resubmit a registration that was in REVISION status.
+     *
+     * @return array{attempt: SupplierRegistrationAttempt, reference: string}
+     */
+    public function resubmitRevision(User $user, array $data, array $files, ?string $ip = null, ?string $userAgent = null): array
+    {
+        $written = [];
+        try {
+            return DB::transaction(function () use ($user, $data, $files, $ip, $userAgent, &$written) {
+                $user = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
+
+                if ($user->account_status !== User::ACCOUNT_STATUS_REVISION) {
+                    throw new \DomainException(__('local_procurement.registration.resubmit_revision'));
+                }
+
+                $lastAttempt = $user->registrationAttempts()->orderByDesc('attempt_number')->lockForUpdate()->first();
+                if (! $lastAttempt || $lastAttempt->status !== SupplierRegistrationAttempt::STATUS_REVISION) {
+                    throw new \DomainException(__('local_procurement.registration.attempt_revision'));
+                }
+
+                $this->checkDuplicates($data['email'] ?? $user->email, $data['nib'], $data['npwp'], $user->id);
+
+                $nibFingerprint = $this->normalizeFingerprint($data['nib']);
+                $taxFingerprint = $this->normalizeFingerprint($data['npwp']);
+
+                // Update Supplier master record
+                $user->supplier()->update([
                     'company_title' => $data['company_title'] ?? null,
                     'company_name' => $data['company_name'],
                     'address' => $data['address'],
@@ -163,265 +328,122 @@ class SupplierRegistrationService
                     'pic_name' => $data['pic_name'],
                     'pic_email' => $data['pic_email'],
                     'pic_phone' => $data['pic_phone'],
-                ]
-            );
+                    'compliance_questionnaire' => SupplierComplianceQuestionnaire::payload($data['questionnaire'] ?? []),
+                ]);
 
-            // Bank Account
-            $bankAccount = SupplierBankAccount::create([
-                'supplier_id' => $user->id,
-                'bank_name' => $data['bank_name'],
-                'account_number' => $data['account_number'],
-                'account_holder_name' => $data['account_holder_name'],
-                'status' => SupplierBankAccount::STATUS_PENDING,
-            ]);
+                // Update Bank Account
+                $bankAccount = $user->supplierBankAccounts()->latest()->first();
+                if ($bankAccount) {
+                    $bankAccount->update([
+                        'bank_name' => $data['bank_name'],
+                        'account_number' => $data['account_number'],
+                        'account_holder_name' => $data['account_holder_name'],
+                        'status' => SupplierBankAccount::STATUS_PENDING,
+                    ]);
+                } else {
+                    $bankAccount = SupplierBankAccount::create([
+                        'supplier_id' => $user->id,
+                        'bank_name' => $data['bank_name'],
+                        'account_number' => $data['account_number'],
+                        'account_holder_name' => $data['account_holder_name'],
+                        'status' => SupplierBankAccount::STATUS_PENDING,
+                    ]);
+                }
 
-            // Save Documents
-            $documentMetadata = $this->storeRegistrationDocuments($user, $bankAccount, $files);
+                // Store any updated/replaced documents
+                $documentMetadata = $this->storeRegistrationDocuments($user, $bankAccount, $files, preserveExisting: true, written: $written);
 
-            // Determine attempt number
-            $previousAttemptCount = SupplierRegistrationAttempt::where('user_id', $user->id)->count();
-            $attemptNumber = $previousAttemptCount + 1;
+                // Create new attempt
+                $attemptNumber = $lastAttempt->attempt_number + 1;
+                $snapshot = [
+                    'company' => [
+                        'company_title' => $data['company_title'] ?? null,
+                        'company_name' => $data['company_name'],
+                        'address' => $data['address'],
+                        'phone' => $data['phone'],
+                        'category' => $data['category'] ?? 'Supplier',
+                        'vendor_category' => $data['vendor_category'] ?? null,
+                        'is_pkp' => ! empty($data['is_pkp']),
+                    ],
+                    'pic' => [
+                        'pic_name' => $data['pic_name'],
+                        'pic_email' => $data['pic_email'],
+                        'pic_phone' => $data['pic_phone'],
+                    ],
+                    'tax' => [
+                        'nib' => $data['nib'],
+                        'npwp' => $data['npwp'],
+                    ],
+                    'bank' => [
+                        'bank_name' => $data['bank_name'],
+                        'account_number' => $data['account_number'],
+                        'account_holder_name' => $data['account_holder_name'],
+                    ],
+                    'documents' => $documentMetadata,
+                    'questionnaire' => SupplierComplianceQuestionnaire::normalize($data['questionnaire'] ?? []),
+                    'revision_notes' => $data['revision_notes'] ?? null,
+                ];
 
-            // Build submission snapshot (strictly excluding sensitive credentials)
-            $snapshot = [
-                'company' => [
-                    'company_title' => $data['company_title'] ?? null,
-                    'company_name' => $data['company_name'],
-                    'address' => $data['address'],
-                    'phone' => $data['phone'],
-                    'category' => $data['category'] ?? 'Supplier',
-                    'vendor_category' => $data['vendor_category'] ?? null,
-                    'is_pkp' => ! empty($data['is_pkp']),
-                ],
-                'pic' => [
-                    'pic_name' => $data['pic_name'],
-                    'pic_email' => $data['pic_email'],
-                    'pic_phone' => $data['pic_phone'],
-                ],
-                'tax' => [
-                    'nib' => $data['nib'],
-                    'npwp' => $data['npwp'],
-                ],
-                'bank' => [
-                    'bank_name' => $data['bank_name'],
-                    'account_number' => $data['account_number'],
-                    'account_holder_name' => $data['account_holder_name'],
-                ],
-                'documents' => $documentMetadata,
-            ];
+                $checksum = hash('sha256', json_encode($snapshot));
 
-            $checksum = hash('sha256', json_encode($snapshot));
-
-            $attempt = SupplierRegistrationAttempt::create([
-                'user_id' => $user->id,
-                'attempt_number' => $attemptNumber,
-                'status' => SupplierRegistrationAttempt::STATUS_PENDING,
-                'submission_snapshot' => $snapshot,
-                'submission_checksum' => $checksum,
-                'submitted_at' => now(),
-            ]);
-
-            // Generate registration access credentials
-            $reference = $this->generateRegistrationReference();
-            $plainAccessKey = Str::random(32);
-            $tokenHash = hash('sha256', $plainAccessKey);
-            $ttlDays = $this->accessTtlDays();
-
-            $access = SupplierRegistrationAccess::updateOrCreate(
-                ['user_id' => $user->id],
-                [
-                    'registration_reference' => $reference,
-                    'token_hash' => $tokenHash,
-                    'issued_at' => now(),
-                    'expires_at' => now()->addDays($ttlDays),
-                    'revoked_at' => null,
-                    'last_used_at' => null,
-                ]
-            );
-
-            // Record audit trail
-            SupplierRegistrationAudit::record(
-                attemptId: $attempt->id,
-                userId: $user->id,
-                event: 'registration_submitted',
-                actorId: $user->id,
-                actorRole: 'applicant',
-                notes: 'Initial supplier registration submitted.',
-                metadata: [
-                    'ip' => $ip,
-                    'user_agent' => $userAgent,
-                    'reference' => $reference,
+                $newAttempt = SupplierRegistrationAttempt::create([
+                    'user_id' => $user->id,
                     'attempt_number' => $attemptNumber,
-                ],
-            );
-
-            // Send notification to reviewers (Admin, Finance, Purchasing)
-            $this->notifyReviewers(
-                event: 'supplier_registration.submitted',
-                eventKey: "supplier_reg_{$attempt->id}_submitted",
-                title: 'notifications.registration.submitted.title',
-                message: 'notifications.registration.submitted.message',
-                replace: ['company' => $data['company_name'], 'reference' => $reference],
-                url: route('supplier-registrations.show', $attempt->hash),
-                attempt: $attempt,
-            );
-
-            return [
-                'attempt' => $attempt,
-                'reference' => $reference,
-                'access_key' => $plainAccessKey,
-            ];
-        });
-    }
-
-    /**
-     * Resubmit a registration that was in REVISION status.
-     *
-     * @return array{attempt: SupplierRegistrationAttempt, reference: string}
-     */
-    public function resubmitRevision(User $user, array $data, array $files, ?string $ip = null, ?string $userAgent = null): array
-    {
-        return DB::transaction(function () use ($user, $data, $files, $ip, $userAgent) {
-            $user = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
-
-            if ($user->account_status !== User::ACCOUNT_STATUS_REVISION) {
-                throw new \DomainException(__('local_procurement.registration.resubmit_revision'));
-            }
-
-            $lastAttempt = $user->registrationAttempts()->orderByDesc('attempt_number')->lockForUpdate()->first();
-            if (! $lastAttempt || $lastAttempt->status !== SupplierRegistrationAttempt::STATUS_REVISION) {
-                throw new \DomainException(__('local_procurement.registration.attempt_revision'));
-            }
-
-            $this->checkDuplicates($data['email'] ?? $user->email, $data['nib'], $data['npwp'], $user->id);
-
-            $nibFingerprint = $this->normalizeFingerprint($data['nib']);
-            $taxFingerprint = $this->normalizeFingerprint($data['npwp']);
-
-            // Update Supplier master record
-            $user->supplier()->update([
-                'company_title' => $data['company_title'] ?? null,
-                'company_name' => $data['company_name'],
-                'address' => $data['address'],
-                'phone' => $data['phone'],
-                'nib' => $data['nib'],
-                'nib_fingerprint' => $nibFingerprint,
-                'npwp' => $data['npwp'],
-                'tax_identity_fingerprint' => $taxFingerprint,
-                'category' => $data['category'] ?? 'Supplier',
-                'vendor_category' => $data['vendor_category'] ?? null,
-                'is_pkp' => ! empty($data['is_pkp']),
-                'pic_name' => $data['pic_name'],
-                'pic_email' => $data['pic_email'],
-                'pic_phone' => $data['pic_phone'],
-            ]);
-
-            // Update Bank Account
-            $bankAccount = $user->supplierBankAccounts()->latest()->first();
-            if ($bankAccount) {
-                $bankAccount->update([
-                    'bank_name' => $data['bank_name'],
-                    'account_number' => $data['account_number'],
-                    'account_holder_name' => $data['account_holder_name'],
-                    'status' => SupplierBankAccount::STATUS_PENDING,
-                ]);
-            } else {
-                $bankAccount = SupplierBankAccount::create([
-                    'supplier_id' => $user->id,
-                    'bank_name' => $data['bank_name'],
-                    'account_number' => $data['account_number'],
-                    'account_holder_name' => $data['account_holder_name'],
-                    'status' => SupplierBankAccount::STATUS_PENDING,
-                ]);
-            }
-
-            // Store any updated/replaced documents
-            $documentMetadata = $this->storeRegistrationDocuments($user, $bankAccount, $files, preserveExisting: true);
-
-            // Create new attempt
-            $attemptNumber = $lastAttempt->attempt_number + 1;
-            $snapshot = [
-                'company' => [
-                    'company_title' => $data['company_title'] ?? null,
-                    'company_name' => $data['company_name'],
-                    'address' => $data['address'],
-                    'phone' => $data['phone'],
-                    'category' => $data['category'] ?? 'Supplier',
-                    'vendor_category' => $data['vendor_category'] ?? null,
-                    'is_pkp' => ! empty($data['is_pkp']),
-                ],
-                'pic' => [
-                    'pic_name' => $data['pic_name'],
-                    'pic_email' => $data['pic_email'],
-                    'pic_phone' => $data['pic_phone'],
-                ],
-                'tax' => [
-                    'nib' => $data['nib'],
-                    'npwp' => $data['npwp'],
-                ],
-                'bank' => [
-                    'bank_name' => $data['bank_name'],
-                    'account_number' => $data['account_number'],
-                    'account_holder_name' => $data['account_holder_name'],
-                ],
-                'documents' => $documentMetadata,
-                'revision_notes' => $data['revision_notes'] ?? null,
-            ];
-
-            $checksum = hash('sha256', json_encode($snapshot));
-
-            $newAttempt = SupplierRegistrationAttempt::create([
-                'user_id' => $user->id,
-                'attempt_number' => $attemptNumber,
-                'status' => SupplierRegistrationAttempt::STATUS_PENDING,
-                'submission_snapshot' => $snapshot,
-                'submission_checksum' => $checksum,
-                'submitted_at' => now(),
-            ]);
-
-            // Update user status to PENDING
-            $user->update(['account_status' => User::ACCOUNT_STATUS_PENDING]);
-
-            // Ensure registration access expiration is renewed for the resubmission
-            SupplierRegistrationAccess::query()
-                ->where('user_id', $user->id)
-                ->whereNull('revoked_at')
-                ->update([
-                    'expires_at' => now()->addDays($this->accessTtlDays()),
+                    'status' => SupplierRegistrationAttempt::STATUS_PENDING,
+                    'submission_snapshot' => $snapshot,
+                    'submission_checksum' => $checksum,
+                    'submitted_at' => now(),
                 ]);
 
-            // Audit
-            SupplierRegistrationAudit::record(
-                attemptId: $newAttempt->id,
-                userId: $user->id,
-                event: 'registration_resubmitted',
-                actorId: $user->id,
-                actorRole: 'applicant',
-                notes: 'Registration resubmitted with revisions.',
-                metadata: [
-                    'ip' => $ip,
-                    'user_agent' => $userAgent,
-                    'attempt_number' => $attemptNumber,
-                    'previous_attempt_id' => $lastAttempt->id,
-                ],
-            );
+                // Update user status to PENDING
+                $user->update(['account_status' => User::ACCOUNT_STATUS_PENDING]);
 
-            // Notify reviewers
-            $this->notifyReviewers(
-                event: 'supplier_registration.resubmitted',
-                eventKey: "supplier_reg_{$newAttempt->id}_resubmitted",
-                title: 'notifications.registration.resubmitted.title',
-                message: 'notifications.registration.resubmitted.message',
-                replace: ['company' => $data['company_name']],
-                url: route('supplier-registrations.show', $newAttempt->hash),
-                attempt: $newAttempt,
-            );
+                // Ensure registration access expiration is renewed for the resubmission
+                SupplierRegistrationAccess::query()
+                    ->where('user_id', $user->id)
+                    ->whereNull('revoked_at')
+                    ->update([
+                        'expires_at' => now()->addDays($this->accessTtlDays()),
+                    ]);
 
-            return [
-                'attempt' => $newAttempt,
-                'reference' => $access?->registration_reference ?? '',
-            ];
-        });
+                // Audit
+                SupplierRegistrationAudit::record(
+                    attemptId: $newAttempt->id,
+                    userId: $user->id,
+                    event: 'registration_resubmitted',
+                    actorId: $user->id,
+                    actorRole: 'applicant',
+                    notes: 'Registration resubmitted with revisions.',
+                    metadata: [
+                        'ip' => $ip,
+                        'user_agent' => $userAgent,
+                        'attempt_number' => $attemptNumber,
+                        'previous_attempt_id' => $lastAttempt->id,
+                    ],
+                );
+
+                // Notify reviewers
+                $this->notifyReviewers(
+                    event: 'supplier_registration.resubmitted',
+                    eventKey: "supplier_reg_{$newAttempt->id}_resubmitted",
+                    title: 'notifications.registration.resubmitted.title',
+                    message: 'notifications.registration.resubmitted.message',
+                    replace: ['company' => $data['company_name']],
+                    url: route('supplier-registrations.show', $newAttempt->hash),
+                    attempt: $newAttempt,
+                );
+
+                return [
+                    'attempt' => $newAttempt,
+                    'reference' => $access?->registration_reference ?? '',
+                ];
+            });
+        } catch (\Throwable $exception) {
+            foreach ($written as $path) {
+                Storage::disk('private')->delete($path);
+            }
+            throw $exception;
+        }
     }
 
     /**
@@ -730,7 +752,7 @@ class SupplierRegistrationService
      *
      * @return array<string, array<string, mixed>>
      */
-    protected function storeRegistrationDocuments(User $user, SupplierBankAccount $bankAccount, array $files, bool $preserveExisting = false): array
+    protected function storeRegistrationDocuments(User $user, SupplierBankAccount $bankAccount, array $files, bool $preserveExisting = false, array &$written = []): array
     {
         $metadata = [];
         $allowedTypes = [
@@ -739,6 +761,7 @@ class SupplierRegistrationService
             'sknr_file' => SupplierMasterDocument::TYPE_SURAT_PERNYATAAN_REKENING,
             'sppkp_file' => SupplierMasterDocument::TYPE_SPPKP,
             'skd_file' => SupplierMasterDocument::TYPE_SKD,
+            'company_profile_file' => SupplierMasterDocument::TYPE_COMPANY_PROFILE,
         ];
 
         foreach ($allowedTypes as $inputKey => $docType) {
@@ -751,15 +774,10 @@ class SupplierRegistrationService
                 $storageDir = 'attachments/supplier-registrations/'.now()->format('Y/m'); // biz-time:ignore storage path
                 $relativePath = $storageDir.'/'.$randomName;
 
-                // Windows-safe stream upload to private disk
-                $stream = fopen($file->getPathname(), 'r');
-                try {
-                    Storage::disk('private')->put($relativePath, $stream);
-                } finally {
-                    if (is_resource($stream)) {
-                        fclose($stream);
-                    }
-                }
+                $stored = app(FileInspectionService::class)->storeUpload(
+                    $file, $inputKey === 'company_profile_file' ? 'registration_company' : 'registration', $relativePath, $inputKey
+                );
+                $written[] = $stored['file_path'];
 
                 $bankAccountId = ($docType === SupplierMasterDocument::TYPE_SURAT_PERNYATAAN_REKENING)
                     ? $bankAccount->id
@@ -769,10 +787,11 @@ class SupplierRegistrationService
                     'supplier_id' => $user->id,
                     'supplier_bank_account_id' => $bankAccountId,
                     'document_type' => $docType,
-                    'file_path' => $relativePath,
-                    'original_filename' => $file->getClientOriginalName(),
-                    'mime_type' => $file->getMimeType() ?: 'application/octet-stream',
-                    'file_size' => $file->getSize(),
+                    'file_path' => $stored['file_path'],
+                    'original_filename' => $stored['file_name'],
+                    'mime_type' => $stored['file_type'],
+                    'file_size' => $stored['file_size'],
+                    'file_inspection_id' => $stored['file_inspection_id'],
                     'uploaded_by' => $user->id,
                 ]);
 

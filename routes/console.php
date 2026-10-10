@@ -18,7 +18,21 @@ Schedule::command('exports:cleanup')
     ->timezone(config('app.business_timezone', 'Asia/Jakarta'))
     ->withoutOverlapping();
 
+Schedule::command('imports:cleanup')
+    ->dailyAt('02:30')
+    ->timezone(config('app.business_timezone', 'Asia/Jakarta'))
+    ->withoutOverlapping();
+
 Schedule::command('local-invoices:send-delivery-reminders')
     ->dailyAt('08:00')
     ->timezone(config('app.business_timezone', 'Asia/Jakarta'))
+    ->withoutOverlapping();
+
+Schedule::command('supplier-audits:notify-invoice-blocked')
+    ->dailyAt('00:10')
+    ->timezone(config('app.business_timezone', 'Asia/Jakarta'))
+    ->withoutOverlapping();
+
+Schedule::command('po-documents:reconcile')
+    ->everyMinute()
     ->withoutOverlapping();

@@ -6,11 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\PurchaseOrder;
 use App\Models\Shipment;
 use App\Models\ShipmentDocument;
-use App\Services\ShipmentService;
 use App\Services\RegionalDisplayFormatter;
+use App\Services\ShipmentService;
 use App\Support\NumberFormat;
 use App\Support\StatusHelper;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Yajra\DataTables\Facades\DataTables;
 
 class SupplierShipmentController extends Controller
@@ -410,10 +411,25 @@ class SupplierShipmentController extends Controller
                 $request->input('document_number')
             );
 
+            if ($request->expectsJson()) {
+                $request->session()->flash('success', __('shipments.copy.document_uploaded_successfully'));
+
+                return response()->json(['redirect' => route('supplier.shipments.show', $shipment)]);
+            }
+
             return back()->with('success', __('shipments.copy.document_uploaded_successfully'));
+        } catch (ValidationException $e) {
+            throw $e;
         } catch (\InvalidArgumentException|\DomainException|\RuntimeException $e) {
+            if ($request->expectsJson()) {
+                throw ValidationException::withMessages(['file' => $e->getMessage()]);
+            }
+
             return back()->with('error', __('shipments.errors.upload_with_reason', ['message' => $e->getMessage()]));
         } catch (\Throwable $e) {
+            if ($request->expectsJson()) {
+                throw $e;
+            }
             report($e);
 
             return back()->with('error', __('shipments.copy.an_unexpected_error_occurred_while_uploading_the_document_please_try_again'));

@@ -169,8 +169,8 @@ class PresentationLayerTimezoneTest extends TestCase
         $this->assertStringNotContainsString('WIB WIB', $qcView);
 
         $poView = view('pdf.po-pdf', ['po' => $po])->render();
-        $this->assertStringContainsString('20 October 2026', $poView);
-        $this->assertStringContainsString('28 October 2026, 10:00 WIB', $poView);
+        $this->assertStringContainsString('20 Oct 2026', $poView);
+        $this->assertStringNotContainsString('generated automatically', $poView);
         $this->assertStringNotContainsString('WIB WIB', $poView);
 
         $this->actingAs($qcUser);
@@ -179,9 +179,9 @@ class PresentationLayerTimezoneTest extends TestCase
         $qcViewId = view('pdf.qc-inspection-pdf', ['inspection' => $inspection])->render();
         $poViewId = view('pdf.po-pdf', ['po' => $po])->render();
         $this->assertStringContainsString('25 Oktober 2026, 11:30', $qcViewId);
-        $this->assertStringContainsString('20 Oktober 2026', $poViewId);
+        $this->assertSame($poView, $poViewId);
         $this->assertStringNotContainsString('2026-10-20', $poViewId, 'The fixed PDF date pattern must not inherit a user ISO preference.');
-        $this->assertStringContainsString('28 Oktober 2026, 10:00 WIB', $poViewId);
+        $this->assertStringContainsString('20 Oct 2026', $poViewId);
         app()->setLocale('en');
     }
 

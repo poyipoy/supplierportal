@@ -6,6 +6,7 @@ use App\Models\LocalInvoice;
 use App\Models\LocalPurchaseOrder;
 use App\Models\Supplier;
 use App\Models\User;
+use App\Services\SupplierAudit\SupplierAuditInvoiceGate;
 use App\Services\VendorMaster\VendorMasterService;
 use App\Support\BusinessTime;
 use Carbon\Carbon;
@@ -31,6 +32,8 @@ class InvoiceSubmissionService
     public function submit(User $actor, array $data, array $files): LocalInvoice
     {
         Gate::forUser($actor)->authorize('create', LocalInvoice::class);
+        // D13: invoice baru diblokir selama Supplier Audit melewati deadline dan belum disubmit.
+        app(SupplierAuditInvoiceGate::class)->assertCanSubmitNewInvoice($actor);
 
         $parser = app(InvoiceFilenameParser::class);
         if (! empty($files['invoice'])) {

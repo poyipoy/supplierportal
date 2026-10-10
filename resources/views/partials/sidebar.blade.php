@@ -154,11 +154,19 @@
                 <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 13;">{{ __('navigation.overview') }}</span></div>
                 <x-ui.sidebar-item :href="route('local-supplier.dashboard')" icon="gauge" :active="request()->routeIs('local-supplier.dashboard')" :label="__('navigation.dashboard')">{{ __('navigation.dashboard') }}</x-ui.sidebar-item>
                 <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 13;">{{ __('navigation.local_invoice') }}</span></div>
-                <x-ui.sidebar-item :href="route('local-supplier.invoices.create')" icon="file-plus" :active="request()->routeIs('local-supplier.invoices.create')" :label="__('navigation.submit_invoice')">{{ __('navigation.submit_invoice') }}</x-ui.sidebar-item>
+                <x-ui.sidebar-item :href="route('local-supplier.invoices.create')" icon="file-plus" :active="request()->routeIs('local-supplier.invoices.create')" :label="__('navigation.submit_invoice')" :disabled="(bool) ($supplierAuditInvoiceBlock ?? null)" :disabled-hint="__('supplier_audit.invoice_block.short')">{{ __('navigation.submit_invoice') }}</x-ui.sidebar-item>
                 <x-ui.sidebar-item :href="route('local-supplier.invoices.index')" icon="receipt" :active="request()->routeIs('local-supplier.invoices.index', 'local-supplier.invoices.show', 'local-supplier.invoices.revision')" :label="__('navigation.invoice_register')">{{ __('navigation.invoice_register') }}</x-ui.sidebar-item>
                 <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 14;">{{ __('navigation.supplier_information') }}</span></div>
                 <x-ui.sidebar-item :href="route('local-supplier.purchase-orders.index')" icon="package-check" :active="request()->routeIs('local-supplier.purchase-orders.*')" :label="__('navigation.purchase_orders')">{{ __('navigation.purchase_orders') }}</x-ui.sidebar-item>
                 <x-ui.sidebar-item :href="route('local-supplier.vendor-profile.show')" icon="building-2" :active="request()->routeIs('local-supplier.vendor-profile.*')" :label="__('navigation.vendor_profile')">{{ __('navigation.vendor_profile') }}</x-ui.sidebar-item>
+                <x-ui.sidebar-item :href="route('local-supplier.supplier-audits.index')" icon="clipboard-check" :active="request()->routeIs('local-supplier.supplier-audits.*')" :label="($supplierAuditPending ?? null) ? __('navigation.supplier_audit').' — '.__('supplier_audit.badge.pending') : __('navigation.supplier_audit')">
+                    {{ __('navigation.supplier_audit') }}
+                    @if($supplierAuditPending ?? null)
+                        <x-slot:trailing>
+                            <span class="chat-badge tw-inline-flex tw-min-w-5 tw-items-center tw-justify-center tw-rounded-full tw-px-1.5 tw-text-ui-xs tw-font-semibold {{ $supplierAuditPending->isLate() ? 'tw-bg-error tw-text-error-foreground' : 'tw-bg-primary tw-text-primary-foreground' }}" data-supplier-audit-badge aria-hidden="true">1</span>
+                        </x-slot:trailing>
+                    @endif
+                </x-ui.sidebar-item>
                 <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 14;">{{ __('navigation.adasi_information') }}</span></div>
                 <x-ui.sidebar-item :href="route('local-supplier.information')" icon="info" :active="request()->routeIs('local-supplier.information')" :label="__('navigation.adasi_information')">{{ __('navigation.announcements') }}</x-ui.sidebar-item>
             @elseif($activePortalScope === \App\Support\PortalContext::SCOPE_IMPORT)
@@ -234,6 +242,7 @@
 
             <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 13;">{{ __('navigation.local_invoice') }}</span></div>
             <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.local-vendors.index')" icon="building-2" :active="request()->routeIs('purchasing.local-vendors.*')" :label="__('navigation.local_vendors')">{{ __('navigation.local_vendors') }}</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.supplier-audits.index')" icon="clipboard-check" :active="request()->routeIs('purchasing.supplier-audits.*')" :label="__('navigation.supplier_audit')">{{ __('navigation.supplier_audit') }}</x-ui.sidebar-item>
             <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.local-procurement.index')" icon="package-check" :active="request()->routeIs('purchasing.local-procurement.*')" :label="__('navigation.local_po_gr')">{{ __('navigation.local_po_gr') }}</x-ui.sidebar-item>
             <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.drp.supplier')" icon="wallet" :active="request()->routeIs('purchasing.drp.supplier', 'purchasing.drp.show')" :label="__('navigation.drp_supplier')">{{ __('navigation.drp_supplier') }}</x-ui.sidebar-item>
             <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.drp.ga')" icon="credit-card" :active="request()->routeIs('purchasing.drp.ga')" :label="__('navigation.drp_ga')">{{ __('navigation.drp_ga') }}</x-ui.sidebar-item>

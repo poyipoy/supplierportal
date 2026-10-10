@@ -3,7 +3,7 @@
 @section('page-title', __('finance.drp.paid_monitoring'))
 
 @section('content')
-<div id="purchasingDrpPaidContainer" class="tw-grid tw-gap-6 tw-pb-16" data-server-tabs-container>
+<div id="purchasingDrpPaidContainer" class="tw-flex tw-flex-col tw-gap-6 tw-pb-16 tw-w-full tw-min-w-0 tw-max-w-full" data-server-tabs-container>
     <x-ui.page-header
         :title="__('finance.drp.paid_monitoring')"
         :description="__('finance.drp_surface.paid_monitor_help')"
@@ -26,7 +26,7 @@
     </x-ui.page-header>
 
     {{-- KPI Metric Cards Grid --}}
-    <div class="tw-grid tw-grid-cols-1 sm:tw-grid-cols-3 tw-gap-4">
+    <div class="tw-grid tw-grid-cols-1 sm:tw-grid-cols-3 tw-gap-4 tw-w-full tw-min-w-0">
         <x-ui.metric-card
             :label="__('finance.labels.total_batches')"
             :value="number_format($metrics['total_batches'])"
@@ -68,7 +68,7 @@
     </div>
 
     {{-- Status Tabs Navigation (Segmented Pill Bar) --}}
-    <div class="tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-gap-3">
+    <div class="tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-gap-3 tw-w-full tw-min-w-0">
         <nav class="tw-inline-flex tw-items-center tw-gap-1.5 tw-rounded-ui-md tw-border tw-border-outline tw-bg-surface-container tw-p-1.5 tw-shadow-none" aria-label="{{ __('common.accessibility.drp_tabs') }}">
             <a
                 href="{{ route('purchasing.drp.paid.index', array_merge(request()->query(), ['tab' => 'unpaid'])) }}"
@@ -78,7 +78,7 @@
             >
                 <x-ui.icon name="clock" size="sm" />
                 <span>{{ __('finance.drp.unpaid') }}</span>
-                <span class="tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-px-2 tw-py-0.5 tw-text-[11px] tw-font-bold {{ $tab === 'unpaid' ? 'tw-bg-primary-foreground/20 tw-text-primary-foreground' : 'tw-bg-surface tw-text-on-surface-variant' }}" data-tab-count="unpaid">
+                <span class="tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-px-2 tw-py-0.5 tw-text-[11px] tw-font-bold ui-tabular-nums {{ $tab === 'unpaid' ? 'tw-bg-primary-foreground/20 tw-text-primary-foreground' : 'tw-bg-surface tw-text-on-surface-variant' }}" data-tab-count="unpaid">
                     {{ $metrics['unpaid_count'] }}
                 </span>
             </a>
@@ -90,7 +90,7 @@
             >
                 <x-ui.icon name="badge-check" size="sm" />
                 <span>{{ __('finance.drp.paid') }}</span>
-                <span class="tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-px-2 tw-py-0.5 tw-text-[11px] tw-font-bold {{ $tab === 'paid' ? 'tw-bg-primary-foreground/20 tw-text-primary-foreground' : 'tw-bg-surface tw-text-on-surface-variant' }}" data-tab-count="paid">
+                <span class="tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-px-2 tw-py-0.5 tw-text-[11px] tw-font-bold ui-tabular-nums {{ $tab === 'paid' ? 'tw-bg-primary-foreground/20 tw-text-primary-foreground' : 'tw-bg-surface tw-text-on-surface-variant' }}" data-tab-count="paid">
                     {{ $metrics['paid_count'] }}
                 </span>
             </a>
@@ -102,7 +102,7 @@
             >
                 <x-ui.icon name="layers" size="sm" />
                 <span>{{ __('finance.drp.all_batches') }}</span>
-                <span class="tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-px-2 tw-py-0.5 tw-text-[11px] tw-font-bold {{ $tab === 'all' ? 'tw-bg-primary-foreground/20 tw-text-primary-foreground' : 'tw-bg-surface tw-text-on-surface-variant' }}" data-tab-count="all">
+                <span class="tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-px-2 tw-py-0.5 tw-text-[11px] tw-font-bold ui-tabular-nums {{ $tab === 'all' ? 'tw-bg-primary-foreground/20 tw-text-primary-foreground' : 'tw-bg-surface tw-text-on-surface-variant' }}" data-tab-count="all">
                     {{ $metrics['total_batches'] }}
                 </span>
             </a>
@@ -110,7 +110,7 @@
     </div>
 
     {{-- Search & Filter Toolbar --}}
-    <form method="GET" action="{{ route('purchasing.drp.paid.index') }}" id="drpPaidFilterForm" class="tw-m-0" data-server-tabs-form>
+    <form method="GET" action="{{ route('purchasing.drp.paid.index') }}" id="drpPaidFilterForm" class="tw-m-0 tw-w-full tw-min-w-0" data-server-tabs-form>
         <input type="hidden" name="tab" value="{{ $tab }}">
 
         <x-ui.toolbar aria-label="{{ __('common.accessibility.drp_filters') }}">
@@ -131,7 +131,7 @@
 
             <x-slot:filters>
                 <div class="tw-flex tw-flex-wrap tw-items-center tw-gap-2.5">
-                    <div class="tw-w-36">
+                    <div class="tw-w-full sm:tw-w-36">
                         <label for="drp-type" class="visually-hidden">{{ __('finance.drp.type') }}</label>
                         <select id="drp-type" name="type" class="form-select form-select-sm tw-text-ui-xs">
                             <option value="">{{ __('local_invoice.labels.all_types') }}</option>
@@ -140,7 +140,7 @@
                         </select>
                     </div>
 
-                    <div class="tw-w-44">
+                    <div class="tw-w-full sm:tw-w-44">
                         <label for="drp-overpayment-status" class="visually-hidden">{{ __('finance.drp_surface.overpayment_status') }}</label>
                         <select id="drp-overpayment-status" name="overpayment_status" class="form-select form-select-sm tw-text-ui-xs">
                             <option value="all" @selected(($overpaymentStatus ?? 'all') === 'all')>{{ __('finance.refund.all') }}</option>
@@ -150,7 +150,7 @@
                         </select>
                     </div>
 
-                    <div class="tw-w-64">
+                    <div class="tw-w-full sm:tw-w-64 tw-max-w-full">
                         <x-ui.date-range-picker
                             id="paid-date-range"
                             start-name="date_from"
@@ -181,7 +181,7 @@
     </form>
 
     {{-- Data Table Section (AJAX-swappable container) --}}
-    <div id="purchasingDrpPaidTableContent" data-server-tabs-content>
+    <div id="purchasingDrpPaidTableContent" class="tw-w-full tw-min-w-0 tw-max-w-full" data-server-tabs-content>
         @include('purchasing.drp._paid_table_content', ['batches' => $batches])
     </div>
 </div>

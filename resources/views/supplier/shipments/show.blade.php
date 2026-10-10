@@ -333,7 +333,7 @@
                     </div>
 
                     @if($shipment->status !== 'cancelled')
-                        <form method="POST" action="{{ route('supplier.shipments.documents.upload', [$shipment, $doc]) }}" enctype="multipart/form-data" class="pt-2 border-top tw-border-outline-variant">
+                        <form method="POST" action="{{ route('supplier.shipments.documents.upload', [$shipment, $doc]) }}" enctype="multipart/form-data" data-async-submit class="pt-2 border-top tw-border-outline-variant">
                             @csrf
                             <input
                                 type="text"

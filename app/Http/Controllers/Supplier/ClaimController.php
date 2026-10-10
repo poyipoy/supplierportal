@@ -7,13 +7,16 @@ use App\Models\MaterialClaim;
 use App\Models\PurchaseOrder;
 use App\Models\QcInspection;
 use App\Models\User;
+use App\Services\FileSecurity\FileInspectionService;
 use App\Services\NotificationService;
 use App\Services\RegionalDisplayFormatter;
+use App\Support\BusinessTime;
 use App\Support\NotificationCategory;
 use App\Support\StatusHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Yajra\DataTables\Facades\DataTables;
 
 class ClaimController extends Controller
@@ -30,7 +33,7 @@ class ClaimController extends Controller
             return DataTables::eloquent($query)
                 ->addColumn('claim_id', fn ($c) => $c->claim_number)
                 ->addColumn('po_number', fn ($c) => $c->purchaseOrder->po_number ?? '-')
-                ->addColumn('created_date', fn ($c) => \App\Support\BusinessTime::format($c->created_at, 'd M Y', false))
+                ->addColumn('created_date', fn ($c) => BusinessTime::format($c->created_at, 'd M Y', false))
                 ->addColumn('deadline_display', function ($c) use ($regionalFormatter) {
                     $meta = StatusHelper::claimDeadlineMeta($c->deadline, $c->status);
                     $date = $c->deadline ? $regionalFormatter->date($c->deadline, 'human') : '-';
@@ -86,8 +89,13 @@ class ClaimController extends Controller
             'attachments.*' => 'nullable|file|mimes:jpg,jpeg,png,pdf,xlsx,doc,docx|max:10240',
         ]);
 
+        $staged = [];
         try {
-            $claim = DB::transaction(function () use ($claimReference, $request) {
+            foreach ($request->file('attachments', []) as $file) {
+                $path = 'attachments/claims/'.now()->format('Y/m').'/'.$file->hashName(); // biz-time:ignore storage path
+                $staged[] = app(FileInspectionService::class)->storeUpload($file, 'claim', $path, 'attachments');
+            }
+            $claim = DB::transaction(function () use ($claimReference, $request, $staged) {
                 $po = $claimReference->po_id
                     ? PurchaseOrder::whereKey($claimReference->po_id)->lockForUpdate()->first()
                     : null;
@@ -106,43 +114,33 @@ class ClaimController extends Controller
                     'supplier_response' => $request->supplier_response,
                     'status' => 'responded',
                 ]);
+                foreach ($staged as $stored) {
+                    $claim->attachments()->create([
+                        'file_path' => $stored['file_path'],
+                        'file_name' => $stored['file_name'],
+                        'file_type' => $stored['file_type'],
+                        'file_inspection_id' => $stored['file_inspection_id'],
+                        'uploaded_by' => auth()->id(),
+                    ]);
+                }
                 $po?->reconcileOperationalStatus();
 
                 return $claim->fresh('purchaseOrder');
             });
         } catch (\RuntimeException $exception) {
-            return back()->withInput()->with('error', $exception->getMessage());
-        }
-
-        // Upload supplier response attachments
-        if ($request->hasFile('attachments')) {
-            foreach ($request->file('attachments') as $file) {
-                if (! $file || ! $file->isValid()) {
-                    continue;
-                }
-
-                // Use getPathname() to avoid getRealPath() returning false on Windows.
-                $fileName = $file->hashName();
-                $path = 'attachments/claims/'.now()->format('Y/m').'/'.$fileName; // biz-time:ignore storage path
-
-                $stream = fopen($file->getPathname(), 'r');
-                if (! $stream) {
-                    continue;
-                }
-
-                try {
-                    Storage::disk('private')->put($path, $stream);
-                } finally {
-                    fclose($stream);
-                }
-
-                $claim->attachments()->create([
-                    'file_path' => $path,
-                    'file_name' => $file->getClientOriginalName(),
-                    'file_type' => $file->getMimeType(),
-                    'uploaded_by' => auth()->id(),
-                ]);
+            foreach ($staged as $stored) {
+                Storage::disk('private')->delete($stored['file_path']);
             }
+            if ($request->expectsJson()) {
+                throw ValidationException::withMessages(['attachments' => $exception->getMessage()]);
+            }
+
+            return back()->withInput()->with('error', $exception->getMessage());
+        } catch (\Throwable $exception) {
+            foreach ($staged as $stored) {
+                Storage::disk('private')->delete($stored['file_path']);
+            }
+            throw $exception;
         }
 
         // Notify purchasing
@@ -164,6 +162,12 @@ class ClaimController extends Controller
             ],
             ['po' => $claim->purchaseOrder->po_number],
         );
+
+        if ($request->expectsJson()) {
+            $request->session()->flash('success', __('claims.copy.response_successfully_sent'));
+
+            return response()->json(['redirect' => route('supplier.claims.show', $claim)]);
+        }
 
         return redirect()->route('supplier.claims.show', $claim)->with('success', __('claims.copy.response_successfully_sent'));
     }

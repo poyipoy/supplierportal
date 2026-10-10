@@ -118,6 +118,8 @@
     enctype="multipart/form-data"
     action="{{ isset($invoice) ? route('local-supplier.invoices.resubmit', $invoice) : route('local-supplier.invoices.store') }}"
     id="localInvoiceForm"
+    data-async-submit
+    @adasi:reveal-field="revealStepFor($event.detail.element)"
     x-data="localInvoiceWizard({
         initialStep: {{ $initialStep }},
         isPkp: @js($isPkp),
@@ -297,7 +299,7 @@
     {{-- ========================================================================= --}}
     {{-- TAHAP 1: UPLOAD DOKUMEN BERKAS LAMPIRAN                                     --}}
     {{-- ========================================================================= --}}
-    <div x-show="step === 1" x-cloak class="tw-grid tw-gap-6 lg:tw-grid-cols-12 tw-items-start">
+    <div x-show="step === 1" x-cloak data-wizard-step="1" class="tw-grid tw-gap-6 lg:tw-grid-cols-12 tw-items-start">
         <div class="lg:tw-col-span-8 tw-space-y-6">
             <x-ui.form-section :title="__('local_invoice.labels.documents_grid')" :description="__('common.final_review.private_uploads')">
                 <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
@@ -438,7 +440,7 @@
     {{-- ========================================================================= --}}
     {{-- TAHAP 2: INFORMASI INVOICE & ALOKASI PENERIMAAN BARANG (GR)               --}}
     {{-- ========================================================================= --}}
-    <div x-show="step === 2" x-cloak class="tw-grid tw-gap-6 lg:tw-grid-cols-12 tw-items-start">
+    <div x-show="step === 2" x-cloak data-wizard-step="2" class="tw-grid tw-gap-6 lg:tw-grid-cols-12 tw-items-start">
         <div class="lg:tw-col-span-8 tw-space-y-6">
             <x-ui.form-section :title="__('local_invoice.labels.po_gr_information')" :description="__('local_invoice.form.gr_requirement')">
                 <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
@@ -863,6 +865,16 @@ function localInvoiceWizard(config) {
             }
             this.step = target;
             window.scrollTo({ top: 0, behavior: 'smooth' });
+        },
+
+        // adasi:reveal-field from the async (file-preserving) submit: open the step holding the errored field.
+        revealStepFor(element) {
+            const container = element?.closest?.('[data-wizard-step]');
+            const target = container ? Number(container.dataset.wizardStep) : null;
+            if (target && target !== this.step) {
+                this.errorMessage = '';
+                this.step = target;
+            }
         }
     };
 }
@@ -1090,5 +1102,13 @@ invoiceForm?.addEventListener('submit', function(e) {
             iconSpan.classList.add('tw-animate-spin');
         }
     }
+});
+
+// Async submit ended without navigating (422 / failure): the form and its files are still here, re-arm the button.
+invoiceForm?.addEventListener('adasi:form-settled', function() {
+    if (!submitBtn) return;
+    submitBtn.removeAttribute('disabled');
+    submitBtn.classList.remove('tw-opacity-80', 'tw-pointer-events-none');
+    submitBtn.querySelector('svg, .ui-icon')?.classList.remove('tw-animate-spin');
 });
 </script>

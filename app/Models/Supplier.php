@@ -25,6 +25,7 @@ class Supplier extends Model
         'pic_name',
         'pic_email',
         'pic_phone',
+        'compliance_questionnaire',
         'payment_term_days',
     ];
 
@@ -32,6 +33,7 @@ class Supplier extends Model
     {
         return [
             'is_pkp' => 'boolean',
+            'compliance_questionnaire' => 'array',
             'payment_term_days' => 'integer',
         ];
     }

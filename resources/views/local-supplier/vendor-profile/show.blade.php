@@ -304,7 +304,7 @@
         <div class="lg:tw-col-span-4 tw-space-y-6">
             {{-- Form Upload Dokumen Legalitas --}}
             <x-ui.card :title="__('local_invoice.actions.upload_legal')">
-                <form action="{{ route('local-supplier.vendor-profile.documents.upload') }}" method="POST" enctype="multipart/form-data" class="tw-space-y-3">
+                <form action="{{ route('local-supplier.vendor-profile.documents.upload') }}" method="POST" enctype="multipart/form-data" data-async-submit class="tw-space-y-3">
                     @csrf
                     <div>
                         <label for="document_type" class="form-label tw-text-ui-xs tw-font-medium">{{ __('local_invoice.labels.document_type') }}</label>

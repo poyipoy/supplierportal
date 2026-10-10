@@ -13,6 +13,7 @@ use App\Models\SupplierRegistrationAccess;
 use App\Models\SupplierRegistrationAttempt;
 use App\Services\Auth\LoginRateLimiter;
 use App\Services\Auth\TurnstileVerifier;
+use App\Services\FileSecurity\FileAccessGuard;
 use App\Services\SupplierRegistrationService;
 use App\Support\BusinessTime;
 use Illuminate\Http\Request;
@@ -54,12 +55,23 @@ class SupplierRegistrationController extends Controller
         );
 
         // Flash credentials for one-time display on success page
-        return redirect()->route('supplier.registration.success')->with([
+        $flash = [
             'registration_reference' => $result['reference'],
             'registration_access_key' => $result['access_key'],
             'company_name' => $safeData['company_name'],
             'registration_submitted_at' => BusinessTime::now()->toIso8601String(),
-        ]);
+        ];
+
+        // Async (file-preserving) submit: credentials stay in the session flash, never in the JSON body.
+        if ($request->expectsJson()) {
+            foreach ($flash as $key => $value) {
+                $request->session()->flash($key, $value);
+            }
+
+            return response()->json(['redirect' => route('supplier.registration.success')]);
+        }
+
+        return redirect()->route('supplier.registration.success')->with($flash);
     }
 
     /**
@@ -284,6 +296,12 @@ class SupplierRegistrationController extends Controller
             userAgent: $request->userAgent(),
         );
 
+        if ($request->expectsJson()) {
+            $request->session()->flash('success', __('registration.feedback.resubmitted'));
+
+            return response()->json(['redirect' => route('supplier.registration.status')]);
+        }
+
         return redirect()->route('supplier.registration.status')
             ->with('success', __('registration.feedback.resubmitted'));
     }
@@ -303,6 +321,8 @@ class SupplierRegistrationController extends Controller
         if (! Storage::disk('private')->exists($document->file_path)) {
             abort(404, __('registration.feedback.document_missing'));
         }
+
+        app(FileAccessGuard::class)->assertReadable($document);
 
         return Storage::disk('private')->download(
             $document->file_path,

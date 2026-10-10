@@ -62,7 +62,7 @@
         {{ __('qc.copy.one_or_more_material_items_do_not_meet_specifications_photographic_evidence_is_mandatory_for_every_n') }}
     </x-ui.alert>
 
-    <form action="{{ route('qc.inspections.store', $po) }}" method="POST" enctype="multipart/form-data" id="inspectionForm" class="tw-grid tw-gap-4">
+    <form action="{{ route('qc.inspections.store', $po) }}" method="POST" enctype="multipart/form-data" data-async-submit id="inspectionForm" class="tw-grid tw-gap-4">
         @csrf
         @if(isset($shipment) && $shipment)
             <input type="hidden" name="shipment_id" value="{{ $shipment->getRouteKey() }}">

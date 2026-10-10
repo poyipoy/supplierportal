@@ -13,6 +13,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Tests\Support\NativeFileFixtures;
 use Tests\TestCase;
 
 class QuotationMtcReplacementLifecycleTest extends TestCase
@@ -78,7 +79,7 @@ class QuotationMtcReplacementLifecycleTest extends TestCase
     public function test_edit_with_no_replacement_preserves_existing_mtc_attachment_and_disk_file(): void
     {
         // 1. Initial submission with MTC file
-        $mtcFile = UploadedFile::fake()->create('initial_mtc.pdf', 100, 'application/pdf');
+        $mtcFile = NativeFileFixtures::upload('initial_mtc.pdf', 100);
 
         $payload = [
             'action' => 'draft',
@@ -156,7 +157,7 @@ class QuotationMtcReplacementLifecycleTest extends TestCase
     public function test_edit_with_replacement_uploads_new_file_and_deletes_old_attachment_and_disk_file(): void
     {
         // 1. Initial submission with initial MTC file
-        $oldFile = UploadedFile::fake()->create('old_mtc.pdf', 100, 'application/pdf');
+        $oldFile = NativeFileFixtures::upload('old_mtc.pdf', 100);
 
         $initialPayload = [
             'action' => 'draft',
@@ -191,7 +192,7 @@ class QuotationMtcReplacementLifecycleTest extends TestCase
         Storage::disk('private')->assertExists($oldFilePath);
 
         // 2. Edit quotation WITH replacement MTC file
-        $newFile = UploadedFile::fake()->create('replacement_mtc.pdf', 150, 'application/pdf');
+        $newFile = NativeFileFixtures::upload('replacement_mtc.pdf', 150);
 
         $replacementPayload = [
             'action' => 'draft',
@@ -240,7 +241,7 @@ class QuotationMtcReplacementLifecycleTest extends TestCase
     public function test_failed_validation_preserves_old_attachment_and_disk_file(): void
     {
         // 1. Initial submission with initial MTC file
-        $oldFile = UploadedFile::fake()->create('saved_mtc.pdf', 100, 'application/pdf');
+        $oldFile = NativeFileFixtures::upload('saved_mtc.pdf', 100);
 
         $initialPayload = [
             'action' => 'draft',

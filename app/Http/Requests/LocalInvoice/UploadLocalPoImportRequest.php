@@ -19,8 +19,8 @@ class UploadLocalPoImportRequest extends FormRequest
             'import_file' => [
                 'required',
                 'file',
-                'extensions:xlsx',
-                'max:10240',
+                'extensions:xlsx,csv,xls',
+                'max:'.config('local_procurement_imports.max_file_kib'),
             ],
         ];
     }

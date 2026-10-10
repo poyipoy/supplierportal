@@ -20,6 +20,8 @@ class SupplierMasterDocument extends Model
 
     public const TYPE_SURAT_PERNYATAAN_REKENING = 'SURAT_PERNYATAAN_REKENING';
 
+    public const TYPE_COMPANY_PROFILE = 'COMPANY_PROFILE';
+
     public const TYPE_OTHER = 'OTHER';
 
     protected $fillable = [
@@ -30,6 +32,7 @@ class SupplierMasterDocument extends Model
         'original_filename',
         'mime_type',
         'file_size',
+        'file_inspection_id',
         'uploaded_by',
     ];
 

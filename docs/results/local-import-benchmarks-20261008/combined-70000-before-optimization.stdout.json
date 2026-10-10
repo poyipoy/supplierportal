@@ -1,0 +1,48 @@
+{"phase":"prepare","rows":70000,"kind":"COMBINED"}
+{"phase":"preview","seconds":73.608,"status":"READY"}
+{
+    "kind": "COMBINED",
+    "rows": 70000,
+    "existing_gr": 500000,
+    "database": "adasi_portal_test",
+    "file_bytes": 2603566,
+    "accept_seconds": 0.09,
+    "payload_bytes": 926,
+    "preview_seconds": 73.608,
+    "confirm_seconds": 67.274,
+    "final_status": "IMPORTING",
+    "failure": null,
+    "summary": {
+        "new_gr": 70000,
+        "new_po": 70000,
+        "invalid": 0,
+        "total_rows": 70000,
+        "unique_pos": 70000,
+        "existing_gr": 0,
+        "existing_po": 0,
+        "source_rows": 70000,
+        "consolidated_gr": 70000
+    },
+    "peak_php_mb": 60,
+    "phases": {
+        "prepare": {
+            "queries": 1000,
+            "sql_ms": 46901.24999999996
+        },
+        "dispatch": {
+            "queries": 10,
+            "sql_ms": 14.71
+        },
+        "preview": {
+            "queries": 4610,
+            "sql_ms": 35889.59000000002
+        },
+        "confirm": {
+            "queries": 2919,
+            "sql_ms": 28285.33999999998
+        }
+    },
+    "created_gr": 0,
+    "created_po": 0,
+    "creation_audits": 0
+}

@@ -27,6 +27,8 @@ class DecodeHashids
      * so it's decoded directly by Laravel and no longer needs this middleware.
      */
     protected const HASHED_PARAM_KEYS = [
+        'procurementImport',
+        'poDocumentBatch',
         'invoice',
         'preset',
         'document',

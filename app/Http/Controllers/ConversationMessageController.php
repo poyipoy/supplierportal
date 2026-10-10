@@ -10,6 +10,7 @@ use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
 use App\Models\User;
+use App\Services\FileSecurity\FileInspectionService;
 use App\Services\NotificationPreferenceService;
 use App\Services\NotificationService;
 use App\Support\BusinessTime;
@@ -18,6 +19,7 @@ use App\Support\NotificationCategory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -124,17 +126,25 @@ class ConversationMessageController extends Controller
         $conversation = Conversation::findOrFail($id);
         $this->authorize('message', $conversation);
 
-        $message = DB::transaction(function () use ($conversation, $body, $request) {
-            $message = $conversation->messages()->create([
-                'sender_id' => auth()->id(),
-                'body' => $body,
-            ]);
+        $written = [];
+        try {
+            $message = DB::transaction(function () use ($conversation, $body, $request, &$written) {
+                $message = $conversation->messages()->create([
+                    'sender_id' => auth()->id(),
+                    'body' => $body,
+                ]);
 
-            $this->storeAttachments($message, $request);
-            $conversation->markWaitingForPartner(auth()->user());
+                $this->storeAttachments($message, $request, $written);
+                $conversation->markWaitingForPartner(auth()->user());
 
-            return $message->load(['sender', 'attachments']);
-        });
+                return $message->load(['sender', 'attachments']);
+            });
+        } catch (\Throwable $exception) {
+            foreach ($written as $path) {
+                Storage::disk('private')->delete($path);
+            }
+            throw $exception;
+        }
 
         // Send a notification to the other party.
         $partner = $conversation->getPartner(auth()->id());
@@ -438,15 +448,18 @@ class ConversationMessageController extends Controller
         ];
     }
 
-    private function storeAttachments(Message $message, Request $request): void
+    private function storeAttachments(Message $message, Request $request, array &$written): void
     {
         foreach ($request->file('attachments', []) as $file) {
-            $path = $file->store('attachments/'.now()->format('Y/m'), 'private'); // biz-time:ignore storage path
+            $path = 'attachments/'.now()->format('Y/m').'/'.$file->hashName(); // biz-time:ignore storage path
+            $stored = app(FileInspectionService::class)->storeUpload($file, 'chat', $path, 'attachments');
+            $written[] = $stored['file_path'];
 
             $message->attachments()->create([
-                'file_path' => $path,
-                'file_name' => $file->getClientOriginalName(),
-                'file_type' => $file->getMimeType(),
+                'file_path' => $stored['file_path'],
+                'file_name' => $stored['file_name'],
+                'file_type' => $stored['file_type'],
+                'file_inspection_id' => $stored['file_inspection_id'],
                 'uploaded_by' => auth()->id(),
             ]);
         }

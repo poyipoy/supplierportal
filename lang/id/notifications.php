@@ -2,12 +2,12 @@
 
 return [
     'registration' => [
-        'submitted' => ['title' => 'Pendaftaran Pemasok Baru', 'message' => 'Pemasok :company telah mengajukan pendaftaran :reference.'],
-        'resubmitted' => ['title' => 'Pendaftaran Pemasok Diajukan Ulang', 'message' => 'Pemasok :company telah mengajukan ulang pendaftaran dengan revisi.'],
-        'revision_requested' => ['title' => 'Revisi Pendaftaran Pemasok Diminta', 'message' => 'Revisi pendaftaran pemasok :company diminta oleh :reviewer.'],
-        'rejected' => ['title' => 'Pendaftaran Pemasok Ditolak', 'message' => 'Pendaftaran pemasok :company ditolak oleh :reviewer.'],
-        'approved' => ['title' => 'Pendaftaran Pemasok Disetujui', 'message' => 'Pemasok :company telah disetujui dengan cakupan portal: :scopes.'],
-        'scopes' => ['import' => 'Pengadaan Material', 'local' => 'Pemasok Lokal', 'both' => 'Pengadaan Material, Pemasok Lokal'],
+        'submitted' => ['title' => 'New Supplier Registration', 'message' => 'Supplier :company telah mengajukan pendaftaran :reference.'],
+        'resubmitted' => ['title' => 'Supplier Registration Diajukan Ulang', 'message' => 'Supplier :company telah mengajukan ulang pendaftaran dengan revisi.'],
+        'revision_requested' => ['title' => 'Revisi Supplier Registration Diminta', 'message' => 'Revisi pendaftaran supplier :company diminta oleh :reviewer.'],
+        'rejected' => ['title' => 'Supplier Registration Ditolak', 'message' => 'Pendaftaran supplier :company ditolak oleh :reviewer.'],
+        'approved' => ['title' => 'Supplier Registration Disetujui', 'message' => 'Supplier :company telah disetujui dengan cakupan portal: :scopes.'],
+        'scopes' => ['import' => 'Pengadaan Material', 'local' => 'Local Supplier', 'both' => 'Pengadaan Material, Local Supplier'],
     ],
 
     'feedback' => ['all_read' => 'Semua notifikasi telah ditandai sebagai dibaca.', 'category_read' => 'Notifikasi kategori :category telah ditandai sebagai dibaca.', 'saved' => 'Preferensi notifikasi disimpan.', 'reset' => 'Preferensi notifikasi dikembalikan ke pengaturan awal.'],
@@ -96,11 +96,11 @@ return [
         ],
         'quotation_submitted' => [
             'label' => 'Penawaran diajukan',
-            'description' => 'Pemasok mengajukan penawaran.',
+            'description' => 'Supplier mengajukan penawaran.',
         ],
         'quotation_revised' => [
             'label' => 'Revisi penawaran diajukan',
-            'description' => 'Pemasok mengajukan kembali penawaran yang direvisi.',
+            'description' => 'Supplier mengajukan kembali penawaran yang direvisi.',
         ],
         'quotation_accepted' => [
             'label' => 'Penawaran diterima',
@@ -136,11 +136,11 @@ return [
         ],
         'po_item_progress_updated' => [
             'label' => 'Progres material diperbarui',
-            'description' => 'Pemasok memperbarui progres material atau estimasi kesiapan.',
+            'description' => 'Supplier memperbarui progres material atau estimasi kesiapan.',
         ],
         'shipment_submitted' => [
             'label' => 'Pengiriman diajukan',
-            'description' => 'Pemasok mengajukan pengiriman.',
+            'description' => 'Supplier mengajukan pengiriman.',
         ],
         'po_material_arrived' => [
             'label' => 'Material siap untuk QC',
@@ -160,7 +160,7 @@ return [
         ],
         'claim_responded' => [
             'label' => 'Tanggapan klaim material',
-            'description' => 'Pemasok menanggapi klaim material.',
+            'description' => 'Supplier menanggapi klaim material.',
         ],
         'claim_resolved' => [
             'label' => 'Klaim material diselesaikan',
@@ -216,23 +216,23 @@ return [
         ],
         'supplier_registration_submitted' => [
             'label' => 'Pendaftaran supplier diajukan',
-            'description' => 'Pemasok mengajukan pendaftaran baru.',
+            'description' => 'Supplier mengajukan pendaftaran baru.',
         ],
         'supplier_registration_resubmitted' => [
             'label' => 'Pendaftaran supplier diajukan ulang',
-            'description' => 'Pemasok mengajukan kembali pendaftaran yang direvisi.',
+            'description' => 'Supplier mengajukan kembali pendaftaran yang direvisi.',
         ],
         'supplier_registration_revision_requested' => [
             'label' => 'Revisi pendaftaran diminta',
-            'description' => 'Peninjau meminta perubahan pendaftaran pemasok.',
+            'description' => 'Peninjau meminta perubahan pendaftaran supplier.',
         ],
         'supplier_registration_rejected' => [
             'label' => 'Pendaftaran supplier ditolak',
-            'description' => 'Peninjau menolak pendaftaran pemasok.',
+            'description' => 'Peninjau menolak pendaftaran supplier.',
         ],
         'supplier_registration_approved' => [
             'label' => 'Pendaftaran supplier disetujui',
-            'description' => 'Peninjau menyetujui pendaftaran pemasok.',
+            'description' => 'Peninjau menyetujui pendaftaran supplier.',
         ],
         'export_completed' => [
             'label' => 'Ekspor selesai',
@@ -250,6 +250,34 @@ return [
             'label' => 'Pemblokiran login berulang',
             'description' => 'Akun mencapai batas pemblokiran login berulang.',
         ],
+        'supplier_audit_assigned' => [
+            'label' => 'Supplier Audit ditugaskan',
+            'description' => 'Purchasing menugaskan form Supplier Audit kepada Anda.',
+        ],
+        'supplier_audit_revision_requested' => [
+            'label' => 'Revisi Supplier Audit diminta',
+            'description' => 'Purchasing meminta Anda merevisi form Supplier Audit yang sudah disubmit.',
+        ],
+        'supplier_audit_result_published' => [
+            'label' => 'Hasil Supplier Audit terbit',
+            'description' => 'Purchasing menerbitkan atau mengganti file hasil Supplier Audit Anda.',
+        ],
+        'supplier_audit_cancelled' => [
+            'label' => 'Supplier Audit dibatalkan',
+            'description' => 'Purchasing membatalkan Supplier Audit yang ditugaskan kepada Anda.',
+        ],
+        'supplier_audit_deadline_changed' => [
+            'label' => 'Deadline Supplier Audit berubah',
+            'description' => 'Purchasing menetapkan, mengubah, atau menghapus deadline Supplier Audit Anda.',
+        ],
+        'supplier_audit_invoice_blocked' => [
+            'label' => 'Invoice baru diblokir Supplier Audit',
+            'description' => 'Supplier Audit Anda melewati deadline, sehingga pengajuan invoice baru ditunda sampai form disubmit.',
+        ],
+        'supplier_audit_submitted' => [
+            'label' => 'Supplier Audit disubmit',
+            'description' => 'Supplier local mengirim form Supplier Audit.',
+        ],
     ],
     'categories' => [
         'requisitions' => 'Permintaan pembelian',
@@ -261,6 +289,7 @@ return [
         'claims' => 'Klaim material',
         'local_invoices' => 'Invoice lokal',
         'registration' => 'Pendaftaran supplier',
+        'supplier_audits' => 'Supplier Audit',
         'exports' => 'Ekspor',
         'security' => 'Keamanan',
     ],

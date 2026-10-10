@@ -6,10 +6,12 @@ use App\Models\Supplier;
 use App\Models\SupplierMasterDocument;
 use App\Models\User;
 use App\Services\SupplierRegistrationService;
+use App\Support\SupplierComplianceQuestionnaire;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Tests\Support\NativeFileFixtures;
 use Tests\TestCase;
 
 class SupplierRegistrationSecurityTest extends TestCase
@@ -42,9 +44,10 @@ class SupplierRegistrationSecurityTest extends TestCase
             'email' => 'procurement@bajabersama.com',
             'password' => 'Password123!',
             'password_confirmation' => 'Password123!',
-            'nib_file' => UploadedFile::fake()->create('nib.pdf', 500, 'application/pdf'),
-            'npwp_file' => UploadedFile::fake()->create('npwp.jpg', 400, 'image/jpeg'),
-            'sknr_file' => UploadedFile::fake()->create('sknr.pdf', 600, 'application/pdf'),
+            'nib_file' => NativeFileFixtures::upload('nib.pdf', 500),
+            'npwp_file' => UploadedFile::fake()->image('npwp.jpg', 20, 20),
+            'sknr_file' => NativeFileFixtures::upload('sknr.pdf', 600),
+            'questionnaire' => SupplierComplianceQuestionnaire::QUESTIONS,
         ], $overrides);
     }
 
@@ -142,9 +145,9 @@ class SupplierRegistrationSecurityTest extends TestCase
         $service->submitInitialRegistration(
             data: $this->validPayload(),
             files: [
-                'nib_file' => UploadedFile::fake()->create('nib.pdf', 500, 'application/pdf'),
-                'npwp_file' => UploadedFile::fake()->create('npwp.jpg', 400, 'image/jpeg'),
-                'sknr_file' => UploadedFile::fake()->create('sknr.pdf', 600, 'application/pdf'),
+                'nib_file' => NativeFileFixtures::upload('nib.pdf', 500),
+                'npwp_file' => UploadedFile::fake()->image('npwp.jpg', 20, 20),
+                'sknr_file' => NativeFileFixtures::upload('sknr.pdf', 600),
             ],
         );
 
@@ -177,9 +180,9 @@ class SupplierRegistrationSecurityTest extends TestCase
         $result = $service->submitInitialRegistration(
             data: $this->validPayload(),
             files: [
-                'nib_file' => UploadedFile::fake()->create('nib.pdf', 500, 'application/pdf'),
-                'npwp_file' => UploadedFile::fake()->create('npwp.jpg', 400, 'image/jpeg'),
-                'sknr_file' => UploadedFile::fake()->create('sknr.pdf', 600, 'application/pdf'),
+                'nib_file' => NativeFileFixtures::upload('nib.pdf', 500),
+                'npwp_file' => UploadedFile::fake()->image('npwp.jpg', 20, 20),
+                'sknr_file' => NativeFileFixtures::upload('sknr.pdf', 600),
             ],
         );
 
@@ -203,9 +206,9 @@ class SupplierRegistrationSecurityTest extends TestCase
         $res1 = $service->submitInitialRegistration(
             data: $this->validPayload(['email' => 'supplier1@test.com', 'nib' => '1111111111111', 'npwp' => '11.111.111.1-111.000']),
             files: [
-                'nib_file' => UploadedFile::fake()->create('nib1.pdf', 500, 'application/pdf'),
-                'npwp_file' => UploadedFile::fake()->create('npwp1.jpg', 400, 'image/jpeg'),
-                'sknr_file' => UploadedFile::fake()->create('sknr1.pdf', 600, 'application/pdf'),
+                'nib_file' => NativeFileFixtures::upload('nib1.pdf', 500),
+                'npwp_file' => UploadedFile::fake()->image('npwp1.jpg', 20, 20),
+                'sknr_file' => NativeFileFixtures::upload('sknr1.pdf', 600),
             ],
         );
 
@@ -213,9 +216,9 @@ class SupplierRegistrationSecurityTest extends TestCase
         $res2 = $service->submitInitialRegistration(
             data: $this->validPayload(['email' => 'supplier2@test.com', 'nib' => '2222222222222', 'npwp' => '22.222.222.2-222.000']),
             files: [
-                'nib_file' => UploadedFile::fake()->create('nib2.pdf', 500, 'application/pdf'),
-                'npwp_file' => UploadedFile::fake()->create('npwp2.jpg', 400, 'image/jpeg'),
-                'sknr_file' => UploadedFile::fake()->create('sknr2.pdf', 600, 'application/pdf'),
+                'nib_file' => NativeFileFixtures::upload('nib2.pdf', 500),
+                'npwp_file' => UploadedFile::fake()->image('npwp2.jpg', 20, 20),
+                'sknr_file' => NativeFileFixtures::upload('sknr2.pdf', 600),
             ],
         );
 

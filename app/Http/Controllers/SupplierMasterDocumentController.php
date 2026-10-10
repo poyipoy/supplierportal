@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\SupplierMasterDocument;
+use App\Services\FileSecurity\FileAccessGuard;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 
@@ -11,6 +12,7 @@ class SupplierMasterDocumentController extends Controller
     public function show(SupplierMasterDocument $document)
     {
         Gate::authorize('view', $document);
+        app(FileAccessGuard::class)->assertReadable($document);
         abort_unless(Storage::disk('private')->exists($document->file_path), 404);
 
         $filename = $document->document_type.'_'.($document->original_filename ?: basename($document->file_path));

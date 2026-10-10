@@ -230,7 +230,7 @@ BLADE;
         $this->assertStringContainsString('Kriteria Filter Lanjutan', $html);
         $this->assertStringContainsString('invoice-submitted-range', $html);
         $this->assertStringContainsString('invoice-due-range', $html);
-        $this->assertStringContainsString('Organisasi Pemasok', $html);
+        $this->assertStringContainsString('Organisasi Supplier', $html);
         $this->assertStringContainsString('PT Sumber Logam Mandiri', $html);
         $this->assertStringContainsString($mockSupplier->hash, $html);
         $this->assertStringContainsString('Hanya Jatuh Tempo', $html);
@@ -246,7 +246,7 @@ BLADE;
             'payments' => false,
         ])->render();
 
-        $this->assertStringNotContainsString('Organisasi Pemasok', $supplierHtml);
+        $this->assertStringNotContainsString('Organisasi Supplier', $supplierHtml);
         $this->assertStringNotContainsString('invoice-supplier', $supplierHtml);
         $this->assertStringNotContainsString('PT Sumber Logam Mandiri', $supplierHtml);
         $this->assertNoCompilerLeakage($supplierHtml);

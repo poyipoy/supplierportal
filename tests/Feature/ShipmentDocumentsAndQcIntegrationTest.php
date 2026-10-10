@@ -13,19 +13,21 @@ use App\Models\QcInspection;
 use App\Models\Quotation;
 use App\Models\QuotationItem;
 use App\Models\Shipment;
-use App\Support\BusinessTime;
 use App\Models\ShipmentDocument;
 use App\Models\User;
 use App\Services\PrItemAwardService;
 use App\Services\PurchaseOrderGenerationService;
 use App\Services\ShipmentService;
+use App\Support\BusinessTime;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Mockery;
+use Tests\Support\NativeFileFixtures;
 use Tests\TestCase;
 
 class ShipmentDocumentsAndQcIntegrationTest extends TestCase
@@ -152,7 +154,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
         $this->assertEqualsCanonicalizing(['invoice', 'packing_list', 'bl', 'form_e'], $docTypes);
 
         $invoiceDoc = $draft->documents->where('doc_type', 'invoice')->first();
-        $file = UploadedFile::fake()->create('commercial_invoice.pdf', 500, 'application/pdf');
+        $file = NativeFileFixtures::upload('commercial_invoice.pdf', 500);
 
         $response = $this->actingAs($this->supplierUserA)
             ->post(route('supplier.shipments.documents.upload', [
@@ -468,7 +470,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
             ->assertForbidden();
 
         // Supplier B cannot upload document to Supplier A's shipment
-        $file = UploadedFile::fake()->create('fake_invoice.pdf', 100);
+        $file = NativeFileFixtures::upload('fake_invoice.pdf', 100);
         $invoiceDoc = $draftA->documents->first();
         $this->actingAs($this->supplierUserB)
             ->post(route('supplier.shipments.documents.upload', [
@@ -496,7 +498,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
         $document = $shipment->documents->first();
         $attachment = app(ShipmentService::class)->uploadDocument(
             $document,
-            UploadedFile::fake()->create('owner-invoice.pdf', 20, 'application/pdf'),
+            NativeFileFixtures::upload('owner-invoice.pdf', 20),
             $this->supplierUserA
         );
 
@@ -513,19 +515,20 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
         $shipment = app(ShipmentService::class)->createDraft($this->supplierUserA);
         $document = $shipment->documents->first();
         $disk = Mockery::mock(FilesystemAdapter::class);
+        $disk->shouldReceive('exists')->once()->andReturnFalse();
         $disk->shouldReceive('put')->once()->andReturnFalse();
         $disk->shouldReceive('delete')->once()->andReturnTrue();
-        Storage::shouldReceive('disk')->with('private')->once()->andReturn($disk);
+        Storage::shouldReceive('disk')->with('private')->twice()->andReturn($disk);
 
         try {
             app(ShipmentService::class)->uploadDocument(
                 $document,
-                UploadedFile::fake()->create('failed.pdf', 20, 'application/pdf'),
+                NativeFileFixtures::upload('failed.pdf', 20),
                 $this->supplierUserA
             );
             $this->fail('Expected a failed private-disk write to abort document persistence.');
-        } catch (\RuntimeException $exception) {
-            $this->assertStringContainsString('store', strtolower($exception->getMessage()));
+        } catch (ValidationException $exception) {
+            $this->assertNotEmpty($exception->errors()['file']);
         }
 
         $this->assertDatabaseMissing('attachments', [
@@ -541,11 +544,11 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
         $document = $shipment->documents->first();
         $existing = app(ShipmentService::class)->uploadDocument(
             $document,
-            UploadedFile::fake()->create('existing.pdf', 20, 'application/pdf'),
+            NativeFileFixtures::upload('existing.pdf', 20),
             $this->supplierUserA
         );
 
-        $newFile = UploadedFile::fake()->create('new-version.pdf', 20, 'application/pdf');
+        $newFile = NativeFileFixtures::upload('new-version.pdf', 20);
         $newPath = 'attachments/'.now()->format('Y/m').'/'.$newFile->hashName();
         Event::listen('eloquent.creating: '.Attachment::class, function () {
             throw new \RuntimeException('Forced attachment insert failure.');
@@ -571,14 +574,14 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
         $document = $shipment->documents->first();
         $first = app(ShipmentService::class)->uploadDocument(
             $document,
-            UploadedFile::fake()->create('version-one.pdf', 20, 'application/pdf'),
+            NativeFileFixtures::upload('version-one.pdf', 20),
             $this->supplierUserA
         );
         $document->update(['status' => ShipmentDocument::STATUS_VERIFIED]);
 
         $second = app(ShipmentService::class)->uploadDocument(
             $document,
-            UploadedFile::fake()->create('version-two.pdf', 20, 'application/pdf'),
+            NativeFileFixtures::upload('version-two.pdf', 20),
             $this->supplierUserA
         );
 

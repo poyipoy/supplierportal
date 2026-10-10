@@ -30,7 +30,7 @@
 
     <div class="tw-max-w-3xl tw-mx-auto tw-w-full">
         <x-ui.card :title="__('ga.labels.employee_revision')">
-            <form method="POST" action="{{ route('ga.claims.resubmit', $claim) }}" enctype="multipart/form-data">
+            <form method="POST" action="{{ route('ga.claims.resubmit', $claim) }}" enctype="multipart/form-data" data-async-submit>
                 @csrf
                 <div class="tw-space-y-4">
                     {{-- Karyawan (Read-Only) --}}

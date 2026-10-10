@@ -13,9 +13,9 @@ use App\Models\Shipment;
 use App\Models\ShipmentDocument;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Tests\Support\NativeFileFixtures;
 use Tests\TestCase;
 
 class PoCustomsDocumentationShipmentSyncTest extends TestCase
@@ -51,7 +51,7 @@ class PoCustomsDocumentationShipmentSyncTest extends TestCase
         $this->assertEquals('pending', $shipmentPackingList->status);
 
         // Upload file on shipment packing list
-        $file = UploadedFile::fake()->create('packing_list_shp01.pdf', 300, 'application/pdf');
+        $file = NativeFileFixtures::upload('packing_list_shp01.pdf', 300);
 
         $response = $this->actingAs($this->supplier)
             ->post(route('supplier.shipments.documents.upload', ['id' => $shipment, 'document_id' => $shipmentPackingList->id]), [
@@ -123,7 +123,7 @@ class PoCustomsDocumentationShipmentSyncTest extends TestCase
 
         $shipmentDoc = $shipment->documents()->where('doc_type', 'packing_list')->firstOrFail();
 
-        $file = UploadedFile::fake()->create('packing_list.pdf', 300, 'application/pdf');
+        $file = NativeFileFixtures::upload('packing_list.pdf', 300);
         $this->actingAs($this->supplier)
             ->post(route('supplier.shipments.documents.upload', ['id' => $shipment, 'document_id' => $shipmentDoc->id]), [
                 'file' => $file,
@@ -152,7 +152,7 @@ class PoCustomsDocumentationShipmentSyncTest extends TestCase
 
         $shipmentDoc = $shipment->documents()->where('doc_type', 'invoice')->firstOrFail();
 
-        $file = UploadedFile::fake()->create('commercial_invoice.pdf', 300, 'application/pdf');
+        $file = NativeFileFixtures::upload('commercial_invoice.pdf', 300);
         $this->actingAs($this->supplier)
             ->post(route('supplier.shipments.documents.upload', ['id' => $shipment, 'document_id' => $shipmentDoc->id]), [
                 'file' => $file,
@@ -203,7 +203,7 @@ class PoCustomsDocumentationShipmentSyncTest extends TestCase
         }
 
         // Upload Packing List on Shipment 1
-        $file1 = UploadedFile::fake()->create('pl_shipment_1.pdf', 200, 'application/pdf');
+        $file1 = NativeFileFixtures::upload('pl_shipment_1.pdf', 200);
         $doc1 = $shipment1->documents()->where('doc_type', 'packing_list')->firstOrFail();
         $this->actingAs($this->supplier)
             ->post(route('supplier.shipments.documents.upload', ['id' => $shipment1, 'document_id' => $doc1->id]), [
@@ -211,7 +211,7 @@ class PoCustomsDocumentationShipmentSyncTest extends TestCase
             ]);
 
         // Upload Packing List on Shipment 2
-        $file2 = UploadedFile::fake()->create('pl_shipment_2.pdf', 250, 'application/pdf');
+        $file2 = NativeFileFixtures::upload('pl_shipment_2.pdf', 250);
         $doc2 = $shipment2->documents()->where('doc_type', 'packing_list')->firstOrFail();
         $this->actingAs($this->supplier)
             ->post(route('supplier.shipments.documents.upload', ['id' => $shipment2, 'document_id' => $doc2->id]), [
@@ -233,7 +233,7 @@ class PoCustomsDocumentationShipmentSyncTest extends TestCase
         [$po, $shipment] = $this->createPoAndShipment($this->supplier);
 
         $doc = $shipment->documents()->where('doc_type', 'packing_list')->firstOrFail();
-        $file = UploadedFile::fake()->create('confidential_pl.pdf', 200, 'application/pdf');
+        $file = NativeFileFixtures::upload('confidential_pl.pdf', 200);
 
         $this->actingAs($this->supplier)
             ->post(route('supplier.shipments.documents.upload', ['id' => $shipment, 'document_id' => $doc->id]), [
@@ -353,7 +353,7 @@ class PoCustomsDocumentationShipmentSyncTest extends TestCase
         [$po, $shipment] = $this->createPoAndShipment($this->supplier);
 
         $shipmentDoc = $shipment->documents()->where('doc_type', 'invoice')->firstOrFail();
-        $file = UploadedFile::fake()->create('invoice.pdf', 200, 'application/pdf');
+        $file = NativeFileFixtures::upload('invoice.pdf', 200);
 
         $this->actingAs($this->supplier)
             ->post(route('supplier.shipments.documents.upload', ['id' => $shipment, 'document_id' => $shipmentDoc->id]), [

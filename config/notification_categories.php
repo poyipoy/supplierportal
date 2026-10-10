@@ -11,6 +11,7 @@ return [
         'notifications.categories.claims',
         'notifications.categories.local_invoices',
         'notifications.categories.registration',
+        'notifications.categories.supplier_audits',
         'notifications.categories.exports',
         'notifications.categories.security',
     ],

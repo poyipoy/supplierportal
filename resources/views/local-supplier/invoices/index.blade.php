@@ -10,7 +10,7 @@
         :eyebrow="__('local_invoice.labels.local_invoice')"
     >
         <x-slot:actions>
-            <x-ui.button :href="route('local-supplier.invoices.create')" variant="primary" size="sm">
+            <x-ui.button :href="route('local-supplier.invoices.create')" :disabled="(bool) ($supplierAuditInvoiceBlock ?? null)" :title="($supplierAuditInvoiceBlock ?? null) ? __('supplier_audit.invoice_block.short') : null" variant="primary" size="sm">
                 <x-ui.icon name="plus" size="sm" />
                 <span>{{ __('local_invoice.actions.submit') }}</span>
             </x-ui.button>
@@ -20,6 +20,8 @@
             </x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>
+
+    @include('local-supplier.supplier-audits._invoice-block-banner')
 
     @include('local-invoices.filters')
 

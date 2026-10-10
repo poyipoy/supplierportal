@@ -114,6 +114,12 @@ class LocalInvoiceSettlementController extends Controller
         $data = $request->validate(['refund_amount' => ['required', 'numeric', 'gt:0', 'regex:/^\d{1,18}(\.\d{1,2})?$/'], 'refund_date' => ['required', 'date_format:Y-m-d'], 'notes' => ['nullable', 'string', 'max:1000'], 'proof' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240']]);
         $service->settle($refund, $data, $request->file('proof'), $request->user());
 
+        if ($request->expectsJson()) {
+            $request->session()->flash('success', __('finance.feedback.refund_settled'));
+
+            return response()->json(['redirect' => route('finance.overpayments.index')]);
+        }
+
         return back()->with('success', __('finance.feedback.refund_settled'));
     }
 

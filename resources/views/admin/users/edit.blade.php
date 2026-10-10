@@ -42,7 +42,7 @@
         {{-- Section 1: Account Identity --}}
         <x-ui.form-section
             :title="__('admin.copy.account_identity')"
-            :description="__('admin.copy.display_name_and_email_address_used_for_portal_communications')"
+            :description="__('profile.account_help')"
         >
             <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
                 <div>
@@ -63,19 +63,11 @@
                 </div>
 
                 <div>
-                    <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="user-email">
-                        {{ __('admin.copy.email_address') }} <span class="text-danger">*</span>
-                    </label>
-                    <input
-                        type="email"
-                        name="email"
-                        id="user-email"
-                        class="form-control @error('email') is-invalid @enderror"
-                        value="{{ old('email', $user->email) }}"
-                        required
-                    >
+                    <div class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface">{{ __('profile.login_email') }}</div>
+                    <p class="tw-m-0 tw-break-all tw-text-ui-sm tw-font-semibold">{{ $user->email }}</p>
+                    <p class="tw-m-0 tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">{{ __('profile.email_help') }}</p>
                     @error('email')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                        <p class="tw-m-0 tw-mt-1 tw-text-ui-xs tw-text-error" role="alert">{{ $message }}</p>
                     @enderror
                 </div>
             </div>

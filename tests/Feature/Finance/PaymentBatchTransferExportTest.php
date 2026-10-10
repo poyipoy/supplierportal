@@ -22,6 +22,8 @@ use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use RuntimeException;
 use Tests\TestCase;
 
 class PaymentBatchTransferExportTest extends TestCase
@@ -132,7 +134,7 @@ class PaymentBatchTransferExportTest extends TestCase
         foreach (['en', 'id'] as $locale) {
             app()->setLocale($locale);
             $workbook = (new PaymentBatchTransferSheetRenderer)->render(collect([$batch]));
-            $this->assertSame(['Data'], $workbook->getSheetNames());
+            $this->assertSame(['Data', 'Legend', 'Form Responses 1', 'bank code', 'Swift Code'], $workbook->getSheetNames());
             $cells = $workbook->getActiveSheet()->rangeToArray('A1:U2');
             $this->assertSame(array_values(PaymentBatchTransferSheetRenderer::COLUMNS), $cells[0]);
             if ($baseline !== null) {
@@ -376,9 +378,9 @@ class PaymentBatchTransferExportTest extends TestCase
         $renderer = new PaymentBatchTransferSheetRenderer;
         $spreadsheet = $renderer->render($batches);
 
-        // Exactly one sheet named "Data"
-        $this->assertSame(['Data'], $spreadsheet->getSheetNames());
-        $this->assertSame(1, $spreadsheet->getSheetCount());
+        // One Data sheet plus the four original supporting sheets.
+        $this->assertSame(['Data', 'Legend', 'Form Responses 1', 'bank code', 'Swift Code'], $spreadsheet->getSheetNames());
+        $this->assertSame(5, $spreadsheet->getSheetCount());
 
         $sheet = $spreadsheet->getSheetByName('Data');
         $this->assertNotNull($sheet);
@@ -666,7 +668,114 @@ class PaymentBatchTransferExportTest extends TestCase
 
     // ─── Workbook Structure Tests ─────────────────────────────────────
 
-    public function test_exactly_one_data_sheet(): void
+    public function test_transfer_workbook_preserves_all_supporting_template_sheets_and_clears_sample_data(): void
+    {
+        [$batch] = $this->createBatchWithGroup('DRP-2026-00001');
+        $book = (new PaymentBatchTransferSheetRenderer)->render(collect([$batch->fresh(['groups.items.payable'])]));
+        $original = IOFactory::load(base_path('TARIKAN TRANSFER.xlsx'));
+        try {
+            $this->assertSame(['Data', 'Legend', 'Form Responses 1', 'bank code', 'Swift Code'], $book->getSheetNames());
+            $this->assertSame('Data', $book->getActiveSheet()->getTitle());
+            foreach (['Legend', 'Form Responses 1', 'bank code', 'Swift Code'] as $name) {
+                $expected = $original->getSheetByName($name);
+                $actual = $book->getSheetByName($name);
+                $this->assertSame($expected->getSheetState(), $actual->getSheetState(), $name);
+                $this->assertSame(hash('sha256', serialize($expected->toArray(null, false, false, true))),
+                    hash('sha256', serialize($actual->toArray(null, false, false, true))), 'Supporting sheet contents: '.$name);
+                foreach ($expected->getCellCollection()->getCoordinates() as $coordinate) {
+                    $this->assertSame($expected->getStyle($coordinate)->exportArray(), $actual->getStyle($coordinate)->exportArray(), $name.' '.$coordinate.' style');
+                }
+            }
+            $data = $book->getSheetByName('Data');
+            $this->assertSame(2, $data->getHighestDataRow());
+            for ($row = 3; $row <= 14; $row++) {
+                foreach (array_keys(PaymentBatchTransferSheetRenderer::COLUMNS) as $column) {
+                    $this->assertNull($data->getCell($column.$row)->getValue(), 'No template transaction at '.$column.$row);
+                }
+            }
+            $this->assertSame(hash_file('sha256', base_path('TARIKAN TRANSFER.xlsx')),
+                hash_file('sha256', resource_path('templates/drp/TARIKAN TRANSFER.xlsx')));
+        } finally {
+            $book->disconnectWorksheets();
+            $original->disconnectWorksheets();
+        }
+    }
+
+    public function test_effective_date_is_blank_for_paid_and_unpaid_groups_without_changing_transfer_dates(): void
+    {
+        [$batch, $group] = $this->createBatchWithGroup('DRP-2026-00001');
+        foreach ([PaymentGroup::STATUS_UNPAID, PaymentGroup::STATUS_PAID] as $status) {
+            $group->update(['status' => $status, 'transfer_date' => '2026-09-18']);
+            $loaded = $batch->fresh(['groups.items.payable']);
+            $renderer = new PaymentBatchTransferSheetRenderer;
+            $this->assertSame('', $renderer->buildAllTransferRows(collect([$loaded]))[0]['eff_date']);
+            $book = $renderer->render(collect([$loaded]));
+            try {
+                $this->assertNull($book->getSheetByName('Data')->getCell('H2')->getValue());
+                $this->assertSame('2026-09-18', $group->fresh()->getRawOriginal('transfer_date'));
+            } finally {
+                $book->disconnectWorksheets();
+            }
+        }
+    }
+
+    public function test_remarks_continue_without_losing_characters_and_use_ellipsis_when_capacity_is_exceeded(): void
+    {
+        [$batch, $group] = $this->createBatchWithGroup('DRP-2026-00001');
+        $invoice = $group->items()->firstOrFail()->payable;
+        $cases = [
+            ['', '', ''],
+            ['INV-SHORT', 'INV-SHORT', ''],
+            ['ABCDEFGHIJKLMNOPQR', 'ABCDEFGHIJKLMNOPQR', ''],
+            ['ABCDEFGHIJKLMNOPQRS', 'ABCDEFGHIJKLMNOPQR', 'S'],
+            ['ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', 'ABCDEFGHIJKLMNOPQR', 'STUVWXYZ0123456789'],
+            ['ABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890', 'ABCDEFGHIJKLMNOPQR', 'STUVWXYZ0123456...'],
+            [str_repeat('漢', 19), str_repeat('漢', 18), '漢'],
+            ['=SUM(1,2)', "'=SUM(1,2)", ''],
+            ['ABCDEFGHIJKLMNOPQR=1+1', 'ABCDEFGHIJKLMNOPQR', '=1+1'],
+        ];
+        foreach ($cases as [$number, $first, $second]) {
+            $invoice->update(['invoice_number' => $number]);
+            $book = (new PaymentBatchTransferSheetRenderer)->render(collect([$batch->fresh(['groups.items.payable'])]));
+            try {
+                $data = $book->getSheetByName('Data');
+                $this->assertSame($first, $data->getCell('M2')->getValue());
+                $this->assertSame($second, $data->getCell('N2')->getValue());
+                foreach (['M2', 'N2'] as $coordinate) {
+                    $this->assertLessThanOrEqual(18, mb_strlen($data->getCell($coordinate)->getValue()));
+                    $this->assertSame('s', $data->getCell($coordinate)->getDataType());
+                }
+            } finally {
+                $book->disconnectWorksheets();
+            }
+        }
+    }
+
+    public function test_multiple_invoice_references_keep_order_and_separator_across_remarks(): void
+    {
+        [$batch, $group] = $this->createBatchWithGroup('DRP-2026-00001', 'BCA', 5000000, 'INV-001');
+        $second = $this->createInvoice(['invoice_number' => 'INV-002']);
+        $group->items()->create(['payable_type' => LocalInvoice::class, 'payable_id' => $second->id,
+            'amount' => 1000000, 'status' => PaymentItem::STATUS_ACTIVE]);
+        $third = $this->createInvoice(['invoice_number' => 'INV-003']);
+        $group->items()->create(['payable_type' => LocalInvoice::class, 'payable_id' => $third->id,
+            'amount' => 1000000, 'status' => PaymentItem::STATUS_ACTIVE]);
+        $row = (new PaymentBatchTransferSheetRenderer)->buildAllTransferRows(collect([$batch->fresh(['groups.items.payable'])]))[0];
+        $this->assertSame('INV-001, INV-002, INV-003', $row['remark_1'].$row['remark_2']);
+        $this->assertSame('INV-001, INV-002, ', $row['remark_1']);
+        $this->assertSame('INV-003', $row['remark_2']);
+    }
+
+    public function test_a_missing_transfer_template_is_rejected_without_a_fallback_workbook(): void
+    {
+        [$batch] = $this->createBatchWithGroup('DRP-2026-00001');
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage(__('exports.feedback.transfer_template_unavailable'));
+        (new PaymentBatchTransferSheetRenderer)->render(collect([$batch->fresh(['groups.items.payable'])]),
+            storage_path('framework/cache/missing-transfer-template-'.bin2hex(random_bytes(8)).'.xlsx'));
+    }
+
+    public function test_exactly_one_data_sheet_and_four_supporting_sheets(): void
     {
         [$batch] = $this->createBatchWithGroup('DRP-2026-00001');
         $batch->load(['groups.items.payable']);
@@ -674,8 +783,8 @@ class PaymentBatchTransferExportTest extends TestCase
         $renderer = new PaymentBatchTransferSheetRenderer;
         $spreadsheet = $renderer->render(collect([$batch]));
 
-        $this->assertSame(1, $spreadsheet->getSheetCount());
-        $this->assertSame(['Data'], $spreadsheet->getSheetNames());
+        $this->assertSame(5, $spreadsheet->getSheetCount());
+        $this->assertSame(['Data', 'Legend', 'Form Responses 1', 'bank code', 'Swift Code'], $spreadsheet->getSheetNames());
 
         $spreadsheet->disconnectWorksheets();
     }
@@ -820,8 +929,21 @@ class PaymentBatchTransferExportTest extends TestCase
 
         $spreadsheet = IOFactory::load($tempFile);
 
-        // Exactly one sheet named "Data"
-        $this->assertSame(['Data'], $spreadsheet->getSheetNames());
+        // One Data sheet plus the four original supporting sheets.
+        $this->assertSame(['Data', 'Legend', 'Form Responses 1', 'bank code', 'Swift Code'], $spreadsheet->getSheetNames());
+
+        $this->assertSame('Data', $spreadsheet->getActiveSheet()->getTitle());
+        $this->assertSame(Worksheet::SHEETSTATE_HIDDEN, $spreadsheet->getSheetByName('bank code')->getSheetState());
+        $original = IOFactory::load(base_path('TARIKAN TRANSFER.xlsx'));
+        try {
+            foreach (['Legend', 'Form Responses 1', 'bank code', 'Swift Code'] as $name) {
+                $this->assertSame(hash('sha256', serialize($original->getSheetByName($name)->toArray(null, false, false, true))),
+                    hash('sha256', serialize($spreadsheet->getSheetByName($name)->toArray(null, false, false, true))),
+                    'Serialized supporting sheet: '.$name);
+            }
+        } finally {
+            $original->disconnectWorksheets();
+        }
 
         $sheet = $spreadsheet->getSheetByName('Data');
         $this->assertNotNull($sheet);
@@ -831,6 +953,9 @@ class PaymentBatchTransferExportTest extends TestCase
         for ($i = 0; $i < $expectedRowCount; $i++) {
             $r = PaymentBatchTransferSheetRenderer::DATA_START_ROW + $i;
             $this->assertEquals($i + 1, $sheet->getCell("A{$r}")->getValue(), "Row {$r} should have No = ".($i + 1));
+            $this->assertNull($sheet->getCell("H{$r}")->getValue());
+            $this->assertSame('s', $sheet->getCell("F{$r}")->getDataType());
+            $this->assertStringStartsWith('0', $sheet->getCell("F{$r}")->getValue());
         }
 
         // Row after last data should be empty (no leftover sample data)

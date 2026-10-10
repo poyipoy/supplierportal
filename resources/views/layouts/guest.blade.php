@@ -21,6 +21,7 @@
 
         <!-- Scripts -->
         @include('partials.i18n-bootstrap')
+        @include('partials.loader-logo')
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body class="tw-font-sans tw-text-on-surface tw-antialiased">

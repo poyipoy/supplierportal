@@ -5,11 +5,11 @@ namespace App\Http\Controllers\LocalSupplier;
 use App\Http\Controllers\Controller;
 use App\Models\SupplierChangeRequest;
 use App\Models\SupplierMasterDocument;
+use App\Services\FileSecurity\FileInspectionService;
 use App\Services\VendorMaster\VendorChangeRequestService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
-use RuntimeException;
 
 class VendorProfileController extends Controller
 {
@@ -64,28 +64,28 @@ class VendorProfileController extends Controller
         $file = $request->file('document');
         $path = 'supplier-documents/'.$user->id.'/'.$file->hashName();
 
-        $stream = fopen($file->getPathname(), 'r');
-        if ($stream === false) {
-            throw new RuntimeException(__('local_invoice.validation.document_read'));
-        }
-
+        $stored = app(FileInspectionService::class)->storeUpload($file, 'vendor', $path, 'document');
         try {
-            if (! Storage::disk('private')->put($path, $stream)) {
-                throw new RuntimeException(__('local_procurement.vendor_ui.document_private_failed'));
-            }
-        } finally {
-            fclose($stream);
+            SupplierMasterDocument::create([
+                'supplier_id' => $user->id,
+                'document_type' => $request->input('document_type'),
+                'file_path' => $stored['file_path'],
+                'original_filename' => $stored['file_name'],
+                'mime_type' => $stored['file_type'],
+                'file_size' => $stored['file_size'],
+                'file_inspection_id' => $stored['file_inspection_id'],
+                'uploaded_by' => $user->id,
+            ]);
+        } catch (\Throwable $exception) {
+            Storage::disk('private')->delete($stored['file_path']);
+            throw $exception;
         }
 
-        SupplierMasterDocument::create([
-            'supplier_id' => $user->id,
-            'document_type' => $request->input('document_type'),
-            'file_path' => $path,
-            'original_filename' => mb_substr(basename(str_replace('\\', '/', $file->getClientOriginalName())), 0, 255),
-            'mime_type' => $file->getMimeType(),
-            'file_size' => $file->getSize(),
-            'uploaded_by' => $user->id,
-        ]);
+        if ($request->expectsJson()) {
+            $request->session()->flash('success', __('local_procurement.vendor_ui.document_uploaded'));
+
+            return response()->json(['redirect' => route('local-supplier.vendor-profile.show')]);
+        }
 
         return back()->with('success', __('local_procurement.vendor_ui.document_uploaded'));
     }

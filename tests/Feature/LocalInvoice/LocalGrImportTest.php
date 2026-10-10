@@ -9,11 +9,11 @@ use App\Models\Supplier;
 use App\Models\SupplierScope;
 use App\Models\User;
 use App\Services\LocalInvoice\LocalGrImportService;
+use App\Services\LocalInvoice\LocalProcurementStreamingReader;
 use App\Support\SpreadsheetImportReader;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class LocalGrImportTest extends TestCase
@@ -373,31 +373,21 @@ class LocalGrImportTest extends TestCase
 
     public function test_http_preview_and_confirm_routes(): void
     {
-        $rows = [
-            [
-                '_row' => 2,
-                'gr_number' => 'REC-HTTP-001',
-                'po_number' => 'PO-TEST-001',
-                'uom' => 'pcs',
-                'qty' => '4.0',
-                'gr_date' => '2026-09-10',
-                '_formula_columns' => [],
-            ],
-        ];
-
-        // Seed session token manually to test confirm route
-        $token = Str::random(40);
-        session()->put('local_gr_import.'.$token, $rows);
-
-        $confirmResponse = $this->actingAs($this->finance)
-            ->post(route('finance.local-procurement.import.gr.confirm'), [
-                'token' => $token,
+        $path = base_path('whinh3512m600_0520_20260924-134847_116644.xlsx');
+        $reader = app(LocalProcurementStreamingReader::class);
+        foreach ($reader->rows($path, 'GR') as $row) {
+            LocalPurchaseOrder::firstOrCreate(['po_number' => $row['po_number']], [
+                'supplier_id' => $this->supplierUser->id, 'po_date' => '2026-09-01', 'total_amount' => '100000000.00',
+                'currency' => 'IDR', 'status' => 'OPEN', 'source' => 'MANUAL',
             ]);
-
-        $confirmResponse->assertRedirect(route('finance.local-procurement.index'));
-        $this->assertDatabaseHas('local_goods_receipts', [
-            'gr_number' => 'REC-HTTP-001',
-        ]);
+        }
+        $response = $this->actingAs($this->finance)->postJson(route('finance.local-procurement.import.gr.preview'), [
+            'import_file' => new UploadedFile($path, 'sample.xlsx', null, null, true),
+        ])->assertStatus(202);
+        $this->getJson($response->json('status_url'))->assertOk()->assertJsonPath('status', 'READY');
+        $this->postJson(route('finance.local-procurement.import.gr.confirm'), ['token' => $response->json('token')])
+            ->assertOk()->assertJsonPath('status', 'COMPLETED');
+        $this->assertGreaterThan(0, LocalGoodsReceipt::count());
     }
 
     public function test_real_whinh_file_preview_with_seeded_pos(): void
@@ -440,8 +430,8 @@ class LocalGrImportTest extends TestCase
                 'import_file' => $fileForPost,
             ], ['Accept' => 'application/json']);
 
-        $response->assertOk();
-        $data = $response->json();
+        $response->assertStatus(202);
+        $data = $this->getJson($response->json('status_url'))->assertOk()->json();
         $this->assertTrue($data['preview']['success'], json_encode($data['preview']));
         $this->assertSame(count($base['rows']), $data['preview']['source_row_count']);
         $this->assertGreaterThan(0, $data['preview']['summary']['new_gr']);

@@ -19,6 +19,7 @@ final readonly class ExportColumn
         public array $audiences = ['purchasing', 'supplier'],
         public array $with = [],
         public ?Closure $headingSuffix = null,
+        public bool $wrapText = false,
     ) {}
 
     public function visibleTo(string $audience): bool

@@ -17,7 +17,7 @@ export function resolveChartThemeColors() {
         successContainer: getVar('--md-success-container', '#D4EDDA'),
         error: getVar('--md-error', '#C0392B'),
         errorContainer: getVar('--md-error-container', '#FADBD8'),
-        warning: getVar('--md-warning', '#D35400'),
+        warning: getVar('--md-chart-warning', getVar('--md-warning', '#D35400')),
         warningContainer: getVar('--md-warning-container', '#FDEBD0'),
         info: getVar('--md-info', '#2980B9'),
         surface: getVar('--md-surface', '#FFFFFF'),

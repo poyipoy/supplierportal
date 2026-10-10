@@ -5,6 +5,7 @@ namespace App\Exports;
 use App\Contracts\AcceptsExportOptions;
 use App\Contracts\TracksExportProgress;
 use App\Exports\Concerns\InteractsWithExportProgress;
+use App\Exports\Concerns\StylesOperationalWorkbook;
 use App\Support\Export\ExportDefinitions;
 use App\Support\Export\ExportOptions;
 use App\Support\SpreadsheetCellSanitizer;
@@ -18,12 +19,11 @@ use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithTitle;
-use PhpOffice\PhpSpreadsheet\Style\Fill;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class SupplierPriceHistoryExport implements AcceptsExportOptions, FromCollection, HasLocalePreference, TracksExportProgress, WithColumnWidths, WithCustomCsvSettings, WithHeadings, WithStyles, WithTitle
 {
     use InteractsWithExportProgress;
+    use StylesOperationalWorkbook;
 
     private ?Collection $cachedRows = null;
 
@@ -139,35 +139,32 @@ class SupplierPriceHistoryExport implements AcceptsExportOptions, FromCollection
         }
         if ($this->view === 'yearly') {
             return [
-                'A' => 14,
-                'B' => 24,
-                'C' => 20,
-                'D' => 20,
-                'E' => 12,
-                'F' => 14,
+                'A' => 10,
+                'B' => 18,
+                'C' => 18,
+                'D' => 18,
+                'E' => 10,
+                'F' => 12,
             ];
         }
 
         return [
-            'A' => 22,
-            'B' => 20,
-            'C' => 20,
-            'D' => 16,
-            'E' => 12,
-            'F' => 14,
+            'A' => 18,
+            'B' => 14,
+            'C' => 18,
+            'D' => 18,
+            'E' => 10,
+            'F' => 12,
         ];
     }
 
-    public function styles(Worksheet $sheet): array
+    protected function workbookPresentationEnabled(): bool
     {
-        return [
-            1 => [
-                'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
-                'fill' => [
-                    'fillType' => Fill::FILL_SOLID,
-                    'startColor' => ['rgb' => '1F5FA6'],
-                ],
-            ],
-        ];
+        return $this->format !== 'csv';
+    }
+
+    protected function workbookWrappedColumns(): array
+    {
+        return $this->view === 'yearly' ? [] : ['C'];
     }
 }

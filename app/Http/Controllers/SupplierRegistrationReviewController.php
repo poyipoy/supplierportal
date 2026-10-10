@@ -7,8 +7,10 @@ use App\Http\Requests\SupplierRegistration\RejectRegistrationRequest;
 use App\Http\Requests\SupplierRegistration\RevisionRequest;
 use App\Models\SupplierMasterDocument;
 use App\Models\SupplierRegistrationAttempt;
+use App\Services\FileSecurity\FileAccessGuard;
 use App\Services\SupplierRegistrationService;
 use App\Support\BusinessTime;
+use App\Support\ServerTabsResponse;
 use App\Support\StatusHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -27,7 +29,8 @@ class SupplierRegistrationReviewController extends Controller
     {
         $statusFilter = strtoupper((string) $request->input('status', 'ALL'));
 
-        if ($request->ajax()) {
+        // Legacy DataTables feed. Server-tabs fragment requests also carry X-Requested-With, so they must skip it.
+        if ($request->ajax() && ! ServerTabsResponse::wants($request)) {
             $query = SupplierRegistrationAttempt::query()
                 ->with(['user.supplier', 'reviewer'])
                 ->orderByDesc('submitted_at');
@@ -109,11 +112,23 @@ class SupplierRegistrationReviewController extends Controller
             'REJECTED' => SupplierRegistrationAttempt::where('status', SupplierRegistrationAttempt::STATUS_REJECTED)->count(),
         ];
 
-        return view('supplier-registrations.index', [
+        $viewData = [
             'attempts' => $attempts,
             'statusFilter' => $statusFilter,
             'counts' => $counts,
-        ]);
+        ];
+
+        // Tab/pencarian/paginasi tanpa reload: tabel + nav (href membawa pencarian, hitungan segar) dirender ulang server.
+        if (ServerTabsResponse::wants($request)) {
+            return ServerTabsResponse::make(
+                view('supplier-registrations._attempts_content', $viewData)->render(),
+                $statusFilter,
+                $request,
+                ['nav' => view('supplier-registrations._status_nav', $viewData)->render()],
+            );
+        }
+
+        return view('supplier-registrations.index', $viewData);
     }
 
     /**
@@ -235,6 +250,10 @@ class SupplierRegistrationReviewController extends Controller
         if (! Storage::disk('private')->exists($document->file_path)) {
             abort(404, __('local_procurement.registration.document_missing'));
         }
+
+        $snapshotIds = collect($attempt->submission_snapshot['documents'] ?? [])->pluck('document_id')->map(fn ($id) => (int) $id);
+        abort_unless($snapshotIds->contains((int) $document->id), 403, __('local_procurement.registration.document_unauthorized'));
+        app(FileAccessGuard::class)->assertReadable($document);
 
         return Storage::disk('private')->download(
             $document->file_path,

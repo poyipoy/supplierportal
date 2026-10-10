@@ -284,11 +284,10 @@ class LocalPoImportTest extends TestCase
                 'import_file' => $uploaded,
             ], ['Accept' => 'application/json']);
 
-        $response->assertOk();
+        $response->assertStatus(202);
         $data = $response->json();
-        $this->assertArrayHasKey('preview', $data);
-        $this->assertArrayHasKey('token', $data);
-        $this->assertTrue($data['preview']['success'], json_encode($data['preview']));
+        $status = $this->getJson($data['status_url'])->assertOk()->json();
+        $this->assertSame('READY', $status['status'], json_encode($status));
         $token = $data['token'];
 
         // Confirm route
@@ -297,7 +296,7 @@ class LocalPoImportTest extends TestCase
                 'token' => $token,
             ]);
 
-        $confirmResponse->assertRedirect(route('finance.local-procurement.index'));
+        $confirmResponse->assertOk()->assertJsonPath('status', 'COMPLETED');
         $this->assertDatabaseHas('local_purchase_orders', [
             'po_number' => 'PNR261178',
         ]);

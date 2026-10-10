@@ -11,6 +11,7 @@ use App\Services\LocalInvoice\LocalProcurementMasterService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Tests\Support\NativeFileFixtures;
 use Tests\TestCase;
 use ZipArchive;
 
@@ -81,7 +82,7 @@ class LocalPurchaseOrderDocumentTest extends TestCase
 
     public function test_finance_and_purchasing_can_upload_single_po_pdf(): void
     {
-        $file = UploadedFile::fake()->createWithContent('PO-ALPHA-001.pdf', "%PDF-1.4\nPO Content Alpha 1");
+        $file = UploadedFile::fake()->createWithContent('PO-ALPHA-001.pdf', NativeFileFixtures::pdf());
 
         $response = $this->actingAs($this->finance)->post(route('finance.local-procurement.upload-po'), [
             'supplier_id' => $this->supplierA->id,
@@ -105,7 +106,7 @@ class LocalPurchaseOrderDocumentTest extends TestCase
         ]);
 
         // Purchasing can also upload
-        $file2 = UploadedFile::fake()->createWithContent('PO-ALPHA-002.pdf', "%PDF-1.4\nPO Content Alpha 2");
+        $file2 = UploadedFile::fake()->createWithContent('PO-ALPHA-002.pdf', NativeFileFixtures::pdf());
         $purchasingResponse = $this->actingAs($this->purchasing)->post(route('purchasing.local-procurement.upload-po'), [
             'supplier_id' => $this->supplierA->id,
             'file' => $file2,
@@ -120,7 +121,7 @@ class LocalPurchaseOrderDocumentTest extends TestCase
 
     public function test_unauthorized_user_cannot_upload_po_document(): void
     {
-        $file = UploadedFile::fake()->createWithContent('PO-ALPHA-001.pdf', "%PDF-1.4\nPO Content");
+        $file = UploadedFile::fake()->createWithContent('PO-ALPHA-001.pdf', NativeFileFixtures::pdf());
 
         $response = $this->actingAs($this->supplierA)->post(route('finance.local-procurement.upload-po'), [
             'supplier_id' => $this->supplierA->id,
@@ -137,7 +138,7 @@ class LocalPurchaseOrderDocumentTest extends TestCase
 
     public function test_unmatched_po_filename_is_rejected(): void
     {
-        $file = UploadedFile::fake()->createWithContent('PO-NON-EXISTENT.pdf', "%PDF-1.4\nContent");
+        $file = UploadedFile::fake()->createWithContent('PO-NON-EXISTENT.pdf', NativeFileFixtures::pdf());
 
         $response = $this->actingAs($this->finance)->post(route('finance.local-procurement.upload-po'), [
             'supplier_id' => $this->supplierA->id,
@@ -154,7 +155,7 @@ class LocalPurchaseOrderDocumentTest extends TestCase
     public function test_cross_supplier_upload_is_rejected(): void
     {
         // Try uploading Beta's PO under Alpha's supplier selection
-        $file = UploadedFile::fake()->createWithContent('PO-BETA-001.pdf', "%PDF-1.4\nContent");
+        $file = UploadedFile::fake()->createWithContent('PO-BETA-001.pdf', NativeFileFixtures::pdf());
 
         $response = $this->actingAs($this->finance)->post(route('finance.local-procurement.upload-po'), [
             'supplier_id' => $this->supplierA->id,
@@ -173,8 +174,8 @@ class LocalPurchaseOrderDocumentTest extends TestCase
         $zipPath = tempnam(sys_get_temp_dir(), 'po_zip').'.zip';
         $zip = new ZipArchive;
         $this->assertTrue($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE));
-        $zip->addFromString('PO-ALPHA-001.pdf', "%PDF-1.4\nPO 1");
-        $zip->addFromString('PO-ALPHA-002.pdf', "%PDF-1.4\nPO 2");
+        $zip->addFromString('PO-ALPHA-001.pdf', NativeFileFixtures::pdf());
+        $zip->addFromString('PO-ALPHA-002.pdf', NativeFileFixtures::pdf());
         $zip->close();
 
         $zipFile = new UploadedFile($zipPath, 'batch_pos.zip', 'application/zip', null, true);
@@ -209,8 +210,8 @@ class LocalPurchaseOrderDocumentTest extends TestCase
         $zipPath = tempnam(sys_get_temp_dir(), 'po_zip_fail').'.zip';
         $zip = new ZipArchive;
         $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
-        $zip->addFromString('PO-ALPHA-001.pdf', "%PDF-1.4\nPO 1");
-        $zip->addFromString('PO-UNKNOWN-999.pdf', "%PDF-1.4\nPO 999");
+        $zip->addFromString('PO-ALPHA-001.pdf', NativeFileFixtures::pdf());
+        $zip->addFromString('PO-UNKNOWN-999.pdf', NativeFileFixtures::pdf());
         $zip->close();
 
         $zipFile = new UploadedFile($zipPath, 'invalid_batch.zip', 'application/zip', null, true);
@@ -238,7 +239,7 @@ class LocalPurchaseOrderDocumentTest extends TestCase
         $zipPath = tempnam(sys_get_temp_dir(), 'po_zip_traversal').'.zip';
         $zip = new ZipArchive;
         $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
-        $zip->addFromString('../traversal.pdf', "%PDF-1.4\nExploit");
+        $zip->addFromString('../traversal.pdf', NativeFileFixtures::pdf());
         $zip->close();
 
         $zipFile = new UploadedFile($zipPath, 'traversal.zip', 'application/zip', null, true);
@@ -305,7 +306,7 @@ class LocalPurchaseOrderDocumentTest extends TestCase
     public function test_supplier_can_view_own_po_and_download_document(): void
     {
         // 1. Attach document to PO A1
-        $file = UploadedFile::fake()->createWithContent('PO-ALPHA-001.pdf', "%PDF-1.4\nPO Document Content Alpha");
+        $file = UploadedFile::fake()->createWithContent('PO-ALPHA-001.pdf', NativeFileFixtures::pdf());
         $this->actingAs($this->finance)->post(route('finance.local-procurement.upload-po'), [
             'supplier_id' => $this->supplierA->id,
             'file' => $file,
@@ -337,7 +338,7 @@ class LocalPurchaseOrderDocumentTest extends TestCase
     public function test_supplier_isolation_prevents_viewing_and_downloading_another_supplier_po(): void
     {
         // 1. Attach document to Beta's PO
-        $file = UploadedFile::fake()->createWithContent('PO-BETA-001.pdf', "%PDF-1.4\nSecret Beta PO Content");
+        $file = UploadedFile::fake()->createWithContent('PO-BETA-001.pdf', NativeFileFixtures::pdf());
         $this->actingAs($this->finance)->post(route('finance.local-procurement.upload-po'), [
             'supplier_id' => $this->supplierB->id,
             'file' => $file,

@@ -64,15 +64,16 @@ class UserDashboardUiTest extends TestCase
         $response = $this->actingAs($user)->get(route('admin.dashboard'))->assertOk();
         $response->assertSee('data-dashboard-customize-link', false);
         $response->assertSee('Customize Layout');
-        $response->assertSee(route('profile.customization') . '#dashboard-layout-title', false);
+        $response->assertSee(route('profile.customization').'#dashboard-layout-title', false);
     }
 
-    public function test_granular_dashboard_reset_button_is_rendered(): void
+    public function test_dashboard_section_reset_control_is_rendered_without_the_legacy_delete_form(): void
     {
         $user = User::factory()->create(['role' => 'admin']);
         $response = $this->actingAs($user)->get(route('profile.customization'))->assertOk();
-        $response->assertSee('Reset Layout to Default');
-        $response->assertSee('form="resetDashboardLayout"', false);
-        $response->assertSee('name="scope" value="dashboard"', false);
+        $response->assertSee('Reset section');
+        $response->assertSee('resetSection(\'dashboard\')', false);
+        $response->assertDontSee('form="resetDashboardLayout"', false);
+        $response->assertDontSee('name="scope" value="dashboard"', false);
     }
 }

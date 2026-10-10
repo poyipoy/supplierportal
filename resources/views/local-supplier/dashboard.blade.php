@@ -10,7 +10,7 @@
         :eyebrow="__('local_invoice.dashboard.eyebrow')"
     >
         <x-slot:actions>
-            <x-ui.button :href="route('local-supplier.invoices.create')" variant="primary">
+            <x-ui.button :href="route('local-supplier.invoices.create')" :disabled="(bool) ($supplierAuditInvoiceBlock ?? null)" :title="($supplierAuditInvoiceBlock ?? null) ? __('supplier_audit.invoice_block.short') : null" variant="primary">
                 <x-ui.icon name="plus" size="sm" />
                 <span>{{ __('local_invoice.actions.submit') }}</span>
             </x-ui.button>
@@ -20,6 +20,8 @@
             </x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>
+
+    @include('local-supplier.supplier-audits._invoice-block-banner')
 
     <x-ui.dashboard-layout audience="supplier.local">
     <x-slot:statuses>
@@ -89,7 +91,7 @@
                 </div>
             </div>
             <div>
-                <x-ui.button :href="route('local-supplier.invoices.create')" variant="outline" size="sm">
+                <x-ui.button :href="route('local-supplier.invoices.create')" :disabled="(bool) ($supplierAuditInvoiceBlock ?? null)" :title="($supplierAuditInvoiceBlock ?? null) ? __('supplier_audit.invoice_block.short') : null" variant="outline" size="sm">
                     <x-ui.icon name="upload-cloud" size="sm" />
                     <span>{{ __('local_invoice.actions.upload_new') }}</span>
                 </x-ui.button>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Attachment;
+use App\Services\FileSecurity\FileAccessGuard;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\HeaderUtils;
@@ -12,6 +13,7 @@ class AttachmentController extends Controller
     public function show(Attachment $attachment)
     {
         $this->authorize('view', $attachment);
+        app(FileAccessGuard::class)->assertReadable($attachment);
 
         /** @var FilesystemAdapter $disk */
         $disk = Storage::disk('private');

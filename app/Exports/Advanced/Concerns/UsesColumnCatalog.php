@@ -80,6 +80,24 @@ trait UsesColumnCatalog
         return array_values(array_unique($with));
     }
 
+    protected function catalogStylesEnabled(): bool
+    {
+        return $this->columnFormat !== 'csv';
+    }
+
+    /** @return list<string> */
+    protected function catalogWrappedColumns(): array
+    {
+        $wrapped = [];
+        foreach ($this->selectedColumns() as $index => $column) {
+            if ($column->wrapText) {
+                $wrapped[] = Coordinate::stringFromColumnIndex($index + 1);
+            }
+        }
+
+        return $wrapped;
+    }
+
     public function getCsvSettings(): array
     {
         return $this->columnFormat === 'csv' ? config('exports.csv') : [];

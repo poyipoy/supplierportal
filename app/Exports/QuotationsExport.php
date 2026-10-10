@@ -6,6 +6,7 @@ use App\Contracts\AcceptsExportOptions;
 use App\Contracts\TracksExportProgress;
 use App\Exports\Advanced\Concerns\UsesColumnCatalog;
 use App\Exports\Concerns\InteractsWithExportProgress;
+use App\Exports\Concerns\StylesOperationalWorkbook;
 use App\Http\Requests\Export\Filters\QuotationExportFilters;
 use App\Models\Quotation;
 use App\Models\QuotationItem;
@@ -22,10 +23,12 @@ use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
 use Maatwebsite\Excel\Concerns\WithCustomQuerySize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
+use Maatwebsite\Excel\Concerns\WithStyles;
 
-class QuotationsExport implements AcceptsExportOptions, FromQuery, HasLocalePreference, TracksExportProgress, WithColumnWidths, WithCustomChunkSize, WithCustomCsvSettings, WithCustomQuerySize, WithHeadings, WithMapping
+class QuotationsExport implements AcceptsExportOptions, FromQuery, HasLocalePreference, TracksExportProgress, WithColumnWidths, WithCustomChunkSize, WithCustomCsvSettings, WithCustomQuerySize, WithHeadings, WithMapping, WithStyles
 {
     use InteractsWithExportProgress;
+    use StylesOperationalWorkbook;
     use UsesColumnCatalog;
 
     public function __construct(
@@ -210,30 +213,40 @@ class QuotationsExport implements AcceptsExportOptions, FromQuery, HasLocalePref
         }
 
         return [
-            'A' => 22,
-            'B' => 18,
-            'C' => 25,
-            'D' => 12,
-            'E' => 30,
-            'F' => 16,
-            'G' => 19,
-            'H' => 38,
-            'I' => 18,
-            'J' => 38,
-            'K' => 16,
-            'L' => 16,
+            'A' => 18,
+            'B' => 16,
+            'C' => 22,
+            'D' => 10,
+            'E' => 22,
+            'F' => 14,
+            'G' => 12,
+            'H' => 24,
+            'I' => 12,
+            'J' => 24,
+            'K' => 18,
+            'L' => 18,
             'M' => 16,
             'N' => 18,
-            'O' => 30,
-            'P' => 19,
-            'Q' => 21,
+            'O' => 24,
+            'P' => 18,
+            'Q' => 20,
             'R' => 18,
-            'S' => 18,
-            'T' => 18,
+            'S' => 16,
+            'T' => 16,
             'U' => 18,
-            'V' => 18,
+            'V' => 16,
             'W' => 18,
             'X' => 18,
         ];
+    }
+
+    protected function workbookPresentationEnabled(): bool
+    {
+        return $this->catalogStylesEnabled();
+    }
+
+    protected function workbookWrappedColumns(): array
+    {
+        return $this->hasExportOptions() ? $this->catalogWrappedColumns() : ['C', 'E', 'H', 'J', 'O', 'P'];
     }
 }

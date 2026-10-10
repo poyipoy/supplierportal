@@ -21,15 +21,16 @@ class LocalGrImportService
     {
         $this->audit->record($actor, 'gr_import_previewed', $actor, null, null, [
             'original_filename' => $filename,
+            'checksum' => $result['checksum'] ?? null,
             'previewed_at' => now()->toIso8601String(),
             'source_row_count' => $result['source_row_count'] ?? count($result['rows'] ?? []),
-            'consolidated_gr_count' => count($result['rows'] ?? []),
+            'consolidated_gr_count' => $result['summary']['consolidated_gr'] ?? count($result['rows'] ?? []),
             'valid' => (bool) ($result['success'] ?? false),
-            'error_count' => count($result['errors'] ?? []),
+            'error_count' => $result['summary']['invalid'] ?? count($result['errors'] ?? []),
         ]);
     }
 
-    public function validate(array $rows): array
+    public function validate(array $rows, bool $fieldsOnly = false): array
     {
         $errors = [];
         $parsedRows = [];
@@ -84,6 +85,10 @@ class LocalGrImportService
                     'gr_date' => $grDate,
                 ];
             }
+        }
+
+        if ($fieldsOnly) {
+            return ['success' => $errors === [], 'rows' => $parsedRows, 'errors' => $errors];
         }
 
         // 2. Cross-row conflict validation per GR Number
@@ -163,7 +168,7 @@ class LocalGrImportService
         }
 
         // 4. Validate exact PO existence and status
-        $poMap = LocalPurchaseOrder::whereIn(DB::raw('LOWER(po_number)'), array_unique($uniquePoKeys))
+        $poMap = LocalPurchaseOrder::forceIndex('local_purchase_orders_po_number_unique')->whereIn('po_number', array_unique($uniquePoKeys))
             ->get()
             ->keyBy(fn ($po) => mb_strtolower($po->po_number));
 
@@ -199,7 +204,7 @@ class LocalGrImportService
 
         // 5. Database duplicate/conflict checks against existing LocalGoodsReceipt
         $uniqueGrKeys = collect($consolidated)->pluck('gr_number')->map(fn ($g) => mb_strtolower($g))->unique();
-        $existingGrMap = LocalGoodsReceipt::whereIn(DB::raw('LOWER(gr_number)'), $uniqueGrKeys->all())
+        $existingGrMap = LocalGoodsReceipt::whereIn('gr_number', $uniqueGrKeys->all())
             ->get()
             ->keyBy(fn ($gr) => mb_strtolower($gr->gr_number));
 

@@ -17,6 +17,7 @@ class Attachment extends Model
         'file_path',
         'file_name',
         'file_type',
+        'file_inspection_id',
         'uploaded_by',
     ];
 

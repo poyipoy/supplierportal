@@ -4,7 +4,9 @@ namespace App\Services\LocalInvoice;
 
 use App\Models\LocalGoodsReceipt;
 use App\Models\LocalInvoiceGoodsReceipt;
+use App\Models\LocalProcurementImport;
 use App\Models\LocalPurchaseOrder;
+use App\Models\SupplierScope;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -12,6 +14,95 @@ use Illuminate\Validation\ValidationException;
 class LocalProcurementMasterService
 {
     public function __construct(private LocalFinanceAuditService $audit) {}
+
+    public function createImportBatch(User $actor, string $kind, array $records, array $normalized): array
+    {
+        $this->authorize($actor);
+        if (! in_array($kind, LocalProcurementImport::KINDS, true)) {
+            throw new \InvalidArgumentException('Unsupported import kind.');
+        }
+        if (count($records) > (int) config('local_procurement_imports.batch_size') || DB::transactionLevel() === 0) {
+            throw new \LogicException('Import batches require a bounded batch inside the import transaction.');
+        }
+        $valuesByRow = collect($normalized)->keyBy('_row');
+        $numbers = array_map(fn ($r) => json_decode($r->values, true)['po_number'], $records);
+        // MySQL otherwise chooses a full scan for large IN lists, widening locks.
+        $poMap = LocalPurchaseOrder::forceIndex('local_purchase_orders_po_number_unique')->whereIn('po_number', $numbers)->orderBy('id')->lockForUpdate()->get()->keyBy(fn ($po) => mb_strtolower($po->po_number));
+        $counts = ['newPo' => 0, 'existingPo' => 0, 'newGr' => 0, 'existingGr' => 0];
+        $inserts = [];
+        if ($records[0]->kind === 'PO') {
+            $supplierIds = array_unique(array_column($normalized, 'supplier_id'));
+            $eligible = User::localEligible()->whereIn('id', $supplierIds)->orderBy('id')->sharedLock()->pluck('id')->all();
+            $scoped = SupplierScope::whereIn('supplier_id', $supplierIds)->where('scope', 'local')->orderBy('supplier_id')->sharedLock()->pluck('supplier_id')->all();
+            $eligible = array_map('intval', array_intersect($eligible, $scoped));
+            foreach ($records as $record) {
+                $row = $valuesByRow->get($record->source_row);
+                $existing = $poMap->get(mb_strtolower($row['po_number']));
+                $amount = $this->money($row['po_amount'], 'po_amount');
+                if (! in_array((int) $row['supplier_id'], array_map('intval', $eligible), true)) {
+                    throw ValidationException::withMessages(['supplier_id' => __('local_procurement.validation.supplier_required')]);
+                }
+                if ($existing) {
+                    if ((int) $existing->supplier_id !== (int) $row['supplier_id'] || $existing->po_date->format('Y-m-d') !== $row['po_date']
+                        || bccomp((string) $existing->total_amount, $amount, 2) !== 0) {
+                        throw ValidationException::withMessages(['po_number' => __('local_procurement.import.po_existing_conflict', ['po' => $row['po_number']])]);
+                    }
+                    $counts['existingPo']++;
+
+                    continue;
+                }
+                $inserts[] = ['po_number' => $row['po_number'], 'supplier_id' => $row['supplier_id'], 'po_date' => $row['po_date'],
+                    'total_amount' => $amount, 'currency' => 'IDR', 'status' => LocalPurchaseOrder::STATUS_OPEN,
+                    'description' => 'Imported via Infor ERP Purchase Order',
+                    'source' => LocalPurchaseOrder::SOURCE_IMPORT, 'created_by' => $actor->id, 'updated_by' => $actor->id,
+                    'created_at' => now(), 'updated_at' => now()];
+            }
+            if ($inserts) {
+                LocalPurchaseOrder::insert($inserts);
+                $created = LocalPurchaseOrder::forceIndex('local_purchase_orders_po_number_unique')->whereIn('po_number', array_column($inserts, 'po_number'))->get();
+                $this->audit->recordCreatedBatch($created, 'po_created', $actor);
+                $counts['newPo'] = count($inserts);
+            }
+        } else {
+            $grNumbers = array_map(fn ($r) => json_decode($r->values, true)['gr_number'], $records);
+            $existingMap = LocalGoodsReceipt::whereIn('gr_number', $grNumbers)->orderBy('id')->lockForUpdate()->get()->keyBy(fn ($gr) => mb_strtolower($gr->gr_number));
+            foreach ($records as $record) {
+                $row = $valuesByRow->get($record->source_row);
+                $po = $poMap->get(mb_strtolower($row['po_number']));
+                if (! $po || $po->status !== LocalPurchaseOrder::STATUS_OPEN) {
+                    throw ValidationException::withMessages(['po_number' => __('local_procurement.validation.gr_open')]);
+                }
+                $qty = trim((string) $row['qty']);
+                if (! LocalGoodsReceipt::validQuantity($qty)) {
+                    throw ValidationException::withMessages(['qty' => __('local_procurement.validation.quantity_precision')]);
+                }
+                $uom = $this->uom($row['uom']);
+                $existing = $existingMap->get(mb_strtolower($row['gr_number']));
+                if ($existing) {
+                    if ((int) $existing->local_purchase_order_id !== (int) $po->id
+                        || $existing->gr_date->format('Y-m-d') !== $row['gr_date'] || bccomp((string) $existing->qty, $qty, 4) !== 0 || $existing->uom !== $uom) {
+                        throw ValidationException::withMessages(['gr_number' => __('local_procurement.import.gr_existing_conflict', ['gr' => $row['gr_number']])]);
+                    }
+                    $counts['existingGr']++;
+
+                    continue;
+                }
+                $inserts[] = ['gr_number' => $row['gr_number'], 'local_purchase_order_id' => $po->id, 'gr_date' => $row['gr_date'],
+                    'qty' => $qty, 'uom' => $uom, 'description' => $row['description'] ?? null,
+                    'notes' => "Imported via Infor ERP Goods Receipt ({$record->source_count} line rows)",
+                    'status' => LocalGoodsReceipt::STATUS_AVAILABLE, 'source' => LocalPurchaseOrder::SOURCE_IMPORT,
+                    'created_by' => $actor->id, 'updated_by' => $actor->id, 'created_at' => now(), 'updated_at' => now()];
+            }
+            if ($inserts) {
+                LocalGoodsReceipt::insert($inserts);
+                $created = LocalGoodsReceipt::whereIn('gr_number', array_column($inserts, 'gr_number'))->get();
+                $this->audit->recordCreatedBatch($created, 'gr_created', $actor);
+                $counts['newGr'] = count($inserts);
+            }
+        }
+
+        return $counts;
+    }
 
     public function createPurchaseOrder(User $actor, array $data, string $source = LocalPurchaseOrder::SOURCE_MANUAL): LocalPurchaseOrder
     {

@@ -13,6 +13,8 @@
         "laravel/reverb": "^1.10",
         "laravel/tinker": "^2.10.1",
         "maatwebsite/excel": "^3.1.70",
+        "openspout/openspout": "4.28.5",
+        "picqer/php-barcode-generator": "3.3.0",
         "pragmarx/google2fa": "^9.0",
         "pusher/pusher-php-server": "^7.3",
         "technikermathe/blade-lucide-icons": "^3.168",

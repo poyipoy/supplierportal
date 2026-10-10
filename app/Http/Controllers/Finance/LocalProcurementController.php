@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Finance;
 
 use App\Exports\LocalGrImportTemplateExport;
-use App\Exports\LocalPoGrImportTemplateExport;
 use App\Exports\LocalPoImportTemplateExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LocalInvoice\SaveLocalGoodsReceiptRequest;
@@ -11,21 +10,15 @@ use App\Http\Requests\LocalInvoice\SaveLocalPurchaseOrderRequest;
 use App\Http\Requests\LocalInvoice\UploadLocalGrImportRequest;
 use App\Http\Requests\LocalInvoice\UploadLocalPoDocumentRequest;
 use App\Http\Requests\LocalInvoice\UploadLocalPoImportRequest;
-use App\Imports\LocalGrImport;
-use App\Imports\LocalPoGrImport;
-use App\Imports\LocalPoImport;
 use App\Models\LocalGoodsReceipt;
 use App\Models\LocalPurchaseOrder;
 use App\Models\User;
-use App\Services\LocalInvoice\LocalGrImportService;
+use App\Services\LocalInvoice\LocalPoDocumentBatchService;
 use App\Services\LocalInvoice\LocalPoDocumentService;
-use App\Services\LocalInvoice\LocalPoGrImportService;
-use App\Services\LocalInvoice\LocalPoImportService;
+use App\Services\LocalInvoice\LocalProcurementImportService;
 use App\Services\LocalInvoice\LocalProcurementMasterService;
-use App\Support\SpreadsheetImportReader;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rules\File;
 use Maatwebsite\Excel\Facades\Excel;
 
 class LocalProcurementController extends Controller
@@ -131,11 +124,6 @@ class LocalProcurementController extends Controller
         return back()->with('success', __('local_procurement.feedback.gr_cancelled'));
     }
 
-    public function template()
-    {
-        return Excel::download(new LocalPoGrImportTemplateExport, 'local-po-gr-template.xlsx');
-    }
-
     public function poTemplate()
     {
         return Excel::download(new LocalPoImportTemplateExport, 'infor-erp-po-template.xlsx');
@@ -146,123 +134,41 @@ class LocalProcurementController extends Controller
         return Excel::download(new LocalGrImportTemplateExport, 'infor-erp-gr-template.xlsx');
     }
 
-    public function poPreview(UploadLocalPoImportRequest $request, LocalPoImportService $service)
+    public function poPreview(UploadLocalPoImportRequest $request, LocalProcurementImportService $service)
     {
-        $import = new LocalPoImport;
-        SpreadsheetImportReader::import($import, $request->file('import_file'));
-        $base = $import->preview();
-        $result = $base['success'] ? $service->validate($base['rows']) : $base;
-        $service->recordPreview($request->user(), $request->file('import_file')->getClientOriginalName(), $result);
-        $token = Str::random(40);
-        if ($result['success']) {
-            session()->put('local_po_import.'.$token, $base['rows']);
-            session()->put('local_po_import_meta.'.$token, [
-                'original_filename' => $request->file('import_file')->getClientOriginalName(),
-                'previewed_at' => now()->toIso8601String(),
-            ]);
-        }
-
-        if ($request->ajax() || $request->wantsJson()) {
-            return response()->json([
-                'preview' => $result,
-                'token' => $token,
-                'confirm_url' => route($this->prefix().'.import.po.confirm'),
-            ]);
-        }
-
-        return redirect()->route($this->prefix().'.index');
+        return $this->queuedPreview($request, $service, 'PO');
     }
 
-    public function poConfirm(Request $request, LocalPoImportService $service)
+    public function grPreview(UploadLocalGrImportRequest $request, LocalProcurementImportService $service)
+    {
+        return $this->queuedPreview($request, $service, 'GR');
+    }
+
+    public function poConfirm(Request $request, LocalProcurementImportService $service)
+    {
+        return $this->queuedConfirm($request, $service, 'PO');
+    }
+
+    public function grConfirm(Request $request, LocalProcurementImportService $service)
+    {
+        return $this->queuedConfirm($request, $service, 'GR');
+    }
+
+    private function queuedPreview(Request $request, LocalProcurementImportService $service, string $kind)
+    {
+        [$import, $token] = $service->start($request->user(), $request->file('import_file'), $kind);
+
+        return response()->json(['id' => $import->hash, 'status' => $import->status, 'token' => $token,
+            'status_url' => route($this->prefix().'.imports.status', $import)], 202);
+    }
+
+    private function queuedConfirm(Request $request, LocalProcurementImportService $service, string $kind)
     {
         $data = $request->validate(['token' => ['required', 'string', 'size:40']]);
-        $rows = session()->pull('local_po_import.'.$data['token']);
-        $metadata = session()->pull('local_po_import_meta.'.$data['token'], []);
-        abort_unless(is_array($rows), 419, __('local_procurement.feedback.preview_expired'));
-        $counts = $service->import($request->user(), $rows, is_array($metadata) ? $metadata : []);
+        $import = $service->confirm($request->user(), $data['token'], $kind);
 
-        $msg = __('local_procurement.feedback.po_imported', ['created' => $counts['newPo'], 'existing' => $counts['existingPo']]);
-
-        return redirect()->route($this->prefix().'.index')->with('success', $msg);
-    }
-
-    public function grPreview(UploadLocalGrImportRequest $request, LocalGrImportService $service)
-    {
-        $import = new LocalGrImport;
-        SpreadsheetImportReader::import($import, $request->file('import_file'));
-        $base = $import->preview();
-        $result = $base['success'] ? $service->validate($base['rows']) : $base;
-        $service->recordPreview($request->user(), $request->file('import_file')->getClientOriginalName(), $result);
-        $token = Str::random(40);
-        if ($result['success']) {
-            session()->put('local_gr_import.'.$token, $base['rows']);
-            session()->put('local_gr_import_meta.'.$token, [
-                'original_filename' => $request->file('import_file')->getClientOriginalName(),
-                'previewed_at' => now()->toIso8601String(),
-            ]);
-        }
-
-        if ($request->ajax() || $request->wantsJson()) {
-            return response()->json([
-                'preview' => $result,
-                'token' => $token,
-                'confirm_url' => route($this->prefix().'.import.gr.confirm'),
-            ]);
-        }
-
-        return redirect()->route($this->prefix().'.index');
-    }
-
-    public function grConfirm(Request $request, LocalGrImportService $service)
-    {
-        $data = $request->validate(['token' => ['required', 'string', 'size:40']]);
-        $rows = session()->pull('local_gr_import.'.$data['token']);
-        $metadata = session()->pull('local_gr_import_meta.'.$data['token'], []);
-        abort_unless(is_array($rows), 419, __('local_procurement.feedback.preview_expired'));
-        $counts = $service->import($request->user(), $rows, is_array($metadata) ? $metadata : []);
-
-        $msg = __('local_procurement.feedback.gr_imported', ['created' => $counts['newGr'], 'rows' => $counts['sourceRows'], 'existing' => $counts['existingGr']]);
-
-        return redirect()->route($this->prefix().'.index')->with('success', $msg);
-    }
-
-    public function preview(Request $request, LocalPoGrImportService $service)
-    {
-        $request->validate(['import_file' => ['required', File::types(['xlsx'])->max(10 * 1024)]]);
-        $import = new LocalPoGrImport;
-        SpreadsheetImportReader::import($import, $request->file('import_file'));
-        $base = $import->preview();
-        $result = $base['success'] ? $service->validate($base['rows']) : $base;
-        $service->recordPreview($request->user(), $request->file('import_file')->getClientOriginalName(), $result);
-        $token = Str::random(40);
-        if ($result['success']) {
-            session()->put('local_po_gr_import.'.$token, $base['rows']);
-            session()->put('local_po_gr_import_meta.'.$token, [
-                'original_filename' => $request->file('import_file')->getClientOriginalName(),
-                'previewed_at' => now()->toIso8601String(),
-            ]);
-        }
-
-        if ($request->ajax() || $request->wantsJson()) {
-            return response()->json([
-                'preview' => $result,
-                'token' => $token,
-                'confirm_url' => route($this->prefix().'.import.confirm'),
-            ]);
-        }
-
-        return redirect()->route($this->prefix().'.index');
-    }
-
-    public function confirm(Request $request, LocalPoGrImportService $service)
-    {
-        $data = $request->validate(['token' => ['required', 'string', 'size:40']]);
-        $rows = session()->pull('local_po_gr_import.'.$data['token']);
-        $metadata = session()->pull('local_po_gr_import_meta.'.$data['token'], []);
-        abort_unless(is_array($rows), 419, __('local_procurement.feedback.preview_expired'));
-        $counts = $service->import($request->user(), $rows, is_array($metadata) ? $metadata : []);
-
-        return redirect()->route($this->prefix().'.index')->with('success', __('local_procurement.feedback.combined_imported', ['po' => $counts['newPo'], 'gr' => $counts['newGr']]));
+        return response()->json(['id' => $import->hash, 'status' => $import->status,
+            'status_url' => route($this->prefix().'.imports.status', $import)], $import->status === 'COMPLETED' ? 200 : 202);
     }
 
     public function uploadPo(UploadLocalPoDocumentRequest $request, LocalPoDocumentService $service)
@@ -272,11 +178,23 @@ class LocalProcurementController extends Controller
         $ext = strtolower($file->getClientOriginalExtension());
 
         if ($ext === 'zip') {
-            $result = $service->uploadZip($request->user(), $supplier, $file);
+            if (config('po_documents.async_enabled')) {
+                $batch = app(LocalPoDocumentBatchService::class)->start(
+                    $request->user(), $supplier, $file, $request->validated('request_key') ?? (string) Str::uuid()
+                );
+
+                return response()->json(app(LocalPoDocumentBatchController::class)->payload($request, $batch), 202);
+            }
+            $result = $service->uploadZip($request->user(), $supplier, $file, $request->validated('request_key'));
             $message = __('local_procurement.feedback.zip_uploaded', ['count' => $result['count'], 'supplier' => $supplier->name]);
         } else {
             $po = $service->uploadSinglePdf($request->user(), $supplier, $file);
             $message = __('local_procurement.feedback.po_uploaded', ['number' => $po->po_number]);
+        }
+
+        $request->session()->flash('success', $message);
+        if ($request->expectsJson()) {
+            return response()->json(['status' => 'COMPLETED', 'redirect' => route($this->prefix().'.index')]);
         }
 
         return redirect()->back()->with('success', $message);

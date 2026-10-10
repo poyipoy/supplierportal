@@ -209,7 +209,7 @@ return [
         'submitted' => 'Diajukan',
         'submitted_quotation' => 'Penawaran Diajukan',
         'submitted_quotations' => 'Penawaran Diajukan',
-        'supplier' => 'Pemasok',
+        'supplier' => 'Supplier',
         'supplier_dashboard' => 'Dashboard Supplier',
         'supplier_material_progress' => 'Progres Material Supplier',
         'supplier_opportunities' => 'Peluang Supplier',

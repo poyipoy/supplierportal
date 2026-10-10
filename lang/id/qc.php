@@ -77,7 +77,7 @@ return [
         'shape' => 'Bentuk',
         'shipment_reference' => 'Referensi Pengiriman',
         'status' => 'Status',
-        'supplier' => 'Pemasok',
+        'supplier' => 'Supplier',
         'supplier_company' => 'Perusahaan Supplier',
         'supplier_name' => 'Nama Supplier',
         'thickness' => 'Ketebalan',

@@ -40,19 +40,18 @@ class RegionalScopeProtectionTest extends TestCase
         $this->actingAs($user);
         app()->setLocale('en');
         $beforePdf = view('pdf.po-pdf', ['po' => $po, 'quotationRates' => [1 => $po->quotations->first()->exchange_rate]])->render();
-        $this->assertStringContainsString('28 October 2026, 10:00 WIB', $beforePdf);
+        $this->assertStringContainsString('29 Sep 2026', $beforePdf);
         $beforeRow = (new PurchaseOrdersExport)->map($po);
         $this->assertSame(1250000.5, $beforeRow[5]);
         $this->assertSame('2026-09-28', $beforeRow[7]);
-        $this->assertStringContainsString('1.250.000,50', $beforePdf);
+        $this->assertStringContainsString('1,250,000.50', $beforePdf);
         $user->preference()->create([...config('user_preferences.defaults'), 'timezone' => 'Asia/Jakarta', 'date_format' => 'iso', 'time_format' => '12h', 'number_format' => 'international']);
         $this->assertSame($beforePdf, view('pdf.po-pdf', ['po' => $po, 'quotationRates' => [1 => $po->quotations->first()->exchange_rate]])->render());
         $this->assertSame($beforeRow, (new PurchaseOrdersExport)->map($po));
 
         app()->setLocale('id');
         $indonesianPdf = view('pdf.po-pdf', ['po' => $po, 'quotationRates' => [1 => $po->quotations->first()->exchange_rate]])->render();
-        $this->assertStringContainsString('28 Oktober 2026, 10:00 WIB', $indonesianPdf);
-        $this->assertStringNotContainsString('2026-10-28', $indonesianPdf);
+        $this->assertSame($beforePdf, $indonesianPdf, 'The fixed PO form stays English for both user locales.');
         app()->setLocale('en');
     }
 

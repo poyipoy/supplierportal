@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\LocalInvoiceDocument;
+use App\Services\FileSecurity\FileAccessGuard;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 
@@ -11,6 +12,7 @@ class LocalInvoiceDocumentController extends Controller
     public function show(LocalInvoiceDocument $document)
     {
         Gate::authorize('view', $document);
+        app(FileAccessGuard::class)->assertReadable($document);
         abort_unless(Storage::disk('private')->exists($document->file_path), 404);
 
         return Storage::disk('private')->download(

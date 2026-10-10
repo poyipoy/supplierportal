@@ -78,6 +78,12 @@ class GaController extends Controller
         $files = $request->allFiles();
         $claim = $service->submitClaim($request->user(), $data, $files);
 
+        if ($request->expectsJson()) {
+            $request->session()->flash('success', __('ga.feedback.submitted', ['number' => $claim->claim_number]));
+
+            return response()->json(['redirect' => route('ga.claims.show', $claim)]);
+        }
+
         return redirect()->route('ga.claims.show', $claim)->with('success', __('ga.feedback.submitted', ['number' => $claim->claim_number]));
     }
 
@@ -138,6 +144,12 @@ class GaController extends Controller
 
         $files = $request->allFiles();
         $service->resubmitClaim($request->user(), $claim, $data, $files);
+
+        if ($request->expectsJson()) {
+            $request->session()->flash('success', __('ga.feedback.resubmitted', ['number' => $claim->claim_number]));
+
+            return response()->json(['redirect' => route('ga.claims.show', $claim)]);
+        }
 
         return redirect()->route('ga.claims.show', $claim)->with('success', __('ga.feedback.resubmitted', ['number' => $claim->claim_number]));
     }

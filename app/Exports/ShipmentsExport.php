@@ -6,6 +6,7 @@ use App\Contracts\AcceptsExportOptions;
 use App\Contracts\TracksExportProgress;
 use App\Exports\Advanced\Concerns\UsesColumnCatalog;
 use App\Exports\Concerns\InteractsWithExportProgress;
+use App\Exports\Concerns\StylesOperationalWorkbook;
 use App\Http\Requests\Export\Filters\ShipmentExportFilters;
 use App\Models\Shipment;
 use App\Support\NumberFormat;
@@ -22,10 +23,12 @@ use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
 use Maatwebsite\Excel\Concerns\WithCustomQuerySize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
+use Maatwebsite\Excel\Concerns\WithStyles;
 
-class ShipmentsExport implements AcceptsExportOptions, FromQuery, HasLocalePreference, TracksExportProgress, WithColumnWidths, WithCustomChunkSize, WithCustomCsvSettings, WithCustomQuerySize, WithHeadings, WithMapping
+class ShipmentsExport implements AcceptsExportOptions, FromQuery, HasLocalePreference, TracksExportProgress, WithColumnWidths, WithCustomChunkSize, WithCustomCsvSettings, WithCustomQuerySize, WithHeadings, WithMapping, WithStyles
 {
     use InteractsWithExportProgress;
+    use StylesOperationalWorkbook;
     use UsesColumnCatalog;
 
     public function __construct(
@@ -147,17 +150,27 @@ class ShipmentsExport implements AcceptsExportOptions, FromQuery, HasLocalePrefe
         }
 
         return [
-            'A' => 20,
-            'B' => 26,
-            'C' => 30,
-            'D' => 14,
-            'E' => 14,
-            'F' => 20,
-            'G' => 16,
-            'H' => 18,
-            'I' => 18,
-            'J' => 16,
-            'K' => 32,
+            'A' => 18,
+            'B' => 22,
+            'C' => 24,
+            'D' => 10,
+            'E' => 10,
+            'F' => 16,
+            'G' => 14,
+            'H' => 14,
+            'I' => 14,
+            'J' => 18,
+            'K' => 24,
         ];
+    }
+
+    protected function workbookPresentationEnabled(): bool
+    {
+        return $this->catalogStylesEnabled();
+    }
+
+    protected function workbookWrappedColumns(): array
+    {
+        return $this->hasExportOptions() ? $this->catalogWrappedColumns() : ['B', 'C', 'J', 'K'];
     }
 }

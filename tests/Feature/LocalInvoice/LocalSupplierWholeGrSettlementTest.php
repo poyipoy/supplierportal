@@ -17,8 +17,9 @@ use App\Models\SupplierScope;
 use App\Models\User;
 use App\Services\LocalInvoice\InvoiceExpiryService;
 use App\Services\LocalInvoice\InvoiceSubmissionService;
+use App\Services\LocalInvoice\LocalGrImportService;
 use App\Services\LocalInvoice\LocalGrReservationService;
-use App\Services\LocalInvoice\LocalPoGrImportService;
+use App\Services\LocalInvoice\LocalPoImportService;
 use App\Services\LocalInvoice\LocalPoReferenceService;
 use App\Services\LocalInvoice\LocalProcurementMasterService;
 use App\Services\Payment\LocalInvoicePaymentService;
@@ -262,7 +263,7 @@ class LocalSupplierWholeGrSettlementTest extends TestCase
 
     public function test_import_validation_is_atomic_and_exact_supplier_match(): void
     {
-        $service = app(LocalPoGrImportService::class);
+        $service = app(LocalPoImportService::class);
         $rows = [
             ['_row' => 2, 'po_number' => 'PO-IMPORT-001', 'supplier_name' => 'PT Whole GR', 'po_date' => '2026-09-15', 'po_amount' => '500.00', 'po_remarks' => null, 'gr_number' => 'GR-IMPORT-001', 'gr_date' => '2026-09-15', 'qty' => '5', 'uom' => 'pcs', 'gr_remarks' => null, '_formula_columns' => []],
             ['_row' => 3, 'po_number' => 'PO-IMPORT-002', 'supplier_name' => 'Unknown Supplier', 'po_date' => '2026-09-15', 'po_amount' => '10.00', 'po_remarks' => null, 'gr_number' => null, 'gr_date' => null, 'qty' => null, 'uom' => null, 'gr_remarks' => null, '_formula_columns' => []],
@@ -282,15 +283,15 @@ class LocalSupplierWholeGrSettlementTest extends TestCase
             ['_row' => 3, 'po_number' => 'PO-IMPORT-VALID', 'supplier_name' => 'pt whole gr', 'po_date' => '2026-09-15', 'po_amount' => '500', 'po_remarks' => 'Imported', 'gr_number' => 'GR-IMPORT-B', 'gr_date' => '2026-09-16', 'qty' => '3', 'uom' => 'pcs', 'gr_remarks' => null, '_formula_columns' => []],
         ];
 
-        $service = app(LocalPoGrImportService::class);
+        $service = app(LocalPoImportService::class);
         $validated = $service->validate($rows);
         $this->assertTrue($validated['success']);
         $this->assertSame(1, $validated['summary']['new_po']);
-        $this->assertSame(2, $validated['summary']['new_gr']);
 
         $counts = $service->import($this->finance, $rows);
         $this->assertSame(1, $counts['newPo']);
-        $this->assertSame(2, $counts['newGr']);
+        $grCounts = app(LocalGrImportService::class)->import($this->finance, $rows);
+        $this->assertSame(2, $grCounts['newGr']);
         $po = LocalPurchaseOrder::where('po_number', 'PO-IMPORT-VALID')->firstOrFail();
         $this->assertSame(LocalPurchaseOrder::SOURCE_IMPORT, $po->source);
         $this->assertSame(2, $po->goodsReceipts()->count());
@@ -446,13 +447,13 @@ class LocalSupplierWholeGrSettlementTest extends TestCase
         $this->assertSame('kg', $snapshot->fresh()->gr_uom_snapshot);
     }
 
-    public function test_combined_import_requires_explicit_quantity_and_unit(): void
+    public function test_gr_import_requires_explicit_quantity_and_unit(): void
     {
-        $row = ['_row' => 2, 'po_number' => 'PO-COMBINED-UOM', 'supplier_name' => 'PT Whole GR',
+        $row = ['_row' => 2, 'po_number' => $this->po->po_number, 'supplier_name' => 'PT Whole GR',
             'po_date' => '2026-09-15', 'po_amount' => '500.00', 'po_remarks' => null,
-            'gr_number' => 'GR-COMBINED-UOM', 'gr_date' => '2026-09-15', 'qty' => '10.125', 'uom' => 'KG',
+            'gr_number' => 'GR-UOM', 'gr_date' => '2026-09-15', 'qty' => '10.125', 'uom' => 'KG',
             'gr_remarks' => null, '_formula_columns' => []];
-        $service = app(LocalPoGrImportService::class);
+        $service = app(LocalGrImportService::class);
         $valid = $service->validate([$row]);
         $this->assertTrue($valid['success']);
         $this->assertSame('kg', $valid['rows'][0]['uom']);

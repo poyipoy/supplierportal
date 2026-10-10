@@ -12,6 +12,7 @@ use App\Support\SpreadsheetCellSanitizer;
 use Illuminate\Support\Collection;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
@@ -20,7 +21,7 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use RuntimeException;
 
 /**
- * Renders a "TARIKAN TRANSFER" workbook with exactly ONE sheet named "Data".
+ * Renders a "TARIKAN TRANSFER" workbook with Data and the original supporting sheets.
  *
  * All selected PaymentBatches' groups are flattened into a single table (A:U).
  * One PaymentGroup = one transfer row.
@@ -78,11 +79,11 @@ class PaymentBatchTransferSheetRenderer
     public const MAX_REMARK_LENGTH = 18;
 
     /**
-     * Render all batches into a single-sheet workbook.
+     * Render all batches into the Data sheet of the original transfer template.
      *
      * @param  Collection<int, PaymentBatch>  $batches  Eagerly loaded with groups→items→payable→supplier.supplier
      */
-    public function render(Collection $batches): Spreadsheet
+    public function render(Collection $batches, ?string $templatePath = null): Spreadsheet
     {
         if ($batches->isEmpty()) {
             throw new RuntimeException('No batches provided for transfer export.');
@@ -94,22 +95,24 @@ class PaymentBatchTransferSheetRenderer
             throw new RuntimeException('No active payment groups found across selected batches for transfer export.');
         }
 
-        $spreadsheet = new Spreadsheet;
-
-        // Exact default font matching TARIKAN TRANSFER.xlsx
-        $spreadsheet->getDefaultStyle()->getFont()->setName('Calibri')->setSize(11);
-
-        $sheet = $spreadsheet->getActiveSheet();
-        $sheet->setTitle('Data');
-        $sheet->setShowGridlines(true);
-
-        // Remove any other default sheets
-        while ($spreadsheet->getSheetCount() > 1) {
-            $spreadsheet->removeSheetByIndex($spreadsheet->getSheetCount() - 1);
+        $templatePath ??= resource_path('templates/drp/TARIKAN TRANSFER.xlsx');
+        if (! is_file($templatePath)) {
+            throw new RuntimeException(__('exports.feedback.transfer_template_unavailable'));
         }
+        $spreadsheet = IOFactory::load($templatePath);
+        if ($spreadsheet->getSheetNames() !== ['Data', 'Legend', 'Form Responses 1', 'bank code', 'Swift Code']) {
+            $spreadsheet->disconnectWorksheets();
+            throw new RuntimeException(__('exports.feedback.transfer_template_unavailable'));
+        }
+        $sheet = $spreadsheet->getSheetByName('Data');
+        if ($sheet->getHighestRow() >= self::DATA_START_ROW) {
+            $sheet->removeRow(self::DATA_START_ROW, $sheet->getHighestRow() - self::HEADER_ROW);
+        }
+        $sheet->setShowGridlines(true);
 
         $this->writeHeaders($sheet);
         $this->writeDataRows($sheet, $dataRows);
+        $spreadsheet->setActiveSheetIndex(0);
 
         return $spreadsheet;
     }
@@ -246,8 +249,8 @@ class PaymentBatchTransferSheetRenderer
             // G: Amount — numeric with General format
             $sheet->setCellValueExplicit("G{$r}", $row['amount'], DataType::TYPE_NUMERIC);
 
-            // H: Eff. Date
-            $sheet->setCellValue("H{$r}", $row['eff_date'] ?? '');
+            // H: Eff. Date is deliberately blank, including previously paid groups.
+            $sheet->setCellValue("H{$r}", null);
 
             // I: Transaction Purpose
             $sheet->setCellValue("I{$r}", $row['transaction_purpose'] ?? '');
@@ -264,10 +267,10 @@ class PaymentBatchTransferSheetRenderer
             $sheet->getStyle("L{$r}")->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
 
             // M: Remark 1
-            $sheet->setCellValue("M{$r}", $row['remark_1'] ?? '');
+            $sheet->setCellValueExplicit("M{$r}", $row['remark_1'] ?? '', DataType::TYPE_STRING);
 
             // N: Remark 2
-            $sheet->setCellValue("N{$r}", $row['remark_2'] ?? '');
+            $sheet->setCellValueExplicit("N{$r}", $row['remark_2'] ?? '', DataType::TYPE_STRING);
 
             // O: Receiver Bank Cd
             $sheet->setCellValue("O{$r}", $row['receiver_bank_cd']);
@@ -353,12 +356,6 @@ class PaymentBatchTransferSheetRenderer
                 }
                 [$remark1, $remark2] = $this->buildRemarks($invoiceNumbers);
 
-                // Effective date: use transfer_date for paid groups, otherwise leave empty
-                $effDate = '';
-                if ($group->transfer_date !== null) {
-                    $effDate = $group->transfer_date->format('d/m/Y');
-                }
-
                 // Supplier PIC email from the payee's supplier profile
                 $supplierEmail = $this->resolveSupplierEmail($group);
 
@@ -370,11 +367,11 @@ class PaymentBatchTransferSheetRenderer
                     'beneficiary_id' => '',
                     'credited_acc' => SpreadsheetCellSanitizer::text($group->account_number, ''),
                     'amount' => (float) $group->net_payment_amount,
-                    'eff_date' => $effDate,
+                    'eff_date' => '',
                     'transaction_purpose' => '',
                     'charges_acc' => $debitAccount,
-                    'remark_1' => SpreadsheetCellSanitizer::text($remark1, ''),
-                    'remark_2' => SpreadsheetCellSanitizer::text($remark2, ''),
+                    'remark_1' => $remark1,
+                    'remark_2' => $remark2,
                     'receiver_bank_cd' => $bankMapping['sandi_bic'],
                     'receiver_bank_name' => $bankMapping['bank_name'],
                     'receiver_name' => SpreadsheetCellSanitizer::text($group->account_holder_name, ''),
@@ -402,45 +399,13 @@ class PaymentBatchTransferSheetRenderer
             return ['', ''];
         }
 
-        $joined = implode(', ', $invoiceNumbers);
-
-        // If everything fits in remark 1
-        if (strlen($joined) <= self::MAX_REMARK_LENGTH) {
-            return [$joined, ''];
-        }
-
-        // Split across remark 1 and remark 2
-        $remark1 = '';
-        $remark2 = '';
-        $remaining = $invoiceNumbers;
-
-        // Pack as many as possible into remark 1
-        $first = [];
-        foreach ($remaining as $idx => $inv) {
-            $candidate = empty($first) ? $inv : implode(', ', array_merge($first, [$inv]));
-            if (strlen($candidate) <= self::MAX_REMARK_LENGTH) {
-                $first[] = $inv;
-                unset($remaining[$idx]);
-            } else {
-                break;
-            }
-        }
-        $remaining = array_values($remaining);
-
-        if (empty($first) && ! empty($remaining)) {
-            $inv = array_shift($remaining);
-            $remark1 = substr($inv, 0, self::MAX_REMARK_LENGTH);
-        } else {
-            $remark1 = implode(', ', $first);
-        }
-
-        if (! empty($remaining)) {
-            $remark2Text = implode(', ', $remaining);
-            if (strlen($remark2Text) > self::MAX_REMARK_LENGTH) {
-                $remark2 = substr($remark2Text, 0, self::MAX_REMARK_LENGTH);
-            } else {
-                $remark2 = $remark2Text;
-            }
+        // Sanitize once before measuring; explicit string cells also protect a
+        // continuation that starts with a formula prefix after splitting.
+        $joined = SpreadsheetCellSanitizer::text(implode(', ', $invoiceNumbers), '');
+        $remark1 = mb_substr($joined, 0, self::MAX_REMARK_LENGTH, 'UTF-8');
+        $remark2 = mb_substr($joined, self::MAX_REMARK_LENGTH, null, 'UTF-8');
+        if (mb_strlen($remark2, 'UTF-8') > self::MAX_REMARK_LENGTH) {
+            $remark2 = mb_substr($remark2, 0, self::MAX_REMARK_LENGTH - 3, 'UTF-8').'...';
         }
 
         return [$remark1, $remark2];

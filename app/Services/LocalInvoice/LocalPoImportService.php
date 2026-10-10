@@ -20,10 +20,11 @@ class LocalPoImportService
     {
         $this->audit->record($actor, 'po_import_previewed', $actor, null, null, [
             'original_filename' => $filename,
+            'checksum' => $result['checksum'] ?? null,
             'previewed_at' => now()->toIso8601String(),
-            'row_count' => count($result['rows'] ?? []),
+            'row_count' => $result['summary']['source_rows'] ?? count($result['rows'] ?? []),
             'valid' => (bool) ($result['success'] ?? false),
-            'error_count' => count($result['errors'] ?? []),
+            'error_count' => $result['summary']['invalid'] ?? count($result['errors'] ?? []),
         ]);
     }
 
@@ -33,7 +34,9 @@ class LocalPoImportService
         $normalized = [];
         $seenHeaders = [];
 
-        $suppliers = User::localEligible()->with('supplier')->get()
+        $names = array_unique(array_map(fn ($row) => mb_strtolower(trim((string) ($row['supplier_name'] ?? ''))), $rows));
+        $suppliers = User::localEligible()->select('users.id')->with('supplier:user_id,company_name')
+            ->whereHas('supplier', fn ($q) => $q->whereIn(DB::raw('LOWER(TRIM(company_name))'), $names))->get()
             ->filter(fn (User $user) => filled($user->supplier?->company_name))
             ->groupBy(fn (User $u) => mb_strtolower(trim((string) $u->supplier?->company_name)));
 
@@ -71,7 +74,7 @@ class LocalPoImportService
             }
 
             $poAmount = $this->money($row['po_amount'] ?? null);
-            if (! empty($row['po_amount']) && ($poAmount === null || bccomp($poAmount, '0', 2) <= 0)) {
+            if (filled($row['po_amount'] ?? null) && ($poAmount === null || bccomp($poAmount, '0', 2) <= 0)) {
                 $rowErrors[] = ['po_amount', __('local_procurement.import.po_amount_positive')];
             }
 
@@ -137,7 +140,7 @@ class LocalPoImportService
                 }
                 $processedKeys[$key] = true;
 
-                $existing = LocalPurchaseOrder::whereRaw('LOWER(po_number) = ?', [$key])
+                $existing = LocalPurchaseOrder::where('po_number', $key)
                     ->lockForUpdate()
                     ->first();
 
@@ -175,7 +178,7 @@ class LocalPoImportService
     {
         $errors = [];
         $uniquePoKeys = collect($rows)->pluck('po_number')->filter()->map(fn ($v) => mb_strtolower($v))->unique();
-        $existingMap = LocalPurchaseOrder::whereIn(DB::raw('LOWER(po_number)'), $uniquePoKeys->all())
+        $existingMap = LocalPurchaseOrder::forceIndex('local_purchase_orders_po_number_unique')->whereIn('po_number', $uniquePoKeys->all())
             ->get()
             ->keyBy(fn ($po) => mb_strtolower($po->po_number));
 

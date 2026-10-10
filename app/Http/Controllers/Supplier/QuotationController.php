@@ -16,6 +16,8 @@ use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
 use App\Models\QuotationItem;
 use App\Models\User;
+use App\Services\FileSecurity\FileAccessGuard;
+use App\Services\FileSecurity\FileInspectionService;
 use App\Services\Materials\MaterialWeightCalculator;
 use App\Services\NotificationService;
 use App\Support\BusinessTime;
@@ -32,6 +34,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
+use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Facades\Excel;
 use Throwable;
 use Yajra\DataTables\Facades\DataTables;
@@ -757,6 +760,7 @@ class QuotationController extends Controller
                     }
                 } elseif ($keepExisting && $existingItemAttachments->has($prItem->id)) {
                     foreach ($existingItemAttachments->get($prItem->id) as $attachment) {
+                        app(FileAccessGuard::class)->assertReadable($attachment);
                         $attachment->update([
                             'attachable_id' => $quotationItem->id,
                         ]);
@@ -821,8 +825,20 @@ class QuotationController extends Controller
                 ? ($wasRevisionRequested ? 'Revised quotation has been resubmitted.' : __('supplier.copy.quotation_successfully_sent'))
                 : ($wasRevisionRequested ? __('supplier.copy.revised_quotation_draft_successfully_saved') : __('supplier.copy.draft_quotation_successfully_saved'));
 
+            if ($request->expectsJson()) {
+                $request->session()->flash('success', $msg);
+
+                return response()->json(['redirect' => route('supplier.quotations.period', $pr->period_id)]);
+            }
+
             return redirect()->route('supplier.quotations.period', $pr->period_id)->with('success', $msg);
 
+        } catch (ValidationException $e) {
+            DB::rollBack();
+            foreach ($newlyCreatedFiles as $newFile) {
+                Storage::disk('private')->delete($newFile);
+            }
+            throw $e;
         } catch (\DomainException|\InvalidArgumentException $e) {
             DB::rollBack();
 
@@ -830,6 +846,10 @@ class QuotationController extends Controller
                 if ($newFile && Storage::disk('private')->exists($newFile)) {
                     Storage::disk('private')->delete($newFile);
                 }
+            }
+
+            if ($request->expectsJson()) {
+                throw ValidationException::withMessages(['items' => $e->getMessage()]);
             }
 
             return back()->withInput()->with('error', __('supplier.errors.save_with_reason', ['message' => $e->getMessage()]));
@@ -841,6 +861,10 @@ class QuotationController extends Controller
                 if ($newFile && Storage::disk('private')->exists($newFile)) {
                     Storage::disk('private')->delete($newFile);
                 }
+            }
+
+            if ($request->expectsJson()) {
+                throw $e;
             }
 
             return back()->withInput()->with('error', __('supplier.copy.failed_to_save_quotation_an_unexpected_error_occurred_please_try_again'));
@@ -995,23 +1019,15 @@ class QuotationController extends Controller
         $fileName = $file->hashName();
         $path = 'attachments/'.now()->format('Y/m').'/'.$fileName; // biz-time:ignore storage path
 
-        $stream = fopen($file->getPathname(), 'r');
-        if (! $stream) {
-            throw new \RuntimeException(__('supplier.copy.file_cannot_be_read_please_upload_the_file_again'));
-        }
-
-        try {
-            Storage::disk('private')->put($path, $stream);
-        } finally {
-            fclose($stream);
-        }
+        $stored = app(FileInspectionService::class)->storeUpload($file, 'mtc', $path, 'items');
 
         $newlyCreatedFiles[] = $path;
 
         $quotationItem->attachments()->create([
-            'file_path' => $path,
-            'file_name' => $file->getClientOriginalName(),
-            'file_type' => $file->getMimeType(),
+            'file_path' => $stored['file_path'],
+            'file_name' => $stored['file_name'],
+            'file_type' => $stored['file_type'],
+            'file_inspection_id' => $stored['file_inspection_id'],
             'uploaded_by' => auth()->id(),
         ]);
     }
@@ -1045,6 +1061,8 @@ class QuotationController extends Controller
             return null;
         }
 
+        app(FileAccessGuard::class)->assertReadable($sourceAttachment);
+
         // 2. Validate file path against path traversal
         $sourcePath = $sourceAttachment->file_path;
         if (! $sourcePath || str_contains($sourcePath, '..') || ! str_starts_with($sourcePath, 'attachments/')) {
@@ -1068,14 +1086,17 @@ class QuotationController extends Controller
         $targetPath = $targetDirectory.'/'.$targetFileName;
 
         // 6. Physically duplicate the file
-        Storage::disk('private')->copy($sourcePath, $targetPath);
+        $stored = app(FileInspectionService::class)->storePath(
+            Storage::disk('private')->path($sourcePath), $sourceAttachment->file_name, 'mtc', $targetPath, 'items'
+        );
         $newlyCreatedFiles[] = $targetPath;
 
         // 7. Create distinct Attachment record for target quotation item
         return $targetItem->attachments()->create([
-            'file_path' => $targetPath,
-            'file_name' => $sourceAttachment->file_name,
-            'file_type' => $sourceAttachment->file_type,
+            'file_path' => $stored['file_path'],
+            'file_name' => $stored['file_name'],
+            'file_type' => $stored['file_type'],
+            'file_inspection_id' => $stored['file_inspection_id'],
             'uploaded_by' => auth()->id(),
         ]);
     }

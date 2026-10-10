@@ -6,6 +6,7 @@ use App\Contracts\AcceptsExportOptions;
 use App\Contracts\TracksExportProgress;
 use App\Exports\Advanced\Concerns\UsesColumnCatalog;
 use App\Exports\Concerns\InteractsWithExportProgress;
+use App\Exports\Concerns\StylesOperationalWorkbook;
 use App\Http\Requests\Export\Filters\InspectionExportFilters;
 use App\Models\QcInspection;
 use App\Models\QcItem;
@@ -22,10 +23,12 @@ use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
 use Maatwebsite\Excel\Concerns\WithCustomQuerySize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
+use Maatwebsite\Excel\Concerns\WithStyles;
 
-class InspectionsExport implements AcceptsExportOptions, FromQuery, HasLocalePreference, TracksExportProgress, WithColumnWidths, WithCustomChunkSize, WithCustomCsvSettings, WithCustomQuerySize, WithHeadings, WithMapping
+class InspectionsExport implements AcceptsExportOptions, FromQuery, HasLocalePreference, TracksExportProgress, WithColumnWidths, WithCustomChunkSize, WithCustomCsvSettings, WithCustomQuerySize, WithHeadings, WithMapping, WithStyles
 {
     use InteractsWithExportProgress;
+    use StylesOperationalWorkbook;
     use UsesColumnCatalog;
 
     protected $startDate;
@@ -136,14 +139,24 @@ class InspectionsExport implements AcceptsExportOptions, FromQuery, HasLocalePre
         }
 
         return [
-            'A' => 22,
-            'B' => 25,
-            'C' => 30,
-            'D' => 38,
-            'E' => 34,
-            'F' => 15,
-            'G' => 18,
+            'A' => 18,
+            'B' => 22,
+            'C' => 22,
+            'D' => 24,
+            'E' => 24,
+            'F' => 10,
+            'G' => 14,
             'H' => 20,
         ];
+    }
+
+    protected function workbookPresentationEnabled(): bool
+    {
+        return $this->catalogStylesEnabled();
+    }
+
+    protected function workbookWrappedColumns(): array
+    {
+        return $this->hasExportOptions() ? $this->catalogWrappedColumns() : ['B', 'C', 'D', 'E', 'F', 'G'];
     }
 }

@@ -7,9 +7,11 @@ use App\Models\SupplierRegistrationAccess;
 use App\Models\SupplierRegistrationAttempt;
 use App\Models\SupplierRegistrationAudit;
 use App\Models\User;
+use App\Support\SupplierComplianceQuestionnaire;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Tests\Support\NativeFileFixtures;
 use Tests\TestCase;
 
 class SupplierRegistrationCredentialAccessTest extends TestCase
@@ -46,9 +48,10 @@ class SupplierRegistrationCredentialAccessTest extends TestCase
             'email' => self::EMAIL,
             'password' => self::PASSWORD,
             'password_confirmation' => self::PASSWORD,
-            'nib_file' => UploadedFile::fake()->create('nib.pdf', 500, 'application/pdf'),
-            'npwp_file' => UploadedFile::fake()->create('npwp.jpg', 400, 'image/jpeg'),
-            'sknr_file' => UploadedFile::fake()->create('sknr.pdf', 600, 'application/pdf'),
+            'nib_file' => NativeFileFixtures::upload('nib.pdf', 500),
+            'npwp_file' => UploadedFile::fake()->image('npwp.jpg', 20, 20),
+            'sknr_file' => NativeFileFixtures::upload('sknr.pdf', 600),
+            'questionnaire' => SupplierComplianceQuestionnaire::QUESTIONS,
         ]);
 
         $response->assertRedirect(route('supplier.registration.success'));

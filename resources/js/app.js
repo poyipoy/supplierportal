@@ -1,3 +1,4 @@
+import { bootPoDocumentUploads } from './po-document-upload';
 import { t } from './i18n.js';
 import Alpine from 'alpinejs';
 import './password-assistance';
@@ -6,14 +7,21 @@ import './unsaved-changes';
 import './number-input-helper';
 import './chart-theme';
 import './preferences';
+import './regional-sample';
 import './submit-guard';
+import './async-form-submit';
+import './adasi-loader';
 import './asset-protection';
 import './advanced-export';
 import './server-tabs';
 import { adasiFileUploadComponent } from './file-upload';
+import { customizationForm } from './customization-form';
+import { supplierAuditForm } from './supplier-audit-form';
 
 window.Alpine = Alpine;
 Alpine.data('adasiFileUploadComponent', adasiFileUploadComponent);
+Alpine.data('customizationForm', customizationForm);
+Alpine.data('supplierAuditForm', supplierAuditForm);
 
 const toastState = Alpine.reactive({
     visible: [],
@@ -447,3 +455,13 @@ Alpine.data('adasiShell', () => ({
 
 Alpine.start();
 bootAdasiCalendars();
+const bootImports = () => {
+    if (document.querySelector('[data-local-import]')) import('./local-procurement-import');
+};
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootImports);
+else bootImports();
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => bootPoDocumentUploads());
+} else {
+    bootPoDocumentUploads();
+}

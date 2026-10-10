@@ -5,6 +5,7 @@ namespace App\Services\Ga;
 use App\Models\Employee;
 use App\Models\GaClaim;
 use App\Models\User;
+use App\Services\FileSecurity\FileInspectionService;
 use App\Support\BusinessTime;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -32,6 +33,9 @@ class GaClaimService
 
         $supportingFile = $files['supporting'] ?? $files['attachment'] ?? null;
         $this->validateSubmission($data, $supportingFile);
+        if ($supportingFile !== null) {
+            app(FileInspectionService::class)->inspectUpload($supportingFile, 'ga', 'supporting');
+        }
 
         $written = [];
 
@@ -65,25 +69,16 @@ class GaClaimService
                     $path = 'ga-claims/'.$claim->id.'/revisions/1/'.$supportingFile->hashName();
                     $written[] = $path;
 
-                    $stream = fopen($supportingFile->getPathname(), 'r');
-                    if ($stream === false) {
-                        throw new RuntimeException(__('ga.validation.file_read'));
-                    }
-                    try {
-                        if (! Storage::disk('private')->put($path, $stream)) {
-                            throw new RuntimeException(__('ga.validation.file_store'));
-                        }
-                    } finally {
-                        fclose($stream);
-                    }
+                    $stored = app(FileInspectionService::class)->storeUpload($supportingFile, 'ga', $path, 'supporting');
 
                     $claim->documents()->create([
                         'revision_number' => 1,
                         'document_type' => 'supporting',
-                        'file_path' => $path,
-                        'original_filename' => mb_substr(basename(str_replace('\\', '/', $supportingFile->getClientOriginalName())), 0, 255),
-                        'mime_type' => $supportingFile->getMimeType(),
-                        'file_size' => $supportingFile->getSize(),
+                        'file_path' => $stored['file_path'],
+                        'original_filename' => $stored['file_name'],
+                        'mime_type' => $stored['file_type'],
+                        'file_size' => $stored['file_size'],
+                        'file_inspection_id' => $stored['file_inspection_id'],
                         'uploaded_by' => $actor->id,
                     ]);
                 }
@@ -125,6 +120,9 @@ class GaClaimService
 
         $supportingFile = $files['supporting'] ?? $files['attachment'] ?? null;
         $this->validateSubmission($data, $supportingFile);
+        if ($supportingFile !== null) {
+            app(FileInspectionService::class)->inspectUpload($supportingFile, 'ga', 'supporting');
+        }
 
         $written = [];
 
@@ -157,25 +155,16 @@ class GaClaimService
                     $path = 'ga-claims/'.$clm->id.'/revisions/'.$newRev.'/'.$supportingFile->hashName();
                     $written[] = $path;
 
-                    $stream = fopen($supportingFile->getPathname(), 'r');
-                    if ($stream === false) {
-                        throw new RuntimeException(__('ga.validation.file_read'));
-                    }
-                    try {
-                        if (! Storage::disk('private')->put($path, $stream)) {
-                            throw new RuntimeException(__('ga.validation.file_store'));
-                        }
-                    } finally {
-                        fclose($stream);
-                    }
+                    $stored = app(FileInspectionService::class)->storeUpload($supportingFile, 'ga', $path, 'supporting');
 
                     $clm->documents()->create([
                         'revision_number' => $newRev,
                         'document_type' => 'supporting',
-                        'file_path' => $path,
-                        'original_filename' => mb_substr(basename(str_replace('\\', '/', $supportingFile->getClientOriginalName())), 0, 255),
-                        'mime_type' => $supportingFile->getMimeType(),
-                        'file_size' => $supportingFile->getSize(),
+                        'file_path' => $stored['file_path'],
+                        'original_filename' => $stored['file_name'],
+                        'mime_type' => $stored['file_type'],
+                        'file_size' => $stored['file_size'],
+                        'file_inspection_id' => $stored['file_inspection_id'],
                         'uploaded_by' => $actor->id,
                     ]);
                 }

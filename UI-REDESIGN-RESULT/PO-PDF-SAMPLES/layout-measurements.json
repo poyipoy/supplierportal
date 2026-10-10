@@ -1,0 +1,85 @@
+{
+  "table_header": {
+    "reference_y_mm": [
+      79.32,
+      87.66
+    ],
+    "actual_y_mm": [
+      79.5,
+      87.96
+    ],
+    "max_error_mm": 0.3
+  },
+  "ship_to_box": {
+    "reference_y_mm": [
+      242.1,
+      248.22,
+      272.46
+    ],
+    "actual_y_mm": [
+      242.28,
+      248.4,
+      272.88
+    ],
+    "max_error_mm": 0.42
+  },
+  "signature_box": {
+    "reference_y_mm": [
+      242.1,
+      247.8,
+      272.22
+    ],
+    "actual_y_mm": [
+      242.4,
+      248.1,
+      272.94
+    ],
+    "max_error_mm": 0.72
+  },
+  "table_columns": {
+    "reference_x_mm": [
+      10.68,
+      17.88,
+      114.42,
+      144.6,
+      172.02,
+      199.26
+    ],
+    "actual_x_mm": [
+      10.68,
+      17.7,
+      114.24,
+      144.24,
+      171.72,
+      199.2
+    ],
+    "max_error_mm": 0.36
+  },
+  "ship_to_sides": {
+    "reference_x_mm": [
+      9.9,
+      97.98
+    ],
+    "actual_x_mm": [
+      9.96,
+      98.28
+    ],
+    "max_error_mm": 0.3
+  },
+  "signature_columns": {
+    "reference_x_mm": [
+      101.76,
+      134.46,
+      166.98,
+      199.62
+    ],
+    "actual_x_mm": [
+      102.0,
+      134.58,
+      167.22,
+      199.74
+    ],
+    "max_error_mm": 0.24
+  },
+  "coverage": "Fixed form borders and columns; dynamic content and approved data changes require separate visual/content review."
+}

@@ -19,9 +19,8 @@ use RuntimeException;
 /**
  * Bulk Transfer Export for DRP Supplier.
  *
- * Generates a single workbook with ONE "Data" sheet containing all transfer
- * rows from the selected PaymentBatches. Uses the TARIKAN TRANSFER format
- * with columns A:U.
+ * Generates one TARIKAN TRANSFER workbook with selected PaymentBatch rows in
+ * Data (columns A:U), retaining the four original supporting sheets.
  *
  * Constructor contract: (int $actorId, list<int> $batchIds)
  *   - Identical scalar signature as PaymentBatchDrpExport for ExportDispatcher compatibility.

@@ -162,4 +162,12 @@ return [
         'rejected' => 'Rejected',
         'active' => 'Active',
     ],
+    'supplier_audit' => [
+        'assigned' => 'Assigned',
+        'draft' => 'Draft',
+        'submitted' => 'Submitted',
+        'revision_requested' => 'Revision Requested',
+        'result_published' => 'Result Published',
+        'cancelled' => 'Cancelled',
+    ],
 ];

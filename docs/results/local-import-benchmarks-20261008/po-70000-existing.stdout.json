@@ -1,0 +1,59 @@
+{"phase":"prepare","rows":70000,"kind":"PO"}
+{"phase":"preview","seconds":63.163,"status":"READY"}
+{
+    "kind": "PO",
+    "rows": 70000,
+    "existing_gr": 500000,
+    "database": "adasi_portal_test",
+    "commit_budget_seconds": 60,
+    "scenario": "existing",
+    "file_bytes": 4559042,
+    "accept_seconds": 0.099,
+    "payload_bytes": 897,
+    "preview_seconds": 63.163,
+    "confirm_seconds": 21.006,
+    "final_status": "COMPLETED",
+    "failure": null,
+    "summary": {
+        "newGr": 0,
+        "newPo": 0,
+        "total": 70000,
+        "new_gr": 0,
+        "new_po": 0,
+        "invalid": 0,
+        "conflicts": 0,
+        "existingGr": 0,
+        "existingPo": 70000,
+        "sourceRows": 70000,
+        "total_rows": 70000,
+        "unique_pos": 70000,
+        "existing_gr": 0,
+        "existing_po": 70000,
+        "source_rows": 70000,
+        "unmatched_po": 0,
+        "consolidated_gr": 0,
+        "totalConsolidated": 0
+    },
+    "peak_php_mb": 72,
+    "phases": {
+        "prepare": {
+            "queries": 1140,
+            "sql_ms": 49589.010000000046
+        },
+        "dispatch": {
+            "queries": 10,
+            "sql_ms": 20.93
+        },
+        "preview": {
+            "queries": 2249,
+            "sql_ms": 25664.929999999997
+        },
+        "confirm": {
+            "queries": 1415,
+            "sql_ms": 12344.07
+        }
+    },
+    "created_gr": 0,
+    "created_po": 0,
+    "creation_audits": 0
+}

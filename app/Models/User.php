@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Validation\ValidationException;
 
 class User extends Authenticatable
 {
@@ -25,6 +26,15 @@ class User extends Authenticatable
     public const ACCOUNT_STATUS_ACTIVE = 'ACTIVE';
 
     public const ACCOUNT_STATUS_REJECTED = 'REJECTED';
+
+    protected static function booted(): void
+    {
+        static::updating(function (User $user): void {
+            if ($user->isDirty('email')) {
+                throw ValidationException::withMessages(['email' => __('profile.email_immutable')]);
+            }
+        });
+    }
 
     /**
      * The attributes that are mass assignable.

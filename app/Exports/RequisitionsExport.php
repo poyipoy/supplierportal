@@ -6,6 +6,7 @@ use App\Contracts\AcceptsExportOptions;
 use App\Contracts\TracksExportProgress;
 use App\Exports\Advanced\Concerns\UsesColumnCatalog;
 use App\Exports\Concerns\InteractsWithExportProgress;
+use App\Exports\Concerns\StylesOperationalWorkbook;
 use App\Http\Requests\Export\Filters\RequisitionExportFilters;
 use App\Models\PrItem;
 use App\Support\BusinessTime;
@@ -21,10 +22,12 @@ use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
 use Maatwebsite\Excel\Concerns\WithCustomQuerySize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
+use Maatwebsite\Excel\Concerns\WithStyles;
 
-class RequisitionsExport implements AcceptsExportOptions, FromQuery, HasLocalePreference, TracksExportProgress, WithColumnWidths, WithCustomChunkSize, WithCustomCsvSettings, WithCustomQuerySize, WithHeadings, WithMapping
+class RequisitionsExport implements AcceptsExportOptions, FromQuery, HasLocalePreference, TracksExportProgress, WithColumnWidths, WithCustomChunkSize, WithCustomCsvSettings, WithCustomQuerySize, WithHeadings, WithMapping, WithStyles
 {
     use InteractsWithExportProgress;
+    use StylesOperationalWorkbook;
     use UsesColumnCatalog;
 
     protected $periodId;
@@ -133,17 +136,27 @@ class RequisitionsExport implements AcceptsExportOptions, FromQuery, HasLocalePr
         }
 
         return [
-            'A' => 22,
-            'B' => 18,
-            'C' => 30,
-            'D' => 38,
+            'A' => 18,
+            'B' => 16,
+            'C' => 22,
+            'D' => 24,
             'E' => 10,
-            'F' => 15,
-            'G' => 15,
-            'H' => 15,
-            'I' => 30,
-            'J' => 15,
-            'K' => 21,
+            'F' => 14,
+            'G' => 14,
+            'H' => 14,
+            'I' => 24,
+            'J' => 18,
+            'K' => 20,
         ];
+    }
+
+    protected function workbookPresentationEnabled(): bool
+    {
+        return $this->catalogStylesEnabled();
+    }
+
+    protected function workbookWrappedColumns(): array
+    {
+        return $this->hasExportOptions() ? $this->catalogWrappedColumns() : ['C', 'D', 'I', 'J'];
     }
 }

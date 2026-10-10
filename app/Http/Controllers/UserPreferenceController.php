@@ -19,17 +19,30 @@ class UserPreferenceController extends Controller
         $user = $request->user();
         $effective = $preferences->for($user);
         $context = $quickAccess->contextFor($user);
+        $dashboardDefaultRows = $dashboardWidgets->layoutFor($user, []);
 
         return view('profile.customization', [
             'preferences' => $effective,
+            'defaults' => config('user_preferences.defaults'),
             'accentChoices' => collect(config('user_preferences.accents'))->map(fn ($label, $key) => __('customization.accents.'.$key))->all(),
             'regionalChoices' => array_intersect_key(config('regional_display'), array_flip(['timezones', 'date_formats', 'time_formats', 'number_formats'])),
             'dashboardAudience' => $dashboardWidgets->audienceFor($user),
             'dashboardWidgets' => $dashboardWidgets->layoutFor($user, $effective['dashboard_preferences']),
+            'dashboardDefaultOrder' => array_column($dashboardDefaultRows, 'key'),
             'quickAccessChoices' => $quickAccess->availableFor($user),
             'selectedQuickAccess' => array_column($quickAccess->selectedFor($user, $effective['quick_access'], $context), 'key'),
+            'otherContextQuickAccessCount' => count($quickAccess->availableInOtherSupplierContext($user, $effective['quick_access'], $context)),
             'supplierContext' => $context,
             'quickAccessLimit' => (int) config('user_preferences.quick_access_limit'),
+            'regionalFormatRegistry' => [
+                'date_formats' => array_keys(config('regional_display.date_formats')),
+                'number_profiles' => config('regional_display.number_profiles'),
+                'months' => config('regional_display.months'),
+            ],
+            'regionalSample' => [
+                'iso' => '2026-10-08T07:30:00Z',
+                'number' => '1,250,000.50',
+            ],
         ]);
     }
 

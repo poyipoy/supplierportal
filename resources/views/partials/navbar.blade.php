@@ -75,14 +75,14 @@
         </div>
 
         {{-- Language Switcher Toggle --}}
-        <form action="{{ route('locale.switch') }}" method="POST" class="tw-inline-flex tw-items-center tw-p-0.5 tw-rounded-ui-full tw-bg-surface-container tw-border tw-border-outline-variant/60 tw-m-0" role="group" aria-label="{{ __('customization.language.label') }}">
+        <form action="{{ route('locale.switch') }}" method="POST" class="lang-toggle-track tw-inline-flex tw-items-center tw-p-0.5 tw-rounded-ui-full tw-bg-surface-container tw-border tw-border-outline-strong tw-m-0" role="group" aria-label="{{ __('customization.language.label') }}">
             @csrf
             <input type="hidden" name="return_to" value="{{ request()->getRequestUri() }}">
             <button
                 type="submit"
                 name="locale"
                 value="id"
-                class="lang-pill-btn ui-focus-ring tw-flex tw-items-center tw-gap-1.5 tw-px-2 tw-py-1 tw-rounded-ui-full tw-text-ui-xs tw-font-bold {{ app()->getLocale() === 'id' ? 'tw-bg-surface tw-text-primary tw-shadow-xs' : 'tw-text-on-surface-variant hover:tw-text-on-surface hover:tw-bg-surface/50' }}"
+                class="lang-pill-btn ui-focus-ring tw-flex tw-items-center tw-gap-1.5 tw-px-2 tw-py-1 tw-rounded-ui-full tw-text-ui-xs tw-font-bold {{ app()->getLocale() === 'id' ? 'is-active tw-bg-surface tw-text-primary tw-border-outline tw-shadow-xs' : 'tw-border-transparent tw-text-on-surface-variant hover:tw-text-on-surface hover:tw-bg-surface/50' }}"
                 aria-label="Bahasa Indonesia"
                 {{ app()->getLocale() === 'id' ? 'disabled aria-pressed=true' : 'aria-pressed=false' }}
             >
@@ -98,7 +98,7 @@
                 type="submit"
                 name="locale"
                 value="en"
-                class="lang-pill-btn ui-focus-ring tw-flex tw-items-center tw-gap-1.5 tw-px-2 tw-py-1 tw-rounded-ui-full tw-text-ui-xs tw-font-bold {{ app()->getLocale() === 'en' ? 'tw-bg-surface tw-text-primary tw-shadow-xs' : 'tw-text-on-surface-variant hover:tw-text-on-surface hover:tw-bg-surface/50' }}"
+                class="lang-pill-btn ui-focus-ring tw-flex tw-items-center tw-gap-1.5 tw-px-2 tw-py-1 tw-rounded-ui-full tw-text-ui-xs tw-font-bold {{ app()->getLocale() === 'en' ? 'is-active tw-bg-surface tw-text-primary tw-border-outline tw-shadow-xs' : 'tw-border-transparent tw-text-on-surface-variant hover:tw-text-on-surface hover:tw-bg-surface/50' }}"
                 aria-label="English"
                 {{ app()->getLocale() === 'en' ? 'disabled aria-pressed=true' : 'aria-pressed=false' }}
             >

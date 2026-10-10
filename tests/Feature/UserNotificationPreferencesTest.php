@@ -25,7 +25,7 @@ class UserNotificationPreferencesTest extends TestCase
     public function test_phase_five_registry_and_flat_event_form(): void
     {
         $registry = config('notification_preferences');
-        $this->assertCount(40, $registry);
+        $this->assertCount(47, $registry);
         $expectedKeys = [
             'pr_submitted', 'quotation_submitted', 'quotation_revised', 'quotation_accepted', 'quotation_rejected',
             'quotation_revision_requested', 'quotation_negotiation_message', 'conversation_message_created',
@@ -39,9 +39,12 @@ class UserNotificationPreferencesTest extends TestCase
             'local_invoice_approved', 'local_invoice_revision_requested', 'local_invoice_rejected',
             'local_invoice_partial_payment', 'local_invoice_paid', 'local_invoice_overpaid',
             'local_invoice_refund_settled', 'local_invoice_physical_delivery_reminder',
+            'supplier_audit_assigned', 'supplier_audit_revision_requested', 'supplier_audit_result_published',
+            'supplier_audit_cancelled', 'supplier_audit_deadline_changed', 'supplier_audit_invoice_blocked',
+            'supplier_audit_submitted',
         ];
         $this->assertEqualsCanonicalizing($expectedKeys, array_keys($registry));
-        $this->assertCount(40, array_unique(array_column($registry, 'source_event')));
+        $this->assertCount(47, array_unique(array_column($registry, 'source_event')));
         foreach ($registry as $entry) {
             $this->assertSame(SystemNotification::class, $entry['class']);
             $this->assertTrue($entry['default']);
@@ -89,7 +92,7 @@ class UserNotificationPreferencesTest extends TestCase
                 ->assertViewHas('events', function (array $events): bool {
                     $order = [
                         'notifications.categories.requisitions', 'notifications.categories.quotations', 'notifications.categories.conversations', 'notifications.categories.purchase_orders', 'notifications.categories.documents',
-                        'notifications.categories.shipments_qc', 'notifications.categories.claims', 'notifications.categories.local_invoices', 'notifications.categories.registration', 'notifications.categories.exports', 'notifications.categories.security',
+                        'notifications.categories.shipments_qc', 'notifications.categories.claims', 'notifications.categories.local_invoices', 'notifications.categories.registration', 'notifications.categories.supplier_audits', 'notifications.categories.exports', 'notifications.categories.security',
                     ];
                     $actual = array_values(array_unique(array_column($events, 'category')));
 
@@ -126,7 +129,7 @@ class UserNotificationPreferencesTest extends TestCase
         $this->assertCount(1, $xpath->query('//input[@type="hidden" and @name="'.$name.'" and @value="0"]'));
         $this->assertCount(1, $xpath->query('//form[@action="'.route('profile.notifications.update').'" and input[@name="_method" and @value="PATCH"]]//input[@name="_token"]'));
         $this->assertCount(1, $xpath->query('//form//input[@name="_method" and @value="PATCH"]'));
-        $this->assertCount(13, $xpath->query('//input[@type="checkbox"]'));
+        $this->assertCount(19, $xpath->query('//input[@type="checkbox"]'));
         $this->assertDatabaseMissing('user_preferences', ['user_id' => $user->id]);
     }
 

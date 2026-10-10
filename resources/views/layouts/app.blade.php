@@ -223,6 +223,7 @@
 
     <!-- Tailwind design foundation + Alpine entry (hybrid compatibility phase) -->
     @include('partials.i18n-bootstrap')
+    @include('partials.loader-logo')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('styles')
 </head>
@@ -335,50 +336,6 @@
             }).observe(document.documentElement, { childList: true, subtree: true });
         }
     </script>
-    <script>
-        // ADASI Loader — Inject overlay ke body
-        const isDataTableRequest = (options = {}) => {
-            const data = options.data;
-
-            if (data && typeof data === 'object') {
-                return Object.prototype.hasOwnProperty.call(data, 'draw');
-            }
-
-            return typeof data === 'string' && /(?:^|&)draw(?:=|%5B|\[)/i.test(data);
-        };
-
-        $.ajaxPrefilter((options) => {
-            if (isDataTableRequest(options)) {
-                options.global = false;
-            }
-        });
-
-        $(function () {
-            // Create the loading overlay once.
-            $('body').append(
-                '<div class="adasi-loader-overlay" id="adasiLoader">' +
-                '<div class="adasi-loader-card">' +
-                '<div class="adasi-loader-ring">' +
-                '<div class="adasi-loader-logo"></div>' +
-                '</div>' +
-                '<span class="adasi-loader-text"></span>' +
-                '</div>' +
-                '</div>'
-            );
-
-            // Show when an AJAX request starts, including DataTables requests.
-            document.querySelector('.adasi-loader-text').textContent = @js(__('common.loading'));
-            $(document).ajaxStart(function () {
-                $('#adasiLoader').addClass('active');
-            });
-
-            // Hide when the AJAX request completes.
-            $(document).ajaxStop(function () {
-                $('#adasiLoader').removeClass('active');
-            });
-        });
-    </script>
-
     <!-- SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
     <script src="{{ asset('assets/js/adasi-alert.js') }}"></script>

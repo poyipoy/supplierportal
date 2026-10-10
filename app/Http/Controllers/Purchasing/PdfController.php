@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Purchasing;
 use App\Http\Controllers\Controller;
 use App\Models\PurchaseOrder;
 use App\Models\QcInspection;
+use App\Support\PurchaseOrderPdf;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 class PdfController extends Controller
@@ -15,13 +16,10 @@ class PdfController extends Controller
     public function purchaseOrder($id)
     {
         $query = PurchaseOrder::with([
-            'supplier',
-            'quotations.supplier',
+            'supplier.supplier',
             'quotations.items.prItem',
             'awards',
-            'quotations.purchaseRequisition.period',
-            'quotations.exchange_rate',
-            'creator',
+            'quotations.purchaseRequisition',
         ]);
 
         if (auth()->user()->role === 'supplier') {
@@ -30,11 +28,9 @@ class PdfController extends Controller
 
         $po = $query->findOrFail($id);
 
-        $quotationRates = $po->commercialQuotations()->mapWithKeys(function ($q) {
-            return [$q->id => $q->exchange_rate];
-        });
+        $document = PurchaseOrderPdf::data($po);
 
-        $pdf = Pdf::loadView('pdf.po-pdf', compact('po', 'quotationRates'))
+        $pdf = Pdf::loadView('pdf.po-pdf', compact('po', 'document'))
             ->setPaper('a4', 'portrait');
 
         return $pdf->download('PO_'.str_replace('/', '-', $po->po_number).'.pdf');

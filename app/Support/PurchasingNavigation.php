@@ -20,6 +20,7 @@ class PurchasingNavigation
         'purchasing.purchase-orders.index',
         'purchasing.shipments.index',
         'purchasing.local-vendors.index',
+        'purchasing.supplier-audits.index',
         'purchasing.local-procurement.index',
         'purchasing.drp.supplier',
         'purchasing.drp.ga',

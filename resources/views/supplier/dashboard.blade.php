@@ -26,8 +26,18 @@
     @endif
 
     <x-ui.dashboard-layout audience="supplier.import">
-        <x-slot:quotations class="lg:tw-col-span-8">
-<x-ui.data-table
+        <x-slot:metrics class="lg:tw-col-span-12">
+            {{-- Restrained operational summary provides high-level metrics at a glance. --}}
+            <div class="tw-grid tw-gap-px tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-outline-variant sm:tw-grid-cols-2 lg:tw-grid-cols-4" aria-label="{{ __('supplier.copy.supplier_operational_summary') }}">
+                <x-ui.metric-card flat :label="__('supplier.copy.active_periods')" :value="$regionalFormatter->number((string) ($periodeAktif), 'plain')" icon="calendar" tone="neutral" :href="route('supplier.quotations.index')" />
+                <x-ui.metric-card flat :label="__('supplier.copy.awaiting_quotation')" :value="$regionalFormatter->number((string) ($belumDirespons), 'plain')" icon="clock" :tone="$belumDirespons > 0 ? 'error' : 'neutral'" :href="route('supplier.quotations.index')" />
+                <x-ui.metric-card flat :label="__('supplier.copy.submitted_this_month')" :value="$regionalFormatter->number((string) ($penawaranTerkirim), 'plain')" icon="send" tone="success" :href="route('supplier.quotations.index')" />
+                <x-ui.metric-card flat :label="__('supplier.copy.received_pos')" :value="$regionalFormatter->number((string) ($poDiterima), 'plain')" icon="receipt" tone="primary" :href="route('supplier.purchase-orders.index')" />
+            </div>
+        </x-slot:metrics>
+
+        <x-slot:quotations class="lg:tw-col-span-12">
+            <x-ui.data-table
                 :title="__('supplier.copy.action_required_requisitions_awaiting_quotation')"
                 :description="__('supplier.copy.open_procurement_opportunities_from_adasi_purchasing_available_for_your_bid')"
                 :empty="$prBelumRespons->isEmpty()"
@@ -76,16 +86,6 @@
                 </table>
             </x-ui.data-table>
         </x-slot:quotations>
-
-        <x-slot:metrics class="lg:tw-col-span-8">
-            {{-- Restrained operational summary follows the primary action queue. --}}
-            <div class="tw-grid tw-gap-px tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-outline-variant sm:tw-grid-cols-2 xl:tw-grid-cols-4" aria-label="{{ __('supplier.copy.supplier_operational_summary') }}">
-                <x-ui.metric-card flat :label="__('supplier.copy.active_periods')" :value="$regionalFormatter->number((string) ($periodeAktif), 'plain')" icon="calendar" tone="neutral" :href="route('supplier.quotations.index')" />
-                <x-ui.metric-card flat :label="__('supplier.copy.awaiting_quotation')" :value="$regionalFormatter->number((string) ($belumDirespons), 'plain')" icon="clock" :tone="$belumDirespons > 0 ? 'error' : 'neutral'" :href="route('supplier.quotations.index')" />
-                <x-ui.metric-card flat :label="__('supplier.copy.submitted_this_month')" :value="$regionalFormatter->number((string) ($penawaranTerkirim), 'plain')" icon="send" tone="success" :href="route('supplier.quotations.index')" />
-                <x-ui.metric-card flat :label="__('supplier.copy.received_pos')" :value="$regionalFormatter->number((string) ($poDiterima), 'plain')" icon="receipt" tone="primary" :href="route('supplier.purchase-orders.index')" />
-            </div>
-        </x-slot:metrics>
 
         <x-slot:orders class="lg:tw-col-span-8">
 <x-ui.data-table

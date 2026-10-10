@@ -4,11 +4,11 @@
 @section('page-title', __('common.notification.title'))
 
 @section('content')
+<x-account.shell active="notifications">
 <div class="tw-grid tw-grid-cols-1 tw-gap-5">
     <x-ui.page-header
         :title="__('common.notification.title')"
         :description="__('notifications.preferences.description')"
-        :eyebrow="__('common.fields.account')"
         style="--md-on-surface-variant: var(--md-on-surface);"
     />
 
@@ -456,6 +456,7 @@
         </x-slot:actions>
     </x-ui.dialog>
 </div>
+</x-account.shell>
 
 @push('scripts')
 <script>

@@ -250,6 +250,34 @@ return [
             'label' => 'Repeated sign-in lockouts',
             'description' => 'An account reaches the repeated sign-in lockout threshold.',
         ],
+        'supplier_audit_assigned' => [
+            'label' => 'Supplier Audit assigned',
+            'description' => 'Purchasing assigns a Supplier Audit form to you.',
+        ],
+        'supplier_audit_revision_requested' => [
+            'label' => 'Supplier Audit revision requested',
+            'description' => 'Purchasing asks you to revise a submitted Supplier Audit form.',
+        ],
+        'supplier_audit_result_published' => [
+            'label' => 'Supplier Audit result published',
+            'description' => 'Purchasing publishes or replaces your Supplier Audit result file.',
+        ],
+        'supplier_audit_cancelled' => [
+            'label' => 'Supplier Audit cancelled',
+            'description' => 'Purchasing cancels a Supplier Audit assigned to you.',
+        ],
+        'supplier_audit_deadline_changed' => [
+            'label' => 'Supplier Audit deadline changed',
+            'description' => 'Purchasing sets, changes, or removes your Supplier Audit deadline.',
+        ],
+        'supplier_audit_invoice_blocked' => [
+            'label' => 'New invoices blocked by Supplier Audit',
+            'description' => 'Your Supplier Audit is past its deadline, so new invoice submission is paused until you submit it.',
+        ],
+        'supplier_audit_submitted' => [
+            'label' => 'Supplier Audit submitted',
+            'description' => 'A local supplier submits a Supplier Audit form.',
+        ],
     ],
     'categories' => [
         'requisitions' => 'Purchase requisitions',
@@ -261,6 +289,7 @@ return [
         'claims' => 'Material claims',
         'local_invoices' => 'Local invoices',
         'registration' => 'Supplier registration',
+        'supplier_audits' => 'Supplier audit',
         'exports' => 'Exports',
         'security' => 'Security',
     ],

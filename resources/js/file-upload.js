@@ -126,8 +126,8 @@ export function adasiFileUploadComponent(paramA = '', paramB = false, paramC = {
             if (!this.isMultiple) {
                 const file = incoming[0];
                 if (file.size > this.maxBytes) {
-                    this.clientError = t('js.upload.size', { limit: this.maxSizeMb, size: this.formatBytes(file.size) });
                     this.clearAll();
+                    this.clientError = t('js.upload.size', { limit: this.maxSizeMb, size: this.formatBytes(file.size) });
                     return;
                 }
                 this.existingFiles = [];
@@ -193,7 +193,26 @@ export function adasiFileUploadComponent(paramA = '', paramB = false, paramC = {
             this.clearAll();
         },
 
+        // Show server (422) errors from an async, file-preserving submit on this dropzone.
+        bindAsyncFormErrors(input) {
+            const form = input?.form;
+            if (!form) return;
+
+            const base = String(input.name || '').replace(/\[\]$/, '');
+            form.addEventListener('adasi:form-submitting', () => {
+                this.clientError = '';
+            });
+            form.addEventListener('adasi:form-errors', (event) => {
+                const errors = event.detail?.errors || {};
+                const match = Object.entries(errors).find(([key]) => key === base || key.startsWith(`${base}.`));
+                if (match) {
+                    this.clientError = String([].concat(match[1])[0] ?? '');
+                }
+            });
+        },
+
         init() {
+            this.bindAsyncFormErrors(this.$refs.fileInput);
             if (this.$refs.fileInput) {
                 this.$refs.fileInput.addEventListener('change', (e) => {
                     if (this._syncing) return;

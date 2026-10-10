@@ -1,6 +1,38 @@
 <?php
 
 return [
+    'po' => [
+        'title' => 'PURCHASE ORDER',
+        'original' => 'ORIGINAL',
+        'number' => 'PURCHASE ORDER NO.',
+        'page' => 'Page   :current   of   :total',
+        'date' => 'Purchase Order Date',
+        'receipt_date' => 'Planned Receipt Date',
+        'currency' => 'Currency',
+        'introduction' => 'We herewith would like to place our order of your products as follow(s)',
+        'no' => 'No.',
+        'description' => 'Description',
+        'quantity' => 'Qty.',
+        'weight' => 'Weight',
+        'unit_price' => 'Unit Price',
+        'total_price' => 'Total Price',
+        'total' => 'Total',
+        'ppn' => 'PPN',
+        'payment_term' => 'Payment Term',
+        'continued_terms' => 'See the complete payment terms on the continuation pages.',
+        'note' => 'Note :',
+        'note_continued' => 'Note (continued)',
+        'ship_to' => 'Ship to Address',
+        'ordered_by' => 'Ordered by',
+        'supplier_confirmation' => 'Supplier Confirmation',
+        'sign_stamp' => 'sign & stamp',
+        'notes' => [
+            'validity' => 'This PO is valid until 3 months after shipment date unless there is a confimation of delayed shipment.',
+            'msds' => 'Please attach MSDS (Material Safety Data Sheet) and certificate(s), if available.',
+            'transport' => 'Transportation of goods must comply with applicable transportation regulations.',
+            'signed_copy' => 'Please attach a signed and stamped copy of Purchase Order upon submitting invoice or tax invoice to ensure seamless payment processing.',
+        ],
+    ],
     'copy' => [
         'accepted' => 'Accepted',
         'approved_by' => 'Approved By',

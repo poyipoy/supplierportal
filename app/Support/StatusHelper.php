@@ -61,6 +61,21 @@ class StatusHelper
         };
     }
 
+    public static function supplierAuditTone(string $status): string
+    {
+        return match (strtoupper($status)) {
+            'ASSIGNED', 'SUBMITTED' => 'info',
+            'REVISION_REQUESTED' => 'warning',
+            'RESULT_PUBLISHED' => 'success',
+            default => 'neutral',
+        };
+    }
+
+    public static function supplierAuditLabel(string $status): string
+    {
+        return self::label('supplier_audit', strtolower($status), $status);
+    }
+
     public static function localInvoiceLabel(string $status): string
     {
         return self::label('local_invoice', strtolower($status), $status);

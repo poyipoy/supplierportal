@@ -76,7 +76,7 @@
             {{-- Supplier Response Card / Form --}}
             <x-ui.card :title="__('claims.copy.supplier_response_and_resolution')" :description="__('claims.copy.your_response_is_committed_upon_submission')">
                 @if($claim->status === 'pending')
-                    <form action="{{ route('supplier.claims.respond', $claim) }}" method="POST" enctype="multipart/form-data" id="respondForm" class="tw-grid tw-gap-3.5">
+                    <form action="{{ route('supplier.claims.respond', $claim) }}" method="POST" enctype="multipart/form-data" data-async-submit id="respondForm" class="tw-grid tw-gap-3.5">
                         @csrf
                         <x-ui.textarea
                             name="supplier_response"
@@ -179,7 +179,8 @@
             if (result.isConfirmed) {
                 const btn = document.getElementById('btnSubmitRespond');
                 window.AdasiButton?.startLoading(btn);
-                form.submit();
+                if (window.AdasiAsyncForm?.submit) window.AdasiAsyncForm.submit(form, btn);
+                else form.requestSubmit();
             }
         });
     });

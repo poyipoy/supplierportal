@@ -15,6 +15,7 @@ use App\Exports\QuotationDetailExport;
 use App\Exports\QuotationsExport;
 use App\Exports\RequisitionsExport;
 use App\Exports\ShipmentsExport;
+use App\Exports\SupplierAuditExport;
 use App\Exports\SupplierPriceHistoryExport;
 use App\Jobs\ProcessExportJob;
 use App\Models\ExportJob;
@@ -45,6 +46,7 @@ class ExportDispatcher
         InspectionsExport::class,
         SupplierPriceHistoryExport::class,
         ShipmentsExport::class,
+        SupplierAuditExport::class,
     ];
 
     private const LIST_EXPORT_CLASSES = [

@@ -137,12 +137,12 @@ class AdvancedExportBaselineTest extends TestCase
             'invoice' => ['Submission', 'Receipt', 'Invoice', 'Tax Invoice Number', 'PO Reference', 'Supplier', 'Currency', 'Invoice Amount', 'PPN', 'Status', 'Submitted (WIB)', 'Approved (WIB)', 'Payment Term Days', 'Due Date', 'Scheduled Payment', 'Completed (WIB)'],
         ];
         $id = [
-            'po' => ['Nomor PO', 'Nomor PR', 'Pemasok', 'Material', 'Mata Uang', 'Total Nilai', 'Total IDR', 'Est. Kedatangan', 'Catatan', 'Status'],
-            'quotation' => ['Nomor PR', 'Periode', 'Pemasok', 'Mata Uang', 'Material', 'Kode HS', 'Jumlah Permintaan', 'Dimensi Permintaan', 'Jumlah Penawaran', 'Dimensi Penawaran', 'Harga per Kg', 'Nilai', 'Kurs', 'Total IDR', 'Catatan Item', 'Status', 'Diajukan Pada (WIB)', 'Ketersediaan', 'Panjang Penawaran', 'Berat Penawaran/Unit', 'Sumber Berat Penawaran', 'Total Berat Penawaran', 'Nilai Permintaan', 'Nilai Penawaran'],
+            'po' => ['Nomor PO', 'Nomor PR', 'Supplier', 'Material', 'Mata Uang', 'Total Nilai', 'Total IDR', 'Est. Kedatangan', 'Catatan', 'Status'],
+            'quotation' => ['Nomor PR', 'Periode', 'Supplier', 'Mata Uang', 'Material', 'Kode HS', 'Jumlah Permintaan', 'Dimensi Permintaan', 'Jumlah Penawaran', 'Dimensi Penawaran', 'Harga per Kg', 'Nilai', 'Kurs', 'Total IDR', 'Catatan Item', 'Status', 'Diajukan Pada (WIB)', 'Ketersediaan', 'Panjang Penawaran', 'Berat Penawaran/Unit', 'Sumber Berat Penawaran', 'Total Berat Penawaran', 'Nilai Permintaan', 'Nilai Penawaran'],
             'pr' => ['Nomor PR', 'Periode', 'Nama Material', 'Spesifikasi', 'Jumlah', 'Berat/Unit', 'Total Berat', 'Total KG PR', 'Catatan', 'Status', 'Tanggal Dibuat (WIB)'],
-            'shipment' => ['Nomor Pengiriman', 'Pemasok', 'PO Terkonsolidasi', 'Jumlah Item', 'Total Jumlah', 'Berat Aktual (Kg)', 'Tanggal Pengiriman', 'Est. Tanggal Kedatangan', 'Tanggal Kedatangan Aktual', 'Status', 'Catatan'],
-            'inspection' => ['Nomor PO', 'Pemasok', 'Material', 'Spesifikasi Permintaan', 'Dimensi Aktual', 'Status Item', 'Status Inspeksi', 'Tanggal Inspeksi (WIB)'],
-            'invoice' => ['Pengajuan', 'Tanda Terima', 'Invoice', 'Nomor Faktur Pajak', 'Referensi PO', 'Pemasok', 'Mata Uang', 'Nilai Invoice', 'PPN', 'Status', 'Diajukan (WIB)', 'Disetujui (WIB)', 'Termin Pembayaran (Hari)', 'Jatuh Tempo', 'Jadwal Pembayaran', 'Selesai (WIB)'],
+            'shipment' => ['Nomor Pengiriman', 'Supplier', 'PO Terkonsolidasi', 'Jumlah Item', 'Total Jumlah', 'Berat Aktual (Kg)', 'Tanggal Pengiriman', 'Est. Tanggal Kedatangan', 'Tanggal Kedatangan Aktual', 'Status', 'Catatan'],
+            'inspection' => ['Nomor PO', 'Supplier', 'Material', 'Spesifikasi Permintaan', 'Dimensi Aktual', 'Status Item', 'Status Inspeksi', 'Tanggal Inspeksi (WIB)'],
+            'invoice' => ['Pengajuan', 'Tanda Terima', 'Invoice', 'Nomor Faktur Pajak', 'Referensi PO', 'Supplier', 'Mata Uang', 'Nilai Invoice', 'PPN', 'Status', 'Diajukan (WIB)', 'Disetujui (WIB)', 'Termin Pembayaran (Hari)', 'Jatuh Tempo', 'Jadwal Pembayaran', 'Selesai (WIB)'],
         ];
 
         return ($locale === 'en' ? $en : $id)[$key];

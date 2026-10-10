@@ -138,7 +138,7 @@
                     <form
                         method="POST"
                         action="{{ route('finance.overpayments.refund', $refund) }}"
-                        enctype="multipart/form-data"
+                        enctype="multipart/form-data" data-async-submit
                     >
                         @csrf
                         <div class="modal-content tw-rounded-ui-xl tw-border-0 tw-shadow-ui-modal">

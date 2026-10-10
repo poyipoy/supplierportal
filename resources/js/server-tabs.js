@@ -25,10 +25,10 @@ const instances = new Map();
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 const fragmentCache = new Map(); // url → { html, tab, metrics, data, timestamp }
 
-function cacheGet(url) {
+function cacheGet(url, ttlMs = CACHE_TTL_MS) {
     const entry = fragmentCache.get(url);
     if (!entry) return null;
-    if (Date.now() - entry.timestamp > CACHE_TTL_MS) {
+    if (Date.now() - entry.timestamp > ttlMs) {
         fragmentCache.delete(url);
         return null;
     }
@@ -59,8 +59,20 @@ function cacheInvalidateAll() {
     fragmentCache.clear();
 }
 
+// Work queues (audits, registrations, claims…) change under other users' hands, so a page can ask for a shorter TTL.
+function cacheTtlFor(state) {
+    return state.options?.cacheTtlMs ?? CACHE_TTL_MS;
+}
+
 // ─── Prefetch Tracking ───────────────────────────────────────────────────
 const prefetchInFlight = new Set(); // URLs currently being prefetched
+
+// X-Adasi-Server-Tabs lets a controller tell a fragment request apart from a DataTables/other XHR on the same URL.
+const FRAGMENT_REQUEST_HEADERS = Object.freeze({
+    'X-Requested-With': 'XMLHttpRequest',
+    'Accept': 'application/json',
+    'X-Adasi-Server-Tabs': '1',
+});
 
 /**
  * @param {string} containerSelector — CSS selector for the outermost wrapper.
@@ -163,12 +175,12 @@ function init(containerSelector, options = {}) {
         if (!url) return;
 
         // Don't prefetch if already cached or already fetching
-        if (cacheGet(url) || prefetchInFlight.has(url)) return;
+        if (cacheGet(url, cacheTtlFor(state)) || prefetchInFlight.has(url)) return;
 
         // 60ms debounce to avoid prefetching on accidental hover-through
         clearTimeout(prefetchTimer);
         prefetchTimer = setTimeout(() => {
-            speculativePrefetch(url);
+            speculativePrefetch(url, cacheTtlFor(state));
         }, 60);
     }, true);
 
@@ -201,18 +213,14 @@ function init(containerSelector, options = {}) {
  * Does not touch the DOM. Silent on error.
  *
  * @param {string} url
+ * @param {number} [ttlMs] — freshness window of an already cached copy.
  */
-async function speculativePrefetch(url) {
-    if (prefetchInFlight.has(url) || cacheGet(url)) return;
+async function speculativePrefetch(url, ttlMs = CACHE_TTL_MS) {
+    if (prefetchInFlight.has(url) || cacheGet(url, ttlMs)) return;
 
     prefetchInFlight.add(url);
     try {
-        const response = await fetch(url, {
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json',
-            },
-        });
+        const response = await fetch(url, { headers: { ...FRAGMENT_REQUEST_HEADERS } });
 
         if (!response.ok) return;
 
@@ -245,7 +253,10 @@ async function fetchAndSwap(state, url, pushHistory) {
     if (state.abortController) {
         state.abortController.abort();
     }
-    state.abortController = new AbortController();
+    // Each request owns its controller. A superseded request must never touch the busy state, the watchdog,
+    // or state.abortController of the request that replaced it.
+    const controller = new AbortController();
+    state.abortController = controller;
 
     // Close any active calendar popover before swapping DOM content
     if (window.AdasiCalendar?.closeActive) {
@@ -253,8 +264,10 @@ async function fetchAndSwap(state, url, pushHistory) {
     }
 
     // ── Cache Hit: instant swap without network ──
-    const cached = cacheGet(url);
+    const cached = cacheGet(url, cacheTtlFor(state));
     if (cached) {
+        // The request this click replaced no longer cleans up after itself, so clear its busy state here.
+        clearBusyState(tableTarget);
         applyData(state, container, tableTarget, cached.data, url, pushHistory, options);
         state.abortController = null;
         return;
@@ -269,18 +282,13 @@ async function fetchAndSwap(state, url, pushHistory) {
     let isTimeout = false;
     const timeoutId = setTimeout(() => {
         isTimeout = true;
-        if (state.abortController) {
-            state.abortController.abort();
-        }
+        controller.abort();
     }, 15000);
 
     try {
         const response = await fetch(url, {
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json',
-            },
-            signal: state.abortController.signal,
+            headers: { ...FRAGMENT_REQUEST_HEADERS },
+            signal: controller.signal,
         });
 
         clearTimeout(timeoutId);
@@ -293,6 +301,9 @@ async function fetchAndSwap(state, url, pushHistory) {
 
         // Store in cache for future revisits
         cacheSet(url, data);
+
+        // A newer click may have taken over while the body was being read; never paint stale content over it.
+        if (state.abortController !== controller) return;
 
         applyData(state, container, tableTarget, data, url, pushHistory, options);
     } catch (err) {
@@ -313,13 +324,20 @@ async function fetchAndSwap(state, url, pushHistory) {
             window.AdasiToast.error(message);
         }
     } finally {
-        tableTarget.removeAttribute('aria-busy');
-        tableTarget.classList.remove('tw-opacity-50');
-        tableTarget.style.pointerEvents = '';
-        hideLoadingOverlay(tableTarget);
-        state.abortController = null;
+        clearTimeout(timeoutId);
+        if (state.abortController === controller) {
+            clearBusyState(tableTarget);
+            state.abortController = null;
+        }
     }
 
+}
+
+function clearBusyState(target) {
+    target.removeAttribute('aria-busy');
+    target.classList.remove('tw-opacity-50');
+    target.style.pointerEvents = '';
+    hideLoadingOverlay(target);
 }
 
 /**
@@ -339,6 +357,11 @@ function applyData(state, container, tableTarget, data, url, pushHistory, option
     // 1. Swap table HTML
     if (data.html) {
         tableTarget.innerHTML = data.html;
+    }
+
+    // 1b. Server-rendered tab nav: hrefs (carried filters), counts and tones come from the server.
+    if (typeof data.nav === 'string') {
+        swapTabNav(container, data.nav);
     }
 
     // 2. Update tab active states (may already be set optimistically, but ensure consistency)
@@ -418,6 +441,17 @@ function updateTabActiveStates(container, activeTab) {
         const badge = tab.querySelector('.tw-rounded-full');
         const isActive = tabName === activeTab;
 
+        // Tabs inside a server-rendered nav are styled through aria-current (aria-[current=page]: variants),
+        // so only the attribute moves; no page-specific class list lives in this file.
+        if (tab.closest('[data-server-tabs-nav]')) {
+            if (isActive) {
+                tab.setAttribute('aria-current', 'page');
+            } else {
+                tab.removeAttribute('aria-current');
+            }
+            return;
+        }
+
         if (isActive) {
             tab.setAttribute('aria-current', 'page');
             tab.classList.add(...pillActiveClasses);
@@ -454,6 +488,26 @@ function updateTabActiveStates(container, activeTab) {
             card.classList.add(...cardInactiveClasses);
         }
     });
+}
+
+/**
+ * Replace the tab nav with the server's copy and hand keyboard focus back to the tab the user activated,
+ * otherwise re-rendering the nav would drop focus to <body>.
+ */
+function swapTabNav(container, navHtml) {
+    const nav = container.querySelector('[data-server-tabs-nav]');
+    if (!nav) return;
+
+    const focusedTab = document.activeElement?.closest?.('[data-server-tab]');
+    const focusedTabName = focusedTab?.closest('[data-server-tabs-nav]') ? focusedTab.dataset.tabName : null;
+
+    nav.innerHTML = navHtml;
+
+    if (focusedTabName) {
+        [...nav.querySelectorAll('[data-server-tab]')]
+            .find((tab) => tab.dataset.tabName === focusedTabName)
+            ?.focus();
+    }
 }
 
 function updateMetrics(container, metrics) {

@@ -124,7 +124,7 @@ return [
         'submit' => 'Ajukan',
         'submit_shipment' => 'Ajukan Pengiriman',
         'submit_shipment_delivery' => 'Ajukan Pengiriman Barang?',
-        'supplier' => 'Pemasok',
+        'supplier' => 'Supplier',
         'to' => 'Sampai',
         'total_qty' => 'Total Jumlah',
         'update' => 'Perbarui',

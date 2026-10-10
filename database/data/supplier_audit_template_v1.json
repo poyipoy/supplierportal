@@ -1,0 +1,809 @@
+{
+    "code": "ISO_14001_9001_AGC_AFC",
+    "version": 1,
+    "title": "FORM CHECKLIST AUDIT SUPPLIER & VENDOR — ISO 14001, ISO 9001 & AGC AFC",
+    "sections": [
+        {
+            "code": "1",
+            "title": "Kebijakan LK3",
+            "level": 1,
+            "parent_code": null,
+            "sheet_number": 1,
+            "sort_order": 1,
+            "criteria": [
+                {
+                    "number": 1,
+                    "sort_order": 1,
+                    "text": "Top manajemen sudah membuat kebijakan QLK3SR (yang memuat visi dan tujuan perusahaan) secara tertulis"
+                },
+                {
+                    "number": 2,
+                    "sort_order": 2,
+                    "text": "Berisi komitmen dan tekad yang jelas untuk melakukan perbaikan secara kontinu"
+                },
+                {
+                    "number": 3,
+                    "sort_order": 3,
+                    "text": "Berisi komitmen untuk mencegah terjadinya pencemaran"
+                },
+                {
+                    "number": 4,
+                    "sort_order": 4,
+                    "text": "Kebijakan memastikan ruang lingkup dan kesesuaian dengan sifat, skala & dampak dari produk dan jasanya"
+                },
+                {
+                    "number": 5,
+                    "sort_order": 5,
+                    "text": "Kebijakan meliputi komitmen yang jelas untuk mematuhi hukum dan peraturan QLK3SR yang berlaku, termasuk peraturan lain yang dipakai oleh organisasi"
+                },
+                {
+                    "number": 6,
+                    "sort_order": 6,
+                    "text": "Kebijakan berisi komitmen perusahaan dalam QCDESMS"
+                },
+                {
+                    "number": 7,
+                    "sort_order": 7,
+                    "text": "Kebijakan direview secara berkala berdasarkan perubahan kondisi, skala/dampak QLK3SR dari kegiatan, produk, dan jasa"
+                },
+                {
+                    "number": 8,
+                    "sort_order": 8,
+                    "text": "Kebijakan QLK3SR jelas untuk menuntun ke tujuan, sasaran dan program QLK3SR perusahaan"
+                },
+                {
+                    "number": 9,
+                    "sort_order": 9,
+                    "text": "Kebijakan LK3 telah didokumentasikan dan dikomunikasikan pada setiap karyawan (lama/baru)"
+                },
+                {
+                    "number": 10,
+                    "sort_order": 10,
+                    "text": "Kebijakan QLK3SR akan diperbaiki dan disesuaikan pada setiap perubahan lingkungan yang terjadi"
+                },
+                {
+                    "number": 11,
+                    "sort_order": 11,
+                    "text": "Kebijakan QLK3SR tersedia dan dikomunikasikan untuk publik"
+                }
+            ]
+        },
+        {
+            "code": "2",
+            "title": "Perencanaan",
+            "level": 1,
+            "parent_code": null,
+            "sheet_number": 1,
+            "sort_order": 2,
+            "criteria": []
+        },
+        {
+            "code": "2.1",
+            "title": "Aspek LK3",
+            "level": 2,
+            "parent_code": "2",
+            "sheet_number": 1,
+            "sort_order": 3,
+            "criteria": [
+                {
+                    "number": 1,
+                    "sort_order": 12,
+                    "text": "Memiliki prosedur untuk identifikasi aspek penting LK3 dari kegiatan bisnis termasuk aktivitas, produk dan jasa/job safety analysis, dan telah ditentukan aspek LK3 mana yang mempunyai dampak penting terhadap lingkungan & K3"
+                },
+                {
+                    "number": 2,
+                    "sort_order": 13,
+                    "text": "Proses identifikasi aspek penting LK3 mempertimbangkan biaya, legal, teknologi, dan waktu untuk menganalisis dan menyiapkan data yang dapat dipercaya"
+                },
+                {
+                    "number": 3,
+                    "sort_order": 14,
+                    "text": "Analisis aspek penting LK3 memperhatikan setiap input dan output dari semua aktivitas produk dan jasa pada saat ini dan saat sebelumnya yang relevan termasuk kondisi normal/rutin, abnormal/non rutin maupun emergency (banjir, gempa bumi, kebakaran, ledakan)"
+                },
+                {
+                    "number": 4,
+                    "sort_order": 15,
+                    "text": "Analisis aspek LK3 mempertimbangkan dokumen UKL/UPL/AMDAL/Peraturan LK3 yang ada"
+                },
+                {
+                    "number": 5,
+                    "sort_order": 16,
+                    "text": "Data aspek penting LK3 selalu diperbaharui"
+                },
+                {
+                    "number": 6,
+                    "sort_order": 17,
+                    "text": "Apakah aspek tidak penting dikendalikan/dikontrol"
+                },
+                {
+                    "number": 7,
+                    "sort_order": 18,
+                    "text": "Proses penentuan objektif dan target LK3 mempertimbangkan aspek penting LK3 yang berhubungan dengan aktivitas, produk dan jasa"
+                }
+            ]
+        },
+        {
+            "code": "3",
+            "title": "Peraturan Perundangan dan Persyaratan LK3SR Lainnya",
+            "level": 1,
+            "parent_code": null,
+            "sheet_number": 1,
+            "sort_order": 4,
+            "criteria": [
+                {
+                    "number": 1,
+                    "sort_order": 19,
+                    "text": "Memiliki prosedur untuk mengidentifikasi secara sistematis semua ketentuan hukum yang berlaku pada aspek LK3SR dari aktivitas organisasi, produk dan jasa"
+                },
+                {
+                    "number": 2,
+                    "sort_order": 20,
+                    "text": "Perusahaan harus secara sistematis mengidentifikasi setiap perubahan yang terjadi pada ketentuan hukum dan persyaratan lainnya yang berhubungan dengan LK3SR yang sudah ada secara berkala"
+                },
+                {
+                    "number": 3,
+                    "sort_order": 21,
+                    "text": "Perusahaan harus menjamin akses pada setiap ketentuan hukum, baik yang sudah ada maupun yang baru"
+                },
+                {
+                    "number": 4,
+                    "sort_order": 22,
+                    "text": "Apakah perusahaan telah melakukan analisa pemenuhan peraturan dan ketentuan yang berlaku"
+                },
+                {
+                    "number": 5,
+                    "sort_order": 23,
+                    "text": "Apakah hasil analisa telah ditindaklanjuti untuk memastikan semua peraturan terpenuhi"
+                },
+                {
+                    "number": 6,
+                    "sort_order": 24,
+                    "text": "Semua peraturan yang relevan dikomunikasikan kepada karyawan maupun pihak yang terkait"
+                },
+                {
+                    "number": 7,
+                    "sort_order": 25,
+                    "text": "Perusahaan membayar upah karyawan sesuai UMK yang berlaku"
+                },
+                {
+                    "number": 8,
+                    "sort_order": 26,
+                    "text": "Perusahaan tidak mempekerjakan karyawan di bawah umur"
+                },
+                {
+                    "number": 9,
+                    "sort_order": 27,
+                    "text": "Perusahaan harus menjamin identifikasi, akses dan penyimpanan dokumen peraturan dan persyaratan lain yang berlaku bagi organisasi"
+                }
+            ]
+        },
+        {
+            "code": "4",
+            "title": "Tujuan dan Sasaran",
+            "level": 1,
+            "parent_code": null,
+            "sheet_number": 1,
+            "sort_order": 5,
+            "criteria": [
+                {
+                    "number": 1,
+                    "sort_order": 28,
+                    "text": "Objektif dan target QLK3SR telah disusun pada tiap fungsi dan level yang terkait dalam organisasi"
+                },
+                {
+                    "number": 2,
+                    "sort_order": 29,
+                    "text": "Objektif bersifat spesifik dan target dapat diukur pada saat dilaksanakan"
+                },
+                {
+                    "number": 3,
+                    "sort_order": 30,
+                    "text": "Objektif dan target bersifat konsisten terhadap kebijakan QLK3SR dan merupakan refleksi dari komitmen terhadap pencegahan pencemaran"
+                },
+                {
+                    "number": 4,
+                    "sort_order": 31,
+                    "text": "Dalam menetapkan objektif QLK3SR organisasi telah mempertimbangkan aspek legal, teknologi, finansial, kepentingan operasional dan bisnis dan pandangan dari pihak ketiga"
+                },
+                {
+                    "number": 5,
+                    "sort_order": 32,
+                    "text": "Apakah perusahaan telah mempertimbangkan penghematan penggunaan sumber daya alam dalam objektif target dan program yang ada"
+                },
+                {
+                    "number": 6,
+                    "sort_order": 33,
+                    "text": "Apakah perusahaan mempunyai mekanisme dan melakukan review objektif dan target secara berkala"
+                }
+            ]
+        },
+        {
+            "code": "5",
+            "title": "Program Manajemen QLK3SR",
+            "level": 1,
+            "parent_code": null,
+            "sheet_number": 2,
+            "sort_order": 6,
+            "criteria": [
+                {
+                    "number": 1,
+                    "sort_order": 34,
+                    "text": "Organisasi telah menetapkan program manajemen QLK3SR untuk mencapai objektif dan target yang menjelaskan bagaimana target organisasi dapat tercapai"
+                },
+                {
+                    "number": 2,
+                    "sort_order": 35,
+                    "text": "Dalam program QLK3SR menunjuk PIC untuk implementasi kebijakan QLK3SR dan PIC untuk pencapaian objektif dan target pada tiap fungsi dan level yang terkait dalam organisasi"
+                },
+                {
+                    "number": 3,
+                    "sort_order": 36,
+                    "text": "Dalam program QLK3SR mencakup sarana (Financial, SDM dan physical resource) yang akan digunakan organisasi untuk mencapai objektif dan target"
+                },
+                {
+                    "number": 4,
+                    "sort_order": 37,
+                    "text": "Program memiliki kerangka waktu yang jelas dengan mengidentifikasi apa yang akan dicapai, bagaimana dan kapan"
+                },
+                {
+                    "number": 5,
+                    "sort_order": 38,
+                    "text": "Program QLK3SR telah direview (revisi bila perlu) bila terjadi pengembangan baru atau modifikasi aktivitas produk dan jasa"
+                },
+                {
+                    "number": 6,
+                    "sort_order": 39,
+                    "text": "Apakah hasil review telah ditindaklanjuti untuk memastikan semua program berjalan"
+                }
+            ]
+        },
+        {
+            "code": "6",
+            "title": "Penerapan dan Operasi",
+            "level": 1,
+            "parent_code": null,
+            "sheet_number": 2,
+            "sort_order": 7,
+            "criteria": []
+        },
+        {
+            "code": "6.1",
+            "title": "Struktur Organisasi dan Tanggung Jawab",
+            "level": 2,
+            "parent_code": "6",
+            "sheet_number": 2,
+            "sort_order": 8,
+            "criteria": [
+                {
+                    "number": 1,
+                    "sort_order": 40,
+                    "text": "Top manajemen telah menunjuk wakil manajemen bidang QLK3SR"
+                },
+                {
+                    "number": 2,
+                    "sort_order": 41,
+                    "text": "LK3MR telah memiliki aturan, tanggung jawab dan wewenang yang terdefinisi untuk menjamin dipenuhi tuntutan SML, diterapkan dan dipelihara sesuai standar ISO 14001 dan untuk pelaporan kinerja sistem pengelolaan LK3SR pada top manajemen"
+                },
+                {
+                    "number": 3,
+                    "sort_order": 42,
+                    "text": "Aturan, tanggung jawab dan wewenang dari setiap level dan fungsi untuk menerapkan elemen-elemen dari sistem pengelolaan LK3SR sudah didefinisikan, didokumentasikan, dan dikomunikasikan kepada tiap personel dan karyawan"
+                },
+                {
+                    "number": 4,
+                    "sort_order": 43,
+                    "text": "Wakil manajemen QLK3SR melaporkan kinerja sistem pengelolaan QLK3SR pada top manajemen. Laporan ini digunakan oleh top manajemen untuk mereview sistem pengelolaan QLK3SR dan sebagai dasar untuk perbaikan"
+                },
+                {
+                    "number": 5,
+                    "sort_order": 44,
+                    "text": "Manajemen sudah mengidentifikasi sumber daya esensial untuk menerapkan dan mengontrol sistem pengelolaan LK3SR"
+                },
+                {
+                    "number": 6,
+                    "sort_order": 45,
+                    "text": "Manajemen menyediakan semua sumber daya esensial untuk menerapkan dan mengontrol sistem pengelolaan LK3SR"
+                }
+            ]
+        },
+        {
+            "code": "6.2",
+            "title": "Pelatihan, Kemampuan dan Kesadaran",
+            "level": 2,
+            "parent_code": "6",
+            "sheet_number": 2,
+            "sort_order": 9,
+            "criteria": [
+                {
+                    "number": 1,
+                    "sort_order": 46,
+                    "text": "Memiliki prosedur untuk mengidentifikasi kebutuhan pelatihan"
+                },
+                {
+                    "number": 2,
+                    "sort_order": 47,
+                    "text": "Perusahaan menjamin bahwa karyawan yang berkaitan dengan operasional yang berdampak penting bagi QLK3SR telah mendapatkan pelatihan LK3"
+                },
+                {
+                    "number": 3,
+                    "sort_order": 48,
+                    "text": "Perusahaan mengatur pelatihan/awareness untuk karyawan dari kontraktor/supplier yang bekerja untuk organisasi"
+                },
+                {
+                    "number": 4,
+                    "sort_order": 49,
+                    "text": "Telah mereview identifikasi kebutuhan training secara periodik dan menjamin tersedianya training yang baik"
+                },
+                {
+                    "number": 5,
+                    "sort_order": 50,
+                    "text": "Memiliki mekanisme untuk menjamin peningkatan kesadaran semua karyawan terhadap tuntutan sistem manajemen LK3"
+                },
+                {
+                    "number": 6,
+                    "sort_order": 51,
+                    "text": "Memiliki program untuk menjamin peningkatan kesadaran semua karyawan terhadap dampak penting LK3, baik yang aktual maupun potensial dari aktivitas pekerjaannya dan benefit LK3 yang diperoleh dari peningkatan kinerja tiap karyawan/operator"
+                },
+                {
+                    "number": 7,
+                    "sort_order": 52,
+                    "text": "Mempunyai program peningkatan kesadaran karyawan terhadap aturan dan tanggung jawab mereka dalam mematuhi LK3, prosedur serta tuntutan sistem manajemen lingkungan. Termasuk prosedur dan respon gawat darurat"
+                },
+                {
+                    "number": 8,
+                    "sort_order": 53,
+                    "text": "Manajemen sudah menentukan tingkat pengalaman, kompetensi dan pelatihan yang perlu untuk menjamin kemampuan personel, khususnya yang menjalankan fungsi pengelolaan lingkungan & K3"
+                },
+                {
+                    "number": 9,
+                    "sort_order": 54,
+                    "text": "Menjamin bahwa karyawan yang bekerja pada operasional yang dapat memberikan dampak penting lingkungan & K3 sudah memiliki kompetensi yang memadai"
+                }
+            ]
+        },
+        {
+            "code": "7",
+            "title": "Komunikasi & Konsultasi",
+            "level": 1,
+            "parent_code": null,
+            "sheet_number": 2,
+            "sort_order": 10,
+            "criteria": [
+                {
+                    "number": 1,
+                    "sort_order": 55,
+                    "text": "Memiliki prosedur untuk komunikasi internal antara berbagai fungsi dan level dalam organisasi"
+                },
+                {
+                    "number": 2,
+                    "sort_order": 56,
+                    "text": "Memiliki prosedur untuk menerima, mendokumentasi dan menanggapi komunikasi dari pihak luar yang relevan dengan sistem pengelolaan LK3SR"
+                },
+                {
+                    "number": 3,
+                    "sort_order": 57,
+                    "text": "Organisasi telah mempertimbangkan beberapa kemungkinan komunikasi eksternal dalam hal aspek penting LK3SR (contoh: surat, temu wicara dll)"
+                },
+                {
+                    "number": 4,
+                    "sort_order": 58,
+                    "text": "Memiliki mekanisme konsultasi dengan pihak yang terkait"
+                }
+            ]
+        },
+        {
+            "code": "8",
+            "title": "Dokumentasi Sistem Manajemen Dasar",
+            "level": 1,
+            "parent_code": null,
+            "sheet_number": 2,
+            "sort_order": 11,
+            "criteria": [
+                {
+                    "number": 1,
+                    "sort_order": 59,
+                    "text": "Elemen utama sistem pengelolaan QLK3SR sudah diidentifikasi, dijelaskan dan didokumentasi"
+                },
+                {
+                    "number": 2,
+                    "sort_order": 60,
+                    "text": "Interaksi antara elemen-elemen utama sistem pengelolaan QLK3SR sudah dijelaskan"
+                },
+                {
+                    "number": 3,
+                    "sort_order": 61,
+                    "text": "Penjelasan ini sudah didokumentasi dalam kertas atau bentuk elektronik"
+                },
+                {
+                    "number": 4,
+                    "sort_order": 62,
+                    "text": "Dokumentasi ini memberikan tuntutan dimana mendapatkan dan bagaimana mengklasifikasi dokumen yang berhubungan"
+                }
+            ]
+        },
+        {
+            "code": "9",
+            "title": "Pengendalian Dokumen",
+            "level": 1,
+            "parent_code": null,
+            "sheet_number": 3,
+            "sort_order": 12,
+            "criteria": [
+                {
+                    "number": 1,
+                    "sort_order": 63,
+                    "text": "Memiliki dan menerapkan prosedur untuk mengontrol seluruh dokumen yang dituntut oleh QLK3SR"
+                },
+                {
+                    "number": 2,
+                    "sort_order": 64,
+                    "text": "Memiliki mekanisme dan memastikan bahwa setiap dokumen akan direview secara periodik dan direvisi bila perlu, serta disetujui oleh orang yang berwenang"
+                },
+                {
+                    "number": 3,
+                    "sort_order": 65,
+                    "text": "Memiliki mekanisme untuk menjamin bahwa dokumen yang berlaku (Revisi terakhir) tersedia disemua bagian terkait"
+                },
+                {
+                    "number": 4,
+                    "sort_order": 66,
+                    "text": "Memiliki mekanisme untuk menjamin dokumen yang tidak digunakan lagi (obsolete) sudah dipindahkan dari semua bagian yang terkait"
+                },
+                {
+                    "number": 5,
+                    "sort_order": 67,
+                    "text": "Memiliki mekanisme yang menjamin bahwa dokumen obsolete yang digunakan untuk keperluan hukum dan atau ilmu pengetahuan bisa diidentifikasi dengan baik"
+                },
+                {
+                    "number": 6,
+                    "sort_order": 68,
+                    "text": "Semua dokumen mudah dibaca, dilengkapi tanggal efektif dan tanggal revisi"
+                },
+                {
+                    "number": 7,
+                    "sort_order": 69,
+                    "text": "Disimpan sesuai masa simpan/dipelihara dalam susunan yang baik"
+                },
+                {
+                    "number": 8,
+                    "sort_order": 70,
+                    "text": "Dokumen eksternal telah diidentifikasi dengan baik"
+                },
+                {
+                    "number": 9,
+                    "sort_order": 71,
+                    "text": "Memiliki instruksi/prosedur yang jelas untuk pemeliharaan dokumen, termasuk updating untuk penggantian dokumen dengan revisinya dan menyimpan dengan rapi dokumen yang sudah tidak dipakai lagi"
+                }
+            ]
+        },
+        {
+            "code": "10",
+            "title": "Penerapan dan Operasi",
+            "level": 1,
+            "parent_code": null,
+            "sheet_number": 3,
+            "sort_order": 13,
+            "criteria": [
+                {
+                    "number": 1,
+                    "sort_order": 72,
+                    "text": "Operasi dan aktivitas yang terkait dengan aspek penting LK3 sudah diidentifikasi dan didokumentasi"
+                },
+                {
+                    "number": 2,
+                    "sort_order": 73,
+                    "text": "Telah mengidentifikasi operasi dan aktivitas yang membutuhkan prosedur untuk menjamin kesesuaian terhadap kebijakan dan pencapaian tujuan dan sasaran"
+                },
+                {
+                    "number": 3,
+                    "sort_order": 74,
+                    "text": "Prosedur yang sudah didokumentasi ditetapkan untuk semua operasi dan aktivitas, termasuk pemeliharaan (maintenance)"
+                },
+                {
+                    "number": 4,
+                    "sort_order": 75,
+                    "text": "Perusahaan telah menetapkan persyaratan pembelian yang berkaitan dengan LK3 (terutama bahan kimia)"
+                },
+                {
+                    "number": 5,
+                    "sort_order": 76,
+                    "text": "Perusahaan telah melakukan penilaian & audit supplier berdasarkan persyaratan LK3"
+                },
+                {
+                    "number": 6,
+                    "sort_order": 77,
+                    "text": "Perusahaan telah melakukan kontrol pekerjaan yang dilakukan oleh internal perusahaan dan pihak luar (termasuk katering, bila ada)"
+                },
+                {
+                    "number": 7,
+                    "sort_order": 78,
+                    "text": "Apakah perusahaan telah menyesuaikan pengelolaan LK3 sesuai permintaan customer"
+                },
+                {
+                    "number": 8,
+                    "sort_order": 79,
+                    "text": "Perusahaan telah mengukur dan melaporkan hasil pengukuran limbah cair, udara sesuai peraturan yang berlaku"
+                },
+                {
+                    "number": 9,
+                    "sort_order": 80,
+                    "text": "Apakah perusahaan telah mengelola limbah padat yang dihasilkan baik B3 maupun non B3"
+                },
+                {
+                    "number": 10,
+                    "sort_order": 81,
+                    "text": "Perusahaan telah mengidentifikasi semua limbah B3 yang dihasilkan perusahaan"
+                },
+                {
+                    "number": 11,
+                    "sort_order": 82,
+                    "text": "Perusahaan telah menyimpan dan membuang limbah B3 sesuai peraturan"
+                },
+                {
+                    "number": 12,
+                    "sort_order": 83,
+                    "text": "Apakah prosedur kerja terkait yang ada telah memperhatikan mengenai penanganan B3"
+                },
+                {
+                    "number": 13,
+                    "sort_order": 84,
+                    "text": "Apakah perusahaan melakukan pendataan mengenai timbulan limbah (B3 & Domestik)"
+                },
+                {
+                    "number": 14,
+                    "sort_order": 85,
+                    "text": "Semua prosedur direview secara periodik dan disesuaikan bila diperlukan"
+                }
+            ]
+        },
+        {
+            "code": "11",
+            "title": "Kesigapan dan Tanggap Darurat",
+            "level": 1,
+            "parent_code": null,
+            "sheet_number": 3,
+            "sort_order": 14,
+            "criteria": [
+                {
+                    "number": 1,
+                    "sort_order": 86,
+                    "text": "Memiliki prosedur untuk mengidentifikasi potensi dan respon terhadap insiden lingkungan, kecelakaan dan situasi darurat"
+                },
+                {
+                    "number": 2,
+                    "sort_order": 87,
+                    "text": "Prosedur juga dipusatkan pada pencegahan dan penanggulangan dampak LK3 yang berhubungan dengan kecelakaan atau situasi darurat"
+                },
+                {
+                    "number": 3,
+                    "sort_order": 88,
+                    "text": "Setelah kejadian kecelakaan atau situasi darurat, prosedur harus direview dan jika perlu direvisi untuk mencegah terulangnya kejadian yang sama"
+                },
+                {
+                    "number": 4,
+                    "sort_order": 89,
+                    "text": "Menguji coba prosedur respon darurat secara berkala"
+                },
+                {
+                    "number": 5,
+                    "sort_order": 90,
+                    "text": "Memiliki dan menerapkan prosedur spesifik untuk mereview kinerja dari ujicoba dan efisiensinya pada kondisi perancangan"
+                },
+                {
+                    "number": 6,
+                    "sort_order": 91,
+                    "text": "Memiliki dan menerapkan prosedur untuk investigasi dari semua kecelakaan dan kejadian yang berdampak terhadap lingkungan dan perencanaan tindakan perbaikan yang benar"
+                }
+            ]
+        },
+        {
+            "code": "12",
+            "title": "Pengecekan dan Tindakan Perbaikan",
+            "level": 1,
+            "parent_code": null,
+            "sheet_number": 3,
+            "sort_order": 15,
+            "criteria": []
+        },
+        {
+            "code": "12.1",
+            "title": "Pemantauan dan Pengukuran",
+            "level": 2,
+            "parent_code": "12",
+            "sheet_number": 3,
+            "sort_order": 16,
+            "criteria": [
+                {
+                    "number": 1,
+                    "sort_order": 92,
+                    "text": "Memiliki prosedur untuk memonitor secara reguler karakteristik kunci dari operasi dan aktivitas yang dapat memberikan dampak penting LK3"
+                },
+                {
+                    "number": 2,
+                    "sort_order": 93,
+                    "text": "Apakah perusahaan secara rutin melakukan kontrol/inspeksi untuk area kerja"
+                },
+                {
+                    "number": 3,
+                    "sort_order": 94,
+                    "text": "Perusahaan menyediakan rekaman informasi untuk melacak kinerja, kontrol operasi yang berhubungan dan kesesuaian dengan tujuan dan sasaran organisasi"
+                },
+                {
+                    "number": 4,
+                    "sort_order": 95,
+                    "text": "Peralatan monitor sudah dikalibrasi dan dipelihara. Catatan proses ini dijaga sesuai prosedur organisasi"
+                },
+                {
+                    "number": 5,
+                    "sort_order": 96,
+                    "text": "Prosedur juga mencakup tindakan untuk mengidentifikasi dan mendokumentasikan peraturan yang relevan dengan aktivitas-aktivitas, produk atau servis yang harus dimonitor dan dipenuhi baku mutunya"
+                },
+                {
+                    "number": 6,
+                    "sort_order": 97,
+                    "text": "Perusahaan menetapkan periode evaluasi hasil monitoring, dimana hasil evaluasi didokumentasikan dan dilaporkan di manajemen"
+                }
+            ]
+        },
+        {
+            "code": "13",
+            "title": "Ketidaksesuaian, Tindak Perbaikan dan Pencegahan",
+            "level": 1,
+            "parent_code": null,
+            "sheet_number": 4,
+            "sort_order": 17,
+            "criteria": [
+                {
+                    "number": 1,
+                    "sort_order": 98,
+                    "text": "Memiliki prosedur yang mendefinisikan tanggung jawab dan wewenang untuk mengatasi dan meneliti kejadian penyimpangan & program perbaikan dan pencegahannya"
+                },
+                {
+                    "number": 2,
+                    "sort_order": 99,
+                    "text": "Perusahaan mengidentifikasi hal-hal yang bisa terjadi penyimpangan dan mengontrolnya"
+                },
+                {
+                    "number": 3,
+                    "sort_order": 100,
+                    "text": "Mengimplementasikan dan mencatat setiap hasil perubahan yang berakibat terjadinya perubahan prosedur/WI operasi"
+                },
+                {
+                    "number": 4,
+                    "sort_order": 101,
+                    "text": "Hasil program perbaikan dan pencegahan dikomunikasikan pada karyawan yang terkait"
+                },
+                {
+                    "number": 5,
+                    "sort_order": 102,
+                    "text": "Hasil program perbaikan dan pencegahan dilaporkan pada manajemen"
+                }
+            ]
+        },
+        {
+            "code": "14",
+            "title": "Catatan",
+            "level": 1,
+            "parent_code": null,
+            "sheet_number": 4,
+            "sort_order": 18,
+            "criteria": [
+                {
+                    "number": 1,
+                    "sort_order": 103,
+                    "text": "Memiliki prosedur untuk mengidentifikasi, memelihara dan menyusun catatan LK3"
+                },
+                {
+                    "number": 2,
+                    "sort_order": 104,
+                    "text": "Catatan QLK3SR termasuk catatan training, hasil audit dan review, serta tujuan dan sasaran yang direncanakan"
+                },
+                {
+                    "number": 3,
+                    "sort_order": 105,
+                    "text": "Catatan QLK3SR ini mudah dibaca, diidentifikasi dan dilacak pada aktivitas, produk atau service yang terkait"
+                },
+                {
+                    "number": 4,
+                    "sort_order": 106,
+                    "text": "Catatan QLK3SR disimpan dan dijaga agar selalu siap dibaca/diperoleh dan dilindungi dari kerusakan atau hilang"
+                },
+                {
+                    "number": 5,
+                    "sort_order": 107,
+                    "text": "Waktu tinggal catatan-catatan QLK3SR ini ditetapkan dan dicatat"
+                },
+                {
+                    "number": 6,
+                    "sort_order": 108,
+                    "text": "Setiap bagian mempunyai daftar catatan QLK3SR dan disimpan dengan baik"
+                },
+                {
+                    "number": 7,
+                    "sort_order": 109,
+                    "text": "Memelihara semua catatan yang diperlukan untuk menunjukkan kesesuaian pada standar (termasuk kepatuhan pada peraturan)"
+                }
+            ]
+        },
+        {
+            "code": "15",
+            "title": "Audit Sistem Manajemen LK3",
+            "level": 1,
+            "parent_code": null,
+            "sheet_number": 4,
+            "sort_order": 19,
+            "criteria": [
+                {
+                    "number": 1,
+                    "sort_order": 110,
+                    "text": "Top manajemen sudah mereview sistem pengelolaan Mutu & LK3SR untuk menjamin kecocokan, kelayakan dan efektivitasnya"
+                },
+                {
+                    "number": 2,
+                    "sort_order": 111,
+                    "text": "Program audit bertujuan menentukan apakah sistem manajemen Mutu & LK3SR sesuai dengan rencana pengelolaan LK3SR atau tidak, dan apakah sistem manajemen LK3SR sudah diterapkan dan dijalankan dengan baik"
+                },
+                {
+                    "number": 3,
+                    "sort_order": 112,
+                    "text": "Prosedur-prosedur ini menjamin informasi hasil audit dilaporkan oleh QLK3SR MR ke manajemen"
+                },
+                {
+                    "number": 4,
+                    "sort_order": 113,
+                    "text": "Program audit, termasuk frekuensi audit, didasarkan pada tingkat kepentingan aktivitas dan hasil audit sebelumnya"
+                },
+                {
+                    "number": 5,
+                    "sort_order": 114,
+                    "text": "Perusahaan telah membentuk team audit sesuai kompetensi yang harus dimiliki"
+                },
+                {
+                    "number": 6,
+                    "sort_order": 115,
+                    "text": "Prosedur audit mencakup ruang lingkup audit, frekuensi dan metodologi, kebutuhan kompetensi auditor, dan tanggung jawab dalam hubungannya dengan pengelolaan dan pelaksanaan audit, dan perlunya melakukan audit dan pelaporan hasil audit"
+                }
+            ]
+        },
+        {
+            "code": "16",
+            "title": "Tinjauan Manajemen",
+            "level": 1,
+            "parent_code": null,
+            "sheet_number": 4,
+            "sort_order": 20,
+            "criteria": [
+                {
+                    "number": 1,
+                    "sort_order": 116,
+                    "text": "Top manajemen sudah mereview sistem pengelolaan QLK3SR untuk menjamin kecocokan, kelayakan dan efektivitasnya"
+                },
+                {
+                    "number": 2,
+                    "sort_order": 117,
+                    "text": "Mengidentifikasi dan mengumpulkan informasi yang diperlukan agar evaluasi dapat dilakukan dengan baik oleh manajemen"
+                },
+                {
+                    "number": 3,
+                    "sort_order": 118,
+                    "text": "Top manajemen sudah menentukan interval untuk mereview sistem pengelolaan lingkungan"
+                },
+                {
+                    "number": 4,
+                    "sort_order": 119,
+                    "text": "Tinjauan manajemen mengarah pada perubahan keadaan yang memungkinkan terjadinya perubahan kebijakan, tujuan dan elemen lain dari Sistem Manajemen QLK3SR, perubahan keadaan dan komitmen untuk perbaikan berkelanjutan"
+                },
+                {
+                    "number": 5,
+                    "sort_order": 120,
+                    "text": "Tinjauan manajemen didokumentasi"
+                },
+                {
+                    "number": 6,
+                    "sort_order": 121,
+                    "text": "Review kebijakan, tujuan dan prosedur dilakukan oleh tingkat manajemen yang mengeluarkannya"
+                }
+            ]
+        }
+    ]
+}

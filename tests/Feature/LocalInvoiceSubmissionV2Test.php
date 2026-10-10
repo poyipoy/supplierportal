@@ -10,9 +10,9 @@ use App\Services\LocalInvoice\InvoiceSubmissionService;
 use App\Services\LocalInvoice\LocalPoReferenceService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use Tests\Support\NativeFileFixtures;
 use Tests\TestCase;
 
 class LocalInvoiceSubmissionV2Test extends TestCase
@@ -84,9 +84,9 @@ class LocalInvoiceSubmissionV2Test extends TestCase
                 'scheduled_physical_delivery_date' => $wednesday,
             ],
             [
-                'invoice' => UploadedFile::fake()->create('inv.pdf', 100),
-                'tax_invoice' => UploadedFile::fake()->create('tax.pdf', 100),
-                'delivery_note' => UploadedFile::fake()->create('sj.pdf', 100),
+                'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
+                'tax_invoice' => NativeFileFixtures::upload('tax.pdf', 100),
+                'delivery_note' => NativeFileFixtures::upload('sj.pdf', 100),
             ]
         );
     }
@@ -119,9 +119,9 @@ class LocalInvoiceSubmissionV2Test extends TestCase
                 'scheduled_physical_delivery_date' => $wednesday,
             ],
             [
-                'invoice' => UploadedFile::fake()->create('inv.pdf', 100),
-                'tax_invoice' => UploadedFile::fake()->create('tax.pdf', 100),
-                'delivery_note' => UploadedFile::fake()->create('sj.pdf', 100),
+                'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
+                'tax_invoice' => NativeFileFixtures::upload('tax.pdf', 100),
+                'delivery_note' => NativeFileFixtures::upload('sj.pdf', 100),
             ]
         );
 
@@ -156,9 +156,9 @@ class LocalInvoiceSubmissionV2Test extends TestCase
                 'scheduled_physical_delivery_date' => $wednesday,
             ],
             [
-                'invoice' => UploadedFile::fake()->create('inv.pdf', 100),
-                'tax_invoice' => UploadedFile::fake()->create('tax.pdf', 100),
-                'delivery_note' => UploadedFile::fake()->create('sj.pdf', 100),
+                'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
+                'tax_invoice' => NativeFileFixtures::upload('tax.pdf', 100),
+                'delivery_note' => NativeFileFixtures::upload('sj.pdf', 100),
             ]
         );
     }
@@ -180,9 +180,9 @@ class LocalInvoiceSubmissionV2Test extends TestCase
                 'scheduled_physical_delivery_date' => $wednesday,
             ],
             [
-                'invoice' => UploadedFile::fake()->create('inv.pdf', 100),
-                'tax_invoice' => UploadedFile::fake()->create('tax.pdf', 100),
-                'delivery_note' => UploadedFile::fake()->create('sj.pdf', 100),
+                'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
+                'tax_invoice' => NativeFileFixtures::upload('tax.pdf', 100),
+                'delivery_note' => NativeFileFixtures::upload('sj.pdf', 100),
             ]
         );
 
@@ -222,7 +222,7 @@ class LocalInvoiceSubmissionV2Test extends TestCase
                 'scheduled_physical_delivery_date' => $wednesday,
             ],
             [
-                'invoice' => UploadedFile::fake()->create('invoice_only.pdf', 100),
+                'invoice' => NativeFileFixtures::upload('invoice_only.pdf', 100),
             ]
         );
 
@@ -262,9 +262,9 @@ class LocalInvoiceSubmissionV2Test extends TestCase
                 'scheduled_physical_delivery_date' => $thursday->toDateString(),
             ],
             [
-                'invoice' => UploadedFile::fake()->create('inv.pdf', 100),
-                'tax_invoice' => UploadedFile::fake()->create('tax.pdf', 100),
-                'delivery_note' => UploadedFile::fake()->create('sj.pdf', 100),
+                'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
+                'tax_invoice' => NativeFileFixtures::upload('tax.pdf', 100),
+                'delivery_note' => NativeFileFixtures::upload('sj.pdf', 100),
             ]
         );
     }
@@ -290,9 +290,9 @@ class LocalInvoiceSubmissionV2Test extends TestCase
             'ppn_scheme' => '11%',
             'tax_invoice_number' => '0100002612345678', // Raw 16 digits
             'scheduled_physical_delivery_date' => $wednesday,
-            'invoice' => UploadedFile::fake()->create('inv.pdf', 100),
-            'tax_invoice' => UploadedFile::fake()->create('tax.pdf', 100),
-            'delivery_note' => UploadedFile::fake()->create('sj.pdf', 100),
+            'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
+            'tax_invoice' => NativeFileFixtures::upload('tax.pdf', 100),
+            'delivery_note' => NativeFileFixtures::upload('sj.pdf', 100),
         ]);
 
         $response->assertSessionHasNoErrors();
@@ -302,6 +302,58 @@ class LocalInvoiceSubmissionV2Test extends TestCase
 
         $revision = $invoice->revisions()->firstOrFail();
         $this->assertSame('010.000-26.12345678', $revision->tax_invoice_number);
+    }
+
+    public function test_async_invoice_submit_returns_json_redirect_and_flashes_success(): void
+    {
+        $supplier = $this->createLocalSupplier();
+        LocalPoReferenceService::registerInternalPo($supplier->id, 'PO-ASYNC-001', value: 5000000.0, grReference: 'GR-ASYNC-001');
+
+        $response = $this->actingAs($supplier)
+            ->withHeaders(['Accept' => 'application/json'])
+            ->post(route('local-supplier.invoices.store'), [
+                'invoice_number' => 'INV-ASYNC-001',
+                'invoice_date' => '2026-09-10',
+                'po_source' => 'INTERNAL',
+                'internal_po_reference' => 'PO-ASYNC-001',
+                'invoice_amount' => 5000000,
+                'ppn_scheme' => '11%',
+                'tax_invoice_number' => '0100002612345678',
+                'scheduled_physical_delivery_date' => $this->nextWednesday(),
+                'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
+                'tax_invoice' => NativeFileFixtures::upload('tax.pdf', 100),
+                'delivery_note' => NativeFileFixtures::upload('sj.pdf', 100),
+            ]);
+
+        $invoice = LocalInvoice::where('invoice_number', 'INV-ASYNC-001')->firstOrFail();
+        $response->assertOk()->assertExactJson(['redirect' => route('local-supplier.invoices.receipt', $invoice)]);
+        $this->assertSame(__('local_invoice.feedback.submitted'), session('success'));
+    }
+
+    public function test_async_invoice_submit_with_invalid_data_returns_422_and_creates_nothing(): void
+    {
+        $supplier = $this->createLocalSupplier(['is_pkp' => true]);
+        LocalPoReferenceService::registerInternalPo($supplier->id, 'PO-ASYNC-002', value: 5000000.0, grReference: 'GR-ASYNC-002');
+
+        $response = $this->actingAs($supplier)
+            ->withHeaders(['Accept' => 'application/json'])
+            ->post(route('local-supplier.invoices.store'), [
+                'invoice_number' => 'INV-ASYNC-002',
+                'invoice_date' => '2026-09-10',
+                'po_source' => 'INTERNAL',
+                'internal_po_reference' => 'PO-ASYNC-002',
+                'invoice_amount' => 5000000,
+                'ppn_scheme' => '11%',
+                // tax_invoice_number omitted for a PKP supplier
+                'scheduled_physical_delivery_date' => $this->nextWednesday(),
+                'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
+                'tax_invoice' => NativeFileFixtures::upload('tax.pdf', 100),
+                'delivery_note' => NativeFileFixtures::upload('sj.pdf', 100),
+            ]);
+
+        $response->assertUnprocessable()->assertJsonValidationErrors(['tax_invoice_number']);
+        $this->assertSame(0, LocalInvoice::where('invoice_number', 'INV-ASYNC-002')->count());
+        $this->assertSame([], Storage::disk('private')->allFiles());
     }
 
     public function test_tax_invoice_number_supports_coretax_17_digit_format(): void
@@ -325,9 +377,9 @@ class LocalInvoiceSubmissionV2Test extends TestCase
             'ppn_scheme' => '11%',
             'tax_invoice_number' => '01002600000000001', // Raw 17 digits Coretax
             'scheduled_physical_delivery_date' => $wednesday,
-            'invoice' => UploadedFile::fake()->create('inv.pdf', 100),
-            'tax_invoice' => UploadedFile::fake()->create('tax.pdf', 100),
-            'delivery_note' => UploadedFile::fake()->create('sj.pdf', 100),
+            'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
+            'tax_invoice' => NativeFileFixtures::upload('tax.pdf', 100),
+            'delivery_note' => NativeFileFixtures::upload('sj.pdf', 100),
         ]);
 
         $response->assertSessionHasNoErrors();
@@ -356,9 +408,9 @@ class LocalInvoiceSubmissionV2Test extends TestCase
             'ppn_scheme' => '11%',
             // tax_invoice_number omitted
             'scheduled_physical_delivery_date' => $wednesday,
-            'invoice' => UploadedFile::fake()->create('inv.pdf', 100),
-            'tax_invoice' => UploadedFile::fake()->create('tax.pdf', 100),
-            'delivery_note' => UploadedFile::fake()->create('sj.pdf', 100),
+            'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
+            'tax_invoice' => NativeFileFixtures::upload('tax.pdf', 100),
+            'delivery_note' => NativeFileFixtures::upload('sj.pdf', 100),
         ]);
 
         $response->assertSessionHasErrors('tax_invoice_number');
@@ -385,9 +437,9 @@ class LocalInvoiceSubmissionV2Test extends TestCase
             'ppn_scheme' => '11%',
             'tax_invoice_number' => 'INVALID-123',
             'scheduled_physical_delivery_date' => $wednesday,
-            'invoice' => UploadedFile::fake()->create('inv.pdf', 100),
-            'tax_invoice' => UploadedFile::fake()->create('tax.pdf', 100),
-            'delivery_note' => UploadedFile::fake()->create('sj.pdf', 100),
+            'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
+            'tax_invoice' => NativeFileFixtures::upload('tax.pdf', 100),
+            'delivery_note' => NativeFileFixtures::upload('sj.pdf', 100),
         ]);
 
         $response->assertSessionHasErrors('tax_invoice_number');
@@ -422,9 +474,9 @@ class LocalInvoiceSubmissionV2Test extends TestCase
             'ppn_scheme' => '11%',
             'tax_invoice_number' => '010.000-26.99999999',
             'scheduled_physical_delivery_date' => $wednesday,
-            'invoice' => UploadedFile::fake()->create('inv.pdf', 100),
-            'tax_invoice' => UploadedFile::fake()->create('tax.pdf', 100),
-            'delivery_note' => UploadedFile::fake()->create('sj.pdf', 100),
+            'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
+            'tax_invoice' => NativeFileFixtures::upload('tax.pdf', 100),
+            'delivery_note' => NativeFileFixtures::upload('sj.pdf', 100),
         ])->assertSessionHasNoErrors();
 
         // Second invoice with duplicate NSFP fails
@@ -437,9 +489,9 @@ class LocalInvoiceSubmissionV2Test extends TestCase
             'ppn_scheme' => '11%',
             'tax_invoice_number' => '010.000-26.99999999',
             'scheduled_physical_delivery_date' => $wednesday,
-            'invoice' => UploadedFile::fake()->create('inv.pdf', 100),
-            'tax_invoice' => UploadedFile::fake()->create('tax.pdf', 100),
-            'delivery_note' => UploadedFile::fake()->create('sj.pdf', 100),
+            'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
+            'tax_invoice' => NativeFileFixtures::upload('tax.pdf', 100),
+            'delivery_note' => NativeFileFixtures::upload('sj.pdf', 100),
         ]);
 
         $response->assertSessionHasErrors('tax_invoice_number');
@@ -470,7 +522,7 @@ class LocalInvoiceSubmissionV2Test extends TestCase
             'ppn_scheme' => '0%',
             // tax_invoice_number omitted
             'scheduled_physical_delivery_date' => $wednesday,
-            'invoice' => UploadedFile::fake()->create('inv.pdf', 100),
+            'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
         ]);
 
         $response->assertSessionHasNoErrors();
@@ -548,9 +600,9 @@ class LocalInvoiceSubmissionV2Test extends TestCase
             'ppn_scheme' => '11%',
             'tax_invoice_number' => '010.000-26.12345678',
             'scheduled_physical_delivery_date' => $wednesday,
-            'invoice' => UploadedFile::fake()->create('inv.pdf', 100),
-            'tax_invoice' => UploadedFile::fake()->create('tax.pdf', 100),
-            'delivery_note' => UploadedFile::fake()->create('sj.pdf', 100),
+            'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
+            'tax_invoice' => NativeFileFixtures::upload('tax.pdf', 100),
+            'delivery_note' => NativeFileFixtures::upload('sj.pdf', 100),
         ]);
 
         $response->assertSessionHasNoErrors();
@@ -575,9 +627,9 @@ class LocalInvoiceSubmissionV2Test extends TestCase
             'ppn_scheme' => '11%',
             'tax_invoice_number' => '010.000-26.12345678',
             'scheduled_physical_delivery_date' => $wednesday,
-            'invoice' => UploadedFile::fake()->create('inv.pdf', 100),
-            'tax_invoice' => UploadedFile::fake()->create('tax.pdf', 100),
-            'delivery_note' => UploadedFile::fake()->create('sj.pdf', 100),
+            'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
+            'tax_invoice' => NativeFileFixtures::upload('tax.pdf', 100),
+            'delivery_note' => NativeFileFixtures::upload('sj.pdf', 100),
         ]);
 
         $response->assertSessionHasErrors('manual_gr_reference');
@@ -592,9 +644,9 @@ class LocalInvoiceSubmissionV2Test extends TestCase
             'ppn_scheme' => '11%',
             'tax_invoice_number' => '010.000-26.12345678',
             'scheduled_physical_delivery_date' => $wednesday,
-            'invoice' => UploadedFile::fake()->create('inv.pdf', 100),
-            'tax_invoice' => UploadedFile::fake()->create('tax.pdf', 100),
-            'delivery_note' => UploadedFile::fake()->create('sj.pdf', 100),
+            'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
+            'tax_invoice' => NativeFileFixtures::upload('tax.pdf', 100),
+            'delivery_note' => NativeFileFixtures::upload('sj.pdf', 100),
         ]);
 
         $responseOk->assertSessionHasNoErrors();

@@ -1,0 +1,142 @@
+﻿ M AGENTS.md
+ M CLAUDE.md
+ M UI-REDESIGN-RESULT/PHASE-7-COPY-AUDIT.jsonl
+ M app/Exports/Advanced/Concerns/UsesColumnCatalog.php
+ M app/Exports/Advanced/Definitions/InspectionDefinition.php
+ M app/Exports/Advanced/Definitions/PurchaseOrderDefinition.php
+ M app/Exports/Advanced/Definitions/QuotationDefinition.php
+ M app/Exports/Advanced/Definitions/RequisitionDefinition.php
+ M app/Exports/Advanced/Definitions/ShipmentDefinition.php
+ M app/Exports/Advanced/ExportColumn.php
+ M app/Exports/InspectionsExport.php
+ D app/Exports/LocalPoGrImportTemplateExport.php
+ M app/Exports/PurchaseOrdersExport.php
+ M app/Exports/QuotationsExport.php
+ M app/Exports/RequisitionsExport.php
+ M app/Exports/ShipmentsExport.php
+ M app/Exports/SupplierPriceHistoryExport.php
+ M app/Http/Controllers/Auth/SupplierRegistrationController.php
+ M app/Http/Controllers/Finance/LocalProcurementController.php
+ M app/Http/Controllers/LocalSupplier/InvoiceController.php
+ M app/Http/Controllers/Purchasing/ExportController.php
+ M app/Http/Controllers/Supplier/ExportController.php
+ M app/Http/Controllers/UserPreferenceController.php
+ M app/Http/Middleware/DecodeHashids.php
+ M app/Http/Requests/Auth/SupplierRegistrationRequest.php
+ M app/Http/Requests/LocalInvoice/UploadLocalGrImportRequest.php
+ M app/Http/Requests/LocalInvoice/UploadLocalPoImportRequest.php
+ M app/Http/Requests/SupplierRegistration/ResubmitRegistrationRequest.php
+ D app/Imports/LocalPoGrImport.php
+ M app/Models/Supplier.php
+ M app/Models/SupplierMasterDocument.php
+ M app/Services/LocalInvoice/LocalFinanceAuditService.php
+ M app/Services/LocalInvoice/LocalGrImportService.php
+ D app/Services/LocalInvoice/LocalPoGrImportService.php
+ M app/Services/LocalInvoice/LocalPoImportService.php
+ M app/Services/LocalInvoice/LocalProcurementMasterService.php
+ M app/Services/SupplierRegistrationService.php
+ M composer.json
+ M composer.lock
+ M context.md
+ M docs/guides/SUPPLIER-PORTAL-REVISION-DEPLOYMENT-20261007.md
+ M lang/en/auth.php
+ M lang/en/customization.php
+ M lang/en/js.php
+ M lang/en/local_procurement.php
+ M lang/en/navigation.php
+ M lang/en/registration.php
+ M lang/id/admin.php
+ M lang/id/auth.php
+ M lang/id/claims.php
+ M lang/id/common.php
+ M lang/id/customization.php
+ M lang/id/documents.php
+ M lang/id/exports.php
+ M lang/id/finance.php
+ M lang/id/js.php
+ M lang/id/local_invoice.php
+ M lang/id/local_procurement.php
+ M lang/id/navigation.php
+ M lang/id/notifications.php
+ M lang/id/purchasing.php
+ M lang/id/qc.php
+ M lang/id/registration.php
+ M lang/id/shipments.php
+ M lang/id/supplier.php
+ M lang/id/terms.php
+ M lang/id/validation.php
+ M resources/css/app.css
+ M resources/js/app.js
+ M resources/js/file-upload.js
+ M resources/views/auth/forgot-password.blade.php
+ M resources/views/auth/supplier-register.blade.php
+ M resources/views/auth/supplier-registration-edit.blade.php
+ M resources/views/finance/local-procurement/_import_gr_modal.blade.php
+ M resources/views/finance/local-procurement/_import_po_modal.blade.php
+ M resources/views/local-invoices/form.blade.php
+ M resources/views/profile/customization.blade.php
+ M resources/views/profile/edit.blade.php
+ M resources/views/profile/notifications.blade.php
+ M resources/views/profile/security.blade.php
+ M resources/views/supplier-registrations/show.blade.php
+ M routes/console.php
+ M routes/web.php
+ M tests/Feature/AdvancedExportBaselineTest.php
+ M tests/Feature/AdvancedPurchaseOrderExportTest.php
+ M tests/Feature/LocalInvoice/LocalGrImportTest.php
+ D tests/Feature/LocalInvoice/LocalPoGrQuantityTemplateTest.php
+ M tests/Feature/LocalInvoice/LocalPoImportTest.php
+ M tests/Feature/LocalInvoice/LocalSupplierWholeGrSettlementTest.php
+ M tests/Feature/LocalInvoiceSubmissionV2Test.php
+ M tests/Feature/MissionFourExportTest.php
+ M tests/Feature/RenderedComponentTest.php
+ M tests/Feature/SupplierRegistration/SupplierRegistrationCredentialAccessTest.php
+ M tests/Feature/SupplierRegistration/SupplierRegistrationSecurityTest.php
+ M tests/Feature/SupplierRegistration/SupplierRegistrationTest.php
+ M tests/Feature/UserDashboardUiTest.php
+ M tests/Unit/TranslationContentTest.php
+ M tests/js/local-po-preview-localization.test.mjs
+?? IMPLEMENTATION-PLAN-SUPPLIER-PORTAL-REVISION-20261007.md
+?? PNR261178.pdf
+?? UI-REDESIGN-RESULT/EXCEL-EXPORT-PRESENTATION-RESULT-20261008.md
+?? UI-REDESIGN-RESULT/EXCEL-PRESENTATION-SAMPLES/
+?? app/Console/Commands/CleanupLocalProcurementImports.php
+?? app/Exceptions/
+?? app/Exports/Concerns/StylesOperationalWorkbook.php
+?? app/Http/Controllers/Finance/LocalProcurementImportController.php
+?? app/Jobs/ProcessLocalProcurementImport.php
+?? app/Models/LocalProcurementImport.php
+?? app/Policies/LocalProcurementImportPolicy.php
+?? app/Services/LocalInvoice/LocalProcurementCsvReader.php
+?? app/Services/LocalInvoice/LocalProcurementImportService.php
+?? app/Services/LocalInvoice/LocalProcurementStreamingReader.php
+?? app/Services/LocalInvoice/LocalProcurementXlsReader.php
+?? app/Support/SupplierComplianceQuestionnaire.php
+?? config/local_procurement_imports.php
+?? database/migrations/2026_10_08_000001_create_local_procurement_import_staging.php
+?? database/migrations/2026_10_08_000002_add_compliance_questionnaire_to_suppliers_table.php
+?? database/migrations/2026_10_08_000003_add_company_profile_to_supplier_master_documents.php
+?? docs/guides/LOCAL-PROCUREMENT-IMPORTS.md
+?? docs/plans/IMPLEMENTATION-PLAN-ACCOUNT-SETTINGS-UX-20261008.md
+?? docs/plans/IMPLEMENTATION-PLAN-LOCAL-PO-GR-LARGE-IMPORT-20261008.md
+?? docs/results/LOCAL-PROCUREMENT-IMPORT-FORMATS-RESULT-20261008.md
+?? docs/results/LOCAL-PROCUREMENT-IMPORT-FORMATS-WORKTREE-20261008.txt
+?? docs/results/LOCAL-PROCUREMENT-LARGE-IMPORT-RESULT-20261008.md
+?? docs/results/local-import-benchmarks-20261008/
+?? docs/results/local-import-formats-benchmarks-20261008/
+?? resources/js/async-form-submit.js
+?? resources/js/customization-form.js
+?? resources/js/local-procurement-import.js
+?? resources/js/regional-sample.js
+?? resources/views/components/account/
+?? skills-lock.json
+?? tests/Feature/LocalInvoice/LocalProcurementBackgroundImportTest.php
+?? tests/Support/local-procurement-import-benchmark.php
+?? tests/Support/local-procurement-import-fixture.php
+?? tests/Unit/LocalProcurementCsvReaderTest.php
+?? tests/Unit/LocalProcurementStreamingReaderTest.php
+?? tests/Unit/LocalProcurementXlsReaderTest.php
+?? tests/Unit/OperationalWorkbookPresentationTest.php
+?? tests/js/async-form-submit.test.mjs
+?? tests/js/customization-form.test.mjs
+?? tests/js/regional-sample.test.mjs

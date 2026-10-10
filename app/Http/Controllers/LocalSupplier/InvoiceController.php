@@ -12,6 +12,7 @@ use App\Models\LocalPurchaseOrder;
 use App\Services\LocalInvoice\InvoiceQuery;
 use App\Services\LocalInvoice\InvoiceSubmissionService;
 use App\Services\LocalInvoice\LocalPoReferenceService;
+use App\Services\SupplierAudit\SupplierAuditInvoiceGate;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -29,9 +30,10 @@ class InvoiceController extends Controller
         return view('local-supplier.invoices.index', ['invoices' => $query->filtered($request->validated(), $request->user()->id)->latest('id')->paginate(25)->withQueryString()]);
     }
 
-    public function searchPurchaseOrders(Request $request, LocalPoReferenceService $poReferenceService): JsonResponse
+    public function searchPurchaseOrders(Request $request, LocalPoReferenceService $poReferenceService, SupplierAuditInvoiceGate $auditGate): JsonResponse
     {
         Gate::authorize('create', LocalInvoice::class);
+        abort_if($auditGate->blockingAudit($request->user()) !== null, 403, __('supplier_audit.invoice_block.short'));
 
         $query = (string) $request->input('q', '');
         $authoritative = Schema::hasColumn('local_invoices', 'local_purchase_order_id')
@@ -75,9 +77,15 @@ class InvoiceController extends Controller
         ]);
     }
 
-    public function create()
+    public function create(SupplierAuditInvoiceGate $auditGate)
     {
         Gate::authorize('create', LocalInvoice::class);
+
+        // D13: arahkan ke form audit yang terlambat; pengajuan invoice baru dibuka lagi setelah submit.
+        if ($blockingAudit = $auditGate->blockingAudit(auth()->user())) {
+            return redirect()->route('local-supplier.supplier-audits.edit', $blockingAudit)
+                ->with('warning', $auditGate->message($blockingAudit));
+        }
 
         return view('local-supplier.invoices.create', ['purchaseOrders' => $this->eligiblePurchaseOrders()]);
     }
@@ -86,7 +94,7 @@ class InvoiceController extends Controller
     {
         $invoice = $service->submit($request->user(), $request->validated(), $request->allFiles());
 
-        return redirect()->route('local-supplier.invoices.receipt', $invoice)->with('success', __('local_invoice.feedback.submitted'));
+        return $this->submittedResponse($request, $invoice, __('local_invoice.feedback.submitted'));
     }
 
     public function show(LocalInvoice $invoice)
@@ -121,7 +129,23 @@ class InvoiceController extends Controller
     {
         $service->resubmit($request->user(), $invoice, $request->validated(), $request->allFiles());
 
-        return redirect()->route('local-supplier.invoices.receipt', $invoice)->with('success', __('local_invoice.feedback.resubmitted'));
+        return $this->submittedResponse($request, $invoice, __('local_invoice.feedback.resubmitted'));
+    }
+
+    /**
+     * Async (file-preserving) submits receive a JSON redirect; classic posts keep the redirect.
+     */
+    private function submittedResponse(Request $request, LocalInvoice $invoice, string $message)
+    {
+        $url = route('local-supplier.invoices.receipt', $invoice);
+
+        if ($request->expectsJson()) {
+            $request->session()->flash('success', $message);
+
+            return response()->json(['redirect' => $url]);
+        }
+
+        return redirect()->to($url)->with('success', $message);
     }
 
     public function cancel(Request $request, LocalInvoice $invoice, InvoiceSubmissionService $service)

@@ -19,246 +19,180 @@
         'searchKeywords' => 'lainnya other asing luar negeri manual',
     ];
 
-    // Determine initial active step if returning from validation redirect
-    $initialStep = 1;
-    if ($errors->any()) {
-        $step4Fields = ['cf-turnstile-response'];
-        $step3Fields = ['nib_file', 'npwp_file', 'sknr_file', 'sppkp_file', 'skd_file'];
-        $step2Fields = ['nib', 'npwp', 'pic_name', 'pic_email', 'pic_phone', 'bank_name', 'bank_select', 'other_bank_name', 'account_number', 'account_holder_name'];
-        $errorKeys = $errors->keys();
+    $totalSteps = 5;
+    $questionnaireKeys = \App\Support\SupplierComplianceQuestionnaire::keys();
+    $questionnaireAnswers = \App\Support\SupplierComplianceQuestionnaire::normalize(old('questionnaire', []));
 
-        if (array_intersect($errorKeys, $step4Fields)) {
-            $initialStep = 4;
-        } elseif (array_intersect($errorKeys, $step3Fields)) {
-            $initialStep = 3;
-        } elseif (array_intersect($errorKeys, $step2Fields)) {
-            $initialStep = 2;
-        } else {
-            $initialStep = 1;
-        }
-    }
+    // Field => wizard step, used to open the earliest step that has a server-side error.
+    $fieldSteps = [
+        'questionnaire' => 2,
+        'nib' => 3, 'npwp' => 3, 'pic_name' => 3, 'pic_email' => 3, 'pic_phone' => 3,
+        'bank_name' => 3, 'bank_select' => 3, 'other_bank_name' => 3, 'account_number' => 3, 'account_holder_name' => 3,
+        'nib_file' => 4, 'npwp_file' => 4, 'sknr_file' => 4, 'sppkp_file' => 4, 'skd_file' => 4, 'company_profile_file' => 4,
+        'cf-turnstile-response' => 5,
+    ];
+    $errorSteps = collect($errors->keys())
+        ->map(fn ($key) => $fieldSteps[\Illuminate\Support\Str::before($key, '.')] ?? 1)
+        ->unique()->sort()->values()->all();
+    $initialStep = $errorSteps[0] ?? 1;
+
+    $stepper = [
+        1 => ['title' => __('registration.stepper.account'), 'help' => __('registration.step1_help'), 'icon' => 'key'],
+        2 => ['title' => __('registration.stepper.questionnaire'), 'help' => __('registration.stepper.questionnaire_help'), 'icon' => 'clipboard-check'],
+        3 => ['title' => __('registration.stepper.legal'), 'help' => __('registration.step2_help'), 'icon' => 'file-badge'],
+        4 => ['title' => __('registration.stepper.documents'), 'help' => __('registration.step3_help'), 'icon' => 'file-text'],
+        5 => ['title' => __('registration.stepper.review'), 'help' => __('registration.step4_help'), 'icon' => 'shield-check'],
+    ];
 @endphp
 
 @section('shell-attributes')
-    x-data="supplierRegistrationWizard({{ $initialStep }})"
+    x-data="supplierRegistrationWizard({ initialStep: {{ $initialStep }}, errorSteps: @js($errorSteps) })"
 @endsection
 
 {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      LEFT PANEL: ACTIVE ONBOARDING COMPANION (Desktop Sticky)
      â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
 @section('brand-panel')
-<aside class="auth-brand-panel tw-relative tw-flex tw-flex-col tw-justify-between tw-overflow-y-auto tw-bg-[#0B1528] tw-text-white tw-p-8 lg:tw-p-10 xl:tw-p-12 tw-sticky tw-top-0 tw-h-screen tw-z-10" aria-label="{{ __('registration.guide') }}">
-    {{-- Subtle industrial ambient background overlay --}}
-    <div class="tw-absolute tw-inset-0 tw-z-0 tw-opacity-15 tw-pointer-events-none">
-        <img src="{{ asset('assets/images/adasi-login-bg.jpg') }}" alt="" class="tw-w-full tw-h-full tw-object-cover" draggable="false">
-    </div>
-    <div class="tw-absolute tw-inset-0 tw-z-0 tw-bg-gradient-to-b tw-from-[#0B1528]/95 tw-via-[#0B1528]/85 tw-to-[#0B1528]/95 tw-pointer-events-none"></div>
-
+<aside class="auth-brand-panel registration-guide-panel tw-relative tw-flex tw-flex-col tw-justify-between tw-overflow-y-auto tw-border-e tw-border-outline-variant tw-text-on-surface tw-p-8 lg:tw-p-10 xl:tw-p-12 tw-sticky tw-top-0 tw-h-screen tw-z-10" aria-label="{{ __('registration.guide') }}">
     {{-- Brand & Header Section --}}
-    <div class="tw-relative tw-z-10">
+    <div>
         <div class="tw-flex tw-items-center tw-gap-3">
             <img src="{{ asset('assets/images/logo-adasi.png') }}" alt="{{ __('common.review.logo') }}" class="tw-h-9 tw-w-auto tw-shrink-0" draggable="false">
             <div>
-                <div class="tw-text-ui-xs tw-font-bold tw-tracking-wider tw-text-white/90 tw-uppercase">PT Astra Daido Steel Indonesia</div>
-                <div class="tw-text-[11px] tw-font-medium tw-text-white/60">{{ __('registration.portal') }}</div>
+                <div class="tw-text-ui-xs tw-font-bold tw-tracking-wider tw-text-on-surface tw-uppercase">PT Astra Daido Steel Indonesia</div>
+                <div class="tw-text-[11px] tw-font-medium tw-text-on-surface-variant">{{ __('registration.portal') }}</div>
             </div>
         </div>
 
         <div class="tw-mt-8">
-            <span class="tw-inline-flex tw-items-center tw-gap-1.5 tw-px-2.5 tw-py-1 tw-rounded-full tw-text-[11px] tw-font-semibold tw-bg-primary/20 tw-text-primary-200 tw-border tw-border-primary/30">
+            <span class="tw-inline-flex tw-items-center tw-gap-1.5 tw-text-[11px] tw-font-semibold tw-uppercase tw-tracking-wider tw-text-primary">
                 <x-ui.icon name="shield-check" size="xs" />
                 <span>{{ __('registration.official') }}</span>
             </span>
-            <h1 class="tw-text-ui-xl xl:tw-text-ui-2xl tw-font-bold tw-text-white tw-mt-2 tw-leading-tight">
+            <h1 class="tw-m-0 tw-text-ui-xl xl:tw-text-ui-2xl tw-font-bold tw-text-on-surface tw-mt-2 tw-leading-tight tw-text-balance">
                 {{ __('registration.join') }}
             </h1>
-            <p class="tw-text-ui-xs tw-text-white/70 tw-mt-2 tw-leading-relaxed tw-max-w-md">
+            <p class="tw-m-0 tw-text-ui-xs tw-text-on-surface-variant tw-mt-2 tw-leading-relaxed tw-max-w-md tw-text-pretty">
                 {{ __('registration.join_help') }}
             </p>
         </div>
 
         {{-- Vertical Stepper Tracker --}}
-        <div class="tw-mt-8 tw-space-y-4" role="navigation" aria-label="{{ __('registration.steps') }}">
-            {{-- Step 1 Item --}}
-            <div
-                class="tw-flex tw-items-start tw-gap-3.5 tw-cursor-pointer tw-group"
-                @click="goToStep(1)"
-            >
-                <div class="tw-flex tw-flex-col tw-items-center tw-shrink-0">
-                    <div
-                        class="tw-w-8 tw-h-8 tw-rounded-full tw-flex tw-items-center tw-justify-center tw-text-ui-xs tw-font-bold tw-transition-all"
-                        :class="{
-                            'tw-bg-success tw-text-white': step > 1,
-                            'tw-bg-primary tw-text-white tw-ring-4 tw-ring-primary/25 tw-scale-105': step === 1,
-                            'tw-bg-white/10 tw-text-white/50 tw-border tw-border-white/20': step < 1
-                        }"
-                    >
-                        <template x-if="step > 1">
-                            <x-ui.icon name="check" size="xs" />
-                        </template>
-                        <template x-if="step <= 1">
-                            <span>1</span>
-                        </template>
-                    </div>
-                    <div class="tw-w-0.5 tw-h-10 tw-my-1" :class="step > 1 ? 'tw-bg-success/50' : 'tw-bg-white/15'"></div>
-                </div>
-                <div class="tw-pt-1">
-                    <div class="tw-text-ui-xs tw-font-semibold tw-transition-colors" :class="step === 1 ? 'tw-text-white tw-font-bold' : (step > 1 ? 'tw-text-white/90' : 'tw-text-white/50')">
-                        {{ __('registration.steps.account') }}
-                    </div>
-                    <div class="tw-text-[11px] tw-text-white/50 tw-mt-0.5">{{ __('registration.step1_help') }}</div>
-                </div>
-            </div>
-
-            {{-- Step 2 Item --}}
-            <div
-                class="tw-flex tw-items-start tw-gap-3.5 tw-cursor-pointer tw-group"
-                @click="goToStep(2)"
-            >
-                <div class="tw-flex tw-flex-col tw-items-center tw-shrink-0">
-                    <div
-                        class="tw-w-8 tw-h-8 tw-rounded-full tw-flex tw-items-center tw-justify-center tw-text-ui-xs tw-font-bold tw-transition-all"
-                        :class="{
-                            'tw-bg-success tw-text-white': step > 2,
-                            'tw-bg-primary tw-text-white tw-ring-4 tw-ring-primary/25 tw-scale-105': step === 2,
-                            'tw-bg-white/10 tw-text-white/50 tw-border tw-border-white/20': step < 2
-                        }"
-                    >
-                        <template x-if="step > 2">
-                            <x-ui.icon name="check" size="xs" />
-                        </template>
-                        <template x-if="step <= 2">
-                            <span>2</span>
-                        </template>
-                    </div>
-                    <div class="tw-w-0.5 tw-h-10 tw-my-1" :class="step > 2 ? 'tw-bg-success/50' : 'tw-bg-white/15'"></div>
-                </div>
-                <div class="tw-pt-1">
-                    <div class="tw-text-ui-xs tw-font-semibold tw-transition-colors" :class="step === 2 ? 'tw-text-white tw-font-bold' : (step > 2 ? 'tw-text-white/90' : 'tw-text-white/50')">
-                        {{ __('registration.steps.legal') }}
-                    </div>
-                    <div class="tw-text-[11px] tw-text-white/50 tw-mt-0.5">{{ __('registration.step2_help') }}</div>
-                </div>
-            </div>
-
-            {{-- Step 3 Item --}}
-            <div
-                class="tw-flex tw-items-start tw-gap-3.5 tw-cursor-pointer tw-group"
-                @click="goToStep(3)"
-            >
-                <div class="tw-flex tw-flex-col tw-items-center tw-shrink-0">
-                    <div
-                        class="tw-w-8 tw-h-8 tw-rounded-full tw-flex tw-items-center tw-justify-center tw-text-ui-xs tw-font-bold tw-transition-all"
-                        :class="{
-                            'tw-bg-success tw-text-white': step > 3,
-                            'tw-bg-primary tw-text-white tw-ring-4 tw-ring-primary/25 tw-scale-105': step === 3,
-                            'tw-bg-white/10 tw-text-white/50 tw-border tw-border-white/20': step < 3
-                        }"
-                    >
-                        <template x-if="step > 3">
-                            <x-ui.icon name="check" size="xs" />
-                        </template>
-                        <template x-if="step <= 3">
-                            <span>3</span>
-                        </template>
-                    </div>
-                    <div class="tw-w-0.5 tw-h-10 tw-my-1" :class="step > 3 ? 'tw-bg-success/50' : 'tw-bg-white/15'"></div>
-                </div>
-                <div class="tw-pt-1">
-                    <div class="tw-text-ui-xs tw-font-semibold tw-transition-colors" :class="step === 3 ? 'tw-text-white tw-font-bold' : (step > 3 ? 'tw-text-white/90' : 'tw-text-white/50')">
-                        {{ __('registration.steps.documents') }}
-                    </div>
-                    <div class="tw-text-[11px] tw-text-white/50 tw-mt-0.5">{{ __('registration.step3_help') }}</div>
-                </div>
-            </div>
-
-            {{-- Step 4 Item --}}
-            <div
-                class="tw-flex tw-items-start tw-gap-3.5 tw-cursor-pointer tw-group"
-                @click="goToStep(4)"
-            >
-                <div class="tw-flex tw-flex-col tw-items-center tw-shrink-0">
-                    <div
-                        class="tw-w-8 tw-h-8 tw-rounded-full tw-flex tw-items-center tw-justify-center tw-text-ui-xs tw-font-bold tw-transition-all"
-                        :class="{
-                            'tw-bg-primary tw-text-white tw-ring-4 tw-ring-primary/25 tw-scale-105': step === 4,
-                            'tw-bg-white/10 tw-text-white/50 tw-border tw-border-white/20': step < 4
-                        }"
-                    >
-                        <span>4</span>
-                    </div>
-                </div>
-                <div class="tw-pt-1">
-                    <div class="tw-text-ui-xs tw-font-semibold tw-transition-colors" :class="step === 4 ? 'tw-text-white tw-font-bold' : 'tw-text-white/50'">
-                        {{ __('registration.steps.review') }}
-                    </div>
-                    <div class="tw-text-[11px] tw-text-white/50 tw-mt-0.5">{{ __('registration.step4_help') }}</div>
-                </div>
-            </div>
-        </div>
+        <nav class="tw-mt-8" aria-label="{{ __('registration.steps') }}">
+            <ol class="tw-m-0 tw-list-none tw-p-0">
+                @foreach ($stepper as $number => $item)
+                    <li class="tw-flex tw-gap-3.5">
+                        <div class="tw-flex tw-flex-col tw-items-center tw-shrink-0">
+                            <button
+                                type="button"
+                                class="ui-focus-ring tw-flex tw-h-8 tw-w-8 tw-items-center tw-justify-center tw-rounded-full tw-border tw-text-ui-xs tw-font-bold tw-transition-colors"
+                                :class="stepMarkerClass({{ $number }})"
+                                @click="goToStep({{ $number }})"
+                                :aria-current="step === {{ $number }} ? 'step' : null"
+                                aria-label="{{ __('registration.step') }} {{ $number }}: {{ $item['title'] }}"
+                            >
+                                <template x-if="hasStepError({{ $number }})">
+                                    <x-ui.icon name="circle-alert" size="xs" />
+                                </template>
+                                <template x-if="!hasStepError({{ $number }}) && step > {{ $number }}">
+                                    <x-ui.icon name="check" size="xs" />
+                                </template>
+                                <template x-if="!hasStepError({{ $number }}) && step <= {{ $number }}">
+                                    <span class="tw-tabular-nums">{{ $number }}</span>
+                                </template>
+                            </button>
+                            @unless ($loop->last)
+                                <span class="tw-my-1 tw-w-px tw-flex-1 tw-min-h-6" :class="step > {{ $number }} ? 'tw-bg-primary' : 'tw-bg-outline-variant'" aria-hidden="true"></span>
+                            @endunless
+                        </div>
+                        <div class="tw-pt-1.5 tw-pb-4 tw-min-w-0">
+                            <div class="tw-text-ui-xs tw-font-semibold" :class="step === {{ $number }} ? 'tw-text-primary' : (step > {{ $number }} ? 'tw-text-on-surface' : 'tw-text-on-surface-variant')">
+                                {{ $item['title'] }}
+                            </div>
+                            <div class="tw-text-[11px] tw-text-on-surface-variant tw-mt-0.5 tw-text-pretty">{{ $item['help'] }}</div>
+                            <div x-show="hasStepError({{ $number }})" x-cloak class="tw-mt-1 tw-inline-flex tw-items-center tw-gap-1 tw-text-[11px] tw-font-semibold tw-text-error">
+                                <x-ui.icon name="circle-alert" size="xs" />
+                                <span>{{ __('registration.stepper.has_errors') }}</span>
+                            </div>
+                        </div>
+                    </li>
+                @endforeach
+            </ol>
+        </nav>
     </div>
 
     {{-- Contextual Guidance Card (Dynamically updates per step) --}}
-    <div class="tw-relative tw-z-10 tw-my-6">
-        <div class="tw-p-4 tw-rounded-ui-md tw-bg-white/5 tw-border tw-border-white/10 tw-backdrop-blur-sm">
+    <div class="tw-my-6">
+        <div class="tw-p-4 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface">
             {{-- Step 1 Tip --}}
-            <div x-show="step === 1" x-cloak class="tw-transition-opacity tw-duration-200">
-                <div class="tw-flex tw-items-center tw-gap-2 tw-text-primary-200 tw-text-ui-xs tw-font-bold">
+            <div x-show="step === 1" x-cloak>
+                <div class="tw-flex tw-items-center tw-gap-2 tw-text-primary tw-text-ui-xs tw-font-bold">
                     <x-ui.icon name="info" size="xs" />
                     <span>{{ __('registration.guide_credentials') }}</span>
                 </div>
-                <p class="tw-text-[11px] tw-text-white/75 tw-mt-1.5 tw-mb-0 tw-leading-relaxed">
-                {{ __('registration.guide_email') }}
-            </p>
+                <p class="tw-text-[11px] tw-text-on-surface-variant tw-mt-1.5 tw-mb-0 tw-leading-relaxed tw-text-pretty">
+                    {{ __('registration.guide_email') }}
+                </p>
             </div>
 
             {{-- Step 2 Tip --}}
-            <div x-show="step === 2" x-cloak class="tw-transition-opacity tw-duration-200">
-                <div class="tw-flex tw-items-center tw-gap-2 tw-text-primary-200 tw-text-ui-xs tw-font-bold">
-                    <x-ui.icon name="credit-card" size="xs" />
-                    <span>{{ __('registration.guide_bank') }}</span>
+            <div x-show="step === 2" x-cloak>
+                <div class="tw-flex tw-items-center tw-gap-2 tw-text-primary tw-text-ui-xs tw-font-bold">
+                    <x-ui.icon name="clipboard-check" size="xs" />
+                    <span>{{ __('registration.questionnaire.title') }}</span>
                 </div>
-                <p class="tw-text-[11px] tw-text-white/75 tw-mt-1.5 tw-mb-0 tw-leading-relaxed">
-                {{ __('registration.guide_nib') }}
-            </p>
+                <p class="tw-text-[11px] tw-text-on-surface-variant tw-mt-1.5 tw-mb-0 tw-leading-relaxed tw-text-pretty">
+                    {{ __('registration.questionnaire.help') }}
+                </p>
             </div>
 
             {{-- Step 3 Tip --}}
-            <div x-show="step === 3" x-cloak class="tw-transition-opacity tw-duration-200">
-                <div class="tw-flex tw-items-center tw-gap-2 tw-text-primary-200 tw-text-ui-xs tw-font-bold">
-                    <x-ui.icon name="file-text" size="xs" />
-                    <span>{{ __('registration.guide_documents') }}</span>
+            <div x-show="step === 3" x-cloak>
+                <div class="tw-flex tw-items-center tw-gap-2 tw-text-primary tw-text-ui-xs tw-font-bold">
+                    <x-ui.icon name="credit-card" size="xs" />
+                    <span>{{ __('registration.guide_bank') }}</span>
                 </div>
-                <p class="tw-text-[11px] tw-text-white/75 tw-mt-1.5 tw-mb-0 tw-leading-relaxed">
-                {{ __('registration.guide_sknr') }}
-            </p>
+                <p class="tw-text-[11px] tw-text-on-surface-variant tw-mt-1.5 tw-mb-0 tw-leading-relaxed tw-text-pretty">
+                    {{ __('registration.guide_nib') }}
+                </p>
             </div>
 
             {{-- Step 4 Tip --}}
-            <div x-show="step === 4" x-cloak class="tw-transition-opacity tw-duration-200">
-                <div class="tw-flex tw-items-center tw-gap-2 tw-text-primary-200 tw-text-ui-xs tw-font-bold">
+            <div x-show="step === 4" x-cloak>
+                <div class="tw-flex tw-items-center tw-gap-2 tw-text-primary tw-text-ui-xs tw-font-bold">
+                    <x-ui.icon name="file-text" size="xs" />
+                    <span>{{ __('registration.guide_documents') }}</span>
+                </div>
+                <p class="tw-text-[11px] tw-text-on-surface-variant tw-mt-1.5 tw-mb-0 tw-leading-relaxed tw-text-pretty">
+                    {{ __('registration.guide_sknr') }}
+                </p>
+            </div>
+
+            {{-- Step 5 Tip --}}
+            <div x-show="step === 5" x-cloak>
+                <div class="tw-flex tw-items-center tw-gap-2 tw-text-primary tw-text-ui-xs tw-font-bold">
                     <x-ui.icon name="shield-check" size="xs" />
                     <span>{{ __('registration.guide_review') }}</span>
                 </div>
-                <p class="tw-text-[11px] tw-text-white/75 tw-mt-1.5 tw-mb-0 tw-leading-relaxed">
-                {{ __('registration.guide_after') }}
-            </p>
+                <p class="tw-text-[11px] tw-text-on-surface-variant tw-mt-1.5 tw-mb-0 tw-leading-relaxed tw-text-pretty">
+                    {{ __('registration.guide_after') }}
+                </p>
             </div>
         </div>
     </div>
 
     {{-- Bottom Support Card --}}
-    <div class="tw-relative tw-z-10 tw-pt-4 tw-border-t tw-border-white/10 tw-text-ui-xs tw-text-white/60">
-        <div class="tw-flex tw-items-center tw-justify-between">
-            <div>
-                <div class="tw-text-[11px] tw-font-medium tw-text-white/40">{{ __('registration.support') }}</div>
-                <div class="tw-text-white/90 tw-font-semibold tw-mt-0.5">procurement@astra-daido.co.id</div>
+    <div class="tw-pt-4 tw-border-t tw-border-outline-variant tw-text-ui-xs tw-text-on-surface-variant">
+        <div class="tw-flex tw-items-center tw-justify-between tw-gap-3">
+            <div class="tw-min-w-0">
+                <div class="tw-text-[11px] tw-font-medium">{{ __('registration.support') }}</div>
+                <div class="tw-text-on-surface tw-font-semibold tw-mt-0.5 tw-break-all">procurement@astra-daido.co.id</div>
             </div>
-            <a href="{{ route('login') }}" class="tw-text-primary-300 hover:tw-text-primary-200 tw-text-ui-xs tw-font-semibold tw-underline">
+            <a href="{{ route('login') }}" class="ui-focus-ring tw-shrink-0 tw-rounded-ui-xs tw-text-primary tw-text-ui-xs tw-font-semibold hover:tw-underline">
                 {{ __('registration.portal_sign_in') }}
             </a>
         </div>
-        <div class="tw-mt-3 tw-text-[10px] tw-text-white/40">
+        <div class="tw-mt-3 tw-text-[10px]">
             &copy; {{ now()->year }} PT Astra Daido Steel Indonesia. {{ __('registration.rights') }}
         </div>
     </div>
@@ -270,6 +204,15 @@
      â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
 @section('content')
 <style>
+    /*
+     * layouts.auth paints the shared .auth-brand-panel navy from an inline <head> style that loads
+     * after the Tailwind bundle, so a utility class cannot win. The registration guide is a flat,
+     * light ERP surface; two classes outrank the layout rule regardless of stylesheet order.
+     */
+    .auth-brand-panel.registration-guide-panel {
+        background: var(--md-surface-container-low);
+        color: var(--md-on-surface);
+    }
     @media (min-width: 1024px) {
         .auth-shell {
             grid-template-columns: 380px 1fr !important;
@@ -310,6 +253,27 @@
         }
     }
     .auth-form-surface { max-width: 54rem !important; width: 100% !important; margin: 0 auto !important; }
+    @media (min-width: 768px) {
+        .reg-tax-grid {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            grid-template-rows: auto auto auto !important;
+            column-gap: 1rem !important;
+            row-gap: 0.375rem !important;
+            align-items: start !important;
+        }
+        .reg-tax-col {
+            display: grid !important;
+            grid-row: span 3 !important;
+            grid-template-rows: subgrid !important;
+            row-gap: 0.375rem !important;
+        }
+        .reg-tax-header-sync {
+            min-height: 48px !important;
+            display: flex !important;
+            align-items: flex-start !important;
+        }
+    }
     .form-step-badge {
         display: inline-flex;
         align-items: center;
@@ -323,10 +287,44 @@
         background: var(--md-primary-container);
         color: var(--md-on-primary-container);
     }
+    .lang-toggle-track {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem;
+        border-radius: var(--md-shape-full);
+        background: var(--md-surface-container-high);
+        border: 1px solid var(--md-outline-strong);
+        box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+    }
     .lang-pill-btn {
-        transition-property: background-color, color, box-shadow, transform;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        padding: 0.375rem 0.75rem;
+        min-height: 2rem;
+        border-radius: var(--md-shape-full);
+        font-size: var(--ui-font-size-xs);
+        font-weight: 700;
+        border: 1px solid transparent;
+        color: var(--md-on-surface-variant);
+        background: transparent;
+        cursor: pointer;
+        outline: none;
+        transition-property: background-color, color, border-color, box-shadow, transform;
         transition-duration: 160ms;
         transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .lang-pill-btn.is-active {
+        background: var(--md-surface);
+        color: var(--md-primary);
+        border-color: var(--md-outline);
+        box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.1), 0 1px 2px -1px rgba(15, 23, 42, 0.08);
+        cursor: default;
+    }
+    .lang-pill-btn:not(.is-active):hover {
+        color: var(--md-on-surface);
+        background: rgba(255, 255, 255, 0.65);
+        border-color: rgba(203, 213, 225, 0.4);
     }
     .lang-pill-btn:active {
         transform: scale(0.96);
@@ -339,7 +337,7 @@
         height: 14px;
         border-radius: 2.5px;
         overflow: hidden;
-        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12);
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
         flex-shrink: 0;
     }
     @media (prefers-reduced-motion: reduce) {
@@ -353,23 +351,42 @@
     }
 </style>
 
-{{-- Mobile Compact Stepper Header (Visible only on < 1024px) --}}
-<div class="lg:tw-hidden tw-mb-5 tw-pb-4 tw-border-b tw-border-outline-variant">
-    <div class="tw-flex tw-items-center tw-justify-between tw-mb-2">
-        <span class="tw-text-ui-xs tw-font-bold tw-uppercase tw-tracking-wider tw-text-primary">
-            {{ __('registration.step') }} <span x-text="step"></span> {{ __('registration.of_four') }}
+{{-- Mobile Compact Stepper (Visible only on < 1024px) --}}
+<nav class="lg:tw-hidden tw-mb-5 tw-pb-4 tw-border-b tw-border-outline-variant" aria-label="{{ __('registration.steps') }}">
+    <ol class="tw-m-0 tw-flex tw-list-none tw-items-center tw-gap-1.5 tw-p-0">
+        @foreach ($stepper as $number => $item)
+            <li class="tw-flex tw-flex-1 tw-items-center tw-gap-1.5 last:tw-flex-none">
+                <button
+                    type="button"
+                    class="ui-focus-ring tw-flex tw-h-8 tw-w-8 tw-shrink-0 tw-items-center tw-justify-center tw-rounded-full tw-border tw-text-ui-xs tw-font-bold tw-transition-colors"
+                    :class="stepMarkerClass({{ $number }})"
+                    @click="goToStep({{ $number }})"
+                    :aria-current="step === {{ $number }} ? 'step' : null"
+                    aria-label="{{ __('registration.step') }} {{ $number }}: {{ $item['title'] }}"
+                >
+                    <template x-if="hasStepError({{ $number }})">
+                        <x-ui.icon name="circle-alert" size="xs" />
+                    </template>
+                    <template x-if="!hasStepError({{ $number }}) && step > {{ $number }}">
+                        <x-ui.icon name="check" size="xs" />
+                    </template>
+                    <template x-if="!hasStepError({{ $number }}) && step <= {{ $number }}">
+                        <span class="tw-tabular-nums">{{ $number }}</span>
+                    </template>
+                </button>
+                @unless ($loop->last)
+                    <span class="tw-h-px tw-flex-1" :class="step > {{ $number }} ? 'tw-bg-primary' : 'tw-bg-outline-variant'" aria-hidden="true"></span>
+                @endunless
+            </li>
+        @endforeach
+    </ol>
+    <div class="tw-mt-2.5 tw-flex tw-items-baseline tw-justify-between tw-gap-3">
+        <span class="tw-text-ui-sm tw-font-semibold tw-text-on-surface tw-text-pretty" x-text="stepTitles[step]"></span>
+        <span class="tw-shrink-0 tw-text-ui-xs tw-font-medium tw-tabular-nums tw-text-on-surface-variant">
+            {{ __('registration.step') }} <span x-text="step"></span> {{ __('registration.of_total', ['total' => $totalSteps]) }}
         </span>
-        <span class="tw-text-ui-xs tw-font-medium tw-text-on-surface-variant" x-text="stepTitles[step]"></span>
     </div>
-
-    {{-- Visual Progress Bar --}}
-    <div class="tw-w-full tw-h-2 tw-rounded-full tw-bg-surface-container-high tw-overflow-hidden">
-        <div
-            class="tw-h-full tw-bg-primary tw-transition-all tw-duration-300"
-            :style="'width: ' + ((step / 4) * 100) + '%'"
-        ></div>
-    </div>
-</div>
+</nav>
 
 {{-- Main Form Header --}}
 <header class="tw-mb-6">
@@ -377,7 +394,7 @@
         <div class="tw-flex tw-items-center tw-gap-2.5">
             <div class="form-step-badge">
                 <x-ui.icon name="layers" size="xs" />
-                <span>{{ __('registration.step') }} <span x-text="step"></span> / 4</span>
+                <span>{{ __('registration.step') }} <span x-text="step"></span> / {{ $totalSteps }}</span>
             </div>
             <span class="tw-text-ui-xs tw-text-on-surface-variant tw-hidden sm:tw-inline">
                 {{ __('registration.fields_marked') }} <span class="tw-text-error tw-font-bold">*</span> {{ __('registration.required_text') }}
@@ -385,12 +402,12 @@
         </div>
 
         {{-- Language Switcher Toggle --}}
-        <div class="tw-inline-flex tw-items-center tw-p-1 tw-rounded-ui-full tw-bg-surface-container-high tw-border tw-border-outline-variant/60 tw-shadow-xs" role="group" aria-label="{{ __('registration.language_selector') }}">
+        <div class="lang-toggle-track tw-inline-flex tw-items-center tw-p-1 tw-rounded-ui-full tw-bg-surface-container-high tw-border tw-border-outline-strong tw-shadow-xs" role="group" aria-label="{{ __('registration.language_selector') }}">
             <button
                 type="button"
                 @click="switchLanguage('id')"
                 class="lang-pill-btn ui-focus-ring tw-flex tw-items-center tw-gap-1.5 tw-px-3 tw-py-1.5 tw-min-h-8 tw-rounded-ui-full tw-text-ui-xs tw-font-bold"
-                :class="currentLocale === 'id' ? 'tw-bg-surface tw-text-primary tw-shadow-sm' : 'tw-text-on-surface-variant hover:tw-text-on-surface hover:tw-bg-surface/60'"
+                :class="currentLocale === 'id' ? 'is-active tw-bg-surface tw-text-primary tw-border-outline tw-shadow-xs' : 'tw-border-transparent tw-text-on-surface-variant hover:tw-text-on-surface hover:tw-bg-surface/60'"
                 aria-label="Bahasa Indonesia"
                 :aria-pressed="currentLocale === 'id'"
             >
@@ -406,7 +423,7 @@
                 type="button"
                 @click="switchLanguage('en')"
                 class="lang-pill-btn ui-focus-ring tw-flex tw-items-center tw-gap-1.5 tw-px-3 tw-py-1.5 tw-min-h-8 tw-rounded-ui-full tw-text-ui-xs tw-font-bold"
-                :class="currentLocale === 'en' ? 'tw-bg-surface tw-text-primary tw-shadow-sm' : 'tw-text-on-surface-variant hover:tw-text-on-surface hover:tw-bg-surface/60'"
+                :class="currentLocale === 'en' ? 'is-active tw-bg-surface tw-text-primary tw-border-outline tw-shadow-xs' : 'tw-border-transparent tw-text-on-surface-variant hover:tw-text-on-surface hover:tw-bg-surface/60'"
                 aria-label="English"
                 :aria-pressed="currentLocale === 'en'"
             >
@@ -467,14 +484,19 @@
 
 {{-- Server-Side Error Alert --}}
 @if ($errors->any())
-    <div class="tw-rounded-ui-sm tw-bg-error-container tw-p-3.5 tw-text-on-error-container tw-mb-5" role="alert">
-        <div class="tw-flex tw-items-center tw-gap-2 tw-font-semibold tw-text-ui-sm tw-mb-1">
+    <div class="tw-rounded-ui-sm tw-border tw-border-error/40 tw-bg-error-container tw-p-3.5 tw-text-on-error-container tw-mb-5" role="alert" tabindex="-1" data-error-summary="supplierRegistrationForm">
+        <div class="tw-flex tw-items-center tw-gap-2 tw-font-semibold tw-text-ui-sm">
             <x-ui.icon name="alert-triangle" size="sm" />
             <span>{{ __('registration.errors') }}</span>
         </div>
-        <ul class="tw-m-0 tw-pl-5 tw-text-ui-xs tw-space-y-0.5">
-            @foreach ($errors->all() as $error)
-                <li>{{ $error }}</li>
+        <p class="tw-m-0 tw-mt-0.5 tw-text-ui-xs">{{ __('registration.errors_jump_help') }}</p>
+        <ul class="tw-m-0 tw-mt-2 tw-ps-5 tw-text-ui-xs tw-space-y-1">
+            @foreach ($errors->messages() as $field => $messages)
+                <li>
+                    <button type="button" class="ui-focus-ring tw-border-0 tw-bg-transparent tw-p-0 tw-text-start tw-font-medium tw-text-on-error-container tw-underline tw-underline-offset-2" data-error-field="{{ $field }}">
+                        {{ $messages[0] }}
+                    </button>
+                </li>
             @endforeach
         </ul>
     </div>
@@ -501,14 +523,23 @@
     action="{{ route('supplier.register.store') }}"
     enctype="multipart/form-data"
     @submit="handleSubmit($event)"
+    @adasi:form-errors="onServerErrors($event.detail.errors)"
+    @adasi:reveal-field="revealStepFor($event.detail.element)"
+    @adasi:form-settled="isSubmitting = false"
+    @adasi:form-success="clearStoredDraft()"
+    data-async-submit
+    data-async-inline-errors="off"
     novalidate
 >
     @csrf
 
+    {{-- Async (file-preserving) validation summary is rendered here by async-form-submit.js --}}
+    <div data-async-error-summary hidden></div>
+
     {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
          STEP 1: ACCOUNT CREDENTIALS & COMPANY PROFILE
          â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
-    <div x-show="step === 1" x-cloak class="tw-space-y-5 tw-transition-opacity tw-duration-200">
+    <div x-show="step === 1" x-cloak data-wizard-step="1" class="tw-space-y-5 tw-transition-opacity tw-duration-200">
         {{-- Section 1.1: Portal Account Credentials --}}
         <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-5">
             <div class="tw-flex tw-items-center tw-gap-2 tw-text-primary tw-font-bold tw-text-ui-sm tw-mb-1">
@@ -519,9 +550,9 @@
                 {{ __('registration.credentials_help') }}
             </p>
 
-            <div class="tw-grid tw-gap-4 md:tw-grid-cols-2">
+            <div class="tw-grid tw-gap-4 md:tw-grid-cols-2 tw-items-start">
                 {{-- Official Company Email --}}
-                <div class="tw-grid tw-gap-1.5 md:tw-col-span-2">
+                <div class="tw-grid tw-content-start tw-gap-1.5 md:tw-col-span-2">
                     <label for="email" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
                         {{ __('registration.email') }} <span class="tw-text-error">*</span>
                     </label>
@@ -542,12 +573,13 @@
                             required
                         >
                     </div>
+                    <p class="tw-m-0 tw-text-[11px] tw-text-on-surface-variant">{{ __('registration.email_help') }}</p>
                     <p x-show="errors.email" x-text="errors.email" class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error"></p>
                     @error('email')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
                 </div>
 
-                {{-- Password with dynamic validation checklist --}}
-                <div class="tw-grid tw-gap-1.5">
+                {{-- Password (criteria checklist sits on its own row below so both inputs stay aligned) --}}
+                <div class="tw-grid tw-content-start tw-gap-1.5">
                     <label for="password" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
                         {{ __('registration.password') }} <span class="tw-text-error">*</span>
                     </label>
@@ -579,31 +611,12 @@
                         </button>
                     </div>
 
-                    {{-- Dynamic Password Strength Criteria Checklist --}}
-                    <div class="tw-mt-1 tw-flex tw-flex-wrap tw-gap-x-3 tw-gap-y-1 tw-text-[11px]">
-                        <span class="tw-flex tw-items-center tw-gap-1" :class="passwordValidLength ? 'tw-text-success tw-font-semibold' : 'tw-text-on-surface-variant'">
-                            <x-ui.icon name="check-circle" size="xs" x-show="passwordValidLength" />
-                            <x-ui.icon name="circle" size="xs" x-show="!passwordValidLength" />
-                            <span>{{ __('registration.password_min_short') }}</span>
-                        </span>
-                        <span class="tw-flex tw-items-center tw-gap-1" :class="passwordHasLetter ? 'tw-text-success tw-font-semibold' : 'tw-text-on-surface-variant'">
-                            <x-ui.icon name="check-circle" size="xs" x-show="passwordHasLetter" />
-                            <x-ui.icon name="circle" size="xs" x-show="!passwordHasLetter" />
-                            <span>{{ __('registration.password_letters') }}</span>
-                        </span>
-                        <span class="tw-flex tw-items-center tw-gap-1" :class="passwordHasNumber ? 'tw-text-success tw-font-semibold' : 'tw-text-on-surface-variant'">
-                            <x-ui.icon name="check-circle" size="xs" x-show="passwordHasNumber" />
-                            <x-ui.icon name="circle" size="xs" x-show="!passwordHasNumber" />
-                            <span>{{ __('registration.password_numbers') }}</span>
-                        </span>
-                    </div>
-
                     <p x-show="errors.password" x-text="errors.password" class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error"></p>
                     @error('password')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
                 </div>
 
                 {{-- Password Confirmation --}}
-                <div class="tw-grid tw-gap-1.5">
+                <div class="tw-grid tw-content-start tw-gap-1.5">
                     <label for="password_confirmation" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
                         {{ __('registration.password_confirm') }} <span class="tw-text-error">*</span>
                     </label>
@@ -636,6 +649,22 @@
                     </div>
                     <p x-show="errors.password_confirmation" x-text="errors.password_confirmation" class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error"></p>
                 </div>
+
+                {{-- Password criteria checklist (mirrors SupplierRegistrationRequest::registrationPasswordRule) --}}
+                <ul class="tw-m-0 tw-flex tw-list-none tw-flex-wrap tw-gap-x-4 tw-gap-y-1 tw-p-0 tw-text-[11px] md:tw-col-span-2" aria-label="{{ __('registration.password') }}">
+                    @foreach ([
+                        'passwordValidLength' => __('registration.password_min_short'),
+                        'passwordHasMixedCase' => __('registration.password_mixed_case'),
+                        'passwordHasNumber' => __('registration.password_numbers'),
+                        'passwordHasSymbol' => __('registration.password_symbol'),
+                    ] as $criterion => $criterionLabel)
+                        <li class="tw-flex tw-items-center tw-gap-1" :class="{{ $criterion }} ? 'tw-text-success tw-font-semibold' : 'tw-text-on-surface-variant'">
+                            <x-ui.icon name="check-circle" size="xs" x-show="{{ $criterion }}" />
+                            <x-ui.icon name="circle" size="xs" x-show="!{{ $criterion }}" />
+                            <span>{{ $criterionLabel }}</span>
+                        </li>
+                    @endforeach
+                </ul>
             </div>
         </div>
 
@@ -649,9 +678,9 @@
                 {{ __('registration.legal_help') }}
             </p>
 
-            <div class="tw-grid tw-gap-4 md:tw-grid-cols-3">
+            <div class="tw-grid tw-gap-4 md:tw-grid-cols-3 tw-items-start">
                 {{-- Entity Legal Form --}}
-                <div class="tw-grid tw-gap-1.5 md:tw-col-span-1">
+                <div class="tw-grid tw-content-start tw-gap-1.5 md:tw-col-span-1">
                     <label for="company_title_select" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
                         {{ __('registration.legal_form') }} <span class="tw-text-error">*</span>
                     </label>
@@ -676,7 +705,7 @@
 
                 {{-- Custom Entity Title (Shown when 'Other' selected) --}}
                 <div
-                    class="tw-grid tw-gap-1.5 md:tw-col-span-2"
+                    class="tw-grid tw-content-start tw-gap-1.5 md:tw-col-span-2"
                     x-show="formData.company_title === 'Other'"
                     x-cloak
                 >
@@ -694,7 +723,7 @@
                 </div>
 
                 {{-- Registered Company Name --}}
-                <div class="tw-grid tw-gap-1.5" :class="formData.company_title === 'Other' ? 'md:tw-col-span-3' : 'md:tw-col-span-2'">
+                <div class="tw-grid tw-content-start tw-gap-1.5" :class="formData.company_title === 'Other' ? 'md:tw-col-span-3' : 'md:tw-col-span-2'">
                     <label for="company_name" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
                         {{ __('registration.company') }} <span class="tw-text-error">*</span>
                     </label>
@@ -715,7 +744,7 @@
                 </div>
 
                 {{-- Official Company Address --}}
-                <div class="tw-grid tw-gap-1.5 md:tw-col-span-3">
+                <div class="tw-grid tw-content-start tw-gap-1.5 md:tw-col-span-3">
                     <label for="address" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
                         {{ __('registration.address') }} <span class="tw-text-error">*</span>
                     </label>
@@ -736,7 +765,7 @@
                 </div>
 
                 {{-- Company Phone / Telephone --}}
-                <div class="tw-grid tw-gap-1.5 md:tw-col-span-2">
+                <div class="tw-grid tw-content-start tw-gap-1.5 md:tw-col-span-2">
                     <label for="phone" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
                         {{ __('registration.company_phone') }} <span class="tw-text-error">*</span>
                     </label>
@@ -762,7 +791,7 @@
                 </div>
 
                 {{-- Business Category / Sector --}}
-                <div class="tw-grid tw-gap-1.5 md:tw-col-span-1">
+                <div class="tw-grid tw-content-start tw-gap-1.5 md:tw-col-span-1">
                     <label for="category" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
                         {{ __('registration.business_sector') }}
                     </label>
@@ -777,7 +806,7 @@
                 </div>
 
                 {{-- PKP Status Card --}}
-                <div class="tw-grid tw-gap-1.5 md:tw-col-span-3">
+                <div class="tw-grid tw-content-start tw-gap-1.5 md:tw-col-span-3">
                     <label
                         class="tw-flex tw-items-center tw-gap-3 tw-p-3.5 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-cursor-pointer hover:tw-bg-surface-container-high/30 tw-transition-colors"
                         for="is_pkp"
@@ -807,8 +836,60 @@
     {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
          STEP 2: LEGAL & TAX IDENTIFICATION, PIC & OFFICIAL BANK
          â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
-    <div x-show="step === 2" x-cloak class="tw-space-y-5 tw-transition-opacity tw-duration-200">
-        {{-- Section 2.1: Legal & Tax Identification --}}
+    {{-- STEP 2: QUALITY & COMPLIANCE QUESTIONNAIRE (answers never block submission) --}}
+    <div x-show="step === 2" x-cloak data-wizard-step="2" class="tw-space-y-5 tw-transition-opacity tw-duration-200">
+        <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-5">
+            <div class="tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-gap-2 tw-mb-1">
+                <div class="tw-flex tw-items-center tw-gap-2 tw-text-primary tw-font-bold tw-text-ui-sm">
+                    <x-ui.icon name="clipboard-check" size="sm" />
+                    <span>{{ __('registration.questionnaire.title') }}</span>
+                </div>
+                <span class="tw-text-[11px] tw-font-semibold tw-tabular-nums tw-text-on-surface-variant" x-text="questionnaireProgressLabel"></span>
+            </div>
+            <p class="tw-m-0 tw-mb-4 tw-text-ui-xs tw-text-on-surface-variant tw-text-pretty">
+                {{ __('registration.questionnaire.help') }}
+            </p>
+
+            <div class="tw-grid tw-gap-3">
+                @foreach ($questionnaireKeys as $index => $questionKey)
+                    <fieldset
+                        class="tw-m-0 tw-min-w-0 tw-rounded-ui-sm tw-border tw-bg-surface tw-px-4 tw-py-3"
+                        :class="errors['questionnaire.{{ $questionKey }}'] ? 'tw-border-error' : 'tw-border-outline-variant'"
+                    >
+                        <legend class="tw-float-left tw-m-0 tw-w-full tw-p-0 tw-text-ui-sm tw-font-medium tw-text-on-surface tw-text-pretty">
+                            <span class="tw-tabular-nums tw-text-on-surface-variant">{{ $index + 1 }}.</span>
+                            {{ __('registration.questionnaire.questions.'.$questionKey) }}
+                            <span class="tw-text-error">*</span>
+                        </legend>
+                        <div class="tw-clear-both tw-mt-2 tw-flex tw-flex-wrap tw-gap-2">
+                            @foreach ([\App\Support\SupplierComplianceQuestionnaire::YES => __('registration.questionnaire.yes'), \App\Support\SupplierComplianceQuestionnaire::NO => __('registration.questionnaire.no')] as $answerValue => $answerLabel)
+                                <label
+                                    class="tw-inline-flex tw-min-h-10 tw-cursor-pointer tw-items-center tw-gap-2 tw-rounded-ui-sm tw-border tw-px-3.5 tw-text-ui-sm tw-transition-colors"
+                                    :class="formData.questionnaire['{{ $questionKey }}'] === '{{ $answerValue }}' ? 'tw-border-primary tw-bg-primary/5 tw-font-semibold tw-text-on-surface' : 'tw-border-outline-variant tw-text-on-surface hover:tw-bg-surface-container'"
+                                >
+                                    <input
+                                        type="radio"
+                                        name="questionnaire[{{ $questionKey }}]"
+                                        value="{{ $answerValue }}"
+                                        x-model="formData.questionnaire['{{ $questionKey }}']"
+                                        @change="validateField('questionnaire.{{ $questionKey }}')"
+                                        class="form-check-input tw-m-0 tw-h-4 tw-w-4"
+                                    >
+                                    <span>{{ $answerLabel }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                        <p x-show="errors['questionnaire.{{ $questionKey }}']" x-text="errors['questionnaire.{{ $questionKey }}']" class="tw-m-0 tw-mt-1.5 tw-text-ui-xs tw-font-medium tw-text-error"></p>
+                        @error('questionnaire.'.$questionKey)<p class="tw-m-0 tw-mt-1.5 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
+                    </fieldset>
+                @endforeach
+            </div>
+        </div>
+    </div>
+
+    {{-- STEP 3: LEGAL & TAX IDENTIFICATION, PIC & OFFICIAL BANK --}}
+    <div x-show="step === 3" x-cloak data-wizard-step="3" class="tw-space-y-5 tw-transition-opacity tw-duration-200">
+        {{-- Section 3.1: Legal & Tax Identification --}}
         <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-5">
             <div class="tw-flex tw-items-center tw-gap-2 tw-text-primary tw-font-bold tw-text-ui-sm tw-mb-1">
                 <x-ui.icon name="file-badge" size="sm" />
@@ -818,15 +899,15 @@
                 {{ __('registration.legal_identifiers_help') }}
             </p>
 
-            <div class="tw-grid tw-gap-4 md:tw-grid-cols-2">
+            <div class="reg-tax-grid tw-grid tw-gap-4 md:tw-grid-cols-2 tw-items-start">
                 {{-- NIB Input with live digit counter --}}
-                <div class="tw-grid tw-gap-1.5">
-                    <div class="tw-flex tw-items-center tw-justify-between">
-                        <label for="nib" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
+                <div class="reg-tax-col tw-grid tw-content-start tw-gap-1.5">
+                    <div class="tw-flex tw-items-start tw-justify-between tw-gap-2 reg-tax-header-sync" style="min-height: 48px;">
+                        <label for="nib" class="tw-text-ui-sm tw-font-medium tw-text-on-surface" style="text-wrap: balance;">
                             {{ __('registration.nib') }} <span class="tw-text-error">*</span>
                         </label>
                         <span
-                            class="tw-text-[11px] tw-font-mono tw-font-semibold tw-tabular-nums"
+                            class="tw-shrink-0 tw-mt-0.5 tw-text-[11px] tw-font-mono tw-font-semibold tw-tabular-nums"
                             :class="formData.nib.replace(/\D/g, '').length === 13 ? 'tw-text-success' : 'tw-text-on-surface-variant'"
                             x-text="window.AdasiI18n.t('js.validation.digit_progress', { count: formData.nib.replace(/\D/g, '').length, max: 13 })"
                         ></span>
@@ -849,18 +930,20 @@
                             required
                         >
                     </div>
-                    <p x-show="errors.nib" x-text="errors.nib" class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error"></p>
-                    @error('nib')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
+                    <div class="tw-min-h-0">
+                        <p x-show="errors.nib" x-text="errors.nib" class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error"></p>
+                        @error('nib')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
+                    </div>
                 </div>
 
                 {{-- NPWP Input with live digit counter --}}
-                <div class="tw-grid tw-gap-1.5">
-                    <div class="tw-flex tw-items-center tw-justify-between">
-                        <label for="npwp" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
+                <div class="reg-tax-col tw-grid tw-content-start tw-gap-1.5">
+                    <div class="tw-flex tw-items-start tw-justify-between tw-gap-2 reg-tax-header-sync" style="min-height: 48px;">
+                        <label for="npwp" class="tw-text-ui-sm tw-font-medium tw-text-on-surface" style="text-wrap: balance;">
                             {{ __('registration.tax_number') }} <span class="tw-text-error">*</span>
                         </label>
                         <span
-                            class="tw-text-[11px] tw-font-mono tw-font-semibold tw-tabular-nums"
+                            class="tw-shrink-0 tw-mt-0.5 tw-text-[11px] tw-font-mono tw-font-semibold tw-tabular-nums"
                             :class="[15, 16].includes(formData.npwp.replace(/\D/g, '').length) ? 'tw-text-success' : 'tw-text-on-surface-variant'"
                             x-text="window.AdasiI18n.t('js.validation.digit_progress', { count: formData.npwp.replace(/\D/g, '').length, max: 16 })"
                         ></span>
@@ -883,8 +966,10 @@
                             required
                         >
                     </div>
-                    <p x-show="errors.npwp" x-text="errors.npwp" class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error"></p>
-                    @error('npwp')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
+                    <div class="tw-min-h-0">
+                        <p x-show="errors.npwp" x-text="errors.npwp" class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error"></p>
+                        @error('npwp')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
+                    </div>
                 </div>
             </div>
         </div>
@@ -899,9 +984,9 @@
                 {{ __('registration.contact_help') }}
             </p>
 
-            <div class="tw-grid tw-gap-4 md:tw-grid-cols-2">
+            <div class="tw-grid tw-gap-4 md:tw-grid-cols-2 tw-items-start">
                 {{-- PIC Full Name (Span 2 / Full Width) --}}
-                <div class="tw-grid tw-gap-1.5 md:tw-col-span-2">
+                <div class="tw-grid tw-content-start tw-gap-1.5 md:tw-col-span-2">
                     <label for="pic_name" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
                         {{ __('registration.pic') }} <span class="tw-text-error">*</span>
                     </label>
@@ -927,7 +1012,7 @@
                 </div>
 
                 {{-- PIC Email Address --}}
-                <div class="tw-grid tw-gap-1.5">
+                <div class="tw-grid tw-content-start tw-gap-1.5">
                     <label for="pic_email" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
                         {{ __('registration.pic_email') }} <span class="tw-text-error">*</span>
                     </label>
@@ -953,7 +1038,7 @@
                 </div>
 
                 {{-- PIC Phone / WhatsApp --}}
-                <div class="tw-grid tw-gap-1.5">
+                <div class="tw-grid tw-content-start tw-gap-1.5">
                     <label for="pic_phone" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
                         {{ __('registration.pic_phone') }} <span class="tw-text-error">*</span>
                     </label>
@@ -990,11 +1075,10 @@
                 {{ __('registration.bank_help') }}
             </p>
 
-            <div class="tw-grid tw-gap-4 md:tw-grid-cols-2">
-                <input type="hidden" name="bank_name" :value="finalBankName">
-
+            <div class="tw-grid tw-gap-4 md:tw-grid-cols-2 tw-items-start">
                 {{-- Bank Select --}}
-                <div class="tw-grid tw-gap-1.5">
+                <div class="tw-grid tw-content-start tw-gap-1.5">
+                    <input type="hidden" name="bank_name" :value="finalBankName">
                     <x-ui.searchable-select
                         name="bank_select"
                         id="bank_select"
@@ -1004,6 +1088,7 @@
                         :options="$bankOptions"
                         :value="old('bank_select', $initialBankSelect)"
                         :error="$errors->first('bank_name')"
+                        :show-sublabel-on-trigger="false"
                         required
                         x-on:change="onBankChange($event)"
                     />
@@ -1011,7 +1096,7 @@
                 </div>
 
                 {{-- Account Number --}}
-                <div class="tw-grid tw-gap-1.5">
+                <div class="tw-grid tw-content-start tw-gap-1.5">
                     <label for="account_number" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
                         {{ __('registration.bank_number') }} <span class="tw-text-error">*</span>
                     </label>
@@ -1033,31 +1118,6 @@
                     </div>
                     <p x-show="errors.account_number" x-text="errors.account_number" class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error"></p>
                     @error('account_number')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
-                </div>
-
-                {{-- Beneficiary Name (Span 2 / Full Width) --}}
-                <div class="tw-grid tw-gap-1.5 md:tw-col-span-2">
-                    <label for="account_holder_name" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
-                        {{ __('registration.account_holder') }} <span class="tw-text-error">*</span>
-                    </label>
-                    <div class="tw-relative">
-                        <div class="tw-absolute tw-inset-y-0 tw-start-0 tw-flex tw-items-center tw-pl-3 tw-pointer-events-none tw-text-on-surface-variant">
-                            <x-ui.icon name="building-2" size="sm" />
-                        </div>
-                        <input
-                            id="account_holder_name"
-                            type="text"
-                            name="account_holder_name"
-                            x-model="formData.account_holder_name"
-                            @blur="validateField('account_holder_name')"
-                            class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-pl-10 tw-pr-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary/20"
-                            :class="errors.account_holder_name ? 'tw-border-error' : 'tw-border-outline-variant'"
-                            placeholder="{{ __('registration.account_holder_help') }}"
-                            required
-                        >
-                    </div>
-                    <p x-show="errors.account_holder_name" x-text="errors.account_holder_name" class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error"></p>
-                    @error('account_holder_name')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
                 </div>
 
                 {{-- Expandable Custom Bank Input (when 'OTHER' is selected) --}}
@@ -1088,6 +1148,31 @@
                         {{ __('registration.other_bank_help') }}
                     </p>
                 </div>
+
+                {{-- Beneficiary Name (Span 2 / Full Width) --}}
+                <div class="tw-grid tw-content-start tw-gap-1.5 md:tw-col-span-2">
+                    <label for="account_holder_name" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
+                        {{ __('registration.account_holder') }} <span class="tw-text-error">*</span>
+                    </label>
+                    <div class="tw-relative">
+                        <div class="tw-absolute tw-inset-y-0 tw-start-0 tw-flex tw-items-center tw-pl-3 tw-pointer-events-none tw-text-on-surface-variant">
+                            <x-ui.icon name="building-2" size="sm" />
+                        </div>
+                        <input
+                            id="account_holder_name"
+                            type="text"
+                            name="account_holder_name"
+                            x-model="formData.account_holder_name"
+                            @blur="validateField('account_holder_name')"
+                            class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-pl-10 tw-pr-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary/20"
+                            :class="errors.account_holder_name ? 'tw-border-error' : 'tw-border-outline-variant'"
+                            placeholder="{{ __('registration.account_holder_help') }}"
+                            required
+                        >
+                    </div>
+                    <p x-show="errors.account_holder_name" x-text="errors.account_holder_name" class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error"></p>
+                    @error('account_holder_name')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
+                </div>
             </div>
         </div>
     </div>
@@ -1095,7 +1180,7 @@
     {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
          STEP 3: VERIFICATION DOCUMENTS (DRAG & DROP ZONES)
          â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
-    <div x-show="step === 3" x-cloak class="tw-space-y-5 tw-transition-opacity tw-duration-200">
+    <div x-show="step === 4" x-cloak data-wizard-step="4" class="tw-space-y-5 tw-transition-opacity tw-duration-200">
         <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-5">
             <div class="tw-flex tw-items-center tw-justify-between tw-mb-1">
                 <div class="tw-flex tw-items-center tw-gap-2 tw-text-primary tw-font-bold tw-text-ui-sm">
@@ -1120,7 +1205,7 @@
                     <span class="tw-text-[11px] tw-text-on-surface-variant">{{ __('registration.required_documents_help') }}</span>
                 </div>
 
-                <div class="tw-grid tw-gap-4 md:tw-grid-cols-2">
+                <div class="tw-grid tw-gap-4 md:tw-grid-cols-2 tw-items-start">
                     {{-- NIB File Dropzone --}}
                     <x-ui.file-upload
                         name="nib_file"
@@ -1167,7 +1252,7 @@
                     <span class="tw-text-[11px] tw-text-on-surface-variant">{{ __('registration.optional_help') }}</span>
                 </div>
 
-                <div class="tw-grid tw-gap-4 md:tw-grid-cols-2">
+                <div class="tw-grid tw-gap-4 md:tw-grid-cols-2 tw-items-start">
                     {{-- SPPKP File Dropzone --}}
                     <x-ui.file-upload
                         name="sppkp_file"
@@ -1189,6 +1274,19 @@
                         :max-size-mb="5"
                         :required="false"
                     />
+
+                    {{-- Company Profile File Dropzone (optional, larger limit for brochures) --}}
+                    <div class="md:tw-col-span-2">
+                        <x-ui.file-upload
+                            name="company_profile_file"
+                            id="company_profile_file"
+                            :label="__('registration.company_profile')"
+                            :helper="__('registration.company_profile_help')"
+                            accept=".pdf,.jpg,.jpeg,.png"
+                            :max-size-mb="10"
+                            :required="false"
+                        />
+                    </div>
                 </div>
             </div>
         </div>
@@ -1197,7 +1295,7 @@
     {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
          STEP 4: PRE-FLIGHT REVIEW & CONFIRMATION
          â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
-    <div x-show="step === 4" x-cloak class="tw-space-y-5 tw-transition-opacity tw-duration-200">
+    <div x-show="step === 5" x-cloak data-wizard-step="5" class="tw-space-y-5 tw-transition-opacity tw-duration-200">
         {{-- Section 4 Header --}}
         <div class="tw-p-4 tw-rounded-ui-md tw-bg-primary/10 tw-border tw-border-primary/20 tw-flex tw-items-start tw-gap-3">
             <x-ui.icon name="check-circle" size="md" class="tw-text-primary tw-shrink-0 tw-mt-0.5" />
@@ -1250,6 +1348,33 @@
             </div>
         </div>
 
+        {{-- Summary Card: Kuesioner Kualitas & Kepatuhan --}}
+        <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-5">
+            <div class="tw-flex tw-items-center tw-justify-between tw-mb-3">
+                <div class="tw-flex tw-items-center tw-gap-2 tw-text-on-surface tw-font-bold tw-text-ui-sm">
+                    <x-ui.icon name="clipboard-check" size="sm" class="tw-text-primary" />
+                    <span>{{ __('registration.questionnaire.summary') }}</span>
+                </div>
+                <button
+                    type="button"
+                    class="ui-motion ui-focus-ring tw-inline-flex tw-items-center tw-gap-1 tw-px-2.5 tw-py-1 tw-rounded-ui-xs tw-border-0 tw-bg-transparent tw-text-ui-xs tw-font-semibold tw-text-primary hover:tw-bg-primary/10"
+                    @click="goToStep(2)"
+                >
+                    <x-ui.icon name="pencil" size="xs" />
+                    <span>{{ __('registration.edit_data') }}</span>
+                </button>
+            </div>
+
+            <dl class="tw-m-0 tw-grid tw-gap-1.5 tw-text-ui-xs">
+                @foreach ($questionnaireKeys as $index => $questionKey)
+                    <div class="tw-flex tw-items-start tw-justify-between tw-gap-3 tw-rounded tw-bg-surface tw-p-2">
+                        <dt class="tw-text-on-surface tw-text-pretty">{{ $index + 1 }}. {{ __('registration.questionnaire.questions.'.$questionKey) }}</dt>
+                        <dd class="tw-m-0 tw-shrink-0 tw-font-semibold tw-text-on-surface" x-text="answerLabel('{{ $questionKey }}')"></dd>
+                    </div>
+                @endforeach
+            </dl>
+        </div>
+
         {{-- Summary Card 2: Legalitas, PIC & Rekening Bank --}}
         <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-5">
             <div class="tw-flex tw-items-center tw-justify-between tw-mb-3">
@@ -1260,7 +1385,7 @@
                 <button
                     type="button"
                     class="ui-motion ui-focus-ring tw-inline-flex tw-items-center tw-gap-1 tw-px-2.5 tw-py-1 tw-rounded-ui-xs tw-border-0 tw-bg-transparent tw-text-ui-xs tw-font-semibold tw-text-primary hover:tw-bg-primary/10"
-                    @click="goToStep(2)"
+                    @click="goToStep(3)"
                 >
                     <x-ui.icon name="pencil" size="xs" />
                     <span>{{ __('registration.edit_data') }}</span>
@@ -1313,7 +1438,7 @@
                 <button
                     type="button"
                     class="ui-motion ui-focus-ring tw-inline-flex tw-items-center tw-gap-1 tw-px-2.5 tw-py-1 tw-rounded-ui-xs tw-border-0 tw-bg-transparent tw-text-ui-xs tw-font-semibold tw-text-primary hover:tw-bg-primary/10"
-                    @click="goToStep(3)"
+                    @click="goToStep(4)"
                 >
                     <x-ui.icon name="pencil" size="xs" />
                     <span>{{ __('registration.edit_documents') }}</span>
@@ -1340,6 +1465,10 @@
                 <div class="tw-flex tw-items-center tw-justify-between tw-p-2 tw-rounded tw-bg-surface">
                     <span class="tw-font-medium tw-text-on-surface">{{ __('registration.summary.skd_document') }}</span>
                     <span class="tw-text-on-surface-variant" x-text="docs.skd ? (docs.skd.name + ' (' + docs.skd.size + ')') : @js(__('registration.js.not_attached'))"></span>
+                </div>
+                <div class="tw-flex tw-items-center tw-justify-between tw-p-2 tw-rounded tw-bg-surface">
+                    <span class="tw-font-medium tw-text-on-surface">{{ __('registration.summary.company_profile_document') }}</span>
+                    <span class="tw-text-on-surface-variant" x-text="docs.company_profile ? (docs.company_profile.name + ' (' + docs.company_profile.size + ')') : @js(__('registration.js.not_attached'))"></span>
                 </div>
             </div>
         </div>
@@ -1388,8 +1517,8 @@
         </div>
 
         {{-- Step Indicator Center --}}
-        <div class="tw-text-ui-xs tw-font-semibold tw-text-on-surface-variant">
-            {{ __('registration.step') }} <span x-text="step"></span> {{ __('registration.of_four') }}
+        <div class="tw-text-ui-xs tw-font-semibold tw-tabular-nums tw-text-on-surface-variant">
+            {{ __('registration.step') }} <span x-text="step"></span> {{ __('registration.of_total', ['total' => $totalSteps]) }}
         </div>
 
         {{-- Next or Submit Button --}}
@@ -1397,7 +1526,7 @@
             {{-- Next Step Button --}}
             <button
                 type="button"
-                x-show="step < 4"
+                x-show="step < maxStep"
                 @click="nextStep()"
                 class="ui-motion ui-focus-ring tw-inline-flex tw-h-11 tw-items-center tw-gap-2 tw-rounded-ui-sm tw-border-0 tw-bg-primary tw-px-6 tw-text-ui-sm tw-font-semibold tw-text-white hover:tw-brightness-95 active:tw-scale-95"
             >
@@ -1408,7 +1537,7 @@
             {{-- Final Submit Button --}}
             <button
                 type="submit"
-                x-show="step === 4"
+                x-show="step === maxStep"
                 :disabled="!legalDeclaration || isSubmitting"
                 class="ui-motion ui-focus-ring tw-inline-flex tw-h-11 tw-items-center tw-gap-2 tw-rounded-ui-sm tw-border-0 tw-bg-primary tw-px-6 tw-text-ui-sm tw-font-semibold tw-text-white hover:tw-brightness-95 active:tw-scale-95 disabled:tw-opacity-50 disabled:tw-pointer-events-none"
             >
@@ -1451,9 +1580,11 @@
 
 <script>
 document.addEventListener('alpine:init', () => {
-    Alpine.data('supplierRegistrationWizard', (initialStep = 1) => ({
-        step: initialStep,
-        maxStep: 4,
+    Alpine.data('supplierRegistrationWizard', (config = {}) => ({
+        step: Number(config.initialStep) || 1,
+        maxStep: {{ $totalSteps }},
+        errorSteps: Array.isArray(config.errorSteps) ? config.errorSteps.map(Number) : [],
+        questionnaireKeys: @js($questionnaireKeys),
         isSubmitting: false,
         legalDeclaration: false,
         hasDraft: false,
@@ -1465,29 +1596,36 @@ document.addEventListener('alpine:init', () => {
 
         stepTitles: {
             1: @js(__('registration.js.step1')),
-            2: @js(__('registration.js.step2')),
-            3: @js(__('registration.js.step3')),
-            4: @js(__('registration.js.step4'))
+            2: @js(__('registration.stepper.questionnaire')),
+            3: @js(__('registration.js.step2')),
+            4: @js(__('registration.js.step3')),
+            5: @js(__('registration.js.step4'))
         },
 
         stepHeadings: {
             1: @js(__('registration.account_profile')),
-            2: @js(__('registration.legal_pic_bank')),
-            3: @js(__('registration.js.heading3')),
-            4: @js(__('registration.js.heading4'))
+            2: @js(__('registration.questionnaire.title')),
+            3: @js(__('registration.legal_pic_bank')),
+            4: @js(__('registration.js.heading3')),
+            5: @js(__('registration.js.heading4'))
         },
 
         stepSubheadings: {
             1: @js(__('registration.js.help1')),
-            2: @js(__('registration.js.help2')),
-            3: @js(__('registration.js.help3')),
-            4: @js(__('registration.js.help4'))
+            2: @js(__('registration.questionnaire.help')),
+            3: @js(__('registration.js.help2')),
+            4: @js(__('registration.js.help3')),
+            5: @js(__('registration.js.help4'))
         },
 
         summaryLabels: {
             categoryGeneral: @js(__('registration.js.category_general')),
             pkp: @js(__('registration.js.pkp_status')),
             nonPkp: @js(__('registration.js.non_pkp_status')),
+            yes: @js(__('registration.questionnaire.yes')),
+            no: @js(__('registration.questionnaire.no')),
+            notAnswered: @js(__('registration.questionnaire.not_answered')),
+            questionnaireProgress: @js(__('registration.questionnaire.progress')),
         },
 
         formData: {
@@ -1510,6 +1648,7 @@ document.addEventListener('alpine:init', () => {
             other_bank_name: @js(old('other_bank_name', $initialOtherBankName)),
             account_number: @js(old('account_number', '')),
             account_holder_name: @js(old('account_holder_name', '')),
+            questionnaire: @js((object) $questionnaireAnswers),
         },
 
         errors: {},
@@ -1520,6 +1659,7 @@ document.addEventListener('alpine:init', () => {
             sknr: null,
             sppkp: null,
             skd: null,
+            company_profile: null,
         },
 
         showPass: false,
@@ -1541,6 +1681,94 @@ document.addEventListener('alpine:init', () => {
 
         get passwordHasNumber() {
             return /[0-9]/.test(this.formData.password);
+        },
+
+        // Mirrors Password::mixedCase() / ->symbols() in SupplierRegistrationRequest.
+        get passwordHasMixedCase() {
+            return /\p{Lu}/u.test(this.formData.password) && /\p{Ll}/u.test(this.formData.password);
+        },
+
+        get passwordHasSymbol() {
+            return /[\p{Z}\p{S}\p{P}]/u.test(this.formData.password);
+        },
+
+        get answeredQuestionCount() {
+            return this.questionnaireKeys.filter((key) => ['yes', 'no'].includes(this.formData.questionnaire?.[key])).length;
+        },
+
+        get questionnaireProgressLabel() {
+            return this.summaryLabels.questionnaireProgress
+                .replace(':count', this.answeredQuestionCount)
+                .replace(':total', this.questionnaireKeys.length);
+        },
+
+        answerLabel(key) {
+            const answer = this.formData.questionnaire?.[key];
+            if (answer === 'yes') return this.summaryLabels.yes;
+            if (answer === 'no') return this.summaryLabels.no;
+            return this.summaryLabels.notAnswered;
+        },
+
+        hasStepError(stepNumber) {
+            return this.errorSteps.includes(stepNumber);
+        },
+
+        stepMarkerClass(stepNumber) {
+            if (this.hasStepError(stepNumber)) {
+                return 'tw-border-error tw-bg-error-container tw-text-on-error-container';
+            }
+            if (this.step === stepNumber) {
+                return 'tw-border-primary tw-bg-primary tw-text-on-primary';
+            }
+            if (this.step > stepNumber) {
+                return 'tw-border-primary tw-bg-primary/10 tw-text-primary';
+            }
+
+            return 'tw-border-outline-variant tw-bg-surface tw-text-on-surface-variant';
+        },
+
+        setStepError(stepNumber, hasError) {
+            const others = this.errorSteps.filter((value) => value !== stepNumber);
+            this.errorSteps = hasError ? [...others, stepNumber].sort((a, b) => a - b) : others;
+        },
+
+        stepOfElement(element) {
+            const container = element?.closest?.('[data-wizard-step]');
+            return container ? Number(container.dataset.wizardStep) : null;
+        },
+
+        // adasi:reveal-field (async summary links / first 422 error) opens the step holding that field.
+        revealStepFor(element) {
+            const target = this.stepOfElement(element);
+            if (target && target !== this.step) {
+                if (target === this.maxStep) {
+                    this.updateDocsSummary();
+                }
+                this.step = target;
+            }
+        },
+
+        // adasi:form-errors (422 from the async submit): show messages inline and flag their steps.
+        onServerErrors(serverErrors = {}) {
+            const form = this.$root.querySelector('#supplierRegistrationForm') || document.getElementById('supplierRegistrationForm');
+            const steps = new Set();
+            this.errors = {};
+
+            Object.entries(serverErrors || {}).forEach(([key, messages]) => {
+                this.errors[key] = String([].concat(messages)[0] ?? '');
+                const field = window.AdasiAsyncForm?.findFieldForErrorKey(form, key);
+                const fieldStep = this.stepOfElement(field);
+                if (fieldStep) steps.add(fieldStep);
+            });
+
+            this.errorSteps = [...steps].sort((a, b) => a - b);
+            this.clientStepError = '';
+        },
+
+        clearStoredDraft() {
+            try {
+                localStorage.removeItem('adasi_supplier_reg_draft');
+            } catch (e) {}
         },
 
         formatBytes(bytes) {
@@ -1630,6 +1858,7 @@ document.addEventListener('alpine:init', () => {
                 sknr_file: 'sknr',
                 sppkp_file: 'sppkp',
                 skd_file: 'skd',
+                company_profile_file: 'company_profile',
             };
 
             this.$nextTick(() => {
@@ -1684,6 +1913,7 @@ document.addEventListener('alpine:init', () => {
                         // Check if there is actual non-empty, meaningful user data
                         const hasMeaningfulData = Object.entries(parsed).some(([key, val]) => {
                             if (['saved_step'].includes(key)) return false;
+                            if (key === 'questionnaire') return Object.keys(this.sanitizeAnswers(val)).length > 0;
                             if (key === 'company_title' && (val === 'PT' || !val)) return false;
                             if (key === 'is_pkp' && !val) return false;
                             return typeof val === 'string' ? val.trim().length > 0 : Boolean(val);
@@ -1704,12 +1934,13 @@ document.addEventListener('alpine:init', () => {
                 if (stored) {
                     const parsed = JSON.parse(stored);
                     Object.keys(parsed).forEach(key => {
-                        if (key in this.formData && !['password', 'password_confirmation', 'saved_step'].includes(key)) {
+                        if (key in this.formData && !['password', 'password_confirmation', 'saved_step', 'questionnaire'].includes(key)) {
                             if (parsed[key] !== undefined && parsed[key] !== null) {
                                 this.formData[key] = parsed[key];
                             }
                         }
                     });
+                    this.formData.questionnaire = this.sanitizeAnswers(parsed.questionnaire);
 
                     // Clear any previous validation errors for restored fields
                     this.errors = {};
@@ -1751,6 +1982,7 @@ document.addEventListener('alpine:init', () => {
                 // Check if any non-default meaningful text has been typed
                 const hasData = Object.entries(this.formData).some(([key, val]) => {
                     if (['password', 'password_confirmation'].includes(key)) return false;
+                    if (key === 'questionnaire') return this.answeredQuestionCount > 0;
                     if (key === 'company_title' && (val === 'PT' || !val)) return false;
                     if (key === 'is_pkp' && !val) return false;
                     return typeof val === 'string' ? val.trim().length > 0 : Boolean(val);
@@ -1779,6 +2011,7 @@ document.addEventListener('alpine:init', () => {
                     other_bank_name: this.formData.other_bank_name,
                     account_number: this.formData.account_number,
                     account_holder_name: this.formData.account_holder_name,
+                    questionnaire: this.sanitizeAnswers(this.formData.questionnaire),
                     saved_step: this.step,
                 };
                 localStorage.setItem('adasi_supplier_reg_draft', JSON.stringify(safePayload));
@@ -1787,8 +2020,26 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
+        // Only known question keys with yes/no values survive draft restore.
+        sanitizeAnswers(raw) {
+            const answers = {};
+            if (!raw || typeof raw !== 'object') return answers;
+            this.questionnaireKeys.forEach((key) => {
+                if (['yes', 'no'].includes(raw[key])) answers[key] = raw[key];
+            });
+            return answers;
+        },
+
         validateField(field) {
             delete this.errors[field];
+
+            if (field.startsWith('questionnaire.')) {
+                const key = field.slice('questionnaire.'.length);
+                if (!['yes', 'no'].includes(this.formData.questionnaire?.[key])) {
+                    this.errors[field] = @js(__('registration.questionnaire.answer_required'));
+                }
+                return;
+            }
 
             if (field === 'email') {
                 const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -1804,7 +2055,7 @@ document.addEventListener('alpine:init', () => {
                     this.errors.password = @js(__('registration.js.password_required'));
                 } else if (this.formData.password.length < 8) {
                     this.errors.password = @js(__('registration.js.password_min'));
-                } else if (!this.passwordHasLetter || !this.passwordHasNumber) {
+                } else if (!this.passwordHasMixedCase || !this.passwordHasNumber || !this.passwordHasSymbol) {
                     this.errors.password = @js(__('registration.js.password_content'));
                 }
             }
@@ -1900,6 +2151,13 @@ document.addEventListener('alpine:init', () => {
         },
 
         validateStep(stepNumber) {
+            const valid = this.runStepValidation(stepNumber);
+            this.setStepError(stepNumber, !valid);
+
+            return valid;
+        },
+
+        runStepValidation(stepNumber) {
             this.clientStepError = '';
 
             if (stepNumber === 1) {
@@ -1923,6 +2181,19 @@ document.addEventListener('alpine:init', () => {
             }
 
             if (stepNumber === 2) {
+                const questionFields = this.questionnaireKeys.map((key) => 'questionnaire.' + key);
+                questionFields.forEach((field) => this.validateField(field));
+                const firstUnanswered = questionFields.find((field) => this.errors[field]);
+
+                if (firstUnanswered) {
+                    this.clientStepError = @js(__('registration.questionnaire.required'));
+                    this.focusField(firstUnanswered.replace('questionnaire.', 'questionnaire[') + ']');
+                    return false;
+                }
+                return true;
+            }
+
+            if (stepNumber === 3) {
                 if (!this.formData.bank_select) {
                     const domVal = document.getElementById('bank_select')?.value;
                     if (domVal) {
@@ -1951,7 +2222,7 @@ document.addEventListener('alpine:init', () => {
                 return true;
             }
 
-            if (stepNumber === 3) {
+            if (stepNumber === 4) {
                 // Check required file attachments
                 const nibInput = document.getElementById('nib_file');
                 const npwpInput = document.getElementById('npwp_file');
@@ -1992,6 +2263,7 @@ document.addEventListener('alpine:init', () => {
                 sknr_file: 'sknr',
                 sppkp_file: 'sppkp',
                 skd_file: 'skd',
+                company_profile_file: 'company_profile',
             };
             Object.keys(docMap).forEach(id => {
                 const input = document.getElementById(id);
@@ -2021,7 +2293,7 @@ document.addEventListener('alpine:init', () => {
                 }
             }
 
-            if (targetStep === 4) {
+            if (targetStep === this.maxStep) {
                 this.updateDocsSummary();
             }
 
@@ -2032,7 +2304,7 @@ document.addEventListener('alpine:init', () => {
         nextStep() {
             if (this.validateStep(this.step)) {
                 if (this.step < this.maxStep) {
-                    if (this.step === 3) {
+                    if (this.step === this.maxStep - 1) {
                         this.updateDocsSummary();
                     }
                     this.step++;
@@ -2055,31 +2327,24 @@ document.addEventListener('alpine:init', () => {
         },
 
         handleSubmit(event) {
-            if (!this.validateStep(1)) {
-                event.preventDefault();
-                this.goToStep(1);
-                if (window.AdasiToast) {
-                    window.AdasiToast.error(this.clientStepError || @js(__('registration.js.step1_first')));
-                }
-                return;
-            }
+            const stepFallbacks = {
+                1: @js(__('registration.js.step1_first')),
+                2: @js(__('registration.js.questionnaire_first')),
+                3: @js(__('registration.js.step2_first')),
+                4: @js(__('registration.js.step3_first')),
+            };
 
-            if (!this.validateStep(2)) {
-                event.preventDefault();
-                this.goToStep(2);
-                if (window.AdasiToast) {
-                    window.AdasiToast.error(this.clientStepError || @js(__('registration.js.step2_first')));
+            for (let s = 1; s < this.maxStep; s++) {
+                if (!this.validateStep(s)) {
+                    event.preventDefault();
+                    // Go straight to the failing step (goToStep would re-validate earlier steps).
+                    this.step = s;
+                    this.scrollToTop();
+                    if (window.AdasiToast) {
+                        window.AdasiToast.error(this.clientStepError || stepFallbacks[s]);
+                    }
+                    return;
                 }
-                return;
-            }
-
-            if (!this.validateStep(3)) {
-                event.preventDefault();
-                this.goToStep(3);
-                if (window.AdasiToast) {
-                    window.AdasiToast.error(this.clientStepError || @js(__('registration.js.step3_first')));
-                }
-                return;
             }
 
             if (!this.legalDeclaration) {
@@ -2091,10 +2356,10 @@ document.addEventListener('alpine:init', () => {
 
             this.isSubmitting = true;
 
-            // Clear draft storage upon submission dispatch
-            try {
-                localStorage.removeItem('adasi_supplier_reg_draft');
-            } catch (e) {}
+            // Async submit clears the draft on adasi:form-success; the classic POST fallback clears it now.
+            if (!window.AdasiAsyncForm) {
+                this.clearStoredDraft();
+            }
         }
     }));
 });

@@ -197,19 +197,510 @@
                 </div>
             </div>
 
-            {{-- SUBMISSION SNAPSHOT CARD --}}
-            <div class="tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-p-5 tw-shadow-xs" x-data="{ expanded: false }">
-                <div class="tw-flex tw-items-center tw-justify-between tw-cursor-pointer" @click="expanded = !expanded">
+            {{-- QUALITY & COMPLIANCE QUESTIONNAIRE CARD (answers of this attempt; never blocks approval) --}}
+            @php
+                $snapshotAnswers = is_array($attempt->snapshot['questionnaire'] ?? null)
+                    ? \App\Support\SupplierComplianceQuestionnaire::normalize($attempt->snapshot['questionnaire'])
+                    : \App\Support\SupplierComplianceQuestionnaire::answersFrom($supplier?->compliance_questionnaire);
+                $flaggedAnswers = \App\Support\SupplierComplianceQuestionnaire::flagged($snapshotAnswers);
+            @endphp
+            <div class="tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-p-5 tw-shadow-xs">
+                <div class="tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-gap-2 tw-mb-3">
                     <div class="tw-flex tw-items-center tw-gap-2 tw-text-primary">
-                        <x-ui.icon name="archive" size="sm" />
-                    <h3 class="tw-m-0 tw-text-ui-sm tw-font-bold tw-text-on-surface">{{ __('local_procurement.registration.snapshot', ['attempt' => $attempt->attempt_number]) }}</h3>
+                        <x-ui.icon name="clipboard-check" size="sm" />
+                        <h3 class="tw-m-0 tw-text-ui-sm tw-font-bold tw-text-on-surface">{{ __('local_procurement.registration.questionnaire') }}</h3>
                     </div>
-                    <x-ui.icon name="chevron-down" size="sm" x-show="!expanded" />
-                    <x-ui.icon name="chevron-up" size="sm" x-show="expanded" />
+                    @if ($snapshotAnswers !== [])
+                        <span class="tw-inline-flex tw-items-center tw-gap-1 tw-text-ui-xs tw-font-semibold {{ $flaggedAnswers ? 'tw-text-warning' : 'tw-text-on-surface-variant' }}">
+                            <x-ui.icon :name="$flaggedAnswers ? 'alert-triangle' : 'check-circle'" size="xs" />
+                            {{ trans_choice('local_procurement.registration.questionnaire_flagged', count($flaggedAnswers), ['count' => count($flaggedAnswers)]) }}
+                        </span>
+                    @endif
                 </div>
 
-                <div class="tw-mt-3" x-show="expanded" style="display: none;">
-                    <pre class="tw-bg-surface-container tw-p-3 tw-rounded-ui-xs tw-text-ui-xs tw-overflow-x-auto tw-m-0 tw-font-mono">{{ json_encode($attempt->snapshot, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
+                @if ($snapshotAnswers === [])
+                    <p class="tw-m-0 tw-text-ui-xs tw-text-on-surface-variant">{{ __('local_procurement.registration.questionnaire_missing') }}</p>
+                @else
+                    <dl class="tw-m-0 tw-grid tw-gap-1.5 tw-text-ui-sm">
+                        @foreach (\App\Support\SupplierComplianceQuestionnaire::keys() as $index => $questionKey)
+                            @php
+                                $answer = $snapshotAnswers[$questionKey] ?? null;
+                                $isFlagged = \App\Support\SupplierComplianceQuestionnaire::isFlagged($questionKey, $answer);
+                            @endphp
+                            <div class="tw-flex tw-items-start tw-justify-between tw-gap-3 tw-rounded-ui-xs tw-border tw-px-3 tw-py-2 {{ $isFlagged ? 'tw-border-warning/50 tw-bg-warning/5' : 'tw-border-outline-variant' }}">
+                                <dt class="tw-text-on-surface tw-text-pretty">{{ $index + 1 }}. {{ __('registration.questionnaire.questions.'.$questionKey) }}</dt>
+                                <dd class="tw-m-0 tw-shrink-0 tw-text-end">
+                                    <span class="tw-font-semibold tw-text-on-surface">
+                                        {{ $answer === null ? __('registration.questionnaire.not_answered') : __('registration.questionnaire.'.$answer) }}
+                                    </span>
+                                    @if ($isFlagged)
+                                        <span class="tw-mt-0.5 tw-flex tw-items-center tw-justify-end tw-gap-1 tw-text-[11px] tw-font-semibold tw-text-warning">
+                                            <x-ui.icon name="alert-triangle" size="xs" />
+                                            {{ __('registration.questionnaire.needs_attention') }}
+                                        </span>
+                                    @endif
+                                </dd>
+                            </div>
+                        @endforeach
+                    </dl>
+                @endif
+            </div>
+
+            {{-- SUBMISSION SNAPSHOT CARD --}}
+            @php
+                $snapshot = is_array($attempt->snapshot) ? $attempt->snapshot : [];
+                $companySnap = is_array($snapshot['company'] ?? null) ? $snapshot['company'] : [];
+                $taxSnap = is_array($snapshot['tax'] ?? null) ? $snapshot['tax'] : [];
+                $picSnap = is_array($snapshot['pic'] ?? null) ? $snapshot['pic'] : [];
+                $bankSnap = is_array($snapshot['bank'] ?? null) ? $snapshot['bank'] : [];
+                $docsSnap = is_array($snapshot['documents'] ?? null) ? $snapshot['documents'] : [];
+                $questSnap = is_array($snapshot['questionnaire'] ?? null) ? \App\Support\SupplierComplianceQuestionnaire::normalize($snapshot['questionnaire']) : [];
+                $revisionNotes = $snapshot['revision_notes'] ?? null;
+                $checksum = $attempt->submission_checksum;
+                $jsonPretty = json_encode($snapshot, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+                $isChecksumValid = !empty($checksum) && hash('sha256', json_encode($snapshot)) === $checksum;
+            @endphp
+            <div
+                class="tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-p-5 tw-shadow-xs"
+                x-data="{
+                    expanded: true,
+                    showRawJson: false,
+                    copiedJson: false,
+                    copiedChecksum: false,
+                    copyText(text, key) {
+                        if (navigator.clipboard && window.isSecureContext) {
+                            navigator.clipboard.writeText(text).then(() => {
+                                this[key] = true;
+                                setTimeout(() => this[key] = false, 2000);
+                            });
+                        } else {
+                            const el = document.createElement('textarea');
+                            el.value = text;
+                            el.style.position = 'fixed';
+                            el.style.left = '-9999px';
+                            document.body.appendChild(el);
+                            el.focus();
+                            el.select();
+                            try {
+                                document.execCommand('copy');
+                                this[key] = true;
+                                setTimeout(() => this[key] = false, 2000);
+                            } catch (e) {}
+                            document.body.removeChild(el);
+                        }
+                    }
+                }"
+            >
+                {{-- CARD HEADER --}}
+                <div class="tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-gap-3">
+                    <div class="tw-flex tw-items-center tw-gap-2.5 tw-cursor-pointer" @click="expanded = !expanded">
+                        <span class="tw-inline-flex tw-items-center tw-justify-center tw-w-8 tw-h-8 tw-rounded-ui-xs tw-bg-primary/10 tw-text-primary tw-shrink-0">
+                            <x-ui.icon name="archive" size="sm" />
+                        </span>
+                        <div>
+                            <div class="tw-flex tw-items-center tw-gap-2">
+                                <h3 class="tw-m-0 tw-text-ui-base tw-font-bold tw-text-on-surface">
+                                    {{ __('local_procurement.registration.snapshot', ['attempt' => $attempt->attempt_number]) }}
+                                </h3>
+                                <span class="tw-inline-flex tw-items-center tw-gap-1 tw-px-2 tw-py-0.5 tw-rounded-full tw-text-[11px] tw-font-semibold {{ $isChecksumValid ? 'tw-bg-success/10 tw-text-success' : 'tw-bg-warning/10 tw-text-warning' }}">
+                                    <x-ui.icon :name="$isChecksumValid ? 'shield-check' : 'shield-alert'" size="xs" />
+                                    <span>{{ $isChecksumValid ? 'SHA-256 Verified' : 'Unverified' }}</span>
+                                </span>
+                            </div>
+                            <p class="tw-m-0 tw-text-[11px] tw-text-on-surface-variant tw-mt-0.5">
+                                {{ $attempt->submitted_at ? $regionalFormatter->timestamp($attempt->submitted_at, 'datetime_comma') : '-' }} &bull; {{ __('local_procurement.registration.snapshot_integrity_verified') }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="tw-flex tw-items-center tw-gap-2">
+                        {{-- MODE TOGGLE (Structured vs Raw JSON) --}}
+                        <div class="tw-inline-flex tw-items-center tw-p-0.5 tw-rounded-ui-xs tw-bg-surface-container tw-border tw-border-outline-variant/60" x-show="expanded">
+                            <button
+                                type="button"
+                                @click.stop="showRawJson = false"
+                                :class="!showRawJson ? 'tw-bg-surface tw-text-primary tw-shadow-xs tw-font-bold' : 'tw-text-on-surface-variant hover:tw-text-on-surface'"
+                                class="tw-px-2.5 tw-py-1 tw-rounded-[calc(var(--radius-xs)-2px)] tw-text-ui-xs tw-inline-flex tw-items-center tw-gap-1.5 tw-transition-all tw-duration-150 tw-border-0 tw-cursor-pointer"
+                                title="{{ __('local_procurement.registration.snapshot_view_structured') }}"
+                            >
+                                <x-ui.icon name="layout-grid" size="xs" />
+                                <span>{{ __('local_procurement.registration.snapshot_view_structured') }}</span>
+                            </button>
+                            <button
+                                type="button"
+                                @click.stop="showRawJson = true"
+                                :class="showRawJson ? 'tw-bg-surface tw-text-primary tw-shadow-xs tw-font-bold' : 'tw-text-on-surface-variant hover:tw-text-on-surface'"
+                                class="tw-px-2.5 tw-py-1 tw-rounded-[calc(var(--radius-xs)-2px)] tw-text-ui-xs tw-inline-flex tw-items-center tw-gap-1.5 tw-transition-all tw-duration-150 tw-border-0 tw-cursor-pointer"
+                                title="{{ __('local_procurement.registration.snapshot_view_raw') }}"
+                            >
+                                <x-ui.icon name="code" size="xs" />
+                                <span>{{ __('local_procurement.registration.snapshot_view_raw') }}</span>
+                            </button>
+                        </div>
+
+                        {{-- COPY JSON BUTTON --}}
+                        <button
+                            type="button"
+                            @click.stop="copyText({{ Js::from($jsonPretty) }}, 'copiedJson')"
+                            class="ui-focus-ring tw-inline-flex tw-items-center tw-gap-1.5 tw-px-2.5 tw-py-1.5 tw-rounded-ui-xs tw-border tw-border-outline-variant tw-bg-surface hover:tw-bg-surface-container tw-text-on-surface tw-text-ui-xs tw-font-semibold tw-transition-all tw-duration-150 active:tw-scale-95 tw-cursor-pointer"
+                            title="{{ __('local_procurement.registration.snapshot_copy_json') }}"
+                        >
+                            <template x-if="copiedJson">
+                                <span class="tw-inline-flex tw-items-center tw-gap-1 tw-text-success">
+                                    <x-ui.icon name="check" size="xs" />
+                                    <span>{{ __('local_procurement.registration.snapshot_json_copied') }}</span>
+                                </span>
+                            </template>
+                            <template x-if="!copiedJson">
+                                <span class="tw-inline-flex tw-items-center tw-gap-1">
+                                    <x-ui.icon name="copy" size="xs" />
+                                    <span>{{ __('local_procurement.registration.snapshot_copy_json') }}</span>
+                                </span>
+                            </template>
+                        </button>
+
+                        {{-- EXPAND / COLLAPSE BUTTON --}}
+                        <button
+                            type="button"
+                            @click.stop="expanded = !expanded"
+                            class="ui-focus-ring tw-inline-flex tw-items-center tw-justify-center tw-w-8 tw-h-8 tw-rounded-ui-xs tw-text-on-surface-variant hover:tw-text-on-surface hover:tw-bg-surface-container tw-border tw-border-outline-variant/60 tw-bg-surface tw-transition-colors tw-cursor-pointer"
+                            aria-label="Toggle snapshot details"
+                        >
+                            <x-ui.icon name="chevron-up" size="sm" x-show="expanded" />
+                            <x-ui.icon name="chevron-down" size="sm" x-show="!expanded" />
+                        </button>
+                    </div>
+                </div>
+
+                {{-- CARD CONTENT BODY --}}
+                <div class="tw-mt-4 tw-pt-4 tw-border-t tw-border-outline-variant/60" x-show="expanded">
+                    {{-- STRUCTURED VIEW --}}
+                    <div class="tw-space-y-4" x-show="!showRawJson">
+                        @if (!empty($revisionNotes))
+                            {{-- REVISION NOTES FROM SUPPLIER --}}
+                            <div class="tw-rounded-ui-xs tw-border tw-border-info/40 tw-bg-info/5 tw-p-3.5">
+                                <div class="tw-flex tw-items-center tw-gap-2 tw-text-info tw-font-semibold tw-text-ui-xs tw-mb-1">
+                                    <x-ui.icon name="message-square" size="xs" />
+                                    <span>{{ __('local_procurement.registration.snapshot_revision_notes') }}</span>
+                                </div>
+                                <p class="tw-m-0 tw-text-ui-xs tw-text-on-surface tw-leading-relaxed tw-text-pretty">{{ $revisionNotes }}</p>
+                            </div>
+                        @endif
+
+                        {{-- 1. COMPANY & TAX IDENTITY --}}
+                        <div class="tw-rounded-ui-xs tw-border tw-border-outline-variant/70 tw-bg-surface-container-lowest tw-p-4 tw-shadow-xs">
+                            <div class="tw-flex tw-items-center tw-justify-between tw-mb-3 tw-border-b tw-border-outline-variant/40 tw-pb-2.5">
+                                <div class="tw-flex tw-items-center tw-gap-2 tw-text-primary">
+                                    <x-ui.icon name="building-2" size="xs" />
+                                    <h4 class="tw-m-0 tw-text-ui-xs tw-font-bold tw-text-on-surface tw-uppercase tw-tracking-wider">
+                                        {{ __('local_procurement.registration.snapshot_company_tax') }}
+                                    </h4>
+                                </div>
+                                @if (!empty($companySnap['is_pkp']))
+                                    <span class="ui-status-chip ui-status-chip--success tw-text-[11px] tw-py-0.5">
+                                        {{ __('local_procurement.registration.pkp_verified') }}
+                                    </span>
+                                @else
+                                    <span class="ui-status-chip ui-status-chip--neutral tw-text-[11px] tw-py-0.5">
+                                        Non-PKP
+                                    </span>
+                                @endif
+                            </div>
+
+                            <dl class="tw-grid tw-grid-cols-1 md:tw-grid-cols-2 tw-gap-x-4 tw-gap-y-3 tw-text-ui-xs tw-m-0">
+                                <div>
+                                    <dt class="tw-text-on-surface-variant">{{ __('local_procurement.registration.company_label') }}</dt>
+                                    <dd class="tw-font-bold tw-text-on-surface tw-text-ui-sm tw-mt-0.5 tw-m-0">
+                                        {{ ($companySnap['company_title'] ?? '') ? $companySnap['company_title'] . ' ' : '' }}{{ $companySnap['company_name'] ?? '-' }}
+                                    </dd>
+                                </div>
+
+                                <div>
+                                    <dt class="tw-text-on-surface-variant">{{ __('local_procurement.registration.business_category') }}</dt>
+                                    <dd class="tw-font-medium tw-text-on-surface tw-mt-0.5 tw-m-0">
+                                        {{ $companySnap['category'] ?? '-' }}
+                                        @if (!empty($companySnap['vendor_category']))
+                                            <span class="tw-text-on-surface-variant">({{ $companySnap['vendor_category'] }})</span>
+                                        @endif
+                                    </dd>
+                                </div>
+
+                                <div>
+                                    <dt class="tw-text-on-surface-variant">{{ __('registration.nib') }}</dt>
+                                    <dd class="tw-font-mono tw-font-semibold tw-text-on-surface tw-mt-0.5 tw-m-0 tw-tabular-nums">
+                                        {{ $taxSnap['nib'] ?? '-' }}
+                                    </dd>
+                                </div>
+
+                                <div>
+                                    <dt class="tw-text-on-surface-variant">{{ __('local_procurement.registration.tax_identity') }}</dt>
+                                    <dd class="tw-font-mono tw-font-semibold tw-text-on-surface tw-mt-0.5 tw-m-0 tw-tabular-nums">
+                                        {{ $taxSnap['npwp'] ?? '-' }}
+                                    </dd>
+                                </div>
+
+                                <div class="md:tw-col-span-2">
+                                    <dt class="tw-text-on-surface-variant">{{ __('local_procurement.registration.legal_address') }}</dt>
+                                    <dd class="tw-font-medium tw-text-on-surface tw-mt-0.5 tw-m-0 tw-text-pretty">
+                                        {{ $companySnap['address'] ?? '-' }}
+                                    </dd>
+                                </div>
+
+                                <div>
+                                    <dt class="tw-text-on-surface-variant">{{ __('local_invoice.labels.company_phone') }}</dt>
+                                    <dd class="tw-font-medium tw-text-on-surface tw-mt-0.5 tw-m-0">
+                                        {{ $companySnap['phone'] ?? '-' }}
+                                    </dd>
+                                </div>
+                            </dl>
+                        </div>
+
+                        {{-- 2. PIC & BANK DETAILS --}}
+                        <div class="tw-grid tw-grid-cols-1 md:tw-grid-cols-2 tw-gap-4">
+                            {{-- PIC --}}
+                            <div class="tw-rounded-ui-xs tw-border tw-border-outline-variant/70 tw-bg-surface-container-lowest tw-p-4 tw-shadow-xs">
+                                <div class="tw-flex tw-items-center tw-gap-2 tw-text-primary tw-mb-3 tw-border-b tw-border-outline-variant/40 tw-pb-2.5">
+                                    <x-ui.icon name="user" size="xs" />
+                                    <h4 class="tw-m-0 tw-text-ui-xs tw-font-bold tw-text-on-surface tw-uppercase tw-tracking-wider">
+                                        {{ __('local_procurement.registration.pic') }}
+                                    </h4>
+                                </div>
+                                <dl class="tw-space-y-2.5 tw-text-ui-xs tw-m-0">
+                                    <div>
+                                        <dt class="tw-text-on-surface-variant">{{ __('common.fields.full_name') }}</dt>
+                                        <dd class="tw-font-semibold tw-text-on-surface tw-mt-0.5 tw-m-0">{{ $picSnap['pic_name'] ?? '-' }}</dd>
+                                    </div>
+                                    <div>
+                                        <dt class="tw-text-on-surface-variant">{{ __('common.fields.email') }}</dt>
+                                        <dd class="tw-font-medium tw-text-on-surface tw-mt-0.5 tw-m-0">{{ $picSnap['pic_email'] ?? '-' }}</dd>
+                                    </div>
+                                    <div>
+                                        <dt class="tw-text-on-surface-variant">{{ __('local_procurement.registration.phone') }}</dt>
+                                        <dd class="tw-font-medium tw-text-on-surface tw-mt-0.5 tw-m-0">{{ $picSnap['pic_phone'] ?? '-' }}</dd>
+                                    </div>
+                                </dl>
+                            </div>
+
+                            {{-- BANK ACCOUNT --}}
+                            <div class="tw-rounded-ui-xs tw-border tw-border-outline-variant/70 tw-bg-surface-container-lowest tw-p-4 tw-shadow-xs">
+                                <div class="tw-flex tw-items-center tw-gap-2 tw-text-primary tw-mb-3 tw-border-b tw-border-outline-variant/40 tw-pb-2.5">
+                                    <x-ui.icon name="credit-card" size="xs" />
+                                    <h4 class="tw-m-0 tw-text-ui-xs tw-font-bold tw-text-on-surface tw-uppercase tw-tracking-wider">
+                                        {{ __('local_procurement.registration.bank_details') }}
+                                    </h4>
+                                </div>
+                                <dl class="tw-space-y-2.5 tw-text-ui-xs tw-m-0">
+                                    <div>
+                                        <dt class="tw-text-on-surface-variant">{{ __('registration.bank') }}</dt>
+                                        <dd class="tw-font-semibold tw-text-on-surface tw-mt-0.5 tw-m-0">{{ $bankSnap['bank_name'] ?? '-' }}</dd>
+                                    </div>
+                                    <div>
+                                        <dt class="tw-text-on-surface-variant">{{ __('registration.account_number') }}</dt>
+                                        <dd class="tw-font-mono tw-font-bold tw-text-on-surface tw-mt-0.5 tw-m-0 tw-tabular-nums tw-tracking-wide">
+                                            {{ $bankSnap['account_number'] ?? '-' }}
+                                        </dd>
+                                    </div>
+                                    <div>
+                                        <dt class="tw-text-on-surface-variant">{{ __('local_invoice.labels.account_name') }}</dt>
+                                        <dd class="tw-font-medium tw-text-on-surface tw-mt-0.5 tw-m-0">{{ $bankSnap['account_holder_name'] ?? '-' }}</dd>
+                                    </div>
+                                </dl>
+                            </div>
+                        </div>
+
+                        {{-- 3. ARCHIVED DOCUMENTS --}}
+                        <div class="tw-rounded-ui-xs tw-border tw-border-outline-variant/70 tw-bg-surface-container-lowest tw-p-4 tw-shadow-xs">
+                            <div class="tw-flex tw-items-center tw-justify-between tw-mb-3 tw-border-b tw-border-outline-variant/40 tw-pb-2.5">
+                                <div class="tw-flex tw-items-center tw-gap-2 tw-text-primary">
+                                    <x-ui.icon name="file-text" size="xs" />
+                                    <h4 class="tw-m-0 tw-text-ui-xs tw-font-bold tw-text-on-surface tw-uppercase tw-tracking-wider">
+                                        {{ __('local_procurement.registration.snapshot_documents') }}
+                                    </h4>
+                                </div>
+                                <span class="tw-text-[11px] tw-font-semibold tw-text-on-surface-variant tw-tabular-nums">
+                                    {{ count($docsSnap) }} {{ __('registration.documents') }}
+                                </span>
+                            </div>
+
+                            @if (empty($docsSnap))
+                                <p class="tw-m-0 tw-text-ui-xs tw-text-on-surface-variant">
+                                    {{ __('local_procurement.registration.snapshot_no_docs') }}
+                                </p>
+                            @else
+                                <div class="tw-grid tw-grid-cols-1 md:tw-grid-cols-2 tw-gap-3">
+                                    @foreach ($docsSnap as $docType => $docInfo)
+                                        @php
+                                            $docTypeLabel = match ($docType) {
+                                                'SURAT_PERNYATAAN_REKENING' => __('local_procurement.registration.doc_bank_declaration'),
+                                                'SKD' => __('local_procurement.registration.doc_domicile'),
+                                                'COMPANY_PROFILE' => __('local_procurement.registration.doc_company_profile'),
+                                                'OTHER' => __('local_procurement.registration.doc_other'),
+                                                default => $docType,
+                                            };
+                                            $docHash = is_array($docInfo) ? ($docInfo['hash'] ?? null) : null;
+                                            $docName = is_array($docInfo) ? ($docInfo['original_filename'] ?? '-') : '-';
+                                            $docSize = is_array($docInfo) ? ($docInfo['file_size'] ?? 0) : 0;
+                                            $docDate = is_array($docInfo) ? ($docInfo['uploaded_at'] ?? null) : null;
+                                        @endphp
+                                        <div class="tw-flex tw-flex-col tw-justify-between tw-p-3 tw-rounded-ui-xs tw-border tw-border-outline-variant/60 tw-bg-surface hover:tw-border-primary/40 tw-transition-colors">
+                                            <div>
+                                                <div class="tw-flex tw-items-center tw-justify-between tw-gap-2 tw-mb-1">
+                                                    <span class="tw-font-bold tw-text-ui-xs tw-text-primary tw-truncate" title="{{ $docTypeLabel }}">
+                                                        {{ $docTypeLabel }}
+                                                    </span>
+                                                    <span class="tw-text-[11px] tw-text-on-surface-variant tw-tabular-nums tw-shrink-0">
+                                                        {{ number_format($docSize / 1024, 1) }} KB
+                                                    </span>
+                                                </div>
+                                                <p class="tw-m-0 tw-text-[11px] tw-text-on-surface tw-truncate tw-font-medium" title="{{ $docName }}">
+                                                    {{ $docName }}
+                                                </p>
+                                                @if ($docDate)
+                                                    <span class="tw-text-[10px] tw-text-on-surface-variant tw-block tw-mt-0.5 tw-tabular-nums">
+                                                        {{ \Illuminate\Support\Carbon::parse($docDate)->format('d M Y, H:i') }}
+                                                    </span>
+                                                @endif
+                                            </div>
+
+                                            @if ($docHash)
+                                                <div class="tw-mt-2.5 tw-pt-2 tw-border-t tw-border-outline-variant/40 tw-flex tw-items-center tw-justify-between">
+                                                    <span class="tw-font-mono tw-text-[10px] tw-text-on-surface-variant/80 tw-truncate" title="Doc Hash: {{ $docHash }}">
+                                                        #{{ $docHash }}
+                                                    </span>
+                                                    <a
+                                                        href="{{ route('supplier-registrations.document', ['attempt' => $attempt->hash, 'document' => $docHash]) }}"
+                                                        class="ui-focus-ring tw-inline-flex tw-items-center tw-gap-1 tw-text-[11px] tw-font-semibold tw-text-primary hover:tw-underline tw-no-underline"
+                                                    >
+                                                        <x-ui.icon name="download" size="xs" />
+                                                        <span>{{ __('local_procurement.registration.download') }}</span>
+                                                    </a>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
+                        </div>
+
+                        {{-- 4. QUESTIONNAIRE SNAPSHOT (IF PRESENT) --}}
+                        @if (!empty($questSnap))
+                            @php
+                                $flaggedInSnapshot = \App\Support\SupplierComplianceQuestionnaire::flagged($questSnap);
+                            @endphp
+                            <div class="tw-rounded-ui-xs tw-border tw-border-outline-variant/70 tw-bg-surface-container-lowest tw-p-4 tw-shadow-xs">
+                                <div class="tw-flex tw-items-center tw-justify-between tw-mb-3 tw-border-b tw-border-outline-variant/40 tw-pb-2.5">
+                                    <div class="tw-flex tw-items-center tw-gap-2 tw-text-primary">
+                                        <x-ui.icon name="clipboard-check" size="xs" />
+                                        <h4 class="tw-m-0 tw-text-ui-xs tw-font-bold tw-text-on-surface tw-uppercase tw-tracking-wider">
+                                            {{ __('local_procurement.registration.snapshot_questionnaire') }}
+                                        </h4>
+                                    </div>
+                                    @if ($flaggedInSnapshot)
+                                        <span class="tw-inline-flex tw-items-center tw-gap-1 tw-text-[11px] tw-font-semibold tw-text-warning">
+                                            <x-ui.icon name="alert-triangle" size="xs" />
+                                            {{ trans_choice('local_procurement.registration.questionnaire_flagged', count($flaggedInSnapshot), ['count' => count($flaggedInSnapshot)]) }}
+                                        </span>
+                                    @else
+                                        <span class="tw-inline-flex tw-items-center tw-gap-1 tw-text-[11px] tw-font-semibold tw-text-success">
+                                            <x-ui.icon name="check-circle" size="xs" />
+                                            {{ trans_choice('local_procurement.registration.questionnaire_flagged', 0, ['count' => 0]) }}
+                                        </span>
+                                    @endif
+                                </div>
+
+                                <dl class="tw-m-0 tw-grid tw-gap-1.5 tw-text-ui-xs">
+                                    @foreach (\App\Support\SupplierComplianceQuestionnaire::keys() as $index => $qKey)
+                                        @php
+                                            $qAnswer = $questSnap[$qKey] ?? null;
+                                            $qFlagged = \App\Support\SupplierComplianceQuestionnaire::isFlagged($qKey, $qAnswer);
+                                        @endphp
+                                        <div class="tw-flex tw-items-start tw-justify-between tw-gap-3 tw-rounded-ui-xs tw-border tw-px-3 tw-py-2 {{ $qFlagged ? 'tw-border-warning/50 tw-bg-warning/5' : 'tw-border-outline-variant/50 tw-bg-surface' }}">
+                                            <dt class="tw-text-on-surface tw-text-pretty">
+                                                {{ $index + 1 }}. {{ __('registration.questionnaire.questions.'.$qKey) }}
+                                            </dt>
+                                            <dd class="tw-m-0 tw-shrink-0 tw-text-end">
+                                                <span class="tw-font-semibold tw-text-on-surface">
+                                                    {{ $qAnswer === null ? __('registration.questionnaire.not_answered') : __('registration.questionnaire.'.$qAnswer) }}
+                                                </span>
+                                                @if ($qFlagged)
+                                                    <span class="tw-mt-0.5 tw-flex tw-items-center tw-justify-end tw-gap-1 tw-text-[10px] tw-font-semibold tw-text-warning">
+                                                        <x-ui.icon name="alert-triangle" size="xs" />
+                                                        {{ __('registration.questionnaire.needs_attention') }}
+                                                    </span>
+                                                @endif
+                                            </dd>
+                                        </div>
+                                    @endforeach
+                                </dl>
+                            </div>
+                        @endif
+
+                        {{-- 5. INTEGRITY VERIFICATION & SHA-256 CHECKSUM FOOTER --}}
+                        <div class="tw-rounded-ui-xs tw-border tw-border-outline-variant/60 tw-bg-surface-container tw-p-3.5">
+                            <div class="tw-flex tw-flex-col sm:tw-flex-row sm:tw-items-center sm:tw-justify-between tw-gap-2">
+                                <div class="tw-flex tw-items-center tw-gap-2">
+                                    <span class="tw-inline-flex tw-items-center tw-justify-center tw-w-6 tw-h-6 tw-rounded-full {{ $isChecksumValid ? 'tw-bg-success/15 tw-text-success' : 'tw-bg-warning/15 tw-text-warning' }} tw-shrink-0">
+                                        <x-ui.icon :name="$isChecksumValid ? 'shield-check' : 'shield-alert'" size="xs" />
+                                    </span>
+                                    <div>
+                                        <span class="tw-text-ui-xs tw-font-bold tw-text-on-surface tw-block">
+                                            {{ __('local_procurement.registration.snapshot_checksum') }}
+                                        </span>
+                                        <span class="tw-text-[11px] tw-text-on-surface-variant">
+                                            {{ $isChecksumValid ? __('local_procurement.registration.snapshot_integrity_verified') : 'Checksum Verification Mismatch' }}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                @if ($checksum)
+                                    <button
+                                        type="button"
+                                        @click.stop="copyText('{{ $checksum }}', 'copiedChecksum')"
+                                        class="ui-focus-ring tw-inline-flex tw-items-center tw-gap-1.5 tw-px-2.5 tw-py-1 tw-rounded-ui-xs tw-border tw-border-outline-variant tw-bg-surface tw-text-on-surface hover:tw-bg-surface-container-highest tw-text-[11px] tw-font-semibold tw-transition-all tw-duration-150 active:tw-scale-95 tw-cursor-pointer tw-shrink-0"
+                                    >
+                                        <template x-if="copiedChecksum">
+                                            <span class="tw-inline-flex tw-items-center tw-gap-1 tw-text-success">
+                                                <x-ui.icon name="check" size="xs" />
+                                                <span>{{ __('local_procurement.registration.snapshot_checksum_copied') }}</span>
+                                            </span>
+                                        </template>
+                                        <template x-if="!copiedChecksum">
+                                            <span class="tw-inline-flex tw-items-center tw-gap-1">
+                                                <x-ui.icon name="copy" size="xs" />
+                                                <span>{{ __('local_procurement.registration.snapshot_copy_checksum') }}</span>
+                                            </span>
+                                        </template>
+                                    </button>
+                                @endif
+                            </div>
+
+                            @if ($checksum)
+                                <div class="tw-mt-2.5">
+                                    <code class="tw-block tw-font-mono tw-text-[11px] tw-text-on-surface-variant tw-bg-surface tw-p-2 tw-rounded-ui-xs tw-border tw-border-outline-variant/60 tw-break-all tw-tabular-nums">
+                                        {{ $checksum }}
+                                    </code>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+
+                    {{-- RAW JSON VIEW --}}
+                    <div class="tw-space-y-2" x-show="showRawJson" style="display: none;">
+                        <div class="tw-flex tw-items-center tw-justify-between tw-text-ui-xs tw-text-on-surface-variant tw-px-1">
+                            <span class="tw-font-mono tw-text-[11px]">JSON Payload (application/json) &bull; {{ strlen($jsonPretty) }} bytes</span>
+                            <button
+                                type="button"
+                                @click.stop="copyText({{ Js::from($jsonPretty) }}, 'copiedJson')"
+                                class="ui-focus-ring tw-inline-flex tw-items-center tw-gap-1 tw-font-semibold tw-text-primary hover:tw-underline tw-cursor-pointer tw-border-0 tw-bg-transparent tw-p-0"
+                            >
+                                <x-ui.icon name="copy" size="xs" />
+                                <span x-text="copiedJson ? '{{ __('local_procurement.registration.snapshot_json_copied') }}' : '{{ __('local_procurement.registration.snapshot_copy_json') }}'"></span>
+                            </button>
+                        </div>
+                        <div class="tw-relative">
+                            <pre x-ref="rawJsonContent" class="tw-bg-slate-900 tw-text-slate-100 dark:tw-bg-surface-container-highest dark:tw-text-on-surface tw-p-4 tw-rounded-ui-xs tw-text-ui-xs tw-overflow-x-auto tw-m-0 tw-font-mono tw-leading-relaxed tw-border tw-border-slate-800 dark:tw-border-outline-variant/60 tw-max-h-[500px] tw-overflow-y-auto">{{ $jsonPretty }}</pre>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -274,6 +765,7 @@
                                 <span class="tw-font-semibold tw-text-ui-xs tw-text-primary">{{ match($doc->document_type) {
                                     'SURAT_PERNYATAAN_REKENING' => __('local_procurement.registration.doc_bank_declaration'),
                                     'SKD' => __('local_procurement.registration.doc_domicile'),
+                                    'COMPANY_PROFILE' => __('local_procurement.registration.doc_company_profile'),
                                     'OTHER' => __('local_procurement.registration.doc_other'),
                                     default => $doc->document_type,
                                 } }}</span>

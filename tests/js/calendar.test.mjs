@@ -42,3 +42,35 @@ test('calendar presets remain correct across month and year boundaries', () => {
         id: 'last-3-months', label: 'Last 3 months', start: '2025-11', end: '2026-01',
     });
 });
+
+test('every caller of bootAdasiCalendars waits for the single in-flight engine load', async () => {
+    // Regression: app.js starts the engine import at startup, then the price comparison page calls
+    // AdasiCalendar.initialize() on DOMContentLoaded while that import is still pending. initializeAdasiCalendars()
+    // retries through `bootAdasiCalendars().then(...)`, so a second boot call must not settle before the first.
+    // It used to return an already-resolved promise, so the retry re-entered itself on every microtask, the import
+    // could never complete, and the page loaded forever.
+    const { spawnSync } = await import('node:child_process');
+    const calendarUrl = new URL('../../resources/js/calendar.js', import.meta.url).href;
+    // calendar.js uses extensionless Vite-style imports, which plain Node cannot resolve.
+    const hook = "export async function resolve(specifier, context, next) { try { return await next(specifier, context); } catch (error) { if (specifier.startsWith('.') && !/\\.[a-z]+$/.test(specifier)) return next(specifier + '.js', context); throw error; } }";
+    const script = `
+        import { register } from 'node:module';
+        register('data:text/javascript,' + encodeURIComponent(${JSON.stringify(hook)}));
+        globalThis.window = globalThis;
+        window.matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {} });
+        globalThis.document = { querySelectorAll: () => [] };
+        const { bootAdasiCalendars } = await import(${JSON.stringify(calendarUrl)});
+        const order = [];
+        const first = bootAdasiCalendars();
+        const second = bootAdasiCalendars();
+        first.then(() => order.push('first'));
+        second.then(() => order.push('second'));
+        await Promise.all([first, second]);
+        console.log(order.join(','));
+    `;
+    const result = spawnSync(process.execPath, ['--input-type=module', '--eval', script], { encoding: 'utf8', timeout: 5000, killSignal: 'SIGKILL' });
+
+    assert.equal(result.error?.code, undefined, 'boot must not spin forever: ' + (result.error?.message ?? ''));
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(result.stdout.trim(), 'first,second');
+});

@@ -9,8 +9,8 @@ use App\Models\SupplierMasterDocument;
 use App\Models\SupplierScope;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Tests\Support\NativeFileFixtures;
 use Tests\TestCase;
 
 class SupplierVendorProfileTest extends TestCase
@@ -110,7 +110,7 @@ class SupplierVendorProfileTest extends TestCase
 
         $user = $this->createLocalSupplier();
 
-        $file = UploadedFile::fake()->create('sppkp.pdf', 500, 'application/pdf');
+        $file = NativeFileFixtures::upload('sppkp.pdf', 500);
 
         $response = $this->actingAs($user)->post(route('local-supplier.vendor-profile.documents.upload'), [
             'document_type' => 'SPPKP',

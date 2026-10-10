@@ -18,8 +18,14 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): View
     {
+        $user = $request->user();
+        $supplierScopes = $user->isSupplier()
+            ? array_values(array_intersect(['import', 'local'], $user->supplierScopes()->pluck('scope')->all()))
+            : [];
+
         return view('profile.edit', [
-            'user' => $request->user(),
+            'user' => $user,
+            'supplierScopes' => $supplierScopes,
         ]);
     }
 
@@ -42,13 +48,7 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
-
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
-        }
-
-        $request->user()->save();
+        $request->user()->update($request->safe()->only('name'));
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }

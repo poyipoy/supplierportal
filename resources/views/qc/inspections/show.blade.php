@@ -251,7 +251,7 @@
             {{-- Allow QC inspector to upload additional photos --}}
             @if(auth()->user()->role === 'qc')
                 <div class="border-top mt-4 pt-3">
-                    <form action="{{ route('qc.inspections.attachments.store', $inspection) }}" method="POST" enctype="multipart/form-data">
+                    <form action="{{ route('qc.inspections.attachments.store', $inspection) }}" method="POST" enctype="multipart/form-data" data-async-submit>
                         @csrf
                         <label class="tw-text-on-surface tw-text-ui-xs fw-semibold mb-1" for="inspection-attachments">{{ __('qc.copy.add_supplemental_ng_evidence_photos') }}</label>
                         <div class="d-flex flex-column flex-sm-row gap-2">

@@ -16,6 +16,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css">
     <link rel="stylesheet" href="{{ asset('assets/css/adasi-alert.css') }}">
     @include('partials.i18n-bootstrap')
+    @include('partials.loader-logo')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <style>
@@ -212,6 +213,91 @@
             text-transform: uppercase;
             color: var(--md-on-surface-variant);
             margin-top: 0.25rem;
+        }
+        @media (min-width: 768px) {
+            .reg-tax-grid {
+                display: grid !important;
+                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                grid-template-rows: auto auto auto !important;
+                column-gap: 1rem !important;
+                row-gap: 0.375rem !important;
+                align-items: start !important;
+            }
+            .reg-tax-col {
+                display: grid !important;
+                grid-row: span 3 !important;
+                grid-template-rows: subgrid !important;
+                row-gap: 0.375rem !important;
+            }
+            .reg-tax-header-sync {
+                min-height: 48px !important;
+                display: flex !important;
+                align-items: flex-start !important;
+            }
+        }
+
+        /* Language switcher toggle track & pills */
+        .lang-toggle-track {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem;
+            border-radius: var(--md-shape-full);
+            background: var(--md-surface-container-high);
+            border: 1px solid var(--md-outline-strong);
+            box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+        }
+        .lang-pill-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.375rem;
+            padding: 0.375rem 0.75rem;
+            min-height: 2rem;
+            border-radius: var(--md-shape-full);
+            font-size: var(--ui-font-size-xs);
+            font-weight: 700;
+            border: 1px solid transparent;
+            color: var(--md-on-surface-variant);
+            background: transparent;
+            cursor: pointer;
+            outline: none;
+            transition-property: background-color, color, border-color, box-shadow, transform;
+            transition-duration: 160ms;
+            transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .lang-pill-btn.is-active {
+            background: var(--md-surface) !important;
+            color: var(--md-primary) !important;
+            border-color: var(--md-outline) !important;
+            box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.1), 0 1px 2px -1px rgba(15, 23, 42, 0.08) !important;
+            cursor: default;
+        }
+        .lang-pill-btn:not(.is-active):hover {
+            color: var(--md-on-surface);
+            background: rgba(255, 255, 255, 0.65);
+            border-color: rgba(203, 213, 225, 0.4);
+        }
+        .lang-pill-btn:active {
+            transform: scale(0.96);
+        }
+        .lang-flag-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 14px;
+            border-radius: 2.5px;
+            overflow: hidden;
+            box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
+            flex-shrink: 0;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .lang-pill-btn {
+                transition: none !important;
+                transform: none !important;
+            }
+            .lang-pill-btn:active {
+                transform: none !important;
+            }
         }
     </style>
 </head>

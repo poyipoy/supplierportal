@@ -4,10 +4,10 @@ return [
     // Exact dashboard middleware audiences: admin has no blanket bypass.
     'audiences' => [
         'admin' => ['route' => 'admin.dashboard', 'roles' => ['admin'], 'context' => null, 'widgets' => [
-            'admin.rates' => ['slot' => 'rates', 'label' => 'dashboard.widgets.exchange_rate_administration', 'required' => true],
-            'admin.notifications' => ['slot' => 'notifications', 'label' => 'dashboard.widgets.recent_administrative_activity', 'required' => false],
-            'admin.shortcuts' => ['slot' => 'shortcuts', 'label' => 'dashboard.widgets.administration_shortcuts', 'required' => false],
             'admin.summary' => ['slot' => 'summary', 'label' => 'dashboard.widgets.operational_summary', 'required' => false],
+            'admin.rates' => ['slot' => 'rates', 'label' => 'dashboard.widgets.exchange_rate_administration', 'required' => true],
+            'admin.shortcuts' => ['slot' => 'shortcuts', 'label' => 'dashboard.widgets.administration_shortcuts', 'required' => false],
+            'admin.notifications' => ['slot' => 'notifications', 'label' => 'dashboard.widgets.recent_administrative_activity', 'required' => false],
         ]],
         'purchasing' => ['route' => 'purchasing.dashboard', 'roles' => ['purchasing'], 'context' => null, 'widgets' => [
             'purchasing.exceptions' => ['slot' => 'exceptions', 'label' => 'dashboard.widgets.operational_action_queue', 'required' => true],
@@ -38,8 +38,8 @@ return [
             'ga.claims' => ['slot' => 'claims', 'label' => 'dashboard.widgets.recent_ga_claims', 'required' => false],
         ]],
         'supplier.import' => ['route' => 'supplier.dashboard', 'roles' => ['supplier'], 'context' => 'import', 'widgets' => [
-            'supplier.import.quotations' => ['slot' => 'quotations', 'label' => 'dashboard.widgets.outstanding_quotations', 'required' => true],
             'supplier.import.metrics' => ['slot' => 'metrics', 'label' => 'dashboard.widgets.supplier_metrics', 'required' => false],
+            'supplier.import.quotations' => ['slot' => 'quotations', 'label' => 'dashboard.widgets.outstanding_quotations', 'required' => true],
             'supplier.import.orders' => ['slot' => 'orders', 'label' => 'dashboard.widgets.purchase_orders_and_claim_responses', 'required' => true],
             'supplier.import.updates' => ['slot' => 'updates', 'label' => 'dashboard.widgets.announcements_and_purchasing_support', 'required' => false],
         ]],

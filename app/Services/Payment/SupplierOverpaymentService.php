@@ -4,6 +4,7 @@ namespace App\Services\Payment;
 
 use App\Models\SupplierOverpaymentRefund;
 use App\Models\User;
+use App\Services\FileSecurity\FileInspectionService;
 use App\Services\LocalInvoice\InvoiceNotificationService;
 use App\Services\LocalInvoice\LocalFinanceAuditService;
 use Illuminate\Http\UploadedFile;
@@ -31,22 +32,10 @@ class SupplierOverpaymentService
         }
         validator($data, ['refund_date' => ['required', 'date_format:Y-m-d'], 'notes' => ['nullable', 'string', 'max:1000']])->validate();
         $path = 'attachments/'.now()->format('Y/m').'/'.$proof->hashName(); // biz-time:ignore storage path
-        $stream = fopen($proof->getPathname(), 'r');
-        if ($stream === false) {
-            throw ValidationException::withMessages(['proof' => __('finance.validation.proof_read')]);
-        }
-        try {
-            if (! Storage::disk('private')->put($path, $stream)) {
-                throw ValidationException::withMessages(['proof' => __('finance.validation.proof_store')]);
-            }
-        } finally {
-            if (is_resource($stream)) {
-                fclose($stream);
-            }
-        }
+        $stored = app(FileInspectionService::class)->storeUpload($proof, 'refund', $path, 'proof');
 
         try {
-            return DB::transaction(function () use ($refund, $data, $proof, $actor, $path) {
+            return DB::transaction(function () use ($refund, $data, $stored, $actor) {
                 $locked = SupplierOverpaymentRefund::whereKey($refund->id)->lockForUpdate()->firstOrFail();
                 if ($locked->status !== SupplierOverpaymentRefund::STATUS_OPEN) {
                     throw ValidationException::withMessages(['refund' => __('finance.validation.already_settled')]);
@@ -57,8 +46,8 @@ class SupplierOverpaymentService
                 $locked->update(['status' => SupplierOverpaymentRefund::STATUS_SETTLED, 'refund_amount' => $data['refund_amount'],
                     'refund_date' => $data['refund_date'],
                     'notes' => $data['notes'] ?? null, 'settled_by' => $actor->id, 'settled_at' => now()]);
-                $locked->attachments()->create(['file_path' => $path, 'file_name' => $proof->getClientOriginalName(),
-                    'file_type' => $proof->getMimeType(), 'uploaded_by' => $actor->id]);
+                $locked->attachments()->create(['file_path' => $stored['file_path'], 'file_name' => $stored['file_name'],
+                    'file_type' => $stored['file_type'], 'file_inspection_id' => $stored['file_inspection_id'], 'uploaded_by' => $actor->id]);
                 $this->audit->record($locked, 'overpayment_refunded', $actor, ['status' => SupplierOverpaymentRefund::STATUS_OPEN], $locked->fresh()->toArray());
 
                 $invoice = $locked->invoice;
