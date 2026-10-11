@@ -26,10 +26,10 @@ use App\Services\Payment\LocalInvoicePaymentService;
 use App\Services\Payment\LocalInvoiceVoucherService;
 use App\Services\Payment\SupplierOverpaymentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use Tests\Support\NativeFileFixtures;
 use Tests\TestCase;
 
 class LocalSupplierWholeGrSettlementTest extends TestCase
@@ -67,7 +67,7 @@ class LocalSupplierWholeGrSettlementTest extends TestCase
             'invoice_number' => 'INV-WHOLE-001', 'invoice_date' => '2026-09-13',
             'local_purchase_order_id' => $this->po->id, 'goods_receipt_ids' => [$this->gr1->id, $this->gr2->id],
             'invoice_amount' => '300.00', 'tax_amount' => '0.00', 'ppn_scheme' => '0%',
-        ], $overrides), ['invoice' => UploadedFile::fake()->create('invoice.pdf', 10, 'application/pdf')]);
+        ], $overrides), ['invoice' => NativeFileFixtures::upload('invoice.pdf', 10)]);
     }
 
     public function test_invoice_requires_one_po_and_exact_whole_gr_total(): void
@@ -119,7 +119,7 @@ class LocalSupplierWholeGrSettlementTest extends TestCase
             'invoice_amount' => '300.00',
             'tax_amount' => '0.00',
             'ppn_scheme' => '0%',
-        ], ['invoice' => UploadedFile::fake()->create('invoice-revision.pdf', 10, 'application/pdf')]);
+        ], ['invoice' => NativeFileFixtures::upload('invoice-revision.pdf', 10)]);
     }
 
     public function test_gr_cannot_be_cross_supplier_or_reused(): void
@@ -129,7 +129,7 @@ class LocalSupplierWholeGrSettlementTest extends TestCase
         Supplier::create(['user_id' => $other->id, 'company_name' => 'PT Other', 'category' => 'Parts', 'payment_term_days' => 30]);
 
         try {
-            app(InvoiceSubmissionService::class)->submit($other, ['invoice_number' => 'INV-CROSS', 'invoice_date' => '2026-09-13', 'local_purchase_order_id' => $this->po->id, 'goods_receipt_ids' => [$this->gr1->id], 'invoice_amount' => '100.00', 'tax_amount' => '0.00', 'ppn_scheme' => '0%'], ['invoice' => UploadedFile::fake()->create('invoice.pdf', 10, 'application/pdf')]);
+            app(InvoiceSubmissionService::class)->submit($other, ['invoice_number' => 'INV-CROSS', 'invoice_date' => '2026-09-13', 'local_purchase_order_id' => $this->po->id, 'goods_receipt_ids' => [$this->gr1->id], 'invoice_amount' => '100.00', 'tax_amount' => '0.00', 'ppn_scheme' => '0%'], ['invoice' => NativeFileFixtures::upload('invoice.pdf', 10)]);
             $this->fail('Cross-supplier PO should be rejected.');
         } catch (ValidationException) {
             $this->assertDatabaseCount('local_invoices', 0);
@@ -351,13 +351,13 @@ class LocalSupplierWholeGrSettlementTest extends TestCase
         $supplierShow->assertSee(__('local_invoice.labels.payment_history', [], 'en'));
 
         try {
-            app(SupplierOverpaymentService::class)->settle($refund, ['refund_amount' => '0.50', 'refund_date' => '2026-09-16'], UploadedFile::fake()->create('proof.pdf', 10, 'application/pdf'), $this->finance);
+            app(SupplierOverpaymentService::class)->settle($refund, ['refund_amount' => '0.50', 'refund_date' => '2026-09-16'], NativeFileFixtures::upload('proof.pdf', 10), $this->finance);
             $this->fail('A partial refund must be rejected.');
         } catch (ValidationException) {
             $this->assertSame(SupplierOverpaymentRefund::STATUS_OPEN, $refund->fresh()->status);
         }
 
-        $settled = app(SupplierOverpaymentService::class)->settle($refund, ['refund_amount' => '1.00', 'refund_date' => '2026-09-16'], UploadedFile::fake()->create('proof.pdf', 10, 'application/pdf'), $this->finance);
+        $settled = app(SupplierOverpaymentService::class)->settle($refund, ['refund_amount' => '1.00', 'refund_date' => '2026-09-16'], NativeFileFixtures::upload('proof.pdf', 10), $this->finance);
         $attachment = $settled->attachments->first();
         $this->assertSame(SupplierOverpaymentRefund::STATUS_SETTLED, $settled->status);
         $this->assertNotNull($attachment);
@@ -367,7 +367,7 @@ class LocalSupplierWholeGrSettlementTest extends TestCase
         $this->assertFalse($purchasing->can('view', $attachment));
 
         $this->expectException(ValidationException::class);
-        app(SupplierOverpaymentService::class)->settle($settled, ['refund_amount' => '1.00', 'refund_date' => '2026-09-17'], UploadedFile::fake()->create('proof.pdf', 10, 'application/pdf'), $this->finance);
+        app(SupplierOverpaymentService::class)->settle($settled, ['refund_amount' => '1.00', 'refund_date' => '2026-09-17'], NativeFileFixtures::upload('proof.pdf', 10), $this->finance);
     }
 
     public function test_invoice_with_ten_goods_receipts_does_not_truncate_references(): void
@@ -404,7 +404,7 @@ class LocalSupplierWholeGrSettlementTest extends TestCase
             'invoice_amount' => '1000.00',
             'tax_amount' => '0.00',
             'ppn_scheme' => '0%',
-        ], ['invoice' => UploadedFile::fake()->create('invoice.pdf', 10, 'application/pdf')]);
+        ], ['invoice' => NativeFileFixtures::upload('invoice.pdf', 10)]);
 
         $this->assertSame($expectedRefString, $invoice->fresh()->internal_gr_reference);
         $this->assertSame(10, $invoice->goodsReceiptHistories()->where('state', 'RESERVED')->count());
@@ -430,7 +430,7 @@ class LocalSupplierWholeGrSettlementTest extends TestCase
             'invoice_amount' => '150.00',
             'tax_amount' => '0.00',
             'ppn_scheme' => '0%',
-        ], ['invoice' => UploadedFile::fake()->create('invoice.pdf', 10, 'application/pdf')]);
+        ], ['invoice' => NativeFileFixtures::upload('invoice.pdf', 10)]);
     }
 
     public function test_invoice_retains_quantity_and_uom_snapshot_after_master_change(): void

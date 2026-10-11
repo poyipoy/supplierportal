@@ -9,8 +9,8 @@ use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Tests\Support\NativeFileFixtures;
 use Tests\TestCase;
 
 class SupplierMtcBatchCopyTest extends TestCase
@@ -45,7 +45,7 @@ class SupplierMtcBatchCopyTest extends TestCase
         $item2 = $pr->items[1];
 
         // 1. Initial draft save with MTC file on Item 1
-        $file = UploadedFile::fake()->create('mill_test_cert.pdf', 500, 'application/pdf');
+        $file = NativeFileFixtures::upload('mill_test_cert.pdf', 500);
 
         $payload = [
             'action' => 'draft',
@@ -159,7 +159,7 @@ class SupplierMtcBatchCopyTest extends TestCase
         $item1 = $pr->items[0];
         $item2 = $pr->items[1];
 
-        $file = UploadedFile::fake()->create('source_cert.pdf', 300, 'application/pdf');
+        $file = NativeFileFixtures::upload('source_cert.pdf', 300);
 
         // Initial save with file on item 1
         $this->actingAs($this->supplier)
@@ -228,7 +228,7 @@ class SupplierMtcBatchCopyTest extends TestCase
         $targetFilePath = $targetAtt->file_path;
 
         // Now replace item 1's file with a NEW file
-        $newFile = UploadedFile::fake()->create('replacement_cert.pdf', 400, 'application/pdf');
+        $newFile = NativeFileFixtures::upload('replacement_cert.pdf', 400);
         $this->actingAs($this->supplier)
             ->post(route('supplier.quotations.store', $pr), [
                 'action' => 'draft',
@@ -387,7 +387,7 @@ class SupplierMtcBatchCopyTest extends TestCase
         ]);
         $prItem = $pr->items[0];
 
-        $file = UploadedFile::fake()->create('to_delete.pdf', 200, 'application/pdf');
+        $file = NativeFileFixtures::upload('to_delete.pdf', 200);
 
         $this->actingAs($this->supplier)
             ->post(route('supplier.quotations.store', $pr), [

@@ -195,6 +195,8 @@ return [
         'term_configured' => 'A Local payment term must be configured by Admin.',
         'invoice_duplicate' => 'This invoice number has already been submitted.',
         'authoritative_selection' => 'Select the authoritative Local Purchase Order and its whole Goods Receipts.',
+        'dpp_positive' => 'The invoice amount (DPP) must be greater than zero.',
+        'tax_consistency' => 'VAT must match :scheme of the invoice amount. Expected :expected.',
         'resubmit_revision' => 'Only an invoice needing revision can be resubmitted, with its original invoice number.',
         'resubmit_selection' => 'Authoritative Local Supplier invoices must be resubmitted with their PO and whole GR selection.',
         'verify_status' => 'Cannot verify: invoice status is [:status], expected UNDER_VERIFICATION.',

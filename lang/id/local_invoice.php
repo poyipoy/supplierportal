@@ -195,6 +195,8 @@ return [
         'term_configured' => 'Termin pembayaran lokal wajib ditetapkan oleh Admin.',
         'invoice_duplicate' => 'Nomor invoice ini sudah pernah diajukan.',
         'authoritative_selection' => 'Pilih Pesanan Pembelian lokal otoritatif beserta GR utuh.',
+        'dpp_positive' => 'Nilai invoice (DPP) harus lebih besar dari nol.',
+        'tax_consistency' => 'PPN harus sesuai :scheme dari nilai invoice. Seharusnya :expected.',
         'resubmit_revision' => 'Hanya invoice yang memerlukan revisi yang dapat diajukan ulang dengan nomor invoice asli.',
         'resubmit_selection' => 'Invoice supplier lokal otoritatif wajib diajukan ulang beserta PO dan pilihan GR utuh.',
         'verify_status' => 'Verifikasi tidak dapat dilakukan: status invoice [:status], wajib UNDER_VERIFICATION.',

@@ -8,9 +8,9 @@ use App\Models\User;
 use App\Services\Ga\GaClaimService;
 use App\Services\Ga\GaVerificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use Tests\Support\NativeFileFixtures;
 use Tests\TestCase;
 
 class GaClaimCanonicalizationTest extends TestCase
@@ -49,7 +49,7 @@ class GaClaimCanonicalizationTest extends TestCase
         $ga = User::factory()->create(['role' => 'ga']);
         $service = app(GaClaimService::class);
         $claim = $service->submitClaim($ga, $this->data(GaClaim::TYPE_ENTERTAINMENT), [
-            'supporting' => UploadedFile::fake()->create('receipt.pdf', 20, 'application/pdf'),
+            'supporting' => NativeFileFixtures::upload('receipt.pdf', 20),
         ]);
         $this->assertSame('supporting', $claim->documents->sole()->document_type);
         Storage::disk('private')->assertExists($claim->documents->sole()->file_path);
@@ -81,7 +81,7 @@ class GaClaimCanonicalizationTest extends TestCase
         }
         $this->assertSame(GaClaim::STATUS_NEED_REVISION, $claim->fresh()->status);
         $revised = $service->resubmitClaim($ga, $claim, $data, [
-            'supporting' => UploadedFile::fake()->create('revised.pdf', 20, 'application/pdf'),
+            'supporting' => NativeFileFixtures::upload('revised.pdf', 20),
         ]);
         $this->assertSame(2, $revised->documents->sole()->revision_number);
         $this->assertSame(GaClaim::STATUS_SUBMITTED, $revised->status);

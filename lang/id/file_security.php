@@ -6,6 +6,7 @@ return [
         'read' => 'Berkas tidak dapat dibaca hingga selesai.',
         'unsupported' => 'Format, enkripsi, atau metode kompresi arsip tidak didukung.',
         'budget' => 'Berkas melampaui batas sumber daya keamanan.',
+        'empty' => 'Berkas kosong atau ukurannya tidak dapat dibaca. Pilih berkas yang berisi data.',
         'archive_storage' => 'Ukuran PDF setelah ZIP diekstrak melampaui batas penyimpanan yang diizinkan. Kurangi ukuran atau jumlah PDF, lalu unggah kembali. Tidak ada dokumen PO baru yang diterbitkan.',
         'name' => 'Arsip berisi nama berkas yang tidak aman.',
         'special' => 'Link dan entri khusus tidak diperbolehkan dalam arsip.',

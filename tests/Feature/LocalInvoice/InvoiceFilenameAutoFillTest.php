@@ -10,9 +10,9 @@ use App\Models\SupplierScope;
 use App\Models\User;
 use App\Services\LocalInvoice\LocalProcurementMasterService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
+use Tests\Support\NativeFileFixtures;
 use Tests\TestCase;
 
 class InvoiceFilenameAutoFillTest extends TestCase
@@ -76,8 +76,8 @@ class InvoiceFilenameAutoFillTest extends TestCase
 
     public function test_invoice_number_derived_from_uploaded_filename(): void
     {
-        $file = UploadedFile::fake()->create('INV-2026-09-001.pdf', 100, 'application/pdf');
-        $taxFile = UploadedFile::fake()->create('0100002612345678.pdf', 100, 'application/pdf');
+        $file = NativeFileFixtures::upload('INV-2026-09-001.pdf', 100);
+        $taxFile = NativeFileFixtures::upload('0100002612345678.pdf', 100);
 
         $response = $this->actingAs($this->supplier)->post(route('local-supplier.invoices.store'), array_merge(
             $this->validPayload(),
@@ -97,8 +97,8 @@ class InvoiceFilenameAutoFillTest extends TestCase
 
     public function test_tax_invoice_number_derived_from_17_digit_coretax_filename(): void
     {
-        $file = UploadedFile::fake()->create('INV-CORETAX-001.pdf', 100, 'application/pdf');
-        $taxFile = UploadedFile::fake()->create('01002600000000001.pdf', 100, 'application/pdf');
+        $file = NativeFileFixtures::upload('INV-CORETAX-001.pdf', 100);
+        $taxFile = NativeFileFixtures::upload('01002600000000001.pdf', 100);
 
         $response = $this->actingAs($this->supplier)->post(route('local-supplier.invoices.store'), array_merge(
             $this->validPayload(),
@@ -116,10 +116,10 @@ class InvoiceFilenameAutoFillTest extends TestCase
     public function test_conflicting_multiple_invoice_files_are_rejected(): void
     {
         $files = [
-            UploadedFile::fake()->create('INV-AAA.pdf', 100, 'application/pdf'),
-            UploadedFile::fake()->create('INV-BBB.pdf', 100, 'application/pdf'),
+            NativeFileFixtures::upload('INV-AAA.pdf', 100),
+            NativeFileFixtures::upload('INV-BBB.pdf', 100),
         ];
-        $taxFile = UploadedFile::fake()->create('0100002612345678.pdf', 100, 'application/pdf');
+        $taxFile = NativeFileFixtures::upload('0100002612345678.pdf', 100);
 
         $response = $this->actingAs($this->supplier)->post(route('local-supplier.invoices.store'), array_merge(
             $this->validPayload(),
@@ -134,10 +134,10 @@ class InvoiceFilenameAutoFillTest extends TestCase
 
     public function test_conflicting_multiple_tax_invoice_files_are_rejected(): void
     {
-        $file = UploadedFile::fake()->create('INV-VALID-001.pdf', 100, 'application/pdf');
+        $file = NativeFileFixtures::upload('INV-VALID-001.pdf', 100);
         $taxFiles = [
-            UploadedFile::fake()->create('0100002612345678.pdf', 100, 'application/pdf'),
-            UploadedFile::fake()->create('0100002612345679.pdf', 100, 'application/pdf'),
+            NativeFileFixtures::upload('0100002612345678.pdf', 100),
+            NativeFileFixtures::upload('0100002612345679.pdf', 100),
         ];
 
         $response = $this->actingAs($this->supplier)->post(route('local-supplier.invoices.store'), array_merge(
@@ -153,8 +153,8 @@ class InvoiceFilenameAutoFillTest extends TestCase
 
     public function test_tampered_browser_invoice_number_is_rejected(): void
     {
-        $file = UploadedFile::fake()->create('INV-HONEST.pdf', 100, 'application/pdf');
-        $taxFile = UploadedFile::fake()->create('0100002612345678.pdf', 100, 'application/pdf');
+        $file = NativeFileFixtures::upload('INV-HONEST.pdf', 100);
+        $taxFile = NativeFileFixtures::upload('0100002612345678.pdf', 100);
 
         $response = $this->actingAs($this->supplier)->post(route('local-supplier.invoices.store'), array_merge(
             $this->validPayload([
@@ -171,8 +171,8 @@ class InvoiceFilenameAutoFillTest extends TestCase
 
     public function test_tampered_browser_tax_number_is_rejected(): void
     {
-        $file = UploadedFile::fake()->create('INV-HONEST-002.pdf', 100, 'application/pdf');
-        $taxFile = UploadedFile::fake()->create('0100002612345678.pdf', 100, 'application/pdf');
+        $file = NativeFileFixtures::upload('INV-HONEST-002.pdf', 100);
+        $taxFile = NativeFileFixtures::upload('0100002612345678.pdf', 100);
 
         $response = $this->actingAs($this->supplier)->post(route('local-supplier.invoices.store'), array_merge(
             $this->validPayload([
@@ -190,8 +190,8 @@ class InvoiceFilenameAutoFillTest extends TestCase
     public function test_uniqueness_validation_enforced_on_derived_invoice_number(): void
     {
         // 1. Create first invoice
-        $file1 = UploadedFile::fake()->create('INV-UNIQUE-001.pdf', 100, 'application/pdf');
-        $taxFile1 = UploadedFile::fake()->create('0100002612345678.pdf', 100, 'application/pdf');
+        $file1 = NativeFileFixtures::upload('INV-UNIQUE-001.pdf', 100);
+        $taxFile1 = NativeFileFixtures::upload('0100002612345678.pdf', 100);
         $this->actingAs($this->supplier)->post(route('local-supplier.invoices.store'), array_merge(
             $this->validPayload(),
             ['invoice' => $file1, 'tax_invoice' => $taxFile1]
@@ -205,8 +205,8 @@ class InvoiceFilenameAutoFillTest extends TestCase
             'uom' => 'pcs', 'qty' => '5.0',
         ]);
 
-        $file2 = UploadedFile::fake()->create('INV-UNIQUE-001.pdf', 100, 'application/pdf');
-        $taxFile2 = UploadedFile::fake()->create('0100002612345679.pdf', 100, 'application/pdf');
+        $file2 = NativeFileFixtures::upload('INV-UNIQUE-001.pdf', 100);
+        $taxFile2 = NativeFileFixtures::upload('0100002612345679.pdf', 100);
         $response = $this->actingAs($this->supplier)->post(route('local-supplier.invoices.store'), array_merge(
             $this->validPayload(['goods_receipt_ids' => [$gr2->id]]),
             ['invoice' => $file2, 'tax_invoice' => $taxFile2]
@@ -218,8 +218,8 @@ class InvoiceFilenameAutoFillTest extends TestCase
     public function test_resubmission_rejects_uploaded_file_with_different_invoice_number(): void
     {
         // Create initial invoice
-        $file = UploadedFile::fake()->create('INV-RESUBMIT-001.pdf', 100, 'application/pdf');
-        $taxFile = UploadedFile::fake()->create('0100002612345678.pdf', 100, 'application/pdf');
+        $file = NativeFileFixtures::upload('INV-RESUBMIT-001.pdf', 100);
+        $taxFile = NativeFileFixtures::upload('0100002612345678.pdf', 100);
         $this->actingAs($this->supplier)->post(route('local-supplier.invoices.store'), array_merge(
             $this->validPayload(),
             ['invoice' => $file, 'tax_invoice' => $taxFile]
@@ -239,7 +239,7 @@ class InvoiceFilenameAutoFillTest extends TestCase
         ]);
 
         // Attempt resubmitting with a DIFFERENT invoice filename
-        $newFile = UploadedFile::fake()->create('INV-RESUBMIT-DIFFERENT.pdf', 100, 'application/pdf');
+        $newFile = NativeFileFixtures::upload('INV-RESUBMIT-DIFFERENT.pdf', 100);
         $response = $this->actingAs($this->supplier)->post(route('local-supplier.invoices.resubmit', $invoice), array_merge(
             $this->validPayload(),
             [

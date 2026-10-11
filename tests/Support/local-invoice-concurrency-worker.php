@@ -26,7 +26,13 @@ try {
         usleep(1000);
     }
     if ($argv[3] === 'submit') {
-        app(InvoiceSubmissionService::class)->submit($actor, ['invoice_number' => $argv[2], 'invoice_date' => today()->format('Y-m-d'), 'po_source' => 'MANUAL', 'manual_po_number' => 'Concurrent manual PO', 'manual_gr_reference' => 'GR-CONCURRENT-001', 'po_number' => 'Concurrent manual PO', 'invoice_amount' => '1.00', 'tax_amount' => '0.00'], ['invoice' => UploadedFile::fake()->image('invoice.png'), 'tax_invoice' => UploadedFile::fake()->image('tax.png')]);
+        // A new invoice must bind to an authoritative Local PO plus a whole GR.
+        // Namespace the numbers per supplier so parallel workers never collide.
+        $concurrentOperator = \App\Models\User::factory()->create(['role' => 'finance']);
+        $concurrentMasters = app(\App\Services\LocalInvoice\LocalProcurementMasterService::class);
+        $concurrentPo = $concurrentMasters->createPurchaseOrder($concurrentOperator, ['supplier_id' => $actor->id, 'po_number' => 'PO-CONC-'.$actor->id, 'po_date' => '2026-09-01', 'total_amount' => '1000.00']);
+        $concurrentGr = $concurrentMasters->createGoodsReceipt($concurrentOperator, $concurrentPo, ['gr_number' => 'GR-CONC-'.$actor->id, 'gr_date' => '2026-09-02', 'uom' => 'pcs', 'qty' => 1.0]);
+        app(InvoiceSubmissionService::class)->submit($actor, ['invoice_number' => $argv[2], 'invoice_date' => today()->format('Y-m-d'), 'local_purchase_order_id' => $concurrentPo->id, 'goods_receipt_ids' => [$concurrentGr->id], 'invoice_amount' => '1.00', 'tax_amount' => '0.00'], ['invoice' => UploadedFile::fake()->image('invoice.png'), 'tax_invoice' => UploadedFile::fake()->image('tax.png')]);
     } else {
         $invoice = LocalInvoice::findOrFail($argv[2]);
         app(InvoiceWorkflowService::class)->act($actor, $invoice, $argv[3], ['notes' => 'Concurrent action']);

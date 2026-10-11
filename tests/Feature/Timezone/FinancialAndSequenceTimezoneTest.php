@@ -18,11 +18,37 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
+use Tests\Support\NativeFileFixtures;
+use App\Services\LocalInvoice\LocalProcurementMasterService;
 use Tests\TestCase;
 
 class FinancialAndSequenceTimezoneTest extends TestCase
 {
     use RefreshDatabase;
+
+    private static int $authSeq = 0;
+
+    /** A fresh authoritative Local PO plus one whole GR for one submission. */
+    private function authoritativeRef(User $owner): array
+    {
+        $suffix = str_pad((string) ++self::$authSeq, 3, '0', STR_PAD_LEFT);
+        $operator = User::factory()->create(['role' => 'finance']);
+        $masters = app(LocalProcurementMasterService::class);
+        $po = $masters->createPurchaseOrder($operator, [
+            'supplier_id' => $owner->id,
+            'po_number' => 'PO-TZ-'.$suffix,
+            'po_date' => '2026-09-01',
+            'total_amount' => '100000000.00',
+        ]);
+        $gr = $masters->createGoodsReceipt($operator, $po, [
+            'gr_number' => 'GR-TZ-'.$suffix,
+            'gr_date' => '2026-09-02',
+            'uom' => 'pcs',
+            'qty' => 10.0,
+        ]);
+
+        return ['local_purchase_order_id' => $po->id, 'goods_receipt_ids' => [$gr->id]];
+    }
 
     /**
      * T1: 2026-10-13 23:30 UTC = Rabu 14 Okt 2026 06:30 WIB.
@@ -53,7 +79,7 @@ class FinancialAndSequenceTimezoneTest extends TestCase
             'submission_number' => 'SUB-2026-00001',
             'invoice_date' => '2026-10-14',
             'po_source' => 'MANUAL',
-            'po_number' => 'PO-MANUAL-T1',
+            'po_number' => 'PO-TZ-DIRECT-001',
             'status' => LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT,
             'currency' => 'IDR',
             'invoice_amount' => 10000000,
@@ -107,14 +133,12 @@ class FinancialAndSequenceTimezoneTest extends TestCase
             'invoice_amount' => 5000000,
             'tax_amount' => 550000,
             'ppn_type' => '11%',
-            'po_source' => 'MANUAL',
-            'manual_po_number' => 'PO-MANUAL-T4',
-            'manual_gr_reference' => 'GR-MANUAL-T4',
+            ...$this->authoritativeRef($supplier),
             'scheduled_physical_delivery_date' => '2027-01-06',
         ], [
-            'invoice' => UploadedFile::fake()->createWithContent('invoice.pdf', "%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF"),
+            'invoice' => NativeFileFixtures::upload('invoice.pdf', 100),
             'tax_invoice' => UploadedFile::fake()->image('tax.png'),
-            'delivery_note' => UploadedFile::fake()->createWithContent('surat_jalan.pdf', "%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF"),
+            'delivery_note' => NativeFileFixtures::upload('surat_jalan.pdf', 100),
         ]);
 
         $this->assertStringStartsWith('SUB-2027-', $invoice->submission_number);
@@ -148,7 +172,7 @@ class FinancialAndSequenceTimezoneTest extends TestCase
             'submission_number' => 'SUB-2026-00005',
             'invoice_date' => '2026-09-30',
             'po_source' => 'MANUAL',
-            'po_number' => 'PO-MANUAL-T5',
+            'po_number' => 'PO-TZ-DIRECT-002',
             'status' => LocalInvoice::STATUS_READY_TO_PAY,
             'currency' => 'IDR',
             'invoice_amount' => 10000000,
@@ -199,14 +223,12 @@ class FinancialAndSequenceTimezoneTest extends TestCase
             'invoice_amount' => 5000000,
             'tax_amount' => 550000,
             'ppn_type' => '11%',
-            'po_source' => 'MANUAL',
-            'manual_po_number' => 'PO-MANUAL-T2',
-            'manual_gr_reference' => 'GR-MANUAL-T2',
+            ...$this->authoritativeRef($supplier),
             'scheduled_physical_delivery_date' => '2026-10-14', // Past date in WIB!
         ], [
-            'invoice' => UploadedFile::fake()->createWithContent('invoice.pdf', "%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF"),
+            'invoice' => NativeFileFixtures::upload('invoice.pdf', 100),
             'tax_invoice' => UploadedFile::fake()->image('tax.png'),
-            'delivery_note' => UploadedFile::fake()->createWithContent('surat_jalan.pdf', "%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF"),
+            'delivery_note' => NativeFileFixtures::upload('surat_jalan.pdf', 100),
         ]);
     }
 
@@ -238,14 +260,12 @@ class FinancialAndSequenceTimezoneTest extends TestCase
             'invoice_amount' => 5000000,
             'tax_amount' => 550000,
             'ppn_type' => '11%',
-            'po_source' => 'MANUAL',
-            'manual_po_number' => 'PO-MANUAL-T3',
-            'manual_gr_reference' => 'GR-MANUAL-T3',
+            ...$this->authoritativeRef($supplier),
             'scheduled_physical_delivery_date' => '2026-10-14', // Same-day Wednesday in WIB
         ], [
-            'invoice' => UploadedFile::fake()->createWithContent('invoice.pdf', "%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF"),
+            'invoice' => NativeFileFixtures::upload('invoice.pdf', 100),
             'tax_invoice' => UploadedFile::fake()->image('tax.png'),
-            'delivery_note' => UploadedFile::fake()->createWithContent('surat_jalan.pdf', "%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF"),
+            'delivery_note' => NativeFileFixtures::upload('surat_jalan.pdf', 100),
         ]);
 
         $this->assertNotNull($invoice);
@@ -292,7 +312,7 @@ class FinancialAndSequenceTimezoneTest extends TestCase
             'submission_number' => 'SUB-2026-00008',
             'invoice_date' => '2026-10-14',
             'po_source' => 'MANUAL',
-            'po_number' => 'PO-MANUAL-T8',
+            'po_number' => 'PO-TZ-DIRECT-003',
             'status' => LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT,
             'currency' => 'IDR',
             'invoice_amount' => 10000000,
@@ -332,7 +352,7 @@ class FinancialAndSequenceTimezoneTest extends TestCase
             'submission_number' => 'SUB-2026-00009',
             'invoice_date' => '2026-10-14',
             'po_source' => 'MANUAL',
-            'po_number' => 'PO-MANUAL-T9',
+            'po_number' => 'PO-TZ-DIRECT-004',
             'status' => LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT,
             'currency' => 'IDR',
             'invoice_amount' => 10000000,

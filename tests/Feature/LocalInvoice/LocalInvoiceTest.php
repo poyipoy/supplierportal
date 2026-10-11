@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Notifications\SystemNotification;
 use App\Services\LocalInvoice\InvoicePhysicalReceiptService;
 use App\Services\LocalInvoice\InvoiceSubmissionService;
+use App\Services\LocalInvoice\LocalProcurementMasterService;
 use App\Services\LocalInvoice\InvoiceVerificationService;
 use App\Services\NotificationUrlResolver;
 use App\Support\BusinessTime;
@@ -25,6 +26,7 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Tests\Support\NativeFileFixtures;
 use Tests\TestCase;
 
 class LocalInvoiceTest extends TestCase
@@ -56,24 +58,51 @@ class LocalInvoiceTest extends TestCase
         return $user;
     }
 
+    private static int $authSeq = 0;
+
+    /**
+     * A fresh authoritative Local PO plus one whole Goods Receipt, sized so the
+     * PO financial ceiling is never the thing under test. New invoices must bind
+     * to an authoritative PO, so every submission needs its own available GR.
+     */
+    private function authoritative(?User $owner = null, int $receipts = 1): array
+    {
+        $owner ??= $this->supplier;
+        $suffix = str_pad((string) ++self::$authSeq, 3, '0', STR_PAD_LEFT);
+        $masters = app(LocalProcurementMasterService::class);
+        $po = $masters->createPurchaseOrder($this->operator, [
+            'supplier_id' => $owner->id,
+            'po_number' => 'PO-AUTH-'.$suffix,
+            'po_date' => '2026-09-01',
+            'total_amount' => '999999999999999999.99',
+        ]);
+        $ids = [];
+        for ($i = 1; $i <= $receipts; $i++) {
+            $ids[] = $masters->createGoodsReceipt($this->operator, $po, [
+                'gr_number' => 'GR-AUTH-'.$suffix.'-'.$i,
+                'gr_date' => '2026-09-02',
+                'uom' => 'pcs',
+                'qty' => 10.0,
+            ])->id;
+        }
+
+        return ['local_purchase_order_id' => $po->id, 'goods_receipt_ids' => $ids];
+    }
+
     private function data(array $overrides = []): array
     {
         return array_merge([
             'invoice_number' => 'INV-001',
             'invoice_date' => '2026-09-08',
-            'po_source' => 'MANUAL',
-            'po_number' => 'PO-MANUAL-01',
-            'manual_po_number' => 'PO-MANUAL-01',
-            'manual_gr_reference' => 'GR-MANUAL-01',
             'invoice_amount' => '100000.25',
             'tax_amount' => '11000.03',
             'tax_invoice_number' => '010.000-26.12345678',
-        ], $overrides);
+        ], $this->authoritative(), $overrides);
     }
 
     private function files(): array
     {
-        return ['invoice' => UploadedFile::fake()->createWithContent('invoice.pdf', "%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF"), 'tax_invoice' => UploadedFile::fake()->image('tax.png')];
+        return ['invoice' => NativeFileFixtures::upload('invoice.pdf', 100), 'tax_invoice' => UploadedFile::fake()->image('tax.png')];
     }
 
     private function submit(): LocalInvoice
@@ -214,11 +243,18 @@ class LocalInvoiceTest extends TestCase
 
     public function test_duplicate_invoice_numbers_are_per_supplier_but_po_reference_is_not_unique(): void
     {
-        $invoice = $this->submit();
-        $this->post(route('local-supplier.invoices.store'), array_merge($this->data(), $this->files()))->assertSessionHasErrors('invoice_number');
-        $this->post(route('local-supplier.invoices.store'), array_merge($this->data(['invoice_number' => 'INV-002', 'tax_invoice_number' => '010.000-26.12345679']), $this->files()))->assertSessionHasNoErrors();
+        // One authoritative PO with two whole GRs: the same PO reference must be
+        // able to back more than one invoice, while invoice numbers stay unique
+        // per supplier.
+        $shared = $this->authoritative(receipts: 2);
+        $firstGr = ['local_purchase_order_id' => $shared['local_purchase_order_id'], 'goods_receipt_ids' => [$shared['goods_receipt_ids'][0]]];
+        $secondGr = ['local_purchase_order_id' => $shared['local_purchase_order_id'], 'goods_receipt_ids' => [$shared['goods_receipt_ids'][1]]];
+
+        $this->actingAs($this->supplier)->post(route('local-supplier.invoices.store'), array_merge($this->data($firstGr), $this->files()))->assertSessionHasNoErrors();
+        $this->post(route('local-supplier.invoices.store'), array_merge($this->data($secondGr), $this->files()))->assertSessionHasErrors('invoice_number');
+        $this->post(route('local-supplier.invoices.store'), array_merge($this->data($secondGr + ['invoice_number' => 'INV-002', 'tax_invoice_number' => '010.000-26.12345679']), $this->files()))->assertSessionHasNoErrors();
         $other = $this->supplier(['local']);
-        $this->actingAs($other)->post(route('local-supplier.invoices.store'), array_merge($this->data(), $this->files()))->assertSessionHasNoErrors();
+        $this->actingAs($other)->post(route('local-supplier.invoices.store'), array_merge($this->data($this->authoritative($other)), $this->files()))->assertSessionHasNoErrors();
         $this->assertDatabaseCount('local_invoices', 3);
         $this->assertSame(3, LocalInvoice::distinct()->count('submission_number'));
     }
@@ -308,13 +344,19 @@ class LocalInvoiceTest extends TestCase
     public function test_storage_write_failure_rolls_back_submission(): void
     {
         Storage::shouldReceive('disk')->with('private')->andReturn($disk = \Mockery::mock());
+        // Native inspection checks for a pre-existing path before it writes.
+        $disk->shouldReceive('exists')->andReturn(false);
         $disk->shouldReceive('put')->once()->andReturn(false);
-        $disk->shouldReceive('delete')->once()->andReturn(true);
+        // Compensation runs in both FileInspectionService and InvoiceDocumentService,
+        // so assert that cleanup happened rather than pinning the layer count.
+        $disk->shouldReceive('delete')->atLeast()->once()->andReturn(true);
         try {
             app(InvoiceSubmissionService::class)->submit($this->supplier, $this->data(), $this->files());
             $this->fail('Expected storage failure');
-        } catch (\RuntimeException $exception) {
-            $this->assertSame('Unable to store document.', $exception->getMessage());
+        } catch (\Throwable $exception) {
+            // Assert the translated contract instead of a literal string, so the
+            // expectation cannot drift out of date the way the previous one did.
+            $this->assertStringContainsString(__('file_security.errors.write'), $exception->getMessage());
         }
         $this->assertDatabaseCount('local_invoices', 0);
         $this->assertDatabaseCount('local_invoice_documents', 0);
@@ -368,7 +410,9 @@ class LocalInvoiceTest extends TestCase
     {
         $this->actingAs($this->supplier)->post(route('local-supplier.invoices.store'), array_merge($this->data(['invoice_amount' => '1000000000000000000.00']), $this->files()))->assertSessionHasErrors('invoice_amount');
         $this->post(route('local-supplier.invoices.store'), array_merge($this->data(['tax_amount' => '1.001']), $this->files()))->assertSessionHasErrors('tax_amount');
-        $this->post(route('local-supplier.invoices.store'), array_merge($this->data(['invoice_amount' => '999999999999999999.99']), $this->files(), ['supporting' => UploadedFile::fake()->image('support.jpg')]))->assertSessionHasNoErrors();
+        // This case exercises DPP decimal precision, not the PPN consistency rule,
+        // so use the 0% scheme and a matching zero tax amount.
+        $this->post(route('local-supplier.invoices.store'), array_merge($this->data(['invoice_amount' => '999999999999999999.99', 'ppn_scheme' => '0%', 'tax_amount' => '0.00']), $this->files(), ['supporting' => UploadedFile::fake()->image('support.jpg')]))->assertSessionHasNoErrors();
         $invoice = LocalInvoice::sole();
         $this->assertSame('999999999999999999.99', $invoice->invoice_amount);
         $this->assertSame(3, $invoice->documents()->count());
@@ -426,19 +470,19 @@ class LocalInvoiceTest extends TestCase
     {
         $multiFiles = [
             'invoice' => [
-                UploadedFile::fake()->createWithContent('inv-page1.pdf', "%PDF-1.4\n1"),
-                UploadedFile::fake()->createWithContent('inv-page2.pdf', "%PDF-1.4\n2"),
+                NativeFileFixtures::upload('inv-page1.pdf', 100),
+                NativeFileFixtures::upload('inv-page2.pdf', 100),
             ],
             'tax_invoice' => [
                 UploadedFile::fake()->image('tax-scan.png'),
             ],
             'delivery_note' => [
-                UploadedFile::fake()->createWithContent('sj-sheet1.pdf', "%PDF-1.4\n3"),
-                UploadedFile::fake()->createWithContent('sj-sheet2.pdf', "%PDF-1.4\n4"),
+                NativeFileFixtures::upload('sj-sheet1.pdf', 100),
+                NativeFileFixtures::upload('sj-sheet2.pdf', 100),
             ],
             'supporting' => [
-                UploadedFile::fake()->createWithContent('bap.pdf', "%PDF-1.4\n5"),
-                UploadedFile::fake()->createWithContent('po-copy.pdf', "%PDF-1.4\n6"),
+                NativeFileFixtures::upload('bap.pdf', 100),
+                NativeFileFixtures::upload('po-copy.pdf', 100),
                 UploadedFile::fake()->image('photo.jpg'),
             ],
         ];
@@ -462,14 +506,14 @@ class LocalInvoiceTest extends TestCase
     {
         $tooManyFiles = [
             'invoice' => [
-                UploadedFile::fake()->create('1.pdf', 100),
-                UploadedFile::fake()->create('2.pdf', 100),
-                UploadedFile::fake()->create('3.pdf', 100),
-                UploadedFile::fake()->create('4.pdf', 100),
-                UploadedFile::fake()->create('5.pdf', 100),
-                UploadedFile::fake()->create('6.pdf', 100), // 6 files exceeds max 5
+                NativeFileFixtures::upload('1.pdf', 100),
+                NativeFileFixtures::upload('2.pdf', 100),
+                NativeFileFixtures::upload('3.pdf', 100),
+                NativeFileFixtures::upload('4.pdf', 100),
+                NativeFileFixtures::upload('5.pdf', 100),
+                NativeFileFixtures::upload('6.pdf', 100), // 6 files exceeds max 5
             ],
-            'tax_invoice' => [UploadedFile::fake()->create('tax.pdf', 100)],
+            'tax_invoice' => [NativeFileFixtures::upload('tax.pdf', 100)],
         ];
 
         $payload = array_merge($this->data(['invoice_number' => 'INV-FAIL-01']), $tooManyFiles);
@@ -481,7 +525,7 @@ class LocalInvoiceTest extends TestCase
     public function test_resubmit_retains_existing_files_and_appends_new_files(): void
     {
         $initialFiles = [
-            'invoice' => [UploadedFile::fake()->createWithContent('orig-inv.pdf', "%PDF-1.4\norig")],
+            'invoice' => [NativeFileFixtures::upload('orig-inv.pdf', 100)],
             'tax_invoice' => [UploadedFile::fake()->image('orig-tax.png')],
         ];
         $this->actingAs($this->supplier)->post(
@@ -501,7 +545,7 @@ class LocalInvoiceTest extends TestCase
         // Resubmit: keep existing invoice, add new tax invoice and 1 supporting document
         $newFiles = [
             'tax_invoice' => [UploadedFile::fake()->image('revised-tax.png')],
-            'supporting' => [UploadedFile::fake()->createWithContent('additional-bap.pdf', "%PDF-1.4\nbap")],
+            'supporting' => [NativeFileFixtures::upload('additional-bap.pdf', 100)],
         ];
 
         $resubmitPayload = array_merge(

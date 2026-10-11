@@ -9,7 +9,7 @@ use App\Models\User;
 use App\Services\SupplierAudit\SupplierAuditInvoiceGate;
 use App\Services\VendorMaster\VendorMasterService;
 use App\Support\BusinessTime;
-use Carbon\Carbon;
+use App\Support\Money;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -95,33 +95,42 @@ class InvoiceSubmissionService
                         'po_remaining_snapshot' => null, 'has_po_discrepancy' => false,
                     ];
                 } else {
-                    $poNum = $data['po_number'] ?? ($data['manual_po_number'] ?? ($data['internal_po_reference'] ?? null));
-                    $poSource = $data['po_source'] ?? null;
-                    $internalPoRef = $data['internal_po_reference'] ?? (($poSource === 'INTERNAL' || blank($poSource)) ? $poNum : null);
-                    $manualPoNum = $data['manual_po_number'] ?? (($poSource === 'MANUAL' || blank($poSource)) ? $poNum : null);
-                    $manualGrRef = $data['manual_gr_reference'] ?? ($data['gr_reference'] ?? null);
-                    try {
-                        $poResolved = $this->poReferenceService->validateAndResolve($actor, $poSource, $internalPoRef, $manualPoNum, (float) $data['invoice_amount'], $manualGrRef);
-                    } catch (\InvalidArgumentException $e) {
-                        $field = str_contains(strtolower($e->getMessage()), 'manual goods receipt')
-                            ? 'manual_gr_reference'
-                            : 'po_number';
-                        throw ValidationException::withMessages([$field => $this->poReferenceService->messageForDisplay($e, $internalPoRef, $poSource)]);
-                    }
-                    if (($poResolved['authoritative'] ?? false) === true) {
-                        throw ValidationException::withMessages(['local_purchase_order_id' => __('local_invoice.validation.authoritative_selection')]);
-                    }
+                    // A new invoice must bind to exactly one authoritative Local PO.
+                    // The legacy manual-reference branch accepted free-text PO and GR
+                    // numbers, applied no PO financial ceiling and reserved no Goods
+                    // Receipt, so it is refused for new submissions. resubmit() still
+                    // serves rows already stored with po_source = MANUAL.
+                    throw ValidationException::withMessages([
+                        'local_purchase_order_id' => __('local_invoice.validation.authoritative_selection'),
+                    ]);
                 }
 
-                // 3. Tax / PPN scheme calculation
+                // 3. Tax / PPN scheme calculation — exact decimal, never float.
                 $ppnScheme = $data['ppn_scheme'] ?? '11%';
-                $invoiceDpp = (float) $data['invoice_amount'];
-                $calcPpn = match ($ppnScheme) {
-                    '11%' => round($invoiceDpp * 0.11, 2),
-                    '1.1%' => round($invoiceDpp * 0.011, 2),
-                    default => 0.0,
-                };
-                $taxAmount = isset($data['tax_amount']) ? (float) $data['tax_amount'] : $calcPpn;
+                $invoiceDpp = Money::normalize($data['invoice_amount']);
+                if (Money::compare($invoiceDpp, Money::zero()) <= 0) {
+                    throw ValidationException::withMessages([
+                        'invoice_amount' => __('local_invoice.validation.dpp_positive'),
+                    ]);
+                }
+                $calcPpn = Money::multiply($invoiceDpp, match ($ppnScheme) {
+                    '11%' => '0.11',
+                    '1.1%' => '0.011',
+                    default => '0',
+                });
+                $taxAmount = isset($data['tax_amount']) ? Money::normalize($data['tax_amount']) : $calcPpn;
+                // The supplier may not route an arbitrary amount through the tax
+                // field: PPN must equal DPP x scheme, within a 1 IDR rounding
+                // tolerance in either direction.
+                if (Money::compare(Money::subtract($taxAmount, $calcPpn), '1.00') > 0
+                    || Money::compare(Money::subtract($calcPpn, $taxAmount), '1.00') > 0) {
+                    throw ValidationException::withMessages([
+                        'tax_amount' => __('local_invoice.validation.tax_consistency', [
+                            'expected' => $calcPpn,
+                            'scheme' => $ppnScheme,
+                        ]),
+                    ]);
+                }
 
                 // 4. Generate sequence number
                 $year = BusinessTime::now()->year;

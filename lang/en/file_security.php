@@ -6,6 +6,7 @@ return [
         'read' => 'The file could not be read completely.',
         'unsupported' => 'The archive format, encryption, or compression method is unsupported.',
         'budget' => 'The file exceeds a configured security resource limit.',
+        'empty' => 'The file is empty or could not be measured. Choose a file that contains data.',
         'archive_storage' => 'The PDFs inside the ZIP exceed the allowed decompressed storage limit. Reduce the size or number of PDFs and upload again. No new PO documents were published.',
         'name' => 'The archive contains an unsafe filename.',
         'special' => 'Links and special archive entries are not allowed.',

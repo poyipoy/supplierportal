@@ -12,10 +12,11 @@ use App\Services\LocalInvoice\InvoiceSubmissionService;
 use App\Services\LocalInvoice\InvoiceVerificationService;
 use App\Services\LocalInvoice\LocalPoReferenceService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use InvalidArgumentException;
+use Tests\Support\NativeFileFixtures;
+use App\Services\LocalInvoice\LocalProcurementMasterService;
 use Tests\TestCase;
 
 class FinanceVerificationV2Test extends TestCase
@@ -51,28 +52,35 @@ class FinanceVerificationV2Test extends TestCase
             'payment_term_days' => 30,
         ]);
 
-        LocalPoReferenceService::registerInternalPo(
-            $supplierUser->id,
-            'PO-VERIF-001',
-            value: 20000000.0,
-            grReference: 'GR-VERIF-001'
-        );
+        $poOperator = User::factory()->create(['role' => 'finance']);
+        $masters = app(LocalProcurementMasterService::class);
+        $po = $masters->createPurchaseOrder($poOperator, [
+            'supplier_id' => $supplierUser->id,
+            'po_number' => 'PO-VERIF-001',
+            'po_date' => '2026-09-01',
+            'total_amount' => '100000000.00',
+        ]);
+        $gr = $masters->createGoodsReceipt($poOperator, $po, [
+            'gr_number' => 'GR-VERIF-001',
+            'gr_date' => '2026-09-02',
+            'uom' => 'pcs',
+            'qty' => 10.0,
+        ]);
 
         $invoice = $this->submissionService->submit(
             $supplierUser,
             [
                 'invoice_number' => 'INV-VERIF-001',
                 'invoice_date' => '2026-09-10',
-                'po_source' => 'INTERNAL',
-                'po_number' => 'PO-VERIF-001',
-                'internal_po_reference' => 'PO-VERIF-001',
+                'local_purchase_order_id' => $po->id,
+                'goods_receipt_ids' => [$gr->id],
                 'invoice_amount' => 10000000,
                 'ppn_scheme' => '11%',
             ],
             [
-                'invoice' => UploadedFile::fake()->create('inv.pdf', 100),
-                'tax_invoice' => UploadedFile::fake()->create('tax.pdf', 100),
-                'delivery_note' => UploadedFile::fake()->create('sj.pdf', 100),
+                'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
+                'tax_invoice' => NativeFileFixtures::upload('tax.pdf', 100),
+                'delivery_note' => NativeFileFixtures::upload('sj.pdf', 100),
             ]
         );
 
@@ -178,14 +186,17 @@ class FinanceVerificationV2Test extends TestCase
             [
                 'invoice_number' => $invoice->invoice_number,
                 'invoice_date' => $invoice->invoice_date->toDateString(),
-                'po_number' => $invoice->po_number,
+                // An authoritative invoice must be resubmitted with its PO and the
+                // same whole-GR selection it reserved on first submission.
+                'local_purchase_order_id' => $invoice->local_purchase_order_id,
+                'goods_receipt_ids' => $invoice->goodsReceiptHistories()->pluck('local_goods_receipt_id')->all(),
                 'invoice_amount' => $invoice->invoice_amount,
                 'tax_amount' => $invoice->tax_amount,
             ],
             [
-                'invoice' => UploadedFile::fake()->create($invoice->invoice_number.'.pdf', 100),
-                'tax_invoice' => UploadedFile::fake()->create('tax_v2.pdf', 100),
-                'delivery_note' => UploadedFile::fake()->create('sj_v2.pdf', 100),
+                'invoice' => NativeFileFixtures::upload($invoice->invoice_number.'.pdf', 100),
+                'tax_invoice' => NativeFileFixtures::upload('tax_v2.pdf', 100),
+                'delivery_note' => NativeFileFixtures::upload('sj_v2.pdf', 100),
             ]
         );
 

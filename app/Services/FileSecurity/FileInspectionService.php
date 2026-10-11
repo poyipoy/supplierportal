@@ -75,7 +75,12 @@ class FileInspectionService
             $this->reject($field, 'read');
         }
         $bytes = filesize($path);
-        if (! is_int($bytes) || $bytes <= 0 || $bytes > $policy['max_bytes']) {
+        // An unreadable or zero-byte upload is not a resource-budget overflow; report
+        // it separately so the cause is not mistaken for an exceeded size ceiling.
+        if (! is_int($bytes) || $bytes <= 0) {
+            $this->reject($field, 'empty');
+        }
+        if ($bytes > $policy['max_bytes']) {
             $this->reject($field, 'budget');
         }
         // Bound container metadata before native MIME/container readers see it.

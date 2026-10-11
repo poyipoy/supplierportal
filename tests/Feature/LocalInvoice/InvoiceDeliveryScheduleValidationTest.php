@@ -12,9 +12,9 @@ use App\Services\LocalInvoice\LocalPoReferenceService;
 use App\Services\LocalInvoice\LocalProcurementMasterService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use Tests\Support\NativeFileFixtures;
 use Tests\TestCase;
 
 class InvoiceDeliveryScheduleValidationTest extends TestCase
@@ -85,9 +85,9 @@ class InvoiceDeliveryScheduleValidationTest extends TestCase
                 'tax_amount' => 110000,
                 'tax_invoice_number' => '01.01.26.12345678901',
                 'scheduled_physical_delivery_date' => $pastWednesday->toDateString(),
-                'invoice' => [UploadedFile::fake()->create('inv.pdf', 100, 'application/pdf')],
-                'tax_invoice' => [UploadedFile::fake()->create('tax.pdf', 100, 'application/pdf')],
-                'delivery_note' => [UploadedFile::fake()->create('sj.pdf', 100, 'application/pdf')],
+                'invoice' => [NativeFileFixtures::upload('inv.pdf', 100)],
+                'tax_invoice' => [NativeFileFixtures::upload('tax.pdf', 100)],
+                'delivery_note' => [NativeFileFixtures::upload('sj.pdf', 100)],
             ]);
 
         $response->assertSessionHasErrors('scheduled_physical_delivery_date');
@@ -118,9 +118,9 @@ class InvoiceDeliveryScheduleValidationTest extends TestCase
                 'scheduled_physical_delivery_date' => $pastWednesday->toDateString(),
             ],
             [
-                'invoice' => [UploadedFile::fake()->create('inv.pdf', 100, 'application/pdf')],
-                'tax_invoice' => [UploadedFile::fake()->create('tax.pdf', 100, 'application/pdf')],
-                'delivery_note' => [UploadedFile::fake()->create('sj.pdf', 100, 'application/pdf')],
+                'invoice' => [NativeFileFixtures::upload('inv.pdf', 100)],
+                'tax_invoice' => [NativeFileFixtures::upload('tax.pdf', 100)],
+                'delivery_note' => [NativeFileFixtures::upload('sj.pdf', 100)],
             ]
         );
     }
@@ -148,9 +148,9 @@ class InvoiceDeliveryScheduleValidationTest extends TestCase
                 'scheduled_physical_delivery_date' => $futureWednesday->toDateString(),
             ],
             [
-                'invoice' => [UploadedFile::fake()->create('inv.pdf', 100, 'application/pdf')],
-                'tax_invoice' => [UploadedFile::fake()->create('tax.pdf', 100, 'application/pdf')],
-                'delivery_note' => [UploadedFile::fake()->create('sj.pdf', 100, 'application/pdf')],
+                'invoice' => [NativeFileFixtures::upload('inv.pdf', 100)],
+                'tax_invoice' => [NativeFileFixtures::upload('tax.pdf', 100)],
+                'delivery_note' => [NativeFileFixtures::upload('sj.pdf', 100)],
             ]
         );
 

@@ -7,8 +7,8 @@ use App\Models\GaClaim;
 use App\Models\User;
 use App\Services\Ga\GaClaimService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Tests\Support\NativeFileFixtures;
 use Tests\TestCase;
 
 class GaClaimReceiptNavigationTest extends TestCase
@@ -52,7 +52,7 @@ class GaClaimReceiptNavigationTest extends TestCase
                 'description' => 'Operasional Test',
             ],
             [
-                'supporting' => UploadedFile::fake()->create('note.pdf', 100),
+                'supporting' => NativeFileFixtures::upload('note.pdf', 100),
             ]
         );
     }

@@ -10,6 +10,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
+use Tests\Support\NativeFileFixtures;
 use Tests\TestCase;
 
 class RegionalInvoiceCalendarDisplayTest extends TestCase
@@ -38,7 +39,7 @@ class RegionalInvoiceCalendarDisplayTest extends TestCase
         $this->systemFinance = User::factory()->create(['role' => 'finance']);
         $this->accounting = User::factory()->create(['role' => 'accounting']);
 
-        $pdf = "%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF";
+        $pdf = NativeFileFixtures::pdf();
         $payload = [
             'invoice_number' => 'INV-REGIONAL-001',
             'invoice_date' => '2026-09-28',

@@ -34,6 +34,7 @@ use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\DataProvider;
 use RuntimeException;
+use Tests\Support\NativeFileFixtures;
 use Tests\TestCase;
 
 class NotificationPreferenceDeliveryTest extends TestCase
@@ -600,7 +601,7 @@ class NotificationPreferenceDeliveryTest extends TestCase
             'goods_receipt_ids' => [$gr->id],
             'scheduled_physical_delivery_date' => BusinessTime::today()->next(3)->toDateString(),
         ], [
-            'invoice' => UploadedFile::fake()->createWithContent('ACK-001.pdf', "%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF"),
+            'invoice' => NativeFileFixtures::upload('ACK-001.pdf', 100),
         ]);
     }
 }

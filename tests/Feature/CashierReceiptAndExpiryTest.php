@@ -10,16 +10,17 @@ use App\Services\LocalInvoice\InvoiceExpiryService;
 use App\Services\LocalInvoice\InvoicePhysicalReceiptService;
 use App\Services\LocalInvoice\InvoiceSubmissionService;
 use App\Services\LocalInvoice\LocalPoReferenceService;
+use App\Services\LocalInvoice\LocalProcurementMasterService;
 use App\Support\BusinessTime;
 use App\Support\StatusHelper;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 use RuntimeException;
+use Tests\Support\NativeFileFixtures;
 use Tests\TestCase;
 
 class CashierReceiptAndExpiryTest extends TestCase
@@ -60,27 +61,35 @@ class CashierReceiptAndExpiryTest extends TestCase
 
     private function submitInvoiceForReceipt(User $supplier, string $invoiceNumber, string $poNumber): LocalInvoice
     {
-        LocalPoReferenceService::registerInternalPo(
-            $supplier->id,
-            $poNumber,
-            value: 10000000.0,
-            grReference: 'GR-'.$invoiceNumber
-        );
+        // A new invoice must bind to an authoritative Local PO plus a whole GR.
+        $masters = app(LocalProcurementMasterService::class);
+        $operator = User::factory()->create(['role' => 'finance']);
+        $po = $masters->createPurchaseOrder($operator, [
+            'supplier_id' => $supplier->id,
+            'po_number' => $poNumber,
+            'po_date' => '2026-09-01',
+            'total_amount' => '10000000.00',
+        ]);
+        $gr = $masters->createGoodsReceipt($operator, $po, [
+            'gr_number' => 'GR-'.$invoiceNumber,
+            'gr_date' => '2026-09-02',
+            'uom' => 'pcs',
+            'qty' => 10.0,
+        ]);
 
         return $this->submissionService->submit(
             $supplier,
             [
                 'invoice_number' => $invoiceNumber,
                 'invoice_date' => '2026-09-10',
-                'po_source' => 'INTERNAL',
-                'po_number' => $poNumber,
-                'internal_po_reference' => $poNumber,
+                'local_purchase_order_id' => $po->id,
+                'goods_receipt_ids' => [$gr->id],
                 'invoice_amount' => 2000000,
             ],
             [
-                'invoice' => UploadedFile::fake()->create($invoiceNumber.'.pdf', 100),
-                'tax_invoice' => UploadedFile::fake()->create('tax-'.$invoiceNumber.'.pdf', 100),
-                'delivery_note' => UploadedFile::fake()->create('sj-'.$invoiceNumber.'.pdf', 100),
+                'invoice' => NativeFileFixtures::upload($invoiceNumber.'.pdf', 100),
+                'tax_invoice' => NativeFileFixtures::upload('tax-'.$invoiceNumber.'.pdf', 100),
+                'delivery_note' => NativeFileFixtures::upload('sj-'.$invoiceNumber.'.pdf', 100),
             ]
         );
     }
@@ -99,27 +108,33 @@ class CashierReceiptAndExpiryTest extends TestCase
         $finance = User::factory()->create(['role' => 'finance']);
         $finance->preference()->create([...config('user_preferences.defaults'), 'locale' => 'id']);
 
-        LocalPoReferenceService::registerInternalPo(
-            $supplier->id,
-            'PO-RECEIPT-001',
-            value: 10000000.0,
-            grReference: 'GR-001'
-        );
+        $masters = app(LocalProcurementMasterService::class);
+        $po = $masters->createPurchaseOrder($finance, [
+            'supplier_id' => $supplier->id,
+            'po_number' => 'PO-RECEIPT-001',
+            'po_date' => '2026-09-01',
+            'total_amount' => '100000000.00',
+        ]);
+        $gr = $masters->createGoodsReceipt($finance, $po, [
+            'gr_number' => 'GR-001',
+            'gr_date' => '2026-09-02',
+            'uom' => 'pcs',
+            'qty' => 10.0,
+        ]);
 
         $invoice = $this->submissionService->submit(
             $supplier,
             [
                 'invoice_number' => 'INV-REC-001',
                 'invoice_date' => '2026-09-10',
-                'po_source' => 'INTERNAL',
-                'po_number' => 'PO-RECEIPT-001',
-                'internal_po_reference' => 'PO-RECEIPT-001',
+                'local_purchase_order_id' => $po->id,
+                'goods_receipt_ids' => [$gr->id],
                 'invoice_amount' => 5000000,
             ],
             [
-                'invoice' => UploadedFile::fake()->create('inv.pdf', 100),
-                'tax_invoice' => UploadedFile::fake()->create('tax.pdf', 100),
-                'delivery_note' => UploadedFile::fake()->create('sj.pdf', 100),
+                'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
+                'tax_invoice' => NativeFileFixtures::upload('tax.pdf', 100),
+                'delivery_note' => NativeFileFixtures::upload('sj.pdf', 100),
             ]
         );
 
@@ -226,27 +241,33 @@ class CashierReceiptAndExpiryTest extends TestCase
         $supplier = $this->createSupplier();
         $finance = User::factory()->create(['role' => 'finance']);
 
-        LocalPoReferenceService::registerInternalPo(
-            $supplier->id,
-            'PO-EXP-001',
-            value: 5000000.0,
-            grReference: 'GR-EXP-001'
-        );
+        $masters = app(LocalProcurementMasterService::class);
+        $po = $masters->createPurchaseOrder($finance, [
+            'supplier_id' => $supplier->id,
+            'po_number' => 'PO-EXP-001',
+            'po_date' => '2026-09-01',
+            'total_amount' => '100000000.00',
+        ]);
+        $gr = $masters->createGoodsReceipt($finance, $po, [
+            'gr_number' => 'GR-EXP-001',
+            'gr_date' => '2026-09-02',
+            'uom' => 'pcs',
+            'qty' => 10.0,
+        ]);
 
         $invoice = $this->submissionService->submit(
             $supplier,
             [
                 'invoice_number' => 'INV-EXP-001',
                 'invoice_date' => '2026-09-10',
-                'po_source' => 'INTERNAL',
-                'po_number' => 'PO-EXP-001',
-                'internal_po_reference' => 'PO-EXP-001',
+                'local_purchase_order_id' => $po->id,
+                'goods_receipt_ids' => [$gr->id],
                 'invoice_amount' => 2000000,
             ],
             [
-                'invoice' => UploadedFile::fake()->create('inv.pdf', 100),
-                'tax_invoice' => UploadedFile::fake()->create('tax.pdf', 100),
-                'delivery_note' => UploadedFile::fake()->create('sj.pdf', 100),
+                'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
+                'tax_invoice' => NativeFileFixtures::upload('tax.pdf', 100),
+                'delivery_note' => NativeFileFixtures::upload('sj.pdf', 100),
             ]
         );
 
@@ -315,27 +336,33 @@ class CashierReceiptAndExpiryTest extends TestCase
         $supplier = $this->createSupplier();
         $finance = User::factory()->create(['role' => 'finance']);
 
-        LocalPoReferenceService::registerInternalPo(
-            $supplier->id,
-            'PO-EXP-002',
-            value: 5000000.0,
-            grReference: 'GR-EXP-002'
-        );
+        $masters = app(LocalProcurementMasterService::class);
+        $po = $masters->createPurchaseOrder($finance, [
+            'supplier_id' => $supplier->id,
+            'po_number' => 'PO-EXP-002',
+            'po_date' => '2026-09-01',
+            'total_amount' => '100000000.00',
+        ]);
+        $gr = $masters->createGoodsReceipt($finance, $po, [
+            'gr_number' => 'GR-EXP-002',
+            'gr_date' => '2026-09-02',
+            'uom' => 'pcs',
+            'qty' => 10.0,
+        ]);
 
         $invoice = $this->submissionService->submit(
             $supplier,
             [
                 'invoice_number' => 'INV-EXP-002',
                 'invoice_date' => '2026-09-10',
-                'po_source' => 'INTERNAL',
-                'po_number' => 'PO-EXP-002',
-                'internal_po_reference' => 'PO-EXP-002',
+                'local_purchase_order_id' => $po->id,
+                'goods_receipt_ids' => [$gr->id],
                 'invoice_amount' => 2000000,
             ],
             [
-                'invoice' => UploadedFile::fake()->create('inv.pdf', 100),
-                'tax_invoice' => UploadedFile::fake()->create('tax.pdf', 100),
-                'delivery_note' => UploadedFile::fake()->create('sj.pdf', 100),
+                'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
+                'tax_invoice' => NativeFileFixtures::upload('tax.pdf', 100),
+                'delivery_note' => NativeFileFixtures::upload('sj.pdf', 100),
             ]
         );
 
