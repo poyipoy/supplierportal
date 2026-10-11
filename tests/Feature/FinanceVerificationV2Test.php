@@ -11,12 +11,12 @@ use App\Services\LocalInvoice\InvoicePhysicalReceiptService;
 use App\Services\LocalInvoice\InvoiceSubmissionService;
 use App\Services\LocalInvoice\InvoiceVerificationService;
 use App\Services\LocalInvoice\LocalPoReferenceService;
+use App\Services\LocalInvoice\LocalProcurementMasterService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use InvalidArgumentException;
 use Tests\Support\NativeFileFixtures;
-use App\Services\LocalInvoice\LocalProcurementMasterService;
 use Tests\TestCase;
 
 class FinanceVerificationV2Test extends TestCase

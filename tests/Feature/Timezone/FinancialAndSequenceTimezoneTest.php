@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\LocalInvoice\InvoiceExpiryService;
 use App\Services\LocalInvoice\InvoicePhysicalReceiptService;
 use App\Services\LocalInvoice\InvoiceSubmissionService;
+use App\Services\LocalInvoice\LocalProcurementMasterService;
 use App\Services\Payment\PaymentForecastService;
 use Carbon\Carbon;
 use Illuminate\Console\Scheduling\Schedule;
@@ -19,7 +20,6 @@ use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 use Tests\Support\NativeFileFixtures;
-use App\Services\LocalInvoice\LocalProcurementMasterService;
 use Tests\TestCase;
 
 class FinancialAndSequenceTimezoneTest extends TestCase
