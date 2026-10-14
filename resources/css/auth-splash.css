@@ -1,0 +1,75 @@
+.auth-splash {
+    --auth-splash-css-ready: 1;
+    --adasi-red: #ed1018;
+    --splash-bg: #fff;
+    --splash-fade: 650ms;
+    --rise-duration: 1600ms;
+    --sink-duration: 1600ms;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    background: var(--splash-bg);
+    opacity: 1;
+    visibility: visible;
+    font-family: "Segoe UI", Arial, sans-serif;
+    transition: opacity var(--splash-fade) ease, visibility var(--splash-fade) ease;
+}
+.auth-splash, .auth-splash *, .auth-splash *::before, .auth-splash *::after { box-sizing: border-box; }
+.auth-splash [hidden], .auth-splash[hidden] { display: none !important; }
+.auth-splash[data-state="waiting"] { animation: auth-splash-expire 0s var(--auth-splash-remaining, 10000ms) forwards; }
+.auth-splash.is-leaving { opacity: 0; visibility: hidden; pointer-events: none; }
+.auth-splash__panel { position: relative; display: grid; place-items: center; width: 100%; padding: 20px; outline: none; }
+.auth-splash__wordmark {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    height: 1.14em;
+    overflow: hidden;
+    white-space: nowrap;
+    color: var(--adasi-red);
+    font-family: "Arial Black", "Segoe UI", Arial, sans-serif;
+    font-size: clamp(2rem, 8vw, 4.5rem);
+    font-weight: 900;
+    line-height: 1.08;
+    letter-spacing: -.065em;
+    padding-right: .07em;
+    padding-top: .05em;
+    user-select: none;
+    -webkit-font-smoothing: antialiased;
+}
+.auth-splash__letter { display: inline-block; transform: translateY(130%); will-change: transform; }
+.auth-splash__letter.is-up { transform: translateY(0); }
+.auth-splash__letter.is-rising { animation: auth-splash-rise var(--rise-duration) ease-in-out both; }
+.auth-splash__letter.is-sinking { animation: auth-splash-sink var(--sink-duration) ease-in-out both; }
+@keyframes auth-splash-rise { from { transform: translateY(130%); } to { transform: translateY(0); } }
+@keyframes auth-splash-sink { from { transform: translateY(0); } to { transform: translateY(130%); } }
+@keyframes auth-splash-expire { to { visibility: hidden; pointer-events: none; } }
+.auth-splash__surface-plane { position: absolute; top: 100%; left: 0; right: 0; height: 100vh; background: #fff; border: 0; pointer-events: none; }
+.auth-splash__skip {
+    position: absolute;
+    z-index: 5;
+    bottom: clamp(22px, 5vh, 48px);
+    left: 50%;
+    transform: translateX(-50%);
+    border: 1px solid #e4e7eb;
+    border-radius: 999px;
+    background: #fff;
+    color: #686f7a;
+    padding: 10px 16px;
+    font-family: inherit;
+    font-size: .8rem;
+    font-weight: 600;
+    line-height: normal;
+    cursor: pointer;
+}
+.auth-splash__skip:hover { background: #f7f8fa; color: #253648; }
+.auth-splash__skip:focus-visible { outline: 3px solid #3f80c5; outline-offset: 4px; }
+.auth-splash__sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+@media (max-width: 480px) { .auth-splash__wordmark { font-size: clamp(3.1rem, 15vw, 4.4rem); } }
+@media (prefers-reduced-motion: reduce) {
+    .auth-splash__letter, .auth-splash__letter.is-rising, .auth-splash__letter.is-sinking { animation: none; transform: translateY(0); will-change: auto; }
+    .auth-splash { transition: none; }
+}

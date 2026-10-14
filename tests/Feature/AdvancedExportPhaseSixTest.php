@@ -217,7 +217,7 @@ class AdvancedExportPhaseSixTest extends TestCase
         Queue::fake();
         $this->actingAs($this->purchasing);
         config(['exports.max_rows' => 0]);
-        $this->getJson(route('purchasing.export.purchase-orders'))->assertUnprocessable();
+        $this->postJson(route('purchasing.export.purchase-orders'))->assertUnprocessable();
         $this->assertSame(0, ExportJob::count());
         config(['exports.max_rows' => 1]);
         $job = ExportDispatcher::dispatch('Legacy', PurchaseOrdersExport::class, [], 'legacy.xlsx');

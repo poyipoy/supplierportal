@@ -22,6 +22,7 @@ use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
 use App\Models\SupplierAudit;
 use App\Models\User;
+use App\Support\ExportConfirmation;
 use App\Support\ExportDispatcher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -32,6 +33,10 @@ class ExportController extends Controller
     public function requisitions(AdvancedExportRequest $request)
     {
         $filters = RequisitionExportFilters::validated($request);
+
+        if ($request->isMethod('get')) {
+            return ExportConfirmation::make($request, __('exports.job_labels.pr_summary'));
+        }
 
         $exportJob = ExportDispatcher::dispatch(
             __('exports.job_labels.pr_summary'),
@@ -51,6 +56,10 @@ class ExportController extends Controller
     public function purchaseOrders(AdvancedExportRequest $request)
     {
         $filters = PurchaseOrderExportFilters::validated($request);
+
+        if ($request->isMethod('get')) {
+            return ExportConfirmation::make($request, __('exports.job_labels.po_summary'));
+        }
 
         $exportJob = ExportDispatcher::dispatch(
             __('exports.job_labels.po_summary'),
@@ -74,6 +83,10 @@ class ExportController extends Controller
     {
         $filters = ShipmentExportFilters::validated($request);
 
+        if ($request->isMethod('get')) {
+            return ExportConfirmation::make($request, __('exports.job_labels.shipment_summary'));
+        }
+
         $exportJob = ExportDispatcher::dispatch(
             __('exports.job_labels.shipment_summary'),
             ShipmentsExport::class,
@@ -94,6 +107,10 @@ class ExportController extends Controller
 
     public function requisitionDetail(Request $request, PurchaseRequisition $purchaseRequisition)
     {
+        if ($request->isMethod('get')) {
+            return ExportConfirmation::make($request, __('purchasing.copy.detail_purchase_requisition'));
+        }
+
         $exportJob = ExportDispatcher::dispatch(
             __('purchasing.copy.detail_purchase_requisition'),
             PurchaseRequisitionDetailExport::class,
@@ -108,6 +125,10 @@ class ExportController extends Controller
     {
         $filters = QuotationExportFilters::validated($request);
 
+        if ($request->isMethod('get')) {
+            return ExportConfirmation::make($request, __('exports.job_labels.quotation_summary'));
+        }
+
         $exportJob = ExportDispatcher::dispatch(
             __('exports.job_labels.quotation_summary'),
             QuotationsExport::class,
@@ -121,6 +142,10 @@ class ExportController extends Controller
 
     public function quotationDetail(Request $request, Quotation $quotation)
     {
+        if ($request->isMethod('get')) {
+            return ExportConfirmation::make($request, __('purchasing.copy.detail_quotation'));
+        }
+
         $exportJob = ExportDispatcher::dispatch(
             __('purchasing.copy.detail_quotation'),
             QuotationDetailExport::class,
@@ -133,6 +158,10 @@ class ExportController extends Controller
 
     public function purchaseOrderDetail(Request $request, PurchaseOrder $purchaseOrder)
     {
+        if ($request->isMethod('get')) {
+            return ExportConfirmation::make($request, __('purchasing.copy.detail_purchase_order'));
+        }
+
         $exportJob = ExportDispatcher::dispatch(
             __('purchasing.copy.detail_purchase_order'),
             PurchaseOrderDetailExport::class,
@@ -150,6 +179,10 @@ class ExportController extends Controller
 
         $fileName = 'Supplier-Audit-'.Str::slug($supplierAudit->supplierName()).'-'.Str::slug($supplierAudit->period_label)
             .'-'.now()->format('Ymd-His').'.xlsx'; // biz-time:ignore instant filename
+        if ($request->isMethod('get')) {
+            return ExportConfirmation::make($request, __('supplier_audit.export.label', ['supplier' => $supplierAudit->supplierName(), 'period' => $supplierAudit->period_label]));
+        }
+
         $exportJob = ExportDispatcher::dispatch(
             __('supplier_audit.export.label', ['supplier' => $supplierAudit->supplierName(), 'period' => $supplierAudit->period_label]),
             SupplierAuditExport::class,

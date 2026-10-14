@@ -32,7 +32,7 @@ class SupplierAuditExportTest extends SupplierAuditTestCase
 
         $cancelled = $this->assign($this->supplier());
         app(SupplierAuditReviewService::class)->cancel($this->purchasing, $cancelled, 'Batal');
-        $this->actingAs($this->purchasing)->getJson(route('purchasing.export.supplier-audits.detail', $cancelled))->assertForbidden();
+        $this->actingAs($this->purchasing)->postJson(route('purchasing.export.supplier-audits.detail', $cancelled))->assertForbidden();
 
         Queue::assertNothingPushed();
     }
@@ -43,7 +43,7 @@ class SupplierAuditExportTest extends SupplierAuditTestCase
         $supplier = $this->supplier();
         $audit = $this->submitComplete($this->assign($supplier), $supplier);
 
-        $this->actingAs($this->purchasing)->getJson(route('purchasing.export.supplier-audits.detail', $audit))
+        $this->actingAs($this->purchasing)->postJson(route('purchasing.export.supplier-audits.detail', $audit))
             ->assertStatus(202)
             ->assertJsonStructure(['message', 'export_job_id', 'status_url']);
 
@@ -53,7 +53,7 @@ class SupplierAuditExportTest extends SupplierAuditTestCase
         $this->assertStringEndsWith('.xlsx', $job->file_name);
         Queue::assertPushed(ProcessExportJob::class);
 
-        $this->actingAs($supplier)->getJson(route('purchasing.export.supplier-audits.detail', $audit))->assertForbidden();
+        $this->actingAs($supplier)->postJson(route('purchasing.export.supplier-audits.detail', $audit))->assertForbidden();
     }
 
     public function test_workbook_mirrors_template_layout_with_four_sheets(): void

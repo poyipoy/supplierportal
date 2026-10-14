@@ -41,8 +41,7 @@ class ShipmentPolicy
     public function update(User $user, Shipment $shipment): bool
     {
         return $user->role === 'supplier'
-            && (int) $user->id === (int) $shipment->supplier_id
-            && $shipment->status === Shipment::STATUS_DRAFT;
+            && (int) $user->id === (int) $shipment->supplier_id;
     }
 
     /**
@@ -51,8 +50,7 @@ class ShipmentPolicy
     public function submit(User $user, Shipment $shipment): bool
     {
         return $user->role === 'supplier'
-            && (int) $user->id === (int) $shipment->supplier_id
-            && $shipment->status === Shipment::STATUS_DRAFT;
+            && (int) $user->id === (int) $shipment->supplier_id;
     }
 
     /**
@@ -61,12 +59,10 @@ class ShipmentPolicy
     public function cancel(User $user, Shipment $shipment): bool
     {
         if ($user->role === 'supplier') {
-            return (int) $user->id === (int) $shipment->supplier_id
-                && in_array($shipment->status, [Shipment::STATUS_DRAFT, Shipment::STATUS_SUBMITTED], true);
+            return (int) $user->id === (int) $shipment->supplier_id;
         }
 
-        return in_array($user->role, ['purchasing', 'admin'], true)
-            && in_array($shipment->status, [Shipment::STATUS_DRAFT, Shipment::STATUS_SUBMITTED], true);
+        return in_array($user->role, ['purchasing', 'admin'], true);
     }
 
     /**
@@ -74,7 +70,16 @@ class ShipmentPolicy
      */
     public function confirmArrival(User $user, Shipment $shipment): bool
     {
-        return in_array($user->role, ['purchasing', 'admin'], true)
-            && $shipment->status === Shipment::STATUS_SUBMITTED;
+        return in_array($user->role, ['purchasing', 'admin'], true);
+    }
+
+    public function uploadDocument(User $user, Shipment $shipment): bool
+    {
+        return $user->role === 'supplier' && (int) $user->id === (int) $shipment->supplier_id;
+    }
+
+    public function reviewDocument(User $user, Shipment $shipment): bool
+    {
+        return in_array($user->role, ['purchasing', 'admin'], true);
     }
 }

@@ -138,6 +138,15 @@
                         {{ __('ga.form.bank_snapshot') }}
                     </div>
                 </div>
+                @if($claim->isReadyToPay() && $claim->approved_bank_snapshot === null && $claim->approved_bank_hash === null)
+                    @can('reverifyBank', $claim)
+                        <form method="POST" action="{{ route('finance.ga-claims.reverify-bank', $claim) }}" class="tw-mt-4">
+                            @csrf
+                            <p class="tw-text-ui-xs tw-text-on-surface-variant">{{ __('finance_controls.reverify_bank_help') }}</p>
+                            <x-ui.button type="submit" size="sm">{{ __('finance_controls.reverify_bank') }}</x-ui.button>
+                        </form>
+                    @endcan
+                @endif
             </x-ui.card>
 
             {{-- Verification Action --}}

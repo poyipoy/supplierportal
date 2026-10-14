@@ -374,4 +374,19 @@ class TranslationContentTest extends TestCase
         $this->assertStringContainsString("__('status.availability.available')", $source);
         $this->assertStringNotContainsString("? 'Available' :", $source);
     }
+
+    public function test_key_workflow_views_do_not_contain_mojibake_or_misencoded_symbols(): void
+    {
+        $checkedFiles = [
+            resource_path('views/auth/supplier-register.blade.php'),
+            resource_path('views/local-invoices/form.blade.php'),
+        ];
+
+        foreach ($checkedFiles as $filePath) {
+            $content = file_get_contents($filePath);
+            $this->assertIsString($content, basename($filePath));
+            $this->assertDoesNotMatchRegularExpression('/(?:â€”|â€“|Ã—|Â·)/u', $content, basename($filePath));
+            $this->assertStringNotContainsString("' Â· '", $content, basename($filePath));
+        }
+    }
 }

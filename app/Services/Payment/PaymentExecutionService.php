@@ -11,6 +11,7 @@ use App\Models\PaymentGroup;
 use App\Models\PaymentItem;
 use App\Models\User;
 use App\Services\LocalInvoice\InvoiceNotificationService;
+use App\Services\LocalInvoice\MakerCheckerService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
@@ -55,6 +56,7 @@ class PaymentExecutionService
             $grp = PaymentGroup::where('id', $group->id)->lockForUpdate()->firstOrFail();
             /** @var PaymentBatch $batch */
             $batch = $grp->batch()->lockForUpdate()->firstOrFail();
+            app(MakerCheckerService::class)->assertActorsRecorded('voucher_settlement', $batch, $actor, [$batch->finalized_by], $batch->actor_tracking_required);
 
             // New authoritative Local Supplier invoices settle through their
             // per-invoice Voucher Bayar/Payment Settlement. Legacy invoices
@@ -197,6 +199,7 @@ class PaymentExecutionService
         return DB::transaction(function () use ($batch, $data, $actor) {
             /** @var PaymentBatch $lockedBatch */
             $lockedBatch = PaymentBatch::where('id', $batch->id)->lockForUpdate()->firstOrFail();
+            app(MakerCheckerService::class)->assertActorsRecorded('voucher_settlement', $lockedBatch, $actor, [$lockedBatch->finalized_by], $lockedBatch->actor_tracking_required);
 
             if ($lockedBatch->status === PaymentBatch::STATUS_PAID) {
                 throw new RuntimeException(__('finance.execution_validation.batch_paid', ['number' => $lockedBatch->batch_number]));
@@ -266,6 +269,7 @@ class PaymentExecutionService
                                     'transfer_date' => $data['transfer_date'],
                                     'correction_reason' => $correctionReason,
                                     'notes' => $data['payment_notes'] ?? null,
+                                    'override_reason' => $data['override_reason'] ?? null,
                                 ], $actor);
                             } elseif ($existingPayment->status === LocalInvoicePayment::STATUS_CORRECTION_REQUIRED) {
                                 $remaining = bcsub((string) $existingPayment->expected_amount, (string) $existingPayment->actual_paid_total, 2);
@@ -280,6 +284,7 @@ class PaymentExecutionService
                                         'transfer_date' => $data['transfer_date'],
                                         'correction_reason' => $data['correction_reasons'][$item->id] ?? 'Batch paid clearance',
                                         'notes' => $data['payment_notes'] ?? null,
+                                        'override_reason' => $data['override_reason'] ?? null,
                                     ], $actor);
                                 }
                             }

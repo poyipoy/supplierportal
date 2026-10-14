@@ -364,7 +364,7 @@ class AsyncExportQueueTest extends TestCase
         Queue::fake();
 
         $this->actingAs($this->qc)
-            ->getJson(route('qc.export.inspections', [
+            ->postJson(route('qc.export.inspections', [
                 'start_date' => '2026-08-31',
                 'end_date' => '2026-08-01',
                 'status' => 'invalid',
@@ -372,7 +372,7 @@ class AsyncExportQueueTest extends TestCase
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['end_date', 'status']);
         $this->actingAs($this->supplier)
-            ->getJson(route('supplier.price-history.export', [
+            ->postJson(route('supplier.price-history.export', [
                 'period_view' => 'weekly',
                 'range' => 'invalid',
                 'thickness' => 'not-a-number',
@@ -814,6 +814,7 @@ class AsyncExportQueueTest extends TestCase
             $this->assertSame(__('status.quotation.submitted', [], 'id'), $chunks->first()->data[0][2]);
             $this->assertSame($this->requisition->pr_number, $chunks->first()->data[0][0]);
             $this->assertSame(10.0, (float) $chunks->first()->data[0][3]);
+
             return true;
         });
         $invalid = $this->createExportJob($this->purchasing, [
@@ -1123,7 +1124,7 @@ class AsyncExportQueueTest extends TestCase
         array $expectedArgs,
         bool $assertExactArgs = true,
     ): ExportJob {
-        $response = $this->actingAs($user)->getJson($url)->assertAccepted();
+        $response = $this->actingAs($user)->postJson($url)->assertAccepted();
         $record = ExportJob::query()->orderByDesc('id')->firstOrFail();
 
         $this->assertSame($user->id, $record->user_id);

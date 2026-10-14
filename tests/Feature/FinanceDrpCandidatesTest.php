@@ -12,6 +12,7 @@ use App\Models\SupplierScope;
 use App\Models\User;
 use App\Services\Payment\PaymentBatchService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use Tests\TestCase;
 
@@ -111,6 +112,7 @@ class FinanceDrpCandidatesTest extends TestCase
             'claim_type' => 'Reimburse/Claim', 'claim_date' => '2026-10-01',
             'amount' => '1000', 'description' => 'Test', 'submitted_by' => $this->finance->id,
             'status' => GaClaim::STATUS_READY_TO_PAY, 'ready_to_pay_at' => now(), 'submitted_at' => now(),
+            'approved_bank_snapshot' => $employee->bankDetails(), 'approved_bank_hash' => $employee->bankFingerprint(),
         ]);
     }
 
@@ -144,7 +146,8 @@ class FinanceDrpCandidatesTest extends TestCase
     public function test_ga_batch_revalidates_employee_bank_and_rolls_back_batch(): void
     {
         $claim = $this->claim();
-        $claim->employee->update(['account_number' => '']);
+        // Simulate a write outside the model so batching must still revalidate live bank data.
+        DB::table('employees')->where('id', $claim->employee_id)->update(['account_number' => '']);
         try {
             app(PaymentBatchService::class)->createGaBatch($this->finance, [$claim->id]);
             $this->fail('Incomplete bank details must reject the batch.');

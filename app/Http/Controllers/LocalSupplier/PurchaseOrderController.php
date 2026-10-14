@@ -18,7 +18,11 @@ class PurchaseOrderController extends Controller
             ->withSum(['invoices as invoiced_amount' => fn ($q) => $q->whereNotIn('status', [LocalInvoice::STATUS_REJECTED, LocalInvoice::STATUS_CANCELLED])], 'invoice_amount');
 
         if ($request->filled('q')) {
-            $query->where('po_number', 'like', '%'.addcslashes($request->string('q'), '%_').'%');
+            $search = '%'.addcslashes((string) $request->string('q'), '%_').'%';
+            $query->where(function ($q) use ($search) {
+                $q->where('po_number', 'like', $search)
+                    ->orWhere('pr_number', 'like', $search);
+            });
         }
         if ($request->filled('status')) {
             $query->where('status', $request->string('status'));
@@ -44,9 +48,11 @@ class PurchaseOrderController extends Controller
 
         $purchaseOrder->load([
             'attachments' => fn ($q) => $q->latest('id'),
-            'goodsReceipts' => fn ($q) => $q->where('status', '!=', LocalGoodsReceipt::STATUS_CANCELLED)->orderBy('gr_date'),
             'invoices' => fn ($q) => $q->latest('invoice_date'),
         ]);
+
+        $purchaseOrder->loadCount(['goodsReceipts as active_gr_count' => fn ($q) => $q->where('status', '!=', LocalGoodsReceipt::STATUS_CANCELLED)]);
+        $purchaseOrder->setRelation('goodsReceipts', $purchaseOrder->goodsReceipts()->where('status', '!=', LocalGoodsReceipt::STATUS_CANCELLED)->with('currentInvoice')->orderByDesc('gr_date')->orderByDesc('id')->limit(25)->get());
 
         return view('local-supplier.purchase-orders.show', [
             'purchaseOrder' => $purchaseOrder,

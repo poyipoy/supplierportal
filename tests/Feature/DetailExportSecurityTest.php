@@ -101,20 +101,20 @@ class DetailExportSecurityTest extends TestCase
         Queue::fake();
 
         $this->actingAs($this->purchasing)
-            ->get(route('purchasing.export.quotations.detail', $quotation))
+            ->post(route('purchasing.export.quotations.detail', $quotation))
             ->assertRedirect();
         $purchasingJob = ExportJob::query()->latest('id')->firstOrFail();
         $this->assertSame(QuotationDetailExport::class, $purchasingJob->export_class);
         $this->assertSame([$quotation->id], $purchasingJob->export_args);
 
         $this->actingAs($this->supplierA)
-            ->get(route('supplier.export.quotations.detail', $quotation))
+            ->post(route('supplier.export.quotations.detail', $quotation))
             ->assertRedirect();
         $supplierJob = ExportJob::query()->latest('id')->firstOrFail();
         $this->assertSame([$quotation->id, $this->supplierA->id, false], $supplierJob->export_args);
 
         $this->actingAs($this->supplierB)
-            ->get(route('supplier.export.quotations.detail', $quotation))
+            ->post(route('supplier.export.quotations.detail', $quotation))
             ->assertForbidden();
 
         Queue::assertPushed(ProcessExportJob::class, 2);
@@ -192,20 +192,20 @@ class DetailExportSecurityTest extends TestCase
         Queue::fake();
 
         $this->actingAs($this->purchasing)
-            ->get(route('purchasing.export.purchase-orders.detail', $po))
+            ->post(route('purchasing.export.purchase-orders.detail', $po))
             ->assertRedirect();
         $purchasingJob = ExportJob::query()->latest('id')->firstOrFail();
         $this->assertSame(PurchaseOrderDetailExport::class, $purchasingJob->export_class);
         $this->assertSame([$po->id], $purchasingJob->export_args);
 
         $this->actingAs($this->supplierA)
-            ->get(route('supplier.export.purchase-orders.detail', $po))
+            ->post(route('supplier.export.purchase-orders.detail', $po))
             ->assertRedirect();
         $supplierJob = ExportJob::query()->latest('id')->firstOrFail();
         $this->assertSame([$po->id, $this->supplierA->id], $supplierJob->export_args);
 
         $this->actingAs($this->supplierB)
-            ->get(route('supplier.export.purchase-orders.detail', $po))
+            ->post(route('supplier.export.purchase-orders.detail', $po))
             ->assertForbidden();
 
         Queue::assertPushed(ProcessExportJob::class, 2);
@@ -226,7 +226,7 @@ class DetailExportSecurityTest extends TestCase
 
         Queue::fake();
         $this->actingAs($this->supplierA)
-            ->get(route('supplier.export.purchase-orders', ['supplier_id' => $this->supplierB]))
+            ->post(route('supplier.export.purchase-orders', ['supplier_id' => $this->supplierB]))
             ->assertRedirect();
 
         $queued = ExportJob::query()->latest('id')->firstOrFail();

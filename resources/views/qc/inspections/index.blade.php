@@ -18,7 +18,7 @@
         :description="__('qc.copy.process_arrived_shipments_waiting_for_quality_evaluation_and_review_completed_inspection_history')"
     >
         <x-slot:actions>
-            <div id="inspectionExportLink" class="d-none"><x-export.advanced-modal export-key="qc.inspections" :action="route('qc.export.inspections')" :filter-selectors="['status' => '#historyStatusFilter']" /></div>
+            <div id="inspectionExportLink" class="d-none"><x-export.advanced-modal export-key="qc.inspections" table="#historyTable" :action="route('qc.export.inspections')" :filter-selectors="['status' => '#historyStatusFilter']" /></div>
         </x-slot:actions>
     </x-ui.page-header>
 

@@ -151,6 +151,7 @@ class FinanceDrpPaidController extends Controller
             'transfer_reference' => ['required', 'string', 'max:100'],
             'transfer_date' => ['required', 'date_format:Y-m-d'],
             'payment_notes' => ['nullable', 'string', 'max:1000'],
+            'override_reason' => ['nullable', 'string', 'max:1000'],
             'custom_amounts' => ['nullable', 'array'],
             'custom_amounts.*' => ['nullable', 'numeric', 'gt:0', 'regex:/^\d{1,18}(\.\d{1,2})?$/'],
             'correction_reasons' => ['nullable', 'array'],

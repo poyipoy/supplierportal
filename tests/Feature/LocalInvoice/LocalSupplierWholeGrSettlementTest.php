@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\LocalInvoice;
 
+use App\Exports\PaymentBatchTransferSheetRenderer;
 use App\Models\LocalGoodsReceipt;
 use App\Models\LocalInvoice;
 use App\Models\LocalInvoicePayment;
@@ -122,6 +123,101 @@ class LocalSupplierWholeGrSettlementTest extends TestCase
         ], ['invoice' => NativeFileFixtures::upload('invoice-revision.pdf', 10)]);
     }
 
+    private function requestRevision(LocalInvoice $invoice, array $overrides = []): void
+    {
+        $invoice->update(array_merge(['status' => LocalInvoice::STATUS_NEED_REVISION], $overrides));
+        $invoice->statusHistories()->create([
+            'from_status' => LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT,
+            'to_status' => LocalInvoice::STATUS_NEED_REVISION,
+            'actor_id' => $this->finance->id,
+            'event' => 'revision_requested',
+            'notes' => 'Provide corrected document.',
+            'created_at' => now(),
+        ]);
+    }
+
+    private function legacyResubmitPayload(LocalInvoice $invoice): array
+    {
+        return [
+            'invoice_number' => $invoice->invoice_number,
+            'invoice_date' => '2026-09-13',
+            'po_source' => 'MANUAL',
+            'manual_po_number' => 'LEGACY-PO-001',
+            'manual_gr_reference' => 'LEGACY-GR-001',
+            'invoice_amount' => '300.00',
+            'tax_amount' => '0.00',
+            'ppn_scheme' => '0%',
+        ];
+    }
+
+    public function test_resubmit_rejects_non_pkp_tax(): void
+    {
+        $invoice = $this->invoice();
+        $this->requestRevision($invoice);
+
+        try {
+            app(InvoiceSubmissionService::class)->resubmit($this->supplier, $invoice, [
+                'invoice_number' => $invoice->invoice_number,
+                'invoice_date' => '2026-09-13',
+                'local_purchase_order_id' => $this->po->id,
+                'goods_receipt_ids' => [$this->gr1->id, $this->gr2->id],
+                'invoice_amount' => '300.00',
+                'tax_amount' => '250.00',
+                'ppn_scheme' => '0%',
+            ], ['invoice' => NativeFileFixtures::upload('invoice-revision.pdf', 10)]);
+            $this->fail('A resubmitted VAT unrelated to DPP x scheme was accepted.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('ppn_scheme', $exception->errors());
+        }
+
+        $this->assertSame('0.00', $invoice->fresh()->tax_amount);
+        $this->assertSame(LocalInvoice::STATUS_NEED_REVISION, $invoice->fresh()->status);
+    }
+
+    public function test_legacy_internal_row_cannot_resubmit_through_manual_reference_branch(): void
+    {
+        $invoice = $this->invoice();
+        // Simulate a grandfathered provider-backed row: INTERNAL, no authoritative PO.
+        $this->requestRevision($invoice, ['local_purchase_order_id' => null, 'po_source' => 'INTERNAL']);
+
+        try {
+            app(InvoiceSubmissionService::class)->resubmit($this->supplier, $invoice, $this->legacyResubmitPayload($invoice), ['invoice' => NativeFileFixtures::upload('invoice-revision.pdf', 10)]);
+            $this->fail('A non-MANUAL row was resubmitted through the manual reference branch.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('local_purchase_order_id', $exception->errors());
+        }
+
+        $this->assertSame('INTERNAL', $invoice->fresh()->po_source);
+    }
+
+    public function test_row_already_stored_as_manual_can_still_be_resubmitted(): void
+    {
+        $invoice = $this->invoice();
+        $this->requestRevision($invoice, ['local_purchase_order_id' => null, 'po_source' => 'MANUAL']);
+
+        $resubmitted = app(InvoiceSubmissionService::class)->resubmit($this->supplier, $invoice, $this->legacyResubmitPayload($invoice), ['invoice' => NativeFileFixtures::upload('invoice-revision.pdf', 10)]);
+
+        $this->assertSame(LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT, $resubmitted->fresh()->status);
+        $this->assertSame('MANUAL', $resubmitted->fresh()->po_source);
+        $this->assertSame('LEGACY-GR-001', $resubmitted->fresh()->manual_gr_reference);
+    }
+
+    public function test_manual_invoice_can_be_resubmitted_through_the_http_request_without_po_or_gr_ids(): void
+    {
+        $invoice = $this->invoice();
+        $this->requestRevision($invoice, ['local_purchase_order_id' => null, 'po_source' => 'MANUAL']);
+
+        $this->actingAs($this->supplier)->post(route('local-supplier.invoices.resubmit', $invoice), array_merge(
+            $this->legacyResubmitPayload($invoice), ['invoice' => NativeFileFixtures::upload('invoice-revision.pdf', 10)]
+        ))->assertSessionHasNoErrors();
+
+        $invoice->refresh();
+        $this->assertNull($invoice->local_purchase_order_id);
+        $this->assertSame('MANUAL', $invoice->po_source);
+        $this->assertSame(2, $invoice->revision_number);
+        $this->assertSame(LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT, $invoice->status);
+    }
+
     public function test_gr_cannot_be_cross_supplier_or_reused(): void
     {
         $other = User::factory()->create(['role' => 'supplier', 'is_active' => true]);
@@ -161,7 +257,7 @@ class LocalSupplierWholeGrSettlementTest extends TestCase
         $invoice->update(['status' => LocalInvoice::STATUS_READY_TO_PAY]);
         $invoice->currentVerification()->create(['revision_number' => 1, 'is_section_a_passed' => true, 'is_section_b_passed' => true, 'is_locked' => true, 'verified_ppn' => '0.00', 'pph_23_applicable' => false, 'pph_4_2_applicable' => false, 'pph_21_applicable' => false]);
         SupplierBankAccount::create(['supplier_id' => $this->supplier->id, 'bank_name' => 'BCA', 'account_number' => '123', 'account_holder_name' => 'PT Whole GR', 'status' => SupplierBankAccount::STATUS_VERIFIED]);
-        $batch = PaymentBatch::create(['batch_number' => 'DRP-TEST-001', 'batch_type' => PaymentBatch::TYPE_SUPPLIER, 'status' => PaymentBatch::STATUS_FINALIZED, 'created_by' => $this->finance->id]);
+        $batch = PaymentBatch::create(['batch_number' => 'DRP-TEST-001', 'batch_type' => PaymentBatch::TYPE_SUPPLIER, 'status' => PaymentBatch::STATUS_FINALIZED, 'finalized_by' => User::factory()->create(['role' => 'finance'])->id, 'created_by' => $this->finance->id]);
         $group = $batch->groups()->create(['payee_type' => 'supplier', 'payee_id' => $this->supplier->id, 'payee_name' => 'PT Whole GR', 'bank_name' => 'BCA', 'account_number' => '123', 'account_holder_name' => 'PT Whole GR', 'subtotal_amount' => '300.00', 'bank_fee' => '0.00', 'net_payment_amount' => '300.00', 'status' => PaymentGroup::STATUS_UNPAID]);
         $item = $group->items()->create(['payable_type' => LocalInvoice::class, 'payable_id' => $invoice->id, 'amount' => '300.00', 'status' => PaymentItem::STATUS_ACTIVE]);
         $voucher = app(LocalInvoiceVoucherService::class)->finalize($item, ['voucher_date' => '2026-09-14', 'payment_method' => 'BANK'], $this->finance);
@@ -202,6 +298,7 @@ class LocalSupplierWholeGrSettlementTest extends TestCase
             'batch_number' => 'DRP-TEST-PDF',
             'batch_type' => PaymentBatch::TYPE_SUPPLIER,
             'status' => PaymentBatch::STATUS_FINALIZED,
+            'finalized_by' => User::factory()->create(['role' => 'finance'])->id,
             'created_by' => $this->finance->id,
         ]);
         $group = $batch->groups()->create([
@@ -241,12 +338,22 @@ class LocalSupplierWholeGrSettlementTest extends TestCase
         app(LocalGrReservationService::class)->consume($invoice, $this->finance);
         $invoice->update(['status' => LocalInvoice::STATUS_READY_TO_PAY]);
         $invoice->currentVerification()->create(['revision_number' => 1, 'is_section_a_passed' => true, 'is_section_b_passed' => true, 'is_locked' => true, 'verified_ppn' => '0.00', 'pph_23_applicable' => false, 'pph_4_2_applicable' => false, 'pph_21_applicable' => false]);
-        $batch = PaymentBatch::create(['batch_number' => 'DRP-TEST-002', 'batch_type' => PaymentBatch::TYPE_SUPPLIER, 'status' => PaymentBatch::STATUS_FINALIZED, 'created_by' => $this->finance->id]);
+        $batch = PaymentBatch::create(['batch_number' => 'DRP-TEST-002', 'batch_type' => PaymentBatch::TYPE_SUPPLIER, 'status' => PaymentBatch::STATUS_FINALIZED, 'finalized_by' => User::factory()->create(['role' => 'finance'])->id, 'created_by' => $this->finance->id]);
         $group = $batch->groups()->create(['payee_type' => 'supplier', 'payee_id' => $this->supplier->id, 'payee_name' => 'PT Whole GR', 'bank_name' => 'BCA', 'account_number' => '123', 'account_holder_name' => 'PT Whole GR', 'subtotal_amount' => '300.00', 'bank_fee' => '0.00', 'net_payment_amount' => '300.00', 'status' => PaymentGroup::STATUS_UNPAID]);
         $item = $group->items()->create(['payable_type' => LocalInvoice::class, 'payable_id' => $invoice->id, 'amount' => '300.00', 'status' => PaymentItem::STATUS_ACTIVE]);
         $voucher = app(LocalInvoiceVoucherService::class)->finalize($item, ['voucher_date' => '2026-09-14', 'payment_method' => 'BANK'], $this->finance);
         $payment = app(LocalInvoicePaymentService::class)->recordPrimary($voucher, ['amount' => '299.00', 'transfer_reference' => 'TRF-SHORT', 'transfer_date' => '2026-09-15', 'correction_reason' => 'Bank short transfer'], $this->finance);
         $this->assertSame(LocalInvoicePayment::STATUS_CORRECTION_REQUIRED, $payment->status);
+        $this->actingAs($this->finance)
+            ->postJson(route('finance.drp.export-transfer'), ['batch_ids' => [$batch->hash]])
+            ->assertStatus(202);
+        $rows = app(PaymentBatchTransferSheetRenderer::class)
+            ->buildAllTransferRows(collect([$batch->fresh(['groups.items.payable'])]));
+        $this->assertCount(1, $rows);
+        $this->assertSame('300.00', $rows[0]['amount']);
+        $this->assertSame('299.00', $payment->fresh()->actual_paid_total);
+        $this->assertSame(LocalInvoicePayment::STATUS_CORRECTION_REQUIRED, $payment->fresh()->status);
+        app()->setLocale('id');
         $partialHistory = $invoice->statusHistories()->where('event', 'partial_payment')->latest('id')->firstOrFail();
         $this->assertSame(__('local_invoice.history.partial_payment_with_reason', [
             'amount' => '299', 'reference' => 'TRF-SHORT', 'actual' => '299', 'remaining' => '1', 'reason' => 'Bank short transfer',
@@ -333,7 +440,7 @@ class LocalSupplierWholeGrSettlementTest extends TestCase
         $invoice->update(['status' => LocalInvoice::STATUS_READY_TO_PAY]);
         $invoice->currentVerification()->create(['revision_number' => 1, 'is_section_a_passed' => true, 'is_section_b_passed' => true, 'is_locked' => true, 'verified_ppn' => '0.00', 'pph_23_applicable' => false, 'pph_4_2_applicable' => false, 'pph_21_applicable' => false]);
         SupplierBankAccount::create(['supplier_id' => $this->supplier->id, 'bank_name' => 'BCA', 'account_number' => '123', 'account_holder_name' => 'PT Whole GR', 'status' => SupplierBankAccount::STATUS_VERIFIED]);
-        $batch = PaymentBatch::create(['batch_number' => 'DRP-TEST-REFUND', 'batch_type' => PaymentBatch::TYPE_SUPPLIER, 'status' => PaymentBatch::STATUS_FINALIZED, 'created_by' => $this->finance->id]);
+        $batch = PaymentBatch::create(['batch_number' => 'DRP-TEST-REFUND', 'batch_type' => PaymentBatch::TYPE_SUPPLIER, 'status' => PaymentBatch::STATUS_FINALIZED, 'finalized_by' => User::factory()->create(['role' => 'finance'])->id, 'created_by' => $this->finance->id]);
         $group = $batch->groups()->create(['payee_type' => 'supplier', 'payee_id' => $this->supplier->id, 'payee_name' => 'PT Whole GR', 'bank_name' => 'BCA', 'account_number' => '123', 'account_holder_name' => 'PT Whole GR', 'subtotal_amount' => '300.00', 'bank_fee' => '0.00', 'net_payment_amount' => '300.00', 'status' => PaymentGroup::STATUS_UNPAID]);
         $item = $group->items()->create(['payable_type' => LocalInvoice::class, 'payable_id' => $invoice->id, 'amount' => '300.00', 'status' => PaymentItem::STATUS_ACTIVE]);
         $voucher = app(LocalInvoiceVoucherService::class)->finalize($item, ['voucher_date' => '2026-09-14', 'payment_method' => 'BANK'], $this->finance);
@@ -431,6 +538,21 @@ class LocalSupplierWholeGrSettlementTest extends TestCase
             'tax_amount' => '0.00',
             'ppn_scheme' => '0%',
         ], ['invoice' => NativeFileFixtures::upload('invoice.pdf', 10)]);
+    }
+
+    public function test_expired_invoice_no_longer_counts_against_po_ceiling(): void
+    {
+        $expired = $this->invoice();
+        $expiry = app(InvoiceExpiryService::class);
+        $expiry->recordMissedDelivery($expired, $this->finance);
+        $expiry->recordMissedDelivery($expired, $this->finance);
+        $this->assertSame(LocalInvoice::STATUS_EXPIRED, $expired->fresh()->status);
+
+        // Expiry released both GRs; the full 300.00 ceiling must be billable again.
+        $replacement = $this->invoice(['invoice_number' => 'INV-WHOLE-002']);
+
+        $this->assertSame(LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT, $replacement->fresh()->status);
+        $this->assertSame($replacement->id, $this->gr1->fresh()->current_invoice_id);
     }
 
     public function test_invoice_retains_quantity_and_uom_snapshot_after_master_change(): void

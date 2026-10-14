@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Exceptions\ImportAttemptSuperseded;
 use App\Models\LocalProcurementImport;
+use App\Services\LocalInvoice\LocalProcurementImportProgress;
 use App\Services\LocalInvoice\LocalProcurementImportService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -55,9 +56,12 @@ class ProcessLocalProcurementImport implements ShouldQueue
 
     public function failed(?Throwable $exception): void
     {
-        LocalProcurementImport::whereKey($this->importId)->where('owner_job_key', $this->runKey)
+        $changed = LocalProcurementImport::whereKey($this->importId)->where('owner_job_key', $this->runKey)
             ->where(fn ($q) => $q->whereNull('lease_expires_at')->orWhere('lease_expires_at', '<', now()))
             ->whereIn('status', ['QUEUED', 'READING', 'VALIDATING', 'IMPORTING'])
             ->update(['status' => 'FAILED', 'failure' => __('local_procurement.large_import.failed'), 'finished_at' => now(), 'lease_expires_at' => null]);
+        if ($changed && ($import = LocalProcurementImport::find($this->importId))) {
+            app(LocalProcurementImportProgress::class)->forget($import);
+        }
     }
 }

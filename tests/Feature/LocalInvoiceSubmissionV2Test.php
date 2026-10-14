@@ -8,6 +8,7 @@ use App\Models\SupplierScope;
 use App\Models\User;
 use App\Services\LocalInvoice\InvoiceSubmissionService;
 use App\Services\LocalInvoice\LocalPoReferenceService;
+use App\Services\LocalInvoice\LocalProcurementMasterService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
@@ -21,12 +22,17 @@ class LocalInvoiceSubmissionV2Test extends TestCase
 
     protected InvoiceSubmissionService $service;
 
+    private User $operator;
+
+    private static int $authSeq = 0;
+
     protected function setUp(): void
     {
         parent::setUp();
         Storage::fake('private');
         LocalPoReferenceService::clearMockPos();
         $this->service = app(InvoiceSubmissionService::class);
+        $this->operator = User::factory()->create(['role' => 'finance']);
     }
 
     private function createLocalSupplier(array $supplierData = []): User
@@ -46,6 +52,39 @@ class LocalInvoiceSubmissionV2Test extends TestCase
         return $user;
     }
 
+    /**
+     * Creates an authoritative Local PO with one whole GR for the owner and
+     * returns the payload keys a new submission must carry.
+     */
+    private function authoritative(User $owner): array
+    {
+        $suffix = str_pad((string) ++self::$authSeq, 3, '0', STR_PAD_LEFT);
+        $masters = app(LocalProcurementMasterService::class);
+        $po = $masters->createPurchaseOrder($this->operator, [
+            'supplier_id' => $owner->id,
+            'po_number' => 'PO-V2-'.$suffix,
+            'po_date' => '2026-09-01',
+            'total_amount' => '999999999999999999.99',
+        ]);
+        $gr = $masters->createGoodsReceipt($this->operator, $po, [
+            'gr_number' => 'GR-V2-'.$suffix,
+            'gr_date' => '2026-09-02',
+            'uom' => 'pcs',
+            'qty' => 10.0,
+        ]);
+
+        return ['local_purchase_order_id' => $po->id, 'goods_receipt_ids' => [$gr->id]];
+    }
+
+    private function files(): array
+    {
+        return [
+            'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
+            'tax_invoice' => NativeFileFixtures::upload('tax.pdf', 100),
+            'delivery_note' => NativeFileFixtures::upload('sj.pdf', 100),
+        ];
+    }
+
     private function nextWednesday(): string
     {
         $date = Carbon::now();
@@ -56,12 +95,26 @@ class LocalInvoiceSubmissionV2Test extends TestCase
         return $date->toDateString();
     }
 
-    public function test_internal_po_requires_goods_receipt_before_submission(): void
+    /**
+     * A submission that does not name an authoritative Local PO must be refused
+     * on local_purchase_order_id, leaving no invoice and no stored file behind.
+     */
+    private function assertRejectedAsNonAuthoritative(User $supplier, array $data): void
+    {
+        try {
+            $this->service->submit($supplier, $data, $this->files());
+            $this->fail('A submission without an authoritative Local PO was accepted.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('local_purchase_order_id', $exception->errors());
+        }
+
+        $this->assertSame(0, LocalInvoice::count());
+        $this->assertSame([], Storage::disk('private')->allFiles());
+    }
+
+    public function test_legacy_internal_po_reference_without_goods_receipt_is_rejected(): void
     {
         $supplier = $this->createLocalSupplier();
-        $wednesday = $this->nextWednesday();
-
-        // Register internal PO WITHOUT Goods Receipt
         LocalPoReferenceService::registerInternalPo(
             $supplier->id,
             'PO-INT-001',
@@ -70,33 +123,22 @@ class LocalInvoiceSubmissionV2Test extends TestCase
             description: 'Steel Pipes'
         );
 
-        $this->expectException(ValidationException::class);
-
-        $this->service->submit(
-            $supplier,
-            [
-                'invoice_number' => 'INV-001',
-                'invoice_date' => '2026-09-10',
-                'po_source' => 'INTERNAL',
-                'po_number' => 'PO-INT-001',
-                'internal_po_reference' => 'PO-INT-001',
-                'invoice_amount' => 5000000,
-                'scheduled_physical_delivery_date' => $wednesday,
-            ],
-            [
-                'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
-                'tax_invoice' => NativeFileFixtures::upload('tax.pdf', 100),
-                'delivery_note' => NativeFileFixtures::upload('sj.pdf', 100),
-            ]
-        );
+        $this->assertRejectedAsNonAuthoritative($supplier, [
+            'invoice_number' => 'INV-001',
+            'invoice_date' => '2026-09-10',
+            'po_source' => 'INTERNAL',
+            'po_number' => 'PO-INT-001',
+            'internal_po_reference' => 'PO-INT-001',
+            'invoice_amount' => 5000000,
+            'scheduled_physical_delivery_date' => $this->nextWednesday(),
+        ]);
     }
 
-    public function test_internal_po_flags_discrepancy_when_dpp_exceeds_remaining_po_value(): void
+    public function test_legacy_internal_po_reference_is_rejected_even_with_goods_receipt(): void
     {
         $supplier = $this->createLocalSupplier();
-        $wednesday = $this->nextWednesday();
-
-        // Register internal PO WITH GR, value 10,000,000
+        // A provider-resolvable PO with a GR used to be billable with only a
+        // discrepancy flag when DPP exceeded its value; it now has no path in.
         LocalPoReferenceService::registerInternalPo(
             $supplier->id,
             'PO-INT-002',
@@ -105,91 +147,46 @@ class LocalInvoiceSubmissionV2Test extends TestCase
             description: 'Steel Plates'
         );
 
-        // Submit invoice with DPP 12,000,000 (> 10,000,000 remaining)
-        $invoice = $this->service->submit(
-            $supplier,
-            [
-                'invoice_number' => 'INV-002',
-                'invoice_date' => '2026-09-10',
-                'po_source' => 'INTERNAL',
-                'po_number' => 'PO-INT-002',
-                'internal_po_reference' => 'PO-INT-002',
-                'invoice_amount' => 12000000,
-                'ppn_scheme' => '11%',
-                'scheduled_physical_delivery_date' => $wednesday,
-            ],
-            [
-                'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
-                'tax_invoice' => NativeFileFixtures::upload('tax.pdf', 100),
-                'delivery_note' => NativeFileFixtures::upload('sj.pdf', 100),
-            ]
-        );
-
-        // Submission allowed, but flagged with discrepancy
-        $this->assertTrue($invoice->has_po_discrepancy);
-        $this->assertEquals(10000000.0, $invoice->po_value_snapshot);
-        $this->assertEquals(10000000.0, $invoice->po_remaining_snapshot);
-        $this->assertSame('PO-INT-002', $invoice->internal_po_reference);
-        $this->assertSame('GR-002', $invoice->internal_gr_reference);
-        $this->assertSame('11%', $invoice->ppn_scheme);
-        $this->assertEquals(1320000.0, $invoice->tax_amount); // 11% of 12,000,000
-        $this->assertNull($invoice->due_date); // Due date NOT set at submission!
+        $this->assertRejectedAsNonAuthoritative($supplier, [
+            'invoice_number' => 'INV-002',
+            'invoice_date' => '2026-09-10',
+            'po_source' => 'INTERNAL',
+            'po_number' => 'PO-INT-002',
+            'internal_po_reference' => 'PO-INT-002',
+            'invoice_amount' => 12000000,
+            'ppn_scheme' => '11%',
+            'scheduled_physical_delivery_date' => $this->nextWednesday(),
+        ]);
     }
 
-    public function test_manual_po_requires_manual_gr_reference(): void
+    public function test_manual_po_without_gr_reference_is_rejected(): void
     {
         $supplier = $this->createLocalSupplier();
-        $wednesday = $this->nextWednesday();
 
-        // Manual PO without manual GR should fail
-        $this->expectException(ValidationException::class);
-
-        $this->service->submit(
-            $supplier,
-            [
-                'invoice_number' => 'INV-003',
-                'invoice_date' => '2026-09-10',
-                'po_source' => 'MANUAL',
-                'manual_po_number' => 'MAN-PO-999',
-                'manual_gr_reference' => null, // Missing!
-                'invoice_amount' => 3000000,
-                'scheduled_physical_delivery_date' => $wednesday,
-            ],
-            [
-                'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
-                'tax_invoice' => NativeFileFixtures::upload('tax.pdf', 100),
-                'delivery_note' => NativeFileFixtures::upload('sj.pdf', 100),
-            ]
-        );
+        $this->assertRejectedAsNonAuthoritative($supplier, [
+            'invoice_number' => 'INV-003',
+            'invoice_date' => '2026-09-10',
+            'po_source' => 'MANUAL',
+            'manual_po_number' => 'MAN-PO-999',
+            'manual_gr_reference' => null,
+            'invoice_amount' => 3000000,
+            'scheduled_physical_delivery_date' => $this->nextWednesday(),
+        ]);
     }
 
-    public function test_manual_po_submission_succeeds_with_manual_gr(): void
+    public function test_manual_po_with_manual_gr_reference_is_rejected(): void
     {
         $supplier = $this->createLocalSupplier();
-        $wednesday = $this->nextWednesday();
 
-        $invoice = $this->service->submit(
-            $supplier,
-            [
-                'invoice_number' => 'INV-004',
-                'invoice_date' => '2026-09-10',
-                'po_source' => 'MANUAL',
-                'manual_po_number' => 'MAN-PO-999',
-                'manual_gr_reference' => 'MAN-GR-888',
-                'invoice_amount' => 3000000,
-                'scheduled_physical_delivery_date' => $wednesday,
-            ],
-            [
-                'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
-                'tax_invoice' => NativeFileFixtures::upload('tax.pdf', 100),
-                'delivery_note' => NativeFileFixtures::upload('sj.pdf', 100),
-            ]
-        );
-
-        $this->assertSame('MANUAL', $invoice->po_source);
-        $this->assertSame('MAN-PO-999', $invoice->manual_po_number);
-        $this->assertSame('MAN-GR-888', $invoice->manual_gr_reference);
-        $this->assertFalse($invoice->has_po_discrepancy);
+        $this->assertRejectedAsNonAuthoritative($supplier, [
+            'invoice_number' => 'INV-004',
+            'invoice_date' => '2026-09-10',
+            'po_source' => 'MANUAL',
+            'manual_po_number' => 'MAN-PO-999',
+            'manual_gr_reference' => 'MAN-GR-888',
+            'invoice_amount' => 3000000,
+            'scheduled_physical_delivery_date' => $this->nextWednesday(),
+        ]);
     }
 
     public function test_conditional_documents_non_pkp_and_service_category_do_not_require_faktur_or_surat_jalan(): void
@@ -199,28 +196,17 @@ class LocalInvoiceSubmissionV2Test extends TestCase
             'vendor_category' => 'Jasa Konsultan',
             'is_pkp' => false,
         ]);
-        $wednesday = $this->nextWednesday();
-
-        LocalPoReferenceService::registerInternalPo(
-            $supplier->id,
-            'PO-JASA-001',
-            value: 5000000.0,
-            grReference: 'GR-JASA-001'
-        );
 
         // Submit with ONLY invoice document (no tax_invoice, no delivery_note)
         $invoice = $this->service->submit(
             $supplier,
-            [
+            array_merge([
                 'invoice_number' => 'INV-JASA-001',
                 'invoice_date' => '2026-09-10',
-                'po_source' => 'INTERNAL',
-                'po_number' => 'PO-JASA-001',
-                'internal_po_reference' => 'PO-JASA-001',
                 'invoice_amount' => 5000000,
                 'ppn_scheme' => '0%',
-                'scheduled_physical_delivery_date' => $wednesday,
-            ],
+                'scheduled_physical_delivery_date' => $this->nextWednesday(),
+            ], $this->authoritative($supplier)),
             [
                 'invoice' => NativeFileFixtures::upload('invoice_only.pdf', 100),
             ]
@@ -235,65 +221,41 @@ class LocalInvoiceSubmissionV2Test extends TestCase
     {
         $supplier = $this->createLocalSupplier();
 
-        LocalPoReferenceService::registerInternalPo(
-            $supplier->id,
-            'PO-SCHED-001',
-            value: 5000000.0,
-            grReference: 'GR-SCHED-001'
-        );
-
         // Pick a Tuesday or Thursday
         $thursday = Carbon::now();
         while ($thursday->dayOfWeek !== Carbon::THURSDAY) {
             $thursday->addDay();
         }
 
-        $this->expectException(ValidationException::class);
-
-        $this->service->submit(
-            $supplier,
-            [
-                'invoice_number' => 'INV-THU-001',
-                'invoice_date' => '2026-09-10',
-                'po_source' => 'INTERNAL',
-                'po_number' => 'PO-SCHED-001',
-                'internal_po_reference' => 'PO-SCHED-001',
-                'invoice_amount' => 5000000,
-                'scheduled_physical_delivery_date' => $thursday->toDateString(),
-            ],
-            [
-                'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
-                'tax_invoice' => NativeFileFixtures::upload('tax.pdf', 100),
-                'delivery_note' => NativeFileFixtures::upload('sj.pdf', 100),
-            ]
-        );
+        try {
+            $this->service->submit(
+                $supplier,
+                array_merge([
+                    'invoice_number' => 'INV-THU-001',
+                    'invoice_date' => '2026-09-10',
+                    'invoice_amount' => 5000000,
+                    'scheduled_physical_delivery_date' => $thursday->toDateString(),
+                ], $this->authoritative($supplier)),
+                $this->files()
+            );
+            $this->fail('A Thursday physical delivery date was accepted.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('scheduled_physical_delivery_date', $exception->errors());
+        }
     }
 
     public function test_tax_invoice_number_is_saved_and_normalized_for_pkp_supplier(): void
     {
         $supplier = $this->createLocalSupplier();
-        $wednesday = $this->nextWednesday();
 
-        LocalPoReferenceService::registerInternalPo(
-            $supplier->id,
-            'PO-TAX-001',
-            value: 5000000.0,
-            grReference: 'GR-TAX-001'
-        );
-
-        $response = $this->actingAs($supplier)->post(route('local-supplier.invoices.store'), [
+        $response = $this->actingAs($supplier)->post(route('local-supplier.invoices.store'), array_merge([
             'invoice_number' => 'INV-TAX-001',
             'invoice_date' => '2026-09-10',
-            'po_source' => 'INTERNAL',
-            'internal_po_reference' => 'PO-TAX-001',
             'invoice_amount' => 5000000,
             'ppn_scheme' => '11%',
             'tax_invoice_number' => '0100002612345678', // Raw 16 digits
-            'scheduled_physical_delivery_date' => $wednesday,
-            'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
-            'tax_invoice' => NativeFileFixtures::upload('tax.pdf', 100),
-            'delivery_note' => NativeFileFixtures::upload('sj.pdf', 100),
-        ]);
+            'scheduled_physical_delivery_date' => $this->nextWednesday(),
+        ], $this->authoritative($supplier), $this->files()));
 
         $response->assertSessionHasNoErrors();
         $invoice = LocalInvoice::where('invoice_number', 'INV-TAX-001')->firstOrFail();
@@ -307,23 +269,17 @@ class LocalInvoiceSubmissionV2Test extends TestCase
     public function test_async_invoice_submit_returns_json_redirect_and_flashes_success(): void
     {
         $supplier = $this->createLocalSupplier();
-        LocalPoReferenceService::registerInternalPo($supplier->id, 'PO-ASYNC-001', value: 5000000.0, grReference: 'GR-ASYNC-001');
 
         $response = $this->actingAs($supplier)
             ->withHeaders(['Accept' => 'application/json'])
-            ->post(route('local-supplier.invoices.store'), [
+            ->post(route('local-supplier.invoices.store'), array_merge([
                 'invoice_number' => 'INV-ASYNC-001',
                 'invoice_date' => '2026-09-10',
-                'po_source' => 'INTERNAL',
-                'internal_po_reference' => 'PO-ASYNC-001',
                 'invoice_amount' => 5000000,
                 'ppn_scheme' => '11%',
                 'tax_invoice_number' => '0100002612345678',
                 'scheduled_physical_delivery_date' => $this->nextWednesday(),
-                'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
-                'tax_invoice' => NativeFileFixtures::upload('tax.pdf', 100),
-                'delivery_note' => NativeFileFixtures::upload('sj.pdf', 100),
-            ]);
+            ], $this->authoritative($supplier), $this->files()));
 
         $invoice = LocalInvoice::where('invoice_number', 'INV-ASYNC-001')->firstOrFail();
         $response->assertOk()->assertExactJson(['redirect' => route('local-supplier.invoices.receipt', $invoice)]);
@@ -333,23 +289,17 @@ class LocalInvoiceSubmissionV2Test extends TestCase
     public function test_async_invoice_submit_with_invalid_data_returns_422_and_creates_nothing(): void
     {
         $supplier = $this->createLocalSupplier(['is_pkp' => true]);
-        LocalPoReferenceService::registerInternalPo($supplier->id, 'PO-ASYNC-002', value: 5000000.0, grReference: 'GR-ASYNC-002');
 
         $response = $this->actingAs($supplier)
             ->withHeaders(['Accept' => 'application/json'])
-            ->post(route('local-supplier.invoices.store'), [
+            ->post(route('local-supplier.invoices.store'), array_merge([
                 'invoice_number' => 'INV-ASYNC-002',
                 'invoice_date' => '2026-09-10',
-                'po_source' => 'INTERNAL',
-                'internal_po_reference' => 'PO-ASYNC-002',
                 'invoice_amount' => 5000000,
                 'ppn_scheme' => '11%',
                 // tax_invoice_number omitted for a PKP supplier
                 'scheduled_physical_delivery_date' => $this->nextWednesday(),
-                'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
-                'tax_invoice' => NativeFileFixtures::upload('tax.pdf', 100),
-                'delivery_note' => NativeFileFixtures::upload('sj.pdf', 100),
-            ]);
+            ], $this->authoritative($supplier), $this->files()));
 
         $response->assertUnprocessable()->assertJsonValidationErrors(['tax_invoice_number']);
         $this->assertSame(0, LocalInvoice::where('invoice_number', 'INV-ASYNC-002')->count());
@@ -359,28 +309,15 @@ class LocalInvoiceSubmissionV2Test extends TestCase
     public function test_tax_invoice_number_supports_coretax_17_digit_format(): void
     {
         $supplier = $this->createLocalSupplier(['is_pkp' => true]);
-        $wednesday = $this->nextWednesday();
 
-        LocalPoReferenceService::registerInternalPo(
-            $supplier->id,
-            'PO-TAX-001-CORETAX',
-            value: 5000000.0,
-            grReference: 'GR-TAX-001-CORETAX'
-        );
-
-        $response = $this->actingAs($supplier)->post(route('local-supplier.invoices.store'), [
+        $response = $this->actingAs($supplier)->post(route('local-supplier.invoices.store'), array_merge([
             'invoice_number' => 'INV-TAX-CORETAX',
             'invoice_date' => '2026-09-10',
-            'po_source' => 'INTERNAL',
-            'internal_po_reference' => 'PO-TAX-001-CORETAX',
             'invoice_amount' => 5000000,
             'ppn_scheme' => '11%',
             'tax_invoice_number' => '01002600000000001', // Raw 17 digits Coretax
-            'scheduled_physical_delivery_date' => $wednesday,
-            'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
-            'tax_invoice' => NativeFileFixtures::upload('tax.pdf', 100),
-            'delivery_note' => NativeFileFixtures::upload('sj.pdf', 100),
-        ]);
+            'scheduled_physical_delivery_date' => $this->nextWednesday(),
+        ], $this->authoritative($supplier), $this->files()));
 
         $response->assertSessionHasNoErrors();
         $invoice = LocalInvoice::where('invoice_number', 'INV-TAX-CORETAX')->firstOrFail();
@@ -390,28 +327,15 @@ class LocalInvoiceSubmissionV2Test extends TestCase
     public function test_tax_invoice_number_is_required_for_pkp_supplier(): void
     {
         $supplier = $this->createLocalSupplier(['is_pkp' => true]);
-        $wednesday = $this->nextWednesday();
 
-        LocalPoReferenceService::registerInternalPo(
-            $supplier->id,
-            'PO-TAX-002',
-            value: 5000000.0,
-            grReference: 'GR-TAX-002'
-        );
-
-        $response = $this->actingAs($supplier)->post(route('local-supplier.invoices.store'), [
+        $response = $this->actingAs($supplier)->post(route('local-supplier.invoices.store'), array_merge([
             'invoice_number' => 'INV-TAX-002',
             'invoice_date' => '2026-09-10',
-            'po_source' => 'INTERNAL',
-            'internal_po_reference' => 'PO-TAX-002',
             'invoice_amount' => 5000000,
             'ppn_scheme' => '11%',
             // tax_invoice_number omitted
-            'scheduled_physical_delivery_date' => $wednesday,
-            'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
-            'tax_invoice' => NativeFileFixtures::upload('tax.pdf', 100),
-            'delivery_note' => NativeFileFixtures::upload('sj.pdf', 100),
-        ]);
+            'scheduled_physical_delivery_date' => $this->nextWednesday(),
+        ], $this->authoritative($supplier), $this->files()));
 
         $response->assertSessionHasErrors('tax_invoice_number');
     }
@@ -419,28 +343,15 @@ class LocalInvoiceSubmissionV2Test extends TestCase
     public function test_tax_invoice_number_rejects_invalid_format(): void
     {
         $supplier = $this->createLocalSupplier(['is_pkp' => true]);
-        $wednesday = $this->nextWednesday();
 
-        LocalPoReferenceService::registerInternalPo(
-            $supplier->id,
-            'PO-TAX-003',
-            value: 5000000.0,
-            grReference: 'GR-TAX-003'
-        );
-
-        $response = $this->actingAs($supplier)->post(route('local-supplier.invoices.store'), [
+        $response = $this->actingAs($supplier)->post(route('local-supplier.invoices.store'), array_merge([
             'invoice_number' => 'INV-TAX-003',
             'invoice_date' => '2026-09-10',
-            'po_source' => 'INTERNAL',
-            'internal_po_reference' => 'PO-TAX-003',
             'invoice_amount' => 5000000,
             'ppn_scheme' => '11%',
             'tax_invoice_number' => 'INVALID-123',
-            'scheduled_physical_delivery_date' => $wednesday,
-            'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
-            'tax_invoice' => NativeFileFixtures::upload('tax.pdf', 100),
-            'delivery_note' => NativeFileFixtures::upload('sj.pdf', 100),
-        ]);
+            'scheduled_physical_delivery_date' => $this->nextWednesday(),
+        ], $this->authoritative($supplier), $this->files()));
 
         $response->assertSessionHasErrors('tax_invoice_number');
     }
@@ -450,49 +361,25 @@ class LocalInvoiceSubmissionV2Test extends TestCase
         $supplier = $this->createLocalSupplier(['is_pkp' => true]);
         $wednesday = $this->nextWednesday();
 
-        LocalPoReferenceService::registerInternalPo(
-            $supplier->id,
-            'PO-TAX-004A',
-            value: 5000000.0,
-            grReference: 'GR-TAX-004A'
-        );
-
-        LocalPoReferenceService::registerInternalPo(
-            $supplier->id,
-            'PO-TAX-004B',
-            value: 5000000.0,
-            grReference: 'GR-TAX-004B'
-        );
-
         // First invoice succeeds
-        $this->actingAs($supplier)->post(route('local-supplier.invoices.store'), [
+        $this->actingAs($supplier)->post(route('local-supplier.invoices.store'), array_merge([
             'invoice_number' => 'INV-TAX-004A',
             'invoice_date' => '2026-09-10',
-            'po_source' => 'INTERNAL',
-            'internal_po_reference' => 'PO-TAX-004A',
             'invoice_amount' => 5000000,
             'ppn_scheme' => '11%',
             'tax_invoice_number' => '010.000-26.99999999',
             'scheduled_physical_delivery_date' => $wednesday,
-            'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
-            'tax_invoice' => NativeFileFixtures::upload('tax.pdf', 100),
-            'delivery_note' => NativeFileFixtures::upload('sj.pdf', 100),
-        ])->assertSessionHasNoErrors();
+        ], $this->authoritative($supplier), $this->files()))->assertSessionHasNoErrors();
 
         // Second invoice with duplicate NSFP fails
-        $response = $this->actingAs($supplier)->post(route('local-supplier.invoices.store'), [
+        $response = $this->actingAs($supplier)->post(route('local-supplier.invoices.store'), array_merge([
             'invoice_number' => 'INV-TAX-004B',
             'invoice_date' => '2026-09-10',
-            'po_source' => 'INTERNAL',
-            'internal_po_reference' => 'PO-TAX-004B',
             'invoice_amount' => 5000000,
             'ppn_scheme' => '11%',
             'tax_invoice_number' => '010.000-26.99999999',
             'scheduled_physical_delivery_date' => $wednesday,
-            'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
-            'tax_invoice' => NativeFileFixtures::upload('tax.pdf', 100),
-            'delivery_note' => NativeFileFixtures::upload('sj.pdf', 100),
-        ]);
+        ], $this->authoritative($supplier), $this->files()));
 
         $response->assertSessionHasErrors('tax_invoice_number');
     }
@@ -504,26 +391,16 @@ class LocalInvoiceSubmissionV2Test extends TestCase
             'vendor_category' => 'Jasa',
             'category' => 'Jasa',
         ]);
-        $wednesday = $this->nextWednesday();
 
-        LocalPoReferenceService::registerInternalPo(
-            $supplier->id,
-            'PO-TAX-005',
-            value: 5000000.0,
-            grReference: 'GR-TAX-005'
-        );
-
-        $response = $this->actingAs($supplier)->post(route('local-supplier.invoices.store'), [
+        $response = $this->actingAs($supplier)->post(route('local-supplier.invoices.store'), array_merge([
             'invoice_number' => 'INV-TAX-005',
             'invoice_date' => '2026-09-10',
-            'po_source' => 'INTERNAL',
-            'internal_po_reference' => 'PO-TAX-005',
             'invoice_amount' => 5000000,
             'ppn_scheme' => '0%',
             // tax_invoice_number omitted
-            'scheduled_physical_delivery_date' => $wednesday,
+            'scheduled_physical_delivery_date' => $this->nextWednesday(),
             'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
-        ]);
+        ], $this->authoritative($supplier)));
 
         $response->assertSessionHasNoErrors();
         $invoice = LocalInvoice::where('invoice_number', 'INV-TAX-005')->firstOrFail();
@@ -579,11 +456,9 @@ class LocalInvoiceSubmissionV2Test extends TestCase
         $this->assertEquals('PO-SEARCH-A1', $filtered->json('data.0.po_number'));
     }
 
-    public function test_invoice_submission_with_unified_po_number_auto_detects_internal(): void
+    public function test_unified_po_number_resolving_to_internal_po_is_rejected(): void
     {
         $supplier = $this->createLocalSupplier();
-        $wednesday = $this->nextWednesday();
-
         LocalPoReferenceService::registerInternalPo(
             $supplier->id,
             'PO-UNIFIED-INT',
@@ -591,69 +466,47 @@ class LocalInvoiceSubmissionV2Test extends TestCase
             grReference: 'GR-UNIFIED-01'
         );
 
-        // Form only sends po_number without po_source or internal_po_reference
-        $response = $this->actingAs($supplier)->post(route('local-supplier.invoices.store'), [
+        // Only po_number is sent; the resolver would auto-detect INTERNAL.
+        $response = $this->actingAs($supplier)->post(route('local-supplier.invoices.store'), array_merge([
             'invoice_number' => 'INV-UNIFIED-001',
             'invoice_date' => '2026-09-10',
             'po_number' => 'PO-UNIFIED-INT',
             'invoice_amount' => 5000000,
             'ppn_scheme' => '11%',
             'tax_invoice_number' => '010.000-26.12345678',
-            'scheduled_physical_delivery_date' => $wednesday,
-            'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
-            'tax_invoice' => NativeFileFixtures::upload('tax.pdf', 100),
-            'delivery_note' => NativeFileFixtures::upload('sj.pdf', 100),
-        ]);
+            'scheduled_physical_delivery_date' => $this->nextWednesday(),
+        ], $this->files()));
 
-        $response->assertSessionHasNoErrors();
-        $invoice = LocalInvoice::where('invoice_number', 'INV-UNIFIED-001')->firstOrFail();
-        $this->assertEquals('INTERNAL', $invoice->po_source);
-        $this->assertEquals('PO-UNIFIED-INT', $invoice->po_number);
-        $this->assertEquals('PO-UNIFIED-INT', $invoice->internal_po_reference);
-        $this->assertEquals('GR-UNIFIED-01', $invoice->internal_gr_reference);
+        $response->assertSessionHasErrors('local_purchase_order_id');
+        $this->assertSame(0, LocalInvoice::count());
+        $this->assertSame([], Storage::disk('private')->allFiles());
     }
 
-    public function test_invoice_submission_with_unified_po_number_auto_detects_manual_and_requires_gr(): void
+    public function test_unified_po_number_with_blank_po_source_does_not_fall_back_to_manual(): void
     {
         $supplier = $this->createLocalSupplier();
-        $wednesday = $this->nextWednesday();
-
-        // 1. Without manual_gr_reference -> fails validation
-        $response = $this->actingAs($supplier)->post(route('local-supplier.invoices.store'), [
+        $base = [
             'invoice_number' => 'INV-UNIFIED-002',
             'invoice_date' => '2026-09-10',
             'po_number' => 'PO-CUSTOM-MANUAL',
             'invoice_amount' => 5000000,
             'ppn_scheme' => '11%',
             'tax_invoice_number' => '010.000-26.12345678',
-            'scheduled_physical_delivery_date' => $wednesday,
-            'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
-            'tax_invoice' => NativeFileFixtures::upload('tax.pdf', 100),
-            'delivery_note' => NativeFileFixtures::upload('sj.pdf', 100),
-        ]);
+            'scheduled_physical_delivery_date' => $this->nextWednesday(),
+        ];
 
-        $response->assertSessionHasErrors('manual_gr_reference');
+        // An unresolvable PO number with no po_source used to default to MANUAL,
+        // with or without a free-text GR reference. Both variants are refused.
+        foreach ([[], ['manual_gr_reference' => 'SJ-CUSTOM-999']] as $variant) {
+            $response = $this->actingAs($supplier)->post(
+                route('local-supplier.invoices.store'),
+                array_merge($base, $variant, $this->files())
+            );
 
-        // 2. With manual_gr_reference -> succeeds
-        $responseOk = $this->actingAs($supplier)->post(route('local-supplier.invoices.store'), [
-            'invoice_number' => 'INV-UNIFIED-002',
-            'invoice_date' => '2026-09-10',
-            'po_number' => 'PO-CUSTOM-MANUAL',
-            'manual_gr_reference' => 'SJ-CUSTOM-999',
-            'invoice_amount' => 5000000,
-            'ppn_scheme' => '11%',
-            'tax_invoice_number' => '010.000-26.12345678',
-            'scheduled_physical_delivery_date' => $wednesday,
-            'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
-            'tax_invoice' => NativeFileFixtures::upload('tax.pdf', 100),
-            'delivery_note' => NativeFileFixtures::upload('sj.pdf', 100),
-        ]);
+            $response->assertSessionHasErrors('local_purchase_order_id');
+        }
 
-        $responseOk->assertSessionHasNoErrors();
-        $invoice = LocalInvoice::where('invoice_number', 'INV-UNIFIED-002')->firstOrFail();
-        $responseOk->assertRedirect(route('local-supplier.invoices.receipt', $invoice));
-        $this->assertEquals('MANUAL', $invoice->po_source);
-        $this->assertEquals('PO-CUSTOM-MANUAL', $invoice->po_number);
-        $this->assertEquals('SJ-CUSTOM-999', $invoice->manual_gr_reference);
+        $this->assertSame(0, LocalInvoice::count());
+        $this->assertSame([], Storage::disk('private')->allFiles());
     }
 }

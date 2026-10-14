@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Http\Requests\LocalInvoice\StoreLocalInvoiceRequest;
+use App\Models\LocalInvoiceDocument;
 use App\Models\Supplier;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
@@ -310,7 +311,10 @@ BLADE);
         $messagesMulti = $requestMulti->messages();
 
         $this->assertSame(
-            __('local_invoice.validation.file_count', ['type' => __('local_invoice.labels.invoice')]),
+            __('local_invoice.validation.file_count', [
+                'type' => __('local_invoice.labels.invoice'),
+                'count' => LocalInvoiceDocument::maxFilesFor('invoice'),
+            ]),
             $messagesMulti['invoice.max']
         );
         $this->assertSame(

@@ -80,7 +80,7 @@ class SupplierAuditController extends Controller
     {
         abort_if($request->isSubmit(), 422);
 
-        $audit = $service->save($request->user(), $supplierAudit, (array) $request->validated()['answers'], false);
+        $audit = $service->save($request->user(), $supplierAudit, (array) ($request->validated()['answers'] ?? []), false);
         $savedAt = now();
 
         return response()->json([
@@ -94,7 +94,7 @@ class SupplierAuditController extends Controller
     public function update(SaveSupplierAuditAnswersRequest $request, SupplierAudit $supplierAudit, SupplierAuditAnswerService $service): JsonResponse|RedirectResponse
     {
         $submit = $request->isSubmit();
-        $audit = $service->save($request->user(), $supplierAudit, (array) $request->validated()['answers'], $submit);
+        $audit = $service->save($request->user(), $supplierAudit, (array) ($request->validated()['answers'] ?? []), $submit);
 
         $url = $submit
             ? route('local-supplier.supplier-audits.show', $audit)

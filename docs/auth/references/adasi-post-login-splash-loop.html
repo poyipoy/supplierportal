@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="description" content="Demo loop splash ADASI: huruf A sampai I naik dan tenggelam berurutan dengan gerakan perlahan tanpa bounce.">
+  <title>ADASI • Loop Splash Preview</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --adasi-red: #ed1018;
+      --splash-bg: #fff;
+      --splash-fade: 650ms;
+      --rise-duration: 1600ms;
+      --sink-duration: 1600ms;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      min-height: 100vh;
+      min-height: 100dvh;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: #f7f9fc;
+      color: #172a42;
+    }
+    button { font: inherit; }
+
+    /* Background area is a preview only, not a real ADASI dashboard. */
+    .preview {
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 400ms ease, transform 500ms ease;
+    }
+    .preview.is-ready { opacity: 1; transform: translateY(0); }
+    .preview-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 19px clamp(20px, 5vw, 72px);
+      border-bottom: 1px solid #e8eef5;
+      background: white;
+    }
+    .preview-brand { display: flex; align-items: center; gap: 11px; font-weight: 800; letter-spacing: -.02em; }
+    .preview-brand-mark { width: 36px; height: 36px; display: grid; place-items: center; color: #fff; background: #143f75; border-radius: 10px; font-size: 23px; }
+    .preview-label { color: #65768b; font-size: .78rem; font-weight: 600; }
+    .preview-content {
+      width: min(980px, calc(100% - 40px));
+      margin: clamp(65px, 13vh, 130px) auto 50px;
+    }
+    .eyebrow { color: #31639b; font-size: .78rem; font-weight: 750; letter-spacing: .13em; text-transform: uppercase; }
+    .preview-title { font-size: clamp(2rem, 5vw, 3.2rem); letter-spacing: -.055em; line-height: 1.15; margin: 14px 0 12px; }
+    .preview-desc { color: #62748a; line-height: 1.6; max-width: 600px; margin: 0 0 30px; }
+    .preview-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .replay-btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+      padding: 12px 18px; border-radius: 11px; border: 1px solid #173d6c;
+      background: #173d6c; color: white; font-size: .9rem; font-weight: 700;
+      cursor: pointer; box-shadow: 0 5px 14px rgba(23,61,108,.13);
+    }
+    .replay-btn:hover { background: #0f2d51; }
+    .replay-btn:focus-visible { outline: 3px solid #5b92d5; outline-offset: 3px; }
+    .preview-note { font-size: .77rem; color: #8694a5; }
+    .preview-footer { margin-top: auto; padding: 18px clamp(20px, 5vw, 72px); font-size: .74rem; color: #95a1af; }
+
+    /* Minimalist wordmark. The solid, white surface masks every letter below the baseline;
+       there is intentionally no line, border, or decorative wave. */
+    .splash {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      background: var(--splash-bg);
+      opacity: 1;
+      visibility: visible;
+      transition: opacity var(--splash-fade) ease, visibility var(--splash-fade) ease;
+    }
+    .splash[hidden] { display: none !important; }
+    .splash.is-leaving { opacity: 0; visibility: hidden; pointer-events: none; }
+    .splash-inner { position: relative; display: grid; place-items: center; width: 100%; padding: 20px; }
+    .wordmark {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      height: 1.14em;
+      overflow: hidden;
+      white-space: nowrap;
+      color: var(--adasi-red);
+      font-family: "Arial Black", "Segoe UI", Arial, sans-serif;
+      font-size: clamp(2rem, 8vw, 4.5rem);
+      font-weight: 900;
+      line-height: 1.08;
+      letter-spacing: -.065em;
+      padding-right: .07em;
+      padding-top: .05em;
+      user-select: none;
+      -webkit-font-smoothing: antialiased;
+    }
+    .letter {
+      display: inline-block;
+      transform: translateY(130%);
+      will-change: transform;
+    }
+    .letter.is-up { transform: translateY(0); }
+    .letter.is-rising {
+      animation: surface-rise var(--rise-duration) ease-in-out both;
+    }
+    .letter.is-sinking {
+      animation: surface-sink var(--sink-duration) ease-in-out both;
+    }
+    /* No overshoot/bounce: each letter moves slowly in a single direction. */
+    @keyframes surface-rise {
+      from { transform: translateY(130%); }
+      to   { transform: translateY(0); }
+    }
+    @keyframes surface-sink {
+      from { transform: translateY(0); }
+      to   { transform: translateY(130%); }
+    }
+    /* Invisible, perfectly flat surface: its pure-white fill conceals the submerged
+       portion. The clipping window above handles the letter-by-letter reveal. */
+    .surface-plane {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      height: 100vh;
+      background: #fff;
+      border: 0;
+      pointer-events: none;
+    }
+    .splash-stop {
+      position: absolute;
+      z-index: 5;
+      bottom: clamp(22px, 5vh, 48px);
+      left: 50%;
+      transform: translateX(-50%);
+      border: 1px solid #e4e7eb;
+      border-radius: 999px;
+      background: #fff;
+      color: #686f7a;
+      padding: 10px 16px;
+      font-size: .8rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .splash-stop:hover { background: #f7f8fa; color: #253648; }
+    .splash-stop:focus-visible { outline: 3px solid #3f80c5; outline-offset: 4px; }
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0;
+      margin: -1px; overflow: hidden; clip: rect(0,0,0,0);
+      white-space: nowrap; border: 0;
+    }
+    @media (max-width: 480px) {
+      .wordmark { font-size: clamp(3.1rem, 15vw, 4.4rem); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .letter, .letter.is-rising, .letter.is-sinking { animation: none; transform: translateY(0); will-change: auto; }
+      .splash, .preview { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="preview" id="demoWorkspace" aria-label="Area preview setelah splash" aria-hidden="true" inert>
+    <header class="preview-header">
+      <div class="preview-brand"><div class="preview-brand-mark" aria-hidden="true">A</div><span>ADASI Supplier Portal</span></div>
+      <div class="preview-label">HTML Splash Preview</div>
+    </header>
+    <div class="preview-content">
+      <div class="eyebrow">Preview loop dihentikan</div>
+      <h1 class="preview-title">Your workspace is ready.</h1>
+      <p class="preview-desc">Preview ini menjalankan animasi ADASI secara berulang sampai Anda memilih menghentikannya. Dalam aplikasi Laravel sebenarnya, loop harus berhenti ketika halaman tujuan siap, bukan dibiarkan tanpa batas.</p>
+      <div class="preview-actions">
+        <button class="replay-btn" type="button" id="replaySplash"><span aria-hidden="true">↻</span> Putar loop lagi</button>
+        <span class="preview-note">Loop terus-menerus • durasi per huruf 1,6 detik • jeda 0,09 detik • tanpa bounce</span>
+      </div>
+    </div>
+    <footer class="preview-footer">Demo mandiri HTML / CSS / JavaScript • Loop sampai dihentikan secara manual</footer>
+  </main>
+
+  <div class="splash" id="adasiSplash" role="status" aria-live="polite" aria-label="Menyiapkan ADASI Supplier Portal">
+    <div class="splash-inner">
+      <div class="wordmark" role="img" aria-label="ADASI">
+        <span class="letter" style="--i:0" aria-hidden="true">A</span>
+        <span class="letter" style="--i:1" aria-hidden="true">D</span>
+        <span class="letter" style="--i:2" aria-hidden="true">A</span>
+        <span class="letter" style="--i:3" aria-hidden="true">S</span>
+        <span class="letter" style="--i:4" aria-hidden="true">I</span>
+      </div>
+      <div class="surface-plane" aria-hidden="true"></div>
+      <span class="sr-only">Menyiapkan ruang kerja Anda.</span>
+    </div>
+    <button class="splash-stop" type="button" id="stopSplash">Hentikan preview</button>
+  </div>
+
+  <script>
+    (() => {
+      'use strict';
+      const splash = document.getElementById('adasiSplash');
+      const workspace = document.getElementById('demoWorkspace');
+      const replay = document.getElementById('replaySplash');
+      const letters = Array.from(splash.querySelectorAll('.letter'));
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+      // Both rising and sinking follow A → D → A → S → I.
+      // Each letter moves more slowly (1600 ms), while start times remain close (90 ms).
+      const ENTER_DELAY = 50;
+      const STAGGER = 90;
+      const RISE_MS = 1600;
+      const ALL_VISIBLE_MS = 300;
+      const SINK_MS = 1600;
+      const LOOP_PAUSE_MS = 100;
+      const FADE_MS = 650;
+      const stopButton = document.getElementById('stopSplash');
+      const timers = new Set();
+      let runId = 0;
+
+      function after(ms, fn) {
+        const id = window.setTimeout(() => {
+          timers.delete(id);
+          fn();
+        }, ms);
+        timers.add(id);
+      }
+      function stopTimers() {
+        for (const id of timers) window.clearTimeout(id);
+        timers.clear();
+      }
+      function rise(letter, run) {
+        if (run !== runId) return;
+        letter.classList.remove('is-sinking', 'is-up');
+        letter.classList.add('is-rising');
+        after(RISE_MS, () => {
+          if (run !== runId) return;
+          letter.classList.remove('is-rising');
+          letter.classList.add('is-up');
+        });
+      }
+      function sink(letter, run) {
+        if (run !== runId) return;
+        letter.classList.remove('is-rising', 'is-up');
+        letter.classList.add('is-sinking');
+        after(SINK_MS, () => {
+          if (run !== runId) return;
+          letter.classList.remove('is-sinking');
+        });
+      }
+      function cycle(run) {
+        if (run !== runId || reduceMotion.matches) return;
+        // Reset occurs only after all letters have fully sunk below the white surface.
+        for (const letter of letters) {
+          letter.classList.remove('is-rising', 'is-up', 'is-sinking');
+        }
+        letters.forEach((letter, index) => {
+          after(ENTER_DELAY + index * STAGGER, () => rise(letter, run));
+        });
+        const lastRiseComplete = ENTER_DELAY + (letters.length - 1) * STAGGER + RISE_MS;
+        const sinkStart = lastRiseComplete + ALL_VISIBLE_MS;
+        letters.forEach((letter, index) => {
+          after(sinkStart + index * STAGGER, () => sink(letter, run));
+        });
+        const lastSinkComplete = sinkStart + (letters.length - 1) * STAGGER + SINK_MS;
+        after(lastSinkComplete + LOOP_PAUSE_MS, () => cycle(run));
+      }
+      function showSplash() {
+        stopTimers();
+        const run = ++runId;
+        splash.hidden = false;
+        splash.classList.remove('is-leaving');
+        workspace.classList.remove('is-ready');
+        workspace.setAttribute('aria-hidden', 'true');
+        workspace.inert = true;
+        for (const letter of letters) {
+          letter.classList.remove('is-rising', 'is-up', 'is-sinking');
+        }
+        if (reduceMotion.matches) {
+          // An indefinite moving loader is inappropriate when reduced motion is requested.
+          letters.forEach(letter => letter.classList.add('is-up'));
+          return;
+        }
+        cycle(run);
+      }
+      function finishPreview() {
+        stopTimers();
+        const run = ++runId;
+        workspace.classList.add('is-ready');
+        splash.classList.add('is-leaving');
+        after(reduceMotion.matches ? 0 : FADE_MS, () => {
+          if (run !== runId) return;
+          splash.hidden = true;
+          workspace.inert = false;
+          workspace.removeAttribute('aria-hidden');
+          replay.focus({ preventScroll: true });
+        });
+      }
+      stopButton.addEventListener('click', finishPreview);
+      replay.addEventListener('click', showSplash);
+      // Honor changes in OS motion preference during the preview as well.
+      reduceMotion.addEventListener?.('change', () => {
+        if (!splash.hidden && !splash.classList.contains('is-leaving')) showSplash();
+      });
+      showSplash();
+    })();
+  </script>
+</body>
+</html>

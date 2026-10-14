@@ -47,14 +47,15 @@ class LocalPoImport extends AbstractPreviewImport implements SkipsEmptyRows, ToC
             $supplierName = self::nullableText($rowArray[6] ?? null);
             $poDate = $rowArray[9] ?? null;
             $poAmount = self::nullableNumber($rowArray[10] ?? null);
+            $prNumber = $rowArray[16] ?? null;
 
             // Skip completely empty rows
-            if ($poNumber === null && $supplierName === null && ($poDate === null || $poDate === '') && $poAmount === null) {
+            if ($poNumber === null && $supplierName === null && ($poDate === null || $poDate === '') && $poAmount === null && ($prNumber === null || $prNumber === '')) {
                 continue;
             }
 
             $formulaCols = [];
-            foreach ([4 => 'po_number', 6 => 'supplier_name', 9 => 'po_date', 10 => 'po_amount'] as $colIdx => $colName) {
+            foreach ([4 => 'po_number', 6 => 'supplier_name', 9 => 'po_date', 10 => 'po_amount', 16 => 'pr_number'] as $colIdx => $colName) {
                 $val = $rowArray[$colIdx] ?? null;
                 if (is_string($val) && str_starts_with($val, '=')) {
                     $formulaCols[] = $colName;
@@ -67,6 +68,8 @@ class LocalPoImport extends AbstractPreviewImport implements SkipsEmptyRows, ToC
                 'supplier_name' => $supplierName,
                 'po_date' => $poDate,
                 'po_amount' => $poAmount,
+                'pr_number' => $prNumber,
+                '_pr_header_valid' => is_string($headerArray[16] ?? null) && mb_strtolower(trim($headerArray[16])) === 'pr',
                 '_formula_columns' => $formulaCols,
             ];
         }

@@ -8,6 +8,7 @@ use App\Models\GaClaim;
 use App\Services\Ga\GaClaimService;
 use chillerlan\QRCode\QRCode;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\URL;
 
 class GaController extends Controller
@@ -119,13 +120,15 @@ class GaController extends Controller
 
     public function basicVerify(GaClaim $claim, Request $request, GaClaimService $service)
     {
-        $service->basicVerify($claim, $request->user(), $request->input('notes'));
+        $data = $request->validate(['notes' => ['nullable', 'string', 'max:1000'], 'override_reason' => ['nullable', 'string', 'max:1000']]);
+        $service->basicVerify($claim, $request->user(), $data['notes'] ?? null, $data['override_reason'] ?? null);
 
         return back()->with('success', __('ga.feedback.verified'));
     }
 
     public function revision(GaClaim $claim)
     {
+        Gate::authorize('resubmit', $claim);
         abort_unless($claim->status === GaClaim::STATUS_NEED_REVISION, 403);
         $employees = Employee::active()->orderBy('name')->get();
         $claimTypes = GaClaim::CLAIM_TYPES;

@@ -181,6 +181,7 @@ class LocalGrImportService
                     'row' => $group['_row'],
                     'column' => 'po_number',
                     'message' => __('local_procurement.import.gr_po_missing', ['gr' => $group['gr_number'], 'po' => $group['po_number']]),
+                    'code' => 'PO_NOT_FOUND', 'context' => ['po_number' => $group['po_number'], 'gr_number' => $group['gr_number']],
                 ];
                 $group['action'] = 'UNMATCHED_PO';
 
@@ -195,9 +196,13 @@ class LocalGrImportService
                 $errors[] = [
                     'row' => $group['_row'],
                     'column' => 'po_number',
-                    'message' => __('local_procurement.import.gr_closed_po', ['po' => $group['po_number']]),
+                    'message' => $po->status === LocalPurchaseOrder::STATUS_CANCELLED
+                        ? __('local_procurement.import.gr_cancelled_po', ['po' => $group['po_number'], 'row' => $group['_row']])
+                        : __('local_procurement.import.gr_closed_po', ['po' => $group['po_number']]),
+                    'code' => $po->status === LocalPurchaseOrder::STATUS_CANCELLED ? 'PO_CANCELLED' : 'PO_CLOSED',
+                    'context' => ['po_number' => $group['po_number'], 'gr_number' => $group['gr_number']],
                 ];
-                $group['action'] = 'PO_CLOSED';
+                $group['action'] = $po->status === LocalPurchaseOrder::STATUS_CANCELLED ? 'CONFLICT' : 'PO_CLOSED';
             }
         }
         unset($group);
@@ -209,11 +214,22 @@ class LocalGrImportService
             ->keyBy(fn ($gr) => mb_strtolower($gr->gr_number));
 
         foreach ($consolidated as &$group) {
-            if ($group['action'] === 'UNMATCHED_PO' || $group['action'] === 'PO_CLOSED') {
+            $grKey = mb_strtolower($group['gr_number']);
+            $existing = $existingGrMap[$grKey] ?? null;
+            if ($existing?->status === LocalGoodsReceipt::STATUS_CANCELLED) {
+                $errors[] = [
+                    'row' => $group['_row'],
+                    'column' => 'gr_number',
+                    'message' => __('local_procurement.import.gr_cancelled', ['gr' => $group['gr_number'], 'row' => $group['_row']]),
+                    'code' => 'GR_CANCELLED', 'context' => ['po_number' => $group['po_number'], 'gr_number' => $group['gr_number']],
+                ];
+                $group['action'] = 'CONFLICT';
+
                 continue;
             }
-
-            $grKey = mb_strtolower($group['gr_number']);
+            if (in_array($group['action'], ['UNMATCHED_PO', 'PO_CLOSED', 'CONFLICT'], true)) {
+                continue;
+            }
             if (! isset($existingGrMap[$grKey])) {
                 continue;
             }
@@ -230,6 +246,7 @@ class LocalGrImportService
                     'row' => $group['_row'],
                     'column' => 'gr_number',
                     'message' => __('local_procurement.import.gr_existing_conflict', ['gr' => $group['gr_number']]),
+                    'code' => 'IDENTITY_CONFLICT', 'context' => ['po_number' => $group['po_number'], 'gr_number' => $group['gr_number']],
                 ];
                 $group['action'] = 'CONFLICT';
             }
@@ -259,16 +276,33 @@ class LocalGrImportService
             $newGr = 0;
             $existingGr = 0;
 
+            $poMap = LocalPurchaseOrder::whereIn('id', array_unique(array_column($result['rows'], 'po_id')))
+                ->orderBy('id')->lockForUpdate()->get()->keyBy('id');
+            $grMap = LocalGoodsReceipt::whereIn('gr_number', array_column($result['rows'], 'gr_number'))
+                ->orderBy('id')->lockForUpdate()->get()->keyBy(fn ($gr) => mb_strtolower($gr->gr_number));
+
             foreach ($result['rows'] as $group) {
-                if ($group['action'] === 'EXISTING') {
+                $po = $poMap->get($group['po_id']);
+                if ($po?->status === LocalPurchaseOrder::STATUS_CANCELLED) {
+                    throw ValidationException::withMessages(['import_file' => __('local_procurement.import.gr_cancelled_po', ['po' => $group['po_number'], 'row' => $group['_row']])]);
+                }
+                if (! $po || $po->status !== LocalPurchaseOrder::STATUS_OPEN) {
+                    throw ValidationException::withMessages(['import_file' => __('local_procurement.import.gr_closed_po', ['po' => $group['po_number']])]);
+                }
+                $existing = $grMap->get(mb_strtolower($group['gr_number']));
+                if ($existing?->status === LocalGoodsReceipt::STATUS_CANCELLED) {
+                    throw ValidationException::withMessages(['import_file' => __('local_procurement.import.gr_cancelled', ['gr' => $group['gr_number'], 'row' => $group['_row']])]);
+                }
+                if ($existing) {
+                    if ((int) $existing->local_purchase_order_id !== (int) $po->id
+                        || $existing->gr_date?->format('Y-m-d') !== $group['gr_date']
+                        || bccomp((string) $existing->qty, $group['qty'], 4) !== 0 || $existing->uom !== $group['uom']) {
+                        throw ValidationException::withMessages(['import_file' => __('local_procurement.import.gr_existing_conflict', ['gr' => $group['gr_number']])]);
+                    }
                     $existingGr++;
 
                     continue;
                 }
-
-                $po = LocalPurchaseOrder::whereKey($group['po_id'])
-                    ->lockForUpdate()
-                    ->firstOrFail();
 
                 $this->masters->createGoodsReceipt($actor, $po, [
                     'gr_number' => $group['gr_number'],
@@ -332,7 +366,8 @@ class LocalGrImportService
 
     private function summary(array $sourceRows, array $consolidated, array $errors, int $unmatchedPoCount): array
     {
-        $newGr = collect($consolidated)->filter(fn ($r) => ($r['action'] ?? '') === 'NEW')->count();
+        $invalidRows = array_unique(array_column($errors, 'row'));
+        $newGr = collect($consolidated)->filter(fn ($r) => ($r['action'] ?? '') === 'NEW' && ! in_array($r['_row'], $invalidRows, true))->count();
         $existingGr = collect($consolidated)->filter(fn ($r) => ($r['action'] ?? '') === 'EXISTING')->count();
         $conflicts = collect($consolidated)->filter(fn ($r) => ($r['action'] ?? '') === 'CONFLICT')->count();
 
@@ -343,7 +378,7 @@ class LocalGrImportService
             'existing_gr' => $existingGr,
             'conflicts' => $conflicts,
             'unmatched_po' => $unmatchedPoCount,
-            'invalid' => count($errors),
+            'invalid' => count($invalidRows),
         ];
     }
 }

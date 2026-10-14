@@ -15,7 +15,6 @@ use App\Services\Auth\LoginRateLimiter;
 use App\Services\Auth\TurnstileVerifier;
 use App\Services\FileSecurity\FileAccessGuard;
 use App\Services\SupplierRegistrationService;
-use App\Support\BusinessTime;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Storage;
@@ -42,6 +41,7 @@ class SupplierRegistrationController extends Controller
         SupplierRegistrationRequest $request,
         TurnstileVerifier $turnstile,
     ) {
+        $request->session()->forget(['registration_receipt', 'registration_received', 'registration_reference', 'registration_access_key', 'company_name', 'registration_submitted_at']);
         $request->validateTurnstile($turnstile);
 
         $safeData = $request->safeRegistrationData();
@@ -53,43 +53,33 @@ class SupplierRegistrationController extends Controller
             ip: $request->ip(),
             userAgent: $request->userAgent(),
         );
+        $request->session()->flash('registration_receipt', [
+            'reference' => $result['reference'],
+            'access_key' => $result['access_key'],
+        ]);
 
-        // Flash credentials for one-time display on success page
-        $flash = [
-            'registration_reference' => $result['reference'],
-            'registration_access_key' => $result['access_key'],
-            'company_name' => $safeData['company_name'],
-            'registration_submitted_at' => BusinessTime::now()->toIso8601String(),
-        ];
-
-        // Async (file-preserving) submit: credentials stay in the session flash, never in the JSON body.
         if ($request->expectsJson()) {
-            foreach ($flash as $key => $value) {
-                $request->session()->flash($key, $value);
-            }
-
             return response()->json(['redirect' => route('supplier.registration.success')]);
         }
 
-        return redirect()->route('supplier.registration.success')->with($flash);
+        return redirect()->route('supplier.registration.success');
     }
 
     /**
-     * Show registration success page with one-time credentials.
+     * Display credentials once, only after the registration transaction succeeds.
      */
     public function success()
     {
-        if (! session()->has('registration_reference') || ! session()->has('registration_access_key')) {
+        $receipt = session()->pull('registration_receipt');
+        if (! is_array($receipt)) {
             return redirect()->route('supplier.registration.access-form')
                 ->with('info', __('registration.feedback.check_status'));
         }
 
-        return view('auth.supplier-register-success', [
-            'reference' => session('registration_reference'),
-            'accessKey' => session('registration_access_key'),
-            'companyName' => session('company_name'),
-            'submittedAt' => BusinessTime::format(session('registration_submitted_at') ?? BusinessTime::now()),
-        ]);
+        return response()->view('auth.supplier-register-success', [
+            'received' => true,
+            'receipt' => $receipt,
+        ])->header('Cache-Control', 'private, no-store');
     }
 
     /**
@@ -148,6 +138,7 @@ class SupplierRegistrationController extends Controller
         $request->session()->regenerate();
         $request->session()->put('registration_access_id', $access->id);
         $request->session()->put('registration_user_id', $access->user_id);
+        $request->session()->put('registration_cycle_reference', $access->registration_reference);
 
         return redirect()->route('supplier.registration.status');
     }
@@ -222,6 +213,7 @@ class SupplierRegistrationController extends Controller
         $request->session()->regenerate();
         $request->session()->put('registration_access_id', $access->id);
         $request->session()->put('registration_user_id', $access->user_id);
+        $request->session()->put('registration_cycle_reference', $access->registration_reference);
 
         return redirect()->route('supplier.registration.status');
     }
@@ -235,12 +227,14 @@ class SupplierRegistrationController extends Controller
         $access = $request->attributes->get('registrationAccess');
         $user = $access->user->load([
             'supplier',
-            'supplierBankAccounts',
-            'supplierMasterDocuments',
-            'registrationAttempts' => fn ($q) => $q->orderByDesc('attempt_number'),
+            'supplierBankAccounts' => fn ($q) => $q->orderBy('id'),
         ]);
+        $attempts = $this->registrationService->currentCycleAttempts($user);
+        $user->setRelation('registrationAttempts', $attempts);
+        $user->setRelation('supplierMasterDocuments', $this->registrationService->currentCycleDocuments($user, $attempts));
 
         $latestAttempt = $user->registrationAttempts->first();
+        $this->assertCurrentAccess($access);
 
         return view('auth.supplier-registration-status', [
             'access' => $access,
@@ -258,7 +252,10 @@ class SupplierRegistrationController extends Controller
     {
         /** @var SupplierRegistrationAccess $access */
         $access = $request->attributes->get('registrationAccess');
-        $user = $access->user->load(['supplier', 'supplierBankAccounts', 'supplierMasterDocuments']);
+        $user = $access->user->load([
+            'supplier',
+            'supplierBankAccounts' => fn ($q) => $q->orderBy('id'),
+        ]);
         $latestAttempt = $user->registrationAttempts()->orderByDesc('attempt_number')->first();
 
         if (! $latestAttempt || $latestAttempt->status !== SupplierRegistrationAttempt::STATUS_REVISION) {
@@ -266,13 +263,16 @@ class SupplierRegistrationController extends Controller
                 ->with('info', __('registration.feedback.not_revision'));
         }
 
+        $documents = $this->registrationService->currentCycleDocuments($user)->keyBy('document_type');
+        $this->assertCurrentAccess($access);
+
         return view('auth.supplier-registration-edit', [
             'access' => $access,
             'user' => $user,
             'supplier' => $user->supplier,
-            'bankAccount' => $user->supplierBankAccounts()->latest()->first(),
+            'bankAccount' => $user->supplierBankAccounts->last(),
             'attempt' => $latestAttempt,
-            'documents' => $user->supplierMasterDocuments->keyBy('document_type'),
+            'documents' => $documents,
         ]);
     }
 
@@ -294,6 +294,7 @@ class SupplierRegistrationController extends Controller
             files: $files,
             ip: $request->ip(),
             userAgent: $request->userAgent(),
+            registrationReference: $access->registration_reference,
         );
 
         if ($request->expectsJson()) {
@@ -318,6 +319,10 @@ class SupplierRegistrationController extends Controller
             abort(403, __('registration.feedback.document_unauthorized'));
         }
 
+        abort_unless($this->registrationService->currentCycleDocuments($access->user)->contains('id', $document->id),
+            403, __('registration.feedback.document_unauthorized'));
+        $this->assertCurrentAccess($access);
+
         if (! Storage::disk('private')->exists($document->file_path)) {
             abort(404, __('registration.feedback.document_missing'));
         }
@@ -340,9 +345,16 @@ class SupplierRegistrationController extends Controller
      */
     public function logoutAccess(Request $request)
     {
-        $request->session()->forget(['registration_access_id', 'registration_user_id']);
+        $request->session()->forget(['registration_access_id', 'registration_user_id', 'registration_cycle_reference']);
 
         return redirect()->route('supplier.registration.access-form')
             ->with('info', __('registration.feedback.exited'));
+    }
+
+    private function assertCurrentAccess(SupplierRegistrationAccess $access): void
+    {
+        $current = $access->fresh();
+        abort_unless($current?->isValid() && hash_equals($access->registration_reference, $current->registration_reference),
+            403, __('auth.registration_session.expired'));
     }
 }

@@ -14,6 +14,13 @@ class PasswordConfirmationContinuationService
 
     private const METHODS = ['POST', 'PUT', 'PATCH', 'DELETE'];
 
+    /**
+     * Halaman GET yang diminta sebelum konfirmasi disimpan sebagai navigasi
+     * tertunda: setelah password benar, user kembali ke halaman itu, bukan
+     * ke Profil. Tidak ada input yang di-replay untuk navigasi.
+     */
+    private const NAVIGATION_METHODS = ['GET', 'HEAD'];
+
     private const MAX_PAYLOAD_BYTES = 8192;
 
     public function capture(Request $request): bool
@@ -21,11 +28,17 @@ class PasswordConfirmationContinuationService
         $route = $request->route();
         $routeName = is_object($route) ? $route->getName() : null;
         $method = strtoupper($request->method());
+        $isNavigation = in_array($method, self::NAVIGATION_METHODS, true);
 
-        if (! is_string($routeName) || $routeName === '' || ! in_array($method, self::METHODS, true)) {
+        if (! is_string($routeName) || $routeName === ''
+            || (! $isNavigation && ! in_array($method, self::METHODS, true))) {
             $this->forget($request);
 
             return false;
+        }
+
+        if ($isNavigation) {
+            $method = 'GET';
         }
 
         $routeDefinition = app('router')->getRoutes()->getByName($routeName);
@@ -35,13 +48,14 @@ class PasswordConfirmationContinuationService
             return false;
         }
 
-        if ($request->allFiles() !== []) {
+        if (! $isNavigation && $request->allFiles() !== []) {
             $this->forget($request);
 
             return false;
         }
 
-        $inputs = $this->flattenInputs($request->except([
+        // Navigasi membawa query string-nya di `uri`; tidak ada body yang di-replay.
+        $inputs = $isNavigation ? [] : $this->flattenInputs($request->except([
             '_token',
             '_method',
             'password',
@@ -140,7 +154,7 @@ class PasswordConfirmationContinuationService
         $expiresAt = $payload['expires_at'] ?? null;
         $inputs = $payload['inputs'] ?? null;
 
-        if (! is_string($method) || ! in_array($method, self::METHODS, true)
+        if (! is_string($method) || ! in_array($method, [...self::METHODS, 'GET'], true)
             || ! is_string($routeName) || $routeName === ''
             || ! is_array($routeParameters)
             || ! is_string($uri) || ! str_starts_with($uri, '/')

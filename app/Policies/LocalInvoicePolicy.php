@@ -20,7 +20,7 @@ class LocalInvoicePolicy
 
     public function resubmit(User $user, LocalInvoice $invoice): bool
     {
-        return $this->create($user) && (int) $invoice->supplier_id === (int) $user->id;
+        return $user->isLocalEligible() && (int) $invoice->supplier_id === (int) $user->id;
     }
 
     public function cancel(User $user, LocalInvoice $invoice): bool

@@ -5,7 +5,10 @@ namespace App\Services\VendorMaster;
 use App\Models\Supplier;
 use App\Models\SupplierBankAccount;
 use App\Models\User;
+use App\Services\LocalInvoice\LocalFinanceAuditService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 class VendorMasterService
@@ -102,6 +105,45 @@ class VendorMasterService
             ]);
 
             return $account;
+        });
+    }
+
+    /**
+     * Ubah default payment term supplier oleh Finance/Admin. Nilai baru dipakai
+     * saat kasir menerima dokumen fisik berikutnya; invoice yang sudah diterima
+     * tetap memakai payment_term_days_snapshot miliknya.
+     */
+    public function updatePaymentTerm(User $supplierUser, int $days, string $reason, User $actor): Supplier
+    {
+        if ($days < 1 || $days > 365) {
+            throw ValidationException::withMessages([
+                'payment_term_days' => __('local_procurement.payment_term.validation.range'),
+            ]);
+        }
+
+        return DB::transaction(function () use ($supplierUser, $days, $reason, $actor) {
+            $supplier = Supplier::where('user_id', $supplierUser->id)->lockForUpdate()->firstOrFail();
+            Gate::forUser($actor)->authorize('updatePaymentTerm', $supplier);
+
+            $before = $supplier->payment_term_days === null ? null : (int) $supplier->payment_term_days;
+            if ($before === $days) {
+                throw ValidationException::withMessages([
+                    'payment_term_days' => __('local_procurement.payment_term.validation.unchanged'),
+                ]);
+            }
+
+            $supplier->update(['payment_term_days' => $days]);
+
+            app(LocalFinanceAuditService::class)->record(
+                $supplier,
+                'vendor_payment_term_updated',
+                $actor,
+                ['payment_term_days' => $before],
+                ['payment_term_days' => $days],
+                ['reason' => $reason, 'supplier_user_id' => $supplierUser->id],
+            );
+
+            return $supplier->fresh();
         });
     }
 

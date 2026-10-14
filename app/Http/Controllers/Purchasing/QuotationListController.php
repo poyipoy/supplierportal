@@ -255,6 +255,8 @@ class QuotationListController extends Controller
 
     public function accept(Request $request, $id)
     {
+        $request->validate(['reviewer_notes' => 'nullable|string|max:1000']);
+
         try {
             $quotation = DB::transaction(function () use ($id, $request) {
                 $quotation = Quotation::whereKey($id)->lockForUpdate()->firstOrFail();

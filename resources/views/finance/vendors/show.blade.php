@@ -49,7 +49,22 @@
                     </div>
                     <div>
                         <span class="tw-text-on-surface-variant tw-block">{{ __('local_procurement.vendor_ui.default_term') }}</span>
-                        <strong class="tw-text-ui-sm tw-text-on-surface">{{ trans_choice('local_invoice.table.term_days', $sup?->payment_term_days ?? 30) }}</strong>
+                        <div class="tw-flex tw-flex-wrap tw-items-center tw-gap-2">
+                            <strong class="tw-text-ui-sm tw-text-on-surface">{{ trans_choice('local_invoice.table.term_days', $sup?->payment_term_days ?? 30) }}</strong>
+                            @if($sup)
+                                @can('updatePaymentTerm', $sup)
+                                    <x-ui.button
+                                        :href="route('finance.vendor-master.payment-term.edit', $vendor)"
+                                        variant="outline"
+                                        size="sm"
+                                        aria-label="{{ __('local_procurement.payment_term.edit_label', ['company' => $sup->company_name ?: $vendor->name]) }}"
+                                    >
+                                        <x-ui.icon name="pencil" size="sm" />
+                                        <span>{{ __('local_procurement.payment_term.edit') }}</span>
+                                    </x-ui.button>
+                                @endcan
+                            @endif
+                        </div>
                     </div>
                     <div class="tw-col-span-full">
                         <span class="tw-text-on-surface-variant tw-block">{{ __('local_invoice.labels.company_address') }}:</span>

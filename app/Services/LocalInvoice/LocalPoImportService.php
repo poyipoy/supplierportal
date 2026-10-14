@@ -4,6 +4,8 @@ namespace App\Services\LocalInvoice;
 
 use App\Models\LocalPurchaseOrder;
 use App\Models\User;
+use App\Support\LocalPoPrNumber;
+use App\Support\Money;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -74,8 +76,18 @@ class LocalPoImportService
             }
 
             $poAmount = $this->money($row['po_amount'] ?? null);
-            if (filled($row['po_amount'] ?? null) && ($poAmount === null || bccomp($poAmount, '0', 2) <= 0)) {
+            if (filled($row['po_amount'] ?? null) && ($poAmount === null || Money::compare($poAmount, Money::ZERO) <= 0)) {
                 $rowErrors[] = ['po_amount', __('local_procurement.import.po_amount_positive')];
+            }
+
+            $prNumber = null;
+            try {
+                $prNumber = LocalPoPrNumber::normalize($row['pr_number'] ?? null);
+                if ($prNumber !== null && ($row['_pr_header_valid'] ?? true) !== true) {
+                    $rowErrors[] = ['pr_number', __('local_procurement.pr_import.header')];
+                }
+            } catch (ValidationException $exception) {
+                $rowErrors[] = ['pr_number', $exception->validator->errors()->first('pr_number')];
             }
 
             $poKey = mb_strtolower(trim((string) ($row['po_number'] ?? '')));
@@ -102,6 +114,7 @@ class LocalPoImportService
                 'supplier_name' => trim((string) ($row['supplier_name'] ?? '')),
                 'po_date' => $poDate,
                 'po_amount' => $poAmount ?? '0.00',
+                'pr_number' => $prNumber,
                 'action' => 'NEW',
             ];
         }
@@ -109,6 +122,16 @@ class LocalPoImportService
         $dbResult = $this->checkDatabaseConflicts($normalized);
         $errors = array_merge($errors, $dbResult['errors']);
         $normalized = $dbResult['rows'];
+        $prByPo = [];
+        foreach ($normalized as $row) {
+            $key = mb_strtolower($row['po_number']);
+            if ($row['pr_number'] !== null && isset($prByPo[$key]) && LocalPoPrNumber::key($prByPo[$key]) !== LocalPoPrNumber::key($row['pr_number'])) {
+                $errors[] = ['row' => $row['_row'], 'column' => 'pr_number', 'message' => __('local_procurement.pr_import.file_conflict', ['po' => $row['po_number']])];
+            }
+            if ($row['pr_number'] !== null) {
+                $prByPo[$key] ??= $row['pr_number'];
+            }
+        }
 
         return [
             'success' => $errors === [],
@@ -132,6 +155,17 @@ class LocalPoImportService
             $newPo = 0;
             $existingPo = 0;
             $processedKeys = [];
+            $existingMap = LocalPurchaseOrder::forceIndex('local_purchase_orders_po_number_unique')
+                ->whereIn('po_number', array_column($result['rows'], 'po_number'))
+                ->orderBy('id')->lockForUpdate()->get()->keyBy(fn ($po) => mb_strtolower($po->po_number));
+
+            $prByPo = [];
+            foreach ($result['rows'] as $row) {
+                if ($row['pr_number'] !== null) {
+                    $prByPo[mb_strtolower($row['po_number'])] ??= $row['pr_number'];
+                }
+            }
+            $filledPoPr = 0;
 
             foreach ($result['rows'] as $row) {
                 $key = mb_strtolower($row['po_number']);
@@ -140,13 +174,22 @@ class LocalPoImportService
                 }
                 $processedKeys[$key] = true;
 
-                $existing = LocalPurchaseOrder::where('po_number', $key)
-                    ->lockForUpdate()
-                    ->first();
+                $existing = $existingMap->get($key);
+                $prNumber = $prByPo[$key] ?? null;
+
+                if ($existing?->status === LocalPurchaseOrder::STATUS_CANCELLED) {
+                    throw ValidationException::withMessages(['import_file' => __('local_procurement.import.po_cancelled', ['po' => $row['po_number'], 'row' => $row['_row']])]);
+                }
+                if ($existing && ((int) $existing->supplier_id !== (int) $row['supplier_id']
+                    || $existing->po_date?->format('Y-m-d') !== $row['po_date']
+                    || Money::compare((string) $existing->total_amount, $row['po_amount']) !== 0)) {
+                    throw ValidationException::withMessages(['import_file' => __('local_procurement.import.po_existing_conflict', ['po' => $row['po_number']])]);
+                }
 
                 if (! $existing) {
                     $this->masters->createPurchaseOrder($actor, [
                         'po_number' => $row['po_number'],
+                        'pr_number' => $prNumber,
                         'supplier_id' => $row['supplier_id'],
                         'po_date' => $row['po_date'],
                         'total_amount' => $row['po_amount'],
@@ -155,6 +198,7 @@ class LocalPoImportService
 
                     $newPo++;
                 } else {
+                    $filledPoPr += $this->masters->fillPurchaseOrderPr($actor, $existing, $prNumber) ? 1 : 0;
                     $existingPo++;
                 }
             }
@@ -164,11 +208,13 @@ class LocalPoImportService
                 'source_row_count' => count($rows),
                 'created_po_count' => $newPo,
                 'existing_po_count' => $existingPo,
+                'po_pr_filled' => $filledPoPr,
             ]));
 
             return [
                 'newPo' => $newPo,
                 'existingPo' => $existingPo,
+                'filledPoPr' => $filledPoPr,
                 'total' => count($rows),
             ];
         });
@@ -189,17 +235,37 @@ class LocalPoImportService
             }
 
             $existing = $existingMap[$key];
+            if ($existing->status === LocalPurchaseOrder::STATUS_CANCELLED) {
+                $errors[] = [
+                    'row' => $row['_row'],
+                    'column' => 'po_number',
+                    'message' => __('local_procurement.import.po_cancelled', ['po' => $row['po_number'], 'row' => $row['_row']]),
+                    'code' => 'PO_CANCELLED', 'context' => ['po_number' => $row['po_number']],
+                ];
+                $row['action'] = 'CONFLICT';
+
+                continue;
+            }
             $supplierMatch = (int) $existing->supplier_id === (int) $row['supplier_id'];
             $dateMatch = $existing->po_date?->format('Y-m-d') === $row['po_date'];
-            $amountMatch = bccomp((string) $existing->total_amount, (string) $row['po_amount'], 2) === 0;
+            $amountMatch = Money::compare((string) $existing->total_amount, (string) $row['po_amount']) === 0;
 
             if ($supplierMatch && $dateMatch && $amountMatch) {
-                $row['action'] = 'EXISTING';
+                if ($row['pr_number'] !== null && filled($existing->pr_number)
+                    && LocalPoPrNumber::key($existing->pr_number) !== LocalPoPrNumber::key($row['pr_number'])) {
+                    $errors[] = ['row' => $row['_row'], 'column' => 'pr_number',
+                        'message' => __('local_procurement.pr_import.conflict', ['po' => $row['po_number']]),
+                        'code' => 'PR_CONFLICT', 'context' => ['po_number' => $row['po_number']]];
+                    $row['action'] = 'CONFLICT';
+                } else {
+                    $row['action'] = $row['pr_number'] !== null && blank($existing->pr_number) ? 'FILL_PR' : 'EXISTING';
+                }
             } else {
                 $errors[] = [
                     'row' => $row['_row'],
                     'column' => 'po_number',
                     'message' => __('local_procurement.import.po_existing_conflict', ['po' => $row['po_number']]),
+                    'code' => 'IDENTITY_CONFLICT', 'context' => ['po_number' => $row['po_number']],
                 ];
                 $row['action'] = 'CONFLICT';
             }
@@ -237,29 +303,26 @@ class LocalPoImportService
             return null;
         }
 
-        if (! str_contains($value, '.')) {
-            return $value.'.00';
-        }
-
-        [$whole, $fraction] = explode('.', $value, 2);
-
-        return $whole.'.'.str_pad($fraction, 2, '0');
+        return Money::normalize($value);
     }
 
     private function summary(array $rows, array $errors): array
     {
         $uniquePos = collect($rows)->pluck('po_number')->filter()->map(fn ($v) => mb_strtolower($v))->unique();
-        $newPos = collect($rows)->filter(fn ($r) => ($r['action'] ?? '') === 'NEW')->pluck('po_number')->unique()->count();
-        $existingPos = collect($rows)->filter(fn ($r) => ($r['action'] ?? '') === 'EXISTING')->pluck('po_number')->unique()->count();
+        $invalidRows = array_unique(array_column($errors, 'row'));
+        $newPos = collect($rows)->filter(fn ($r) => ($r['action'] ?? '') === 'NEW' && ! in_array($r['_row'], $invalidRows, true))->pluck('po_number')->unique()->count();
+        $existingPos = collect($rows)->filter(fn ($r) => in_array($r['action'] ?? '', ['EXISTING', 'FILL_PR'], true))->pluck('po_number')->unique()->count();
+        $filledPos = collect($rows)->filter(fn ($r) => ($r['action'] ?? '') === 'FILL_PR' && ! in_array($r['_row'], $invalidRows, true))->pluck('po_number')->map(fn ($n) => mb_strtolower($n))->unique()->count();
         $conflicts = collect($rows)->filter(fn ($r) => ($r['action'] ?? '') === 'CONFLICT')->pluck('po_number')->unique()->count();
 
         return [
             'total_rows' => count($rows),
             'unique_pos' => $uniquePos->count(),
             'new_po' => $newPos,
+            'po_pr_filled' => $filledPos,
             'existing_po' => $existingPos,
             'conflicts' => $conflicts,
-            'invalid' => count($errors),
+            'invalid' => count($invalidRows),
         ];
     }
 }

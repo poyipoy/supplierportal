@@ -12,11 +12,14 @@ use App\Models\PaymentGroup;
 use App\Models\PaymentItem;
 use App\Models\User;
 use App\Services\Payment\PaymentBatchService;
+use App\Services\Payment\PaymentTransferGuard;
 use App\Services\Payment\PaymentVoucherService;
 use App\Support\BankTransferMapping;
 use App\Support\BusinessTime;
+use App\Support\ExportConfirmation;
 use App\Support\ExportDispatcher;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Vinkla\Hashids\Facades\Hashids;
 
@@ -125,7 +128,8 @@ class FinanceDrpController extends Controller
 
     public function finalize(PaymentBatch $batch, Request $request, PaymentBatchService $service)
     {
-        $service->finalizeBatch($batch, $request->user());
+        $data = $request->validate(['override_reason' => ['nullable', 'string', 'max:1000']]);
+        $service->finalizeBatch($batch, $request->user(), $data['override_reason'] ?? null);
 
         return back()->with('success', __('finance.feedback.batch_finalized', ['number' => $batch->batch_number]));
     }
@@ -154,7 +158,7 @@ class FinanceDrpController extends Controller
             'reason' => 'required|string|max:500',
         ]);
 
-        $service->overrideGroupFee($group, (float) $request->input('bank_fee'), $request->input('reason'), $request->user());
+        $service->overrideGroupFee($group, $request->input('bank_fee'), $request->input('reason'), $request->user());
 
         return back()->with('success', __('finance.feedback.fee_updated'));
     }
@@ -164,9 +168,10 @@ class FinanceDrpController extends Controller
         $request->validate([
             'voucher_number' => 'required|string|max:100',
             'voucher_date' => 'required|date',
+            'override_reason' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $service->assignVoucher($group, $request->input('voucher_number'), $request->input('voucher_date'), $request->user());
+        $service->assignVoucher($group, $request->input('voucher_number'), $request->input('voucher_date'), $request->user(), $request->input('override_reason'));
 
         return back()->with('success', __('finance.feedback.voucher_updated'));
     }
@@ -191,6 +196,10 @@ class FinanceDrpController extends Controller
 
         if (! $hasActiveItems) {
             abort(422, __('finance.export_validation.empty'));
+        }
+
+        if ($request->isMethod('get')) {
+            return ExportConfirmation::make($request, __('exports.job_labels.drp', ['number' => $batch->batch_number]));
         }
 
         $exportJob = ExportDispatcher::dispatch(
@@ -329,12 +338,17 @@ class FinanceDrpController extends Controller
             $label = substr($label, 0, 197).'...';
         }
 
-        $exportJob = ExportDispatcher::dispatch(
-            $label,
-            PaymentBatchTransferExport::class,
-            [$request->user()->id, $resolvedIds],
-            $fileName
-        );
+        $exportJob = DB::transaction(function () use ($request, $resolvedIds, $label, $fileName) {
+            $guard = app(PaymentTransferGuard::class);
+            $lockedBatches = $guard->lockedBatches($resolvedIds);
+            if (BankTransferMapping::validateBatches($lockedBatches) !== []) {
+                abort(422, __('finance.export_validation.unknown_banks', ['details' => '']));
+            }
+            $job = ExportDispatcher::dispatch($label, PaymentBatchTransferExport::class, [$request->user()->id, $resolvedIds], $fileName);
+            $guard->markExported($lockedBatches, $request->user());
+
+            return $job;
+        }, 3);
 
         $message = __('finance.feedback.transfer_export_accepted');
 

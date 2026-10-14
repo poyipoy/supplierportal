@@ -6,10 +6,12 @@ use App\Models\MaterialClaim;
 use App\Models\PurchaseOrder;
 use App\Models\QcInspection;
 use App\Models\User;
+use App\Services\FileSecurity\FileInspectionService;
 use App\Support\StatusHelper;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Tests\Support\NativeFileFixtures;
 use Tests\TestCase;
 
 class RegionalMaterialClaimDisplayTest extends TestCase
@@ -132,8 +134,8 @@ class RegionalMaterialClaimDisplayTest extends TestCase
     public function test_ownership_import_scope_hashid_and_private_attachment_access_are_preserved(): void
     {
         Storage::fake('private');
-        Storage::disk('private')->put('attachments/regional-claim.pdf', 'private evidence');
-        $attachment = $this->claim->attachments()->create(['file_path' => 'attachments/regional-claim.pdf', 'file_name' => 'claim.pdf', 'file_type' => 'application/pdf', 'uploaded_by' => $this->supplier->id]);
+        $stored = app(FileInspectionService::class)->storeUpload(NativeFileFixtures::upload('claim.pdf', 10), 'claim', 'attachments/regional-claim.pdf');
+        $attachment = $this->claim->attachments()->create([...$stored, 'uploaded_by' => $this->supplier->id]);
         $this->preference($this->supplier);
         $this->detail('supplier', $this->supplier)->assertOk();
         $this->actingAs($this->supplier)->get(route('attachments.show', $attachment))->assertOk();

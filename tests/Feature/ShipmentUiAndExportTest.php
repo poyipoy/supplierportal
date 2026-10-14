@@ -122,7 +122,7 @@ class ShipmentUiAndExportTest extends TestCase
     public function test_purchasing_can_dispatch_shipments_excel_export(): void
     {
         $response = $this->actingAs($this->purchasing)
-            ->getJson(route('purchasing.export.shipments', [
+            ->postJson(route('purchasing.export.shipments', [
                 'status' => 'draft',
             ]), [
                 'X-Requested-With' => 'XMLHttpRequest',

@@ -28,6 +28,16 @@ class RegionalDisplayFormatterTest extends TestCase
         }
     }
 
+    public function test_exact_money_groups_large_decimals_without_a_float_round_trip(): void
+    {
+        $system = new RegionalDisplayFormatter(['number_format' => 'system']);
+        $international = new RegionalDisplayFormatter(['number_format' => 'international']);
+        $this->assertSame('9.007.199.254.740.993,99', $system->money('9007199254740993.99'));
+        $this->assertSame('9,007,199,254,740,993.99', $international->money('9007199254740993.99'));
+        $this->assertSame('1.001', $system->money('1000.50', 0));
+        $this->assertSame('0,00', $system->money(null));
+    }
+
     public function test_system_preserves_original_numeric_text_byte_for_byte(): void
     {
         $formatter = new RegionalDisplayFormatter([]);

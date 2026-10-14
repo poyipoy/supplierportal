@@ -4,6 +4,7 @@ namespace App\Services\LocalInvoice;
 
 use App\Models\LocalInvoice;
 use App\Models\LocalPurchaseOrder;
+use App\Models\PaymentItem;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Services\SupplierAudit\SupplierAuditInvoiceGate;
@@ -13,6 +14,7 @@ use App\Support\Money;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 
@@ -68,8 +70,17 @@ class InvoiceSubmissionService
                 if (! $supplier || $supplier->payment_term_days < 1 || $supplier->payment_term_days > 365) {
                     throw ValidationException::withMessages(['payment_term_days' => __('local_invoice.validation.term_configured')]);
                 }
-                if (LocalInvoice::where('supplier_id', $actor->id)->where('invoice_number', $data['invoice_number'])->exists()) {
-                    throw ValidationException::withMessages(['invoice_number' => __('local_invoice.validation.invoice_duplicate')]);
+                $duplicate = LocalInvoice::where('supplier_id', $actor->id)->where('invoice_number', $data['invoice_number'])->first();
+                if ($duplicate) {
+                    throw ValidationException::withMessages(['invoice_number' => __($duplicate->status === LocalInvoice::STATUS_CANCELLED
+                        ? 'local_invoice.recovery.duplicate_invoice' : 'local_invoice.validation.invoice_duplicate')]);
+                }
+                if (! empty($data['tax_invoice_number'])) {
+                    $duplicateTax = LocalInvoice::where('supplier_id', $actor->id)->where('tax_invoice_number', $data['tax_invoice_number'])->first();
+                    if ($duplicateTax) {
+                        throw ValidationException::withMessages(['tax_invoice_number' => __($duplicateTax->status === LocalInvoice::STATUS_CANCELLED
+                            ? 'local_invoice.recovery.duplicate_tax' : 'local_invoice.validation.tax_number_duplicate', ['number' => $data['tax_invoice_number']])]);
+                    }
                 }
 
                 // 1. Validate Wednesday delivery schedule if provided
@@ -107,30 +118,7 @@ class InvoiceSubmissionService
 
                 // 3. Tax / PPN scheme calculation — exact decimal, never float.
                 $ppnScheme = $data['ppn_scheme'] ?? '11%';
-                $invoiceDpp = Money::normalize($data['invoice_amount']);
-                if (Money::compare($invoiceDpp, Money::zero()) <= 0) {
-                    throw ValidationException::withMessages([
-                        'invoice_amount' => __('local_invoice.validation.dpp_positive'),
-                    ]);
-                }
-                $calcPpn = Money::multiply($invoiceDpp, match ($ppnScheme) {
-                    '11%' => '0.11',
-                    '1.1%' => '0.011',
-                    default => '0',
-                });
-                $taxAmount = isset($data['tax_amount']) ? Money::normalize($data['tax_amount']) : $calcPpn;
-                // The supplier may not route an arbitrary amount through the tax
-                // field: PPN must equal DPP x scheme, within a 1 IDR rounding
-                // tolerance in either direction.
-                if (Money::compare(Money::subtract($taxAmount, $calcPpn), '1.00') > 0
-                    || Money::compare(Money::subtract($calcPpn, $taxAmount), '1.00') > 0) {
-                    throw ValidationException::withMessages([
-                        'tax_amount' => __('local_invoice.validation.tax_consistency', [
-                            'expected' => $calcPpn,
-                            'scheme' => $ppnScheme,
-                        ]),
-                    ]);
-                }
+                $taxAmount = $this->consistentTaxAmount($data, $ppnScheme, $supplier);
 
                 // 4. Generate sequence number
                 $year = BusinessTime::now()->year;
@@ -229,20 +217,54 @@ class InvoiceSubmissionService
         $written = [];
         try {
             return DB::transaction(function () use ($actor, $invoice, $data, $files, &$written) {
+                // Serialise on the supplier row before anything else, exactly as
+                // submit() does. Without it a resubmit locks the PO first and then
+                // needs the users row for FK checks, inverting submit()'s order
+                // (deadlock), and its PO ceiling sum could read a snapshot taken
+                // before a concurrent submit committed.
+                User::whereKey($actor->id)->lockForUpdate()->firstOrFail();
                 $invoice = LocalInvoice::whereKey($invoice->id)->lockForUpdate()->firstOrFail();
                 Gate::forUser($actor->fresh())->authorize('resubmit', $invoice);
-                if ($invoice->status !== LocalInvoice::STATUS_NEED_REVISION || $data['invoice_number'] !== $invoice->invoice_number) {
+                $fromStatus = $invoice->status;
+                $recovering = $fromStatus === LocalInvoice::STATUS_CANCELLED;
+                if (! in_array($fromStatus, [LocalInvoice::STATUS_NEED_REVISION, LocalInvoice::STATUS_CANCELLED], true) || $data['invoice_number'] !== $invoice->invoice_number) {
                     throw ValidationException::withMessages(['invoice' => __('local_invoice.validation.resubmit_revision')]);
                 }
 
-                $supplier = Supplier::where('user_id', $actor->id)->firstOrFail();
+                if ($recovering) {
+                    $data['recovery_reason'] = is_string($data['recovery_reason'] ?? null) ? trim($data['recovery_reason']) : ($data['recovery_reason'] ?? null);
+                    Validator::make($data, ['recovery_reason' => ['required', 'string', 'max:1000'], 'business_document_valid' => ['accepted']], [
+                        'recovery_reason.required' => __('local_invoice.recovery.reason_required'),
+                        'recovery_reason.string' => __('local_invoice.recovery.reason_required'),
+                        'recovery_reason.max' => __('local_invoice.recovery.reason_max'),
+                        'business_document_valid.accepted' => __('local_invoice.recovery.confirm_required'),
+                    ])->validate();
+                    if ($invoice->voucher()->exists() || $invoice->payment()->exists()
+                        || PaymentItem::whereMorphedTo('payable', $invoice)->where('status', PaymentItem::STATUS_ACTIVE)->exists()
+                        || $invoice->activeGoodsReceiptHistories()->exists()) {
+                        throw ValidationException::withMessages(['invoice' => __('local_invoice.recovery.dependencies')]);
+                    }
+                    app(SupplierAuditInvoiceGate::class)->assertCanSubmitNewInvoice($actor->fresh());
+                    if (empty($data['local_purchase_order_id'])) {
+                        throw ValidationException::withMessages(['local_purchase_order_id' => __('local_invoice.validation.authoritative_selection')]);
+                    }
+                }
+
+                $supplier = Supplier::where('user_id', $actor->id)->lockForUpdate()->firstOrFail();
+                if ($supplier->payment_term_days < 1 || $supplier->payment_term_days > 365) {
+                    throw ValidationException::withMessages(['payment_term_days' => __('local_invoice.validation.term_configured')]);
+                }
+                if (! empty($data['tax_invoice_number']) && LocalInvoice::where('supplier_id', $actor->id)
+                    ->where('tax_invoice_number', $data['tax_invoice_number'])->whereKeyNot($invoice->id)->exists()) {
+                    throw ValidationException::withMessages(['tax_invoice_number' => __('local_invoice.validation.tax_number_duplicate', ['number' => $data['tax_invoice_number']])]);
+                }
 
                 // 1. Validate Wednesday delivery schedule if provided
                 if (! empty($data['scheduled_physical_delivery_date'])) {
                     $this->deliveryScheduleValidator->assert($data['scheduled_physical_delivery_date']);
                 }
 
-                $request = $invoice->statusHistories()->where('event', 'revision_requested')->latest('id')->firstOrFail();
+                $request = $recovering ? null : $invoice->statusHistories()->where('event', 'revision_requested')->latest('id')->firstOrFail();
 
                 if ($invoice->local_purchase_order_id && ! array_key_exists('local_purchase_order_id', $data)) {
                     throw ValidationException::withMessages([
@@ -263,6 +285,13 @@ class InvoiceSubmissionService
                         'po_remaining_snapshot' => null, 'has_po_discrepancy' => false,
                     ];
                 } else {
+                    // Only a row already stored on the legacy manual path may stay
+                    // there; every other row must name an authoritative Local PO.
+                    if ($invoice->po_source !== 'MANUAL') {
+                        throw ValidationException::withMessages([
+                            'local_purchase_order_id' => __('local_invoice.validation.authoritative_selection'),
+                        ]);
+                    }
                     $poNum = $data['po_number'] ?? ($data['manual_po_number'] ?? ($data['internal_po_reference'] ?? $invoice->po_number));
                     $poSource = $data['po_source'] ?? $invoice->po_source;
                     $internalPoRef = $data['internal_po_reference'] ?? (($poSource === 'INTERNAL' || blank($poSource)) ? $poNum : null);
@@ -283,19 +312,13 @@ class InvoiceSubmissionService
 
                 // 3. Recalculate PPN and tax amount
                 $ppnScheme = $data['ppn_scheme'] ?? ($invoice->ppn_scheme ?? '11%');
-                $invoiceDpp = (float) $data['invoice_amount'];
-                $calcPpn = match ($ppnScheme) {
-                    '11%' => round($invoiceDpp * 0.11, 2),
-                    '1.1%' => round($invoiceDpp * 0.011, 2),
-                    default => 0.0,
-                };
-                $taxAmount = isset($data['tax_amount']) ? (float) $data['tax_amount'] : $calcPpn;
+                $taxAmount = $this->consistentTaxAmount($data, $ppnScheme, $supplier);
 
                 $revision = $invoice->revisions()->create(array_merge($this->values($data), [
                     'revision_number' => $invoice->revision_number + 1,
-                    'reason' => $request->notes,
-                    'requested_by' => $request->actor_id,
-                    'requested_at' => $request->created_at,
+                    'reason' => $recovering ? $data['recovery_reason'] : $request->notes,
+                    'requested_by' => $recovering ? $actor->id : $request->actor_id,
+                    'requested_at' => $recovering ? now() : $request->created_at,
                     'resubmitted_at' => now(),
                     'tax_amount' => $taxAmount,
                     'po_source' => $poResolved['po_source'],
@@ -329,13 +352,15 @@ class InvoiceSubmissionService
                     'tax_amount' => $taxAmount,
                     'status' => LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT,
                     'physical_verified_at' => null,
+                    'approved_at' => null,
+                    'ready_to_pay_at' => null,
                     'cashier_received_at' => null,
                     'review_started_at' => null,
                     'due_date' => null,
                     'payment_term_days_snapshot' => null,
                     'scheduled_payment_date' => null,
                     'missed_delivery_count' => 0,
-                    'scheduled_physical_delivery_date' => $data['scheduled_physical_delivery_date'] ?? $invoice->scheduled_physical_delivery_date,
+                    'scheduled_physical_delivery_date' => $recovering ? ($data['scheduled_physical_delivery_date'] ?? null) : ($data['scheduled_physical_delivery_date'] ?? $invoice->scheduled_physical_delivery_date),
                     'po_source' => $poResolved['po_source'],
                     'po_number' => $poResolved['po_number'],
                     'internal_po_reference' => $poResolved['internal_po_reference'],
@@ -357,10 +382,11 @@ class InvoiceSubmissionService
                 }
 
                 $history = $invoice->statusHistories()->create([
-                    'from_status' => LocalInvoice::STATUS_NEED_REVISION,
+                    'from_status' => $fromStatus,
                     'to_status' => $invoice->status,
                     'actor_id' => $actor->id,
                     'event' => 'resubmitted',
+                    'notes' => $recovering ? $data['recovery_reason'] : null,
                     'created_at' => now(),
                 ]);
                 $this->notifications->send($invoice, $history);
@@ -393,5 +419,44 @@ class InvoiceSubmissionService
     private function values(array $data): array
     {
         return Arr::only($data, ['invoice_number', 'invoice_date', 'po_number', 'invoice_amount', 'tax_amount', 'tax_invoice_number']);
+    }
+
+    /**
+     * Shared by submit() and resubmit(): DPP must be positive and the supplier
+     * may not route an arbitrary amount through the tax field. PPN must equal
+     * DPP x scheme within a 1 IDR rounding tolerance for PKP suppliers.
+     * Non-PKP suppliers must use the exempt scheme and exactly zero tax.
+     */
+    private function consistentTaxAmount(array $data, string $ppnScheme, Supplier $supplier): string
+    {
+        $invoiceDpp = Money::normalize($data['invoice_amount']);
+        if (Money::compare($invoiceDpp, Money::zero()) <= 0) {
+            throw ValidationException::withMessages([
+                'invoice_amount' => __('local_invoice.validation.dpp_positive'),
+            ]);
+        }
+        if (! $this->vendorMasterService->requiresFakturPajak($supplier)
+            && ($ppnScheme !== '0%' || Money::compare($data['tax_amount'] ?? Money::zero(), Money::zero()) !== 0)) {
+            throw ValidationException::withMessages([
+                'ppn_scheme' => __('local_invoice.validation.non_pkp_no_ppn'),
+            ]);
+        }
+        $calcPpn = Money::multiply($invoiceDpp, match ($ppnScheme) {
+            '11%' => '0.11',
+            '1.1%' => '0.011',
+            default => '0',
+        });
+        $taxAmount = isset($data['tax_amount']) ? Money::normalize($data['tax_amount']) : $calcPpn;
+        if (Money::compare(Money::subtract($taxAmount, $calcPpn), '1.00') > 0
+            || Money::compare(Money::subtract($calcPpn, $taxAmount), '1.00') > 0) {
+            throw ValidationException::withMessages([
+                'tax_amount' => __('local_invoice.validation.tax_consistency', [
+                    'expected' => $calcPpn,
+                    'scheme' => $ppnScheme,
+                ]),
+            ]);
+        }
+
+        return $taxAmount;
     }
 }

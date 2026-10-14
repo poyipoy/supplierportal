@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    @include('partials.auth-splash-bootstrap', ['authSplashLayout' => 'app', 'authSplashReadiness' => 'core'])
+    @include('partials.i18n-bootstrap')
     <meta name="robots" content="noindex, nofollow">
     <meta name="portal-scope" content="{{ \App\Support\PortalContext::current() ?? 'import' }}">
     @auth
@@ -202,27 +204,24 @@
     <link rel="icon" href="{{ asset('assets/images/logo-adasi.png') }}" type="image/png">
 
     <!-- Google Fonts: Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@fontsource/inter@5.2.8/latin.css" integrity="sha384-GjfJOJUB+Pa/uD6sSvglxeY3WGudhaBNhoZpfIKiYMJOFCaZPWWZbDMOJW4oMKg2" crossorigin="anonymous" rel="stylesheet">
 
     <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous" rel="stylesheet">
 
     @hasSection('uses-datatables')
         <!-- DataTables CSS (only on pages that initialize a DataTable) -->
-        <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+        <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" integrity="sha384-5oFfLntNy8kuC2TaebWZbaHTqdh3Q+7PwYbB490gupK0YtTAB7mBJGv4bQl9g9rK" crossorigin="anonymous">
     @endif
 
     <!-- SweetAlert2 CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css" integrity="sha384-e9JoBUb50niLuTodlxX3NLZZfrt9fQkX5bihGXOGWD/7QFJoXEH37S2df8UA2ehO" crossorigin="anonymous">
 
     <!-- ADASI Alert Theme -->
     <link rel="stylesheet" href="{{ asset('assets/css/adasi-alert.css') }}">
 
 
     <!-- Tailwind design foundation + Alpine entry (hybrid compatibility phase) -->
-    @include('partials.i18n-bootstrap')
     @include('partials.loader-logo')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('styles')
@@ -235,6 +234,7 @@
     x-on:keydown.tab.window="trapSidebarFocus($event)"
     x-effect="document.body.classList.toggle('ui-nav-open', mobileOpen)"
 >
+    <x-ui.auth-splash :error="isset($exception)" />
     <a href="#main-content" class="ui-skip-link">{{ __('navigation.skip') }}</a>
     @php
         $initNotifCount = 0;
@@ -278,7 +278,7 @@
     <x-ui.image-lightbox />
 
     <!-- Bootstrap 5 JS Bundle -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
     <script>
         window.initAdasiTooltips = function (root = document) {
@@ -295,12 +295,12 @@
     </script>
 
     <!-- jQuery -->
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha384-1H217gwSVyLSIfaLxHbE7dRb3v4mYCKbpQvzx0cegeju1MVsGrX5xXxAvs/HgeFs" crossorigin="anonymous"></script>
 
     @hasSection('uses-datatables')
         <!-- DataTables JS (only on pages that initialize a DataTable) -->
-        <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-        <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+        <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js" integrity="sha384-k5vbMeKHbxEZ0AEBTSdR7UjAgWCcUfrS8c0c5b2AfIh7olfhNkyCZYwOfzOQhauK" crossorigin="anonymous"></script>
+        <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js" integrity="sha384-PgPBH0hy6DTJwu7pTf6bkRqPlf/+pjUBExpr/eIfzszlGYFlF9Wi9VTAJODPhgCO" crossorigin="anonymous"></script>
     @endif
     <script>
         window.AdasiDataTable = Object.freeze({
@@ -337,7 +337,7 @@
         }
     </script>
     <!-- SweetAlert2 JS -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js" integrity="sha384-VNUenFzuMm/yuCawx3aXQgp6+Z5QL6nRMkX1fNFfqPzI1fdaooshPNCHt/Llz/bJ" crossorigin="anonymous"></script>
     <script src="{{ asset('assets/js/adasi-alert.js') }}"></script>
 
     <!-- Ngrok browser warning bypass for internal async requests -->
@@ -778,8 +778,8 @@
 @auth
     @if($pusherClientReady)
         <!-- Laravel Echo + Pusher Channels -->
-        <script src="https://cdn.jsdelivr.net/npm/pusher-js@8.4.0/dist/web/pusher.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/laravel-echo@1.19.0/dist/echo.iife.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/pusher-js@8.4.0/dist/web/pusher.min.js" integrity="sha384-F0kpynobTwTZnUdhUu3W6P6QcdLW2hKKDTh6ECx+p/osH1JYIKlYqUjNc4ObdiTj" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/laravel-echo@1.19.0/dist/echo.iife.js" integrity="sha384-ScNZkQp2Eq+lxW1uQEWSn+2+fQYxKc1pCX6Vl1lxSRzJBvJ5DRR98jdTDqdde2iX" crossorigin="anonymous"></script>
 
         <script>
             (() => {
@@ -1136,6 +1136,9 @@
 @endauth
 
     @stack('scripts')
+    @if (! isset($exception) && request()->attributes->get('ui.auth_splash_rendered'))
+        <template data-auth-splash-layout-ready="app" data-readiness="core"></template>
+    @endif
 </body>
 
 </html>

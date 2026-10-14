@@ -11,6 +11,7 @@ use App\Services\ShipmentService;
 use App\Support\NumberFormat;
 use App\Support\StatusHelper;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Yajra\DataTables\Facades\DataTables;
 
@@ -25,6 +26,7 @@ class SupplierShipmentController extends Controller
      */
     public function index(Request $request, RegionalDisplayFormatter $regionalFormatter)
     {
+        Gate::authorize('viewAny', Shipment::class);
         $supplierId = auth()->id();
 
         $query = Shipment::query()
@@ -135,6 +137,7 @@ class SupplierShipmentController extends Controller
      */
     public function create(Request $request)
     {
+        Gate::authorize('create', Shipment::class);
         $supplierId = auth()->id();
 
         // Load active or overdue POs belonging to this supplier
@@ -188,13 +191,13 @@ class SupplierShipmentController extends Controller
     public function edit($id)
     {
         $shipment = Shipment::with('items')->findOrFail($id);
-        if ((int) $shipment->supplier_id !== (int) auth()->id()) {
-            abort(403, __('shipments.copy.you_do_not_have_access_to_this_shipment'));
-        }
+        Gate::authorize('view', $shipment);
         if ($shipment->status !== Shipment::STATUS_DRAFT) {
             return redirect()->route('supplier.shipments.show', $shipment)
                 ->with('error', __('shipments.copy.only_draft_shipments_can_be_edited'));
         }
+
+        Gate::authorize('update', $shipment);
 
         $currentQuantities = $shipment->items->keyBy(fn ($item) => $item->purchase_order_id.':'.$item->quotation_item_id);
         $currentPoIds = $shipment->items->pluck('purchase_order_id')->unique()->all();
@@ -247,6 +250,7 @@ class SupplierShipmentController extends Controller
      */
     public function store(Request $request)
     {
+        Gate::authorize('create', Shipment::class);
         $this->validateShipmentPayload($request, true);
 
         try {
@@ -286,9 +290,7 @@ class SupplierShipmentController extends Controller
     public function update(Request $request, $id)
     {
         $shipment = Shipment::findOrFail($id);
-        if ((int) $shipment->supplier_id !== (int) auth()->id()) {
-            abort(403, __('shipments.copy.you_do_not_have_access_to_this_shipment'));
-        }
+        Gate::authorize('update', $shipment);
 
         $this->validateShipmentPayload($request, false);
 
@@ -326,9 +328,7 @@ class SupplierShipmentController extends Controller
             ])
             ->findOrFail($id);
 
-        if ((int) $shipment->supplier_id !== (int) auth()->id()) {
-            abort(403, __('shipments.copy.you_do_not_have_access_to_this_shipment'));
-        }
+        Gate::authorize('view', $shipment);
 
         return view('supplier.shipments.show', compact('shipment'));
     }
@@ -340,9 +340,7 @@ class SupplierShipmentController extends Controller
     {
         $shipment = Shipment::findOrFail($id);
 
-        if ((int) $shipment->supplier_id !== (int) auth()->id()) {
-            abort(403, __('shipments.copy.you_do_not_have_access_to_this_shipment'));
-        }
+        Gate::authorize('submit', $shipment);
 
         $validated = $this->validateShipmentPayload($request, false, false);
 
@@ -367,9 +365,7 @@ class SupplierShipmentController extends Controller
     {
         $shipment = Shipment::findOrFail($id);
 
-        if ((int) $shipment->supplier_id !== (int) auth()->id()) {
-            abort(403, __('shipments.copy.you_do_not_have_access_to_this_shipment'));
-        }
+        Gate::authorize('cancel', $shipment);
 
         try {
             $cancelled = $this->shipmentService->cancelShipment($shipment, auth()->user());
@@ -397,9 +393,7 @@ class SupplierShipmentController extends Controller
 
         $shipment = Shipment::findOrFail($id);
 
-        if ((int) $shipment->supplier_id !== (int) auth()->id()) {
-            abort(403, __('shipments.copy.you_do_not_have_access_to_this_shipment'));
-        }
+        Gate::authorize('uploadDocument', $shipment);
 
         $document = ShipmentDocument::where('shipment_id', $shipment->id)->findOrFail($document_id);
 

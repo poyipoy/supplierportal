@@ -48,6 +48,7 @@ class User extends Authenticatable
         'role',
         'is_active',
         'account_status',
+        'must_change_password',
     ];
 
     /**
@@ -73,6 +74,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
+            'must_change_password' => 'boolean',
             'two_factor_secret' => 'encrypted',
             'two_factor_recovery_codes' => 'encrypted:array',
             'two_factor_confirmed_at' => 'datetime',

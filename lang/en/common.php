@@ -1,6 +1,11 @@
 <?php
 
 return [
+    'select.free_minimum' => 'Type at least 2 characters to search. You can enter a new number.',
+    'select.free_loading' => 'Searching PR numbers...',
+    'select.free_failed' => 'Suggestions could not be loaded. You can still enter a number.',
+    'select.free_results' => ':count suggestions available. Use arrow keys to choose.',
+    'select.free_empty' => 'No matching PR. You can use the number you typed.',
     'unknown' => 'Unknown',
     'chat.title' => 'Chat: :context - ADASI Portal',
     'chat.page_title' => 'Negotiation: :context',
@@ -86,10 +91,10 @@ return [
     'reference_example' => 'Example: :reference',
 
     'final_review' => [
-        'created_by_date' => "Created by :name on :date",
-        'created_by' => "Created by :name.",
-        'currency_records' => ":currency Records",
-        'page' => "Page :page of :last",
+        'created_by_date' => 'Created by :name on :date',
+        'created_by' => 'Created by :name.',
+        'currency_records' => ':currency Records',
+        'page' => 'Page :page of :last',
 
         'paid_help' => 'Monitor settlement status of Supplier and GA DRP batches, review transfer proofs, and mark completed batches paid.',
         'ready_invoice_help' => 'Select Ready to Pay invoices that are not included in an active Draft or Finalized batch.',
@@ -97,7 +102,7 @@ return [
         'cashier_receipt' => 'Physical Document Receipt (Cashier)',
         'po_locked_help' => 'Local PO currency is fixed to IDR. PO number and supplier identity become locked for audit after a GR or invoice is linked.',
         'master_reporting' => 'Master Invoices (Reporting & Repository)',
-        'private_uploads' => 'Files are stored privately on the server. PDF, JPG, JPEG, or PNG; maximum 5 MB per file and 5 files per category.',
+        'private_uploads' => 'Files are stored privately on the server. PDF only; maximum 5 MB per file and 5 files per category.',
         'local_po' => 'Local Purchase Order (PO)',
         'whole_gr' => 'Whole Goods Receipt (GR)',
         'pending_vendor_changes' => 'Vendor Data Change Requests (Awaiting Purchasing / Finance Approval)',

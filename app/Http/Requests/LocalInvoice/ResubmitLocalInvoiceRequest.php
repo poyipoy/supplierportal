@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\LocalInvoice;
 
+use App\Models\LocalInvoice;
+use App\Models\LocalInvoiceDocument;
 use App\Services\VendorMaster\VendorMasterService;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -17,12 +19,57 @@ class ResubmitLocalInvoiceRequest extends StoreLocalInvoiceRequest
     {
         parent::prepareForValidation();
 
+        if (is_string($this->input('recovery_reason'))) {
+            $this->merge(['recovery_reason' => trim($this->input('recovery_reason'))]);
+        }
+
         $invoice = $this->route('invoice');
         if ($invoice && $this->has('invoice_number') && $this->input('invoice_number') !== $invoice->invoice_number) {
             throw ValidationException::withMessages([
                 'invoice_number' => __('local_invoice.validation.revision_identity', ['uploaded' => $this->input('invoice_number'), 'number' => $invoice->invoice_number]),
             ]);
         }
+
+        $this->dropSupersededKeptDocuments($invoice);
+    }
+
+    /**
+     * Tipe berkas tunggal (invoice, faktur pajak) memakai semantik ganti: begitu
+     * supplier mengunggah berkas baru, dokumen lama bertipe sama tidak lagi
+     * dibawa ke revisi berikutnya alih-alih ditolak karena melebihi batas.
+     */
+    private function dropSupersededKeptDocuments(?LocalInvoice $invoice): void
+    {
+        $keptIds = array_values(array_filter((array) $this->input('kept_document_ids', [])));
+        if (! $invoice || $keptIds === []) {
+            return;
+        }
+
+        $replacedTypes = array_values(array_filter(
+            array_keys(LocalInvoiceDocument::MAX_FILES_PER_TYPE),
+            fn (string $type) => LocalInvoiceDocument::replacesOnUpload($type) && ! empty($this->file($type))
+        ));
+
+        if ($replacedTypes === []) {
+            return;
+        }
+
+        $superseded = $invoice->documents()
+            ->whereIn('id', $keptIds)
+            ->whereIn('document_type', $replacedTypes)
+            ->pluck('id')
+            ->all();
+
+        if ($superseded === []) {
+            return;
+        }
+
+        $this->merge([
+            'kept_document_ids' => array_values(array_diff(
+                array_map('intval', $keptIds),
+                array_map('intval', $superseded)
+            )),
+        ]);
     }
 
     public function rules(): array
@@ -30,8 +77,18 @@ class ResubmitLocalInvoiceRequest extends StoreLocalInvoiceRequest
         $rules = parent::rules();
         $invoice = $this->route('invoice');
 
+        if ($invoice?->status !== LocalInvoice::STATUS_CANCELLED && $invoice?->po_source === 'MANUAL' && $invoice->local_purchase_order_id === null) {
+            $rules['local_purchase_order_id'] = ['nullable', 'integer', 'exists:local_purchase_orders,id'];
+            $rules['goods_receipt_ids'] = ['required_with:local_purchase_order_id', 'nullable', 'array', 'min:1'];
+        }
+
         // The invoice number is its business identity and remains fixed across revisions.
         $rules['invoice_number'] = ['required', Rule::in([$invoice->invoice_number])];
+
+        if ($invoice->status === LocalInvoice::STATUS_CANCELLED) {
+            $rules['recovery_reason'] = ['required', 'string', 'max:1000'];
+            $rules['business_document_valid'] = ['accepted'];
+        }
 
         $supplier = $this->user()->supplier;
         $vendorMasterService = app(VendorMasterService::class);
@@ -78,12 +135,29 @@ class ResubmitLocalInvoiceRequest extends StoreLocalInvoiceRequest
                 $retainedCount = $retainedDocs->where('document_type', $type)->count();
                 $uploaded = $this->file($type);
                 $newCount = is_array($uploaded) ? count($uploaded) : ($uploaded ? 1 : 0);
-                if ($retainedCount + $newCount > 5) {
-                    $fail('Total berkas tersimpan dan baru untuk '.$type.' melebihi batas maksimal 5 berkas.');
+                $max = LocalInvoiceDocument::maxFilesFor($type);
+
+                // Revisi yang hanya mempertahankan berkas lama tidak diblokir:
+                // dokumen warisan boleh melebihi batas baru selama tidak ditambah.
+                if ($newCount > 0 && $retainedCount + $newCount > $max) {
+                    $fail(__('local_invoice.validation.file_limit', [
+                        'type' => __('local_invoice.labels.'.$type),
+                        'count' => $max,
+                    ]));
                 }
             }
         };
 
         return $rules;
+    }
+
+    public function messages(): array
+    {
+        return array_merge(parent::messages(), [
+            'recovery_reason.required' => __('local_invoice.recovery.reason_required'),
+            'recovery_reason.string' => __('local_invoice.recovery.reason_required'),
+            'recovery_reason.max' => __('local_invoice.recovery.reason_max'),
+            'business_document_valid.accepted' => __('local_invoice.recovery.confirm_required'),
+        ]);
     }
 }

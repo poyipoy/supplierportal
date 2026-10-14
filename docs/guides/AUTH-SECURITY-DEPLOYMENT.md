@@ -35,7 +35,7 @@ TRUSTED_PROXIES=
 
 Production code forces session encryption, Secure cookies, HttpOnly cookies, and `SameSite=lax`. Keep `TRUSTED_PROXIES` empty for direct cPanel SSL. If a proxy is introduced later, use only comma-separated explicit IP or CIDR values; wildcard values are ignored.
 
-Turnstile is disabled when either key is empty:
+Registration CAPTCHA is disabled when both keys are empty, including production. Setting only one key is incomplete configuration and blocks registration. With both keys set, registration requires successful Turnstile verification; missing/expired tokens and provider errors still block submission:
 
 ```dotenv
 TURNSTILE_SITE_KEY=
@@ -45,7 +45,7 @@ TURNSTILE_TIMEOUT_SECONDS=3
 
 An optional CSP report collector can be supplied with `CSP_REPORT_URI`. The policy remains report-only in this release.
 
-The global failed-login velocity brake detects distributed credential stuffing and forces Turnstile while active. It does not create an application-wide HTTP 429 or account lockout. Production Turnstile credentials must therefore be configured and smoke-tested.
+The global failed-login velocity brake detects distributed credential stuffing and requests Turnstile while active. It does not create an application-wide HTTP 429 or account lockout. Its CAPTCHA protection depends on valid Turnstile credentials. When enabling Turnstile in production, configure and smoke-test both credentials. Registration without CAPTCHA still requires validation, rate limits and supplier review before account activation.
 
 The known-device cookie is an encrypted, first-party, HttpOnly cookie with `SameSite=lax`, Secure enabled in production, and a sliding 400-day lifetime. The database stores only a SHA-256 hash of the random browser token. Clearing cookies, using a private profile, reinstalling the browser, or creating a new browser profile causes the next successful login to be treated as a new device. The first successful login from each browser after this migration may therefore produce one expected bootstrap alert.
 

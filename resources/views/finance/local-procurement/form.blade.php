@@ -52,7 +52,7 @@
                     <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
                         {{-- Nomor PO --}}
                         <div>
-                            <div class="tw-flex tw-items-center tw-justify-between tw-mb-1">
+                            <div class="tw-flex tw-items-center tw-justify-between tw-min-h-6 tw-mb-1">
                                 <label for="po_number" class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-mb-0">
                                     {{ __('local_invoice.receipt.po_number') }} <span class="tw-text-error">*</span>
                                 </label>
@@ -82,6 +82,19 @@
                         </div>
 
                         {{-- Supplier Lokal --}}
+                        <div class="tw-min-w-0">
+                            @if($isEdit && filled($purchaseOrder->pr_number))
+                                <label for="pr_number" class="form-label tw-flex tw-items-center tw-min-h-6 tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-mb-1">{{ __('local_procurement.pr.number_label') }}</label>
+                                <input id="pr_number" name="pr_number" value="{{ $purchaseOrder->pr_number }}" readonly maxlength="100" class="form-control form-control-sm">
+                                <p class="form-text">{{ __('local_procurement.pr.manual_locked') }}</p>
+                            @else
+                                <x-ui.searchable-select name="pr_number" id="pr_number" :label="__('local_procurement.pr.number_label')"
+                                    :value="$purchaseOrder->pr_number" :allow-custom="true"
+                                    :suggestions-url="route($routePrefix.'.pr-suggestions', [], false)"
+                                    :placeholder="__('local_procurement.pr.manual_hint')" :helper="__('local_procurement.pr.manual_hint')" />
+                            @endif
+                        </div>
+
                         <div>
                             <div class="tw-flex tw-items-center tw-justify-between tw-mb-1">
                                 <label for="supplier_id" class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-mb-0">
@@ -240,15 +253,6 @@
                                         {{ \App\Support\StatusHelper::localFinanceLabel($purchaseOrder->status) }}
                                     </x-ui.status-chip>
                                 </div>
-
-                                @if($activeGrTotal > 0)
-                                    <div class="tw-flex tw-items-center tw-justify-between tw-text-on-surface-variant">
-                                        <span>{{ __('local_procurement.surface.active_gr') }}</span>
-                                        <span class="tw-font-mono tw-font-semibold tw-text-on-surface">
-                                            Rp {{ number_format($activeGrTotal, 0, ',', '.') }}
-                                        </span>
-                                    </div>
-                                @endif
                             @endif
                         </div>
 

@@ -168,7 +168,7 @@ class PaymentBatchSettlementTest extends TestCase
         return $invoice;
     }
 
-    public function test_entire_supplier_batch_with_bca_and_non_bca_groups_settles_to_paid_status(): void
+    public function test_one_finance_user_can_create_finalize_voucher_and_pay_supplier_batch(): void
     {
         $invBca = $this->createVerifiedInvoice($this->supplierBca, 5000000.00, 'INV-SETTLE-BCA');
         $invMandiri = $this->createVerifiedInvoice($this->supplierMandiri, 4000000.00, 'INV-SETTLE-MAN');
@@ -201,6 +201,8 @@ class PaymentBatchSettlementTest extends TestCase
         // 2. Finalize Batch
         $batch = $batchService->finalizeBatch($batch, $this->financeUser);
         $this->assertSame(PaymentBatch::STATUS_FINALIZED, $batch->status);
+        $this->assertSame($this->financeUser->id, $batch->created_by);
+        $this->assertSame($this->financeUser->id, $batch->finalized_by);
 
         // 3. Generate Vouchers for both items
         foreach ($batch->groups as $group) {

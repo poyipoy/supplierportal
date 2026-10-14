@@ -100,7 +100,7 @@ class AdvancedExportPhaseFiveBTest extends TestCase
         $this->assertSame(['100000.25', 'LSI-5B-ONE', "'@Invoice", '2026-09-15'], $export->map($export->query()->firstOrFail()));
         $restored = unserialize(serialize($export));
         $this->assertSame($export->map($invoice), $restored->map($restored->query()->firstOrFail()));
-        $this->actingAs($finance)->get(route('finance.master-invoices.export', ['q' => 'ONE']))->assertRedirect(route('exports.index'));
+        $this->actingAs($finance)->post(route('finance.master-invoices.export', ['q' => 'ONE']))->assertRedirect(route('exports.index'));
         $this->assertSame(['q' => 'ONE'], ExportJob::sole()->export_args[1]);
     }
 

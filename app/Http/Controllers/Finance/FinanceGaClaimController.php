@@ -58,4 +58,11 @@ class FinanceGaClaimController extends Controller
 
         return back()->with('success', __($request->boolean('approve') ? 'ga.feedback.approved' : 'ga.feedback.revision_requested', ['number' => $claim->claim_number]));
     }
+
+    public function reverifyBank(GaClaim $claim, Request $request, GaVerificationService $service)
+    {
+        $service->reverifyBank($claim, $request->user());
+
+        return back()->with('success', __('finance_controls.bank_reverified'));
+    }
 }

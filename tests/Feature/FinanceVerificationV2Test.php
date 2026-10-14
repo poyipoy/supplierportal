@@ -16,6 +16,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use InvalidArgumentException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Support\NativeFileFixtures;
 use Tests\TestCase;
 
@@ -365,6 +366,86 @@ class FinanceVerificationV2Test extends TestCase
         ]);
 
         $responseRedirectA->assertRedirect(route('finance.invoices.show', $invoice).'#section-a');
+    }
+
+    public static function nonPositiveNetPayableCases(): array
+    {
+        return [
+            'zero net' => [['pph_23_applicable' => true, 'pph_23_amount' => '11100000.00']],
+            'negative net' => [['pph_23_applicable' => true, 'pph_23_amount' => '11100000.01']],
+            'combined withholding' => [[
+                'pph_23_applicable' => true, 'pph_23_amount' => '2000000.00',
+                'pph_4_2_applicable' => true, 'pph_4_2_amount' => '4000000.00',
+                'pph_21_applicable' => true, 'pph_21_amount' => '5100000.00',
+            ]],
+            'calculated withholding' => [['pph_23_applicable' => true, 'pph_23_base' => '11100000.00', 'pph_23_rate' => '100.00']],
+            'corrected PPN' => [[
+                'ppn_status' => 'TIDAK_SESUAI', 'verified_ppn' => '990000.00', 'tax_notes' => 'Corrected PPN.',
+                'pph_21_applicable' => true, 'pph_21_amount' => '10990000.00',
+            ]],
+        ];
+    }
+
+    #[DataProvider('nonPositiveNetPayableCases')]
+    public function test_section_b_rejects_non_positive_net_payable_atomically(array $data): void
+    {
+        [$invoice, $finance] = $this->createReadyForVerificationInvoice();
+        $verification = $this->verificationService->verifySectionA($invoice, [], $finance);
+        $before = $verification->getAttributes();
+
+        try {
+            $this->verificationService->verifySectionB($invoice, $data + ['ppn_status' => 'SESUAI'], $finance);
+            $this->fail('Section B accepted a non-positive net payable.');
+        } catch (InvalidArgumentException $exception) {
+            $this->assertSame(__('local_invoice.validation.net_payable_positive'), $exception->getMessage());
+        }
+
+        $this->assertSame($before, $verification->fresh()->getAttributes());
+        $this->assertFalse($verification->fresh()->is_section_b_passed);
+        $this->assertSame(LocalInvoice::STATUS_UNDER_VERIFICATION, $invoice->fresh()->status);
+    }
+
+    public function test_section_b_accepts_a_positive_one_cent_net_payable(): void
+    {
+        [$invoice, $finance] = $this->createReadyForVerificationInvoice();
+        $this->verificationService->verifySectionA($invoice, [], $finance);
+
+        $verification = $this->verificationService->verifySectionB($invoice, [
+            'ppn_status' => 'SESUAI', 'pph_23_applicable' => true, 'pph_23_amount' => '11099999.99',
+        ], $finance);
+
+        $this->assertTrue($verification->is_section_b_passed);
+        $this->assertSame('0.01', $verification->netPayableExact($invoice->invoice_amount));
+    }
+
+    public function test_section_b_rejection_returns_json_or_redirect_with_input(): void
+    {
+        [$invoice, $finance] = $this->createReadyForVerificationInvoice();
+        $verification = $this->verificationService->verifySectionA($invoice, [], $finance);
+        $data = ['ppn_status' => 'SESUAI', 'pph_21_applicable' => true, 'pph_21_amount' => '11100000.00'];
+        $url = route('finance.invoices.verify-section-b', $invoice);
+
+        $this->actingAs($finance)->postJson($url, $data)->assertUnprocessable()->assertJson([
+            'success' => false, 'message' => __('local_invoice.validation.net_payable_positive'),
+        ]);
+        $this->post($url, $data)->assertRedirect(route('finance.invoices.show', $invoice).'#section-b')
+            ->assertSessionHasErrors('general')->assertSessionHasInput('pph_21_amount', '11100000.00');
+        $this->assertFalse($verification->fresh()->is_section_b_passed);
+    }
+
+    public function test_invalid_section_b_edit_preserves_the_previously_passed_verification(): void
+    {
+        [$invoice, $finance] = $this->createReadyForVerificationInvoice();
+        $this->verificationService->verifySectionA($invoice, [], $finance);
+        $verification = $this->verificationService->verifySectionB($invoice, ['ppn_status' => 'SESUAI'], $finance);
+        $before = $verification->getAttributes();
+
+        $this->actingAs($finance)->postJson(route('finance.invoices.verify-section-b', $invoice), [
+            'ppn_status' => 'SESUAI', 'pph_4_2_applicable' => true, 'pph_4_2_amount' => '11100000.01',
+        ])->assertUnprocessable();
+
+        $this->assertSame($before, $verification->fresh()->getAttributes());
+        $this->assertTrue($verification->fresh()->is_section_b_passed);
     }
 
     public function test_section_a_and_b_are_disabled_and_locked_when_invoice_is_approved_ready_to_pay(): void

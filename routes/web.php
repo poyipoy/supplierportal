@@ -40,6 +40,7 @@ use App\Http\Controllers\Ga\EmployeeController;
 use App\Http\Controllers\Ga\GaController;
 use App\Http\Controllers\GaClaimDocumentController;
 use App\Http\Controllers\LocaleController;
+use App\Http\Controllers\LocalGoodsReceiptTableController;
 use App\Http\Controllers\LocalInvoiceDocumentController;
 use App\Http\Controllers\LocalInvoiceReceiptController;
 use App\Http\Controllers\LocalSupplier\InformationController;
@@ -102,6 +103,7 @@ Route::middleware(['auth', 'role:supplier', 'supplier.scope:local'])->prefix('lo
     Route::get('/dashboard', [LocalSupplierInvoiceController::class, 'dashboard'])->name('dashboard');
     Route::get('/purchase-orders', [LocalSupplierPurchaseOrderController::class, 'index'])->name('purchase-orders.index');
     Route::get('/purchase-orders/search', [LocalSupplierInvoiceController::class, 'searchPurchaseOrders'])->name('purchase-orders.search');
+    Route::get('/purchase-orders/{purchaseOrder}/goods-receipts/data', LocalGoodsReceiptTableController::class)->name('purchase-orders.goods-receipts.data');
     Route::get('/purchase-orders/{purchase_order}', [LocalSupplierPurchaseOrderController::class, 'show'])->name('purchase-orders.show');
     Route::get('/invoices', [LocalSupplierInvoiceController::class, 'index'])->name('invoices.index');
     Route::get('/invoices/create', [LocalSupplierInvoiceController::class, 'create'])->name('invoices.create');
@@ -186,29 +188,31 @@ Route::middleware(['auth', 'role:finance,admin'])->prefix('finance')->name('fina
     Route::get('/ga-claims', [FinanceGaClaimController::class, 'index'])->name('ga-claims.index');
     Route::get('/ga-claims/{claim}', [FinanceGaClaimController::class, 'show'])->name('ga-claims.show');
     Route::post('/ga-claims/{claim}/verify', [FinanceGaClaimController::class, 'verify'])->name('ga-claims.verify');
+    Route::post('/ga-claims/{claim}/reverify-bank', [FinanceGaClaimController::class, 'reverifyBank'])->name('ga-claims.reverify-bank');
 
     // DRP Bulk Transfer Export (multi-batch → single TARIKAN TRANSFER workbook)
     Route::post('/drp/export-transfer', [FinanceDrpController::class, 'exportTransferBulk'])->name('drp.export-transfer');
 
     // DRP Batch Detail, Finalize, Item Removal, Fee Override, Voucher, Pay
-    Route::get('/drp/{batch}/export', [FinanceDrpController::class, 'export'])->name('drp.export');
+    Route::match(['get', 'post'], '/drp/{batch}/export', [FinanceDrpController::class, 'export'])->name('drp.export');
     Route::get('/drp/{batch}', [FinanceDrpController::class, 'show'])->name('drp.show');
     Route::post('/drp/{batch}/finalize', [FinanceDrpController::class, 'finalize'])->name('drp.finalize');
     Route::post('/drp/{batch}/cancel', [FinanceDrpController::class, 'cancelBatch'])->name('drp.cancel');
     Route::post('/drp-items/{item}/remove', [FinanceDrpController::class, 'removeItem'])->name('drp.remove-item');
     Route::post('/drp-groups/{group}/fee-override', [FinanceDrpController::class, 'overrideFee'])->name('drp.override-fee');
     Route::post('/drp-groups/{group}/voucher', [FinanceDrpController::class, 'assignVoucher'])->name('drp.assign-voucher');
-    Route::post('/drp-groups/{group}/pay', [FinanceDrpController::class, 'markPaid'])->name('drp.mark-paid');
 
     // Authoritative Local PO / whole-GR master (no delete routes)
     Route::prefix('local-procurement')->name('local-procurement.')->group(function () {
         Route::get('/', [LocalProcurementController::class, 'index'])->name('index');
         Route::get('/create', [LocalProcurementController::class, 'create'])->name('create');
+        Route::get('/pr-suggestions', [LocalProcurementController::class, 'prSuggestions'])->middleware('throttle:120,1')->name('pr-suggestions');
         Route::get('/imports', [LocalProcurementImportController::class, 'index'])->name('imports.index');
         Route::get('/imports/{procurementImport}', [LocalProcurementImportController::class, 'status'])->name('imports.status');
         Route::get('/imports/{procurementImport}/records', [LocalProcurementImportController::class, 'records'])->name('imports.records');
         Route::get('/imports/{procurementImport}/errors', [LocalProcurementImportController::class, 'errors'])->name('imports.errors');
         Route::post('/imports/{procurementImport}/cancel', [LocalProcurementImportController::class, 'cancel'])->middleware('throttle:15,1')->name('imports.cancel');
+        Route::post('/imports/{procurementImport}/revalidate', [LocalProcurementImportController::class, 'revalidate'])->middleware('throttle:15,1')->name('imports.revalidate');
         Route::post('/', [LocalProcurementController::class, 'store'])->name('store');
         Route::get('/import/po/template', [LocalProcurementController::class, 'poTemplate'])->name('import.po.template');
         Route::post('/import/po/preview', [LocalProcurementController::class, 'poPreview'])->middleware('throttle:15,1')->name('import.po.preview');
@@ -219,14 +223,17 @@ Route::middleware(['auth', 'role:finance,admin'])->prefix('finance')->name('fina
         Route::post('/upload-po', [LocalProcurementController::class, 'uploadPo'])->name('upload-po');
         Route::get('/po-documents/{poDocumentBatch}', [LocalPoDocumentBatchController::class, 'status'])->name('po-documents.status');
         Route::post('/po-documents/{poDocumentBatch}/retry', [LocalPoDocumentBatchController::class, 'retry'])->middleware('throttle:15,1')->name('po-documents.retry');
+        Route::get('/{purchaseOrder}/goods-receipts/data', LocalGoodsReceiptTableController::class)->name('goods-receipts.data');
         Route::get('/{purchaseOrder}', [LocalProcurementController::class, 'show'])->name('show');
         Route::get('/{purchaseOrder}/edit', [LocalProcurementController::class, 'edit'])->name('edit');
         Route::put('/{purchaseOrder}', [LocalProcurementController::class, 'update'])->name('update');
         Route::post('/{purchaseOrder}/close', [LocalProcurementController::class, 'close'])->name('close');
         Route::post('/{purchaseOrder}/cancel', [LocalProcurementController::class, 'cancel'])->name('cancel');
+        Route::post('/{purchaseOrder}/restore', [LocalProcurementController::class, 'restore'])->middleware('throttle:30,1')->name('restore');
         Route::post('/{purchaseOrder}/goods-receipts', [LocalProcurementController::class, 'storeGoodsReceipt'])->name('goods-receipts.store');
         Route::put('/goods-receipts/{goodsReceipt}', [LocalProcurementController::class, 'updateGoodsReceipt'])->name('goods-receipts.update');
         Route::post('/goods-receipts/{goodsReceipt}/cancel', [LocalProcurementController::class, 'cancelGoodsReceipt'])->name('goods-receipts.cancel');
+        Route::post('/goods-receipts/{goodsReceipt}/restore', [LocalProcurementController::class, 'restoreGoodsReceipt'])->middleware('throttle:30,1')->name('goods-receipts.restore');
     });
 
     // One invoice -> one Voucher Bayar -> one settlement; corrections are separate transfers.
@@ -246,6 +253,11 @@ Route::middleware(['auth', 'role:finance,admin'])->prefix('finance')->name('fina
     // Vendor Master & Change Approvals
     Route::get('/vendor-master', [FinanceVendorController::class, 'index'])->name('vendor-master.index');
     Route::get('/vendor-master/{vendor}', [FinanceVendorController::class, 'show'])->name('vendor-master.show');
+    // Payment term memengaruhi jatuh tempo: konfirmasi password sebelum form dibuka dan saat disimpan.
+    Route::get('/vendor-master/{vendor}/payment-term', [FinanceVendorController::class, 'editPaymentTerm'])
+        ->middleware('password.confirm')->name('vendor-master.payment-term.edit');
+    Route::put('/vendor-master/{vendor}/payment-term', [FinanceVendorController::class, 'updatePaymentTerm'])
+        ->middleware(['password.confirm', 'throttle:30,1'])->name('vendor-master.payment-term.update');
     Route::post('/vendor-change-requests/{request}/approve', [FinanceVendorController::class, 'approveChange'])->name('vendor-change-requests.approve');
     Route::post('/vendor-change-requests/{request}/reject', [FinanceVendorController::class, 'rejectChange'])->name('vendor-change-requests.reject');
 });
@@ -437,7 +449,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Manajemen User & Kurs
     Route::delete('/users/{user}/two-factor', [UserTwoFactorController::class, 'destroy'])
         ->middleware(['password.confirm', 'throttle:auth.security-action'])->name('users.two-factor.destroy');
-    Route::resource('users', UserController::class);
+    Route::resource('users', UserController::class)->middlewareFor(['create', 'edit', 'store', 'update'], 'password.confirm');
     Route::resource('exchange-rates', ExchangeRateController::class)->only(['index', 'store']);
 
     // Pengumuman
@@ -515,13 +527,13 @@ Route::middleware(['auth', 'role:purchasing', 'purchasing.navigation'])->prefix(
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     // Export
     Route::match(['get', 'post'], '/export/requisitions', [ExportController::class, 'requisitions'])->name('export.requisitions');
-    Route::get('/export/requisitions/{purchaseRequisition}', [ExportController::class, 'requisitionDetail'])->name('export.requisitions.detail');
+    Route::match(['get', 'post'], '/export/requisitions/{purchaseRequisition}', [ExportController::class, 'requisitionDetail'])->name('export.requisitions.detail');
     Route::match(['get', 'post'], '/export/purchase-orders', [ExportController::class, 'purchaseOrders'])->name('export.purchase-orders');
-    Route::get('/export/purchase-orders/{purchaseOrder}', [ExportController::class, 'purchaseOrderDetail'])->name('export.purchase-orders.detail');
+    Route::match(['get', 'post'], '/export/purchase-orders/{purchaseOrder}', [ExportController::class, 'purchaseOrderDetail'])->name('export.purchase-orders.detail');
     Route::match(['get', 'post'], '/export/quotations', [ExportController::class, 'quotations'])->name('export.quotations');
-    Route::get('/export/quotations/{quotation}', [ExportController::class, 'quotationDetail'])->name('export.quotations.detail');
+    Route::match(['get', 'post'], '/export/quotations/{quotation}', [ExportController::class, 'quotationDetail'])->name('export.quotations.detail');
     Route::match(['get', 'post'], '/export/shipments', [ExportController::class, 'shipments'])->name('export.shipments');
-    Route::get('/export/supplier-audits/{supplierAudit}', [ExportController::class, 'supplierAuditDetail'])->name('export.supplier-audits.detail');
+    Route::match(['get', 'post'], '/export/supplier-audits/{supplierAudit}', [ExportController::class, 'supplierAuditDetail'])->name('export.supplier-audits.detail');
     // Supplier Audit (Supplier Local)
     Route::get('/supplier-audits', [PurchasingSupplierAuditController::class, 'index'])->name('supplier-audits.index');
     Route::get('/supplier-audits/create', [PurchasingSupplierAuditController::class, 'create'])->name('supplier-audits.create');
@@ -544,8 +556,10 @@ Route::middleware(['auth', 'role:purchasing', 'purchasing.navigation'])->prefix(
         Route::get('/imports/{procurementImport}/records', [LocalProcurementImportController::class, 'records'])->name('imports.records');
         Route::get('/imports/{procurementImport}/errors', [LocalProcurementImportController::class, 'errors'])->name('imports.errors');
         Route::post('/imports/{procurementImport}/cancel', [LocalProcurementImportController::class, 'cancel'])->middleware('throttle:15,1')->name('imports.cancel');
+        Route::post('/imports/{procurementImport}/revalidate', [LocalProcurementImportController::class, 'revalidate'])->middleware('throttle:15,1')->name('imports.revalidate');
         Route::get('/', 'index')->name('index');
         Route::get('/create', 'create')->name('create');
+        Route::get('/pr-suggestions', 'prSuggestions')->middleware('throttle:120,1')->name('pr-suggestions');
         Route::post('/', 'store')->name('store');
         Route::get('/import/po/template', 'poTemplate')->name('import.po.template');
         Route::post('/import/po/preview', 'poPreview')->middleware('throttle:15,1')->name('import.po.preview');
@@ -556,14 +570,17 @@ Route::middleware(['auth', 'role:purchasing', 'purchasing.navigation'])->prefix(
         Route::post('/upload-po', 'uploadPo')->name('upload-po');
         Route::get('/po-documents/{poDocumentBatch}', [LocalPoDocumentBatchController::class, 'status'])->name('po-documents.status');
         Route::post('/po-documents/{poDocumentBatch}/retry', [LocalPoDocumentBatchController::class, 'retry'])->middleware('throttle:15,1')->name('po-documents.retry');
+        Route::get('/{purchaseOrder}/goods-receipts/data', LocalGoodsReceiptTableController::class)->name('goods-receipts.data');
         Route::get('/{purchaseOrder}', 'show')->name('show');
         Route::get('/{purchaseOrder}/edit', 'edit')->name('edit');
         Route::put('/{purchaseOrder}', 'update')->name('update');
         Route::post('/{purchaseOrder}/close', 'close')->name('close');
         Route::post('/{purchaseOrder}/cancel', 'cancel')->name('cancel');
+        Route::post('/{purchaseOrder}/restore', 'restore')->middleware('throttle:30,1')->name('restore');
         Route::post('/{purchaseOrder}/goods-receipts', 'storeGoodsReceipt')->name('goods-receipts.store');
         Route::put('/goods-receipts/{goodsReceipt}', 'updateGoodsReceipt')->name('goods-receipts.update');
         Route::post('/goods-receipts/{goodsReceipt}/cancel', 'cancelGoodsReceipt')->name('goods-receipts.cancel');
+        Route::post('/goods-receipts/{goodsReceipt}/restore', 'restoreGoodsReceipt')->middleware('throttle:30,1')->name('goods-receipts.restore');
     });
 
     // Read-Only DRP (Supplier, GA, Paid) & Vouchers
@@ -599,9 +616,9 @@ Route::middleware(['auth'])->prefix('shared')->name('shared.')->group(function (
 Route::middleware(['auth', 'role:supplier', 'supplier.scope:import'])->prefix('supplier')->name('supplier.')->group(function () {
     Route::get('/dashboard', [SupplierController::class, 'dashboard'])->name('dashboard');
     Route::match(['get', 'post'], '/export/quotations', [SupplierExportController::class, 'quotations'])->name('export.quotations');
-    Route::get('/export/quotations/{quotation}', [SupplierExportController::class, 'quotationDetail'])->name('export.quotations.detail');
+    Route::match(['get', 'post'], '/export/quotations/{quotation}', [SupplierExportController::class, 'quotationDetail'])->name('export.quotations.detail');
     Route::match(['get', 'post'], '/export/purchase-orders', [SupplierExportController::class, 'purchaseOrders'])->name('export.purchase-orders');
-    Route::get('/export/purchase-orders/{purchaseOrder}', [SupplierExportController::class, 'purchaseOrderDetail'])->name('export.purchase-orders.detail');
+    Route::match(['get', 'post'], '/export/purchase-orders/{purchaseOrder}', [SupplierExportController::class, 'purchaseOrderDetail'])->name('export.purchase-orders.detail');
     Route::get('/quotations/period/{period_id}', [QuotationController::class, 'period'])->name('quotations.period');
     Route::get('/quotations/{pr_id}/import-template', [QuotationController::class, 'importTemplate'])->name('quotations.import-template');
     Route::post('/quotations/{pr_id}/import-preview', [QuotationController::class, 'importPreview'])

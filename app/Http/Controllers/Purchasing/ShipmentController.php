@@ -15,6 +15,7 @@ use App\Support\NumberFormat;
 use App\Support\StatusHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Yajra\DataTables\Facades\DataTables;
 
 class ShipmentController extends Controller
@@ -28,6 +29,7 @@ class ShipmentController extends Controller
      */
     public function index(Request $request, RegionalDisplayFormatter $regionalFormatter)
     {
+        Gate::authorize('viewAny', Shipment::class);
         $filters = ShipmentExportFilters::validated($request);
         $query = Shipment::query()->with(['supplier', 'items.purchaseOrder', 'documents.latestAttachment'])->latest('shipment_date');
         ShipmentExportFilters::apply($query, $filters);
@@ -129,6 +131,8 @@ class ShipmentController extends Controller
             ])
             ->findOrFail($id);
 
+        Gate::authorize('view', $shipment);
+
         return view('purchasing.shipments.show', compact('shipment'));
     }
 
@@ -141,6 +145,7 @@ class ShipmentController extends Controller
             'actual_arrival_date' => 'nullable|date|before_or_equal:'.BusinessTime::today()->toDateString(),
         ]);
         $shipment = Shipment::findOrFail($id);
+        Gate::authorize('confirmArrival', $shipment);
 
         try {
             $arrived = $this->shipmentService->confirmArrival($shipment, auth()->user(), [
@@ -165,17 +170,22 @@ class ShipmentController extends Controller
     {
         $request->validate([
             'status' => 'required|string|in:'.implode(',', ShipmentDocument::STATUSES),
+            'notes' => 'nullable|string|max:1000',
         ]);
 
-        $shipment = Shipment::findOrFail($id);
-        $document = ShipmentDocument::where('shipment_id', $shipment->id)->findOrFail($document_id);
+        $document = DB::transaction(function () use ($request, $id, $document_id) {
+            $shipment = Shipment::whereKey($id)->lockForUpdate()->firstOrFail();
+            Gate::authorize('reviewDocument', $shipment);
+            $document = ShipmentDocument::where('shipment_id', $shipment->id)->lockForUpdate()->findOrFail($document_id);
+            $document->update([
+                'status' => $request->input('status'),
+                'notes' => $request->input('notes', $document->notes),
+            ]);
 
-        $document->update([
-            'status' => $request->input('status'),
-            'notes' => $request->input('notes', $document->notes),
-        ]);
+            PoDocument::syncFromShipmentDocument($document);
 
-        PoDocument::syncFromShipmentDocument($document);
+            return $document;
+        });
 
         return back()->with('success', __('shipments.feedback.document_status', ['status' => StatusHelper::shipmentDocLabel($document->status)]));
     }

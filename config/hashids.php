@@ -29,15 +29,9 @@ return [
     'connections' => [
 
         'main' => [
-            'salt' => env('HASHIDS_SALT', 'AdasiPortalSupplier2026_Secure'),
+            'salt' => (string) env('HASHIDS_SALT'),
             'length' => env('HASHIDS_LENGTH', 8),
             'alphabet' => env('HASHIDS_ALPHABET', 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890'),
-        ],
-
-        'alternative' => [
-            'salt' => 'your-alt-salt-string',
-            'length' => 6,
-            'alphabet' => 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890',
         ],
 
     ],

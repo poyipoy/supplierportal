@@ -97,6 +97,7 @@
                 <thead class="table-light">
                     <tr>
                         <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('local_invoice.receipt.po_number') }}</th>
+                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('local_procurement.pr.label') }}</th>
                         <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('local_procurement.labels.po_date') }}</th>
                         <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">{{ __('local_procurement.review.ceiling') }}</th>
                         <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">{{ __('local_procurement.review.gr_actual') }}</th>
@@ -112,6 +113,11 @@
                                 <a href="{{ route('local-supplier.purchase-orders.show', $po) }}" class="tw-font-mono tw-font-bold tw-text-primary hover:tw-text-primary-hover tw-no-underline hover:tw-underline">
                                     {{ $po->po_number }}
                                 </a>
+                            </td>
+                            <td>
+                                <span class="tw-block tw-font-mono tw-text-ui-xs tw-text-on-surface" style="max-width: 16rem; overflow-wrap: anywhere;">
+                                    {{ filled($po->pr_number) ? $po->pr_number : __('local_procurement.pr.empty') }}
+                                </span>
                             </td>
                             <td>
                                 <span class="tw-text-ui-xs tw-text-on-surface-variant">
@@ -153,7 +159,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="tw-py-8 tw-text-center tw-text-on-surface-variant tw-text-ui-sm">
+                            <td colspan="8" class="tw-py-8 tw-text-center tw-text-on-surface-variant tw-text-ui-sm">
                                 {{ __('local_procurement.empty.po') }}
                             </td>
                         </tr>

@@ -4,18 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    @include('partials.auth-splash-bootstrap', ['authSplashLayout' => 'auth', 'authSplashReadiness' => request()->routeIs('login') ? 'native-login' : 'core'])
+    @include('partials.i18n-bootstrap')
     <meta name="robots" content="noindex, nofollow">
     @yield('meta')
     <title>@yield('title', __('auth.login.title'))</title>
 
     <link rel="icon" href="{{ asset('assets/images/logo-adasi.png') }}" type="image/png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/@fontsource/inter@5.2.8/latin.css" integrity="sha384-GjfJOJUB+Pa/uD6sSvglxeY3WGudhaBNhoZpfIKiYMJOFCaZPWWZbDMOJW4oMKg2" crossorigin="anonymous" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css" integrity="sha384-e9JoBUb50niLuTodlxX3NLZZfrt9fQkX5bihGXOGWD/7QFJoXEH37S2df8UA2ehO" crossorigin="anonymous">
     <link rel="stylesheet" href="{{ asset('assets/css/adasi-alert.css') }}">
-    @include('partials.i18n-bootstrap')
     @include('partials.loader-logo')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
@@ -302,6 +301,7 @@
     </style>
 </head>
 <body class="tw-m-0 tw-min-h-screen tw-bg-surface tw-font-sans tw-text-on-surface tw-antialiased">
+    <x-ui.auth-splash :error="isset($exception)" />
     <main class="auth-shell" @yield('shell-attributes')>
         @hasSection('brand-panel')
             @yield('brand-panel')
@@ -363,10 +363,17 @@
 
     <x-ui.toast-container />
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
+    @if (! isset($exception) && request()->attributes->get('ui.auth_splash_rendered') && request()->routeIs('login'))
+        <template data-auth-splash-layout-ready="auth" data-readiness="native-login"></template>
+    @endif
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js" integrity="sha384-VNUenFzuMm/yuCawx3aXQgp6+Z5QL6nRMkX1fNFfqPzI1fdaooshPNCHt/Llz/bJ" crossorigin="anonymous"></script>
     <script src="{{ asset('assets/js/adasi-alert.js') }}"></script>
     @yield('scripts')
     @stack('scripts')
+    @if (! isset($exception) && request()->attributes->get('ui.auth_splash_rendered') && ! request()->routeIs('login'))
+        <template data-auth-splash-layout-ready="auth" data-readiness="core"></template>
+    @endif
 </body>
 </html>

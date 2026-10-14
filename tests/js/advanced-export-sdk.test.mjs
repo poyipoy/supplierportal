@@ -36,6 +36,16 @@ test('advanced POST uses CSRF/JSON and the existing progress SDK without navigat
     assert.equal(await app.window.AdasiAsyncExport.startExport(app.form, { url: app.form.action, body }), false);
     assert.equal(app.requests.length, 1);
 });
+test('legacy links dispatch with POST and CSRF while retaining URL filters', async () => {
+    const app = boot();
+    const control = { href: 'https://portal.test/purchasing/export/requisitions?status=draft', dataset: {},
+        setAttribute() {}, removeAttribute() {}, classList: { add() {}, remove() {} } };
+    assert.equal(await app.window.AdasiAsyncExport.startExport(control), true);
+    assert.equal(app.requests[0].init.method, 'POST');
+    assert.equal(app.requests[0].init.headers['X-CSRF-TOKEN'], 'test-token');
+    assert.equal(new URL(app.requests[0].url).searchParams.get('status'), 'draft');
+    assert.equal(Object.hasOwn(app.requests[0].init, 'body'), false);
+});
 test('different options have distinct request identities and cross-origin requests are rejected', async () => {
     const app = boot();
     for (const format of ['csv', 'xlsx']) {

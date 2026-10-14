@@ -48,6 +48,16 @@ class AuthSecurityServiceProvider extends ServiceProvider
 
     private function registerRateLimiters(): void
     {
+        foreach (['uploads' => 15, 'exports' => 10, 'pdf' => 60, 'search' => 120] as $policy => $maximum) {
+            RateLimiter::for('resources.'.$policy, function (Request $request) use ($policy, $maximum): Limit {
+                $identity = $request->user()?->getAuthIdentifier();
+                $key = $identity === null ? 'ip:'.($request->ip() ?: 'unknown') : 'user:'.$identity;
+
+                return Limit::perMinute($maximum)->by('resources:'.$policy.':'.$key)
+                    ->response(static fn (Request $request, array $headers) => RateLimitResponse::forNamedLimiter($request, $headers));
+            });
+        }
+
         RateLimiter::for('auth.credentials', function (Request $request): Limit {
             return $this->limit('credentials:user', $this->authenticatedIdentity($request), 'credentials');
         });

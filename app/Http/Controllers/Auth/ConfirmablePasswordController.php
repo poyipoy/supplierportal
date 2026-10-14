@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Services\Auth\PasswordConfirmationContinuationService;
+use App\Services\Auth\TwoFactorService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -41,6 +42,17 @@ class ConfirmablePasswordController extends Controller
         $request->session()->put('auth.password_confirmed_at', time());
 
         $pendingAction = $continuation->pull($request);
+
+        // Halaman yang diminta sebelum konfirmasi (mis. form edit) dibuka kembali,
+        // dengan pemeriksaan origin kedua agar tidak menjadi open redirect.
+        if ($pendingAction !== null && $pendingAction['method'] === 'GET') {
+            return redirect()->to(TwoFactorService::safeIntendedUrl(
+                $request,
+                $pendingAction['url'],
+                route('profile.edit', absolute: false),
+            ));
+        }
+
         if ($pendingAction !== null) {
             return view('auth.password-confirmation-continuation', [
                 'action' => $pendingAction,

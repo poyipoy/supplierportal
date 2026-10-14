@@ -568,7 +568,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
         $this->assertSame(1, $document->attachments()->count());
     }
 
-    public function test_reupload_preserves_history_resets_review_and_both_roles_resolve_latest_version(): void
+    public function test_pending_reupload_preserves_history_and_both_roles_resolve_latest_version(): void
     {
         $shipment = app(ShipmentService::class)->createDraft($this->supplierUserA);
         $document = $shipment->documents->first();
@@ -577,8 +577,6 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
             NativeFileFixtures::upload('version-one.pdf', 20),
             $this->supplierUserA
         );
-        $document->update(['status' => ShipmentDocument::STATUS_VERIFIED]);
-
         $second = app(ShipmentService::class)->uploadDocument(
             $document,
             NativeFileFixtures::upload('version-two.pdf', 20),

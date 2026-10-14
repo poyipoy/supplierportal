@@ -3,7 +3,7 @@
 @section('page-title', __('finance.drp.payment_plan_detail'))
 
 @section('content')
-<div class="tw-grid tw-gap-6 tw-pb-16">
+<div class="drp-batch-detail tw-grid tw-grid-cols-1 tw-min-w-0 tw-max-w-full tw-gap-6 tw-pb-16">
     <x-ui.page-header
         :title="__('finance.drp_ui.batch_title', ['number' => $batch->batch_number])"
         :description="__('finance.closure.batch_description', ['type' => __('finance.closure.batch_type_'.strtolower($batch->batch_type)), 'date' => $regionalFormatter->timestamp($batch->created_at, 'datetime'), 'name' => $batch->creator?->name ?? __('common.final_copy.system')])"
@@ -64,7 +64,7 @@
 
     {{-- Batch Summary Cards --}}
     <div class="tw-grid tw-grid-cols-2 sm:tw-grid-cols-3 {{ $batch->status === \App\Models\PaymentBatch::STATUS_PARTIALLY_PAID ? 'lg:tw-grid-cols-6' : 'md:tw-grid-cols-4' }} tw-gap-4">
-        <x-ui.card>
+        <x-ui.card class="tw-min-w-0 tw-break-words">
             <span class="tw-text-ui-xs tw-text-on-surface-variant tw-block">{{ __('finance.drp.batch_status') }}</span>
             <div class="tw-mt-1">
                 <x-ui.status-chip :tone="\App\Support\StatusHelper::paymentBatchTone($batch->status)">
@@ -72,32 +72,32 @@
                 </x-ui.status-chip>
             </div>
         </x-ui.card>
-        <x-ui.card>
+        <x-ui.card class="tw-min-w-0 tw-break-words">
             <span class="tw-text-ui-xs tw-text-on-surface-variant tw-block">{{ __('finance.drp.total_gross') }}</span>
             <span class="tw-font-mono tw-font-bold tw-text-ui-base tw-text-on-surface tw-block tw-mt-1">
                 Rp {{ number_format($batch->total_subtotal, 0, ',', '.') }}
             </span>
         </x-ui.card>
-        <x-ui.card>
+        <x-ui.card class="tw-min-w-0 tw-break-words">
             <span class="tw-text-ui-xs tw-text-on-surface-variant tw-block">{{ __('finance.drp.total_bank_fee') }}</span>
             <span class="tw-font-mono tw-font-bold tw-text-ui-base tw-text-error tw-block tw-mt-1">
                 Rp {{ number_format($batch->total_bank_fee, 0, ',', '.') }}
             </span>
         </x-ui.card>
-        <x-ui.card>
+        <x-ui.card class="tw-min-w-0 tw-break-words">
             <span class="tw-text-ui-xs tw-text-on-surface-variant tw-block">{{ __('finance.drp.total_net') }}</span>
             <span class="tw-font-mono tw-font-bold tw-text-ui-base tw-text-on-surface tw-block tw-mt-1">
                 Rp {{ number_format($batch->total_net_amount, 0, ',', '.') }}
             </span>
         </x-ui.card>
         @if($batch->status === \App\Models\PaymentBatch::STATUS_PARTIALLY_PAID)
-            <x-ui.card class="tw-border-success/30 tw-bg-success/5">
+            <x-ui.card class="tw-min-w-0 tw-break-words tw-border-success/30 tw-bg-success/5">
                 <span class="tw-text-ui-xs tw-text-success tw-font-semibold tw-block">{{ __('local_invoice.labels.paid') }}</span>
                 <span class="tw-font-mono tw-font-bold tw-text-ui-base tw-text-success tw-block tw-mt-1">
                     Rp {{ number_format($batch->actual_paid_amount, 0, ',', '.') }}
                 </span>
             </x-ui.card>
-            <x-ui.card class="tw-border-warning/30 tw-bg-warning/5">
+            <x-ui.card class="tw-min-w-0 tw-break-words tw-border-warning/30 tw-bg-warning/5">
                 <span class="tw-text-ui-xs tw-text-warning-container-foreground tw-font-semibold tw-block">{{ __('local_invoice.labels.remaining') }}</span>
                 <span class="tw-font-mono tw-font-bold tw-text-ui-base tw-text-warning-container-foreground tw-block tw-mt-1">
                     Rp {{ number_format($batch->remaining_amount, 0, ',', '.') }}
@@ -138,12 +138,12 @@
     @endif
 
     {{-- Groups & Items --}}
-    <div class="tw-space-y-6">
+    <div class="tw-min-w-0 tw-max-w-full tw-space-y-6">
         @foreach($batch->groups as $groupIndex => $group)
-            <x-ui.card>
+            <x-ui.card class="tw-min-w-0 tw-max-w-full">
                 <div class="tw-flex tw-flex-col md:tw-flex-row md:tw-items-center md:tw-justify-between tw-gap-4 tw-border-b tw-border-outline-variant tw-pb-4 tw-mb-4">
-                    <div>
-                        <div class="tw-flex tw-items-center tw-gap-2.5">
+                    <div class="tw-min-w-0 tw-flex-1 tw-break-words">
+                        <div class="tw-flex tw-flex-wrap tw-items-center tw-gap-2.5">
                             <h3 class="tw-text-ui-base tw-font-bold tw-text-on-surface tw-m-0">
                                 {{ $group->payee_name }}
                             </h3>
@@ -221,7 +221,7 @@
                 @endif
 
                 {{-- Group Items Table --}}
-                <div class="table-responsive">
+                <div class="table-responsive tw-w-full tw-min-w-0 tw-max-w-full">
                     <table class="table table-sm table-hover align-middle tw-m-0 tw-text-ui-xs w-100">
                         <thead class="table-light">
                             <tr>
@@ -237,7 +237,7 @@
                         <tbody>
                             @foreach($group->items as $item)
                                 <tr>
-                                    <td>
+                                    <td class="tw-max-w-[20rem] tw-break-all">
                                         <strong class="tw-font-mono">{{ $item->item_reference }}</strong>
                                     </td>
                                     <td>

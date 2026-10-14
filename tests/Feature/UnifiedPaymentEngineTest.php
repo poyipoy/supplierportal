@@ -200,6 +200,8 @@ class UnifiedPaymentEngineTest extends TestCase
             'submitted_by' => $gaUser->id,
             'submitted_at' => now(),
             'ready_to_pay_at' => now(),
+            'approved_bank_snapshot' => $employee->bankDetails(),
+            'approved_bank_hash' => $employee->bankFingerprint(),
         ]);
 
         $batch = $this->batchService->createGaBatch(User::factory()->create(['role' => 'finance']), [$claim->id]);

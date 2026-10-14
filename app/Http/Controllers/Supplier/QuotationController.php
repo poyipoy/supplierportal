@@ -51,6 +51,7 @@ class QuotationController extends Controller
      */
     public function index(Request $request)
     {
+        Gate::authorize('viewAny', Quotation::class);
         $supplierId = auth()->id();
 
         $periods = Period::where('status', 'open')
@@ -117,6 +118,7 @@ class QuotationController extends Controller
      */
     public function period(Request $request, $period_id)
     {
+        Gate::authorize('viewAny', Quotation::class);
         $filters = QuotationExportFilters::validated($request, supplier: true);
         $period = Period::findOrFail($period_id);
         $supplierId = auth()->id();
@@ -202,6 +204,7 @@ class QuotationController extends Controller
      */
     public function create($pr_id)
     {
+        Gate::authorize('create', Quotation::class);
         $pr = PurchaseRequisition::with(['items', 'invitedSuppliers'])->findOrFail($pr_id);
 
         if (! in_array($pr->status, ['submitted', 'bidding'])) {
@@ -222,6 +225,9 @@ class QuotationController extends Controller
         if ($quotation && ! $quotation->canBeRevisedBySupplier()) {
             return redirect()->route('supplier.quotations.show', $quotation)
                 ->with('info', __('supplier.copy.you_have_already_submitted_a_quotation_for_this_requisition'));
+        }
+        if ($quotation) {
+            Gate::authorize('update', $quotation);
         }
 
         $currencyOptions = ExchangeRate::CURRENCIES;
@@ -296,6 +302,7 @@ class QuotationController extends Controller
      */
     public function store(Request $request, $pr_id)
     {
+        Gate::authorize('create', Quotation::class);
         $pr = PurchaseRequisition::with('invitedSuppliers', 'items.materialMaster')->findOrFail($pr_id);
 
         if (! in_array($pr->status, ['submitted', 'bidding'])) {
@@ -562,6 +569,10 @@ class QuotationController extends Controller
                 throw new \RuntimeException(__('supplier.copy.this_quotation_is_locked_or_used_by_an_award_or_purchase_order_and_cannot_be_changed'));
             }
             $wasRevisionRequested = $quotation?->status === Quotation::STATUS_REVISION_REQUESTED;
+
+            if ($quotation) {
+                Gate::authorize('update', $quotation);
+            }
 
             $nextStatus = $request->action === 'submitted'
                 ? Quotation::STATUS_SUBMITTED
@@ -839,7 +850,7 @@ class QuotationController extends Controller
                 Storage::disk('private')->delete($newFile);
             }
             throw $e;
-        } catch (\DomainException|\InvalidArgumentException $e) {
+        } catch (\DomainException|\InvalidArgumentException|\RuntimeException $e) {
             DB::rollBack();
 
             foreach ($newlyCreatedFiles as $newFile) {
@@ -1103,6 +1114,7 @@ class QuotationController extends Controller
 
     private function importableRequisition($prId): PurchaseRequisition
     {
+        Gate::authorize('create', Quotation::class);
         $supplier = auth()->user();
 
         if (! $supplier || ! $supplier->is_active) {
@@ -1133,6 +1145,9 @@ class QuotationController extends Controller
 
         if ($quotation && ! $quotation->canBeRevisedBySupplier()) {
             abort(403, __('supplier.copy.this_quotation_can_no_longer_be_imported_or_changed'));
+        }
+        if ($quotation) {
+            Gate::authorize('update', $quotation);
         }
 
         return $pr;

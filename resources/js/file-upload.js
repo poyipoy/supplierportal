@@ -9,6 +9,10 @@ export function adasiFileUploadComponent(paramA = '', paramB = false, paramC = {
     let maxFiles = 5;
     let maxSizeMb = 5;
     let initialExisting = [];
+    const options = (typeof paramA === 'object' && paramA !== null && !Array.isArray(paramA))
+        ? paramA : ((typeof paramC === 'object' && paramC !== null) ? paramC : {});
+    const allowedExtensions = Array.isArray(options.allowedExtensions)
+        ? options.allowedExtensions.map(extension => String(extension).replace(/^\./, '').toLowerCase()) : [];
 
     if (typeof paramA === 'object' && paramA !== null && !Array.isArray(paramA)) {
         // Modern object signature: { multiple: bool, maxFiles: int, maxSizeMb: int, existingFiles: array }
@@ -57,6 +61,7 @@ export function adasiFileUploadComponent(paramA = '', paramB = false, paramC = {
         stagedFiles: [],
         isDragging: false,
         clientError: '',
+        serverError: String(options.serverError || ''),
         maxBytes: maxSizeMb * 1024 * 1024,
         _syncing: false,
 
@@ -121,10 +126,23 @@ export function adasiFileUploadComponent(paramA = '', paramB = false, paramC = {
         handleFiles(files) {
             if (!files || files.length === 0) return;
             this.clientError = '';
+            this.serverError = '';
             const incoming = Array.from(files);
+
+            const allowed = file => allowedExtensions.length === 0
+                || (String(file.name).includes('.')
+                    && allowedExtensions.includes(String(file.name).split('.').pop().toLowerCase()));
+            const typeError = file => t('js.upload.extension', {
+                name: file.name, formats: allowedExtensions.join(', ').toUpperCase(),
+            });
 
             if (!this.isMultiple) {
                 const file = incoming[0];
+                if (!allowed(file)) {
+                    this.syncInputFiles();
+                    this.clientError = typeError(file);
+                    return;
+                }
                 if (file.size > this.maxBytes) {
                     this.clearAll();
                     this.clientError = t('js.upload.size', { limit: this.maxSizeMb, size: this.formatBytes(file.size) });
@@ -137,6 +155,10 @@ export function adasiFileUploadComponent(paramA = '', paramB = false, paramC = {
             }
 
             for (const file of incoming) {
+                if (!allowed(file)) {
+                    this.clientError = typeError(file);
+                    continue;
+                }
                 if (this.totalFilesCount >= this.maxFiles) {
                     this.clientError = t('js.upload.limit', { count: this.maxFiles });
                     break;
@@ -165,6 +187,7 @@ export function adasiFileUploadComponent(paramA = '', paramB = false, paramC = {
 
         removeStagedFile(index) {
             this.clientError = '';
+            this.serverError = '';
             if (index >= 0 && index < this.stagedFiles.length) {
                 this.stagedFiles.splice(index, 1);
                 this.syncInputFiles();
@@ -173,6 +196,7 @@ export function adasiFileUploadComponent(paramA = '', paramB = false, paramC = {
 
         removeExistingFile(index) {
             this.clientError = '';
+            this.serverError = '';
             if (index >= 0 && index < this.existingFiles.length) {
                 this.existingFiles.splice(index, 1);
             }
@@ -182,6 +206,7 @@ export function adasiFileUploadComponent(paramA = '', paramB = false, paramC = {
             this.stagedFiles = [];
             this.existingFiles = [];
             this.clientError = '';
+            this.serverError = '';
             const input = this.$refs.fileInput;
             if (input) {
                 input.value = '';
@@ -201,6 +226,7 @@ export function adasiFileUploadComponent(paramA = '', paramB = false, paramC = {
             const base = String(input.name || '').replace(/\[\]$/, '');
             form.addEventListener('adasi:form-submitting', () => {
                 this.clientError = '';
+                this.serverError = '';
             });
             form.addEventListener('adasi:form-errors', (event) => {
                 const errors = event.detail?.errors || {};

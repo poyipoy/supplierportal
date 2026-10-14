@@ -7,6 +7,8 @@ use App\Http\Controllers\Controller;
 use App\Models\LocalInvoice;
 use App\Models\Supplier;
 use App\Models\User;
+use App\Services\NotificationService;
+use App\Support\BusinessTime;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -53,7 +55,7 @@ class UserController extends Controller
                 ->addColumn('mfa_badge', fn ($user) => $user->hasTwoFactorAuthentication()
                     ? '<span class="ui-status-chip ui-status-chip--success">'.e(__('admin.copy.enabled')).'</span>'
                     : '<span class="ui-status-chip ui-status-chip--neutral">'.e(__('admin.copy.not_enabled')).'</span>')
-                ->addColumn('created_date', fn ($user) => \App\Support\BusinessTime::format($user->created_at, 'd M Y', false))
+                ->addColumn('created_date', fn ($user) => BusinessTime::format($user->created_at, 'd M Y', false))
                 ->addColumn('action', function ($user) {
                     $html = '<div class="d-inline-flex align-items-center gap-1">'
                         .'<a href="'.route('admin.users.edit', $user).'" class="ui-data-action ui-data-action--primary ui-focus-ring" aria-label="'.e(__('purchasing.action_names.edit', ['name' => $user->name])).'">'.e(__('admin.copy.edit')).'</a>';
@@ -128,6 +130,7 @@ class UserController extends Controller
                 'role' => $request->role,
                 'is_active' => $request->has('is_active') ? true : false,
                 'account_status' => User::ACCOUNT_STATUS_ACTIVE,
+                'must_change_password' => true,
             ]);
 
             if ($request->role === 'supplier') {
@@ -150,13 +153,16 @@ class UserController extends Controller
             }
             DB::commit();
 
+            event(new AuthSecurityEvent('password_changed', $user, metadata: ['actor_user_id' => $request->user()->id, 'reason' => 'admin_create']));
+            $this->notifyPasswordSet($user);
+
             return redirect()->route('admin.users.index')->with('success', __('admin.copy.user_successfully_added'));
 
         } catch (\Exception $e) {
             DB::rollBack();
             report($e);
 
-            return back()->withInput()->with('error', __('admin.copy.an_error_occurred_while_saving_the_user_please_try_again'));
+            return back()->withInput($request->except(['password', 'password_confirmation']))->with('error', __('admin.copy.an_error_occurred_while_saving_the_user_please_try_again'));
         }
     }
 
@@ -222,6 +228,7 @@ class UserController extends Controller
 
             if ($passwordChanged) {
                 $data['password'] = Hash::make($request->password);
+                $data['must_change_password'] = true;
             }
 
             $newScopes = $request->role === 'supplier'
@@ -299,6 +306,7 @@ class UserController extends Controller
                     'actor_user_id' => auth()->id(),
                     'reason' => 'admin_update',
                 ]));
+                $this->notifyPasswordSet($user);
             }
 
             return redirect()->route('admin.users.index')->with('success', __('admin.copy.user_successfully_updated'));
@@ -307,7 +315,7 @@ class UserController extends Controller
             DB::rollBack();
             report($e);
 
-            return back()->withInput()->with('error', __('admin.copy.an_error_occurred_while_updating_the_user_please_try_again'));
+            return back()->withInput($request->except(['password', 'password_confirmation']))->with('error', __('admin.copy.an_error_occurred_while_updating_the_user_please_try_again'));
         }
     }
 
@@ -334,5 +342,11 @@ class UserController extends Controller
 
             return back()->with('error', __('admin.copy.failed_to_delete_user_make_sure_there_is_no_tightly_related_data'));
         }
+    }
+
+    private function notifyPasswordSet(User $user): void
+    {
+        app(NotificationService::class)->send($user, 'auth.password_set_by_admin', 'auth:password-set:'.$user->id.':'.$user->auth_session_version,
+            'finance_controls.password_notice_title', 'finance_controls.password_notice_body', route('profile.security'), 'shield');
     }
 }

@@ -4,10 +4,15 @@ namespace App\Services\VendorMaster;
 
 use App\Models\Supplier;
 use App\Models\SupplierChangeRequest;
+use App\Models\SupplierMasterDocument;
 use App\Models\User;
+use App\Services\FileSecurity\FileAccessGuard;
+use App\Services\LocalInvoice\LocalFinanceAuditService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 use RuntimeException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class VendorChangeRequestService
 {
@@ -82,6 +87,24 @@ class VendorChangeRequestService
             if (! $supplierUser instanceof User || ! $supplierUser->isLocalEligible()) {
                 throw new InvalidArgumentException(__('local_procurement.vendor_validation.active_supplier'));
             }
+            $bankFields = ['bank_name', 'account_number', 'account_holder_name'];
+            $hasBankChange = array_intersect($bankFields, array_keys($proposed)) !== [];
+            if ($hasBankChange) {
+                if (collect($bankFields)->contains(fn ($field) => trim((string) ($proposed[$field] ?? '')) === '')) {
+                    throw ValidationException::withMessages(['bank_confirmation_document_id' => __('finance_controls.bank_document')]);
+                }
+                $document = SupplierMasterDocument::whereKey($proposed['bank_confirmation_document_id'] ?? null)
+                    ->where('supplier_id', $supplierUser->id)
+                    ->where('document_type', SupplierMasterDocument::TYPE_SURAT_PERNYATAAN_REKENING)->lockForUpdate()->first();
+                if (! $document) {
+                    throw ValidationException::withMessages(['bank_confirmation_document_id' => __('finance_controls.bank_document')]);
+                }
+                try {
+                    app(FileAccessGuard::class)->assertReadable($document);
+                } catch (HttpException) {
+                    throw ValidationException::withMessages(['bank_confirmation_document_id' => __('finance_controls.bank_document')]);
+                }
+            }
 
             // Apply profile updates
             $supplier = $supplierUser->supplier ?? new Supplier(['user_id' => $supplierUser->id]);
@@ -125,6 +148,7 @@ class VendorChangeRequestService
                 'reviewed_at' => now(),
                 'review_notes' => $notes,
             ]);
+            app(LocalFinanceAuditService::class)->record($req, 'vendor_change_approved', $reviewer, $req->current_data_snapshot, $proposed, ['bank_confirmation_document_id' => $hasBankChange ? $document->id : null, 'review_notes' => $notes]);
 
             return $req->fresh();
         });

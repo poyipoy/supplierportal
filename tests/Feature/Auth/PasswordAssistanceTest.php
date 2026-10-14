@@ -72,9 +72,9 @@ class PasswordAssistanceTest extends TestCase
         $this->assertStringContainsString('Contact Person: [Contact Person]', $parameters['body']);
     }
 
-    public function test_support_placeholder_is_defined_in_config(): void
+    public function test_support_email_defaults_to_the_adasi_contact(): void
     {
-        $this->assertSame('supplier.support@example.com', config('support.supplier_email'));
+        $this->assertSame('raihan.ramadhan@astra-daido.co.id', config('support.supplier_email'));
     }
 
     public function test_invalid_support_destination_never_creates_an_active_mailto_link(): void
@@ -84,7 +84,8 @@ class PasswordAssistanceTest extends TestCase
             $this->get('/forgot-password')->assertOk()
                 ->assertDontSee('href="mailto:', false)
                 ->assertDontSee('<script>alert(1)</script>', false)
-                ->assertSeeText('Please contact your company representative for support contact details.');
+                ->assertSeeText('WhatsApp Support')
+                ->assertSeeText('082136753958');
         }
     }
 }

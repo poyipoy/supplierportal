@@ -915,6 +915,37 @@ class QuotationAvailabilityTest extends TestCase
         $this->assertSame($ids, $quotation->items()->pluck('id')->all());
     }
 
+    /**
+     * The Create Quotation page submits via resources/js/async-form-submit.js (fetch with
+     * Accept: application/json), so Request::expectsJson() is true for every real submit.
+     * A business-rule guard inside store() that throws a plain RuntimeException must still
+     * surface as a 422 with a user-facing message here — not an unhandled 500, which the
+     * client can only render as the generic "Action could not be completed" toast.
+     */
+    public function test_async_json_submit_surfaces_locked_quotation_error_instead_of_a_raw_500(): void
+    {
+        $pr = $this->createRequisition();
+        $quotation = $this->createDraftQuotation($pr, $this->supplier, 2.5);
+        $ids = $quotation->items()->pluck('id')->all();
+        $changed = false;
+        Quotation::retrieved(function (Quotation $loaded) use ($quotation, &$changed): void {
+            if (! $changed && $loaded->id === $quotation->id) {
+                $changed = true;
+                DB::table('quotations')->where('id', $quotation->id)->update(['status' => 'accepted']);
+            }
+        });
+
+        $response = $this->actingAs($this->supplier)
+            ->postJson(route('supplier.quotations.store', $pr), $this->quotationPayload($pr));
+
+        $response->assertStatus(422);
+        $response->assertJsonStructure(['message', 'errors']);
+
+        $this->assertTrue($changed);
+        $this->assertSame('accepted', $quotation->fresh()->status);
+        $this->assertSame($ids, $quotation->items()->pluck('id')->all());
+    }
+
     public function test_quick_action_revalidates_after_the_initial_quotation_read(): void
     {
         $pr = $this->createRequisition();

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\LocalInvoice;
 use App\Models\Supplier;
 use App\Models\User;
+use App\Services\LocalInvoice\LocalProcurementMasterService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -39,19 +40,24 @@ class RegionalInvoiceCalendarDisplayTest extends TestCase
         $this->systemFinance = User::factory()->create(['role' => 'finance']);
         $this->accounting = User::factory()->create(['role' => 'accounting']);
 
+        $masters = app(LocalProcurementMasterService::class);
+        $po = $masters->createPurchaseOrder($this->finance, ['supplier_id' => $this->supplier->id, 'po_number' => 'PO-REGIONAL-001',
+            'po_date' => '2026-09-01', 'total_amount' => '100000.25']);
+        $gr = $masters->createGoodsReceipt($this->finance, $po, ['gr_number' => 'GR-REGIONAL-001',
+            'gr_date' => '2026-09-02', 'qty' => '1', 'uom' => 'pcs']);
+
         $pdf = NativeFileFixtures::pdf();
         $payload = [
             'invoice_number' => 'INV-REGIONAL-001',
             'invoice_date' => '2026-09-28',
-            'po_source' => 'MANUAL',
-            'po_number' => 'PO-REGIONAL-001',
-            'manual_po_number' => 'PO-REGIONAL-001',
-            'manual_gr_reference' => 'GR-REGIONAL-001',
+            'local_purchase_order_id' => $po->id,
+            'goods_receipt_ids' => [$gr->id],
+            'ppn_scheme' => '11%',
             'invoice_amount' => '100000.25',
             'tax_amount' => '11000.03',
             'tax_invoice_number' => '010.000-26.12345678',
             'invoice' => UploadedFile::fake()->createWithContent('invoice.pdf', $pdf),
-            'tax_invoice' => UploadedFile::fake()->image('tax.png'),
+            'tax_invoice' => NativeFileFixtures::upload('tax.pdf'),
         ];
         $this->actingAs($this->supplier)->post(route('local-supplier.invoices.store'), $payload)->assertSessionHasNoErrors();
         $this->invoice = LocalInvoice::sole();

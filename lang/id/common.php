@@ -1,6 +1,11 @@
 <?php
 
 return [
+    'select.free_minimum' => 'Ketik minimal 2 karakter untuk mencari. Nomor baru dapat diketik langsung.',
+    'select.free_loading' => 'Mencari nomor PR...',
+    'select.free_failed' => 'Saran tidak dapat dimuat. Nomor tetap dapat diketik langsung.',
+    'select.free_results' => ':count saran tersedia. Gunakan tombol panah untuk memilih.',
+    'select.free_empty' => 'PR tidak ditemukan. Nomor yang diketik tetap dapat digunakan.',
     'unknown' => 'Tidak Diketahui',
     'chat.title' => 'Percakapan: :context - ADASI Portal',
     'chat.page_title' => 'Negosiasi: :context',
@@ -86,10 +91,10 @@ return [
     'reference_example' => 'Contoh: :reference',
 
     'final_review' => [
-        'created_by_date' => "Dibuat oleh :name pada :date",
-        'created_by' => "Dibuat oleh :name.",
-        'currency_records' => "Data :currency",
-        'page' => "Halaman :page dari :last",
+        'created_by_date' => 'Dibuat oleh :name pada :date',
+        'created_by' => 'Dibuat oleh :name.',
+        'currency_records' => 'Data :currency',
+        'page' => 'Halaman :page dari :last',
 
         'paid_help' => 'Pantau status pelunasan seluruh batch DRP Supplier dan GA, telusuri bukti transfer, dan tandai batch lunas secara terpadu.',
         'ready_invoice_help' => 'Pilih invoice berstatus Siap Dibayar yang belum masuk dalam batch aktif Draf atau Final.',
@@ -97,7 +102,7 @@ return [
         'cashier_receipt' => 'Penerimaan Berkas Fisik (Kasir)',
         'po_locked_help' => 'Mata uang PO lokal dikunci pada IDR. Nomor PO dan identitas supplier terkunci secara audit setelah ada GR atau invoice terkait.',
         'master_reporting' => 'Master Invoice (Pelaporan & Repositori)',
-        'private_uploads' => 'Berkas disimpan secara privat di server. Format PDF, JPG, JPEG, atau PNG; maksimal 5 MB per berkas dan 5 berkas per kategori.',
+        'private_uploads' => 'Berkas disimpan secara privat di server. Hanya PDF; maksimal 5 MB per berkas dan 5 berkas per kategori.',
         'local_po' => 'Purchase Order (PO) Lokal',
         'whole_gr' => 'Penerimaan Barang (GR) Utuh',
         'pending_vendor_changes' => 'Pengajuan Perubahan Data Vendor (Menunggu Persetujuan Pengadaan / Keuangan)',

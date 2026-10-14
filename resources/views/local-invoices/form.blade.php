@@ -1,8 +1,10 @@
 @php
     $invoice = $invoice ?? null;
+    $isCancelledRecovery = $invoice?->status === \App\Models\LocalInvoice::STATUS_CANCELLED;
     $supplier = auth()->user()->supplier;
     $companyName = $supplier?->company_name ?: auth()->user()->name;
     $isPkp = (bool) ($supplier?->is_pkp ?? false);
+    $selectedPpnScheme = $isPkp ? old('ppn_scheme', $invoice->ppn_scheme ?? '11%') : '0%';
     $vendorCategory = $supplier?->vendor_category ?: $supplier?->category ?: 'Barang';
     $requiresDeliveryNote = $vendorCategory === 'Barang';
     $selectedPo = old('local_purchase_order_id', $invoice->local_purchase_order_id ?? '');
@@ -39,7 +41,8 @@
 
     $hasStep2Errors = $errors->hasAny([
         'invoice_number', 'invoice_date', 'local_purchase_order_id', 'goods_receipt_ids',
-        'invoice_amount', 'ppn_scheme', 'tax_amount', 'tax_invoice_number', 'scheduled_physical_delivery_date'
+        'invoice_amount', 'ppn_scheme', 'tax_amount', 'tax_invoice_number', 'scheduled_physical_delivery_date',
+        'recovery_reason', 'business_document_valid'
     ]);
     $hasStep1Errors = $errors->hasAny([
         'invoice', 'invoice.*', 'tax_invoice', 'tax_invoice.*', 'delivery_note', 'delivery_note.*', 'supporting', 'supporting.*'
@@ -53,6 +56,7 @@
             (string) $po->id => [
                 'po_id' => $po->id,
                 'po_number' => $po->po_number,
+                'pr_number' => $po->pr_number,
                 'total_amount' => (float) $po->total_amount,
                 'remaining_ceiling' => $remainingCeiling,
                 'grs' => $po->goodsReceipts->map(function ($gr) {
@@ -89,11 +93,11 @@
 
         return [
             'value' => (string) $po->id,
-            'label' => $po->po_number . ' Â· Rp ' . $nominalFormatted,
-            'sublabel' => !empty($sublabelParts) ? implode(' Â· ', $sublabelParts) : null,
+            'label' => $po->po_number . ' · Rp ' . $nominalFormatted . ' · ' . __('local_procurement.pr.label') . ': ' . (filled($po->pr_number) ? $po->pr_number : __('local_procurement.pr.empty')),
+            'sublabel' => !empty($sublabelParts) ? implode(' · ', $sublabelParts) : null,
             'badge' => $po->status,
             'badgeTone' => $po->status === 'OPEN' ? 'success' : 'neutral',
-            'searchKeywords' => $po->po_number . ' ' . $po->total_amount . ' ' . $nominalFormatted . ' ' . $po->status,
+            'searchKeywords' => $po->po_number . ' ' . ($po->pr_number ?? '') . ' ' . $po->total_amount . ' ' . $nominalFormatted . ' ' . $po->status,
         ];
     })->all();
 
@@ -308,9 +312,9 @@
                         id="file_invoice"
                         :label="__('common.final_review.original_invoice')"
                         :helper="__('common.final_copy.physical_invoice_help')"
-                        accept=".pdf,.jpg,.jpeg,.png"
-                        :multiple="true"
-                        :max-files="5"
+                        accept=".pdf"
+                        :allowed-extensions="['pdf']"
+                        :multiple="false"
                         :required="!isset($invoice)"
                         :existing-files="$existingInvoiceDocs"
                     />
@@ -320,9 +324,9 @@
                         id="file_tax_invoice"
                         :label="__('local_invoice.labels.tax_invoice')"
                         :helper="$isPkp ? __('local_invoice.closure.tax_invoice_help') : __('local_invoice.closure.tax_exempt_help')"
-                        accept=".pdf,.jpg,.jpeg,.png"
-                        :multiple="true"
-                        :max-files="5"
+                        accept=".pdf"
+                        :allowed-extensions="['pdf']"
+                        :multiple="false"
                         :required="$isPkp && !isset($invoice)"
                         :existing-files="$existingTaxDocs"
                     />
@@ -333,7 +337,8 @@
                             id="file_delivery_note"
                             :label="__('local_invoice.labels.delivery_note')"
                             :helper="__('common.final_copy.delivery_note_help')"
-                            accept=".pdf,.jpg,.jpeg,.png"
+                            accept=".pdf"
+                            :allowed-extensions="['pdf']"
                             :multiple="true"
                             :max-files="5"
                             :required="!isset($invoice)"
@@ -346,7 +351,8 @@
                         id="file_supporting"
                         :label="__('common.final_review.supporting_docs')"
                         :helper="__('local_invoice.closure.supporting_documents')"
-                        accept=".pdf,.jpg,.jpeg,.png"
+                        accept=".pdf"
+                        :allowed-extensions="['pdf']"
                         :multiple="true"
                         :max-files="5"
                         :existing-files="$existingSuppDocs"
@@ -441,7 +447,7 @@
     {{-- TAHAP 2: INFORMASI INVOICE & ALOKASI PENERIMAAN BARANG (GR)               --}}
     {{-- ========================================================================= --}}
     <div x-show="step === 2" x-cloak data-wizard-step="2" class="tw-grid tw-gap-6 lg:tw-grid-cols-12 tw-items-start">
-        <div class="lg:tw-col-span-8 tw-space-y-6">
+        <div class="tw-min-w-0 lg:tw-col-span-8 tw-space-y-6">
             <x-ui.form-section :title="__('local_invoice.labels.po_gr_information')" :description="__('local_invoice.form.gr_requirement')">
                 <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
                     <div>
@@ -478,18 +484,22 @@
                         />
                     </div>
 
-                    <div>
+                    <div class="tw-min-w-0">
                         <x-ui.searchable-select
                             name="local_purchase_order_id"
                             id="local_purchase_order_id"
                             :label="__('common.final_review.local_po')"
                             :placeholder="__('common.final_review.choose_open_po')"
-                            :search-placeholder="__('common.final_review.search_po_status')"
+                            :search-placeholder="__('local_procurement.pr.search')"
                             :options="$poOptions"
                             :value="$selectedPo"
                             :show-sublabel-on-trigger="false"
                             required
                         />
+                        <div id="selected-po-pr" class="tw-mt-2 tw-min-w-0 tw-text-ui-xs tw-text-on-surface" @if(empty($selectedPo)) hidden @endif aria-live="polite">
+                            <span class="tw-font-semibold">{{ __('local_procurement.pr.label') }}:</span>
+                            <span id="selected-po-pr-number" class="tw-font-mono" style="overflow-wrap: anywhere;">{{ $localPoGrMap[(string) $selectedPo]['pr_number'] ?? __('local_procurement.pr.empty') }}</span>
+                        </div>
                     </div>
 
                     <div>
@@ -536,12 +546,14 @@
                                 {{ __('finance.labels.ppn_scheme') }} <span class="tw-text-error">*</span>
                             </label>
                             <select name="ppn_scheme" id="ppn-scheme" class="form-select form-select-sm">
-                                <option value="11%" @selected(old('ppn_scheme', $invoice->ppn_scheme ?? '11%') === '11%')>{{ __('local_invoice.closure.ppn_standard') }}</option>
-                                <option value="1.1%" @selected(old('ppn_scheme', $invoice->ppn_scheme ?? '') === '1.1%')>{{ __('local_invoice.closure.ppn_certain') }}</option>
-                                <option value="0%" @selected(old('ppn_scheme', $invoice->ppn_scheme ?? '') === '0%')>{{ __('local_invoice.closure.ppn_exempt') }}</option>
+                                @if($isPkp)
+                                    <option value="11%" @selected($selectedPpnScheme === '11%')>{{ __('local_invoice.closure.ppn_standard') }}</option>
+                                    <option value="1.1%" @selected($selectedPpnScheme === '1.1%')>{{ __('local_invoice.closure.ppn_certain') }}</option>
+                                @endif
+                                <option value="0%" @selected($selectedPpnScheme === '0%')>{{ __('local_invoice.closure.ppn_exempt') }}</option>
                             </select>
                             <div class="tw-text-[11px] tw-text-on-surface-variant tw-mt-1">
-                                {{ __('local_invoice.form.ppn_scheme_help') }}
+                                {{ $isPkp ? __('local_invoice.form.ppn_scheme_help') : __('local_invoice.validation.non_pkp_no_ppn') }}
                             </div>
                         </div>
 
@@ -556,7 +568,8 @@
                                 step="0.01"
                                 min="0"
                                 class="form-control form-control-sm tw-font-mono"
-                                value="{{ old('tax_amount', $invoice->tax_amount ?? '') }}"
+                                value="{{ $isPkp ? old('tax_amount', $invoice->tax_amount ?? '') : \App\Support\Money::zero() }}"
+                                @readonly(!$isPkp)
                                 placeholder="0.00"
                             >
                             <div class="tw-text-[11px] tw-text-on-surface-variant tw-mt-1">
@@ -631,6 +644,7 @@
                                     if (input) {
                                         input.value = this.value;
                                         input.setSelectionRange(this.value.length, this.value.length);
+                                        input.dispatchEvent(new Event('input', { bubbles: true }));
                                     }
                                 });
                             }
@@ -709,6 +723,21 @@
                             :helper="__('local_invoice.closure.counter_schedule', ['timezone' => \App\Support\BusinessTime::label()])"
                         />
                     </div>
+                    @if($isCancelledRecovery)
+                        <div class="sm:tw-col-span-2 tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface-container tw-p-4 tw-space-y-3">
+                            <div data-async-error-anchor>
+                                <label for="invoiceRecoveryReason" class="form-label tw-text-ui-xs tw-font-semibold">{{ __('local_invoice.recovery.reason') }} <span class="tw-text-error" aria-hidden="true">*</span></label>
+                                <textarea id="invoiceRecoveryReason" name="recovery_reason" maxlength="1000" rows="3" required class="form-control @error('recovery_reason') is-invalid @enderror" aria-describedby="invoiceRecoveryReasonHint{{ $errors->has('recovery_reason') ? ' invoiceRecoveryReasonError' : '' }}" @error('recovery_reason') aria-invalid="true" @enderror>{{ old('recovery_reason') }}</textarea>
+                                <p id="invoiceRecoveryReasonHint" class="tw-mt-1 tw-mb-0 tw-text-ui-xs tw-text-on-surface-variant">{{ __('local_invoice.recovery.reason_hint') }}</p>
+                                @error('recovery_reason')<div id="invoiceRecoveryReasonError" class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+                            <div class="form-check" data-async-error-anchor>
+                                <input id="invoiceBusinessDocumentValid" name="business_document_valid" type="checkbox" value="1" required @checked(old('business_document_valid')) class="form-check-input @error('business_document_valid') is-invalid @enderror" @error('business_document_valid') aria-invalid="true" aria-describedby="invoiceBusinessDocumentValidError" @enderror>
+                                <label for="invoiceBusinessDocumentValid" class="form-check-label tw-text-ui-xs">{{ __('local_invoice.recovery.confirm_business_document') }}</label>
+                                @error('business_document_valid')<div id="invoiceBusinessDocumentValidError" class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+                        </div>
+                    @endif
                 </div>
             </x-ui.form-section>
         </div>
@@ -779,7 +808,7 @@
                             id="btnSubmitInvoice"
                         >
                             <x-ui.icon name="send" size="sm" />
-                            <span>{{ isset($invoice) ? __('local_invoice.form.submit_revision') : __('local_invoice.actions.submit') }}</span>
+                            <span>{{ $isCancelledRecovery ? __('local_invoice.recovery.submit') : (isset($invoice) ? __('local_invoice.form.submit_revision') : __('local_invoice.actions.submit')) }}</span>
                         </x-ui.button>
 
                         <x-ui.button
@@ -919,7 +948,7 @@ function updateValidation() {
     const tax = Number(taxInput?.value || 0);
     const grandTotal = dpp + tax;
 
-    if (summaryPoCeiling) summaryPoCeiling.textContent = poData ? rupiah(poCeiling) : 'â€”';
+    if (summaryPoCeiling) summaryPoCeiling.textContent = poData ? rupiah(poCeiling) : '—';
     if (summaryGrCount) summaryGrCount.textContent = @js(__('local_invoice.interaction.document_count')).replace(':count', () => String(selectedGrCount));
     if (summaryGrQty) summaryGrQty.textContent = selectedGrQty || '—';
     if (summaryDpp) summaryDpp.textContent = rupiah(dpp);
@@ -955,6 +984,10 @@ poSelect?.addEventListener('change', () => {
     const poVal = poSelect.value;
     const poData = (poVal && localPoGr[String(poVal)]) ? localPoGr[String(poVal)] : null;
     const rows = poData ? poData.grs : [];
+    const prInformation = document.getElementById('selected-po-pr');
+    const prNumber = document.getElementById('selected-po-pr-number');
+    if (prInformation) prInformation.hidden = !poData;
+    if (prNumber) prNumber.textContent = poData?.pr_number || @js(__('local_procurement.pr.empty'));
     const emptyMsg = poVal ? @js(__('local_invoice.interaction.empty_gr')) : @js(__('local_invoice.interaction.select_po_first'));
 
     window.dispatchEvent(new CustomEvent('set-multi-options', {
@@ -1008,13 +1041,42 @@ if (initialPoVal && localPoGr[String(initialPoVal)]) {
 updateValidation();
 
 // Filename Autofill for Invoice Number and Tax Invoice Number (R-02)
+function clearInvoiceIdentityFeedback(input) {
+    if (!input) return;
+    input.removeAttribute('aria-invalid');
+    input.removeAttribute('data-async-invalid');
+    input.classList.remove('is-invalid');
+    const anchor = input.closest('fieldset') || input.closest('[data-async-error-anchor]')
+        || (input.parentElement?.classList.contains('tw-relative') ? input.parentElement : input);
+    const note = anchor.nextElementSibling;
+    if (note?.matches('[data-async-error]')) note.remove();
+    const form = input.closest('form');
+    const summaryLink = form?.querySelector(`[data-error-field="${input.name}"]`);
+    if (summaryLink) {
+        summaryLink.closest('li')?.remove();
+        const summary = form.querySelector('[data-async-error-summary]');
+        if (summary && !summary.querySelector('[data-error-field]')) summary.hidden = true;
+    }
+}
 const fileInvoiceInput = document.getElementById('file_invoice');
 const invoiceNumberInput = document.getElementById('invoice-number');
 const invoiceAutofillBadge = document.getElementById('invoice-autofill-badge');
 const invoiceAutofillFilename = document.getElementById('invoice-autofill-filename');
+let detectedInvoiceNumber = null;
+const updateInvoiceAutofillBadge = () => {
+    const matches = detectedInvoiceNumber !== null && invoiceNumberInput?.value.trim() === detectedInvoiceNumber;
+    invoiceAutofillBadge?.classList.toggle('tw-hidden', !matches);
+    invoiceAutofillBadge?.classList.toggle('tw-inline-flex', matches);
+};
+invoiceNumberInput?.addEventListener('input', () => {
+    updateInvoiceAutofillBadge();
+    clearInvoiceIdentityFeedback(invoiceNumberInput);
+});
 
 fileInvoiceInput?.addEventListener('change', function() {
     const files = Array.from(this.files || []);
+    detectedInvoiceNumber = null;
+    updateInvoiceAutofillBadge();
     if (files.length === 0) return;
 
     const candidates = files.map(f => {
@@ -1025,13 +1087,12 @@ fileInvoiceInput?.addEventListener('change', function() {
     const uniqueCandidates = [...new Set(candidates)];
     if (uniqueCandidates.length === 1 && uniqueCandidates[0] !== '') {
         const derived = uniqueCandidates[0];
+        detectedInvoiceNumber = derived;
         if (invoiceNumberInput && !invoiceNumberInput.hasAttribute('readonly')) {
             invoiceNumberInput.value = derived;
+            invoiceNumberInput.dispatchEvent(new Event('input', { bubbles: true }));
         }
-        if (invoiceAutofillBadge) {
-            invoiceAutofillBadge.classList.remove('tw-hidden');
-            invoiceAutofillBadge.classList.add('tw-inline-flex');
-        }
+        updateInvoiceAutofillBadge();
         if (invoiceAutofillFilename) {
             invoiceAutofillFilename.classList.remove('tw-hidden');
             const bold = invoiceAutofillFilename.querySelector('strong');
@@ -1051,9 +1112,21 @@ fileInvoiceInput?.addEventListener('change', function() {
 const fileTaxInput = document.getElementById('file_tax_invoice');
 const taxInvoiceInput = document.getElementById('tax_invoice_number');
 const taxAutofillBadge = document.getElementById('tax-autofill-badge');
+let detectedTaxDigits = null;
+const updateTaxAutofillBadge = () => {
+    const matches = detectedTaxDigits !== null && taxInvoiceInput?.value.replace(/\D/g, '') === detectedTaxDigits;
+    taxAutofillBadge?.classList.toggle('tw-hidden', !matches);
+    taxAutofillBadge?.classList.toggle('tw-inline-flex', matches);
+};
+taxInvoiceInput?.addEventListener('input', () => {
+    updateTaxAutofillBadge();
+    clearInvoiceIdentityFeedback(taxInvoiceInput);
+});
 
 fileTaxInput?.addEventListener('change', function() {
     const files = Array.from(this.files || []);
+    detectedTaxDigits = null;
+    updateTaxAutofillBadge();
     if (files.length === 0) return;
 
     const candidates = files.map(f => {
@@ -1070,12 +1143,10 @@ fileTaxInput?.addEventListener('change', function() {
 
     const uniqueCandidates = [...new Set(candidates)];
     if (uniqueCandidates.length === 1 && uniqueCandidates[0] !== '') {
+        detectedTaxDigits = uniqueCandidates[0].replace(/\D/g, '');
         taxInvoiceInput.value = uniqueCandidates[0];
         taxInvoiceInput.dispatchEvent(new Event('input', { bubbles: true }));
-        if (taxAutofillBadge) {
-            taxAutofillBadge.classList.remove('tw-hidden');
-            taxAutofillBadge.classList.add('tw-inline-flex');
-        }
+        updateTaxAutofillBadge();
     }
 });
 

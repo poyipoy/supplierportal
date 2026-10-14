@@ -611,7 +611,7 @@ class PaymentForecastAndReportingTest extends TestCase
         $resMonth->assertSee('SUB-UNPAID-01');
 
         // 5. Export Excel route dispatches export job
-        $resExport = $this->actingAs($finance)->get(route('finance.master-invoices.export'));
+        $resExport = $this->actingAs($finance)->post(route('finance.master-invoices.export'));
         $resExport->assertRedirect(route('exports.index'));
         $resExport->assertSessionHas('success', 'Master invoices export queued.');
     }
@@ -687,7 +687,7 @@ class PaymentForecastAndReportingTest extends TestCase
         $invoice->update(['status' => LocalInvoice::STATUS_READY_TO_PAY]);
         $batchService = app(PaymentBatchService::class);
         $batch = $batchService->createSupplierBatch($finance, [$invoice->id], 'DRP Final Batch');
-        $batchService->finalizeBatch($batch, $finance);
+        $batchService->finalizeBatch($batch, User::factory()->create(['role' => 'finance']));
 
         $executionService = app(PaymentExecutionService::class);
         $group = $batch->groups()->first();

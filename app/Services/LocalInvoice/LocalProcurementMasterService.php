@@ -3,12 +3,17 @@
 namespace App\Services\LocalInvoice;
 
 use App\Models\LocalGoodsReceipt;
+use App\Models\LocalInvoice;
 use App\Models\LocalInvoiceGoodsReceipt;
 use App\Models\LocalProcurementImport;
 use App\Models\LocalPurchaseOrder;
 use App\Models\SupplierScope;
 use App\Models\User;
+use App\Support\LocalPoPrNumber;
+use App\Support\Money;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
 class LocalProcurementMasterService
@@ -28,8 +33,10 @@ class LocalProcurementMasterService
         $numbers = array_map(fn ($r) => json_decode($r->values, true)['po_number'], $records);
         // MySQL otherwise chooses a full scan for large IN lists, widening locks.
         $poMap = LocalPurchaseOrder::forceIndex('local_purchase_orders_po_number_unique')->whereIn('po_number', $numbers)->orderBy('id')->lockForUpdate()->get()->keyBy(fn ($po) => mb_strtolower($po->po_number));
-        $counts = ['newPo' => 0, 'existingPo' => 0, 'newGr' => 0, 'existingGr' => 0];
+        $counts = ['newPo' => 0, 'existingPo' => 0, 'newGr' => 0, 'existingGr' => 0, 'filledPoPr' => 0];
         $inserts = [];
+        $prFills = [];
+        $prAudits = [];
         if ($records[0]->kind === 'PO') {
             $supplierIds = array_unique(array_column($normalized, 'supplier_id'));
             $eligible = User::localEligible()->whereIn('id', $supplierIds)->orderBy('id')->sharedLock()->pluck('id')->all();
@@ -39,19 +46,37 @@ class LocalProcurementMasterService
                 $row = $valuesByRow->get($record->source_row);
                 $existing = $poMap->get(mb_strtolower($row['po_number']));
                 $amount = $this->money($row['po_amount'], 'po_amount');
+                $prNumber = LocalPoPrNumber::normalize($row['pr_number'] ?? null);
                 if (! in_array((int) $row['supplier_id'], array_map('intval', $eligible), true)) {
                     throw ValidationException::withMessages(['supplier_id' => __('local_procurement.validation.supplier_required')]);
                 }
                 if ($existing) {
+                    if ($existing->status === LocalPurchaseOrder::STATUS_CANCELLED) {
+                        throw ValidationException::withMessages(['po_number' => __('local_procurement.import.po_cancelled', ['po' => $row['po_number'], 'row' => $record->source_row])]);
+                    }
                     if ((int) $existing->supplier_id !== (int) $row['supplier_id'] || $existing->po_date->format('Y-m-d') !== $row['po_date']
                         || bccomp((string) $existing->total_amount, $amount, 2) !== 0) {
                         throw ValidationException::withMessages(['po_number' => __('local_procurement.import.po_existing_conflict', ['po' => $row['po_number']])]);
                     }
                     $counts['existingPo']++;
 
+                    if ($prNumber !== null) {
+                        if (filled($existing->pr_number) && LocalPoPrNumber::key($existing->pr_number) !== LocalPoPrNumber::key($prNumber)) {
+                            throw ValidationException::withMessages(['pr_number' => __('local_procurement.pr_import.conflict', ['po' => $existing->po_number])]);
+                        }
+                        if (blank($existing->pr_number)) {
+                            $prFills[] = ['id' => $existing->id, 'pr_number' => $prNumber];
+                            $prAudits[] = ['auditable_type' => LocalPurchaseOrder::class, 'auditable_id' => $existing->id,
+                                'action' => 'po_pr_filled', 'actor_id' => $actor->id,
+                                'before_values' => json_encode(['pr_number' => $existing->pr_number], JSON_THROW_ON_ERROR),
+                                'after_values' => json_encode(['pr_number' => $prNumber], JSON_THROW_ON_ERROR), 'metadata' => null, 'created_at' => now()];
+                        }
+                    }
+
                     continue;
                 }
                 $inserts[] = ['po_number' => $row['po_number'], 'supplier_id' => $row['supplier_id'], 'po_date' => $row['po_date'],
+                    'pr_number' => $prNumber,
                     'total_amount' => $amount, 'currency' => 'IDR', 'status' => LocalPurchaseOrder::STATUS_OPEN,
                     'description' => 'Imported via Infor ERP Purchase Order',
                     'source' => LocalPurchaseOrder::SOURCE_IMPORT, 'created_by' => $actor->id, 'updated_by' => $actor->id,
@@ -63,12 +88,32 @@ class LocalProcurementMasterService
                 $this->audit->recordCreatedBatch($created, 'po_created', $actor);
                 $counts['newPo'] = count($inserts);
             }
+            if ($prFills) {
+                // The parent locks above serialize filling a previously empty reference.
+                // Update only metadata: financial master columns never enter this write.
+                $bindings = [];
+                foreach ($prFills as $fill) {
+                    array_push($bindings, $fill['id'], $fill['pr_number']);
+                }
+                array_push($bindings, $actor->id, now()->toDateTimeString(), ...array_column($prFills, 'id'));
+                $changed = DB::update('UPDATE `local_purchase_orders` SET `pr_number` = CASE `id` '
+                    .str_repeat('WHEN ? THEN ? ', count($prFills)).'END, `updated_by` = ?, `updated_at` = ? WHERE `id` IN ('
+                    .implode(',', array_fill(0, count($prFills), '?')).") AND (`pr_number` IS NULL OR `pr_number` = '')", $bindings);
+                if ($changed !== count($prFills)) {
+                    throw new \LogicException('Locked PO references changed unexpectedly.');
+                }
+                DB::table('local_finance_audit_logs')->insert($prAudits);
+                $counts['filledPoPr'] = count($prFills);
+            }
         } else {
             $grNumbers = array_map(fn ($r) => json_decode($r->values, true)['gr_number'], $records);
             $existingMap = LocalGoodsReceipt::whereIn('gr_number', $grNumbers)->orderBy('id')->lockForUpdate()->get()->keyBy(fn ($gr) => mb_strtolower($gr->gr_number));
             foreach ($records as $record) {
                 $row = $valuesByRow->get($record->source_row);
                 $po = $poMap->get(mb_strtolower($row['po_number']));
+                if ($po?->status === LocalPurchaseOrder::STATUS_CANCELLED) {
+                    throw ValidationException::withMessages(['po_number' => __('local_procurement.import.gr_cancelled_po', ['po' => $row['po_number'], 'row' => $record->source_row])]);
+                }
                 if (! $po || $po->status !== LocalPurchaseOrder::STATUS_OPEN) {
                     throw ValidationException::withMessages(['po_number' => __('local_procurement.validation.gr_open')]);
                 }
@@ -79,6 +124,9 @@ class LocalProcurementMasterService
                 $uom = $this->uom($row['uom']);
                 $existing = $existingMap->get(mb_strtolower($row['gr_number']));
                 if ($existing) {
+                    if ($existing->status === LocalGoodsReceipt::STATUS_CANCELLED) {
+                        throw ValidationException::withMessages(['gr_number' => __('local_procurement.import.gr_cancelled', ['gr' => $row['gr_number'], 'row' => $record->source_row])]);
+                    }
                     if ((int) $existing->local_purchase_order_id !== (int) $po->id
                         || $existing->gr_date->format('Y-m-d') !== $row['gr_date'] || bccomp((string) $existing->qty, $qty, 4) !== 0 || $existing->uom !== $uom) {
                         throw ValidationException::withMessages(['gr_number' => __('local_procurement.import.gr_existing_conflict', ['gr' => $row['gr_number']])]);
@@ -123,6 +171,7 @@ class LocalProcurementMasterService
             }
             $po = LocalPurchaseOrder::create([
                 'po_number' => $poNumber, 'supplier_id' => $supplier->id,
+                'pr_number' => LocalPoPrNumber::normalize($data['pr_number'] ?? null),
                 'po_date' => $data['po_date'], 'total_amount' => $poAmount,
                 'currency' => 'IDR', 'description' => $data['description'] ?? null,
                 'status' => LocalPurchaseOrder::STATUS_OPEN, 'source' => $source,
@@ -131,6 +180,34 @@ class LocalProcurementMasterService
             $this->audit->record($po, 'po_created', $actor, null, $po->toArray());
 
             return $po;
+        });
+    }
+
+    public function fillPurchaseOrderPr(User $actor, LocalPurchaseOrder $purchaseOrder, ?string $prNumber): bool
+    {
+        $this->authorize($actor);
+        $prNumber = LocalPoPrNumber::normalize($prNumber);
+        if ($prNumber === null) {
+            return false;
+        }
+
+        return DB::transaction(function () use ($actor, $purchaseOrder, $prNumber): bool {
+            $po = LocalPurchaseOrder::whereKey($purchaseOrder->id)->lockForUpdate()->firstOrFail();
+            if ($po->status === LocalPurchaseOrder::STATUS_CANCELLED) {
+                throw ValidationException::withMessages(['po_number' => __('local_procurement.validation.cancelled_edit')]);
+            }
+            if (filled($po->pr_number)) {
+                if (LocalPoPrNumber::key($po->pr_number) !== LocalPoPrNumber::key($prNumber)) {
+                    throw ValidationException::withMessages(['pr_number' => __('local_procurement.pr_import.conflict', ['po' => $po->po_number])]);
+                }
+
+                return false;
+            }
+            $before = ['pr_number' => $po->pr_number];
+            $po->update(['pr_number' => $prNumber, 'updated_by' => $actor->id]);
+            $this->audit->record($po, 'po_pr_filled', $actor, $before, ['pr_number' => $prNumber]);
+
+            return true;
         });
     }
 
@@ -166,6 +243,17 @@ class LocalProcurementMasterService
                 throw ValidationException::withMessages(['total_amount' => __('local_procurement.validation.ceiling_low')]);
             }
             $before = $po->toArray();
+            if (array_key_exists('pr_number', $data)) {
+                $prNumber = LocalPoPrNumber::normalize($data['pr_number']);
+                if (filled($po->pr_number)) {
+                    if (LocalPoPrNumber::key($po->pr_number) !== LocalPoPrNumber::key($prNumber)) {
+                        throw ValidationException::withMessages(['pr_number' => __('local_procurement.pr_import.conflict', ['po' => $po->po_number])]);
+                    }
+                } elseif ($prNumber !== null) {
+                    $this->fillPurchaseOrderPr($actor, $po, $prNumber);
+                    $po->refresh();
+                }
+            }
             $po->update([
                 'po_number' => $poNumber, 'supplier_id' => $supplier->id,
                 'po_date' => $data['po_date'], 'total_amount' => $poAmount,
@@ -256,8 +344,8 @@ class LocalProcurementMasterService
         $this->authorize($actor);
 
         return DB::transaction(function () use ($actor, $goodsReceipt, $data) {
-            $gr = LocalGoodsReceipt::whereKey($goodsReceipt->id)->lockForUpdate()->firstOrFail();
-            $po = LocalPurchaseOrder::whereKey($gr->local_purchase_order_id)->lockForUpdate()->firstOrFail();
+            $po = LocalPurchaseOrder::whereKey($goodsReceipt->local_purchase_order_id)->lockForUpdate()->firstOrFail();
+            $gr = $po->goodsReceipts()->whereKey($goodsReceipt->id)->lockForUpdate()->firstOrFail();
             if ($gr->status !== LocalGoodsReceipt::STATUS_AVAILABLE) {
                 throw ValidationException::withMessages(['status' => __('local_procurement.validation.gr_edit_available')]);
             }
@@ -292,7 +380,8 @@ class LocalProcurementMasterService
         $this->authorize($actor);
 
         return DB::transaction(function () use ($actor, $goodsReceipt) {
-            $gr = LocalGoodsReceipt::whereKey($goodsReceipt->id)->lockForUpdate()->firstOrFail();
+            $po = LocalPurchaseOrder::whereKey($goodsReceipt->local_purchase_order_id)->lockForUpdate()->firstOrFail();
+            $gr = $po->goodsReceipts()->whereKey($goodsReceipt->id)->lockForUpdate()->firstOrFail();
             if ($gr->status !== LocalGoodsReceipt::STATUS_AVAILABLE) {
                 throw ValidationException::withMessages(['status' => __('local_procurement.validation.gr_cancel_available')]);
             }
@@ -301,6 +390,91 @@ class LocalProcurementMasterService
 
             return $gr->fresh();
         });
+    }
+
+    public function restorePurchaseOrder(User $actor, LocalPurchaseOrder $purchaseOrder, array $data): LocalPurchaseOrder
+    {
+        Gate::forUser($actor)->authorize('restore', $purchaseOrder);
+        $reason = $this->recoveryReason($data);
+
+        return DB::transaction(function () use ($actor, $purchaseOrder, $reason) {
+            $actor = $this->lockRecoveryUsers($actor, $purchaseOrder->supplier_id);
+            $po = LocalPurchaseOrder::whereKey($purchaseOrder->id)->lockForUpdate()->firstOrFail();
+            Gate::forUser($actor)->authorize('restore', $po);
+            if ($po->supplier_id !== $purchaseOrder->supplier_id) {
+                throw ValidationException::withMessages(['supplier_id' => __('local_procurement.recovery.supplier_ineligible')]);
+            }
+            if ($po->status !== LocalPurchaseOrder::STATUS_CANCELLED) {
+                throw ValidationException::withMessages(['status' => __('local_procurement.recovery.po_cancelled_only')]);
+            }
+            $blockedGr = $po->goodsReceipts()->where(fn ($q) => $q->whereNotNull('current_invoice_id')
+                ->orWhereIn('status', [LocalGoodsReceipt::STATUS_RESERVED, LocalGoodsReceipt::STATUS_INVOICED]))
+                ->orderBy('id')->lockForUpdate()->first();
+            if ($blockedGr || $po->invoices()->whereNotIn('status', [LocalInvoice::STATUS_CANCELLED, LocalInvoice::STATUS_REJECTED, LocalInvoice::STATUS_EXPIRED])->exists()
+                || LocalInvoiceGoodsReceipt::where('local_purchase_order_id', $po->id)->whereIn('state', ['RESERVED', 'CONSUMED'])->exists()) {
+                throw ValidationException::withMessages(['status' => __('local_procurement.recovery.dependencies')]);
+            }
+            $before = $po->toArray();
+            $po->update(['status' => LocalPurchaseOrder::STATUS_OPEN, 'updated_by' => $actor->id]);
+            $this->audit->record($po, 'po_restored', $actor, $before, $po->fresh()->toArray(), ['reason' => $reason, 'business_document_valid' => true]);
+
+            return $po->fresh();
+        });
+    }
+
+    public function restoreGoodsReceipt(User $actor, LocalGoodsReceipt $goodsReceipt, array $data): LocalGoodsReceipt
+    {
+        $parent = $goodsReceipt->purchaseOrder;
+        Gate::forUser($actor)->authorize('restoreGoodsReceipt', $parent);
+        $reason = $this->recoveryReason($data);
+
+        return DB::transaction(function () use ($actor, $parent, $goodsReceipt, $reason) {
+            $actor = $this->lockRecoveryUsers($actor, $parent->supplier_id);
+            $po = LocalPurchaseOrder::whereKey($parent->id)->lockForUpdate()->firstOrFail();
+            Gate::forUser($actor)->authorize('restoreGoodsReceipt', $po);
+            if ($po->supplier_id !== $parent->supplier_id) {
+                throw ValidationException::withMessages(['supplier_id' => __('local_procurement.recovery.supplier_ineligible')]);
+            }
+            if ($po->status !== LocalPurchaseOrder::STATUS_OPEN) {
+                throw ValidationException::withMessages(['status' => __('local_procurement.recovery.po_open_required')]);
+            }
+            $gr = $po->goodsReceipts()->whereKey($goodsReceipt->id)->lockForUpdate()->firstOrFail();
+            if ($gr->status !== LocalGoodsReceipt::STATUS_CANCELLED) {
+                throw ValidationException::withMessages(['status' => __('local_procurement.recovery.gr_cancelled_only')]);
+            }
+            if ($gr->current_invoice_id !== null || LocalInvoiceGoodsReceipt::where('local_goods_receipt_id', $gr->id)->whereIn('state', ['RESERVED', 'CONSUMED'])->exists()) {
+                throw ValidationException::withMessages(['status' => __('local_procurement.recovery.dependencies')]);
+            }
+            $before = $gr->toArray();
+            $gr->update(['status' => LocalGoodsReceipt::STATUS_AVAILABLE, 'updated_by' => $actor->id]);
+            $this->audit->record($gr, 'gr_restored', $actor, $before, $gr->fresh()->toArray(), ['reason' => $reason, 'business_document_valid' => true]);
+
+            return $gr->fresh();
+        });
+    }
+
+    private function recoveryReason(array $data): string
+    {
+        if (is_string($data['reason'] ?? null)) {
+            $data['reason'] = trim($data['reason']);
+        }
+
+        return Validator::make($data, ['reason' => ['required', 'string', 'max:1000'], 'business_document_valid' => ['accepted']], [
+            'reason.required' => __('local_procurement.recovery.reason_required'), 'reason.string' => __('local_procurement.recovery.reason_required'),
+            'reason.max' => __('local_procurement.recovery.reason_max'), 'business_document_valid.accepted' => __('local_procurement.recovery.confirm_required'),
+        ])->validate()['reason'];
+    }
+
+    private function lockRecoveryUsers(User $actor, int $supplierId): User
+    {
+        $users = User::whereIn('id', [$actor->id, $supplierId])->orderBy('id')->sharedLock()->get()->keyBy('id');
+        $supplier = $users->get($supplierId);
+        $hasScope = SupplierScope::where('supplier_id', $supplierId)->where('scope', 'local')->sharedLock()->first() !== null;
+        if (! $supplier || ! $supplier->is_active || $supplier->role !== 'supplier' || $supplier->account_status !== User::ACCOUNT_STATUS_ACTIVE || ! $hasScope) {
+            throw ValidationException::withMessages(['supplier_id' => __('local_procurement.recovery.supplier_ineligible')]);
+        }
+
+        return $users->get($actor->id) ?? $actor->fresh();
     }
 
     private function uom(mixed $value): string
@@ -322,16 +496,10 @@ class LocalProcurementMasterService
     private function money(mixed $value, string $field): string
     {
         $value = trim((string) $value);
-        if (! preg_match('/^\d{1,18}(?:\.\d{1,2})?$/', $value) || bccomp($value, '0', 2) <= 0) {
+        if (! preg_match('/^\d{1,18}(?:\.\d{1,2})?$/', $value) || Money::compare($value, Money::ZERO) <= 0) {
             throw ValidationException::withMessages([$field => __('local_procurement.validation.amount_positive')]);
         }
 
-        if (! str_contains($value, '.')) {
-            return $value.'.00';
-        }
-
-        [$whole, $fraction] = explode('.', $value, 2);
-
-        return $whole.'.'.str_pad($fraction, 2, '0');
+        return Money::normalize($value);
     }
 }

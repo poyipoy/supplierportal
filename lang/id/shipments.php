@@ -3,6 +3,8 @@
 return [
     'closure.title' => 'Pengiriman :number',
     'guard_copy' => [
+        'cancelled_document_upload' => 'Dokumen tidak dapat diunggah pada pengiriman yang dibatalkan.',
+        'final_document_upload' => 'Dokumen pengiriman yang sudah diverifikasi atau selesai tidak dapat diganti.',
         'modify_status' => 'Item pengiriman yang sudah berstatus :status tidak dapat diubah.',
         'po_supplier' => 'Purchase Order #:po bukan milik supplier #:supplier.',
         'item_po' => 'Item penawaran #:item bukan bagian Purchase Order #:po.',

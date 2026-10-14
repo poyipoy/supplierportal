@@ -15,6 +15,41 @@ class VendorMasterViewsTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_pending_bank_changes_link_only_the_selected_owned_confirmation_document(): void
+    {
+        [$user, , , , $request] = $this->createLocalSupplierWithFullMaster();
+        $documents = [];
+        foreach (['selected-bank.pdf', 'other-bank.pdf'] as $name) {
+            $documents[] = SupplierMasterDocument::create([
+                'supplier_id' => $user->id, 'document_type' => SupplierMasterDocument::TYPE_SURAT_PERNYATAAN_REKENING,
+                'file_path' => 'bank/'.$name, 'original_filename' => $name, 'mime_type' => 'application/pdf',
+                'file_size' => 100, 'uploaded_by' => $user->id,
+            ]);
+        }
+        $request->update(['proposed_data' => ['bank_name' => 'BCA', 'account_number' => '77778888',
+            'account_holder_name' => 'New Bank Holder', 'bank_confirmation_document_id' => $documents[0]->id]]);
+
+        foreach (['finance' => 'finance.vendor-master.index', 'purchasing' => 'purchasing.local-vendors.index'] as $role => $route) {
+            session()->forget('password_hash_web');
+            $this->actingAs(User::factory()->create(['role' => $role]))->get(route($route))->assertOk()
+                ->assertSee('77778888')->assertSee('New Bank Holder')->assertSee('selected-bank.pdf')
+                ->assertSee(route('supplier-master-documents.show', $documents[0]), false)->assertDontSee('other-bank.pdf');
+        }
+    }
+
+    public function test_purchasing_vendor_detail_requires_active_local_eligibility(): void
+    {
+        $purchasing = User::factory()->create(['role' => 'purchasing']);
+        foreach ([
+            User::factory()->create(),
+            User::factory()->create(['role' => 'admin']),
+            User::factory()->create(['is_active' => false]),
+            User::factory()->create(['account_status' => User::ACCOUNT_STATUS_PENDING]),
+        ] as $vendor) {
+            $this->actingAs($purchasing)->get(route('purchasing.local-vendors.show', $vendor))->assertNotFound();
+        }
+    }
+
     private function createLocalSupplierWithFullMaster(): array
     {
         $user = User::factory()->create(['role' => 'supplier', 'is_active' => true]);

@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Ga;
 
 use App\Http\Controllers\Controller;
 use App\Models\Employee;
+use App\Services\LocalInvoice\LocalFinanceAuditService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class EmployeeController extends Controller
 {
@@ -39,7 +41,10 @@ class EmployeeController extends Controller
             'account_holder_name' => 'required|string|max:150',
         ]);
 
-        Employee::create(array_merge($validated, ['is_active' => true]));
+        DB::transaction(function () use ($request, $validated): void {
+            $employee = Employee::create(array_merge($validated, ['is_active' => true]));
+            app(LocalFinanceAuditService::class)->record($employee, 'employee_created', $request->user(), null, $employee->toArray());
+        });
 
         return back()->with('success', __('ga.feedback.employee_added', ['name' => $validated['name']]));
     }
@@ -55,7 +60,11 @@ class EmployeeController extends Controller
             'is_active' => 'required|boolean',
         ]);
 
-        $employee->update($validated);
+        DB::transaction(function () use ($employee, $validated, $request): void {
+            $locked = Employee::whereKey($employee->id)->lockForUpdate()->firstOrFail();
+            $locked->bankChangeActor = $request->user();
+            $locked->update($validated);
+        });
 
         return back()->with('success', __('ga.feedback.employee_updated', ['name' => $employee->name]));
     }
@@ -63,6 +72,7 @@ class EmployeeController extends Controller
     public function toggleStatus(Employee $employee)
     {
         $employee->update(['is_active' => ! $employee->is_active]);
+
         return back()->with('success', __($employee->is_active ? 'ga.feedback.employee_activated' : 'ga.feedback.employee_deactivated', ['name' => $employee->name]));
     }
 }

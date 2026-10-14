@@ -186,7 +186,13 @@
         <div class="tw-flex tw-items-center tw-justify-between tw-gap-3">
             <div class="tw-min-w-0">
                 <div class="tw-text-[11px] tw-font-medium">{{ __('registration.support') }}</div>
-                <div class="tw-text-on-surface tw-font-semibold tw-mt-0.5 tw-break-all">procurement@astra-daido.co.id</div>
+                <div class="tw-text-on-surface tw-font-semibold tw-mt-0.5 tw-break-all">{{ config('support.supplier_email') }}</div>
+                @if(config('support.supplier_whatsapp') && config('support.supplier_whatsapp_url'))
+                    <a href="{{ config('support.supplier_whatsapp_url') }}" target="_blank" rel="noopener noreferrer" class="ui-focus-ring tw-mt-1 tw-inline-flex tw-items-center tw-gap-1 tw-rounded-ui-xs tw-text-on-surface-variant hover:tw-text-primary">
+                        <x-ui.icon name="whatsapp" size="xs" />
+                        <span>{{ __('registration.support_whatsapp') }} {{ config('support.supplier_whatsapp') }}</span>
+                    </a>
+                @endif
             </div>
             <a href="{{ route('login') }}" class="ui-focus-ring tw-shrink-0 tw-rounded-ui-xs tw-text-primary tw-text-ui-xs tw-font-semibold hover:tw-underline">
                 {{ __('registration.portal_sign_in') }}
@@ -1343,7 +1349,7 @@
                 </div>
                 <div>
                     <span class="tw-text-on-surface-variant tw-block">{{ __('registration.summary.sector') }}</span>
-                    <span class="tw-text-on-surface" x-text="(formData.category || summaryLabels.categoryGeneral) + ' Â· ' + (formData.is_pkp ? summaryLabels.pkp : summaryLabels.nonPkp)"></span>
+                    <span class="tw-text-on-surface" x-text="(formData.category || summaryLabels.categoryGeneral) + ' · ' + (formData.is_pkp ? summaryLabels.pkp : summaryLabels.nonPkp)"></span>
                 </div>
             </div>
         </div>
@@ -1491,7 +1497,7 @@
         </div>
 
         {{-- Bot Protection Turnstile if configured --}}
-        @if (config('auth_security.turnstile.site_key'))
+        @if (filled(config('auth_security.turnstile.site_key')))
             <div class="tw-flex tw-flex-col tw-items-center tw-pt-2">
                 <div class="cf-turnstile" data-sitekey="{{ config('auth_security.turnstile.site_key') }}"></div>
                 @error('cf-turnstile-response')<p class="tw-m-0 tw-mt-1.5 tw-text-ui-xs tw-font-medium tw-text-error" role="alert">{{ $message }}</p>@enderror
@@ -1574,7 +1580,7 @@
 @endsection
 
 @section('scripts')
-@if (config('auth_security.turnstile.site_key'))
+@if (filled(config('auth_security.turnstile.site_key')))
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 @endif
 

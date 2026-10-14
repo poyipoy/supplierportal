@@ -147,6 +147,7 @@
                 <thead class="table-light">
                     <tr>
                         <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('local_invoice.receipt.po_number') }}</th>
+                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('local_procurement.pr.label') }}</th>
                         <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('local_invoice.labels.supplier') }}</th>
                         <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('local_procurement.labels.po_date') }}</th>
                         <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">{{ __('local_procurement.register.po_value') }}</th>
@@ -170,6 +171,11 @@
                                             <span>PDF</span>
                                         </a>
                                     @endif
+                                </div>
+                            </td>
+                            <td>
+                                <div class="tw-font-mono tw-text-on-surface" style="max-width: 16rem; overflow-wrap: anywhere;">
+                                    {{ filled($po->pr_number) ? $po->pr_number : __('local_procurement.pr.empty') }}
                                 </div>
                             </td>
                             <td>
@@ -215,7 +221,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="tw-py-8 tw-text-center tw-text-on-surface-variant tw-text-ui-sm">
+                            <td colspan="9" class="tw-py-8 tw-text-center tw-text-on-surface-variant tw-text-ui-sm">
                                 {{ __('local_procurement.empty.po_filtered') }}
                             </td>
                         </tr>

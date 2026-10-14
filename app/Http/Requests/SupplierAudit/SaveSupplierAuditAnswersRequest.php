@@ -27,10 +27,11 @@ class SaveSupplierAuditAnswersRequest extends FormRequest
 
         return [
             'action' => ['required', Rule::in([self::ACTION_DRAFT, self::ACTION_SUBMIT])],
-            'answers' => ['required', 'array'],
+            'answers' => ['required', 'array', 'max:150'],
             'answers.*' => ['array'],
-            'answers.*.answer' => [$submit ? 'required' : 'nullable', Rule::in(SupplierAuditAnswer::ANSWERS)],
+            'answers.*.answer' => ['sometimes', $submit ? 'required' : 'nullable', Rule::in(SupplierAuditAnswer::ANSWERS)],
             'answers.*.score' => array_values(array_filter([
+                'sometimes',
                 $submit ? 'required_if:answers.*.answer,'.SupplierAuditAnswer::ANSWER_YES : null,
                 'prohibited_if:answers.*.answer,'.SupplierAuditAnswer::ANSWER_NO,
                 'nullable',
@@ -43,6 +44,7 @@ class SaveSupplierAuditAnswersRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'answers.max' => __('supplier_audit.errors.answer_limit', ['count' => 150]),
             'answers.*.answer.required' => __('supplier_audit.errors.answer_required', ['criterion' => ':attribute']),
             'answers.*.score.required_if' => __('supplier_audit.errors.score_required', ['criterion' => ':attribute']),
             'answers.*.score.prohibited_if' => __('supplier_audit.errors.score_prohibited', ['criterion' => ':attribute']),

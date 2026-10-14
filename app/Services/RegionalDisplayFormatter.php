@@ -2,10 +2,11 @@
 
 namespace App\Services;
 
+use App\Support\BusinessTime;
+use App\Support\Money;
 use DateTimeImmutable;
 use DateTimeInterface;
 use DateTimeZone;
-use App\Support\BusinessTime;
 use Illuminate\Support\Carbon;
 use InvalidArgumentException;
 
@@ -81,6 +82,17 @@ class RegionalDisplayFormatter
         $businessTime = BusinessTime::toBusiness($value);
 
         return $this->localizedFormat(DateTimeImmutable::createFromInterface($businessTime), $pattern);
+    }
+
+    /** Group exact decimal money before applying the user's numeric separators. */
+    public function money(string|int|null $amount, int $scale = 2, string $profile = 'indonesian'): string
+    {
+        $source = $this->registry['number_profiles'][$profile] ?? throw new InvalidArgumentException('Unknown numeric presentation profile.');
+        $parts = explode('.', Money::normalize($amount, $scale));
+        $integer = preg_replace('/\B(?=(?:[0-9]{3})+(?![0-9]))/', $source['group'], $parts[0]);
+        $text = $integer.(isset($parts[1]) ? $source['decimal'].$parts[1] : '');
+
+        return $this->number($text, $profile);
     }
 
     /** Transcode separators only; no float conversion, rounding or fractional digit changes. */

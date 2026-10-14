@@ -7,7 +7,9 @@ use App\Models\PaymentBatch;
 use App\Models\PaymentGroup;
 use App\Models\PaymentItem;
 use App\Models\User;
+use App\Services\Payment\PaymentTransferGuard;
 use App\Support\BankTransferMapping;
+use App\Support\Money;
 use App\Support\SpreadsheetCellSanitizer;
 use Illuminate\Support\Collection;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
@@ -21,7 +23,7 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use RuntimeException;
 
 /**
- * Renders a "TARIKAN TRANSFER" workbook with Data and the original supporting sheets.
+ * Renders a "TARIKAN TRANSFER" workbook with text transfer cells and three supporting sheets.
  *
  * All selected PaymentBatches' groups are flattened into a single table (A:U).
  * One PaymentGroup = one transfer row.
@@ -104,6 +106,7 @@ class PaymentBatchTransferSheetRenderer
             $spreadsheet->disconnectWorksheets();
             throw new RuntimeException(__('exports.feedback.transfer_template_unavailable'));
         }
+        $spreadsheet->removeSheetByIndex($spreadsheet->getIndex($spreadsheet->getSheetByName('Form Responses 1')));
         $sheet = $spreadsheet->getSheetByName('Data');
         if ($sheet->getHighestRow() >= self::DATA_START_ROW) {
             $sheet->removeRow(self::DATA_START_ROW, $sheet->getHighestRow() - self::HEADER_ROW);
@@ -112,6 +115,8 @@ class PaymentBatchTransferSheetRenderer
 
         $this->writeHeaders($sheet);
         $this->writeDataRows($sheet, $dataRows);
+        $sheet->getStyle('A'.self::HEADER_ROW.':U'.(self::HEADER_ROW + count($dataRows)))
+            ->getNumberFormat()->setFormatCode('@');
         $spreadsheet->setActiveSheetIndex(0);
 
         return $spreadsheet;
@@ -191,7 +196,8 @@ class PaymentBatchTransferSheetRenderer
      * - Default row height
      * - Debited Acc. & Charges Acc.: text format '@' with vertical center
      * - Credited Acc.: text format '@'
-     * - Amount: pure numeric value with General format
+     * All transfer columns are written as explicit strings and formatted as Text.
+     * Eff. Date remains blank.
      *
      * @param  list<array<string, mixed>>  $dataRows
      */
@@ -225,73 +231,39 @@ class PaymentBatchTransferSheetRenderer
         foreach ($dataRows as $i => $row) {
             $r = self::DATA_START_ROW + $i;
 
-            // A: No
-            $sheet->setCellValue("A{$r}", $row['no']);
-
-            // B: Transaction ID
-            $sheet->setCellValueExplicit("B{$r}", (string) $row['transaction_id'], DataType::TYPE_STRING);
-
-            // C: Transfer Type
-            $sheet->setCellValue("C{$r}", $row['transfer_type']);
-
-            // D: Debited Acc. — text format '@' and vertical center
-            $sheet->setCellValueExplicit("D{$r}", (string) $row['debited_acc'], DataType::TYPE_STRING);
-            $sheet->getStyle("D{$r}")->getNumberFormat()->setFormatCode('@');
-            $sheet->getStyle("D{$r}")->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
-
-            // E: Beneficiary ID (empty if no source)
-            $sheet->setCellValue("E{$r}", $row['beneficiary_id'] ?? '');
-
-            // F: Credited Acc. — text format '@' preserving leading zeros
-            $sheet->setCellValueExplicit("F{$r}", (string) $row['credited_acc'], DataType::TYPE_STRING);
-            $sheet->getStyle("F{$r}")->getNumberFormat()->setFormatCode('@');
-
-            // G: Amount — numeric with General format
-            $sheet->setCellValueExplicit("G{$r}", $row['amount'], DataType::TYPE_NUMERIC);
-
-            // H: Eff. Date is deliberately blank, including previously paid groups.
-            $sheet->setCellValue("H{$r}", null);
-
-            // I: Transaction Purpose
-            $sheet->setCellValue("I{$r}", $row['transaction_purpose'] ?? '');
-
-            // J: Currency
-            $sheet->setCellValue("J{$r}", 'IDR');
-
-            // K: Charges Type
-            $sheet->setCellValue("K{$r}", 'OUR');
-
-            // L: Charges Acc. — text format '@' and vertical center
-            $sheet->setCellValueExplicit("L{$r}", (string) $row['charges_acc'], DataType::TYPE_STRING);
-            $sheet->getStyle("L{$r}")->getNumberFormat()->setFormatCode('@');
-            $sheet->getStyle("L{$r}")->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
-
-            // M: Remark 1
-            $sheet->setCellValueExplicit("M{$r}", $row['remark_1'] ?? '', DataType::TYPE_STRING);
-
-            // N: Remark 2
-            $sheet->setCellValueExplicit("N{$r}", $row['remark_2'] ?? '', DataType::TYPE_STRING);
-
-            // O: Receiver Bank Cd
-            $sheet->setCellValue("O{$r}", $row['receiver_bank_cd']);
-
-            // P: Receiver Bank Name
-            $sheet->setCellValue("P{$r}", $row['receiver_bank_name']);
-
-            // Q: Receiver Name
-            $sheet->setCellValue("Q{$r}", $row['receiver_name']);
-
-            // R: Receiver Cust. Type (1 in TARIKAN TRANSFER.xlsx)
-            $sheet->setCellValue("R{$r}", $row['receiver_cust_type'] ?? '1');
-
-            // S: Receiver Cust. Residen (1 in TARIKAN TRANSFER.xlsx)
-            $sheet->setCellValue("S{$r}", '1');
-
-            // T: Transaction Cd (99 in TARIKAN TRANSFER.xlsx)
-            $sheet->setCellValue("T{$r}", '99');
-
-            // U: Beneficiary Email
-            $sheet->setCellValue("U{$r}", $row['beneficiary_email'] ?? '');
+            $values = [
+                'A' => $row['no'],
+                'B' => $row['transaction_id'],
+                'C' => $row['transfer_type'],
+                'D' => $row['debited_acc'],
+                'E' => $row['beneficiary_id'] ?? '',
+                'F' => $row['credited_acc'],
+                'G' => $row['amount'],
+                'H' => null,
+                'I' => $row['transaction_purpose'] ?? '',
+                'J' => 'IDR',
+                'K' => 'OUR',
+                'L' => $row['charges_acc'],
+                'M' => $row['remark_1'] ?? '',
+                'N' => $row['remark_2'] ?? '',
+                'O' => $row['receiver_bank_cd'],
+                'P' => $row['receiver_bank_name'],
+                'Q' => $row['receiver_name'],
+                'R' => $row['receiver_cust_type'] ?? '1',
+                'S' => '1',
+                'T' => '99',
+                'U' => $row['beneficiary_email'] ?? '',
+            ];
+            foreach ($values as $column => $value) {
+                $sheet->setCellValueExplicit(
+                    $column.$r,
+                    $value === null ? null : (string) $value,
+                    $value === null ? DataType::TYPE_NULL : DataType::TYPE_STRING,
+                );
+            }
+            foreach (['D', 'L'] as $column) {
+                $sheet->getStyle($column.$r)->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
+            }
         }
     }
 
@@ -305,6 +277,7 @@ class PaymentBatchTransferSheetRenderer
      */
     public function buildAllTransferRows(Collection $batches): array
     {
+        app(PaymentTransferGuard::class)->assertEligible($batches);
         $rows = [];
         $globalNo = 1;
         $debitAccount = config('finance.transfer_debit_account');
@@ -331,6 +304,7 @@ class PaymentBatchTransferSheetRenderer
                 if ($activeItems->isEmpty()) {
                     continue;
                 }
+                $currentGroupSequence = $groupSeq++;
 
                 // Bank resolution
                 $bankMapping = BankTransferMapping::resolve((string) $group->bank_name);
@@ -344,7 +318,7 @@ class PaymentBatchTransferSheetRenderer
 
                 // Transaction ID: deterministic
                 $batchSuffix = str_replace('DRP-', '', $batch->batch_number);
-                $transactionId = sprintf('%s-%03d', $batchSuffix, $groupSeq);
+                $transactionId = sprintf('%s-%03d', $batchSuffix, $currentGroupSequence);
 
                 // Invoice references for Remark 1 / Remark 2
                 $invoiceNumbers = [];
@@ -366,7 +340,7 @@ class PaymentBatchTransferSheetRenderer
                     'debited_acc' => $debitAccount,
                     'beneficiary_id' => '',
                     'credited_acc' => SpreadsheetCellSanitizer::text($group->account_number, ''),
-                    'amount' => (float) $group->net_payment_amount,
+                    'amount' => Money::normalize($group->net_payment_amount),
                     'eff_date' => '',
                     'transaction_purpose' => '',
                     'charges_acc' => $debitAccount,
@@ -380,7 +354,6 @@ class PaymentBatchTransferSheetRenderer
                 ];
 
                 $globalNo++;
-                $groupSeq++;
             }
         }
 

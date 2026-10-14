@@ -2,10 +2,14 @@
 
 namespace App\Services\Payment;
 
+use App\Models\PaymentBatch;
 use App\Models\PaymentGroup;
 use App\Models\User;
+use App\Services\LocalInvoice\LocalFinanceAuditService;
+use App\Services\LocalInvoice\MakerCheckerService;
 use App\Support\BusinessTime;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 class PaymentVoucherService
@@ -24,20 +28,27 @@ class PaymentVoucherService
     /**
      * Assign voucher number and date to a payment group.
      */
-    public function assignVoucher(PaymentGroup $group, string $voucherNumber, string $voucherDate, User $actor): PaymentGroup
+    public function assignVoucher(PaymentGroup $group, string $voucherNumber, string $voucherDate, User $actor, ?string $overrideReason = null): PaymentGroup
     {
         if (! $actor->isFinance() && ! $actor->isAdmin()) {
             throw new InvalidArgumentException(__('finance.validation.voucher_role'));
         }
 
-        return DB::transaction(function () use ($group, $voucherNumber, $voucherDate) {
+        return DB::transaction(function () use ($group, $voucherNumber, $voucherDate, $actor) {
             /** @var PaymentGroup $grp */
             $grp = PaymentGroup::where('id', $group->id)->lockForUpdate()->firstOrFail();
+            $batch = $grp->batch()->lockForUpdate()->firstOrFail();
+            if ($grp->status !== PaymentGroup::STATUS_UNPAID || ! in_array($batch->status, [PaymentBatch::STATUS_FINALIZED, PaymentBatch::STATUS_PARTIALLY_PAID], true)) {
+                throw ValidationException::withMessages(['voucher' => __('finance_controls.voucher_status')]);
+            }
+            app(MakerCheckerService::class)->assertActorsRecorded('voucher_settlement', $batch, $actor, [$batch->finalized_by], $batch->actor_tracking_required);
+            $before = $grp->only(['voucher_number', 'voucher_date']);
 
             $grp->update([
                 'voucher_number' => trim($voucherNumber),
                 'voucher_date' => $voucherDate,
             ]);
+            app(LocalFinanceAuditService::class)->record($grp, 'group_voucher_assigned', $actor, $before, $grp->only(array_keys($before)));
 
             return $grp->fresh();
         });

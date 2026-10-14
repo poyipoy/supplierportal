@@ -172,7 +172,7 @@ class SupplierPortalContextV2Test extends TestCase
         $supplier = $this->supplierWithScopes(['import', 'local']);
         $initialSessionVersion = (int) $supplier->auth_session_version;
 
-        $response = $this->actingAs($admin)->put(route('admin.users.update', $supplier), [
+        $response = $this->actingAs($admin)->withSession(['auth.password_confirmed_at' => now()->timestamp])->put(route('admin.users.update', $supplier), [
             'name' => $supplier->name,
             'email' => $supplier->email,
             'role' => 'supplier',
@@ -201,7 +201,7 @@ class SupplierPortalContextV2Test extends TestCase
         $currentVersion = (int) $supplier->auth_session_version;
 
         // Admin revokes 'local' scope
-        $this->actingAs($admin)->put(route('admin.users.update', $supplier), [
+        $this->actingAs($admin)->withSession(['auth.password_confirmed_at' => now()->timestamp])->put(route('admin.users.update', $supplier), [
             'name' => $supplier->name,
             'email' => $supplier->email,
             'role' => 'supplier',

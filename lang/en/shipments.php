@@ -3,6 +3,8 @@
 return [
     'closure.title' => 'Shipment :number',
     'guard_copy' => [
+        'cancelled_document_upload' => 'Documents cannot be uploaded to a cancelled shipment.',
+        'final_document_upload' => 'Verified or completed shipment documents cannot be replaced.',
         'modify_status' => 'Cannot modify items of a shipment that is already :status.',
         'po_supplier' => 'Purchase Order #:po does not belong to supplier #:supplier.',
         'item_po' => 'Quotation item #:item does not belong to Purchase Order #:po.',

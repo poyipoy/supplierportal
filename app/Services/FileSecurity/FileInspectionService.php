@@ -75,6 +75,7 @@ class FileInspectionService
             $this->reject($field, 'read');
         }
         $bytes = filesize($path);
+        $archivePolicy = $profile === 'spreadsheet_import' ? 'streaming_office' : 'office';
         // An unreadable or zero-byte upload is not a resource-budget overflow; report
         // it separately so the cause is not mistaken for an exceeded size ceiling.
         if (! is_int($bytes) || $bytes <= 0) {
@@ -85,7 +86,7 @@ class FileInspectionService
         }
         // Bound container metadata before native MIME/container readers see it.
         if (in_array($extension, ['zip', 'xlsx', 'docx'], true)) {
-            $this->archives->inspect($path, $extension === 'zip' ? 'po_zip' : 'office');
+            $this->archives->inspect($path, $extension === 'zip' ? 'po_zip' : $archivePolicy);
         } elseif (in_array($extension, ['xls', 'doc'], true)) {
             app(OleContainerInspector::class)->inspect($path, $extension);
         }
@@ -120,7 +121,7 @@ class FileInspectionService
                     $this->reject($field, 'image');
                 }
             } elseif (in_array($extension, ['xlsx', 'docx'], true)) {
-                $this->archives->inspectOffice($path, $extension);
+                $this->archives->inspectOffice($path, $extension, $archivePolicy);
                 $mime = $types[$extension][0];
             } elseif ($extension === 'zip') {
                 $this->archives->inspect($path);

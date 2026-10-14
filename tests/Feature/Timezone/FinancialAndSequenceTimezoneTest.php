@@ -14,7 +14,6 @@ use App\Services\Payment\PaymentForecastService;
 use Carbon\Carbon;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\ValidationException;
@@ -137,7 +136,7 @@ class FinancialAndSequenceTimezoneTest extends TestCase
             'scheduled_physical_delivery_date' => '2027-01-06',
         ], [
             'invoice' => NativeFileFixtures::upload('invoice.pdf', 100),
-            'tax_invoice' => UploadedFile::fake()->image('tax.png'),
+            'tax_invoice' => NativeFileFixtures::upload('tax.pdf'),
             'delivery_note' => NativeFileFixtures::upload('surat_jalan.pdf', 100),
         ]);
 
@@ -227,7 +226,7 @@ class FinancialAndSequenceTimezoneTest extends TestCase
             'scheduled_physical_delivery_date' => '2026-10-14', // Past date in WIB!
         ], [
             'invoice' => NativeFileFixtures::upload('invoice.pdf', 100),
-            'tax_invoice' => UploadedFile::fake()->image('tax.png'),
+            'tax_invoice' => NativeFileFixtures::upload('tax.pdf'),
             'delivery_note' => NativeFileFixtures::upload('surat_jalan.pdf', 100),
         ]);
     }
@@ -264,7 +263,7 @@ class FinancialAndSequenceTimezoneTest extends TestCase
             'scheduled_physical_delivery_date' => '2026-10-14', // Same-day Wednesday in WIB
         ], [
             'invoice' => NativeFileFixtures::upload('invoice.pdf', 100),
-            'tax_invoice' => UploadedFile::fake()->image('tax.png'),
+            'tax_invoice' => NativeFileFixtures::upload('tax.pdf'),
             'delivery_note' => NativeFileFixtures::upload('surat_jalan.pdf', 100),
         ]);
 

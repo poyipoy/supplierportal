@@ -1,6 +1,7 @@
 import { bootPoDocumentUploads } from './po-document-upload';
 import { t } from './i18n.js';
 import Alpine from 'alpinejs';
+import { searchableFreeInput } from './searchable-free-input';
 import './password-assistance';
 import { bootAdasiCalendars } from './calendar';
 import './unsaved-changes';
@@ -19,6 +20,7 @@ import { customizationForm } from './customization-form';
 import { supplierAuditForm } from './supplier-audit-form';
 
 window.Alpine = Alpine;
+Alpine.data('searchableFreeInput', searchableFreeInput);
 Alpine.data('adasiFileUploadComponent', adasiFileUploadComponent);
 Alpine.data('customizationForm', customizationForm);
 Alpine.data('supplierAuditForm', supplierAuditForm);
@@ -457,6 +459,7 @@ Alpine.start();
 bootAdasiCalendars();
 const bootImports = () => {
     if (document.querySelector('[data-local-import]')) import('./local-procurement-import');
+    if (document.querySelector('[data-gr-table]')) import('./local-po-gr-table').then(module => module.bootLocalPoGrTable());
 };
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootImports);
 else bootImports();
@@ -464,4 +467,17 @@ if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => bootPoDocumentUploads());
 } else {
     bootPoDocumentUploads();
+}
+
+// Registered last so the synchronous DOM-ready work above completes first.
+// Optional imports and network requests do not gate core readiness.
+const acknowledgeAuthSplashCore = () => {
+    // The microtask runs after synchronous DOM-ready listeners, including
+    // handlers registered later in the parsed document. Alpine settles next.
+    queueMicrotask(() => Alpine.nextTick(() => window.AdasiAuthSplash?.markCoreReady()));
+};
+if (document.readyState !== 'complete' && !window.AdasiAuthSplash?.domReady) {
+    document.addEventListener('DOMContentLoaded', acknowledgeAuthSplashCore, { once: true });
+} else {
+    acknowledgeAuthSplashCore();
 }

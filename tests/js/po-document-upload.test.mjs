@@ -49,7 +49,7 @@ test('queued state is announced, does not imply publication, and polling finishe
     } finally { Object.assign(globalThis, prior); }
 });
 
-test('storage validation error takes precedence over a generic response summary', () => {
+test('file validation clears the separate status to avoid duplicating the contextual component error', () => {
     const handlers = new Map();
     const status = { textContent: '' };
     const progress = { hidden: false };
@@ -66,7 +66,7 @@ test('storage validation error takes precedence over a generic response summary'
         handlers.get('adasi:form-errors')({ detail: {
             message: 'The given data was invalid.', errors: { file: ['ZIP exceeds available storage. Reduce the file size.'] },
         } });
-        assert.equal(status.textContent, 'ZIP exceeds available storage. Reduce the file size.');
+        assert.equal(status.textContent, '');
         assert.equal(progress.hidden, true);
     } finally {
         globalThis.sessionStorage = prior;

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\BusinessTime;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Cache;
@@ -73,6 +74,12 @@ class ExchangeRate extends Model
 
     protected static function booted(): void
     {
+        static::creating(function (ExchangeRate $rate): void {
+            $rate->currency = strtoupper($rate->currency);
+            if ($rate->currency === self::CURRENCY_IDR) {
+                $rate->rate_to_idr = '1.0000';
+            }
+        });
         // Otomatis invalidate cache saat kurs baru di-INSERT
         static::created(function (ExchangeRate $rate) {
             static::clearLatestRateCache($rate->currency);
@@ -93,11 +100,16 @@ class ExchangeRate extends Model
      */
     public static function latestRate(string $currency): ?self
     {
-        $cacheKey = 'exchange_rate_latest_'.strtoupper($currency);
+        $currency = strtoupper($currency);
+        $businessDate = BusinessTime::today()->toDateString();
+        $cacheKey = 'exchange_rate_latest_'.$currency.'_'.$businessDate;
 
-        return Cache::remember($cacheKey, now()->addMinutes(60), function () use ($currency) {
+        return Cache::remember($cacheKey, now()->addMinutes(60), function () use ($currency, $businessDate) {
             return static::where('currency', $currency)
+                ->whereDate('valid_from', '<=', $businessDate)
+                ->when($currency === self::CURRENCY_IDR, fn ($query) => $query->where('rate_to_idr', '1.0000'))
                 ->orderBy('valid_from', 'desc')
+                ->orderBy('id', 'desc')
                 ->first();
         });
     }
@@ -108,5 +120,6 @@ class ExchangeRate extends Model
     public static function clearLatestRateCache(string $currency): void
     {
         Cache::forget('exchange_rate_latest_'.strtoupper($currency));
+        Cache::forget('exchange_rate_latest_'.strtoupper($currency).'_'.BusinessTime::today()->toDateString());
     }
 }

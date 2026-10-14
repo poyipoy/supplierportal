@@ -20,6 +20,9 @@ class SupplierAuditAnswerService
      */
     public function save(User $supplier, SupplierAudit $audit, array $answers, bool $submit): SupplierAudit
     {
+        if (count($answers) > 150) {
+            throw ValidationException::withMessages(['answers' => __('supplier_audit.errors.answer_limit', ['count' => 150])]);
+        }
         [$locked, $history] = DB::transaction(function () use ($supplier, $audit, $answers, $submit) {
             $locked = SupplierAudit::whereKey($audit->getKey())->lockForUpdate()->firstOrFail();
 
@@ -36,7 +39,7 @@ class SupplierAuditAnswerService
                     throw ValidationException::withMessages(['answers' => __('supplier_audit.errors.invalid_criterion')]);
                 }
 
-                [$answer, $score] = $this->normalize($input);
+                [$answer, $score] = $this->normalize($input, $row);
                 if ($row->answer !== $answer || $row->score !== $score) {
                     $row->forceFill(['answer' => $answer, 'score' => $score])->save();
                 }
@@ -85,16 +88,16 @@ class SupplierAuditAnswerService
      *
      * @return array{0: ?string, 1: ?int}
      */
-    private function normalize(array $input): array
+    private function normalize(array $input, SupplierAuditAnswer $row): array
     {
-        $answer = $input['answer'] ?? null;
+        $answer = array_key_exists('answer', $input) ? $input['answer'] : $row->answer;
         $answer = in_array($answer, SupplierAuditAnswer::ANSWERS, true) ? $answer : null;
 
         if ($answer !== SupplierAuditAnswer::ANSWER_YES) {
             return [$answer, null];
         }
 
-        $score = $input['score'] ?? null;
+        $score = array_key_exists('score', $input) ? $input['score'] : $row->score;
         if ($score === null || $score === '') {
             return [$answer, null];
         }

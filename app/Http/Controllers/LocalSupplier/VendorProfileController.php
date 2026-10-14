@@ -10,6 +10,7 @@ use App\Services\VendorMaster\VendorChangeRequestService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class VendorProfileController extends Controller
 {
@@ -46,7 +47,17 @@ class VendorProfileController extends Controller
             'bank_name' => 'nullable|string|max:100',
             'account_number' => 'nullable|string|max:50',
             'account_holder_name' => 'nullable|string|max:150',
+            'bank_confirmation_document_id' => ['nullable', 'string', 'max:100'],
         ]);
+
+        if (! empty($validated['bank_confirmation_document_id'])) {
+            $hash = $validated['bank_confirmation_document_id'];
+            $document = ! ctype_digit($hash) ? (new SupplierMasterDocument)->resolveRouteBinding($hash) : null;
+            if (! $document || (int) $document->supplier_id !== (int) $request->user()->id || $document->document_type !== SupplierMasterDocument::TYPE_SURAT_PERNYATAAN_REKENING) {
+                throw ValidationException::withMessages(['bank_confirmation_document_id' => __('finance_controls.bank_document')]);
+            }
+            $validated['bank_confirmation_document_id'] = $document->id;
+        }
 
         $service->submitChangeRequest($request->user(), array_filter($validated, fn ($v) => $v !== null));
 

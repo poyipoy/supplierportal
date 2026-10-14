@@ -5,12 +5,14 @@ namespace App\Http\Controllers\Finance;
 use App\Exports\LocalGrImportTemplateExport;
 use App\Exports\LocalPoImportTemplateExport;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\LocalInvoice\RestoreLocalProcurementRequest;
 use App\Http\Requests\LocalInvoice\SaveLocalGoodsReceiptRequest;
 use App\Http\Requests\LocalInvoice\SaveLocalPurchaseOrderRequest;
 use App\Http\Requests\LocalInvoice\UploadLocalGrImportRequest;
 use App\Http\Requests\LocalInvoice\UploadLocalPoDocumentRequest;
 use App\Http\Requests\LocalInvoice\UploadLocalPoImportRequest;
 use App\Models\LocalGoodsReceipt;
+use App\Models\LocalInvoice;
 use App\Models\LocalPurchaseOrder;
 use App\Models\User;
 use App\Services\LocalInvoice\LocalPoDocumentBatchService;
@@ -19,6 +21,7 @@ use App\Services\LocalInvoice\LocalProcurementImportService;
 use App\Services\LocalInvoice\LocalProcurementMasterService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Facades\Excel;
 
 class LocalProcurementController extends Controller
@@ -28,7 +31,11 @@ class LocalProcurementController extends Controller
         $supplier = $this->resolveSupplierFilter($request->query('supplier_id'));
         $query = LocalPurchaseOrder::with('supplier.supplier')->withCount(['goodsReceipts as active_gr_count' => fn ($q) => $q->where('status', '!=', LocalGoodsReceipt::STATUS_CANCELLED)]);
         if ($request->filled('q')) {
-            $query->where('po_number', 'like', '%'.addcslashes($request->string('q'), '%_').'%');
+            $search = '%'.addcslashes((string) $request->string('q'), '%_').'%';
+            $query->where(function ($q) use ($search) {
+                $q->where('po_number', 'like', $search)
+                    ->orWhere('pr_number', 'like', $search);
+            });
         }
         if ($supplier) {
             $query->where('supplier_id', $supplier->id);
@@ -63,6 +70,19 @@ class LocalProcurementController extends Controller
         return view('finance.local-procurement.form', ['purchaseOrder' => new LocalPurchaseOrder, 'suppliers' => $this->suppliers(), 'routePrefix' => $this->prefix()]);
     }
 
+    public function prSuggestions(Request $request)
+    {
+        $this->authorize('manage', LocalPurchaseOrder::class);
+        $request->validate(['q' => ['nullable', 'string', 'max:100']]);
+        $term = trim((string) $request->input('q', ''));
+        $numbers = mb_strlen($term) < 2 ? collect() : LocalPurchaseOrder::query()
+            ->whereNotNull('pr_number')->where('pr_number', 'like', '%'.addcslashes($term, '\\%_').'%')
+            ->selectRaw('MIN(pr_number) as pr_number')->groupByRaw('BINARY LOWER(TRIM(pr_number))')
+            ->orderBy('pr_number')->limit(20)->get()->map(fn ($po) => ['pr_number' => $po->pr_number]);
+
+        return response()->json(['data' => $numbers])->header('Cache-Control', 'private, no-store');
+    }
+
     public function store(SaveLocalPurchaseOrderRequest $request, LocalProcurementMasterService $service)
     {
         $po = $service->createPurchaseOrder($request->user(), $request->validated());
@@ -72,7 +92,11 @@ class LocalProcurementController extends Controller
 
     public function show(LocalPurchaseOrder $purchaseOrder)
     {
-        $purchaseOrder->load(['supplier.supplier', 'goodsReceipts.currentInvoice', 'invoices']);
+        $this->authorize('view', $purchaseOrder);
+        $purchaseOrder->load('supplier.supplier');
+        $purchaseOrder->loadSum(['invoices as active_invoice_amount' => fn ($q) => $q->whereNotIn('status', [LocalInvoice::STATUS_REJECTED, LocalInvoice::STATUS_CANCELLED])], 'invoice_amount');
+        $purchaseOrder->loadCount(['goodsReceipts', 'goodsReceipts as active_gr_count' => fn ($q) => $q->where('status', '!=', LocalGoodsReceipt::STATUS_CANCELLED)]);
+        $purchaseOrder->setRelation('goodsReceipts', $purchaseOrder->goodsReceipts()->with('currentInvoice')->orderByDesc('gr_date')->orderByDesc('id')->limit(25)->get());
 
         return view('finance.local-procurement.show', ['purchaseOrder' => $purchaseOrder, 'routePrefix' => $this->prefix()]);
     }
@@ -108,6 +132,30 @@ class LocalProcurementController extends Controller
         $service->createGoodsReceipt($request->user(), $purchaseOrder, $request->validated());
 
         return back()->with('success', __('local_procurement.feedback.gr_added'));
+    }
+
+    public function restore(RestoreLocalProcurementRequest $request, LocalPurchaseOrder $purchaseOrder, LocalProcurementMasterService $service)
+    {
+        try {
+            $service->restorePurchaseOrder($request->user(), $purchaseOrder, $request->validated());
+        } catch (ValidationException $exception) {
+            $exception->errorBag('restorePo');
+            throw $exception;
+        }
+
+        return redirect()->route($this->prefix().'.show', $purchaseOrder)->with('success', __('local_procurement.recovery.po_restored'));
+    }
+
+    public function restoreGoodsReceipt(RestoreLocalProcurementRequest $request, LocalGoodsReceipt $goodsReceipt, LocalProcurementMasterService $service)
+    {
+        try {
+            $gr = $service->restoreGoodsReceipt($request->user(), $goodsReceipt, $request->validated());
+        } catch (ValidationException $exception) {
+            $exception->errorBag('restoreGr');
+            throw $exception;
+        }
+
+        return redirect()->route($this->prefix().'.show', $gr->purchaseOrder)->with('success', __('local_procurement.recovery.gr_restored'));
     }
 
     public function updateGoodsReceipt(SaveLocalGoodsReceiptRequest $request, LocalGoodsReceipt $goodsReceipt, LocalProcurementMasterService $service)

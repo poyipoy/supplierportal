@@ -1,6 +1,19 @@
 <?php
 
 return [
+    'confirmation.rows_help' => 'File rows follow the selected export structure.',
+    'confirmation' => [
+        'title' => 'Confirm Export',
+        'help' => 'The export will be prepared after you confirm. Your selected filters will be used.',
+        'submit' => 'Prepare Export',
+        'history' => 'Export History',
+    ],
+    'confirmation' => [
+        'title' => 'Confirm Export',
+        'help' => 'The export will be prepared after you confirm. Your selected filters will be used.',
+        'submit' => 'Prepare Export',
+        'history' => 'Export History',
+    ],
     'advanced' => [
         'enabled' => 'Yes', 'disabled' => 'No',
         'unresponded' => 'Not Responded',

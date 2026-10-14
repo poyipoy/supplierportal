@@ -5,7 +5,7 @@
 @section('content')
 @php
     $credentialErrors = $errors->getBag('credentials');
-    $initialTab = session('access_tab') ?? ($errors->hasAny(['email', 'password']) ? 'credentials' : 'key');
+    $initialTab = session('access_tab') ?? ($errors->hasAny(['reference', 'access_key']) ? 'key' : 'credentials');
     $emailError = $credentialErrors->first('email') ?: $errors->first('email');
     $passwordError = $errors->first('password');
 @endphp

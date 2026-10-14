@@ -4,6 +4,10 @@
 @section('page-heading', __('auth.login.help'))
 
 @section('content')
+@php
+    $supportWhatsapp ??= null;
+    $supportWhatsappUrl ??= null;
+@endphp
 <div class="tw-grid tw-min-w-0 tw-gap-5" data-password-assistance>
     <header>
         <h1 class="tw-m-0 tw-text-ui-xl tw-font-bold tw-text-on-surface">{{ __('auth.login.help') }}</h1>
@@ -36,7 +40,19 @@
             <p id="assistance-email" class="tw-m-0 tw-break-all tw-text-ui-sm">{{ $supportEmail }}</p>
             <x-ui.button type="button" variant="outline" size="sm" class="tw-justify-self-start" data-password-assistance-copy="assistance-email" data-copy-label="{{ __('auth.password_assistance.email_copy_label') }}">{{ __('auth.password_assistance.copy_email') }}</x-ui.button>
         </section>
-    @else
+    @endif
+
+    @if($supportWhatsapp && $supportWhatsappUrl)
+        <section aria-labelledby="support-whatsapp-heading" class="tw-min-w-0 tw-grid tw-gap-1.5">
+            <h2 id="support-whatsapp-heading" class="tw-m-0 tw-flex tw-items-center tw-gap-2 tw-text-ui-sm tw-font-semibold">
+                <x-ui.icon name="whatsapp" size="sm" class="tw-text-on-surface-variant" />
+                {{ __('auth.password_assistance.whatsapp') }}
+            </h2>
+            <a href="{{ $supportWhatsappUrl }}" target="_blank" rel="noopener noreferrer" class="ui-focus-ring tw-w-fit tw-rounded-ui-xs tw-text-ui-sm tw-font-semibold tw-text-primary">{{ $supportWhatsapp }}</a>
+        </section>
+    @endif
+
+    @if(!$supportEmail && !$supportWhatsapp)
         <p class="tw-m-0 tw-text-ui-sm tw-text-pretty">{{ __('auth.password_assistance.no_support') }}</p>
     @endif
 

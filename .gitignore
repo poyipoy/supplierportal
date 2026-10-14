@@ -1,6 +1,7 @@
 *.log
 *.patch
 *.diff
+*.zip
 Revise Portal/
 .DS_Store
 .env

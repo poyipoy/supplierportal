@@ -75,7 +75,10 @@ class LocalPoReferenceService
             ->when($authoritativeSchema, fn ($q) => $q->where('status', LocalPurchaseOrder::STATUS_OPEN), fn ($q) => $q->whereIn('status', [LocalPurchaseOrder::STATUS_OPEN, 'APPROVED']))
             ->when($authoritativeSchema, fn ($q) => $q->whereHas('goodsReceipts', fn ($gr) => $gr->where('status', LocalGoodsReceipt::STATUS_AVAILABLE)))
             ->when($query !== '', function ($q) use ($query) {
-                $q->where('po_number', 'like', "%{$query}%");
+                $search = '%'.addcslashes(trim($query), '%_').'%';
+                $q->where(function ($q) use ($search) {
+                    $q->where('po_number', 'like', $search)->orWhere('pr_number', 'like', $search);
+                });
             });
         $dbPos = $authoritativeSchema
             ? $dbQuery->with(['goodsReceipts' => fn ($q) => $q->where('status', LocalGoodsReceipt::STATUS_AVAILABLE)->orderBy('gr_date')])
@@ -93,6 +96,7 @@ class LocalPoReferenceService
 
                 $results[$po->po_number] = [
                     'po_number' => $po->po_number,
+                    'pr_number' => $po->pr_number,
                     'description' => $po->description ?? '',
                     'total_amount' => $poValue,
                     'formatted_total_amount' => 'Rp '.number_format($poValue, 0, ',', '.'),

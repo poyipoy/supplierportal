@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Events\AuthSecurityEvent;
 use App\Http\Controllers\Controller;
 use App\Services\Auth\SessionInventoryService;
+use App\Services\Auth\SessionRevocationService;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,6 +20,7 @@ class RevokeSessionController extends Controller
     public function __invoke(
         Request $request,
         SessionInventoryService $sessions,
+        SessionRevocationService $revocation,
     ): RedirectResponse {
         $validated = $request->validate([
             'session_token' => ['required', 'string', 'max:2048'],
@@ -37,6 +39,7 @@ class RevokeSessionController extends Controller
         $deleted = $sessions->revoke($request->user(), $sessionId);
 
         if ($deleted) {
+            $revocation->invalidateRememberTokens($request->user(), $request);
             event(new AuthSecurityEvent('session_revoked', $request->user(), metadata: ['reason' => 'manual_single_session']));
         }
 

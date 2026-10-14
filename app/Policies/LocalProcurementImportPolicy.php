@@ -22,4 +22,9 @@ class LocalProcurementImportPolicy
     {
         return $this->view($user, $import);
     }
+
+    public function revalidate(User $user, LocalProcurementImport $import): bool
+    {
+        return $this->view($user, $import);
+    }
 }

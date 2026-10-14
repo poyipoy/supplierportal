@@ -11,6 +11,7 @@ use App\Services\Auth\TwoFactorService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class AuthenticatedSessionController extends Controller
@@ -73,6 +74,15 @@ class AuthenticatedSessionController extends Controller
         $request->session()->invalidate();
 
         $request->session()->regenerateToken();
+
+        if (config('ui.auth_splash.enabled', false)) {
+            $request->session()->put('ui.auth_splash', [
+                'id' => (string) Str::uuid(),
+                'reason' => 'post-logout',
+                'issued_at' => now()->timestamp,
+                'target' => null,
+            ]);
+        }
 
         return redirect()->route('login');
     }

@@ -20,7 +20,6 @@ use App\Services\LocalInvoice\LocalGrReservationService;
 use App\Services\LocalInvoice\LocalProcurementMasterService;
 use App\Services\Payment\LocalInvoiceVoucherService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Tests\Support\NativeFileFixtures;
@@ -91,6 +90,7 @@ class FinanceDrpPaidTest extends TestCase
             'total_net_amount' => 1995000,
             'created_by' => $this->finance->id,
             'finalized_at' => now(),
+            'finalized_by' => $this->admin->id,
         ]);
 
         $batchPaid = PaymentBatch::create([
@@ -107,6 +107,8 @@ class FinanceDrpPaidTest extends TestCase
         // Default tab (unpaid) -> shows DRAFT & FINALIZED, excludes PAID
         $response = $this->actingAs($this->finance)->get(route('finance.drp.paid.index'));
         $response->assertOk();
+        $response->assertSee('data-tab-count="unpaid"', false);
+        $this->assertMatchesRegularExpression('/data-tab-count="unpaid"[^>]*>\s*2\s*</', $response->getContent());
         $response->assertSee('DRP-DRAFT-001');
         $response->assertSee('DRP-FIN-001');
         $response->assertDontSee('DRP-PAID-001');
@@ -165,6 +167,7 @@ class FinanceDrpPaidTest extends TestCase
             'total_net_amount' => 500000,
             'created_by' => $this->finance->id,
             'finalized_at' => now(),
+            'finalized_by' => $this->admin->id,
         ]);
 
         $group = $batch->groups()->create([
@@ -263,6 +266,7 @@ class FinanceDrpPaidTest extends TestCase
             'total_net_amount' => 1000,
             'created_by' => $this->finance->id,
             'finalized_at' => now(),
+            'finalized_by' => $this->admin->id,
         ]);
 
         $group = $batch->groups()->create([
@@ -378,6 +382,7 @@ class FinanceDrpPaidTest extends TestCase
             'total_net_amount' => 1000,
             'created_by' => $this->finance->id,
             'finalized_at' => now(),
+            'finalized_by' => $this->admin->id,
         ]);
 
         $group = $batch->groups()->create([
@@ -479,6 +484,7 @@ class FinanceDrpPaidTest extends TestCase
             'status' => PaymentBatch::STATUS_FINALIZED,
             'created_by' => $this->finance->id,
             'finalized_at' => now(),
+            'finalized_by' => $this->admin->id,
         ]);
 
         $group = $batch->groups()->create([
@@ -541,6 +547,7 @@ class FinanceDrpPaidTest extends TestCase
             'status' => PaymentBatch::STATUS_FINALIZED,
             'created_by' => $this->finance->id,
             'finalized_at' => now(),
+            'finalized_by' => $this->admin->id,
         ]);
 
         $resMissing = $this->actingAs($this->finance)->post(route('finance.drp.paid.mark-paid', $batchFin), [
@@ -602,6 +609,7 @@ class FinanceDrpPaidTest extends TestCase
             'status' => PaymentBatch::STATUS_FINALIZED,
             'created_by' => $this->finance->id,
             'finalized_at' => now(),
+            'finalized_by' => $this->admin->id,
         ]);
 
         $group = $batch->groups()->create([
@@ -672,6 +680,7 @@ class FinanceDrpPaidTest extends TestCase
             'total_net_amount' => 300000,
             'created_by' => $this->finance->id,
             'finalized_at' => now(),
+            'finalized_by' => $this->admin->id,
         ]);
 
         // 3. Cancelled batch: should be excluded
@@ -698,6 +707,7 @@ class FinanceDrpPaidTest extends TestCase
 
         $response = $this->actingAs($this->finance)->get(route('finance.drp.paid.index'));
         $response->assertOk();
+        $this->assertMatchesRegularExpression('/data-tab-count="unpaid"[^>]*>\s*1\s*</', $response->getContent());
 
         // Metrics passed to view
         $metrics = $response->viewData('metrics');
@@ -870,6 +880,7 @@ class FinanceDrpPaidTest extends TestCase
             'status' => PaymentBatch::STATUS_FINALIZED,
             'created_by' => $this->finance->id,
             'finalized_at' => now(),
+            'finalized_by' => $this->admin->id,
         ]);
 
         $group = $batch->groups()->create([
@@ -990,6 +1001,7 @@ class FinanceDrpPaidTest extends TestCase
             'total_net_amount' => 500,
             'created_by' => $this->finance->id,
             'finalized_at' => now(),
+            'finalized_by' => $this->admin->id,
         ]);
 
         $group = $batch->groups()->create([
@@ -1144,6 +1156,7 @@ class FinanceDrpPaidTest extends TestCase
             'total_net_amount' => 1000,
             'created_by' => $this->finance->id,
             'finalized_at' => now(),
+            'finalized_by' => $this->admin->id,
         ]);
         $grp1 = $batch1->groups()->create([
             'payee_type' => 'supplier',

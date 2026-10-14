@@ -204,6 +204,104 @@ test('the DOM overlay is built at boot and activation reuses it', () => {
     assert.equal(doc.body.children.length, 1, 'activation reuses the mounted overlay');
 });
 
+test('splash owns presentation while loader tokens remain intact, then pending work takes over', () => {
+    const doc = fakeDocument();
+    const listeners = new Map();
+    const actions = [];
+    let waiting = true;
+    let visual = true;
+    doc.defaultView = {
+        AdasiAuthSplash: {
+            isWaiting: () => waiting,
+            hasVisual: () => visual,
+            removeVisual: () => { visual = false; actions.push('splash-removed'); },
+        },
+        addEventListener: (name, callback) => listeners.set(name, callback),
+    };
+    const timers = fakeTimers();
+    const view = createDomView(doc, key => key);
+    const loader = createLoaderController({ view, timers });
+    const token = loader.show();
+    timers.advance(SHOW_DELAY);
+    const overlay = doc.body.children[0];
+    assert.equal(loader.pendingCount(), 1);
+    assert.equal(overlay.classList.contains('active'), false);
+    assert.equal(doc.body.attributes['aria-busy'], undefined);
+    waiting = false;
+    listeners.get('adasi:auth-splash-released')();
+    assert.deepEqual(actions, ['splash-removed']);
+    assert.equal(overlay.classList.contains('active'), true);
+    assert.equal(loader.pendingCount(), 1);
+    loader.hide(token, true);
+    assert.equal(overlay.classList.contains('active'), false);
+});
+
+test('requests completed under splash never flash or clear state they did not acquire', () => {
+    const doc = fakeDocument();
+    let released;
+    doc.body.setAttribute('aria-busy', 'original');
+    doc.defaultView = {
+        AdasiAuthSplash: { isWaiting: () => true, hasVisual: () => true, removeVisual() { throw Error('must not hand off completed work'); } },
+        addEventListener: (name, callback) => { if (name === 'adasi:auth-splash-released') released = callback; },
+    };
+    const view = createDomView(doc, key => key);
+    view.activate();
+    view.showSlow();
+    view.deactivate();
+    released();
+    assert.equal(doc.body.attributes['aria-busy'], 'original');
+    assert.equal(doc.body.children[0].classList.contains('active'), false);
+});
+
+test('foreground loader activation during cosmetic fade removes splash first', () => {
+    const doc = fakeDocument();
+    let removed = false;
+    doc.defaultView = {
+        AdasiAuthSplash: { isWaiting: () => false, hasVisual: () => true, removeVisual: () => { removed = true; } },
+        addEventListener() {},
+    };
+    const view = createDomView(doc, key => key);
+    view.activate();
+    assert.equal(removed, true);
+    assert.equal(doc.body.children[0].classList.contains('active'), true);
+});
+
+test('completed suppressed work does not flash during minimum visibility, and new work still appears', () => {
+    const doc = fakeDocument();
+    let waiting = true;
+    let released;
+    doc.defaultView = {
+        AdasiAuthSplash: { isWaiting: () => waiting, hasVisual: () => false },
+        addEventListener: (name, callback) => { if (name === 'adasi:auth-splash-released') released = callback; },
+    };
+    const view = createDomView(doc, key => key);
+    const timers = fakeTimers();
+    const loader = createLoaderController({ view, timers });
+    view.bind(() => loader.reset(), () => loader.pendingCount() > 0);
+    const first = loader.show();
+    timers.advance(200);
+    loader.hide(first);
+    waiting = false;
+    released();
+    assert.equal(doc.body.children[0].classList.contains('active'), false);
+    const second = loader.show();
+    assert.equal(doc.body.children[0].classList.contains('active'), true);
+    loader.hide(second, true);
+});
+
+test('loader handoff preserves a closed sidebar inert state and preexisting body busy state', () => {
+    const doc = fakeDocument();
+    const sidebar = { inert: true };
+    doc.querySelectorAll = () => [sidebar];
+    doc.body.setAttribute('aria-busy', 'false');
+    const view = createDomView(doc, key => key);
+    view.activate();
+    assert.equal(doc.body.attributes['aria-busy'], 'true');
+    view.deactivate();
+    assert.equal(sidebar.inert, true, 'a closed mobile sidebar must stay inaccessible after foreground work settles');
+    assert.equal(doc.body.attributes['aria-busy'], 'false');
+});
+
 /** Just enough DOM for createDomView: nodes are plain objects, unknown queries return an inert stub. */
 function fakeDocument() {
     const node = (tag) => ({
@@ -215,8 +313,14 @@ function fakeDocument() {
         hidden: false,
         children: [],
         attributes: {},
-        classList: { add() {}, remove() {} },
+        classList: {
+            names: new Set(),
+            add(name) { this.names.add(name); },
+            remove(name) { this.names.delete(name); },
+            contains(name) { return this.names.has(name); },
+        },
         setAttribute(name, value) { this.attributes[name] = String(value); },
+        getAttribute(name) { return this.attributes[name] ?? null; },
         removeAttribute(name) { delete this.attributes[name]; },
         addEventListener() {},
         appendChild(child) { this.children.push(child); return child; },

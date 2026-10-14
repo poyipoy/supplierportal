@@ -14,6 +14,7 @@ use App\Models\ShipmentDocument;
 use App\Models\SupplierAudit;
 use App\Models\SupplierOverpaymentRefund;
 use App\Models\User;
+use Illuminate\Support\Facades\Gate;
 
 class AttachmentPolicy
 {
@@ -24,18 +25,33 @@ class AttachmentPolicy
      */
     public function view(User $user, Attachment $attachment): bool
     {
+        $attachable = $attachment->attachable;
+
+        if (! $attachable) {
+            return false;
+        }
+
+        if ($attachable instanceof Message) {
+            return $attachable->conversation !== null
+                && $attachable->conversation->isMember($user->id);
+        }
+
+        if ($attachable instanceof SupplierAudit) {
+            if (! Gate::forUser($user)->allows('view', $attachable)) {
+                return false;
+            }
+
+            return $user->role !== 'supplier'
+                || ($attachable->status === SupplierAudit::STATUS_RESULT_PUBLISHED
+                    && (int) $attachable->resultAttachments()->value('id') === (int) $attachment->id);
+        }
+
         // Admin & Purchasing: akses penuh
         if ($user->role === 'admin') {
             return true;
         }
         if ($user->role === 'purchasing' && $attachment->attachable_type !== SupplierOverpaymentRefund::class) {
             return true;
-        }
-
-        $attachable = $attachment->attachable;
-
-        if (! $attachable) {
-            return false;
         }
 
         $type = $attachment->attachable_type;
@@ -74,18 +90,8 @@ class AttachmentPolicy
                 ShipmentDocument::class => $attachable->shipment
                     && (int) $attachable->shipment->supplier_id === (int) $user->id,
 
-                Message::class => $attachable->conversation
-                    && $attachable->conversation->isMember($user->id),
-
-                SupplierOverpaymentRefund::class => (int) $attachable->supplier_id === (int) $user->id,
-
-                LocalPurchaseOrder::class => (int) $attachable->supplier_id === (int) $user->id,
-
-                // Supplier hanya boleh mengunduh file hasil terbaru dari audit miliknya (D9).
-                SupplierAudit::class => (int) $attachable->supplier_id === (int) $user->id
-                    && $user->hasSupplierScope('local')
-                    && $attachable->status === SupplierAudit::STATUS_RESULT_PUBLISHED
-                    && (int) $attachable->resultAttachments()->value('id') === (int) $attachment->id,
+                SupplierOverpaymentRefund::class, LocalPurchaseOrder::class => $user->hasSupplierScope('local')
+                    && (int) $attachable->supplier_id === (int) $user->id,
 
                 default => false,
             };

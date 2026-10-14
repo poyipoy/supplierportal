@@ -69,4 +69,26 @@ class BoundedCsvReaderTest extends TestCase
             fclose($stream);
         }
     }
+
+    public function test_default_cell_budget_rejects_large_cells_inside_small_records(): void
+    {
+        $stream = $this->stream('"'.str_repeat('a', 65537).'",b');
+        try {
+            $this->expectException(ValidationException::class);
+            (new BoundedCsvReader)->read($stream, ',');
+        } finally {
+            fclose($stream);
+        }
+    }
+
+    public function test_default_record_budget_rejects_large_multiline_records(): void
+    {
+        $stream = $this->stream('"'.str_repeat("row\n", 262145).'",b');
+        try {
+            $this->expectException(ValidationException::class);
+            (new BoundedCsvReader)->read($stream, ',');
+        } finally {
+            fclose($stream);
+        }
+    }
 }

@@ -55,7 +55,7 @@
                 <div class="company-name">PT. ASTRA DAIDO STEEL INDONESIA</div>
                 <div class="company-dept">{{ __('finance.copy_review.finance_department') }}</div>
                 <div class="company-address">Kawasan Industri Delta Silicon 8, Jl. Albasia Raya K. 07 No.003 Lippo Cikarang, Cikarang Pusat - Bekasi </div>
-                <div class="company-contact">{{ __('documents.copy.phone') }}: 021-39506699 &middot; {{ __('documents.copy.email') }}: finance@adasi.co.id &middot; {{ __('documents.copy.website') }}: www.astra-daido.co.id</div>
+                <div class="company-contact">{{ __('documents.copy.phone') }}: 021-39506699 &middot; {{ __('documents.copy.email') }}: {{ config('finance.adasi_refund_account.finance_email') ?: config('support.supplier_email') }} &middot; {{ __('documents.copy.website') }}: www.astra-daido.co.id</div>
             </td>
             <td class="kop-spacer-cell"></td>
         </tr>

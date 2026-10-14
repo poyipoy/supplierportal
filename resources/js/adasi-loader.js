@@ -62,6 +62,7 @@ export function createLoaderController({ view, timers }) {
             seq += 1;
             pending.add(seq);
             hideTimer = clear(hideTimer);
+            if (active) view.reconcile?.();
             if (!active && showTimer === null) {
                 showTimer = timers.setTimeout(activate, SHOW_DELAY);
             }
@@ -107,6 +108,10 @@ export function createDomView(doc = document, translate = t) {
     let dismiss = null;
     let previousFocus = null;
     let inerted = [];
+    let previousBusy = null;
+    let wantsActive = false;
+    let wantsSlow = false;
+    let presented = false;
 
     const build = (onDismiss) => {
         overlay = doc.createElement('div');
@@ -125,9 +130,10 @@ export function createDomView(doc = document, translate = t) {
         doc.body.appendChild(overlay);
     };
 
-    return {
-        bind(onDismiss) {
+    const view = {
+        bind(onDismiss, hasPending = () => true) {
             this.onDismiss = onDismiss;
+            this.hasPending = hasPending;
         },
         /**
          * Built at boot, not on first display: the logo is a CSS background, which the browser only requests
@@ -137,29 +143,46 @@ export function createDomView(doc = document, translate = t) {
             if (!overlay && doc.body) build(() => this.onDismiss?.());
         },
         activate() {
+            wantsActive = true;
+            const splash = doc.defaultView?.AdasiAuthSplash;
             this.mount();
+            if (splash?.isWaiting()) return;
+            if (splash?.hasVisual()) splash.removeVisual('loader-handoff');
+            if (presented) return;
+            presented = true;
             text.textContent = translate('js.loader.loading');
             dismiss.hidden = true;
             previousFocus = doc.activeElement;
-            inerted = Array.from(doc.querySelectorAll(INERT_SELECTOR));
-            inerted.forEach((node) => { node.inert = true; });
+            inerted = Array.from(doc.querySelectorAll(INERT_SELECTOR), (node) => ({ node, wasInert: node.inert }));
+            inerted.forEach(({ node }) => { node.inert = true; });
+            previousBusy = doc.body.getAttribute?.('aria-busy') ?? null;
             doc.body.setAttribute('aria-busy', 'true');
             overlay.classList.add('active');
             overlay.querySelector('.adasi-loader-card').focus({ preventScroll: true });
+            if (wantsSlow) this.showSlow();
+        },
+        reconcile() {
+            if (wantsActive && this.hasPending?.() !== false) this.activate();
         },
         showSlow() {
-            if (!overlay) return;
+            wantsSlow = true;
+            if (!overlay || !presented) return;
             text.textContent = translate('js.loader.slow');
             dismiss.textContent = translate('js.loader.dismiss');
             dismiss.hidden = false;
             dismiss.focus({ preventScroll: true });
         },
         deactivate() {
-            if (!overlay) return;
+            wantsActive = false;
+            wantsSlow = false;
+            if (!overlay || !presented) return;
+            presented = false;
             overlay.classList.remove('active');
-            inerted.forEach((node) => { node.inert = false; });
+            inerted.forEach(({ node, wasInert }) => { node.inert = wasInert; });
             inerted = [];
-            doc.body.removeAttribute('aria-busy');
+            if (previousBusy === null) doc.body.removeAttribute('aria-busy');
+            else doc.body.setAttribute('aria-busy', previousBusy);
+            previousBusy = null;
             const target = previousFocus;
             previousFocus = null;
             if (target && target.isConnected && typeof target.focus === 'function') {
@@ -167,6 +190,14 @@ export function createDomView(doc = document, translate = t) {
             }
         },
     };
+
+    // Tokens continue settling while the auth splash owns interaction. Only
+    // pending foreground work takes presentation after its owner has released.
+    doc.defaultView?.addEventListener('adasi:auth-splash-released', () => {
+        view.reconcile();
+    });
+
+    return view;
 }
 
 function setTableBusy(wrapper, busy) {
@@ -209,7 +240,7 @@ export function bootAdasiLoader(win = globalThis.window) {
             now: () => win.performance.now(),
         },
     });
-    view.bind(() => loader.reset());
+    view.bind(() => loader.reset(), () => loader.pendingCount() > 0);
     view.mount();
     win.AdasiLoader = loader;
 

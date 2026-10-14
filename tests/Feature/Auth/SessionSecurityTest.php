@@ -8,6 +8,7 @@ use DOMDocument;
 use DOMXPath;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
@@ -123,7 +124,7 @@ class SessionSecurityTest extends TestCase
         $target = User::factory()->create(['role' => 'purchasing', 'is_active' => true]);
         $oldVersion = $target->auth_session_version;
 
-        $this->actingAs($admin)->put(route('admin.users.update', $target), [
+        $this->actingAs($admin)->withSession(['auth.password_confirmed_at' => now()->timestamp])->put(route('admin.users.update', $target), [
             'name' => $target->name,
             'email' => $target->email,
             'role' => 'purchasing',
@@ -150,7 +151,7 @@ class SessionSecurityTest extends TestCase
         $target = User::factory()->create(['role' => 'purchasing']);
         $oldVersion = $target->auth_session_version;
 
-        $this->actingAs($admin)->put(route('admin.users.update', $target), [
+        $this->actingAs($admin)->withSession(['auth.password_confirmed_at' => now()->timestamp])->put(route('admin.users.update', $target), [
             'name' => $target->name,
             'email' => $target->email,
             'role' => 'qc',
@@ -273,6 +274,95 @@ class SessionSecurityTest extends TestCase
         ]);
     }
 
+    public function test_revoked_remember_me_device_cannot_sign_back_in_with_its_recaller_cookie(): void
+    {
+        config()->set('session.driver', 'database');
+        $user = User::factory()->create(['remember_token' => 'device-b-remember-token']);
+        [$recallerName, $deviceBRecaller] = $this->recallerCookie($user, 'device-b-remember-token');
+        $this->insertSession($user, 'device-b-session');
+
+        $this->actingAs($user)->from('/profile/security')
+            ->delete(route('profile.sessions.revoke'), ['session_token' => Crypt::encryptString('device-b-session')])
+            ->assertSessionHas('status', 'session-revoked');
+
+        $this->asFreshDevice()
+            ->withCookie($recallerName, $deviceBRecaller)
+            ->get('/dashboard')
+            ->assertRedirect(route('login'));
+
+        $this->assertGuest();
+        $this->assertNotSame('device-b-remember-token', $user->fresh()->remember_token);
+    }
+
+    public function test_revoking_another_session_keeps_the_current_devices_remember_cookie_valid(): void
+    {
+        config()->set('session.driver', 'database');
+        $user = User::factory()->create(['remember_token' => 'shared-remember-token']);
+        [$recallerName, $currentRecaller] = $this->recallerCookie($user, 'shared-remember-token');
+        $this->insertSession($user, 'other-device-session');
+
+        $response = $this->actingAs($user)->from('/profile/security')
+            ->withCookie($recallerName, $currentRecaller)
+            ->delete(route('profile.sessions.revoke'), ['session_token' => Crypt::encryptString('other-device-session')])
+            ->assertSessionHas('status', 'session-revoked');
+
+        $rotatedToken = $user->fresh()->remember_token;
+        [, $expectedRecaller] = $this->recallerCookie($user, $rotatedToken);
+
+        $this->assertNotSame('shared-remember-token', $rotatedToken);
+        $response->assertCookie($recallerName, $expectedRecaller);
+
+        $this->asFreshDevice()
+            ->withCookie($recallerName, $expectedRecaller)
+            ->get(route('profile.edit'))
+            ->assertOk();
+
+        $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_concurrent_session_eviction_also_invalidates_evicted_remember_cookies(): void
+    {
+        config()->set('session.driver', 'database');
+        config()->set('auth_security.session.max_concurrent_sessions', 1);
+        Notification::fake();
+        $user = User::factory()->create(['remember_token' => 'evicted-device-token']);
+        [$recallerName, $evictedRecaller] = $this->recallerCookie($user, 'evicted-device-token');
+        $this->insertSession($user, 'evicted-device-session');
+
+        $login = $this->post('/login', ['email' => $user->email, 'password' => 'password', 'remember' => '1'])
+            ->assertRedirect(route('dashboard', absolute: false));
+
+        $this->assertDatabaseMissing('sessions', ['id' => 'evicted-device-session']);
+        $rotatedToken = $user->fresh()->remember_token;
+        $this->assertNotSame('evicted-device-token', $rotatedToken);
+        [, $expectedRecaller] = $this->recallerCookie($user, $rotatedToken);
+        $login->assertCookie($recallerName, $expectedRecaller);
+
+        $this->asFreshDevice()
+            ->withCookie($recallerName, $evictedRecaller)
+            ->get('/dashboard')
+            ->assertRedirect(route('login'));
+
+        $this->assertGuest();
+    }
+
+    public function test_logout_other_devices_invalidates_existing_remember_cookies(): void
+    {
+        $user = User::factory()->create(['remember_token' => 'other-device-token']);
+        [$recallerName, $otherRecaller] = $this->recallerCookie($user, 'other-device-token');
+
+        $this->actingAs($user)
+            ->post(route('profile.logout-other-devices'), ['password' => 'password'])
+            ->assertRedirect();
+
+        $this->asFreshDevice()
+            ->withCookie($recallerName, $otherRecaller)
+            ->get('/dashboard')
+            ->assertRedirect(route('login'));
+
+        $this->assertGuest();
+    }
+
     public function test_user_cannot_revoke_another_users_session(): void
     {
         config()->set('session.driver', 'database');
@@ -288,7 +378,7 @@ class SessionSecurityTest extends TestCase
             'last_activity' => now()->timestamp,
         ]);
 
-        $this->actingAs($actor)
+        $this->actingAs($actor)->withSession(['auth.password_confirmed_at' => now()->timestamp])
             ->delete(route('profile.sessions.revoke'), ['session_token' => Crypt::encryptString('other-users-session')])
             ->assertRedirect()
             ->assertSessionHas('status', 'session-not-found');
@@ -435,6 +525,33 @@ class SessionSecurityTest extends TestCase
             ->assertRedirect('/profile/security')->assertSessionHas('status', 'session-revoked');
         $this->assertDatabaseMissing('sessions', ['id' => $rawId]);
         $this->assertAuthenticatedAs($user);
+    }
+
+    /**
+     * @return array{0: string, 1: string} recaller cookie name and plaintext value
+     */
+    private function recallerCookie(User $user, string $rememberToken): array
+    {
+        $guard = Auth::guard('web');
+
+        return [
+            $guard->getRecallerName(),
+            $user->getAuthIdentifier().'|'.$rememberToken.'|'.$guard->hashPasswordForCookie($user->fresh()->getAuthPassword()),
+        ];
+    }
+
+    /**
+     * Drop the in-memory guard, session, and cookies so the next request
+     * behaves like a different browser that only holds its own cookies.
+     */
+    private function asFreshDevice(): static
+    {
+        Auth::forgetGuards();
+        $this->flushSession();
+        $this->defaultCookies = [];
+        $this->unencryptedCookies = [];
+
+        return $this;
     }
 
     private function insertSession(User $user, string $id): void

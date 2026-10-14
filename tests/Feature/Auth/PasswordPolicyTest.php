@@ -25,7 +25,7 @@ class PasswordPolicyTest extends TestCase
     {
         $admin = User::factory()->create(['role' => 'admin']);
 
-        $this->actingAs($admin)->post(route('admin.users.store'), [
+        $this->actingAs($admin)->withSession(['auth.password_confirmed_at' => now()->timestamp])->post(route('admin.users.store'), [
             'name' => 'Weak User',
             'email' => 'weak-user@example.test',
             'password' => 'weakpassword',
@@ -35,7 +35,7 @@ class PasswordPolicyTest extends TestCase
         ])->assertSessionHasErrors('password');
 
         $target = User::factory()->create(['role' => 'purchasing']);
-        $this->actingAs($admin)->put(route('admin.users.update', $target), [
+        $this->actingAs($admin)->withSession(['auth.password_confirmed_at' => now()->timestamp])->put(route('admin.users.update', $target), [
             'name' => $target->name,
             'email' => $target->email,
             'password' => 'weakpassword',

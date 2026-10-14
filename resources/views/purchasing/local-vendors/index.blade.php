@@ -41,6 +41,7 @@
                                 </span>
                             </div>
 
+                            <x-finance.vendor-bank-proposal :change-request="$req" />
                             <div class="tw-flex tw-items-center tw-gap-2">
                                 <form method="POST" action="{{ route('purchasing.local-vendors.change-requests.approve', $req) }}" onsubmit="event.preventDefault(); window.AdasiAlert.confirm({title: {{ json_encode(__('local_procurement.vendor_ui.approve_title'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}, text: {{ json_encode(__('local_procurement.vendor_ui.approve_help'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}, confirmText: {{ json_encode(__('local_procurement.vendor_ui.approve_yes'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}, cancelText: {{ json_encode(__('local_invoice.actions.cancel'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}}).then(r => { if (r.isConfirmed) this.submit(); });">
                                     @csrf

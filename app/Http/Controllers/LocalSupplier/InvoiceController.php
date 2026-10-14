@@ -43,7 +43,12 @@ class InvoiceController extends Controller
             $orders = LocalPurchaseOrder::where('supplier_id', $request->user()->id)
                 ->where('status', LocalPurchaseOrder::STATUS_OPEN)
                 ->whereHas('goodsReceipts', fn ($q) => $q->where('status', LocalGoodsReceipt::STATUS_AVAILABLE))
-                ->when($query !== '', fn ($q) => $q->where('po_number', 'like', '%'.addcslashes($query, '%_').'%'))
+                ->when($query !== '', function ($q) use ($query) {
+                    $search = '%'.addcslashes(trim($query), '%_').'%';
+                    $q->where(function ($q) use ($search) {
+                        $q->where('po_number', 'like', $search)->orWhere('pr_number', 'like', $search);
+                    });
+                })
                 ->with(['goodsReceipts' => fn ($q) => $q->where('status', LocalGoodsReceipt::STATUS_AVAILABLE)->orderBy('gr_date')])
                 ->latest('id')->limit(10)->get();
 
@@ -56,6 +61,7 @@ class InvoiceController extends Controller
                 return [
                     'id' => $po->id,
                     'po_number' => $po->po_number,
+                    'pr_number' => $po->pr_number,
                     'description' => $po->description,
                     'total_amount' => (float) $po->total_amount,
                     'formatted_total_amount' => 'Rp '.number_format($po->total_amount, 0, ',', '.'),
@@ -119,7 +125,7 @@ class InvoiceController extends Controller
     public function revision(LocalInvoice $invoice)
     {
         Gate::authorize('resubmit', $invoice);
-        abort_unless($invoice->status === 'NEED_REVISION', 409);
+        abort_unless(in_array($invoice->status, ['NEED_REVISION', 'CANCELLED'], true), 409);
         $invoice->load(['statusHistories', 'goodsReceiptHistories.goodsReceipt']);
 
         return view('local-supplier.invoices.revision', ['invoice' => $invoice, 'purchaseOrders' => $this->eligiblePurchaseOrders($invoice)]);
@@ -165,7 +171,7 @@ class InvoiceController extends Controller
             ->where(function ($q) use ($invoice) {
                 $q->where('status', LocalPurchaseOrder::STATUS_OPEN);
                 if ($invoice?->local_purchase_order_id) {
-                    $q->orWhereKey($invoice->local_purchase_order_id);
+                    $q->orWhere('id', $invoice->local_purchase_order_id);
                 }
             })
             ->whereHas('goodsReceipts', fn ($q) => $q->where('status', LocalGoodsReceipt::STATUS_AVAILABLE)

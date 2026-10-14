@@ -15,6 +15,7 @@ class CompleteLoginService
     public function __construct(
         private readonly KnownDeviceService $knownDevices,
         private readonly SessionInventoryService $sessions,
+        private readonly SessionRevocationService $revocation,
         private readonly NotificationService $notifications,
     ) {}
 
@@ -37,6 +38,7 @@ class CompleteLoginService
         );
 
         if ($evicted > 0) {
+            $this->revocation->invalidateRememberTokens($user, $request);
             event(new AuthSecurityEvent('concurrent_session_limit_enforced', $user, metadata: ['count' => $evicted]));
         }
 
@@ -54,6 +56,15 @@ class CompleteLoginService
                 ['domain' => NotificationDomain::GLOBAL],
             );
 
+        }
+
+        if (config('ui.auth_splash.enabled', false)) {
+            $request->session()->put('ui.auth_splash', [
+                'id' => (string) Str::uuid(),
+                'reason' => 'post-login',
+                'issued_at' => now()->timestamp,
+                'target' => null,
+            ]);
         }
     }
 }

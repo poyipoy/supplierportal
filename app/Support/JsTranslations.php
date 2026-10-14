@@ -13,7 +13,11 @@ final class JsTranslations
             $english = trans($domain, [], 'en');
             $current = trans($domain, [], $locale);
             if (is_array($english)) {
-                self::flatten($domain, array_replace_recursive($english, is_array($current) ? $current : []), $messages);
+                $values = array_replace_recursive($english, is_array($current) ? $current : []);
+                if ($domain === 'js') {
+                    $values = array_filter($values, fn ($key) => ! str_starts_with($key, 'local_import.'), ARRAY_FILTER_USE_KEY);
+                }
+                self::flatten($domain, $values, $messages);
             }
         }
         foreach (['purchasing', 'supplier', 'shipments'] as $domain) {
@@ -25,6 +29,18 @@ final class JsTranslations
         }
 
         return ['locale' => $locale, 'messages' => $messages];
+    }
+
+    /** Import-only copy is delivered once on the import page, outside the shared dictionary. */
+    public static function localImportPayload(): array
+    {
+        $english = trans('js', [], 'en');
+        $current = trans('js');
+        $values = array_replace_recursive(is_array($english) ? $english : [], is_array($current) ? $current : []);
+        $messages = [];
+        self::flatten('js', array_filter($values, fn ($key) => str_starts_with($key, 'local_import.'), ARRAY_FILTER_USE_KEY), $messages);
+
+        return $messages;
     }
 
     private static function flatten(string $prefix, array $values, array &$messages): void

@@ -119,6 +119,7 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
             'batch_number' => 'DRP-OP-'.uniqid(),
             'batch_type' => PaymentBatch::TYPE_SUPPLIER,
             'status' => PaymentBatch::STATUS_FINALIZED,
+            'finalized_by' => User::factory()->create(['role' => 'finance'])->id,
             'created_by' => $this->finance->id,
         ]);
         $group = $batch->groups()->create([
@@ -306,6 +307,7 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
             'batch_number' => 'DRP-OP-2',
             'batch_type' => PaymentBatch::TYPE_SUPPLIER,
             'status' => PaymentBatch::STATUS_FINALIZED,
+            'finalized_by' => User::factory()->create(['role' => 'finance'])->id,
             'created_by' => $this->finance->id,
         ]);
         $group = $batch->groups()->create([
@@ -452,6 +454,7 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
             'batch_number' => 'DRP-FLT-'.uniqid(),
             'batch_type' => PaymentBatch::TYPE_SUPPLIER,
             'status' => PaymentBatch::STATUS_FINALIZED,
+            'finalized_by' => User::factory()->create(['role' => 'finance'])->id,
             'created_by' => $this->finance->id,
         ]);
         $group = $batch->groups()->create([

@@ -20,10 +20,16 @@ class LocalInvoiceVerification extends Model
 
     protected $guarded = ['id'];
 
+    protected static function booted(): void
+    {
+        static::creating(fn (LocalInvoiceVerification $verification) => $verification->actor_tracking_required = true);
+    }
+
     protected function casts(): array
     {
         return [
             'revision_number' => 'integer',
+            'actor_tracking_required' => 'boolean',
             'submitted_ppn' => 'decimal:2',
             'verified_ppn' => 'decimal:2',
             'pph_23_applicable' => 'boolean',

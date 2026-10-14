@@ -43,11 +43,11 @@
 
         <x-slot:actions>
             {{-- Quick action for Supplier on Revision --}}
-            @if($invoice->status === 'NEED_REVISION' && auth()->user()->isSupplier())
+            @if(in_array($invoice->status, ['NEED_REVISION', 'CANCELLED'], true) && auth()->user()->isSupplier())
                 @can('resubmit', $invoice)
                     <x-ui.button :href="route('local-supplier.invoices.revision', $invoice)" variant="primary">
                         <x-ui.icon name="file-edit" size="sm" />
-                        <span>{{ __('local_invoice.detail.resubmit') }}</span>
+                        <span>{{ $invoice->status === 'CANCELLED' ? __('local_invoice.recovery.action') : __('local_invoice.detail.resubmit') }}</span>
                     </x-ui.button>
                 @endcan
             @endif
@@ -156,7 +156,7 @@
             $adasiBank = config('finance.adasi_refund_account.bank_name', 'Bank Central Asia (BCA)');
             $adasiAccNo = config('finance.adasi_refund_account.account_number', '123-456-7890');
             $adasiAccHolder = config('finance.adasi_refund_account.account_holder', 'PT Astra Daido Steel Indonesia');
-            $adasiFinanceContact = config('finance.adasi_refund_account.finance_contact', 'finance@adasi.co.id');
+            $adasiFinanceContact = config('finance.adasi_refund_account.finance_contact', 'raihan.ramadhan@astra-daido.co.id');
             $adasiFinanceEmail = config('finance.adasi_refund_account.finance_email');
             if (empty($adasiFinanceEmail) && preg_match('/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/', (string) $adasiFinanceContact, $emailMatches)) {
                 $adasiFinanceEmail = $emailMatches[0];

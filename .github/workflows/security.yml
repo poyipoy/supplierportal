@@ -1,0 +1,25 @@
+name: Security checks
+
+on:
+  pull_request:
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  tracked-artifacts:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject archives and private application data
+        run: php scripts/check-tracked-artifacts.php
+
+  dependencies:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Audit locked PHP dependencies
+        run: composer audit --locked --no-interaction
+      - name: Audit locked JavaScript dependencies
+        run: npm audit --package-lock-only

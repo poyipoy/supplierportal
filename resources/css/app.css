@@ -2,6 +2,45 @@
 @tailwind components;
 @tailwind utilities;
 
+.gr-invoice-link { display: inline-flex; align-items: flex-start; gap: 0.5rem; max-width: 100%; min-width: 0; border-radius: var(--md-shape-sm); color: var(--md-on-surface); text-decoration: none !important; }
+.gr-invoice-link > .ui-icon { color: var(--ui-primary-text); }
+.gr-invoice-link__number { display: block; font-weight: 600; line-height: 1.45; overflow-wrap: anywhere; }
+.gr-invoice-link__action { display: inline-flex; align-items: center; gap: 0.25rem; margin-top: 0.125rem; color: var(--ui-primary-text); font-size: var(--ui-font-size-xs, 0.75rem); line-height: 1.5; }
+.gr-invoice-link:hover .gr-invoice-link__number { color: var(--ui-primary-text); }
+.gr-invoice-link:hover .gr-invoice-link__action { text-decoration: underline; text-underline-offset: 0.2em; }
+
+.local-import-modal .btn-close, .local-po-gr-modal .btn-close { width: 2.5rem; height: 2.5rem; padding: 0; background-size: 1rem; }
+:root[data-theme="dark"] .local-import-modal .btn-close,
+:root[data-theme="dark"] .local-po-gr-modal .btn-close { filter: invert(1); }
+.local-import-progress-track { height: 4px; overflow: hidden; border-radius: 2px; background: var(--md-surface-container-high); margin-top: 6px; }
+.local-import-progress-fill { display: block; height: 100%; background: var(--md-primary); transition: width 180ms linear; }
+.local-import-progress-fill.is-indeterminate { animation: local-import-progress 1.4s linear infinite; }
+.local-import-workflow [aria-current="step"] { color: var(--ui-primary-text); font-weight: 600; }
+.local-import-modal .modal-footer { flex-wrap: wrap; gap: 0.5rem; }
+.local-import-modal .modal-footer .ui-button,
+.local-import-modal .modal-footer > button,
+.local-import-modal [data-recovery-refresh] { min-height: 44px; }
+.local-import-modal .modal-body { min-width: 0; }
+.local-import-modal .local-import-review-summary { border-left: 3px solid var(--md-primary); }
+.local-import-modal .local-import-recheck.is-primary { background: var(--md-primary); color: var(--md-on-primary); border-color: var(--md-primary); }
+.local-import-modal .table { --bs-table-color: var(--md-on-surface); --bs-table-bg: transparent; --bs-table-striped-color: var(--md-on-surface); --bs-table-striped-bg: var(--md-surface-container-low); --bs-table-hover-color: var(--md-on-surface); --bs-table-hover-bg: var(--md-surface-container-high); }
+.local-import-modal .table thead th { color: var(--md-on-surface); background: var(--md-surface-container-high); }
+.local-import-modal [data-recovery-list] li { min-width: 0; }
+.local-import-modal .local-import-preview-metrics { border: 0; border-bottom: 1px solid var(--md-outline-variant); border-radius: 0; padding: 0.5rem 0; }
+@media (max-width: 640px) {
+    .local-import-modal .local-import-review-summary p { font-size: 1rem; line-height: 1.5; }
+    .local-import-modal .modal-footer { justify-content: flex-end; }
+}
+@media (max-height: 480px) {
+    .local-import-modal .modal-dialog-scrollable .modal-content { overflow-y: auto; }
+    .local-import-modal .modal-dialog-scrollable .modal-body { overflow: visible; flex: 0 0 auto; }
+}
+@keyframes local-import-progress { from { transform: translateX(-100%); } to { transform: translateX(300%); } }
+@media (prefers-reduced-motion: reduce) {
+    .local-import-progress-fill { transition: none; }
+    .local-import-progress-fill.is-indeterminate { animation: none; }
+}
+
 @view-transition {
     navigation: auto;
 }
@@ -3281,6 +3320,56 @@ html[data-sidebar-motion-ready="true"] {
     }
 }
 
+/* Keep DRP actions and table width inside the available shell content. */
+.drp-paid-tab-count {
+    color: var(--md-on-surface-variant) !important;
+}
+
+#drpPaidContainer a[data-tab-name].tw-bg-primary .drp-paid-tab-count {
+    color: var(--md-primary-foreground) !important;
+}
+
+.drp-batch-detail > header {
+    flex-wrap: wrap;
+}
+
+.drp-batch-detail > header > div:last-child {
+    min-width: 0;
+    max-width: 100%;
+    flex-shrink: 1;
+}
+
+.voucher-detail > header {
+    flex-wrap: wrap;
+}
+
+.voucher-detail > header > div:last-child {
+    min-width: 0;
+    max-width: 100%;
+    flex-shrink: 1;
+}
+
+.voucher-detail > header > div:first-child > p:last-child,
+.voucher-snapshot dd,
+.voucher-settlement {
+    overflow-wrap: anywhere;
+}
+
+.voucher-detail .voucher-snapshot dl {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.voucher-detail .voucher-snapshot dd {
+    min-width: 0;
+    margin: 0;
+}
+
+.voucher-settlement,
+.voucher-settlement > * {
+    min-width: 0;
+    max-width: 100%;
+}
+
 /* DataTables adds these classes after the page CSS is built; keep this override outside
    Tailwind's scanned component layer so its dynamic sort state is always emitted. */
 table.dataTable thead > tr > :is(th, td):is(.sorting, .sorting_asc, .sorting_desc, .sorting_asc_disabled, .sorting_desc_disabled, .sorting_disabled) {
@@ -4136,4 +4225,72 @@ div.dataTables_wrapper div.dataTables_processing {
     }
 }
 
+/* Editable combobox: consistent form sizing and a distinct suggestion surface. */
+.ui-searchable-free-input__input { padding-inline-start: 2.25rem; padding-inline-end: 2.25rem; }
+.ui-searchable-free-input__search,
+.ui-searchable-free-input__chevron {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    color: var(--md-on-surface-variant);
+    pointer-events: none;
+    z-index: 1;
+}
+.ui-searchable-free-input__search { inset-inline-start: .75rem; }
+.ui-searchable-free-input__chevron { inset-inline-end: .75rem; }
+.ui-searchable-free-input__chevron svg { transition: transform 120ms ease-out; }
+.ui-searchable-free-input__chevron.is-open svg { transform: rotate(180deg); }
+.ui-searchable-free-input__menu {
+    margin-top: .25rem;
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--md-on-surface) 12%, transparent);
+}
+.ui-searchable-free-input__option {
+    border-inline-start: 3px solid transparent;
+    transition: background-color 120ms ease-out, border-color 120ms ease-out;
+}
+.ui-searchable-free-input__option:hover,
+.ui-searchable-free-input__option.is-highlighted {
+    background: var(--md-surface-container-high);
+    border-inline-start-color: var(--md-primary);
+}
+.ui-searchable-free-input__option.is-selected { color: var(--md-primary); }
+@media (prefers-reduced-motion: reduce) {
+    .ui-searchable-free-input__option,
+    .ui-searchable-free-input__chevron svg { transition: none; }
+}
 
+/* Editable combobox: consistent form sizing and a distinct suggestion surface. */
+.ui-searchable-free-input__input { padding-inline-start: 2.25rem; padding-inline-end: 2.25rem; }
+.ui-searchable-free-input__search,
+.ui-searchable-free-input__chevron {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    color: var(--md-on-surface-variant);
+    pointer-events: none;
+    z-index: 1;
+}
+.ui-searchable-free-input__search { inset-inline-start: .75rem; }
+.ui-searchable-free-input__chevron { inset-inline-end: .75rem; }
+.ui-searchable-free-input__chevron svg { transition: transform 120ms ease-out; }
+.ui-searchable-free-input__chevron.is-open svg { transform: rotate(180deg); }
+.ui-searchable-free-input__menu {
+    margin-top: .25rem;
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--md-on-surface) 12%, transparent);
+}
+.ui-searchable-free-input__option {
+    border-inline-start: 3px solid transparent;
+    transition: background-color 120ms ease-out, border-color 120ms ease-out;
+}
+.ui-searchable-free-input__option:hover,
+.ui-searchable-free-input__option.is-highlighted {
+    background: var(--md-surface-container-high);
+    border-inline-start-color: var(--md-primary);
+}
+.ui-searchable-free-input__option.is-selected { color: var(--md-primary); }
+@media (prefers-reduced-motion: reduce) {
+    .ui-searchable-free-input__option,
+    .ui-searchable-free-input__chevron svg { transition: none; }
+}

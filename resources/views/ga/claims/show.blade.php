@@ -136,6 +136,7 @@
             @if($claim->status === \App\Models\GaClaim::STATUS_SUBMITTED)
                 <x-ui.card :title="__('ga.verification.basic')">
                     <form method="POST" action="{{ route('ga.claims.basic-verify', $claim) }}">
+                        <x-finance.maker-checker-override id="ga-basic-override" />
                         @csrf
                         <div class="tw-space-y-3">
                             <p class="tw-text-ui-xs tw-text-on-surface-variant">

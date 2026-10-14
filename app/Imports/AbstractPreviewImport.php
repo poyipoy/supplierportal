@@ -4,13 +4,18 @@ namespace App\Imports;
 
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\RegistersEventListeners;
+use Maatwebsite\Excel\Concerns\WithReadFilter;
 use Maatwebsite\Excel\Events\BeforeImport;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\Reader\IReadFilter;
 
-abstract class AbstractPreviewImport
+abstract class AbstractPreviewImport implements WithReadFilter
 {
     use RegistersEventListeners;
 
     protected const MAX_ROWS = 1000;
+
+    public const MAX_COLUMNS = 64;
 
     public array $rows = [];
 
@@ -23,6 +28,35 @@ abstract class AbstractPreviewImport
     protected int $invalidRowCount = 0;
 
     protected bool $fileInvalid = false;
+
+    /** Reject raw dimensions before the workbook is hydrated, including blank rows. */
+    public function acceptsDimensions(int $rows, int $columns): bool
+    {
+        $this->totalRowCount = max(0, $rows - 1);
+        if ($rows > self::MAX_ROWS + 1) {
+            $this->invalidRowCount = $this->totalRowCount;
+            $this->addFileError(null, 'import_file', __('purchasing.imports.max_rows', ['count' => self::MAX_ROWS]));
+        }
+        if ($columns > self::MAX_COLUMNS) {
+            $this->addFileError(null, 'import_file', __('file_security_resources.sheet_columns', ['count' => self::MAX_COLUMNS]));
+        }
+
+        return ! $this->fileInvalid;
+    }
+
+    public function readFilter(): IReadFilter
+    {
+        return new class(self::MAX_ROWS + 1, self::MAX_COLUMNS) implements IReadFilter
+        {
+            public function __construct(private int $rows, private int $columns) {}
+
+            public function readCell($columnAddress, $row, $worksheetName = ''): bool
+            {
+                return $row >= 1 && $row <= $this->rows
+                    && Coordinate::columnIndexFromString($columnAddress) <= $this->columns;
+            }
+        };
+    }
 
     public function sheets(): array
     {

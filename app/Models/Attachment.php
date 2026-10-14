@@ -32,4 +32,9 @@ class Attachment extends Model
     {
         return $this->belongsTo(User::class, 'uploaded_by');
     }
+
+    public function fileInspection(): BelongsTo
+    {
+        return $this->belongsTo(FileInspection::class);
+    }
 }

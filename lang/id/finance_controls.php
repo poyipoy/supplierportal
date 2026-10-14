@@ -1,0 +1,28 @@
+<?php
+
+return [
+    'reverify_bank' => 'Verifikasi ulang rekening',
+    'reverify_bank_help' => 'Pastikan rekening tujuan di atas sudah benar sebelum memasukkan klaim ini ke batch pembayaran.',
+    'different_actor' => 'Tahap ini harus dilakukan reviewer yang berbeda. Override administrator yang diizinkan wajib disertai alasan.',
+    'missing_actor' => 'Identitas reviewer wajib pada data ini belum lengkap. Lakukan kembali verifikasi sebelumnya.',
+    'amount_limit' => 'Nominal harus berada antara :min dan :max.',
+    'ga_zero_fee' => 'Biaya bank reimbursement GA harus nol.',
+    'bank_frozen' => 'Rekening tidak dapat diubah selama karyawan memiliki klaim aktif yang sudah diverifikasi.',
+    'bank_actor' => 'Rekening hanya dapat diubah oleh user GA atau administrator yang aktif.',
+    'bank_snapshot' => 'Snapshot rekening yang disetujui tidak tersedia atau telah berubah. Finance wajib memverifikasi ulang sebelum membuat DRP.',
+    'bank_reverify' => 'Rekening hanya dapat diverifikasi ulang untuk klaim Ready to Pay yang belum berada dalam DRP aktif.',
+    'bank_reverified' => 'Rekening klaim telah diverifikasi ulang.',
+    'bank_document' => 'Pilih dokumen surat pernyataan rekening milik Supplier yang dapat dibaca untuk perubahan rekening ini.',
+    'bank_document_label' => 'Dokumen surat pernyataan rekening',
+    'transfer_status' => 'Export transfer memerlukan DRP yang sudah divalidasi (final, sebagian dibayar, atau lunas).',
+    'transfer_partial' => 'Export transfer memerlukan invoice supplier aktif yang siap dibayar atau sudah lunas.',
+    'transfer_empty' => 'Tidak ada group pembayaran aktif yang tersedia untuk export transfer.',
+    'transfer_locked' => 'DRP ini sudah memiliki export transfer sehingga keanggotaan atau biayanya tidak dapat diubah.',
+    'voucher_status' => 'Voucher hanya dapat diberikan pada group belum dibayar dalam DRP yang sudah final.',
+    'override_label' => 'Alasan override administrator',
+    'override_help' => 'Hanya diperlukan saat tindakan ini menggunakan override pemisahan reviewer; alasan dicatat dalam audit.',
+    'password_required' => 'Administrator telah menetapkan password Anda. Ganti password sebelum melanjutkan.',
+    'password_notice_title' => 'Password ditetapkan administrator',
+    'password_notice_body' => 'Administrator menetapkan password akun Anda. Masuk dan ganti password sebelum menggunakan portal. Hubungi administrator jika tindakan ini tidak Anda harapkan.',
+    'import_actor' => 'Aktor import harus merupakan user GA atau administrator aktif.',
+];

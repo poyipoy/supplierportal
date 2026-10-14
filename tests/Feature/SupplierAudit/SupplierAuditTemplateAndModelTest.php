@@ -11,9 +11,51 @@ use Database\Seeders\SupplierAuditTemplateSeeder;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class SupplierAuditTemplateAndModelTest extends SupplierAuditTestCase
 {
+    public static function activeStatuses(): array
+    {
+        return array_map(fn ($status) => [$status], SupplierAudit::ACTIVE_STATUSES);
+    }
+
+    #[DataProvider('activeStatuses')]
+    public function test_database_rejects_a_second_active_audit_even_without_assignment_service(string $status): void
+    {
+        $audit = $this->assign($this->supplier());
+        $copy = $audit->getAttributes();
+        unset($copy['id'], $copy['active_supplier_id']);
+        $copy['status'] = $status;
+        $this->expectException(QueryException::class);
+        DB::table('supplier_audits')->insert($copy);
+    }
+
+    public function test_terminal_audits_do_not_block_new_assignments_and_history_remains_available(): void
+    {
+        $supplier = $this->supplier();
+        $first = $this->assign($supplier);
+        $first->update(['status' => SupplierAudit::STATUS_CANCELLED]);
+        $second = $this->assign($supplier);
+        $second->update(['status' => SupplierAudit::STATUS_RESULT_PUBLISHED]);
+        $third = $this->assign($supplier);
+
+        $this->assertSame(3, SupplierAudit::where('supplier_id', $supplier->id)->count());
+        $this->assertNull($first->fresh()->active_supplier_id);
+        $this->assertNull($second->fresh()->active_supplier_id);
+        $this->assertSame((int) $supplier->id, (int) $third->fresh()->active_supplier_id);
+    }
+
+    public function test_reactivating_a_terminal_audit_cannot_create_two_active_audits(): void
+    {
+        $supplier = $this->supplier();
+        $first = $this->assign($supplier);
+        $first->update(['status' => SupplierAudit::STATUS_CANCELLED]);
+        $this->assign($supplier);
+        $this->expectException(QueryException::class);
+        $first->update(['status' => SupplierAudit::STATUS_DRAFT]);
+    }
+
     public function test_seeder_creates_the_approved_checklist_and_is_idempotent(): void
     {
         $this->seed(SupplierAuditTemplateSeeder::class);

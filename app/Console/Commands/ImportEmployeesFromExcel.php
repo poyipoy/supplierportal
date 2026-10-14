@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\User;
 use App\Services\Employee\EmployeeExcelImportService;
 use Illuminate\Console\Command;
 use Throwable;
@@ -13,7 +14,7 @@ class ImportEmployeesFromExcel extends Command
      *
      * @var string
      */
-    protected $signature = 'employee:import-excel {--file= : Path spesifik ke berkas TARIKAN TRANSFER.xlsx}';
+    protected $signature = 'employee:import-excel {--file= : Path spesifik ke berkas TARIKAN TRANSFER.xlsx} {--actor= : ID user GA atau administrator untuk audit perubahan rekening existing}';
 
     /**
      * The console command description.
@@ -37,7 +38,15 @@ class ImportEmployeesFromExcel extends Command
         }
 
         try {
-            $result = $service->import($filePath);
+            $actor = null;
+            if ($this->option('actor') !== null) {
+                $actorId = (string) $this->option('actor');
+                $actor = ctype_digit($actorId) ? User::find($actorId) : null;
+                if (! $actor || ! $actor->is_active || (! $actor->isGa() && ! $actor->isAdmin())) {
+                    throw new \InvalidArgumentException(__('finance_controls.import_actor'));
+                }
+            }
+            $result = $service->import($filePath, actor: $actor);
 
             $this->table(
                 ['Metrik', 'Jumlah'],

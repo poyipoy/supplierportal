@@ -52,9 +52,13 @@ class LocalGrReservationService
             }
         }
 
+        // Expiry releases the GRs, so an EXPIRED invoice must stop consuming the
+        // ceiling too (matching LocalPoReferenceService). Callers hold the
+        // supplier users-row lock first, which serialises every writer of this
+        // PO's ceiling and keeps this plain read current.
         $otherInvoiced = LocalInvoice::where('local_purchase_order_id', $po->id)
             ->where('id', '!=', $invoice->id)
-            ->whereNotIn('status', [LocalInvoice::STATUS_REJECTED, LocalInvoice::STATUS_CANCELLED])
+            ->whereNotIn('status', [LocalInvoice::STATUS_REJECTED, LocalInvoice::STATUS_CANCELLED, LocalInvoice::STATUS_EXPIRED])
             ->sum('invoice_amount');
 
         if (bccomp(bcadd((string) $otherInvoiced, (string) $invoice->invoice_amount, 2), (string) $po->total_amount, 2) > 0) {

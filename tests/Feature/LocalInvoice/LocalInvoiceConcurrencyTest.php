@@ -10,11 +10,11 @@ use App\Services\LocalInvoice\InvoiceSubmissionService;
 use App\Services\LocalInvoice\InvoiceWorkflowService;
 use App\Services\LocalInvoice\LocalProcurementMasterService;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\Process\Process;
+use Tests\Support\NativeFileFixtures;
 use Tests\TestCase;
 
 class LocalInvoiceConcurrencyTest extends TestCase
@@ -57,6 +57,47 @@ class LocalInvoiceConcurrencyTest extends TestCase
         $this->assertSame(2, LocalInvoiceReceipt::distinct()->count('receipt_number'));
     }
 
+    public function test_resubmit_racing_a_submit_cannot_exceed_the_po_ceiling(): void
+    {
+        Storage::fake('private');
+        Notification::fake();
+        $supplier = User::factory()->create();
+        $supplier->supplierScopes()->create(['scope' => 'local']);
+        Supplier::create(['user_id' => $supplier->id, 'company_name' => 'Ceiling Race', 'address' => 'Test', 'phone' => '1', 'npwp' => '1', 'category' => 'Test', 'payment_term_days' => 30]);
+        $operator = User::factory()->create(['role' => 'finance']);
+        $masters = app(LocalProcurementMasterService::class);
+        $po = $masters->createPurchaseOrder($operator, ['supplier_id' => $supplier->id, 'po_number' => 'PO-CEIL-1', 'po_date' => '2026-09-01', 'total_amount' => '1000.00']);
+        $grs = [];
+        foreach ([1, 2] as $i) {
+            $grs[$i] = $masters->createGoodsReceipt($operator, $po, ['gr_number' => 'GR-CEIL-'.$i, 'gr_date' => '2026-09-02', 'uom' => 'pcs', 'qty' => 1.0]);
+        }
+        $files = fn () => ['invoice' => NativeFileFixtures::upload('invoice.pdf'), 'tax_invoice' => NativeFileFixtures::upload('tax.pdf')];
+        $invoice = app(InvoiceSubmissionService::class)->submit($supplier, ['invoice_number' => 'CEIL-X', 'invoice_date' => '2026-09-10', 'local_purchase_order_id' => $po->id, 'goods_receipt_ids' => [$grs[1]->id], 'invoice_amount' => '100.00', 'tax_amount' => '0.00', 'ppn_scheme' => '0%'], $files());
+        $invoice->update(['status' => LocalInvoice::STATUS_NEED_REVISION]);
+        $invoice->statusHistories()->create(['from_status' => LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT, 'to_status' => LocalInvoice::STATUS_NEED_REVISION, 'actor_id' => $operator->id, 'event' => 'revision_requested', 'notes' => 'Revise', 'created_at' => now()]);
+
+        // Raise X to 900 while a new invoice Y claims 900 of the same 1000 ceiling.
+        $start = microtime(true) + 3;
+        $jobs = [
+            [(string) $invoice->id, 'resubmit-po', $grs[1]->id],
+            ['CEIL-Y', 'submit-po', $grs[2]->id],
+        ];
+        $processes = array_map(fn ($job) => new Process([PHP_BINARY, base_path('tests/Support/local-invoice-concurrency-worker.php'), (string) $supplier->id, $job[0], $job[1], Storage::disk('private')->path(''), (string) $start, (string) $po->id, (string) $job[2], '900.00'], base_path(), ['APP_ENV' => 'testing']), $jobs);
+        foreach ($processes as $process) {
+            $process->start();
+        }
+        foreach ($processes as $process) {
+            $process->wait();
+            $this->assertTrue($process->isSuccessful(), $process->getErrorOutput());
+        }
+
+        $this->assertEqualsCanonicalizing(['accepted', 'rejected'], array_map(fn ($process) => trim($process->getOutput()), $processes));
+        $active = LocalInvoice::where('local_purchase_order_id', $po->id)
+            ->whereNotIn('status', [LocalInvoice::STATUS_REJECTED, LocalInvoice::STATUS_CANCELLED])
+            ->sum('invoice_amount');
+        $this->assertLessThanOrEqual(0, bccomp((string) $active, '1000.00', 2), "Active DPP {$active} exceeds the 1000.00 PO ceiling.");
+    }
+
     public function test_conflicting_transitions_from_two_connections_have_one_winner(): void
     {
         $this->assertSame('adasi_portal_test', DB::connection()->getDatabaseName());
@@ -71,7 +112,7 @@ class LocalInvoiceConcurrencyTest extends TestCase
             $masters = app(LocalProcurementMasterService::class);
             $po = $masters->createPurchaseOrder($operator, ['supplier_id' => $supplier->id, 'po_number' => 'PO-RACE-'.$iteration, 'po_date' => '2026-09-01', 'total_amount' => '1000.00']);
             $gr = $masters->createGoodsReceipt($operator, $po, ['gr_number' => 'GR-RACE-'.$iteration, 'gr_date' => '2026-09-02', 'uom' => 'pcs', 'qty' => 1.0]);
-            $invoice = app(InvoiceSubmissionService::class)->submit($supplier, ['invoice_number' => 'RACE-'.$iteration, 'invoice_date' => today()->format('Y-m-d'), 'local_purchase_order_id' => $po->id, 'goods_receipt_ids' => [$gr->id], 'invoice_amount' => '1.00', 'tax_amount' => '0.00'], ['invoice' => UploadedFile::fake()->image('invoice.png'), 'tax_invoice' => UploadedFile::fake()->image('tax.png')]);
+            $invoice = app(InvoiceSubmissionService::class)->submit($supplier, ['invoice_number' => 'RACE-'.$iteration, 'invoice_date' => today()->format('Y-m-d'), 'local_purchase_order_id' => $po->id, 'goods_receipt_ids' => [$gr->id], 'invoice_amount' => '1.00', 'tax_amount' => '0.00', 'ppn_scheme' => '0%'], ['invoice' => NativeFileFixtures::upload('invoice.pdf'), 'tax_invoice' => NativeFileFixtures::upload('tax.pdf')]);
             app(InvoiceWorkflowService::class)->act($operator, $invoice, 'verifyPhysical');
             $start = microtime(true) + 3;
             $processes = array_map(fn ($action) => new Process([PHP_BINARY, base_path('tests/Support/local-invoice-concurrency-worker.php'), (string) $operator->id, (string) $invoice->id, $action, Storage::disk('private')->path(''), (string) $start], base_path(), ['APP_ENV' => 'testing']), $actions);

@@ -76,6 +76,7 @@
                         @if($canExport)
                             <x-ui.button :href="route('purchasing.export.supplier-audits.detail', $audit)" variant="primary" size="sm" class="tw-justify-self-start"
                                 data-async-export data-export-source-count="1" data-export-filtered="false"
+                                data-export-row-label="{{ __('js.export.rows') }}" data-export-row-explanation="{{ __('exports.confirmation.rows_help') }}"
                                 data-export-source-singular="{{ __('supplier_audit.title') }}" data-export-source-plural="{{ __('supplier_audit.title') }}">
                                 <x-ui.icon name="file-spreadsheet" size="sm" /><span>{{ __('supplier_audit.actions.export') }}</span>
                             </x-ui.button>
@@ -98,6 +99,7 @@
                         @if($canExport)
                             <x-ui.button :href="route('purchasing.export.supplier-audits.detail', $audit)" variant="outline" size="sm" class="tw-justify-self-start"
                                 data-async-export data-export-source-count="1" data-export-filtered="false"
+                                data-export-row-label="{{ __('js.export.rows') }}" data-export-row-explanation="{{ __('exports.confirmation.rows_help') }}"
                                 data-export-source-singular="{{ __('supplier_audit.title') }}" data-export-source-plural="{{ __('supplier_audit.title') }}">
                                 <x-ui.icon name="file-spreadsheet" size="sm" /><span>{{ __('supplier_audit.actions.export') }}</span>
                             </x-ui.button>

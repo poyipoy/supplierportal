@@ -24,7 +24,7 @@ class InvoiceVerificationService
     {
         $this->assertFinanceOrAdmin($reviewer);
 
-        return DB::transaction(function () use ($invoice, $data) {
+        return DB::transaction(function () use ($invoice, $data, $reviewer) {
             /** @var LocalInvoice $inv */
             $inv = LocalInvoice::where('id', $invoice->id)->lockForUpdate()->firstOrFail();
 
@@ -42,6 +42,7 @@ class InvoiceVerificationService
                 throw new RuntimeException(__('local_invoice.validation.verification_locked'));
             }
 
+            $before = $verification->exists ? $verification->toArray() : null;
             $checks = ['invoice', 'tax_invoice', 'po', 'delivery_note', 'gr'];
             $allPassed = true;
 
@@ -73,7 +74,9 @@ class InvoiceVerificationService
             }
 
             $verification->is_section_a_passed = $allPassed;
+            $verification->section_a_verified_by = $reviewer->id;
             $verification->save();
+            app(LocalFinanceAuditService::class)->record($verification, 'section_a_verified', $reviewer, $before, $verification->toArray());
 
             return $verification->fresh();
         });
@@ -86,7 +89,7 @@ class InvoiceVerificationService
     {
         $this->assertFinanceOrAdmin($reviewer);
 
-        return DB::transaction(function () use ($invoice, $data) {
+        return DB::transaction(function () use ($invoice, $data, $reviewer) {
             /** @var LocalInvoice $inv */
             $inv = LocalInvoice::where('id', $invoice->id)->lockForUpdate()->firstOrFail();
 
@@ -107,6 +110,7 @@ class InvoiceVerificationService
                 throw new RuntimeException(__('local_invoice.validation.section_a_required'));
             }
 
+            $before = $verification->toArray();
             $ppnStatus = $data['ppn_status'] ?? LocalInvoiceVerification::PPN_SESUAI;
             if ($ppnStatus === LocalInvoiceVerification::PPN_TIDAK_SESUAI) {
                 if (! isset($data['verified_ppn']) || $data['verified_ppn'] === null || $data['verified_ppn'] === '') {
@@ -147,9 +151,15 @@ class InvoiceVerificationService
             $verification->pph_21_applicable = (bool) ($data['pph_21_applicable'] ?? false);
             $verification->pph_21_amount = $verification->pph_21_applicable && isset($data['pph_21_amount']) ? Money::normalize($data['pph_21_amount']) : Money::ZERO;
 
+            if (Money::compare($verification->netPayableExact($inv->invoice_amount), Money::zero()) <= 0) {
+                throw new InvalidArgumentException(__('local_invoice.validation.net_payable_positive'));
+            }
+
             $verification->tax_notes = $data['tax_notes'] ?? null;
             $verification->is_section_b_passed = true;
+            $verification->section_b_verified_by = $reviewer->id;
             $verification->save();
+            app(LocalFinanceAuditService::class)->record($verification, 'section_b_verified', $reviewer, $before, $verification->toArray());
 
             return $verification->fresh();
         });
@@ -158,7 +168,7 @@ class InvoiceVerificationService
     /**
      * Lock verification and transition invoice to READY_TO_PAY.
      */
-    public function lockAndApprove(LocalInvoice $invoice, User $reviewer): LocalInvoice
+    public function lockAndApprove(LocalInvoice $invoice, User $reviewer, ?string $overrideReason = null): LocalInvoice
     {
         $this->assertFinanceOrAdmin($reviewer);
 
@@ -184,6 +194,11 @@ class InvoiceVerificationService
                 throw new RuntimeException(__('local_invoice.validation.sections_required'));
             }
 
+            if (config('finance.maker_checker.ready_to_pay', true)) {
+                $controls = app(MakerCheckerService::class);
+                $controls->assertActorsRecorded('physical_receipt', $inv, $reviewer, [$inv->cashier_received_by], $verification->actor_tracking_required);
+                $controls->assertActorsRecorded('section_verification', $verification, $reviewer, [$verification->section_a_verified_by, $verification->section_b_verified_by], $verification->actor_tracking_required);
+            }
             $this->reservations->consume($inv, $reviewer);
             $now = now();
             $verification->update([

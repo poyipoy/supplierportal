@@ -2,11 +2,13 @@
 
 namespace App\Support;
 
+use App\Imports\AbstractPreviewImport;
 use App\Services\FileSecurity\FileInspectionService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use RuntimeException;
 
 final class SpreadsheetImportReader
@@ -30,6 +32,14 @@ final class SpreadsheetImportReader
         try {
             if (! File::copy($sourcePath, $temporaryPath)) {
                 throw new RuntimeException(__('local_procurement.import.prepare_failed'));
+            }
+
+            $reader = IOFactory::createReaderForFile($temporaryPath);
+            $worksheets = $reader->listWorksheetInfo($temporaryPath);
+            $first = $worksheets[0] ?? ['totalRows' => 0, 'totalColumns' => 0];
+            if ($import instanceof AbstractPreviewImport
+                && ! $import->acceptsDimensions((int) $first['totalRows'], (int) $first['totalColumns'])) {
+                return;
             }
 
             Excel::import($import, $temporaryPath);

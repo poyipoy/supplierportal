@@ -12,6 +12,9 @@
     'disabled' => false,
     'emptyMessage' => __('common.select.empty'),
     'showSublabelOnTrigger' => true,
+    'allowCustom' => false,
+    'suggestionsUrl' => null,
+    'maxlength' => 100,
 ])
 
 @php
@@ -52,6 +55,9 @@
     })->values()->all();
 @endphp
 
+@if(filter_var($allowCustom, FILTER_VALIDATE_BOOLEAN))
+    @include('components.ui._searchable-free-input')
+@else
 <div
     {{ $attributes->class(['tw-grid tw-gap-1.5 tw-relative']) }}
     x-data="{
@@ -342,3 +348,4 @@
         </p>
     @endif
 </div>
+@endif

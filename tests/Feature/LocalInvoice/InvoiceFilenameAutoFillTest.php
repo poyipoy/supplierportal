@@ -12,6 +12,7 @@ use App\Services\LocalInvoice\LocalProcurementMasterService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Support\NativeFileFixtures;
 use Tests\TestCase;
 
@@ -72,6 +73,82 @@ class InvoiceFilenameAutoFillTest extends TestCase
             'ppn_scheme' => '11%',
             'tax_amount' => '11000.00',
         ], $overrides);
+    }
+
+    public static function changedTaxNumbers(): array
+    {
+        $cases = [];
+        foreach (['en', 'id'] as $locale) {
+            foreach ([['12.34.56.78765432875', '12.34.56.78765432876', '01.00.26.00000000099'],
+                ['010.000-26.12345678', '010.000-26.12345679', '010.000-26.00000099']] as $numbers) {
+                foreach ([false, true] as $revision) {
+                    foreach ([false, true] as $spoofOriginal) {
+                        $cases[] = [$locale, ...$numbers, $revision, $spoofOriginal];
+                    }
+                }
+            }
+        }
+
+        return $cases;
+    }
+
+    #[DataProvider('changedTaxNumbers')]
+    public function test_edited_tax_number_reports_filename_mismatch_instead_of_an_unrelated_duplicate(string $locale, string $used, string $entered, string $current, bool $revision, bool $spoofOriginal): void
+    {
+        $this->supplier->preference()->create([...config('user_preferences.defaults'), 'locale' => $locale]);
+        app()->setLocale($locale);
+        LocalInvoice::create(['supplier_id' => $this->supplier->id, 'submission_number' => 'TAKEN-TAX-SUB', 'invoice_number' => 'INV-TAKEN',
+            'invoice_date' => '2026-09-20', 'invoice_amount' => '100.00', 'tax_amount' => '11.00', 'tax_invoice_number' => $used,
+            'po_number' => $this->po->po_number, 'po_source' => 'INTERNAL', 'local_purchase_order_id' => $this->po->id,
+            'status' => LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT, 'revision_number' => 1, 'submitted_at' => now()]);
+        $url = route('local-supplier.invoices.store');
+        if ($revision) {
+            $this->actingAs($this->supplier)->post($url, $this->validPayload([
+                'invoice_number' => 'INV-EDITED', 'tax_invoice_number' => $current,
+                'invoice' => NativeFileFixtures::upload('INV-EDITED.pdf'), 'tax_invoice' => NativeFileFixtures::upload($current.'.pdf'),
+            ]))->assertSessionHasNoErrors();
+            $invoice = LocalInvoice::where('invoice_number', 'INV-EDITED')->firstOrFail();
+            $invoice->update(['status' => LocalInvoice::STATUS_NEED_REVISION]);
+            $invoice->statusHistories()->create(['from_status' => LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT,
+                'to_status' => LocalInvoice::STATUS_NEED_REVISION, 'event' => 'revision_requested',
+                'actor_id' => $this->finance->id, 'notes' => 'Correct the attachment identity.', 'created_at' => now()]);
+            $url = route('local-supplier.invoices.resubmit', $invoice);
+        }
+        $count = LocalInvoice::count();
+        $files = Storage::disk('private')->allFiles();
+        $response = $this->actingAs($this->supplier)->postJson($url, $this->validPayload([
+            'invoice_number' => 'INV-EDITED', 'tax_invoice_number' => $entered,
+            ...($spoofOriginal ? ['_original_tax_invoice_number' => $used] : []),
+            'invoice' => NativeFileFixtures::upload('INV-EDITED.pdf'), 'tax_invoice' => NativeFileFixtures::upload($used.'.pdf'),
+        ]));
+        $response->assertUnprocessable()->assertJsonPath('errors.tax_invoice_number', [
+            __('local_invoice.validation.tax_filename', ['number' => $entered, 'filename' => $used]),
+        ]);
+        $this->assertSame($count, LocalInvoice::count());
+        $this->assertSame($files, Storage::disk('private')->allFiles());
+        if ($revision) {
+            $this->assertSame($current, $invoice->fresh()->tax_invoice_number);
+            $this->assertSame(1, $invoice->fresh()->revision_number);
+        }
+
+        // Correcting just the attachment identity resolves the mismatch.
+        $this->withoutExceptionHandling();
+        $this->postJson($url, $this->validPayload([
+            'invoice_number' => 'INV-EDITED', 'tax_invoice_number' => str_replace(['.', '-'], '', $entered),
+            'invoice' => NativeFileFixtures::upload('INV-EDITED.pdf'), 'tax_invoice' => NativeFileFixtures::upload($entered.'.pdf'),
+        ]))->assertOk()->assertJsonStructure(['redirect']);
+        $saved = LocalInvoice::where('invoice_number', 'INV-EDITED')->firstOrFail();
+        $this->assertSame($entered, $saved->tax_invoice_number);
+        $this->assertSame($revision ? 2 : 1, $saved->revision_number);
+        $this->withExceptionHandling();
+
+        // A real duplicate still names the exact normalized number being checked.
+        $this->postJson(route('local-supplier.invoices.store'), $this->validPayload([
+            'invoice_number' => 'INV-ANOTHER', 'tax_invoice_number' => $entered,
+            'invoice' => NativeFileFixtures::upload('INV-ANOTHER.pdf'), 'tax_invoice' => NativeFileFixtures::upload($entered.'.pdf'),
+        ]))->assertUnprocessable()->assertJsonPath('errors.tax_invoice_number', [
+            __('local_invoice.validation.tax_number_duplicate', ['number' => $entered]),
+        ]);
     }
 
     public function test_invoice_number_derived_from_uploaded_filename(): void

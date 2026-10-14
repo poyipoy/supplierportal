@@ -10,6 +10,7 @@ use App\Models\PaymentBatch;
 use App\Models\PaymentItem;
 use App\Models\User;
 use App\Services\LocalInvoice\LocalFinanceAuditService;
+use App\Services\LocalInvoice\MakerCheckerService;
 use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -44,6 +45,7 @@ class LocalInvoiceVoucherService
             if ($batch->batch_type !== PaymentBatch::TYPE_SUPPLIER || ! in_array($batch->status, [PaymentBatch::STATUS_FINALIZED, PaymentBatch::STATUS_PARTIALLY_PAID], true)) {
                 throw ValidationException::withMessages(['payment_item' => __('finance.validation.voucher_finalize_batch')]);
             }
+            app(MakerCheckerService::class)->assertActorsRecorded('voucher_settlement', $batch, $actor, [$batch->finalized_by], $batch->actor_tracking_required);
 
             $invoice = LocalInvoice::whereKey($lockedItem->payable_id)->lockForUpdate()->firstOrFail();
             if (! $invoice->isReadyToPay()) {

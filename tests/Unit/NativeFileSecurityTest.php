@@ -291,6 +291,27 @@ class NativeFileSecurityTest extends TestCase
         app(FileInspectionService::class)->inspectUpload($file, 'invoice');
     }
 
+    public function test_only_streaming_imports_use_the_larger_office_expansion_budget(): void
+    {
+        $path = tempnam(sys_get_temp_dir(), 'adasi-office-');
+        $this->paths[] = $path;
+        $workbook = new Spreadsheet;
+        $workbook->getActiveSheet()->setCellValue('A1', 'Native Office fixture');
+        (new Xlsx($workbook))->save($path);
+        $workbook->disconnectWorksheets();
+        config(['native_file_security.office.max_total_bytes' => 1024]);
+        $file = new UploadedFile($path, 'book.xlsx', 'application/zip', null, true);
+        foreach (['spreadsheet_preview', 'employee_spreadsheet', 'chat'] as $profile) {
+            try {
+                app(FileInspectionService::class)->inspectUpload($file, $profile);
+                $this->fail('A regular upload used the streaming expansion allowance.');
+            } catch (ValidationException) {
+                $this->assertTrue(true);
+            }
+        }
+        $this->assertSame('VALIDATED', app(FileInspectionService::class)->inspectUpload($file, 'spreadsheet_import')->status);
+    }
+
     private function archive(array $entries): string
     {
         $path = tempnam(sys_get_temp_dir(), 'adasi-zip-');

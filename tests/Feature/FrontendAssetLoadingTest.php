@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\File;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use Tests\TestCase;
@@ -11,6 +13,108 @@ use Tests\TestCase;
 class FrontendAssetLoadingTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_auth_splash_bootstrap_precedes_assets_and_keeps_native_readiness_independent(): void
+    {
+        foreach (['auth', 'app', 'guest'] as $layout) {
+            $source = file_get_contents(resource_path("views/layouts/{$layout}.blade.php"));
+            $bootstrap = strpos($source, "@include('partials.auth-splash-bootstrap'");
+            $this->assertNotFalse($bootstrap);
+            $this->assertLessThan(strpos($source, '<link'), $bootstrap);
+            $i18n = strpos($source, "@include('partials.i18n-bootstrap')");
+            $this->assertGreaterThan($bootstrap, $i18n);
+            $this->assertLessThan(strpos($source, '<link'), $i18n, 'Classic i18n script must not wait for external stylesheets before the body can parse.');
+            $this->assertStringContainsString('<x-ui.auth-splash', $source);
+            $this->assertStringContainsString('data-auth-splash-layout-ready', $source);
+        }
+
+        $auth = file_get_contents(resource_path('views/layouts/auth.blade.php'));
+        $this->assertLessThan(strpos($auth, '<script src='), strpos($auth, 'data-readiness="native-login"'));
+        $app = file_get_contents(resource_path('views/layouts/app.blade.php'));
+        $this->assertGreaterThan(strrpos($app, "@stack('scripts')"), strpos($app, 'data-auth-splash-layout-ready'));
+    }
+
+    public function test_auth_splash_is_inlined_once_without_a_vite_import_or_entry(): void
+    {
+        $bootstrap = file_get_contents(resource_path('views/partials/auth-splash-bootstrap.blade.php'));
+        $this->assertStringContainsString("resource_path('js/auth-splash.js')", $bootstrap);
+        $this->assertStringContainsString("resource_path('css/auth-splash.css')", $bootstrap);
+        $this->assertStringContainsString('ui.auth_splash_bootstrap_available', $bootstrap);
+        $this->assertStringContainsString('isset($exception)', $bootstrap);
+        $this->assertStringNotContainsString("import './auth-splash", file_get_contents(resource_path('js/app.js')));
+        $this->assertStringNotContainsString('auth-splash', file_get_contents(base_path('vite.config.js')));
+        $this->assertStringContainsString('markCoreReady()', file_get_contents(resource_path('js/app.js')));
+    }
+
+    public function test_login_controls_have_a_working_native_password_fallback(): void
+    {
+        $this->get(route('login'))->assertOk()
+            ->assertSee('type="password"', false)
+            ->assertSee(':type="visible ? \'text\' : \'password\'"', false)
+            ->assertSee(':disabled="false"', false)
+            ->assertSee('aria-label="'.__('auth.login.show_password').'"', false);
+    }
+
+    public function test_splash_acknowledges_only_rendered_markup_and_keeps_marker_details_server_side(): void
+    {
+        config(['ui.auth_splash.enabled' => true]);
+        request()->attributes->set('ui.auth_splash', [
+            'reason' => 'post-login',
+            'id' => 'private-marker-id',
+            'target' => '/private/intended-page',
+        ]);
+        request()->attributes->set('ui.auth_splash_bootstrap_available', false);
+
+        $this->assertStringNotContainsString('data-auth-splash', Blade::render('<x-ui.auth-splash />'));
+        $this->assertFalse(request()->attributes->get('ui.auth_splash_rendered', false));
+
+        request()->attributes->set('ui.auth_splash_bootstrap_available', true);
+        $html = Blade::render('<x-ui.auth-splash />');
+        $this->assertTrue(request()->attributes->get('ui.auth_splash_rendered'));
+        $this->assertSame(5, substr_count($html, 'class="auth-splash__letter"'));
+        $this->assertStringContainsString('hidden aria-hidden="true"', $html);
+        $this->assertStringContainsString('role="status" aria-live="polite" aria-atomic="true"', $html);
+        $this->assertStringNotContainsString('private-marker-id', $html);
+        $this->assertStringNotContainsString('/private/intended-page', $html);
+
+        request()->attributes->remove('ui.auth_splash_rendered');
+        $this->assertStringNotContainsString('data-auth-splash', Blade::render('<x-ui.auth-splash :error="true" />'));
+        $this->assertFalse(request()->attributes->get('ui.auth_splash_rendered', false));
+    }
+
+    public function test_missing_or_unreadable_standalone_source_omits_bootstrap_and_component(): void
+    {
+        config(['ui.auth_splash.enabled' => true]);
+        request()->attributes->set('ui.auth_splash', ['reason' => 'login-page']);
+        File::partialMock()->shouldReceive('isReadable')
+            ->with(resource_path('js/auth-splash.js'))->once()->andReturn(false);
+
+        $html = Blade::render("@include('partials.auth-splash-bootstrap', ['authSplashLayout' => 'auth', 'authSplashReadiness' => 'native-login']) <x-ui.auth-splash />");
+
+        $this->assertStringNotContainsString('data-auth-splash', $html);
+        $this->assertFalse(request()->attributes->get('ui.auth_splash_bootstrap_available'));
+        $this->assertFalse(request()->attributes->get('ui.auth_splash_rendered', false));
+    }
+
+    public function test_static_cdn_scripts_and_styles_have_exact_versions_and_integrity(): void
+    {
+        $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(resource_path('views')));
+        $assets = [];
+        foreach ($files as $file) {
+            if (! $file->isFile() || $file->getExtension() !== 'php') {
+                continue;
+            }
+            preg_match_all('~<(?:script|link)\b[^>]*(?:src|href)="(https://(?:cdn\.jsdelivr\.net|cdn\.datatables\.net|code\.jquery\.com)/[^"<>]+)"[^>]*>~i', file_get_contents($file->getPathname()), $matches, PREG_SET_ORDER);
+            foreach ($matches as [$tag, $url]) {
+                $this->assertMatchesRegularExpression('~(?:@\d+\.\d+\.\d+/|/\d+\.\d+\.\d+/|jquery-\d+\.\d+\.\d+\.min\.js)~', $url);
+                $this->assertMatchesRegularExpression('/integrity="sha384-[A-Za-z0-9+\/]{64}"/', $tag);
+                $this->assertStringContainsString('crossorigin="anonymous"', $tag);
+                $assets[$url] = true;
+            }
+        }
+        $this->assertCount(13, $assets);
+        $this->assertArrayHasKey('https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js', $assets);
+    }
 
     public function test_datatables_assets_are_only_rendered_for_opted_in_pages(): void
     {

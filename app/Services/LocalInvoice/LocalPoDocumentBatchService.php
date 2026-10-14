@@ -2,6 +2,7 @@
 
 namespace App\Services\LocalInvoice;
 
+use App\Exceptions\PoDocumentAttemptSuperseded;
 use App\Jobs\ProcessLocalPoDocumentBatch;
 use App\Models\Attachment;
 use App\Models\FileInspection;
@@ -145,11 +146,15 @@ class LocalPoDocumentBatchService
                 return $batch;
             });
         } catch (\Throwable $exception) {
-            $this->removePrivateFile($path);
+            if ($this->removePrivateFile($path)) {
+                FileInspection::whereKey($stored['file_inspection_id'])->update(['status' => 'ERROR', 'error_code' => 'admission_failed']);
+            }
             throw $exception;
         }
         if ($batch->original_path !== $path) {
-            $this->removePrivateFile($path);
+            if ($this->removePrivateFile($path)) {
+                FileInspection::whereKey($stored['file_inspection_id'])->update(['status' => 'ERROR', 'error_code' => 'duplicate_admission']);
+            }
         }
         if ($dispatch && $asynchronous) {
             // A post-commit enqueue failure preserves the committed dispatch intent.
@@ -273,7 +278,7 @@ class LocalPoDocumentBatchService
             DB::transaction(function () use ($batch, $run, $actor, $supplier, $started) {
                 $locked = LocalPoDocumentBatch::whereKey($batch->id)->lockForUpdate()->firstOrFail();
                 if ($locked->run_token !== $run || $locked->status !== 'PUBLISHING') {
-                    throw new RuntimeException('PO attempt superseded.');
+                    throw new PoDocumentAttemptSuperseded('PO attempt superseded.');
                 }
                 $lockedSupplier = User::whereKey($supplier->id)->lockForUpdate()->firstOrFail();
                 app(LocalPoDocumentService::class)->authorizePublication($actor->fresh(), $lockedSupplier);
@@ -294,6 +299,8 @@ class LocalPoDocumentBatchService
                 $locked->update(['status' => 'COMPLETED', 'finished_at' => now(), 'lease_expires_at' => null]);
             });
             $this->cleanup($batch->fresh(), true);
+        } catch (PoDocumentAttemptSuperseded) {
+            // The current attempt owns its paths and state; a stale worker must leave them untouched.
         } catch (\Throwable $exception) {
             if ($batch) {
                 $changed = LocalPoDocumentBatch::whereKey($batch->id)->where('run_token', $run)->whereIn('status', LocalPoDocumentBatch::ACTIVE)
@@ -323,7 +330,7 @@ class LocalPoDocumentBatchService
         DB::transaction(function () use ($batch, $run, $operation) {
             $locked = LocalPoDocumentBatch::whereKey($batch->id)->lockForUpdate()->firstOrFail();
             if ($locked->run_token !== $run || ! in_array($locked->status, LocalPoDocumentBatch::ACTIVE, true)) {
-                throw new RuntimeException('PO attempt superseded.');
+                throw new PoDocumentAttemptSuperseded('PO attempt superseded.');
             }
             $operation();
             $locked->update(['lease_expires_at' => now()->addSeconds($batch->asynchronous ? (int) config('po_documents.lease_seconds') : 120)]);
@@ -527,6 +534,7 @@ class LocalPoDocumentBatchService
             }
             if ($entry->final_path && ! $entry->attachment_id && ! Attachment::where('file_path', $entry->final_path)->exists()) {
                 if ($this->removePrivateFile($entry->final_path)) {
+                    FileInspection::whereKey($entry->file_inspection_id)->update(['status' => 'ERROR', 'error_code' => 'publication_failed']);
                     $entry->update(['final_path' => null, 'file_inspection_id' => null]);
                 } else {
                     $complete = false;

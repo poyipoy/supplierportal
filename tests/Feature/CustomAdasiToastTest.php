@@ -132,9 +132,9 @@ class CustomAdasiToastTest extends TestCase
         $this->assertStringContainsString('toast.indeterminate', $toast);
         $this->assertStringNotContainsString('border-inline-start: 3px solid var(--adasi-toast-accent)', $styles);
 
-        $startExportPosition = strpos($runtime, 'const startExport = async (control) =>');
+        $startExportPosition = strpos($runtime, 'const startExport = async (control, options = {}) =>');
         $startingToastPosition = strpos($runtime, 'toastId: createStartingToast(toastId)', $startExportPosition);
-        $requestPosition = strpos($runtime, 'const response = await window.fetch(requestUrl', $startExportPosition);
+        $requestPosition = strpos($runtime, 'const response = await window.fetch(endpointUrl', $startExportPosition);
 
         $this->assertIsInt($startExportPosition);
         $this->assertIsInt($startingToastPosition);
@@ -179,8 +179,8 @@ class CustomAdasiToastTest extends TestCase
         $this->assertStringNotContainsString('data rows to Excel', $runtime);
         $this->assertStringContainsString('rowLabel: state.rowLabel', $runtime);
         $this->assertStringContainsString("cleanPresentationText(record.rowLabel, t('js.export.rows'))", $runtime);
-        $this->assertStringContainsString('purchasing.copy.each_material_item_will_be_written_as_a_separate_excel_row', file_get_contents(resource_path('views/purchasing/pr/index.blade.php')));
-        $this->assertStringContainsString('data-export-count-table="#historyTable"', file_get_contents(resource_path('views/qc/inspections/index.blade.php')));
+        $this->assertStringContainsString('x-export.advanced-modal', file_get_contents(resource_path('views/purchasing/pr/index.blade.php')));
+        $this->assertStringContainsString('table="#historyTable"', file_get_contents(resource_path('views/qc/inspections/index.blade.php')));
 
         $controlCount = 0;
         foreach (File::allFiles(resource_path('views')) as $view) {
@@ -202,7 +202,7 @@ class CustomAdasiToastTest extends TestCase
             }
         }
 
-        $this->assertSame(17, $controlCount);
+        $this->assertSame(11, $controlCount);
     }
 
     public function test_async_export_toast_rehydrates_before_polling_with_scoped_view_transition(): void

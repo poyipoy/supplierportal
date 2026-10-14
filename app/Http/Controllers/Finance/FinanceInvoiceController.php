@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Services\LocalInvoice\InvoicePhysicalReceiptService;
 use App\Services\LocalInvoice\InvoiceQuery;
 use App\Services\LocalInvoice\InvoiceVerificationService;
+use App\Support\ExportConfirmation;
 use App\Support\ExportDispatcher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -50,7 +51,7 @@ class FinanceInvoiceController extends Controller
 
         return view('finance.invoices.show', [
             'invoice' => $invoice,
-            'verification' => $invoice->currentVerification,
+            'verification' => $invoice->currentVerification?->revision_number === $invoice->revision_number ? $invoice->currentVerification : null,
         ]);
     }
 
@@ -194,6 +195,10 @@ class FinanceInvoiceController extends Controller
     public function exportMasterInvoice(AdvancedExportRequest $request)
     {
         $filters = LocalInvoiceExportFilters::validated($request);
+        if ($request->isMethod('get')) {
+            return ExportConfirmation::make($request, __('exports.job_labels.invoice_master'));
+        }
+
         $job = ExportDispatcher::dispatch(
             __('exports.job_labels.invoice_master'),
             LocalInvoicesExport::class,

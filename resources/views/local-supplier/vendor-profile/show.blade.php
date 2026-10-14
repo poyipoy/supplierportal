@@ -219,6 +219,15 @@
                     </div>
 
                     <div class="tw-pt-2 tw-flex tw-justify-end">
+                        <div class="tw-mr-3">
+                            <label for="bank_confirmation_document_id" class="form-label tw-text-ui-xs">{{ __('finance_controls.bank_document_label') }}</label>
+                            <select id="bank_confirmation_document_id" name="bank_confirmation_document_id" class="form-select form-select-sm">
+                                <option value="">{{ __('finance_controls.bank_document_label') }}</option>
+                                @foreach($documents->where('document_type', \App\Models\SupplierMasterDocument::TYPE_SURAT_PERNYATAAN_REKENING) as $bankDocument)
+                                    <option value="{{ $bankDocument->hash }}" @selected(old('bank_confirmation_document_id') === $bankDocument->hash)>{{ $bankDocument->original_filename }}</option>
+                                @endforeach
+                            </select>
+                        </div>
                         <x-ui.button type="submit" variant="primary" size="sm">
                             <x-ui.icon name="send" size="sm" />
                             <span>{{ __('local_procurement.vendor_ui.submit_change') }}</span>

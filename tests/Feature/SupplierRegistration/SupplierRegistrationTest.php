@@ -428,20 +428,16 @@ class SupplierRegistrationTest extends TestCase
         $this->assertSame([], Storage::disk('private')->allFiles());
     }
 
-    public function test_async_submit_returns_same_origin_redirect_and_keeps_access_key_out_of_json(): void
+    public function test_async_submit_returns_same_origin_redirect_without_exposing_access_credentials(): void
     {
         $response = $this->withHeaders(['Accept' => 'application/json'])
             ->post(route('supplier.register.store'), $this->validRegistrationPayload());
 
         $response->assertOk()->assertExactJson(['redirect' => route('supplier.registration.success')]);
 
-        $accessKey = session('registration_access_key');
-        $reference = session('registration_reference');
-        $this->assertIsString($accessKey);
-        $this->assertStringNotContainsString($accessKey, $response->getContent());
-
-        // The one-time credentials are still delivered through the flashed session on the success page.
-        $this->get(route('supplier.registration.success'))->assertOk()->assertSee($reference)->assertSee($accessKey);
+        $this->assertNull(session('registration_access_key'));
+        $this->assertNull(session('registration_reference'));
+        $this->get(route('supplier.registration.success'))->assertOk()->assertSee(__('registration.received_heading'));
     }
 
     public function test_async_resubmit_updates_questionnaire_and_company_profile(): void

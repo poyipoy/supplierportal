@@ -7,15 +7,19 @@ use App\Jobs\ProcessLocalProcurementImport;
 use App\Models\LocalProcurementImport;
 use App\Models\LocalPurchaseOrder;
 use App\Models\User;
+use App\Services\FileSecurity\FileAccessGuard;
 use App\Services\FileSecurity\FileInspectionService;
+use App\Support\LocalPoPrNumber;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 class LocalProcurementImportService
 {
@@ -48,11 +52,11 @@ class LocalProcurementImportService
                     'original_filename' => mb_substr($file->getClientOriginalName(), 0, 255),
                     'expires_at' => now()->addHours((int) config('local_procurement_imports.preview_hours')),
                 ]);
-                $import->update(['token_hash' => hash('sha256', $this->tokenFor($import))]);
                 $import->attachments()->create(['file_path' => $path, 'file_name' => $import->original_filename,
                     'file_type' => $stored['file_type'], 'file_inspection_id' => $stored['file_inspection_id'], 'uploaded_by' => $actor->id]);
                 $job = new ProcessLocalProcurementImport($import->id, 'preview');
-                $import->update(['owner_job_key' => $job->runKey]);
+                $import->fill(['owner_job_key' => $job->runKey]);
+                $import->fill(['token_hash' => hash('sha256', $this->generationTokenFor($import))])->save();
                 dispatch($job->onQueue(config('local_procurement_imports.queue')));
 
                 return $import;
@@ -71,28 +75,115 @@ class LocalProcurementImportService
         abort_unless(in_array($kind, LocalProcurementImport::KINDS, true), 404);
         $this->assertQueue();
 
-        return DB::transaction(function () use ($actor, $token, $kind) {
+        $import = DB::transaction(function () use ($actor, $token, $kind) {
+            $lockedActor = User::whereKey($actor->id)->lockForUpdate()->firstOrFail();
             $import = LocalProcurementImport::where('token_hash', hash('sha256', $token))
                 ->where('user_id', $actor->id)->where('kind', $kind)->lockForUpdate()->first();
             abort_unless($import, 419, __('local_procurement.feedback.preview_expired'));
-            $lockedActor = User::whereKey($actor->id)->lockForUpdate()->firstOrFail();
             Gate::forUser($lockedActor)->authorize('confirm', $import);
             if (in_array($import->status, ['IMPORTING', 'COMPLETED'], true)) {
                 return $import;
             }
             abort_if($import->expires_at->isPast(), 419, __('local_procurement.feedback.preview_expired'));
             abort_unless($import->status === 'READY', 409, __('local_procurement.large_import.not_ready'));
+            $newCount = $import->summary[$kind === 'PO' ? 'new_po' : 'new_gr'] ?? null;
+            abort_unless(is_int($newCount) && $newCount >= 0, 409, __('local_procurement.large_import.not_ready'));
+            if ($kind === 'PO') {
+                $prCount = $import->summary['po_pr_filled'] ?? 0;
+                abort_unless(is_int($prCount) && $prCount >= 0, 409, __('local_procurement.large_import.not_ready'));
+                $newCount += $prCount;
+            }
+            if ($newCount === 0) {
+                throw ValidationException::withMessages(['import_file' => __('local_procurement.import.no_new_records')]);
+            }
             $job = new ProcessLocalProcurementImport($import->id, 'confirm');
             $import->update(['status' => 'IMPORTING', 'failure' => null, 'owner_job_key' => $job->runKey]);
             dispatch($job->onQueue(config('local_procurement_imports.queue')));
 
             return $import->fresh();
         });
+        if ($import->status === 'IMPORTING') {
+            app(LocalProcurementImportProgress::class)->write($import, 'WAITING_SAVE', 0,
+                (int) ($import->summary[$kind === 'PO' ? 'unique_pos' : 'consolidated_gr'] ?? 0), '', true);
+        }
+
+        return $import;
     }
 
     public function tokenFor(LocalProcurementImport $import): string
     {
-        return substr(hash_hmac('sha256', $import->id.':'.$import->user_id.':'.$import->checksum, config('app.key')), 0, 40);
+        $legacy = substr(hash_hmac('sha256', $import->id.':'.$import->user_id.':'.$import->checksum, config('app.key')), 0, 40);
+
+        return hash_equals((string) $import->token_hash, hash('sha256', $legacy)) ? $legacy : $this->generationTokenFor($import);
+    }
+
+    public function generationTokenFor(LocalProcurementImport $import): string
+    {
+        return substr(hash_hmac('sha256', $import->id.':'.$import->user_id.':'.$import->checksum.':'.$import->owner_job_key, config('app.key')), 0, 40);
+    }
+
+    public function canRevalidate(LocalProcurementImport $import): bool
+    {
+        if (! in_array($import->status, ['READY', 'VALIDATION_FAILED', 'FAILED'], true)
+            || $import->expires_at->isPast() || $import->cleaned_at !== null) {
+            return false;
+        }
+        $import->loadMissing('attachments.fileInspection');
+        $attachment = $import->attachments->first();
+        if (! $attachment || ! is_file(Storage::disk('private')->path($attachment->file_path))) {
+            return false;
+        }
+        $inspection = $attachment->fileInspection;
+        if ($inspection?->status === 'VALIDATED') {
+            return $inspection->file_path === $attachment->file_path
+                && filesize(Storage::disk('private')->path($attachment->file_path)) === $inspection->file_size;
+        }
+
+        return app(FileAccessGuard::class)->classification($attachment) === 'HISTORICAL_UNVERIFIED';
+    }
+
+    public function revalidate(User $actor, LocalProcurementImport $candidate, int $expectedAttempt): LocalProcurementImport
+    {
+        Gate::forUser($actor)->authorize('revalidate', $candidate);
+        $this->assertAdmissionEnabled();
+        $this->assertQueue();
+        Validator::make(['expected_attempt' => $expectedAttempt], ['expected_attempt' => ['integer', 'min:0']], [
+            'expected_attempt.min' => __('local_procurement.revalidation.refresh_required'),
+        ])->validate();
+
+        $import = DB::transaction(function () use ($actor, $candidate, $expectedAttempt) {
+            $lockedActor = User::whereKey($actor->id)->lockForUpdate()->firstOrFail();
+            $import = LocalProcurementImport::whereKey($candidate->id)->lockForUpdate()->firstOrFail();
+            Gate::forUser($lockedActor)->authorize('revalidate', $import);
+            abort_unless(in_array($import->status, ['READY', 'VALIDATION_FAILED', 'FAILED'], true), 409, __('local_procurement.revalidation.not_available'));
+            abort_unless((int) $import->attempt === $expectedAttempt, 409, __('local_procurement.revalidation.refresh_required'));
+            abort_if($import->expires_at->isPast(), 419, __('local_procurement.feedback.preview_expired'));
+            if (! $this->canRevalidate($import)) {
+                throw ValidationException::withMessages(['import_file' => __('local_procurement.revalidation.file_unavailable')]);
+            }
+            try {
+                app(FileAccessGuard::class)->assertReadable($import->attachments->first());
+            } catch (HttpExceptionInterface $exception) {
+                throw ValidationException::withMessages(['import_file' => __('local_procurement.revalidation.file_unavailable')]);
+            }
+            $active = LocalProcurementImport::where('user_id', $actor->id)->where('id', '!=', $import->id)
+                ->whereIn('kind', LocalProcurementImport::KINDS)->whereIn('status', LocalProcurementImport::ACTIVE)
+                ->where(fn ($q) => $q->where('expires_at', '>', now())->orWhereIn('status', ['READING', 'VALIDATING', 'IMPORTING']))->count();
+            if ($active >= (int) config('local_procurement_imports.active_per_user')) {
+                throw ValidationException::withMessages(['import_file' => __('local_procurement.large_import.capacity')]);
+            }
+            app(LocalProcurementImportProgress::class)->forget($import);
+            $job = new ProcessLocalProcurementImport($import->id, 'preview');
+            $import->fill(['status' => 'QUEUED', 'owner_job_key' => $job->runKey, 'summary' => null,
+                'failure' => null, 'warnings' => null, 'finished_at' => null, 'lease_expires_at' => null,
+                'processed_rows' => 0, 'source_rows' => 0]);
+            $import->fill(['token_hash' => hash('sha256', $this->generationTokenFor($import))])->save();
+            dispatch($job->onQueue(config('local_procurement_imports.queue')));
+
+            return $import;
+        });
+
+        return $import->fresh();
     }
 
     public function preview(int $id, ?string $runKey = null): void
@@ -160,13 +251,17 @@ class LocalProcurementImportService
                 $this->deadline($started, (int) config('local_procurement_imports.timeout_seconds'));
             }
             $summary = $this->summary($import);
-            DB::transaction(function () use ($import, $summary, $actor) {
-                $this->ownedUpdate($import, ['status' => $summary['invalid'] ? 'VALIDATION_FAILED' : 'READY', 'summary' => $summary,
-                    'expires_at' => now()->addHours((int) config('local_procurement_imports.preview_hours')),
+            $noNewRecords = $summary['invalid'] === 0 && ($summary[$import->kind === 'PO' ? 'new_po' : 'new_gr'] + ($import->kind === 'PO' ? $summary['po_pr_filled'] : 0)) === 0;
+            $failed = $summary['invalid'] > 0 || $noNewRecords;
+            DB::transaction(function () use ($import, $summary, $actor, $noNewRecords, $failed) {
+                $actor = User::whereKey($actor->id)->lockForUpdate()->firstOrFail();
+                Gate::forUser($actor)->authorize('view', $import);
+                $this->ownedUpdate($import, ['status' => $failed ? 'VALIDATION_FAILED' : 'READY', 'summary' => $summary,
+                    'failure' => $noNewRecords ? __('local_procurement.import.no_new_records') : null,
                     'source_rows' => $import->processed_rows, 'lease_expires_at' => null,
-                    'finished_at' => $summary['invalid'] ? now() : null]);
+                    'finished_at' => $failed ? now() : null]);
                 $this->validator($import->kind)->recordPreview($actor, $import->original_filename,
-                    ['success' => ! $summary['invalid'], 'rows' => [], 'errors' => [], 'source_row_count' => $import->processed_rows, 'summary' => $summary, 'checksum' => $import->checksum]);
+                    ['success' => ! $failed, 'rows' => [], 'errors' => [], 'source_row_count' => $import->processed_rows, 'summary' => $summary, 'checksum' => $import->checksum]);
             });
         } catch (ImportAttemptSuperseded $exception) {
             return;
@@ -185,14 +280,25 @@ class LocalProcurementImportService
             return;
         }
         $owner = $runKey ?? LocalProcurementImport::find($id)?->owner_job_key;
+        $userId = LocalProcurementImport::whereKey($id)->value('user_id');
+        if (! $userId) {
+            return;
+        }
+        $executionNumber = 0;
         try {
-            DB::transaction(function () use ($id, $runKey) {
+            DB::transaction(function () use ($id, $runKey, $userId, &$executionNumber) {
+                $actor = User::whereKey($userId)->lockForUpdate()->firstOrFail();
                 $import = LocalProcurementImport::whereKey($id)->lockForUpdate()->firstOrFail();
                 if ($import->status !== 'IMPORTING' || ($runKey !== null && $import->owner_job_key !== $runKey)) {
                     return;
                 }
                 $started = microtime(true);
-                $actor = User::whereKey($import->user_id)->lockForUpdate()->firstOrFail();
+                $executionNumber++;
+                $execution = (string) Str::uuid();
+                $telemetry = app(LocalProcurementImportProgress::class);
+                $totalRecords = DB::table('local_procurement_import_records')->where('import_id', $id)
+                    ->where('attempt', $import->attempt)->where('kind', $import->kind)->count();
+                $telemetry->write($import, $executionNumber > 1 ? 'RETRYING' : 'PREPARING', 0, $totalRecords, $execution);
                 Gate::forUser($actor)->authorize('confirm', $import);
                 // Lock existing parents once, globally ordered, before any GR writes.
                 $ids = [];
@@ -205,8 +311,10 @@ class LocalProcurementImportService
                     LocalPurchaseOrder::whereIn('id', $chunk)->orderBy('id')->lockForUpdate()->get(['id']);
                     $this->deadline($started, (int) config('local_procurement_imports.commit_seconds'));
                 }
-                $counts = ['newPo' => 0, 'existingPo' => 0, 'newGr' => 0, 'existingGr' => 0,
+                $counts = ['newPo' => 0, 'existingPo' => 0, 'newGr' => 0, 'existingGr' => 0, 'filledPoPr' => 0,
                     'sourceRows' => $import->source_rows, 'totalConsolidated' => (int) ($import->summary['consolidated_gr'] ?? 0), 'total' => $import->source_rows];
+                $processedRecords = 0;
+                $telemetry->write($import, 'SAVING', 0, $totalRecords, $execution);
                 foreach ($this->recordBatches($import) as $records) {
                     $rows = $records->map(fn ($r) => json_decode($r->values, true))->all();
                     if ($records->first()->kind === 'GR') {
@@ -225,18 +333,32 @@ class LocalProcurementImportService
                     foreach ($batchCounts as $key => $value) {
                         $counts[$key] += $value;
                     }
+                    $processedRecords += $records->count();
+                    $telemetry->write($import, $processedRecords >= $totalRecords ? 'FINALIZING' : 'SAVING', $processedRecords, $totalRecords, $execution);
                     $this->deadline($started, (int) config('local_procurement_imports.commit_seconds'));
+                }
+                if ($counts['newPo'] + $counts['newGr'] + $counts['filledPoPr'] === 0) {
+                    throw ValidationException::withMessages(['import_file' => __('local_procurement.import.no_new_records')]);
                 }
                 app(LocalFinanceAuditService::class)->record($actor, match ($import->kind) {
                     'PO' => 'po_import_confirmed', 'GR' => 'gr_import_confirmed',
                 }, $actor, null, null, array_merge($counts, ['import_id' => $import->id, 'original_filename' => $import->original_filename,
                     'source_row_count' => $import->source_rows, 'checksum' => $import->checksum, 'confirmed_at' => now()->toIso8601String()]));
-                $import->update(['status' => 'COMPLETED', 'summary' => array_merge($import->summary ?? [], $counts),
+                $import->update(['status' => 'COMPLETED', 'summary' => array_merge($import->summary ?? [], $counts, [
+                    'new_po' => $counts['newPo'], 'existing_po' => $counts['existingPo'],
+                    'po_pr_filled' => $counts['filledPoPr'],
+                    'new_gr' => $counts['newGr'], 'existing_gr' => $counts['existingGr'],
+                ]),
                     'finished_at' => now(), 'lease_expires_at' => null]);
             }, 3);
         } catch (ValidationException $exception) {
             LocalProcurementImport::whereKey($id)->where('owner_job_key', $owner)->where('status', 'IMPORTING')->update(['status' => 'VALIDATION_FAILED',
                 'failure' => implode(' ', $exception->validator->errors()->all()), 'finished_at' => now()]);
+        } finally {
+            $finished = LocalProcurementImport::find($id);
+            if ($finished && $finished->owner_job_key === $owner) {
+                app(LocalProcurementImportProgress::class)->forget($finished);
+            }
         }
     }
 
@@ -308,6 +430,14 @@ class LocalProcurementImportService
                         'source_count' => 0, 'qty' => '0.0000', 'errors' => [], 'descriptions' => [], 'description_length' => 0];
                 }
                 $first = $group['values'];
+                if ($kind === 'PO' && filled($values['pr_number'] ?? null)) {
+                    if (filled($first['pr_number'] ?? null) && LocalPoPrNumber::key($first['pr_number']) !== LocalPoPrNumber::key($values['pr_number'])) {
+                        $group['errors']['pr_number'] = ['row' => $row->source_row, 'column' => 'pr_number',
+                            'message' => __('local_procurement.pr_import.file_conflict', ['po' => $first['po_number']])];
+                    } elseif (blank($first['pr_number'] ?? null)) {
+                        $group['values']['pr_number'] = $values['pr_number'];
+                    }
+                }
                 $fields = $kind === 'PO' ? ['supplier_id', 'po_date', 'po_amount'] : ['po_number', 'gr_date', 'uom'];
                 foreach ($fields as $field) {
                     $a = trim((string) ($first[$field] ?? ''));
@@ -400,11 +530,12 @@ class LocalProcurementImportService
     private function summary(LocalProcurementImport $import): array
     {
         $records = DB::table('local_procurement_import_records')->where('import_id', $import->id)->where('attempt', $import->attempt);
-        $invalid = DB::table('local_procurement_import_rows')->where('import_id', $import->id)->where('attempt', $import->attempt)->whereRaw('JSON_LENGTH(errors) > 0')->count();
-        $invalid += (clone $records)->whereRaw('JSON_LENGTH(errors) > 0')->count();
+        $sourceErrors = DB::table('local_procurement_import_rows')->where('import_id', $import->id)->where('attempt', $import->attempt)
+            ->whereRaw('JSON_LENGTH(errors) > 0')->select('source_row');
+        $invalid = DB::query()->fromSub($sourceErrors->union((clone $records)->whereRaw('JSON_LENGTH(errors) > 0')->select('source_row')), 'problem_rows')->count();
         $po = (clone $records)->where('kind', 'PO')->count();
         $gr = (clone $records)->where('kind', 'GR')->count();
-        $existingPo = (clone $records)->where('kind', 'PO')->where('values->action', 'EXISTING')->count();
+        $existingPo = (clone $records)->where('kind', 'PO')->whereIn('values->action', ['EXISTING', 'FILL_PR'])->count();
         $existingGr = (clone $records)->where('kind', 'GR')->where('values->action', 'EXISTING')->count();
         $conflicts = (clone $records)->where('values->action', 'CONFLICT')->count();
         $conflicts += DB::table('local_procurement_import_rows')->where('import_id', $import->id)->where('attempt', $import->attempt)
@@ -412,8 +543,12 @@ class LocalProcurementImportService
         $unmatched = (clone $records)->where('values->action', 'UNMATCHED_PO')->count();
 
         return ['total_rows' => $import->processed_rows, 'source_rows' => $import->processed_rows, 'unique_pos' => $po,
-            'consolidated_gr' => $gr, 'new_po' => $po - $existingPo, 'existing_po' => $existingPo,
-            'new_gr' => $gr - $existingGr, 'existing_gr' => $existingGr, 'invalid' => $invalid, 'conflicts' => $conflicts, 'unmatched_po' => $unmatched];
+            'consolidated_gr' => $gr,
+            'new_po' => (clone $records)->where('kind', 'PO')->where('values->action', 'NEW')->whereRaw('JSON_LENGTH(errors) = 0')->count(),
+            'po_pr_filled' => (clone $records)->where('kind', 'PO')->where('values->action', 'FILL_PR')->whereRaw('JSON_LENGTH(errors) = 0')->count(),
+            'existing_po' => $existingPo,
+            'new_gr' => (clone $records)->where('kind', 'GR')->where('values->action', 'NEW')->whereRaw('JSON_LENGTH(errors) = 0')->count(),
+            'existing_gr' => $existingGr, 'invalid' => $invalid, 'conflicts' => $conflicts, 'unmatched_po' => $unmatched];
     }
 
     private function validator(string $kind): LocalPoImportService|LocalGrImportService

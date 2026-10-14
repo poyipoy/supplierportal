@@ -124,21 +124,30 @@ class PurchasingNavigation
             return false;
         }
 
-        $url = trim($url);
+        $decoded = rawurldecode($url);
 
-        if (Str::startsWith($url, ['//', 'javascript:', 'data:'])) {
+        if (str_contains($decoded, '\\') || preg_match('/[\x00-\x1f\x7f]/', $decoded)) {
             return false;
         }
 
-        if (self::isDataEndpointUrl($url)) {
+        if (Str::startsWith(strtolower($decoded), ['//', 'javascript:', 'data:'])) {
             return false;
         }
 
-        if (Str::startsWith($url, '/')) {
-            return ! self::containsLegacyNumericIdentifier($url);
+        if (self::isDataEndpointUrl($decoded)) {
+            return false;
         }
 
-        $parsed = parse_url($url);
+        if (Str::startsWith($decoded, '/')) {
+            $parts = parse_url($decoded);
+
+            return is_array($parts)
+                && ! isset($parts['scheme']) && ! isset($parts['host'])
+                && ! isset($parts['user']) && ! isset($parts['pass'])
+                && ! self::containsLegacyNumericIdentifier($decoded);
+        }
+
+        $parsed = parse_url($decoded);
 
         if (! is_array($parsed) || empty($parsed['host'])) {
             return false;
@@ -146,7 +155,9 @@ class PurchasingNavigation
 
         return ($parsed['host'] ?? null) === request()->getHost()
             && in_array($parsed['scheme'] ?? request()->getScheme(), ['http', 'https'], true)
-            && ! self::containsLegacyNumericIdentifier($url);
+            && ! isset($parsed['user']) && ! isset($parsed['pass'])
+            && ($parsed['port'] ?? request()->getPort()) === request()->getPort()
+            && ! self::containsLegacyNumericIdentifier($decoded);
     }
 
     public static function isDataEndpointUrl(?string $url): bool

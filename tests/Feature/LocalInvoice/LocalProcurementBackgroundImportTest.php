@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Services\LocalInvoice\LocalPoImportService;
 use App\Services\LocalInvoice\LocalProcurementImportService;
 use App\Services\LocalInvoice\LocalProcurementStreamingReader;
+use App\Services\RegionalDisplayFormatter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
@@ -27,6 +28,7 @@ use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class LocalProcurementBackgroundImportTest extends TestCase
@@ -257,7 +259,8 @@ class LocalProcurementBackgroundImportTest extends TestCase
         $service = app(LocalProcurementImportService::class);
         [$import] = $service->start($this->actor, $this->workbook('PO', 1), 'PO');
         $service->preview($import->id);
-        $this->assertSame('READY', $import->fresh()->status);
+        $this->assertSame('VALIDATION_FAILED', $import->fresh()->status);
+        $this->assertSame(__('local_procurement.import.no_new_records'), $import->fresh()->failure);
         $this->assertSame(1, $import->fresh()->summary['existing_po']);
         $this->assertSame(0, $import->fresh()->summary['new_po']);
         $this->po->delete();
@@ -318,8 +321,8 @@ class LocalProcurementBackgroundImportTest extends TestCase
     public function test_csv_and_xls_http_uploads_match_xlsx_domain_values(): void
     {
         foreach (['PO', 'GR'] as $kind) {
-            foreach (['xlsx', 'csv', 'xls'] as $format) {
-                $xlsx = $this->workbook($kind, 2001);
+            foreach (['xlsx', 'csv', 'xls'] as $formatIndex => $format) {
+                $xlsx = $this->workbook($kind, 2001, offset: $formatIndex * 2001);
                 if ($format === 'xlsx') {
                     $file = $xlsx;
                 } else {
@@ -359,14 +362,240 @@ class LocalProcurementBackgroundImportTest extends TestCase
                 $this->assertSame('COMPLETED', $import->fresh()->status);
             }
         }
-        $this->assertSame(2002, LocalPurchaseOrder::count());
-        $this->assertSame(1, LocalGoodsReceipt::count());
+        $this->assertSame(6004, LocalPurchaseOrder::count());
+        $this->assertSame(3, LocalGoodsReceipt::count());
         $this->assertSame('2001.0000', LocalGoodsReceipt::firstOrFail()->qty);
-        $this->assertSame(2001, LocalFinanceAuditLog::where('action', 'po_created')->count());
-        $this->assertSame(1, LocalFinanceAuditLog::where('action', 'gr_created')->count());
+        $this->assertSame(6003, LocalFinanceAuditLog::where('action', 'po_created')->count());
+        $this->assertSame(3, LocalFinanceAuditLog::where('action', 'gr_created')->count());
     }
 
-    private function workbook(string $kind, int $count, bool $mixed = false): UploadedFile
+    public function test_unfinished_previews_can_be_resumed_and_cancelled_to_free_a_shared_slot(): void
+    {
+        $service = app(LocalProcurementImportService::class);
+        [$poImport] = $service->start($this->actor, $this->workbook('PO', 1), 'PO');
+        [$grImport] = $service->start($this->actor, $this->workbook('GR', 1), 'GR');
+        $service->preview($poImport->id);
+        $service->preview($grImport->id);
+        $this->assertSame('READY', $poImport->fresh()->status);
+        $this->assertSame('READY', $grImport->fresh()->status);
+
+        $this->actingAs($this->actor)->getJson(route('finance.local-procurement.imports.index', ['active' => 1]))
+            ->assertOk()->assertJsonCount(2)->assertJsonFragment(['id' => $poImport->hash, 'kind' => 'PO', 'status' => 'READY']);
+        $this->getJson(route('finance.local-procurement.imports.status', $grImport))
+            ->assertOk()->assertJsonPath('status', 'READY')->assertJsonPath('token', $service->tokenFor($grImport));
+        $other = User::factory()->create(['role' => 'purchasing']);
+        $this->actingAs($other)->getJson(route('purchasing.local-procurement.imports.index', ['active' => 1]))
+            ->assertOk()->assertExactJson([]);
+        $this->postJson(route('purchasing.local-procurement.imports.cancel', $poImport))->assertForbidden();
+
+        $this->actingAs($this->actor)->postJson(route('finance.local-procurement.imports.cancel', $poImport))
+            ->assertOk()->assertJsonPath('status', 'CANCELLED');
+        $this->assertSame('CANCELLED', $poImport->fresh()->status);
+        [$replacement] = $service->start($this->actor, $this->workbook('PO', 1), 'PO');
+        $this->assertSame('QUEUED', $replacement->status);
+        $this->assertSame('READY', $grImport->fresh()->status);
+    }
+
+    public function test_active_import_list_excludes_expired_previews_and_terminal_imports(): void
+    {
+        $create = function (string $status, bool $expired = false): LocalProcurementImport {
+            return LocalProcurementImport::create(['user_id' => $this->actor->id, 'kind' => 'GR', 'locale' => 'en',
+                'status' => $status, 'token_hash' => hash('sha256', uniqid('', true)), 'checksum' => str_repeat('a', 64),
+                'original_filename' => 'preview.xlsx', 'expires_at' => $expired ? now()->subHour() : now()->addHour()]);
+        };
+        $create('READY', true);
+        $create('COMPLETED');
+        $reading = $create('READING', true);
+        $ready = $create('READY');
+        $response = $this->actingAs($this->actor)->getJson(route('finance.local-procurement.imports.index', ['active' => 1]));
+        $response->assertOk()->assertJsonCount(2)->assertJsonFragment(['id' => $reading->hash])->assertJsonFragment(['id' => $ready->hash]);
+        $response->assertHeader('Cache-Control', 'no-store, private');
+        // The recovery panel shows when each import was uploaded and how far it got.
+        $response->assertJsonStructure([['id', 'kind', 'status', 'filename', 'status_url', 'created_at', 'processed_rows']]);
+        $ready->forceFill(['processed_rows' => 544])->save();
+        $entry = collect($this->getJson(route('finance.local-procurement.imports.index', ['active' => 1]))->json())->firstWhere('id', $ready->hash);
+        $this->assertSame(544, $entry['processed_rows']);
+        $this->assertSame(app(RegionalDisplayFormatter::class)->timestamp($ready->created_at), $entry['created_at']);
+    }
+
+    public static function importKinds(): array
+    {
+        return [['PO'], ['GR']];
+    }
+
+    #[DataProvider('importKinds')]
+    public function test_reimporting_identical_data_blocks_preview_and_preserves_master_and_audits(string $kind): void
+    {
+        $service = app(LocalProcurementImportService::class);
+        [$first, $token] = $this->readyImport($kind, 1);
+        $service->confirm($this->actor, $token, $kind);
+        $service->commit($first->id);
+        $this->assertSame('COMPLETED', $first->fresh()->status);
+        $masters = [LocalPurchaseOrder::count(), LocalGoodsReceipt::count()];
+        $audits = LocalFinanceAuditLog::whereIn('action', ['po_created', 'gr_created', 'po_import_confirmed', 'gr_import_confirmed'])->count();
+
+        [$repeat, $repeatToken] = $service->start($this->actor, $this->workbook($kind, 1, distinctGr: true), $kind);
+        $service->preview($repeat->id);
+        $repeat->refresh();
+        $key = strtolower($kind);
+        $this->assertSame('VALIDATION_FAILED', $repeat->status);
+        $this->assertSame(__('local_procurement.import.no_new_records'), $repeat->failure);
+        $this->assertSame(0, $repeat->summary['new_'.$key]);
+        $this->assertSame(1, $repeat->summary['existing_'.$key]);
+        $this->assertSame(0, $repeat->summary['conflicts']);
+        $this->assertSame(0, $repeat->summary['invalid']);
+        $this->assertNotNull($repeat->finished_at);
+        $this->assertSame(1, DB::table('local_procurement_import_records')->where('import_id', $repeat->id)->count());
+        $this->actingAs($this->actor)->getJson(route('finance.local-procurement.imports.status', $repeat))
+            ->assertOk()->assertJsonPath('token', null)->assertJsonPath('preview.rows.0.action', 'EXISTING');
+        $this->postJson(route('finance.local-procurement.import.'.$key.'.confirm'), ['token' => $repeatToken])->assertStatus(409);
+
+        // A replay of the completed batch remains idempotent.
+        $service->confirm($this->actor, $token, $kind);
+        $service->commit($first->id);
+        $this->assertSame($masters, [LocalPurchaseOrder::count(), LocalGoodsReceipt::count()]);
+        $this->assertSame($audits, LocalFinanceAuditLog::whereIn('action', ['po_created', 'gr_created', 'po_import_confirmed', 'gr_import_confirmed'])->count());
+        $previewAudit = LocalFinanceAuditLog::where('action', $key.'_import_previewed')->latest('id')->firstOrFail();
+        $this->assertFalse($previewAudit->metadata['valid']);
+
+        // Rejected duplicate previews do not consume an active slot.
+        [$next] = $service->start($this->actor, $this->workbook($kind, 1, distinctGr: true, offset: 10), $kind);
+        $this->assertSame('QUEUED', $next->status);
+    }
+
+    #[DataProvider('importKinds')]
+    public function test_legacy_ready_preview_without_new_data_or_valid_summary_never_dispatches(string $kind): void
+    {
+        $key = 'new_'.strtolower($kind);
+        foreach (['finance', 'purchasing'] as $role) {
+            $this->actor->update(['role' => $role]);
+            [$import, $token] = $this->readyImport($kind, 1);
+            foreach ([[$key => 0], null, [], [$key => '1'], [$key => -1]] as $summary) {
+                $import->update(['summary' => $summary]);
+                $response = $this->actingAs($this->actor)->postJson(route($role.'.local-procurement.import.'.strtolower($kind).'.confirm'), ['token' => $token]);
+                if ($summary === [$key => 0]) {
+                    $response->assertStatus(422)->assertJsonValidationErrors('import_file');
+                    $this->assertSame(__('local_procurement.import.no_new_records'), $response->json('errors.import_file.0'));
+                } else {
+                    $response->assertStatus(409);
+                }
+                $this->assertSame('READY', $import->fresh()->status);
+                Queue::assertNotPushed(ProcessLocalProcurementImport::class, fn ($job) => $job->importId === $import->id && $job->stage === 'confirm');
+            }
+            $import->update(['status' => 'CANCELLED']);
+        }
+    }
+
+    #[DataProvider('importKinds')]
+    public function test_worker_rejects_a_second_preview_when_all_records_became_existing(string $kind): void
+    {
+        $service = app(LocalProcurementImportService::class);
+        [$first, $firstToken] = $this->readyImport($kind, 1);
+        [$second, $secondToken] = $this->readyImport($kind, 1);
+        $service->confirm($this->actor, $firstToken, $kind);
+        $service->commit($first->id);
+        $masters = [LocalPurchaseOrder::count(), LocalGoodsReceipt::count()];
+        $audits = LocalFinanceAuditLog::count();
+        $service->confirm($this->actor, $secondToken, $kind);
+        $service->commit($second->id);
+        $this->assertSame('VALIDATION_FAILED', $second->fresh()->status);
+        $this->assertSame(__('local_procurement.import.no_new_records'), $second->fresh()->failure);
+        $this->assertSame($masters, [LocalPurchaseOrder::count(), LocalGoodsReceipt::count()]);
+        $this->assertSame($audits, LocalFinanceAuditLog::count());
+        $this->assertSame(1, LocalFinanceAuditLog::where('action', strtolower($kind).'_import_confirmed')->count());
+        $service->commit($second->id);
+        $this->assertSame($audits, LocalFinanceAuditLog::count());
+    }
+
+    #[DataProvider('importKinds')]
+    public function test_mixed_import_skips_existing_records_and_reports_actual_counts(string $kind): void
+    {
+        $service = app(LocalProcurementImportService::class);
+        [$first, $firstToken] = $this->readyImport($kind, 1);
+        $service->confirm($this->actor, $firstToken, $kind);
+        $service->commit($first->id);
+        [$mixed, $token] = $this->readyImport($kind, 2);
+        $this->assertSame(1, $mixed->fresh()->summary['new_'.strtolower($kind)]);
+        $this->assertSame(1, $mixed->fresh()->summary['existing_'.strtolower($kind)]);
+        $service->confirm($this->actor, $token, $kind);
+        $service->commit($mixed->id);
+        $this->assertCompletedCounts($mixed, $kind, 1, 1);
+    }
+
+    #[DataProvider('importKinds')]
+    public function test_worker_reconciles_preview_counts_after_another_import_commits(string $kind): void
+    {
+        $service = app(LocalProcurementImportService::class);
+        [$first, $firstToken] = $this->readyImport($kind, 1);
+        [$mixed, $mixedToken] = $this->readyImport($kind, 2);
+        $this->assertSame(2, $mixed->fresh()->summary['new_'.strtolower($kind)]);
+        $service->confirm($this->actor, $firstToken, $kind);
+        $service->commit($first->id);
+        $service->confirm($this->actor, $mixedToken, $kind);
+        $service->commit($mixed->id);
+        $this->assertCompletedCounts($mixed, $kind, 1, 1);
+    }
+
+    #[DataProvider('importKinds')]
+    public function test_conflicting_existing_data_blocks_the_entire_file(string $kind): void
+    {
+        $service = app(LocalProcurementImportService::class);
+        [$first, $token] = $this->readyImport($kind, 1);
+        $service->confirm($this->actor, $token, $kind);
+        $service->commit($first->id);
+        if ($kind === 'PO') {
+            LocalPurchaseOrder::where('po_number', 'PO-ROW-0')->update(['total_amount' => '101.00']);
+        } else {
+            LocalGoodsReceipt::where('gr_number', 'IMPORT-GR-0')->update(['qty' => '2.0000']);
+        }
+        $masters = [LocalPurchaseOrder::count(), LocalGoodsReceipt::count()];
+        [$conflict, $token] = $service->start($this->actor, $this->workbook($kind, 2, distinctGr: true), $kind);
+        $service->preview($conflict->id);
+        $this->assertSame('VALIDATION_FAILED', $conflict->fresh()->status);
+        $this->assertGreaterThan(0, $conflict->fresh()->summary['conflicts']);
+        $this->assertNull($conflict->fresh()->failure);
+        $this->actingAs($this->actor)->postJson(route('finance.local-procurement.import.'.strtolower($kind).'.confirm'), ['token' => $token])->assertStatus(409);
+        $this->assertSame($masters, [LocalPurchaseOrder::count(), LocalGoodsReceipt::count()]);
+    }
+
+    #[DataProvider('importKinds')]
+    public function test_existing_first_batch_does_not_block_new_records_in_later_batches(string $kind): void
+    {
+        $service = app(LocalProcurementImportService::class);
+        [$first, $firstToken] = $this->readyImport($kind, 500);
+        $service->confirm($this->actor, $firstToken, $kind);
+        $service->commit($first->id);
+        [$mixed, $mixedToken] = $this->readyImport($kind, 501, lastNumber: 'ZZZ-NEW');
+        $actions = DB::table('local_procurement_import_records')->where('import_id', $mixed->id)
+            ->orderBy('id')->pluck('values')->map(fn ($values) => json_decode($values, true)['action'])->all();
+        $this->assertSame(array_fill(0, 500, 'EXISTING'), array_slice($actions, 0, 500));
+        $this->assertSame('NEW', $actions[500]);
+        $service->confirm($this->actor, $mixedToken, $kind);
+        $service->commit($mixed->id);
+        $this->assertCompletedCounts($mixed, $kind, 1, 500);
+    }
+
+    private function readyImport(string $kind, int $count, ?string $lastNumber = null): array
+    {
+        $service = app(LocalProcurementImportService::class);
+        [$import, $token] = $service->start($this->actor, $this->workbook($kind, $count, distinctGr: true, lastNumber: $lastNumber), $kind);
+        $service->preview($import->id);
+        $this->assertSame('READY', $import->fresh()->status, $import->fresh()->failure ?? '');
+
+        return [$import, $token];
+    }
+
+    private function assertCompletedCounts(LocalProcurementImport $import, string $kind, int $created, int $existing): void
+    {
+        $import->refresh();
+        $this->assertSame('COMPLETED', $import->status, $import->failure ?? '');
+        $this->assertSame($created, $import->summary['new_'.strtolower($kind)]);
+        $this->assertSame($existing, $import->summary['existing_'.strtolower($kind)]);
+        $this->assertSame($created, $import->summary['new'.ucfirst(strtolower($kind))]);
+        $this->assertSame($existing, $import->summary['existing'.ucfirst(strtolower($kind))]);
+    }
+
+    private function workbook(string $kind, int $count, bool $mixed = false, bool $distinctGr = false, int $offset = 0, ?string $lastNumber = null): UploadedFile
     {
         $path = Storage::disk('private')->path('fixture-'.uniqid().'.xlsx');
         $writer = new Writer;
@@ -376,17 +605,20 @@ class LocalProcurementBackgroundImportTest extends TestCase
         for ($i = 0; $i < $count; $i++) {
             $row = array_fill(0, 21, null);
             if ($kind === 'PO') {
-                $row[4] = 'PO-ROW-'.$i;
+                $row[4] = 'PO-ROW-'.($offset + $i);
                 $row[6] = 'PT Import Test';
                 $row[9] = '2026-10-01';
                 $row[10] = '100.00';
             } elseif ($kind === 'GR') {
                 $row[8] = 'Long material description';
-                $row[9] = 'IMPORT-GR';
+                $row[9] = $distinctGr ? 'IMPORT-GR-'.($offset + $i) : 'IMPORT-GR'.($offset ? '-'.$offset : '');
                 $row[11] = 'IMPORT-PARENT';
                 $row[15] = 1;
                 $row[16] = $mixed && $i === 500 ? 'kg' : 'pcs';
                 $row[19] = '2026-10-01';
+            }
+            if ($lastNumber !== null && $i === $count - 1) {
+                $row[$kind === 'PO' ? 4 : 9] = $lastNumber;
             }
             $writer->addRow(Row::fromValues($row));
         }

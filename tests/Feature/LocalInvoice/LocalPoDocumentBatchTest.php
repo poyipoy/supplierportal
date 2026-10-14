@@ -4,9 +4,12 @@ namespace Tests\Feature\LocalInvoice;
 
 use App\Jobs\ProcessLocalPoDocumentBatch;
 use App\Models\Attachment;
+use App\Models\FileInspection;
+use App\Models\LocalPoDocumentBatch;
 use App\Models\LocalPurchaseOrder;
 use App\Models\SupplierScope;
 use App\Models\User;
+use App\Services\FileSecurity\NativeArchiveInspector;
 use App\Services\LocalInvoice\LocalPoDocumentBatchService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -49,6 +52,57 @@ class LocalPoDocumentBatchTest extends TestCase
             $this->assertDatabaseCount('local_finance_audit_logs', 1);
         } finally {
             @unlink($file->getPathname());
+        }
+    }
+
+    public function test_failed_admission_marks_the_discarded_inspection_as_error(): void
+    {
+        [$actor, $supplier] = $this->actors();
+        $file = $this->zip('PO-BATCH-1.pdf');
+        LocalPoDocumentBatch::creating(function (): void {
+            throw new \RuntimeException('Injected admission failure');
+        });
+        try {
+            try {
+                app(LocalPoDocumentBatchService::class)->start($actor, $supplier, $file, (string) Str::uuid());
+                $this->fail('Expected admission failure.');
+            } catch (\RuntimeException $exception) {
+                $this->assertSame('Injected admission failure', $exception->getMessage());
+            }
+            $this->assertDatabaseCount('local_po_document_batches', 0);
+            $this->assertSame([], Storage::disk('private')->allFiles('po-documents/originals'));
+            $inspection = FileInspection::where('profile', 'po_zip')->sole();
+            $this->assertSame('ERROR', $inspection->status);
+            $this->assertSame('admission_failed', $inspection->error_code);
+        } finally {
+            LocalPoDocumentBatch::flushEventListeners();
+            unlink($file->getPathname());
+        }
+    }
+
+    public function test_superseded_worker_does_not_fail_the_new_attempt_or_delete_its_original(): void
+    {
+        [$actor, $supplier, $po] = $this->actors();
+        $file = $this->zip('PO-BATCH-1.pdf');
+        try {
+            $service = app(LocalPoDocumentBatchService::class);
+            $batch = $service->start($actor, $supplier, $file, (string) Str::uuid(), false);
+            $inspector = app(NativeArchiveInspector::class);
+            $this->partialMock(NativeArchiveInspector::class)->shouldReceive('extractPdfArchive')->once()
+                ->andReturnUsing(function (...$arguments) use ($inspector, $batch) {
+                    $files = $inspector->extractPdfArchive(...$arguments);
+                    $batch->update(['run_token' => 'replacement-worker']);
+
+                    return $files;
+                });
+            $service->process($batch->id, $batch->dispatch_token);
+            $this->assertSame('PROCESSING', $batch->fresh()->status);
+            $this->assertSame('replacement-worker', $batch->fresh()->run_token);
+            $this->assertNull($batch->fresh()->failure_code);
+            Storage::disk('private')->assertExists($batch->original_path);
+            $this->assertSame(0, $po->attachments()->count());
+        } finally {
+            unlink($file->getPathname());
         }
     }
 
@@ -139,6 +193,7 @@ class LocalPoDocumentBatchTest extends TestCase
             $this->assertDatabaseCount('attachments', 0);
             $this->assertDatabaseCount('local_finance_audit_logs', 0);
             $this->assertSame([], Storage::disk('private')->allFiles('attachments/po-documents'));
+            $this->assertSame(0, FileInspection::where('profile', 'po_zip_pdf')->where('status', 'VALIDATED')->count());
         } finally {
             Attachment::flushEventListeners();
             unlink($file->getPathname());

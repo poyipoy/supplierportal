@@ -174,9 +174,7 @@ class PurchaseOrderGenerationService
                 // Resolve snapshot exchange rate
                 $exchangeRateId = $supplierAwards->first()?->quotation?->exchange_rate_id;
                 if (! $exchangeRateId) {
-                    $latestRate = ExchangeRate::where('currency', $currency)
-                        ->orderByDesc('valid_from')
-                        ->first();
+                    $latestRate = ExchangeRate::latestRate($currency);
                     $exchangeRateId = $latestRate?->id;
                 }
 

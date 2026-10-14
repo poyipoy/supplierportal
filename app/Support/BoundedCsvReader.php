@@ -12,8 +12,8 @@ final class BoundedCsvReader
         if (! is_resource($stream) || strlen($delimiter) !== 1) {
             $this->reject();
         }
-        $maxRecord = (int) config('native_file_security.csv.max_record_bytes', 50 * 1024 * 1024);
-        $maxCell = (int) config('native_file_security.csv.max_cell_bytes', 50 * 1024 * 1024);
+        $maxRecord = (int) config('native_file_security.csv.max_record_bytes', 1024 * 1024);
+        $maxCell = (int) config('native_file_security.csv.max_cell_bytes', 64 * 1024);
         $maxColumns = (int) config('native_file_security.csv.max_columns', 16384);
         if (min($maxRecord, $maxCell, $maxColumns) < 1) {
             $this->reject();

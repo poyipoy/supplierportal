@@ -6,6 +6,7 @@ use App\Exports\InspectionsExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Export\AdvancedExportRequest;
 use App\Http\Requests\Export\Filters\InspectionExportFilters;
+use App\Support\ExportConfirmation;
 use App\Support\ExportDispatcher;
 
 class QcExportController extends Controller
@@ -13,6 +14,10 @@ class QcExportController extends Controller
     public function inspections(AdvancedExportRequest $request)
     {
         $filters = InspectionExportFilters::validated($request);
+
+        if ($request->isMethod('get')) {
+            return ExportConfirmation::make($request, __('exports.job_labels.qc_summary'));
+        }
 
         $exportJob = ExportDispatcher::dispatch(
             __('exports.job_labels.qc_summary'),

@@ -1,0 +1,28 @@
+<?php
+
+return [
+    'different_actor' => 'A different reviewer must complete this step. An allowed administrator override requires a reason.',
+    'missing_actor' => 'This record is missing a required reviewer identity. Complete the previous verification again.',
+    'amount_limit' => 'The amount must be between :min and :max.',
+    'ga_zero_fee' => 'GA reimbursements must have a zero bank fee.',
+    'bank_frozen' => 'Bank details cannot change while an employee has an active verified claim.',
+    'bank_actor' => 'Bank details may only be changed by an active GA user or administrator.',
+    'bank_snapshot' => 'The approved bank details are missing or have changed. Finance must verify them again before batching.',
+    'bank_reverify' => 'Bank details can only be reverified for an unbatched Ready to Pay claim.',
+    'bank_reverified' => 'The claim bank details have been verified again.',
+    'reverify_bank' => 'Verify bank details again',
+    'reverify_bank_help' => 'Confirm the destination account above before including this claim in a payment batch.',
+    'bank_document' => 'Select an owned, readable bank declaration document for this bank change.',
+    'bank_document_label' => 'Bank declaration document',
+    'transfer_status' => 'Transfer exports require a validated DRP batch (finalized, partially paid, or paid).',
+    'transfer_partial' => 'Transfer exports require active supplier invoices that are ready to pay or paid.',
+    'transfer_empty' => 'No active payment groups are available for transfer export.',
+    'transfer_locked' => 'This batch has a transfer export and its membership or fees cannot be changed.',
+    'voucher_status' => 'Vouchers may only be assigned to an unpaid group in a finalized batch.',
+    'override_label' => 'Administrator override reason',
+    'override_help' => 'Only needed when this action overrides reviewer separation; the reason is recorded in the audit.',
+    'password_required' => 'Your administrator has set your password. Change it before continuing.',
+    'password_notice_title' => 'Password set by an administrator',
+    'password_notice_body' => 'An administrator set your account password. Sign in and change it before using the portal. Contact your administrator if you did not expect this.',
+    'import_actor' => 'The import actor must be an active GA user or administrator.',
+];

@@ -87,7 +87,7 @@
             >
                 <x-ui.icon name="clock" size="sm" />
                 <span>{{ __('finance.drp.unpaid') }}</span>
-                <span class="tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-px-2 tw-py-0.5 tw-text-[11px] tw-font-bold ui-tabular-nums {{ $tab === 'unpaid' ? 'tw-bg-primary-foreground/20 tw-text-primary-foreground' : 'tw-bg-surface tw-text-on-surface-variant' }}" data-tab-count="unpaid">
+                <span class="drp-paid-tab-count tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-px-2 tw-py-0.5 tw-text-[11px] tw-font-bold ui-tabular-nums {{ $tab === 'unpaid' ? 'tw-bg-primary-foreground/20 tw-text-primary-foreground' : 'tw-bg-surface tw-text-on-surface-variant' }}" data-tab-count="unpaid">
                     {{ $metrics['unpaid_count'] }}
                 </span>
             </a>
@@ -99,7 +99,7 @@
             >
                 <x-ui.icon name="badge-check" size="sm" />
                 <span>{{ __('finance.drp.paid') }}</span>
-                <span class="tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-px-2 tw-py-0.5 tw-text-[11px] tw-font-bold ui-tabular-nums {{ $tab === 'paid' ? 'tw-bg-primary-foreground/20 tw-text-primary-foreground' : 'tw-bg-surface tw-text-on-surface-variant' }}" data-tab-count="paid">
+                <span class="drp-paid-tab-count tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-px-2 tw-py-0.5 tw-text-[11px] tw-font-bold ui-tabular-nums {{ $tab === 'paid' ? 'tw-bg-primary-foreground/20 tw-text-primary-foreground' : 'tw-bg-surface tw-text-on-surface-variant' }}" data-tab-count="paid">
                     {{ $metrics['paid_count'] }}
                 </span>
             </a>
@@ -111,7 +111,7 @@
             >
                 <x-ui.icon name="layers" size="sm" />
                 <span>{{ __('finance.drp.all_batches') }}</span>
-                <span class="tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-px-2 tw-py-0.5 tw-text-[11px] tw-font-bold ui-tabular-nums {{ $tab === 'all' ? 'tw-bg-primary-foreground/20 tw-text-primary-foreground' : 'tw-bg-surface tw-text-on-surface-variant' }}" data-tab-count="all">
+                <span class="drp-paid-tab-count tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-px-2 tw-py-0.5 tw-text-[11px] tw-font-bold ui-tabular-nums {{ $tab === 'all' ? 'tw-bg-primary-foreground/20 tw-text-primary-foreground' : 'tw-bg-surface tw-text-on-surface-variant' }}" data-tab-count="all">
                     {{ $metrics['total_batches'] }}
                 </span>
             </a>

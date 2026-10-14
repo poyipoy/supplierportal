@@ -68,4 +68,18 @@ class LocalProcurementCsvReaderTest extends TestCase
             }
         }
     }
+
+    public function test_blank_source_rows_count_toward_the_streaming_limit(): void
+    {
+        config(['local_procurement_imports.max_rows' => 2]);
+        $path = $this->csv(',');
+        file_put_contents($path, "\n\n", FILE_APPEND);
+        try {
+            $this->expectException(ValidationException::class);
+            $this->expectExceptionMessage(__('local_procurement.import.row_limit', ['count' => 2]));
+            iterator_to_array(app(LocalProcurementStreamingReader::class)->rows($path, 'GR'));
+        } finally {
+            unlink($path);
+        }
+    }
 }

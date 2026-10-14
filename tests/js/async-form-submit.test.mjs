@@ -12,7 +12,7 @@ test('Laravel error keys map to the input names used by the forms', () => {
     assert.deepEqual(errorKeyToFieldNames(null), []);
 });
 
-test('an HTML 413 response displays a file error and restores the form without removing the selected ZIP', async () => {
+for (const status of [413, 422]) test(`${status} error restores the form without removing the selected upload`, async () => {
     const prior = Object.fromEntries(['window', 'document', 'fetch', 'FormData', 'CustomEvent'].map((key) => [key, globalThis[key]]));
     const events = [];
     const selected = { name: 'documents.zip', size: 70 * 1024 * 1024 };
@@ -37,15 +37,57 @@ test('an HTML 413 response displays a file error and restores the form without r
         globalThis.document = { createElement: element, querySelector: () => null };
         globalThis.FormData = class { append() {} };
         globalThis.CustomEvent = class { constructor(type, options) { this.type = type; this.detail = options?.detail; } };
-        globalThis.fetch = async () => ({ ok: false, status: 413, json: async () => { throw new Error('HTML response'); } });
+        globalThis.fetch = async () => ({ ok: false, status, json: async () => {
+            if (status === 413) throw new Error('HTML response');
+            return { errors: { email: ['This email is already registered.'] } };
+        } });
         await submitAsync(form);
         const error = events.find((event) => event.type === 'adasi:form-errors');
-        assert.deepEqual(error?.detail.errors, { file: ['js.async_form.too_large'] });
+        assert.deepEqual(error?.detail.errors, status === 413 ? { file: ['js.async_form.too_large'] } : { email: ['This email is already registered.'] });
         assert.equal(form.dataset.asyncSubmitting, undefined);
         assert.equal(loaderHidden, true);
         assert.equal(buttonsReset, true);
         assert.deepEqual(input.files, [selected]);
         assert.equal(summary.hidden, false);
+    } finally {
+        Object.assign(globalThis, prior);
+    }
+});
+
+test('submits to the attribute action URL, not a same-named form control that shadows the IDL property', async () => {
+    // A <input name="action"> (or id="action") inside a <form> shadows the native
+    // HTMLFormElement.action getter in real browsers: form.action then returns the
+    // input element instead of the URL string. form.getAttribute('action') is immune
+    // to this because it reads the raw content attribute, bypassing named-item lookup.
+    const prior = Object.fromEntries(['window', 'document', 'fetch', 'FormData', 'CustomEvent'].map((key) => [key, globalThis[key]]));
+    let requestedUrl = null;
+    const shadowingActionInput = { toString: () => '[object HTMLInputElement]' };
+    const form = {
+        action: shadowingActionInput,
+        dataset: {},
+        getAttribute: (name) => (name === 'action' ? 'http://portal.test/supplier/quotations/abc123' : 'POST'),
+        setAttribute() {}, removeAttribute() {},
+        querySelectorAll: () => [],
+        querySelector: () => null,
+        dispatchEvent() {},
+    };
+    try {
+        globalThis.window = {
+            location: { origin: 'http://portal.test', assign() {} },
+            requestAnimationFrame: (callback) => callback(),
+            AdasiI18n: { t: (key) => key },
+            AdasiLoader: { show: () => 1, hide() {} },
+            AdasiButton: { resetForm() {} },
+        };
+        globalThis.document = { createElement: () => ({ setAttribute() {}, append() {}, replaceChildren() {} }), querySelector: () => null };
+        globalThis.FormData = class { append() {} };
+        globalThis.CustomEvent = class { constructor(type, options) { this.type = type; this.detail = options?.detail; } };
+        globalThis.fetch = async (url) => {
+            requestedUrl = url;
+            return { ok: true, redirected: false, json: async () => ({ redirect: '/supplier/quotations/period/1' }) };
+        };
+        await submitAsync(form);
+        assert.equal(requestedUrl, 'http://portal.test/supplier/quotations/abc123');
     } finally {
         Object.assign(globalThis, prior);
     }

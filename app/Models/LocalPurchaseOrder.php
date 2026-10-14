@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use App\Support\LocalPoPrNumber;
 use App\Traits\HasHashids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Validation\ValidationException;
 
 class LocalPurchaseOrder extends Model
 {
@@ -25,6 +27,7 @@ class LocalPurchaseOrder extends Model
 
     protected $fillable = [
         'po_number',
+        'pr_number',
         'supplier_id',
         'total_amount',
         'currency',
@@ -40,6 +43,20 @@ class LocalPurchaseOrder extends Model
         'total_amount' => 'decimal:2',
         'po_date' => 'date',
     ];
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $po): void {
+            if (array_key_exists('pr_number', $po->getAttributes())) {
+                $po->pr_number = LocalPoPrNumber::normalize($po->pr_number);
+            }
+            $original = $po->getRawOriginal('pr_number');
+            if ($po->exists && filled($original) && $po->isDirty('pr_number')
+                && LocalPoPrNumber::key($original) !== LocalPoPrNumber::key($po->pr_number)) {
+                throw ValidationException::withMessages(['pr_number' => __('local_procurement.pr_import.conflict', ['po' => $po->po_number])]);
+            }
+        });
+    }
 
     public function supplier(): BelongsTo
     {

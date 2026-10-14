@@ -3,6 +3,7 @@
 namespace App\Services\Employee;
 
 use App\Models\Employee;
+use App\Models\User;
 use App\Services\FileSecurity\FileInspectionService;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -35,8 +36,11 @@ class EmployeeExcelImportService
      *
      * @return array{total: int, created: int, updated: int}
      */
-    public function import(?string $filePath = null, ?string $sheetName = null): array
+    public function import(?string $filePath = null, ?string $sheetName = null, ?User $actor = null): array
     {
+        if ($actor !== null && (! $actor->is_active || (! $actor->isGa() && ! $actor->isAdmin()))) {
+            throw new InvalidArgumentException(__('finance_controls.import_actor'));
+        }
         $path = $filePath ?: $this->resolveDefaultFilePath();
 
         if (! file_exists($path)) {
@@ -68,7 +72,7 @@ class EmployeeExcelImportService
         $updatedCount = 0;
         $totalProcessed = 0;
 
-        DB::transaction(function () use ($targetSheet, $highestRow, &$createdCount, &$updatedCount, &$totalProcessed) {
+        DB::transaction(function () use ($targetSheet, $highestRow, $actor, &$createdCount, &$updatedCount, &$totalProcessed) {
             for ($row = 2; $row <= $highestRow; $row++) {
                 $name = trim((string) $targetSheet->getCell('C'.$row)->getValue());
                 $dept = trim((string) $targetSheet->getCell('D'.$row)->getValue());
@@ -94,16 +98,15 @@ class EmployeeExcelImportService
                 // Account holder name defaults to employee name if empty
                 $cleanHolder = $holder !== '' ? $holder : $name;
 
-                $employee = Employee::updateOrCreate(
-                    ['name' => $name],
-                    [
-                        'department' => $dept !== '' ? $dept : 'GENERAL',
-                        'bank_name' => $cleanBank !== '' ? $cleanBank : 'BCA',
-                        'account_number' => $cleanAccount,
-                        'account_holder_name' => $cleanHolder,
-                        'is_active' => true,
-                    ]
-                );
+                $employee = Employee::where('name', $name)->lockForUpdate()->first() ?? new Employee(['name' => $name]);
+                $employee->bankChangeActor = $actor;
+                $employee->fill([
+                    'department' => $dept !== '' ? $dept : 'GENERAL',
+                    'bank_name' => $cleanBank !== '' ? $cleanBank : 'BCA',
+                    'account_number' => $cleanAccount,
+                    'account_holder_name' => $cleanHolder,
+                    'is_active' => true,
+                ])->save();
 
                 if ($employee->wasRecentlyCreated) {
                     $createdCount++;

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\DuplicateSupplierRegistration;
 use App\Models\Supplier;
 use App\Models\SupplierBankAccount;
 use App\Models\SupplierMasterDocument;
@@ -14,6 +15,8 @@ use App\Support\BusinessTime;
 use App\Support\NotificationCategory;
 use App\Support\NotificationDomain;
 use App\Support\SupplierComplianceQuestionnaire;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -23,9 +26,38 @@ use Illuminate\Validation\ValidationException;
 
 class SupplierRegistrationService
 {
+    private const DOCUMENT_TYPES = [
+        'nib_file' => SupplierMasterDocument::TYPE_NIB,
+        'npwp_file' => SupplierMasterDocument::TYPE_NPWP,
+        'sknr_file' => SupplierMasterDocument::TYPE_SURAT_PERNYATAAN_REKENING,
+        'sppkp_file' => SupplierMasterDocument::TYPE_SPPKP,
+        'skd_file' => SupplierMasterDocument::TYPE_SKD,
+        'company_profile_file' => SupplierMasterDocument::TYPE_COMPANY_PROFILE,
+    ];
+
     public function __construct(
         protected NotificationService $notificationService,
     ) {}
+
+    /** Attempts after the last rejection belong to the applicant's current cycle. */
+    public function currentCycleAttempts(User $user): Collection
+    {
+        $lastRejected = $user->registrationAttempts()
+            ->where('status', SupplierRegistrationAttempt::STATUS_REJECTED)
+            ->max('attempt_number') ?? 0;
+
+        return $user->registrationAttempts()->where('attempt_number', '>', $lastRejected)
+            ->orderByDesc('attempt_number')->get();
+    }
+
+    public function currentCycleDocuments(User $user, ?Collection $attempts = null): Collection
+    {
+        $ids = ($attempts ?? $this->currentCycleAttempts($user))
+            ->flatMap(fn (SupplierRegistrationAttempt $attempt) => collect($attempt->submission_snapshot['documents'] ?? [])->pluck('document_id'))
+            ->map(fn ($id) => (int) $id)->filter(fn ($id) => $id > 0)->unique()->values()->all();
+
+        return $user->supplierMasterDocuments()->whereKey($ids)->orderBy('id')->get();
+    }
 
     /**
      * Compute normalized SHA-256 fingerprint for identity uniqueness.
@@ -43,7 +75,7 @@ class SupplierRegistrationService
 
     /**
      * Check duplicate identities against active/in-progress suppliers.
-     * Throws generic ValidationException without disclosing existing account ownership.
+     * Reject duplicate identities on the matching input field.
      */
     public function checkDuplicates(string $email, string $nib, string $npwp, ?int $ignoreUserId = null): void
     {
@@ -57,14 +89,14 @@ class SupplierRegistrationService
             $isSameUser = $ignoreUserId && (int) $existingUser->id === (int) $ignoreUserId;
             if (! $isSameUser) {
                 if ($existingUser->account_status !== User::ACCOUNT_STATUS_REJECTED) {
-                    throw ValidationException::withMessages([
-                        'email' => __('local_procurement.registration.unprocessed'),
+                    throw DuplicateSupplierRegistration::withMessages([
+                        'email' => __('registration.duplicate.email'),
                     ]);
                 }
             } else {
                 if (! in_array($existingUser->account_status, [User::ACCOUNT_STATUS_REJECTED, User::ACCOUNT_STATUS_REVISION], true)) {
-                    throw ValidationException::withMessages([
-                        'email' => __('local_procurement.registration.unprocessed'),
+                    throw DuplicateSupplierRegistration::withMessages([
+                        'email' => __('registration.duplicate.email'),
                     ]);
                 }
             }
@@ -78,8 +110,8 @@ class SupplierRegistrationService
                 ->exists();
 
             if ($existingNib) {
-                throw ValidationException::withMessages([
-                    'nib' => __('local_procurement.registration.unprocessed'),
+                throw DuplicateSupplierRegistration::withMessages([
+                    'nib' => __('registration.duplicate.nib'),
                 ]);
             }
         }
@@ -92,8 +124,8 @@ class SupplierRegistrationService
                 ->exists();
 
             if ($existingNpwp) {
-                throw ValidationException::withMessages([
-                    'npwp' => __('local_procurement.registration.unprocessed'),
+                throw DuplicateSupplierRegistration::withMessages([
+                    'npwp' => __('registration.duplicate.npwp'),
                 ]);
             }
         }
@@ -106,9 +138,23 @@ class SupplierRegistrationService
      */
     public function submitInitialRegistration(array $data, array $files, ?string $ip = null, ?string $userAgent = null): array
     {
+        // File errors must be identical whether or not an identity already exists.
+        foreach (self::DOCUMENT_TYPES as $inputKey => $documentType) {
+            if (($files[$inputKey] ?? null) instanceof UploadedFile) {
+                app(FileInspectionService::class)->inspectUpload(
+                    $files[$inputKey], $inputKey === 'company_profile_file' ? 'registration_company' : 'registration', $inputKey
+                );
+            }
+        }
+
         $written = [];
         try {
             return DB::transaction(function () use ($data, $files, $ip, $userAgent, &$written) {
+                // A deadlock retry starts after rollback; remove files from the rolled-back attempt.
+                foreach ($written as $path) {
+                    Storage::disk('private')->delete($path);
+                }
+                $written = [];
                 $normalizedEmail = Str::lower(trim($data['email']));
                 $nibFingerprint = $this->normalizeFingerprint($data['nib']);
                 $taxFingerprint = $this->normalizeFingerprint($data['npwp']);
@@ -121,8 +167,8 @@ class SupplierRegistrationService
 
                 if ($existingUser) {
                     if ($existingUser->account_status !== User::ACCOUNT_STATUS_REJECTED) {
-                        throw ValidationException::withMessages([
-                            'email' => __('local_procurement.registration.unprocessed'),
+                        throw DuplicateSupplierRegistration::withMessages([
+                            'email' => __('registration.duplicate.email'),
                         ]);
                     }
                     $this->checkDuplicates($data['email'], $data['nib'], $data['npwp'], $existingUser->id);
@@ -277,10 +323,22 @@ class SupplierRegistrationService
                     'reference' => $reference,
                     'access_key' => $plainAccessKey,
                 ];
-            });
+            }, 3);
         } catch (\Throwable $exception) {
             foreach ($written as $path) {
                 Storage::disk('private')->delete($path);
+            }
+            // A concurrent insert may reach the unique constraint after the duplicate check.
+            if ($exception instanceof QueryException && (int) ($exception->errorInfo[1] ?? 0) === 1062
+                && preg_match('/(users_email_unique|suppliers_nib_fingerprint_unique|suppliers_tax_identity_fingerprint_unique)/', $exception->getMessage(), $matches)) {
+                $field = match ($matches[1]) {
+                    'users_email_unique' => 'email',
+                    'suppliers_nib_fingerprint_unique' => 'nib',
+                    'suppliers_tax_identity_fingerprint_unique' => 'npwp',
+                };
+                throw DuplicateSupplierRegistration::withMessages([
+                    $field => __('registration.duplicate.'.$field),
+                ]);
             }
             throw $exception;
         }
@@ -291,12 +349,20 @@ class SupplierRegistrationService
      *
      * @return array{attempt: SupplierRegistrationAttempt, reference: string}
      */
-    public function resubmitRevision(User $user, array $data, array $files, ?string $ip = null, ?string $userAgent = null): array
+    public function resubmitRevision(User $user, array $data, array $files, ?string $ip = null, ?string $userAgent = null, ?string $registrationReference = null): array
     {
         $written = [];
         try {
-            return DB::transaction(function () use ($user, $data, $files, $ip, $userAgent, &$written) {
+            return DB::transaction(function () use ($user, $data, $files, $ip, $userAgent, $registrationReference, &$written) {
                 $user = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
+
+                if ($registrationReference !== null) {
+                    $access = SupplierRegistrationAccess::where('user_id', $user->id)
+                        ->where('registration_reference', $registrationReference)->lockForUpdate()->first();
+                    if (! $access?->isValid()) {
+                        throw ValidationException::withMessages(['registration' => __('auth.registration_session.expired')]);
+                    }
+                }
 
                 if ($user->account_status !== User::ACCOUNT_STATUS_REVISION) {
                     throw new \DomainException(__('local_procurement.registration.resubmit_revision'));
@@ -712,6 +778,14 @@ class SupplierRegistrationService
         }
 
         return DB::transaction(function () use ($user, $latestAttempt) {
+            $lockedUser = User::whereKey($user->id)->lockForUpdate()->firstOrFail();
+            $currentAttempt = $lockedUser->registrationAttempts()->orderByDesc('attempt_number')->first();
+            if ($currentAttempt?->id !== $latestAttempt->id
+                || ! in_array($currentAttempt->status, [SupplierRegistrationAttempt::STATUS_PENDING, SupplierRegistrationAttempt::STATUS_REVISION], true)
+                || ! hash_equals($user->password, $lockedUser->password)) {
+                return null;
+            }
+
             $access = SupplierRegistrationAccess::query()
                 ->where('user_id', $user->id)
                 ->whereNull('revoked_at')
@@ -755,16 +829,9 @@ class SupplierRegistrationService
     protected function storeRegistrationDocuments(User $user, SupplierBankAccount $bankAccount, array $files, bool $preserveExisting = false, array &$written = []): array
     {
         $metadata = [];
-        $allowedTypes = [
-            'nib_file' => SupplierMasterDocument::TYPE_NIB,
-            'npwp_file' => SupplierMasterDocument::TYPE_NPWP,
-            'sknr_file' => SupplierMasterDocument::TYPE_SURAT_PERNYATAAN_REKENING,
-            'sppkp_file' => SupplierMasterDocument::TYPE_SPPKP,
-            'skd_file' => SupplierMasterDocument::TYPE_SKD,
-            'company_profile_file' => SupplierMasterDocument::TYPE_COMPANY_PROFILE,
-        ];
+        $retainedDocuments = $preserveExisting ? $this->currentCycleDocuments($user)->keyBy('document_type') : collect();
 
-        foreach ($allowedTypes as $inputKey => $docType) {
+        foreach (self::DOCUMENT_TYPES as $inputKey => $docType) {
             /** @var UploadedFile|null $file */
             $file = $files[$inputKey] ?? null;
 
@@ -804,11 +871,7 @@ class SupplierRegistrationService
                     'uploaded_at' => now()->toISOString(),
                 ];
             } elseif ($preserveExisting) {
-                // Keep the most recent document metadata if not re-uploaded
-                $existingDoc = SupplierMasterDocument::where('supplier_id', $user->id)
-                    ->where('document_type', $docType)
-                    ->latest()
-                    ->first();
+                $existingDoc = $retainedDocuments->get($docType);
 
                 if ($existingDoc) {
                     $metadata[$docType] = [

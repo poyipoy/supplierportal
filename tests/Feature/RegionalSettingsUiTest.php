@@ -16,7 +16,7 @@ class RegionalSettingsUiTest extends TestCase
     {
         $user = User::factory()->create(['role' => 'admin']);
         $response = $this->actingAs($user)->get(route('profile.customization'))->assertOk();
-        $response->assertSee('Regional Preferences')->assertSee('Calendar date')->assertSee('event instant');
+        $response->assertSee(__('customization.sections.region'))->assertSee('Calendar date')->assertSee('event instant');
         foreach (['timezone', 'date_format', 'time_format', 'number_format'] as $field) {
             $response->assertSee('for="regional-'.$field.'"', false);
             $response->assertSee('id="regional-'.$field.'"', false);

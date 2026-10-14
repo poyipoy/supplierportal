@@ -18,7 +18,7 @@ final class LocalProcurementStreamingReader
     public const MIME_TYPES = ['xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'xls' => 'application/vnd.ms-excel', 'csv' => 'text/csv'];
 
     private const COLUMNS = [
-        'PO' => ['po_number' => 4, 'supplier_name' => 6, 'po_date' => 9, 'po_amount' => 10],
+        'PO' => ['po_number' => 4, 'supplier_name' => 6, 'po_date' => 9, 'po_amount' => 10, 'pr_number' => 16],
         'GR' => ['description' => 8, 'gr_number' => 9, 'po_number' => 11, 'qty' => 15, 'uom' => 16, 'gr_date' => 19],
     ];
 
@@ -72,24 +72,35 @@ final class LocalProcurementStreamingReader
             default => null,
         };
         $source = match ($format) {
-            'csv' => $reader->rows($path, max($mapping) + 1),
+            'csv' => $reader->rows($path, $kind === 'PO' ? 11 : max($mapping) + 1),
             'xls' => $reader->rows($path, array_values($mapping)),
             default => $this->xlsxRows($path),
         };
         $count = 0;
+        $prHeaderValid = false;
+        $sourceRows = 0;
+        $limit = min((int) config('local_procurement_imports.max_rows'), $format === 'xls' ? 65535 : 70000);
         foreach ($source as [$number, $cells, $formulas, $calendar]) {
             if ($number === 1) {
+                $prHeaderCell = $cells[16] ?? null;
+                $prHeaderValid = is_string($prHeaderCell) && mb_strtolower(trim($prHeaderCell)) === 'pr';
                 $this->headerWarnings(array_map(fn ($v) => $v instanceof DateTimeInterface ? $v->format('Y-m-d') : (string) $v, $cells), $kind);
 
                 continue;
             }
+            if (++$sourceRows > $limit) {
+                throw ValidationException::withMessages(['import_file' => __('local_procurement.import.row_limit', ['count' => $limit])]);
+            }
             $values = ['_row' => $number, '_formula_columns' => []];
+            if ($kind === 'PO') {
+                $values['_pr_header_valid'] = $prHeaderValid;
+            }
             foreach ($mapping as $field => $index) {
                 $value = $cells[$index] ?? null;
                 if (in_array($index, $formulas, true) || (is_string($value) && str_starts_with($value, '='))) {
                     $values['_formula_columns'][] = $field;
                 }
-                $values[$field] = $value instanceof DateTimeInterface ? $value->format('Y-m-d') : $value;
+                $values[$field] = $value instanceof DateTimeInterface && $field !== 'pr_number' ? $value->format('Y-m-d') : $value;
                 if (in_array($field, ['po_date', 'gr_date'], true) && is_numeric($value)) {
                     $previousCalendar = ExcelDate::getExcelCalendar();
                     try {
@@ -100,13 +111,10 @@ final class LocalProcurementStreamingReader
                     }
                 }
             }
-            if (collect($values)->except(['_row', '_formula_columns'])->every(fn ($v) => $v === null || $v === '')) {
+            if (collect($values)->except(['_row', '_formula_columns', '_pr_header_valid'])->every(fn ($v) => $v === null || $v === '')) {
                 continue;
             }
-            $limit = min((int) config('local_procurement_imports.max_rows'), $format === 'xls' ? 65535 : 70000);
-            if (++$count > $limit) {
-                throw ValidationException::withMessages(['import_file' => __('local_procurement.import.row_limit', ['count' => $limit])]);
-            }
+            $count++;
             yield $values;
         }
         if ($reader) {

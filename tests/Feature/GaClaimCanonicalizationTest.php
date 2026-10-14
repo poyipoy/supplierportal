@@ -67,7 +67,7 @@ class GaClaimCanonicalizationTest extends TestCase
             'submitted_by' => $ga->id, 'submitted_at' => now(),
         ]);
         $service = app(GaClaimService::class);
-        $service->basicVerify($claim, $ga);
+        $service->basicVerify($claim, User::factory()->create(['role' => 'ga']));
         $ready = app(GaVerificationService::class)->financeVerify($claim, $finance, true);
         $this->assertSame(GaClaim::STATUS_READY_TO_PAY, $ready->status);
         $this->assertCount(0, $ready->documents);

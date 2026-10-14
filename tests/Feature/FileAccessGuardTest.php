@@ -46,7 +46,8 @@ class FileAccessGuardTest extends TestCase
     public function test_verified_cutover_identity_preserves_legacy_access_without_validated_claim(): void
     {
         $document = $this->document();
-        DB::table('file_security_cutovers')->where('document_table', 'attachments')->update(['legacy_max_id' => $document->id]);
+        DB::table('file_security_cutovers')->updateOrInsert(['document_table' => 'attachments'], ['legacy_max_id' => $document->id, 'created_at' => now()]);
+        $this->assertSame($document->id, (int) DB::table('file_security_cutovers')->where('document_table', 'attachments')->value('legacy_max_id'));
         Storage::disk('private')->put($document->file_path, 'historical uninspected bytes');
         $this->assertSame('HISTORICAL_UNVERIFIED', app(FileAccessGuard::class)->classification($document));
         $admin = User::factory()->create(['role' => 'admin']);

@@ -216,7 +216,7 @@ class PaymentBatchDrpExportTest extends TestCase
     {
         $batch = $this->createSupplierBatch();
 
-        $response = $this->get(route('finance.drp.export', $batch));
+        $response = $this->post(route('finance.drp.export', $batch));
 
         $response->assertRedirect(route('login'));
     }
@@ -226,15 +226,15 @@ class PaymentBatchDrpExportTest extends TestCase
         $batch = $this->createSupplierBatch();
 
         $this->actingAs($this->supplierUser)
-            ->get(route('finance.drp.export', $batch))
+            ->post(route('finance.drp.export', $batch))
             ->assertForbidden();
 
         $this->actingAs($this->purchasing)
-            ->get(route('finance.drp.export', $batch))
+            ->post(route('finance.drp.export', $batch))
             ->assertForbidden();
 
         $this->actingAs($this->qc)
-            ->get(route('finance.drp.export', $batch))
+            ->post(route('finance.drp.export', $batch))
             ->assertForbidden();
     }
 
@@ -246,7 +246,7 @@ class PaymentBatchDrpExportTest extends TestCase
         ]);
 
         $this->actingAs($this->finance)
-            ->get(route('finance.drp.export', $gaBatch))
+            ->post(route('finance.drp.export', $gaBatch))
             ->assertStatus(422);
     }
 
@@ -258,7 +258,7 @@ class PaymentBatchDrpExportTest extends TestCase
         ]);
 
         $this->actingAs($this->finance)
-            ->get(route('finance.drp.export', $cancelledBatch))
+            ->post(route('finance.drp.export', $cancelledBatch))
             ->assertStatus(422);
     }
 
@@ -268,7 +268,7 @@ class PaymentBatchDrpExportTest extends TestCase
         // No groups or items created
 
         $this->actingAs($this->finance)
-            ->get(route('finance.drp.export', $batch))
+            ->post(route('finance.drp.export', $batch))
             ->assertStatus(422);
     }
 
@@ -297,7 +297,7 @@ class PaymentBatchDrpExportTest extends TestCase
 
         // AJAX request by Finance returns 202 JSON
         $response = $this->actingAs($this->finance)
-            ->getJson(route('finance.drp.export', $batch));
+            ->postJson(route('finance.drp.export', $batch));
 
         $response->assertStatus(202)
             ->assertJsonStructure([

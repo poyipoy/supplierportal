@@ -73,33 +73,39 @@ class SupplierRegistrationCredentialAccessTest extends TestCase
         $this->assertGuest();
     }
 
-    public function test_success_page_exposes_receipt_once(): void
+    public function test_acknowledgement_is_shown_once(): void
     {
         $this->register();
 
         $this->get(route('supplier.registration.success'))->assertOk();
 
-        // Flash is consumed by the redirect chain above: a refresh must not re-expose the key.
+        // The acknowledgement is one-time; a refresh returns to status access.
         $this->get(route('supplier.registration.success'))
             ->assertRedirect(route('supplier.registration.access-form'));
     }
 
-    public function test_receipt_contains_reference_key_company_and_print_controls(): void
+    public function test_success_shows_access_credentials_once_and_keeps_email_password_tracking_available(): void
     {
         $this->register();
+        $receipt = session('registration_receipt');
 
         $response = $this->get(route('supplier.registration.success'));
 
         $response->assertOk()
-            ->assertSee('id="receipt_print"', false)
-            ->assertSee('id="receipt_copy_both"', false)
+            ->assertSee(__('registration.received_heading'))
+            ->assertSee(__('registration.received_tracking'))
             ->assertSee('id="registration_receipt"', false)
-            ->assertSee('PT Baja Bersama Abadi')
-            ->assertSee(__('registration.receipt.title'))
-            ->assertSee(__('registration.receipt.submitted_at'));
+            ->assertSee($receipt['reference'])->assertSee($receipt['access_key'])
+            ->assertDontSee('id="receipt_print"', false);
 
         $access = SupplierRegistrationAccess::firstOrFail();
         $response->assertSee($access->registration_reference);
+        $response->assertHeader('Cache-Control', 'no-store, private');
+        $this->assertSame(hash('sha256', $receipt['access_key']), $access->token_hash);
+        $this->assertNull(session('registration_receipt'));
+        $this->get(route('supplier.registration.success'))->assertRedirect(route('supplier.registration.access-form'));
+        $this->post(route('supplier.registration.access'), ['reference' => $receipt['reference'], 'access_key' => $receipt['access_key']])
+            ->assertRedirect(route('supplier.registration.status'));
     }
 
     public function test_pending_applicant_can_open_status_with_email_and_password(): void

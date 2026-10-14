@@ -35,6 +35,13 @@ class InvoiceDocumentService
                 ->get()
             : collect();
 
+        // Tipe berkas tunggal memakai semantik ganti: unggahan baru membuat
+        // dokumen lama bertipe sama tidak ikut dibawa ke revisi ini.
+        $retainedDocs = $retainedDocs->reject(
+            fn (LocalInvoiceDocument $doc) => LocalInvoiceDocument::replacesOnUpload($doc->document_type)
+                && ! empty($files[$doc->document_type] ?? null)
+        )->values();
+
         foreach ($retainedDocs as $doc) {
             $revision->documents()->create([
                 'local_invoice_id' => $revision->local_invoice_id,
@@ -48,7 +55,7 @@ class InvoiceDocumentService
             ]);
         }
 
-        $baseRules = ['file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'];
+        $baseRules = ['file', 'mimes:pdf', 'max:5120'];
 
         foreach (['invoice', 'tax_invoice', 'delivery_note', 'supporting'] as $type) {
             $typeLabel = __(match ($type) {
@@ -80,9 +87,11 @@ class InvoiceDocumentService
             $list = is_array($uploaded) ? $uploaded : [$uploaded];
             $retainedCount = $retainedDocs->where('document_type', $type)->count();
 
-            if ($retainedCount + count($list) > 5) {
+            $maxFiles = LocalInvoiceDocument::maxFilesFor($type);
+
+            if ($retainedCount + count($list) > $maxFiles) {
                 throw ValidationException::withMessages([
-                    $type => __('local_invoice.validation.file_limit', ['type' => $typeLabel]),
+                    $type => __('local_invoice.validation.file_limit', ['type' => $typeLabel, 'count' => $maxFiles]),
                 ]);
             }
 
@@ -91,7 +100,10 @@ class InvoiceDocumentService
                     continue;
                 }
 
-                Validator::make(['file' => $file], ['file' => $baseRules])->validate();
+                Validator::make([$type => $file], [$type => $baseRules], [
+                    $type.'.mimes' => __('local_invoice.validation.file_type', ['type' => $typeLabel]),
+                    $type.'.max' => __('local_invoice.validation.file_size', ['type' => $typeLabel]),
+                ])->validate();
 
                 $path = 'local-invoices/'.$revision->local_invoice_id.'/revisions/'.$revision->revision_number.'/'.$file->hashName();
                 $written[] = $path;

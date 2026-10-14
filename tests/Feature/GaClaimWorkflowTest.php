@@ -101,9 +101,9 @@ class GaClaimWorkflowTest extends TestCase
         );
 
         // 1. GA Basic Verification
-        $basicVerified = $this->claimService->basicVerify($claim, $gaUser, 'Basic info matched.');
+        $basicVerified = $this->claimService->basicVerify($claim, ($checker = User::factory()->create(['role' => 'ga'])), 'Basic info matched.');
         $this->assertSame(GaClaim::STATUS_BASIC_VERIFIED, $basicVerified->status);
-        $this->assertSame($gaUser->id, $basicVerified->basic_verified_by);
+        $this->assertSame($checker->id, $basicVerified->basic_verified_by);
 
         // 2. Finance Verification -> READY_TO_PAY
         $readyToPay = $this->verificationService->financeVerify($basicVerified, $financeUser, approve: true);
@@ -195,7 +195,7 @@ class GaClaimWorkflowTest extends TestCase
         );
 
         // GA basic verifies
-        $this->claimService->basicVerify($claim, $gaUser);
+        $this->claimService->basicVerify($claim, ($checker = User::factory()->create(['role' => 'ga'])));
 
         // Finance requests revision
         $this->verificationService->financeVerify($claim, $financeUser, approve: false, reason: 'Kwitansi fisik buram, mohon upload ulang.');
@@ -343,7 +343,7 @@ class GaClaimWorkflowTest extends TestCase
             ],
             ['supporting' => NativeFileFixtures::upload('receipt.pdf', 100)]
         );
-        $this->claimService->basicVerify($claim, $gaUser);
+        $this->claimService->basicVerify($claim, ($checker = User::factory()->create(['role' => 'ga'])));
 
         // Finance Index
         $this->actingAs($finance)->get(route('finance.ga-claims.index'))->assertOk()->assertSee($claim->claim_number);

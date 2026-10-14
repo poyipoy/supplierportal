@@ -670,6 +670,7 @@
             const formData = new FormData(control);
 
             for (const [key, value] of formData.entries()) {
+                if (key === '_token' || key === '_method') continue;
                 if (typeof value === 'string') {
                     url.searchParams.set(key, value);
                 }
@@ -1011,11 +1012,12 @@
 
         try {
             const response = await window.fetch(endpointUrl, {
-                method: options.body ? 'POST' : 'GET',
+                method: 'POST',
                 headers: {
                     Accept: 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
-                    ...(options.body ? { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '' } : {}),
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                    ...(options.body ? { 'Content-Type': 'application/json' } : {}),
                 },
                 ...(options.body ? { body: JSON.stringify(options.body) } : {}),
                 credentials: 'same-origin',

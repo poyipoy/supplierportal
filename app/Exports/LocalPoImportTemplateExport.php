@@ -3,10 +3,12 @@
 namespace App\Exports;
 
 use Maatwebsite\Excel\Concerns\FromArray;
+use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithTitle;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 
-class LocalPoImportTemplateExport implements FromArray, WithHeadings, WithTitle
+class LocalPoImportTemplateExport implements FromArray, WithColumnFormatting, WithHeadings, WithTitle
 {
     public function headings(): array
     {
@@ -27,6 +29,7 @@ class LocalPoImportTemplateExport implements FromArray, WithHeadings, WithTitle
             'Workflow Status',
             'Reference A',
             'Tax Classification',
+            'PR',
         ];
     }
 
@@ -50,6 +53,7 @@ class LocalPoImportTemplateExport implements FromArray, WithHeadings, WithTitle
                 'Approved',
                 'Contoh Referensi',
                 'PPH',
+                'PR-001',
             ],
         ];
     }
@@ -57,5 +61,10 @@ class LocalPoImportTemplateExport implements FromArray, WithHeadings, WithTitle
     public function title(): string
     {
         return 'data';
+    }
+
+    public function columnFormats(): array
+    {
+        return ['Q' => NumberFormat::FORMAT_TEXT];
     }
 }

@@ -20,21 +20,16 @@ class SupplierRegistrationRequest extends FormRequest
      * Registration-only password policy (min 8, mixed case, number, symbol).
      *
      * Deliberately separate from Password::defaults() (min 12) which governs internal
-     * accounts and later password changes; breached-password check mirrors production defaults.
+     * accounts and later password changes. Registration validates composition only.
      */
     public static function registrationPasswordRule(): Password
     {
-        $rule = Password::min(8)
+        return Password::min(8)
             ->max(255)
             ->mixedCase()
             ->numbers()
             ->symbols();
 
-        if (app()->environment('production') && config('auth_security.password.uncompromised_in_production', true)) {
-            $rule->uncompromised((int) config('auth_security.password.uncompromised_threshold', 3));
-        }
-
-        return $rule;
     }
 
     public function rules(): array
@@ -90,13 +85,13 @@ class SupplierRegistrationRequest extends FormRequest
     }
 
     /**
-     * Validate bot protection when configured.
+     * Both empty keys disable Turnstile; partial configuration and verification failures block submission.
      */
     public function validateTurnstile(TurnstileVerifier $turnstile): void
     {
-        if ($turnstile->configured()) {
+        if (filled(config('auth_security.turnstile.site_key')) || filled(config('auth_security.turnstile.secret_key'))) {
             $status = $turnstile->verify($this);
-            if ($status === TurnstileStatus::Invalid) {
+            if ($status !== TurnstileStatus::Passed) {
                 throw ValidationException::withMessages([
                     'cf-turnstile-response' => __('auth.registration_verification_failed'),
                 ]);

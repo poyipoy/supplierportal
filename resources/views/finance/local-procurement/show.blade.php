@@ -1,14 +1,14 @@
 @extends('layouts.app')
 @section('title', __('local_procurement.closure.po_detail_title', ['number' => $purchaseOrder->po_number]))
+@section('uses-datatables', true)
 @section('page-title', __('local_procurement.list.detail'))
 
 @php
-    $activeGrs = $purchaseOrder->goodsReceipts->where('status', '!=', \App\Models\LocalGoodsReceipt::STATUS_CANCELLED);
-    $activeGrCount = $activeGrs->count();
-    $activeInvoices = $purchaseOrder->invoices->whereNotIn('status', [\App\Models\LocalInvoice::STATUS_REJECTED, \App\Models\LocalInvoice::STATUS_CANCELLED]);
-    $invoicedTotal = (float) $activeInvoices->sum('invoice_amount');
-    $remainingPoAmount = max(0, (float) $purchaseOrder->total_amount - $invoicedTotal);
-    $invoicedPercent = $purchaseOrder->total_amount > 0 ? min(100, round(($invoicedTotal / $purchaseOrder->total_amount) * 100, 1)) : 0;
+    $activeGrCount = $purchaseOrder->active_gr_count;
+    $invoicedTotal = \App\Support\Money::normalize($purchaseOrder->active_invoice_amount);
+    $remainingPoAmount = \App\Support\Money::atLeastZero(\App\Support\Money::subtract($purchaseOrder->total_amount, $invoicedTotal));
+    $invoicedPercent = bccomp($purchaseOrder->total_amount, '0', 2) > 0 ? bcdiv(bcmul($invoicedTotal, '100', 3), $purchaseOrder->total_amount, 1) : '0';
+    $invoicedPercent = bccomp($invoicedPercent, '100', 1) > 0 ? '100' : $invoicedPercent;
 @endphp
 
 @section('content')
@@ -16,7 +16,7 @@
     {{-- Header --}}
     <x-ui.page-header
         :title="'PO ' . $purchaseOrder->po_number"
-        :description="($purchaseOrder->supplier->supplier?->company_name ?: $purchaseOrder->supplier->name) . ' · IDR ' . number_format($purchaseOrder->total_amount, 2, ',', '.')"
+        :description="($purchaseOrder->supplier->supplier?->company_name ?: $purchaseOrder->supplier->name) . ' · IDR ' . $regionalFormatter->money($purchaseOrder->total_amount)"
         :eyebrow="__('local_procurement.surface.local_audience')">
         <x-slot:actions>
             <x-ui.button :href="route($routePrefix.'.index')" variant="ghost" size="sm">
@@ -52,6 +52,11 @@
                     <span>{{ __('local_procurement.actions.cancel_po') }}</span>
                 </button>
             @endif
+            @if($purchaseOrder->status === 'CANCELLED')
+                @can('restore', $purchaseOrder)
+                    <x-ui.button type="button" variant="primary" data-bs-toggle="modal" data-bs-target="#restorePoModal">{{ __('local_procurement.recovery.restore_po') }}</x-ui.button>
+                @endcan
+            @endif
         </x-slot:actions>
     </x-ui.page-header>
 
@@ -78,6 +83,10 @@
             </div>
 
             <div class="tw-grid tw-grid-cols-1 sm:tw-grid-cols-2 tw-gap-3 tw-border-t tw-border-outline-variant tw-pt-3 tw-text-ui-xs">
+                <div class="sm:tw-col-span-2 tw-min-w-0">
+                    <span class="tw-text-on-surface-variant">{{ __('local_procurement.pr.label') }}:</span>
+                    <span class="tw-block tw-font-mono tw-text-on-surface tw-mt-0.5" style="overflow-wrap: anywhere;">{{ filled($purchaseOrder->pr_number) ? $purchaseOrder->pr_number : __('local_procurement.pr.empty') }}</span>
+                </div>
                 <div>
                     <span class="tw-text-on-surface-variant">{{ __('local_invoice.labels.supplier') }}:</span>
                     <strong class="tw-block tw-text-ui-sm tw-text-on-surface tw-mt-0.5">
@@ -105,11 +114,11 @@
             <div class="tw-space-y-2 tw-text-ui-xs">
                 <div class="tw-flex tw-items-center tw-justify-between">
                     <span class="tw-text-on-surface-variant">{{ __('local_procurement.surface.po_ceiling_label') }}</span>
-                    <strong class="tw-font-mono tw-text-on-surface">Rp {{ number_format($purchaseOrder->total_amount, 2, ',', '.') }}</strong>
+                    <strong class="tw-font-mono tw-text-on-surface">Rp {{ $regionalFormatter->money($purchaseOrder->total_amount) }}</strong>
                 </div>
                 <div class="tw-flex tw-items-center tw-justify-between">
                     <span class="tw-text-on-surface-variant">{{ __('local_procurement.surface.active_invoiced') }}</span>
-                    <strong class="tw-font-mono tw-text-success">Rp {{ number_format($invoicedTotal, 2, ',', '.') }}</strong>
+                    <strong class="tw-font-mono tw-text-success">Rp {{ $regionalFormatter->money($invoicedTotal, 2) }}</strong>
                 </div>
                 <div class="tw-flex tw-items-center tw-justify-between">
                     <span class="tw-text-on-surface-variant">{{ __('local_procurement.labels.gr_list') }}:</span>
@@ -117,8 +126,8 @@
                 </div>
                 <div class="tw-flex tw-items-center tw-justify-between tw-border-t tw-border-outline-variant tw-pt-1.5">
                     <span class="tw-text-on-surface-variant">{{ __('local_procurement.labels.remaining_ceiling') }}:</span>
-                    <strong class="tw-font-mono {{ $remainingPoAmount > 0 ? 'tw-text-primary' : 'tw-text-on-surface-variant' }}">
-                        Rp {{ number_format($remainingPoAmount, 2, ',', '.') }}
+                    <strong class="tw-font-mono {{ \App\Support\Money::compare($remainingPoAmount, \App\Support\Money::ZERO) > 0 ? 'tw-text-primary' : 'tw-text-on-surface-variant' }}">
+                        Rp {{ $regionalFormatter->money($remainingPoAmount, 2) }}
                     </strong>
                 </div>
             </div>
@@ -136,220 +145,8 @@
         </div>
     </div>
 
-    {{-- Goods Receipts Data Table --}}
-    <x-ui.data-table
-        :title="__('local_procurement.labels.whole_gr_list')"
-        :description="trans_choice('finance.closure.gr_count', $purchaseOrder->goodsReceipts->count())"
-    >
-        <div class="table-responsive">
-            <table class="table table-hover align-middle tw-m-0 tw-text-ui-sm w-100">
-                <thead class="table-light">
-                    <tr>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('local_procurement.surface.gr_number') }}</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('local_procurement.labels.gr_date') }}</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('local_procurement.labels.goods_description') }}</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">{{ __('common.fields.qty') }}</th>
-                        <th scope="col">{{ __('local_procurement.labels.uom') }}</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-center">{{ __('local_invoice.labels.status') }}</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('local_procurement.labels.gr_invoice') }}</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-center">{{ __('local_invoice.labels.source') }}</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">{{ __('local_invoice.labels.actions') }}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($purchaseOrder->goodsReceipts as $gr)
-                        <tr>
-                            <td>
-                                <strong class="tw-font-mono tw-text-on-surface">{{ $gr->gr_number }}</strong>
-                                @if($gr->notes)
-                                    <span class="tw-block tw-text-[11px] tw-text-on-surface-variant">@if(preg_match('/^Imported via Infor ERP Goods Receipt \((\d+) line rows\)$/', $gr->notes, $provenance)){{ trans_choice('local_procurement.provenance.imported_gr', (int) $provenance[1]) }}@else{{ $gr->notes }}@endif</span>
-                                @endif
-                            </td>
-                            <td>
-                                <span class="tw-text-ui-xs tw-text-on-surface-variant">
-                                    {{ $regionalFormatter->date($gr->gr_date, 'human') ?? '—' }}
-                                </span>
-                            </td>
-                            <td>
-                                <span class="tw-text-ui-xs tw-text-on-surface">
-                                    {{ $gr->description ?: '—' }}
-                                </span>
-                            </td>
-                            <td class="text-end tw-font-mono tw-text-ui-xs tw-text-on-surface">
-                                {{ \App\Models\LocalGoodsReceipt::formatQuantity($gr->qty) }}
-                            </td>
-                            <td>{{ $gr->uom ?? '—' }}</td>
-                            <td class="text-center">
-                                <x-ui.status-chip :tone="\App\Support\StatusHelper::localFinanceTone($gr->status)">
-                                    {{ \App\Support\StatusHelper::localFinanceLabel($gr->status) }}
-                                </x-ui.status-chip>
-                            </td>
-                            <td>
-                                @if($gr->currentInvoice)
-                                    @php
-                                        $invoiceShowRoute = ($routePrefix === 'purchasing.local-procurement' || (auth()->user() && auth()->user()->isPurchasing()))
-                                            ? 'purchasing.local-invoices.show'
-                                            : 'finance.invoices.show';
-                                    @endphp
-                                    <a href="{{ route($invoiceShowRoute, $gr->currentInvoice) }}" class="tw-text-ui-xs tw-font-semibold tw-text-primary hover:tw-underline">
-                                        {{ $gr->currentInvoice->invoice_number }}
-                                    </a>
-                                @else
-                                    <span class="tw-text-ui-xs tw-text-on-surface-variant">—</span>
-                                @endif
-                            </td>
-                            <td class="text-center">
-                                <span class="tw-inline-flex tw-items-center tw-px-2 tw-py-0.5 tw-rounded tw-text-[10px] tw-font-semibold {{ $gr->source === 'IMPORT' ? 'tw-bg-secondary/10 tw-text-secondary' : 'tw-bg-surface-high tw-text-on-surface' }}">
-                                    {{ __('local_procurement.sources.'.strtolower($gr->source ?: 'MANUAL')) }}
-                                </span>
-                            </td>
-                            <td class="text-end">
-                                @if($gr->status === 'AVAILABLE')
-                                    <div class="tw-inline-flex tw-items-center tw-gap-1.5">
-                                        <button
-                                            type="button"
-                                            class="btn btn-sm btn-outline-secondary tw-inline-flex tw-items-center tw-gap-1"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#editGrModal-{{ $gr->id }}"
-                                        >
-                                            <x-ui.icon name="file-pen" size="sm" />
-                                            <span>{{ __('common.final_copy.edit') }}</span>
-                                        </button>
+    @include('finance.local-procurement._gr_table')
 
-                                        <button
-                                            type="button"
-                                            class="btn btn-sm btn-outline-danger tw-inline-flex tw-items-center tw-gap-1"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#cancelGrModal-{{ $gr->id }}"
-                                        >
-                                            <x-ui.icon name="x" size="sm" />
-                                            <span>{{ __('local_invoice.actions.cancel') }}</span>
-                                        </button>
-                                    </div>
-                                @else
-                                    <span class="tw-text-ui-xs tw-text-on-surface-variant tw-italic">{{ __('local_procurement.surface.locked') }} ({{ \App\Support\StatusHelper::localFinanceLabel($gr->status) }})</span>
-                                @endif
-                            </td>
-                        </tr>
-
-                        {{-- Modal Edit GR --}}
-                        @if($gr->status === 'AVAILABLE')
-                            <div class="modal fade" id="editGrModal-{{ $gr->id }}" tabindex="-1" aria-hidden="true">
-                                <div class="modal-dialog modal-dialog-centered">
-                                    <form method="POST" action="{{ route($routePrefix.'.goods-receipts.update', $gr) }}">
-                                        @csrf
-                                        @method('PUT')
-                                        <div class="modal-content">
-                                            <div class="modal-header">
-                                                <h5 class="modal-title tw-text-ui-sm tw-font-bold tw-text-on-surface tw-flex tw-items-center tw-gap-2">
-                                                    <x-ui.icon name="file-pen" size="sm" class="tw-text-primary" />
-                                                    <span>{{ __('local_procurement.surface.gr_edit', ['number' => $gr->gr_number]) }}</span>
-                                                </h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('local_invoice.actions.close') }}"></button>
-                                            </div>
-                                            <div class="modal-body tw-space-y-3">
-                                                <div>
-                                                    <label class="form-label tw-text-ui-xs tw-font-semibold">{{ __('local_procurement.surface.gr_number') }}<span class="text-danger">*</span></label>
-                                                    <input name="gr_number" class="form-control form-control-sm" value="{{ $gr->gr_number }}" required>
-                                                </div>
-
-                                                <div>
-                                                    <x-ui.date-picker
-                                                        :id="'edit_gr_date_'.$gr->id"
-                                                        name="gr_date"
-                                                        :label="__('local_procurement.labels.gr_date')"
-                                                        :value="$gr->gr_date?->format('Y-m-d')"
-                                                        required="true"
-                                                    />
-                                                </div>
-
-                                                <div>
-                                                    <label class="form-label tw-text-ui-xs tw-font-semibold">{{ __('local_procurement.closure.quantity') }} <span class="text-danger">*</span></label>
-                                                    <input
-                                                        name="qty"
-                                                        type="number"
-                                                        step="0.001"
-                                                        min="0.001"
-                                                        class="form-control form-control-sm tw-font-mono"
-                                                        value="{{ rtrim(rtrim((string) $gr->qty, '0'), '.') }}"
-                                                        required
-                                                    >
-                                                </div>
-                                                <div>
-                                                    <label for="gr_uom_{{ $gr->id }}" class="form-label tw-text-ui-xs tw-font-semibold">{{ __('local_procurement.labels.uom') }} <span class="text-danger">*</span></label>
-                                                    <select name="uom" id="gr_uom_{{ $gr->id }}" class="form-select form-select-sm @error('uom') is-invalid @enderror" @error('uom') aria-invalid="true" aria-describedby="gr_uom_{{ $gr->id }}_error" @enderror required>
-                                                        <option value="">{{ __('local_procurement.labels.choose_uom') }}</option>
-                                                        @foreach(\App\Models\LocalGoodsReceipt::UOMS as $uom)
-                                                            <option value="{{ $uom }}" @selected(old('uom', $gr->uom) === $uom)>{{ $uom }}</option>
-                                                        @endforeach
-                                                    </select>
-                                                    @error('uom')<div id="gr_uom_{{ $gr->id }}_error" class="invalid-feedback">{{ $message }}</div>@enderror
-                                                </div>
-
-                                                <div>
-                                                    <label class="form-label tw-text-ui-xs tw-font-semibold">{{ __('local_procurement.labels.goods_description_optional') }}</label>
-                                                    <input name="description" class="form-control form-control-sm" value="{{ $gr->description }}" placeholder="{{ __('local_procurement.surface.material_placeholder') }}">
-                                                </div>
-
-                                                <div>
-                                                    <label class="form-label tw-text-ui-xs tw-font-semibold">{{ __('local_invoice.labels.optional_notes') }}</label>
-                                                    <input name="notes" class="form-control form-control-sm" value="{{ $gr->notes }}" placeholder="{{ __('local_procurement.surface.receipt_placeholder') }}">
-                                                </div>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('local_invoice.actions.cancel') }}</x-ui.button>
-                                                <x-ui.button type="submit" variant="primary" size="sm">
-                                                    <x-ui.icon name="check" size="sm" />
-                                                    <span>{{ __('local_invoice.actions.save_changes') }}</span>
-                                                </x-ui.button>
-                                            </div>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-
-                            {{-- Modal Konfirmasi Batal GR --}}
-                            <div class="modal fade" id="cancelGrModal-{{ $gr->id }}" tabindex="-1" aria-hidden="true">
-                                <div class="modal-dialog modal-dialog-centered">
-                                    <form method="POST" action="{{ route($routePrefix.'.goods-receipts.cancel', $gr) }}">
-                                        @csrf
-                                        <div class="modal-content">
-                                            <div class="modal-header">
-                                                <h5 class="modal-title tw-text-ui-sm tw-font-bold tw-text-error tw-flex tw-items-center tw-gap-2">
-                                                    <x-ui.icon name="alert-triangle" size="sm" />
-                                                    <span>{{ __('local_procurement.actions.cancel_gr') }}</span>
-                                                </h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('local_invoice.actions.close') }}"></button>
-                                            </div>
-                                            <div class="modal-body tw-space-y-2">
-                                                <p class="tw-text-ui-sm tw-text-on-surface tw-mb-0">
-                                                    {{ __('local_procurement.surface.cancel_gr', ['number' => $gr->gr_number, 'qty' => \App\Models\LocalGoodsReceipt::formatQuantity($gr->qty)]) }}
-                                                </p>
-                                                <p class="tw-text-ui-xs tw-text-on-surface-variant tw-mb-0">{{ __('local_procurement.surface.cancel_gr_help') }}</p>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('local_invoice.actions.cancel') }}</x-ui.button>
-                                                <button type="submit" class="btn btn-sm btn-danger tw-inline-flex tw-items-center tw-gap-1">
-                                                    <x-ui.icon name="x" size="sm" />
-                                                    <span>{{ __('local_procurement.surface.cancel_gr_yes') }}</span>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        @endif
-                    @empty
-                        <tr>
-                            <td colspan="9" class="tw-py-8 tw-text-center tw-text-on-surface-variant tw-text-ui-sm">
-                                {{ __('local_procurement.empty.gr') }}
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-    </x-ui.data-table>
 </div>
 
 {{-- Modal Tambah GR Baru --}}
@@ -495,5 +292,10 @@
             </form>
         </div>
     </div>
+@endif
+@if($purchaseOrder->status === 'CANCELLED')
+    @can('restore', $purchaseOrder)
+        @include('finance.local-procurement._restore_modal', ['recoveryKind' => 'po', 'recoveryTarget' => $purchaseOrder])
+    @endcan
 @endif
 @endsection

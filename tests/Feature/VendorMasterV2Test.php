@@ -5,11 +5,15 @@ namespace Tests\Feature;
 use App\Models\Supplier;
 use App\Models\SupplierBankAccount;
 use App\Models\SupplierChangeRequest;
+use App\Models\SupplierMasterDocument;
 use App\Models\User;
+use App\Services\FileSecurity\FileInspectionService;
 use App\Services\VendorMaster\VendorChangeRequestService;
 use App\Services\VendorMaster\VendorMasterService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
+use Tests\Support\NativeFileFixtures;
 use Tests\TestCase;
 
 class VendorMasterV2Test extends TestCase
@@ -23,6 +27,7 @@ class VendorMasterV2Test extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Storage::fake('private');
         $this->vendorMasterService = app(VendorMasterService::class);
         $this->changeRequestService = app(VendorChangeRequestService::class);
     }
@@ -116,6 +121,13 @@ class VendorMasterV2Test extends TestCase
 
         $purchasing = User::factory()->create(['role' => 'purchasing']);
 
+        $stored = app(FileInspectionService::class)->storeUpload(NativeFileFixtures::upload('bank.pdf', 10), 'vendor', 'vendor-documents/bank-test.pdf');
+        $document = SupplierMasterDocument::create([
+            'supplier_id' => $supplierUser->id, 'document_type' => SupplierMasterDocument::TYPE_SURAT_PERNYATAAN_REKENING,
+            'file_path' => $stored['file_path'], 'original_filename' => 'bank.pdf', 'mime_type' => $stored['file_type'],
+            'file_size' => $stored['file_size'], 'file_inspection_id' => $stored['file_inspection_id'], 'uploaded_by' => $supplierUser->id,
+        ]);
+
         $req = $this->changeRequestService->submitChangeRequest($supplierUser, [
             'company_name' => 'PT Baja Mulia New',
             'phone' => '021-999999',
@@ -123,6 +135,7 @@ class VendorMasterV2Test extends TestCase
             'bank_name' => 'BCA',
             'account_number' => '5555555555',
             'account_holder_name' => 'PT Baja Mulia New',
+            'bank_confirmation_document_id' => $document->id,
         ]);
 
         $this->assertSame(SupplierChangeRequest::STATUS_PENDING, $req->status);

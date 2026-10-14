@@ -115,7 +115,7 @@ class MissionFourExportTest extends TestCase
         Queue::fake();
 
         $this->actingAs($this->purchasing)
-            ->get(route('purchasing.export.requisitions.detail', $target))
+            ->post(route('purchasing.export.requisitions.detail', $target))
             ->assertRedirect();
 
         $queued = ExportJob::query()->latest('id')->firstOrFail();
@@ -124,7 +124,7 @@ class MissionFourExportTest extends TestCase
         Queue::assertPushed(ProcessExportJob::class, fn (ProcessExportJob $job) => $job->exportJobId === $queued->id);
 
         $this->actingAs($this->supplierA)
-            ->get(route('purchasing.export.requisitions.detail', $target))
+            ->post(route('purchasing.export.requisitions.detail', $target))
             ->assertForbidden();
 
         $this->actingAs($this->purchasing)
@@ -239,7 +239,7 @@ class MissionFourExportTest extends TestCase
             $urlFilters['supplier_id'] = $this->supplierA;
 
             $this->actingAs($this->purchasing)
-                ->get(route('purchasing.export.quotations', $urlFilters))
+                ->post(route('purchasing.export.quotations', $urlFilters))
                 ->assertRedirect();
 
             $queued = ExportJob::query()->latest('id')->firstOrFail();
@@ -292,7 +292,7 @@ class MissionFourExportTest extends TestCase
 
         try {
             $this->actingAs($this->supplierA)
-                ->get(route('supplier.export.quotations', ['supplier_id' => $this->supplierB]))
+                ->post(route('supplier.export.quotations', ['supplier_id' => $this->supplierB]))
                 ->assertRedirect();
 
             $queued = ExportJob::query()->latest('id')->firstOrFail();
@@ -309,17 +309,17 @@ class MissionFourExportTest extends TestCase
         $this->withSession(['auth_absolute_started_at' => now()->timestamp]);
 
         $this->actingAs($this->supplierA)
-            ->get(route('purchasing.export.quotations'))
+            ->post(route('purchasing.export.quotations'))
             ->assertForbidden();
 
         $this->flushSession()
             ->actingAs($this->purchasing)
-            ->get(route('supplier.export.quotations'))
+            ->post(route('supplier.export.quotations'))
             ->assertForbidden();
 
         $this->app['auth']->logout();
 
-        $this->get(route('supplier.export.quotations'))
+        $this->post(route('supplier.export.quotations'))
             ->assertRedirect(route('login'));
     }
 

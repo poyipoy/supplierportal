@@ -6,8 +6,11 @@ use App\Models\Employee;
 use App\Models\GaClaim;
 use App\Models\User;
 use App\Services\FileSecurity\FileInspectionService;
+use App\Services\LocalInvoice\MakerCheckerService;
 use App\Support\BusinessTime;
+use App\Support\FinanceConfigurationGuard;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -41,6 +44,10 @@ class GaClaimService
 
         try {
             return DB::transaction(function () use ($actor, $employee, $data, $supportingFile, &$written) {
+                $employee = Employee::whereKey($employee->id)->where('is_active', true)->lockForUpdate()->first();
+                if (! $employee) {
+                    throw new InvalidArgumentException(__('ga.validation.employee_active'));
+                }
                 $year = BusinessTime::now()->year;
                 DB::table('local_invoice_sequences')->insertOrIgnore(['year' => $year, 'last_number' => 0]);
                 $seq = DB::table('local_invoice_sequences')->where('year', $year)->lockForUpdate()->first();
@@ -56,7 +63,7 @@ class GaClaimService
                     'employee_id' => $employee->id,
                     'claim_type' => $data['claim_type'],
                     'claim_date' => $data['claim_date'],
-                    'amount' => (float) $data['amount'],
+                    'amount' => app(FinanceConfigurationGuard::class)->amount($data['amount'], 'ga_claim_max_amount', 'amount', '0.01'),
                     'description' => $data['description'] ?? null,
                     'status' => GaClaim::STATUS_SUBMITTED,
                     'revision_number' => 1,
@@ -117,6 +124,7 @@ class GaClaimService
         if (! $actor->isGa() && ! $actor->isAdmin()) {
             throw new InvalidArgumentException(__('ga.validation.resubmit_role'));
         }
+        Gate::forUser($actor)->authorize('resubmit', $claim);
 
         $supportingFile = $files['supporting'] ?? $files['attachment'] ?? null;
         $this->validateSubmission($data, $supportingFile);
@@ -128,8 +136,10 @@ class GaClaimService
 
         try {
             return DB::transaction(function () use ($actor, $claim, $data, $supportingFile, &$written) {
+                Employee::whereKey($claim->employee_id)->lockForUpdate()->firstOrFail();
                 /** @var GaClaim $clm */
                 $clm = GaClaim::where('id', $claim->id)->lockForUpdate()->firstOrFail();
+                Gate::forUser($actor)->authorize('resubmit', $clm);
 
                 if ($clm->status !== GaClaim::STATUS_NEED_REVISION) {
                     throw new RuntimeException(__('ga.validation.resubmit_status', ['status' => $clm->status]));
@@ -140,7 +150,7 @@ class GaClaimService
                 $clm->update([
                     'claim_type' => $data['claim_type'],
                     'claim_date' => $data['claim_date'],
-                    'amount' => (float) $data['amount'],
+                    'amount' => app(FinanceConfigurationGuard::class)->amount($data['amount'], 'ga_claim_max_amount', 'amount', '0.01'),
                     'description' => $data['description'] ?? null,
                     'status' => GaClaim::STATUS_SUBMITTED,
                     'revision_number' => $newRev,
@@ -149,6 +159,8 @@ class GaClaimService
                     'basic_verified_at' => null,
                     'finance_verified_by' => null,
                     'finance_verified_at' => null,
+                    'approved_bank_snapshot' => null,
+                    'approved_bank_hash' => null,
                 ]);
 
                 if ($supportingFile !== null) {
@@ -190,6 +202,7 @@ class GaClaimService
 
     private function validateSubmission(array $data, mixed $supportingFile): void
     {
+        app(FinanceConfigurationGuard::class)->amount($data['amount'] ?? null, 'ga_claim_max_amount', 'amount', '0.01');
         Validator::make(
             ['claim_type' => $data['claim_type'] ?? null, 'supporting' => $supportingFile],
             [
@@ -208,19 +221,22 @@ class GaClaimService
     /**
      * Perform GA Basic Verification.
      */
-    public function basicVerify(GaClaim $claim, User $gaActor, ?string $notes = null): GaClaim
+    public function basicVerify(GaClaim $claim, User $gaActor, ?string $notes = null, ?string $overrideReason = null): GaClaim
     {
         if (! $gaActor->isGa() && ! $gaActor->isAdmin()) {
             throw new InvalidArgumentException(__('ga.validation.basic_role'));
         }
 
-        return DB::transaction(function () use ($claim, $gaActor, $notes) {
+        return DB::transaction(function () use ($claim, $gaActor, $notes, $overrideReason) {
+            Employee::whereKey($claim->employee_id)->lockForUpdate()->firstOrFail();
             /** @var GaClaim $clm */
             $clm = GaClaim::where('id', $claim->id)->lockForUpdate()->firstOrFail();
 
             if ($clm->status !== GaClaim::STATUS_SUBMITTED) {
                 throw new RuntimeException(__('ga.validation.basic_status', ['status' => $clm->status]));
             }
+
+            app(MakerCheckerService::class)->assertDifferent('ga_basic_verify', $clm, $gaActor, [$clm->submitted_by], $overrideReason, true);
 
             $clm->update([
                 'status' => GaClaim::STATUS_BASIC_VERIFIED,

@@ -19,7 +19,7 @@ class LocalInvoiceSettlementController extends Controller
 {
     public function finalizeVoucher(Request $request, PaymentItem $item, LocalInvoiceVoucherService $service)
     {
-        $data = $request->validate(['voucher_date' => ['required', 'date_format:Y-m-d'], 'payment_method' => ['required', Rule::in(['BANK', 'KAS'])], 'remarks' => ['nullable', 'string', 'max:1000']]);
+        $data = $request->validate(['voucher_date' => ['required', 'date_format:Y-m-d'], 'payment_method' => ['required', Rule::in(['BANK', 'KAS'])], 'remarks' => ['nullable', 'string', 'max:1000'], 'override_reason' => ['nullable', 'string', 'max:1000']]);
         $voucher = $service->finalize($item, $data, $request->user());
 
         return redirect()->route('finance.vouchers.show', $voucher)->with('success', __('finance.feedback.voucher_finalized'));
@@ -31,6 +31,7 @@ class LocalInvoiceSettlementController extends Controller
             'voucher_date' => ['required', 'date_format:Y-m-d'],
             'payment_method' => ['required', Rule::in(['BANK', 'KAS'])],
             'remarks' => ['nullable', 'string', 'max:1000'],
+            'override_reason' => ['nullable', 'string', 'max:1000'],
         ]);
         $voucher = $service->finalize($item, $data, $request->user());
 
@@ -125,6 +126,6 @@ class LocalInvoiceSettlementController extends Controller
 
     private function paymentData(Request $request, bool $correction = false): array
     {
-        return $request->validate(['amount' => ['required', 'numeric', 'gt:0', 'regex:/^\d{1,18}(\.\d{1,2})?$/'], 'transfer_reference' => ['required', 'string', 'max:100'], 'transfer_date' => ['required', 'date_format:Y-m-d'], 'correction_reason' => [$correction ? 'required' : 'nullable', 'string', 'max:1000'], 'notes' => ['nullable', 'string', 'max:1000']]);
+        return $request->validate(['amount' => ['required', 'numeric', 'gt:0', 'regex:/^\d{1,18}(\.\d{1,2})?$/'], 'transfer_reference' => ['required', 'string', 'max:100'], 'transfer_date' => ['required', 'date_format:Y-m-d'], 'correction_reason' => [$correction ? 'required' : 'nullable', 'string', 'max:1000'], 'notes' => ['nullable', 'string', 'max:1000'], 'override_reason' => ['nullable', 'string', 'max:1000']]);
     }
 }

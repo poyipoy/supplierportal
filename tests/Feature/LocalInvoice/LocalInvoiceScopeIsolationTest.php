@@ -283,7 +283,7 @@ class LocalInvoiceScopeIsolationTest extends TestCase
         User::factory()->create(['role' => 'ga']);
         User::factory()->create(['role' => 'finance']);
 
-        $response = $this->actingAs($admin)->get(route('admin.users.index'));
+        $response = $this->actingAs($admin)->withSession(['auth.password_confirmed_at' => now()->timestamp])->get(route('admin.users.index'));
         $response->assertOk();
         $response->assertSee('General Affairs');
         $response->assertSee('Finance');
@@ -294,7 +294,7 @@ class LocalInvoiceScopeIsolationTest extends TestCase
         $admin = User::factory()->create(['role' => 'admin']);
         User::factory()->create(['role' => 'finance', 'name' => 'Fin User']);
 
-        $response = $this->actingAs($admin)
+        $response = $this->actingAs($admin)->withSession(['auth.password_confirmed_at' => now()->timestamp])
             ->getJson(route('admin.users.index').'?draw=1&start=0&length=25&search%5Bvalue%5D=Fin+User');
         $response->assertOk();
         $response->assertSee('Finance');
@@ -412,7 +412,7 @@ class LocalInvoiceScopeIsolationTest extends TestCase
         $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
 
         // 1. Create form
-        $createResponse = $this->actingAs($admin)->get(route('admin.users.create'));
+        $createResponse = $this->actingAs($admin)->withSession(['auth.password_confirmed_at' => now()->timestamp])->get(route('admin.users.create'));
         $createResponse->assertOk();
         $createResponse->assertSee('Supplier (Material &amp; Invoicing)', false);
         $createResponse->assertDontSee('Supplier (Bidding &amp; Quotations)', false);
@@ -436,7 +436,7 @@ class LocalInvoiceScopeIsolationTest extends TestCase
         $this->assertTrue($businessAccessPos > $supplierSectionPos, 'Supplier Business Access must be inside supplier-section, not above it');
 
         // 2. Edit form for Admin user (non-supplier)
-        $editAdminResponse = $this->actingAs($admin)->get(route('admin.users.edit', $admin));
+        $editAdminResponse = $this->actingAs($admin)->withSession(['auth.password_confirmed_at' => now()->timestamp])->get(route('admin.users.edit', $admin));
         $editAdminResponse->assertOk();
         $editAdminContent = $editAdminResponse->getContent();
         // The supplier section should be hidden (d-none) for non-supplier
@@ -444,7 +444,7 @@ class LocalInvoiceScopeIsolationTest extends TestCase
 
         // 3. Edit form for Supplier user
         $supplier = $this->supplierWithScopes(['import']);
-        $editSupplierResponse = $this->actingAs($admin)->get(route('admin.users.edit', $supplier));
+        $editSupplierResponse = $this->actingAs($admin)->withSession(['auth.password_confirmed_at' => now()->timestamp])->get(route('admin.users.edit', $supplier));
         $editSupplierResponse->assertOk();
         $editSupplierContent = $editSupplierResponse->getContent();
         // The supplier section should NOT have d-none for supplier
@@ -477,7 +477,7 @@ class LocalInvoiceScopeIsolationTest extends TestCase
             'supplier_scopes_present' => '1',
         ];
 
-        $storeResponse = $this->actingAs($admin)->post(route('admin.users.store'), $postDataDual);
+        $storeResponse = $this->actingAs($admin)->withSession(['auth.password_confirmed_at' => now()->timestamp])->post(route('admin.users.store'), $postDataDual);
         $storeResponse->assertRedirect(route('admin.users.index'));
 
         $dualUser = User::where('email', 'dual-supplier@example.com')->firstOrFail();
@@ -501,7 +501,7 @@ class LocalInvoiceScopeIsolationTest extends TestCase
             'supplier_scopes_present' => '1',
         ];
 
-        $updateResponse = $this->actingAs($admin)->put(route('admin.users.update', $dualUser), $updateDataLocal);
+        $updateResponse = $this->actingAs($admin)->withSession(['auth.password_confirmed_at' => now()->timestamp])->put(route('admin.users.update', $dualUser), $updateDataLocal);
         $updateResponse->assertRedirect(route('admin.users.index'));
 
         $dualUser->refresh();
@@ -524,7 +524,7 @@ class LocalInvoiceScopeIsolationTest extends TestCase
             'supplier_scopes_present' => '1',
         ];
 
-        $updateImportResponse = $this->actingAs($admin)->put(route('admin.users.update', $dualUser), $updateDataImport);
+        $updateImportResponse = $this->actingAs($admin)->withSession(['auth.password_confirmed_at' => now()->timestamp])->put(route('admin.users.update', $dualUser), $updateDataImport);
         $updateImportResponse->assertRedirect(route('admin.users.index'));
 
         $dualUser->refresh();

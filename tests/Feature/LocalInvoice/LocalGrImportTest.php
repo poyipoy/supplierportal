@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\LocalInvoice;
 
-use App\Imports\LocalGrImport;
 use App\Models\LocalGoodsReceipt;
 use App\Models\LocalPurchaseOrder;
 use App\Models\Supplier;
@@ -10,7 +9,6 @@ use App\Models\SupplierScope;
 use App\Models\User;
 use App\Services\LocalInvoice\LocalGrImportService;
 use App\Services\LocalInvoice\LocalProcurementStreamingReader;
-use App\Support\SpreadsheetImportReader;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -395,12 +393,7 @@ class LocalGrImportTest extends TestCase
         $filePath = base_path('whinh3512m600_0520_20260924-134847_116644.xlsx');
         $this->assertFileExists($filePath);
 
-        $uploaded = new UploadedFile($filePath, 'whinh_sample.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
-
-        $import = new LocalGrImport;
-        SpreadsheetImportReader::import($import, $uploaded);
-        $base = $import->preview();
-        $this->assertTrue($base['success']);
+        $base = ['rows' => iterator_to_array(app(LocalProcurementStreamingReader::class)->rows($filePath, 'GR'))];
 
         $firstRow = $base['rows'][0];
         $this->assertArrayHasKey('description', $firstRow);

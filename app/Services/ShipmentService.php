@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Attachment;
+use App\Models\FileInspection;
 use App\Models\PoDocument;
 use App\Models\PrItemAward;
 use App\Models\PurchaseOrder;
@@ -600,6 +601,8 @@ class ShipmentService
             throw new InvalidArgumentException(__('shipments.copy.this_shipment_document_does_not_belong_to_the_authenticated_supplier'));
         }
 
+        $this->assertDocumentUploadAllowed($document, $document->shipment);
+
         $path = 'attachments/'.now()->format('Y/m').'/'.$file->hashName(); // biz-time:ignore storage path
 
         $disk = Storage::disk('private');
@@ -607,15 +610,18 @@ class ShipmentService
 
         try {
             return DB::transaction(function () use ($document, $documentNumber, $stored, $user) {
+                $lockedShipment = Shipment::query()->whereKey($document->shipment_id)->lockForUpdate()->firstOrFail();
                 $lockedDocument = ShipmentDocument::query()
-                    ->with('shipment')
+                    ->where('shipment_id', $lockedShipment->id)
                     ->whereKey($document->id)
                     ->lockForUpdate()
                     ->firstOrFail();
 
-                if ((int) $lockedDocument->shipment?->supplier_id !== (int) $user->id) {
+                if ((int) $lockedShipment->supplier_id !== (int) $user->id) {
                     throw new InvalidArgumentException(__('shipments.copy.this_shipment_document_does_not_belong_to_the_authenticated_supplier'));
                 }
+
+                $this->assertDocumentUploadAllowed($lockedDocument, $lockedShipment);
 
                 $attachment = $lockedDocument->attachments()->create([
                     'file_path' => $stored['file_path'],
@@ -636,8 +642,23 @@ class ShipmentService
             });
         } catch (Throwable $exception) {
             $disk->delete($path);
+            FileInspection::whereKey($stored['file_inspection_id'])->update([
+                'status' => 'ERROR',
+                'error_code' => 'publication_failed',
+            ]);
 
             throw $exception;
+        }
+    }
+
+    private function assertDocumentUploadAllowed(ShipmentDocument $document, Shipment $shipment): void
+    {
+        if ($shipment->status === Shipment::STATUS_CANCELLED) {
+            throw new InvalidArgumentException(__('shipments.guard_copy.cancelled_document_upload'));
+        }
+
+        if (in_array($document->status, [ShipmentDocument::STATUS_VERIFIED, ShipmentDocument::STATUS_DONE], true)) {
+            throw new InvalidArgumentException(__('shipments.guard_copy.final_document_upload'));
         }
     }
 }

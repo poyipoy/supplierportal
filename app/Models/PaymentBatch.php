@@ -35,6 +35,11 @@ class PaymentBatch extends Model
 
     protected $guarded = ['id'];
 
+    protected static function booted(): void
+    {
+        static::creating(fn (PaymentBatch $batch) => $batch->actor_tracking_required = true);
+    }
+
     protected function casts(): array
     {
         return [
@@ -42,6 +47,8 @@ class PaymentBatch extends Model
             'total_bank_fee' => 'decimal:2',
             'total_net_amount' => 'decimal:2',
             'finalized_at' => 'datetime',
+            'actor_tracking_required' => 'boolean',
+            'transfer_exported_at' => 'datetime',
             'paid_at' => 'datetime',
         ];
     }

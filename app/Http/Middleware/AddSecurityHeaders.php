@@ -37,7 +37,7 @@ class AddSecurityHeaders
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
         $response->headers->set('X-Robots-Tag', 'noindex, nofollow');
 
-        $cspHeader = config('auth_security.headers.csp_enforce', false)
+        $cspHeader = config('auth_security.headers.csp_enforce', true)
             ? 'Content-Security-Policy'
             : 'Content-Security-Policy-Report-Only';
 

@@ -8,6 +8,7 @@ use App\Http\Requests\Export\AdvancedExportRequest;
 use App\Models\ExchangeRate;
 use App\Models\ExportJob;
 use App\Models\PrItem;
+use App\Support\ExportConfirmation;
 use App\Support\ExportDispatcher;
 use App\Support\NumberFormat;
 use App\Support\SupplierPriceHistoryBuilder;
@@ -161,6 +162,10 @@ class SupplierPriceHistoryController extends Controller
         );
         $currencySuffix = $currency ? '_'.$currency : '';
         $fileName = 'Price_History_'.str_replace([' ', '/'], '_', $materialName).$currencySuffix.'_'.now()->format('YmdHis').'.xlsx'; // biz-time:ignore instant filename
+
+        if ($request->isMethod('get')) {
+            return ExportConfirmation::make($request, __('supplier.copy.supplier_price_history'));
+        }
 
         $exportJob = ExportDispatcher::dispatch(
             __('supplier.copy.supplier_price_history'),

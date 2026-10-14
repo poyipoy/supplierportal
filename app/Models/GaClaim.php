@@ -71,6 +71,7 @@ class GaClaim extends Model
         return [
             'claim_date' => 'date',
             'amount' => 'decimal:2',
+            'approved_bank_snapshot' => 'array',
             'revision_number' => 'integer',
             'submitted_at' => 'datetime',
             'basic_verified_at' => 'datetime',

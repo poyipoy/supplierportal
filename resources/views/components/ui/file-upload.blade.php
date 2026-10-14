@@ -10,6 +10,7 @@
     'maxSizeMb' => 5,
     'disabled' => false,
     'accept' => null,
+    'allowedExtensions' => [],
     'existingFiles' => [],
     'existingFileName' => null,
     'existingFileUrl' => null,
@@ -24,7 +25,9 @@
         $message = $errors->first($validationKey . '.*');
     }
     $helperId = $helper ? $resolvedId . '-help' : null;
-    $errorId = $message ? $resolvedId . '-error' : null;
+    $errorId = $resolvedId . '-error';
+    $formatId = $resolvedId . '-format';
+    $descriptionIds = implode(' ', array_filter([$helperId, $formatId, $errorId]));
 
     $normalizedExistingFiles = $existingFiles;
     if (empty($normalizedExistingFiles) && !empty($existingFileName)) {
@@ -48,21 +51,28 @@
         multiple: @js($multiple),
         maxFiles: @js($maxFiles),
         maxSizeMb: @js($maxSizeMb),
-        existingFiles: @js($normalizedExistingFiles)
+        existingFiles: @js($normalizedExistingFiles),
+        allowedExtensions: @js($allowedExtensions),
+        serverError: @js($message)
     })"
     {{ $attributes->only('class')->class(['tw-h-full']) }}
 >
+    <span id="{{ $formatId }}" class="tw-sr-only">
+        {{ $formatText }} @if($multiple) · {{ __('common.review.upload_maximum', ['count' => $maxFiles]) }} @endif
+    </span>
     {{-- Hidden inputs for retained existing documents (across revisions) --}}
     <template x-for="file in existingFiles" :key="'kept-' + (file.id || file.name)">
-        <span x-if="file.id">
-            <input type="hidden" name="kept_document_ids[]" :value="file.id">
+        <span>
+            <template x-if="file.id">
+                <input type="hidden" name="kept_document_ids[]" :value="file.id">
+            </template>
         </span>
     </template>
 
     {{-- Balanced Document Card Container --}}
     <div
         class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface-container/25 tw-p-4 tw-flex tw-flex-col tw-h-full tw-transition-all hover:tw-border-outline"
-        :class="{ 'tw-border-error tw-bg-error-container/10': {{ $message ? 'true' : 'false' }} || clientError }"
+        :class="{ 'tw-border-error tw-bg-error-container/10': serverError || clientError }"
     >
         {{-- Card Header: Title, Status Badge, and Helper Note --}}
         <div>
@@ -101,7 +111,7 @@
             </div>
 
             @if($helper)
-                <p class="tw-text-[11px] tw-text-on-surface-variant tw-mt-1 tw-mb-0 tw-leading-normal">
+                <p id="{{ $helperId }}" class="tw-text-[11px] tw-text-on-surface-variant tw-mt-1 tw-mb-0 tw-leading-normal">
                     {{ $helper }}
                 </p>
             @endif
@@ -122,10 +132,12 @@
                 class="group tw-relative tw-flex tw-flex-col tw-items-center tw-justify-center tw-text-center tw-rounded-ui-sm tw-border tw-border-dashed tw-border-outline-variant tw-bg-surface tw-p-4 tw-flex-1 tw-min-h-[110px] tw-transition-all tw-cursor-pointer hover:tw-border-primary hover:tw-bg-primary/5 focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-primary focus:tw-border-primary"
                 :class="{
                     'tw-border-primary tw-bg-primary-container/20': isDragging,
-                    'tw-border-error tw-bg-error-container/20': {{ $message ? 'true' : 'false' }} || clientError
+                    'tw-border-error tw-bg-error-container/20': serverError || clientError
                 }"
                 role="button"
                 aria-label="{{ __('common.upload.label', ['label' => $label ?: __('common.upload.file')]) }}"
+                aria-describedby="{{ $descriptionIds }}"
+                :aria-invalid="(clientError || serverError) ? 'true' : 'false'"
             >
                 <div class="tw-w-9 tw-h-9 tw-rounded-full tw-bg-primary/10 tw-text-primary tw-flex tw-items-center tw-justify-center tw-mb-1.5 group-hover:tw-bg-primary group-hover:tw-text-primary-foreground tw-transition-colors">
                     <x-ui.icon name="upload-cloud" size="sm" />
@@ -233,7 +245,12 @@
                                 @drop.prevent="handleDrop($event)"
                                 tabindex="0"
                                 @keydown.enter.prevent="$refs.fileInput.click()"
-                                class="tw-flex tw-items-center tw-justify-center tw-gap-1.5 tw-py-1.5 tw-px-3 tw-rounded-ui-sm tw-border tw-border-dashed tw-border-outline-variant hover:tw-border-primary hover:tw-bg-primary/5 tw-text-ui-xs tw-font-semibold tw-text-primary tw-cursor-pointer tw-transition-colors"
+                                @keydown.space.prevent="$refs.fileInput.click()"
+                                role="button"
+                                aria-label="{{ __('common.upload.label', ['label' => $label ?: __('common.upload.file')]) }}"
+                                aria-describedby="{{ $descriptionIds }}"
+                                :aria-invalid="(clientError || serverError) ? 'true' : 'false'"
+                                class="ui-focus-ring tw-flex tw-items-center tw-justify-center tw-gap-1.5 tw-py-1.5 tw-px-3 tw-rounded-ui-sm tw-border tw-border-dashed tw-border-outline-variant hover:tw-border-primary hover:tw-bg-primary/5 tw-text-ui-xs tw-font-semibold tw-text-primary tw-cursor-pointer tw-transition-colors"
                                 :class="{ 'tw-border-primary tw-bg-primary/10': isDragging }"
                             >
                                 <x-ui.icon name="plus" size="sm" />
@@ -257,7 +274,12 @@
                                 @drop.prevent="handleDrop($event)"
                                 tabindex="0"
                                 @keydown.enter.prevent="$refs.fileInput.click()"
-                                class="tw-flex tw-items-center tw-justify-center tw-gap-1.5 tw-py-1.5 tw-px-3 tw-rounded-ui-sm tw-border tw-border-dashed tw-border-outline-variant hover:tw-border-primary hover:tw-bg-primary/5 tw-text-ui-xs tw-font-semibold tw-text-primary tw-cursor-pointer tw-transition-colors"
+                                @keydown.space.prevent="$refs.fileInput.click()"
+                                role="button"
+                                aria-label="{{ __('common.upload.label', ['label' => $label ?: __('common.upload.file')]) }}"
+                                aria-describedby="{{ $descriptionIds }}"
+                                :aria-invalid="(clientError || serverError) ? 'true' : 'false'"
+                                class="ui-focus-ring tw-flex tw-items-center tw-justify-center tw-gap-1.5 tw-py-1.5 tw-px-3 tw-rounded-ui-sm tw-border tw-border-dashed tw-border-outline-variant hover:tw-border-primary hover:tw-bg-primary/5 tw-text-ui-xs tw-font-semibold tw-text-primary tw-cursor-pointer tw-transition-colors"
                                 :class="{ 'tw-border-primary tw-bg-primary/10': isDragging }"
                                 title="{{ __('common.upload.replace_title') }}"
                             >
@@ -281,17 +303,12 @@
             @disabled($disabled)
             @if($multiple) multiple @endif
             @if($accept) accept="{{ $accept }}" @endif
-            @if($helper || $message) aria-describedby="{{ collect([$helperId, $errorId])->filter()->implode(' ') }}" @endif
-            @if($message) aria-invalid="true" @endif
+            aria-describedby="{{ $descriptionIds }}"
+            :aria-invalid="(clientError || serverError) ? 'true' : 'false'"
             {{ $attributes->except(['class', 'accept', 'id', 'name', 'type', 'layout']) }}
         >
 
         {{-- Error Alert / Message --}}
-        <p x-show="clientError" x-text="clientError" class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error tw-mt-2.5" role="alert"></p>
-        @if($message)
-            <p id="{{ $errorId }}" class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error tw-mt-2.5" role="alert">
-                {{ $message }}
-            </p>
-        @endif
+        <p id="{{ $errorId }}" x-show="clientError || serverError" x-text="clientError || serverError" class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error tw-mt-2.5" role="alert">{{ $message }}</p>
     </div>
 </div>

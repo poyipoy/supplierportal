@@ -5,11 +5,58 @@ namespace Tests\Feature\SupplierAudit;
 use App\Models\SupplierAudit;
 use App\Models\SupplierAuditStatusHistory;
 use App\Notifications\SystemNotification;
+use App\Services\SupplierAudit\SupplierAuditAnswerService;
 use App\Services\SupplierAudit\SupplierAuditReviewService;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Validation\ValidationException;
 
 class SupplierAuditAnswerTest extends SupplierAuditTestCase
 {
+    public function test_partial_answer_fields_preserve_saved_values_and_explicit_null_clears(): void
+    {
+        $supplier = $this->supplier();
+        $audit = $this->assign($supplier);
+        $cid = $this->firstCriterionId($audit);
+        app(SupplierAuditAnswerService::class)->save($supplier, $audit, [$cid => ['answer' => 'YES', 'score' => 4]], false);
+        $url = route('local-supplier.supplier-audits.update', $audit);
+
+        foreach ([['answer' => 'YES'], ['score' => 5], []] as $input) {
+            $this->actingAs($supplier)->putJson($url, ['action' => 'draft', 'answers' => [$cid => $input]])->assertOk();
+            $this->assertSame('YES', $this->answerFor($audit, $cid)->answer);
+            $this->assertSame(array_key_exists('answer', $input) ? 4 : 5, $this->answerFor($audit, $cid)->score);
+        }
+
+        $this->actingAs($supplier)->putJson($url, ['action' => 'draft', 'answers' => [$cid => ['score' => null]]])->assertOk();
+        $this->assertSame('YES', $this->answerFor($audit, $cid)->answer);
+        $this->assertNull($this->answerFor($audit, $cid)->score);
+        $this->actingAs($supplier)->putJson($url, ['action' => 'draft', 'answers' => [$cid => ['answer' => null]]])->assertOk();
+        $this->assertNull($this->answerFor($audit, $cid)->answer);
+        $this->assertNull($this->answerFor($audit, $cid)->score);
+    }
+
+    public function test_oversized_answer_payload_is_rejected_without_changing_existing_answers(): void
+    {
+        $supplier = $this->supplier();
+        $audit = $this->assign($supplier);
+        $cid = $this->firstCriterionId($audit);
+        app(SupplierAuditAnswerService::class)->save($supplier, $audit, [$cid => ['answer' => 'YES', 'score' => 4]], false);
+        $answers = array_fill(1, 151, ['answer' => 'NO']);
+        $this->actingAs($supplier)->putJson(route('local-supplier.supplier-audits.update', $audit), [
+            'action' => 'draft', 'answers' => $answers,
+        ])->assertUnprocessable()->assertJsonValidationErrors('answers');
+        $this->assertSame('YES', $this->answerFor($audit, $cid)->answer);
+        $this->assertSame(4, $this->answerFor($audit, $cid)->score);
+    }
+
+    public function test_direct_answer_service_rejects_oversized_payload(): void
+    {
+        $supplier = $this->supplier();
+        $audit = $this->assign($supplier);
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage(__('supplier_audit.errors.answer_limit', ['count' => 150]));
+        app(SupplierAuditAnswerService::class)->save($supplier, $audit, array_fill(1, 151, []), false);
+    }
+
     public function test_edit_page_renders_wizard_with_all_criteria(): void
     {
         $supplier = $this->supplier();

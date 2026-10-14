@@ -118,6 +118,8 @@ return [
         'locked' => 'This audit can no longer be edited.',
         'invalid_criterion' => 'The submitted answers do not belong to this audit.',
         'score_range' => 'Score must be a whole number from 1 to 5.',
+        'answer_limit' => 'Submit at most :count audit answers in one request.',
+        'answer_limit' => 'Submit at most :count audit answers in one request.',
         'answer_required' => ':criterion must be answered Yes or No.',
         'score_required' => ':criterion needs a score from 1 to 5 because the answer is Yes.',
         'score_prohibited' => ':criterion cannot have a score because the answer is No.',

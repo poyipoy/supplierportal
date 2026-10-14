@@ -3,11 +3,11 @@
 namespace App\Http\Requests\LocalInvoice;
 
 use App\Models\LocalInvoice;
+use App\Models\LocalInvoiceDocument;
 use App\Services\LocalInvoice\DeliveryScheduleValidator;
 use App\Services\LocalInvoice\InvoiceFilenameParser;
 use App\Services\VendorMaster\VendorMasterService;
 use App\Support\BusinessTime;
-use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -21,20 +21,24 @@ class StoreLocalInvoiceRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        if ($this->file('surat_jalan') && ! $this->file('delivery_note')) {
+            $this->files->set('delivery_note', $this->file('surat_jalan'));
+            $this->files->remove('surat_jalan');
+            $this->getInputSource()->remove('surat_jalan');
+            $this->convertedFiles = null;
+        }
+
         $parser = app(InvoiceFilenameParser::class);
 
         $rawInvoiceInput = $this->input('invoice_number');
         $rawTaxInput = $this->input('tax_invoice_number');
-        if (! $this->has('_original_invoice_number') && $rawInvoiceInput !== null) {
-            $this->merge(['_original_invoice_number' => $rawInvoiceInput]);
-        }
-        if (! $this->has('_original_tax_invoice_number') && $rawTaxInput !== null) {
-            $this->merge(['_original_tax_invoice_number' => $rawTaxInput]);
-        }
+        // These internal values must come from the submitted fields, never a
+        // client-supplied _original_* value. Keep typed values for validation.
+        $this->merge(['_original_invoice_number' => $rawInvoiceInput, '_original_tax_invoice_number' => $rawTaxInput]);
 
         // Derive invoice number from uploaded invoice file(s)
         $invoiceFiles = $this->file('invoice');
-        if (! empty($invoiceFiles)) {
+        if (! empty($invoiceFiles) && blank($rawInvoiceInput)) {
             try {
                 $derivedInvoiceNumber = $parser->parseInvoiceNumber($invoiceFiles, $rawInvoiceInput);
                 if ($derivedInvoiceNumber !== null) {
@@ -47,7 +51,7 @@ class StoreLocalInvoiceRequest extends FormRequest
 
         // Derive tax invoice number from uploaded tax_invoice file(s)
         $taxFiles = $this->file('tax_invoice');
-        if (! empty($taxFiles)) {
+        if (! empty($taxFiles) && blank($rawTaxInput)) {
             try {
                 $derivedTaxNumber = $parser->parseTaxInvoiceNumber($taxFiles, $rawTaxInput);
                 if ($derivedTaxNumber !== null) {
@@ -126,13 +130,11 @@ class StoreLocalInvoiceRequest extends FormRequest
         $requiresTaxInvoice = $supplier ? $vendorMasterService->requiresFakturPajak($supplier) : false;
         $requiresSuratJalan = $supplier ? $vendorMasterService->requiresSuratJalan($supplier) : false;
 
-        $fileRules = ['file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'];
-
         $baseRules = [
-            // New UI submits local_purchase_order_id + whole GR IDs. Legacy manual/reference
-            // fields remain accepted for grandfathered integrations and existing records.
-            'local_purchase_order_id' => ['nullable', 'integer', 'exists:local_purchase_orders,id'],
-            'goods_receipt_ids' => ['required_with:local_purchase_order_id', 'nullable', 'array', 'min:1'],
+            // New invoices require an authoritative PO and whole GR IDs. Only
+            // grandfathered MANUAL resubmits may omit them in the child request.
+            'local_purchase_order_id' => ['required', 'integer', 'exists:local_purchase_orders,id'],
+            'goods_receipt_ids' => ['required', 'array', 'min:1'],
             'goods_receipt_ids.*' => ['required', 'integer', 'distinct', 'exists:local_goods_receipts,id'],
             'po_source' => ['nullable', 'string', Rule::in(['INTERNAL', 'MANUAL'])],
             'po_number' => ['required_without_all:local_purchase_order_id,internal_po_reference,manual_po_number', 'nullable', 'string', 'max:100'],
@@ -142,7 +144,7 @@ class StoreLocalInvoiceRequest extends FormRequest
             'gr_reference' => ['nullable', 'string', 'max:1000'],
             'invoice_number' => ['required', 'string', 'max:100', Rule::unique('local_invoices')->where('supplier_id', $this->user()->id)],
             'invoice_date' => ['required', 'date_format:Y-m-d'],
-            'invoice_amount' => ['required', 'numeric', 'min:0', 'regex:/^\d{1,18}(\.\d{1,2})?$/'],
+            'invoice_amount' => ['required', 'numeric', 'gt:0', 'regex:/^\d{1,18}(\.\d{1,2})?$/'],
             'ppn_scheme' => ['required', 'string', Rule::in(['11%', '1.1%', '0%'])],
             'tax_amount' => ['nullable', 'numeric', 'min:0', 'regex:/^\d{1,18}(\.\d{1,2})?$/'],
             'tax_invoice_number' => [
@@ -183,26 +185,36 @@ class StoreLocalInvoiceRequest extends FormRequest
 
         if (is_array($fileVal)) {
             return [
-                $field => [$required ? 'required' : 'nullable', 'array', 'min:1', 'max:5'],
-                $field.'.*' => ['file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
+                $field => [$required ? 'required' : 'nullable', 'array', 'min:1', 'max:'.LocalInvoiceDocument::maxFilesFor($field)],
+                $field.'.*' => ['file', 'mimes:pdf', 'max:5120'],
             ];
         }
 
         return [
-            $field => array_merge([$required ? 'required' : 'nullable'], ['file', 'mimes:pdf,jpg,jpeg,png', 'max:5120']),
+            $field => array_merge([$required ? 'required' : 'nullable'], ['file', 'mimes:pdf', 'max:5120']),
         ];
     }
 
     public function messages(): array
     {
+        $cancelledInvoice = false;
+        $cancelledTax = false;
+        if ($supplierId = $this->user()?->id) {
+            $cancelled = LocalInvoice::where('supplier_id', $supplierId)->where('status', LocalInvoice::STATUS_CANCELLED);
+            $cancelledInvoice = (clone $cancelled)->where('invoice_number', $this->input('invoice_number'))->exists();
+            $cancelledTax = $this->filled('tax_invoice_number') && (clone $cancelled)->where('tax_invoice_number', $this->input('tax_invoice_number'))->exists();
+        }
         $messages = [
             'tax_invoice_number.required' => __('local_invoice.validation.tax_number_required'),
             'tax_invoice_number.regex' => __('local_invoice.validation.tax_number_format'),
-            'tax_invoice_number.unique' => __('local_invoice.validation.tax_number_duplicate'),
+            'tax_invoice_number.unique' => __($cancelledTax ? 'local_invoice.recovery.duplicate_tax' : 'local_invoice.validation.tax_number_duplicate', ['number' => $this->input('tax_invoice_number')]),
             'invoice_number.required' => __('local_invoice.validation.invoice_number_required'),
-            'invoice_number.unique' => __('local_invoice.validation.invoice_duplicate'),
+            'invoice_number.unique' => __($cancelledInvoice ? 'local_invoice.recovery.duplicate_invoice' : 'local_invoice.validation.invoice_duplicate'),
             'invoice_date.required' => __('local_invoice.validation.invoice_date_required'),
             'invoice_amount.required' => __('local_invoice.validation.dpp_required'),
+            'invoice_amount.gt' => __('local_invoice.validation.dpp_positive'),
+            'local_purchase_order_id.required' => __('local_invoice.validation.authoritative_selection'),
+            'goods_receipt_ids.required' => __('local_invoice.validation.whole_gr_required'),
             'goods_receipt_ids.required_with' => __('local_invoice.validation.whole_gr_required'),
             'goods_receipt_ids.min' => __('local_invoice.validation.whole_gr_required'),
             'invoice.required' => __('local_invoice.validation.invoice_file_required'),
@@ -215,10 +227,11 @@ class StoreLocalInvoiceRequest extends FormRequest
             'invoice' => __('local_invoice.labels.invoice'),
             'tax_invoice' => __('local_invoice.labels.tax_invoice'),
             'delivery_note' => __('local_invoice.labels.delivery_note'),
+            'surat_jalan' => __('local_invoice.labels.delivery_note'),
             'supporting' => __('local_invoice.labels.supporting'),
         ] as $field => $label) {
             if (is_array($this->file($field))) {
-                $messages["{$field}.max"] = __('local_invoice.validation.file_count', ['type' => $label]);
+                $messages["{$field}.max"] = __('local_invoice.validation.file_count', ['type' => $label, 'count' => LocalInvoiceDocument::maxFilesFor($field)]);
                 $messages["{$field}.*.mimes"] = __('local_invoice.validation.file_type', ['type' => $label]);
                 $messages["{$field}.*.max"] = __('local_invoice.validation.file_size', ['type' => $label]);
             } else {

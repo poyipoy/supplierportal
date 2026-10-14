@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Purchasing;
 use App\Http\Controllers\Controller;
 use App\Models\LocalInvoice;
 use App\Models\SupplierChangeRequest;
+use App\Models\SupplierMasterDocument;
 use App\Models\User;
 use App\Services\VendorMaster\VendorChangeRequestService;
 use Illuminate\Http\Request;
@@ -24,12 +25,18 @@ class PurchasingLocalVendorController extends Controller
             ->with(['supplier.supplier', 'requester'])
             ->latest('id')
             ->get();
+        $documentIds = $pendingRequests->pluck('proposed_data.bank_confirmation_document_id')->filter()->unique()->all();
+        $pendingRequests->load(['supplier.supplier.masterDocuments' => fn ($query) => $query
+            ->whereKey($documentIds)->where('document_type', SupplierMasterDocument::TYPE_SURAT_PERNYATAAN_REKENING)
+            ->select(['id', 'supplier_id', 'original_filename'])]);
 
         return view('purchasing.local-vendors.index', compact('vendors', 'pendingRequests'));
     }
 
     public function show(User $vendor)
     {
+        abort_unless($vendor->isLocalEligible(), 404);
+
         $vendor->load(['supplier.bankAccounts', 'supplier.masterDocuments', 'supplier.changeRequests']);
 
         return view('purchasing.local-vendors.show', compact('vendor'));
@@ -68,7 +75,7 @@ class PurchasingLocalVendorController extends Controller
 
         return view('purchasing.local-vendors.invoice-show', [
             'invoice' => $invoice,
-            'verification' => $invoice->currentVerification,
+            'verification' => $invoice->currentVerification?->revision_number === $invoice->revision_number ? $invoice->currentVerification : null,
             'readOnly' => true,
         ]);
     }

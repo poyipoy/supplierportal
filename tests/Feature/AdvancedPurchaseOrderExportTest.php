@@ -124,7 +124,7 @@ class AdvancedPurchaseOrderExportTest extends TestCase
         foreach ([[], ['status'], ['po_number', 'internal_note'], ['po_number', 'po_number']] as $keys) {
             $this->postJson(route('supplier.export.purchase-orders'), ['options' => ['columns' => $keys]])->assertUnprocessable();
         }
-        $this->actingAs($this->purchasing)->getJson(route('purchasing.export.purchase-orders'))->assertAccepted();
+        $this->actingAs($this->purchasing)->postJson(route('purchasing.export.purchase-orders'))->assertAccepted();
         $this->postJson(route('purchasing.export.purchase-orders'), ['supplier_id' => (string) $this->supplier->id, 'options' => ['columns' => ['po_number']]])->assertNotFound();
     }
 

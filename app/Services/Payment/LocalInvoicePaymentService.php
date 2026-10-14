@@ -13,6 +13,7 @@ use App\Models\SupplierOverpaymentRefund;
 use App\Models\User;
 use App\Services\LocalInvoice\InvoiceNotificationService;
 use App\Services\LocalInvoice\LocalFinanceAuditService;
+use App\Services\LocalInvoice\MakerCheckerService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
@@ -28,6 +29,8 @@ class LocalInvoicePaymentService
 
         return DB::transaction(function () use ($voucher, $data, $actor) {
             $lockedVoucher = LocalInvoiceVoucher::whereKey($voucher->id)->lockForUpdate()->firstOrFail();
+            $batch = $lockedVoucher->batch()->lockForUpdate()->firstOrFail();
+            app(MakerCheckerService::class)->assertActorsRecorded('voucher_settlement', $batch, $actor, [$batch->finalized_by], $batch->actor_tracking_required);
             if ($lockedVoucher->status !== LocalInvoiceVoucher::STATUS_FINAL) {
                 throw new RuntimeException(__('finance.validation.final_voucher'));
             }
@@ -61,6 +64,8 @@ class LocalInvoicePaymentService
 
         return DB::transaction(function () use ($payment, $data, $actor) {
             $locked = LocalInvoicePayment::whereKey($payment->id)->lockForUpdate()->firstOrFail();
+            $batch = $locked->voucher->batch()->lockForUpdate()->firstOrFail();
+            app(MakerCheckerService::class)->assertActorsRecorded('voucher_settlement', $batch, $actor, [$batch->finalized_by], $batch->actor_tracking_required);
             if ($locked->status !== LocalInvoicePayment::STATUS_CORRECTION_REQUIRED) {
                 throw ValidationException::withMessages(['payment' => __('finance.validation.underpaid_correction')]);
             }

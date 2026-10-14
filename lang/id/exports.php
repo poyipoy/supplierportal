@@ -1,6 +1,19 @@
 <?php
 
 return [
+    'confirmation.rows_help' => 'Jumlah baris file mengikuti struktur export yang dipilih.',
+    'confirmation' => [
+        'title' => 'Konfirmasi Export',
+        'help' => 'Export akan disiapkan setelah Anda mengonfirmasi. Filter yang Anda pilih akan digunakan.',
+        'submit' => 'Siapkan Export',
+        'history' => 'Riwayat Export',
+    ],
+    'confirmation' => [
+        'title' => 'Konfirmasi Export',
+        'help' => 'Export akan disiapkan setelah Anda mengonfirmasi. Filter yang Anda pilih akan digunakan.',
+        'submit' => 'Siapkan Export',
+        'history' => 'Riwayat Export',
+    ],
     'advanced' => [
         'enabled' => 'Ya', 'disabled' => 'Tidak',
         'unresponded' => 'Belum Ditanggapi',

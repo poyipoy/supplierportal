@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Jobs\ProcessLocalProcurementImport;
 use App\Models\LocalProcurementImport;
+use App\Services\LocalInvoice\LocalProcurementImportProgress;
 use App\Services\LocalInvoice\LocalProcurementImportService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -31,7 +32,8 @@ class CleanupLocalProcurementImports extends Command
                         return;
                     }
                     $job = new ProcessLocalProcurementImport($import->id, 'preview');
-                    $import->update(['status' => 'QUEUED', 'lease_expires_at' => null, 'attempt' => $import->attempt + 1, 'owner_job_key' => $job->runKey]);
+                    $import->fill(['status' => 'QUEUED', 'lease_expires_at' => null, 'attempt' => $import->attempt + 1, 'owner_job_key' => $job->runKey]);
+                    $import->fill(['token_hash' => hash('sha256', app(LocalProcurementImportService::class)->generationTokenFor($import))])->save();
                     dispatch($job->onQueue(config('local_procurement_imports.queue')));
                 });
             });
@@ -50,6 +52,7 @@ class CleanupLocalProcurementImports extends Command
                     DB::table('local_procurement_import_rows')->where('import_id', $import->id)->delete();
                     DB::table('local_procurement_import_records')->where('import_id', $import->id)->delete();
                     $import->update(['cleaned_at' => now()]);
+                    app(LocalProcurementImportProgress::class)->forget($import);
                 });
             });
         if (! LocalProcurementImport::where('status', 'READING')->exists()) {

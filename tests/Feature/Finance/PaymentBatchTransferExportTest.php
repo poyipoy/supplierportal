@@ -21,6 +21,7 @@ use App\Support\ExportDispatcher;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use RuntimeException;
@@ -134,7 +135,7 @@ class PaymentBatchTransferExportTest extends TestCase
         foreach (['en', 'id'] as $locale) {
             app()->setLocale($locale);
             $workbook = (new PaymentBatchTransferSheetRenderer)->render(collect([$batch]));
-            $this->assertSame(['Data', 'Legend', 'Form Responses 1', 'bank code', 'Swift Code'], $workbook->getSheetNames());
+            $this->assertSame(['Data', 'Legend', 'bank code', 'Swift Code'], $workbook->getSheetNames());
             $cells = $workbook->getActiveSheet()->rangeToArray('A1:U2');
             $this->assertSame(array_values(PaymentBatchTransferSheetRenderer::COLUMNS), $cells[0]);
             if ($baseline !== null) {
@@ -203,6 +204,58 @@ class PaymentBatchTransferExportTest extends TestCase
             ]);
 
         $response->assertStatus(202);
+    }
+
+    public function test_validated_batches_can_be_exported_repeatedly_before_and_after_payment(): void
+    {
+        [$batch, $group, $invoice] = $this->createBatchWithGroup('DRP-REPEAT-EXPORT');
+        $baseline = null;
+        foreach ([PaymentBatch::STATUS_FINALIZED, PaymentBatch::STATUS_PARTIALLY_PAID, PaymentBatch::STATUS_PAID] as $status) {
+            $batch->update(['status' => $status]);
+            if ($status !== PaymentBatch::STATUS_FINALIZED) {
+                $group->update(['status' => PaymentGroup::STATUS_PAID]);
+                $invoice->update(['status' => LocalInvoice::STATUS_PAID]);
+            }
+
+            $export = new PaymentBatchTransferExport($this->finance->id, [$batch->id]);
+            $this->assertCount(1, $export->getBatches());
+            $this->assertCount(1, $export->getBatches()->first()->groups);
+            $this->assertSame(1, $export->progressTotalRows());
+
+            for ($attempt = 0; $attempt < 2; $attempt++) {
+                $this->actingAs($this->finance)
+                    ->postJson(route('finance.drp.export-transfer'), ['batch_ids' => [$batch->hash]])
+                    ->assertStatus(202);
+                $path = "exports/repeat-{$status}-{$attempt}.xlsx";
+                $export->generateWorkbook($path, 'private');
+                $book = IOFactory::load(Storage::disk('private')->path($path));
+                try {
+                    $cells = $book->getSheetByName('Data')->rangeToArray('A1:U2');
+                    $this->assertSame(5000000, (int) $cells[1][6]);
+                    $this->assertSame('INV-001', $cells[1][12]);
+                    if ($baseline !== null) {
+                        $this->assertSame($baseline, $cells);
+                    }
+                    $baseline = $cells;
+                } finally {
+                    $book->disconnectWorksheets();
+                }
+                $this->assertSame($status, $batch->fresh()->status);
+            }
+        }
+    }
+
+    public function test_draft_batch_cannot_dispatch_or_generate_transfer_export(): void
+    {
+        [$batch] = $this->createBatchWithGroup('DRP-DRAFT-EXPORT');
+        $batch->update(['status' => PaymentBatch::STATUS_DRAFT]);
+        $this->actingAs($this->finance)
+            ->postJson(route('finance.drp.export-transfer'), ['batch_ids' => [$batch->hash]])
+            ->assertUnprocessable();
+        $this->assertDatabaseCount('export_jobs', 0);
+        $this->expectException(ValidationException::class);
+        (new PaymentBatchTransferExport($this->finance->id, [$batch->id]))
+            ->generateWorkbook('exports/draft.xlsx', 'private');
     }
 
     public function test_raw_integer_batch_ids_rejected(): void
@@ -378,9 +431,9 @@ class PaymentBatchTransferExportTest extends TestCase
         $renderer = new PaymentBatchTransferSheetRenderer;
         $spreadsheet = $renderer->render($batches);
 
-        // One Data sheet plus the four original supporting sheets.
-        $this->assertSame(['Data', 'Legend', 'Form Responses 1', 'bank code', 'Swift Code'], $spreadsheet->getSheetNames());
-        $this->assertSame(5, $spreadsheet->getSheetCount());
+        // One Data sheet plus the three retained supporting sheets.
+        $this->assertSame(['Data', 'Legend', 'bank code', 'Swift Code'], $spreadsheet->getSheetNames());
+        $this->assertSame(4, $spreadsheet->getSheetCount());
 
         $sheet = $spreadsheet->getSheetByName('Data');
         $this->assertNotNull($sheet);
@@ -674,9 +727,9 @@ class PaymentBatchTransferExportTest extends TestCase
         $book = (new PaymentBatchTransferSheetRenderer)->render(collect([$batch->fresh(['groups.items.payable'])]));
         $original = IOFactory::load(base_path('TARIKAN TRANSFER.xlsx'));
         try {
-            $this->assertSame(['Data', 'Legend', 'Form Responses 1', 'bank code', 'Swift Code'], $book->getSheetNames());
+            $this->assertSame(['Data', 'Legend', 'bank code', 'Swift Code'], $book->getSheetNames());
             $this->assertSame('Data', $book->getActiveSheet()->getTitle());
-            foreach (['Legend', 'Form Responses 1', 'bank code', 'Swift Code'] as $name) {
+            foreach (['Legend', 'bank code', 'Swift Code'] as $name) {
                 $expected = $original->getSheetByName($name);
                 $actual = $book->getSheetByName($name);
                 $this->assertSame($expected->getSheetState(), $actual->getSheetState(), $name);
@@ -775,7 +828,7 @@ class PaymentBatchTransferExportTest extends TestCase
             storage_path('framework/cache/missing-transfer-template-'.bin2hex(random_bytes(8)).'.xlsx'));
     }
 
-    public function test_exactly_one_data_sheet_and_four_supporting_sheets(): void
+    public function test_exactly_one_data_sheet_and_three_supporting_sheets(): void
     {
         [$batch] = $this->createBatchWithGroup('DRP-2026-00001');
         $batch->load(['groups.items.payable']);
@@ -783,8 +836,8 @@ class PaymentBatchTransferExportTest extends TestCase
         $renderer = new PaymentBatchTransferSheetRenderer;
         $spreadsheet = $renderer->render(collect([$batch]));
 
-        $this->assertSame(5, $spreadsheet->getSheetCount());
-        $this->assertSame(['Data', 'Legend', 'Form Responses 1', 'bank code', 'Swift Code'], $spreadsheet->getSheetNames());
+        $this->assertSame(4, $spreadsheet->getSheetCount());
+        $this->assertSame(['Data', 'Legend', 'bank code', 'Swift Code'], $spreadsheet->getSheetNames());
 
         $spreadsheet->disconnectWorksheets();
     }
@@ -809,7 +862,7 @@ class PaymentBatchTransferExportTest extends TestCase
         $spreadsheet->disconnectWorksheets();
     }
 
-    public function test_numeric_amount_values(): void
+    public function test_amount_is_exported_as_exact_decimal_text(): void
     {
         [$batch] = $this->createBatchWithGroup('DRP-2026-00001', 'BCA', 5000000);
         $batch->load(['groups.items.payable']);
@@ -819,8 +872,9 @@ class PaymentBatchTransferExportTest extends TestCase
         $sheet = $spreadsheet->getSheetByName('Data');
 
         $amountValue = $sheet->getCell('G2')->getValue();
-        $this->assertIsFloat($amountValue);
-        $this->assertEquals(5000000, $amountValue);
+        $this->assertSame('5000000.00', $amountValue);
+        $this->assertSame('s', $sheet->getCell('G2')->getDataType());
+        $this->assertSame('@', $sheet->getStyle('G2')->getNumberFormat()->getFormatCode());
 
         $spreadsheet->disconnectWorksheets();
     }
@@ -837,6 +891,48 @@ class PaymentBatchTransferExportTest extends TestCase
         $this->assertSame('IDR', $sheet->getCell('J2')->getValue());
 
         $spreadsheet->disconnectWorksheets();
+    }
+
+    public function test_all_transfer_cells_are_text_and_response_sheet_is_removed_after_serialization(): void
+    {
+        [$batch, $group] = $this->createBatchWithGroup('DRP-TEXT-001');
+        $group->update(['net_payment_amount' => '1234567890123456.78', 'account_number' => '001234567890123456789']);
+        $templatePath = resource_path('templates/drp/TARIKAN TRANSFER.xlsx');
+        $templateHash = hash_file('sha256', $templatePath);
+        $book = (new PaymentBatchTransferSheetRenderer)->render(collect([$batch->fresh(['groups.items.payable'])]));
+        (new PaymentBatchTransferExport($this->finance->id, [$batch->id]))->generateWorkbook('exports/text-transfer.xlsx', 'private');
+        $saved = IOFactory::load(Storage::disk('private')->path('exports/text-transfer.xlsx'));
+        try {
+            foreach ([$book, $saved] as $workbook) {
+                $this->assertSame(['Data', 'Legend', 'bank code', 'Swift Code'], $workbook->getSheetNames());
+                $this->assertNull($workbook->getSheetByName('Form Responses 1'));
+                $this->assertSame(Worksheet::SHEETSTATE_HIDDEN, $workbook->getSheetByName('bank code')->getSheetState());
+                $sheet = $workbook->getActiveSheet();
+                $this->assertSame('Data', $sheet->getTitle());
+                foreach (array_keys(PaymentBatchTransferSheetRenderer::COLUMNS) as $column) {
+                    foreach ([1, 2] as $row) {
+                        $coordinate = $column.$row;
+                        $cell = $sheet->getCell($coordinate);
+                        $this->assertSame('@', $sheet->getStyle($coordinate)->getNumberFormat()->getFormatCode(), $coordinate);
+                        if ($cell->getValue() !== null && $cell->getValue() !== '') {
+                            $this->assertSame('s', $cell->getDataType(), $coordinate);
+                            $this->assertIsString($cell->getValue(), $coordinate);
+                        }
+                    }
+                }
+                $this->assertSame('1', $sheet->getCell('A2')->getValue());
+                $this->assertSame('001234567890123456789', $sheet->getCell('F2')->getValue());
+                $this->assertSame('1234567890123456.78', $sheet->getCell('G2')->getValue());
+                $this->assertNull($sheet->getCell('H2')->getValue());
+                $this->assertSame('1', $sheet->getCell('R2')->getValue());
+                $this->assertSame('1', $sheet->getCell('S2')->getValue());
+                $this->assertSame('99', $sheet->getCell('T2')->getValue());
+            }
+            $this->assertSame($templateHash, hash_file('sha256', $templatePath));
+        } finally {
+            $book->disconnectWorksheets();
+            $saved->disconnectWorksheets();
+        }
     }
 
     public function test_charges_type_is_our(): void
@@ -929,14 +1025,14 @@ class PaymentBatchTransferExportTest extends TestCase
 
         $spreadsheet = IOFactory::load($tempFile);
 
-        // One Data sheet plus the four original supporting sheets.
-        $this->assertSame(['Data', 'Legend', 'Form Responses 1', 'bank code', 'Swift Code'], $spreadsheet->getSheetNames());
+        // One Data sheet plus the three retained supporting sheets.
+        $this->assertSame(['Data', 'Legend', 'bank code', 'Swift Code'], $spreadsheet->getSheetNames());
 
         $this->assertSame('Data', $spreadsheet->getActiveSheet()->getTitle());
         $this->assertSame(Worksheet::SHEETSTATE_HIDDEN, $spreadsheet->getSheetByName('bank code')->getSheetState());
         $original = IOFactory::load(base_path('TARIKAN TRANSFER.xlsx'));
         try {
-            foreach (['Legend', 'Form Responses 1', 'bank code', 'Swift Code'] as $name) {
+            foreach (['Legend', 'bank code', 'Swift Code'] as $name) {
                 $this->assertSame(hash('sha256', serialize($original->getSheetByName($name)->toArray(null, false, false, true))),
                     hash('sha256', serialize($spreadsheet->getSheetByName($name)->toArray(null, false, false, true))),
                     'Serialized supporting sheet: '.$name);
@@ -1018,7 +1114,7 @@ class PaymentBatchTransferExportTest extends TestCase
         [$batch] = $this->createBatchWithGroup('DRP-2026-00001');
 
         $this->actingAs($this->finance)
-            ->getJson(route('finance.drp.export', $batch))
+            ->postJson(route('finance.drp.export', $batch))
             ->assertStatus(202);
     }
 

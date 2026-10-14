@@ -44,6 +44,7 @@
             </div>
             <input
                 id="password"
+                type="password"
                 :type="visible ? 'text' : 'password'"
                 name="password"
                 class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-pl-10 tw-pr-11 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary {{ (isset($errors) && $errors->has('password')) ? 'tw-border-error' : 'tw-border-outline-variant' }}"
@@ -53,7 +54,7 @@
                 @if(isset($errors) && $errors->has('password')) aria-invalid="true" aria-describedby="password-error" @endif
                 required
             >
-            <button type="button" class="ui-focus-ring tw-absolute tw-inset-y-0 tw-end-0.5 tw-my-auto tw-inline-flex tw-h-9 tw-w-9 tw-items-center tw-justify-center tw-rounded-ui-full tw-border-0 tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container" @click="visible = !visible" :aria-label="visible ? @js(__('auth.login.hide_password')) : @js(__('auth.login.show_password'))">
+            <button type="button" disabled :disabled="false" aria-label="{{ __('auth.login.show_password') }}" class="ui-focus-ring tw-absolute tw-inset-y-0 tw-end-0.5 tw-my-auto tw-inline-flex tw-h-9 tw-w-9 tw-items-center tw-justify-center tw-rounded-ui-full tw-border-0 tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container" @click="visible = !visible" :aria-label="visible ? @js(__('auth.login.hide_password')) : @js(__('auth.login.show_password'))">
                 <x-ui.icon name="eye-off" x-show="visible" />
                 <x-ui.icon name="eye" x-show="!visible" />
             </button>

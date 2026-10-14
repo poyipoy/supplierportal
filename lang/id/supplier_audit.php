@@ -118,6 +118,8 @@ return [
         'locked' => 'Audit ini tidak bisa diubah lagi.',
         'invalid_criterion' => 'Jawaban yang dikirim bukan milik audit ini.',
         'score_range' => 'Score harus bilangan bulat 1 sampai 5.',
+        'answer_limit' => 'Kirim maksimal :count jawaban audit dalam satu permintaan.',
+        'answer_limit' => 'Kirim maksimal :count jawaban audit dalam satu permintaan.',
         'answer_required' => ':criterion wajib dijawab Ya atau Tidak.',
         'score_required' => ':criterion memerlukan Score 1 sampai 5 karena jawabannya Ya.',
         'score_prohibited' => ':criterion tidak boleh punya Score karena jawabannya Tidak.',

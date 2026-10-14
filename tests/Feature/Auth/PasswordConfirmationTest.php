@@ -2,10 +2,13 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Models\Supplier;
+use App\Models\SupplierScope;
 use App\Models\User;
 use App\Services\Auth\PasswordConfirmationContinuationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 class PasswordConfirmationTest extends TestCase
@@ -164,5 +167,117 @@ class PasswordConfirmationTest extends TestCase
         ]);
 
         $response->assertSessionHasErrors();
+    }
+
+    /**
+     * Buka halaman GET yang dilindungi, konfirmasi password, dan kembalikan
+     * respons konfirmasinya (session diteruskan lewat cookie).
+     */
+    private function confirmAfterVisiting(User $user, string $url): TestResponse
+    {
+        $start = $this->actingAs($user)->get($url)->assertRedirect(route('password.confirm'));
+        $start->assertSessionHas(PasswordConfirmationContinuationService::SESSION_KEY);
+
+        return $this->withCookie(config('session.cookie'), $start->getCookie(config('session.cookie'))->getValue())
+            ->post(route('password.confirm'), ['password' => 'password']);
+    }
+
+    public function test_confirmation_returns_to_admin_user_edit_page_instead_of_profile(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $target = User::factory()->create(['role' => 'purchasing']);
+        $url = route('admin.users.edit', $target);
+
+        $this->confirmAfterVisiting($admin, $url)
+            ->assertRedirect($url)
+            ->assertSessionMissing(PasswordConfirmationContinuationService::SESSION_KEY);
+
+        $this->get($url)->assertOk();
+    }
+
+    public function test_confirmation_returns_to_admin_user_create_page_and_keeps_query_string(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $url = route('admin.users.create', ['role' => 'supplier']);
+
+        $this->confirmAfterVisiting($admin, $url)->assertRedirect($url);
+    }
+
+    public function test_confirmation_returns_to_finance_payment_term_form(): void
+    {
+        $finance = User::factory()->create(['role' => 'finance']);
+        $vendor = User::factory()->create(['role' => 'supplier', 'is_active' => true]);
+        SupplierScope::create(['supplier_id' => $vendor->id, 'scope' => 'local']);
+        Supplier::create(['user_id' => $vendor->id, 'company_name' => 'PT Uji', 'payment_term_days' => 30]);
+        $url = route('finance.vendor-master.payment-term.edit', $vendor);
+
+        $this->confirmAfterVisiting($finance, $url)->assertRedirect($url);
+        $this->get($url)->assertOk()->assertSee('name="payment_term_days"', false);
+    }
+
+    public function test_pending_navigation_is_single_use(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $url = route('admin.users.create');
+
+        $this->confirmAfterVisiting($admin, $url)->assertRedirect($url);
+
+        // Konfirmasi berikutnya tanpa navigasi tertunda kembali ke perilaku default.
+        $this->post(route('password.confirm'), ['password' => 'password'])
+            ->assertRedirect(route('profile.edit'));
+    }
+
+    public function test_pending_navigation_bound_to_another_user_session_or_expired_is_ignored(): void
+    {
+        $payload = $this->capturedNavigationPayload();
+        $this->assertSame('GET', $payload['method']);
+        $this->assertSame([], $payload['inputs']);
+
+        foreach (['user_id' => 'different-user', 'session_id' => 'different-session', 'expires_at' => now()->subSecond()->timestamp] as $field => $value) {
+            $this->postConfirmationWithPayload(array_merge($payload, [$field => $value]), keepSession: $field !== 'session_id')
+                ->assertRedirect(route('profile.edit'));
+        }
+    }
+
+    public function test_pending_navigation_to_external_or_internal_endpoint_falls_back_to_profile(): void
+    {
+        $payload = $this->capturedNavigationPayload();
+
+        foreach (['//evil.example/phish', 'https://evil.example/phish', '/exports/abc/status'] as $uri) {
+            $response = $this->postConfirmationWithPayload(array_merge($payload, ['uri' => $uri]));
+
+            $response->assertRedirect(route('profile.edit'));
+            $this->assertStringNotContainsString('evil.example', (string) $response->headers->get('Location'));
+        }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function capturedNavigationPayload(): array
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $start = $this->actingAs($admin)->get(route('admin.users.create'))->assertRedirect(route('password.confirm'));
+
+        return json_decode(
+            Crypt::decryptString($start->getSession()->get(PasswordConfirmationContinuationService::SESSION_KEY)),
+            true,
+            512,
+            JSON_THROW_ON_ERROR,
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function postConfirmationWithPayload(array $payload, bool $keepSession = true): TestResponse
+    {
+        $this->startSession();
+        if ($keepSession) {
+            $payload['session_id'] = $this->app['session']->getId();
+        }
+
+        return $this->withSession([PasswordConfirmationContinuationService::SESSION_KEY => Crypt::encryptString(json_encode($payload, JSON_THROW_ON_ERROR))])
+            ->post(route('password.confirm'), ['password' => 'password']);
     }
 }

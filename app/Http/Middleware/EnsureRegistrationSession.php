@@ -31,8 +31,8 @@ class EnsureRegistrationSession
             ->where('expires_at', '>', now())
             ->first();
 
-        if (! $access) {
-            $request->session()->forget(['registration_access_id', 'registration_user_id']);
+        if (! $access || ! hash_equals($access->registration_reference, (string) $request->session()->get('registration_cycle_reference', ''))) {
+            $request->session()->forget(['registration_access_id', 'registration_user_id', 'registration_cycle_reference']);
 
             return redirect()->route('supplier.registration.access-form')
                 ->with('error', __('auth.registration_session.expired'));

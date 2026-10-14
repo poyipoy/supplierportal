@@ -4,13 +4,16 @@ use App\Http\Middleware\AddSecurityHeaders;
 use App\Http\Middleware\ApplyUserLocale;
 use App\Http\Middleware\DecodeHashids;
 use App\Http\Middleware\EnforceAuthSessionSecurity;
+use App\Http\Middleware\EnforcePasswordChange;
 use App\Http\Middleware\EnforceSupplierDomain;
 use App\Http\Middleware\EnsurePasswordConfirmation;
 use App\Http\Middleware\EnsurePendingTwoFactorChallenge;
 use App\Http\Middleware\EnsureRegistrationSession;
+use App\Http\Middleware\LimitOperationalRequests;
 use App\Http\Middleware\NoStoreResponse;
 use App\Http\Middleware\RememberPurchasingListUrl;
 use App\Http\Middleware\RoleMiddleware;
+use App\Http\Middleware\ShareAuthSplashState;
 use App\Http\Middleware\SupplierScopeMiddleware;
 use App\Support\PortalContext;
 use App\Support\RateLimitResponse;
@@ -20,6 +23,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
+use Illuminate\Session\Middleware\StartSession;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withEvents(discover: false)
@@ -57,12 +61,16 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->web(append: [
             ApplyUserLocale::class,
+            ShareAuthSplashState::class,
             DecodeHashids::class,
             EnforceAuthSessionSecurity::class,
+            EnforcePasswordChange::class,
             AddSecurityHeaders::class,
             EnforceSupplierDomain::class,
+            LimitOperationalRequests::class,
         ]);
-        $middleware->appendToPriorityList(\Illuminate\Session\Middleware\StartSession::class, ApplyUserLocale::class);
+        $middleware->appendToPriorityList(StartSession::class, ApplyUserLocale::class);
+        $middleware->appendToPriorityList(ApplyUserLocale::class, ShareAuthSplashState::class);
 
         $middleware->alias([
             'role' => RoleMiddleware::class,

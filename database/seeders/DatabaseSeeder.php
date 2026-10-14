@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             'email' => 'admin@adasi.com',
             'password' => Hash::make('password'),
             'role' => 'admin',
+            'account_status' => User::ACCOUNT_STATUS_ACTIVE,
             'is_active' => true,
         ]);
 
@@ -30,6 +31,7 @@ class DatabaseSeeder extends Seeder
             'email' => 'purchasing@adasi.com',
             'password' => Hash::make('password'),
             'role' => 'purchasing',
+            'account_status' => User::ACCOUNT_STATUS_ACTIVE,
             'is_active' => true,
         ]);
 
@@ -39,6 +41,7 @@ class DatabaseSeeder extends Seeder
             'email' => 'qc@adasi.com',
             'password' => Hash::make('password'),
             'role' => 'qc',
+            'account_status' => User::ACCOUNT_STATUS_ACTIVE,
             'is_active' => true,
         ]);
 
@@ -48,6 +51,7 @@ class DatabaseSeeder extends Seeder
             'email' => 'supplier1@test.com',
             'password' => Hash::make('password'),
             'role' => 'supplier',
+            'account_status' => User::ACCOUNT_STATUS_ACTIVE,
             'is_active' => true,
         ]);
 
@@ -67,6 +71,7 @@ class DatabaseSeeder extends Seeder
             'email' => 'supplier2@test.com',
             'password' => Hash::make('password'),
             'role' => 'supplier',
+            'account_status' => User::ACCOUNT_STATUS_ACTIVE,
             'is_active' => true,
         ]);
 

@@ -44,7 +44,7 @@ class LoginEmailImmutabilityTest extends TestCase
             $payload += ['role' => 'admin', 'auth_session_version' => 99, 'email_verified_at' => null];
         }
 
-        $this->actingAs($actor)->withSession(['auth_session_version' => $actor->auth_session_version]);
+        $this->actingAs($actor)->withSession(['auth.password_confirmed_at' => now()->timestamp])->withSession(['auth_session_version' => $actor->auth_session_version]);
         $response = $adminPath
             ? $this->put(route('admin.users.update', $target), $payload)
             : $this->patch(route('profile.update'), $payload);
@@ -75,7 +75,7 @@ class LoginEmailImmutabilityTest extends TestCase
         $actor = $adminPath ? User::factory()->create(['role' => 'admin']) : $target;
         $payload = ['name' => 'Must Not Save', 'email' => 'replacement@example.com', 'role' => 'qc', 'is_active' => '1'];
         $url = $adminPath ? route('admin.users.update', $target) : route('profile.update');
-        $this->actingAs($actor)->from($adminPath ? route('admin.users.edit', $target) : route('profile.edit'));
+        $this->actingAs($actor)->withSession(['auth.password_confirmed_at' => now()->timestamp])->from($adminPath ? route('admin.users.edit', $target) : route('profile.edit'));
         $response = $json
             ? $this->json($adminPath ? 'PUT' : 'PATCH', $url, $payload)
             : $this->call($adminPath ? 'PUT' : 'PATCH', $url, $payload);
@@ -124,7 +124,7 @@ class LoginEmailImmutabilityTest extends TestCase
     public function test_admin_can_still_set_email_when_creating_an_account(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
-        $this->actingAs($admin)->post(route('admin.users.store'), [
+        $this->actingAs($admin)->withSession(['auth.password_confirmed_at' => now()->timestamp])->post(route('admin.users.store'), [
             'name' => 'New User', 'email' => 'new.user@example.com', 'role' => 'purchasing',
             'is_active' => '1', 'password' => 'Strong!AccountPassword123',
             'password_confirmation' => 'Strong!AccountPassword123',

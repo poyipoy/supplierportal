@@ -218,7 +218,7 @@ class NotificationPreferencesUiTest extends TestCase
         $this->assertCount(1, $xpath->query('.//input[@name="_method" and @value="DELETE"]', $resetForm->item(0)));
     }
 
-    public function test_local_supplier_has_thirteen_checkboxes_and_no_required_wording(): void
+    public function test_local_supplier_includes_audit_notifications_without_required_wording(): void
     {
         $user = $this->localSupplier();
         $response = $this->actingAs($user)->get(route('profile.notifications'))->assertOk();
@@ -226,7 +226,7 @@ class NotificationPreferencesUiTest extends TestCase
         $response->assertDontSeeText('Required notifications');
 
         $xpath = $this->xpathFromHtml($response->getContent());
-        $this->assertCount(13, $xpath->query('//input[@type="checkbox"]'));
+        $this->assertCount(19, $xpath->query('//input[@type="checkbox"]'));
 
         // Confirm bulk controls are button elements, never inputs
         $bulkOn = $xpath->query('//button[normalize-space(.)="Turn all on"]');
@@ -335,7 +335,7 @@ class NotificationPreferencesUiTest extends TestCase
 
         // Select exists for each event
         $selects = $xpath->query('//select[starts-with(@name, "notification_delivery[")]');
-        $this->assertCount(13, $selects);
+        $this->assertCount(19, $selects);
 
         /** @var \DOMElement $select */
         foreach ($selects as $select) {
@@ -362,8 +362,8 @@ class NotificationPreferencesUiTest extends TestCase
             $this->assertSame('silent', $options->item(1)->getAttribute('value'));
         }
 
-        // Local supplier still has exactly 13 checkboxes
-        $this->assertCount(13, $xpath->query('//input[@type="checkbox"]'));
+        // Local supplier still has exactly 19 checkboxes including Supplier Audit
+        $this->assertCount(19, $xpath->query('//input[@type="checkbox"]'));
     }
 
     public function test_silent_filter_button_and_quiet_mode_preset_rendered(): void

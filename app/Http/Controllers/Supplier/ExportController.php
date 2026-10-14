@@ -13,6 +13,7 @@ use App\Http\Requests\Export\Filters\QuotationExportFilters;
 use App\Models\ExportJob;
 use App\Models\PurchaseOrder;
 use App\Models\Quotation;
+use App\Support\ExportConfirmation;
 use App\Support\ExportDispatcher;
 use Illuminate\Http\Request;
 
@@ -23,6 +24,10 @@ class ExportController extends Controller
         $filters = QuotationExportFilters::validated($request, supplier: true);
 
         $scope = ! empty($filters['period_id']) ? 'period_'.$filters['period_id'] : 'all';
+
+        if ($request->isMethod('get')) {
+            return ExportConfirmation::make($request, __('exports.job_labels.supplier_quotation_summary'));
+        }
 
         $exportJob = ExportDispatcher::dispatch(
             __('exports.job_labels.supplier_quotation_summary'),
@@ -43,6 +48,10 @@ class ExportController extends Controller
             __('supplier.copy.you_do_not_have_access_to_this_quotation')
         );
 
+        if ($request->isMethod('get')) {
+            return ExportConfirmation::make($request, __('supplier.copy.detail_quotation_supplier'));
+        }
+
         $exportJob = ExportDispatcher::dispatch(
             __('supplier.copy.detail_quotation_supplier'),
             QuotationDetailExport::class,
@@ -56,6 +65,10 @@ class ExportController extends Controller
     public function purchaseOrders(AdvancedExportRequest $request)
     {
         $filters = PurchaseOrderExportFilters::validated($request, supplier: true);
+
+        if ($request->isMethod('get')) {
+            return ExportConfirmation::make($request, __('exports.job_labels.supplier_po_summary'));
+        }
 
         $exportJob = ExportDispatcher::dispatch(
             __('exports.job_labels.supplier_po_summary'),
@@ -82,6 +95,10 @@ class ExportController extends Controller
             403,
             __('supplier.copy.you_do_not_have_access_to_this_purchase_order')
         );
+
+        if ($request->isMethod('get')) {
+            return ExportConfirmation::make($request, __('supplier.copy.detail_purchase_order_supplier'));
+        }
 
         $exportJob = ExportDispatcher::dispatch(
             __('supplier.copy.detail_purchase_order_supplier'),

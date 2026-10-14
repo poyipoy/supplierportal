@@ -251,9 +251,15 @@ export async function submitAsync(form, submitter = null) {
     const token = form.querySelector('input[name="_token"]')?.value
         || document.querySelector('meta[name="csrf-token"]')?.content;
 
+    // Read the raw `action` content attribute, not the `form.action` IDL property: a
+    // descendant form control named/id'd "action" (several forms use <input name="action">
+    // to carry draft/submitted intent) shadows HTMLFormElement.action per the HTML Standard's
+    // named-item lookup, so `form.action` can silently return that element instead of the URL.
+    const actionUrl = form.getAttribute('action') || form.action;
+
     let response;
     try {
-        response = await fetch(form.action, {
+        response = await fetch(actionUrl, {
             method: (form.getAttribute('method') || 'POST').toUpperCase(),
             body,
             credentials: 'same-origin',

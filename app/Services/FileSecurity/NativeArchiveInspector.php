@@ -242,9 +242,9 @@ class NativeArchiveInspector
         }
     }
 
-    public function inspectOffice(string $path, string $type): void
+    public function inspectOffice(string $path, string $type, string $policy = 'office'): void
     {
-        $manifest = $this->inspect($path, 'office');
+        $manifest = $this->inspect($path, $policy);
         $paths = array_column($manifest, 'normalized_name');
         foreach (['[Content_Types].xml', '_rels/.rels', $type === 'xlsx' ? 'xl/workbook.xml' : 'word/document.xml'] as $required) {
             if (! in_array($required, $paths, true)) {
@@ -252,7 +252,7 @@ class NativeArchiveInspector
             }
         }
         $zip = $this->open($path, count($manifest));
-        $limits = $this->limits('office');
+        $limits = $this->limits($policy);
         $deadline = microtime(true) + $limits['max_runtime_seconds'];
         $total = 0;
         try {
@@ -466,7 +466,13 @@ class NativeArchiveInspector
 
     private function limits(string $policy): array
     {
-        $limits = config('native_file_security.'.($policy === 'po_zip' ? 'zip' : 'office'));
+        $configuration = match ($policy) {
+            'po_zip' => 'zip',
+            'office' => 'office',
+            'streaming_office' => 'streaming_office',
+            default => null,
+        };
+        $limits = $configuration === null ? null : config('native_file_security.'.$configuration);
         if (! is_array($limits)) {
             $this->reject('configuration');
         }

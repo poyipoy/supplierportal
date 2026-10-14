@@ -10,8 +10,11 @@ use App\Models\PaymentBatch;
 use App\Models\PaymentGroup;
 use App\Models\PaymentItem;
 use App\Models\User;
+use App\Services\Payment\PaymentTransferGuard;
 use App\Support\BankTransferMapping;
+use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use RuntimeException;
@@ -20,14 +23,14 @@ use RuntimeException;
  * Bulk Transfer Export for DRP Supplier.
  *
  * Generates one TARIKAN TRANSFER workbook with selected PaymentBatch rows in
- * Data (columns A:U), retaining the four original supporting sheets.
+ * Data (columns A:U as Text), retaining Legend, bank code and Swift Code.
  *
  * Constructor contract: (int $actorId, list<int> $batchIds)
  *   - Identical scalar signature as PaymentBatchDrpExport for ExportDispatcher compatibility.
  *
  * @see PaymentBatchTransferSheetRenderer
  */
-class PaymentBatchTransferExport implements \Illuminate\Contracts\Translation\HasLocalePreference, GeneratesWorkbook, TracksExportProgress
+class PaymentBatchTransferExport implements GeneratesWorkbook, HasLocalePreference, TracksExportProgress
 {
     use InteractsWithExportProgress;
 
@@ -50,7 +53,7 @@ class PaymentBatchTransferExport implements \Illuminate\Contracts\Translation\Ha
     {
         $this->authorizeActor();
 
-        $batches = $this->getBatches();
+        $batches = DB::transaction(fn () => app(PaymentTransferGuard::class)->lockedBatches($this->batchIds));
 
         if ($batches->isEmpty()) {
             throw new RuntimeException('No eligible supplier payment batches found for transfer export.');
@@ -86,7 +89,14 @@ class PaymentBatchTransferExport implements \Illuminate\Contracts\Translation\Ha
         }
 
         $renderer = app(PaymentBatchTransferSheetRenderer::class);
-        $spreadsheet = $renderer->render($batches);
+        $spreadsheet = DB::transaction(function () use ($renderer) {
+            $guard = app(PaymentTransferGuard::class);
+            $fresh = $guard->lockedBatches($this->batchIds);
+            $spreadsheet = $renderer->render($fresh);
+            $guard->markExported($fresh, User::findOrFail($this->actorId));
+
+            return $spreadsheet;
+        }, 3);
 
         $tempPath = tempnam(sys_get_temp_dir(), 'drp_transfer_');
         if ($tempPath === false) {
@@ -161,7 +171,7 @@ class PaymentBatchTransferExport implements \Illuminate\Contracts\Translation\Ha
         return $this->cachedBatches = PaymentBatch::query()
             ->where('batch_type', PaymentBatch::TYPE_SUPPLIER)
             ->whereIn('id', $cleanBatchIds)
-            ->where('status', '!=', PaymentBatch::STATUS_CANCELLED)
+            ->whereIn('status', [PaymentBatch::STATUS_FINALIZED, PaymentBatch::STATUS_PARTIALLY_PAID, PaymentBatch::STATUS_PAID])
             ->with([
                 'groups' => fn ($q) => $q
                     ->where('status', '!=', PaymentGroup::STATUS_CANCELLED)
