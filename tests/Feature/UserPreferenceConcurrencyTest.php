@@ -12,6 +12,9 @@ class UserPreferenceConcurrencyTest extends TestCase
 {
     use DatabaseTruncation;
 
+    // Retain the migration-owned singleton used to serialize PO ZIP admission.
+    protected $exceptTables = ['local_po_document_capacity'];
+
     public function test_concurrent_locale_and_notification_first_saves_preserve_both_scopes(): void
     {
         $user = User::factory()->create(['role' => 'supplier']);

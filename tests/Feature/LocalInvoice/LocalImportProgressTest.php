@@ -25,6 +25,9 @@ class LocalImportProgressTest extends TestCase
 {
     use DatabaseTruncation;
 
+    // Retain the migration-owned singleton used to serialize PO ZIP admission.
+    protected $exceptTables = ['local_po_document_capacity'];
+
     private string $root;
 
     private User $actor;

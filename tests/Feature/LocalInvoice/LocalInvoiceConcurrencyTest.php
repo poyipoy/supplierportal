@@ -21,6 +21,9 @@ class LocalInvoiceConcurrencyTest extends TestCase
 {
     use DatabaseTruncation;
 
+    // Retain the migration-owned singleton used to serialize PO ZIP admission.
+    protected $exceptTables = ['local_po_document_capacity'];
+
     protected function beforeTruncatingDatabase(): void
     {
         $this->assertSame('adasi_portal_test', DB::connection()->getDatabaseName());
