@@ -43,7 +43,9 @@ final class PurchaseOrderPdf
             throw new RuntimeException('Supplier details are too long for the PO PDF header.');
         }
 
-        $items = $po->commercialQuotationItems();
+        // I-15: quantity, KG and amount come from the single ordered resolver.
+        $lines = $po->orderedLines();
+        $items = $lines->map(fn ($line) => $line->quotationItem)->values();
         $quotations = $items->pluck('quotation')->unique('id')->values();
         $terms = $quotations->map(fn ($q) => trim((string) $q->payment_terms) ?: '-')->unique();
         $paymentTerm = $terms->count() <= 1 ? ($terms->first() ?? '-') : $quotations->map(fn ($q) => ($q->purchaseRequisition?->pr_number ?: '-').': '.(trim((string) $q->payment_terms) ?: '-'))->implode('; ');
@@ -55,19 +57,20 @@ final class PurchaseOrderPdf
         $customNotes = trim((string) $po->notes) === '' ? [] : $wrap('- '.trim($po->notes), 166, 8);
 
         $rows = [];
-        foreach ($items as $index => $item) {
+        foreach ($lines as $index => $line) {
+            $item = $line->quotationItem;
             $prItem = $item->prItem;
             $description = $wrap($prItem?->material_name ?: '-', 92.6);
             $dimension = $item->offered_dimension_label;
             if ($dimension === '-') {
                 $dimension = $prItem?->dimension_label ?: '-';
             }
-            $quantity = $item->fulfillment_quantity;
-            $amount = $item->resolved_amount;
+            $quantity = $line->qty;
+            $amount = $line->amount;
             $unitPrice = $quantity > 0
                 ? Money::normalize(bcdiv(Money::normalize($amount, 4), (string) $quantity, 8), 4)
                 : null;
-            $weight = self::number($item->offered_total_weight ?? $prItem?->total_weight);
+            $weight = self::number($line->kg);
             array_push($description, ...$wrap($dimension, 92.6));
             array_push($description, ...$wrap('HS Code: '.($prItem?->hs_code ?: '-').' | '.trans('documents.po.weight', [], 'en').': '.$weight.' kg', 92.6));
             $cells = [
@@ -163,9 +166,12 @@ final class PurchaseOrderPdf
             'font_bold' => self::asset('fonts/noto-sans/NotoSans-Bold.ttf'),
             'po_number_lines' => $wrap($po->po_number, 67),
             'currency' => strtoupper($po->currency ?: 'USD'),
+            // Q7 (released only after G-PDF): PO logistics snapshot, fixed English form; "-" when NULL.
+            'port_of_discharge' => $po->port_of_discharge ? trans('procurement.ports.'.$po->port_of_discharge, [], 'en') : '-',
+            'incoterm' => $po->incoterm ?: '-',
             'date' => $po->created_at ? BusinessTime::toBusiness($po->created_at)->locale('en')->translatedFormat('d M Y') : '-',
             'receipt_date' => $po->estimated_arrival?->locale('en')->translatedFormat('d M Y') ?? '-',
-            'total' => self::number($items->sum('resolved_amount'), 2),
+            'total' => self::number($po->orderedAmountTotal(), 2),
         ];
     }
 

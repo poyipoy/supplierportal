@@ -1,0 +1,49 @@
+{
+  "../../../../../node_modules/cally/dist/cally.js": {
+    "file": "assets/cally-kj_bRPgQ.js",
+    "name": "cally",
+    "src": "../../../../../node_modules/cally/dist/cally.js",
+    "isDynamicEntry": true
+  },
+  "resources/css/app.css": {
+    "file": "assets/app-yK-ELWVK.css",
+    "src": "resources/css/app.css",
+    "isEntry": true,
+    "name": "app",
+    "names": [
+      "app.css"
+    ]
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-D_TWodPa.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true,
+    "dynamicImports": [
+      "../../../../../node_modules/cally/dist/cally.js",
+      "resources/js/local-procurement-import.js",
+      "resources/js/local-po-gr-table.js"
+    ]
+  },
+  "resources/js/local-po-gr-table.js": {
+    "file": "assets/local-po-gr-table-BnthzBmv.js",
+    "name": "local-po-gr-table",
+    "src": "resources/js/local-po-gr-table.js",
+    "isDynamicEntry": true
+  },
+  "resources/js/local-procurement-import.js": {
+    "file": "assets/local-procurement-import-CDqZ2mpw.js",
+    "name": "local-procurement-import",
+    "src": "resources/js/local-procurement-import.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/app.js"
+    ]
+  },
+  "resources/js/registration-receipt.js": {
+    "file": "assets/registration-receipt-bdzplG4C.js",
+    "name": "registration-receipt",
+    "src": "resources/js/registration-receipt.js",
+    "isEntry": true
+  }
+}

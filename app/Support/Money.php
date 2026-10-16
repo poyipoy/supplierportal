@@ -97,6 +97,37 @@ final class Money
         return $total;
     }
 
+    /**
+     * Split $total across $weights (key => weight) in proportion to each weight, exactly.
+     *
+     * Shares are truncated to $scale and the leftover cents go to the lowest key, so the
+     * shares always add up to $total. A zero weight sum puts everything on the lowest key.
+     *
+     * @param  array<int|string, string|int|float|null>  $weights
+     * @return array<int|string, string>
+     */
+    public static function allocate(string|int|float|null $total, array $weights, int $scale = self::SCALE): array
+    {
+        if ($weights === []) {
+            return [];
+        }
+
+        ksort($weights);
+        $total = self::normalize($total, $scale);
+        $weightSum = self::sum($weights, $scale);
+        $firstKey = array_key_first($weights);
+
+        $shares = [];
+        foreach ($weights as $key => $weight) {
+            $shares[$key] = bccomp($weightSum, '0', $scale) > 0
+                ? bcdiv(bcmul($total, self::normalize($weight, $scale), $scale * 2), $weightSum, $scale)
+                : self::zero($scale);
+        }
+        $shares[$firstKey] = bcadd($shares[$firstKey], bcsub($total, self::sum($shares, $scale), $scale), $scale);
+
+        return $shares;
+    }
+
     /** Clamp a negative amount to zero, replacing max(0.0, $x) on floats. */
     public static function atLeastZero(string|int|float|null $value, int $scale = self::SCALE): string
     {

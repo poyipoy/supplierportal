@@ -1,0 +1,9 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Error: Cannot read properties of null (reading 'querySelector')"
+    }
+  ],
+  "isError": true
+}

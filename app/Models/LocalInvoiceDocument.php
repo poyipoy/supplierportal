@@ -12,11 +12,13 @@ class LocalInvoiceDocument extends Model
     /**
      * Batas berkas per tipe dokumen dalam satu revisi invoice. Invoice asli dan
      * faktur pajak dibatasi satu berkas karena nomor dokumennya diturunkan dari
-     * nama berkas; tipe lain masih boleh berlembar-lembar.
+     * nama berkas. PO juga satu berkas; GR dan tipe pendukung boleh beberapa.
      */
     public const MAX_FILES_PER_TYPE = [
         'invoice' => 1,
         'tax_invoice' => 1,
+        'purchase_order' => 1,
+        'goods_receipt' => 5,
         'delivery_note' => 5,
         'surat_jalan' => 5,
         'supporting' => 5,

@@ -1,0 +1,118 @@
+@extends('layouts.app')
+@section('uses-datatables', true)
+
+@section('title', __('supplier.titles.requisitions', ['period' => $period->display_label]))
+@section('page-title', __('supplier.titles.requisitions_page', ['period' => $period->display_label]))
+
+@section('content')
+<div class="tw-grid tw-gap-4">
+    {{-- Breadcrumb & Compact Page Header --}}
+    <x-ui.breadcrumb :items="[
+        __('purchasing.breadcrumbs.dashboard') => route('supplier.dashboard'),
+        __('purchasing.breadcrumbs.quotation_periods') => route('supplier.quotations.index'),
+        $period->display_label => null,
+    ]" />
+
+    <x-ui.page-header
+        :title="__('supplier.titles.requisitions_page', ['period' => $period->display_label])"
+        :eyebrow="__('supplier.copy.supplier_opportunities')"
+        :description="__('supplier.copy.review_requisitions_and_manage_quotations_assigned_to_your_supplier_account')"
+    >
+        <x-slot:actions>
+<x-export.advanced-modal export-key="supplier.quotations" :action="route('supplier.export.quotations')" :periods="collect([$period])" :initial-filters="['period_id'=>$period->id]" :filter-selectors="['pr_number'=>'#filter_pr_number','status'=>'#filter_status']" table="#prTable" trigger-id="exportSupplierQuotationsBtn" />
+            <x-ui.button :href="route('supplier.quotations.index')" variant="ghost" size="sm">
+                <x-ui.icon name="arrow-left" />
+                <span>{{ __('supplier.copy.back_to_periods') }}</span>
+            </x-ui.button>
+        </x-slot:actions>
+    </x-ui.page-header>
+
+    {{-- Data Table with Integrated Toolbar --}}
+    <x-ui.data-table
+        :title="__('supplier.copy.requisition_list')"
+        :description="__('supplier.copy.filter_by_pr_number_or_your_quotation_status')"
+    >
+        <x-slot:filters>
+            <div class="row g-2 align-items-end">
+                <div class="col-md-5 col-lg-4">
+                    <label class="form-label small fw-semibold tw-text-on-surface mb-1" for="filter_pr_number">{{ __('supplier.copy.pr_number') }}</label>
+                    <input type="text" id="filter_pr_number" class="form-control form-control-sm" placeholder="{{ __('supplier.copy.e_g_req_05_2026_001') }}">
+                </div>
+                <div class="col-md-4 col-lg-3">
+                    <label class="form-label small fw-semibold tw-text-on-surface mb-1" for="filter_status">{{ __('supplier.copy.my_quotation_status') }}</label>
+                    <select id="filter_status" class="form-select form-select-sm">
+                        <option value="">{{ __('supplier.copy.all_statuses') }}</option>
+                        <option value="unresponded">{{ __('supplier.copy.awaiting_quotation') }}</option>
+                        <option value="draft">{{ __('supplier.copy.draft') }}</option>
+                        <option value="revision_requested">{{ __('supplier.copy.revision_requested') }}</option>
+                        <option value="submitted">{{ __('supplier.copy.submitted') }}</option>
+                        <option value="accepted">{{ __('supplier.copy.accepted') }}</option>
+                        <option value="rejected">{{ __('supplier.copy.rejected') }}</option>
+                    </select>
+                </div>
+                <div class="col-md-3 col-lg-2 d-flex tw-gap-1.5">
+                    <x-ui.button type="button" size="sm" class="tw-flex-1" id="applyFilter">
+                        <x-ui.icon name="search" size="sm" class="me-1" />{{ __('supplier.copy.filter') }}
+                    </x-ui.button>
+                    <x-ui.icon-button icon="rotate-ccw" :label="__('supplier.copy.reset_filters')" variant="outline" size="sm" id="resetFilter" />
+                </div>
+            </div>
+        </x-slot:filters>
+
+        <table class="table table-hover align-middle mb-0 tw-text-ui-xs w-100" id="prTable">
+            <thead class="table-light">
+                <tr>
+                    <th scope="col" style="width: 40px;">{{ __('supplier.copy.no') }}</th>
+                    <th scope="col">{{ __('supplier.copy.pr_number') }}</th>
+                    <th scope="col">{{ __('supplier.copy.date_issued') }}</th>
+                    <th scope="col" class="text-center">{{ __('supplier.copy.items') }}</th>
+                    <th scope="col" class="text-center">{{ __('supplier.copy.my_quotation_status') }}</th>
+                    <th scope="col" class="text-end" style="width: 140px;">{{ __('supplier.copy.action') }}</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </x-ui.data-table>
+</div>
+@endsection
+
+@push('scripts')
+<script>
+    $(document).ready(function() {
+        var table = $('#prTable').DataTable({
+            processing: true,
+            serverSide: true,
+            ajax: {
+                url: '{{ route("supplier.quotations.period", $period->id) }}',
+                data: function(d) {
+                    d.pr_number = $('#filter_pr_number').val();
+                    d.status = $('#filter_status').val();
+                }
+            },
+            columns: [
+                { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-center tw-text-on-surface-variant' },
+                { data: 'pr_number_display', name: 'pr_number', className: 'fw-bold text-primary' },
+                { data: 'updated_date', name: 'updated_at', className: 'ui-tabular-nums tw-text-on-surface-variant' },
+                { data: 'item_count', name: 'item_count', orderable: false, searchable: false, className: 'text-center fw-medium ui-tabular-nums' },
+                { data: 'status_badge', name: 'status', searchable: false, className: 'text-center' },
+                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
+            ],
+            language: {},
+
+            order: []
+        });
+
+
+        $('#filter_status').on('change', function() { table.ajax.reload(); });
+        $('#applyFilter').on('click', function() { table.ajax.reload(); });
+        $('#filter_pr_number').on('keypress', function(e) {
+            if (e.which === 13) table.ajax.reload();
+        });
+        $('#resetFilter').on('click', function() {
+            $('#filter_pr_number').val('');
+            $('#filter_status').val('');
+            table.ajax.reload();
+        });
+    });
+</script>
+@endpush

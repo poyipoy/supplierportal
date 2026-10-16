@@ -16,8 +16,9 @@
     .quotation-table-scroll {
         display: block;
         max-width: 100%;
-        overflow-x: auto;
-        overflow-y: hidden;
+        /* Decision 09: bounded vertical scroll (shared .ui-table-sticky) so
+           the sticky header and Material column work while scrolling. */
+        overflow: auto;
         overscroll-behavior-inline: contain;
         position: relative;
         scrollbar-width: thin;
@@ -658,7 +659,7 @@
     <x-ui.page-header
         :title="$quotation?->status === 'revision_requested' ? __('supplier.audit_ui.revise_quotation') : __('supplier.copy.create_quotation')"
         :eyebrow="__('supplier.copy.supplier_proposal_entry')"
-        :description="__('supplier.page.quotation_help', ['reference' => $pr->pr_number ?? __('terms.purchase_requisition')])"
+        :description="__($shipmentMtcEnabled ? 'supplier.page.quotation_help_shipment_mtc' : 'supplier.page.quotation_help', ['reference' => $pr->pr_number ?? __('terms.purchase_requisition')])"
     >
         <x-slot:meta>
             @if($quotation?->status === 'revision_requested')
@@ -705,18 +706,89 @@
                     </div>
                 </div>
 
+                <div class="tw-mt-3">
+                    @include('partials.procurement-logistics', ['port' => $pr->port_of_discharge, 'incoterm' => $pr->incoterm])
+                </div>
+            </x-ui.form-section>
+
+            {{-- Section 2: Commercial Terms & Logistics --}}
+            <x-ui.form-section
+                :title="__('supplier.copy.commercial_terms_and_logistics')"
+                :description="__('supplier.copy.specify_estimated_delivery_timeline_proposal_validity_duration_and_payment_arrangements')"
+            >
+                <x-ui.alert id="allUnavailableTermsNotice" tone="info" class="tw-mb-4 d-none">
+                    {{ __('common.final_review.all_unavailable') }}
+                </x-ui.alert>
+
+                <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
+                    <x-ui.date-picker
+                        name="estimated_delivery"
+                        :label="__('supplier.copy.supplier_estimate_delivery')"
+                        :value="optional($quotation?->estimated_delivery)->format('Y-m-d')"
+                        :helper="__('supplier.copy.estimated_date_material_will_be_ready_for_dispatch_from_your_facility')"
+                        required
+                    />
+                    <x-ui.date-picker
+                        name="validity_period"
+                        id="validityPeriod"
+                        :label="__('supplier.copy.quotation_valid_until')"
+                        :value="optional($quotation?->validity_period)->format('Y-m-d')"
+                        :min="now()->toDateString()"
+                        :helper="__('supplier.copy.required_for_final_submission_prices_remain_firm_until_this_date')"
+                    />
+                    <x-ui.textarea
+                        name="payment_terms"
+                        :label="__('supplier.copy.payment_terms')"
+                        :rows="2"
+                        maxlength="100"
+                        required
+                        :placeholder="__('supplier.copy.e_g_t_t_30_days_after_b_l_date_l_c_at_sight_cad')"
+                        :value="$quotation->payment_terms ?? 'TT 30 Days'"
+                    />
+                    <x-ui.textarea
+                        name="general_notes"
+                        :label="__('supplier.copy.general_supplier_notes')"
+                        :rows="2"
+                        :placeholder="__('supplier.copy.e_g_cif_tanjung_priok_sea_freight_in_wooden_cases_valid_14_days')"
+                        :value="$quotation->general_notes ?? ''"
+                    />
+                </div>
+            </x-ui.form-section>
+
+            {{-- Section 3: Status & Follow-up --}}
+            <x-ui.form-section
+                :title="__('procurement.quotation.status_follow_up')"
+                :description="__('procurement.quotation.status_follow_up_description')"
+                data-quotation-section="status"
+            >
+                <div class="d-flex flex-wrap align-items-center tw-gap-2">
+                    <span class="tw-text-ui-xs fw-semibold tw-uppercase tw-text-on-surface-variant">{{ __('procurement.quotation.current_status') }}</span>
+                    @if($quotation)
+                        <x-status-badge type="quotation" :status="$quotation->status" />
+                    @else
+                        <span class="ui-status-chip ui-status-chip--neutral">{{ __('procurement.quotation.not_yet_submitted') }}</span>
+                    @endif
+                </div>
                 @if($quotation?->status === 'revision_requested')
                     <x-ui.alert tone="warning" :title="__('supplier.copy.quotation_revision_requested')" class="tw-mt-3">
                         {{ __('supplier.copy.purchasing_asked_this_quotation_to_be_resubmitted_update_unit_prices_delivery_schedule_validity_date') }}
                     </x-ui.alert>
                 @endif
+                @if($quotation?->reviewer_notes)
+                    <div class="tw-mt-3 tw-p-2.5 bg-warning-subtle border border-warning-subtle rounded tw-text-ui-xs text-warning-emphasis">
+                        <span class="fw-bold d-block tw-mb-0.5"><x-ui.icon name="square-pen" size="sm" class="me-1" />{{ __('supplier.copy.purchasing_reviewer_notes') }}</span>
+                        {{ $quotation->reviewer_notes }}
+                    </div>
+                @elseif($quotation?->status !== 'revision_requested')
+                    <p class="tw-m-0 tw-mt-2 tw-text-ui-xs tw-text-on-surface-variant">{{ __('procurement.quotation.no_follow_up') }}</p>
+                @endif
             </x-ui.form-section>
 
-            {{-- Section 2: Material Pricing & Availability Matrix --}}
+            {{-- Section 4: Detail Quotation (material pricing & availability) --}}
             <x-ui.form-section
                 class="quotation-material-section"
                 :title="__('supplier.copy.material_commercial_offer')"
-                :description="__('supplier.copy.specify_your_availability_dimensions_price_per_kg_and_attach_mtc_certificates')"
+                :description="__($shipmentMtcEnabled ? 'supplier.copy.specify_your_availability_dimensions_and_price_per_kg_shipment_mtc' : 'supplier.copy.specify_your_availability_dimensions_price_per_kg_and_attach_mtc_certificates')"
             >
                 <x-slot:actions>
                     <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
@@ -754,6 +826,9 @@
                     {{ __('supplier.copy.exchange_rate_for') }} <strong id="currencyWarningLabel">{{ $supplierCurrency ?: '-' }}</strong> {{ __('supplier.copy.is_not_recorded_in_master_exchange_rates_contact_admin_before_final_submission') }}
                 </x-ui.alert>
 
+                @if($surplusOffersAllowed)
+                    <x-ui.alert tone="info" class="tw-mb-2">{{ __('procurement.quotation.surplus_hint') }}</x-ui.alert>
+                @endif
                 @php
                     $quotationDimensionOrder = \App\Models\PrItem::FIXED_DIMENSION_ORDER;
                     $quotationScalarDimensionOrder = array_values(array_filter(
@@ -769,7 +844,7 @@
                         <span>{{ __('supplier.copy.scroll_horizontally_to_compare_requested_and_offer_values_for_each_material') }}</span>
                     </div>
 
-                    <div class="table-responsive quotation-table-scroll" role="region" tabindex="0" aria-label="{{ __('supplier.copy.material_quotation_price_entry') }}" aria-describedby="quotationTableScrollHint">
+                    <div class="table-responsive quotation-table-scroll ui-table-sticky" role="region" tabindex="0" aria-label="{{ __('supplier.copy.material_quotation_price_entry') }}" aria-describedby="quotationTableScrollHint">
                         <table class="table table-bordered align-middle mb-0 quotation-items-table tw-text-ui-xs">
                             <caption class="visually-hidden">{{ __('supplier.copy.supplier_quotation_entry_table_with_paired_requested_and_offer_rows_for_each_material') }}</caption>
                             <colgroup>
@@ -787,7 +862,9 @@
                                 <col class="quotation-col-commercial">
                                 <col class="quotation-col-amount">
                                 <col class="quotation-col-notes">
+                                @unless($shipmentMtcEnabled)
                                 <col class="quotation-col-mtc">
+                                @endunless
                                 <col class="quotation-col-availability">
                             </colgroup>
                             <thead class="table-light text-center">
@@ -804,7 +881,9 @@
                                     <th scope="col">{{ __('supplier.copy.price_kg') }}<span class="currency-label">{{ $supplierCurrency ?: '-' }}</span>)</th>
                                     <th scope="col">{{ __('supplier.copy.amount') }}<span class="currency-label">{{ $supplierCurrency ?: '-' }}</span>)</th>
                                     <th scope="col">{{ __('supplier.copy.notes') }}</th>
+                                    @unless($shipmentMtcEnabled)
                                     <th scope="col">MTC</th>
+                                    @endunless
                                     <th scope="col">{{ __('supplier.copy.availability') }}</th>
                                 </tr>
                             </thead>
@@ -886,7 +965,9 @@
                                             <span class="requested-amount-display quotation-calculated" aria-live="polite">—</span>
                                         </td>
                                         <td class="text-start tw-text-on-surface-variant">{{ $item->remark ?: '—' }}</td>
+                                        @unless($shipmentMtcEnabled)
                                         <td class="text-center tw-text-outline">—</td>
+                                        @endunless
                                         <td class="text-center"><span class="ui-status-chip ui-status-chip--neutral">{{ __('supplier.copy.requested') }}</span></td>
                                     </tr>
                                     <tr class="quotation-offer-row {{ $itemIsAvailable ? '' : 'is-unavailable' }}">
@@ -896,13 +977,15 @@
                                                 id="availableQty{{ $index }}"
                                                 type="number"
                                                 min="1"
-                                                max="{{ $item->quantity_value }}"
+                                                @unless($surplusOffersAllowed) max="{{ $item->quantity_value }}" @endunless
                                                 step="1"
                                                 name="items[{{ $index }}][available_qty]"
                                                 class="form-control form-control-sm availability-input offer-disable-when-unavailable quotation-editable text-end ui-tabular-nums @error("items.{$index}.available_qty") is-invalid @enderror"
                                                 data-availability-field="qty"
                                                 value="{{ old("items.{$index}.available_qty", $qItem?->available_qty) }}"
-                                                aria-label="{{ __('supplier.a11y.offer_quantity', ['material' => $item->material_name, 'maximum' => $item->quantity_value]) }}"
+                                                aria-label="{{ $surplusOffersAllowed
+                                                    ? __('procurement.quotation.offer_quantity_a11y', ['material' => $item->material_name, 'requested' => $item->quantity_value])
+                                                    : __('supplier.a11y.offer_quantity', ['material' => $item->material_name, 'maximum' => $item->quantity_value]) }}"
                                                 aria-describedby="availableQtyFeedback{{ $index }}"
                                             >
                                             <div id="availableQtyFeedback{{ $index }}" class="invalid-feedback offer-qty-feedback">
@@ -1038,6 +1121,7 @@
                                                 </div>
                                             </div>
                                         </td>
+                                        @unless($shipmentMtcEnabled) {{-- Mission 05: MTC moved to the shipment --}}
                                         <td>
                                             @php $hasMtc = !empty($mtcAttachment); @endphp
                                             <div class="mtc-upload-container @error("items.{$index}.mtc_file") border-danger @enderror" data-mtc-container data-existing-attachment-id="{{ $mtcAttachment?->id ?? '' }}">
@@ -1125,6 +1209,7 @@
                                             </div>
                                             @error("items.{$index}.mtc_file")<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                                         </td>
+                                        @endunless
                                         <td>
                                             <div class="availability-control">
                                                 <button
@@ -1157,11 +1242,19 @@
                             @endforeach
                             <tfoot class="table-light fw-bold border-top">
                                 <tr>
-                                    <td colspan="12" class="text-end tw-text-on-surface">{{ __('supplier.copy.total_offer_amount') }}</td>
+                                    <th scope="row" colspan="3" class="text-end tw-text-on-surface">{{ __('procurement.quotation.total_offered') }}</th>
+                                    <td class="text-end tw-text-on-surface ui-tabular-nums">
+                                        <span id="totalOfferedQty" aria-label="{{ __('procurement.quotation.total_offered_qty') }}">0</span>
+                                    </td>
+                                    <td colspan="6"></td>
+                                    <td class="text-end tw-text-on-surface ui-tabular-nums">
+                                        <span id="totalOfferedKg" aria-label="{{ __('procurement.quotation.total_offered_kg') }}">0</span>
+                                    </td>
+                                    <td class="text-end tw-text-on-surface">{{ __('supplier.copy.total_offer_amount') }}</td>
                                     <td class="text-end tw-text-on-surface ui-tabular-nums">
                                         <span id="totalAmount">0</span>
                                     </td>
-                                    <td colspan="3"></td>
+                                    <td colspan="{{ $shipmentMtcEnabled ? 2 : 3 }}"></td>
                                 </tr>
                             </tfoot>
                         </table>
@@ -1169,49 +1262,6 @@
                 </div>
             </x-ui.form-section>
 
-            {{-- Section 3: Commercial Terms & Logistics --}}
-            <x-ui.form-section
-                :title="__('supplier.copy.commercial_terms_and_logistics')"
-                :description="__('supplier.copy.specify_estimated_delivery_timeline_proposal_validity_duration_and_payment_arrangements')"
-            >
-                <x-ui.alert id="allUnavailableTermsNotice" tone="info" class="tw-mb-4 d-none">
-                    {{ __('common.final_review.all_unavailable') }}
-                </x-ui.alert>
-
-                <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
-                    <x-ui.date-picker
-                        name="estimated_delivery"
-                        :label="__('supplier.copy.supplier_estimated_ready_dispatch_date')"
-                        :value="optional($quotation?->estimated_delivery)->format('Y-m-d')"
-                        :helper="__('supplier.copy.estimated_date_material_will_be_ready_for_dispatch_from_your_facility')"
-                        required
-                    />
-                    <x-ui.date-picker
-                        name="validity_period"
-                        id="validityPeriod"
-                        :label="__('supplier.copy.quotation_valid_until')"
-                        :value="optional($quotation?->validity_period)->format('Y-m-d')"
-                        :min="now()->toDateString()"
-                        :helper="__('supplier.copy.required_for_final_submission_prices_remain_firm_until_this_date')"
-                    />
-                    <x-ui.textarea
-                        name="payment_terms"
-                        :label="__('supplier.copy.payment_terms')"
-                        :rows="2"
-                        maxlength="100"
-                        required
-                        :placeholder="__('supplier.copy.e_g_t_t_30_days_after_b_l_date_l_c_at_sight_cad')"
-                        :value="$quotation->payment_terms ?? 'TT 30 Days'"
-                    />
-                    <x-ui.textarea
-                        name="general_notes"
-                        :label="__('supplier.copy.general_supplier_notes')"
-                        :rows="2"
-                        :placeholder="__('supplier.copy.e_g_cif_tanjung_priok_sea_freight_in_wooden_cases_valid_14_days')"
-                        :value="$quotation->general_notes ?? ''"
-                    />
-                </div>
-            </x-ui.form-section>
         </div>
 
         {{-- Sticky Action Bar --}}
@@ -1321,6 +1371,8 @@
 <script>
     const currencyRates = @json($currencyRates);
     const quotationImportPreviewUrl = @json(route('supplier.quotations.import-preview', $pr));
+    // UI hint only; the server enforces the effective surplus flag.
+    const quotationSurplusOffersAllowed = @json($surplusOffersAllowed);
     let quotationImportRows = [];
     let quotationImportRequestInFlight = false;
 
@@ -1688,7 +1740,7 @@
             message = @json(__('supplier.copy.offer_qty_is_required_for_an_available_item'));
         } else if (raw !== '' && (!Number.isInteger(value) || value < 1)) {
             message = @json(__('supplier.copy.offer_qty_must_be_a_whole_number_of_at_least_1'));
-        } else if (raw !== '' && value > requested) {
+        } else if (raw !== '' && !quotationSurplusOffersAllowed && value > requested) {
             message = window.AdasiI18n.t('supplier.js.offer_limit', { requested });
         }
 
@@ -1948,20 +2000,29 @@
         $group.find('.offer-amount-display').text(offerAmount === null ? '—' : formatMaxTwo(offerAmount));
 
         return {
+            qty: Number.isInteger(offeredQty) && offeredQty > 0 ? offeredQty : 0,
+            kg: offerTotalWeight ?? 0,
             amount: offerAmount ?? 0,
             idr: offerAmount !== null && rate > 0 ? offerAmount * rate : 0,
         };
     }
 
+    // Preview only: the server recomputes every amount on save (Decision 06).
     function recalculateQuotationTotals() {
+        let totalQty = 0;
+        let totalKg = 0;
         let totalAmount = 0;
         let totalIdr = 0;
         $('.quotation-item-group').each(function() {
             const totals = recalculateQuotationRow($(this));
+            totalQty += totals.qty ?? 0;
+            totalKg += totals.kg ?? 0;
             totalAmount += totals.amount;
             totalIdr += totals.idr;
         });
 
+        $('#totalOfferedQty').text(formatMaxTwo(totalQty));
+        $('#totalOfferedKg').text(formatMaxTwo(totalKg));
         $('#totalAmount').text(formatMaxTwo(totalAmount));
     }
 

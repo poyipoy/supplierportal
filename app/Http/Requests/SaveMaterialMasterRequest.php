@@ -11,7 +11,12 @@ class SaveMaterialMasterRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user() && $this->user()->isAdmin();
+        // Decision 28: Admin and Purchasing through MaterialMasterPolicy.
+        $material = $this->route('materialMaster');
+
+        return $this->user() !== null && ($material instanceof MaterialMaster
+            ? $this->user()->can('update', $material)
+            : $this->user()->can('create', MaterialMaster::class));
     }
 
     protected function prepareForValidation(): void

@@ -77,15 +77,19 @@
         <span id="{{ $labelId }}" class="{{ $compact ? 'tw-sr-only' : 'tw-text-ui-sm tw-font-medium tw-text-on-surface' }}">{{ __('common.review.range_label', ['start' => $startLabel, 'end' => $endLabel]) }}</span>
         <div class="ui-date-range-trigger" role="group" aria-labelledby="{{ $labelId }}" @if($describedBy) aria-describedby="{{ $describedBy }}" @endif>
             <button type="button" class="ui-date-range-trigger__field" data-calendar-boundary="start" aria-haspopup="dialog" aria-expanded="false" aria-controls="{{ $panelId }}">
-                <span class="ui-date-range-trigger__label">{{ $startLabel }}</span>
-                <span class="ui-date-range-trigger__value" data-calendar-display="start">{{ $startDisplay }}</span>
+                <span class="ui-date-range-trigger__field-content">
+                    <span class="ui-date-range-trigger__label">{{ $startLabel }}</span>
+                    <span class="ui-date-range-trigger__value" data-calendar-display="start">{{ $startDisplay }}</span>
+                </span>
             </button>
             <span class="ui-date-range-trigger__divider" aria-hidden="true">–</span>
             <button type="button" class="ui-date-range-trigger__field" data-calendar-boundary="end" aria-haspopup="dialog" aria-expanded="false" aria-controls="{{ $panelId }}">
-                <span class="ui-date-range-trigger__label">{{ $endLabel }}</span>
-                <span class="ui-date-range-trigger__value" data-calendar-display="end">{{ $endDisplay }}</span>
+                <span class="ui-date-range-trigger__field-content">
+                    <span class="ui-date-range-trigger__label">{{ $endLabel }}</span>
+                    <span class="ui-date-range-trigger__value" data-calendar-display="end">{{ $endDisplay }}</span>
+                </span>
+                <x-ui.icon name="calendar-days" size="sm" class="ui-date-range-trigger__icon" aria-hidden="true" />
             </button>
-            <x-ui.icon name="calendar-days" size="sm" class="ui-date-range-trigger__icon" aria-hidden="true" />
         </div>
     </div>
 
@@ -105,15 +109,18 @@
         @if($granularity === 'month')
             <div class="ui-month-grid__header">
                 <button type="button" class="ui-calendar-icon-action" data-calendar-year-previous aria-label="{{ __('common.calendar.previous_year') }}"><x-ui.icon name="chevron-left" size="sm" /></button>
-                <label class="tw-sr-only" for="{{ $resolvedId }}-year">{{ __('common.calendar.year') }}</label>
-                <select id="{{ $resolvedId }}-year" class="ui-month-grid__year" data-calendar-year aria-label="{{ __('common.calendar.year') }}"></select>
+                <button type="button" class="ui-month-grid__year-toggle" data-calendar-year-toggle aria-label="{{ __('common.calendar.toggle_year') }}" aria-expanded="false">
+                    <span data-calendar-year-label>{{ $startResolvedValue ? substr($startResolvedValue, 0, 4) : date('Y') }}</span>
+                    <x-ui.icon name="chevron-down" size="xs" class="ui-month-grid__year-chevron" />
+                </button>
                 <button type="button" class="ui-calendar-icon-action" data-calendar-year-next aria-label="{{ __('common.calendar.next_year') }}"><x-ui.icon name="chevron-right" size="sm" /></button>
             </div>
+            <div class="ui-month-grid__year-panel" data-calendar-year-panel hidden role="grid" aria-label="{{ __('common.calendar.years') }}"></div>
             <div class="ui-month-grid" data-calendar-month-grid role="grid" aria-label="{{ __('common.calendar.months') }}"></div>
         @else
             <calendar-range data-calendar-day-grid months="2" first-day-of-week="1" page-by="single" locale="{{ app()->getLocale() === 'id' ? 'id-ID' : 'en-GB' }}">
                 <x-ui.icon slot="previous" name="chevron-left" size="sm" aria-hidden="true" />
-                <calendar-select-year slot="heading" max-years="81"></calendar-select-year>
+                <calendar-select-year slot="heading" max-years="15"></calendar-select-year>
                 <x-ui.icon slot="next" name="chevron-right" size="sm" aria-hidden="true" />
                 <calendar-month></calendar-month>
                 <calendar-month offset="1"></calendar-month>

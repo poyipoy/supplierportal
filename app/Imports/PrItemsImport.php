@@ -33,6 +33,8 @@ class PrItemsImport extends AbstractPreviewImport implements SkipsEmptyRows, ToC
 
     private const REQUIRED_HEADINGS = ['material_name', 'quantity'];
 
+    protected bool $allOrNothing = true;
+
     public function __construct(
         private readonly MaterialResolver $materials,
         private readonly PrItemProcessor $processor,
@@ -129,19 +131,27 @@ class PrItemsImport extends AbstractPreviewImport implements SkipsEmptyRows, ToC
                 continue;
             }
 
+            // Decision 05: a dimension the shape does not use is an error, never
+            // a silently dropped value.
             foreach (PrItem::DIMENSION_FIELDS as $field) {
                 if ($data[$field] !== null && $result->data[$field] === null) {
-                    $this->addWarning(
-                        $rowNumber,
-                        $field,
-                        __('materials.copy.ignored_irrelevant_dimension', [
+                    $rowErrors[] = [
+                        'column' => $field,
+                        'value' => $data[$field],
+                        'message' => __('materials.copy.irrelevant_dimension_rejected', [
                             'dimension' => __('materials.dimensions.'.$field),
+                            'value' => $data[$field],
                             'shape' => $result->data['shape']
                                 ? __('materials.shape.'.strtolower((string) $result->data['shape']))
                                 : __('materials.copy.not_specified'),
-                        ])
-                    );
+                        ]),
+                    ];
                 }
+            }
+            if ($rowErrors !== []) {
+                $this->rejectRow($rowNumber, $rowErrors);
+
+                continue;
             }
 
             if ($result->weight->status !== 'calculated') {
@@ -191,7 +201,7 @@ class PrItemsImport extends AbstractPreviewImport implements SkipsEmptyRows, ToC
     {
         $this->markInvalidRow();
         foreach ($errors as $error) {
-            $this->addRowError($row, $error['column'], $error['message']);
+            $this->addRowError($row, $error['column'], $error['message'], $error['value'] ?? null);
         }
     }
 }

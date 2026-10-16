@@ -1,0 +1,16 @@
+{
+  "keys": [
+    "po_number",
+    "pr_number",
+    "material",
+    "supplier",
+    "currency",
+    "total_amount",
+    "total_idr",
+    "est_arrival",
+    "remark",
+    "status"
+  ],
+  "focused": "material",
+  "indicators": 0
+}

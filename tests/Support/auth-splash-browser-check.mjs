@@ -133,7 +133,17 @@ async function snapshot() {
     return evaluate(`({state:window.AdasiAuthSplash?.state,ready:window.AdasiAuthSplash?.ready,dom:document.readyState,
         overlayVisible:Boolean(document.querySelector('[data-auth-splash]:not([hidden])')),inert:document.querySelector('#main-content,.auth-shell')?.inert,
         bodyBusy:document.body.getAttribute('aria-busy'),focus:document.activeElement?.id||document.activeElement?.className,
+        marks:performance.getEntriesByType('mark').filter(m=>m.name.startsWith('adasi-auth-splash-')).map(m=>({name:m.name,time:m.startTime})),
         measurements:window.__splashQA,requests:performance.getEntriesByType('resource').map(r=>new URL(r.name).pathname)})`);
+}
+function assertMinimum(actual) {
+    const at = name => actual.marks.find(mark => mark.name === 'adasi-auth-splash-' + name)?.time;
+    const visible = at('visible-start'), ready = at('render-ready'), released = at('interaction-released');
+    assert.ok(Number.isFinite(visible) && Number.isFinite(ready) && Number.isFinite(released));
+    // Browser scheduling is asserted with tolerance; exact boundaries live in Node tests.
+    assert.ok(released - visible >= 1995, JSON.stringify({ visible, ready, released }));
+    assert.ok(released >= ready);
+    return { visible, ready, released, heldMs: released - visible };
 }
 async function passed(name, data = {}) { findings.push({ name, passed: true, ...data }); console.log('PASS ' + name); }
 const wordmarkStyles = selector => `(()=>{const e=document.querySelector(${JSON.stringify(selector)}),s=getComputedStyle(e);return Object.fromEntries(['fontFamily','fontSize','fontWeight','lineHeight','letterSpacing','height','paddingTop','paddingRight','color','overflow','whiteSpace'].map(k=>[k,s[k]]))})()`;
@@ -205,6 +215,14 @@ try {
         try{new PerformanceObserver(l=>__splashQA.longTasks.push(...l.getEntries().map(e=>({start:e.startTime,duration:e.duration})))).observe({type:'longtask',buffered:true});}catch{}` });
     await command('Emulation.setDeviceMetricsOverride', { width: 1366, height: 900, deviceScaleFactor: 1, mobile: false });
 
+    for (const cached of [false, true]) {
+        await command('Network.setCacheDisabled', { cacheDisabled: !cached });
+        await navigate('/login');
+        await until('window.AdasiAuthSplash?.state === "REMOVED"');
+        await passed('minimum-login-' + (cached ? 'cached' : 'cold'), assertMinimum(await snapshot()));
+    }
+    await command('Network.setCacheDisabled', { cacheDisabled: true });
+
     for (const [name, options] of [['module-blocked', { blockApp: true }], ['module-hung', { hangApp: true }], ['CDN-and-module-hung', { hangApp: true, hangCdn: true }]]) {
         if (name === 'CDN-and-module-hung' && process.env.QA_SKIP_HANG_CSS === '1') {
             result.limitations.push('Hanging stylesheet readiness scenario skipped for this diagnostic run.');
@@ -218,7 +236,7 @@ try {
         if (name === 'CDN-and-module-hung') {
             assert.ok(actual.measurements.events.some(e => e.detail.exit === 'hard-timeout'));
             assert.ok(!actual.measurements.events.some(e => e.name === 'adasi:page-ready'));
-        }
+        } else assertMinimum(actual);
         assert.equal(await evaluate('document.querySelector("#password").type'), 'password');
         assert.equal(await evaluate('document.querySelector("button[type=button][aria-label]").disabled'), true);
         if (name !== 'module-blocked') assert.equal(actual.measurements.domReadyAt, undefined, 'Native sentinel releases while DOMContentLoaded remains pending');
@@ -269,12 +287,18 @@ try {
     assert.ok(!ax.nodes.some(n => n.role?.value === 'StaticText' && ['A', 'D', 'S', 'I'].includes(n.name?.value)), 'Decorative letters absent from accessibility tree');
     await evaluate('document.body.insertAdjacentHTML("beforeend",`<template data-auth-splash-layout-ready="app" data-readiness="core"></template>`)');
     await until('window.AdasiAuthSplash?.state === "REMOVED"');
+    const reduced = await snapshot();
+    const reducedReady = reduced.measurements.events.find(e => e.name === 'adasi:page-ready');
+    const reducedRelease = reduced.measurements.events.find(e => e.name === 'adasi:auth-splash-released');
+    assert.ok(reducedRelease.at - reducedReady.at < 50, 'Reduced motion bypasses the branding minimum');
     await passed('reduced-motion-and-accessibility-tree');
     for (const scale of [2, 4]) {
         const width = Math.floor(1366 / scale), height = Math.floor(900 / scale);
         await command('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false });
         await navigate('/__splash-fixture/core', { blockApp: true });
         await until('!document.querySelector("[data-auth-splash-skip]").hidden');
+        assert.equal(await evaluate('getComputedStyle(document.querySelector("[data-auth-splash-skip]")).clipPath'), 'inset(50%)');
+        await key('Tab', 9);
         const geometry = await evaluate('(()=>{const b=document.querySelector("[data-auth-splash-skip]"),w=document.querySelector(".auth-splash__wordmark"),r=b.getBoundingClientRect(),m=w.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:innerWidth,height:innerHeight,wordmarkWidth:m.width,controlWidth:r.width,controlHeight:r.height}})()');
         assert.ok(geometry.left >= 0 && geometry.right <= width && geometry.top >= 0 && geometry.bottom <= height, JSON.stringify(geometry));
         assert.ok(geometry.wordmarkWidth <= width && geometry.controlWidth >= 24 && geometry.controlHeight >= 24);
@@ -325,7 +349,7 @@ try {
     assert.ok(!requests.some(url => /\/auth-splash\.(?:js|css)/.test(url)));
     result.performance = { cls: healthy.measurements.shifts.reduce((a, b) => a + b, 0), longTasks: healthy.measurements.longTasks,
         events: healthy.measurements.events, standaloneNetworkRequests: 0, totalRequests: requests.length };
-    await passed('healthy-core-and-no-standalone-asset-requests', { cls: result.performance.cls });
+    await passed('healthy-core-and-no-standalone-asset-requests', { cls: result.performance.cls, ...assertMinimum(healthy) });
     await navigate('/__splash-fixture/core?disabled=1');
     assert.equal(await evaluate('Boolean(document.querySelector("[data-auth-splash],[data-auth-splash-bootstrap]"))'), false);
     await passed('feature-flag-disabled-fixture');
@@ -400,9 +424,10 @@ $users[]=['id'=>$user->id,'email'=>$user->email,'mfa'=>$mfa];}return ['password'
         }
         await until('location.pathname === "/finance/dashboard" && window.AdasiAuthSplash?.state === "REMOVED"', 25000);
         assert.ok((await snapshot()).measurements.events.some(e => e.detail.reason === 'post-login'));
+        const minimum = assertMinimum(await snapshot());
         result.authenticationTimings ??= [];
         result.authenticationTimings.push(await evaluate('({method:' + JSON.stringify(user.mfa ? 'MFA' : 'password') + ',marks:performance.getEntriesByType("mark").filter(m=>m.name.startsWith("adasi-auth-splash-")).map(m=>({name:m.name,time:m.startTime})),events:__splashQA.events})'));
-        await passed('real-' + (user.mfa ? 'MFA' : 'password') + '-login-success');
+        await passed('real-' + (user.mfa ? 'MFA' : 'password') + '-login-success', minimum);
         if (!user.mfa) {
             assert.equal(await evaluate(`fetch('/logout',{method:'POST'}).then(r=>r.status)`), 419);
             await passed('real-logout-CSRF-enforced');
@@ -452,7 +477,7 @@ $users[]=['id'=>$user->id,'email'=>$user->email,'mfa'=>$mfa];}return ['password'
         await evaluate(`document.querySelector('form[action$="/logout"]').requestSubmit()`);
         await until('location.pathname === "/login" && window.AdasiAuthSplash?.state === "REMOVED"');
         assert.ok((await snapshot()).measurements.events.some(e => e.detail.reason === 'post-logout'));
-        await passed('real-' + (user.mfa ? 'MFA' : 'password') + '-logout-and-refresh-no-replay');
+        await passed('real-' + (user.mfa ? 'MFA' : 'password') + '-logout-and-refresh-no-replay', assertMinimum(await snapshot()));
     }
     // Isolate browser-native view-transition diagnostics with the feature off.
     await command('Network.setExtraHTTPHeaders', { headers: { 'X-Splash-QA-Disabled': '1' } });

@@ -90,7 +90,11 @@ class ManualPoPrTest extends TestCase
         $vendor = $this->vendor();
         $this->actingAs(User::factory()->create(['role' => 'finance']));
         $this->get(route('finance.local-procurement.create'))->assertOk()->assertSee('role="combobox"', false)->assertSee('name="pr_number"', false);
-        $po = LocalPurchaseOrder::create($this->data($vendor, ['pr_number' => 'PR-LOCKED', 'currency' => 'IDR', 'status' => 'OPEN']));
+
+        $poWithoutPr = LocalPurchaseOrder::create($this->data($vendor, ['po_number' => 'PO-NO-PR', 'pr_number' => null, 'currency' => 'IDR', 'status' => 'OPEN']));
+        $this->get(route('finance.local-procurement.edit', $poWithoutPr))->assertOk()->assertSee('role="combobox"', false)->assertSee('name="pr_number"', false);
+
+        $po = LocalPurchaseOrder::create($this->data($vendor, ['po_number' => 'PO-LOCKED', 'pr_number' => 'PR-LOCKED', 'currency' => 'IDR', 'status' => 'OPEN']));
         $this->get(route('finance.local-procurement.edit', $po))->assertOk()->assertSee('PR-LOCKED')->assertSee('readonly', false);
     }
 

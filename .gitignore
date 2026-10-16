@@ -37,3 +37,7 @@ Thumbs.db
 /.claude/
 /config.zip
 /config (2).zip
+/*.docx
+/*.jpeg
+owned-chrome-profiles/
+*chrome-profile*/

@@ -1,0 +1,217 @@
+{
+  "created": "2026-10-16T02:41:16.120Z",
+  "baseline": "UI-REDESIGN-RESULT/export-column-designer/baseline-files.json",
+  "total": 1909,
+  "identical": 1875,
+  "missionChanges": [
+    {
+      "path": "lang/en/exports.php",
+      "before": "82503f55e40882c8345f740a4b03cbd3d05416127d2c16d6958e54e6c417cc9a",
+      "after": "5de7acd7d5cde8908539c47df860e716246522e7cfcbc656c01d270c47f46516",
+      "mission": true
+    },
+    {
+      "path": "lang/id/exports.php",
+      "before": "15e2437929cb88fc4556c6b8fa94b0f9e15ceae31c52337e6e53553bb9cd7cef",
+      "after": "1f12e3271229d4511b964fe7ecc8925af009fc959b92fba3047ad7e8b16a0fc0",
+      "mission": true
+    },
+    {
+      "path": "resources/css/app.css",
+      "before": "c232ec2fffcc939d2390bc9e903244cdade836b3746e2250ebc54e1d1aaa805d",
+      "after": "dbd0da36b639dc9e3761493e16e1765f7574ea7164ce04b12d65f1daf00945e3",
+      "mission": true
+    },
+    {
+      "path": "resources/js/advanced-export.js",
+      "before": "aa09fde265a9c906fc1ce47cb2dd4235b74aef1b86ab7f400d5671ef0fb88be7",
+      "after": "45ce65b211808f94961655976d44ed394561712fd8753faa3b0435a2955dab54",
+      "mission": true
+    },
+    {
+      "path": "resources/views/components/export/advanced-modal.blade.php",
+      "before": "c128095becaa553c11b5bc0cecb4169ee525faa73792499addfb1b6faae697ea",
+      "after": "12d3061012d9e46bca260705b1ef0da24513ea564bceefe8055591b3261a65d6",
+      "mission": true
+    },
+    {
+      "path": "tests/Feature/AdvancedExportUiTest.php",
+      "before": "1ae694a2603ad1d08e9d03aa531ec145a42187c806b0b389521d823bf8a2e5b6",
+      "after": "e6fba2c4a37f016988b792677b38251a1f9f94972f26f3f243bca59a142dd8a4",
+      "mission": true
+    },
+    {
+      "path": "tests/Feature/AdvancedPurchaseOrderExportTest.php",
+      "before": "8075c306428e19f48ecd1a680c357a8758f70445ad3acb3b4a1fc8273ee9cde6",
+      "after": "e2c4222b8c30575e7aa7cd0f684bf98edf772dfda51b50430f530bc1c6276ff7",
+      "mission": true
+    },
+    {
+      "path": "tests/js/advanced-export-format.test.mjs",
+      "before": "e1880239d338bdd133d7e3002e7774881097d97f579149666be7a476ecea63cf",
+      "after": "1e02ed3ce87c705efc9ee60cd5097f623d7ef46471d13dce75bdfcc2ee9172a3",
+      "mission": true
+    }
+  ],
+  "otherChanges": [
+    {
+      "path": "app/Http/Controllers/Purchasing/MaterialReferencePriceController.php",
+      "before": "33a07985f8a2fc9d532a7d421406c4bffa5631963ae96d7afe649a2dfcc4e83e",
+      "after": "388634e1663590d0a68e5fcde599f9ad0de437807cf0d660e5883a3b40b96436",
+      "mission": false
+    },
+    {
+      "path": "app/Http/Requests/ReferencePrice/SaveMaterialReferencePriceRequest.php",
+      "before": "eaa3860aa157a9079cca58f30b4d8a18a41b5f266fa0afb542c818ec8caf06af",
+      "after": "731eef408d630861376642779807eede3ed61b261726f2b6122741d6422be9c2",
+      "mission": false
+    },
+    {
+      "path": "app/Services/Pricing/MaterialReferencePriceService.php",
+      "before": "14f5c45cf89299ec14354feb5743bf077d0bf0af45410777a8ef27ec3c26fd5b",
+      "after": "628d37d6fec61422b82c262450c53b9866cce4067cf9e11f0954dd8c252ea0ce",
+      "mission": false
+    },
+    {
+      "path": "app/Services/Pricing/ReferencePriceResolver.php",
+      "before": "27a7f6a91230813b4b0182e41b12535975170b93a5a4e5373f8c7a743406a868",
+      "after": "6522f1c0c4908e1e572f61643bf33d6437f67ff8b5ae9f63d48aebf8b0844f43",
+      "mission": false
+    },
+    {
+      "path": "docs/results/GATE-2-IMPLEMENTATION-CHECKPOINT.md",
+      "before": "2f7a48986d91c0549062bdbee4dae2b5417fdc93cf92ff10ca5261cef00b9f03",
+      "after": "aea9c0ba12b01232a60403239a85f1a7bd6c56bbab597fdb34dcc9543d17e2d8",
+      "mission": false
+    },
+    {
+      "path": "resources/views/procurement/_ordered_delta.blade.php",
+      "before": "f5293c6307de2e5a842412ccfe1521e515d337aa419aa7b32ecb7a7cbaa61548",
+      "after": "7230a365c4f4cd61dd62b24224dfed5152a7300095f79037ed421f49b59f3647",
+      "mission": false
+    },
+    {
+      "path": "resources/views/procurement/_reference_snapshot_panel.blade.php",
+      "before": "f16d1137fe7d5f11a01cde1709adb8cadc20baab1fd595c7ff38ba2f29e145b8",
+      "after": "9e97a638d0451357a4fd60c4edc3ae91369c6334c17e0eec06b16e174f074f59",
+      "mission": false
+    },
+    {
+      "path": "resources/views/purchasing/reference-prices/index.blade.php",
+      "before": "ee9b6fe4ba8ae2c8ffbd911d01501492b4ff7b330a4d7c323f544a94363af215",
+      "after": "8e6f54e0f4c4a812f2146a8d928d1b439b6cc5f11ca82a39152d776b395ab96d",
+      "mission": false
+    },
+    {
+      "path": "tests/Feature/Procurement/ReferencePriceTest.php",
+      "before": "224faff3660176b8d993bf49cd436a4e2b9863e735eb0deeb2882f32897f0f7a",
+      "after": "5ff3b2bd9094f243665377e3e2a167aff0208f5a0a1402321d518e84643f75f3",
+      "mission": false
+    },
+    {
+      "path": "tests/Feature/Procurement/ReferencePriceVersionResolutionTest.php",
+      "before": "e2a7b7fcb3f1708d979ada7f37d44d2d992f69d2bc8c78525e86d2d47e08ce5e",
+      "after": "e8d9d5110e05969b4425a748a41bfb81b8a14acb9cf2915f1e9195e125f92efb",
+      "mission": false
+    },
+    {
+      "path": "tests/Support/shipment-ordered-qty-worker.php",
+      "before": "7ed7e61c9039c563272086415cb4252b77c77acddb79bbcdae21cf8452a8678f",
+      "after": "150ab81667e2e978828cd0f6c975131cbdec259a3938660a863c87e847975a5e",
+      "mission": false
+    },
+    {
+      "path": "app/Http/Controllers/Purchasing/QuotationListController.php",
+      "before": "368b5467cb7f8dc38c80d054e131e250bf97c15fc13485b2a35ba865c4692f4b",
+      "after": "60c525248526f88cd7cd1e19186210ae0609995cb60c743a3fc0f3ebbea4fa48",
+      "mission": false
+    },
+    {
+      "path": "lang/en/materials.php",
+      "before": "1274859244fdd928ba4fe1a2ceaa90abffa40b55b7c12e4add5d2fcee19b7790",
+      "after": "5f234b7b6dacdd04590c6d01ace520197f1092c133aeb2d8b1a9f89fb0d18504",
+      "mission": false
+    },
+    {
+      "path": "lang/en/purchasing.php",
+      "before": "8de779810dabcf384de6cddeb634820f51830214c2c48aae30f3217d5d560003",
+      "after": "ab3e27fe9d67ab89d9711bcd35d3ca4b507996aa0a1b50437bd794c255c7df3c",
+      "mission": false
+    },
+    {
+      "path": "lang/en/supplier.php",
+      "before": "eabe553ca37a715fd5e7595f7c99f6f5a06ed1c59a2fa2e987df0f2e7be4e7d0",
+      "after": "e6cc16ff6d08d4d6045e26fce723b4520977be310df15f6b8496c0709e8bc838",
+      "mission": false
+    },
+    {
+      "path": "lang/id/materials.php",
+      "before": "6376167f118c208d642c290f6b7b54d2f91fdac55ec37a6d67f05745e0938cff",
+      "after": "ca77ec80492ad4ab6c57946ce20d55d79637db2d7998ef329f339a98de5d87fb",
+      "mission": false
+    },
+    {
+      "path": "lang/id/purchasing.php",
+      "before": "ef19f548f0e824d61699b7913f39d6b398fb9c311136b1fd6b757a095a7f8031",
+      "after": "845bae7143cdc54f98ace034791e89538b8148bd24f3b4816ce4ef461df399af",
+      "mission": false
+    },
+    {
+      "path": "lang/id/supplier.php",
+      "before": "10282188ef586e8a1fb82e1b322fdbbab7462ad1ecf62b3bd59f7ecaa7dd3bd3",
+      "after": "ef2411d356e7e8501b28454312d5d01677c7e8273aad8a52c1d69c34913df6d6",
+      "mission": false
+    },
+    {
+      "path": "resources/views/purchasing/comparison/_historical_content.blade.php",
+      "before": "00da269962f7201c96fd919b3f384c3c4bad953e49a163065a77512ed71feb59",
+      "after": "81e50696407b76f5357f424a413ebdf4456c4d5591b2527abc56ed8b5b7f2fb0",
+      "mission": false
+    },
+    {
+      "path": "resources/views/purchasing/comparison/_scripts.blade.php",
+      "before": "8a0b74f31abce721fbc744cbdb743884098210dd53ebed1e15134e37a946ab97",
+      "after": "b3d7d945cd84300192f14e494d5c5d2eb1b5649f71e21a346518d7197c3c0bf6",
+      "mission": false
+    },
+    {
+      "path": "resources/views/purchasing/po/show.blade.php",
+      "before": "dd309b42d86bc0094bccbf81056ba1c07cf4593188691bb3015d89178a377a90",
+      "after": "96bf9c5cd336a83e6edbed64a6901e79bea4ef03e890bb4c7a61bcc316699862",
+      "mission": false
+    },
+    {
+      "path": "resources/views/purchasing/quotations/show.blade.php",
+      "before": "5dd00600c89113123d9d6b9dff40c365e6b74617b7179c6fb94fa6a8c4a5f159",
+      "after": "64feb49747febac8af63f4667b64c3ccdcb4aa65660587acdcba90693b15bb3d",
+      "mission": false
+    },
+    {
+      "path": "resources/views/supplier/quotations/create.blade.php",
+      "before": "8937bdd21b22c6713d8db779e0f87afd8b55b2e15cd22bb1155d8b332e7c156d",
+      "after": "0cb94340fee6666497bb930f65fb2fe04e27e5e8cb4c45f9f7fe6ef12b580505",
+      "mission": false
+    },
+    {
+      "path": "resources/views/supplier/quotations/show.blade.php",
+      "before": "490a06ce33ddfd468de57231ad9af1672ff33de4d0b4f6b99dc833d4d353ee8a",
+      "after": "169b0ed22e89b61e547d23691f83a9b7e373f29198c5dd0784b4dfa29e24aec6",
+      "mission": false
+    },
+    {
+      "path": "routes/web.php",
+      "before": "0dfeae6d6a0ba380f484e10cdcd8e851dc860edde14b7e11fd93e526b60e1f6f",
+      "after": "ebd93e81f9ae8e81378328012c345a082f5c6e837d4abc265bc6df7421950457",
+      "mission": false
+    },
+    {
+      "path": "tests/Feature/PriceComparisonServerTabsTest.php",
+      "before": "ca5e29e9ac459016bafd5204fdc66cb2e2a18630321079984f81d0f613cf0ea8",
+      "after": "745161bf37e96407ae1e688f9cfcd10aee67167c0ef7102a58a7cc6cb29aed05",
+      "mission": false
+    }
+  ],
+  "missing": [],
+  "authSplashUnchanged": true,
+  "note": "Other differences are observed concurrent changes, not attributed to this task. No reset/revert performed."
+}

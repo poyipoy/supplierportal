@@ -16,6 +16,13 @@
             : __('supplier_audit.create_extra.never_audited'),
     ])->values();
     $businessToday = \App\Support\BusinessTime::today();
+    $currentYear = (int) $businessToday->format('Y');
+    $periodPresets = [
+        __('supplier_audit.create_extra.preset_year', ['year' => $currentYear]),
+        __('supplier_audit.create_extra.preset_year', ['year' => $currentYear - 1]),
+        __('supplier_audit.create_extra.preset_sem_1', ['year' => $currentYear]),
+        __('supplier_audit.create_extra.preset_sem_2', ['year' => $currentYear]),
+    ];
     $deadlinePresets = [
         $businessToday->addDays(14)->toDateString() => __('supplier_audit.create_extra.preset_14'),
         $businessToday->addDays(30)->toDateString() => __('supplier_audit.create_extra.preset_30'),
@@ -29,6 +36,19 @@
             selected: initial.filter((value) => rows.some((row) => row.value === value && !row.disabled)),
             search: '',
             labels,
+            period: @js(old('period_label', '')),
+            deadline: @js(old('due_date', '')),
+            init() {
+                const dueInput = document.getElementById('due_date');
+                if (dueInput) {
+                    dueInput.addEventListener('change', (e) => {
+                        this.deadline = e.target.value;
+                    });
+                    dueInput.addEventListener('input', (e) => {
+                        this.deadline = e.target.value;
+                    });
+                }
+            },
             get visibleRows() {
                 const term = this.search.trim().toLowerCase();
                 if (!term) return this.rows;
@@ -43,7 +63,17 @@
             get summaryLabel() {
                 return this.labels.summary.replace(':selected', this.selected.length).replace(':skipped', this.skippedCount);
             },
+            setPeriod(value) {
+                this.period = value;
+                const input = document.getElementById('period_label');
+                if (!input) return;
+                input.value = value;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+                input.focus();
+            },
             setDeadline(value) {
+                this.deadline = value;
                 const input = document.getElementById('due_date');
                 if (!input) return;
                 input.value = value;
@@ -130,20 +160,107 @@
         </x-ui.form-section>
 
         <x-ui.form-section :title="__('supplier_audit.fields.period')">
-            <x-ui.input name="period_label" id="period_label" :label="__('supplier_audit.fields.period')" :helper="__('supplier_audit.create.period_help')" required maxlength="100" />
-            <div class="tw-grid tw-content-start tw-gap-2">
-                <x-ui.date-picker name="due_date" id="due_date" :label="__('supplier_audit.fields.due_date')" :helper="__('supplier_audit.create.due_date_help')" :min="\App\Support\BusinessTime::today()->toDateString()" />
-                <div class="tw-flex tw-flex-wrap tw-gap-1" data-deadline-presets>
-                    @foreach($deadlinePresets as $presetValue => $presetLabel)
-                        <x-ui.button type="button" variant="ghost" size="sm" x-on:click="setDeadline(@js($presetValue))">{{ $presetLabel }}</x-ui.button>
-                    @endforeach
+            <div class="tw-grid tw-gap-6 md:tw-grid-cols-2 md:tw-items-start">
+                {{-- Left: Period --}}
+                <div class="tw-grid tw-content-start tw-gap-2.5">
+                    <x-ui.input
+                        name="period_label"
+                        id="period_label"
+                        :label="__('supplier_audit.fields.period')"
+                        required
+                        maxlength="100"
+                        x-model="period"
+                    />
+
+                    <div class="tw-grid tw-gap-1.5">
+                        <span class="tw-text-[11px] tw-font-semibold tw-text-on-surface-variant tw-tracking-wider tw-uppercase">
+                            {{ __('supplier_audit.create_extra.quick_presets') }}
+                        </span>
+                        <div class="tw-flex tw-flex-wrap tw-gap-1.5" data-period-presets>
+                            @foreach($periodPresets as $presetLabel)
+                                <button
+                                    type="button"
+                                    class="ui-motion tw-inline-flex tw-items-center tw-gap-1.5 tw-rounded-ui-xs tw-border tw-px-2.5 tw-py-1 tw-text-ui-xs tw-font-medium transition-colors focus-visible:tw-outline-2 focus-visible:tw-outline-offset-1 focus-visible:tw-outline-primary"
+                                    :class="period === @js($presetLabel)
+                                        ? 'tw-border-primary tw-bg-primary/10 tw-text-primary tw-font-semibold'
+                                        : 'tw-border-outline-variant tw-bg-surface tw-text-on-surface-variant hover:tw-border-outline hover:tw-bg-surface-container hover:tw-text-on-surface'"
+                                    x-on:click="setPeriod(@js($presetLabel))"
+                                >
+                                    <x-ui.icon name="clock" size="xs" class="tw-opacity-60" />
+                                    <span>{{ $presetLabel }}</span>
+                                </button>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    <p class="tw-m-0 tw-text-ui-xs tw-text-on-surface-variant">
+                        {{ __('supplier_audit.create.period_help') }}
+                    </p>
                 </div>
-            </div>
-            <div class="tw-grid tw-gap-1.5 md:tw-col-span-2">
-                <span class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('supplier_audit.fields.template') }}</span>
-                <span class="tw-text-ui-sm tw-text-on-surface-variant">
-                    {{ $template ? __('supplier_audit.create.template_label', ['title' => $template->title, 'version' => $template->version]) : '—' }}
-                </span>
+
+                {{-- Right: Deadline --}}
+                <div class="tw-grid tw-content-start tw-gap-2.5">
+                    <x-ui.date-picker
+                        name="due_date"
+                        id="due_date"
+                        :label="__('supplier_audit.fields.due_date')"
+                        :min="\App\Support\BusinessTime::today()->toDateString()"
+                        x-model="deadline"
+                    />
+
+                    <div class="tw-grid tw-gap-1.5">
+                        <span class="tw-text-[11px] tw-font-semibold tw-text-on-surface-variant tw-tracking-wider tw-uppercase">
+                            {{ __('supplier_audit.create_extra.quick_presets') }}
+                        </span>
+                        <div class="tw-flex tw-flex-wrap tw-gap-1.5" data-deadline-presets>
+                            @foreach($deadlinePresets as $presetValue => $presetLabel)
+                                <button
+                                    type="button"
+                                    class="ui-motion tw-inline-flex tw-items-center tw-gap-1.5 tw-rounded-ui-xs tw-border tw-px-2.5 tw-py-1 tw-text-ui-xs tw-font-medium transition-colors focus-visible:tw-outline-2 focus-visible:tw-outline-offset-1 focus-visible:tw-outline-primary"
+                                    :class="(deadline === @js($presetValue) || (!deadline && @js($presetValue) === ''))
+                                        ? 'tw-border-primary tw-bg-primary/10 tw-text-primary tw-font-semibold'
+                                        : 'tw-border-outline-variant tw-bg-surface tw-text-on-surface-variant hover:tw-border-outline hover:tw-bg-surface-container hover:tw-text-on-surface'"
+                                    x-on:click="setDeadline(@js($presetValue))"
+                                >
+                                    <x-ui.icon name="calendar" size="xs" class="tw-opacity-60" />
+                                    <span>{{ $presetLabel }}</span>
+                                </button>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    <p class="tw-m-0 tw-flex tw-items-start tw-gap-1.5 tw-text-ui-xs tw-text-on-surface-variant">
+                        <x-ui.icon name="info" size="xs" class="tw-mt-0.5 tw-shrink-0 tw-text-on-surface-variant/70" />
+                        <span>{{ __('supplier_audit.create.due_date_help') }}</span>
+                    </p>
+                </div>
+
+                {{-- Bottom: Checklist Template Info Card --}}
+                <div class="md:tw-col-span-2 tw-mt-1">
+                    <div class="tw-flex tw-flex-col sm:tw-flex-row sm:tw-items-center tw-justify-between tw-gap-3 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface-container-low tw-p-3.5">
+                        <div class="tw-flex tw-items-start tw-gap-3 tw-min-w-0">
+                            <div class="tw-flex tw-h-9 tw-w-9 tw-shrink-0 tw-items-center tw-justify-center tw-rounded-ui-xs tw-bg-primary/10 tw-text-primary">
+                                <x-ui.icon name="clipboard-check" size="md" />
+                            </div>
+                            <div class="tw-grid tw-gap-0.5 tw-min-w-0">
+                                <span class="tw-text-ui-xs tw-font-medium tw-text-on-surface-variant">
+                                    {{ __('supplier_audit.fields.template') }}
+                                </span>
+                                <span class="tw-text-ui-sm tw-font-semibold tw-text-on-surface tw-truncate" title="{{ $template?->title }}">
+                                    {{ $template?->title ?? '—' }}
+                                </span>
+                            </div>
+                        </div>
+                        @if($template)
+                            <div class="tw-flex tw-items-center tw-gap-2 tw-shrink-0">
+                                <span class="tw-inline-flex tw-items-center tw-gap-1.5 tw-rounded-full tw-bg-success/10 tw-px-2.5 tw-py-1 tw-text-ui-xs tw-font-medium tw-text-success">
+                                    <span class="tw-h-1.5 tw-w-1.5 tw-rounded-full tw-bg-success"></span>
+                                    <span>v{{ $template->version }} · {{ __('supplier_audit.create_extra.active_badge') }}</span>
+                                </span>
+                            </div>
+                        @endif
+                    </div>
+                </div>
             </div>
         </x-ui.form-section>
 

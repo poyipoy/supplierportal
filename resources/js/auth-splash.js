@@ -13,6 +13,10 @@
     const cancel = win.clearTimeout.bind(win);
     const clock = () => win.performance.now();
     const deadline = clock() + delay(config.hardTimeout, 10000, 10000);
+    const configuredMinimum = Number(config.minVisibleMs);
+    const minimumVisible = typeof config.minVisibleMs === 'string' && config.minVisibleMs.trim() !== ''
+        && Number.isFinite(configuredMinimum) && configuredMinimum >= 0 && configuredMinimum <= 10000
+        ? configuredMinimum : 2000;
     const slowAfter = delay(config.slowAfter, 2000, 2000);
     const cleanupAfter = delay(config.cleanupMs, 750, 750);
     const layout = config.layout || 'app';
@@ -36,6 +40,9 @@
     let watchdog = null;
     let skipTimer = null;
     let fadeTimer = null;
+    let minimumTimer = null;
+    let visibleAt = null;
+    let minimumBypassed = false;
     let readyFrame = null;
     let runId = 0;
     let returnFocus = null;
@@ -87,7 +94,8 @@
         freezeWave(false);
         restoreRoots();
         observer?.disconnect();
-        [watchdog, skipTimer, fadeTimer].forEach(cancel);
+        [watchdog, skipTimer, fadeTimer, minimumTimer].forEach(cancel);
+        minimumTimer = null;
         if (readyFrame !== null) win.cancelAnimationFrame?.(readyFrame);
         readyFrame = null;
         removers.splice(0).forEach(remove => { try { remove(); } catch { /* Continue cleanup. */ } });
@@ -112,6 +120,8 @@
         freezeWave(!immediate);
         observer?.disconnect();
         cancel(skipTimer);
+        cancel(minimumTimer);
+        minimumTimer = null;
         if (readyFrame !== null) win.cancelAnimationFrame?.(readyFrame);
         readyFrame = null;
         try {
@@ -218,6 +228,21 @@
         }
         return sentinel && (mode === 'native-login' ? nativeDomReady : mode === 'native-document' || (domReady && coreReady));
     };
+    const releaseWhenReady = () => {
+        if (!renderReady || state === 'REMOVED' || state === 'RELEASED') return;
+        if (clock() >= deadline) return release('hard-timeout', true);
+        // Early readiness is a fact, not permission to discard late markup.
+        if (state === 'ARMED') {
+            if (minimumVisible === 0) release('ready');
+            return;
+        }
+        const remaining = minimumBypassed ? 0 : visibleAt + minimumVisible - clock();
+        if (remaining <= 0) return release('ready');
+        if (minimumTimer === null) minimumTimer = later(safe(() => {
+            minimumTimer = null;
+            releaseWhenReady();
+        }), Math.min(remaining, Math.max(0, deadline - clock())));
+    };
     const queueReady = () => {
         if (readyFrame !== null || ready || state === 'REMOVED' || state === 'RELEASED') return;
         const complete = safe(() => {
@@ -230,7 +255,7 @@
             mark('render-ready');
             mark('ready');
             emit('adasi:page-ready', 'ready');
-            release('ready');
+            releaseWhenReady();
         });
         // Two frame boundaries allow an initial render opportunity. A stalled
         // renderer is released by the independent watchdog, never labelled ready.
@@ -246,14 +271,15 @@
         if (clock() >= deadline) return release('hard-timeout', true);
         overlay ||= doc.querySelector('[data-auth-splash]');
         const prerequisitesReady = factsReady();
-        if (renderReady) return release('ready');
         if (!overlay) {
-            if (prerequisitesReady) queueReady();
+            if (renderReady) releaseWhenReady();
+            else if (prerequisitesReady) queueReady();
             return;
         }
         if (state === 'WAITING') {
             acquireRoots();
-            if (prerequisitesReady) queueReady();
+            if (renderReady) releaseWhenReady();
+            else if (prerequisitesReady) queueReady();
             return;
         }
         letters = Array.from(overlay.querySelectorAll('.auth-splash__letter'));
@@ -272,6 +298,8 @@
         overlay.setAttribute('data-state', 'waiting');
         overlay.style.setProperty('--auth-splash-remaining', Math.max(0, deadline - clock()) + 'ms');
         visible = true;
+        visibleAt = clock();
+        minimumBypassed = motion.matches;
         mark('visible-start');
         panel.focus({ preventScroll: true });
         if (motion.matches) letters.forEach(letter => letter.classList.add('is-up'));
@@ -293,8 +321,15 @@
             letters.forEach(letter => { letter.style.transform = ''; });
             if (motion.matches) letters.forEach(letter => letter.classList.add('is-up'));
             else cycle(++runId);
+            if (motion.matches) {
+                minimumBypassed = true;
+                cancel(minimumTimer);
+                minimumTimer = null;
+            }
+            releaseWhenReady();
         }));
-        if (prerequisitesReady) queueReady();
+        if (renderReady) releaseWhenReady();
+        else if (prerequisitesReady) queueReady();
     });
 
     win.AdasiAuthSplash = Object.freeze({

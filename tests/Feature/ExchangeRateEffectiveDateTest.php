@@ -61,6 +61,50 @@ class ExchangeRateEffectiveDateTest extends TestCase
         $this->assertNull(ExchangeRate::latestRate('CNY'));
     }
 
+    public function test_purchasing_quick_rate_update_stores_the_business_date_across_utc_midnight(): void
+    {
+        // 18:00 UTC on 12 Oct is already 01:00 on 13 Oct in Asia/Jakarta.
+        $this->travelTo(now()->setTimezone('UTC')->setDate(2026, 10, 12)->setTime(18, 0));
+        $purchasing = User::factory()->create(['role' => 'purchasing']);
+
+        $this->actingAs($purchasing)
+            ->post(route('purchasing.kurs.update'), ['currency' => 'USD', 'rate_to_idr' => '16250'])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $rate = ExchangeRate::sole();
+        $this->assertSame('2026-10-13', $rate->valid_from->toDateString());
+        $this->assertSame('2026-10-13', DB::table('exchange_rates')->where('id', $rate->id)->value('valid_from'));
+        $this->assertSame($rate->id, ExchangeRate::latestRate('USD')?->id);
+    }
+
+    public function test_admin_quick_rate_update_stores_the_business_date_across_utc_midnight(): void
+    {
+        $this->travelTo(now()->setTimezone('UTC')->setDate(2026, 10, 12)->setTime(18, 0));
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin)
+            ->post(route('admin.kurs.update'), ['currency' => 'JPY', 'rate_to_idr' => '107.5'])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertSame('2026-10-13', DB::table('exchange_rates')->where('currency', 'JPY')->value('valid_from'));
+    }
+
+    public function test_quick_rate_update_keeps_its_authorization_and_validation(): void
+    {
+        $supplier = User::factory()->create(['role' => 'supplier']);
+        $purchasing = User::factory()->create(['role' => 'purchasing']);
+
+        $this->actingAs($supplier)->post(route('purchasing.kurs.update'), ['currency' => 'USD', 'rate_to_idr' => '16000'])->assertForbidden();
+        $this->actingAs($supplier)->post(route('admin.kurs.update'), ['currency' => 'USD', 'rate_to_idr' => '16000'])->assertForbidden();
+        $this->actingAs($purchasing)->post(route('admin.kurs.update'), ['currency' => 'USD', 'rate_to_idr' => '16000'])->assertForbidden();
+        $this->actingAs($purchasing)->post(route('purchasing.kurs.update'), ['currency' => 'EUR', 'rate_to_idr' => '0'])
+            ->assertSessionHasErrors(['currency', 'rate_to_idr']);
+
+        $this->assertDatabaseCount('exchange_rates', 0);
+    }
+
     private function rate(User $owner, string $currency, string $amount, string $date): ExchangeRate
     {
         return ExchangeRate::create([

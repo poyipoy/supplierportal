@@ -71,7 +71,7 @@ class LocalInvoiceTaxConsistencyTest extends TestCase
 
     private function payload(array $overrides): array
     {
-        return array_merge([
+        return array_merge([...NativeFileFixtures::invoiceReferences(),
             'invoice_number' => 'INV-TAX-001',
             'invoice_date' => '2026-09-08',
             'local_purchase_order_id' => $this->po->id,

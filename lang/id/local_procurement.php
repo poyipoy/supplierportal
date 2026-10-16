@@ -10,6 +10,7 @@ return [
         'search' => 'Cari nomor PO atau PR...',
         'column_q' => 'Kolom Q: Nomor PR (opsional).',
         'mapping' => 'Satu PO dapat memiliki satu nomor PR; PR yang sama dapat digunakan oleh beberapa PO. Ulangi supplier, tanggal PO, nilai PO, dan PR yang sama pada baris PO berulang. Nilai PO dihitung satu kali. Impor ulang dapat mengisi PR yang masih kosong; PR yang terdaftar tidak dapat diganti.',
+        'choose_placeholder' => 'Pilih atau cari nomor PR...',
         'filled' => 'PO dengan pengisian PR',
     ],
     'pr_import' => [

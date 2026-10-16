@@ -1,0 +1,755 @@
+{
+  "created": "2026-10-16T02:38:54.547Z",
+  "protocol": "counterbalanced-trace-protocol.json",
+  "protocolSha256": "66620fab2a9cca56d56e7dd3a277c2c192ce22b54898030b9882da2d720dc2d4",
+  "version": {
+    "protocolVersion": "1.3",
+    "product": "Chrome/155.0.8059.40",
+    "revision": "@cfaadc5a132d78e1828635aa8405a499f3e14864",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+    "jsVersion": "15.5.35.20"
+  },
+  "profileDir": "C:\\laragon\\www\\adasi_portal_supplier\\UI-REDESIGN-RESULT\\export-column-designer\\continuation-20261016\\owned-chrome-profiles\\counterbalanced-final-1792118268253-c1bea740-c280-4668-9d03-8da894e0a61c",
+  "ownedPid": 26608,
+  "args": [
+    "--headless=new",
+    "--remote-debugging-port=0",
+    "--remote-debugging-address=127.0.0.1",
+    "--user-data-dir=C:\\laragon\\www\\adasi_portal_supplier\\UI-REDESIGN-RESULT\\export-column-designer\\continuation-20261016\\owned-chrome-profiles\\counterbalanced-final-1792118268253-c1bea740-c280-4668-9d03-8da894e0a61c",
+    "--window-size=1440,1000",
+    "--force-device-scale-factor=1",
+    "--no-first-run",
+    "--no-default-browser-check",
+    "--disable-extensions",
+    "--disable-background-networking",
+    "--disable-component-update",
+    "--disable-sync",
+    "--metrics-recording-only",
+    "about:blank"
+  ],
+  "schedule": [
+    {
+      "index": 0,
+      "pair": 0,
+      "batch": 0,
+      "size": 12,
+      "variant": "legacy"
+    },
+    {
+      "index": 1,
+      "pair": 0,
+      "batch": 0,
+      "size": 12,
+      "variant": "designer"
+    },
+    {
+      "index": 2,
+      "pair": 1,
+      "batch": 0,
+      "size": 24,
+      "variant": "legacy"
+    },
+    {
+      "index": 3,
+      "pair": 1,
+      "batch": 0,
+      "size": 24,
+      "variant": "designer"
+    },
+    {
+      "index": 4,
+      "pair": 2,
+      "batch": 0,
+      "size": 64,
+      "variant": "legacy"
+    },
+    {
+      "index": 5,
+      "pair": 2,
+      "batch": 0,
+      "size": 64,
+      "variant": "designer"
+    },
+    {
+      "index": 6,
+      "pair": 3,
+      "batch": 1,
+      "size": 12,
+      "variant": "designer"
+    },
+    {
+      "index": 7,
+      "pair": 3,
+      "batch": 1,
+      "size": 12,
+      "variant": "legacy"
+    },
+    {
+      "index": 8,
+      "pair": 4,
+      "batch": 1,
+      "size": 24,
+      "variant": "designer"
+    },
+    {
+      "index": 9,
+      "pair": 4,
+      "batch": 1,
+      "size": 24,
+      "variant": "legacy"
+    },
+    {
+      "index": 10,
+      "pair": 5,
+      "batch": 1,
+      "size": 64,
+      "variant": "designer"
+    },
+    {
+      "index": 11,
+      "pair": 5,
+      "batch": 1,
+      "size": 64,
+      "variant": "legacy"
+    },
+    {
+      "index": 12,
+      "pair": 6,
+      "batch": 2,
+      "size": 12,
+      "variant": "legacy"
+    },
+    {
+      "index": 13,
+      "pair": 6,
+      "batch": 2,
+      "size": 12,
+      "variant": "designer"
+    },
+    {
+      "index": 14,
+      "pair": 7,
+      "batch": 2,
+      "size": 24,
+      "variant": "legacy"
+    },
+    {
+      "index": 15,
+      "pair": 7,
+      "batch": 2,
+      "size": 24,
+      "variant": "designer"
+    },
+    {
+      "index": 16,
+      "pair": 8,
+      "batch": 2,
+      "size": 64,
+      "variant": "legacy"
+    },
+    {
+      "index": 17,
+      "pair": 8,
+      "batch": 2,
+      "size": 64,
+      "variant": "designer"
+    }
+  ],
+  "measuredSamples": 540,
+  "fixedThresholdComparison": {
+    "status": "FAIL",
+    "unchangedSource": "UI-REDESIGN-RESULT/export-column-designer/continuation-20261016/checked-trace-thresholds-frozen.json",
+    "sourceSha256": "0de96ef99521bc94331d37df4da5805bda484e3c14b4e06db413ab4d350c6741",
+    "values": [
+      {
+        "size": 12,
+        "metric": "ready",
+        "B": 26.387,
+        "J": 3.8150000000000013,
+        "limit": 30.202,
+        "actual": 23.072,
+        "status": "PASS"
+      },
+      {
+        "size": 12,
+        "metric": "paint",
+        "B": 9.48,
+        "J": 2.0360000000000005,
+        "limit": 11.516000000000002,
+        "actual": 10.782,
+        "status": "PASS"
+      },
+      {
+        "size": 12,
+        "metric": "command",
+        "B": 8.215,
+        "J": 2.5699999999999985,
+        "limit": 10.784999999999998,
+        "actual": 6.625,
+        "status": "PASS"
+      },
+      {
+        "size": 12,
+        "metric": "commandPaint",
+        "B": 15.222,
+        "J": 4.302999999999999,
+        "limit": 19.525,
+        "actual": 8.622,
+        "status": "PASS"
+      },
+      {
+        "size": 12,
+        "metric": "openPaint",
+        "B": 32.588,
+        "J": 3.9879999999999995,
+        "limit": 36.576,
+        "actual": 31.641,
+        "status": "PASS"
+      },
+      {
+        "size": 24,
+        "metric": "ready",
+        "B": 19.708,
+        "J": 6.157,
+        "limit": 25.865,
+        "actual": 22.118,
+        "status": "PASS"
+      },
+      {
+        "size": 24,
+        "metric": "paint",
+        "B": 6.617,
+        "J": 1.298,
+        "limit": 7.915,
+        "actual": 9.57,
+        "status": "FAIL"
+      },
+      {
+        "size": 24,
+        "metric": "command",
+        "B": 4.603,
+        "J": 3.6510000000000007,
+        "limit": 8.254000000000001,
+        "actual": 5.502,
+        "status": "PASS"
+      },
+      {
+        "size": 24,
+        "metric": "commandPaint",
+        "B": 9.223,
+        "J": 5.088000000000001,
+        "limit": 14.311000000000002,
+        "actual": 8.789,
+        "status": "PASS"
+      },
+      {
+        "size": 24,
+        "metric": "openPaint",
+        "B": 24.812,
+        "J": 10.296000000000003,
+        "limit": 35.108000000000004,
+        "actual": 32.064,
+        "status": "PASS"
+      },
+      {
+        "size": 64,
+        "metric": "ready",
+        "B": 31.36,
+        "J": 10.056000000000001,
+        "limit": 41.416,
+        "actual": 25.429,
+        "status": "PASS"
+      },
+      {
+        "size": 64,
+        "metric": "paint",
+        "B": 11.511,
+        "J": 3.0969999999999995,
+        "limit": 14.607999999999999,
+        "actual": 11.193,
+        "status": "PASS"
+      },
+      {
+        "size": 64,
+        "metric": "command",
+        "B": 9.307,
+        "J": 3.4349999999999987,
+        "limit": 12.741999999999999,
+        "actual": 7.134,
+        "status": "PASS"
+      },
+      {
+        "size": 64,
+        "metric": "commandPaint",
+        "B": 12.711,
+        "J": 5.892000000000001,
+        "limit": 18.603,
+        "actual": 9.659,
+        "status": "PASS"
+      },
+      {
+        "size": 64,
+        "metric": "openPaint",
+        "B": 42.45,
+        "J": 13.298000000000002,
+        "limit": 55.748000000000005,
+        "actual": 35.062,
+        "status": "PASS"
+      }
+    ]
+  },
+  "pairedDiagnosticValidation": {
+    "status": "PASS",
+    "method": "Diagnostic validation only: paired legacy B=median of its three batch p95s and J=range; designer median p95 compared with B+J. This never replaces or relaxes the checked frozen limits.",
+    "values": [
+      {
+        "size": 12,
+        "metric": "ready",
+        "B": 21.833,
+        "J": 10.602,
+        "limit": 32.435,
+        "actual": 23.072,
+        "status": "PASS",
+        "purpose": "paired diagnostic validation; never replaces fixed checked threshold"
+      },
+      {
+        "size": 12,
+        "metric": "paint",
+        "B": 8.869,
+        "J": 3.287,
+        "limit": 12.155999999999999,
+        "actual": 10.782,
+        "status": "PASS",
+        "purpose": "paired diagnostic validation; never replaces fixed checked threshold"
+      },
+      {
+        "size": 12,
+        "metric": "command",
+        "B": 6.745,
+        "J": 3.4029999999999996,
+        "limit": 10.148,
+        "actual": 6.625,
+        "status": "PASS",
+        "purpose": "paired diagnostic validation; never replaces fixed checked threshold"
+      },
+      {
+        "size": 12,
+        "metric": "commandPaint",
+        "B": 11.611,
+        "J": 4.743,
+        "limit": 16.354,
+        "actual": 8.622,
+        "status": "PASS",
+        "purpose": "paired diagnostic validation; never replaces fixed checked threshold"
+      },
+      {
+        "size": 12,
+        "metric": "openPaint",
+        "B": 29.199,
+        "J": 13.675,
+        "limit": 42.874,
+        "actual": 31.641,
+        "status": "PASS",
+        "purpose": "paired diagnostic validation; never replaces fixed checked threshold"
+      },
+      {
+        "size": 24,
+        "metric": "ready",
+        "B": 25.025,
+        "J": 13.195,
+        "limit": 38.22,
+        "actual": 22.118,
+        "status": "PASS",
+        "purpose": "paired diagnostic validation; never replaces fixed checked threshold"
+      },
+      {
+        "size": 24,
+        "metric": "paint",
+        "B": 7.644,
+        "J": 5.748,
+        "limit": 13.392,
+        "actual": 9.57,
+        "status": "PASS",
+        "purpose": "paired diagnostic validation; never replaces fixed checked threshold"
+      },
+      {
+        "size": 24,
+        "metric": "command",
+        "B": 6.093,
+        "J": 4.430999999999999,
+        "limit": 10.524,
+        "actual": 5.502,
+        "status": "PASS",
+        "purpose": "paired diagnostic validation; never replaces fixed checked threshold"
+      },
+      {
+        "size": 24,
+        "metric": "commandPaint",
+        "B": 10.634,
+        "J": 4.122,
+        "limit": 14.756,
+        "actual": 8.789,
+        "status": "PASS",
+        "purpose": "paired diagnostic validation; never replaces fixed checked threshold"
+      },
+      {
+        "size": 24,
+        "metric": "openPaint",
+        "B": 31.308,
+        "J": 16.193,
+        "limit": 47.501000000000005,
+        "actual": 32.064,
+        "status": "PASS",
+        "purpose": "paired diagnostic validation; never replaces fixed checked threshold"
+      },
+      {
+        "size": 64,
+        "metric": "ready",
+        "B": 45.866,
+        "J": 5.259,
+        "limit": 51.125,
+        "actual": 25.429,
+        "status": "PASS",
+        "purpose": "paired diagnostic validation; never replaces fixed checked threshold"
+      },
+      {
+        "size": 64,
+        "metric": "paint",
+        "B": 20.624,
+        "J": 0.7899999999999991,
+        "limit": 21.413999999999998,
+        "actual": 11.193,
+        "status": "PASS",
+        "purpose": "paired diagnostic validation; never replaces fixed checked threshold"
+      },
+      {
+        "size": 64,
+        "metric": "command",
+        "B": 12.72,
+        "J": 1.2779999999999987,
+        "limit": 13.998,
+        "actual": 7.134,
+        "status": "PASS",
+        "purpose": "paired diagnostic validation; never replaces fixed checked threshold"
+      },
+      {
+        "size": 64,
+        "metric": "commandPaint",
+        "B": 22.266,
+        "J": 2.179000000000002,
+        "limit": 24.445,
+        "actual": 9.659,
+        "status": "PASS",
+        "purpose": "paired diagnostic validation; never replaces fixed checked threshold"
+      },
+      {
+        "size": 64,
+        "metric": "openPaint",
+        "B": 64.959,
+        "J": 7.371000000000002,
+        "limit": 72.33000000000001,
+        "actual": 35.062,
+        "status": "PASS",
+        "purpose": "paired diagnostic validation; never replaces fixed checked threshold"
+      }
+    ]
+  },
+  "pairs": [
+    {
+      "pair": 0,
+      "size": 12,
+      "batch": 0,
+      "order": [
+        "legacy",
+        "designer"
+      ],
+      "differences": {
+        "ready": 1.2390000000000008,
+        "paint": 1.9130000000000003,
+        "command": -0.1200000000000001,
+        "commandPaint": -2.9890000000000008,
+        "openPaint": 2.4419999999999966
+      }
+    },
+    {
+      "pair": 1,
+      "size": 24,
+      "batch": 0,
+      "order": [
+        "legacy",
+        "designer"
+      ],
+      "differences": {
+        "ready": -7.436,
+        "paint": 0.48499999999999943,
+        "command": -1.0869999999999997,
+        "commandPaint": -3.8520000000000003,
+        "openPaint": -5.405999999999999
+      }
+    },
+    {
+      "pair": 2,
+      "size": 64,
+      "batch": 0,
+      "order": [
+        "legacy",
+        "designer"
+      ],
+      "differences": {
+        "ready": -20.512999999999998,
+        "paint": -8.45,
+        "command": -7.696999999999999,
+        "commandPaint": -15.862000000000002,
+        "openPaint": -28.180000000000007
+      }
+    },
+    {
+      "pair": 3,
+      "size": 12,
+      "batch": 1,
+      "order": [
+        "designer",
+        "legacy"
+      ],
+      "differences": {
+        "ready": -0.690999999999999,
+        "paint": 1.9559999999999995,
+        "command": 0.6859999999999999,
+        "commandPaint": -2.1849999999999987,
+        "openPaint": 1.1430000000000007
+      }
+    },
+    {
+      "pair": 4,
+      "size": 24,
+      "batch": 1,
+      "order": [
+        "designer",
+        "legacy"
+      ],
+      "differences": {
+        "ready": -7.333000000000002,
+        "paint": -0.014000000000001123,
+        "command": -2.0729999999999995,
+        "commandPaint": -4.82,
+        "openPaint": -4.638000000000005
+      }
+    },
+    {
+      "pair": 5,
+      "size": 64,
+      "batch": 1,
+      "order": [
+        "designer",
+        "legacy"
+      ],
+      "differences": {
+        "ready": -19.48,
+        "paint": -9.431,
+        "command": -4.755000000000001,
+        "commandPaint": -10.768999999999998,
+        "openPaint": -29.897000000000006
+      }
+    },
+    {
+      "pair": 6,
+      "size": 12,
+      "batch": 2,
+      "order": [
+        "legacy",
+        "designer"
+      ],
+      "differences": {
+        "ready": -2.8689999999999998,
+        "paint": 0.04800000000000004,
+        "command": -0.9989999999999997,
+        "commandPaint": -3.869999999999999,
+        "openPaint": -2.6940000000000026
+      }
+    },
+    {
+      "pair": 7,
+      "size": 24,
+      "batch": 2,
+      "order": [
+        "legacy",
+        "designer"
+      ],
+      "differences": {
+        "ready": 5.998999999999999,
+        "paint": 3.841,
+        "command": 1.4249999999999998,
+        "commandPaint": -1.1390000000000011,
+        "openPaint": 10.023
+      }
+    },
+    {
+      "pair": 8,
+      "size": 64,
+      "batch": 2,
+      "order": [
+        "legacy",
+        "designer"
+      ],
+      "differences": {
+        "ready": -21.197,
+        "paint": -10.126,
+        "command": -5.586,
+        "commandPaint": -12.606999999999998,
+        "openPaint": -30.114000000000004
+      }
+    }
+  ],
+  "checkedBaselineDrift": [
+    {
+      "size": 12,
+      "metric": "ready",
+      "pairedLegacyB": 21.833,
+      "checkedB": 26.387,
+      "checkedJ": 3.8150000000000013,
+      "delta": -4.554000000000002,
+      "absoluteDeltaExceedsCheckedJ": true
+    },
+    {
+      "size": 12,
+      "metric": "paint",
+      "pairedLegacyB": 8.869,
+      "checkedB": 9.48,
+      "checkedJ": 2.0360000000000005,
+      "delta": -0.6110000000000007,
+      "absoluteDeltaExceedsCheckedJ": false
+    },
+    {
+      "size": 12,
+      "metric": "command",
+      "pairedLegacyB": 6.745,
+      "checkedB": 8.215,
+      "checkedJ": 2.5699999999999985,
+      "delta": -1.4699999999999998,
+      "absoluteDeltaExceedsCheckedJ": false
+    },
+    {
+      "size": 12,
+      "metric": "commandPaint",
+      "pairedLegacyB": 11.611,
+      "checkedB": 15.222,
+      "checkedJ": 4.302999999999999,
+      "delta": -3.610999999999999,
+      "absoluteDeltaExceedsCheckedJ": false
+    },
+    {
+      "size": 12,
+      "metric": "openPaint",
+      "pairedLegacyB": 29.199,
+      "checkedB": 32.588,
+      "checkedJ": 3.9879999999999995,
+      "delta": -3.3889999999999993,
+      "absoluteDeltaExceedsCheckedJ": false
+    },
+    {
+      "size": 24,
+      "metric": "ready",
+      "pairedLegacyB": 25.025,
+      "checkedB": 19.708,
+      "checkedJ": 6.157,
+      "delta": 5.317,
+      "absoluteDeltaExceedsCheckedJ": false
+    },
+    {
+      "size": 24,
+      "metric": "paint",
+      "pairedLegacyB": 7.644,
+      "checkedB": 6.617,
+      "checkedJ": 1.298,
+      "delta": 1.0270000000000001,
+      "absoluteDeltaExceedsCheckedJ": false
+    },
+    {
+      "size": 24,
+      "metric": "command",
+      "pairedLegacyB": 6.093,
+      "checkedB": 4.603,
+      "checkedJ": 3.6510000000000007,
+      "delta": 1.4900000000000002,
+      "absoluteDeltaExceedsCheckedJ": false
+    },
+    {
+      "size": 24,
+      "metric": "commandPaint",
+      "pairedLegacyB": 10.634,
+      "checkedB": 9.223,
+      "checkedJ": 5.088000000000001,
+      "delta": 1.4109999999999996,
+      "absoluteDeltaExceedsCheckedJ": false
+    },
+    {
+      "size": 24,
+      "metric": "openPaint",
+      "pairedLegacyB": 31.308,
+      "checkedB": 24.812,
+      "checkedJ": 10.296000000000003,
+      "delta": 6.495999999999999,
+      "absoluteDeltaExceedsCheckedJ": false
+    },
+    {
+      "size": 64,
+      "metric": "ready",
+      "pairedLegacyB": 45.866,
+      "checkedB": 31.36,
+      "checkedJ": 10.056000000000001,
+      "delta": 14.506,
+      "absoluteDeltaExceedsCheckedJ": true
+    },
+    {
+      "size": 64,
+      "metric": "paint",
+      "pairedLegacyB": 20.624,
+      "checkedB": 11.511,
+      "checkedJ": 3.0969999999999995,
+      "delta": 9.113,
+      "absoluteDeltaExceedsCheckedJ": true
+    },
+    {
+      "size": 64,
+      "metric": "command",
+      "pairedLegacyB": 12.72,
+      "checkedB": 9.307,
+      "checkedJ": 3.4349999999999987,
+      "delta": 3.4130000000000003,
+      "absoluteDeltaExceedsCheckedJ": false
+    },
+    {
+      "size": 64,
+      "metric": "commandPaint",
+      "pairedLegacyB": 22.266,
+      "checkedB": 12.711,
+      "checkedJ": 5.892000000000001,
+      "delta": 9.554999999999998,
+      "absoluteDeltaExceedsCheckedJ": true
+    },
+    {
+      "size": 64,
+      "metric": "openPaint",
+      "pairedLegacyB": 64.959,
+      "checkedB": 42.45,
+      "checkedJ": 13.298000000000002,
+      "delta": 22.509,
+      "absoluteDeltaExceedsCheckedJ": true
+    }
+  ],
+  "priorFailuresAndDriftPreserved": [
+    "paired-v2-comparison.json",
+    "cdp-paired-comparison.json",
+    "trace-acceptance-comparison.json",
+    "checked-trace-acceptance-comparison.json",
+    "checked-legacy-drift-replay.json"
+  ],
+  "outcome": "PERFORMANCE GATE OPEN; NO MORE CAPTURE ITERATION",
+  "limitations": [
+    "Renderer Paint ends only, no physical presentation claim.",
+    "Last Paint is bounded by the declared two-rAF observation window.",
+    "Uncorrelated next DrawFrame values are diagnostics only.",
+    "Three batches provide finite local evidence, not production SLA.",
+    "Legacy drift from prior checked baseline is reported explicitly; thresholds remain unchanged."
+  ]
+}

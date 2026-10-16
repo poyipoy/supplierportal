@@ -61,7 +61,8 @@ class RegionalScopeProtectionTest extends TestCase
         $user = User::factory()->create(['role' => 'admin']);
         $this->actingAs($user);
         $voucher = (object) [
-            'voucher_number' => 'VB/09/2026/001', 'batch' => (object) ['batch_number' => 'DRP/09/2026/001'],
+            'voucher_number' => 'VB/09/2026/001',
+            'batch' => (object) ['batch_number' => 'DRP/09/2026/001', 'finalized_at' => Carbon::parse('2026-09-28T23:35:00Z'), 'created_at' => Carbon::parse('2026-09-20T01:00:00Z')],
             'voucher_date' => Carbon::parse('2026-09-28'), 'payment_method' => 'BANK',
             'supplier_name_snapshot' => 'Fixed Supplier', 'npwp_snapshot' => '012345',
             'bank_name_snapshot' => 'BCA', 'bank_account_snapshot' => '1234', 'bank_account_holder_snapshot' => 'Fixed Supplier',
@@ -74,15 +75,56 @@ class RegionalScopeProtectionTest extends TestCase
         $this->assertStringContainsString('Phone: 021-39506699', $before);
         $this->assertStringContainsString('Website: www.astra-daido.co.id', $before);
         $this->assertStringContainsString('Rp 1.362.500,55', $before);
+        foreach (['PAYMENT VOUCHER', 'VB/09/2026/001', 'Account Holder', 'BCA / 1234', 'Document', 'Batch'] as $expected) {
+            $this->assertStringContainsString($expected, $before);
+        }
+        $this->assertMatchesRegularExpression('/>Ref<.*?>DRP\/09\/2026\/001</s', $before);
+        // Finalisasi 23:35 UTC = 29 Sep di Asia/Jakarta; created_at tidak dipakai bila finalized_at ada.
+        $this->assertMatchesRegularExpression('/>Date DRP<.*?>29 Sep 2026</s', $before);
+        $this->assertStringNotContainsString('Generated from authoritative server snapshots', $before);
+
         app()->setLocale('id');
-        $indonesian = view('finance.vouchers.print', compact('voucher'))->render();
-        $this->assertStringContainsString('Telepon: 021-39506699', $indonesian);
-        $this->assertStringContainsString('Situs web: www.astra-daido.co.id', $indonesian);
+        $this->assertSame($before, view('finance.vouchers.print', compact('voucher'))->render(), 'Voucher PDF is a fixed English form.');
         app()->setLocale('en');
         $preference = $user->preference()->create([...config('user_preferences.defaults'), 'timezone' => 'Asia/Jakarta', 'date_format' => 'dmy', 'time_format' => '12h', 'number_format' => 'international']);
         $this->assertSame($before, view('finance.vouchers.print', compact('voucher'))->render());
         $preference->update(['date_format' => 'iso', 'number_format' => 'indonesian']);
         $this->assertSame($before, view('finance.vouchers.print', compact('voucher'))->render());
+
+        $this->assertStringNotContainsString('TRANSFER INFORMATION', $before, 'The fee is a table row, not a separate block.');
+        $feeRow = fn (string $amount) => '/Bank Fee<\/td><td class="right">\('.preg_quote($amount, '/').'\)/';
+        // No group on the fixture, or a zero fee (BCA): the row is still printed and the total is untouched.
+        $this->assertMatchesRegularExpression($feeRow('0,00'), $before);
+        $voucher->payment_item_id = 11;
+        $voucher->group = (object) ['bank_fee' => '0.00', 'activeItems' => collect([(object) ['id' => 11, 'amount' => '1362500.55']])];
+        $noFee = view('finance.vouchers.print', compact('voucher'))->render();
+        $this->assertMatchesRegularExpression($feeRow('0,00'), $noFee);
+        $this->assertStringContainsString('Rp 1.362.500,55', $noFee);
+        $this->assertStringContainsString('Authoritative words', $noFee);
+
+        // One transfer (fee 2.500,00) carrying two vouchers: each prints its proportional share, the cent remainder goes to
+        // the lowest item id, and the shares add up to the group fee. The total is net of the fee and the words follow it.
+        $voucher->group = (object) ['bank_fee' => '2500.00', 'activeItems' => collect([
+            (object) ['id' => 12, 'amount' => '637499.45'],
+            (object) ['id' => 11, 'amount' => '1362500.55'],
+        ])];
+        $first = view('finance.vouchers.print', compact('voucher'))->render();
+        $this->assertMatchesRegularExpression($feeRow('1.703,13'), $first);
+        $this->assertStringContainsString('Rp 1.360.797,42', $first);
+        $this->assertStringNotContainsString('Authoritative words', $first);
+        $this->assertStringContainsString('Rupiah', $first);
+        $voucher->payment_item_id = 12;
+        $voucher->amount = '637499.45';
+        $second = view('finance.vouchers.print', compact('voucher'))->render();
+        $this->assertMatchesRegularExpression($feeRow('796,87'), $second);
+        $this->assertStringContainsString('Rp 636.702,58', $second);
+        $voucher->amount = '1362500.55';
+        unset($voucher->group, $voucher->payment_item_id);
+
+        $voucher->batch = (object) ['batch_number' => 'DRP/09/2026/001', 'finalized_at' => null, 'created_at' => Carbon::parse('2026-09-20T01:00:00Z')];
+        $this->assertMatchesRegularExpression('/>Date DRP<.*?>20 Sep 2026</s', view('finance.vouchers.print', compact('voucher'))->render());
+        $voucher->batch = (object) ['batch_number' => 'DRP/09/2026/001', 'finalized_at' => null, 'created_at' => null];
+        $this->assertMatchesRegularExpression('/>Date DRP<.*?>-</s', view('finance.vouchers.print', compact('voucher'))->render());
     }
 
     public function test_display_never_changes_stored_values_query_sorting_or_deadline_and_money_semantics(): void

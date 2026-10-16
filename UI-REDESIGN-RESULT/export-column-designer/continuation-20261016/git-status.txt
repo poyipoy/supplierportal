@@ -1,0 +1,235 @@
+ M .agents/skills/boost/SKILL.md
+ M AGENTS.md
+ M UI-REDESIGN-RESULT/PHASE-7-COPY-AUDIT.jsonl
+ M app/Exports/Advanced/Definitions/PurchaseOrderDefinition.php
+ M app/Exports/Advanced/Definitions/QuotationDefinition.php
+ M app/Exports/PaymentBatchTransferSheetRenderer.php
+ M app/Exports/PrImportTemplateExport.php
+ M app/Exports/PurchaseOrderDetailExport.php
+ M app/Exports/PurchaseOrdersExport.php
+ M app/Exports/QuotationDetailExport.php
+ M app/Exports/QuotationImportTemplateExport.php
+ M app/Exports/QuotationsExport.php
+ M app/Http/Controllers/Admin/AdminController.php
+ M app/Http/Controllers/Admin/HsCodeRuleController.php
+ M app/Http/Controllers/Admin/MaterialHsCodeController.php
+ M app/Http/Controllers/Admin/MaterialMasterController.php
+ M app/Http/Controllers/Finance/LocalInvoiceSettlementController.php
+ M app/Http/Controllers/Finance/LocalProcurementController.php
+ M app/Http/Controllers/Purchasing/AwardConsolidationController.php
+ M app/Http/Controllers/Purchasing/PriceComparisonController.php
+ M app/Http/Controllers/Purchasing/PurchaseOrderController.php
+ M app/Http/Controllers/Purchasing/PurchaseRequisitionController.php
+ M app/Http/Controllers/Purchasing/PurchasingController.php
+ M app/Http/Controllers/Purchasing/QuotationListController.php
+ M app/Http/Controllers/Purchasing/ShipmentController.php
+ M app/Http/Controllers/Supplier/QuotationController.php
+ M app/Http/Controllers/Supplier/SupplierPurchaseOrderController.php
+ M app/Http/Controllers/Supplier/SupplierShipmentController.php
+ M app/Http/Requests/LocalInvoice/ResubmitLocalInvoiceRequest.php
+ M app/Http/Requests/LocalInvoice/StoreLocalInvoiceRequest.php
+ M app/Http/Requests/SaveHsCodeRuleRequest.php
+ M app/Http/Requests/SaveMaterialMasterRequest.php
+ M app/Http/Requests/SavePurchaseRequisitionRequest.php
+ M app/Imports/AbstractPreviewImport.php
+ M app/Imports/PrItemsImport.php
+ M app/Imports/QuotationItemsImport.php
+ M app/Models/Employee.php
+ M app/Models/LocalInvoiceDocument.php
+ M app/Models/PaymentGroup.php
+ M app/Models/PrItemAward.php
+ M app/Models/PurchaseOrder.php
+ M app/Models/PurchaseRequisition.php
+ M app/Models/QuotationItem.php
+ M app/Models/Shipment.php
+ M app/Models/SupplierBankAccount.php
+ M app/Policies/AttachmentPolicy.php
+ M app/Policies/ShipmentPolicy.php
+ M app/Providers/AppServiceProvider.php
+ M app/Services/Auth/KnownDeviceService.php
+ M app/Services/LocalInvoice/InvoiceDocumentService.php
+ M app/Services/Payment/PaymentBatchService.php
+ M app/Services/PrItemAwardService.php
+ M app/Services/PurchaseOrderGenerationService.php
+ M app/Services/ShipmentService.php
+ M app/Support/BankTransferMapping.php
+ M app/Support/Money.php
+ M app/Support/PurchaseOrderPdf.php
+ M config/finance.php
+ M config/ui.php
+ M lang/en/common.php
+ M lang/en/documents.php
+ M lang/en/exports.php
+ M lang/en/finance.php
+ M lang/en/local_invoice.php
+ M lang/en/local_procurement.php
+ M lang/en/materials.php
+ M lang/en/purchasing.php
+ M lang/en/shipments.php
+ M lang/en/supplier.php
+ M lang/id/common.php
+ M lang/id/documents.php
+ M lang/id/exports.php
+ M lang/id/finance.php
+ M lang/id/local_invoice.php
+ M lang/id/local_procurement.php
+ M lang/id/materials.php
+ M lang/id/purchasing.php
+ M lang/id/shipments.php
+ M lang/id/supplier.php
+ M phpunit.xml
+ M resources/css/app.css
+ M resources/css/auth-splash.css
+ M resources/js/advanced-export.js
+ M resources/js/app.js
+ M resources/js/auth-splash.js
+ M resources/js/file-upload.js
+ M resources/views/admin/material-hs-code/_material_form.blade.php
+ M resources/views/admin/material-hs-code/_rule_form.blade.php
+ M resources/views/admin/material-hs-code/_script.blade.php
+ M resources/views/components/export/advanced-modal.blade.php
+ M resources/views/components/ui/data-table.blade.php
+ M resources/views/components/ui/file-upload.blade.php
+ M resources/views/components/ui/searchable-select.blade.php
+ M resources/views/finance/local-procurement/form.blade.php
+ M resources/views/finance/vouchers/print.blade.php
+ M resources/views/local-invoices/form.blade.php
+ M resources/views/local-invoices/partials/_documents_grid.blade.php
+ M resources/views/partials/auth-splash-bootstrap.blade.php
+ M resources/views/partials/sidebar.blade.php
+ M resources/views/pdf/po-pdf.blade.php
+ M resources/views/purchasing/comparison/_historical_content.blade.php
+ M resources/views/purchasing/comparison/_inter_supplier_content.blade.php
+ M resources/views/purchasing/comparison/_scripts.blade.php
+ M resources/views/purchasing/comparison/_vs_best_content.blade.php
+ M resources/views/purchasing/comparison/historical.blade.php
+ M resources/views/purchasing/comparison/inter-supplier.blade.php
+ M resources/views/purchasing/comparison/vs-best.blade.php
+ M resources/views/purchasing/po/consolidate-awards.blade.php
+ M resources/views/purchasing/po/show.blade.php
+ M resources/views/purchasing/pr/_form_table_styles.blade.php
+ M resources/views/purchasing/pr/create.blade.php
+ M resources/views/purchasing/pr/edit.blade.php
+ M resources/views/purchasing/pr/show.blade.php
+ M resources/views/purchasing/quotations/show.blade.php
+ M resources/views/purchasing/shipments/show.blade.php
+ M resources/views/supplier/po/show.blade.php
+ M resources/views/supplier/quotations/create.blade.php
+ M resources/views/supplier/quotations/show.blade.php
+ M resources/views/supplier/shipments/create.blade.php
+ M resources/views/supplier/shipments/show.blade.php
+ M routes/web.php
+ M tests/Feature/AdminMaterialHsCodeTest.php
+ M tests/Feature/AdvancedExportUiTest.php
+ M tests/Feature/AdvancedPurchaseOrderExportTest.php
+ M tests/Feature/Auth/AuthSplashTest.php
+ M tests/Feature/CashierReceiptAndExpiryTest.php
+ M tests/Feature/ExchangeRateEffectiveDateTest.php
+ M tests/Feature/ExportPresetTest.php
+ M tests/Feature/Finance/PaymentBatchTransferExportTest.php
+ M tests/Feature/FinanceDrpPaidTest.php
+ M tests/Feature/FinanceVerificationV2Test.php
+ M tests/Feature/LocalInvoice/CancelledInvoiceRecoveryTest.php
+ M tests/Feature/LocalInvoice/CancelledRecoveryConcurrencyTest.php
+ M tests/Feature/LocalInvoice/InvoiceDeliveryScheduleValidationTest.php
+ M tests/Feature/LocalInvoice/InvoiceFilenameAutoFillTest.php
+ M tests/Feature/LocalInvoice/LocalInvoiceAuthoritativeReferenceTest.php
+ M tests/Feature/LocalInvoice/LocalInvoiceConcurrencyTest.php
+ M tests/Feature/LocalInvoice/LocalInvoicePdfOnlyTest.php
+ M tests/Feature/LocalInvoice/LocalInvoiceTaxConsistencyTest.php
+ M tests/Feature/LocalInvoice/LocalInvoiceTest.php
+ M tests/Feature/LocalInvoice/LocalSupplierOverpaymentTransparencyTest.php
+ M tests/Feature/LocalInvoice/LocalSupplierWholeGrSettlementTest.php
+ M tests/Feature/LocalInvoice/ManualPoPrTest.php
+ M tests/Feature/LocalInvoiceSubmissionV2Test.php
+ M tests/Feature/MaterialProcurementDummySeederTest.php
+ M tests/Feature/MissionFiveImportTest.php
+ M tests/Feature/NotificationDeliveryTest.php
+ M tests/Feature/NotificationPreferenceDeliveryTest.php
+ M tests/Feature/PrItemRemarkTest.php
+ M tests/Feature/PriceComparisonPerformanceRegressionTest.php
+ M tests/Feature/PriceComparisonServerTabsTest.php
+ M tests/Feature/PurchaseRequisitionMaterialAutomationTest.php
+ M tests/Feature/QuotationAvailabilityTest.php
+ M tests/Feature/RegionalInvoiceCalendarDisplayTest.php
+ M tests/Feature/RegionalScopeProtectionTest.php
+ M tests/Feature/ShipmentAndPartialDeliveryTest.php
+ M tests/Feature/Timezone/FinancialAndSequenceTimezoneTest.php
+ M tests/Feature/UnifiedPaymentEngineTest.php
+ M tests/Support/NativeFileFixtures.php
+ M tests/Support/auth-splash-browser-check.mjs
+ M tests/Support/local-invoice-concurrency-worker.php
+ M tests/Unit/MoneyTest.php
+ M tests/Unit/Support/BankTransferMappingTest.php
+ M tests/js/advanced-export-format.test.mjs
+ M tests/js/auth-splash.test.mjs
+?? GATE-1-PORTAL-SUPPLIER-MATERIAL-PROCUREMENT-REVISION-PLAN.md
+?? "Sarapan Algi.docx"
+?? Screenshot_Infor-LN.jpeg
+?? UI-REDESIGN-RESULT/AUTH-SPLASH-MINIMUM-DURATION-RESULT.md
+?? UI-REDESIGN-RESULT/LOCAL-INVOICE-PO-GR-20261015.md
+?? UI-REDESIGN-RESULT/export-column-designer/
+?? app/Console/Commands/ReconcileProcurement.php
+?? app/Exceptions/MtcRequiredException.php
+?? app/Exceptions/PoGenerationDisabledException.php
+?? app/Http/Controllers/Admin/Concerns/
+?? app/Http/Controllers/Purchasing/MaterialReferencePriceController.php
+?? app/Http/Requests/ReferencePrice/
+?? app/Models/AwardReferencePriceSnapshot.php
+?? app/Models/MasterDataAuditLog.php
+?? app/Models/MaterialReferencePrice.php
+?? app/Models/PrItemAwardEvent.php
+?? app/Policies/HsCodeRulePolicy.php
+?? app/Policies/MaterialMasterPolicy.php
+?? app/Policies/MaterialReferencePricePolicy.php
+?? app/Services/Materials/DeletionOutcome.php
+?? app/Services/Materials/MasterDataDeletionService.php
+?? app/Services/Pricing/
+?? app/Support/Pricing/
+?? app/Support/Procurement/
+?? config/procurement.php
+?? database/migrations/2026_10_14_000002_add_logistics_terms_to_purchase_requisitions.php
+?? database/migrations/2026_10_14_000003_add_logistics_terms_to_purchase_orders.php
+?? database/migrations/2026_10_14_000004_add_ordered_and_acceptance_fields_to_pr_item_awards.php
+?? database/migrations/2026_10_14_000005_create_pr_item_award_events_table.php
+?? database/migrations/2026_10_14_000006_create_material_reference_prices_table.php
+?? database/migrations/2026_10_14_000007_create_award_reference_price_snapshots_table.php
+?? database/migrations/2026_10_15_000001_add_po_and_gr_to_local_invoice_documents.php
+?? database/migrations/2026_10_15_000100_create_master_data_audit_logs_table.php
+?? docs/export/
+?? docs/guides/LOCAL-INVOICE-REQUIRED-DOCUMENTS.md
+?? docs/plans/GATE-1-MATERIAL-PROCUREMENT-REVISION-PLAN.md
+?? docs/results/GATE-2-IMPLEMENTATION-CHECKPOINT.md
+?? docs/results/USER-ACCOUNTS-FINANCE-GA-LOCAL-20261012.sql
+?? lang/en/procurement.php
+?? lang/id/procurement.php
+?? resources/js/export-column-designer.js
+?? resources/js/searchable-select.js
+?? resources/views/partials/procurement-logistics.blade.php
+?? resources/views/procurement/
+?? resources/views/purchasing/comparison/_evaluation_header.blade.php
+?? resources/views/purchasing/comparison/_price_indicators.blade.php
+?? resources/views/purchasing/pr/_form_totals.blade.php
+?? resources/views/purchasing/pr/_logistics_fields.blade.php
+?? resources/views/purchasing/reference-prices/
+?? resources/views/quotations/
+?? resources/views/shipments/
+?? tests/Feature/LocalInvoice/LocalInvoiceRequiredDocumentsTest.php
+?? tests/Feature/Pricing/
+?? tests/Feature/Procurement/
+?? tests/Support/export-column-designer-app.php
+?? tests/Support/export-column-designer-browser-check.js
+?? tests/Support/export-column-designer-browser-cleanup.js
+?? tests/Support/export-column-designer-browser-drag.js
+?? tests/Support/export-column-designer-browser-measure.js
+?? tests/Support/export-column-designer-browser-resources.js
+?? tests/Support/export-column-designer-fixtures.php
+?? tests/Support/export-column-output-proof.php
+?? tests/Support/local-invoice-required-documents-browser-fixture.php
+?? tests/Support/master-data-delete-worker.php
+?? tests/Support/reference-price-overlap-worker.php
+?? tests/Support/shipment-ordered-qty-worker.php
+?? tests/js/advanced-export-columns.test.mjs
+?? tests/js/export-column-state.test.mjs
+?? tests/js/local-invoice-required-documents.test.mjs
+?? tests/js/searchable-select.test.mjs

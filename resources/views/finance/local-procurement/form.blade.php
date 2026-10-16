@@ -81,17 +81,31 @@
                             @endif
                         </div>
 
-                        {{-- Supplier Lokal --}}
+                        {{-- PR Number --}}
                         <div class="tw-min-w-0">
                             @if($isEdit && filled($purchaseOrder->pr_number))
-                                <label for="pr_number" class="form-label tw-flex tw-items-center tw-min-h-6 tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-mb-1">{{ __('local_procurement.pr.number_label') }}</label>
-                                <input id="pr_number" name="pr_number" value="{{ $purchaseOrder->pr_number }}" readonly maxlength="100" class="form-control form-control-sm">
-                                <p class="form-text">{{ __('local_procurement.pr.manual_locked') }}</p>
+                                <div class="tw-flex tw-items-center tw-justify-between tw-min-h-6 tw-mb-1">
+                                    <label for="pr_number" class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-mb-0">{{ __('local_procurement.pr.number_label') }}</label>
+                                    <span class="tw-inline-flex tw-items-center tw-gap-1 tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold tw-bg-warning-container tw-text-warning-container-foreground">
+                                        <x-ui.icon name="lock" size="sm" />
+                                        <span>{{ __('local_invoice.labels.locked') }}</span>
+                                    </span>
+                                </div>
+                                <input id="pr_number" name="pr_number" value="{{ $purchaseOrder->pr_number }}" readonly maxlength="100" class="form-control form-control-sm tw-font-mono tw-bg-surface-container">
+                                <div class="form-text tw-text-[11px] tw-text-on-surface-variant">{{ __('local_procurement.pr.manual_locked') }}</div>
                             @else
-                                <x-ui.searchable-select name="pr_number" id="pr_number" :label="__('local_procurement.pr.number_label')"
-                                    :value="$purchaseOrder->pr_number" :allow-custom="true"
+                                <x-ui.searchable-select
+                                    name="pr_number"
+                                    id="pr_number"
+                                    :label="__('local_procurement.pr.number_label')"
+                                    :placeholder="__('local_procurement.pr.choose_placeholder')"
+                                    :search-placeholder="__('local_procurement.pr.search')"
+                                    :options="$prOptions ?? []"
+                                    :value="old('pr_number', $purchaseOrder->pr_number)"
+                                    :allow-custom="true"
                                     :suggestions-url="route($routePrefix.'.pr-suggestions', [], false)"
-                                    :placeholder="__('local_procurement.pr.manual_hint')" :helper="__('local_procurement.pr.manual_hint')" />
+                                    :helper="__('local_procurement.pr.manual_hint')"
+                                />
                             @endif
                         </div>
 

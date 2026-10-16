@@ -364,5 +364,10 @@ return [
         'last_audit' => 'Last audit: :value',
         'never_audited' => 'Never audited',
         'summary' => ':selected selected · :skipped skipped (active audit)',
+        'quick_presets' => 'Quick Presets',
+        'preset_year' => 'Year :year',
+        'preset_sem_1' => ':year Semester I',
+        'preset_sem_2' => ':year Semester II',
+        'active_badge' => 'Active',
     ],
 ];

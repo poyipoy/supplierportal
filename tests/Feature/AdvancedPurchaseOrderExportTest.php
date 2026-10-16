@@ -106,7 +106,8 @@ class AdvancedPurchaseOrderExportTest extends TestCase
         $internal = new ExportColumn('internal_note', 'remark', fn ($row) => $row->notes, audiences: ['purchasing']);
         $this->assertTrue($internal->visibleTo('purchasing'));
         $this->assertFalse($internal->visibleTo('supplier'));
-        $this->assertCount(10, ExportDefinitions::allowedColumns(ExportDefinitions::get('supplier.po')));
+        // 10 original columns + 2 opt-in logistics columns (Mission 04-W, Q7).
+        $this->assertCount(12, ExportDefinitions::allowedColumns(ExportDefinitions::get('supplier.po')));
     }
 
     public function test_post_and_legacy_get_force_supplier_and_reject_audience_or_column_spoofing(): void
@@ -236,6 +237,49 @@ class AdvancedPurchaseOrderExportTest extends TestCase
             $this->assertSame(2, $sheet->getHighestDataRow());
         } finally {
             $book->disconnectWorksheets();
+        }
+    }
+
+    #[DataProvider('locales')]
+    public function test_designer_order_survives_http_dispatch_worker_and_both_file_writers(string $locale): void
+    {
+        config(['queue.default' => 'sync']);
+        Storage::fake('private');
+        Event::fake([ExportProgressUpdated::class]);
+        $this->supplier->preference()->create([...config('user_preferences.defaults'), 'locale' => $locale]);
+        // The same ordered subset is recorded by the rendered-browser proof.
+        $columns = ['remark', 'po_number', 'currency'];
+        $headings = $locale === 'en' ? ['Remark', 'PO Number', 'Currency'] : ['Catatan', 'Nomor PO', 'Mata Uang'];
+        $values = ["'=Pilot é, \"note\"", 'PO/08/2026/911', 'USD'];
+        foreach (['xlsx', 'csv'] as $format) {
+            $this->actingAs($this->supplier)->postJson(route('supplier.export.purchase-orders'), [
+                'options' => ['columns' => $columns, 'format' => $format],
+            ])->assertAccepted();
+            $record = ExportJob::latest('id')->firstOrFail();
+            $this->assertSame('completed', $record->status);
+            $this->assertSame($columns, $record->export_options['columns']);
+            $path = Storage::disk('private')->path($record->file_path);
+            if ($format === 'xlsx') {
+                $book = IOFactory::load($path);
+                try {
+                    $actual = $book->getActiveSheet()->toArray(null, true, false, false);
+                } finally {
+                    $book->disconnectWorksheets();
+                }
+            } else {
+                $stream = fopen($path, 'rb');
+                try {
+                    $this->assertSame("\xEF\xBB\xBF", fread($stream, 3));
+                    $actual = [fgetcsv($stream, 0, ',', '"', ''), fgetcsv($stream, 0, ',', '"', '')];
+                    $this->assertFalse(fgetcsv($stream, 0, ',', '"', ''));
+                } finally {
+                    fclose($stream);
+                }
+            }
+            $this->assertSame([$headings, $values], $actual);
+            if (getenv('EXPORT_COLUMN_EVIDENCE') === '1') {
+                file_put_contents(base_path('UI-REDESIGN-RESULT/export-column-designer/http-output-'.$locale.'.'.$format), file_get_contents($path));
+            }
         }
     }
 }

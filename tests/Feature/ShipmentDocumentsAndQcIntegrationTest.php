@@ -27,11 +27,13 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Mockery;
+use Tests\Support\AttachesShipmentMtc;
 use Tests\Support\NativeFileFixtures;
 use Tests\TestCase;
 
 class ShipmentDocumentsAndQcIntegrationTest extends TestCase
 {
+    use AttachesShipmentMtc;
     use RefreshDatabase;
 
     private User $purchasingUser;
@@ -220,7 +222,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
         $shipmentService = app(ShipmentService::class);
         $draft = $shipmentService->createDraft($this->supplierUserA);
 
-        $submitted = $shipmentService->submitShipment($draft, [
+        $submitted = $this->submitWithMtc($draft, [
             'shipment_date' => now()->toDateString(),
             'items' => [
                 [
@@ -273,7 +275,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
 
         $shipmentService = app(ShipmentService::class);
         $draft1 = $shipmentService->createDraft($this->supplierUserA);
-        $shipment1 = $shipmentService->submitShipment($draft1, [
+        $shipment1 = $this->submitWithMtc($draft1, [
             'items' => [
                 [
                     'purchase_order_id' => $po->id,
@@ -332,7 +334,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
 
         // Shipment 1: 8 kg
         $draft1 = $shipmentService->createDraft($this->supplierUserA);
-        $shipment1 = $shipmentService->submitShipment($draft1, [
+        $shipment1 = $this->submitWithMtc($draft1, [
             'items' => [
                 [
                     'purchase_order_id' => $po->id,
@@ -362,7 +364,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
 
         // Shipment 2: 12 pcs (completing the 20 pcs ordered)
         $draft2 = $shipmentService->createDraft($this->supplierUserA);
-        $shipment2 = $shipmentService->submitShipment($draft2, [
+        $shipment2 = $this->submitWithMtc($draft2, [
             'items' => [
                 [
                     'purchase_order_id' => $po->id,
@@ -415,7 +417,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
 
         $shipmentService = app(ShipmentService::class);
         $draft = $shipmentService->createDraft($this->supplierUserA);
-        $shipment = $shipmentService->submitShipment($draft, [
+        $shipment = $this->submitWithMtc($draft, [
             'items' => [
                 [
                     'purchase_order_id' => $po->id,
@@ -616,7 +618,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
         // Create Shipment B containing only items for PO B
         $shipmentService = app(ShipmentService::class);
         $draftB = $shipmentService->createDraft($this->supplierUserA);
-        $shipmentB = $shipmentService->submitShipment($draftB, [
+        $shipmentB = $this->submitWithMtc($draftB, [
             'items' => [
                 [
                     'purchase_order_id' => $poB->id,
@@ -668,7 +670,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
         // Shipment containing items for both PO A and PO B
         $shipmentService = app(ShipmentService::class);
         $draft = $shipmentService->createDraft($this->supplierUserA);
-        $shipment = $shipmentService->submitShipment($draft, [
+        $shipment = $this->submitWithMtc($draft, [
             'items' => [
                 [
                     'purchase_order_id' => $poA->id,
@@ -753,7 +755,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
             $shipment = $shipmentService->createDraft($this->supplierUserA);
 
             if ($status === Shipment::STATUS_SUBMITTED) {
-                $shipment = $shipmentService->submitShipment($shipment, [
+                $shipment = $this->submitWithMtc($shipment, [
                     'items' => [[
                         'purchase_order_id' => $po->id,
                         'quotation_item_id' => $qItem->id,
@@ -876,7 +878,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
         [$po, $prItems, $qItems] = $this->createTwoItemAwardedPo();
         $shipmentService = app(ShipmentService::class);
         $shipment = $shipmentService->createDraft($this->supplierUserA);
-        $shipment = $shipmentService->submitShipment($shipment, [
+        $shipment = $this->submitWithMtc($shipment, [
             'items' => [
                 [
                     'purchase_order_id' => $po->id,
@@ -938,7 +940,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
         // 5 kg delivered in shipment 1
         $shipmentService = app(ShipmentService::class);
         $draft1 = $shipmentService->createDraft($this->supplierUserA);
-        $shipment1 = $shipmentService->submitShipment($draft1, [
+        $shipment1 = $this->submitWithMtc($draft1, [
             'items' => [
                 [
                     'purchase_order_id' => $po->id,
@@ -1007,7 +1009,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
         // Verify remaining delivery can continue:
         // Supplier can submit remaining 15 pcs
         $draft2 = $shipmentService->createDraft($this->supplierUserA);
-        $shipment2 = $shipmentService->submitShipment($draft2, [
+        $shipment2 = $this->submitWithMtc($draft2, [
             'items' => [
                 [
                     'purchase_order_id' => $po->id,
@@ -1102,7 +1104,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
         [$po, $prItems, $qItems] = $this->createTwoItemAwardedPo();
         $shipmentService = app(ShipmentService::class);
         $shipment = $shipmentService->createDraft($this->supplierUserA);
-        $shipment = $shipmentService->submitShipment($shipment, [
+        $shipment = $this->submitWithMtc($shipment, [
             'items' => [
                 ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItems[0]->id, 'shipped_qty' => 10, 'actual_weight_kg' => 10.0],
                 ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItems[1]->id, 'shipped_qty' => 12, 'actual_weight_kg' => 12.0],
@@ -1331,7 +1333,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
     {
         $shipmentService = app(ShipmentService::class);
         $shipment = $shipmentService->createDraft($this->supplierUserA);
-        $shipment = $shipmentService->submitShipment($shipment, [
+        $shipment = $this->submitWithMtc($shipment, [
             'items' => [[
                 'purchase_order_id' => $po->id,
                 'quotation_item_id' => $qItem->id,
@@ -1429,7 +1431,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
 
         // First arrived shipment
         $shipment1 = $shipmentService->createDraft($this->supplierUserA);
-        $shipment1 = $shipmentService->submitShipment($shipment1, [
+        $shipment1 = $this->submitWithMtc($shipment1, [
             'items' => [[
                 'purchase_order_id' => $po->id,
                 'quotation_item_id' => $qItems[0]->id,
@@ -1441,7 +1443,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
 
         // Second arrived shipment
         $shipment2 = $shipmentService->createDraft($this->supplierUserA);
-        $shipment2 = $shipmentService->submitShipment($shipment2, [
+        $shipment2 = $this->submitWithMtc($shipment2, [
             'items' => [[
                 'purchase_order_id' => $po->id,
                 'quotation_item_id' => $qItems[1]->id,

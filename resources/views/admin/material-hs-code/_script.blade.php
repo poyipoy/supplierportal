@@ -2,12 +2,14 @@
 $(function () {
     const materialModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('materialModal'));
     const ruleModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('ruleModal'));
-    const materialStoreUrl = @json(route('admin.material-masters.store'));
-    const materialUpdateUrl = @json(route('admin.material-masters.update', 0));
-    const materialStatusUrl = @json(route('admin.material-masters.status', 0));
-    const ruleStoreUrl = @json(route('admin.hs-code-rules.store'));
-    const ruleUpdateUrl = @json(route('admin.hs-code-rules.update', 0));
-    const ruleStatusUrl = @json(route('admin.hs-code-rules.status', 0));
+    const materialStoreUrl = @json(route($masterRoutePrefix.'.material-masters.store'));
+    const materialUpdateUrl = @json(route($masterRoutePrefix.'.material-masters.update', 0));
+    const materialStatusUrl = @json(route($masterRoutePrefix.'.material-masters.status', 0));
+    const ruleStoreUrl = @json(route($masterRoutePrefix.'.hs-code-rules.store'));
+    const ruleUpdateUrl = @json(route($masterRoutePrefix.'.hs-code-rules.update', 0));
+    const ruleStatusUrl = @json(route($masterRoutePrefix.'.hs-code-rules.status', 0));
+    const materialDestroyUrl = @json(route($masterRoutePrefix.'.material-masters.destroy', 0));
+    const ruleDestroyUrl = @json(route($masterRoutePrefix.'.hs-code-rules.destroy', 0));
     const csrfToken = @json(csrf_token());
     const oldContext = @json(old('form_context'));
     const oldInput = @json(old());
@@ -23,7 +25,7 @@ $(function () {
         serverSide: true,
         dom: 'rtip',
         ajax: {
-            url: @json(route('admin.material-masters.data')),
+            url: @json(route($masterRoutePrefix.'.material-masters.data')),
             data: (data) => Object.assign(data, {
                 status: $('#materialStatusFilter').val(),
                 category: $('#materialCategoryFilter').val(),
@@ -52,7 +54,7 @@ $(function () {
         serverSide: true,
         dom: 'rtip',
         ajax: {
-            url: @json(route('admin.hs-code-rules.data')),
+            url: @json(route($masterRoutePrefix.'.hs-code-rules.data')),
             data: (data) => Object.assign(data, {
                 status: $('#ruleStatusFilter').val(),
                 category: $('#ruleCategoryFilter').val(),
@@ -155,6 +157,55 @@ $(function () {
             AdasiToast.success(@json(__('admin.copy.material_status_updated')));
         })
           .fail(showAjaxError);
+    });
+
+    // Q3 guarded hard delete. A referenced record is refused by the server
+    // (422, audited); offer deactivation instead.
+    function deleteMasterRecord(url, name, table, deactivate) {
+        AdasiAlert.confirm({
+            title: @json(__('materials.master_data.delete_confirm_title')),
+            text: name,
+            confirmText: @json(__('materials.master_data.delete')),
+            confirmTone: 'danger'
+        }, true).then((result) => {
+            if (!result.isConfirmed) return;
+            $.ajax({ url, method: 'POST', data: { _token: csrfToken, _method: 'DELETE' } })
+                .done((response) => {
+                    table.ajax.reload(null, false);
+                    refreshQuality();
+                    AdasiToast.success(response.message);
+                })
+                .fail((xhr) => {
+                    if (xhr.status !== 422 || !xhr.responseJSON?.message) {
+                        showAjaxError(xhr);
+                        return;
+                    }
+                    AdasiAlert.confirm({
+                        title: @json(__('materials.master_data.delete_refused_title')),
+                        text: xhr.responseJSON.message,
+                        confirmText: @json(__('materials.master_data.deactivate_instead')),
+                        confirmTone: 'primary'
+                    }).then((choice) => { if (choice.isConfirmed) deactivate(); });
+                });
+        });
+    }
+
+    $(document).on('click', '.btn-delete-material', function () {
+        const button = $(this);
+        deleteMasterRecord(materialDestroyUrl.replace(/\/0$/, `/${button.data('id')}`), String(button.data('name')), materialsTable, () => {
+            $.ajax({ url: materialStatusUrl.replace('/0/', `/${button.data('id')}/`), method: 'POST', data: { _token: csrfToken, _method: 'PATCH', is_active: 0 } })
+                .done(() => { materialsTable.ajax.reload(null, false); refreshQuality(); AdasiToast.success(@json(__('admin.copy.material_status_updated'))); })
+                .fail(showAjaxError);
+        });
+    });
+
+    $(document).on('click', '.btn-delete-rule', function () {
+        const button = $(this);
+        deleteMasterRecord(ruleDestroyUrl.replace(/\/0$/, `/${button.data('id')}`), String(button.data('name')), rulesTable, () => {
+            $.ajax({ url: ruleStatusUrl.replace('/0/', `/${button.data('id')}/`), method: 'POST', data: { _token: csrfToken, _method: 'PATCH', status: 'inactive' } })
+                .done(() => { rulesTable.ajax.reload(null, false); refreshQuality(); AdasiToast.success(@json(__('admin.copy.hs_code_rule_status_updated'))); })
+                .fail(showAjaxError);
+        });
     });
 
     function resetRuleConditions() {
@@ -269,7 +320,7 @@ $(function () {
     function loadQuality() {
         if (qualityLoaded) return;
         qualityLoaded = true;
-        $.getJSON(@json(route('admin.master-data-quality.index'))).done((report) => {
+        $.getJSON(@json(route($masterRoutePrefix.'.master-data-quality.index'))).done((report) => {
             const summary = report.summary || {};
             const attention = report.needs_attention || {};
             const referenceNotes = report.reference_notes || {};

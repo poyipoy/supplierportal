@@ -243,7 +243,8 @@ class QuotationAvailabilityTest extends TestCase
         $this->actingAs($this->supplier)
             ->get(route('supplier.quotations.show', $quotation))
             ->assertOk()
-            ->assertSee('Not specified');
+            // D14: shared read-only detail uses the canonical comparison label.
+            ->assertSee('Not Specified');
 
         $this->actingAs($this->purchasing)
             ->get(route('purchasing.quotations.show', $quotation))
@@ -660,6 +661,67 @@ class QuotationAvailabilityTest extends TestCase
             ->assertSessionHasErrors('items.0.available_qty');
 
         $this->assertDatabaseCount('quotations', 0);
+    }
+
+    public function test_surplus_flag_without_the_write_path_still_rejects_surplus(): void
+    {
+        config(['procurement.allow_offer_surplus' => true, 'procurement.ordered_quantity_write_enabled' => false]);
+        $pr = $this->createRequisition([['quantity' => 2]]);
+        $payload = $this->quotationPayload($pr);
+        $payload['items'][0] = array_merge($payload['items'][0], [
+            'is_available' => true,
+            'available_qty' => 3,
+            'offered_weight_per_unit' => 2,
+        ]);
+
+        $this->actingAs($this->supplier)
+            ->post(route('supplier.quotations.store', $pr), $payload)
+            ->assertSessionHasErrors('items.0.available_qty');
+
+        $this->assertDatabaseCount('quotations', 0);
+    }
+
+    public function test_surplus_offer_is_saved_when_surplus_is_effective_and_pr_quantity_is_unchanged(): void
+    {
+        config(['procurement.allow_offer_surplus' => true, 'procurement.ordered_quantity_write_enabled' => true]);
+        $pr = $this->createRequisition([['quantity' => 10]]);
+        $payload = $this->quotationPayload($pr);
+        $payload['items'][0] = array_merge($payload['items'][0], [
+            'is_available' => true,
+            'available_qty' => 15,
+            'offered_weight_per_unit' => 2,
+            'offered_weight_manual_override' => true,
+            'price_per_kg' => 100,
+        ]);
+
+        $this->actingAs($this->supplier)
+            ->get(route('supplier.quotations.create', $pr))
+            ->assertOk()
+            ->assertDontSee('max="10"', false);
+
+        $this->actingAs($this->supplier)
+            ->post(route('supplier.quotations.store', $pr), $payload)
+            ->assertSessionHasNoErrors()
+            ->assertRedirect();
+
+        $quotation = Quotation::where('pr_id', $pr->id)->firstOrFail();
+        $item = $quotation->items()->with('prItem')->firstOrFail();
+        $this->assertSame(15, $item->available_qty);
+        $this->assertSame(10, $item->prItem->fresh()->quantity_value);
+        $this->assertSame('3000.0000', $item->amount);
+        $this->assertSame('surplus', $item->availability_comparison['quantity']['code']);
+        $this->assertSame(5, $item->availability_comparison['quantity']['delta']);
+
+        $this->actingAs($this->purchasing)
+            ->get(route('purchasing.quotations.show', $quotation))
+            ->assertOk()
+            ->assertSee('Surplus +5');
+
+        // Zero is still refused with the flag on.
+        $payload['items'][0]['available_qty'] = 0;
+        $this->actingAs($this->supplier)
+            ->post(route('supplier.quotations.store', $pr), $payload)
+            ->assertSessionHasErrors('items.0.available_qty');
     }
 
     public function test_not_available_clears_offer_fields_and_can_be_submitted(): void

@@ -72,6 +72,9 @@
             @csrf
             @if($isEditing) @method('PUT') @endif
             <input type="hidden" name="action" id="shipmentFormAction" value="draft">
+            @if(\App\Support\Procurement\ProcurementFeatures::shipmentMtcEnabled())
+                <x-ui.alert tone="info" class="tw-mb-3">{{ __('shipments.mtc.create_hint') }}</x-ui.alert>
+            @endif
 
             {{-- 1. General Logistics Information --}}
             <x-ui.card :title="__('shipments.copy.shipment_logistics_information')" :description="__('shipments.copy.set_key_dispatch_details_and_container_or_forwarding_notes_for_this_consignment')">

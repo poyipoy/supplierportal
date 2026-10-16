@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Services\Ga\GaVerificationService;
 use App\Services\LocalInvoice\LocalFinanceAuditService;
 use App\Services\LocalInvoice\MakerCheckerService;
+use App\Support\BankTransferMapping;
 use App\Support\BusinessTime;
 use App\Support\FinanceConfigurationGuard;
 use App\Support\Money;
@@ -119,9 +120,7 @@ class PaymentBatchService
                     $subtotal = Money::add($subtotal, $amount);
                 }
 
-                // Default bank fee: BCA = 0, Non-BCA = 2.500
-                $fee = $groupData['is_bca'] ? Money::ZERO : Money::normalize(2500);
-                $fee = app(FinanceConfigurationGuard::class)->amount($fee, 'bank_fee_max_amount', 'bank_fee');
+                $fee = $this->defaultSupplierFee((string) $groupData['bank_name'], $subtotal);
                 $net = Money::atLeastZero(Money::subtract($subtotal, $fee));
 
                 $group = $batch->groups()->create([
@@ -328,6 +327,10 @@ class PaymentBatchService
             $activeItems = $group->activeItems;
             $newSubtotal = Money::sum($activeItems->pluck('amount'));
             $newFee = $activeItems->isEmpty() ? Money::ZERO : Money::normalize($group->bank_fee);
+            // A default (non-overridden) supplier fee follows the transfer type, which depends on the subtotal.
+            if ($activeItems->isNotEmpty() && $group->payee_type === 'supplier' && blank($group->fee_override_reason)) {
+                $newFee = $this->defaultSupplierFee((string) $group->bank_name, $newSubtotal);
+            }
             $newNet = Money::atLeastZero(Money::subtract($newSubtotal, $newFee));
 
             $group->update([
@@ -401,6 +404,21 @@ class PaymentBatchService
 
             return $b->fresh(['groups.items']);
         });
+    }
+
+    /**
+     * Default supplier bank fee by transfer type: BCA = 0, LLG = 2.500, RTGS (non-BCA above the
+     * LLG limit) = finance.bank_transfer.rtgs_fee. Always validated against bank_fee_max_amount.
+     */
+    private function defaultSupplierFee(string $bankName, string $subtotal): string
+    {
+        $fee = match (BankTransferMapping::transferType($bankName, $subtotal)) {
+            BankTransferMapping::TRANSFER_TYPE_BCA => Money::ZERO,
+            BankTransferMapping::TRANSFER_TYPE_RTGS => Money::normalize(config('finance.bank_transfer.rtgs_fee', '25000.00')),
+            default => Money::normalize(2500),
+        };
+
+        return app(FinanceConfigurationGuard::class)->amount($fee, 'bank_fee_max_amount', 'bank_fee');
     }
 
     /**

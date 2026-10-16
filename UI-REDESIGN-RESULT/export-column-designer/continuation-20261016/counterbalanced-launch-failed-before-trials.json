@@ -1,0 +1,134 @@
+{
+  "startedAt": "2026-10-16T02:37:04.830Z",
+  "protocolSha256": "66620fab2a9cca56d56e7dd3a277c2c192ce22b54898030b9882da2d720dc2d4",
+  "declaredAt": "2026-10-16T02:37:04.551Z",
+  "schedule": [
+    {
+      "index": 0,
+      "pair": 0,
+      "batch": 0,
+      "size": 12,
+      "variant": "legacy"
+    },
+    {
+      "index": 1,
+      "pair": 0,
+      "batch": 0,
+      "size": 12,
+      "variant": "designer"
+    },
+    {
+      "index": 2,
+      "pair": 1,
+      "batch": 0,
+      "size": 24,
+      "variant": "legacy"
+    },
+    {
+      "index": 3,
+      "pair": 1,
+      "batch": 0,
+      "size": 24,
+      "variant": "designer"
+    },
+    {
+      "index": 4,
+      "pair": 2,
+      "batch": 0,
+      "size": 64,
+      "variant": "legacy"
+    },
+    {
+      "index": 5,
+      "pair": 2,
+      "batch": 0,
+      "size": 64,
+      "variant": "designer"
+    },
+    {
+      "index": 6,
+      "pair": 3,
+      "batch": 1,
+      "size": 12,
+      "variant": "designer"
+    },
+    {
+      "index": 7,
+      "pair": 3,
+      "batch": 1,
+      "size": 12,
+      "variant": "legacy"
+    },
+    {
+      "index": 8,
+      "pair": 4,
+      "batch": 1,
+      "size": 24,
+      "variant": "designer"
+    },
+    {
+      "index": 9,
+      "pair": 4,
+      "batch": 1,
+      "size": 24,
+      "variant": "legacy"
+    },
+    {
+      "index": 10,
+      "pair": 5,
+      "batch": 1,
+      "size": 64,
+      "variant": "designer"
+    },
+    {
+      "index": 11,
+      "pair": 5,
+      "batch": 1,
+      "size": 64,
+      "variant": "legacy"
+    },
+    {
+      "index": 12,
+      "pair": 6,
+      "batch": 2,
+      "size": 12,
+      "variant": "legacy"
+    },
+    {
+      "index": 13,
+      "pair": 6,
+      "batch": 2,
+      "size": 12,
+      "variant": "designer"
+    },
+    {
+      "index": 14,
+      "pair": 7,
+      "batch": 2,
+      "size": 24,
+      "variant": "legacy"
+    },
+    {
+      "index": 15,
+      "pair": 7,
+      "batch": 2,
+      "size": 24,
+      "variant": "designer"
+    },
+    {
+      "index": 16,
+      "pair": 8,
+      "batch": 2,
+      "size": 64,
+      "variant": "legacy"
+    },
+    {
+      "index": 17,
+      "pair": 8,
+      "batch": 2,
+      "size": 64,
+      "variant": "designer"
+    }
+  ],
+  "noAutomaticRetry": true
+}

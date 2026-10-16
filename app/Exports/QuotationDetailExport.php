@@ -5,6 +5,7 @@ namespace App\Exports;
 use App\Contracts\TracksExportProgress;
 use App\Exports\Concerns\InteractsWithExportProgress;
 use App\Models\Quotation;
+use App\Support\Procurement\SnapshotRate;
 use App\Support\SpreadsheetCellSanitizer;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
@@ -38,7 +39,7 @@ class QuotationDetailExport implements \Illuminate\Contracts\Translation\HasLoca
 
         $quotation = $query->firstOrFail();
         $pr = $quotation->purchaseRequisition;
-        $rate = (float) ($quotation->exchange_rate?->rate_to_idr ?? 0);
+        $rate = SnapshotRate::forQuotation($quotation);
         $supplierName = $quotation->supplier?->supplier?->company_name
             ?: $quotation->supplier?->name;
 
@@ -79,8 +80,8 @@ class QuotationDetailExport implements \Illuminate\Contracts\Translation\HasLoca
                 (float) ($prItem?->total_weight ?? 0),
                 $pricePerKg,
                 $amount,
-                $pricePerKg === null ? null : $pricePerKg * $rate,
-                $offerAmount === null ? null : $offerAmount * $rate,
+                SnapshotRate::toIdr($pricePerKg, $rate),
+                SnapshotRate::toIdr($offerAmount, $rate),
                 SpreadsheetCellSanitizer::text($item->notes),
                 $item->attachments->count(),
                 $item->is_available ? __('status.availability.available') : __('status.availability.not_available'),

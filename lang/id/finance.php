@@ -631,6 +631,17 @@ return [
         'date' => 'Tanggal Voucher',
         'notes' => 'Voucher memakai snapshot final; transfer koreksi tetap tercatat pada settlement yang sama.',
         'no_voucher' => 'Voucher belum digenerate, menggunakan nominal item',
+        'bank_fee' => 'Biaya Bank',
+        'print_header' => [
+            'ref' => 'Ref',
+            'drp_date' => 'Tanggal DRP',
+            'paid_to' => 'Dibayar kepada',
+            'bank' => 'Bank',
+            'account_holder' => 'Atas Nama',
+            'document' => 'Dokumen',
+            'batch' => 'Batch',
+            'date' => 'Tanggal',
+        ],
     ],
     'refund' => [
         'title' => 'Pengembalian Dana atas Kelebihan Bayar',

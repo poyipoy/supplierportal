@@ -25,6 +25,8 @@ class PurchaseRequisition extends Model
         'pr_number',
         'notes',
         'status',
+        'port_of_discharge',
+        'incoterm',
     ];
 
     // ─── Helpers ───

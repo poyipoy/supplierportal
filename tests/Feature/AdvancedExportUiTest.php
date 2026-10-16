@@ -28,7 +28,12 @@ class AdvancedExportUiTest extends TestCase
             ->assertSee('data-advanced-export-form', false)->assertSee('data-export-quick', false)
             ->assertSee('aria-modal="true"', false)->assertSee('aria-labelledby="advanced-export-'.$role.'-po-title"', false)
             ->assertSee('data-adasi-date-picker', false)->assertSee('advanced-export-'.$role.'-po-start_date', false)
-            ->assertSee('data-column-up', false)->assertSee('data-column-down', false);
+            ->assertSee('ui-export-designer-modal', false)
+            ->assertSee('role="listbox"', false)->assertSee('aria-orientation="horizontal"', false)
+            ->assertSee('data-column-scroll', false)->assertSee('data-column-empty-rows', false)
+            ->assertSee('data-column-menu', false)->assertSee('data-column-unhide', false)
+            ->assertSee('data-column-command="move-left"', false)->assertSee('data-column-command="move-right"', false)
+            ->assertDontSee('data-column-up', false)->assertDontSee('data-column-check', false);
     }
 
     #[DataProvider('audiences')]
@@ -37,7 +42,8 @@ class AdvancedExportUiTest extends TestCase
         Queue::fake();
         $actor = User::factory()->create(['role' => $role]);
         $actor->preference()->create([...config('user_preferences.defaults'), 'locale' => $locale]);
-        $this->actingAs($actor)->getJson(route('exports.definitions.show', $role.'.po'))->assertOk()->assertJsonCount(10, 'columns');
+        // 10 original columns + 2 opt-in logistics columns (Mission 04-W, Q7).
+        $this->actingAs($actor)->getJson(route('exports.definitions.show', $role.'.po'))->assertOk()->assertJsonCount(12, 'columns');
         $preset = $this->postJson(route('export-presets.store'), ['export_key' => $role.'.po', 'name' => 'UI preset', 'columns' => ['remark', 'po_number'], 'format' => 'csv', 'filters' => ['status' => 'active'], 'is_default' => true])->assertCreated()->json();
         $this->getJson(route('export-presets.index', ['export_key' => $role.'.po']))->assertOk()->assertJsonPath('data.0.is_default', true);
         $this->postJson(route($role.'.export.purchase-orders'), [...$preset['filters'], 'options' => ['columns' => $preset['columns'], 'format' => $preset['format']]])->assertAccepted();

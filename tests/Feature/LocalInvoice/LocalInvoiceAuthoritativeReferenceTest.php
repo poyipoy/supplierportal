@@ -73,7 +73,7 @@ class LocalInvoiceAuthoritativeReferenceTest extends TestCase
 
     private function submitInvoice(array $payload)
     {
-        return $this->actingAs($this->supplier)->post(route('local-supplier.invoices.store'), array_merge([
+        return $this->actingAs($this->supplier)->post(route('local-supplier.invoices.store'), array_merge([...NativeFileFixtures::invoiceReferences(),
             'invoice_number' => 'INV-REF-001',
             'invoice_date' => '2026-09-08',
             'invoice_amount' => '5000000.00',
@@ -148,7 +148,7 @@ class LocalInvoiceAuthoritativeReferenceTest extends TestCase
             'invoice_amount' => '100.00',
             'ppn_scheme' => '11%',
             'tax_invoice_number' => '010.000-26.12345678',
-        ], $overrides), [], [
+        ], $overrides), [], [...NativeFileFixtures::invoiceReferences(),
             'invoice' => NativeFileFixtures::upload('invoice.pdf', 10),
             'tax_invoice' => NativeFileFixtures::upload('tax.pdf'),
         ]);

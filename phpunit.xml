@@ -29,6 +29,9 @@
         <!-- The tarpit sleeps real seconds; LoginSecurityTest enables it
              explicitly for the one test that asserts the delay. -->
         <env name="AUTH_TARPIT_ENABLED" value="false"/>
+        <!-- Mission 05: suites outside tests/Feature/Procurement/ShipmentMtcTest
+             keep the pre-R3 shipment flow; that test enables the switch. -->
+        <env name="PROCUREMENT_SHIPMENT_MTC_ENABLED" value="false"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
         <env name="DB_CONNECTION" value="mysql"/>

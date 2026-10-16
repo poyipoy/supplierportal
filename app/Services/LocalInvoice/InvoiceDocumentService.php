@@ -24,6 +24,13 @@ class InvoiceDocumentService
         bool $requiresDeliveryNote = false,
         array $retainedDocIds = []
     ): void {
+        Validator::make(['kept_document_ids' => $retainedDocIds], [
+            'kept_document_ids.*' => ['required', 'integer'],
+        ], [
+            'kept_document_ids.*.required' => __('local_invoice.validation.retained_invalid'),
+            'kept_document_ids.*.integer' => __('local_invoice.validation.retained_invalid'),
+        ])->validate();
+
         if (isset($files['surat_jalan']) && ! isset($files['delivery_note'])) {
             $files['delivery_note'] = $files['surat_jalan'];
             unset($files['surat_jalan']);
@@ -34,6 +41,12 @@ class InvoiceDocumentService
                 ->whereIn('id', $retainedDocIds)
                 ->get()
             : collect();
+
+        if ($retainedDocs->count() !== count(array_unique($retainedDocIds))) {
+            throw ValidationException::withMessages([
+                'kept_document_ids' => __('local_invoice.validation.retained_invalid'),
+            ]);
+        }
 
         // Tipe berkas tunggal memakai semantik ganti: unggahan baru membuat
         // dokumen lama bertipe sama tidak ikut dibawa ke revisi ini.
@@ -55,17 +68,20 @@ class InvoiceDocumentService
             ]);
         }
 
-        $baseRules = ['file', 'mimes:pdf', 'max:5120'];
+        $baseRules = ['required', 'file', 'mimes:pdf', 'extensions:pdf', 'max:5120'];
 
-        foreach (['invoice', 'tax_invoice', 'delivery_note', 'supporting'] as $type) {
+        foreach (['invoice', 'tax_invoice', 'purchase_order', 'goods_receipt', 'delivery_note', 'supporting'] as $type) {
             $typeLabel = __(match ($type) {
                 'tax_invoice' => 'local_invoice.labels.tax_invoice',
+                'purchase_order' => 'local_invoice.labels.purchase_order',
+                'goods_receipt' => 'local_invoice.labels.goods_receipt',
                 'delivery_note' => 'local_invoice.labels.delivery_note',
                 'supporting' => 'local_invoice.labels.supporting',
                 default => 'local_invoice.labels.invoice',
             });
             $isRequired = match ($type) {
                 'invoice' => true,
+                'purchase_order', 'goods_receipt' => true,
                 'tax_invoice' => $requiresTaxInvoice,
                 'delivery_note' => $requiresDeliveryNote,
                 default => false,
@@ -80,16 +96,12 @@ class InvoiceDocumentService
                 ]);
             }
 
-            if (empty($uploaded)) {
-                continue;
-            }
-
-            $list = is_array($uploaded) ? $uploaded : [$uploaded];
+            $list = empty($uploaded) ? [] : (is_array($uploaded) ? $uploaded : [$uploaded]);
             $retainedCount = $retainedDocs->where('document_type', $type)->count();
 
             $maxFiles = LocalInvoiceDocument::maxFilesFor($type);
 
-            if ($retainedCount + count($list) > $maxFiles) {
+            if (($list !== [] || in_array($type, ['purchase_order', 'goods_receipt'], true)) && $retainedCount + count($list) > $maxFiles) {
                 throw ValidationException::withMessages([
                     $type => __('local_invoice.validation.file_limit', ['type' => $typeLabel, 'count' => $maxFiles]),
                 ]);
@@ -97,11 +109,15 @@ class InvoiceDocumentService
 
             foreach ($list as $file) {
                 if (! $file instanceof UploadedFile) {
-                    continue;
+                    throw ValidationException::withMessages([
+                        $type => __('local_invoice.validation.file_invalid', ['type' => $typeLabel]),
+                    ]);
                 }
 
                 Validator::make([$type => $file], [$type => $baseRules], [
                     $type.'.mimes' => __('local_invoice.validation.file_type', ['type' => $typeLabel]),
+                    $type.'.extensions' => __('local_invoice.validation.file_type', ['type' => $typeLabel]),
+                    $type.'.uploaded' => __('local_invoice.validation.file_invalid', ['type' => $typeLabel]),
                     $type.'.max' => __('local_invoice.validation.file_size', ['type' => $typeLabel]),
                 ])->validate();
 

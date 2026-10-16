@@ -1,0 +1,77 @@
+﻿{
+    "captured_at":  "2026-10-15T15:50:27.2994626Z",
+    "branch":  "feature/material-procurement-revision-gate2",
+    "head":  "78e8bf47fa722f622b58437d975824b81aae7190",
+    "files":  [
+                  {
+                      "path":  "tests/Feature/AdvancedPurchaseOrderExportTest.php",
+                      "sha256":  "8075c306428e19f48ecd1a680c357a8758f70445ad3acb3b4a1fc8273ee9cde6"
+                  },
+                  {
+                      "path":  "app/Exports/Advanced/Concerns/UsesColumnCatalog.php",
+                      "sha256":  "b10c3f25c2740aae1a4dd0f47b52137f4a069733bd393c7ac80b834560600f87"
+                  },
+                  {
+                      "path":  "app/Exports/Advanced/Definitions/PurchaseOrderDefinition.php",
+                      "sha256":  "f7e5fa90db716fd7ecf7ac2cbba4d7ef6e445f88ac177c7ff8532900034a3d65"
+                  },
+                  {
+                      "path":  "app/Exports/Advanced/Definitions/QuotationDefinition.php",
+                      "sha256":  "9439b4163cb07ff1a9f0b29aa743c1ea8f52dfeca9d0450f3c0496087b99d34d"
+                  },
+                  {
+                      "path":  "app/Exports/Advanced/Definitions/RequisitionDefinition.php",
+                      "sha256":  "bb04e29ac5487aee78189637687e6d414ccd838c52d9becf613c01bb0893c32d"
+                  },
+                  {
+                      "path":  "app/Exports/Advanced/Definitions/ShipmentDefinition.php",
+                      "sha256":  "6f31e77d93e18e5f2c675d7baa51930477d1ca36aa1375c76c2460f19f235a3d"
+                  },
+                  {
+                      "path":  "app/Exports/Advanced/Definitions/InspectionDefinition.php",
+                      "sha256":  "9fdae2be60e433157d6f5671b30815655c391af3d097b2a45fa3b3780512e4a4"
+                  },
+                  {
+                      "path":  "app/Exports/Advanced/Definitions/LocalInvoiceDefinition.php",
+                      "sha256":  "444a6be8417803b66e1eb77ee21173f04c95e12c669883dcecbcbc153ccb662a"
+                  },
+                  {
+                      "path":  "app/Support/Export/ExportDefinitions.php",
+                      "sha256":  "3adc146441dca0309cece0fb0712767c3ffdf9ce81c124fb7d8ddefbbf097720"
+                  },
+                  {
+                      "path":  "app/Exports/PurchaseOrdersExport.php",
+                      "sha256":  "df1e85cc14d9b927d11efdebe690dabd09985b121caa5a497c02b370923ed378"
+                  },
+                  {
+                      "path":  "app/Exports/QuotationsExport.php",
+                      "sha256":  "9531ed1402e0951e62f57b405d7b905b31dc35740d7ff4e26b5b30034d8e1abc"
+                  },
+                  {
+                      "path":  "app/Exports/RequisitionsExport.php",
+                      "sha256":  "58c8dcea7f728da597c3a644ec17c1f52ee72a6f7ddd899835a91a4692bb4754"
+                  },
+                  {
+                      "path":  "app/Exports/ShipmentsExport.php",
+                      "sha256":  "3bea9bfc5473b5a1f186d4a82a04f47706dd7957e67a84f72f7b1a792be8fca6"
+                  },
+                  {
+                      "path":  "app/Exports/InspectionsExport.php",
+                      "sha256":  "0a8de769256b44f398ad6726cc064b38d090e32fa94b9f63495c3a2502712f22"
+                  },
+                  {
+                      "path":  "app/Exports/LocalInvoicesExport.php",
+                      "sha256":  "d81ac91d77ee682c5c709efea5fe35766b290fc60254534c70744073bd080fcf"
+                  },
+                  {
+                      "path":  "phpunit.xml",
+                      "sha256":  "752f271893d5c825b5a592ca53abbe5ad6d1e9d19fddcb7b251d6512a9e99be8"
+                  }
+              ],
+    "advanced_purchase_order_existing_diff":  "diff --git a/tests/Feature/AdvancedPurchaseOrderExportTest.php b/tests/Feature/AdvancedPurchaseOrderExportTest.php\r\nindex 1644058..761a5ce 100644\r\n--- a/tests/Feature/AdvancedPurchaseOrderExportTest.php\r\n+++ b/tests/Feature/AdvancedPurchaseOrderExportTest.php\r\n@@ -106,7 +106,8 @@ public function test_column_audience_metadata_is_conservative(): void\r\n         $internal = new ExportColumn(\u0027internal_note\u0027, \u0027remark\u0027, fn ($row) =\u003e $row-\u003enotes, audiences: [\u0027purchasing\u0027]);\r\n         $this-\u003eassertTrue($internal-\u003evisibleTo(\u0027purchasing\u0027));\r\n         $this-\u003eassertFalse($internal-\u003evisibleTo(\u0027supplier\u0027));\r\n-        $this-\u003eassertCount(10, ExportDefinitions::allowedColumns(ExportDefinitions::get(\u0027supplier.po\u0027)));\r\n+        // 10 original columns + 2 opt-in logistics columns (Mission 04-W, Q7).\r\n+        $this-\u003eassertCount(12, ExportDefinitions::allowedColumns(ExportDefinitions::get(\u0027supplier.po\u0027)));\r\n     }\r\n \r\n     public function test_post_and_legacy_get_force_supplier_and_reject_audience_or_column_spoofing(): void\r\n",
+    "test_db_status":  "BLOCKED: advisory lock connection 4706 held by existing QA service PHP 2112/9356; service untouched",
+    "readonly_safety_command":  "php vendor/bin/phpunit tests/Feature/TestingEnvironmentDatabaseSafetyTest.php --do-not-cache-result --colors=never",
+    "readonly_safety_result":  "PASS 2 tests / 4 assertions; live SELECT DATABASE() = adasi_portal_test verified by test; exit 0",
+    "db_backed_feature_suite":  "NOT RUN: shared database occupied",
+    "proof_scope_planned":  "DB-denied in-memory real Eloquent models + actual unchanged export map/headings + native Maatwebsite Sheet/Writer XLSX/CSV; excludes HTTP/queue/query selection"
+}

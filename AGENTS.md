@@ -75,7 +75,7 @@ Aplikasi ini server-rendered Blade tanpa API layer. Satu-satunya endpoint JSON a
 | Role | Deskripsi |
 |---|---|
 | `admin` | Kelola user, kurs, master, audit, serta modul yang secara eksplisit menerima role admin |
-| `purchasing` | PR, penawaran, PO Impor, shipment, klaim; Local PO/GR, DRP Purchasing, review registrasi/vendor sesuai route |
+| `purchasing` | PR, penawaran, PO Impor, shipment, klaim; Local PO/GR, DRP Purchasing, review registrasi/vendor sesuai route; kelola Master Material & HS Code (termasuk hapus terjaga bila tidak direferensikan) dan Master Harga Referensi |
 | `supplier` | Portal Impor dan/atau Local Supplier menurut scope — **hanya data milik sendiri** |
 | `qc` | Input hasil inspeksi material, tentukan OK / NG |
 | `finance` | Penerimaan fisik invoice, verifikasi, DRP, voucher, settlement/refund, vendor master, Local PO/GR |
@@ -113,7 +113,7 @@ Tidak semua data supplier-facing memiliki kolom owner tersebut. `PurchaseRequisi
 
 Jalankan `SupplierDataIsolationTest` untuk Impor dan `LocalInvoiceScopeIsolationTest` untuk Local Supplier setelah mengubah boundary terkait; registrasi memiliki suite `tests/Feature/SupplierRegistration/`.
 
-Policy aktif berada di `app/Policies/` dan memakai **auto-discovery**: tidak ada array `$policies` atau `Gate::policy()`, sehingga policy harus bernama `App\Policies\<Model>Policy` agar terikat. Saat ini ada 16: `Attachment`, `Conversation`, `ExportPreset`, `GaClaim`, `GaClaimDocument`, `LocalInvoice`, `LocalInvoiceDocument`, `LocalInvoiceReceipt`, `LocalProcurementImport`, `LocalPoDocumentBatch`, `LocalPurchaseOrder`, `Quotation`, `Shipment`, `Supplier`, `SupplierAudit`, `SupplierMasterDocument`. Pertahankan `Gate::authorize()` / `$this->authorize()` pada jalur yang sudah menggunakannya. Untuk aksi Core 2 baru, tambahkan method policy, bukan `abort_unless` inline. Sebagian besar controller Core 1 masih memakai pengecekan role/ownership inline; ikuti gaya controller yang sedang dikerjakan. Model binding/hashid bukan pengganti otorisasi.
+Policy aktif berada di `app/Policies/` dan memakai **auto-discovery**: tidak ada array `$policies` atau `Gate::policy()`, sehingga policy harus bernama `App\Policies\<Model>Policy` agar terikat. Saat ini ada 19: `Attachment`, `Conversation`, `ExportPreset`, `GaClaim`, `GaClaimDocument`, `HsCodeRule`, `LocalInvoice`, `LocalInvoiceDocument`, `LocalInvoiceReceipt`, `LocalProcurementImport`, `LocalPoDocumentBatch`, `LocalPurchaseOrder`, `MaterialMaster`, `MaterialReferencePrice`, `Quotation`, `Shipment`, `Supplier`, `SupplierAudit`, `SupplierMasterDocument`. Pertahankan `Gate::authorize()` / `$this->authorize()` pada jalur yang sudah menggunakannya. Untuk aksi Core 2 baru, tambahkan method policy, bukan `abort_unless` inline. Sebagian besar controller Core 1 masih memakai pengecekan role/ownership inline; ikuti gaya controller yang sedang dikerjakan. Model binding/hashid bukan pengganti otorisasi.
 
 ---
 
@@ -168,6 +168,10 @@ attachments            id, attachable_type, attachable_id, file_path, file_name,
 announcements          id, title, content, created_by, published_at
 document_sequences     id, type (PR, PO, SHP, dsb.), year, month, last_number
 material_masters / material_aliases / hs_code_rules   ← master data material & HS code
+master_data_audit_logs  audit append-only Material Master / HS Code Rule
+                          (created, updated, status_changed, deleted, delete_refused)
+material_reference_prices      Master Harga (versi, supersede/void; tanpa edit/hapus)
+award_reference_price_snapshots  snapshot harga referensi per award saat PO dibuat (immutable)
 conversations / messages     ← negosiasi Purchasing ⇄ Supplier
 export_jobs            id, user_id, label, export_class, export_args, file_name, disk, status,
                           format[xlsx|csv], export_options
@@ -261,7 +265,7 @@ $model->attachments()->create([
 ]);
 ```
 
-Jalur polymorphic aktif meliputi MTC pada `QuotationItem`, bukti NG pada `QcInspection`, respons `MaterialClaim`, percakapan `Message`, `ShipmentDocument`, PDF `LocalPurchaseOrder`, dan bukti refund `SupplierOverpaymentRefund`. Relasi `attachments()` pada model lain belum tentu berarti ada endpoint upload aktif.
+Jalur polymorphic aktif meliputi MTC pada `Shipment` (attachment `Shipment` = MTC saja; MTC historis pada `QuotationItem` tetap dapat diunduh, read-only), bukti NG pada `QcInspection`, respons `MaterialClaim`, percakapan `Message`, `ShipmentDocument`, PDF `LocalPurchaseOrder`, dan bukti refund `SupplierOverpaymentRefund`. Relasi `attachments()` pada model lain belum tentu berarti ada endpoint upload aktif.
 
 **Pengecualian domain yang disengaja:** invoice lokal memakai `local_invoice_documents` dengan linkage revision, GA memakai `ga_claim_documents`, dan vendor/registrasi memakai `supplier_master_documents`. Pertahankan tabel dan controller/policy masing-masing; jangan memigrasikannya ke polymorphic `attachments` hanya demi menyeragamkan struktur.
 
@@ -375,7 +379,7 @@ Shared document routes juga memakai role dan policy. Verifikasi receipt publik m
 
 Model dengan trait `HasHashids` mengembalikan hash pada `getRouteKey()`. Daftar aktif mencakup:
 
-- Impor/shared: `User`, `PurchaseRequisition`, `Quotation`, `PurchaseOrder`, `PrItemAward`, `Shipment`, `QcInspection`, `MaterialClaim`, `Conversation`, `ExportJob`, `ExportPreset`, **`Attachment`**. Total 27 model dengan trait ini per 9 Oktober 2026 (working tree); verifikasi ulang dengan `grep -rl "App.Traits.HasHashids" app/Models/`.
+- Impor/shared: `User`, `PurchaseRequisition`, `Quotation`, `PurchaseOrder`, `PrItemAward`, `Shipment`, `QcInspection`, `MaterialClaim`, `Conversation`, `ExportJob`, `ExportPreset`, **`Attachment`**. Total 29 model dengan trait ini per 15 Oktober 2026 (working tree), termasuk `MaterialReferencePrice` (parameter route `{referencePrice}`, implicit binding); verifikasi ulang dengan `grep -rl "App.Traits.HasHashids" app/Models/`.
 - Lokal: `LocalInvoice`, `LocalInvoiceDocument`, `LocalInvoicePayment`, `LocalInvoiceVoucher`, `LocalPurchaseOrder`, `LocalGoodsReceipt`, `LocalProcurementImport`, `PaymentBatch`, `PaymentGroup`, `SupplierOverpaymentRefund`, `SupplierMasterDocument`, `GaClaim`, `GaClaimDocument`, `SupplierRegistrationAttempt`, `SupplierAudit` (parameter route `{supplierAudit}`, implicit binding).
 
 Periksa trait model sebelum menambah URL; daftar ini tidak berarti semua model/domain item memakai hashid.
@@ -423,7 +427,11 @@ $amount = $quotationItem->resolved_amount;
 $idr = $amount * (float) $quotation->exchangeRate->rate_to_idr;
 ```
 
-Modul Perbandingan Harga dan Riwayat Harga **join ke kurs snapshot** (`exchange_rates` via `exchange_rate_id` milik quotation/PO), bukan ke kurs terbaru — supaya angka historis tidak berubah setiap kali admin memasukkan kurs baru. Jangan mengganti join ini dengan `latestRate()`.
+*Nilai dokumen* (total quotation/PO, daftar PO, ekspor, PDF) memakai **kurs snapshot** dokumen (`exchange_rate_id`) dan tidak pernah dihitung ulang. Mata uang asing tanpa snapshot ditampilkan "—"/"Exchange Rate Unavailable": tidak pernah dianggap 1 atau 0. IDR→IDR = 1.
+
+*Analitik Perbandingan Harga* (Best Current Offer, Historical Best/Average, Master Reference Price, grafik) memakai **Exchange Rate Benchmark** (`exchange_rates`). Kurs yang dipakai adalah yang berlaku pada **tanggal evaluasi = `BusinessTime::today()`** (Asia/Jakarta, satu tanggal per request) melalui `ExchangeRateResolver::rateAsOf()`. Kurs bertanggal masa depan tidak dipakai. Nilai tanpa kurs dikeluarkan dari perhitungan dan dilaporkan.
+
+`latestRate()` tetap hanya untuk membuat snapshot baru. Jangan mencampur kedua lapisan.
 
 ### 3. Kurs terbaru hanya dipilih ketika snapshot baru dibuat
 
@@ -473,11 +481,17 @@ Sudah ada 3 view terpisah di `resources/views/purchasing/comparison/` (`inter-su
 | Historis | Grafik garis harga satu material dari satu supplier lintas periode |
 | vs Harga Terbaik | Harga saat ini vs `MIN(price_per_kg)` histori material yang sama |
 
-> Semua perbandingan mengonversi harga ke IDR memakai **kurs snapshot** milik quotation/PO masing-masing (`LEFT JOIN exchange_rates ON ...exchange_rate_id`), dengan fallback ke kurs quotation bila PO belum punya. Jangan menggantinya dengan kurs terbaru — angka historis harus stabil.
+> Analitik perbandingan (Mission 07) memakai Exchange Rate Benchmark pada tanggal evaluasi, dalam mata uang analisis pilihan (`?currency=` IDR/USD/JPY/CNY, default IDR); lihat §Konversi Kurs → 2. Sel matriks inter-supplier dan nilai dokumen tetap memakai kurs snapshot. Riwayat pembelian dihitung `PurchaseHistoryPriceService` (rata-rata tertimbang Σ(harga×KG pesanan)/ΣKG lintas mata uang, BCMath); mata uang tanpa kurs dikeluarkan dan dilaporkan, tidak pernah `COALESCE(rate, 1)`.
 
 Sisi supplier punya modul serupa yang terbatas pada datanya sendiri: `SupplierPriceHistoryController` + `SupplierPriceHistoryBuilder`.
 
 ---
+
+### Master Harga Referensi dan Master Data Material
+
+- Master Material / HS Code dikelola Admin dan Purchasing (`MaterialMasterPolicy`, `HsCodeRulePolicy`; route Purchasing `purchasing.master-data.*`, tanpa akses area Admin lain). Hapus permanen hanya bila tidak direferensikan, dua fase lewat `MasterDataDeletionService`: hapus + audit `deleted` dalam satu transaksi; penolakan (termasuk backstop FK RESTRICT) diaudit `delete_refused` setelah transaksi. Audit di `master_data_audit_logs` bersifat append-only.
+- `material_reference_prices` (Master Harga): versi append-only lewat `MaterialReferencePriceService` (create, supersede = versi lama ditutup X−1, void dengan alasan, catatan); tidak ada edit harga atau hapus. Overlap dimensi/tanggal (akhir terbuka = 9999-12-31) per material+bentuk+mata uang dicegah di bawah lock baris `material_masters`.
+- `ReferencePriceResolver` hanya membaca, memakai dimensi kunci **penawaran** (Flat: tebal; Round/Hollow: diameter luar) tanpa fallback ke PR, dan tidak pernah memblokir. `PurchaseOrderGenerationService` menulis tepat satu `award_reference_price_snapshots` per award (matched/not_available) di transaksi pembuatan PO; snapshot immutable dan PO sebelum aktivasi tidak di-backfill ("not captured"). `procurement:reconcile` melaporkan `po_missing_reference_snapshot_after_activation`.
 
 ## Item Award dan Shipment Impor
 
@@ -530,7 +544,7 @@ Gunakan konstanta status model dan helper legacy (`isReadyToPay()`, `isPaid()`) 
 ### DRP, Voucher, Settlement, Refund, dan GA
 
 - Pertahankan container **`payment_batches → payment_groups → payment_items`**. `PaymentItem::payable()` polymorphic ke `LocalInvoice` atau `GaClaim`; tipe batch `SUPPLIER`/`GA` tidak boleh dicampur.
-- `PaymentBatchService` mengunci payable, memeriksa Ready to Pay, rekening verified, dan reservasi DRP existing. Group menyimpan snapshot payee/rekening. Default fee supplier BCA nol, non-BCA Rp2.500; GA selalu nol. Override fee memerlukan alasan audit. Group kosong/cancelled dikeluarkan dari total; finalize memvalidasi ulang active payable.
+- `PaymentBatchService` mengunci payable, memeriksa Ready to Pay, rekening verified, dan reservasi DRP existing. Group menyimpan snapshot payee/rekening. Default fee supplier mengikuti tipe transfer (`BankTransferMapping::transferType()`, berbasis **subtotal** group): BCA nol (deteksi BCA hanya lewat `BankTransferMapping::isBca()`), LLG Rp2.500, dan non-BCA di atas `finance.bank_transfer.llg_max_amount` (Rp1 miliar, batas SKNBI) diekspor sebagai `RTG` dengan fee `finance.bank_transfer.rtgs_fee` (`FINANCE_BANK_FEE_RTGS`, default 25.000 belum dikonfirmasi tarif kontrak; harus ≤ `FINANCE_BANK_FEE_MAX_AMOUNT`). `removeItem` menghitung ulang fee default, bukan fee yang di-override. GA selalu nol. Override fee memerlukan alasan audit. PDF voucher menampilkan Bank Fee sebagai baris tabel (selalu tampil, `(0,00)` bila nol) dan Total Voucher Amount setelah fee; fee group dibagi proporsional ke nilai tiap voucher dalam group lewat `Money::allocate()` (sisa sen ke item id terkecil) dan terbilang dihitung ulang saat cetak. Ini hanya tampilan: `local_invoice_vouchers.amount`, settlement, dan halaman detail voucher tetap net invoice tanpa fee. Group kosong/cancelled dikeluarkan dari total; finalize memvalidasi ulang active payable.
 - **ONE INVOICE → ONE VOUCHER BAYAR → ONE PAYMENT SETTLEMENT** untuk invoice authoritative. `LocalInvoiceVoucherService` membuat voucher FINAL dari verified net payable dan snapshot dokumen/rekening. Amount voucher adalah net payable invoice; fee/net transfer pada group memiliki makna tersendiri—jangan menyamakan kedua amount tanpa memeriksa service.
 - `LocalInvoicePaymentService` mencatat satu PRIMARY transfer. Salah transfer kurang menjadi `CORRECTION_REQUIRED`; tambahan transfer CORRECTION berada pada settlement yang sama dengan alasan wajib, bukan cicilan yang direncanakan atau settlement kedua.
 - Settlement difinalkan saat total aktual mencapai expected amount; invoice menjadi `PAID`. Group/batch mengikuti penyelesaian semua active invoice/group. Jalur bulk paid tetap harus memanggil logic voucher/settlement dan guard terkait.
@@ -609,13 +623,13 @@ File upload mengikuti model penyimpanan domain yang sudah aktif. Impor, PDF Loca
 
 | Modul | Aturan yang berlaku sekarang |
 |---|---|
-| Penawaran (Supplier) — file MTC | `mimes:pdf,jpg,jpeg,png`, `max:5120` (5 MB) |
+| Shipment — MTC | `pdf,jpg,jpeg,png`, 5 MB, profile `mtc`, polymorphic pada `Shipment`; draft: unggah/hapus; submitted: hanya tambah; arrived/cancelled: ditolak (fail-closed); wajib ≥1 VALIDATED sebelum submit. Upload MTC baru di quotation ditolak; MTC quotation historis tetap dapat diunduh (read-only). Switch `procurement.shipment_mtc_enabled` |
 | QC Inspection | `mimes:jpg,jpeg,png`, `max:10240` — wajib jika status NG |
 | Claim Material (Supplier) | `mimes:jpg,jpeg,png,pdf,xlsx,doc,docx`, `max:10240` |
 | Conversation Message | `mimes:jpg,jpeg,png,pdf,xlsx,xls,doc,docx`, `max:10240`, maksimal 5 file |
 | Shipment Document | `pdf,jpg,jpeg,png,xlsx,doc,docx`, 10 MB; metadata di `shipment_documents`, berkas di polymorphic attachments |
 | Purchase Order / PO Document Impor | Tidak ada endpoint upload langsung; status impor juga diagregasi/disinkronkan dari dokumen shipment oleh helper `PurchaseOrder` |
-| Local Invoice | Upload baru saat submit/resubmit hanya `pdf`, 5 MB per file; maks. 5 per tipe termasuk berkas lama yang dipertahankan, linkage revision wajib. Gambar lama tetap dapat diakses dan dipakai ulang melalui ownership/`FileAccessGuard` |
+| Local Invoice | Upload baru saat submit/resubmit hanya `pdf`, 5 MiB per file; invoice/faktur pajak/PO maks. 1, GR/surat jalan/pendukung maks. 5 termasuk berkas lama yang dipertahankan. PO dan GR wajib pada submit maupun revisi (termasuk invoice lama); PO baru menggantikan PO pada revisi berikutnya tanpa menghapus histori. Linkage revision wajib. Gambar historis existing tetap dapat diakses dan dipakai ulang melalui ownership/`FileAccessGuard` |
 | GA Claim | `pdf,jpg,jpeg,png,xlsx,xls,doc,docx`, 10 MB |
 | Vendor Master / Registrasi | Ikuti FormRequest/controller terkait; upload vendor-profile `pdf,jpg,jpeg,png`, 10 MB. Registrasi: NIB/NPWP/SKNR wajib, SPPKP/SKD opsional (`pdf,jpg,jpeg,png`, 5 MB); Company Profile opsional (`COMPANY_PROFILE`, `pdf,jpg,jpeg,png`, 10 MB) |
 | Local PO PDF / ZIP | `UploadLocalPoDocumentRequest`: PDF/ZIP maks. 50 MB; nama PDF harus cocok dengan PO milik supplier, PDF magic bytes, batas ZIP, path traversal, dan rollback berkas dijaga `LocalPoDocumentService` |

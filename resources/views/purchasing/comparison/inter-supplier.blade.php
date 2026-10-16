@@ -12,7 +12,7 @@
     />
     <x-purchasing.comparison-tabs active="inter-supplier" />
 
-    <div id="purchasingComparisonContent" data-server-tabs-content>
+    <div id="purchasingComparisonContent" class="tw-min-w-0 tw-max-w-full" data-server-tabs-content>
         @include('purchasing.comparison._inter_supplier_content')
     </div>
 </div>

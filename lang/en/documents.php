@@ -2,6 +2,8 @@
 
 return [
     'po' => [
+        'port_of_discharge' => 'Port of Discharge',
+        'incoterm' => 'Incoterms',
         'title' => 'PURCHASE ORDER',
         'original' => 'ORIGINAL',
         'number' => 'PURCHASE ORDER NO.',

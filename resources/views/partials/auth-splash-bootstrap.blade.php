@@ -30,6 +30,7 @@
         data-layout="{{ $authSplashLayout }}"
         data-readiness="{{ $authSplashReadiness }}"
         data-hard-timeout="{{ (int) config('ui.auth_splash.hard_timeout_ms', 10000) }}"
+        data-min-visible-ms="{{ config('ui.auth_splash.min_visible_ms', 2000) }}"
         data-slow-after="{{ (int) config('ui.auth_splash.slow_after_ms', 2000) }}"
         data-fade-ms="{{ (int) config('ui.auth_splash.fade_ms', 650) }}"
         data-cleanup-ms="{{ (int) config('ui.auth_splash.cleanup_ms', 750) }}"

@@ -1,0 +1,460 @@
+{
+  "declaredAt": "2026-10-16T02:37:04.551Z",
+  "status": "DECLARED BEFORE BROWSER LAUNCH",
+  "objective": "One final bounded counterbalanced renderer-Paint comparison; strict nonregression remains open if evidence is incomplete or either strict comparison fails.",
+  "priorEvidencePreserved": [
+    "paired-v2-comparison.json",
+    "cdp-paired-comparison.json",
+    "trace-acceptance-comparison.json",
+    "checked-trace-acceptance-comparison.json",
+    "checked-legacy-drift-replay.json"
+  ],
+  "measurement": {
+    "source": "trace-acceptance-checked.mjs exact generated measure string, unchanged",
+    "sha256": "d657a327cba3faf9ef9a499bf7c682a5d71acd1020eacb5e7c11740af4e1a0b0",
+    "metrics": [
+      "ready",
+      "paint",
+      "command",
+      "commandPaint",
+      "openPaint"
+    ],
+    "iterationsPerTrial": 30,
+    "discardedWarmupsPerTrial": 3,
+    "totalTrials": 18,
+    "totalMeasuredSamples": 540,
+    "readiness": "One-shot MutationObserver sees submit enabled and complete expected header count; current catalog and UI lifecycle verified before timing.",
+    "framePhase": "Same checked rAF alignment before open and command; selection measured separately and allowed to paint before command.",
+    "paint": "Main-thread renderer Paint X-event end inside the checked two-rAF observation window. Not physical presentation or all transitions settled.",
+    "traceCategories": "devtools.timeline,blink.user_timing,disabled-by-default-devtools.timeline.frame",
+    "missingPaint": "FAIL; never substitute zero latency",
+    "dataLoss": "Must be explicitly false for every trial"
+  },
+  "environment": {
+    "browser": "One fresh task-owned headless Chrome process and profile; same page navigated between variants",
+    "outerWindow": [
+      1440,
+      1000
+    ],
+    "exactViewport": [
+      1440,
+      900
+    ],
+    "deviceScaleFactor": 1,
+    "mobile": false,
+    "baseUrl": "http://127.0.0.1:8103",
+    "fixtures": "GET-only immutable frozen production source/build replay; no business records or DB",
+    "loaderGate": "Before every trial require the actual window.AdasiLoader API, isActive()===false and pendingCount()===0 for three consecutive rAF observations. Never call reset().",
+    "moduleGate": "Exact navigation, document complete, expected variant/root, Bootstrap, real loader API, fonts ready, and expected frozen app script/stylesheets; checked three discarded warmups then follow.",
+    "concurrency": "Root must explicitly allow the run after its tests/builds/other performance captures finish. No concurrent intentional CPU/browser probes."
+  },
+  "schedule": [
+    {
+      "index": 0,
+      "pair": 0,
+      "batch": 0,
+      "size": 12,
+      "variant": "legacy"
+    },
+    {
+      "index": 1,
+      "pair": 0,
+      "batch": 0,
+      "size": 12,
+      "variant": "designer"
+    },
+    {
+      "index": 2,
+      "pair": 1,
+      "batch": 0,
+      "size": 24,
+      "variant": "legacy"
+    },
+    {
+      "index": 3,
+      "pair": 1,
+      "batch": 0,
+      "size": 24,
+      "variant": "designer"
+    },
+    {
+      "index": 4,
+      "pair": 2,
+      "batch": 0,
+      "size": 64,
+      "variant": "legacy"
+    },
+    {
+      "index": 5,
+      "pair": 2,
+      "batch": 0,
+      "size": 64,
+      "variant": "designer"
+    },
+    {
+      "index": 6,
+      "pair": 3,
+      "batch": 1,
+      "size": 12,
+      "variant": "designer"
+    },
+    {
+      "index": 7,
+      "pair": 3,
+      "batch": 1,
+      "size": 12,
+      "variant": "legacy"
+    },
+    {
+      "index": 8,
+      "pair": 4,
+      "batch": 1,
+      "size": 24,
+      "variant": "designer"
+    },
+    {
+      "index": 9,
+      "pair": 4,
+      "batch": 1,
+      "size": 24,
+      "variant": "legacy"
+    },
+    {
+      "index": 10,
+      "pair": 5,
+      "batch": 1,
+      "size": 64,
+      "variant": "designer"
+    },
+    {
+      "index": 11,
+      "pair": 5,
+      "batch": 1,
+      "size": 64,
+      "variant": "legacy"
+    },
+    {
+      "index": 12,
+      "pair": 6,
+      "batch": 2,
+      "size": 12,
+      "variant": "legacy"
+    },
+    {
+      "index": 13,
+      "pair": 6,
+      "batch": 2,
+      "size": 12,
+      "variant": "designer"
+    },
+    {
+      "index": 14,
+      "pair": 7,
+      "batch": 2,
+      "size": 24,
+      "variant": "legacy"
+    },
+    {
+      "index": 15,
+      "pair": 7,
+      "batch": 2,
+      "size": 24,
+      "variant": "designer"
+    },
+    {
+      "index": 16,
+      "pair": 8,
+      "batch": 2,
+      "size": 64,
+      "variant": "legacy"
+    },
+    {
+      "index": 17,
+      "pair": 8,
+      "batch": 2,
+      "size": 64,
+      "variant": "designer"
+    }
+  ],
+  "fixedThresholdComparison": {
+    "source": "UI-REDESIGN-RESULT/export-column-designer/continuation-20261016/checked-trace-thresholds-frozen.json",
+    "sourceSha256": "0de96ef99521bc94331d37df4da5805bda484e3c14b4e06db413ab4d350c6741",
+    "originalCreated": "2026-10-16T02:24:54.468Z",
+    "method": "B=median p95 of three30-iteration baseline batches; J=range of baseline p95; upper bound B+J. Actual true-readiness mutation and renderer Paint end; start/command phase aligned by rAF. No physical presentation claim.",
+    "values": [
+      {
+        "size": 12,
+        "metric": "ready",
+        "B": 26.387,
+        "J": 3.8150000000000013,
+        "limit": 30.202
+      },
+      {
+        "size": 12,
+        "metric": "paint",
+        "B": 9.48,
+        "J": 2.0360000000000005,
+        "limit": 11.516000000000002
+      },
+      {
+        "size": 12,
+        "metric": "command",
+        "B": 8.215,
+        "J": 2.5699999999999985,
+        "limit": 10.784999999999998
+      },
+      {
+        "size": 12,
+        "metric": "commandPaint",
+        "B": 15.222,
+        "J": 4.302999999999999,
+        "limit": 19.525
+      },
+      {
+        "size": 12,
+        "metric": "openPaint",
+        "B": 32.588,
+        "J": 3.9879999999999995,
+        "limit": 36.576
+      },
+      {
+        "size": 24,
+        "metric": "ready",
+        "B": 19.708,
+        "J": 6.157,
+        "limit": 25.865
+      },
+      {
+        "size": 24,
+        "metric": "paint",
+        "B": 6.617,
+        "J": 1.298,
+        "limit": 7.915
+      },
+      {
+        "size": 24,
+        "metric": "command",
+        "B": 4.603,
+        "J": 3.6510000000000007,
+        "limit": 8.254000000000001
+      },
+      {
+        "size": 24,
+        "metric": "commandPaint",
+        "B": 9.223,
+        "J": 5.088000000000001,
+        "limit": 14.311000000000002
+      },
+      {
+        "size": 24,
+        "metric": "openPaint",
+        "B": 24.812,
+        "J": 10.296000000000003,
+        "limit": 35.108000000000004
+      },
+      {
+        "size": 64,
+        "metric": "ready",
+        "B": 31.36,
+        "J": 10.056000000000001,
+        "limit": 41.416
+      },
+      {
+        "size": 64,
+        "metric": "paint",
+        "B": 11.511,
+        "J": 3.0969999999999995,
+        "limit": 14.607999999999999
+      },
+      {
+        "size": 64,
+        "metric": "command",
+        "B": 9.307,
+        "J": 3.4349999999999987,
+        "limit": 12.741999999999999
+      },
+      {
+        "size": 64,
+        "metric": "commandPaint",
+        "B": 12.711,
+        "J": 5.892000000000001,
+        "limit": 18.603
+      },
+      {
+        "size": 64,
+        "metric": "openPaint",
+        "B": 42.45,
+        "J": 13.298000000000002,
+        "limit": 55.748000000000005
+      }
+    ]
+  },
+  "pairedValidation": {
+    "method": "Diagnostic validation only: paired legacy B=median of its three batch p95s and J=range; designer median p95 compared with B+J. This never replaces or relaxes the checked frozen limits.",
+    "significance": "If either fixed thresholds or paired diagnostic fails, report performance gate open; preserve all individual samples and failed rows.",
+    "drift": "Report paired legacy change from checked B and whether absolute change exceeds checked J, without recomputing checked thresholds."
+  },
+  "stopPolicy": "Exactly this 18-trial schedule once. No automatic retry, threshold tuning, product edit, or repeated run until green. Any observation/trace/source/loader failure stops and records incomplete evidence.",
+  "inputs": [
+    {
+      "file": "UI-REDESIGN-RESULT/export-column-designer/continuation-20261016/cdp-browser-probe.mjs",
+      "bytes": 24610,
+      "sha256": "2a66ac917e82cc057d58c15a49b1dd5a6b5baa3fa64628c17d37b89d21ec3032"
+    },
+    {
+      "file": "UI-REDESIGN-RESULT/export-column-designer/continuation-20261016/checked-trace-thresholds-frozen.json",
+      "bytes": 2629,
+      "sha256": "0de96ef99521bc94331d37df4da5805bda484e3c14b4e06db413ab4d350c6741"
+    },
+    {
+      "file": "UI-REDESIGN-RESULT/export-column-designer/continuation-20261016/counterbalanced-trace.mjs",
+      "bytes": 22692,
+      "sha256": "853531c9c53d19f3dbee556d04b7871331b53796e6a6e1492d222f6ad9e5de97"
+    },
+    {
+      "file": "UI-REDESIGN-RESULT/export-column-designer/continuation-20261016/frozen/designer/public/build/assets/app-ChQwB2jD.css",
+      "bytes": 150891,
+      "sha256": "7bf6ae870b7fa31fe388ba749939a9aca07951d1de77715627773f70ae1316f6"
+    },
+    {
+      "file": "UI-REDESIGN-RESULT/export-column-designer/continuation-20261016/frozen/designer/public/build/assets/app-IkKtPNrf.js",
+      "bytes": 180004,
+      "sha256": "87f088c95e965a013aaa11b8d3b20f5f6c2c87d851329db6c994e3bdf67ef58e"
+    },
+    {
+      "file": "UI-REDESIGN-RESULT/export-column-designer/continuation-20261016/frozen/designer/public/build/assets/cally-kj_bRPgQ.js",
+      "bytes": 24588,
+      "sha256": "6615aaec409e156a63c7e823599138891c25521e659a2a61edbed8e620f2bfad"
+    },
+    {
+      "file": "UI-REDESIGN-RESULT/export-column-designer/continuation-20261016/frozen/designer/public/build/assets/local-po-gr-table-BnthzBmv.js",
+      "bytes": 4033,
+      "sha256": "e8082f8b0b28ed7d5ad623ece2dab67e5ae3bb0048ae6e09cbc622c967dd077f"
+    },
+    {
+      "file": "UI-REDESIGN-RESULT/export-column-designer/continuation-20261016/frozen/designer/public/build/assets/local-procurement-import-BQ-mkGYh.js",
+      "bytes": 24711,
+      "sha256": "795c897a49e3f7e7262f105e4a08c12ef8a9772445db7d943367f780e0b0bd5d"
+    },
+    {
+      "file": "UI-REDESIGN-RESULT/export-column-designer/continuation-20261016/frozen/designer/public/build/assets/registration-receipt-bdzplG4C.js",
+      "bytes": 1124,
+      "sha256": "fef195260742c513f8b2c01b1d4447bb7611307c65e1efe6a844aca9963f334c"
+    },
+    {
+      "file": "UI-REDESIGN-RESULT/export-column-designer/continuation-20261016/frozen/designer/public/build/manifest.json",
+      "bytes": 1424,
+      "sha256": "0e8e7bab11ddb32f8a4fbadeeeda13bb501e6709978bf043a7af6eb053279539"
+    },
+    {
+      "file": "UI-REDESIGN-RESULT/export-column-designer/continuation-20261016/frozen/legacy/public/build/assets/app-D_TWodPa.js",
+      "bytes": 164141,
+      "sha256": "df0d2fe679bfc4b6866f5633145c49b3cedbc6a714ebf91c9f57515ea62a3789"
+    },
+    {
+      "file": "UI-REDESIGN-RESULT/export-column-designer/continuation-20261016/frozen/legacy/public/build/assets/app-yK-ELWVK.css",
+      "bytes": 146430,
+      "sha256": "6ced584504954e9e543a255182ec5b1c480f6edd9c63b72eed5aad1d9c506021"
+    },
+    {
+      "file": "UI-REDESIGN-RESULT/export-column-designer/continuation-20261016/frozen/legacy/public/build/assets/cally-kj_bRPgQ.js",
+      "bytes": 24588,
+      "sha256": "6615aaec409e156a63c7e823599138891c25521e659a2a61edbed8e620f2bfad"
+    },
+    {
+      "file": "UI-REDESIGN-RESULT/export-column-designer/continuation-20261016/frozen/legacy/public/build/assets/local-po-gr-table-BnthzBmv.js",
+      "bytes": 4033,
+      "sha256": "e8082f8b0b28ed7d5ad623ece2dab67e5ae3bb0048ae6e09cbc622c967dd077f"
+    },
+    {
+      "file": "UI-REDESIGN-RESULT/export-column-designer/continuation-20261016/frozen/legacy/public/build/assets/local-procurement-import-CDqZ2mpw.js",
+      "bytes": 24711,
+      "sha256": "7bda3ee83a569eb55622338af03dae07a240343949c876beea6f94f33b497da1"
+    },
+    {
+      "file": "UI-REDESIGN-RESULT/export-column-designer/continuation-20261016/frozen/legacy/public/build/assets/registration-receipt-bdzplG4C.js",
+      "bytes": 1124,
+      "sha256": "fef195260742c513f8b2c01b1d4447bb7611307c65e1efe6a844aca9963f334c"
+    },
+    {
+      "file": "UI-REDESIGN-RESULT/export-column-designer/continuation-20261016/frozen/legacy/public/build/manifest.json",
+      "bytes": 1424,
+      "sha256": "e086ac8aa017d381c8eec4a64adb88f1689524a61a9f8925c4a8d59d9883e36b"
+    },
+    {
+      "file": "UI-REDESIGN-RESULT/export-column-designer/continuation-20261016/legacy-en.html",
+      "bytes": 31681,
+      "sha256": "80606bfac695eb5ef9391421dfcf31ca654960a781cce8299d123c8602ee7262"
+    },
+    {
+      "file": "UI-REDESIGN-RESULT/export-column-designer/continuation-20261016/serve-frozen.mjs",
+      "bytes": 4440,
+      "sha256": "6b86cff4db80413931c12210cba59adbc4fd50a624cc3fa66a4ab10f911be0f6"
+    },
+    {
+      "file": "UI-REDESIGN-RESULT/export-column-designer/continuation-20261016/trace-acceptance-checked.mjs",
+      "bytes": 9613,
+      "sha256": "f1bd3f957065452a7c7f40249025485b67d30267254196b41ba1cab609d0b664"
+    },
+    {
+      "file": "UI-REDESIGN-RESULT/export-column-designer/continuation-20261016/vendor/bootstrap.css",
+      "bytes": 232803,
+      "sha256": "3c8f27e6009ccfd710a905e6dcf12d0ee3c6f2ac7da05b0572d3e0d12e736fc8"
+    },
+    {
+      "file": "UI-REDESIGN-RESULT/export-column-designer/continuation-20261016/vendor/bootstrap.js",
+      "bytes": 80721,
+      "sha256": "0833b2e9c3a26c258476c46266e6877fc75218625162e0460be9a3a098a61c6c"
+    },
+    {
+      "file": "UI-REDESIGN-RESULT/export-column-designer/fixtures/purchasing.po-en.html",
+      "bytes": 41068,
+      "sha256": "8472fc0b249bdff3e7e95e0f7e672e83266a9e1fb15cead169387a6fe2cb092c"
+    },
+    {
+      "file": "UI-REDESIGN-RESULT/export-column-designer/fixtures/purchasing.po-en.json",
+      "bytes": 1408,
+      "sha256": "df944aa6fd37dac47af426d3122e556f5a874394681265557107bb46b820dc5b"
+    },
+    {
+      "file": "UI-REDESIGN-RESULT/export-column-designer/fixtures/purchasing.quotations-en.json",
+      "bytes": 2621,
+      "sha256": "2fd5add0c70027fe7146d50de366ab86f59b4cd33095cb77f0fba6dd3a58d03e"
+    },
+    {
+      "file": "lang/en/exports.php",
+      "bytes": 12181,
+      "sha256": "5de7acd7d5cde8908539c47df860e716246522e7cfcbc656c01d270c47f46516"
+    },
+    {
+      "file": "lang/id/exports.php",
+      "bytes": 12407,
+      "sha256": "1f12e3271229d4511b964fe7ecc8925af009fc959b92fba3047ad7e8b16a0fc0"
+    },
+    {
+      "file": "resources/css/app.css",
+      "bytes": 138270,
+      "sha256": "dbd0da36b639dc9e3761493e16e1765f7574ea7164ce04b12d65f1daf00945e3"
+    },
+    {
+      "file": "resources/js/advanced-export.js",
+      "bytes": 18907,
+      "sha256": "45ce65b211808f94961655976d44ed394561712fd8753faa3b0435a2955dab54"
+    },
+    {
+      "file": "resources/js/export-column-designer.js",
+      "bytes": 29676,
+      "sha256": "58cecabc37bd1af11365ce43d32c79d85fed29f417c1b15cc94cdd5cbb8be2c9"
+    },
+    {
+      "file": "resources/views/components/export/advanced-modal.blade.php",
+      "bytes": 16064,
+      "sha256": "12d3061012d9e46bca260705b1ef0da24513ea564bceefe8055591b3261a65d6"
+    },
+    {
+      "file": "tests/Support/export-column-designer-browser-measure.js",
+      "bytes": 5380,
+      "sha256": "5d8414e9a9b8f4ef99a8dda417c43054d9d5709f68fa43c2272028574cb657cb"
+    }
+  ]
+}

@@ -1,0 +1,428 @@
+<script>
+$(function () {
+    const materialModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('materialModal'));
+    const ruleModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('ruleModal'));
+    const materialStoreUrl = @json(route($masterRoutePrefix.'.material-masters.store'));
+    const materialUpdateUrl = @json(route($masterRoutePrefix.'.material-masters.update', 0));
+    const materialStatusUrl = @json(route($masterRoutePrefix.'.material-masters.status', 0));
+    const ruleStoreUrl = @json(route($masterRoutePrefix.'.hs-code-rules.store'));
+    const ruleUpdateUrl = @json(route($masterRoutePrefix.'.hs-code-rules.update', 0));
+    const ruleStatusUrl = @json(route($masterRoutePrefix.'.hs-code-rules.status', 0));
+    const materialDestroyUrl = @json(route($masterRoutePrefix.'.material-masters.destroy', 0));
+    const ruleDestroyUrl = @json(route($masterRoutePrefix.'.hs-code-rules.destroy', 0));
+    const csrfToken = @json(csrf_token());
+    const oldContext = @json(old('form_context'));
+    const oldInput = @json(old());
+    const shapeDimensions = {
+        Flat: ['thickness', 'width', 'length'],
+        Round: ['d_outer', 'length'],
+        Hollow: ['d_inner', 'd_outer', 'length']
+    };
+    let qualityLoaded = false;
+
+    const materialsTable = $('#materialsTable').DataTable({
+        processing: true,
+        serverSide: true,
+        dom: 'rtip',
+        ajax: {
+            url: @json(route($masterRoutePrefix.'.material-masters.data')),
+            data: (data) => Object.assign(data, {
+                status: $('#materialStatusFilter').val(),
+                category: $('#materialCategoryFilter').val(),
+                density: $('#materialDensityFilter').val(),
+                manufacturer: $('#materialManufacturerFilter').val()
+            })
+        },
+        columns: [
+            { data: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-center text-muted' },
+            { data: 'material_code', name: 'material_code', className: 'font-monospace fw-semibold text-primary text-nowrap' },
+            { data: 'raw_category', name: 'raw_category', defaultContent: '-' },
+            { data: 'hs_category_label', name: 'hs_category', defaultContent: '-' },
+            { data: 'density_profile_label', name: 'density_profile' },
+            { data: 'manufacturer_scope_label', name: 'manufacturer_scope' },
+            { data: 'status_badge', name: 'is_active', searchable: false },
+            { data: 'source_display', name: 'source_sheet', searchable: false },
+            { data: 'updated_date', name: 'updated_at', className: 'text-nowrap' },
+            { data: 'action', orderable: false, searchable: false, className: 'text-end text-nowrap' }
+        ],
+
+        order: []
+    });
+
+    const rulesTable = $('#rulesTable').DataTable({
+        processing: true,
+        serverSide: true,
+        dom: 'rtip',
+        ajax: {
+            url: @json(route($masterRoutePrefix.'.hs-code-rules.data')),
+            data: (data) => Object.assign(data, {
+                status: $('#ruleStatusFilter').val(),
+                category: $('#ruleCategoryFilter').val(),
+                shape: $('#ruleShapeFilter').val()
+            })
+        },
+        columns: [
+            { data: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-center text-muted' },
+            { data: 'hs_code', name: 'hs_code', className: 'font-monospace fw-semibold text-primary text-nowrap' },
+            { data: 'material_category_label', name: 'material_category' },
+            { data: 'shape_label', name: 'shape' },
+            { data: 'conditions_display', orderable: false, searchable: false },
+            { data: 'priority', name: 'priority', className: 'text-center' },
+            { data: 'status_badge', name: 'status', searchable: false },
+            { data: 'source_display', orderable: false, searchable: false },
+            { data: 'updated_date', name: 'updated_at', className: 'text-nowrap' },
+            { data: 'action', orderable: false, searchable: false, className: 'text-end text-nowrap' }
+        ],
+
+        order: []
+    });
+
+    $('#materialStatusFilter, #materialCategoryFilter, #materialDensityFilter, #materialManufacturerFilter').on('change', () => materialsTable.ajax.reload());
+    $('#ruleStatusFilter, #ruleCategoryFilter, #ruleShapeFilter').on('change', () => rulesTable.ajax.reload());
+
+    let materialSearchTimer;
+    $('#materialSearch').on('input', function () {
+        clearTimeout(materialSearchTimer);
+        const value = this.value;
+        materialSearchTimer = setTimeout(() => materialsTable.search(value).draw(), 250);
+    });
+    let ruleSearchTimer;
+    $('#ruleSearch').on('input', function () {
+        clearTimeout(ruleSearchTimer);
+        const value = this.value;
+        ruleSearchTimer = setTimeout(() => rulesTable.search(value).draw(), 250);
+    });
+    $('#resetMaterialFilters').on('click', function () {
+        $('#materialSearch, #materialStatusFilter, #materialCategoryFilter, #materialDensityFilter, #materialManufacturerFilter').val('');
+        materialsTable.search('').ajax.reload();
+    });
+    $('#resetRuleFilters').on('click', function () {
+        $('#ruleSearch, #ruleStatusFilter, #ruleCategoryFilter, #ruleShapeFilter').val('');
+        rulesTable.search('').ajax.reload();
+    });
+
+    function setMethod($input, method) {
+        if (method) {
+            $input.attr('name', '_method').val(method);
+        } else {
+            $input.removeAttr('name').val('');
+        }
+    }
+
+    function resetMaterialForm() {
+        document.getElementById('materialForm').reset();
+        $('#materialForm').attr('action', materialStoreUrl);
+        setMethod($('#materialFormMethod'), null);
+        $('#materialRecordId').val('');
+        $('#materialModalTitle').text(@json(__('admin.copy.add_material')));
+        $('#materialActive').prop('checked', true);
+        $('#materialDensity').val('steel');
+        $('#materialManufacturer').val('unknown');
+    }
+
+    function editMaterial(material) {
+        resetMaterialForm();
+        $('#materialForm').attr('action', materialUpdateUrl.replace('/0', `/${material.id}`));
+        setMethod($('#materialFormMethod'), 'PUT');
+        $('#materialRecordId').val(material.id);
+        $('#materialModalTitle').text(@json(__('admin.copy.edit_material')));
+        $('#materialCode').val(material.material_code || '');
+        $('#materialRawCategory').val(material.raw_category || '');
+        $('#materialHsCategory').val(material.hs_category || '');
+        $('#materialDensity').val(material.density_profile || 'steel');
+        $('#materialManufacturer').val(material.manufacturer_scope || 'unknown');
+        $('#materialActive').prop('checked', material.is_active === true || material.is_active === 1);
+        materialModal.show();
+    }
+
+    $('#btnAddMaterial').on('click', () => { resetMaterialForm(); materialModal.show(); });
+    $(document).on('click', '.btn-edit-material', function () { editMaterial(JSON.parse($(this).attr('data-material'))); });
+
+    function refreshQuality() {
+        qualityLoaded = false;
+        $('#qualityLoading').removeClass('d-none');
+        $('#qualityContent').addClass('d-none');
+        loadQuality();
+    }
+
+    $(document).on('click', '.btn-toggle-material', function () {
+        const button = $(this);
+        $.ajax({
+            url: materialStatusUrl.replace('/0/', `/${button.data('id')}/`),
+            method: 'POST',
+            data: { _token: csrfToken, _method: 'PATCH', is_active: button.data('active') }
+        }).done(() => {
+            materialsTable.ajax.reload(null, false);
+            refreshQuality();
+            AdasiToast.success(@json(__('admin.copy.material_status_updated')));
+        })
+          .fail(showAjaxError);
+    });
+
+    // Q3 guarded hard delete. A referenced record is refused by the server
+    // (422, audited); offer deactivation instead.
+    function deleteMasterRecord(url, name, table, deactivate) {
+        AdasiAlert.confirm({
+            title: @json(__('materials.master_data.delete_confirm_title')),
+            text: name,
+            confirmText: @json(__('materials.master_data.delete')),
+            confirmTone: 'danger'
+        }, true).then((result) => {
+            if (!result.isConfirmed) return;
+            $.ajax({ url, method: 'POST', data: { _token: csrfToken, _method: 'DELETE' } })
+                .done((response) => {
+                    table.ajax.reload(null, false);
+                    refreshQuality();
+                    AdasiToast.success(response.message);
+                })
+                .fail((xhr) => {
+                    if (xhr.status !== 422 || !xhr.responseJSON?.message) {
+                        showAjaxError(xhr);
+                        return;
+                    }
+                    AdasiAlert.confirm({
+                        title: @json(__('materials.master_data.delete_refused_title')),
+                        text: xhr.responseJSON.message,
+                        confirmText: @json(__('materials.master_data.deactivate_instead')),
+                        confirmTone: 'primary'
+                    }).then((choice) => { if (choice.isConfirmed) deactivate(); });
+                });
+        });
+    }
+
+    $(document).on('click', '.btn-delete-material', function () {
+        const button = $(this);
+        deleteMasterRecord(materialDestroyUrl.replace(/\/0$/, `/${button.data('id')}`), String(button.data('name')), materialsTable, () => {
+            $.ajax({ url: materialStatusUrl.replace('/0/', `/${button.data('id')}/`), method: 'POST', data: { _token: csrfToken, _method: 'PATCH', is_active: 0 } })
+                .done(() => { materialsTable.ajax.reload(null, false); refreshQuality(); AdasiToast.success(@json(__('admin.copy.material_status_updated'))); })
+                .fail(showAjaxError);
+        });
+    });
+
+    $(document).on('click', '.btn-delete-rule', function () {
+        const button = $(this);
+        deleteMasterRecord(ruleDestroyUrl.replace(/\/0$/, `/${button.data('id')}`), String(button.data('name')), rulesTable, () => {
+            $.ajax({ url: ruleStatusUrl.replace('/0/', `/${button.data('id')}/`), method: 'POST', data: { _token: csrfToken, _method: 'PATCH', status: 'inactive' } })
+                .done(() => { rulesTable.ajax.reload(null, false); refreshQuality(); AdasiToast.success(@json(__('admin.copy.hs_code_rule_status_updated'))); })
+                .fail(showAjaxError);
+        });
+    });
+
+    function resetRuleConditions() {
+        $('.rule-condition-row').each(function () {
+            $(this).find('.condition-min, .condition-max').val('');
+            $(this).find('.condition-min-inclusive, .condition-max-inclusive').prop('checked', true);
+        });
+    }
+
+    function applyRuleShape() {
+        const relevant = shapeDimensions[$('#ruleShape').val()] || [];
+        $('.rule-condition-row').each(function () {
+            const enabled = relevant.includes($(this).data('dimension'));
+            $(this).toggleClass('d-none', !enabled);
+            if (!enabled) {
+                $(this).find('.condition-min, .condition-max').val('');
+            }
+        });
+    }
+
+    function populateConditions(conditions) {
+        resetRuleConditions();
+        Object.entries(conditions || {}).forEach(([dimension, bounds]) => {
+            const $row = $(`.rule-condition-row[data-dimension="${dimension}"]`);
+            $row.find('.condition-min').val(bounds.min ?? '');
+            $row.find('.condition-max').val(bounds.max ?? '');
+            $row.find('.condition-min-inclusive').prop('checked', bounds.min_inclusive !== false);
+            $row.find('.condition-max-inclusive').prop('checked', bounds.max_inclusive !== false);
+        });
+    }
+
+    function resetRuleForm() {
+        document.getElementById('ruleForm').reset();
+        $('#ruleForm').attr('action', ruleStoreUrl);
+        setMethod($('#ruleFormMethod'), null);
+        $('#ruleRecordId').val('');
+        $('#ruleModalTitle').text(@json(__('admin.copy.add_hs_code_rule')));
+        $('#rulePriority').val(100);
+        $('#ruleStatus').val('active');
+        resetRuleConditions();
+        applyRuleShape();
+    }
+
+    function editRule(rule) {
+        resetRuleForm();
+        $('#ruleForm').attr('action', ruleUpdateUrl.replace('/0', `/${rule.id}`));
+        setMethod($('#ruleFormMethod'), 'PUT');
+        $('#ruleRecordId').val(rule.id);
+        $('#ruleModalTitle').text(@json(__('admin.copy.edit_hs_code_rule')));
+        $('#ruleHsCode').val(rule.hs_code || '');
+        $('#ruleCategory').val(rule.material_category);
+        $('#ruleShape').val(rule.shape);
+        $('#rulePriority').val(rule.priority || 100);
+        $('#ruleStatus').val(rule.status || 'inactive');
+        $('#ruleNotes').val(rule.notes || '');
+        applyRuleShape();
+        populateConditions(rule.conditions || {});
+        ruleModal.show();
+    }
+
+    $('#btnAddRule').on('click', () => { resetRuleForm(); ruleModal.show(); });
+    $('#ruleShape').on('change', applyRuleShape);
+    $(document).on('click', '.btn-edit-rule', function () { editRule(JSON.parse($(this).attr('data-rule'))); });
+
+    $('#ruleForm').on('submit', function (event) {
+        const conditions = {};
+        $('.rule-condition-row:not(.d-none)').each(function () {
+            const min = $(this).find('.condition-min').val();
+            const max = $(this).find('.condition-max').val();
+            if (min === '' && max === '') return;
+            conditions[$(this).data('dimension')] = {
+                min: min === '' ? null : Number(min),
+                min_inclusive: $(this).find('.condition-min-inclusive').is(':checked'),
+                max: max === '' ? null : Number(max),
+                max_inclusive: $(this).find('.condition-max-inclusive').is(':checked')
+            };
+        });
+        if (Object.keys(conditions).length === 0) {
+            event.preventDefault();
+            $('#ruleConditionError').removeClass('d-none').trigger('focus');
+            return;
+        }
+        $('#ruleConditionError').addClass('d-none');
+        $('#ruleConditionsJson').val(JSON.stringify(conditions));
+        $(this).find('button[type="submit"]').prop('disabled', true).find('.spinner-border').removeClass('d-none');
+    });
+
+    $('#materialForm').on('submit', function () {
+        $(this).find('button[type="submit"]').prop('disabled', true).find('.spinner-border').removeClass('d-none');
+    });
+
+    $(document).on('click', '.btn-toggle-rule', function () {
+        const button = $(this);
+        $.ajax({
+            url: ruleStatusUrl.replace('/0/', `/${button.data('id')}/`),
+            method: 'POST',
+            data: { _token: csrfToken, _method: 'PATCH', status: button.data('status') }
+        }).done(() => {
+            rulesTable.ajax.reload(null, false);
+            refreshQuality();
+            AdasiToast.success(@json(__('admin.copy.hs_code_rule_status_updated')));
+        })
+          .fail(showAjaxError);
+    });
+
+    function showAjaxError(xhr) {
+        const errors = xhr.responseJSON?.errors || {};
+        const first = Object.values(errors)[0];
+        AdasiToast.error(Array.isArray(first) ? first[0] : (first || xhr.responseJSON?.message || @json(__('admin.copy.request_failed'))));
+    }
+
+    function loadQuality() {
+        if (qualityLoaded) return;
+        qualityLoaded = true;
+        $.getJSON(@json(route($masterRoutePrefix.'.master-data-quality.index'))).done((report) => {
+            const summary = report.summary || {};
+            const attention = report.needs_attention || {};
+            const referenceNotes = report.reference_notes || {};
+            $('#qualityMaterials').text(summary.materials ?? 0);
+            $('#qualityMapped').text(summary.materials_with_hs_mapping ?? 0);
+            $('#qualityNeedsMapping').text(summary.materials_needing_hs_mapping ?? 0);
+            $('#qualityActiveRules').text(summary.active_hs_rules ?? 0);
+            $('#qualityNeedsReview').text(summary.rules_needing_review ?? 0);
+            renderTagList('#unmappedMaterials', attention.materials_without_hs_mapping, @json(__('admin.copy.all_materials_have_an_hs_mapping')));
+            renderTagList('#categoriesWithoutRules', attention.categories_without_active_hs_rules, @json(__('admin.copy.every_mapped_category_has_an_active_hs_rule')));
+            renderRulesNeedingReview(attention.rules_needing_review || []);
+
+            const duplicateCoverage = referenceNotes.duplicate_rule_coverage || {};
+            $('#duplicateRuleCoverage').text(duplicateCoverage.message || @json(__('admin.copy.no_duplicate_rule_coverage_was_found')));
+            renderInactiveRulesForReference(referenceNotes.inactive_rules_kept_for_reference || []);
+            renderTagList('#unusedRuleCategories', referenceNotes.rule_categories_not_used_by_materials, @json(__('admin.copy.all_active_rule_categories_are_used_by_current_materials')));
+            renderTagList('#referenceOnlyMaterials', referenceNotes.reference_only_materials, 'None.');
+            $('#qualityLoading').addClass('d-none');
+            $('#qualityError').addClass('d-none');
+            $('#qualityContent').removeClass('d-none');
+        }).fail(() => {
+            qualityLoaded = false;
+            $('#qualityLoading').addClass('d-none');
+            $('#qualityContent').removeClass('d-none');
+            $('#qualityError').removeClass('d-none');
+        });
+    }
+
+    function renderTagList(selector, values, emptyMessage) {
+        const $container = $(selector).empty();
+        if (!Array.isArray(values) || values.length === 0) {
+            $('<span class="text-muted">').text(emptyMessage).appendTo($container);
+            return;
+        }
+
+        const $list = $('<ul class="list-unstyled mb-0 d-grid gap-1">');
+        values.forEach((value) => $('<li class="font-monospace small">').text(value).appendTo($list));
+        $list.appendTo($container);
+    }
+
+    function renderRulesNeedingReview(items) {
+        const $container = $('#rulesNeedingReview').empty();
+        if (!items.length) {
+            $('<div class="text-muted">').text(@json(__('admin.copy.no_active_rules_need_review'))).appendTo($container);
+            return;
+        }
+
+        items.forEach((item) => {
+            const $item = $('<div class="border-top pt-3 mt-3">');
+            $('<div class="fw-semibold">').text(`${item.category} / ${item.shape}`).appendTo($item);
+            $('<div class="text-muted mt-1">').text(item.message).appendTo($item);
+            $('<div class="mt-2">').append($('<span class="small fw-semibold me-2">').text(@json(__('admin.copy.hs_codes'))), document.createTextNode((item.hs_codes || []).join(', '))).appendTo($item);
+            $item.appendTo($container);
+        });
+    }
+
+    function renderInactiveRulesForReference(items) {
+        const $container = $('#inactiveRulesForReference').empty();
+        if (!items.length) {
+            $('<span class="text-muted">').text(@json(__('admin.copy.none'))).appendTo($container);
+            return;
+        }
+
+        const $list = $('<ul class="list-unstyled mb-0">');
+        items.forEach((item) => $('<li class="mb-2">')
+            .append($('<span class="font-monospace me-1">').text(item.hs_code), document.createTextNode(item.note ? `— ${item.note}` : '— ' + @js(__('common.final_review.inactive_reference'))))
+            .appendTo($list));
+        $list.appendTo($container);
+    }
+
+    $('button[data-bs-target="#data-quality"]').on('shown.bs.tab', loadQuality);
+    $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function () { history.replaceState(null, '', $(this).attr('data-bs-target')); });
+
+    if (location.hash) {
+        const trigger = document.querySelector(`[data-bs-target="${location.hash}"]`);
+        if (trigger) bootstrap.Tab.getOrCreateInstance(trigger).show();
+    }
+
+    if (oldContext === 'material') {
+        if (oldInput.record_id) {
+            $('#materialForm').attr('action', materialUpdateUrl.replace('/0', `/${oldInput.record_id}`));
+            setMethod($('#materialFormMethod'), 'PUT');
+            $('#materialModalTitle').text(@json(__('admin.copy.edit_material')));
+        }
+        $('#materialHsCategory').val(oldInput.hs_category || '');
+        $('#materialDensity').val(oldInput.density_profile || 'steel');
+        $('#materialManufacturer').val(oldInput.manufacturer_scope || 'unknown');
+        $('#materialActive').prop('checked', String(oldInput.is_active) === '1');
+        materialModal.show();
+    } else if (oldContext === 'rule') {
+        if (oldInput.record_id) {
+            $('#ruleForm').attr('action', ruleUpdateUrl.replace('/0', `/${oldInput.record_id}`));
+            setMethod($('#ruleFormMethod'), 'PUT');
+            $('#ruleModalTitle').text(@json(__('admin.copy.edit_hs_code_rule')));
+        }
+        $('#ruleCategory').val(oldInput.material_category);
+        $('#ruleShape').val(oldInput.shape);
+        $('#rulePriority').val(oldInput.priority || 100);
+        $('#ruleStatus').val(oldInput.status || 'inactive');
+        applyRuleShape();
+        try { populateConditions(JSON.parse(oldInput.conditions_json || '{}')); } catch (error) {}
+        ruleModal.show();
+    }
+});
+</script>

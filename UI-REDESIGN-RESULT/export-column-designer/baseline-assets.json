@@ -1,0 +1,38 @@
+[
+  {
+    "entry": "node_modules/cally/dist/cally.js",
+    "file": "assets/cally-kj_bRPgQ.js",
+    "bytes": 24588,
+    "gzip": 9747
+  },
+  {
+    "entry": "resources/css/app.css",
+    "file": "assets/app-oxZ5b9pC.css",
+    "bytes": 146364,
+    "gzip": 25501
+  },
+  {
+    "entry": "resources/js/app.js",
+    "file": "assets/app-D_TWodPa.js",
+    "bytes": 164141,
+    "gzip": 50705
+  },
+  {
+    "entry": "resources/js/local-po-gr-table.js",
+    "file": "assets/local-po-gr-table-BnthzBmv.js",
+    "bytes": 4033,
+    "gzip": 1548
+  },
+  {
+    "entry": "resources/js/local-procurement-import.js",
+    "file": "assets/local-procurement-import-CDqZ2mpw.js",
+    "bytes": 24711,
+    "gzip": 7999
+  },
+  {
+    "entry": "resources/js/registration-receipt.js",
+    "file": "assets/registration-receipt-bdzplG4C.js",
+    "bytes": 1124,
+    "gzip": 507
+  }
+]

@@ -20,11 +20,15 @@ use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
+use Tests\Support\AttachesShipmentMtc;
+use Tests\Support\NativeFileFixtures;
 use Tests\TestCase;
 
 class ShipmentAndPartialDeliveryTest extends TestCase
 {
+    use AttachesShipmentMtc;
     use RefreshDatabase;
 
     private User $purchasing;
@@ -44,6 +48,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Storage::fake('private');
 
         $this->purchasing = User::factory()->create(['role' => 'purchasing', 'is_active' => true]);
         $this->supplierA = User::factory()->create(['role' => 'supplier', 'is_active' => true]);
@@ -129,7 +134,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
 
         $shipment = $this->shipmentService->createDraft($this->supplierA);
 
-        $submitted = $this->shipmentService->submitShipment($shipment, [
+        $submitted = $this->submitWithMtc($shipment, [
             'items' => [
                 [
                     'purchase_order_id' => $poA->id,
@@ -163,7 +168,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
 
         $shipment = $this->shipmentService->createDraft($this->supplierA);
 
-        $submitted = $this->shipmentService->submitShipment($shipment, [
+        $submitted = $this->submitWithMtc($shipment, [
             'items' => [
                 [
                     'purchase_order_id' => $po1->id,
@@ -203,7 +208,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Multi-supplier shipments are forbidden');
 
-        $this->shipmentService->submitShipment($shipment, [
+        $this->submitWithMtc($shipment, [
             'items' => [
                 [
                     'purchase_order_id' => $poA->id,
@@ -229,7 +234,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
 
         // Shipment 1: 8 pcs
         $shp1 = $this->shipmentService->createDraft($this->supplierA);
-        $this->shipmentService->submitShipment($shp1, [
+        $this->submitWithMtc($shp1, [
             'items' => [
                 ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_qty' => 8, 'actual_weight_kg' => 8.0],
             ],
@@ -242,7 +247,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
 
         // Shipment 2: 7 pcs
         $shp2 = $this->shipmentService->createDraft($this->supplierA);
-        $this->shipmentService->submitShipment($shp2, [
+        $this->submitWithMtc($shp2, [
             'items' => [
                 ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_qty' => 7, 'actual_weight_kg' => 7.0],
             ],
@@ -254,7 +259,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
 
         // Shipment 3: 5 pcs (remaining fulfilled)
         $shp3 = $this->shipmentService->createDraft($this->supplierA);
-        $this->shipmentService->submitShipment($shp3, [
+        $this->submitWithMtc($shp3, [
             'items' => [
                 ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_qty' => 5, 'actual_weight_kg' => 5.0],
             ],
@@ -274,7 +279,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
 
         // Shipment 1: 15 pcs
         $shp1 = $this->shipmentService->createDraft($this->supplierA);
-        $this->shipmentService->submitShipment($shp1, [
+        $this->submitWithMtc($shp1, [
             'items' => [
                 ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_qty' => 15, 'actual_weight_kg' => 15.0],
             ],
@@ -286,7 +291,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('exceeds remaining ordered');
 
-        $this->shipmentService->submitShipment($shp2, [
+        $this->submitWithMtc($shp2, [
             'items' => [
                 ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_qty' => 6, 'actual_weight_kg' => 6.0],
             ],
@@ -299,7 +304,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
         $qItem = $po->awards->first()->quotationItem;
 
         $shp1 = $this->shipmentService->createDraft($this->supplierA);
-        $this->shipmentService->submitShipment($shp1, [
+        $this->submitWithMtc($shp1, [
             'items' => [
                 ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_qty' => 15, 'actual_weight_kg' => 15.0],
             ],
@@ -326,7 +331,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
         $shpB = $this->shipmentService->createDraft($this->supplierA);
 
         // Submit A succeeds (allocated 8 pcs, remaining 2 pcs)
-        $this->shipmentService->submitShipment($shpA, [
+        $this->submitWithMtc($shpA, [
             'items' => [
                 ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_qty' => 8, 'actual_weight_kg' => 8.0],
             ],
@@ -336,7 +341,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('exceeds remaining ordered');
 
-        $this->shipmentService->submitShipment($shpB, [
+        $this->submitWithMtc($shpB, [
             'items' => [
                 ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_qty' => 7, 'actual_weight_kg' => 7.0],
             ],
@@ -350,6 +355,8 @@ class ShipmentAndPartialDeliveryTest extends TestCase
         $items = [['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_qty' => 10, 'actual_weight_kg' => 10.0]];
         $first = $this->shipmentService->createDraft($this->supplierA, ['items' => $items]);
         $second = $this->shipmentService->createDraft($this->supplierA, ['items' => $items]);
+        $this->attachValidatedMtc($first);
+        $this->attachValidatedMtc($second);
         $queries = [];
         DB::listen(function ($query) use (&$queries): void {
             $queries[] = strtolower($query->sql);
@@ -384,7 +391,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('does not belong to Purchase Order');
 
-        $this->shipmentService->submitShipment($shp, [
+        $this->submitWithMtc($shp, [
             'items' => [
                 ['purchase_order_id' => $poA->id, 'quotation_item_id' => $qItemB->id, 'shipped_qty' => 5, 'actual_weight_kg' => 5.0],
             ],
@@ -402,7 +409,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
 
         $this->expectException(InvalidArgumentException::class);
 
-        $this->shipmentService->submitShipment($shp, [
+        $this->submitWithMtc($shp, [
             'items' => [
                 ['purchase_order_id' => $poA->id, 'quotation_item_id' => $qItemB->id, 'shipped_qty' => 5, 'actual_weight_kg' => 5.0],
             ],
@@ -454,7 +461,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
         $this->expectExceptionMessage('Duplicate item entries detected');
 
         // Payload with 5 + 5 for an 8 unit remaining limit
-        $this->shipmentService->submitShipment($shp, [
+        $this->submitWithMtc($shp, [
             'items' => [
                 ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_qty' => 5, 'actual_weight_kg' => 5.0],
                 ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_qty' => 5, 'actual_weight_kg' => 5.0],
@@ -548,7 +555,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
 
         // Submit 5 pcs -> partially_shipped
         $shp1 = $this->shipmentService->createDraft($this->supplierA);
-        $this->shipmentService->submitShipment($shp1, [
+        $this->submitWithMtc($shp1, [
             'items' => [
                 ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_qty' => 5, 'actual_weight_kg' => 5.0],
             ],
@@ -563,7 +570,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
 
         // Submit remaining 15 pcs -> fully_shipped (total active = 20 pcs, but only 5 arrived)
         $shp2 = $this->shipmentService->createDraft($this->supplierA);
-        $this->shipmentService->submitShipment($shp2, [
+        $this->submitWithMtc($shp2, [
             'items' => [
                 ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_qty' => 15, 'actual_weight_kg' => 15.0],
             ],
@@ -637,7 +644,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
         $po = $this->createPoForSupplier($this->supplierA, 10.0);
         $qItem = $po->awards->first()->quotationItem;
         $shipment = $this->shipmentService->createDraft($this->supplierA);
-        $shipment = $this->shipmentService->submitShipment($shipment, [
+        $shipment = $this->submitWithMtc($shipment, [
             'items' => [[
                 'purchase_order_id' => $po->id,
                 'quotation_item_id' => $qItem->id,
@@ -666,8 +673,13 @@ class ShipmentAndPartialDeliveryTest extends TestCase
 
     public function test_pr_qty_ten_with_supplier_available_qty_eight_resolves_authoritative_ordered_qty_eight(): void
     {
-        // PR quantity 10, supplier available_qty 8 -> PO line authoritative ordered Qty is 8
-        $po = $this->createPoForSupplier($this->supplierA, 80.0, 10, 8);
+        // PR quantity 10, supplier available_qty 8 -> PO line authoritative ordered Qty is 8.
+        // Mission 04-R refuses to generate an unselected shortage while the
+        // ordered-quantity write path is off (guard a), so model the legacy PO
+        // that already exists: generated at 8/8, PR quantity recorded as 10.
+        $po = $this->createPoForSupplier($this->supplierA, 80.0, 8, 8);
+        PrItem::query()->whereKey($po->awards->first()->pr_item_id)->update(['quantity' => 10]);
+        $po = $po->fresh();
         $qItem = $po->awards->first()->quotationItem;
 
         $this->assertSame(8, $qItem->fulfillment_quantity);
@@ -687,6 +699,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
             'shipment_date' => now()->toDateString(),
             'estimated_arrival_date' => now()->addDays(7)->toDateString(),
             'action' => 'submit',
+            'mtc_files' => [NativeFileFixtures::upload('mtc.pdf')],
             'items' => [[
                 'purchase_order_id' => $po->id,
                 'quotation_item_id' => $qItem->id,
@@ -803,6 +816,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
             'shipment_date' => now()->toDateString(),
             'estimated_arrival_date' => now()->addDays(7)->toDateString(),
             'action' => 'submit',
+            'mtc_files' => [NativeFileFixtures::upload('mtc.pdf')],
             'items' => [[
                 'purchase_order_id' => $po->id,
                 'quotation_item_id' => $qItem->id,
@@ -839,7 +853,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Actual weight (kg) must be supplied explicitly');
 
-        $this->shipmentService->submitShipment($shipment, [
+        $this->submitWithMtc($shipment, [
             'items' => [[
                 'purchase_order_id' => $po->id,
                 'quotation_item_id' => $qItem->id,
@@ -854,7 +868,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
         $qItem = $po->awards->first()->quotationItem;
         $shipment = $this->shipmentService->createDraft($this->supplierA);
 
-        $this->shipmentService->submitShipment($shipment, [
+        $this->submitWithMtc($shipment, [
             'items' => [[
                 'purchase_order_id' => $po->id,
                 'quotation_item_id' => $qItem->id,
@@ -877,7 +891,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
 
         // Shipment 1: 3 pcs
         $shp1 = $this->shipmentService->createDraft($this->supplierA);
-        $this->shipmentService->submitShipment($shp1, [
+        $this->submitWithMtc($shp1, [
             'items' => [['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_qty' => 3, 'actual_weight_kg' => 30.0]],
         ]);
         $this->assertSame(3, $this->shipmentService->getItemDeliveryStatus($po->id, $qItem->id)['allocated_qty']);
@@ -885,7 +899,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
 
         // Shipment 2: 5 pcs
         $shp2 = $this->shipmentService->createDraft($this->supplierA);
-        $this->shipmentService->submitShipment($shp2, [
+        $this->submitWithMtc($shp2, [
             'items' => [['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_qty' => 5, 'actual_weight_kg' => 50.0]],
         ]);
         $status = $this->shipmentService->getItemDeliveryStatus($po->id, $qItem->id);
@@ -902,7 +916,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
 
         // Ship 4 pcs with large physical weight
         $shp1 = $this->shipmentService->createDraft($this->supplierA);
-        $this->shipmentService->submitShipment($shp1, [
+        $this->submitWithMtc($shp1, [
             'items' => [['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_qty' => 4, 'actual_weight_kg' => 500.0]],
         ]);
         $this->shipmentService->confirmArrival($shp1, $this->purchasing);
@@ -913,7 +927,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
 
         // Ship remaining 4 pcs with tiny physical weight
         $shp2 = $this->shipmentService->createDraft($this->supplierA);
-        $this->shipmentService->submitShipment($shp2, [
+        $this->submitWithMtc($shp2, [
             'items' => [['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_qty' => 4, 'actual_weight_kg' => 0.5]],
         ]);
         $this->shipmentService->confirmArrival($shp2, $this->purchasing);
@@ -937,7 +951,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
         $this->assertSame(10, $this->shipmentService->getItemDeliveryStatus($po->id, $qItem->id)['remaining_qty']);
 
         // Submit consumes allocation
-        $this->shipmentService->submitShipment($draft);
+        $this->submitWithMtc($draft);
         $this->assertSame(6, $this->shipmentService->getItemDeliveryStatus($po->id, $qItem->id)['allocated_qty']);
         $this->assertSame(4, $this->shipmentService->getItemDeliveryStatus($po->id, $qItem->id)['remaining_qty']);
     }
@@ -1012,10 +1026,12 @@ class ShipmentAndPartialDeliveryTest extends TestCase
     {
         $po = $this->createPoForSupplier($this->supplierA, 10.0);
         $qItem = $po->awards->first()->quotationItem;
+        // Legacy POs predate Mission 06B and carry no reference snapshots.
+        DB::table('award_reference_price_snapshots')->where('purchase_order_id', $po->id)->delete();
         $po->awards()->delete();
         $this->assertFalse($po->awards()->exists());
         $shipment = $this->shipmentService->createDraft($this->supplierA);
-        $this->shipmentService->submitShipment($shipment, [
+        $this->submitWithMtc($shipment, [
             'items' => [[
                 'purchase_order_id' => $po->id,
                 'quotation_item_id' => $qItem->id,
@@ -1038,7 +1054,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
         $po = $this->createPoForSupplier($this->supplierA, 10.0);
         $qItem = $po->awards->first()->quotationItem;
         $shipment = $this->shipmentService->createDraft($this->supplierA);
-        $this->shipmentService->submitShipment($shipment, [
+        $this->submitWithMtc($shipment, [
             'items' => [[
                 'purchase_order_id' => $po->id,
                 'quotation_item_id' => $qItem->id,
@@ -1067,7 +1083,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
         $po = $this->createPoForSupplier($this->supplierA, 10.0);
         $qItem = $po->awards->first()->quotationItem;
         $shipment = $this->shipmentService->createDraft($this->supplierA);
-        $this->shipmentService->submitShipment($shipment, [
+        $this->submitWithMtc($shipment, [
             'items' => [[
                 'purchase_order_id' => $po->id,
                 'quotation_item_id' => $qItem->id,
@@ -1179,7 +1195,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
         $this->expectExceptionMessage('already received through the legacy receiving flow');
 
         try {
-            $this->shipmentService->submitShipment($shipment);
+            $this->submitWithMtc($shipment);
         } finally {
             $this->assertSame(Shipment::STATUS_DRAFT, $shipment->fresh()->status);
             $this->assertNull($shipment->fresh()->submitted_at);
@@ -1197,7 +1213,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
     {
         [$po, $qItem] = $this->createLegacyPoForShipment($this->supplierA, 10.0);
         $first = $this->shipmentService->createDraft($this->supplierA);
-        $this->shipmentService->submitShipment($first, [
+        $this->submitWithMtc($first, [
             'items' => [[
                 'purchase_order_id' => $po->id,
                 'quotation_item_id' => $qItem->id,
@@ -1210,7 +1226,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
         $this->assertNotNull($po->fresh()->actual_arrival);
 
         $second = $this->shipmentService->createDraft($this->supplierA);
-        $submitted = $this->shipmentService->submitShipment($second, [
+        $submitted = $this->submitWithMtc($second, [
             'items' => [[
                 'purchase_order_id' => $po->id,
                 'quotation_item_id' => $qItem->id,
@@ -1232,7 +1248,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
     {
         [$po, $qItem] = $this->createLegacyPoForShipment($this->supplierA, 10.0);
         $cancelled = $this->shipmentService->createDraft($this->supplierA);
-        $this->shipmentService->submitShipment($cancelled, [
+        $this->submitWithMtc($cancelled, [
             'items' => [[
                 'purchase_order_id' => $po->id,
                 'quotation_item_id' => $qItem->id,
@@ -1251,7 +1267,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
         $this->assertSame(Shipment::STATUS_CANCELLED, $cancelled->fresh()->status);
 
         $replacement = $this->shipmentService->createDraft($this->supplierA);
-        $submitted = $this->shipmentService->submitShipment($replacement, [
+        $submitted = $this->submitWithMtc($replacement, [
             'items' => [[
                 'purchase_order_id' => $po->id,
                 'quotation_item_id' => $qItem->id,
@@ -1360,6 +1376,8 @@ class ShipmentAndPartialDeliveryTest extends TestCase
         $award = $po->awards()->with('quotationItem')->firstOrFail();
         $qItem = $award->quotationItem;
 
+        // Legacy POs predate Mission 06B and carry no reference snapshots.
+        DB::table('award_reference_price_snapshots')->where('purchase_order_id', $po->id)->delete();
         $po->awards()->delete();
         $po->unsetRelation('awards');
 

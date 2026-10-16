@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "controls": [
+    {
+      "text": "Geser Kiri",
+      "name": "Geser Kiri: Nomor PR"
+    },
+    {
+      "text": "Geser Kanan",
+      "name": "Geser Kanan: Nomor PR"
+    },
+    {
+      "text": "Geser Kiri",
+      "name": "Geser Kiri: Nomor PR"
+    },
+    {
+      "text": "Geser Kanan",
+      "name": "Geser Kanan: Nomor PR"
+    }
+  ],
+  "modalOpen": true
+}

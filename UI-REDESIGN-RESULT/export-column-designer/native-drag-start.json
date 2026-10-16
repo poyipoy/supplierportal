@@ -1,0 +1,75 @@
+{
+  "keys": [
+    "po_number",
+    "material",
+    "pr_number",
+    "supplier",
+    "currency",
+    "total_amount",
+    "total_idr",
+    "est_arrival",
+    "remark",
+    "status"
+  ],
+  "drops": [
+    {
+      "trusted": true,
+      "x": 309,
+      "y": 268,
+      "target": "pr_number",
+      "rects": [
+        {
+          "key": "po_number",
+          "left": 45.60000228881836,
+          "right": 221.60000228881836
+        },
+        {
+          "key": "pr_number",
+          "left": 221.60000610351562,
+          "right": 397.6000061035156
+        },
+        {
+          "key": "supplier",
+          "left": 397.6000061035156,
+          "right": 573.6000061035156
+        },
+        {
+          "key": "material",
+          "left": 573.6000366210938,
+          "right": 749.6000366210938
+        },
+        {
+          "key": "currency",
+          "left": 749.6000366210938,
+          "right": 925.6000366210938
+        },
+        {
+          "key": "total_amount",
+          "left": 925.6000366210938,
+          "right": 1101.6000366210938
+        },
+        {
+          "key": "total_idr",
+          "left": 1101.5999755859375,
+          "right": 1277.5999755859375
+        },
+        {
+          "key": "est_arrival",
+          "left": 1277.5999755859375,
+          "right": 1453.5999755859375
+        },
+        {
+          "key": "remark",
+          "left": 1453.5999755859375,
+          "right": 1629.5999755859375
+        },
+        {
+          "key": "status",
+          "left": 1629.5999755859375,
+          "right": 1805.5999755859375
+        }
+      ]
+    }
+  ],
+  "feedback": "Material is column 2 of 10."
+}

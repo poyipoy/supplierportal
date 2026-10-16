@@ -1,0 +1,19 @@
+﻿{
+    "TestDatabase":  "adasi_export_column_designer_20261015_test",
+    "SharedDatabaseReset":  false,
+    "TestDatabaseRetainedForReview":  true,
+    "Harnesses":  [
+                      {
+                          "Port":  8101,
+                          "ProcessId":  6412,
+                          "Status":  "stopped task-owned harness",
+                          "Helper":  "export-column-designer-fixtures.php"
+                      },
+                      {
+                          "Port":  8102,
+                          "ProcessId":  10644,
+                          "Status":  "stopped task-owned harness",
+                          "Helper":  "export-column-designer-app.php"
+                      }
+                  ]
+}

@@ -1,0 +1,319 @@
+@props([
+    'name',
+    'id' => null,
+    'label' => null,
+    'helper' => null,
+    'error' => null,
+    'required' => false,
+    'multiple' => false,
+    'maxFiles' => 5,
+    'showCount' => false,
+    'maxSizeMb' => 5,
+    'disabled' => false,
+    'accept' => null,
+    'allowedExtensions' => [],
+    'existingFiles' => [],
+    'existingFileName' => null,
+    'existingFileUrl' => null,
+    'layout' => 'stacked',
+])
+
+@php
+    $resolvedId = $id ?: preg_replace('/[^A-Za-z0-9_-]+/', '-', $name);
+    $validationKey = trim(preg_replace('/\[([^\]]*)\]/', '.$1', $name), '.');
+    $message = $error ?: (isset($errors) && $errors->has($validationKey) ? $errors->first($validationKey) : null);
+    if (! $message && isset($errors) && $errors->has($validationKey . '.*')) {
+        $message = $errors->first($validationKey . '.*');
+    }
+    $helperId = $helper ? $resolvedId . '-help' : null;
+    $errorId = $resolvedId . '-error';
+    $formatId = $resolvedId . '-format';
+    $descriptionIds = implode(' ', array_filter([$helperId, $formatId, $errorId]));
+
+    $normalizedExistingFiles = $existingFiles;
+    if (empty($normalizedExistingFiles) && !empty($existingFileName)) {
+        $normalizedExistingFiles = [
+            [
+                'id' => null,
+                'name' => $existingFileName,
+                'size' => '',
+                'url' => $existingFileUrl,
+            ]
+        ];
+    }
+    $hasExisting = !empty($normalizedExistingFiles);
+    $formatText = __('common.upload.format', ['formats' => $accept ? strtoupper(str_replace(['.', ','], ['', ', '], $accept)) : '', 'size' => $maxSizeMb]);
+    $inputName = $multiple && !str_ends_with($name, '[]') ? $name . '[]' : $name;
+    $isHorizontal = ($layout === 'horizontal');
+@endphp
+
+<div
+    x-data="adasiFileUploadComponent({
+        multiple: @js($multiple),
+        maxFiles: @js($maxFiles),
+        maxSizeMb: @js($maxSizeMb),
+        existingFiles: @js($normalizedExistingFiles),
+        allowedExtensions: @js($allowedExtensions),
+        serverError: @js($message)
+    })"
+    {{ $attributes->only('class')->class(['tw-h-full tw-min-w-0']) }}
+>
+    <span id="{{ $formatId }}" class="tw-sr-only">
+        {{ $formatText }} @if($multiple) · {{ __('common.review.upload_maximum', ['count' => $maxFiles]) }} @endif
+    </span>
+    {{-- Hidden inputs for retained existing documents (across revisions) --}}
+    <template x-for="file in existingFiles" :key="'kept-' + (file.id || file.name)">
+        <span>
+            <template x-if="file.id">
+                <input type="hidden" name="kept_document_ids[]" :value="file.id">
+            </template>
+        </span>
+    </template>
+
+    {{-- Balanced Document Card Container --}}
+    <div
+        class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface-container/25 tw-p-4 tw-flex tw-flex-col tw-h-full tw-transition-all hover:tw-border-outline"
+        :class="{ 'tw-border-error tw-bg-error-container/10': serverError || clientError }"
+    >
+        {{-- Card Header: Title, Status Badge, and Helper Note --}}
+        <div>
+            <div class="tw-flex tw-items-start tw-justify-between tw-gap-2">
+                <label for="{{ $resolvedId }}" class="tw-text-ui-xs tw-font-bold tw-text-on-surface tw-cursor-pointer tw-mb-0 tw-leading-tight">
+                    {{ $label }}
+                    @if($required)
+                        <span class="tw-text-error" aria-hidden="true">*</span>
+                        <span class="tw-sr-only">{{ __('common.upload.required') }}</span>
+                    @endif
+                </label>
+
+                {{-- Dynamic Status Badge --}}
+                <div class="tw-shrink-0" aria-live="polite" aria-atomic="true">
+                    <template x-if="{{ $showCount ? 'true' : 'hasFiles' }}">
+                        @if($multiple || $showCount)
+                            <span class="tw-inline-flex tw-items-center tw-gap-1 tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold tw-bg-primary/10 tw-text-primary">
+                                <x-ui.icon name="files" size="sm" />
+                                <span><span x-text="totalFilesCount"></span>/{{ $maxFiles }} {{ __('common.upload.files') }}</span>
+                            </span>
+                        @else
+                            <span class="tw-inline-flex tw-items-center tw-gap-1 tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold tw-bg-success/15 tw-text-success">
+                                <x-ui.icon name="check" size="sm" />
+                                <span x-text="isExisting ? @js(__('common.upload.saved')) : @js(__('common.upload.ready'))"></span>
+                            </span>
+                        @endif
+                    </template>
+                    <template x-if="{{ $showCount ? 'false' : '!hasFiles' }}">
+                        @if($required)
+                            <span class="tw-inline-flex tw-items-center tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold tw-bg-error/10 tw-text-error">
+                                {{ __('common.upload.required') }}
+                            </span>
+                        @else
+                            <span class="tw-inline-flex tw-items-center tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-medium tw-bg-surface-high tw-text-on-surface-variant">
+                                {{ __('common.fields.optional') }}
+                            </span>
+                        @endif
+                    </template>
+                </div>
+            </div>
+
+            @if($helper)
+                <p id="{{ $helperId }}" class="tw-text-[11px] tw-text-on-surface-variant tw-mt-1 tw-mb-0 tw-leading-normal">
+                    {{ $helper }}
+                </p>
+            @endif
+        </div>
+
+        {{-- Card Body: Centered Expanding Dropzone OR Compact Scrollable File List --}}
+        <div class="tw-mt-3 tw-flex-1 tw-flex tw-flex-col tw-justify-start tw-gap-2.5">
+            {{-- 1. Full Dropzone (When !hasFiles) - Centered & Expands to Fill Row Height --}}
+            <div
+                x-show="!hasFiles"
+                @click="$refs.fileInput.click()"
+                @dragover.prevent="isDragging = true"
+                @dragleave.prevent="isDragging = false"
+                @drop.prevent="handleDrop($event)"
+                tabindex="0"
+                @keydown.enter.prevent="$refs.fileInput.click()"
+                @keydown.space.prevent="$refs.fileInput.click()"
+                class="group tw-relative tw-flex tw-flex-col tw-items-center tw-justify-center tw-text-center tw-rounded-ui-sm tw-border tw-border-dashed tw-border-outline-variant tw-bg-surface tw-p-4 tw-flex-1 tw-min-h-[110px] tw-transition-all tw-cursor-pointer hover:tw-border-primary hover:tw-bg-primary/5 focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-primary focus:tw-border-primary"
+                :class="{
+                    'tw-border-primary tw-bg-primary-container/20': isDragging,
+                    'tw-border-error tw-bg-error-container/20': serverError || clientError
+                }"
+                role="button"
+                aria-label="{{ __('common.upload.label', ['label' => $label ?: __('common.upload.file')]) }}"
+                aria-describedby="{{ $descriptionIds }}"
+                :aria-invalid="(clientError || serverError) ? 'true' : 'false'"
+            >
+                <div class="tw-w-9 tw-h-9 tw-rounded-full tw-bg-primary/10 tw-text-primary tw-flex tw-items-center tw-justify-center tw-mb-1.5 group-hover:tw-bg-primary group-hover:tw-text-primary-foreground tw-transition-colors">
+                    <x-ui.icon name="upload-cloud" size="sm" />
+                </div>
+
+                <div class="tw-text-ui-xs tw-font-semibold tw-text-primary group-hover:tw-underline">
+                    {{ __('common.upload.choose') }} <span class="tw-text-on-surface-variant tw-font-normal">{{ __('common.upload.drag') }}</span>
+                </div>
+                <div class="tw-text-[11px] tw-text-on-surface-variant tw-mt-1">
+                    {{ $formatText }} @if($multiple) · {{ __('common.review.upload_maximum', ['count' => $maxFiles]) }} @endif
+                </div>
+            </div>
+
+            {{-- 2. File List (When hasFiles) - Max height 144px + Scrollbar + Add/Limit Control --}}
+            <template x-if="hasFiles">
+                <div class="tw-flex-1 tw-flex tw-flex-col tw-justify-between tw-gap-2">
+                    {{-- Scrollable File Items Container --}}
+                    <div
+                        class="tw-max-h-36 tw-overflow-y-auto tw-space-y-1.5 tw-pr-1 ui-scrollable-list"
+                        @dragover.prevent="if (canAddMore || !isMultiple) isDragging = true"
+                        @dragleave.prevent="isDragging = false"
+                        @drop.prevent="if (canAddMore || !isMultiple) handleDrop($event)"
+                    >
+                        {{-- 2.1 Existing Saved Files --}}
+                        <template x-for="(file, idx) in existingFiles" :key="'exist-' + idx">
+                            <div class="tw-flex tw-items-center tw-justify-between tw-gap-2 tw-rounded-ui-sm tw-border tw-border-success/30 tw-bg-surface tw-px-2.5 tw-py-2 tw-transition-all hover:tw-border-success/50">
+                                <div class="tw-flex tw-items-center tw-gap-2 tw-min-w-0 tw-flex-1">
+                                    <div class="tw-w-7 tw-h-7 tw-rounded-full tw-bg-success/10 tw-text-success tw-flex tw-items-center tw-justify-center tw-shrink-0">
+                                        <x-ui.icon name="file-check" size="sm" />
+                                    </div>
+                                    <div class="tw-min-w-0 tw-flex-1">
+                                        <div class="tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-truncate" x-text="file.name" :title="file.name"></div>
+                                        <div class="tw-text-[10px] tw-text-on-surface-variant tw-flex tw-items-center tw-gap-1.5 tw-mt-0.5">
+                                            <template x-if="file.size">
+                                                <span class="tw-font-mono" x-text="file.size"></span>
+                                            </template>
+                                            <template x-if="file.size">
+                                                <span>·</span>
+                                            </template>
+                                            <span class="tw-text-success tw-font-medium tw-inline-flex tw-items-center tw-gap-0.5">
+                                                <x-ui.icon name="check" size="sm" />
+                                                <span>{{ __('common.upload.saved') }}</span>
+                                            </span>
+                                            <template x-if="file.url">
+                                                <a :href="file.url" target="_blank" class="tw-text-primary tw-underline tw-font-semibold tw-ms-1" @click.stop>
+                                                    {{ __('common.actions.view') }}
+                                                </a>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    class="ui-motion ui-focus-ring tw-inline-flex tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-transparent tw-bg-error-container/30 tw-text-error tw-p-1 tw-text-[10px] tw-font-semibold hover:tw-bg-error-container hover:tw-text-on-error-container"
+                                    @click.stop="removeExistingFile(idx)"
+                                    title="{{ __('common.upload.remove_saved') }}"
+                                    aria-label="{{ __('common.upload.remove_saved') }}"
+                                >
+                                    <x-ui.icon name="trash-2" size="sm" />
+                                </button>
+                            </div>
+                        </template>
+
+                        {{-- 2.2 Newly Staged Files (Ready to upload) --}}
+                        <template x-for="(file, idx) in stagedFiles" :key="'staged-' + idx">
+                            <div class="tw-flex tw-items-center tw-justify-between tw-gap-2 tw-rounded-ui-sm tw-border tw-border-primary/30 tw-bg-surface tw-px-2.5 tw-py-2 tw-transition-all hover:tw-border-primary/50">
+                                <div class="tw-flex tw-items-center tw-gap-2 tw-min-w-0 tw-flex-1">
+                                    <div class="tw-w-7 tw-h-7 tw-rounded-full tw-bg-primary/10 tw-text-primary tw-flex tw-items-center tw-justify-center tw-shrink-0">
+                                        <x-ui.icon name="file-up" size="sm" />
+                                    </div>
+                                    <div class="tw-min-w-0 tw-flex-1">
+                                        <div class="tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-truncate" x-text="file.name" :title="file.name"></div>
+                                        <div class="tw-text-[10px] tw-text-on-surface-variant tw-flex tw-items-center tw-gap-1.5 tw-mt-0.5">
+                                            <span class="tw-font-mono" x-text="formatBytes(file.size)"></span>
+                                            <span>·</span>
+                                            <span class="tw-text-primary tw-font-medium tw-inline-flex tw-items-center tw-gap-0.5">
+                                                <x-ui.icon name="upload-cloud" size="sm" />
+                                                <span>{{ __('common.upload.ready') }}</span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    class="ui-motion ui-focus-ring tw-inline-flex tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-transparent tw-bg-error-container/30 tw-text-error tw-p-1 tw-text-[10px] tw-font-semibold hover:tw-bg-error-container hover:tw-text-on-error-container"
+                                    @click.stop="removeStagedFile(idx)"
+                                    title="{{ __('common.upload.cancel_file') }}"
+                                    aria-label="{{ __('common.upload.cancel_file') }}"
+                                >
+                                    <x-ui.icon name="trash-2" size="sm" />
+                                </button>
+                            </div>
+                        </template>
+                    </div>
+
+                    {{-- Secondary Action / Limit Notice --}}
+                    <div>
+                        @if($multiple)
+                            {{-- Multi-upload: Can add more files --}}
+                            <div
+                                x-show="canAddMore"
+                                @click="$refs.fileInput.click()"
+                                @dragover.prevent="isDragging = true"
+                                @dragleave.prevent="isDragging = false"
+                                @drop.prevent="handleDrop($event)"
+                                tabindex="0"
+                                @keydown.enter.prevent="$refs.fileInput.click()"
+                                @keydown.space.prevent="$refs.fileInput.click()"
+                                role="button"
+                                aria-label="{{ __('common.upload.label', ['label' => $label ?: __('common.upload.file')]) }}"
+                                aria-describedby="{{ $descriptionIds }}"
+                                :aria-invalid="(clientError || serverError) ? 'true' : 'false'"
+                                class="ui-focus-ring tw-flex tw-items-center tw-justify-center tw-gap-1.5 tw-py-1.5 tw-px-3 tw-rounded-ui-sm tw-border tw-border-dashed tw-border-outline-variant hover:tw-border-primary hover:tw-bg-primary/5 tw-text-ui-xs tw-font-semibold tw-text-primary tw-cursor-pointer tw-transition-colors"
+                                :class="{ 'tw-border-primary tw-bg-primary/10': isDragging }"
+                            >
+                                <x-ui.icon name="plus" size="sm" />
+                                <span>{{ __('common.upload.add') }} (<span x-text="totalFilesCount"></span>/{{ $maxFiles }})</span>
+                            </div>
+
+                            {{-- Multi-upload: Max files limit reached notice --}}
+                            <div
+                                x-show="!canAddMore"
+                                class="tw-text-center tw-py-1.5 tw-px-2.5 tw-rounded-ui-sm tw-bg-surface-container-high/60 tw-border tw-border-outline-variant/60 tw-text-[11px] tw-font-medium tw-text-on-surface-variant"
+                            >
+                                <x-ui.icon name="check-circle" size="sm" class="tw-inline tw-text-success tw-me-1" />
+                                <span>{{ __('common.review.upload_limit_reached', ['count' => $maxFiles]) }}</span>
+                            </div>
+                        @else
+                            {{-- Single-upload: Replace file action --}}
+                            <div
+                                @click="$refs.fileInput.click()"
+                                @dragover.prevent="isDragging = true"
+                                @dragleave.prevent="isDragging = false"
+                                @drop.prevent="handleDrop($event)"
+                                tabindex="0"
+                                @keydown.enter.prevent="$refs.fileInput.click()"
+                                @keydown.space.prevent="$refs.fileInput.click()"
+                                role="button"
+                                aria-label="{{ __('common.upload.label', ['label' => $label ?: __('common.upload.file')]) }}"
+                                aria-describedby="{{ $descriptionIds }}"
+                                :aria-invalid="(clientError || serverError) ? 'true' : 'false'"
+                                class="ui-focus-ring tw-flex tw-items-center tw-justify-center tw-gap-1.5 tw-py-1.5 tw-px-3 tw-rounded-ui-sm tw-border tw-border-dashed tw-border-outline-variant hover:tw-border-primary hover:tw-bg-primary/5 tw-text-ui-xs tw-font-semibold tw-text-primary tw-cursor-pointer tw-transition-colors"
+                                :class="{ 'tw-border-primary tw-bg-primary/10': isDragging }"
+                                title="{{ __('common.upload.replace_title') }}"
+                            >
+                                <x-ui.icon name="refresh-cw" size="sm" />
+                                <span>{{ __('common.upload.replace') }}</span>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        {{-- Real Hidden Native File Input --}}
+        <input
+            x-ref="fileInput"
+            id="{{ $resolvedId }}"
+            name="{{ $inputName }}"
+            type="file"
+            class="tw-sr-only"
+            @required($required && !$hasExisting)
+            @disabled($disabled)
+            @if($multiple) multiple @endif
+            @if($accept) accept="{{ $accept }}" @endif
+            aria-describedby="{{ $descriptionIds }}"
+            :aria-invalid="(clientError || serverError) ? 'true' : 'false'"
+            {{ $attributes->except(['class', 'accept', 'id', 'name', 'type', 'layout']) }}
+        >
+
+        {{-- Error Alert / Message --}}
+        <p id="{{ $errorId }}" x-show="clientError || serverError" x-text="clientError || serverError" class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error tw-mt-2.5" role="alert">{{ $message }}</p>
+    </div>
+</div>

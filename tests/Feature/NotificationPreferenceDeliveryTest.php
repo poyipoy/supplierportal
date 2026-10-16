@@ -599,7 +599,7 @@ class NotificationPreferenceDeliveryTest extends TestCase
             'local_purchase_order_id' => $po->id,
             'goods_receipt_ids' => [$gr->id],
             'scheduled_physical_delivery_date' => BusinessTime::today()->next(3)->toDateString(),
-        ], [
+        ], [...NativeFileFixtures::invoiceReferences(),
             'invoice' => NativeFileFixtures::upload('ACK-001.pdf', 100),
         ]);
     }

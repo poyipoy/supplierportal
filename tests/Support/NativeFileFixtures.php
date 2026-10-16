@@ -6,6 +6,14 @@ use Illuminate\Http\UploadedFile;
 
 final class NativeFileFixtures
 {
+    public static function invoiceReferences(): array
+    {
+        return [
+            'purchase_order' => self::upload('purchase-order.pdf'),
+            'goods_receipt' => [self::upload('goods-receipt.pdf')],
+        ];
+    }
+
     public static function pdf(string $text = 'ADASI document'): string
     {
         $text = str_replace(['\\', '(', ')'], ['\\\\', '\\(', '\\)'], $text);

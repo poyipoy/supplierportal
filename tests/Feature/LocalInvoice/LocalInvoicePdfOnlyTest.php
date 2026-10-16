@@ -55,7 +55,7 @@ class LocalInvoicePdfOnlyTest extends TestCase
 
     private function files(bool $arrays = false): array
     {
-        $files = [];
+        $files = NativeFileFixtures::invoiceReferences();
         foreach (['invoice' => 'inv', 'tax_invoice' => 'tax', 'delivery_note' => 'dn', 'supporting' => 'support'] as $type => $name) {
             $file = NativeFileFixtures::upload($name.'.pdf');
             $files[$type] = $arrays ? [$file] : $file;
@@ -77,7 +77,7 @@ class LocalInvoicePdfOnlyTest extends TestCase
     public static function rejectedUploads(): array
     {
         $cases = [];
-        foreach (['invoice', 'tax_invoice', 'delivery_note', 'supporting', 'surat_jalan'] as $type) {
+        foreach (['invoice', 'tax_invoice', 'purchase_order', 'goods_receipt', 'delivery_note', 'supporting', 'surat_jalan'] as $type) {
             foreach (['jpg', 'jpeg', 'png', 'pdf'] as $extension) {
                 foreach ([false, true] as $revision) {
                     $cases[$type.' '.$extension.' '.($revision ? 'resubmit' : 'submit')] = [$type, $extension, $revision];
@@ -131,14 +131,14 @@ class LocalInvoicePdfOnlyTest extends TestCase
         $this->actingAs($this->supplier)->postJson(route('local-supplier.invoices.store'), array_merge($this->data, $files))
             ->assertOk()->assertJsonStructure(['redirect']);
         $invoice = LocalInvoice::sole();
-        $this->assertSame(4, $invoice->documents()->count());
+        $this->assertSame(6, $invoice->documents()->count());
         app(InvoicePhysicalReceiptService::class)->recordReceipt($this->operator, $invoice,
             scannedReceiptQr: URL::signedRoute('receipts.verify-supplier', ['receipt' => $invoice->receipt->receipt_number, 'revision' => 1]));
         app(InvoiceVerificationService::class)->requestRevision($invoice, 'Revise documents', $this->operator);
         $this->postJson(route('local-supplier.invoices.resubmit', $invoice), array_merge($this->data, $this->files($arrays)))
             ->assertOk()->assertJsonStructure(['redirect']);
         $this->assertSame(2, $invoice->fresh()->revision_number);
-        $this->assertSame(4, $invoice->fresh()->latestRevision->documents()->count());
+        $this->assertSame(6, $invoice->fresh()->latestRevision->documents()->count());
     }
 
     #[DataProvider('fileShapes')]
@@ -287,10 +287,10 @@ class LocalInvoicePdfOnlyTest extends TestCase
         foreach (['en', 'id'] as $locale) {
             $this->supplier->preference()->updateOrCreate([], [...config('user_preferences.defaults'), 'locale' => $locale]);
             $response = $this->actingAs($this->supplier)->get(route('local-supplier.invoices.create'))->assertOk();
-            $response->assertSee(__('common.final_review.private_uploads', [], $locale));
-            $this->assertSame(4, substr_count($response->getContent(), 'accept=".pdf"'));
+            $response->assertSee(__('local_invoice.documents.upload_rules', [], $locale));
+            $this->assertSame(6, substr_count($response->getContent(), 'accept=".pdf"'));
             $response->assertDontSee('accept=".pdf,.jpg,.jpeg,.png"', false);
-            foreach (['invoice', 'tax_invoice', 'delivery_note', 'supporting'] as $type) {
+            foreach (['invoice', 'tax_invoice', 'purchase_order', 'goods_receipt', 'delivery_note', 'supporting'] as $type) {
                 $response->assertSee('id="file_'.$type.'-format"', false)
                     ->assertSee('id="file_'.$type.'-error"', false)
                     ->assertSee('aria-describedby="file_'.$type.'-help file_'.$type.'-format file_'.$type.'-error"', false);

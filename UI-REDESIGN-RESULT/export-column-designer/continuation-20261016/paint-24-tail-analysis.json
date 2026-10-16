@@ -1,0 +1,369 @@
+{
+  "created": "2026-10-16T02:52:16.267Z",
+  "scope": "Read-only analysis of already captured 24-column trace; no new browser capture, source change, or threshold adjustment. Summed render events are diagnostic only and may include nested events.",
+  "groups": [
+    {
+      "variant": "legacy",
+      "batch": 0,
+      "p95ReadyToPaint": 7.644,
+      "p95RenderEventTotal": 9.356,
+      "tailWindows": [
+        {
+          "iteration": 6,
+          "readyToPaint": 9.785,
+          "cost": {
+            "Layout": 3.436,
+            "UpdateLayoutTree": 3.601,
+            "Paint": 3.293,
+            "PrePaint": 0.802,
+            "Layerize": 0.574
+          },
+          "renderEventTotal": 11.706,
+          "nodes": [
+            "#document",
+            "HTML",
+            "DIV class='modal-body tw-grid tw-gap-4'"
+          ]
+        },
+        {
+          "iteration": 22,
+          "readyToPaint": 7.644,
+          "cost": {
+            "Layout": 2.892,
+            "UpdateLayoutTree": 2.216,
+            "Paint": 2.318,
+            "PrePaint": 0.809,
+            "Layerize": 0.632
+          },
+          "renderEventTotal": 8.866999999999999,
+          "nodes": [
+            "#document",
+            "HTML",
+            "DIV class='modal-body tw-grid tw-gap-4'"
+          ]
+        },
+        {
+          "iteration": 12,
+          "readyToPaint": 7.219,
+          "cost": {
+            "Layout": 2.195,
+            "UpdateLayoutTree": 2.528,
+            "Paint": 3.655,
+            "PrePaint": 0.481,
+            "Layerize": 0.497
+          },
+          "renderEventTotal": 9.356,
+          "nodes": [
+            "#document",
+            "HTML",
+            "DIV class='modal-body tw-grid tw-gap-4'"
+          ]
+        }
+      ]
+    },
+    {
+      "variant": "legacy",
+      "batch": 1,
+      "p95ReadyToPaint": 11.477,
+      "p95RenderEventTotal": 14.078,
+      "tailWindows": [
+        {
+          "iteration": 10,
+          "readyToPaint": 13.618,
+          "cost": {
+            "Layout": 5.097,
+            "UpdateLayoutTree": 3.856,
+            "Paint": 7.583,
+            "PrePaint": 1.191,
+            "Layerize": 0.568
+          },
+          "renderEventTotal": 18.295,
+          "nodes": [
+            "#document",
+            "HTML",
+            "DIV class='modal-body tw-grid tw-gap-4'"
+          ]
+        },
+        {
+          "iteration": 1,
+          "readyToPaint": 11.477,
+          "cost": {
+            "Layout": 5.095,
+            "UpdateLayoutTree": 2.033,
+            "Paint": 4.752,
+            "PrePaint": 1.643,
+            "Layerize": 0.555
+          },
+          "renderEventTotal": 14.078,
+          "nodes": [
+            "#document",
+            "HTML",
+            "DIV class='modal-body tw-grid tw-gap-4'"
+          ]
+        },
+        {
+          "iteration": 0,
+          "readyToPaint": 8.881,
+          "cost": {
+            "Layout": 3.756,
+            "UpdateLayoutTree": 2.736,
+            "Paint": 3.557,
+            "PrePaint": 0.536,
+            "Layerize": 0.564
+          },
+          "renderEventTotal": 11.149,
+          "nodes": [
+            "#document",
+            "HTML",
+            "DIV class='modal-body tw-grid tw-gap-4'"
+          ]
+        }
+      ]
+    },
+    {
+      "variant": "legacy",
+      "batch": 2,
+      "p95ReadyToPaint": 5.729,
+      "p95RenderEventTotal": 8.232000000000001,
+      "tailWindows": [
+        {
+          "iteration": 8,
+          "readyToPaint": 6.679,
+          "cost": {
+            "Layout": 2.544,
+            "UpdateLayoutTree": 1.749,
+            "Paint": 3.094,
+            "PrePaint": 0.82,
+            "Layerize": 0.464
+          },
+          "renderEventTotal": 8.671000000000001,
+          "nodes": [
+            "#document",
+            "HTML",
+            "DIV class='modal-body tw-grid tw-gap-4'"
+          ]
+        },
+        {
+          "iteration": 0,
+          "readyToPaint": 5.729,
+          "cost": {
+            "Layout": 1.676,
+            "UpdateLayoutTree": 1.336,
+            "Paint": 4.148,
+            "PrePaint": 0.644,
+            "Layerize": 0.428
+          },
+          "renderEventTotal": 8.232000000000001,
+          "nodes": [
+            "#document",
+            "HTML",
+            "DIV class='modal-body tw-grid tw-gap-4'"
+          ]
+        },
+        {
+          "iteration": 7,
+          "readyToPaint": 5.417,
+          "cost": {
+            "Layout": 1.601,
+            "UpdateLayoutTree": 1.803,
+            "Paint": 2.012,
+            "PrePaint": 0.827,
+            "Layerize": 0.294
+          },
+          "renderEventTotal": 6.537,
+          "nodes": [
+            "#document",
+            "HTML",
+            "DIV class='modal-body tw-grid tw-gap-4'"
+          ]
+        }
+      ]
+    },
+    {
+      "variant": "designer",
+      "batch": 0,
+      "p95ReadyToPaint": 8.129,
+      "p95RenderEventTotal": 9.846,
+      "tailWindows": [
+        {
+          "iteration": 11,
+          "readyToPaint": 8.329,
+          "cost": {
+            "Layout": 1.872,
+            "UpdateLayoutTree": 2.998,
+            "Paint": 3.759,
+            "PrePaint": 0.949,
+            "Layerize": 0.268
+          },
+          "renderEventTotal": 9.846,
+          "nodes": [
+            "#document",
+            "HTML",
+            "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+            "DIV class='ui-column-scroll'"
+          ]
+        },
+        {
+          "iteration": 27,
+          "readyToPaint": 8.129,
+          "cost": {
+            "Layout": 2.152,
+            "UpdateLayoutTree": 2.785,
+            "Paint": 3.956,
+            "PrePaint": 0.717,
+            "Layerize": 0.545
+          },
+          "renderEventTotal": 10.155000000000001,
+          "nodes": [
+            "#document",
+            "HTML",
+            "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+            "DIV class='ui-column-scroll'"
+          ]
+        },
+        {
+          "iteration": 26,
+          "readyToPaint": 7.156,
+          "cost": {
+            "Layout": 1.797,
+            "UpdateLayoutTree": 2.491,
+            "Paint": 2.797,
+            "PrePaint": 1.008,
+            "Layerize": 0.404
+          },
+          "renderEventTotal": 8.497,
+          "nodes": [
+            "#document",
+            "HTML",
+            "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+            "DIV class='ui-column-scroll'"
+          ]
+        }
+      ]
+    },
+    {
+      "variant": "designer",
+      "batch": 1,
+      "p95ReadyToPaint": 11.463,
+      "p95RenderEventTotal": 13.686,
+      "tailWindows": [
+        {
+          "iteration": 6,
+          "readyToPaint": 11.886,
+          "cost": {
+            "Layout": 2.79,
+            "UpdateLayoutTree": 4.721,
+            "Paint": 5.688,
+            "PrePaint": 1.223,
+            "Layerize": 0.563
+          },
+          "renderEventTotal": 14.985000000000001,
+          "nodes": [
+            "#document",
+            "HTML",
+            "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+            "DIV class='ui-column-scroll'"
+          ]
+        },
+        {
+          "iteration": 16,
+          "readyToPaint": 11.463,
+          "cost": {
+            "Layout": 4.53,
+            "UpdateLayoutTree": 3.997,
+            "Paint": 3.783,
+            "PrePaint": 0.772,
+            "Layerize": 0.604
+          },
+          "renderEventTotal": 13.686,
+          "nodes": [
+            "#document",
+            "HTML",
+            "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+            "DIV class='ui-column-scroll'"
+          ]
+        },
+        {
+          "iteration": 12,
+          "readyToPaint": 9.464,
+          "cost": {
+            "Layout": 2.26,
+            "UpdateLayoutTree": 3.659,
+            "Paint": 4.904,
+            "PrePaint": 0.827,
+            "Layerize": 0.655
+          },
+          "renderEventTotal": 12.305,
+          "nodes": [
+            "#document",
+            "HTML",
+            "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+            "DIV class='ui-column-scroll'"
+          ]
+        }
+      ]
+    },
+    {
+      "variant": "designer",
+      "batch": 2,
+      "p95ReadyToPaint": 9.57,
+      "p95RenderEventTotal": 11.697000000000001,
+      "tailWindows": [
+        {
+          "iteration": 28,
+          "readyToPaint": 10.111,
+          "cost": {
+            "Layout": 2.386,
+            "UpdateLayoutTree": 3.447,
+            "Paint": 4.019,
+            "PrePaint": 1.352,
+            "Layerize": 0.493
+          },
+          "renderEventTotal": 11.697000000000001,
+          "nodes": [
+            "#document",
+            "HTML",
+            "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+            "DIV class='ui-column-scroll'"
+          ]
+        },
+        {
+          "iteration": 29,
+          "readyToPaint": 9.57,
+          "cost": {
+            "Layout": 2.043,
+            "UpdateLayoutTree": 3.791,
+            "Paint": 4.895,
+            "PrePaint": 0.824,
+            "Layerize": 1.025
+          },
+          "renderEventTotal": 12.578,
+          "nodes": [
+            "#document",
+            "HTML",
+            "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+            "DIV class='ui-column-scroll'"
+          ]
+        },
+        {
+          "iteration": 27,
+          "readyToPaint": 7.689,
+          "cost": {
+            "Layout": 1.302,
+            "UpdateLayoutTree": 2.221,
+            "Paint": 5.169,
+            "PrePaint": 1.109,
+            "Layerize": 0.498
+          },
+          "renderEventTotal": 10.299,
+          "nodes": [
+            "#document",
+            "HTML",
+            "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+            "DIV class='ui-column-scroll'"
+          ]
+        }
+      ]
+    }
+  ]
+}

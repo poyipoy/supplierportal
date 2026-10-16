@@ -121,6 +121,14 @@ export function adasiFileUploadComponent(paramA = '', paramB = false, paramC = {
             } finally {
                 this._syncing = false;
             }
+            this.notifyFilesChanged();
+        },
+
+        notifyFilesChanged() {
+            this.$dispatch?.('adasi:files-changed', {
+                id: this.$refs.fileInput?.id,
+                count: this.totalFilesCount,
+            });
         },
 
         handleFiles(files) {
@@ -199,6 +207,7 @@ export function adasiFileUploadComponent(paramA = '', paramB = false, paramC = {
             this.serverError = '';
             if (index >= 0 && index < this.existingFiles.length) {
                 this.existingFiles.splice(index, 1);
+                this.notifyFilesChanged();
             }
         },
 
@@ -211,6 +220,7 @@ export function adasiFileUploadComponent(paramA = '', paramB = false, paramC = {
             if (input) {
                 input.value = '';
             }
+            this.notifyFilesChanged();
         },
 
         // Legacy clearFile alias

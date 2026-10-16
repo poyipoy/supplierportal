@@ -57,7 +57,7 @@ class CancelledInvoiceRecoveryTest extends TestCase
             'recovery_reason' => '  Salah membatalkan pengajuan di portal.  ', 'business_document_valid' => '1'];
         $service = app(InvoiceSubmissionService::class);
         $this->invoice = $service->submit($this->supplier, $this->payload,
-            ['invoice' => NativeFileFixtures::upload('invoice.pdf'), 'tax_invoice' => NativeFileFixtures::upload('tax.pdf')]);
+            [...NativeFileFixtures::invoiceReferences(), 'invoice' => NativeFileFixtures::upload('invoice.pdf'), 'tax_invoice' => NativeFileFixtures::upload('tax.pdf')]);
         $service->cancel($this->supplier, $this->invoice);
         $this->invoice->refresh();
         $this->payload['kept_document_ids'] = $this->invoice->latestRevision->documents->modelKeys();
@@ -81,7 +81,7 @@ class CancelledInvoiceRecoveryTest extends TestCase
         $this->assertSame('INV-RECOVERY', $this->invoice->invoice_number);
         $this->assertSame(1, LocalInvoice::count());
         $this->assertSame(2, $this->invoice->revisions()->count());
-        $this->assertSame(4, $this->invoice->documents()->count());
+        $this->assertSame(8, $this->invoice->documents()->count());
         $this->assertEqualsCanonicalizing($paths, Storage::disk('private')->allFiles());
         $history = $this->invoice->statusHistories()->latest('id')->first();
         $this->assertSame('CANCELLED', $history->from_status);
@@ -120,7 +120,7 @@ class CancelledInvoiceRecoveryTest extends TestCase
             ->assertUnprocessable()->assertJsonValidationErrors('goods_receipt_ids');
         $this->assertSame('CANCELLED', $this->invoice->fresh()->status);
         $this->assertSame(1, $this->invoice->revisions()->count());
-        $this->assertSame(2, $this->invoice->documents()->count());
+        $this->assertSame(4, $this->invoice->documents()->count());
         $this->assertEqualsCanonicalizing($paths, Storage::disk('private')->allFiles());
     }
 
@@ -138,7 +138,7 @@ class CancelledInvoiceRecoveryTest extends TestCase
     public function test_new_submission_with_cancelled_identity_directs_owner_to_resubmit(): void
     {
         $response = $this->actingAs($this->supplier)->postJson(route('local-supplier.invoices.store'),
-            array_merge($this->payload, ['invoice' => NativeFileFixtures::upload('INV-RECOVERY.pdf'),
+            array_merge($this->payload, [...NativeFileFixtures::invoiceReferences(), 'invoice' => NativeFileFixtures::upload('INV-RECOVERY.pdf'),
                 'tax_invoice' => NativeFileFixtures::upload('0100002612345678.pdf')]));
         $response->assertUnprocessable()->assertJsonValidationErrors(['invoice_number', 'tax_invoice_number']);
         $this->assertStringContainsString(__('local_invoice.recovery.duplicate_invoice'), $response->json('errors.invoice_number.0'));

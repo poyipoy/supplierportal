@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Services\LocalInvoice\LocalFinanceAuditService;
+use App\Support\BankTransferMapping;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -84,8 +85,6 @@ class Employee extends Model
 
     public function isBca(): bool
     {
-        $name = strtoupper(trim((string) $this->bank_name));
-
-        return $name === 'BCA' || str_starts_with($name, 'BCA (') || str_starts_with($name, 'BANK BCA');
+        return BankTransferMapping::isBca((string) $this->bank_name);
     }
 }

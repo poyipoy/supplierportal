@@ -2,18 +2,27 @@
 
 namespace App\Services;
 
+use App\Exceptions\PoGenerationDisabledException;
+use App\Models\AwardReferencePriceSnapshot;
 use App\Models\ExchangeRate;
 use App\Models\PoDocument;
 use App\Models\PrItem;
 use App\Models\PrItemAward;
+use App\Models\PrItemAwardEvent;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
 use App\Models\QuotationItem;
 use App\Models\User;
+use App\Services\Pricing\ReferencePriceResolver;
+use App\Support\Money;
 use App\Support\NotificationCategory;
+use App\Support\Pricing\EvaluationContext;
+use App\Support\Procurement\LogisticsTerms;
+use App\Support\Procurement\ProcurementFeatures;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 class PurchaseOrderGenerationService
@@ -65,6 +74,12 @@ class PurchaseOrderGenerationService
         User $creator,
         array $options = []
     ): Collection {
+        // Kill switch (I-20): first statement, before any lock or write, so all
+        // three entry points stop and their enclosing transactions roll back.
+        if (! ProcurementFeatures::poGenerationEnabled()) {
+            throw new PoGenerationDisabledException;
+        }
+
         $awardIds = collect($awards)->map(function ($award) {
             return $award instanceof PrItemAward ? (int) $award->id : (int) $award;
         })->filter(fn ($id) => $id > 0)->values()->all();
@@ -84,11 +99,13 @@ class PurchaseOrderGenerationService
 
         return DB::transaction(function () use ($awardIds, $awardReferences, $creator, $options) {
             $prIds = $awardReferences->pluck('pr_id')->unique()->sort()->values()->all();
-            PurchaseRequisition::query()
+            /** @var Collection<int, PurchaseRequisition> $lockedRequisitions */
+            $lockedRequisitions = PurchaseRequisition::query()
                 ->whereIn('id', $prIds)
                 ->orderBy('id')
                 ->lockForUpdate()
-                ->get();
+                ->get()
+                ->keyBy('id');
 
             $prItemIds = $awardReferences->pluck('pr_item_id')->unique()->sort()->values()->all();
             PrItem::query()
@@ -157,6 +174,13 @@ class PurchaseOrderGenerationService
                 }
             }
 
+            $writePath = ProcurementFeatures::orderedQuantityWriteEnabled();
+            if ($writePath) {
+                $this->assertOrderable($lockedAwards, $options['selections'] ?? [], $creator);
+            } else {
+                $this->assertLegacyOrderable($lockedAwards);
+            }
+
             // Group awards strictly by supplier_id (1 PO = exactly 1 supplier)
             $groupedBySupplier = $lockedAwards->groupBy('supplier_id');
             $createdPos = collect();
@@ -170,6 +194,13 @@ class PurchaseOrderGenerationService
                 }
 
                 $currency = $currencies->first() ?? 'USD';
+
+                // Q1 / I-11: one PO carries one Port of Discharge + Incoterms.
+                // Mixed PR values are rejected (never picked, never split).
+                [$portOfDischarge, $incoterm] = $this->uniformLogistics(
+                    $supplierAwards->pluck('pr_id')->unique()->sort()->values(),
+                    $lockedRequisitions
+                );
 
                 // Resolve snapshot exchange rate
                 $exchangeRateId = $supplierAwards->first()?->quotation?->exchange_rate_id;
@@ -207,6 +238,8 @@ class PurchaseOrderGenerationService
                     'created_by' => $creator->id,
                     'estimated_arrival' => $estimatedArrival,
                     'notes' => $notes,
+                    'port_of_discharge' => $portOfDischarge,
+                    'incoterm' => $incoterm,
                 ]);
 
                 // 2. Attach quotations to PO via pivot po_quotations
@@ -224,6 +257,21 @@ class PurchaseOrderGenerationService
                 // 4. Link item awards to this PO
                 PrItemAward::whereIn('id', $supplierAwards->pluck('id'))
                     ->update(['purchase_order_id' => $po->id]);
+
+                // 4b. M04-W: freeze ordered quantity, KG, price and amount once,
+                // in the transaction that creates the PO (I-1, I-17).
+                if ($writePath) {
+                    foreach ($supplierAwards as $award) {
+                        $this->freezeOrderedValues($award, $po, $creator);
+                    }
+                }
+
+                // 4c. M06B (§12.2, I-19, I-22): one immutable reference-price
+                // snapshot per award, in this transaction and in either
+                // write-path state; a miss is recorded as not_available.
+                foreach ($supplierAwards as $award) {
+                    $this->snapshotReferencePrice($award, $po);
+                }
 
                 // 5. Update quotation status to accepted for participating quotations
                 $participatingQuotations = Quotation::with('items')->whereIn('id', $quotationIds)->get();
@@ -312,5 +360,187 @@ class PurchaseOrderGenerationService
 
             return $createdPos;
         });
+    }
+
+    /**
+     * Mission 04-W (I-1, I-4): apply any submitted selection under the award
+     * locks, then require an ordered quantity within 1..offered and, for a
+     * different specification, an acceptance whose hash matches the current
+     * offer. Every failing line is reported, keyed to its PR item.
+     *
+     * @param  Collection<int, PrItemAward>  $awards
+     * @param  array<int, array{order_qty?: mixed, accept_spec?: mixed}>  $selections  keyed by pr_item_id
+     *
+     * @throws ValidationException
+     */
+    private function assertOrderable(Collection $awards, array $selections, User $creator): void
+    {
+        $awardService = app(PrItemAwardService::class);
+        $errors = [];
+
+        foreach ($awards as $award) {
+            $quotationItem = $award->quotationItem;
+            $quotationItem->setRelation('prItem', $award->prItem);
+            $awardService->applySelection($award, $quotationItem, $selections[$award->pr_item_id] ?? [], $creator);
+
+            $prItemId = (int) $award->pr_item_id;
+            $material = $award->prItem?->material_name ?? '#'.$prItemId;
+            $offered = (int) $quotationItem->fulfillment_quantity;
+            if ($award->ordered_qty === null) {
+                $errors["order_qty.{$prItemId}"] = __('procurement.ordered_quantity.order_qty_required', ['material' => $material, 'max' => $offered]);
+            } elseif ($award->ordered_qty < 1 || $award->ordered_qty > $offered) {
+                $errors["order_qty.{$prItemId}"] = __('procurement.ordered_quantity.order_qty_range', ['material' => $material, 'max' => $offered]);
+            }
+
+            if ($quotationItem->availability_comparison['specification']['code'] === 'different'
+                && ! $award->isSpecAcceptanceCurrent($quotationItem->specificationSnapshot())) {
+                $errors["accept_spec.{$prItemId}"] = __($award->spec_accepted_at === null
+                    ? 'procurement.ordered_quantity.spec_acceptance_required'
+                    : 'procurement.ordered_quantity.spec_acceptance_stale', ['material' => $material]);
+            }
+        }
+
+        if ($errors !== []) {
+            throw ValidationException::withMessages($errors);
+        }
+    }
+
+    /**
+     * The evaluation date is the generation business date (EvaluationContext);
+     * the resolver never blocks generation.
+     */
+    private function snapshotReferencePrice(PrItemAward $award, PurchaseOrder $po): void
+    {
+        $line = $award->quotationItem;
+        $line->setRelation('prItem', $award->prItem);
+        $result = app(ReferencePriceResolver::class)->resolve($line, EvaluationContext::current(), (string) $po->currency);
+
+        AwardReferencePriceSnapshot::create([
+            'pr_item_award_id' => $award->id,
+            'purchase_order_id' => $po->id,
+            'material_reference_price_id' => $result->reference?->id,
+            'status' => $result->isMatched() ? AwardReferencePriceSnapshot::STATUS_MATCHED : AwardReferencePriceSnapshot::STATUS_NOT_AVAILABLE,
+            'reason_code' => $result->reasonCode,
+            'evaluation_date' => $result->evaluationDate,
+            'dimension_field' => $result->dimensionField,
+            'dimension_value' => $result->dimensionValue,
+            'reference_currency' => $result->reference?->currency,
+            'reference_price_per_kg' => $result->reference === null ? null : (string) $result->reference->price_per_kg,
+            'po_currency' => $result->targetCurrency,
+            'reference_rate_id' => $result->referenceRateId,
+            'po_rate_id' => $result->targetRateId,
+            'converted_reference_price_per_kg' => $result->convertedReferencePricePerKg,
+            'offer_price_per_kg' => $result->offerPricePerKg,
+            'diff_amount_per_kg' => $result->diffAmountPerKg,
+            'diff_percent' => $result->diffPercent,
+        ]);
+    }
+
+    /**
+     * Frozen values are written once and never recomputed (I-17). KG and
+     * amount follow the resolver's "selected" formula, rounded to 4 dp.
+     */
+    private function freezeOrderedValues(PrItemAward $award, PurchaseOrder $po, User $creator): void
+    {
+        $quotationItem = $award->quotationItem;
+        $weightPerUnit = Money::normalize($quotationItem->offered_weight_per_unit ?? $award->prItem?->weight_needed, 4);
+        $totalWeight = Money::multiply($award->ordered_qty, $weightPerUnit, 4);
+        $pricePerKg = Money::normalize($quotationItem->price_per_kg, 4);
+        $amount = Money::multiply($totalWeight, $pricePerKg, 4);
+
+        $award->forceFill([
+            'purchase_order_id' => $po->id,
+            'ordered_weight_per_unit' => $weightPerUnit,
+            'ordered_total_weight_kg' => $totalWeight,
+            'ordered_price_per_kg' => $pricePerKg,
+            'ordered_amount' => $amount,
+        ])->save();
+
+        PrItemAwardEvent::create([
+            'pr_item_award_id' => $award->id,
+            'pr_id' => $award->pr_id,
+            'pr_item_id' => $award->pr_item_id,
+            'quotation_item_id' => $award->quotation_item_id,
+            'purchase_order_id' => $po->id,
+            'event' => PrItemAwardEvent::ORDERED_VALUES_FROZEN,
+            'payload' => [
+                'ordered_qty' => $award->ordered_qty,
+                'ordered_weight_per_unit' => $weightPerUnit,
+                'ordered_total_weight_kg' => $totalWeight,
+                'ordered_price_per_kg' => $pricePerKg,
+                'ordered_amount' => $amount,
+                'requested_qty' => $award->prItem?->quantity_value,
+                'offered_qty' => $quotationItem->fulfillment_quantity,
+            ],
+            'actor_id' => $creator->id,
+        ]);
+    }
+
+    /**
+     * Mission 04-R fail-closed legacy guard (I-21). Without the ordered-quantity
+     * write path, a PO line is the full offer. The path cannot freeze a
+     * Purchasing selection or price a non-offer quantity, so it refuses instead
+     * of silently ordering the offer:
+     *  (b) any unassigned award carrying a selection (ordered qty or spec
+     *      acceptance), whatever the quantities;
+     *  (a) an unselected offer whose quantity differs from the PR quantity.
+     *
+     * @param  Collection<int, PrItemAward>  $awards
+     *
+     * @throws InvalidArgumentException
+     */
+    private function assertLegacyOrderable(Collection $awards): void
+    {
+        foreach ($awards as $award) {
+            $context = ' ['.($award->purchaseRequisition?->pr_number ?? '#'.$award->pr_id).', award '.$award->id.']';
+
+            if ($award->purchase_order_id === null && $award->hasPurchasingSelection()) {
+                throw new InvalidArgumentException(__('procurement.ordered_quantity.selection_unfinalizable').$context);
+            }
+
+            $offered = $award->quotationItem?->fulfillment_quantity;
+            $requested = $award->prItem?->quantity_value;
+            if ($offered !== null && $requested !== null && (int) $offered !== (int) $requested) {
+                throw new InvalidArgumentException(__('procurement.ordered_quantity.selection_required').$context);
+            }
+        }
+    }
+
+    /**
+     * The single (port, incoterm) pair shared by every participating PR, read
+     * from the rows locked above. NULL is a distinct value: two legacy PRs
+     * without logistics still consolidate, NULL never mixes with a value.
+     *
+     * @param  Collection<int, int>  $prIds
+     * @param  Collection<int, PurchaseRequisition>  $requisitions
+     * @return array{0: ?string, 1: ?string}
+     *
+     * @throws InvalidArgumentException
+     */
+    private function uniformLogistics(Collection $prIds, Collection $requisitions): array
+    {
+        $terms = $prIds->map(function (int $prId) use ($requisitions): array {
+            $pr = $requisitions->get($prId);
+
+            return [
+                'pr' => $pr?->pr_number ?? '#'.$prId,
+                'port' => $pr?->port_of_discharge,
+                'incoterm' => $pr?->incoterm,
+            ];
+        });
+
+        $distinct = $terms->unique(fn (array $term) => json_encode([$term['port'], $term['incoterm']]));
+
+        if ($distinct->count() > 1) {
+            throw new InvalidArgumentException(__('procurement.logistics.mixed_consolidation', [
+                'details' => $terms
+                    ->map(fn (array $term) => $term['pr'].' ('.LogisticsTerms::describe($term['port'], $term['incoterm']).')')
+                    ->implode(' ≠ '),
+            ]));
+        }
+
+        $term = $terms->first();
+
+        return [$term['port'] ?? null, $term['incoterm'] ?? null];
     }
 }

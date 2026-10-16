@@ -391,15 +391,29 @@ class CalendarController {
 
     installMonthGrid() {
         this.panel.querySelector('[data-calendar-year-previous]')?.addEventListener('click', () => {
+            const panel = this.panel.querySelector('[data-calendar-year-panel]') || this.yearPanel;
+            if (panel && !panel.hidden) {
+                this.displayYear -= 10;
+                this.buildMonthYearPanel();
+                return;
+            }
             this.displayYear -= 1;
             this.renderMonthGrid();
             this.announce(t('js.calendar.year', { year: this.displayYear }));
         });
         this.panel.querySelector('[data-calendar-year-next]')?.addEventListener('click', () => {
+            const panel = this.panel.querySelector('[data-calendar-year-panel]') || this.yearPanel;
+            if (panel && !panel.hidden) {
+                this.displayYear += 10;
+                this.buildMonthYearPanel();
+                return;
+            }
             this.displayYear += 1;
             this.renderMonthGrid();
             this.announce(t('js.calendar.year', { year: this.displayYear }));
         });
+        const toggleBtn = this.panel.querySelector('[data-calendar-year-toggle]') || this.yearToggleBtn;
+        toggleBtn?.addEventListener('click', () => this.toggleMonthYearPanel());
         this.yearSelect?.addEventListener('change', () => {
             this.displayYear = Number(this.yearSelect.value);
             this.renderMonthGrid();
@@ -413,10 +427,69 @@ class CalendarController {
         this.monthGrid.addEventListener('keydown', (event) => this.onMonthGridKeydown(event));
     }
 
+    buildMonthYearPanel() {
+        const panel = this.panel.querySelector('[data-calendar-year-panel]') || this.yearPanel;
+        if (!panel) return;
+        const startDecade = Math.floor(this.displayYear / 10) * 10 - 1;
+        let html = '';
+        for (let y = startDecade; y < startDecade + 12; y++) {
+            const isCurrent = (y === this.displayYear);
+            const isOutside = (y === startDecade || y === startDecade + 11);
+            html += `<button type="button" class="ui-month-grid__year-cell${isCurrent ? ' is-current' : ''}${isOutside ? ' is-outside' : ''}" data-calendar-pick-year="${y}" role="gridcell" aria-pressed="${isCurrent}">${y}</button>`;
+        }
+        panel.innerHTML = html;
+        const yearLabel = this.panel.querySelector('[data-calendar-year-label]') || this.yearLabel;
+        if (yearLabel) yearLabel.textContent = `${startDecade + 1}–${startDecade + 10}`;
+        panel.querySelectorAll('[data-calendar-pick-year]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                this.displayYear = parseInt(btn.dataset.calendarPickYear, 10);
+                this.toggleMonthYearPanel(false);
+                this.renderMonthGrid();
+                this.announce(t('js.calendar.year_selected', { year: this.displayYear }));
+            });
+        });
+        panel.addEventListener('keydown', (event) => this.onYearGridKeydown(event));
+    }
+
+    toggleMonthYearPanel(force) {
+        const panel = this.panel.querySelector('[data-calendar-year-panel]') || this.yearPanel;
+        const toggleBtn = this.panel.querySelector('[data-calendar-year-toggle]') || this.yearToggleBtn;
+        if (!panel || !this.monthGrid) return;
+        const willOpen = force !== undefined ? force : panel.hidden;
+        if (willOpen) this.buildMonthYearPanel();
+        panel.hidden = !willOpen;
+        this.monthGrid.hidden = willOpen;
+        toggleBtn?.setAttribute('aria-expanded', String(willOpen));
+        toggleBtn?.classList.toggle('is-active', willOpen);
+        if (!willOpen) {
+            const yearLabel = this.panel.querySelector('[data-calendar-year-label]') || this.yearLabel;
+            if (yearLabel) yearLabel.textContent = String(this.displayYear);
+        }
+    }
+
+    onYearGridKeydown(event) {
+        const button = event.target.closest('[data-calendar-pick-year]');
+        const panel = this.panel.querySelector('[data-calendar-year-panel]') || this.yearPanel;
+        if (!button || !panel) return;
+        const buttons = [...panel.querySelectorAll('[data-calendar-pick-year]:not([disabled])')];
+        const current = buttons.indexOf(button);
+        if (current < 0) return;
+        const movement = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: 4, ArrowUp: -4 }[event.key];
+        if (movement === undefined) return;
+        event.preventDefault();
+        buttons[(current + movement + buttons.length) % buttons.length]?.focus();
+    }
+
     onKeydown(event) {
         if (!this.isOpen) return;
         if (event.key === 'Escape') {
             event.preventDefault();
+            const monthYearPanel = this.panel.querySelector('[data-calendar-year-panel]') || this.yearPanel;
+            if (monthYearPanel && !monthYearPanel.hidden) {
+                if (this.type === 'single') this.toggleYearPanel(false);
+                if (this.granularity === 'month') this.toggleMonthYearPanel(false);
+                return;
+            }
             this.close({ restoreFocus: true });
             return;
         }
@@ -494,6 +567,9 @@ class CalendarController {
         });
         if (this.type === 'single') {
             this.toggleYearPanel(false);
+        }
+        if (this.granularity === 'month') {
+            this.toggleMonthYearPanel(false);
         }
         if (this.isMobile()) {
             document.body.classList.remove('ui-calendar-sheet-open');
@@ -767,6 +843,7 @@ class CalendarController {
         if (this.granularity === 'month') {
             const focused = this.activeBoundary === 'end' ? this.draft.end : this.draft.start;
             this.displayYear = Number((focused || `${new Date().getFullYear()}-01`).slice(0, 4));
+            this.toggleMonthYearPanel(false);
             this.renderMonthGrid();
             return;
         }
@@ -854,19 +931,24 @@ class CalendarController {
     }
 
     renderMonthGrid() {
-        if (!this.monthGrid || !this.yearSelect) return;
-        const currentYear = new Date().getFullYear();
-        const minYear = Number((this.native[0]?.min || '').slice(0, 4)) || currentYear - 40;
-        const maxYear = Number((this.native[1]?.max || this.native[0]?.max || '').slice(0, 4)) || currentYear + 40;
-        const lower = Math.min(minYear, this.displayYear - 20);
-        const upper = Math.max(maxYear, this.displayYear + 20);
-        this.yearSelect.replaceChildren(...Array.from({ length: upper - lower + 1 }, (_, index) => {
-            const option = document.createElement('option');
-            option.value = String(lower + index);
-            option.textContent = String(lower + index);
-            option.selected = lower + index === this.displayYear;
-            return option;
-        }));
+        if (!this.monthGrid) return;
+        const yearLabel = this.panel.querySelector('[data-calendar-year-label]') || this.yearLabel;
+        if (yearLabel) yearLabel.textContent = String(this.displayYear);
+
+        if (this.yearSelect) {
+            const currentYear = new Date().getFullYear();
+            const minYear = Number((this.native[0]?.min || '').slice(0, 4)) || currentYear - 40;
+            const maxYear = Number((this.native[1]?.max || this.native[0]?.max || '').slice(0, 4)) || currentYear + 40;
+            const lower = Math.min(minYear, this.displayYear - 10);
+            const upper = Math.max(maxYear, this.displayYear + 10);
+            this.yearSelect.replaceChildren(...Array.from({ length: upper - lower + 1 }, (_, index) => {
+                const option = document.createElement('option');
+                option.value = String(lower + index);
+                option.textContent = String(lower + index);
+                option.selected = lower + index === this.displayYear;
+                return option;
+            }));
+        }
 
         const formatter = new Intl.DateTimeFormat(window.AdasiI18n.locale === 'id' ? 'id-ID' : 'en-US', { month: 'short' });
         this.monthGrid.replaceChildren(...Array.from({ length: 12 }, (_, index) => {

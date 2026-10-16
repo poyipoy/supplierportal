@@ -20,6 +20,23 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Interbank transfer rules for supplier DRP groups
+    |--------------------------------------------------------------------------
+    |
+    | Non-BCA groups with a subtotal above llg_max_amount (SKNBI per-transaction
+    | limit, PADG 21/11/PADG/2019) are exported as RTGS and get rtgs_fee as the
+    | default bank fee. The RTGS default is an unconfirmed third-party figure;
+    | Finance must set FINANCE_BANK_FEE_RTGS to the contracted KlikBCA Bisnis rate.
+    | rtgs_fee must not exceed limits.bank_fee_max_amount.
+    |
+    */
+    'bank_transfer' => [
+        'llg_max_amount' => env('FINANCE_LLG_MAX_AMOUNT', '1000000000.00'),
+        'rtgs_fee' => env('FINANCE_BANK_FEE_RTGS', '25000.00'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Official ADASI Refund Account Configuration
     |--------------------------------------------------------------------------
     |

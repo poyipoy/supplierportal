@@ -66,6 +66,7 @@ class InvoiceFilenameAutoFillTest extends TestCase
     private function validPayload(array $overrides = []): array
     {
         return array_merge([
+            ...NativeFileFixtures::invoiceReferences(),
             'local_purchase_order_id' => $this->po->id,
             'goods_receipt_ids' => [$this->gr->id],
             'invoice_date' => '2026-09-24',
@@ -103,7 +104,7 @@ class InvoiceFilenameAutoFillTest extends TestCase
             'status' => LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT, 'revision_number' => 1, 'submitted_at' => now()]);
         $url = route('local-supplier.invoices.store');
         if ($revision) {
-            $this->actingAs($this->supplier)->post($url, $this->validPayload([
+            $this->actingAs($this->supplier)->post($url, $this->validPayload([...NativeFileFixtures::invoiceReferences(),
                 'invoice_number' => 'INV-EDITED', 'tax_invoice_number' => $current,
                 'invoice' => NativeFileFixtures::upload('INV-EDITED.pdf'), 'tax_invoice' => NativeFileFixtures::upload($current.'.pdf'),
             ]))->assertSessionHasNoErrors();
@@ -116,7 +117,7 @@ class InvoiceFilenameAutoFillTest extends TestCase
         }
         $count = LocalInvoice::count();
         $files = Storage::disk('private')->allFiles();
-        $response = $this->actingAs($this->supplier)->postJson($url, $this->validPayload([
+        $response = $this->actingAs($this->supplier)->postJson($url, $this->validPayload([...NativeFileFixtures::invoiceReferences(),
             'invoice_number' => 'INV-EDITED', 'tax_invoice_number' => $entered,
             ...($spoofOriginal ? ['_original_tax_invoice_number' => $used] : []),
             'invoice' => NativeFileFixtures::upload('INV-EDITED.pdf'), 'tax_invoice' => NativeFileFixtures::upload($used.'.pdf'),
@@ -133,7 +134,7 @@ class InvoiceFilenameAutoFillTest extends TestCase
 
         // Correcting just the attachment identity resolves the mismatch.
         $this->withoutExceptionHandling();
-        $this->postJson($url, $this->validPayload([
+        $this->postJson($url, $this->validPayload([...NativeFileFixtures::invoiceReferences(),
             'invoice_number' => 'INV-EDITED', 'tax_invoice_number' => str_replace(['.', '-'], '', $entered),
             'invoice' => NativeFileFixtures::upload('INV-EDITED.pdf'), 'tax_invoice' => NativeFileFixtures::upload($entered.'.pdf'),
         ]))->assertOk()->assertJsonStructure(['redirect']);
@@ -143,7 +144,7 @@ class InvoiceFilenameAutoFillTest extends TestCase
         $this->withExceptionHandling();
 
         // A real duplicate still names the exact normalized number being checked.
-        $this->postJson(route('local-supplier.invoices.store'), $this->validPayload([
+        $this->postJson(route('local-supplier.invoices.store'), $this->validPayload([...NativeFileFixtures::invoiceReferences(),
             'invoice_number' => 'INV-ANOTHER', 'tax_invoice_number' => $entered,
             'invoice' => NativeFileFixtures::upload('INV-ANOTHER.pdf'), 'tax_invoice' => NativeFileFixtures::upload($entered.'.pdf'),
         ]))->assertUnprocessable()->assertJsonPath('errors.tax_invoice_number', [

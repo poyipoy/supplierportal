@@ -1,0 +1,626 @@
+import { t } from './i18n.js';
+/**
+ * AdasiServerTabs — Reusable server-side AJAX tab/filter/pagination controller.
+ *
+ * Intercepts tab link clicks, filter form submissions, and pagination clicks
+ * inside a designated container. Fetches rendered HTML fragments from the server,
+ * swaps the table container content, updates metric badges and tab active states,
+ * and synchronizes the browser URL via the History API.
+ *
+ * Features:
+ * - Optimistic tab active-state (instant visual feedback on click)
+ * - In-memory fragment cache (0ms on revisit, 5-minute TTL)
+ * - Speculative hover/touch prefetch (60ms debounce)
+ * - Cache invalidation on form submit and reset
+ *
+ * Usage (in Blade @push('scripts')):
+ *   AdasiServerTabs.init('#drpPaidContainer', {
+ *       onUpdated: () => { /* re-bind checkboxes, etc. *\/ },
+ *   });
+ */
+
+const instances = new Map();
+
+// ─── In-Memory Fragment Cache ─────────────────────────────────────────────
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const fragmentCache = new Map(); // url → { html, tab, metrics, data, timestamp }
+
+function cacheGet(url, ttlMs = CACHE_TTL_MS) {
+    const entry = fragmentCache.get(url);
+    if (!entry) return null;
+    if (Date.now() - entry.timestamp > ttlMs) {
+        fragmentCache.delete(url);
+        return null;
+    }
+    return entry;
+}
+
+function cacheSet(url, data) {
+    fragmentCache.set(url, {
+        html: data.html,
+        tab: data.tab,
+        metrics: data.metrics,
+        openOverpaymentsCount: data.openOverpaymentsCount,
+        url: data.url,
+        data,
+        timestamp: Date.now(),
+    });
+}
+
+function cacheInvalidateForTab(tabName) {
+    for (const [url, entry] of fragmentCache) {
+        if (entry.tab === tabName) {
+            fragmentCache.delete(url);
+        }
+    }
+}
+
+function cacheInvalidateAll() {
+    fragmentCache.clear();
+}
+
+// Work queues (audits, registrations, claims…) change under other users' hands, so a page can ask for a shorter TTL.
+function cacheTtlFor(state) {
+    return state.options?.cacheTtlMs ?? CACHE_TTL_MS;
+}
+
+// ─── Prefetch Tracking ───────────────────────────────────────────────────
+const prefetchInFlight = new Set(); // URLs currently being prefetched
+
+// X-Adasi-Server-Tabs lets a controller tell a fragment request apart from a DataTables/other XHR on the same URL.
+const FRAGMENT_REQUEST_HEADERS = Object.freeze({
+    'X-Requested-With': 'XMLHttpRequest',
+    'Accept': 'application/json',
+    'X-Adasi-Server-Tabs': '1',
+});
+
+/**
+ * @param {string} containerSelector — CSS selector for the outermost wrapper.
+ * @param {Object} [options]
+ * @param {Function} [options.onUpdated] — called after DOM swap completes.
+ */
+function init(containerSelector, options = {}) {
+    const container = document.querySelector(containerSelector);
+    if (!container) {
+        console.warn(`[AdasiServerTabs] Container not found: ${containerSelector}`);
+        return;
+    }
+
+    // Prevent double-init on the same container, but merge any new options
+    if (instances.has(containerSelector)) {
+        const existing = instances.get(containerSelector);
+        if (options && Object.keys(options).length > 0) {
+            existing.options = Object.assign(existing.options || {}, options);
+        }
+        return existing;
+    }
+
+    const state = {
+        container,
+        abortController: null,
+        options,
+        previousTab: null, // For optimistic rollback
+    };
+
+    instances.set(containerSelector, state);
+
+    // --- Tab click delegation ---
+    container.addEventListener('click', (e) => {
+        const tabLink = e.target.closest('[data-server-tab]');
+        if (tabLink) {
+            e.preventDefault();
+            const url = tabLink.getAttribute('href') || tabLink.dataset.serverTab;
+            if (url) {
+                // Optimistic: record previous tab and immediately update visual state
+                const currentActive = container.querySelector('[data-server-tab][aria-current="page"]');
+                state.previousTab = currentActive?.dataset.tabName || null;
+                const targetTab = tabLink.dataset.tabName;
+                if (targetTab) {
+                    updateTabActiveStates(container, targetTab);
+                }
+                fetchAndSwap(state, url, true);
+            }
+            return;
+        }
+
+        // --- Pagination link delegation ---
+        const pageLink = e.target.closest('.pagination a');
+        if (pageLink) {
+            e.preventDefault();
+            const url = pageLink.getAttribute('href');
+            if (url) fetchAndSwap(state, url, true);
+        }
+    });
+
+    // --- Filter form submission interception (delegated) ---
+    container.addEventListener('submit', (e) => {
+        const form = e.target.closest('[data-server-tabs-form]');
+        if (form && !form.hasAttribute('data-managed-submit')) {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const params = new URLSearchParams(formData);
+            const actionUrl = form.getAttribute('action') || window.location.pathname;
+            const sep = actionUrl.includes('?') ? '&' : '?';
+            const queryString = params.toString();
+            const url = queryString ? `${actionUrl}${sep}${queryString}` : actionUrl;
+
+            // Invalidate cache for the current tab on filter submission
+            const hiddenTab = form.querySelector('input[name="tab"]');
+            if (hiddenTab && hiddenTab.value) {
+                cacheInvalidateForTab(hiddenTab.value);
+            } else {
+                // If no tab input, invalidate all cache for safety
+                cacheInvalidateAll();
+            }
+
+            fetchAndSwap(state, url, true);
+        }
+    });
+
+    // --- Invalidate tab cache on date range commit ---
+    container.addEventListener('adasi:date-range-commit', () => {
+        const activeTab = container.querySelector('[data-server-tab][aria-current="page"]')?.dataset.tabName;
+        if (activeTab) {
+            cacheInvalidateForTab(activeTab);
+        }
+    });
+
+    // --- Speculative hover/touch prefetch ---
+    let prefetchTimer = null;
+    container.addEventListener('pointerenter', (e) => {
+        const tabLink = e.target.closest('[data-server-tab]');
+        if (!tabLink) return;
+
+        const url = tabLink.getAttribute('href') || tabLink.dataset.serverTab;
+        if (!url) return;
+
+        // Don't prefetch if already cached or already fetching
+        if (cacheGet(url, cacheTtlFor(state)) || prefetchInFlight.has(url)) return;
+
+        // 60ms debounce to avoid prefetching on accidental hover-through
+        clearTimeout(prefetchTimer);
+        prefetchTimer = setTimeout(() => {
+            speculativePrefetch(url, cacheTtlFor(state));
+        }, 60);
+    }, true);
+
+    container.addEventListener('pointerleave', (e) => {
+        const tabLink = e.target.closest('[data-server-tab]');
+        if (tabLink) {
+            clearTimeout(prefetchTimer);
+        }
+    }, true);
+
+    // --- Browser back/forward (popstate) ---
+    window.addEventListener('popstate', (e) => {
+        if (e.state && e.state._serverTabs === containerSelector) {
+            fetchAndSwap(state, window.location.href, false);
+        }
+    });
+
+    // Push initial state so popstate can work for the very first page
+    if (!window.history.state || !window.history.state._serverTabs) {
+        window.history.replaceState(
+            { _serverTabs: containerSelector, url: window.location.href },
+            '',
+            window.location.href,
+        );
+    }
+}
+
+/**
+ * Speculative prefetch: fetch a tab's content in the background and cache it.
+ * Does not touch the DOM. Silent on error.
+ *
+ * @param {string} url
+ * @param {number} [ttlMs] — freshness window of an already cached copy.
+ */
+async function speculativePrefetch(url, ttlMs = CACHE_TTL_MS) {
+    if (prefetchInFlight.has(url) || cacheGet(url, ttlMs)) return;
+
+    prefetchInFlight.add(url);
+    try {
+        const response = await fetch(url, { headers: { ...FRAGMENT_REQUEST_HEADERS } });
+
+        if (!response.ok) return;
+
+        const data = await response.json();
+        cacheSet(url, data);
+    } catch {
+        // Silently discard prefetch errors — they don't affect UX
+    } finally {
+        prefetchInFlight.delete(url);
+    }
+}
+
+/**
+ * Core: fetch the AJAX JSON response from the server and swap DOM content.
+ * If a valid cached fragment exists, uses it instantly (0ms swap).
+ *
+ * @param {Object} state
+ * @param {string} url
+ * @param {boolean} pushHistory — true for user-initiated nav, false for popstate
+ */
+async function fetchAndSwap(state, url, pushHistory) {
+    const { container, options } = state;
+    const tableTarget = container.querySelector('[data-server-tabs-content]');
+    if (!tableTarget) {
+        console.warn('[AdasiServerTabs] Missing [data-server-tabs-content] inside container.');
+        return;
+    }
+
+    // Cancel any in-flight request (handles rapid tab clicking)
+    if (state.abortController) {
+        state.abortController.abort();
+    }
+    // Each request owns its controller. A superseded request must never touch the busy state, the watchdog,
+    // or state.abortController of the request that replaced it.
+    const controller = new AbortController();
+    state.abortController = controller;
+
+    // Close any active calendar popover before swapping DOM content
+    if (window.AdasiCalendar?.closeActive) {
+        window.AdasiCalendar.closeActive();
+    }
+
+    // ── Cache Hit: instant swap without network ──
+    const cached = cacheGet(url, cacheTtlFor(state));
+    if (cached) {
+        // The request this click replaced no longer cleans up after itself, so clear its busy state here.
+        clearBusyState(tableTarget);
+        applyData(state, container, tableTarget, cached.data, url, pushHistory, options);
+        state.abortController = null;
+        return;
+    }
+
+    // ── Cache Miss: show loading state and fetch ──
+    tableTarget.setAttribute('aria-busy', 'true');
+    tableTarget.classList.add('tw-opacity-50');
+    tableTarget.style.pointerEvents = 'none';
+    showLoadingOverlay(tableTarget);
+
+    let isTimeout = false;
+    const timeoutId = setTimeout(() => {
+        isTimeout = true;
+        controller.abort();
+    }, 15000);
+
+    try {
+        const response = await fetch(url, {
+            headers: { ...FRAGMENT_REQUEST_HEADERS },
+            signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        // Store in cache for future revisits
+        cacheSet(url, data);
+
+        // A newer click may have taken over while the body was being read; never paint stale content over it.
+        if (state.abortController !== controller) return;
+
+        applyData(state, container, tableTarget, data, url, pushHistory, options);
+    } catch (err) {
+        clearTimeout(timeoutId);
+        if (err.name === 'AbortError' && !isTimeout) return; // Intentional cancellation
+        console.error('[AdasiServerTabs] Fetch failed:', err);
+
+        // Rollback optimistic tab state on error
+        if (state.previousTab) {
+            updateTabActiveStates(container, state.previousTab);
+            state.previousTab = null;
+        }
+
+        if (window.AdasiToast && typeof window.AdasiToast.error === 'function') {
+            const message = isTimeout
+                ? t('js.server_tabs.timeout')
+                : t('js.server_tabs.failed');
+            window.AdasiToast.error(message);
+        }
+    } finally {
+        clearTimeout(timeoutId);
+        if (state.abortController === controller) {
+            clearBusyState(tableTarget);
+            state.abortController = null;
+        }
+    }
+
+}
+
+function clearBusyState(target) {
+    target.removeAttribute('aria-busy');
+    target.classList.remove('tw-opacity-50');
+    target.style.pointerEvents = '';
+    hideLoadingOverlay(target);
+}
+
+/**
+ * Apply fetched or cached data to the DOM.
+ * Extracted so both cache-hit and network paths use the same logic.
+ */
+function applyData(state, container, tableTarget, data, url, pushHistory, options) {
+    // 0. Dispatch before-swap event for cleanup (Chart.js, DataTables, etc.)
+    container.dispatchEvent(new CustomEvent('adasi:server-tabs:before-swap', {
+        bubbles: true,
+        detail: {
+            currentTab: container.querySelector('[data-server-tab][aria-current="page"]')?.dataset.tabName,
+            nextTab: data.tab,
+        },
+    }));
+
+    // 1. Swap table HTML
+    if (data.html) {
+        tableTarget.innerHTML = data.html;
+    }
+
+    // 1b. Server-rendered tab nav: hrefs (carried filters), counts and tones come from the server.
+    if (typeof data.nav === 'string') {
+        swapTabNav(container, data.nav);
+    }
+
+    // 2. Update tab active states (may already be set optimistically, but ensure consistency)
+    if (data.tab) {
+        updateTabActiveStates(container, data.tab);
+    }
+
+    // 3. Update metric badges
+    if (data.metrics) {
+        updateMetrics(container, data.metrics);
+    }
+
+    // 4. Update overpayment badge
+    if (data.openOverpaymentsCount !== undefined) {
+        updateOverpaymentBadge(container, data.openOverpaymentsCount);
+    }
+
+    // 5. Update hidden tab input in filter form
+    if (data.tab) {
+        const hiddenTab = container.querySelector('[data-server-tabs-form] input[name="tab"]');
+        if (hiddenTab) hiddenTab.value = data.tab;
+    }
+
+    // 6. Sync URL
+    if (pushHistory) {
+        const resolvedUrl = data.url || url;
+        window.history.pushState(
+            { _serverTabs: getContainerSelector(state), url: resolvedUrl },
+            '',
+            resolvedUrl,
+        );
+    }
+
+    // 7. Re-init Bootstrap tooltips inside swapped content
+    reinitTooltips(tableTarget);
+
+    // 7b. Re-init Adasi Calendars inside swapped content
+    if (window.AdasiCalendar?.initialize) {
+        window.AdasiCalendar.initialize(tableTarget);
+    }
+
+    // 8. Dispatch custom event for page-specific re-binding
+    container.dispatchEvent(new CustomEvent('adasi:server-tabs:updated', {
+        bubbles: true,
+        detail: { tab: data.tab, metrics: data.metrics, data },
+    }));
+
+    // 9. Callback
+    if (typeof options.onUpdated === 'function') {
+        options.onUpdated(data);
+    }
+
+    // Clear optimistic rollback state on success
+    state.previousTab = null;
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────
+
+function getContainerSelector(state) {
+    for (const [selector, s] of instances) {
+        if (s === state) return selector;
+    }
+    return '';
+}
+
+function updateTabActiveStates(container, activeTab) {
+    // 1. Update Segmented Pill Tabs (exclude metric cards)
+    const pillTabs = container.querySelectorAll('[data-server-tab]:not([data-server-tab-card])');
+    const pillActiveClasses = ['tw-bg-primary', 'tw-text-primary-foreground', 'tw-shadow-xs'];
+    const pillInactiveClasses = ['tw-text-on-surface-variant'];
+    const pillHoverClasses = ['hover:tw-bg-surface', 'hover:tw-text-on-surface'];
+    const activeBadgeClasses = ['tw-bg-white/20', 'tw-text-white'];
+    const inactiveBadgeClasses = ['tw-bg-surface', 'tw-text-on-surface-variant'];
+
+    pillTabs.forEach((tab) => {
+        const tabName = tab.dataset.tabName;
+        const badge = tab.querySelector('.tw-rounded-full');
+        const isActive = tabName === activeTab;
+
+        // Tabs inside a server-rendered nav are styled through aria-current (aria-[current=page]: variants),
+        // so only the attribute moves; no page-specific class list lives in this file.
+        if (tab.closest('[data-server-tabs-nav]')) {
+            if (isActive) {
+                tab.setAttribute('aria-current', 'page');
+            } else {
+                tab.removeAttribute('aria-current');
+            }
+            return;
+        }
+
+        if (isActive) {
+            tab.setAttribute('aria-current', 'page');
+            tab.classList.add(...pillActiveClasses);
+            tab.classList.remove(...pillInactiveClasses, ...pillHoverClasses);
+            if (badge) {
+                badge.classList.add(...activeBadgeClasses);
+                badge.classList.remove(...inactiveBadgeClasses);
+            }
+        } else {
+            tab.removeAttribute('aria-current');
+            tab.classList.remove(...pillActiveClasses);
+            tab.classList.add(...pillInactiveClasses, ...pillHoverClasses);
+            if (badge) {
+                badge.classList.remove(...activeBadgeClasses);
+                badge.classList.add(...inactiveBadgeClasses);
+            }
+        }
+    });
+
+    // 2. Update Metric Cards
+    const cardTabs = container.querySelectorAll('[data-server-tab-card]');
+    const cardActiveClasses = ['tw-border-primary', 'tw-ring-2', 'tw-ring-primary'];
+    const cardInactiveClasses = ['tw-border-outline'];
+
+    cardTabs.forEach((card) => {
+        const tabName = card.dataset.tabName;
+        const isActive = tabName === activeTab;
+
+        if (isActive) {
+            card.classList.add(...cardActiveClasses);
+            card.classList.remove(...cardInactiveClasses);
+        } else {
+            card.classList.remove(...cardActiveClasses);
+            card.classList.add(...cardInactiveClasses);
+        }
+    });
+}
+
+/**
+ * Replace the tab nav with the server's copy and hand keyboard focus back to the tab the user activated,
+ * otherwise re-rendering the nav would drop focus to <body>.
+ */
+function swapTabNav(container, navHtml) {
+    const nav = container.querySelector('[data-server-tabs-nav]');
+    if (!nav) return;
+
+    const focusedTab = document.activeElement?.closest?.('[data-server-tab]');
+    const focusedTabName = focusedTab?.closest('[data-server-tabs-nav]') ? focusedTab.dataset.tabName : null;
+
+    nav.innerHTML = navHtml;
+
+    if (focusedTabName) {
+        [...nav.querySelectorAll('[data-server-tab]')]
+            .find((tab) => tab.dataset.tabName === focusedTabName)
+            ?.focus();
+    }
+}
+
+function updateMetrics(container, metrics) {
+    // Update tab count badges
+    const badgeMap = {
+        unpaid_count: '[data-tab-count="unpaid"]',
+        paid_count: '[data-tab-count="paid"]',
+        total_batches: '[data-tab-count="all"]',
+    };
+
+    for (const [key, selector] of Object.entries(badgeMap)) {
+        if (metrics[key] !== undefined) {
+            const badges = container.querySelectorAll(selector);
+            badges.forEach((badge) => {
+                badge.textContent = Number(metrics[key]).toLocaleString('id-ID');
+            });
+        }
+    }
+
+    // Update metric card values and meta descriptions
+    const metricCardMap = {
+        total_batches: '[data-metric="total_batches"]',
+        unpaid_amount: '[data-metric="unpaid_amount"]',
+        unpaid_count: '[data-metric="unpaid_count"]',
+        paid_amount: '[data-metric="paid_amount"]',
+        paid_count: '[data-metric="paid_count"]',
+    };
+
+    for (const [key, selector] of Object.entries(metricCardMap)) {
+        if (metrics[key] !== undefined) {
+            const elements = container.querySelectorAll(selector);
+            elements.forEach((el) => {
+                if (key.endsWith('_amount')) {
+                    el.textContent = `Rp ${Number(metrics[key]).toLocaleString('id-ID')}`;
+                } else if (key === 'total_batches') {
+                    el.textContent = Number(metrics[key]).toLocaleString('id-ID');
+                } else {
+                    // count metrics used as meta descriptions
+                    el.textContent = t(key === 'unpaid_count' ? 'js.server_tabs.unpaid' : 'js.server_tabs.paid', { count: Number(metrics[key]).toLocaleString('id-ID') });
+                }
+            });
+        }
+    }
+}
+
+function updateOverpaymentBadge(container, count) {
+    const badge = container.querySelector('[data-overpayment-count]');
+    if (!badge) return;
+
+    badge.textContent = count;
+    if (count > 0) {
+        badge.classList.remove('tw-hidden');
+    } else {
+        badge.classList.add('tw-hidden');
+    }
+}
+
+function showLoadingOverlay(target) {
+    let overlay = target.querySelector('.server-tabs-loading-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.className = 'server-tabs-loading-overlay tw-absolute tw-inset-0 tw-flex tw-items-center tw-justify-center tw-z-10';
+        overlay.innerHTML = `
+            <div class="tw-flex tw-items-center tw-gap-2 tw-px-4 tw-py-2 tw-rounded-lg tw-bg-surface tw-shadow-md tw-border tw-border-outline-variant">
+                <div class="tw-animate-spin tw-w-4 tw-h-4 tw-border-2 tw-border-primary tw-border-t-transparent tw-rounded-full"></div>
+                <span class="tw-text-ui-xs tw-text-on-surface-variant tw-font-medium" data-server-tabs-loading-text></span>
+            </div>
+        `;
+        overlay.querySelector('[data-server-tabs-loading-text]').textContent = t('js.tables.loading');
+        target.style.position = 'relative';
+        target.appendChild(overlay);
+    }
+    overlay.style.display = '';
+}
+
+function hideLoadingOverlay(target) {
+    const overlay = target.querySelector('.server-tabs-loading-overlay');
+    if (overlay) overlay.style.display = 'none';
+}
+
+function reinitTooltips(container) {
+    const Tooltip = window.bootstrap?.Tooltip;
+    if (!Tooltip) return;
+
+    container.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((el) => {
+        Tooltip.getOrCreateInstance(el);
+    });
+}
+
+export function bootServerTabs() {
+    if (typeof document === 'undefined') return;
+    document.querySelectorAll('[data-server-tabs-container]').forEach((container) => {
+        const selector = container.id ? `#${container.id}` : null;
+        if (selector) {
+            init(selector);
+        }
+    });
+}
+
+// Auto-boot on DOM ready or immediately if document is already interactive/complete
+if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bootServerTabs);
+    } else {
+        bootServerTabs();
+    }
+}
+
+// ─── Public API ───────────────────────────────────────────────────────────
+
+window.AdasiServerTabs = Object.freeze({
+    init,
+    boot: bootServerTabs,
+    invalidateCache: cacheInvalidateAll,
+    invalidateCacheForTab: cacheInvalidateForTab,
+});

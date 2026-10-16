@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Support\BusinessTime;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
@@ -33,6 +34,11 @@ class PriceComparisonServerTabsTest extends TestCase
         $response->assertOk();
         $response->assertSee('id="purchasingComparisonContainer"', false);
         $response->assertSee('id="purchasingComparisonContent"', false);
+        // #purchasingComparisonContent is a CSS Grid item of #purchasingComparisonContainer
+        // (tw-grid); without tw-min-w-0 the grid item's default min-width: auto lets the wide
+        // comparison-matrix-table (width: max-content) blow out the whole page horizontally
+        // instead of scrolling inside its own <x-ui.data-table> wrapper.
+        $response->assertSee('id="purchasingComparisonContent" class="tw-min-w-0 tw-max-w-full"', false);
         $response->assertSee('data-server-tab', false);
         $response->assertSee('data-tab-name="inter-supplier"', false);
         $response->assertSee('data-tab-name="historical"', false);
@@ -59,7 +65,7 @@ class PriceComparisonServerTabsTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('id="purchasingComparisonContainer"', false);
-        $response->assertSee('id="purchasingComparisonContent"', false);
+        $response->assertSee('id="purchasingComparisonContent" class="tw-min-w-0 tw-max-w-full"', false);
         $response->assertSee('data-server-tab', false);
     }
 
@@ -104,7 +110,7 @@ class PriceComparisonServerTabsTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('id="purchasingComparisonContainer"', false);
-        $response->assertSee('id="purchasingComparisonContent"', false);
+        $response->assertSee('id="purchasingComparisonContent" class="tw-min-w-0 tw-max-w-full"', false);
         $response->assertSee('id="vsBestTable"', false);
         $response->assertSee('id="vsBestMonthRange"', false);
     }
@@ -172,8 +178,10 @@ class PriceComparisonServerTabsTest extends TestCase
             ]));
         $dataResponse->assertOk();
 
-        $this->assertTrue(Cache::has('purchasing:vs_best_summary_unfiltered:v1'));
-        $cachedSummary = Cache::get('purchasing:vs_best_summary_unfiltered:v1');
+        // Mission 07: the cached summary is keyed by evaluation date and currency (Q9).
+        $cacheKey = 'purchasing:vs_best_summary_unfiltered:v2:'.BusinessTime::today()->toDateString().':IDR';
+        $this->assertTrue(Cache::has($cacheKey));
+        $cachedSummary = Cache::get($cacheKey);
         $this->assertIsArray($cachedSummary);
         $this->assertArrayHasKey('total_rows', $cachedSummary);
         $this->assertArrayHasKey('competitive_count', $cachedSummary);

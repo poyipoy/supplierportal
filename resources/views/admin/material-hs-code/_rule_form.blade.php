@@ -1,6 +1,6 @@
 <div class="modal fade" id="ruleModal" tabindex="-1" aria-labelledby="ruleModalTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable modal-fullscreen-lg-down">
-        <form id="ruleForm" method="POST" action="{{ route('admin.hs-code-rules.store') }}" class="modal-content">
+        <form id="ruleForm" method="POST" action="{{ route($masterRoutePrefix.'.hs-code-rules.store') }}" class="modal-content">
             @csrf
             <input type="hidden" id="ruleFormMethod">
             <input type="hidden" name="form_context" value="rule">

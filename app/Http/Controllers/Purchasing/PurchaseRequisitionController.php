@@ -18,6 +18,7 @@ use App\Services\NotificationService;
 use App\Support\BusinessTime;
 use App\Support\NotificationCategory;
 use App\Support\NumberFormat;
+use App\Support\Procurement\LogisticsTerms;
 use App\Support\PurchasingNavigation;
 use App\Support\SpreadsheetImportReader;
 use Illuminate\Http\Request;
@@ -223,7 +224,7 @@ class PurchaseRequisitionController extends Controller
 
         return response()->json(
             $import->preview(),
-            $import->hasFileErrors() ? 422 : 200
+            $import->hasBlockingErrors() ? 422 : 200
         );
     }
 
@@ -237,6 +238,16 @@ class PurchaseRequisitionController extends Controller
         if ($pr->created_by !== auth()->id() || $pr->status !== 'draft') {
             return redirect(PurchasingNavigation::backUrl('purchasing.requisitions.index'))
                 ->with('error', __('purchasing.copy.only_your_draft_requisitions_can_be_submitted_from_this_list'));
+        }
+
+        // The list quick-submit posts no form fields; the draft must already
+        // carry both logistics terms (decision 12, shared submit guard).
+        try {
+            LogisticsTerms::assertSubmittable($pr->port_of_discharge, $pr->incoterm);
+        } catch (ValidationException $exception) {
+            return redirect(PurchasingNavigation::backUrl('purchasing.requisitions.index'))
+                ->withErrors($exception->errors())
+                ->with('error', collect($exception->errors())->flatten()->first());
         }
 
         try {
@@ -278,6 +289,8 @@ class PurchaseRequisitionController extends Controller
                     'created_by' => auth()->id(),
                     'pr_number' => $validated['action'] === 'submitted' ? PurchaseRequisition::generatePrNumber() : null,
                     'notes' => $validated['notes'] ?? null,
+                    'port_of_discharge' => $validated['port_of_discharge'] ?? null,
+                    'incoterm' => $validated['incoterm'] ?? null,
                     'status' => $validated['action'],
                 ]);
 
@@ -342,6 +355,8 @@ class PurchaseRequisitionController extends Controller
             ->distinct('supplier_id')
             ->count('supplier_id');
         $totalKg = $pr->items->sum(fn ($item) => $item->total_weight);
+        // Footer totals are server-authoritative (decision 06).
+        $totalQty = (int) $pr->items->sum(fn ($item) => $item->quantity_value);
 
         return view('purchasing.pr.show', compact(
             'pr',
@@ -349,6 +364,7 @@ class PurchaseRequisitionController extends Controller
             'lowestTotalIdr',
             'submittedQuotationCount',
             'totalKg',
+            'totalQty',
         ));
     }
 
@@ -426,6 +442,8 @@ class PurchaseRequisitionController extends Controller
                         ? PurchaseRequisition::generatePrNumber()
                         : $pr->pr_number,
                     'notes' => $validated['notes'] ?? null,
+                    'port_of_discharge' => $validated['port_of_discharge'] ?? null,
+                    'incoterm' => $validated['incoterm'] ?? null,
                     'status' => $validated['action'],
                 ]);
 

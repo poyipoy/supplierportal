@@ -49,8 +49,9 @@
     <div class="tw-grid tw-items-start tw-gap-4 xl:tw-grid-cols-[minmax(0,2fr)_minmax(19rem,1fr)]">
         {{-- Main Column --}}
         <div class="tw-grid tw-min-w-0 tw-gap-4">
-            {{-- Info Quotation Card --}}
-            <x-ui.card :title="__('purchasing.copy.commercial_summary')">
+            {{-- Decision 24 / 14: same order as the Supplier form, read-only. --}}
+            {{-- 1. Procurement Context --}}
+            <x-ui.card :title="__('procurement.quotation.procurement_context')" data-quotation-section="context">
                 <div class="tw-grid tw-gap-3 sm:tw-grid-cols-2 lg:tw-grid-cols-3">
                     <div class="tw-p-2.5 tw-bg-surface-low border rounded">
                         <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('purchasing.copy.pr_number') }}</div>
@@ -64,12 +65,21 @@
                         <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('purchasing.copy.currency') }}</div>
                         <div class="fw-bold tw-text-on-surface tw-text-ui-sm tw-mt-0.5"><span class="ui-status-chip ui-status-chip--neutral">{{ $quotation->currency }}</span></div>
                     </div>
+                </div>
+                <div class="tw-mt-3">
+                    @include('partials.procurement-logistics', ['port' => $quotation->purchaseRequisition->port_of_discharge, 'incoterm' => $quotation->purchaseRequisition->incoterm])
+                </div>
+            </x-ui.card>
+
+            {{-- 2. Commercial Terms & Logistics --}}
+            <x-ui.card :title="__('procurement.quotation.commercial_terms')" data-quotation-section="terms">
+                <div class="tw-grid tw-gap-3 sm:tw-grid-cols-2 lg:tw-grid-cols-3">
                     <div class="tw-p-2.5 tw-bg-surface-low border rounded">
                         <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('purchasing.copy.date_submitted') }}</div>
                         <div class="fw-semibold tw-text-on-surface tw-text-ui-sm tw-mt-0.5">{{ $quotation->submitted_at ? $regionalFormatter->timestamp($quotation->submitted_at, 'datetime_comma') : '-' }}</div>
                     </div>
                     <div class="tw-p-2.5 tw-bg-surface-low border rounded">
-                        <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('purchasing.copy.supplier_estimated_ready_dispatch_date') }}</div>
+                        <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('purchasing.copy.supplier_estimate_delivery') }}</div>
                         <div class="fw-semibold tw-text-on-surface tw-text-ui-sm tw-mt-0.5">{{ $quotation->estimated_delivery ? $regionalFormatter->date($quotation->estimated_delivery) : '-' }}</div>
                     </div>
                     <div class="tw-p-2.5 tw-bg-surface-low border rounded">
@@ -87,21 +97,26 @@
                         <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('purchasing.copy.payment_terms_conditions') }}</div>
                         <div class="tw-text-on-surface tw-text-ui-sm tw-mt-0.5">{{ $quotation->payment_terms ?? '-' }}</div>
                     </div>
+                    @if($quotation->general_notes)
+                        <div class="sm:tw-col-span-2 lg:tw-col-span-3 tw-p-2.5 tw-bg-surface-low border rounded tw-text-ui-xs tw-text-on-surface">
+                            <span class="fw-bold d-block tw-mb-0.5">{{ __('purchasing.copy.supplier_notes') }}</span>
+                            {{ $quotation->general_notes }}
+                        </div>
+                    @endif
                 </div>
+            </x-ui.card>
 
+            {{-- 3. Status & Follow-up --}}
+            <x-ui.card :title="__('procurement.quotation.status_follow_up')" data-quotation-section="status">
+                <div class="d-flex flex-wrap align-items-center tw-gap-2">
+                    <span class="tw-text-ui-xs fw-semibold tw-uppercase tw-text-on-surface-variant">{{ __('procurement.quotation.current_status') }}</span>
+                    <x-status-badge type="quotation" :status="$quotation->status" />
+                </div>
                 @if($quotation->status === 'revision_requested')
                     <x-ui.alert tone="warning" :title="__('purchasing.copy.revision_requested')" class="tw-mt-3">{{ __('purchasing.copy.the_supplier_must_resubmit_the_quotation_with_updated_pricing_and_validity') }}</x-ui.alert>
                 @elseif($quotation->isExpired())
                     <x-ui.alert tone="error" :title="__('purchasing.copy.quotation_expired')" class="tw-mt-3">{{ __('purchasing.copy.the_supplier_must_resubmit_a_valid_offer_before_a_po_can_be_created') }}</x-ui.alert>
                 @endif
-
-                @if($quotation->general_notes)
-                    <div class="mt-3 tw-p-2.5 tw-bg-surface-low border rounded tw-text-ui-xs tw-text-on-surface">
-                        <span class="fw-bold d-block tw-mb-0.5">{{ __('purchasing.copy.supplier_notes') }}</span>
-                        {{ $quotation->general_notes }}
-                    </div>
-                @endif
-
                 @if($quotation->reviewer_notes)
                     <div class="mt-3 tw-p-2.5 bg-warning-subtle border border-warning-subtle rounded tw-text-ui-xs text-warning-emphasis">
                         <span class="fw-bold d-block tw-mb-0.5"><x-ui.icon name="square-pen" size="sm" class="me-1" />{{ __('purchasing.copy.purchasing_reviewer_notes') }}</span>
@@ -110,133 +125,10 @@
                 @endif
             </x-ui.card>
 
-            {{-- Material Price Breakdown Table --}}
-            <x-ui.data-table
-                :title="__('purchasing.page.material_price_count', ['count' => $quotation->items->count()])"
-                :description="__('purchasing.copy.requested_specifications_supplier_availability_and_exchange_rate_snapshot_in_one_review_table')"
-            >
-                <table class="table table-hover align-middle mb-0 tw-text-ui-xs w-100">
-                    <thead class="table-light text-center">
-                        <tr>
-                            <th scope="col" style="width: 35px;">{{ __('purchasing.copy.no') }}</th>
-                            <th scope="col" class="text-start">{{ __('purchasing.copy.material') }}</th>
-                            <th scope="col">{{ __('purchasing.copy.requested_vs_offered') }}</th>
-                            <th scope="col">{{ __('purchasing.copy.qty') }}<br><span class="fw-normal">{{ __('purchasing.copy.requested_offer') }}</span></th>
-                            <th scope="col" class="text-end">{{ __('purchasing.copy.weight_unit_kg_e8ab70') }}<br><span class="fw-normal">{{ __('purchasing.copy.requested_offer') }}</span></th>
-                            <th scope="col" class="text-end">{{ __('purchasing.copy.total_kg') }}<br><span class="fw-normal">{{ __('purchasing.copy.requested_offer') }}</span></th>
-                            <th scope="col" class="text-end">{{ __('purchasing.copy.price_kg') }} ({{ $quotation->currency }})</th>
-                            <th scope="col" class="text-end">{{ __('purchasing.copy.requested_amount') }}</th>
-                            <th scope="col" class="text-end">{{ __('purchasing.copy.offer_amount') }}</th>
-                            <th scope="col" class="text-end">{{ __('purchasing.copy.offer_est_idr') }}</th>
-                            <th scope="col">{{ __('purchasing.copy.notes') }}</th>
-                            <th scope="col" class="text-center" style="width: 50px;">MTC</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @php
-                            $totalOriginal = 0;
-                            $totalIdr = 0;
-                            $rateValue = $quotationRate ? (float) $quotationRate->rate_to_idr : null;
-                        @endphp
-                        @foreach($quotation->items as $idx => $item)
-                            @php
-                                $quantity = $item->prItem ? $item->prItem->quantity_value : 1;
-                                $weight = $item->prItem ? (float)$item->prItem->weight_needed : 0;
-                                $totalWeight = $item->prItem ? (float)$item->prItem->total_weight : $weight;
-                                $pricePerKg = $item->price_per_kg === null ? null : (float) $item->price_per_kg;
-                                $amount = $item->resolved_amount;
-                                $requestedAmount = $item->requested_amount;
-                                $amountIdr = $rateValue !== null ? $amount * $rateValue : null;
-                                $totalOriginal += $amount;
-                                $totalIdr += $amountIdr ?? 0;
-                                $availability = $item->availability_comparison;
-                            @endphp
-                            <tr>
-                                <td class="text-center tw-text-on-surface-variant ui-tabular-nums">{{ $idx + 1 }}</td>
-                                <td>
-                                    <div class="fw-bold tw-text-on-surface">{{ $item->prItem->material_name ?? '-' }}</div>
-                                    @if($item->prItem && $item->prItem->shape)
-                                        <span class="ui-status-chip ui-status-chip--neutral tw-mt-0.5">{{ $item->prItem->shape }}</span>
-                                        <div class="tw-text-on-surface-variant tw-text-ui-xs tw-mt-0.5">{{ $item->prItem->dimension_label }}</div>
-                                    @endif
-                                    @if($item->prItem?->remark)
-                                        <div class="tw-text-on-surface-variant tw-text-ui-xs tw-mt-0.5">{{ __('common.final_copy.remark') }} {{ $item->prItem->remark }}</div>
-                                    @endif
-                                </td>
-                                <td class="text-start tw-min-w-[210px]">
-                                    <div class="border rounded tw-p-1.5 tw-bg-surface-low mb-1 tw-text-ui-xs">
-                                        <span class="tw-text-on-surface-variant fw-semibold d-block">{{ __('purchasing.copy.requested') }}</span>
-                                        <span class="fw-medium">{{ __('common.fields.qty') }} {{ $regionalFormatter->number(number_format($quantity, 0), 'international') }} &bull; {{ $item->prItem?->dimension_label ?? '-' }}</span>
-                                    </div>
-                                    <div class="border rounded tw-p-1.5 tw-bg-surface tw-text-ui-xs">
-                                        <span class="text-primary fw-semibold d-block">{{ __('purchasing.copy.offered') }}</span>
-                                        @if($availability['specification']['code'] === 'not_available')
-                                            <span class="ui-status-chip ui-status-chip--error">{{ __('purchasing.copy.not_available') }}</span>
-                                        @else
-                                            <span class="fw-medium">{{ __('common.fields.qty') }} {{ $item->available_qty ?? '-' }} &bull; {{ $item->available_dimension_label }}</span>
-                                            @if($item->is_estimated_weight)
-                                                <div class="tw-mt-1"><span class="ui-status-chip ui-status-chip--warning">{{ __('purchasing.copy.est_weight') }}</span></div>
-                                            @endif
-                                        @endif
-                                        <div class="d-flex flex-wrap gap-1 mt-1">
-                                            <span @class([
-                                                'badge',
-                                                'bg-secondary' => in_array($availability['quantity']['code'], ['not_specified', 'not_available'], true),
-                                                'bg-warning text-dark' => $availability['quantity']['code'] === 'shortage',
-                                                'bg-success' => in_array($availability['quantity']['code'], ['match', 'surplus'], true),
-                                            ]) style="font-size: var(--ui-font-size-xs);">{{ $availability['quantity']['label'] }}</span>
-                                            <span @class([
-                                                'badge',
-                                                'bg-secondary' => in_array($availability['specification']['code'], ['not_specified', 'not_available'], true),
-                                                'bg-warning text-dark' => $availability['specification']['code'] === 'different',
-                                                'bg-success' => in_array($availability['specification']['code'], ['exact', 'within_range'], true),
-                                            ]) style="font-size: var(--ui-font-size-xs);">{{ $availability['specification']['label'] }}</span>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="text-center ui-tabular-nums">
-                                    <div>{{ $quantity }}</div>
-                                    <div class="fw-bold text-primary">{{ $item->is_available ? ($item->available_qty ?? '-') : '—' }}</div>
-                                </td>
-                                <td class="text-end ui-tabular-nums">
-                                    <div class="tw-text-on-surface-variant">{{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($weight), 'decimal') }}</div>
-                                    <div class="fw-bold text-primary">{{ $item->is_available ? $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($item->offered_weight_per_unit ?? $weight), 'decimal') : '—' }}</div>
-                                </td>
-                                <td class="text-end ui-tabular-nums">
-                                    <div class="tw-text-on-surface-variant">{{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($totalWeight), 'decimal') }}</div>
-                                    <div class="fw-bold text-primary">{{ $item->is_available ? $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($item->offered_total_weight), 'decimal') : '—' }}</div>
-                                </td>
-                                <td class="text-end fw-bold ui-tabular-nums">{{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($pricePerKg, 4), 'decimal') }}</td>
-                                <td class="text-end ui-tabular-nums">{{ $item->is_available ? $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($requestedAmount), 'decimal') : '—' }}</td>
-                                <td class="text-end fw-semibold ui-tabular-nums" data-offer-amount="{{ $item->is_available ? \App\Support\NumberFormat::maxDecimals($amount) : '' }}">{{ $item->is_available ? $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($amount), 'decimal') : '—' }}</td>
-                                <td class="text-end fw-bold tw-text-on-surface ui-tabular-nums">
-                                    {{ $amountIdr !== null && $item->is_available ? 'Rp '.$regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($amountIdr), 'decimal') : '—' }}
-                                </td>
-                                <td class="text-start tw-text-on-surface-variant">{{ $item->notes ?: '—' }}</td>
-                                <td class="text-center">
-                                    @if($item->attachments->isNotEmpty())
-                                        @foreach($item->attachments as $attachment)
-                                            <x-ui.icon-button :href="route('attachments.show', $attachment)" icon="paperclip" :label="__('common.closure.attachment_open', ['name' => $attachment->file_name])" size="sm" target="_blank" />
-                                        @endforeach
-                                    @else
-                                        <span class="tw-text-outline">-</span>
-                                    @endif
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                    <tfoot class="table-light fw-bold border-top">
-                        <tr>
-                            <td colspan="8" class="text-end tw-text-on-surface">{{ __('purchasing.page.offer_total', ['currency' => $quotation->currency]) }}</td>
-                            <td class="text-end tw-text-on-surface ui-tabular-nums">{{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($totalOriginal), 'decimal') }}</td>
-                            <td class="text-end text-primary ui-tabular-nums fs-6">
-                                {{ $rateValue !== null ? 'Rp '.$regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($totalIdr), 'decimal') : '—' }}
-                            </td>
-                            <td colspan="2"></td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </x-ui.data-table>
+            {{-- 4. Detail Quotation (read-only, no form) --}}
+            <div class="tw-min-w-0" data-quotation-section="detail">
+                @include('quotations._items_readonly_table', ['quotation' => $quotation, 'referencePrices' => $referencePrices])
+            </div>
         </div>
 
         {{-- Sidebar Column --}}
@@ -251,6 +143,8 @@
                         <div><x-ui.icon name="phone" size="sm" class="me-1 tw-text-outline" />{{ $quotation->supplier->supplier->phone ?? '-' }}</div>
                     </div>
                 @endif
+                {{-- Decision 10: Supplier PIC ("–" when absent). --}}
+                @include('quotations._supplier_pic', ['profile' => $quotation->supplier->supplier])
             </x-ui.card>
 
             {{-- Chat Action Card --}}
@@ -336,7 +230,10 @@
                 @endif
 
                 @if($canCreatePo)
-                    <x-ui.button type="button" size="sm" class="tw-w-full tw-mb-2" data-bs-toggle="modal" data-bs-target="#generatePoModal">
+                    @unless($poGenerationEnabled)
+                        <x-ui.alert tone="warning" class="tw-mb-2">{{ __('procurement.po_generation.disabled_notice') }}</x-ui.alert>
+                    @endunless
+                    <x-ui.button type="button" size="sm" class="tw-w-full tw-mb-2" data-bs-toggle="modal" data-bs-target="#generatePoModal" :disabled="! $poGenerationEnabled">
                         <x-slot:leading><x-ui.icon name="receipt" /></x-slot:leading>
                         {{ __('purchasing.copy.generate_purchase_order') }}
                     </x-ui.button>
@@ -445,6 +342,9 @@
                                     <tr>
                                         <th scope="col">{{ __('purchasing.copy.material') }}</th>
                                         <th scope="col" class="text-end">{{ __('purchasing.copy.quantity') }}</th>
+                                        @if($orderedQuantityWriteEnabled)
+                                            <th scope="col" style="min-width: 11rem;">{{ __('procurement.ordered_quantity.order_qty') }}</th>
+                                        @endif
                                         <th scope="col" class="text-end">{{ __('purchasing.copy.total_weight_kg_c45d9d') }}</th>
                                         <th scope="col" class="text-end">{{ __('purchasing.copy.price_kg_5a0171') }}</th>
                                         <th scope="col" class="text-end">{{ __('purchasing.copy.amount') }}</th>
@@ -457,6 +357,27 @@
                                         <tr @class(['table-light' => ! $preview['eligible']])>
                                             <td class="fw-semibold">{{ $previewItem->prItem->material_name ?? '-' }}</td>
                                             <td class="text-end ui-tabular-nums">{{ $previewItem->prItem?->quantity_value ?? '-' }}</td>
+                                            @if($orderedQuantityWriteEnabled)
+                                                <td>
+                                                    @if($preview['eligible'] && $previewItem->prItem)
+                                                        @include('procurement._order_qty_control', [
+                                                            'prItemId' => $previewItem->pr_item_id,
+                                                            'material' => $previewItem->prItem->material_name,
+                                                            'requested' => $previewItem->prItem->quantity_value,
+                                                            'offered' => (int) $previewItem->fulfillment_quantity,
+                                                            'value' => $preview['ordered_qty'],
+                                                            'disabled' => false,
+                                                            'specDifferent' => $preview['spec_different'],
+                                                            'specAccepted' => $preview['spec_accepted'],
+                                                            'requestedSpec' => $previewItem->prItem->dimension_label,
+                                                            'offeredSpec' => $previewItem->available_dimension_label,
+                                                            'idSuffix' => 'Direct'.$previewItem->id,
+                                                        ])
+                                                    @else
+                                                        <span class="tw-text-outline">—</span>
+                                                    @endif
+                                                </td>
+                                            @endif
                                             <td class="text-end ui-tabular-nums">
                                                 {{ \App\Support\NumberFormat::maxDecimals($previewItem->offered_total_weight ?? $previewItem->prItem?->total_weight ?? 0) }}
                                             </td>
@@ -478,12 +399,12 @@
                                 </tbody>
                                 <tfoot class="table-light fw-bold">
                                     <tr>
-                                        <td colspan="4" class="text-end">{{ __('purchasing.copy.po_total') }} ({{ $quotation->currency }})</td>
+                                        <td colspan="{{ $orderedQuantityWriteEnabled ? 5 : 4 }}" class="text-end">{{ __('purchasing.copy.po_total') }} ({{ $quotation->currency }})</td>
                                         <td class="text-end ui-tabular-nums">{{ \App\Support\NumberFormat::maxDecimals($directPoTotalAmount) }}</td>
                                         <td></td>
                                     </tr>
                                     <tr>
-                                        <td colspan="4" class="text-end">{{ __('purchasing.copy.estimated_total_idr') }}</td>
+                                        <td colspan="{{ $orderedQuantityWriteEnabled ? 5 : 4 }}" class="text-end">{{ __('purchasing.copy.estimated_total_idr') }}</td>
                                         <td class="text-end text-primary ui-tabular-nums">
                                             {{ $directPoTotalIdr !== null ? 'Rp '.\App\Support\NumberFormat::maxDecimals($directPoTotalIdr) : '-' }}
                                         </td>

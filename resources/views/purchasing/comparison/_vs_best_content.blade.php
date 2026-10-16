@@ -1,12 +1,18 @@
 @php
-    $formatRupiah = fn ($value) => $value !== null ? 'Rp ' . (isset($regionalFormatter) ? $regionalFormatter->number(number_format($value, 0, ',', '.'), 'indonesian') : number_format($value, 0, ',', '.')) : '-';
+    // Mission 07: amounts are in the selected analysis currency (IDR keeps the Rupiah format).
+    $formatRupiah = fn ($value) => $value === null ? '-' : ($currency === 'IDR'
+        ? 'Rp ' . (isset($regionalFormatter) ? $regionalFormatter->number(number_format($value, 0, ',', '.'), 'indonesian') : number_format($value, 0, ',', '.'))
+        : $currency . ' ' . \App\Support\NumberFormat::maxDecimals($value, 4));
     $formatNumber = fn ($value, $decimals = 1) => $value !== null ? (isset($regionalFormatter) ? $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($value, $decimals), 'decimal') : \App\Support\NumberFormat::maxDecimals($value, $decimals)) : '-';
 @endphp
+
+@include('purchasing.comparison._evaluation_header', ['evaluation' => $evaluation, 'route' => 'purchasing.comparison.vs-best'])
 
 {{-- Filter Toolbar --}}
 <x-ui.toolbar>
     <x-slot:filters>
         <form method="GET" action="{{ route('purchasing.comparison.vs-best') }}" class="d-flex flex-wrap align-items-center gap-2 w-100" id="vsBestFilterForm" data-server-tabs-form>
+            <input type="hidden" name="currency" value="{{ $currency }}">
             <div style="min-width: 250px;">
                 <x-ui.date-range-picker
                     id="vsBestMonthRange"
@@ -49,7 +55,7 @@
                 <th scope="col" class="text-start">{{ __('purchasing.copy.material') }}</th>
                 <th scope="col">{{ __('purchasing.copy.current_price') }}</th>
                 <th scope="col">{{ __('purchasing.copy.historical_best_price') }}</th>
-                <th scope="col">{{ __('purchasing.copy.difference_idr_kg') }}</th>
+                <th scope="col">{{ __('purchasing.comparison_analytics.difference_per_kg', ['currency' => $currency]) }}</th>
                 <th scope="col">{{ __('purchasing.copy.potential_total_difference') }}</th>
                 <th scope="col">{{ __('purchasing.copy.status') }}</th>
                 <th scope="col">{{ __('purchasing.copy.action') }}</th>
@@ -62,9 +68,11 @@
 <script id="vsBestConfig" type="application/json">
 {
     "summaryFallback": @json($summary),
+    "currency": @json($currency),
     "filterParams": {
         "date_from": @json($dateFromInput),
-        "date_to": @json($dateToInput)
+        "date_to": @json($dateToInput),
+        "currency": @json($currency)
     },
     "tableDataUrl": @json(route('purchasing.comparison.vs-best.data'))
 }

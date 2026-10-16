@@ -1,0 +1,8 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Script ran on page and returned:\n```json\n{\"events\":[{\"event\":\"show\",\"time\":159211.69999999925},{\"event\":\"shown\",\"time\":159689.29999999888}],\"status\":\"Selected columns: 10\",\"error\":\"\",\"rows\":12,\"definitionUrl\":\"http://127.0.0.1:8099/exports/definitions/purchasing.po\",\"presetsUrl\":\"http://127.0.0.1:8099/export-presets\",\"focus\":\"modal fade show\",\"modal\":{\"x\":0,\"y\":0,\"width\":1536,\"height\":720,\"scrollHeight\":720,\"clientHeight\":720,\"overflow\":\"hidden auto\"},\"dialog\":{\"x\":368,\"y\":28,\"width\":800,\"height\":664,\"scrollHeight\":664,\"clientHeight\":664,\"overflow\":\"visible\"},\"body\":{\"x\":368.8000183105469,\"y\":84.0999984741211,\"width\":798.4000244140625,\"height\":534.2999877929688,\"scrollHeight\":1537,\"clientHeight\":534,\"overflow\":\"auto\"},\"footer\":{\"x\":368.8000183105469,\"y\":618.4000244140625,\"width\":798.4000244140625,\"height\":72.80000305175781,\"scrollHeight\":72,\"clientHeight\":72,\"overflow\":\"visible\"},\"listNodes\":192,\"resources\":[{\"url\":\"http://127.0.0.1:8099/exports/definitions/purchasing.po\",\"duration\":537.3000000007451,\"transfer\":1708},{\"url\":\"http://127.0.0.1:8099/export-presets?export_key=purchasing.po\",\"duration\":1148.7999999988824,\"transfer\":311}]}\n```"
+    }
+  ]
+}

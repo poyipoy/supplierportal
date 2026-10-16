@@ -1,0 +1,20 @@
+{
+  "scope": "320x225 CSS viewport equivalent to reflow at 400% of 1280x900; actual browser zoom not established",
+  "viewport": [
+    320,
+    226
+  ],
+  "pageWidth": 320,
+  "menu": {
+    "x": 28.80000114440918,
+    "y": 35,
+    "right": 220.80000114440918,
+    "bottom": 217.60000610351562
+  },
+  "footer": {
+    "top": 102,
+    "bottom": 174.8000030517578
+  },
+  "allRibbonActionsFit": true,
+  "locale": "id"
+}

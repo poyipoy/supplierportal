@@ -2,20 +2,29 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\ResolvesMasterDataRoutes;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SaveMaterialMasterRequest;
+use App\Models\MasterDataAuditLog;
 use App\Models\MaterialAlias;
 use App\Models\MaterialMaster;
+use App\Services\Materials\MasterDataDeletionService;
+use App\Support\BusinessTime;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Yajra\DataTables\Facades\DataTables;
 
 class MaterialMasterController extends Controller
 {
+    use ResolvesMasterDataRoutes;
+
     public function data(Request $request): JsonResponse
     {
+        Gate::authorize('viewAny', MaterialMaster::class);
         $query = MaterialMaster::query()->orderBy('material_code');
         $query->when($request->filled('status'), fn ($q) => $q->where('is_active', $request->string('status')->toString() === 'active'));
         $query->when($request->filled('category'), fn ($q) => $q->where('hs_category', $request->string('category')->toString()));
@@ -36,7 +45,7 @@ class MaterialMasterController extends Controller
                 'sheet' => $material->source_sheet ?? __('admin.copy.admin'),
                 'row' => $material->source_row ?? '-',
             ])))
-            ->addColumn('updated_date', fn (MaterialMaster $material) => $material->updated_at ? \App\Support\BusinessTime::format($material->updated_at, 'd M Y', false) : '-')
+            ->addColumn('updated_date', fn (MaterialMaster $material) => $material->updated_at ? BusinessTime::format($material->updated_at, 'd M Y', false) : '-')
             ->addColumn('action', function (MaterialMaster $material) {
                 $payload = e(json_encode([
                     'id' => $material->id,
@@ -53,7 +62,8 @@ class MaterialMasterController extends Controller
                 return '<div class="d-inline-flex align-items-center gap-1">'
                     .'<button type="button" class="ui-data-action ui-data-action--primary ui-focus-ring btn-edit-material" data-material="'.$payload.'" aria-label="'.e(__('purchasing.action_names.edit_material', ['name' => $material->material_code])).'">'.e(__('admin.copy.edit')).'</button>'
                     .'<div class="dropdown"><button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="'.e(__('purchasing.action_names.more_actions_for', ['name' => $material->material_code])).'">'.e(__('admin.copy.more')).'</button>'
-                    .'<ul class="dropdown-menu dropdown-menu-end"><li><button type="button" class="dropdown-item btn-toggle-material" data-id="'.$material->id.'" data-active="'.($material->is_active ? '0' : '1').'">'.$stateLabel.'</button></li></ul></div>'
+                    .'<ul class="dropdown-menu dropdown-menu-end"><li><button type="button" class="dropdown-item btn-toggle-material" data-id="'.$material->id.'" data-active="'.($material->is_active ? '0' : '1').'">'.$stateLabel.'</button></li>'
+                    .'<li><button type="button" class="dropdown-item text-danger btn-delete-material" data-id="'.$material->id.'" data-name="'.e($material->material_code).'">'.e(__('materials.master_data.delete')).'</button></li></ul></div>'
                     .'</div>';
             })
             ->rawColumns(['status_badge', 'action'])
@@ -65,13 +75,16 @@ class MaterialMasterController extends Controller
         $validated = $request->validated();
         $this->guardCodeAgainstAliases($validated['normalized_code']);
 
-        MaterialMaster::create([
-            ...$validated,
-            'created_by' => auth()->id(),
-            'updated_by' => auth()->id(),
-        ]);
+        DB::transaction(function () use ($validated): void {
+            $material = MaterialMaster::create([
+                ...$validated,
+                'created_by' => auth()->id(),
+                'updated_by' => auth()->id(),
+            ]);
+            MasterDataAuditLog::record($material, MasterDataAuditLog::CREATED, null, $material->getAttributes(), auth()->user());
+        });
 
-        return redirect()->to(route('admin.material-hs-code.index').'#materials')
+        return redirect()->to($this->masterIndexUrl('materials'))
             ->with('success', __('admin.copy.material_master_successfully_created'));
     }
 
@@ -82,24 +95,52 @@ class MaterialMasterController extends Controller
         $validated = $request->validated();
         $this->guardCodeAgainstAliases($validated['normalized_code']);
 
-        $materialMaster->update([
-            ...$validated,
-            'updated_by' => auth()->id(),
-        ]);
+        DB::transaction(function () use ($validated, $materialMaster): void {
+            $before = $materialMaster->getAttributes();
+            $materialMaster->update([
+                ...$validated,
+                'updated_by' => auth()->id(),
+            ]);
+            MasterDataAuditLog::record($materialMaster, MasterDataAuditLog::UPDATED, $before, $materialMaster->getAttributes(), auth()->user());
+        });
 
-        return redirect()->to(route('admin.material-hs-code.index').'#materials')
+        return redirect()->to($this->masterIndexUrl('materials'))
             ->with('success', __('admin.copy.material_master_successfully_updated'));
     }
 
     public function status(Request $request, MaterialMaster $materialMaster): JsonResponse
     {
+        Gate::authorize('toggleStatus', $materialMaster);
         $validated = $request->validate(['is_active' => ['required', 'boolean']]);
-        $materialMaster->update([
-            'is_active' => $validated['is_active'],
-            'updated_by' => auth()->id(),
-        ]);
+        DB::transaction(function () use ($validated, $materialMaster): void {
+            $before = $materialMaster->getAttributes();
+            $materialMaster->update([
+                'is_active' => $validated['is_active'],
+                'updated_by' => auth()->id(),
+            ]);
+            MasterDataAuditLog::record($materialMaster, MasterDataAuditLog::STATUS_CHANGED, $before, $materialMaster->getAttributes(), auth()->user());
+        });
 
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * Q3 guarded hard delete: refused (422, audited) while referenced.
+     */
+    public function destroy(MaterialMaster $materialMaster, MasterDataDeletionService $deletion): JsonResponse
+    {
+        Gate::authorize('delete', $materialMaster);
+        $outcome = $deletion->delete($materialMaster, auth()->user());
+
+        if (! $outcome->deleted) {
+            return response()->json(['message' => __('materials.master_data.delete_refused_material', [
+                'pr_items' => $outcome->counts['pr_items'] ?? 0,
+                'aliases' => $outcome->counts['aliases'] ?? 0,
+                'reference_prices' => $outcome->counts['reference_prices'] ?? 0,
+            ]), 'counts' => $outcome->counts], 422);
+        }
+
+        return response()->json(['success' => true, 'message' => __('materials.master_data.deleted')]);
     }
 
     private function guardCodeAgainstAliases(string $normalizedCode): void

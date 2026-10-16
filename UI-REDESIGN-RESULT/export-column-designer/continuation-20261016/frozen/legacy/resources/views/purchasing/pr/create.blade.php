@@ -1,0 +1,325 @@
+@extends('layouts.app')
+
+@section('title', __('purchasing.copy.create_purchase_requisition_adasi_portal'))
+@section('page-title', __('purchasing.copy.create_purchase_requisition'))
+
+@push('styles')
+    @include('purchasing.pr._form_table_styles')
+@endpush
+
+@section('content')
+<div class="tw-grid tw-gap-4">
+    {{-- Breadcrumb & Compact Page Header --}}
+    <x-ui.breadcrumb :items="[
+        'Purchase Requisition' => \App\Support\PurchasingNavigation::backUrl('purchasing.requisitions.index'),
+        __('purchasing.breadcrumbs.create') => null,
+    ]" />
+
+    <x-ui.page-header
+        :title="__('purchasing.copy.create_purchase_requisition')"
+        :eyebrow="__('purchasing.copy.purchasing_workflow')"
+        :description="__('purchasing.copy.select_the_procurement_period_designate_supplier_audience_and_specify_material_requirements')"
+    />
+
+    {{-- Main Sectioned Form --}}
+    <form id="prForm" action="{{ route('purchasing.requisitions.store') }}" method="POST">
+        @csrf
+        <input type="hidden" name="return_url" value="{{ request('return_url') }}">
+        <input type="hidden" name="action" id="formAction" value="draft">
+        <input type="hidden" name="supplier_selection_present" value="1">
+
+        <div class="tw-grid tw-gap-5">
+            {{-- Section 1: General Information --}}
+            <x-ui.form-section
+                :title="__('purchasing.copy.general_information')"
+                :description="__('purchasing.copy.define_the_procurement_context_invitation_scope_and_requisition_remarks')"
+            >
+                <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2 lg:tw-grid-cols-3">
+                    <x-ui.select name="period_id" id="period_id" :label="__('purchasing.copy.quotation_period')" class="pr-period-field" required>
+                        <option value="">{{ __('purchasing.copy.select_period') }}</option>
+                        @foreach($periods as $period)
+                            <option value="{{ $period->id }}" {{ old('period_id') == $period->id ? 'selected' : '' }}>
+                                {{ $period->display_label }}
+                            </option>
+                        @endforeach
+                    </x-ui.select>
+
+                    <div class="tw-min-w-0">
+                        @php
+                            $selectedSupplierIds = collect(old('supplier_ids', []));
+                            if (old('supplier_id')) {
+                                $selectedSupplierIds->push(old('supplier_id'));
+                            }
+                        @endphp
+                        @include('purchasing.pr._supplier_picker_modal', [
+                            'modalId' => 'createSupplierPickerModal',
+                            'suppliers' => $suppliers,
+                            'selectedSupplierIds' => $selectedSupplierIds,
+                        ])
+                    </div>
+
+                    <div class="sm:tw-col-span-2 lg:tw-col-span-1">
+                        <x-ui.textarea
+                            name="notes"
+                            id="notes"
+                            :label="__('purchasing.copy.additional_remarks_notes')"
+                            :value="old('notes')"
+                            rows="2"
+                            :placeholder="__('purchasing.copy.e_g_required_delivery_cikarang_plant_strict_thickness_tolerance')"
+                        />
+                    </div>
+
+                    @include('purchasing.pr._logistics_fields', ['pr' => null])
+                </div>
+            </x-ui.form-section>
+
+            {{-- Section 2: Material Requirements --}}
+            <x-ui.form-section
+                :title="__('purchasing.copy.material_requirements')"
+                :description="__('purchasing.copy.add_materials_from_master_data_specify_dimensional_shapes_and_inspect_auto_computed_weights')"
+                class="pr-material-section"
+            >
+                <x-slot:actions>
+                    <div class="d-flex align-items-center gap-2">
+                        @include('purchasing.pr._import_controls')
+                        <x-ui.button type="button" variant="outline" size="sm" id="btnAddRow">
+                            <x-ui.icon name="plus" size="sm" />
+                            <span>{{ __('purchasing.copy.add_material') }}</span>
+                        </x-ui.button>
+                    </div>
+                </x-slot:actions>
+
+                <div class="table-responsive pr-form-table-scroll ui-table-sticky border rounded" role="region" tabindex="0" aria-label="{{ __('procurement.tables.pr_items') }}">
+                    <table class="table table-bordered table-hover table-sm align-middle pr-items-table mb-0 tw-text-ui-xs" id="itemsTable">
+                        <caption class="visually-hidden">{{ __('purchasing.copy.required_material_entry_table_with_shape_aware_dimension_columns') }}</caption>
+                        <colgroup>
+                            <col style="width: 48px; min-width: 48px;">
+                            <col style="width: 250px; min-width: 250px;">
+                            <col style="width: 165px; min-width: 165px;">
+                            <col style="width: 110px; min-width: 110px;">
+                            <col style="width: 78px; min-width: 78px;">
+                            <col style="width: 100px; min-width: 100px;">
+                            <col style="width: 100px; min-width: 100px;">
+                            <col style="width: 100px; min-width: 100px;">
+                            <col style="width: 100px; min-width: 100px;">
+                            <col style="width: 100px; min-width: 100px;">
+                            <col style="width: 160px; min-width: 160px;">
+                            <col style="width: 180px; min-width: 180px;">
+                            <col style="width: 64px; min-width: 64px;">
+                        </colgroup>
+                        <thead class="table-light text-center">
+                            <tr class="pr-group-header">
+                                <th scope="col" class="pr-sticky-number">{{ __('purchasing.copy.no') }}</th>
+                                <th scope="col" class="pr-sticky-material">{{ __('purchasing.copy.material') }} <span class="text-danger">*</span></th>
+                                <th scope="col">HS Code</th>
+                                <th scope="col">{{ __('purchasing.copy.shape') }}</th>
+                                <th scope="col">{{ __('purchasing.copy.qty') }} <span class="text-danger">*</span></th>
+                                @foreach(\App\Models\PrItem::FIXED_DIMENSION_ORDER as $dimensionField)
+                                    <th scope="col">{{ \App\Models\PrItem::dimensionLabel($dimensionField) }} (mm)</th>
+                                @endforeach
+                                <th scope="col">{{ __('purchasing.copy.weight_unit_kg_e8ab70') }}</th>
+                                <th scope="col">{{ __('purchasing.copy.remark') }}</th>
+                                <th scope="col" class="pr-sticky-action">{{ __('purchasing.copy.action') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody id="itemsBody">
+                            @if(old('items'))
+                                @foreach(old('items') as $index => $item)
+                                    @include('purchasing.pr._item_row', ['index' => $index, 'item' => $item])
+                                @endforeach
+                            @endif
+                        </tbody>
+                        @include('purchasing.pr._form_totals')
+                    </table>
+                </div>
+
+                @error('items') <div class="text-danger small tw-mt-1.5">{{ $message }}</div> @enderror
+                <div id="noItemAlert" class="text-danger small tw-mt-1.5 d-none" role="alert" aria-live="assertive">{{ __('purchasing.copy.at_least_1_material_row_is_required_before_saving_or_submitting') }}</div>
+            </x-ui.form-section>
+        </div>
+
+        {{-- Sticky Action Bar --}}
+        <x-ui.action-bar class="tw-mt-6">
+            <x-slot:left>
+                <x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.requisitions.index')" variant="ghost" size="sm">
+                    <x-ui.icon name="arrow-left" size="sm" />
+                    <span>{{ __('purchasing.copy.cancel') }}</span>
+                </x-ui.button>
+            </x-slot:left>
+
+            <x-slot:right>
+                <x-ui.button type="button" variant="outline" size="sm" id="btnSaveDraft" onclick="submitForm('draft')">
+                    <span>{{ __('purchasing.copy.save_draft') }}</span>
+                </x-ui.button>
+                <x-ui.button type="button" size="sm" id="btnSubmitPr" onclick="confirmSubmit()">
+                    <x-ui.icon name="send" size="sm" />
+                    <span>{{ __('purchasing.copy.submit_requisition') }}</span>
+                </x-ui.button>
+            </x-slot:right>
+        </x-ui.action-bar>
+    </form>
+</div>
+
+@include('purchasing.pr._import')
+
+{{-- Template for new row --}}
+<template id="rowTemplate">
+    @include('purchasing.pr._item_row', ['index' => '{INDEX}', 'item' => null])
+</template>
+
+@endsection
+
+@push('scripts')
+<script>
+    let itemIndex = {{ old('items') ? count(old('items')) : 0 }};
+
+    @include('purchasing.pr._material_shape_script')
+
+    function addRow() {
+        const template = document.getElementById('rowTemplate').innerHTML;
+        const html = template.replace(/{INDEX}/g, itemIndex);
+        $('#itemsBody').append(html);
+        applyMaterialShapeRules($('#itemsBody tr.item-row').last(), true);
+        resetMaterialPreview($('#itemsBody tr.item-row').last());
+        itemIndex++;
+        renumberPrRows();
+        checkRowCount();
+    }
+
+    function removeRow(btn) {
+        AdasiAlert.confirmDanger({
+            title: @json(__('purchasing.copy.delete_this_row')),
+            confirmText: @json(__('purchasing.audit_ui.confirm_delete')),
+            cancelText: @json(__('purchasing.copy.cancel'))
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $(btn).closest('tr').remove();
+                renumberPrRows();
+                checkRowCount();
+            }
+        });
+    }
+
+    function checkRowCount() {
+        if ($('#itemsBody tr').length === 0) {
+            $('#noItemAlert').removeClass('d-none');
+        } else {
+            $('#noItemAlert').addClass('d-none');
+        }
+    }
+
+    function submitForm(action) {
+        if ($('#itemsBody tr').length === 0) {
+            $('#noItemAlert').removeClass('d-none');
+            document.getElementById('btnAddRow')?.focus();
+            return;
+        }
+
+        const form = document.getElementById('prForm');
+        if (form && !form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+
+        const activeBtn = action === 'submitted' ? document.getElementById('btnSubmitPr') : document.getElementById('btnSaveDraft');
+        if (form && activeBtn) {
+            form._lastClickedButton = activeBtn;
+        }
+        window.AdasiUnsaved?.markClean?.();
+        $('#formAction').val(action);
+        if (form && typeof form.requestSubmit === 'function') {
+            form.requestSubmit();
+        } else {
+            $('#prForm').submit();
+        }
+    }
+
+    function confirmSubmit() {
+        if ($('#itemsBody tr').length === 0) {
+            $('#noItemAlert').removeClass('d-none');
+            document.getElementById('btnAddRow')?.focus();
+            return;
+        }
+
+        const form = document.getElementById('prForm');
+        if (form && !form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+
+        AdasiAlert.confirm({
+            title: @json(__('purchasing.copy.submit_requisition')),
+            text: @json(__('purchasing.copy.status_will_change_to_submitted_and_will_be_open_for_quotation_bidding')),
+            confirmText: @json(__('purchasing.copy.yes_submit')),
+            cancelText: @json(__('purchasing.copy.cancel'))
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const submitBtn = document.getElementById('btnSubmitPr');
+                if (form && submitBtn) {
+                    form._lastClickedButton = submitBtn;
+                }
+                window.AdasiUnsaved?.markClean?.();
+                $('#formAction').val('submitted');
+                if (form && typeof form.requestSubmit === 'function') {
+                    form.requestSubmit();
+                } else {
+                    $('#prForm').submit();
+                }
+            }
+        });
+    }
+
+    $(document).ready(function() {
+        $('#btnAddRow').click(addRow);
+
+        // Add one empty row initially if old input doesn't exist
+        if ($('#itemsBody tr').length === 0) {
+            addRow();
+        } else {
+            initializeMaterialShapeRows();
+        }
+
+        // Prevent accidental form submission on Enter in fields
+        $('#prForm').on('keydown', 'input, select', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+            }
+        });
+
+        // Horizontal drag-to-scroll for items table
+        const prScroll = document.querySelector('.pr-form-table-scroll');
+        if (prScroll) {
+            let isDown = false;
+            let startX = 0;
+            let startScrollLeft = 0;
+
+            prScroll.addEventListener('mousedown', function(e) {
+                if (e.button !== 0) return;
+                if (e.target.closest('input, select, textarea, button, a, label, [role="button"], .dropdown-menu, .modal, .material-search-results')) {
+                    return;
+                }
+                isDown = true;
+                startX = e.pageX;
+                startScrollLeft = prScroll.scrollLeft;
+                prScroll.style.cursor = 'grabbing';
+                prScroll.style.userSelect = 'none';
+            });
+
+            window.addEventListener('mousemove', function(e) {
+                if (!isDown) return;
+                e.preventDefault();
+                const walk = e.pageX - startX;
+                prScroll.scrollLeft = startScrollLeft - walk;
+            });
+
+            window.addEventListener('mouseup', function() {
+                if (isDown) {
+                    isDown = false;
+                    prScroll.style.cursor = '';
+                    prScroll.style.removeProperty('user-select');
+                }
+            });
+        }
+    });
+</script>
+@endpush

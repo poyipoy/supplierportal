@@ -55,105 +55,17 @@
     })->values()->all();
 @endphp
 
-@if(filter_var($allowCustom, FILTER_VALIDATE_BOOLEAN))
-    @include('components.ui._searchable-free-input')
-@else
 <div
     {{ $attributes->class(['tw-grid tw-gap-1.5 tw-relative']) }}
-    x-data="{
-        open: false,
-        search: '',
+    x-data="searchableSelect({
         selectedValue: @js((string) ($resolvedValue ?? '')),
         options: @js($normalizedOptions),
-        highlightedIndex: -1,
-
-        init() {
-            this.$watch('selectedValue', (val) => {
-                this.syncNativeSelect(val);
-            });
-            if (this.selectedValue) {
-                this.syncNativeSelect(this.selectedValue);
-            }
-        },
-
-        get filteredOptions() {
-            if (!this.search.trim()) return this.options;
-            const q = this.search.toLowerCase().trim();
-            return this.options.filter(opt =>
-                opt.searchKeywords.includes(q) ||
-                opt.label.toLowerCase().includes(q) ||
-                (opt.sublabel && opt.sublabel.toLowerCase().includes(q))
-            );
-        },
-
-        get selectedOption() {
-            return this.options.find(opt => String(opt.value) === String(this.selectedValue)) || null;
-        },
-
-        select(option) {
-            this.selectedValue = option ? String(option.value) : '';
-            this.syncNativeSelect(this.selectedValue);
-            this.open = false;
-            this.search = '';
-            this.highlightedIndex = -1;
-            this.$dispatch('change', { value: this.selectedValue });
-            this.$nextTick(() => {
-                this.$refs.triggerButton?.focus();
-            });
-        },
-
-        clear() {
-            this.select(null);
-        },
-
-        toggle() {
-            if ({{ $disabled ? 'true' : 'false' }}) return;
-            this.open = !this.open;
-            if (this.open) {
-                this.search = '';
-                this.highlightedIndex = -1;
-                this.$nextTick(() => {
-                    this.$refs.searchInput?.focus();
-                });
-            }
-        },
-
-        close() {
-            this.open = false;
-            this.highlightedIndex = -1;
-        },
-
-        syncNativeSelect(val) {
-            const selectEl = this.$refs.nativeSelect;
-            if (selectEl) {
-                if (selectEl.value !== val) {
-                    selectEl.value = val;
-                }
-                selectEl.dispatchEvent(new Event('change', { bubbles: true }));
-            }
-        },
-
-        navigate(step) {
-            const count = this.filteredOptions.length;
-            if (!count) return;
-            this.highlightedIndex = (this.highlightedIndex + step + count) % count;
-            this.$nextTick(() => {
-                const listEl = this.$refs.optionsList;
-                const itemEl = listEl?.children[this.highlightedIndex];
-                itemEl?.scrollIntoView({ block: 'nearest' });
-            });
-        },
-
-        selectHighlighted() {
-            if (this.highlightedIndex >= 0 && this.highlightedIndex < this.filteredOptions.length) {
-                this.select(this.filteredOptions[this.highlightedIndex]);
-            } else if (this.filteredOptions.length === 1) {
-                this.select(this.filteredOptions[0]);
-            }
-        }
-    }"
-    @click.outside="close()"
-    @keydown.escape.stop="close()"
+        allowCustom: @js(filter_var($allowCustom, FILTER_VALIDATE_BOOLEAN)),
+        suggestionsUrl: @js($suggestionsUrl),
+        disabled: @js((bool) $disabled)
+    })"
+    @click.outside="close(false)"
+    @keydown.escape.stop="close(true)"
     x-on:set-select-value.window="if ($event.detail?.name === '{{ $name }}' || $event.detail?.id === '{{ $resolvedId }}') { selectedValue = String($event.detail.value ?? ''); syncNativeSelect(selectedValue); }"
 >
     @if($label)
@@ -192,8 +104,10 @@
         @keydown.arrow-down.prevent="toggle()"
         @keydown.enter.prevent="toggle()"
         @disabled($disabled)
+        role="combobox"
         aria-haspopup="listbox"
         :aria-expanded="open"
+        :aria-controls="'{{ $resolvedId }}-listbox'"
         class="ui-motion tw-flex tw-min-h-[var(--ui-control-height-md)] tw-w-full tw-items-center tw-justify-between tw-rounded-ui-sm tw-border tw-bg-surface tw-px-3 tw-py-2 tw-text-start tw-text-ui-sm tw-text-on-surface tw-shadow-none ui-focus-ring disabled:tw-cursor-not-allowed disabled:tw-bg-surface-container disabled:tw-opacity-50"
         :class="{
             'tw-border-error': {{ $message ? 'true' : 'false' }},
@@ -205,13 +119,13 @@
             <template x-if="selectedOption">
                 @if($showSub)
                     <div class="tw-flex tw-flex-col tw-gap-0.5">
-                        <span class="tw-font-medium tw-text-on-surface tw-truncate" x-text="selectedOption.label"></span>
+                        <span class="tw-font-medium tw-text-on-surface tw-truncate" :class="{ 'tw-font-mono': allowCustom }" x-text="selectedOption.label"></span>
                         <template x-if="selectedOption.sublabel">
                             <span class="tw-text-ui-xs tw-text-on-surface-variant tw-truncate" x-text="selectedOption.sublabel"></span>
                         </template>
                     </div>
                 @else
-                    <span class="tw-font-medium tw-text-on-surface tw-truncate tw-block" x-text="selectedOption.label"></span>
+                    <span class="tw-font-medium tw-text-on-surface tw-truncate tw-block" :class="{ 'tw-font-mono': allowCustom }" x-text="selectedOption.label"></span>
                 @endif
             </template>
             <template x-if="!selectedOption">
@@ -223,8 +137,13 @@
             <template x-if="selectedOption && !{{ $disabled ? 'true' : 'false' }}">
                 <span
                     @click.stop="clear()"
+                    @keydown.enter.stop.prevent="clear()"
+                    @keydown.space.stop.prevent="clear()"
+                    role="button"
+                    tabindex="0"
                     class="tw-p-1 tw-rounded-full tw-text-on-surface-variant hover:tw-text-error hover:tw-bg-surface-container tw-cursor-pointer ui-motion"
                     title="{{ __('common.select.clear') }}"
+                    aria-label="{{ __('common.select.clear') }}"
                 >
                     <x-ui.icon name="x" size="sm" class="tw-w-3.5 tw-h-3.5" />
                 </span>
@@ -240,6 +159,7 @@
 
     {{-- Dropdown Menu Popover --}}
     <div
+        id="{{ $resolvedId }}-listbox"
         x-show="open"
         x-cloak
         x-transition:enter="ui-motion tw-transition tw-ease-out tw-duration-150"
@@ -304,7 +224,7 @@
                 >
                     <div class="tw-flex tw-flex-col tw-gap-0.5 tw-min-w-0 tw-flex-1 tw-pe-2">
                         <div class="tw-flex tw-items-center tw-gap-2">
-                            <span class="tw-text-ui-sm tw-font-semibold tw-text-on-surface tw-truncate" x-text="opt.label"></span>
+                            <span class="tw-text-ui-sm tw-font-semibold tw-text-on-surface tw-truncate" :class="{ 'tw-font-mono': allowCustom }" x-text="opt.label"></span>
                             <template x-if="opt.badge">
                                 <span
                                     class="tw-inline-flex tw-items-center tw-px-1.5 tw-py-0.2 tw-rounded-full tw-text-[10px] tw-font-bold tw-uppercase tw-tracking-wider"
@@ -329,9 +249,26 @@
                 </div>
             </template>
 
+            {{-- Creatable Custom Option --}}
+            <template x-if="showCustomOption">
+                <div
+                    @click="selectCustom(search.trim())"
+                    @mouseenter="highlightedIndex = filteredOptions.length"
+                    role="option"
+                    class="tw-flex tw-items-center tw-gap-2 tw-p-2.5 tw-rounded-ui-sm tw-cursor-pointer tw-border tw-border-dashed tw-border-primary/40 tw-bg-primary/5 hover:tw-bg-primary/10 ui-motion"
+                    :class="{ 'tw-ring-1 tw-ring-primary tw-bg-primary/10': highlightedIndex === filteredOptions.length }"
+                >
+                    <x-ui.icon name="plus-circle" size="sm" class="tw-text-primary tw-shrink-0" />
+                    <div class="tw-min-w-0 tw-flex-1 tw-text-ui-xs">
+                        <span class="tw-text-on-surface-variant">{{ __('common.select.use_custom') }}: </span>
+                        <span class="tw-font-mono tw-font-bold tw-text-primary" x-text="search.trim()"></span>
+                    </div>
+                </div>
+            </template>
+
             {{-- Empty State --}}
             <div
-                x-show="filteredOptions.length === 0"
+                x-show="filteredOptions.length === 0 && !showCustomOption"
                 x-cloak
                 class="tw-py-6 tw-px-3 tw-text-center tw-text-on-surface-variant"
             >
@@ -348,4 +285,3 @@
         </p>
     @endif
 </div>
-@endif

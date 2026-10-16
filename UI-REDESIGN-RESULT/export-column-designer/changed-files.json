@@ -1,0 +1,119 @@
+{
+  "files": [
+    {
+      "path": "resources/js/export-column-designer.js",
+      "status": "new",
+      "bytes": 29676,
+      "sha256": "58cecabc37bd1af11365ce43d32c79d85fed29f417c1b15cc94cdd5cbb8be2c9"
+    },
+    {
+      "path": "resources/js/advanced-export.js",
+      "status": "modified",
+      "bytes": 18907,
+      "sha256": "45ce65b211808f94961655976d44ed394561712fd8753faa3b0435a2955dab54"
+    },
+    {
+      "path": "resources/views/components/export/advanced-modal.blade.php",
+      "status": "modified",
+      "bytes": 16064,
+      "sha256": "12d3061012d9e46bca260705b1ef0da24513ea564bceefe8055591b3261a65d6"
+    },
+    {
+      "path": "resources/css/app.css",
+      "status": "modified",
+      "bytes": 138270,
+      "sha256": "dbd0da36b639dc9e3761493e16e1765f7574ea7164ce04b12d65f1daf00945e3"
+    },
+    {
+      "path": "lang/en/exports.php",
+      "status": "modified",
+      "bytes": 12181,
+      "sha256": "5de7acd7d5cde8908539c47df860e716246522e7cfcbc656c01d270c47f46516"
+    },
+    {
+      "path": "lang/id/exports.php",
+      "status": "modified",
+      "bytes": 12407,
+      "sha256": "1f12e3271229d4511b964fe7ecc8925af009fc959b92fba3047ad7e8b16a0fc0"
+    },
+    {
+      "path": "tests/js/export-column-state.test.mjs",
+      "status": "new",
+      "bytes": 18967,
+      "sha256": "9d2942f662f9ded86bcfcfb094c4b76eae9ca3a7ff0ebb02130bd0ca6c4d8147"
+    },
+    {
+      "path": "tests/js/advanced-export-columns.test.mjs",
+      "status": "new",
+      "bytes": 13714,
+      "sha256": "08b5f4bc4261b334695c7c6bc3496a5c39850325153cccc992702183fc3c2074"
+    },
+    {
+      "path": "tests/js/advanced-export-format.test.mjs",
+      "status": "modified",
+      "bytes": 3117,
+      "sha256": "1e02ed3ce87c705efc9ee60cd5097f623d7ef46471d13dce75bdfcc2ee9172a3"
+    },
+    {
+      "path": "tests/Feature/AdvancedExportUiTest.php",
+      "status": "modified",
+      "bytes": 3360,
+      "sha256": "e6fba2c4a37f016988b792677b38251a1f9f94972f26f3f243bca59a142dd8a4"
+    },
+    {
+      "path": "tests/Feature/AdvancedPurchaseOrderExportTest.php",
+      "status": "modified",
+      "bytes": 14917,
+      "sha256": "e2c4222b8c30575e7aa7cd0f684bf98edf772dfda51b50430f530bc1c6276ff7"
+    },
+    {
+      "path": "tests/Support/export-column-output-proof.php",
+      "status": "new",
+      "bytes": 22705,
+      "sha256": "e47564308a82f05110104ac2833176b8e3d08604b79a6eb2b537beea14a90158"
+    },
+    {
+      "path": "tests/Support/export-column-designer-fixtures.php",
+      "status": "new",
+      "bytes": 7699,
+      "sha256": "1e83b448212aff712e498f972890a9e53422198ac1beb7229a12b1860e17985d"
+    },
+    {
+      "path": "tests/Support/export-column-designer-app.php",
+      "status": "new",
+      "bytes": 3831,
+      "sha256": "2a7c15cfec1ea7bec474bd29e1f21df49d71852b119774a34fa94c8dcbe87519"
+    },
+    {
+      "path": "tests/Support/export-column-designer-browser-check.js",
+      "status": "new",
+      "bytes": 10775,
+      "sha256": "add8a265c27d25fc20062df92581f0e75fc953ed34159e3a64650f0fba3a5a0b"
+    },
+    {
+      "path": "tests/Support/export-column-designer-browser-measure.js",
+      "status": "new",
+      "bytes": 5380,
+      "sha256": "5d8414e9a9b8f4ef99a8dda417c43054d9d5709f68fa43c2272028574cb657cb"
+    },
+    {
+      "path": "tests/Support/export-column-designer-browser-drag.js",
+      "status": "new",
+      "bytes": 5316,
+      "sha256": "151f6510ec53abf7e15c25e2aaf3960d2213db3c25c992b609fd83c8dfb9e2e4"
+    },
+    {
+      "path": "tests/Support/export-column-designer-browser-resources.js",
+      "status": "new",
+      "bytes": 2210,
+      "sha256": "c088ba5180ee17ded9de9894a6e06e052ccf41542b4bd6171241c42d7b280282"
+    },
+    {
+      "path": "tests/Support/export-column-designer-browser-cleanup.js",
+      "status": "new",
+      "bytes": 2535,
+      "sha256": "37aaa3ae0c7625061444205ea800a767c77bf83b0c1669d0821b5023d25fc0e2"
+    }
+  ],
+  "head": "78e8bf47fa722f622b58437d975824b81aae7190"
+}

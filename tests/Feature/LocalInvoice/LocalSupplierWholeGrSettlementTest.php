@@ -68,7 +68,7 @@ class LocalSupplierWholeGrSettlementTest extends TestCase
             'invoice_number' => 'INV-WHOLE-001', 'invoice_date' => '2026-09-13',
             'local_purchase_order_id' => $this->po->id, 'goods_receipt_ids' => [$this->gr1->id, $this->gr2->id],
             'invoice_amount' => '300.00', 'tax_amount' => '0.00', 'ppn_scheme' => '0%',
-        ], $overrides), ['invoice' => NativeFileFixtures::upload('invoice.pdf', 10)]);
+        ], $overrides), [...NativeFileFixtures::invoiceReferences(), 'invoice' => NativeFileFixtures::upload('invoice.pdf', 10)]);
     }
 
     public function test_invoice_requires_one_po_and_exact_whole_gr_total(): void
@@ -120,7 +120,7 @@ class LocalSupplierWholeGrSettlementTest extends TestCase
             'invoice_amount' => '300.00',
             'tax_amount' => '0.00',
             'ppn_scheme' => '0%',
-        ], ['invoice' => NativeFileFixtures::upload('invoice-revision.pdf', 10)]);
+        ], [...NativeFileFixtures::invoiceReferences(), 'invoice' => NativeFileFixtures::upload('invoice-revision.pdf', 10)]);
     }
 
     private function requestRevision(LocalInvoice $invoice, array $overrides = []): void
@@ -164,7 +164,7 @@ class LocalSupplierWholeGrSettlementTest extends TestCase
                 'invoice_amount' => '300.00',
                 'tax_amount' => '250.00',
                 'ppn_scheme' => '0%',
-            ], ['invoice' => NativeFileFixtures::upload('invoice-revision.pdf', 10)]);
+            ], [...NativeFileFixtures::invoiceReferences(), 'invoice' => NativeFileFixtures::upload('invoice-revision.pdf', 10)]);
             $this->fail('A resubmitted VAT unrelated to DPP x scheme was accepted.');
         } catch (ValidationException $exception) {
             $this->assertArrayHasKey('ppn_scheme', $exception->errors());
@@ -181,7 +181,7 @@ class LocalSupplierWholeGrSettlementTest extends TestCase
         $this->requestRevision($invoice, ['local_purchase_order_id' => null, 'po_source' => 'INTERNAL']);
 
         try {
-            app(InvoiceSubmissionService::class)->resubmit($this->supplier, $invoice, $this->legacyResubmitPayload($invoice), ['invoice' => NativeFileFixtures::upload('invoice-revision.pdf', 10)]);
+            app(InvoiceSubmissionService::class)->resubmit($this->supplier, $invoice, $this->legacyResubmitPayload($invoice), [...NativeFileFixtures::invoiceReferences(), 'invoice' => NativeFileFixtures::upload('invoice-revision.pdf', 10)]);
             $this->fail('A non-MANUAL row was resubmitted through the manual reference branch.');
         } catch (ValidationException $exception) {
             $this->assertArrayHasKey('local_purchase_order_id', $exception->errors());
@@ -195,7 +195,7 @@ class LocalSupplierWholeGrSettlementTest extends TestCase
         $invoice = $this->invoice();
         $this->requestRevision($invoice, ['local_purchase_order_id' => null, 'po_source' => 'MANUAL']);
 
-        $resubmitted = app(InvoiceSubmissionService::class)->resubmit($this->supplier, $invoice, $this->legacyResubmitPayload($invoice), ['invoice' => NativeFileFixtures::upload('invoice-revision.pdf', 10)]);
+        $resubmitted = app(InvoiceSubmissionService::class)->resubmit($this->supplier, $invoice, $this->legacyResubmitPayload($invoice), [...NativeFileFixtures::invoiceReferences(), 'invoice' => NativeFileFixtures::upload('invoice-revision.pdf', 10)]);
 
         $this->assertSame(LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT, $resubmitted->fresh()->status);
         $this->assertSame('MANUAL', $resubmitted->fresh()->po_source);
@@ -208,7 +208,7 @@ class LocalSupplierWholeGrSettlementTest extends TestCase
         $this->requestRevision($invoice, ['local_purchase_order_id' => null, 'po_source' => 'MANUAL']);
 
         $this->actingAs($this->supplier)->post(route('local-supplier.invoices.resubmit', $invoice), array_merge(
-            $this->legacyResubmitPayload($invoice), ['invoice' => NativeFileFixtures::upload('invoice-revision.pdf', 10)]
+            $this->legacyResubmitPayload($invoice), [...NativeFileFixtures::invoiceReferences(), 'invoice' => NativeFileFixtures::upload('invoice-revision.pdf', 10)]
         ))->assertSessionHasNoErrors();
 
         $invoice->refresh();
@@ -225,7 +225,7 @@ class LocalSupplierWholeGrSettlementTest extends TestCase
         Supplier::create(['user_id' => $other->id, 'company_name' => 'PT Other', 'category' => 'Parts', 'payment_term_days' => 30]);
 
         try {
-            app(InvoiceSubmissionService::class)->submit($other, ['invoice_number' => 'INV-CROSS', 'invoice_date' => '2026-09-13', 'local_purchase_order_id' => $this->po->id, 'goods_receipt_ids' => [$this->gr1->id], 'invoice_amount' => '100.00', 'tax_amount' => '0.00', 'ppn_scheme' => '0%'], ['invoice' => NativeFileFixtures::upload('invoice.pdf', 10)]);
+            app(InvoiceSubmissionService::class)->submit($other, ['invoice_number' => 'INV-CROSS', 'invoice_date' => '2026-09-13', 'local_purchase_order_id' => $this->po->id, 'goods_receipt_ids' => [$this->gr1->id], 'invoice_amount' => '100.00', 'tax_amount' => '0.00', 'ppn_scheme' => '0%'], [...NativeFileFixtures::invoiceReferences(), 'invoice' => NativeFileFixtures::upload('invoice.pdf', 10)]);
             $this->fail('Cross-supplier PO should be rejected.');
         } catch (ValidationException) {
             $this->assertDatabaseCount('local_invoices', 0);
@@ -511,7 +511,7 @@ class LocalSupplierWholeGrSettlementTest extends TestCase
             'invoice_amount' => '1000.00',
             'tax_amount' => '0.00',
             'ppn_scheme' => '0%',
-        ], ['invoice' => NativeFileFixtures::upload('invoice.pdf', 10)]);
+        ], [...NativeFileFixtures::invoiceReferences(), 'invoice' => NativeFileFixtures::upload('invoice.pdf', 10)]);
 
         $this->assertSame($expectedRefString, $invoice->fresh()->internal_gr_reference);
         $this->assertSame(10, $invoice->goodsReceiptHistories()->where('state', 'RESERVED')->count());
@@ -537,7 +537,7 @@ class LocalSupplierWholeGrSettlementTest extends TestCase
             'invoice_amount' => '150.00',
             'tax_amount' => '0.00',
             'ppn_scheme' => '0%',
-        ], ['invoice' => NativeFileFixtures::upload('invoice.pdf', 10)]);
+        ], [...NativeFileFixtures::invoiceReferences(), 'invoice' => NativeFileFixtures::upload('invoice.pdf', 10)]);
     }
 
     public function test_expired_invoice_no_longer_counts_against_po_ceiling(): void

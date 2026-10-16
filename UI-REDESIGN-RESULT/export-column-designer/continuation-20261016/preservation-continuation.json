@@ -1,0 +1,42 @@
+{
+  "created": "2026-10-16T02:41:16.771Z",
+  "baseline": "UI-REDESIGN-RESULT/export-column-designer/continuation-20261016/baseline-files.json",
+  "total": 1920,
+  "identical": 1915,
+  "missionChanges": [
+    {
+      "path": "resources/css/app.css",
+      "before": "8d42d72e0fd91cb3a504e6e5de291ceb5bc20ed62e4ac4d447c336ba17b81d88",
+      "after": "dbd0da36b639dc9e3761493e16e1765f7574ea7164ce04b12d65f1daf00945e3",
+      "mission": true
+    },
+    {
+      "path": "resources/js/export-column-designer.js",
+      "before": "3bdff139b428147a4a51486c3e689b214c3f2ffaf86920bf679e86cbf130f02a",
+      "after": "58cecabc37bd1af11365ce43d32c79d85fed29f417c1b15cc94cdd5cbb8be2c9",
+      "mission": true
+    },
+    {
+      "path": "tests/Support/export-column-designer-browser-check.js",
+      "before": "09716fe0f0f9baee67c8171c861a8f483ffac1305d681541dea1ae5f94372736",
+      "after": "add8a265c27d25fc20062df92581f0e75fc953ed34159e3a64650f0fba3a5a0b",
+      "mission": true
+    },
+    {
+      "path": "tests/Support/export-column-designer-browser-measure.js",
+      "before": "a0239e2dd347459861ea1b89878bf94dec6d33b494c2cd26ad42a5476890462d",
+      "after": "5d8414e9a9b8f4ef99a8dda417c43054d9d5709f68fa43c2272028574cb657cb",
+      "mission": true
+    },
+    {
+      "path": "tests/Support/export-column-designer-fixtures.php",
+      "before": "ddb36a4d29863432d431c6f549c28ee4e10d62fe1db9df662fb03a037fa061ba",
+      "after": "1e83b448212aff712e498f972890a9e53422198ac1beb7229a12b1860e17985d",
+      "mission": true
+    }
+  ],
+  "otherChanges": [],
+  "missing": [],
+  "authSplashUnchanged": true,
+  "note": "Other differences are observed concurrent changes, not attributed to this task. No reset/revert performed."
+}

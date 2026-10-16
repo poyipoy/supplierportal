@@ -5,6 +5,7 @@ namespace App\Exports;
 use App\Contracts\TracksExportProgress;
 use App\Exports\Concerns\InteractsWithExportProgress;
 use App\Models\PurchaseOrder;
+use App\Support\Procurement\LogisticsTerms;
 use App\Support\SpreadsheetCellSanitizer;
 use App\Support\StatusHelper;
 use Illuminate\Support\Collection;
@@ -61,16 +62,30 @@ class PurchaseOrderDetailExport implements \Illuminate\Contracts\Translation\Has
                 : '-';
         };
 
+        // I-15: line amounts from the single ordered resolver.
+        $orderedLines = $po->orderedLines()->keyBy(fn ($line) => $line->quotationItem->id);
+        $orderedAmounts = $orderedLines->map(fn ($line) => (float) $line->amount);
+        // Q7: the PO logistics snapshot (NULL on legacy POs).
+        $port = LogisticsTerms::portLabel($po->port_of_discharge);
+        $incoterm = LogisticsTerms::incotermLabel($po->incoterm);
+
         return $po->commercialQuotations()->flatMap(function ($quotation) use (
             $po,
             $supplierName,
             $latestInspection,
             $latestClaim,
-            $documentStatus
+            $documentStatus,
+            $orderedAmounts,
+            $orderedLines,
+            $port,
+            $incoterm
         ) {
-            $rate = (float) ($quotation->exchange_rate?->rate_to_idr
-                ?? $po->exchangeRate?->rate_to_idr
-                ?? 0);
+            // Q4C: IDR is the identity rate; a missing foreign snapshot rate is
+            // an unavailable (blank) IDR value, never 0.
+            $snapshotRate = $quotation->exchange_rate?->rate_to_idr ?? $po->exchangeRate?->rate_to_idr;
+            $rate = strtoupper((string) ($quotation->currency ?: $po->currency)) === 'IDR'
+                ? 1.0
+                : ($snapshotRate !== null && (float) $snapshotRate > 0 ? (float) $snapshotRate : null);
             $poStatus = SpreadsheetCellSanitizer::text(
                 StatusHelper::poLabel($po->status, $po->is_overdue)
             );
@@ -91,10 +106,14 @@ class PurchaseOrderDetailExport implements \Illuminate\Contracts\Translation\Has
                 $claimStatus,
                 $latestInspection,
                 $latestClaim,
-                $documentStatus
+                $documentStatus,
+                $orderedAmounts,
+                $orderedLines,
+                $port,
+                $incoterm
             ) {
                 $prItem = $item->prItem;
-                $amount = $item->resolved_amount;
+                $amount = $orderedAmounts->get($item->id, $item->resolved_amount);
                 $requestedAmount = $item->requested_amount;
                 $offerAmount = $item->offer_amount;
                 $pricePerKg = $item->price_per_kg === null ? null : (float) $item->price_per_kg;
@@ -112,7 +131,7 @@ class PurchaseOrderDetailExport implements \Illuminate\Contracts\Translation\Has
                     $pricePerKg,
                     $amount,
                     $rate,
-                    $amount * $rate,
+                    $rate === null ? null : $amount * $rate,
                     $poStatus,
                     $po->created_at ? \App\Support\BusinessTime::format($po->created_at, 'Y-m-d H:i:s', false) : '-',
                     $po->estimated_arrival?->format('Y-m-d') ?? '-',
@@ -135,6 +154,11 @@ class PurchaseOrderDetailExport implements \Illuminate\Contracts\Translation\Has
                     $item->offered_total_weight,
                     $requestedAmount,
                     $offerAmount,
+                    // Appended (Mission 04-W): ordered values from the single resolver + logistics.
+                    $orderedLines->get($item->id)?->qty,
+                    $orderedLines->has($item->id) ? (float) $orderedLines->get($item->id)->kg : null,
+                    SpreadsheetCellSanitizer::text($port),
+                    SpreadsheetCellSanitizer::text($incoterm),
                 ];
             });
         });
@@ -178,6 +202,10 @@ class PurchaseOrderDetailExport implements \Illuminate\Contracts\Translation\Has
             __('exports.headings.offer_total_weight'),
             __('exports.headings.requested_amount'),
             __('exports.headings.offer_amount'),
+            __('exports.headings.ordered_quantity'),
+            __('exports.headings.ordered_weight'),
+            __('exports.headings.port_of_discharge'),
+            __('exports.headings.incoterm'),
         ];
     }
 
@@ -234,6 +262,10 @@ class PurchaseOrderDetailExport implements \Illuminate\Contracts\Translation\Has
             'AG' => 18,
             'AH' => 18,
             'AI' => 18,
+            'AJ' => 14,
+            'AK' => 16,
+            'AL' => 20,
+            'AM' => 26,
         ];
     }
 }

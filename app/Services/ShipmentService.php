@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\MtcRequiredException;
 use App\Models\Attachment;
 use App\Models\FileInspection;
 use App\Models\PoDocument;
@@ -15,6 +16,7 @@ use App\Models\User;
 use App\Services\FileSecurity\FileInspectionService;
 use App\Support\BusinessTime;
 use App\Support\NotificationCategory;
+use App\Support\Procurement\ProcurementFeatures;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -24,6 +26,12 @@ use Throwable;
 class ShipmentService
 {
     private const LEGACY_ONLY_ARRIVAL_MESSAGE = 'shipments.validation.legacy_only_arrival';
+
+    // Bounded retry for InnoDB deadlocks (1213) between concurrent submissions.
+    // Safe because submitShipment is the outermost transaction on every path,
+    // its callback has no file or audit side effects, every attempt re-reads
+    // and re-validates under fresh locks, and the notification is after-commit.
+    private const SUBMIT_ATTEMPTS = 3;
 
     public function __construct(
         protected NotificationService $notifications
@@ -354,6 +362,14 @@ class ShipmentService
                 ->get()
                 ->keyBy('id');
 
+            // I-9 (Q6B): an ordinary read, so it runs only after every PO lock;
+            // earlier it would fix the read view before a concurrent submission
+            // commits (over-shipment). It stays under the shipment lock that
+            // removeMtc() also takes, so the last MTC cannot vanish meanwhile.
+            if (ProcurementFeatures::shipmentMtcEnabled() && $this->validatedMtcCount($lockedShipment) < 1) {
+                throw new MtcRequiredException;
+            }
+
             // Values proven by the validation pass below, consumed verbatim by the
             // persistence pass. Re-deriving them a second time is how the
             // pcs -> kg fallback survived the first remediation.
@@ -482,7 +498,7 @@ class ShipmentService
             );
 
             return $lockedShipment->fresh(['items', 'documents', 'supplier']);
-        });
+        }, self::SUBMIT_ATTEMPTS);
     }
 
     /**
@@ -648,6 +664,97 @@ class ShipmentService
             ]);
 
             throw $exception;
+        }
+    }
+
+    /**
+     * Mission 05 (Q6B): append MTC files to the owner's shipment. Allowed only
+     * while Draft or Submitted (fail-closed allow-list; Arrived/Cancelled and
+     * any other status are refused, T-6). Files are inspected with the 'mtc'
+     * profile before the transaction and removed again if it fails.
+     *
+     * @param  list<UploadedFile>  $files
+     * @return list<Attachment>
+     */
+    public function uploadMtc(int|Shipment $shipment, array $files, User $user): array
+    {
+        $shipmentId = $shipment instanceof Shipment ? $shipment->id : $shipment;
+        $current = Shipment::query()->findOrFail($shipmentId);
+        $this->assertMtcChangeAllowed($current, $user, Shipment::MTC_UPLOAD_STATUSES);
+
+        $inspections = app(FileInspectionService::class);
+        $stored = [];
+        try {
+            foreach (array_values($files) as $index => $file) {
+                $path = 'attachments/'.now()->format('Y/m').'/'.$file->hashName(); // biz-time:ignore storage path
+                $stored[] = ['path' => $path, ...$inspections->storeUpload($file, 'mtc', $path, "mtc_files.{$index}")];
+            }
+
+            return DB::transaction(function () use ($shipmentId, $stored, $user) {
+                $locked = Shipment::query()->whereKey($shipmentId)->lockForUpdate()->firstOrFail();
+                $this->assertMtcChangeAllowed($locked, $user, Shipment::MTC_UPLOAD_STATUSES);
+
+                return array_map(fn (array $file) => $locked->attachments()->create([
+                    'file_path' => $file['file_path'],
+                    'file_name' => $file['file_name'],
+                    'file_type' => $file['file_type'],
+                    'file_inspection_id' => $file['file_inspection_id'],
+                    'uploaded_by' => $user->id,
+                ]), $stored);
+            });
+        } catch (Throwable $exception) {
+            foreach ($stored as $file) {
+                Storage::disk('private')->delete($file['path']);
+                FileInspection::whereKey($file['file_inspection_id'])->update(['status' => 'ERROR', 'error_code' => 'publication_failed']);
+            }
+
+            throw $exception;
+        }
+    }
+
+    /**
+     * Remove one MTC file while the shipment is still a Draft (Submitted
+     * shipments are append-only). The attachment must belong to this shipment
+     * (anti-IDOR); the file is deleted only after the row removal commits.
+     */
+    public function removeMtc(int|Shipment $shipment, int|Attachment $attachment, User $user): void
+    {
+        $shipmentId = $shipment instanceof Shipment ? $shipment->id : $shipment;
+        $attachmentId = $attachment instanceof Attachment ? $attachment->id : $attachment;
+
+        DB::transaction(function () use ($shipmentId, $attachmentId, $user) {
+            $locked = Shipment::query()->whereKey($shipmentId)->lockForUpdate()->firstOrFail();
+            $this->assertMtcChangeAllowed($locked, $user, Shipment::MTC_DELETE_STATUSES);
+
+            /** @var Attachment $file */
+            $file = $locked->attachments()->whereKey($attachmentId)->lockForUpdate()->firstOrFail();
+            $path = $file->file_path;
+            $file->delete();
+
+            DB::afterCommit(fn () => Storage::disk('private')->delete($path));
+        });
+    }
+
+    private function validatedMtcCount(Shipment $shipment): int
+    {
+        return $shipment->attachments()
+            ->whereHas('fileInspection', fn ($query) => $query->where('status', FileInspection::STATUS_VALIDATED))
+            ->count();
+    }
+
+    /**
+     * @param  list<string>  $allowedStatuses
+     */
+    private function assertMtcChangeAllowed(Shipment $shipment, User $user, array $allowedStatuses): void
+    {
+        if ((int) $shipment->supplier_id !== (int) $user->id) {
+            throw new InvalidArgumentException(__('shipments.copy.this_shipment_document_does_not_belong_to_the_authenticated_supplier'));
+        }
+
+        if (! in_array($shipment->status, $allowedStatuses, true)) {
+            throw new InvalidArgumentException(__($shipment->status === Shipment::STATUS_SUBMITTED
+                ? 'shipments.mtc.submitted_append_only'
+                : 'shipments.mtc.status_refused'));
         }
     }
 

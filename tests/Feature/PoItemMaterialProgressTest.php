@@ -18,11 +18,14 @@ use App\Services\PurchaseOrderGenerationService;
 use App\Services\ShipmentService;
 use App\Support\StatusHelper;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpKernel\Exception\HttpException;
+use Tests\Support\AttachesShipmentMtc;
 use Tests\TestCase;
 
 class PoItemMaterialProgressTest extends TestCase
 {
+    use AttachesShipmentMtc;
     use RefreshDatabase;
 
     private User $purchasing;
@@ -48,6 +51,7 @@ class PoItemMaterialProgressTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Storage::fake('private');
 
         $this->purchasing = User::factory()->create([
             'role' => 'purchasing',
@@ -416,7 +420,7 @@ class PoItemMaterialProgressTest extends TestCase
         $qItem = $award->quotationItem;
 
         $draft = $this->shipmentService->createDraft($this->supplierA);
-        $shipment = $this->shipmentService->submitShipment($draft, [
+        $shipment = $this->submitWithMtc($draft, [
             'items' => [
                 [
                     'purchase_order_id' => $po->id,
@@ -453,7 +457,7 @@ class PoItemMaterialProgressTest extends TestCase
 
         // Submit partial shipment
         $draft = $this->shipmentService->createDraft($this->supplierA);
-        $this->shipmentService->submitShipment($draft, [
+        $this->submitWithMtc($draft, [
             'items' => [
                 [
                     'purchase_order_id' => $po->id,
@@ -479,7 +483,7 @@ class PoItemMaterialProgressTest extends TestCase
         $qItem = $award->quotationItem;
 
         $draft = $this->shipmentService->createDraft($this->supplierA);
-        $shipment = $this->shipmentService->submitShipment($draft, [
+        $shipment = $this->submitWithMtc($draft, [
             'items' => [
                 [
                     'purchase_order_id' => $po->id,
@@ -509,7 +513,7 @@ class PoItemMaterialProgressTest extends TestCase
         $prItem = $award->prItem;
 
         $draft = $this->shipmentService->createDraft($this->supplierA);
-        $shipment = $this->shipmentService->submitShipment($draft, [
+        $shipment = $this->submitWithMtc($draft, [
             'items' => [
                 [
                     'purchase_order_id' => $po->id,
@@ -552,7 +556,7 @@ class PoItemMaterialProgressTest extends TestCase
 
         // Shipment 1: 8 pcs
         $draft1 = $this->shipmentService->createDraft($this->supplierA);
-        $this->shipmentService->submitShipment($draft1, [
+        $this->submitWithMtc($draft1, [
             'items' => [
                 ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_qty' => 8, 'actual_weight_kg' => 8.0],
             ],
@@ -560,7 +564,7 @@ class PoItemMaterialProgressTest extends TestCase
 
         // Shipment 2: Remaining 12 pcs
         $draft2 = $this->shipmentService->createDraft($this->supplierA);
-        $this->shipmentService->submitShipment($draft2, [
+        $this->submitWithMtc($draft2, [
             'items' => [
                 ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_qty' => 12, 'actual_weight_kg' => 12.0],
             ],
@@ -592,7 +596,7 @@ class PoItemMaterialProgressTest extends TestCase
         $qItem = $award->quotationItem;
 
         $draft = $this->shipmentService->createDraft($this->supplierA);
-        $shipment = $this->shipmentService->submitShipment($draft, [
+        $shipment = $this->submitWithMtc($draft, [
             'items' => [
                 ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_qty' => 8, 'actual_weight_kg' => 8.0],
             ],
@@ -621,7 +625,7 @@ class PoItemMaterialProgressTest extends TestCase
         $prItem = $award->prItem;
 
         $draft = $this->shipmentService->createDraft($this->supplierA);
-        $shipment = $this->shipmentService->submitShipment($draft, [
+        $shipment = $this->submitWithMtc($draft, [
             'items' => [
                 ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_qty' => 8, 'actual_weight_kg' => 8.0],
             ],
@@ -888,7 +892,7 @@ class PoItemMaterialProgressTest extends TestCase
             'estimated_arrival_date' => $shipmentEta,
         ]);
 
-        $shipment = $this->shipmentService->submitShipment($draft, [
+        $shipment = $this->submitWithMtc($draft, [
             'items' => [
                 ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_qty' => 10, 'actual_weight_kg' => 10.0],
             ],
@@ -929,7 +933,7 @@ class PoItemMaterialProgressTest extends TestCase
 
         // Deliver 8 of 20
         $draft = $this->shipmentService->createDraft($this->supplierA);
-        $shipment = $this->shipmentService->submitShipment($draft, [
+        $shipment = $this->submitWithMtc($draft, [
             'items' => [
                 ['purchase_order_id' => $po->id, 'quotation_item_id' => $qItem->id, 'shipped_qty' => 8, 'actual_weight_kg' => 8.0],
             ],

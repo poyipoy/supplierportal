@@ -131,16 +131,12 @@ class PurchaseOrdersExport implements AcceptsExportOptions, FromQuery, HasLocale
             ->flatMap(fn ($quotation) => $quotation->items->map(fn ($item) => $item->prItem?->material_name))
             ->filter()
             ->implode(', ') ?: '-';
-        $totalAmount = (float) $commercialQuotations->sum(fn ($quotation) => $quotation->items->sum(fn ($item) => $item->resolved_amount));
+        // I-15 / Q4C: ordered amounts from the single resolver; an unavailable
+        // snapshot rate exports a blank IDR cell, never 0.
+        $totalAmount = (float) $po->orderedAmountTotal();
         $currency = $po->currency ?? '-';
-        $totalIdr = 0.0;
-
-        foreach ($commercialQuotations as $quotation) {
-            $rate = (float) ($quotation->exchange_rate?->rate_to_idr ?? 0);
-            foreach ($quotation->items as $item) {
-                $totalIdr += $item->resolved_amount * $rate;
-            }
-        }
+        $orderedIdr = $po->orderedAmountIdr();
+        $totalIdr = $orderedIdr === null ? null : (float) $orderedIdr;
 
         return [
             SpreadsheetCellSanitizer::text($po->po_number),

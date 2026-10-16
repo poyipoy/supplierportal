@@ -97,7 +97,10 @@ class PurchaseOrderController extends Controller
 
                     return '<span title="'.e($notes).'">'.e($preview).'</span>';
                 })
-                ->addColumn('total_idr', fn ($po) => 'Rp '.$regionalFormatter->number(number_format((float) $po->resolved_total_idr, 0, ',', '.'), 'indonesian'))
+                // Q4C: a foreign PO without a snapshot rate has no IDR total.
+                ->addColumn('total_idr', fn ($po) => $po->resolved_total_idr === null
+                    ? '— ('.__('purchasing.copy.exchange_rate_unavailable').')'
+                    : 'Rp '.$regionalFormatter->number(number_format((float) $po->resolved_total_idr, 0, ',', '.'), 'indonesian'))
                 ->addColumn('status_badge', function ($po) {
                     return StatusHelper::badge(
                         StatusHelper::poBadge($po->status, $po->is_overdue),
@@ -216,7 +219,7 @@ class PurchaseOrderController extends Controller
     public function show($id)
     {
         $po = PurchaseOrder::with([
-            'supplier',
+            'supplier.supplier',
             'quotations.supplier',
             'quotations.items.prItem',
             'quotations.purchaseRequisition.period',
@@ -232,6 +235,8 @@ class PurchaseOrderController extends Controller
             'awards.quotation',
             'awards.quotationItem',
             'shipmentItems.shipment.documents.latestAttachment',
+            'shipmentItems.shipment.mtcAttachments',
+            'referencePriceSnapshots.award.prItem',
         ])->findOrFail($id);
 
         // Collect rates per quotation for display

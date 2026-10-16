@@ -512,6 +512,48 @@ class PaymentBatchTransferExportTest extends TestCase
         $this->assertCount(1, $rows);
     }
 
+    public function test_transfer_type_follows_bank_and_the_llg_limit_in_a_mixed_batch(): void
+    {
+        [$batch] = $this->createBatchWithGroup('DRP-2026-00001', 'Bank Central Asia', 5000000, 'INV-BCA');
+        $this->addGroup($batch, 'MANDIRI', 5000000, 'INV-LLG-SMALL');
+        // subtotal = net + 2.500 = exactly 1.000.000.000,00 -> still LLG
+        $this->addGroup($batch, 'BRI', 999997500, 'INV-LLG-EDGE');
+        // subtotal above the limit -> RTGS, amount stays the group net
+        $this->addGroup($batch, 'BNI', 1500000000, 'INV-RTGS');
+
+        $batch->load(['groups.items.payable']);
+        $rows = (new PaymentBatchTransferSheetRenderer)->buildAllTransferRows(collect([$batch]));
+
+        $this->assertSame(['BCA', 'LLG', 'LLG', 'RTG'], array_column($rows, 'transfer_type'));
+        $this->assertEquals(1500000000, $rows[3]['amount']);
+        // Bank code mapping is unaffected by the RTGS switch.
+        $this->assertSame('BNINIDJA', $rows[3]['receiver_bank_cd']);
+    }
+
+    private function addGroup(PaymentBatch $batch, string $bankName, float $net, string $invNumber): PaymentGroup
+    {
+        $group = $batch->groups()->create([
+            'payee_type' => 'supplier',
+            'payee_id' => $this->supplierUser->id,
+            'payee_name' => 'PT Supplier '.$bankName,
+            'bank_name' => $bankName,
+            'account_number' => '55'.random_int(10000000, 99999999),
+            'account_holder_name' => 'PT Supplier '.$bankName,
+            'subtotal_amount' => $net + 2500,
+            'bank_fee' => 2500,
+            'net_payment_amount' => $net,
+            'status' => PaymentGroup::STATUS_UNPAID,
+        ]);
+        $group->items()->create([
+            'payable_type' => LocalInvoice::class,
+            'payable_id' => $this->createInvoice(['invoice_number' => $invNumber])->id,
+            'amount' => $net + 2500,
+            'status' => PaymentItem::STATUS_ACTIVE,
+        ]);
+
+        return $group;
+    }
+
     public function test_amount_uses_net_payment_amount(): void
     {
         [$batch, $group] = $this->createBatchWithGroup('DRP-2026-00001', 'BCA', 9997500, 'INV-001');

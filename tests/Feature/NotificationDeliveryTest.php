@@ -26,11 +26,14 @@ use Illuminate\Contracts\Broadcasting\Broadcaster;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Storage;
 use RuntimeException;
+use Tests\Support\AttachesShipmentMtc;
 use Tests\TestCase;
 
 class NotificationDeliveryTest extends TestCase
 {
+    use AttachesShipmentMtc;
     use RefreshDatabase;
 
     public function test_physical_reminder_retries_are_idempotent_and_new_schedule_has_new_identity(): void
@@ -151,6 +154,8 @@ class NotificationDeliveryTest extends TestCase
         $response = $this->actingAs($purchasing)->post(route('purchasing.requisitions.store'), [
             'period_id' => $period->id,
             'action' => 'submitted',
+            'port_of_discharge' => 'TANJUNG_PRIOK',
+            'incoterm' => 'CIF',
             'notes' => 'Core transaction remains successful',
             'items' => [[
                 'material_master_id' => $material->id,
@@ -198,6 +203,8 @@ class NotificationDeliveryTest extends TestCase
         $this->actingAs($purchasing)->put(route('purchasing.requisitions.update', $pr), [
             'period_id' => $period->id,
             'action' => 'submitted',
+            'port_of_discharge' => 'TANJUNG_PRIOK',
+            'incoterm' => 'CIF',
             'items' => [[
                 'id' => $item->id,
                 'material_master_id' => $material->id,
@@ -326,9 +333,10 @@ class NotificationDeliveryTest extends TestCase
         $this->assertSame('po.issued', $poNotification->data['event']);
         $this->assertSame($po->id, $poNotification->data['po_id']);
 
+        Storage::fake('private');
         $shipmentService = app(ShipmentService::class);
         $shipment = $shipmentService->createDraft($supplier);
-        $shipmentService->submitShipment($shipment, [
+        $this->submitWithMtc($shipment, [
             'items' => [[
                 'purchase_order_id' => $po->id,
                 'quotation_item_id' => $quotationItem->id,

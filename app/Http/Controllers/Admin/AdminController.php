@@ -47,7 +47,8 @@ class AdminController extends Controller
         ExchangeRate::create([
             'currency' => $request->currency,
             'rate_to_idr' => $request->rate_to_idr,
-            'valid_from' => now(),
+            // valid_from is a DATE: the business calendar day, never the UTC date.
+            'valid_from' => BusinessTime::today()->toDateString(),
             'created_by' => auth()->id(),
         ]);
 

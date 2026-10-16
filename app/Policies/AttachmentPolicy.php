@@ -10,6 +10,7 @@ use App\Models\PurchaseOrder;
 use App\Models\QcInspection;
 use App\Models\Quotation;
 use App\Models\QuotationItem;
+use App\Models\Shipment;
 use App\Models\ShipmentDocument;
 use App\Models\SupplierAudit;
 use App\Models\SupplierOverpaymentRefund;
@@ -89,6 +90,9 @@ class AttachmentPolicy
 
                 ShipmentDocument::class => $attachable->shipment
                     && (int) $attachable->shipment->supplier_id === (int) $user->id,
+
+                // Q6B: shipment MTC, owner only.
+                Shipment::class => (int) $attachable->supplier_id === (int) $user->id,
 
                 SupplierOverpaymentRefund::class, LocalPurchaseOrder::class => $user->hasSupplierScope('local')
                     && (int) $attachable->supplier_id === (int) $user->id,

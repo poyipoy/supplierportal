@@ -1,0 +1,54 @@
+{
+  "status": "PASS",
+  "ids": [
+    "advanced-export-purchasing-po",
+    "advanced-export-purchasing-quotations"
+  ],
+  "first": [
+    "po_number",
+    "pr_number",
+    "supplier",
+    "material",
+    "total_amount",
+    "total_idr",
+    "est_arrival",
+    "remark",
+    "status"
+  ],
+  "firstAfter": [
+    "po_number",
+    "pr_number",
+    "supplier",
+    "material",
+    "total_amount",
+    "total_idr",
+    "est_arrival",
+    "remark",
+    "status"
+  ],
+  "second": [
+    "pr_number",
+    "period",
+    "supplier",
+    "currency",
+    "hs_code",
+    "requested_quantity",
+    "requested_dimensions",
+    "offered_quantity",
+    "offered_dimensions",
+    "price_per_kg",
+    "amount",
+    "exchange_rate",
+    "total_idr",
+    "item_notes",
+    "status",
+    "submitted_at",
+    "availability",
+    "offered_length",
+    "offer_weight_unit",
+    "offer_weight_source",
+    "offer_total_weight",
+    "requested_amount",
+    "offer_amount"
+  ]
+}

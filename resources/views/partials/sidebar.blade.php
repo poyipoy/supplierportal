@@ -248,6 +248,10 @@
             <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.drp.ga')" icon="credit-card" :active="request()->routeIs('purchasing.drp.ga')" :label="__('navigation.drp_ga')">{{ __('navigation.drp_ga') }}</x-ui.sidebar-item>
             <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.drp.paid.index')" icon="badge-check" :active="request()->routeIs('purchasing.drp.paid.*')" :label="__('navigation.drp_paid')">{{ __('navigation.drp_paid') }}</x-ui.sidebar-item>
 
+            <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 11;">{{ __('navigation.master_data') }}</span></div>
+            <x-ui.sidebar-item :href="route('purchasing.master-data.material-hs-code.index')" icon="boxes" :active="request()->routeIs('purchasing.master-data.*') && ! request()->routeIs('purchasing.master-data.reference-prices.*')" :label="__('navigation.materials')">{{ __('navigation.materials') }}</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="route('purchasing.master-data.reference-prices.index')" icon="badge-dollar-sign" :active="request()->routeIs('purchasing.master-data.reference-prices.*')" :label="__('materials.reference_prices.nav')">{{ __('materials.reference_prices.nav') }}</x-ui.sidebar-item>
+
             <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 13;">{{ __('navigation.collaboration') }}</span></div>
             <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.conversations.index')" icon="message-circle-more" :active="request()->routeIs('purchasing.conversations.*')" :label="__('navigation.chat_title')">
                 {{ __('common.chat.title') }}

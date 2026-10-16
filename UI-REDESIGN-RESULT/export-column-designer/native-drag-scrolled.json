@@ -1,0 +1,133 @@
+{
+  "keys": [
+    "po_number",
+    "material",
+    "pr_number",
+    "supplier",
+    "status",
+    "currency",
+    "total_amount",
+    "total_idr",
+    "est_arrival",
+    "remark"
+  ],
+  "scroll": 330.3999938964844,
+  "drops": [
+    {
+      "trusted": true,
+      "x": 309,
+      "y": 268,
+      "target": "pr_number",
+      "rects": [
+        {
+          "key": "po_number",
+          "left": 45.60000228881836,
+          "right": 221.60000228881836
+        },
+        {
+          "key": "pr_number",
+          "left": 221.60000610351562,
+          "right": 397.6000061035156
+        },
+        {
+          "key": "supplier",
+          "left": 397.6000061035156,
+          "right": 573.6000061035156
+        },
+        {
+          "key": "material",
+          "left": 573.6000366210938,
+          "right": 749.6000366210938
+        },
+        {
+          "key": "currency",
+          "left": 749.6000366210938,
+          "right": 925.6000366210938
+        },
+        {
+          "key": "total_amount",
+          "left": 925.6000366210938,
+          "right": 1101.6000366210938
+        },
+        {
+          "key": "total_idr",
+          "left": 1101.5999755859375,
+          "right": 1277.5999755859375
+        },
+        {
+          "key": "est_arrival",
+          "left": 1277.5999755859375,
+          "right": 1453.5999755859375
+        },
+        {
+          "key": "remark",
+          "left": 1453.5999755859375,
+          "right": 1629.5999755859375
+        },
+        {
+          "key": "status",
+          "left": 1629.5999755859375,
+          "right": 1805.5999755859375
+        }
+      ]
+    },
+    {
+      "trusted": true,
+      "x": 507,
+      "y": 268,
+      "target": "currency",
+      "rects": [
+        {
+          "key": "po_number",
+          "left": -284.8000183105469,
+          "right": -108.80001831054688
+        },
+        {
+          "key": "material",
+          "left": -108.80000305175781,
+          "right": 67.19999694824219
+        },
+        {
+          "key": "pr_number",
+          "left": 67.20000457763672,
+          "right": 243.20000457763672
+        },
+        {
+          "key": "supplier",
+          "left": 243.1999969482422,
+          "right": 419.1999969482422
+        },
+        {
+          "key": "currency",
+          "left": 419.20001220703125,
+          "right": 595.2000122070312
+        },
+        {
+          "key": "total_amount",
+          "left": 595.2000122070312,
+          "right": 771.2000122070312
+        },
+        {
+          "key": "total_idr",
+          "left": 771.2000122070312,
+          "right": 947.2000122070312
+        },
+        {
+          "key": "est_arrival",
+          "left": 947.2000122070312,
+          "right": 1123.2000122070312
+        },
+        {
+          "key": "remark",
+          "left": 1123.2000732421875,
+          "right": 1299.2000732421875
+        },
+        {
+          "key": "status",
+          "left": 1299.2000732421875,
+          "right": 1475.2000732421875
+        }
+      ]
+    }
+  ]
+}

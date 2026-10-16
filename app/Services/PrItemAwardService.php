@@ -4,12 +4,15 @@ namespace App\Services;
 
 use App\Models\PrItem;
 use App\Models\PrItemAward;
+use App\Models\PrItemAwardEvent;
 use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
 use App\Models\QuotationItem;
 use App\Models\User;
+use App\Support\Procurement\ProcurementFeatures;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 class PrItemAwardService
@@ -95,6 +98,7 @@ class PrItemAwardService
 
             // Create or update award
             if ($existingAward) {
+                $this->clearStaleSelection($existingAward, (int) $lockedQuotationItem->id, $user);
                 $existingAward->update([
                     'quotation_id' => $quotation->id,
                     'quotation_item_id' => $lockedQuotationItem->id,
@@ -137,18 +141,20 @@ class PrItemAwardService
      * Award multiple PR items atomically.
      *
      * @param  array<int, int>  $selections  Map of pr_item_id => quotation_item_id
+     * @param  array<int, array{order_qty?: mixed, accept_spec?: mixed}>  $orderSelections  Map of pr_item_id => Purchasing selection (M04-W)
      * @return Collection<int, PrItemAward>
      */
     public function awardBatch(
         PurchaseRequisition $pr,
         array $selections,
-        User $user
+        User $user,
+        array $orderSelections = []
     ): Collection {
         if (empty($selections)) {
             return collect();
         }
 
-        return DB::transaction(function () use ($pr, $selections, $user) {
+        return DB::transaction(function () use ($pr, $selections, $user, $orderSelections) {
             $pr = PurchaseRequisition::whereKey($pr->id)->lockForUpdate()->firstOrFail();
             $prItemIds = array_keys($selections);
             sort($prItemIds);
@@ -233,6 +239,7 @@ class PrItemAwardService
                 }
 
                 if ($existingAward) {
+                    $this->clearStaleSelection($existingAward, (int) $quotationItem->id, $user);
                     $existingAward->update([
                         'quotation_id' => $quotation->id,
                         'quotation_item_id' => $quotationItem->id,
@@ -240,7 +247,7 @@ class PrItemAwardService
                         'awarded_by' => $user->id,
                         'awarded_at' => now(),
                     ]);
-                    $results->push($existingAward->fresh(['prItem', 'quotationItem', 'supplier']));
+                    $award = $existingAward;
                 } else {
                     $award = PrItemAward::create([
                         'pr_id' => $pr->id,
@@ -252,12 +259,102 @@ class PrItemAwardService
                         'awarded_by' => $user->id,
                         'awarded_at' => now(),
                     ]);
-                    $results->push($award);
                 }
+
+                $quotationItem->setRelation('prItem', $prItem);
+                $this->applySelection($award, $quotationItem, $orderSelections[$prItemId] ?? [], $user);
+                $results->push($existingAward ? $award->fresh(['prItem', 'quotationItem', 'supplier']) : $award);
             }
 
             return $results;
         });
+    }
+
+    /**
+     * Mission 04-W (decisions 01–04, Q2): persist a Purchasing order quantity
+     * and/or specification acceptance on an award the caller holds locked.
+     * Only keys present in $selection are applied; the server validates
+     * 1 ≤ order_qty ≤ offered and keys errors to the line. While the write path
+     * is disabled nothing is written, so guards (a)/(b) stay authoritative.
+     *
+     * @param  array{order_qty?: mixed, accept_spec?: mixed}  $selection
+     *
+     * @throws ValidationException
+     */
+    public function applySelection(PrItemAward $award, QuotationItem $quotationItem, array $selection, User $user): void
+    {
+        if (! ProcurementFeatures::orderedQuantityWriteEnabled()) {
+            return;
+        }
+
+        $prItemId = (int) $award->pr_item_id;
+        $material = $quotationItem->prItem?->material_name ?? '#'.$prItemId;
+        $requested = $quotationItem->prItem?->quantity_value;
+        $offered = (int) $quotationItem->fulfillment_quantity;
+
+        $rawQty = $selection['order_qty'] ?? null;
+        if ($rawQty !== null && $rawQty !== '') {
+            $qty = filter_var($rawQty, FILTER_VALIDATE_INT);
+            if ($qty === false || $qty < 1 || $qty > $offered) {
+                throw ValidationException::withMessages([
+                    "order_qty.{$prItemId}" => __('procurement.ordered_quantity.order_qty_range', ['material' => $material, 'max' => $offered]),
+                ]);
+            }
+
+            if ($award->ordered_qty !== $qty) {
+                $previous = $award->ordered_qty;
+                $award->forceFill(['ordered_qty' => $qty])->save();
+                $this->recordEvent($award, PrItemAwardEvent::ORDERED_QTY_SELECTED, [
+                    'previous' => $previous,
+                    'ordered_qty' => $qty,
+                    'requested_qty' => $requested,
+                    'offered_qty' => $offered,
+                ], $user);
+            }
+        }
+
+        $rawAccept = $selection['accept_spec'] ?? null;
+        if ($rawAccept === null || $rawAccept === '') {
+            return;
+        }
+
+        $accept = filter_var($rawAccept, FILTER_VALIDATE_BOOL);
+        if ($accept && $quotationItem->availability_comparison['specification']['code'] === 'different') {
+            $snapshot = $quotationItem->specificationSnapshot();
+            if (! $award->isSpecAcceptanceCurrent($snapshot)) {
+                $hash = PrItemAward::specAcceptanceHash($snapshot);
+                $award->forceFill([
+                    'spec_accepted_by' => $user->id,
+                    'spec_accepted_at' => now(),
+                    'spec_acceptance_snapshot' => $snapshot,
+                    'spec_acceptance_hash' => $hash,
+                ])->save();
+                $this->recordEvent($award, PrItemAwardEvent::SPEC_ACCEPTED, ['snapshot' => $snapshot, 'hash' => $hash], $user);
+            }
+        } elseif (! $accept && $award->spec_accepted_at !== null) {
+            $previousHash = $award->spec_acceptance_hash;
+            $award->forceFill([
+                'spec_accepted_by' => null,
+                'spec_accepted_at' => null,
+                'spec_acceptance_snapshot' => null,
+                'spec_acceptance_hash' => null,
+            ])->save();
+            $this->recordEvent($award, PrItemAwardEvent::SPEC_ACCEPTANCE_REVOKED, ['previous_hash' => $previousHash], $user);
+        }
+    }
+
+    private function recordEvent(PrItemAward $award, string $event, array $payload, User $user): void
+    {
+        PrItemAwardEvent::create([
+            'pr_item_award_id' => $award->id,
+            'pr_id' => $award->pr_id,
+            'pr_item_id' => $award->pr_item_id,
+            'quotation_item_id' => $award->quotation_item_id,
+            'purchase_order_id' => $award->purchase_order_id,
+            'event' => $event,
+            'payload' => $payload,
+            'actor_id' => $user->id,
+        ]);
     }
 
     /**
@@ -298,5 +395,43 @@ class PrItemAwardService
             ->unassignedToPo()
             ->get()
             ->groupBy('supplier_id');
+    }
+
+    /**
+     * I-21: a Purchasing selection (ordered quantity or specification
+     * acceptance) belongs to one offer. Re-pointing the award to another offer
+     * clears it in the same transaction and records why. The caller holds the
+     * award row lock.
+     */
+    private function clearStaleSelection(PrItemAward $award, int $newQuotationItemId, User $user): void
+    {
+        if ((int) $award->quotation_item_id === $newQuotationItemId || ! $award->hasPurchasingSelection()) {
+            return;
+        }
+
+        $previous = [
+            'previous_quotation_item_id' => (int) $award->quotation_item_id,
+            'new_quotation_item_id' => $newQuotationItemId,
+            'previous_ordered_qty' => $award->ordered_qty,
+            'previous_spec_accepted_at' => $award->spec_accepted_at?->toIso8601String(),
+        ];
+
+        $award->forceFill([
+            'ordered_qty' => null,
+            'spec_accepted_by' => null,
+            'spec_accepted_at' => null,
+            'spec_acceptance_snapshot' => null,
+            'spec_acceptance_hash' => null,
+        ])->save();
+
+        PrItemAwardEvent::create([
+            'pr_item_award_id' => $award->id,
+            'pr_id' => $award->pr_id,
+            'pr_item_id' => $award->pr_item_id,
+            'quotation_item_id' => $newQuotationItemId,
+            'event' => PrItemAwardEvent::SELECTION_CLEARED,
+            'payload' => $previous,
+            'actor_id' => $user->id,
+        ]);
     }
 }

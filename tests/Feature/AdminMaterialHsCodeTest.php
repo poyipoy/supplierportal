@@ -202,10 +202,12 @@ class AdminMaterialHsCodeTest extends TestCase
             ->assertJsonPath('success', true);
         $this->assertFalse($scm->fresh()->is_active);
 
+        // Q3 (Mission 06A): an unreferenced master is hard-deleted and audited;
+        // referenced ones are refused (covered by MasterDataAccessTest).
         $this->actingAs($this->admin)
-            ->delete('/admin/material-masters/'.$material->id)
-            ->assertStatus(405);
-        $this->assertDatabaseHas('material_masters', ['id' => $material->id]);
+            ->deleteJson('/admin/material-masters/'.$material->id)
+            ->assertOk();
+        $this->assertDatabaseMissing('material_masters', ['id' => $material->id]);
     }
 
     public function test_rule_activation_rejects_same_priority_different_code_overlap(): void
@@ -275,10 +277,11 @@ class AdminMaterialHsCodeTest extends TestCase
             ->assertJsonValidationErrors('conditions');
         $this->assertSame(HsCodeRule::STATUS_INACTIVE, $inactive->fresh()->status);
 
+        // Q3 (Mission 06A): an unreferenced rule is hard-deleted and audited.
         $this->actingAs($this->admin)
-            ->delete('/admin/hs-code-rules/'.$inactive->id)
-            ->assertStatus(405);
-        $this->assertDatabaseHas('hs_code_rules', ['id' => $inactive->id]);
+            ->deleteJson('/admin/hs-code-rules/'.$inactive->id)
+            ->assertOk();
+        $this->assertDatabaseMissing('hs_code_rules', ['id' => $inactive->id]);
     }
 
     public function test_data_quality_summarizes_duplicate_coverage_and_surfaces_rules_needing_review(): void

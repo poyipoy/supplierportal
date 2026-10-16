@@ -75,7 +75,7 @@ class InvoiceDeliveryScheduleValidationTest extends TestCase
         }
 
         $response = $this->actingAs($this->supplierUser)
-            ->post(route('local-supplier.invoices.store'), [
+            ->post(route('local-supplier.invoices.store'), [...NativeFileFixtures::invoiceReferences(),
                 'local_purchase_order_id' => $this->po->id,
                 'goods_receipt_ids' => [$this->gr->id],
                 'invoice_number' => 'INV-TEST-PAST',
@@ -117,7 +117,7 @@ class InvoiceDeliveryScheduleValidationTest extends TestCase
                 'tax_invoice_number' => '01.01.26.12345678901',
                 'scheduled_physical_delivery_date' => $pastWednesday->toDateString(),
             ],
-            [
+            [...NativeFileFixtures::invoiceReferences(),
                 'invoice' => [NativeFileFixtures::upload('inv.pdf', 100)],
                 'tax_invoice' => [NativeFileFixtures::upload('tax.pdf', 100)],
                 'delivery_note' => [NativeFileFixtures::upload('sj.pdf', 100)],
@@ -147,7 +147,7 @@ class InvoiceDeliveryScheduleValidationTest extends TestCase
                 'tax_invoice_number' => '01.01.26.12345678901',
                 'scheduled_physical_delivery_date' => $futureWednesday->toDateString(),
             ],
-            [
+            [...NativeFileFixtures::invoiceReferences(),
                 'invoice' => [NativeFileFixtures::upload('inv.pdf', 100)],
                 'tax_invoice' => [NativeFileFixtures::upload('tax.pdf', 100)],
                 'delivery_note' => [NativeFileFixtures::upload('sj.pdf', 100)],

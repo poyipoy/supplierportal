@@ -126,6 +126,8 @@ class ShipmentController extends Controller
                 'items.purchaseOrder.creator',
                 'items.quotationItem.prItem.purchaseRequisition',
                 'documents.latestAttachment',
+                'mtcAttachments.fileInspection',
+                'mtcAttachments.uploader',
                 'qcInspections.inspector',
                 'qcInspections.items.prItem',
             ])

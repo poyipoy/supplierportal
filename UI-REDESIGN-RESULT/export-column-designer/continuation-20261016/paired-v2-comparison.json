@@ -1,0 +1,113 @@
+{
+  "method": "Median p95 of three30-iteration batches; B=baseline median p95, J=baseline p95 range; animations explicitly off",
+  "values": [
+    {
+      "size": 12,
+      "metric": "ready",
+      "B": 16.799999999813735,
+      "J": 2.7000000001862645,
+      "limit": 19.5,
+      "actual": 19,
+      "status": "PASS"
+    },
+    {
+      "size": 12,
+      "metric": "paint",
+      "B": 12.899999999906868,
+      "J": 0.6999999997206032,
+      "limit": 13.599999999627471,
+      "actual": 15.300000000279397,
+      "status": "FAIL"
+    },
+    {
+      "size": 12,
+      "metric": "command",
+      "B": 5.2999999998137355,
+      "J": 1.599999999627471,
+      "limit": 6.8999999994412065,
+      "actual": 4.5,
+      "status": "PASS"
+    },
+    {
+      "size": 12,
+      "metric": "commandPaint",
+      "B": 14.200000000186265,
+      "J": 0.10000000009313226,
+      "limit": 14.300000000279397,
+      "actual": 15.5,
+      "status": "FAIL"
+    },
+    {
+      "size": 24,
+      "metric": "ready",
+      "B": 20.399999999906868,
+      "J": 5.500000000465661,
+      "limit": 25.90000000037253,
+      "actual": 24.100000000093132,
+      "status": "PASS"
+    },
+    {
+      "size": 24,
+      "metric": "paint",
+      "B": 14.5,
+      "J": 5.099999999627471,
+      "limit": 19.59999999962747,
+      "actual": 20.100000000093132,
+      "status": "FAIL"
+    },
+    {
+      "size": 24,
+      "metric": "command",
+      "B": 7,
+      "J": 2.7999999998137355,
+      "limit": 9.799999999813735,
+      "actual": 6.399999999906868,
+      "status": "PASS"
+    },
+    {
+      "size": 24,
+      "metric": "commandPaint",
+      "B": 17.199999999720603,
+      "J": 1.1999999997206032,
+      "limit": 18.399999999441206,
+      "actual": 18.199999999720603,
+      "status": "PASS"
+    },
+    {
+      "size": 64,
+      "metric": "ready",
+      "B": 33.299999999813735,
+      "J": 3.7000000001862645,
+      "limit": 37,
+      "actual": 27.5,
+      "status": "PASS"
+    },
+    {
+      "size": 64,
+      "metric": "paint",
+      "B": 19.399999999906868,
+      "J": 0.20000000018626451,
+      "limit": 19.600000000093132,
+      "actual": 18,
+      "status": "PASS"
+    },
+    {
+      "size": 64,
+      "metric": "command",
+      "B": 10.700000000186265,
+      "J": 1.1999999997206032,
+      "limit": 11.899999999906868,
+      "actual": 7.100000000093132,
+      "status": "PASS"
+    },
+    {
+      "size": 64,
+      "metric": "commandPaint",
+      "B": 20.90000000037253,
+      "J": 2.8999999999068677,
+      "limit": 23.800000000279397,
+      "actual": 17.600000000093132,
+      "status": "PASS"
+    }
+  ]
+}

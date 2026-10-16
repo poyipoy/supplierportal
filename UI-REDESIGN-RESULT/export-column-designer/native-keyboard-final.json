@@ -1,0 +1,39 @@
+{
+  "keys": [
+    {
+      "key": "End",
+      "trusted": true
+    },
+    {
+      "key": "Tab",
+      "trusted": true
+    },
+    {
+      "key": "Shift",
+      "trusted": true
+    },
+    {
+      "key": "Tab",
+      "trusted": true
+    },
+    {
+      "key": "Shift",
+      "trusted": true
+    },
+    {
+      "key": "F10",
+      "trusted": true
+    },
+    {
+      "key": "Escape",
+      "trusted": true
+    },
+    {
+      "key": "Escape",
+      "trusted": true
+    }
+  ],
+  "modalOpen": false,
+  "backdrops": 0,
+  "focusRestored": true
+}

@@ -106,19 +106,22 @@ class MissionFiveImportTest extends TestCase
     public function test_pr_and_quotation_templates_have_the_required_contract_and_authorization(): void
     {
         $prTemplate = new PrImportTemplateExport;
+        // Q5: technical keys unchanged; dimensions Thickness, Width, OD, ID, Length.
         $this->assertSame([
-            'material_name', 'shape', 'quantity', 'thickness', 'd_inner',
-            'd_outer', 'width', 'length', 'remark',
+            'material_name', 'shape', 'quantity', 'thickness', 'width',
+            'd_outer', 'd_inner', 'length', 'remark',
         ], $prTemplate->headings());
         $this->assertCount(1, $prTemplate->array());
 
         $quotationTemplate = new QuotationImportTemplateExport($this->pr->id);
+        // Q5: same technical keys; dimensions Thickness, Width, OD, ID, Length.
         $this->assertSame([
             'pr_item_id', 'material_name', 'requested_dimension', 'price_per_kg',
-            'available_qty', 'available_thickness', 'available_d_inner',
-            'available_d_outer', 'available_width', 'available_length', 'notes',
+            'available_qty', 'available_thickness', 'available_width',
+            'available_d_outer', 'available_d_inner', 'available_length', 'notes',
             'availability', 'offered_weight_per_unit',
         ], $quotationTemplate->headings());
+        $this->assertCount(13, $quotationTemplate->collection()->first());
         $this->assertSame(
             $this->pr->items->pluck('id')->all(),
             $quotationTemplate->collection()->pluck(0)->all()
@@ -168,13 +171,14 @@ class MissionFiveImportTest extends TestCase
     public function test_pr_preview_maps_canonical_dimensions_for_all_shapes_and_never_writes_database(): void
     {
         $before = $this->databaseSnapshot();
+        // Old/arbitrary column order still parses: the import is heading-based.
         $upload = $this->spreadsheetUpload([
             'quantity', 'material_name', 'shape', 'd_inner', 'width',
             'd_outer', 'thickness', 'length', 'remark',
         ], [
-            [2, 'SCM440', 'Flat', 999, 120, 999, 1.2, 240, 'Imported flat'],
-            [3, 'SCM440', 'Round', 999, 999, 20, 999, 300, 'Imported round'],
-            [4, 'SCM440', 'Hollow', 10, 999, 20, 999, 400, 'Imported hollow'],
+            [2, 'SCM440', 'Flat', null, 120, null, 1.2, 240, 'Imported flat'],
+            [3, 'SCM440', 'Round', null, null, 20, null, 300, 'Imported round'],
+            [4, 'SCM440', 'Hollow', 10, null, 20, null, 400, 'Imported hollow'],
         ]);
 
         $response = $this->actingAs($this->purchasing)
@@ -214,8 +218,52 @@ class MissionFiveImportTest extends TestCase
         $this->assertNull($hollow['width']);
         $this->assertEquals(400.0, $hollow['length']);
 
-        $this->assertNotEmpty($response->json('warnings'));
         $this->assertSame($before, $this->databaseSnapshot());
+    }
+
+    public function test_pr_preview_rejects_a_shape_irrelevant_dimension_with_row_column_and_value(): void
+    {
+        $upload = $this->spreadsheetUpload(
+            ['material_name', 'shape', 'quantity', 'thickness', 'width', 'd_outer', 'd_inner', 'length'],
+            [
+                ['SCM440', 'Flat', 2, 1.2, 120, null, null, 240],
+                ['SCM440', 'Flat', 2, 1.2, 120, 25, null, 240],
+            ]
+        );
+
+        $response = $this->actingAs($this->purchasing)
+            ->post(route('purchasing.requisitions.import-preview'), ['import_file' => $upload])
+            ->assertStatus(422)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('rows', []);
+
+        $error = collect($response->json('errors'))->firstWhere('column', 'd_outer');
+        $this->assertNotNull($error);
+        $this->assertSame(3, $error['row']);
+        $this->assertSame('25', (string) $error['value']);
+        $this->assertStringContainsString('25', $error['message']);
+    }
+
+    public function test_pr_preview_is_all_or_nothing_for_95_valid_and_5_invalid_rows(): void
+    {
+        $rows = [];
+        for ($i = 1; $i <= 100; $i++) {
+            $rows[] = ['SCM440', 'Round', $i % 20 === 0 ? 0 : 2, null, null, 20, null, 300];
+        }
+        $upload = $this->spreadsheetUpload(
+            ['material_name', 'shape', 'quantity', 'thickness', 'width', 'd_outer', 'd_inner', 'length'],
+            $rows
+        );
+
+        $response = $this->actingAs($this->purchasing)
+            ->post(route('purchasing.requisitions.import-preview'), ['import_file' => $upload])
+            ->assertStatus(422)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('rows', [])
+            ->assertJsonPath('summary.total', 100)
+            ->assertJsonPath('summary.invalid', 5);
+
+        $this->assertGreaterThanOrEqual(5, count($response->json('errors')));
     }
 
     public function test_pr_preview_reports_all_row_errors_without_returning_partial_success(): void
@@ -228,15 +276,16 @@ class MissionFiveImportTest extends TestCase
             ['=DANGEROUS()', '3333', 'Round', 2, 12, 'formula'],
         ]);
 
+        // D05: any row error makes the whole preview non-importable.
         $response = $this->actingAs($this->purchasing)
             ->post(route('purchasing.requisitions.import-preview'), ['import_file' => $upload])
-            ->assertOk()
+            ->assertStatus(422)
             ->assertJsonPath('success', false)
             ->assertJsonPath('summary.total', 3)
             ->assertJsonPath('summary.valid', 1)
             ->assertJsonPath('summary.invalid', 2);
 
-        $this->assertCount(1, $response->json('rows'));
+        $this->assertSame([], $response->json('rows'));
         $this->assertTrue(collect($response->json('errors'))->contains(
             fn (array $error) => $error['row'] === 3 && $error['column'] === 'quantity'
         ));
@@ -357,9 +406,9 @@ class MissionFiveImportTest extends TestCase
         $before = $this->databaseSnapshot();
         $upload = $this->spreadsheetUpload([
             'notes', 'available_width', 'price_per_kg', 'material_name', 'pr_item_id',
-            'available_qty', 'available_d_outer', 'requested_dimension',
+            'available_qty', 'requested_dimension',
         ], [[
-            'Imported item note', 105, 8.75, 'Spoofed material', $target->id, 2, 999, 'Spoofed dimensions',
+            'Imported item note', 105, 8.75, 'Spoofed material', $target->id, 2, 'Spoofed dimensions',
         ]]);
 
         $response = $this->actingAs($this->supplierA)
@@ -401,8 +450,9 @@ class MissionFiveImportTest extends TestCase
 
         $response = $this->actingAs($this->supplierA)
             ->post(route('supplier.quotations.import-preview', $this->pr), ['import_file' => $upload])
-            ->assertOk()
-            ->assertJsonPath('success', false);
+            ->assertUnprocessable()
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('rows', []);
 
         $this->assertTrue(collect($response->json('errors'))->contains(
             fn (array $error) => $error['column'] === 'pr_item_id' && str_contains($error['message'], 'duplicate')
@@ -495,7 +545,7 @@ class MissionFiveImportTest extends TestCase
 
         $response = $this->actingAs($this->supplierA)
             ->post(route('supplier.quotations.import-preview', $this->pr), ['import_file' => $upload])
-            ->assertOk()
+            ->assertUnprocessable()
             ->assertJsonPath('success', false)
             ->assertJsonPath('summary.valid', 0)
             ->assertJsonPath('summary.invalid', 1);
@@ -508,7 +558,7 @@ class MissionFiveImportTest extends TestCase
         $this->assertSame($before, $this->databaseSnapshot());
     }
 
-    public function test_quotation_preview_rejects_explicit_quantity_above_requested(): void
+    public function test_quotation_preview_rejects_quantity_above_requested_while_surplus_is_disabled(): void
     {
         $item = $this->pr->items->firstOrFail();
         $upload = $this->spreadsheetUpload(
@@ -518,9 +568,92 @@ class MissionFiveImportTest extends TestCase
 
         $this->actingAs($this->supplierA)
             ->post(route('supplier.quotations.import-preview', $this->pr), ['import_file' => $upload])
-            ->assertOk()
+            ->assertUnprocessable()
             ->assertJsonPath('success', false)
+            ->assertJsonPath('rows', [])
             ->assertJsonPath('summary.invalid', 1);
+    }
+
+    public function test_quotation_preview_accepts_surplus_quantity_only_when_both_flags_are_on(): void
+    {
+        $item = $this->pr->items->firstOrFail();
+        $rows = [[$item->id, 'Available', 100, 3]];
+        $headings = ['pr_item_id', 'availability', 'price_per_kg', 'available_qty'];
+
+        // Surplus flag alone is inconsistent and fails closed.
+        config(['procurement.allow_offer_surplus' => true, 'procurement.ordered_quantity_write_enabled' => false]);
+        $this->actingAs($this->supplierA)
+            ->post(route('supplier.quotations.import-preview', $this->pr), ['import_file' => $this->spreadsheetUpload($headings, $rows)])
+            ->assertUnprocessable();
+
+        config(['procurement.ordered_quantity_write_enabled' => true]);
+        $this->actingAs($this->supplierA)
+            ->post(route('supplier.quotations.import-preview', $this->pr), ['import_file' => $this->spreadsheetUpload($headings, $rows)])
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('rows.0.available_qty', 3);
+    }
+
+    public function test_quotation_preview_rejects_a_shape_irrelevant_dimension_with_row_column_and_value(): void
+    {
+        $flat = $this->pr->items->firstOrFail();
+        $before = $this->databaseSnapshot();
+        $upload = $this->spreadsheetUpload(
+            ['pr_item_id', 'availability', 'price_per_kg', 'available_qty', 'available_thickness', 'available_d_outer'],
+            [[$flat->id, 'Available', 100, 2, 1.5, 25]],
+        );
+
+        $response = $this->actingAs($this->supplierA)
+            ->post(route('supplier.quotations.import-preview', $this->pr), ['import_file' => $upload])
+            ->assertUnprocessable()
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('rows', []);
+
+        $this->assertTrue(collect($response->json('errors'))->contains(
+            fn (array $error) => $error['row'] === 2
+                && $error['column'] === 'available_d_outer'
+                && (string) $error['value'] === '25'
+        ));
+        $this->assertSame($before, $this->databaseSnapshot());
+    }
+
+    public function test_quotation_preview_is_all_or_nothing_when_one_row_is_invalid(): void
+    {
+        [$flat, $round] = $this->pr->items->values()->all();
+        $upload = $this->spreadsheetUpload(
+            ['pr_item_id', 'availability', 'price_per_kg', 'available_qty'],
+            [[$flat->id, 'Available', 100, 2], [$round->id, 'Available', -5, 3]],
+        );
+
+        $this->actingAs($this->supplierA)
+            ->post(route('supplier.quotations.import-preview', $this->pr), ['import_file' => $upload])
+            ->assertUnprocessable()
+            ->assertJsonPath('rows', [])
+            ->assertJsonPath('summary.valid', 1)
+            ->assertJsonPath('summary.invalid', 1);
+    }
+
+    public function test_quotation_preview_parses_an_old_column_order_file_identically(): void
+    {
+        $flat = $this->pr->items->firstOrFail();
+        $old = $this->spreadsheetUpload(
+            ['pr_item_id', 'price_per_kg', 'available_qty', 'available_thickness', 'available_d_inner', 'available_d_outer', 'available_width', 'available_length'],
+            [[$flat->id, 100, 2, 1.5, null, null, 100, 200]],
+        );
+        $new = $this->spreadsheetUpload(
+            ['pr_item_id', 'price_per_kg', 'available_qty', 'available_thickness', 'available_width', 'available_d_outer', 'available_d_inner', 'available_length'],
+            [[$flat->id, 100, 2, 1.5, 100, null, null, 200]],
+        );
+
+        $oldRows = $this->actingAs($this->supplierA)
+            ->post(route('supplier.quotations.import-preview', $this->pr), ['import_file' => $old])
+            ->assertOk()->json('rows');
+        $newRows = $this->actingAs($this->supplierA)
+            ->post(route('supplier.quotations.import-preview', $this->pr), ['import_file' => $new])
+            ->assertOk()->json('rows');
+
+        $this->assertSame($newRows, $oldRows);
+        $this->assertEquals(100.0, $oldRows[0]['available_width']);
     }
 
     public function test_not_available_import_warns_and_clears_numeric_offer_values(): void

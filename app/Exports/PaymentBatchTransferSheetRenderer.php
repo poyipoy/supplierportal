@@ -336,7 +336,7 @@ class PaymentBatchTransferSheetRenderer
                 $rows[] = [
                     'no' => $globalNo,
                     'transaction_id' => SpreadsheetCellSanitizer::text($transactionId, ''),
-                    'transfer_type' => $bankMapping['transfer_type'],
+                    'transfer_type' => BankTransferMapping::transferType((string) $group->bank_name, $group->subtotal_amount),
                     'debited_acc' => $debitAccount,
                     'beneficiary_id' => '',
                     'credited_acc' => SpreadsheetCellSanitizer::text($group->account_number, ''),

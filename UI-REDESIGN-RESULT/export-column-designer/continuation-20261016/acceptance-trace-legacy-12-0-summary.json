@@ -1,0 +1,782 @@
+{
+  "variant": "legacy",
+  "size": 12,
+  "batch": 0,
+  "source": "frozen production build",
+  "viewport": [
+    1440,
+    900
+  ],
+  "animations": {
+    "dialog": false,
+    "backdrop": false
+  },
+  "metadataRequests": 66,
+  "closed": true,
+  "backdrops": 0,
+  "openLayers": 0,
+  "trace": {
+    "file": "acceptance-trace-legacy-12-0.json.gz",
+    "gzipBytes": 326961,
+    "sha256": "84ec2ba277b4718aa9d1571aa7d2bcddd68d1d27466eaa6ce92c187d74630884"
+  },
+  "rows": [
+    {
+      "iteration": 0,
+      "ready": 11.142,
+      "paint": 3.901,
+      "command": 3.921,
+      "commandPaint": 8.524,
+      "openPaint": 15.043,
+      "selection": 0.006,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "compositor": {
+        "open": {
+          "afterPaintMs": 1.337,
+          "frameSeqId": 74,
+          "layerTreeId": 2
+        },
+        "command": {
+          "afterPaintMs": 5.674,
+          "frameSeqId": 79,
+          "layerTreeId": 2
+        }
+      }
+    },
+    {
+      "iteration": 1,
+      "ready": 12.437,
+      "paint": 4.194,
+      "command": 3.264,
+      "commandPaint": 7.781,
+      "openPaint": 16.631,
+      "selection": 0.007,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "compositor": {
+        "open": {
+          "afterPaintMs": 1.315,
+          "frameSeqId": 82,
+          "layerTreeId": 2
+        },
+        "command": {
+          "afterPaintMs": 0.983,
+          "frameSeqId": 86,
+          "layerTreeId": 2
+        }
+      }
+    },
+    {
+      "iteration": 2,
+      "ready": 10.743,
+      "paint": 5.215,
+      "command": 3.485,
+      "commandPaint": 8.338,
+      "openPaint": 15.958,
+      "selection": 0.011,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "compositor": {
+        "open": {
+          "afterPaintMs": 1.577,
+          "frameSeqId": 90,
+          "layerTreeId": 2
+        },
+        "command": {
+          "afterPaintMs": 5.757,
+          "frameSeqId": 95,
+          "layerTreeId": 2
+        }
+      }
+    },
+    {
+      "iteration": 3,
+      "ready": 12.968,
+      "paint": 5.492,
+      "command": 3.213,
+      "commandPaint": 8.156,
+      "openPaint": 18.46,
+      "selection": 0.007,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "compositor": {
+        "open": {
+          "afterPaintMs": 1.292,
+          "frameSeqId": 98,
+          "layerTreeId": 2
+        },
+        "command": {
+          "afterPaintMs": 5.811,
+          "frameSeqId": 103,
+          "layerTreeId": 2
+        }
+      }
+    },
+    {
+      "iteration": 4,
+      "ready": 10.766,
+      "paint": 4.072,
+      "command": 3.033,
+      "commandPaint": 7.684,
+      "openPaint": 14.838,
+      "selection": 0.013,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "compositor": {
+        "open": {
+          "afterPaintMs": 1.977,
+          "frameSeqId": 106,
+          "layerTreeId": 2
+        },
+        "command": {
+          "afterPaintMs": 1.084,
+          "frameSeqId": 110,
+          "layerTreeId": 2
+        }
+      }
+    },
+    {
+      "iteration": 5,
+      "ready": 17.135,
+      "paint": 4.678,
+      "command": 3.155,
+      "commandPaint": 7.746,
+      "openPaint": 21.813,
+      "selection": 0.012,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "compositor": {
+        "open": {
+          "afterPaintMs": 1.656,
+          "frameSeqId": 116,
+          "layerTreeId": 2
+        },
+        "command": {
+          "afterPaintMs": 1.095,
+          "frameSeqId": 120,
+          "layerTreeId": 2
+        }
+      }
+    },
+    {
+      "iteration": 6,
+      "ready": 12.258,
+      "paint": 5.647,
+      "command": 4.41,
+      "commandPaint": 8.866,
+      "openPaint": 17.905,
+      "selection": 0.013,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "compositor": {
+        "open": {
+          "afterPaintMs": 1.33,
+          "frameSeqId": 124,
+          "layerTreeId": 2
+        },
+        "command": {
+          "afterPaintMs": 5.213,
+          "frameSeqId": 129,
+          "layerTreeId": 2
+        }
+      }
+    },
+    {
+      "iteration": 7,
+      "ready": 11.96,
+      "paint": 5.122,
+      "command": 3.301,
+      "commandPaint": 8.773,
+      "openPaint": 17.082,
+      "selection": 0.008,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "compositor": {
+        "open": {
+          "afterPaintMs": 1.38,
+          "frameSeqId": 132,
+          "layerTreeId": 2
+        },
+        "command": {
+          "afterPaintMs": 5.846,
+          "frameSeqId": 137,
+          "layerTreeId": 2
+        }
+      }
+    },
+    {
+      "iteration": 8,
+      "ready": 21.271,
+      "paint": 8.756,
+      "command": 4.128,
+      "commandPaint": 8.457,
+      "openPaint": 30.027,
+      "selection": 0.042,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "compositor": {
+        "open": {
+          "afterPaintMs": 3.56,
+          "frameSeqId": 142,
+          "layerTreeId": 2
+        },
+        "command": {
+          "afterPaintMs": 5.506,
+          "frameSeqId": 147,
+          "layerTreeId": 2
+        }
+      }
+    },
+    {
+      "iteration": 9,
+      "ready": 13.546,
+      "paint": 6.611,
+      "command": 2.727,
+      "commandPaint": 7.592,
+      "openPaint": 20.157,
+      "selection": 0.006,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "compositor": {
+        "open": {
+          "afterPaintMs": 2.112,
+          "frameSeqId": 151,
+          "layerTreeId": 2
+        },
+        "command": {
+          "afterPaintMs": 0.833,
+          "frameSeqId": 155,
+          "layerTreeId": 2
+        }
+      }
+    },
+    {
+      "iteration": 10,
+      "ready": 8.569,
+      "paint": 3.329,
+      "command": 2.645,
+      "commandPaint": 7.634,
+      "openPaint": 11.898,
+      "selection": 0.013,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "compositor": {
+        "open": {
+          "afterPaintMs": 1.275,
+          "frameSeqId": 158,
+          "layerTreeId": 2
+        },
+        "command": {
+          "afterPaintMs": 0.951,
+          "frameSeqId": 163,
+          "layerTreeId": 2
+        }
+      }
+    },
+    {
+      "iteration": 11,
+      "ready": 10.103,
+      "paint": 3.884,
+      "command": 2.84,
+      "commandPaint": 7.76,
+      "openPaint": 13.987,
+      "selection": 0.005,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "compositor": {
+        "open": {
+          "afterPaintMs": 1.568,
+          "frameSeqId": 167,
+          "layerTreeId": 2
+        },
+        "command": {
+          "afterPaintMs": 0.855,
+          "frameSeqId": 171,
+          "layerTreeId": 2
+        }
+      }
+    },
+    {
+      "iteration": 12,
+      "ready": 8.443,
+      "paint": 3.52,
+      "command": 2.754,
+      "commandPaint": 8.119,
+      "openPaint": 11.963,
+      "selection": 0.006,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "compositor": {
+        "open": {
+          "afterPaintMs": 1.274,
+          "frameSeqId": 174,
+          "layerTreeId": 2
+        },
+        "command": {
+          "afterPaintMs": 0.983,
+          "frameSeqId": 179,
+          "layerTreeId": 2
+        }
+      }
+    },
+    {
+      "iteration": 13,
+      "ready": 9.769,
+      "paint": 5.84,
+      "command": 4.079,
+      "commandPaint": 8.24,
+      "openPaint": 15.609,
+      "selection": 0.006,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "compositor": {
+        "open": {
+          "afterPaintMs": 1.491,
+          "frameSeqId": 183,
+          "layerTreeId": 2
+        },
+        "command": {
+          "afterPaintMs": 6.313,
+          "frameSeqId": 188,
+          "layerTreeId": 2
+        }
+      }
+    },
+    {
+      "iteration": 14,
+      "ready": 13.562,
+      "paint": 3.721,
+      "command": 5.219,
+      "commandPaint": 9.099,
+      "openPaint": 17.283,
+      "selection": 0.015,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "compositor": {
+        "open": {
+          "afterPaintMs": 1.8,
+          "frameSeqId": 192,
+          "layerTreeId": 2
+        },
+        "command": {
+          "afterPaintMs": 4.927,
+          "frameSeqId": 197,
+          "layerTreeId": 2
+        }
+      }
+    },
+    {
+      "iteration": 15,
+      "ready": 10.215,
+      "paint": 4.32,
+      "command": 4.89,
+      "commandPaint": 8.027,
+      "openPaint": 14.535,
+      "selection": 0.005,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "compositor": {
+        "open": {
+          "afterPaintMs": 1.98,
+          "frameSeqId": 200,
+          "layerTreeId": 2
+        },
+        "command": {
+          "afterPaintMs": 5.674,
+          "frameSeqId": 205,
+          "layerTreeId": 2
+        }
+      }
+    },
+    {
+      "iteration": 16,
+      "ready": 11.846,
+      "paint": 6.693,
+      "command": 3.509,
+      "commandPaint": 7.882,
+      "openPaint": 18.539,
+      "selection": 0.01,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "compositor": {
+        "open": {
+          "afterPaintMs": 2.126,
+          "frameSeqId": 209,
+          "layerTreeId": 2
+        },
+        "command": {
+          "afterPaintMs": 5.847,
+          "frameSeqId": 214,
+          "layerTreeId": 2
+        }
+      }
+    },
+    {
+      "iteration": 17,
+      "ready": 10.878,
+      "paint": 3.45,
+      "command": 2.494,
+      "commandPaint": 7.416,
+      "openPaint": 14.328,
+      "selection": 0.014,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "compositor": {
+        "open": {
+          "afterPaintMs": 1.774,
+          "frameSeqId": 217,
+          "layerTreeId": 2
+        },
+        "command": {
+          "afterPaintMs": 0.749,
+          "frameSeqId": 221,
+          "layerTreeId": 2
+        }
+      }
+    },
+    {
+      "iteration": 18,
+      "ready": 11.545,
+      "paint": 3.378,
+      "command": 3.224,
+      "commandPaint": 8.571,
+      "openPaint": 14.923,
+      "selection": 0.006,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "compositor": {
+        "open": {
+          "afterPaintMs": 2.538,
+          "frameSeqId": 225,
+          "layerTreeId": 2
+        },
+        "command": {
+          "afterPaintMs": 5.384,
+          "frameSeqId": 230,
+          "layerTreeId": 2
+        }
+      }
+    },
+    {
+      "iteration": 19,
+      "ready": 15.566,
+      "paint": 3.528,
+      "command": 4.577,
+      "commandPaint": 7.765,
+      "openPaint": 19.094,
+      "selection": 0.007,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "compositor": {
+        "open": {
+          "afterPaintMs": 1.467,
+          "frameSeqId": 234,
+          "layerTreeId": 2
+        },
+        "command": {
+          "afterPaintMs": 6.196,
+          "frameSeqId": 239,
+          "layerTreeId": 2
+        }
+      }
+    },
+    {
+      "iteration": 20,
+      "ready": 8.938,
+      "paint": 3.276,
+      "command": 2.589,
+      "commandPaint": 7.621,
+      "openPaint": 12.214,
+      "selection": 0.007,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "compositor": {
+        "open": {
+          "afterPaintMs": 1.823,
+          "frameSeqId": 242,
+          "layerTreeId": 2
+        },
+        "command": {
+          "afterPaintMs": 0.811,
+          "frameSeqId": 246,
+          "layerTreeId": 2
+        }
+      }
+    },
+    {
+      "iteration": 21,
+      "ready": 9.006,
+      "paint": 3.654,
+      "command": 3.134,
+      "commandPaint": 7.56,
+      "openPaint": 12.66,
+      "selection": 0.007,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "compositor": {
+        "open": {
+          "afterPaintMs": 1.354,
+          "frameSeqId": 250,
+          "layerTreeId": 2
+        },
+        "command": {
+          "afterPaintMs": 0.89,
+          "frameSeqId": 254,
+          "layerTreeId": 2
+        }
+      }
+    },
+    {
+      "iteration": 22,
+      "ready": 8.012,
+      "paint": 3.535,
+      "command": 2.557,
+      "commandPaint": 7.508,
+      "openPaint": 11.547,
+      "selection": 0.005,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "compositor": {
+        "open": {
+          "afterPaintMs": 1.245,
+          "frameSeqId": 257,
+          "layerTreeId": 2
+        },
+        "command": {
+          "afterPaintMs": 0.735,
+          "frameSeqId": 262,
+          "layerTreeId": 2
+        }
+      }
+    },
+    {
+      "iteration": 23,
+      "ready": 8.072,
+      "paint": 3.43,
+      "command": 2.653,
+      "commandPaint": 7.645,
+      "openPaint": 11.502,
+      "selection": 0.012,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "compositor": {
+        "open": {
+          "afterPaintMs": 1.291,
+          "frameSeqId": 265,
+          "layerTreeId": 2
+        },
+        "command": {
+          "afterPaintMs": 0.848,
+          "frameSeqId": 270,
+          "layerTreeId": 2
+        }
+      }
+    },
+    {
+      "iteration": 24,
+      "ready": 8.223,
+      "paint": 4.547,
+      "command": 2.497,
+      "commandPaint": 7.521,
+      "openPaint": 12.77,
+      "selection": 0.006,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "compositor": {
+        "open": {
+          "afterPaintMs": 1.479,
+          "frameSeqId": 274,
+          "layerTreeId": 2
+        },
+        "command": {
+          "afterPaintMs": 0.74,
+          "frameSeqId": 278,
+          "layerTreeId": 2
+        }
+      }
+    },
+    {
+      "iteration": 25,
+      "ready": 9.601,
+      "paint": 3.239,
+      "command": 2.512,
+      "commandPaint": 7.483,
+      "openPaint": 12.84,
+      "selection": 0.006,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "compositor": {
+        "open": {
+          "afterPaintMs": 1.265,
+          "frameSeqId": 282,
+          "layerTreeId": 2
+        },
+        "command": {
+          "afterPaintMs": 0.711,
+          "frameSeqId": 286,
+          "layerTreeId": 2
+        }
+      }
+    },
+    {
+      "iteration": 26,
+      "ready": 8.501,
+      "paint": 3.641,
+      "command": 3.015,
+      "commandPaint": 7.816,
+      "openPaint": 12.142,
+      "selection": 0.006,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "compositor": {
+        "open": {
+          "afterPaintMs": 1.137,
+          "frameSeqId": 289,
+          "layerTreeId": 2
+        },
+        "command": {
+          "afterPaintMs": 0.965,
+          "frameSeqId": 294,
+          "layerTreeId": 2
+        }
+      }
+    },
+    {
+      "iteration": 27,
+      "ready": 8.41,
+      "paint": 3.819,
+      "command": 2.668,
+      "commandPaint": 7.437,
+      "openPaint": 12.229,
+      "selection": 0.01,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "compositor": {
+        "open": {
+          "afterPaintMs": 1.536,
+          "frameSeqId": 297,
+          "layerTreeId": 2
+        },
+        "command": {
+          "afterPaintMs": 1.027,
+          "frameSeqId": 302,
+          "layerTreeId": 2
+        }
+      }
+    },
+    {
+      "iteration": 28,
+      "ready": 9.225,
+      "paint": 3.443,
+      "command": 2.939,
+      "commandPaint": 9.433,
+      "openPaint": 12.668,
+      "selection": 0.006,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "compositor": {
+        "open": {
+          "afterPaintMs": 1.385,
+          "frameSeqId": 306,
+          "layerTreeId": 2
+        },
+        "command": {
+          "afterPaintMs": 1.129,
+          "frameSeqId": 310,
+          "layerTreeId": 2
+        }
+      }
+    },
+    {
+      "iteration": 29,
+      "ready": 10.453,
+      "paint": 3.839,
+      "command": 2.476,
+      "commandPaint": 8.284,
+      "openPaint": 14.292,
+      "selection": 0.008,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "compositor": {
+        "open": {
+          "afterPaintMs": 1.36,
+          "frameSeqId": 314,
+          "layerTreeId": 2
+        },
+        "command": {
+          "afterPaintMs": 0.921,
+          "frameSeqId": 318,
+          "layerTreeId": 2
+        }
+      }
+    }
+  ],
+  "p95": {
+    "ready": 17.135,
+    "paint": 6.693,
+    "command": 4.89,
+    "commandPaint": 9.099,
+    "openPaint": 21.813
+  }
+}

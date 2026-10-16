@@ -637,6 +637,17 @@ return [
         'date' => 'Voucher Date',
         'notes' => 'The voucher uses final snapshots; correction transfers remain part of the same settlement.',
         'no_voucher' => 'Voucher not generated; using item amount',
+        'bank_fee' => 'Bank Fee',
+        'print_header' => [
+            'ref' => 'Ref',
+            'drp_date' => 'Date DRP',
+            'paid_to' => 'Paid to',
+            'bank' => 'Bank',
+            'account_holder' => 'Account Holder',
+            'document' => 'Document',
+            'batch' => 'Batch',
+            'date' => 'Date',
+        ],
     ],
     'refund' => [
         'title' => 'Overpayment Refund',

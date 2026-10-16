@@ -364,5 +364,10 @@ return [
         'last_audit' => 'Audit terakhir: :value',
         'never_audited' => 'Belum pernah diaudit',
         'summary' => ':selected dipilih · :skipped dilewati (audit aktif)',
+        'quick_presets' => 'Pilihan Cepat',
+        'preset_year' => 'Tahun :year',
+        'preset_sem_1' => ':year Semester I',
+        'preset_sem_2' => ':year Semester II',
+        'active_badge' => 'Aktif',
     ],
 ];

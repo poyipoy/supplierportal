@@ -1,0 +1,1256 @@
+{
+  "index": 7,
+  "pair": 3,
+  "batch": 1,
+  "size": 12,
+  "variant": "legacy",
+  "source": "declared frozen production replay",
+  "readiness": {
+    "page": {
+      "href": "http://127.0.0.1:8103/legacy",
+      "documentReady": "complete",
+      "visibility": "visible",
+      "viewport": [
+        1440,
+        900
+      ],
+      "dpr": 1,
+      "fonts": "loaded",
+      "modern": false,
+      "exportKey": "purchasing.po",
+      "scripts": [
+        "http://127.0.0.1:8103/vendor/bootstrap.js",
+        "http://127.0.0.1:8103/assets/legacy/app.js"
+      ],
+      "stylesheets": [
+        "http://127.0.0.1:8103/vendor/bootstrap.css",
+        "http://127.0.0.1:8103/assets/legacy/app.css"
+      ]
+    },
+    "loader": {
+      "waitedMs": 19.700000000186265,
+      "samples": [
+        {
+          "elapsed": 5.7999999998137355,
+          "active": false,
+          "pending": 0
+        },
+        {
+          "elapsed": 12.599999999627471,
+          "active": false,
+          "pending": 0
+        },
+        {
+          "elapsed": 19.700000000186265,
+          "active": false,
+          "pending": 0
+        }
+      ],
+      "active": false,
+      "pending": 0,
+      "resetCalled": false
+    }
+  },
+  "viewport": [
+    1440,
+    900
+  ],
+  "animations": {
+    "dialog": false,
+    "backdrop": false
+  },
+  "metadataRequests": 66,
+  "closed": true,
+  "backdrops": 0,
+  "openLayers": 0,
+  "trace": {
+    "file": "counterbalanced-trace-legacy-12-1.json.gz",
+    "gzipBytes": 342502,
+    "sha256": "9b2b988a347a28964941e8e284dfdfbe72f68c89db5a2fff44ba8b23328aea2c",
+    "dataLossOccurred": false
+  },
+  "rows": [
+    {
+      "iteration": 0,
+      "ready": 23.172,
+      "paint": 7.442,
+      "command": 6.686,
+      "commandPaint": 11.873,
+      "openPaint": 30.614,
+      "selection": 0.008,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 2.079,
+          "frameSeqId": 4250,
+          "layerTreeId": 9
+        },
+        "command": {
+          "afterPaintMs": 2.14,
+          "frameSeqId": 4255,
+          "layerTreeId": 9
+        }
+      }
+    },
+    {
+      "iteration": 1,
+      "ready": 20.67,
+      "paint": 7.668,
+      "command": 5.157,
+      "commandPaint": 12.311,
+      "openPaint": 28.338,
+      "selection": 0.026,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 2.693,
+          "frameSeqId": 4260,
+          "layerTreeId": 9
+        },
+        "command": {
+          "afterPaintMs": 1.781,
+          "frameSeqId": 4265,
+          "layerTreeId": 9
+        }
+      }
+    },
+    {
+      "iteration": 2,
+      "ready": 23.981,
+      "paint": 7.932,
+      "command": 6.44,
+      "commandPaint": 10.864,
+      "openPaint": 31.913,
+      "selection": 0.01,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 3.603,
+          "frameSeqId": 4271,
+          "layerTreeId": 9
+        },
+        "command": {
+          "afterPaintMs": 3.175,
+          "frameSeqId": 4275,
+          "layerTreeId": 9
+        }
+      }
+    },
+    {
+      "iteration": 3,
+      "ready": 22.959,
+      "paint": 7.277,
+      "command": 5.799,
+      "commandPaint": 11.214,
+      "openPaint": 30.236,
+      "selection": 0.01,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 2.37,
+          "frameSeqId": 4280,
+          "layerTreeId": 9
+        },
+        "command": {
+          "afterPaintMs": 3.532,
+          "frameSeqId": 4285,
+          "layerTreeId": 9
+        }
+      }
+    },
+    {
+      "iteration": 4,
+      "ready": 24.934,
+      "paint": 6.352,
+      "command": 6.041,
+      "commandPaint": 10.916,
+      "openPaint": 31.286,
+      "selection": 0.015,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 2.031,
+          "frameSeqId": 4290,
+          "layerTreeId": 9
+        },
+        "command": {
+          "afterPaintMs": 2.872,
+          "frameSeqId": 4295,
+          "layerTreeId": 9
+        }
+      }
+    },
+    {
+      "iteration": 5,
+      "ready": 25.901,
+      "paint": 7.081,
+      "command": 8.062,
+      "commandPaint": 13.863,
+      "openPaint": 32.982,
+      "selection": 0.014,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 2.268,
+          "frameSeqId": 4301,
+          "layerTreeId": 9
+        },
+        "command": {
+          "afterPaintMs": 0.157,
+          "frameSeqId": 4306,
+          "layerTreeId": 9
+        }
+      }
+    },
+    {
+      "iteration": 6,
+      "ready": 22.461,
+      "paint": 8.991,
+      "command": 6.993,
+      "commandPaint": 11.138,
+      "openPaint": 31.452,
+      "selection": 0.008,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 3.653,
+          "frameSeqId": 4312,
+          "layerTreeId": 9
+        },
+        "command": {
+          "afterPaintMs": 2.072,
+          "frameSeqId": 4317,
+          "layerTreeId": 9
+        }
+      }
+    },
+    {
+      "iteration": 7,
+      "ready": 21.575,
+      "paint": 13.662,
+      "command": 6.064,
+      "commandPaint": 10.781,
+      "openPaint": 35.237,
+      "selection": 0.012,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 4.237,
+          "frameSeqId": 4323,
+          "layerTreeId": 9
+        },
+        "command": {
+          "afterPaintMs": 3.327,
+          "frameSeqId": 4328,
+          "layerTreeId": 9
+        }
+      }
+    },
+    {
+      "iteration": 8,
+      "ready": 18.981,
+      "paint": 6.902,
+      "command": 4.845,
+      "commandPaint": 9.217,
+      "openPaint": 25.883,
+      "selection": 0.013,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 2.336,
+          "frameSeqId": 4333,
+          "layerTreeId": 9
+        },
+        "command": {
+          "afterPaintMs": 4.845,
+          "frameSeqId": 4338,
+          "layerTreeId": 9
+        }
+      }
+    },
+    {
+      "iteration": 9,
+      "ready": 20.533,
+      "paint": 8.825,
+      "command": 5.085,
+      "commandPaint": 10.87,
+      "openPaint": 29.358,
+      "selection": 0.015,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 7.61,
+          "frameSeqId": 4343,
+          "layerTreeId": 9
+        },
+        "command": {
+          "afterPaintMs": 3.13,
+          "frameSeqId": 4348,
+          "layerTreeId": 9
+        }
+      }
+    },
+    {
+      "iteration": 10,
+      "ready": 25.279,
+      "paint": 8.278,
+      "command": 8.124,
+      "commandPaint": 13.552,
+      "openPaint": 33.557,
+      "selection": 0.033,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 2.905,
+          "frameSeqId": 4354,
+          "layerTreeId": 9
+        },
+        "command": {
+          "afterPaintMs": 0.41,
+          "frameSeqId": 4359,
+          "layerTreeId": 9
+        }
+      }
+    },
+    {
+      "iteration": 11,
+      "ready": 24.368,
+      "paint": 7.84,
+      "command": 4.861,
+      "commandPaint": 9.746,
+      "openPaint": 32.208,
+      "selection": 0.013,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 2.243,
+          "frameSeqId": 4365,
+          "layerTreeId": 9
+        },
+        "command": {
+          "afterPaintMs": 4.565,
+          "frameSeqId": 4370,
+          "layerTreeId": 9
+        }
+      }
+    },
+    {
+      "iteration": 12,
+      "ready": 15.768,
+      "paint": 5.812,
+      "command": 4.404,
+      "commandPaint": 10.147,
+      "openPaint": 21.58,
+      "selection": 0.014,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 1.989,
+          "frameSeqId": 4374,
+          "layerTreeId": 9
+        },
+        "command": {
+          "afterPaintMs": 3.962,
+          "frameSeqId": 4379,
+          "layerTreeId": 9
+        }
+      }
+    },
+    {
+      "iteration": 13,
+      "ready": 20.33,
+      "paint": 8.868,
+      "command": 5.221,
+      "commandPaint": 8.746,
+      "openPaint": 29.198,
+      "selection": 0.021,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 1.986,
+          "frameSeqId": 4384,
+          "layerTreeId": 9
+        },
+        "command": {
+          "afterPaintMs": 4.378,
+          "frameSeqId": 4389,
+          "layerTreeId": 9
+        }
+      }
+    },
+    {
+      "iteration": 14,
+      "ready": 19.741,
+      "paint": 6.573,
+      "command": 5.395,
+      "commandPaint": 9.854,
+      "openPaint": 26.314,
+      "selection": 0.025,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 2.407,
+          "frameSeqId": 4394,
+          "layerTreeId": 9
+        },
+        "command": {
+          "afterPaintMs": 4.485,
+          "frameSeqId": 4399,
+          "layerTreeId": 9
+        }
+      }
+    },
+    {
+      "iteration": 15,
+      "ready": 15.22,
+      "paint": 3.855,
+      "command": 5.833,
+      "commandPaint": 9.702,
+      "openPaint": 19.075,
+      "selection": 0.006,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 1.705,
+          "frameSeqId": 4402,
+          "layerTreeId": 9
+        },
+        "command": {
+          "afterPaintMs": 4.462,
+          "frameSeqId": 4407,
+          "layerTreeId": 9
+        }
+      }
+    },
+    {
+      "iteration": 16,
+      "ready": 16.018,
+      "paint": 4.813,
+      "command": 3.303,
+      "commandPaint": 8.186,
+      "openPaint": 20.831,
+      "selection": 0.009,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 1.917,
+          "frameSeqId": 4411,
+          "layerTreeId": 9
+        },
+        "command": {
+          "afterPaintMs": 5.904,
+          "frameSeqId": 4416,
+          "layerTreeId": 9
+        }
+      }
+    },
+    {
+      "iteration": 17,
+      "ready": 12.356,
+      "paint": 6.094,
+      "command": 4.961,
+      "commandPaint": 9.109,
+      "openPaint": 18.45,
+      "selection": 0.009,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 1.764,
+          "frameSeqId": 4419,
+          "layerTreeId": 9
+        },
+        "command": {
+          "afterPaintMs": 4.926,
+          "frameSeqId": 4424,
+          "layerTreeId": 9
+        }
+      }
+    },
+    {
+      "iteration": 18,
+      "ready": 15.168,
+      "paint": 4.124,
+      "command": 3.901,
+      "commandPaint": 8.186,
+      "openPaint": 19.292,
+      "selection": 0.012,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 2.433,
+          "frameSeqId": 4428,
+          "layerTreeId": 9
+        },
+        "command": {
+          "afterPaintMs": 5.865,
+          "frameSeqId": 4432,
+          "layerTreeId": 9
+        }
+      }
+    },
+    {
+      "iteration": 19,
+      "ready": 14.118,
+      "paint": 5.378,
+      "command": 3.729,
+      "commandPaint": 9.047,
+      "openPaint": 19.496,
+      "selection": 0.012,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 1.938,
+          "frameSeqId": 4436,
+          "layerTreeId": 9
+        },
+        "command": {
+          "afterPaintMs": 4.919,
+          "frameSeqId": 4441,
+          "layerTreeId": 9
+        }
+      }
+    },
+    {
+      "iteration": 20,
+      "ready": 14.308,
+      "paint": 4.564,
+      "command": 5.695,
+      "commandPaint": 9.945,
+      "openPaint": 18.872,
+      "selection": 0.014,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 1.791,
+          "frameSeqId": 4444,
+          "layerTreeId": 9
+        },
+        "command": {
+          "afterPaintMs": 4.227,
+          "frameSeqId": 4449,
+          "layerTreeId": 9
+        }
+      }
+    },
+    {
+      "iteration": 21,
+      "ready": 16.54,
+      "paint": 5.085,
+      "command": 4.16,
+      "commandPaint": 8.396,
+      "openPaint": 21.625,
+      "selection": 0.012,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 1.911,
+          "frameSeqId": 4453,
+          "layerTreeId": 9
+        },
+        "command": {
+          "afterPaintMs": 5.679,
+          "frameSeqId": 4458,
+          "layerTreeId": 9
+        }
+      }
+    },
+    {
+      "iteration": 22,
+      "ready": 13.912,
+      "paint": 5.136,
+      "command": 6.009,
+      "commandPaint": 10.593,
+      "openPaint": 19.048,
+      "selection": 0.01,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 1.721,
+          "frameSeqId": 4461,
+          "layerTreeId": 9
+        },
+        "command": {
+          "afterPaintMs": 3.423,
+          "frameSeqId": 4466,
+          "layerTreeId": 9
+        }
+      }
+    },
+    {
+      "iteration": 23,
+      "ready": 14.639,
+      "paint": 5.409,
+      "command": 3.427,
+      "commandPaint": 8.834,
+      "openPaint": 20.048,
+      "selection": 0.02,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 1.892,
+          "frameSeqId": 4470,
+          "layerTreeId": 9
+        },
+        "command": {
+          "afterPaintMs": 5.134,
+          "frameSeqId": 4475,
+          "layerTreeId": 9
+        }
+      }
+    },
+    {
+      "iteration": 24,
+      "ready": 17.31,
+      "paint": 6.661,
+      "command": 5.735,
+      "commandPaint": 10.643,
+      "openPaint": 23.971,
+      "selection": 0.016,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 2.026,
+          "frameSeqId": 4479,
+          "layerTreeId": 9
+        },
+        "command": {
+          "afterPaintMs": 3.469,
+          "frameSeqId": 4484,
+          "layerTreeId": 9
+        }
+      }
+    },
+    {
+      "iteration": 25,
+      "ready": 18.827,
+      "paint": 5.889,
+      "command": 5.914,
+      "commandPaint": 10.545,
+      "openPaint": 24.716,
+      "selection": 0.013,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 1.934,
+          "frameSeqId": 4488,
+          "layerTreeId": 9
+        },
+        "command": {
+          "afterPaintMs": 3.709,
+          "frameSeqId": 4493,
+          "layerTreeId": 9
+        }
+      }
+    },
+    {
+      "iteration": 26,
+      "ready": 20.659,
+      "paint": 6.255,
+      "command": 3.977,
+      "commandPaint": 8.325,
+      "openPaint": 26.914,
+      "selection": 0.019,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 2.118,
+          "frameSeqId": 4498,
+          "layerTreeId": 9
+        },
+        "command": {
+          "afterPaintMs": 5.362,
+          "frameSeqId": 4503,
+          "layerTreeId": 9
+        }
+      }
+    },
+    {
+      "iteration": 27,
+      "ready": 19.449,
+      "paint": 6.85,
+      "command": 3.829,
+      "commandPaint": 8.448,
+      "openPaint": 26.299,
+      "selection": 0.022,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 2.606,
+          "frameSeqId": 4508,
+          "layerTreeId": 9
+        },
+        "command": {
+          "afterPaintMs": 5.67,
+          "frameSeqId": 4512,
+          "layerTreeId": 9
+        }
+      }
+    },
+    {
+      "iteration": 28,
+      "ready": 15.894,
+      "paint": 5.421,
+      "command": 4.71,
+      "commandPaint": 9.3,
+      "openPaint": 21.315,
+      "selection": 0.012,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 1.628,
+          "frameSeqId": 4516,
+          "layerTreeId": 9
+        },
+        "command": {
+          "afterPaintMs": 4.766,
+          "frameSeqId": 4521,
+          "layerTreeId": 9
+        }
+      }
+    },
+    {
+      "iteration": 29,
+      "ready": 17.773,
+      "paint": 6.81,
+      "command": 5.528,
+      "commandPaint": 8.908,
+      "openPaint": 24.583,
+      "selection": 0.014,
+      "paintCounts": {
+        "initial": 3,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body tw-grid tw-gap-4'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 2.207,
+          "frameSeqId": 4525,
+          "layerTreeId": 9
+        },
+        "command": {
+          "afterPaintMs": 5.171,
+          "frameSeqId": 4530,
+          "layerTreeId": 9
+        }
+      }
+    }
+  ],
+  "p95": {
+    "ready": 25.279,
+    "paint": 8.991,
+    "command": 8.062,
+    "commandPaint": 13.552,
+    "openPaint": 33.557
+  },
+  "loaderAfter": {
+    "active": false,
+    "pending": 0,
+    "resetCalled": false
+  }
+}

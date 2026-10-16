@@ -11,6 +11,7 @@ use App\Http\Requests\Export\Filters\QuotationExportFilters;
 use App\Models\Quotation;
 use App\Models\QuotationItem;
 use App\Support\BusinessTime;
+use App\Support\Procurement\SnapshotRate;
 use App\Support\SpreadsheetCellSanitizer;
 use Carbon\Carbon;
 use Illuminate\Contracts\Translation\HasLocalePreference;
@@ -120,7 +121,7 @@ class QuotationsExport implements AcceptsExportOptions, FromQuery, HasLocalePref
         $quotation = $item->quotation;
         $supplierName = $quotation?->supplier?->supplier?->company_name
             ?: $quotation?->supplier?->name;
-        $rate = (float) ($quotation?->exchange_rate?->rate_to_idr ?? 0);
+        $rate = SnapshotRate::forQuotation($quotation);
         $prItem = $item->prItem;
         $requestedAmount = $item->requested_amount;
         $offerAmount = $item->offer_amount;
@@ -143,7 +144,7 @@ class QuotationsExport implements AcceptsExportOptions, FromQuery, HasLocalePref
             $pricePerKg,
             $amount,
             $rate,
-            $offerAmount === null ? null : $offerAmount * $rate,
+            SnapshotRate::toIdr($offerAmount, $rate),
             SpreadsheetCellSanitizer::text($item->notes),
             SpreadsheetCellSanitizer::text($quotation?->statusLabel()),
             $quotation?->submitted_at ? BusinessTime::format($quotation->submitted_at, 'Y-m-d H:i:s', false) : '-',

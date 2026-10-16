@@ -1,0 +1,474 @@
+<!doctype html><html lang="en" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="csrf-token" content="fixture-only"><title>Column Designer Fixture</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"><link rel="stylesheet" href="/build/assets/app-ChQwB2jD.css"></head><body><div data-advanced-export data-export-key="purchasing.po" data-definition-url="http://127.0.0.1:8101/exports/definitions/purchasing.po?locale=en"
+     data-presets-url="http://127.0.0.1:8101/export-presets" data-preset-store-url="http://127.0.0.1:8101/export-presets"
+     data-filter-selectors='[]' data-initial-filters='[]' data-export-copy='{"loading":"Preparing export options\u2026","failed":"Export options could not be loaded. Please try again.","default_columns":"Default Configuration","saved":"Preset saved.","required":"Required","save_failed":"The preset could not be saved.","invalid_columns":"Select valid columns allowed for this export, including required columns.","visible_summary":":count visible \u00b7 :hidden hidden","active_column":"Active: :column","column_position":":column is column :position of :total.","move_left":"Move Left: :column","move_right":"Move Right: :column","hide_required":"Required columns cannot be hidden.","hide_last":"At least one column must remain visible.","hidden_none":"There are no hidden columns.","restore_before":":column will appear before :before.","restore_end":":column will appear at the end.","hidden_restored":":column restored.","column_hidden":":column hidden.","columns_reset":"Default columns restored.","drag_position":"Move :column to position :position of :total.","drag_cancelled":"Column move cancelled.","keyboard_hint":"All visible columns are exported. Select a header for actions. Use arrow keys to navigate, or use the buttons to move and hide columns.","unhide":"Unhide"}' data-export-table="">
+    <div class="tw-flex tw-items-center tw-gap-2">
+        <button
+        type="button"
+                                class="ui-button ui-motion ui-focus-ring tw-inline-flex tw-items-center tw-justify-center tw-whitespace-nowrap tw-rounded-ui-sm tw-border tw-font-semibold tw-no-underline disabled:tw-cursor-not-allowed disabled:tw-opacity-50 tw-border-outline tw-bg-transparent tw-text-on-surface hover:tw-bg-surface-container active:tw-bg-surface-high tw-min-h-[var(--ui-control-height-sm)] tw-gap-1.5 tw-px-2.5 tw-py-1 tw-text-ui-xs" data-bs-toggle="modal" data-bs-target="#advanced-export-purchasing-po" data-export-open="data-export-open"
+    >
+        
+                    <span class="tw-inline-flex tw-items-center tw-gap-1.5"><svg width="18" height="18" stroke-width="1.75" focusable="false" aria-hidden="true" class="ui-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/>
+  <path d="M14 2v5a1 1 0 0 0 1 1h5"/>
+  <path d="M8 13h2"/>
+  <path d="M14 13h2"/>
+  <path d="M8 17h2"/>
+  <path d="M14 17h2"/>
+</svg>
+Advanced Export</span>
+        
+            </button>
+        <button
+        type="button"
+                                class="ui-button ui-motion ui-focus-ring tw-inline-flex tw-items-center tw-justify-center tw-whitespace-nowrap tw-rounded-ui-sm tw-border tw-font-semibold tw-no-underline disabled:tw-cursor-not-allowed disabled:tw-opacity-50 tw-border-transparent tw-bg-transparent tw-text-on-surface hover:tw-bg-surface-container active:tw-bg-surface-high tw-min-h-[var(--ui-control-height-sm)] tw-gap-1.5 tw-px-2.5 tw-py-1 tw-text-ui-xs" data-export-quick="data-export-quick"
+    >
+        
+                    <span class="tw-inline-flex tw-items-center tw-gap-1.5">Quick Export</span>
+        
+            </button>
+    </div>
+    <div class="modal fade ui-export-designer-modal" id="advanced-export-purchasing-po" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="advanced-export-purchasing-po-title" aria-describedby="advanced-export-purchasing-po-help">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content tw-border-outline tw-bg-surface tw-text-on-surface">
+                <div class="modal-header">
+                    <h2 class="modal-title tw-text-ui-lg" id="advanced-export-purchasing-po-title" tabindex="-1">Advanced Export</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form action="http://127.0.0.1:8101/blocked-export" method="POST" data-advanced-export-form class="tw-flex tw-flex-col tw-min-h-0 tw-overflow-hidden">
+                    <input type="hidden" name="_token" value="fixture-only" autocomplete="off">                    <div class="modal-body ui-export-designer__body tw-grid tw-gap-4">
+                        <p id="advanced-export-purchasing-po-help" class="tw-m-0 tw-text-ui-sm tw-text-on-surface-variant">Choose filters, columns and format, or use your saved preset.</p>
+                        <p data-export-error hidden role="alert" tabindex="-1" class="tw-m-0 tw-text-ui-sm tw-text-error"></p>
+                        <button
+        type="button"
+                                class="ui-button ui-motion ui-focus-ring tw-inline-flex tw-items-center tw-justify-center tw-whitespace-nowrap tw-rounded-ui-sm tw-border tw-font-semibold tw-no-underline disabled:tw-cursor-not-allowed disabled:tw-opacity-50 tw-border-outline tw-bg-transparent tw-text-on-surface hover:tw-bg-surface-container active:tw-bg-surface-high tw-min-h-[var(--ui-control-height-sm)] tw-gap-1.5 tw-px-2.5 tw-py-1 tw-text-ui-xs" data-export-retry="data-export-retry" hidden="hidden"
+    >
+        
+                    <span class="tw-inline-flex tw-items-center tw-gap-1.5">Reload Options</span>
+        
+            </button>
+                        <p data-export-status aria-live="polite" class="tw-m-0 tw-text-ui-sm tw-text-on-surface-variant"></p>
+                        <fieldset class="tw-border tw-border-outline tw-rounded-ui-sm tw-p-3">
+                            <legend class="tw-float-none tw-w-auto tw-px-1 tw-text-ui-sm tw-font-semibold">Filters</legend>
+                            <div class="tw-grid tw-gap-3 md:tw-grid-cols-2 xl:tw-grid-cols-3">
+                                                                                                                                                                            <div>
+                                                                                    <div
+    class="ui-calendar ui-date-picker tw-grid tw-gap-1.5"
+    data-adasi-date-picker
+    data-calendar-required="false"
+        >
+    <div data-calendar-native>
+                    <label id="advanced-export-purchasing-po-start_date-label" for="advanced-export-purchasing-po-start_date" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
+                Start Date
+                            </label>
+        
+        <input
+            id="advanced-export-purchasing-po-start_date"
+            name="start_date"
+            type="date"
+            value=""
+                                                                        data-calendar-native-input
+             aria-describedby="advanced-export-purchasing-po-start_date-error"                         class="ui-calendar__native-input ui-motion tw-min-h-[var(--ui-control-height-md)] tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-px-3 tw-py-2 tw-text-ui-sm tw-text-on-surface tw-shadow-none placeholder:tw-text-on-surface-variant focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary disabled:tw-cursor-not-allowed disabled:tw-bg-surface-container disabled:tw-opacity-50 tw-border-outline-strong" data-filter-name="start_date"
+        >
+    </div>
+
+    <div data-calendar-enhanced hidden>
+                    <span id="advanced-export-purchasing-po-start_date-label-enhanced" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
+                Start Date
+                            </span>
+                <button
+            type="button"
+            class="ui-calendar-trigger"
+            data-calendar-trigger
+            data-calendar-label="Start Date"
+            aria-haspopup="dialog"
+            aria-expanded="false"
+            aria-controls="advanced-export-purchasing-po-start_date-calendar-panel"
+            aria-label="Start Date"
+             aria-describedby="advanced-export-purchasing-po-start_date-error"                     >
+            <span data-calendar-display>Choose date</span>
+            <svg aria-hidden="true" width="16" height="16" stroke-width="1.75" focusable="false" class="ui-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M8 2v3"/>
+  <path d="M16 2v3"/>
+  <rect x="3" y="3" width="18" height="18" rx="2"/>
+  <path d="M3 9h18"/>
+  <path d="M8 13h.01"/>
+  <path d="M12 13h.01"/>
+  <path d="M16 13h.01"/>
+  <path d="M8 17h.01"/>
+  <path d="M12 17h.01"/>
+  <path d="M16 17h.01"/>
+</svg>
+        </button>
+    </div>
+
+        <p id="advanced-export-purchasing-po-start_date-error" data-calendar-error class="tw-m-0 tw-flex tw-items-start tw-gap-1.5 tw-text-ui-xs tw-font-medium tw-text-error tw-hidden" role="alert">
+        <svg width="16" height="16" stroke-width="1.75" focusable="false" aria-hidden="true" class="ui-icon tw-mt-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="12" cy="12" r="10"/>
+  <line x1="12" x2="12" y1="8" y2="12"/>
+  <line x1="12" x2="12.01" y1="16" y2="16"/>
+</svg>
+        <span data-calendar-error-message></span>
+    </p>
+
+    <div id="advanced-export-purchasing-po-start_date-calendar-panel" class="ui-calendar-panel ui-calendar-panel--single" data-calendar-panel hidden role="dialog" aria-modal="false" aria-label="Choose date">
+        <div class="ui-calendar-panel__topline">
+            <span class="ui-calendar-panel__title">Choose date</span>
+            <button type="button" class="ui-calendar-panel__close" data-calendar-close aria-label="Close calendar"><svg width="16" height="16" stroke-width="1.75" focusable="false" aria-hidden="true" class="ui-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M18 6 6 18"/>
+  <path d="m6 6 12 12"/>
+</svg>
+</button>
+        </div>
+
+        <div class="ui-calendar-nav">
+            <button type="button" class="ui-calendar-nav-btn" data-calendar-prev aria-label="Previous month">
+                <svg aria-hidden="true" width="16" height="16" stroke-width="1.75" focusable="false" class="ui-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="m15 18-6-6 6-6"/>
+</svg>
+            </button>
+
+            <button type="button" class="ui-calendar-month-year" data-calendar-year-toggle aria-label="Toggle year selection" aria-expanded="false">
+                <span class="ui-calendar-month-label" data-calendar-month-label>August</span>
+                <span class="ui-calendar-year-label" data-calendar-year-label>2026</span>
+            </button>
+
+            <button type="button" class="ui-calendar-nav-btn" data-calendar-next aria-label="Next month">
+                <svg aria-hidden="true" width="16" height="16" stroke-width="1.75" focusable="false" class="ui-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="m9 18 6-6-6-6"/>
+</svg>
+            </button>
+        </div>
+
+        <div class="ui-calendar-year-panel" data-calendar-year-panel hidden></div>
+
+        <div class="ui-calendar-body" data-calendar-body>
+            <div class="ui-calendar-weekdays" aria-hidden="true">
+                <span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>            </div>
+            <div class="ui-calendar-days" data-calendar-days-grid role="grid" aria-label="Calendar days"></div>
+        </div>
+
+        <div class="ui-calendar-panel__footer ui-calendar-panel__footer--single">
+            <button type="button" class="ui-calendar-footer-btn" data-calendar-today>Today</button>
+            <button type="button" class="ui-calendar-footer-btn ui-calendar-footer-btn--primary" data-calendar-clear>Clear</button>            <span class="tw-sr-only" data-calendar-live aria-live="polite" aria-atomic="true"></span>
+        </div>
+    </div>
+</div>
+                                                                            </div>
+                                                                                                                                            <div>
+                                                                                    <div
+    class="ui-calendar ui-date-picker tw-grid tw-gap-1.5"
+    data-adasi-date-picker
+    data-calendar-required="false"
+        >
+    <div data-calendar-native>
+                    <label id="advanced-export-purchasing-po-end_date-label" for="advanced-export-purchasing-po-end_date" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
+                End Date
+                            </label>
+        
+        <input
+            id="advanced-export-purchasing-po-end_date"
+            name="end_date"
+            type="date"
+            value=""
+                                                                        data-calendar-native-input
+             aria-describedby="advanced-export-purchasing-po-end_date-error"                         class="ui-calendar__native-input ui-motion tw-min-h-[var(--ui-control-height-md)] tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-px-3 tw-py-2 tw-text-ui-sm tw-text-on-surface tw-shadow-none placeholder:tw-text-on-surface-variant focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary disabled:tw-cursor-not-allowed disabled:tw-bg-surface-container disabled:tw-opacity-50 tw-border-outline-strong" data-filter-name="end_date"
+        >
+    </div>
+
+    <div data-calendar-enhanced hidden>
+                    <span id="advanced-export-purchasing-po-end_date-label-enhanced" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
+                End Date
+                            </span>
+                <button
+            type="button"
+            class="ui-calendar-trigger"
+            data-calendar-trigger
+            data-calendar-label="End Date"
+            aria-haspopup="dialog"
+            aria-expanded="false"
+            aria-controls="advanced-export-purchasing-po-end_date-calendar-panel"
+            aria-label="End Date"
+             aria-describedby="advanced-export-purchasing-po-end_date-error"                     >
+            <span data-calendar-display>Choose date</span>
+            <svg aria-hidden="true" width="16" height="16" stroke-width="1.75" focusable="false" class="ui-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M8 2v3"/>
+  <path d="M16 2v3"/>
+  <rect x="3" y="3" width="18" height="18" rx="2"/>
+  <path d="M3 9h18"/>
+  <path d="M8 13h.01"/>
+  <path d="M12 13h.01"/>
+  <path d="M16 13h.01"/>
+  <path d="M8 17h.01"/>
+  <path d="M12 17h.01"/>
+  <path d="M16 17h.01"/>
+</svg>
+        </button>
+    </div>
+
+        <p id="advanced-export-purchasing-po-end_date-error" data-calendar-error class="tw-m-0 tw-flex tw-items-start tw-gap-1.5 tw-text-ui-xs tw-font-medium tw-text-error tw-hidden" role="alert">
+        <svg width="16" height="16" stroke-width="1.75" focusable="false" aria-hidden="true" class="ui-icon tw-mt-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="12" cy="12" r="10"/>
+  <line x1="12" x2="12" y1="8" y2="12"/>
+  <line x1="12" x2="12.01" y1="16" y2="16"/>
+</svg>
+        <span data-calendar-error-message></span>
+    </p>
+
+    <div id="advanced-export-purchasing-po-end_date-calendar-panel" class="ui-calendar-panel ui-calendar-panel--single" data-calendar-panel hidden role="dialog" aria-modal="false" aria-label="Choose date">
+        <div class="ui-calendar-panel__topline">
+            <span class="ui-calendar-panel__title">Choose date</span>
+            <button type="button" class="ui-calendar-panel__close" data-calendar-close aria-label="Close calendar"><svg width="16" height="16" stroke-width="1.75" focusable="false" aria-hidden="true" class="ui-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M18 6 6 18"/>
+  <path d="m6 6 12 12"/>
+</svg>
+</button>
+        </div>
+
+        <div class="ui-calendar-nav">
+            <button type="button" class="ui-calendar-nav-btn" data-calendar-prev aria-label="Previous month">
+                <svg aria-hidden="true" width="16" height="16" stroke-width="1.75" focusable="false" class="ui-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="m15 18-6-6 6-6"/>
+</svg>
+            </button>
+
+            <button type="button" class="ui-calendar-month-year" data-calendar-year-toggle aria-label="Toggle year selection" aria-expanded="false">
+                <span class="ui-calendar-month-label" data-calendar-month-label>August</span>
+                <span class="ui-calendar-year-label" data-calendar-year-label>2026</span>
+            </button>
+
+            <button type="button" class="ui-calendar-nav-btn" data-calendar-next aria-label="Next month">
+                <svg aria-hidden="true" width="16" height="16" stroke-width="1.75" focusable="false" class="ui-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="m9 18 6-6-6-6"/>
+</svg>
+            </button>
+        </div>
+
+        <div class="ui-calendar-year-panel" data-calendar-year-panel hidden></div>
+
+        <div class="ui-calendar-body" data-calendar-body>
+            <div class="ui-calendar-weekdays" aria-hidden="true">
+                <span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>            </div>
+            <div class="ui-calendar-days" data-calendar-days-grid role="grid" aria-label="Calendar days"></div>
+        </div>
+
+        <div class="ui-calendar-panel__footer ui-calendar-panel__footer--single">
+            <button type="button" class="ui-calendar-footer-btn" data-calendar-today>Today</button>
+            <button type="button" class="ui-calendar-footer-btn ui-calendar-footer-btn--primary" data-calendar-clear>Clear</button>            <span class="tw-sr-only" data-calendar-live aria-live="polite" aria-atomic="true"></span>
+        </div>
+    </div>
+</div>
+                                                                            </div>
+                                                                                                                                            <div>
+                                                                                    <label for="advanced-export-purchasing-po-po_number" class="tw-text-ui-sm tw-font-medium">PO Number</label>
+                                                                                                                                                <input type="text" id="advanced-export-purchasing-po-po_number" name="po_number" data-filter-name="po_number" class="form-control form-control-sm" maxlength="255">
+                                                                                                                                                                        </div>
+                                                                                                                                            <div>
+                                                                                    <label for="advanced-export-purchasing-po-search" class="tw-text-ui-sm tw-font-medium">Search</label>
+                                                                                                                                                <input type="text" id="advanced-export-purchasing-po-search" name="search" data-filter-name="search" class="form-control form-control-sm" maxlength="255">
+                                                                                                                                                                        </div>
+                                                                                                                                            <div>
+                                                                                    <label for="advanced-export-purchasing-po-status" class="tw-text-ui-sm tw-font-medium">Status</label>
+                                                                                            <select id="advanced-export-purchasing-po-status" name="status" data-filter-name="status" class="form-select form-select-sm">
+                                                    <option value="">All</option>                                                                                                            <option value="active">Active</option><option value="waiting_qc">Waiting QC</option><option value="claim_needed">Claim Needed</option><option value="overdue">Overdue</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option>                                                                                                    </select>
+                                                                                                                        </div>
+                                                                                                                                            <div>
+                                                                                    <label for="advanced-export-purchasing-po-supplier_id" class="tw-text-ui-sm tw-font-medium">Supplier</label>
+                                                                                            <select id="advanced-export-purchasing-po-supplier_id" name="supplier_id" data-filter-name="supplier_id" class="form-select form-select-sm">
+                                                    <option value="">All</option>                                                                                                                                                                                                                </select>
+                                                                                                                        </div>
+                                                            </div>
+                            <div class="tw-mt-3" >
+                                <label class="tw-text-ui-sm tw-inline-flex tw-items-center tw-gap-2"><input type="checkbox" data-export-relative>Use a relative date range</label>
+                                <label for="advanced-export-purchasing-po-days" class="tw-text-ui-xs">Number of days</label>
+                                <input id="advanced-export-purchasing-po-days" type="number" min="1" max="3650" value="30" data-export-days class="form-control form-control-sm" disabled>
+                            </div>
+                        </fieldset>
+                        <fieldset data-column-designer class="ui-column-designer tw-border tw-border-outline tw-rounded-ui-sm tw-p-3" disabled>
+                            <legend class="tw-float-none tw-w-auto tw-px-1 tw-text-ui-sm tw-font-semibold">Columns and Order</legend>
+                            <div class="ui-column-ribbon" role="group" aria-label="Column actions">
+                                <button
+        type="button"
+                                class="ui-button ui-motion ui-focus-ring tw-inline-flex tw-items-center tw-justify-center tw-whitespace-nowrap tw-rounded-ui-sm tw-border tw-font-semibold tw-no-underline disabled:tw-cursor-not-allowed disabled:tw-opacity-50 tw-border-outline tw-bg-transparent tw-text-on-surface hover:tw-bg-surface-container active:tw-bg-surface-high tw-min-h-[var(--ui-control-height-sm)] tw-gap-1.5 tw-px-2.5 tw-py-1 tw-text-ui-xs" data-column-command="hide"
+    >
+        
+                    <span class="tw-inline-flex tw-items-center tw-gap-1.5"><svg width="18" height="18" stroke-width="1.75" focusable="false" aria-hidden="true" class="ui-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/>
+  <path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/>
+  <path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/>
+  <path d="m2 2 20 20"/>
+</svg>
+Hide</span>
+        
+            </button>
+                                <button
+        type="button"
+                                class="ui-button ui-motion ui-focus-ring tw-inline-flex tw-items-center tw-justify-center tw-whitespace-nowrap tw-rounded-ui-sm tw-border tw-font-semibold tw-no-underline disabled:tw-cursor-not-allowed disabled:tw-opacity-50 tw-border-outline tw-bg-transparent tw-text-on-surface hover:tw-bg-surface-container active:tw-bg-surface-high tw-min-h-[var(--ui-control-height-sm)] tw-gap-1.5 tw-px-2.5 tw-py-1 tw-text-ui-xs" data-column-command="unhide" aria-controls="advanced-export-purchasing-po-unhide"
+    >
+        
+                    <span class="tw-inline-flex tw-items-center tw-gap-1.5"><svg width="18" height="18" stroke-width="1.75" focusable="false" aria-hidden="true" class="ui-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/>
+  <circle cx="12" cy="12" r="3"/>
+</svg>
+Unhide</span>
+        
+            </button>
+                                <button
+        type="button"
+                                class="ui-button ui-motion ui-focus-ring tw-inline-flex tw-items-center tw-justify-center tw-whitespace-nowrap tw-rounded-ui-sm tw-border tw-font-semibold tw-no-underline disabled:tw-cursor-not-allowed disabled:tw-opacity-50 tw-border-transparent tw-bg-transparent tw-text-on-surface hover:tw-bg-surface-container active:tw-bg-surface-high tw-min-h-[var(--ui-control-height-sm)] tw-gap-1.5 tw-px-2.5 tw-py-1 tw-text-ui-xs" data-column-command="move-left"
+    >
+        
+                    <span class="tw-inline-flex tw-items-center tw-gap-1.5"><svg width="18" height="18" stroke-width="1.75" focusable="false" aria-hidden="true" class="ui-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="m12 19-7-7 7-7"/>
+  <path d="M19 12H5"/>
+</svg>
+Move Left</span>
+        
+            </button>
+                                <button
+        type="button"
+                                class="ui-button ui-motion ui-focus-ring tw-inline-flex tw-items-center tw-justify-center tw-whitespace-nowrap tw-rounded-ui-sm tw-border tw-font-semibold tw-no-underline disabled:tw-cursor-not-allowed disabled:tw-opacity-50 tw-border-transparent tw-bg-transparent tw-text-on-surface hover:tw-bg-surface-container active:tw-bg-surface-high tw-min-h-[var(--ui-control-height-sm)] tw-gap-1.5 tw-px-2.5 tw-py-1 tw-text-ui-xs" data-column-command="move-right"
+    >
+        
+                    <span class="tw-inline-flex tw-items-center tw-gap-1.5"><svg width="18" height="18" stroke-width="1.75" focusable="false" aria-hidden="true" class="ui-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M5 12h14"/>
+  <path d="m12 5 7 7-7 7"/>
+</svg>
+Move Right</span>
+        
+            </button>
+                                <button
+        type="button"
+                                class="ui-button ui-motion ui-focus-ring tw-inline-flex tw-items-center tw-justify-center tw-whitespace-nowrap tw-rounded-ui-sm tw-border tw-font-semibold tw-no-underline disabled:tw-cursor-not-allowed disabled:tw-opacity-50 tw-border-transparent tw-bg-transparent tw-text-on-surface hover:tw-bg-surface-container active:tw-bg-surface-high tw-min-h-[var(--ui-control-height-sm)] tw-gap-1.5 tw-px-2.5 tw-py-1 tw-text-ui-xs" data-column-command="menu" aria-haspopup="menu" aria-controls="advanced-export-purchasing-po-menu"
+    >
+        
+                    <span class="tw-inline-flex tw-items-center tw-gap-1.5"><svg width="18" height="18" stroke-width="1.75" focusable="false" aria-hidden="true" class="ui-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="12" cy="12" r="1"/>
+  <circle cx="19" cy="12" r="1"/>
+  <circle cx="5" cy="12" r="1"/>
+</svg>
+Column Menu</span>
+        
+            </button>
+                                <button
+        type="button"
+                                class="ui-button ui-motion ui-focus-ring tw-inline-flex tw-items-center tw-justify-center tw-whitespace-nowrap tw-rounded-ui-sm tw-border tw-font-semibold tw-no-underline disabled:tw-cursor-not-allowed disabled:tw-opacity-50 tw-border-transparent tw-bg-transparent tw-text-on-surface hover:tw-bg-surface-container active:tw-bg-surface-high tw-min-h-[var(--ui-control-height-sm)] tw-gap-1.5 tw-px-2.5 tw-py-1 tw-text-ui-xs" data-column-command="reset" data-export-reset="data-export-reset"
+    >
+        
+                    <span class="tw-inline-flex tw-items-center tw-gap-1.5">Reset Columns</span>
+        
+            </button>
+                            </div>
+                            <p id="advanced-export-purchasing-po-keyboard" class="ui-column-help">All visible columns are exported. Select a header for actions. Use arrow keys to navigate, or use the buttons to move and hide columns.</p>
+                            <div class="ui-column-summary"><span data-column-summary></span><span data-column-selected-label></span></div>
+                            <div data-column-scroll class="ui-column-scroll">
+                                <div class="ui-column-sheet">
+                                    <div id="advanced-export-purchasing-po-columns" data-export-columns class="ui-column-sheet__headers" role="listbox" aria-orientation="horizontal" aria-label="Select a column for actions" aria-describedby="advanced-export-purchasing-po-keyboard"></div>
+                                    <div data-column-empty-rows aria-hidden="true"></div>
+                                </div>
+                            </div>
+                            <p data-column-feedback class="tw-sr-only" aria-live="polite" aria-atomic="true"></p>
+                        </fieldset>
+                        <fieldset data-export-format-section class="tw-border tw-border-outline tw-rounded-ui-sm tw-p-3">
+                            <legend class="tw-float-none tw-w-auto tw-px-1 tw-text-ui-sm tw-font-semibold">Format</legend>
+                            <label for="advanced-export-purchasing-po-format" class="tw-text-ui-sm">Format</label>
+                            <select id="advanced-export-purchasing-po-format" data-export-format class="form-select form-select-sm"><option value="xlsx">XLSX</option><option value="csv">CSV</option></select>
+                            <p class="tw-m-0 tw-mt-2 tw-text-ui-xs tw-text-on-surface-variant">For more than 20,000 rows, CSV is recommended. In Excel, use Data → From Text/CSV if columns do not separate.</p>
+                        </fieldset>
+                        <fieldset data-export-presets-section class="tw-border tw-border-outline tw-rounded-ui-sm tw-p-3">
+                            <legend class="tw-float-none tw-w-auto tw-px-1 tw-text-ui-sm tw-font-semibold">Personal Presets</legend>
+                            <label for="advanced-export-purchasing-po-preset" class="tw-text-ui-sm">Personal Presets</label>
+                            <select id="advanced-export-purchasing-po-preset" data-export-preset class="form-select form-select-sm"></select>
+                            <p class="ui-column-help">Presets save visible columns and their order.</p>
+                            <label for="advanced-export-purchasing-po-name" class="tw-mt-2 tw-text-ui-sm">Preset Name</label>
+                            <input id="advanced-export-purchasing-po-name" data-export-preset-name type="text" maxlength="80" class="form-control form-control-sm">
+                            <label class="tw-text-ui-sm tw-mt-2 tw-inline-flex tw-items-center tw-gap-2"><input type="checkbox" data-export-default>Use as default</label>
+                            <div class="tw-flex tw-flex-wrap tw-gap-2 tw-mt-2">
+                                <button
+        type="button"
+                                class="ui-button ui-motion ui-focus-ring tw-inline-flex tw-items-center tw-justify-center tw-whitespace-nowrap tw-rounded-ui-sm tw-border tw-font-semibold tw-no-underline disabled:tw-cursor-not-allowed disabled:tw-opacity-50 tw-border-outline tw-bg-transparent tw-text-on-surface hover:tw-bg-surface-container active:tw-bg-surface-high tw-min-h-[var(--ui-control-height-sm)] tw-gap-1.5 tw-px-2.5 tw-py-1 tw-text-ui-xs" data-export-save="data-export-save"
+    >
+        
+                    <span class="tw-inline-flex tw-items-center tw-gap-1.5">Save as Preset</span>
+        
+            </button>
+                                <button
+        type="button"
+                                class="ui-button ui-motion ui-focus-ring tw-inline-flex tw-items-center tw-justify-center tw-whitespace-nowrap tw-rounded-ui-sm tw-border tw-font-semibold tw-no-underline disabled:tw-cursor-not-allowed disabled:tw-opacity-50 tw-border-transparent tw-bg-transparent tw-text-on-surface hover:tw-bg-surface-container active:tw-bg-surface-high tw-min-h-[var(--ui-control-height-sm)] tw-gap-1.5 tw-px-2.5 tw-py-1 tw-text-ui-xs" data-export-update="data-export-update"
+    >
+        
+                    <span class="tw-inline-flex tw-items-center tw-gap-1.5">Update Preset</span>
+        
+            </button>
+                                <button
+        type="button"
+                                class="ui-button ui-motion ui-focus-ring tw-inline-flex tw-items-center tw-justify-center tw-whitespace-nowrap tw-rounded-ui-sm tw-border tw-font-semibold tw-no-underline disabled:tw-cursor-not-allowed disabled:tw-opacity-50 tw-border-transparent tw-bg-error tw-text-error-foreground hover:tw-brightness-95 active:tw-brightness-90 tw-min-h-[var(--ui-control-height-sm)] tw-gap-1.5 tw-px-2.5 tw-py-1 tw-text-ui-xs" data-export-delete="data-export-delete"
+    >
+        
+                    <span class="tw-inline-flex tw-items-center tw-gap-1.5">Delete Preset</span>
+        
+            </button>
+                            </div>
+                        </fieldset>
+                    </div>
+                    <div class="modal-footer">
+                        <button
+        type="button"
+                                class="ui-button ui-motion ui-focus-ring tw-inline-flex tw-items-center tw-justify-center tw-whitespace-nowrap tw-rounded-ui-sm tw-border tw-font-semibold tw-no-underline disabled:tw-cursor-not-allowed disabled:tw-opacity-50 tw-border-transparent tw-bg-transparent tw-text-on-surface hover:tw-bg-surface-container active:tw-bg-surface-high tw-min-h-[var(--ui-control-height-md)] tw-gap-2 tw-px-3.5 tw-py-1.5 tw-text-ui-sm" data-bs-dismiss="modal"
+    >
+        
+                    <span class="tw-inline-flex tw-items-center tw-gap-1.5">Cancel</span>
+        
+            </button>
+                        <button
+        type="submit"
+        disabled                        class="ui-button ui-motion ui-focus-ring tw-inline-flex tw-items-center tw-justify-center tw-whitespace-nowrap tw-rounded-ui-sm tw-border tw-font-semibold tw-no-underline disabled:tw-cursor-not-allowed disabled:tw-opacity-50 tw-border-transparent tw-bg-primary tw-text-primary-foreground hover:tw-brightness-95 active:tw-brightness-90 tw-min-h-[var(--ui-control-height-md)] tw-gap-2 tw-px-3.5 tw-py-1.5 tw-text-ui-sm" data-export-submit="data-export-submit"
+    >
+        
+                    <span class="tw-inline-flex tw-items-center tw-gap-1.5">Export</span>
+        
+            </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div id="advanced-export-purchasing-po-menu" data-column-menu data-column-layer class="ui-column-layer ui-column-menu" role="menu" aria-label="Column Menu" hidden>
+            <button type="button" role="menuitem" data-column-command="hide">Hide</button>
+            <button type="button" role="menuitem" data-column-command="unhide">Unhide</button>
+            <button type="button" role="menuitem" data-column-command="move-left">Move Left</button>
+            <button type="button" role="menuitem" data-column-command="move-right">Move Right</button>
+            <button type="button" role="menuitem" data-column-command="reset">Reset Columns</button>
+        </div>
+        <div id="advanced-export-purchasing-po-unhide" data-column-unhide data-column-layer class="ui-column-layer ui-column-unhide" role="group" aria-labelledby="advanced-export-purchasing-po-unhide-label" hidden>
+            <label id="advanced-export-purchasing-po-unhide-label" for="advanced-export-purchasing-po-hidden-select">Unhide</label>
+            <select id="advanced-export-purchasing-po-hidden-select" data-column-hidden-select class="form-select form-select-sm" aria-describedby="advanced-export-purchasing-po-restore-position"></select>
+            <p id="advanced-export-purchasing-po-restore-position" data-column-restore-position class="ui-column-help"></p>
+            <div class="tw-flex tw-flex-wrap tw-gap-2">
+                <button
+        type="button"
+                                class="ui-button ui-motion ui-focus-ring tw-inline-flex tw-items-center tw-justify-center tw-whitespace-nowrap tw-rounded-ui-sm tw-border tw-font-semibold tw-no-underline disabled:tw-cursor-not-allowed disabled:tw-opacity-50 tw-border-transparent tw-bg-primary tw-text-primary-foreground hover:tw-brightness-95 active:tw-brightness-90 tw-min-h-[var(--ui-control-height-sm)] tw-gap-1.5 tw-px-2.5 tw-py-1 tw-text-ui-xs" data-column-command="restore"
+    >
+        
+                    <span class="tw-inline-flex tw-items-center tw-gap-1.5">Restore Column</span>
+        
+            </button>
+                <button
+        type="button"
+                                class="ui-button ui-motion ui-focus-ring tw-inline-flex tw-items-center tw-justify-center tw-whitespace-nowrap tw-rounded-ui-sm tw-border tw-font-semibold tw-no-underline disabled:tw-cursor-not-allowed disabled:tw-opacity-50 tw-border-transparent tw-bg-transparent tw-text-on-surface hover:tw-bg-surface-container active:tw-bg-surface-high tw-min-h-[var(--ui-control-height-sm)] tw-gap-1.5 tw-px-2.5 tw-py-1 tw-text-ui-xs" data-column-command="close-layer"
+    >
+        
+                    <span class="tw-inline-flex tw-items-center tw-gap-1.5">Cancel</span>
+        
+            </button>
+            </div>
+        </div>
+    </div>
+    <template data-export-column-template>
+        <div data-export-column draggable="true" class="ui-column-header" role="option" tabindex="-1" aria-selected="false">
+            <span data-column-letter class="ui-column-header__letter" aria-hidden="true"></span>
+            <span data-column-label class="ui-column-header__label"></span>
+            <span data-column-required class="ui-column-header__required" hidden>Required</span>
+        </div>
+    </template>
+</div>
+<style>:root { --adasi-loader-logo: url('http://127.0.0.1:8101/assets/images/logo-adasi.png'); }</style>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script><script type="module" src="/build/assets/app-IkKtPNrf.js"></script></body></html>

@@ -92,7 +92,7 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
             'invoice_amount' => '1000.00',
             'tax_amount' => '0.00',
             'ppn_scheme' => '0%',
-        ], ['invoice' => NativeFileFixtures::upload('invoice.pdf', 10)]);
+        ], [...NativeFileFixtures::invoiceReferences(), 'invoice' => NativeFileFixtures::upload('invoice.pdf', 10)]);
 
         app(LocalGrReservationService::class)->consume($invoice, $this->finance);
         $invoice->update(['status' => LocalInvoice::STATUS_READY_TO_PAY]);
@@ -288,7 +288,7 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
             'invoice_amount' => '500.00',
             'tax_amount' => '0.00',
             'ppn_scheme' => '0%',
-        ], ['invoice' => NativeFileFixtures::upload('invoice.pdf', 10)]);
+        ], [...NativeFileFixtures::invoiceReferences(), 'invoice' => NativeFileFixtures::upload('invoice.pdf', 10)]);
 
         app(LocalGrReservationService::class)->consume($settledInvoice, $this->finance);
         $settledInvoice->update(['status' => LocalInvoice::STATUS_READY_TO_PAY]);
@@ -435,7 +435,7 @@ class LocalSupplierOverpaymentTransparencyTest extends TestCase
             'invoice_amount' => '500.00',
             'tax_amount' => '0.00',
             'ppn_scheme' => '0%',
-        ], ['invoice' => NativeFileFixtures::upload('invoice.pdf', 10)]);
+        ], [...NativeFileFixtures::invoiceReferences(), 'invoice' => NativeFileFixtures::upload('invoice.pdf', 10)]);
 
         app(LocalGrReservationService::class)->consume($settledInvoice, $this->finance);
         $settledInvoice->update(['status' => LocalInvoice::STATUS_READY_TO_PAY]);

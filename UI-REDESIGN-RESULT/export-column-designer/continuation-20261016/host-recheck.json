@@ -1,0 +1,147 @@
+﻿{
+    "Scope":  "Read-only visible process CPU samples; sandbox may hide processes, not a full system idle certification",
+    "LogicalProcessorCount":  12,
+    "Samples":  [
+                    {
+                        "ObservedUtc":  "2026-10-16T02:53:34.1241719Z",
+                        "DurationSeconds":  3.1272683,
+                        "VisibleProcessesLogicalCores":  1.559,
+                        "TopVisibleProcesses":  [
+                                                    {
+                                                        "Id":  11972,
+                                                        "Name":  "devsense.php.ls",
+                                                        "LogicalCores":  0.989
+                                                    },
+                                                    {
+                                                        "Id":  4480,
+                                                        "Name":  "Antigravity IDE",
+                                                        "LogicalCores":  0.23
+                                                    },
+                                                    {
+                                                        "Id":  5544,
+                                                        "Name":  "Antigravity IDE",
+                                                        "LogicalCores":  0.145
+                                                    },
+                                                    {
+                                                        "Id":  11192,
+                                                        "Name":  "Antigravity IDE",
+                                                        "LogicalCores":  0.11
+                                                    },
+                                                    {
+                                                        "Id":  27368,
+                                                        "Name":  "powershell",
+                                                        "LogicalCores":  0.04
+                                                    },
+                                                    {
+                                                        "Id":  14224,
+                                                        "Name":  "dptf_helper",
+                                                        "LogicalCores":  0.025
+                                                    },
+                                                    {
+                                                        "Id":  27644,
+                                                        "Name":  "ngrok",
+                                                        "LogicalCores":  0.015
+                                                    },
+                                                    {
+                                                        "Id":  20840,
+                                                        "Name":  "Antigravity IDE",
+                                                        "LogicalCores":  0.005
+                                                    }
+                                                ]
+                    },
+                    {
+                        "ObservedUtc":  "2026-10-16T02:53:37.1953874Z",
+                        "DurationSeconds":  3.0352001,
+                        "VisibleProcessesLogicalCores":  1.637,
+                        "TopVisibleProcesses":  [
+                                                    {
+                                                        "Id":  11972,
+                                                        "Name":  "devsense.php.ls",
+                                                        "LogicalCores":  0.999
+                                                    },
+                                                    {
+                                                        "Id":  5544,
+                                                        "Name":  "Antigravity IDE",
+                                                        "LogicalCores":  0.216
+                                                    },
+                                                    {
+                                                        "Id":  22212,
+                                                        "Name":  "Antigravity IDE",
+                                                        "LogicalCores":  0.206
+                                                    },
+                                                    {
+                                                        "Id":  4480,
+                                                        "Name":  "Antigravity IDE",
+                                                        "LogicalCores":  0.077
+                                                    },
+                                                    {
+                                                        "Id":  11192,
+                                                        "Name":  "Antigravity IDE",
+                                                        "LogicalCores":  0.077
+                                                    },
+                                                    {
+                                                        "Id":  4416,
+                                                        "Name":  "claude",
+                                                        "LogicalCores":  0.026
+                                                    },
+                                                    {
+                                                        "Id":  14224,
+                                                        "Name":  "dptf_helper",
+                                                        "LogicalCores":  0.021
+                                                    },
+                                                    {
+                                                        "Id":  27368,
+                                                        "Name":  "powershell",
+                                                        "LogicalCores":  0.015
+                                                    }
+                                                ]
+                    },
+                    {
+                        "ObservedUtc":  "2026-10-16T02:53:40.2652839Z",
+                        "DurationSeconds":  3.0441458999999997,
+                        "VisibleProcessesLogicalCores":  1.51,
+                        "TopVisibleProcesses":  [
+                                                    {
+                                                        "Id":  11972,
+                                                        "Name":  "devsense.php.ls",
+                                                        "LogicalCores":  0.991
+                                                    },
+                                                    {
+                                                        "Id":  5544,
+                                                        "Name":  "Antigravity IDE",
+                                                        "LogicalCores":  0.334
+                                                    },
+                                                    {
+                                                        "Id":  11192,
+                                                        "Name":  "Antigravity IDE",
+                                                        "LogicalCores":  0.062
+                                                    },
+                                                    {
+                                                        "Id":  19916,
+                                                        "Name":  "mysqld",
+                                                        "LogicalCores":  0.046
+                                                    },
+                                                    {
+                                                        "Id":  27644,
+                                                        "Name":  "ngrok",
+                                                        "LogicalCores":  0.026
+                                                    },
+                                                    {
+                                                        "Id":  4480,
+                                                        "Name":  "Antigravity IDE",
+                                                        "LogicalCores":  0.026
+                                                    },
+                                                    {
+                                                        "Id":  21100,
+                                                        "Name":  "chrome",
+                                                        "LogicalCores":  0.015
+                                                    },
+                                                    {
+                                                        "Id":  27368,
+                                                        "Name":  "powershell",
+                                                        "LogicalCores":  0.01
+                                                    }
+                                                ]
+                    }
+                ]
+}

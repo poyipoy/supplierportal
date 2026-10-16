@@ -83,6 +83,8 @@ thead th.col-sticky-material {
     </form>
 </x-ui.toolbar>
 
+@include('purchasing.comparison._evaluation_header', ['evaluation' => $evaluation, 'route' => 'purchasing.comparison.inter-supplier'])
+
 @if($comparison)
     @php
         $supplierTotals = [];
@@ -165,7 +167,7 @@ thead th.col-sticky-material {
     @endif
 
     {{-- Grafik Batang --}}
-    <x-ui.card :title="__('purchasing.copy.price_comparison_chart_per_material_idr_kg')">
+    <x-ui.card :title="__('purchasing.comparison_analytics.chart_title', ['currency' => $currency])">
         <x-slot:actions>
             <div class="tw-min-w-60">
                 <label class="form-label small fw-bold mb-1" for="comparisonMaterialFilter">{{ __('purchasing.copy.material') }}</label>
@@ -211,7 +213,7 @@ thead th.col-sticky-material {
         <input type="hidden" name="pr_id" value="{{ $selectedPr->getRouteKey() }}">
 
         {{-- Side-by-side comparison table --}}
-        <x-ui.data-table :title="__('purchasing.page.comparison_title', ['pr' => $selectedPr->pr_number])" :description="__('purchasing.copy.select_supplier_offers_per_pr_item_maximum_one_offer_per_item')" class="tw-min-w-0 tw-max-w-full">
+        <x-ui.data-table sticky :scroll-label="__('procurement.tables.comparison_matrix')" :title="__('purchasing.page.comparison_title', ['pr' => $selectedPr->pr_number])" :description="__('purchasing.copy.select_supplier_offers_per_pr_item_maximum_one_offer_per_item')" class="tw-min-w-0 tw-max-w-full">
                 <table class="table table-bordered table-hover align-middle mb-0 tw-text-ui-xs comparison-matrix-table">
                     <thead class="table-light text-center">
                         <tr>
@@ -227,9 +229,12 @@ thead th.col-sticky-material {
                                             {{ \App\Support\StatusHelper::quotationLabel($sup['status']) }}
                                         </x-ui.status-chip>
                                     </div>
-                                    <div class="tw-mt-1.5 tw-text-ui-xs tw-text-on-surface-variant" title="{{ __('purchasing.copy.supplier_original_estimated_ready_dispatch_date') }}">
-                                        <span class="fw-semibold">{{ __('purchasing.copy.ready_dispatch') }}</span>
+                                    <div class="tw-mt-1.5 tw-text-ui-xs tw-text-on-surface-variant" title="{{ __('purchasing.copy.supplier_estimate_delivery') }}">
+                                        <span class="fw-semibold">{{ __('purchasing.copy.supplier_estimate_delivery_prefix') }}</span>
                                         <span class="tw-text-on-surface">{{ $sup['estimated_delivery_formatted'] ?? '-' }}</span>
+                                    </div>
+                                    <div class="text-start tw-font-normal">
+                                        @include('quotations._supplier_pic', ['profile' => $sup['profile'] ?? null])
                                     </div>
                                 </th>
                             @endforeach
@@ -312,6 +317,21 @@ thead th.col-sticky-material {
                                                             {{ !empty($p['is_awarded']) ? __('purchasing.copy.selected_offer') : __('purchasing.copy.select_offer') }}
                                                         </span>
                                                     </label>
+                                                    @if(\App\Support\Procurement\ProcurementFeatures::orderedQuantityWriteEnabled())
+                                                        @include('procurement._order_qty_control', [
+                                                            'prItemId' => $row['item']->id,
+                                                            'material' => $row['item']->material_name,
+                                                            'requested' => $row['item']->quantity_value,
+                                                            'offered' => (int) ($p['available_qty'] ?? $row['item']->quantity_value),
+                                                            'value' => $p['ordered_qty'] ?? null,
+                                                            'disabled' => empty($p['is_awarded']),
+                                                            'specDifferent' => ($p['spec_code'] ?? null) === 'different',
+                                                            'specAccepted' => ! empty($p['spec_accepted']),
+                                                            'requestedSpec' => $p['requested_spec'] ?? null,
+                                                            'offeredSpec' => $p['offered_spec'] ?? null,
+                                                            'idSuffix' => $row['item']->id.'_'.$p['quotation_item_id'],
+                                                        ])
+                                                    @endif
                                                 </div>
                                             @elseif(!empty($p['is_awarded']))
                                                 <div class="tw-mt-2 tw-pt-1.5 tw-border-t tw-border-outline-variant text-center">
@@ -337,6 +357,9 @@ thead th.col-sticky-material {
                     </tbody>
                 </table>
         </x-ui.data-table>
+
+        {{-- Mission 07: benchmark indicators per PR item --}}
+        <div class="tw-mt-4">@include('purchasing.comparison._price_indicators', ['matrix' => $comparison['matrix'], 'currency' => $currency])</div>
 
         @if($hasActionableAwardSelections)
             {{-- Existing PO assignments remain visible while unassigned items stay actionable. --}}
@@ -386,12 +409,12 @@ thead th.col-sticky-material {
                             :value="now()->addDays(14)->format('Y-m-d')"
                         />
                         <div class="form-text tw-text-ui-xs tw-text-on-surface-variant tw-mt-1">
-                            <span class="fw-semibold">{{ __('purchasing.copy.supplier_ready_dispatch_date') }}</span> {{ __('purchasing.copy.when_supplier_expects_material_ready_to_send') }}<br>
+                            <span class="fw-semibold">{{ __('purchasing.copy.supplier_estimate_delivery_prefix') }}</span> {{ __('purchasing.copy.when_supplier_expects_material_ready_to_send') }}<br>
                             <span class="fw-semibold">{{ __('purchasing.copy.po_target_arrival_date_21ee07') }}</span> {{ __('purchasing.copy.when_purchasing_expects_material_at_adsi') }}
                         </div>
                         <div id="targetArrivalWarning" class="alert alert-warning py-1.5 px-2.5 tw-text-ui-xs tw-mt-2 d-none" role="alert">
                             <x-ui.icon name="triangle-alert" size="sm" class="me-1 text-warning" />
-                            <span>{{ __('purchasing.copy.po_target_arrival_date_is_earlier_than_the_selected_supplier_s_estimated_ready_dispatch_date_review') }}</span>
+                            <span>{{ __('purchasing.copy.po_target_earlier_than_supplier_estimate_delivery') }}</span>
                         </div>
                     </div>
                     <div>
@@ -400,13 +423,17 @@ thead th.col-sticky-material {
                     </div>
                 </div>
 
+                @unless($poGenerationEnabled)
+                    <x-ui.alert tone="warning" class="tw-mt-3">{{ __('procurement.po_generation.disabled_notice') }}</x-ui.alert>
+                @endunless
+
                 <x-slot:actions>
                     <div class="tw-flex tw-flex-wrap tw-gap-2">
                         <x-ui.button type="submit" name="action" value="save" variant="outline" size="sm">
                             <x-slot:leading><x-ui.icon name="save" size="sm" /></x-slot:leading>
                             {{ __('purchasing.copy.save_selected_offers') }}
                         </x-ui.button>
-                        <x-ui.button type="submit" name="action" value="generate_pos" variant="primary" size="sm" id="btnGeneratePos">
+                        <x-ui.button type="submit" name="action" value="generate_pos" variant="primary" size="sm" id="btnGeneratePos" :disabled="! $poGenerationEnabled">
                             <x-slot:leading><x-ui.icon name="receipt" size="sm" /></x-slot:leading>
                             {{ __('purchasing.audit_ui.confirm_generation') }}
                         </x-ui.button>

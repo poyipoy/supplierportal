@@ -406,6 +406,10 @@
             @endif
         </x-ui.card>
     @endif
+
+    @if(\App\Support\Procurement\ProcurementFeatures::shipmentMtcEnabled() || $shipment->mtcAttachments->isNotEmpty())
+        @include('shipments._mtc_section', ['shipment' => $shipment, 'manageable' => false])
+    @endif
 </div>
 
 {{-- Confirm Arrival Modal --}}

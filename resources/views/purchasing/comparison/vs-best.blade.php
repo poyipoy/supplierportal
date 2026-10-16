@@ -12,7 +12,7 @@
     />
     <x-purchasing.comparison-tabs active="vs-best" />
 
-    <div id="purchasingComparisonContent" data-server-tabs-content>
+    <div id="purchasingComparisonContent" class="tw-min-w-0 tw-max-w-full" data-server-tabs-content>
         @include('purchasing.comparison._vs_best_content')
     </div>
 </div>

@@ -6,7 +6,7 @@ import vm from 'node:vm';
 const sourcePath = new URL('../../resources/js/auth-splash.js', import.meta.url);
 const source = existsSync(sourcePath) ? readFileSync(sourcePath, 'utf8') : '';
 
-function environment({ mode = 'core', reduced = false, body = true, css = true, parsed = false, failFocus = false, autofocus = false, holdFrames = false } = {}) {
+function environment({ mode = 'core', reduced = false, body = true, css = true, parsed = false, failFocus = false, autofocus = false, holdFrames = false, minVisible = '0' } = {}) {
     let now = 0;
     let sequence = 0;
     const queue = new Map();
@@ -90,6 +90,8 @@ function environment({ mode = 'core', reduced = false, body = true, css = true, 
     document.querySelector = selector => root.matches(selector) ? root : root.querySelector(selector);
     document.querySelectorAll = selector => root.querySelectorAll(selector);
     document.currentScript = { dataset: { hardTimeout: '10000', slowAfter: '2000', fadeMs: '650', cleanupMs: '750', layout: mode === 'native-login' ? 'auth' : 'app', readiness: mode } };
+    // Existing readiness-only cases explicitly disable the branding minimum.
+    if (minVisible !== null) document.currentScript.dataset.minVisibleMs = minVisible;
     const overlay = node('div', { 'data-auth-splash': '', class: 'auth-splash', 'aria-hidden': 'true' });
     overlay.hidden = true;
     overlay.dataset = { splashReason: 'post-login' };
@@ -169,6 +171,132 @@ test('standalone controller exists and never depends on an application import', 
     assert.ok(source.length > 0);
     assert.doesNotMatch(source, /^\s*(?:import|export)\s/m);
     assert.doesNotMatch(source, /\b(?:fetch|XMLHttpRequest|localStorage)\s*[.(]/);
+});
+
+for (const mode of ['native-login', 'core']) test('minimum holds interaction after real readiness: ' + mode, () => {
+    const e = environment({ mode, minVisible: null, autofocus: true });
+    e.advance(268);
+    e.parsed(); e.domReady(); e.coreReady(); e.advance(32);
+    assert.equal(e.window.AdasiAuthSplash.renderReady, true);
+    assert.equal(e.events.filter(event => event.type === 'adasi:page-ready').length, 1);
+    assert.equal(e.window.AdasiAuthSplash.state, 'WAITING');
+    assert.equal(e.document.activeElement, e.panel);
+    assert.equal(e.workspace.inert, true);
+    e.coreReady(); e.mutate(); e.advance(1699);
+    assert.equal(e.window.AdasiAuthSplash.state, 'WAITING');
+    e.advance(1);
+    assert.equal(e.window.AdasiAuthSplash.state, 'RELEASED');
+    assert.equal(e.workspace.inert, false);
+    assert.equal(e.document.activeElement, e.email);
+    assert.ok(e.letters.every(letter => letter.animationCancellations > 0));
+    assert.equal(e.events.filter(event => event.type === 'adasi:page-ready').length, 1);
+    assert.equal(e.events.filter(event => event.type === 'adasi:auth-splash-released').length, 1);
+    e.advance(750);
+    assert.equal(e.window.AdasiAuthSplash.state, 'REMOVED');
+    assert.equal(e.queue.size, 0);
+});
+
+for (const value of ['bad', '', '-1', '10001', 'Infinity', null]) test('invalid or missing minimum defaults to 2000: ' + value, () => {
+    const e = environment({ mode: 'native-login', parsed: true, minVisible: value });
+    e.advance(1999);
+    assert.equal(e.window.AdasiAuthSplash.state, 'WAITING');
+    e.advance(1);
+    assert.equal(e.window.AdasiAuthSplash.state, 'RELEASED');
+});
+
+test('custom minimum uses activation time and late readiness is never delayed again', () => {
+    const e = environment({ body: false, minVisible: '500' });
+    e.advance(1000);
+    e.document.body = e.root;
+    e.root.appendChild(e.overlay); e.root.appendChild(e.workspace); e.mutate();
+    e.parsed(); e.domReady(); e.coreReady(); e.advance(499);
+    assert.equal(e.window.AdasiAuthSplash.state, 'WAITING');
+    e.advance(1);
+    assert.equal(e.window.AdasiAuthSplash.state, 'RELEASED');
+    const late = environment({ minVisible: '2000' });
+    late.advance(2968);
+    late.parsed(); late.domReady(); late.coreReady(); late.advance(32);
+    assert.equal(late.window.AdasiAuthSplash.state, 'RELEASED');
+});
+
+test('readiness before late markup stays sticky until activation plus the minimum', () => {
+    const e = environment({ mode: 'native-login', body: false, minVisible: '2000' });
+    e.document.body = e.root;
+    e.root.appendChild(e.workspace); e.parsed(); e.advance(32);
+    assert.equal(e.window.AdasiAuthSplash.renderReady, true);
+    assert.equal(e.window.AdasiAuthSplash.state, 'ARMED');
+    e.advance(968);
+    e.root.appendChild(e.overlay); e.mutate();
+    assert.equal(e.window.AdasiAuthSplash.state, 'WAITING');
+    e.advance(1999);
+    assert.equal(e.window.AdasiAuthSplash.state, 'WAITING');
+    e.advance(1);
+    assert.equal(e.window.AdasiAuthSplash.state, 'RELEASED');
+});
+
+for (const action of ['Escape', 'skip', 'pagehide', 'pageswap', 'bfcache', 'css-timeout']) test('minimum never blocks immediate exit: ' + action, () => {
+    const e = environment({ mode: 'native-login', parsed: true, minVisible: '5000' });
+    e.advance(action === 'skip' ? 2000 : 32);
+    if (action === 'Escape') e.document.dispatchEvent({ type: 'keydown', key: 'Escape' });
+    else if (action === 'skip') e.skip.dispatchEvent({ type: 'click' });
+    else if (action === 'bfcache') e.window.dispatchEvent({ type: 'pageshow', persisted: true });
+    else if (action === 'css-timeout') e.overlay.dispatchEvent({ type: 'animationend', animationName: 'auth-splash-expire' });
+    else e.window.dispatchEvent({ type: action });
+    assert.equal(e.window.AdasiAuthSplash.state, 'REMOVED');
+    assert.equal(e.workspace.inert, false);
+    assert.equal(e.queue.size, 0);
+    e.coreReady(); e.boot(); e.advance(10000);
+    assert.equal(e.window.AdasiAuthSplash.state, 'REMOVED');
+});
+
+test('initial and live reduced motion bypass the minimum without a fade', () => {
+    const initial = environment({ mode: 'native-login', parsed: true, minVisible: '2000', reduced: true });
+    initial.advance(32);
+    assert.equal(initial.window.AdasiAuthSplash.state, 'REMOVED');
+    assert.equal(initial.queue.size, 0);
+    const live = environment({ mode: 'native-login', parsed: true, minVisible: '2000' });
+    live.advance(100);
+    assert.equal(live.window.AdasiAuthSplash.state, 'WAITING');
+    live.motion.matches = true; live.motion.dispatchEvent({ type: 'change' });
+    assert.equal(live.window.AdasiAuthSplash.state, 'REMOVED');
+    assert.equal(live.queue.size, 0);
+});
+
+test('an initialization error while holding the minimum restores interaction and cancels timers', () => {
+    const e = environment({ mode: 'native-login', parsed: true, minVisible: '2000' });
+    e.advance(32);
+    assert.equal(e.window.AdasiAuthSplash.state, 'WAITING');
+    e.document.querySelector = () => { throw new Error('DOM integration failed'); };
+    e.mutate();
+    assert.equal(e.window.AdasiAuthSplash.state, 'REMOVED');
+    assert.equal(e.events.find(event => event.type === 'adasi:auth-splash-hidden').detail.exit, 'error');
+    assert.equal(e.workspace.inert, false);
+    assert.equal(e.queue.size, 0);
+});
+
+test('the hard deadline wins over a late activation minimum', () => {
+    const e = environment({ mode: 'native-login', body: false, minVisible: '2000' });
+    e.advance(9500);
+    e.document.body = e.root;
+    e.root.appendChild(e.overlay); e.root.appendChild(e.workspace); e.parsed();
+    e.advance(499);
+    assert.equal(e.window.AdasiAuthSplash.state, 'WAITING');
+    e.advance(1);
+    assert.equal(e.window.AdasiAuthSplash.state, 'REMOVED');
+    assert.equal(e.events.find(event => event.type === 'adasi:auth-splash-hidden').detail.exit, 'hard-timeout');
+    assert.equal(e.workspace.inert, false);
+    assert.equal(e.queue.size, 0);
+});
+
+test('returning from a background tab does not restart the minimum', () => {
+    const e = environment({ mode: 'native-login', parsed: true, minVisible: '2000' });
+    e.advance(32);
+    e.document.hidden = true;
+    e.document.dispatchEvent({ type: 'visibilitychange' });
+    e.advance(1968);
+    e.document.hidden = false;
+    e.document.dispatchEvent({ type: 'visibilitychange' });
+    assert.equal(e.window.AdasiAuthSplash.state, 'RELEASED');
 });
 
 test('native login releases without app.js or DOMContentLoaded', () => {
@@ -298,7 +426,7 @@ test('fade is interrupted before user interaction and child transitions cannot r
 });
 
 test('blocked CSS never activates or acquires interaction', () => {
-    const e = environment({ css: false });
+    const e = environment({ css: false, minVisible: '2000' });
     assert.equal(e.overlay.hidden, true);
     assert.equal(e.workspace.inert, false);
     assert.equal(e.window.AdasiAuthSplash.state, 'REMOVED');
@@ -391,7 +519,7 @@ test('Alpine root bindings cannot clear splash inert, and their latest intent su
 });
 
 test('withheld render frames use watchdog fail-open and never report healthy readiness', () => {
-    const e = environment({ mode: 'native-login', holdFrames: true });
+    const e = environment({ mode: 'native-login', holdFrames: true, minVisible: '2000' });
     e.parsed();
     e.advance(0);
     assert.equal(e.window.AdasiAuthSplash.ready, false);

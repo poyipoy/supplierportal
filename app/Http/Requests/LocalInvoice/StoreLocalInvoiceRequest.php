@@ -173,6 +173,8 @@ class StoreLocalInvoiceRequest extends FormRequest
             $baseRules,
             $this->fileRule('invoice', true),
             $this->fileRule('tax_invoice', $requiresTaxInvoice),
+            $this->fileRule('purchase_order', true),
+            $this->fileRule('goods_receipt', true),
             $this->fileRule('delivery_note', $requiresSuratJalan),
             $this->fileRule('surat_jalan', false),
             $this->fileRule('supporting', false)
@@ -186,12 +188,12 @@ class StoreLocalInvoiceRequest extends FormRequest
         if (is_array($fileVal)) {
             return [
                 $field => [$required ? 'required' : 'nullable', 'array', 'min:1', 'max:'.LocalInvoiceDocument::maxFilesFor($field)],
-                $field.'.*' => ['file', 'mimes:pdf', 'max:5120'],
+                $field.'.*' => ['required', 'file', 'mimes:pdf', 'extensions:pdf', 'max:5120'],
             ];
         }
 
         return [
-            $field => array_merge([$required ? 'required' : 'nullable'], ['file', 'mimes:pdf', 'max:5120']),
+            $field => array_merge([$required ? 'required' : 'nullable'], ['file', 'mimes:pdf', 'extensions:pdf', 'max:5120']),
         ];
     }
 
@@ -219,6 +221,8 @@ class StoreLocalInvoiceRequest extends FormRequest
             'goods_receipt_ids.min' => __('local_invoice.validation.whole_gr_required'),
             'invoice.required' => __('local_invoice.validation.invoice_file_required'),
             'tax_invoice.required' => __('local_invoice.validation.tax_file_required'),
+            'purchase_order.required' => __('local_invoice.validation.file_required', ['type' => __('local_invoice.labels.purchase_order')]),
+            'goods_receipt.required' => __('local_invoice.validation.file_required', ['type' => __('local_invoice.labels.goods_receipt')]),
             'delivery_note.required' => __('local_invoice.validation.dn_file_required'),
             'scheduled_physical_delivery_date.after_or_equal' => __('local_invoice.validation.delivery_past'),
         ];
@@ -226,10 +230,17 @@ class StoreLocalInvoiceRequest extends FormRequest
         foreach ([
             'invoice' => __('local_invoice.labels.invoice'),
             'tax_invoice' => __('local_invoice.labels.tax_invoice'),
+            'purchase_order' => __('local_invoice.labels.purchase_order'),
+            'goods_receipt' => __('local_invoice.labels.goods_receipt'),
             'delivery_note' => __('local_invoice.labels.delivery_note'),
             'surat_jalan' => __('local_invoice.labels.delivery_note'),
             'supporting' => __('local_invoice.labels.supporting'),
         ] as $field => $label) {
+            foreach ([$field, $field.'.*'] as $key) {
+                $messages[$key.'.file'] = __('local_invoice.validation.file_invalid', ['type' => $label]);
+                $messages[$key.'.uploaded'] = __('local_invoice.validation.file_invalid', ['type' => $label]);
+                $messages[$key.'.extensions'] = __('local_invoice.validation.file_type', ['type' => $label]);
+            }
             if (is_array($this->file($field))) {
                 $messages["{$field}.max"] = __('local_invoice.validation.file_count', ['type' => $label, 'count' => LocalInvoiceDocument::maxFilesFor($field)]);
                 $messages["{$field}.*.mimes"] = __('local_invoice.validation.file_type', ['type' => $label]);

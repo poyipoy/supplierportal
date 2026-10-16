@@ -1,0 +1,7 @@
+﻿{
+    "Status":  "BLOCKED_LAUNCH_ZERO_TRIALS",
+    "Reason":  "Windows sandbox denied Chrome Mojo platform channel and Crashpad CreateFile, exit 4294930433",
+    "RecordedProtocol":  "counterbalanced-trace-protocol.json",
+    "ThresholdsChanged":  false,
+    "PreviousEvidencePreserved":  true
+}

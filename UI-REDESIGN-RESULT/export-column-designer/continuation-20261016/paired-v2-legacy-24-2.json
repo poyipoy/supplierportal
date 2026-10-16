@@ -1,0 +1,266 @@
+{
+  "variant": "legacy",
+  "size": 24,
+  "batch": 2,
+  "viewport": [
+    1440,
+    900
+  ],
+  "animations": {
+    "dialog": false,
+    "backdrop": false
+  },
+  "records": [
+    {
+      "ready": 20.600000000093132,
+      "paint": 12,
+      "command": 8.5,
+      "commandPaint": 15.300000000279397,
+      "columnNodes": 384,
+      "modalNodes": 572
+    },
+    {
+      "ready": 19.800000000279397,
+      "paint": 11.600000000093132,
+      "command": 6.400000000372529,
+      "commandPaint": 11.100000000093132,
+      "columnNodes": 384,
+      "modalNodes": 572
+    },
+    {
+      "ready": 21,
+      "paint": 16.59999999962747,
+      "command": 5.100000000093132,
+      "commandPaint": 13.799999999813735,
+      "columnNodes": 384,
+      "modalNodes": 572
+    },
+    {
+      "ready": 20.799999999813735,
+      "paint": 12.200000000186265,
+      "command": 7.5,
+      "commandPaint": 15.099999999627471,
+      "columnNodes": 384,
+      "modalNodes": 572
+    },
+    {
+      "ready": 18.5,
+      "paint": 13.699999999720603,
+      "command": 4.399999999906868,
+      "commandPaint": 11.600000000093132,
+      "columnNodes": 384,
+      "modalNodes": 572
+    },
+    {
+      "ready": 14.899999999906868,
+      "paint": 10,
+      "command": 4.899999999906868,
+      "commandPaint": 13.700000000186265,
+      "columnNodes": 384,
+      "modalNodes": 572
+    },
+    {
+      "ready": 18.700000000186265,
+      "paint": 12.100000000093132,
+      "command": 5.7000000001862645,
+      "commandPaint": 13.900000000372529,
+      "columnNodes": 384,
+      "modalNodes": 572
+    },
+    {
+      "ready": 18.899999999906868,
+      "paint": 12.899999999906868,
+      "command": 4.7000000001862645,
+      "commandPaint": 14.899999999906868,
+      "columnNodes": 384,
+      "modalNodes": 572
+    },
+    {
+      "ready": 16.200000000186265,
+      "paint": 13.799999999813735,
+      "command": 7,
+      "commandPaint": 13.199999999720603,
+      "columnNodes": 384,
+      "modalNodes": 572
+    },
+    {
+      "ready": 16,
+      "paint": 7.600000000093132,
+      "command": 5.300000000279397,
+      "commandPaint": 13.899999999906868,
+      "columnNodes": 384,
+      "modalNodes": 572
+    },
+    {
+      "ready": 16.59999999962747,
+      "paint": 15.300000000279397,
+      "command": 4.100000000093132,
+      "commandPaint": 13.900000000372529,
+      "columnNodes": 384,
+      "modalNodes": 572
+    },
+    {
+      "ready": 15.600000000093132,
+      "paint": 15.600000000093132,
+      "command": 6.600000000093132,
+      "commandPaint": 16.700000000186265,
+      "columnNodes": 384,
+      "modalNodes": 572
+    },
+    {
+      "ready": 19.800000000279397,
+      "paint": 8.399999999906868,
+      "command": 4.5,
+      "commandPaint": 13.899999999906868,
+      "columnNodes": 384,
+      "modalNodes": 572
+    },
+    {
+      "ready": 20.799999999813735,
+      "paint": 17.5,
+      "command": 4.7000000001862645,
+      "commandPaint": 13.899999999906868,
+      "columnNodes": 384,
+      "modalNodes": 572
+    },
+    {
+      "ready": 18.100000000093132,
+      "paint": 13.600000000093132,
+      "command": 4.699999999720603,
+      "commandPaint": 15.599999999627471,
+      "columnNodes": 384,
+      "modalNodes": 572
+    },
+    {
+      "ready": 19.399999999906868,
+      "paint": 10.100000000093132,
+      "command": 6.7999999998137355,
+      "commandPaint": 13.600000000093132,
+      "columnNodes": 384,
+      "modalNodes": 572
+    },
+    {
+      "ready": 20.699999999720603,
+      "paint": 10.600000000093132,
+      "command": 6.699999999720603,
+      "commandPaint": 13.5,
+      "columnNodes": 384,
+      "modalNodes": 572
+    },
+    {
+      "ready": 15.799999999813735,
+      "paint": 9.700000000186265,
+      "command": 10.200000000186265,
+      "commandPaint": 21,
+      "columnNodes": 384,
+      "modalNodes": 572
+    },
+    {
+      "ready": 31.600000000093132,
+      "paint": 18.399999999906868,
+      "command": 6.699999999720603,
+      "commandPaint": 13.5,
+      "columnNodes": 384,
+      "modalNodes": 572
+    },
+    {
+      "ready": 23.200000000186265,
+      "paint": 16.100000000093132,
+      "command": 4.7000000001862645,
+      "commandPaint": 13.899999999906868,
+      "columnNodes": 384,
+      "modalNodes": 572
+    },
+    {
+      "ready": 21,
+      "paint": 11,
+      "command": 8.100000000093132,
+      "commandPaint": 13.899999999906868,
+      "columnNodes": 384,
+      "modalNodes": 572
+    },
+    {
+      "ready": 16.799999999813735,
+      "paint": 14.800000000279397,
+      "command": 5,
+      "commandPaint": 13.600000000093132,
+      "columnNodes": 384,
+      "modalNodes": 572
+    },
+    {
+      "ready": 14.100000000093132,
+      "paint": 11.299999999813735,
+      "command": 4.100000000093132,
+      "commandPaint": 13.5,
+      "columnNodes": 384,
+      "modalNodes": 572
+    },
+    {
+      "ready": 12.5,
+      "paint": 12.299999999813735,
+      "command": 3.5,
+      "commandPaint": 13.5,
+      "columnNodes": 384,
+      "modalNodes": 572
+    },
+    {
+      "ready": 10.400000000372529,
+      "paint": 8.599999999627471,
+      "command": 3.7000000001862645,
+      "commandPaint": 16,
+      "columnNodes": 384,
+      "modalNodes": 572
+    },
+    {
+      "ready": 17.600000000093132,
+      "paint": 12.600000000093132,
+      "command": 4.199999999720603,
+      "commandPaint": 13.899999999906868,
+      "columnNodes": 384,
+      "modalNodes": 572
+    },
+    {
+      "ready": 12.300000000279397,
+      "paint": 12.600000000093132,
+      "command": 3.7000000001862645,
+      "commandPaint": 14,
+      "columnNodes": 384,
+      "modalNodes": 572
+    },
+    {
+      "ready": 14.600000000093132,
+      "paint": 9.800000000279397,
+      "command": 3.7000000001862645,
+      "commandPaint": 14,
+      "columnNodes": 384,
+      "modalNodes": 572
+    },
+    {
+      "ready": 11.799999999813735,
+      "paint": 12.300000000279397,
+      "command": 3.8000000002793968,
+      "commandPaint": 13.5,
+      "columnNodes": 384,
+      "modalNodes": 572
+    },
+    {
+      "ready": 12.299999999813735,
+      "paint": 5.899999999906868,
+      "command": 3.5,
+      "commandPaint": 13.899999999906868,
+      "columnNodes": 384,
+      "modalNodes": 572
+    }
+  ],
+  "p95": {
+    "ready": 23.200000000186265,
+    "paint": 17.5,
+    "command": 8.5,
+    "commandPaint": 16.700000000186265
+  },
+  "metadataRequests": 66,
+  "expectedMetadataRequests": 66,
+  "closed": true,
+  "backdrops": 0,
+  "openLayers": 0
+}

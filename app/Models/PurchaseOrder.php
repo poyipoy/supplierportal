@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Support\BusinessTime;
+use App\Support\Money;
+use App\Support\Procurement\OrderedLine;
 use App\Traits\HasHashids;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -35,6 +37,8 @@ class PurchaseOrder extends Model
         'estimated_arrival',
         'actual_arrival',
         'notes',
+        'port_of_discharge',
+        'incoterm',
     ];
 
     protected function casts(): array
@@ -97,7 +101,7 @@ class PurchaseOrder extends Model
      */
     public function commercialQuotationItems(): Collection
     {
-        $this->loadMissing(['awards', 'quotations.items.prItem']);
+        $this->loadMissing(['awards', 'quotations.items.prItem', 'quotations.exchange_rate']);
         $awardedIds = $this->awards->pluck('quotation_item_id');
 
         return $this->quotations->sortBy('id')->flatMap(function (Quotation $quotation) use ($awardedIds) {
@@ -107,6 +111,67 @@ class PurchaseOrder extends Model
                     return (clone $item)->setRelation('quotation', $quotation);
                 });
         })->values();
+    }
+
+    /**
+     * Single ordered qty/KG/amount resolver (Gate 1 section 11.2), one line per
+     * commercial quotation item. Precedence per line: frozen award values ->
+     * selected ordered_qty -> legacy award (offer) -> legacy PO without awards.
+     *
+     * Not yet read by the existing consumers; Mission 04-R moves them here.
+     *
+     * @return Collection<int, OrderedLine>
+     */
+    public function orderedLines(): Collection
+    {
+        $items = $this->commercialQuotationItems();
+        $awardsByItem = $this->awards->keyBy('quotation_item_id');
+
+        return $items->map(function (QuotationItem $item) use ($awardsByItem): OrderedLine {
+            $award = $awardsByItem->get($item->id);
+
+            return match (true) {
+                $award === null => OrderedLine::legacy($item, null),
+                $award->hasFrozenOrderedValues() => OrderedLine::frozen($item, $award),
+                $award->ordered_qty !== null => OrderedLine::selected($item, $award),
+                default => OrderedLine::legacy($item, $award),
+            };
+        })->values();
+    }
+
+    public function orderedLineFor(int $quotationItemId): ?OrderedLine
+    {
+        return $this->orderedLines()->first(fn (OrderedLine $line) => (int) $line->quotationItem->id === $quotationItemId);
+    }
+
+    /** Σ ordered amount in the PO currency (BCMath, 4 dp). */
+    public function orderedAmountTotal(): string
+    {
+        return Money::sum($this->orderedLines()->pluck('amount'), OrderedLine::SCALE);
+    }
+
+    /**
+     * Transactional IDR value from each line's quotation snapshot rate (Q4C):
+     * IDR is the identity rate; a foreign line without a positive snapshot
+     * rate makes the whole total unavailable (null), never partial, 1 or 0.
+     */
+    public function orderedAmountIdr(): ?string
+    {
+        $total = Money::zero(OrderedLine::SCALE);
+
+        foreach ($this->orderedLines() as $line) {
+            $quotation = $line->quotationItem->quotation;
+            $currency = strtoupper((string) ($quotation?->currency ?: $this->currency));
+            $rate = $currency === ExchangeRate::CURRENCY_IDR ? '1' : $quotation?->exchange_rate?->rate_to_idr;
+
+            if ($rate === null || Money::compare($rate, '0', OrderedLine::SCALE) <= 0) {
+                return null;
+            }
+
+            $total = Money::add($total, Money::multiply($line->amount, $rate, OrderedLine::SCALE), OrderedLine::SCALE);
+        }
+
+        return $total;
     }
 
     /** Group output without changing the original quotation's complete item relation. */
@@ -166,12 +231,32 @@ class PurchaseOrder extends Model
             END
             SQL;
 
+        // SQL mirror of orderedLines() precedence (I-15): frozen amount, then
+        // the selected quantity, then the unchanged legacy expression.
+        $orderedAmountExpression = <<<SQL
+            CASE
+                WHEN line_award.ordered_amount IS NOT NULL THEN line_award.ordered_amount
+                WHEN line_award.ordered_qty IS NOT NULL THEN ROUND(
+                    ROUND(line_award.ordered_qty * COALESCE(qi.offered_weight_per_unit, pi.weight_needed, 0), 4)
+                    * COALESCE(qi.price_per_kg, 0), 4)
+                ELSE ({$resolvedAmountExpression})
+            END
+            SQL;
+        // Q4C: IDR is the identity rate; one foreign line without a positive
+        // snapshot rate makes the whole total unavailable (NULL), never partial.
+        $rateExpression = "CASE WHEN q.currency = 'IDR' THEN 1 ELSE er.rate_to_idr END";
+        $missingRateExpression = "SUM(CASE WHEN q.currency <> 'IDR' AND (er.rate_to_idr IS NULL OR er.rate_to_idr <= 0) THEN 1 ELSE 0 END)";
+
         return $query->selectSub(
             DB::table('po_quotations as links')
                 ->join('quotations as q', 'q.id', '=', 'links.quotation_id')
                 ->join('quotation_items as qi', 'qi.quotation_id', '=', 'q.id')
                 ->leftJoin('pr_items as pi', 'pi.id', '=', 'qi.pr_item_id')
                 ->leftJoin('exchange_rates as er', 'er.id', '=', 'q.exchange_rate_id')
+                ->leftJoin('pr_item_awards as line_award', function ($join): void {
+                    $join->on('line_award.quotation_item_id', '=', 'qi.id')
+                        ->on('line_award.purchase_order_id', '=', 'purchase_orders.id');
+                })
                 ->whereColumn('links.po_id', 'purchase_orders.id')
                 ->whereNull('q.deleted_at')
                 ->where(function ($lines) {
@@ -184,7 +269,7 @@ class PurchaseOrder extends Model
                             ->whereColumn('po_awards.purchase_order_id', 'purchase_orders.id');
                     });
                 })
-                ->selectRaw("COALESCE(SUM(({$resolvedAmountExpression}) * COALESCE(er.rate_to_idr, 1)), 0)"),
+                ->selectRaw("CASE WHEN {$missingRateExpression} > 0 THEN NULL ELSE COALESCE(SUM(({$orderedAmountExpression}) * ({$rateExpression})), 0) END"),
             'resolved_total_idr',
         );
     }
@@ -217,6 +302,12 @@ class PurchaseOrder extends Model
     public function awards(): HasMany
     {
         return $this->hasMany(PrItemAward::class, 'purchase_order_id');
+    }
+
+    /** Mission 06B: immutable reference snapshots written at finalization. */
+    public function referencePriceSnapshots(): HasMany
+    {
+        return $this->hasMany(AwardReferencePriceSnapshot::class)->orderBy('id');
     }
 
     public function shipmentItems(): HasMany
@@ -400,9 +491,7 @@ class PurchaseOrder extends Model
      */
     public function getTotalOrderedWeightAttribute(): float
     {
-        return $this->awards()->exists()
-            ? (float) $this->awards->sum(fn ($a) => (float) ($a->quotationItem?->offered_total_weight ?? $a->prItem?->total_weight ?? 0))
-            : (float) $this->allQuotationItems()->sum(fn ($qi) => (float) ($qi->offered_total_weight ?? $qi->prItem?->total_weight ?? 0));
+        return (float) Money::sum($this->orderedLines()->pluck('kg'), OrderedLine::SCALE);
     }
 
     /**
@@ -411,9 +500,7 @@ class PurchaseOrder extends Model
      */
     public function getTotalOrderedQuantityAttribute(): int
     {
-        return $this->awards()->exists()
-            ? (int) $this->awards->sum(fn ($a) => $a->quotationItem?->fulfillment_quantity ?? $a->prItem?->quantity_value ?? 0)
-            : (int) $this->allQuotationItems()->sum(fn ($qi) => $qi->fulfillment_quantity);
+        return (int) $this->orderedLines()->sum('qty');
     }
 
     public function getDeliveryProgressAttribute(): string
@@ -519,7 +606,9 @@ class PurchaseOrder extends Model
     public function itemFulfillmentStatus(int $quotationItemId, ?int $excludeShipmentId = null): array
     {
         $quotationItem = QuotationItem::with('prItem')->findOrFail($quotationItemId);
-        $orderedQty = $quotationItem->fulfillment_quantity;
+        // I-2/I-15: the shipment limit is the resolved ordered quantity (frozen
+        // when present); lines outside this PO keep the offer quantity.
+        $orderedQty = $this->orderedLineFor($quotationItemId)?->qty ?? $quotationItem->fulfillment_quantity;
 
         $query = $this->shipmentItems()
             ->where('quotation_item_id', $quotationItemId)

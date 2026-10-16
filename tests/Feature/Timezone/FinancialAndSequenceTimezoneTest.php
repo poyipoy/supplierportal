@@ -134,7 +134,7 @@ class FinancialAndSequenceTimezoneTest extends TestCase
             'ppn_type' => '11%',
             ...$this->authoritativeRef($supplier),
             'scheduled_physical_delivery_date' => '2027-01-06',
-        ], [
+        ], [...NativeFileFixtures::invoiceReferences(),
             'invoice' => NativeFileFixtures::upload('invoice.pdf', 100),
             'tax_invoice' => NativeFileFixtures::upload('tax.pdf'),
             'delivery_note' => NativeFileFixtures::upload('surat_jalan.pdf', 100),
@@ -224,7 +224,7 @@ class FinancialAndSequenceTimezoneTest extends TestCase
             'ppn_type' => '11%',
             ...$this->authoritativeRef($supplier),
             'scheduled_physical_delivery_date' => '2026-10-14', // Past date in WIB!
-        ], [
+        ], [...NativeFileFixtures::invoiceReferences(),
             'invoice' => NativeFileFixtures::upload('invoice.pdf', 100),
             'tax_invoice' => NativeFileFixtures::upload('tax.pdf'),
             'delivery_note' => NativeFileFixtures::upload('surat_jalan.pdf', 100),
@@ -261,7 +261,7 @@ class FinancialAndSequenceTimezoneTest extends TestCase
             'ppn_type' => '11%',
             ...$this->authoritativeRef($supplier),
             'scheduled_physical_delivery_date' => '2026-10-14', // Same-day Wednesday in WIB
-        ], [
+        ], [...NativeFileFixtures::invoiceReferences(),
             'invoice' => NativeFileFixtures::upload('invoice.pdf', 100),
             'tax_invoice' => NativeFileFixtures::upload('tax.pdf'),
             'delivery_note' => NativeFileFixtures::upload('surat_jalan.pdf', 100),

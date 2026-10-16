@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Supplier;
 
+use App\Exceptions\MtcRequiredException;
 use App\Http\Controllers\Controller;
+use App\Models\Attachment;
 use App\Models\PurchaseOrder;
 use App\Models\Shipment;
 use App\Models\ShipmentDocument;
@@ -17,6 +19,12 @@ use Yajra\DataTables\Facades\DataTables;
 
 class SupplierShipmentController extends Controller
 {
+    /** Q6B: MTC files ('mtc' inspection profile, private disk). */
+    private const MTC_RULES = [
+        'mtc_files' => 'nullable|array|max:10',
+        'mtc_files.*' => 'file|mimes:pdf,jpg,jpeg,png|max:5120',
+    ];
+
     public function __construct(
         protected ShipmentService $shipmentService
     ) {}
@@ -252,6 +260,7 @@ class SupplierShipmentController extends Controller
     {
         Gate::authorize('create', Shipment::class);
         $this->validateShipmentPayload($request, true);
+        $request->validate(self::MTC_RULES);
 
         try {
             $shipment = $this->shipmentService->createDraft(auth()->user(), [
@@ -260,6 +269,7 @@ class SupplierShipmentController extends Controller
                 'notes' => $request->input('notes'),
                 'items' => $request->input('items'),
             ]);
+            $this->attachFormMtc($request, $shipment);
 
             if ($request->input('action') === 'submit') {
                 $shipment = $this->shipmentService->submitShipment($shipment, [
@@ -275,6 +285,9 @@ class SupplierShipmentController extends Controller
 
             return redirect()->route('supplier.shipments.show', $shipment)
                 ->with('success', __('shipments.feedback.created', ['shipment' => $shipment->shipment_number]));
+        } catch (MtcRequiredException $e) {
+            // The draft exists: continue on its page to attach MTC (no duplicate drafts on retry).
+            return redirect()->route('supplier.shipments.show', $shipment)->with('error', $e->getMessage());
         } catch (\InvalidArgumentException|\DomainException $e) {
             return back()->withInput()->with('error', $e->getMessage());
         } catch (\Throwable $e) {
@@ -293,6 +306,7 @@ class SupplierShipmentController extends Controller
         Gate::authorize('update', $shipment);
 
         $this->validateShipmentPayload($request, false);
+        $request->validate(self::MTC_RULES);
 
         try {
             $shipment = $this->shipmentService->updateDraft($shipment, auth()->user(), [
@@ -301,6 +315,7 @@ class SupplierShipmentController extends Controller
                 'notes' => $request->input('notes'),
                 'items' => $request->input('items'),
             ]);
+            $this->attachFormMtc($request, $shipment);
 
             return redirect()->route('supplier.shipments.show', $shipment)
                 ->with('success', __('shipments.feedback.updated', ['shipment' => $shipment->shipment_number]));
@@ -325,6 +340,8 @@ class SupplierShipmentController extends Controller
                 'items.quotationItem.prItem',
                 'documents.latestAttachment',
                 'qcInspections.items',
+                'mtcAttachments.fileInspection',
+                'mtcAttachments.uploader',
             ])
             ->findOrFail($id);
 
@@ -379,6 +396,61 @@ class SupplierShipmentController extends Controller
 
             return back()->with('error', __('shipments.copy.an_unexpected_error_occurred_while_cancelling_the_shipment_please_try_again'));
         }
+    }
+
+    /**
+     * Mission 05 (Q6B): append MTC files (Draft or Submitted only).
+     */
+    public function storeMtc(Request $request, $id)
+    {
+        $shipment = Shipment::findOrFail($id);
+        Gate::authorize('uploadMtc', $shipment);
+        $request->validate(self::MTC_RULES + ['mtc_files' => 'required|array|min:1|max:10']);
+
+        try {
+            $this->shipmentService->uploadMtc($shipment, $request->file('mtc_files'), auth()->user());
+        } catch (\InvalidArgumentException $exception) {
+            throw ValidationException::withMessages(['mtc' => $exception->getMessage()]);
+        }
+
+        return $this->mtcResponse($request, $shipment, __('shipments.mtc.uploaded'));
+    }
+
+    /**
+     * Mission 05 (Q6B): remove one MTC file (Draft only).
+     */
+    public function destroyMtc(Request $request, $id, Attachment $attachment)
+    {
+        $shipment = Shipment::findOrFail($id);
+        Gate::authorize('deleteMtc', $shipment);
+
+        try {
+            $this->shipmentService->removeMtc($shipment, $attachment, auth()->user());
+        } catch (\InvalidArgumentException $exception) {
+            throw ValidationException::withMessages(['mtc' => $exception->getMessage()]);
+        }
+
+        return $this->mtcResponse($request, $shipment, __('shipments.mtc.removed'));
+    }
+
+    /** MTC chosen on the create/edit form is stored before any in-request submit. */
+    private function attachFormMtc(Request $request, Shipment $shipment): void
+    {
+        $files = $request->file('mtc_files');
+        if (is_array($files) && $files !== []) {
+            $this->shipmentService->uploadMtc($shipment, $files, auth()->user());
+        }
+    }
+
+    private function mtcResponse(Request $request, Shipment $shipment, string $message)
+    {
+        if ($request->expectsJson()) {
+            $request->session()->flash('success', $message);
+
+            return response()->json(['redirect' => route('supplier.shipments.show', $shipment)]);
+        }
+
+        return back()->with('success', $message);
     }
 
     /**

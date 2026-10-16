@@ -3,6 +3,26 @@
     window._activeComparisonChart = null;
     window._activeVsBestTable = null;
 
+    // Mission 07: analytics amounts in the selected analysis currency (IDR keeps Rp).
+    window.formatAnalyticMoney = function(value, currency, maxDecimals) {
+        if (value === null || value === undefined || value === '') return '-';
+        const code = currency || 'IDR';
+        const decimals = maxDecimals ?? (code === 'IDR' ? 0 : 4);
+        const number = Number(value).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: decimals });
+        const text = (code === 'IDR' ? 'Rp ' : code + ' ') + number;
+        return window.AdasiPreferences?.displayNumber ? window.AdasiPreferences.displayNumber(text, 'indonesian') : text;
+    };
+
+    if (!window._analysisCurrencyListener) {
+        window._analysisCurrencyListener = true;
+        document.addEventListener('change', (event) => {
+            const select = event.target.closest?.('[data-analysis-currency]');
+            if (select && select.form) {
+                select.form.requestSubmit ? select.form.requestSubmit() : select.form.submit();
+            }
+        });
+    }
+
     window.destroyComparisonActiveInstances = function() {
         if (window._activeComparisonChart) {
             try {
@@ -234,14 +254,14 @@
                         },
                         tooltip: window.AdasiChart?.getTooltip({
                             callbacks: {
-                                label: (ctx) => ' ' + ctx.dataset.label + ': Rp ' + Number(ctx.parsed.y).toLocaleString('id-ID'),
+                                label: (ctx) => ' ' + ctx.dataset.label + ': ' + window.formatAnalyticMoney(ctx.parsed.y, comparisonChartData?.currency),
                             }
                         }) || {},
                     },
                     scales: window.AdasiChart?.getScales({
                         yMaxTicks: 5,
                         yBeginAtZero: true,
-                        yFormat: (v) => 'Rp ' + Number(v).toLocaleString('id-ID'),
+                        yFormat: (v) => window.formatAnalyticMoney(v, comparisonChartData?.currency),
                     }) || {},
                 }
             });
@@ -351,9 +371,33 @@
             }
         };
 
+        // M04-W: only the chosen offer's Order Qty / acceptance controls are
+        // active; disabled inputs are not submitted, so one value per PR item.
+        const syncOrderQtyControls = () => {
+            document.querySelectorAll('.award-radio').forEach(radio => {
+                const control = radio.closest('td')?.querySelector('[data-order-qty-control]');
+                if (!control) return;
+                control.hidden = !radio.checked;
+                control.querySelectorAll('input').forEach(input => { input.disabled = !radio.checked; });
+            });
+        };
+        const refreshOrderQtyHint = (input) => {
+            const control = input.closest('[data-order-qty-control]');
+            const hint = control?.querySelector('[data-order-qty-hint]');
+            if (!hint) return;
+            const value = Number(input.value);
+            const delta = Number.isInteger(value) ? value - Number(control.dataset.requested) : null;
+            hint.textContent = hint.dataset.template.replace('__DELTA__', delta === null ? '—' : (delta > 0 ? `+${delta}` : String(delta)));
+        };
+        document.querySelectorAll('[data-order-qty-input]').forEach(input => {
+            input.addEventListener('input', () => refreshOrderQtyHint(input));
+        });
+
         document.querySelectorAll('.award-radio').forEach(radio => {
             radio.addEventListener('change', updateAwardPreviews);
+            radio.addEventListener('change', syncOrderQtyControls);
         });
+        syncOrderQtyControls();
 
         const poEstimatedArrivalInput = document.getElementById('poEstimatedArrival');
         if (poEstimatedArrivalInput) {
@@ -409,10 +453,10 @@
             }[char]));
         }
 
+        let historicalCurrency = config.currency || 'IDR';
+
         function formatRupiah(value) {
-            if (value === null || value === undefined || value === '') return '-';
-            const text = 'Rp ' + Number(value).toLocaleString('id-ID');
-            return window.AdasiPreferences?.displayNumber ? window.AdasiPreferences.displayNumber(text, 'indonesian') : text;
+            return window.formatAnalyticMoney(value, historicalCurrency);
         }
 
         function formatNumber(value, decimals = 2) {
@@ -474,11 +518,10 @@
         }
 
         function renderMaterialOptions(materials, selectedValue = '') {
-            const placeholder = !supplierSelect.value
-                ? window.AdasiI18n.t('purchasing.js.history_select_supplier_first')
-                : (materials.length > 0
-                    ? window.AdasiI18n.t('purchasing.js.history_select_material')
-                    : window.AdasiI18n.t('purchasing.js.history_no_material'));
+            // Mission 07: the supplier is optional (decision 15).
+            const placeholder = materials.length > 0
+                ? window.AdasiI18n.t('purchasing.js.history_select_material')
+                : window.AdasiI18n.t('purchasing.js.history_no_material');
 
             materialSelect.innerHTML = [
                 `<option value="">${escapeOptionText(placeholder)}</option>`,
@@ -489,7 +532,7 @@
                     return `<option value="${escapeOptionText(name)}" data-shape="${escapeOptionText(shape)}"${selected}>${escapeOptionText(name)}</option>`;
                 }),
             ].join('');
-            materialSelect.disabled = !supplierSelect.value || materials.length === 0;
+            materialSelect.disabled = materials.length === 0;
         }
 
         function clearHistorycalResults(message) {
@@ -510,11 +553,6 @@
 
             renderMaterialOptions([], '');
 
-            if (!supplierId) {
-                clearHistorycalResults(@json(__('purchasing.copy.comparison_select_supplier_and_material')));
-                return;
-            }
-
             materialSelect.innerHTML = '<option value="">' + @json(__('purchasing.copy.comparison_loading_materials')) + '</option>';
             materialSelect.disabled = true;
             clearHistorycalResults(@json(__('purchasing.copy.comparison_select_material_from_supplier')));
@@ -522,7 +560,9 @@
 
             try {
                 const url = new URL(materialsUrl, window.location.origin);
-                url.searchParams.set('supplier_id', supplierId);
+                if (supplierId) {
+                    url.searchParams.set('supplier_id', supplierId);
+                }
 
                 const response = await fetch(url.toString(), {
                     headers: {
@@ -537,7 +577,7 @@
 
                 const data = await response.json();
                 const materials = data.materials || [];
-                const selectedMaterial = materials.includes(previousMaterial) ? previousMaterial : '';
+                const selectedMaterial = materials.some((material) => (material.name || material) === previousMaterial) ? previousMaterial : '';
                 renderMaterialOptions(materials, selectedMaterial);
 
                 if (selectedMaterial && typeof window.loadHistorycalPayloadFromFilters === 'function') {
@@ -565,13 +605,14 @@
             const primaryColor = colors.primary;
             const errorColor = colors.error;
 
-            if (payload.periodView === 'yearly') {
+            // Mission 07: both views chart the weighted average per period (12.3).
+            if (payload.periodView === 'yearly' || payload.periodView === 'monthly') {
                 return {
                     type: 'line',
                     data: {
                         labels: chartData.labels || [],
                         datasets: [{
-                            label: window.AdasiI18n.t('purchasing.js.average_price_kg_idr'),
+                            label: window.AdasiI18n.t('purchasing.js.weighted_average_price_kg') + ' (' + historicalCurrency + ')',
                             data: chartData.pricesIdr || [],
                             borderColor: primaryColor,
                             backgroundColor: (ctx) => window.AdasiChart?.createAreaGradient(ctx, primaryColor, 0.18, 0.01) || 'transparent',
@@ -618,7 +659,7 @@
                         scales: window.AdasiChart?.getScales({
                             yMaxTicks: 5,
                             yBeginAtZero: true,
-                            yFormat: (value) => 'Rp ' + Number(value).toLocaleString('id-ID'),
+                            yFormat: (value) => formatRupiah(value),
                         }) || {},
                     },
                 };
@@ -740,6 +781,21 @@
         }
 
         function renderSummary(summary) {
+            const weighted = document.getElementById('historicalWeightedAverage');
+            if (weighted) {
+                weighted.textContent = summary.weighted_average != null ? formatRupiah(summary.weighted_average) : '—';
+            }
+            const basis = document.getElementById('historicalWeightedBasis');
+            if (basis) {
+                basis.textContent = window.AdasiI18n.t('purchasing.js.history_basis', { pos: summary.po_count || 0, kg: formatNumber(summary.total_kg || 0) })
+                    + ' · ' + window.AdasiI18n.t('purchasing.js.historical_best') + ': ' + (summary.best != null ? formatRupiah(summary.best) : '—');
+            }
+            const excluded = document.getElementById('historicalExcludedNote');
+            if (excluded) {
+                const lines = summary.excluded?.lines || 0;
+                excluded.classList.toggle('d-none', lines === 0);
+                excluded.textContent = lines === 0 ? '' : window.AdasiI18n.t('purchasing.js.history_excluded', { lines, kg: formatNumber(summary.excluded.kg), currencies: (summary.excluded.currencies || []).join(', ') });
+            }
             const averageChange = document.getElementById('averageChangeValue');
             const totalChange = document.getElementById('totalChangeValue');
             if (averageChange) {
@@ -761,11 +817,11 @@
             if (payload.periodView === 'yearly') {
                 head.innerHTML = `
                     <tr>
-                        <th scope="col">Year</th>
-                        <th scope="col">Average IDR/Kg</th>
-                        <th scope="col">Lowest Price</th>
-                        <th scope="col">Highest Price</th>
-                        <th scope="col">Change from Previous Period</th>
+                        <th scope="col">${window.AdasiI18n.t('purchasing.js.year')}</th>
+                        <th scope="col">${window.AdasiI18n.t('purchasing.js.weighted_average_price_kg')} (${escapeOptionText(historicalCurrency)})</th>
+                        <th scope="col">${window.AdasiI18n.t('purchasing.js.lowest_price')}</th>
+                        <th scope="col">${window.AdasiI18n.t('purchasing.js.highest_price')}</th>
+                        <th scope="col">${window.AdasiI18n.t('purchasing.js.change_from_previous_period')}</th>
                     </tr>
                 `;
                 body.innerHTML = rows.map((row) => `
@@ -785,7 +841,7 @@
                     <th scope="col">${window.AdasiI18n.t('purchasing.js.pr_number')}</th>
                     <th scope="col">${window.AdasiI18n.t('purchasing.js.supplier')}</th>
                     <th scope="col">${window.AdasiI18n.t('purchasing.js.price_kg')}</th>
-                    <th scope="col">${window.AdasiI18n.t('purchasing.js.total_price_idr')}</th>
+                    <th scope="col">${window.AdasiI18n.t('purchasing.js.converted_total')} (${escapeOptionText(historicalCurrency)})</th>
                     <th scope="col">${window.AdasiI18n.t('purchasing.js.po_date')}</th>
                     <th scope="col">${window.AdasiI18n.t('purchasing.js.change')}</th>
                 </tr>
@@ -879,6 +935,7 @@
         }
 
         function renderPayload(payload) {
+            historicalCurrency = payload.currency || historicalCurrency;
             if (!payload.chartData) {
                 if (window._activeComparisonChart) {
                     window._activeComparisonChart.destroy();
@@ -914,13 +971,13 @@
             if (titleEl) {
                 const title = @json(__('purchasing.copy.comparison_price_trend_title', ['material' => ':material', 'supplier' => ':supplier']))
                     .replace(':material', escapeOptionText(payload.materialName))
-                    .replace(':supplier', escapeOptionText(payload.supplierName));
+                    .replace(':supplier', escapeOptionText(payload.supplierName || @json(__('purchasing.comparison_analytics.all_suppliers'))));
                 titleEl.innerHTML = `<span class="tw-text-primary me-1">&#128200;</span><span>${title}</span>`;
             }
         }
 
         window.loadHistorycalPayloadFromFilters = async function(historyPage = 1) {
-            if (!supplierSelect.value || !materialSelect.value) {
+            if (!materialSelect.value) {
                 return;
             }
 
@@ -1017,6 +1074,16 @@
             }
         });
 
+        // Mission 07: the key dimension label follows the material's shape.
+        const keyDimension = document.getElementById('historicalKeyDimension');
+        const keyDimensionLabel = document.getElementById('historicalKeyDimensionLabel');
+        materialSelect.addEventListener('change', () => {
+            const shape = materialSelect.selectedOptions[0]?.dataset.shape || '';
+            if (keyDimension && keyDimensionLabel) {
+                keyDimensionLabel.textContent = shape === 'Flat' ? keyDimension.dataset.labelThickness : keyDimension.dataset.labelDOuter;
+            }
+        });
+
         // Shape Dimension Visibility
         const dimensionFields = document.querySelectorAll('.dimension-field');
         const relevantDimensions = {
@@ -1077,10 +1144,10 @@
         const filterParams = Object.assign({}, config.filterParams || {});
         const tableDataUrl = config.tableDataUrl;
 
+        let vsBestCurrency = config.currency || 'IDR';
+
         function formatRupiah(value) {
-            if (value === null || value === undefined || value === '') return '-';
-            const text = 'Rp ' + Number(value).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
-            return window.AdasiPreferences?.displayNumber ? window.AdasiPreferences.displayNumber(text, 'indonesian') : text;
+            return window.formatAnalyticMoney(value, vsBestCurrency, vsBestCurrency === 'IDR' ? 2 : 4);
         }
 
         function formatInteger(value) {
@@ -1110,6 +1177,7 @@
                         Object.assign(d, filterParams);
                     },
                     dataSrc: function(json) {
+                        vsBestCurrency = json.currency || vsBestCurrency;
                         updateSummary(json.summary);
                         return json.data || [];
                     },

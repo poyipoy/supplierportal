@@ -474,6 +474,10 @@ class QuotationItem extends Model
             $this->available_qty > $prItem->quantity_value => self::status('surplus', __('materials.copy.quantity_surplus')),
             default => self::status('match', __('materials.copy.quantity_match')),
         };
+        // Offered − requested (display only; the PR quantity never changes).
+        $quantity['delta'] = $this->available_qty === null
+            ? null
+            : (int) $this->available_qty - (int) $prItem->quantity_value;
 
         $fields = PrItem::relevantDimensionFields($prItem->shape);
         if ($fields === []) {
@@ -543,6 +547,37 @@ class QuotationItem extends Model
         $value = is_string($value) ? strtolower(trim($value)) : $value;
 
         return in_array($value, self::OFFER_WEIGHT_SOURCES, true) ? $value : null;
+    }
+
+    /**
+     * Requested vs offered shape-relevant specification, the content a
+     * Purchasing acceptance covers (decision 04). Any later change to the offer
+     * changes this snapshot and therefore the acceptance hash.
+     *
+     * @return array{quotation_item_id: int, pr_item_id: int, shape: ?string, requested: array<string, ?float>, offered: array<string, ?float>}
+     */
+    public function specificationSnapshot(): array
+    {
+        $prItem = $this->prItem;
+        $number = static fn ($value): ?float => $value === null ? null : (float) $value;
+        $requested = [];
+        $offered = [];
+        foreach (PrItem::relevantDimensionFields($prItem?->shape) as $field) {
+            $requested[$field] = $number($prItem?->{$field});
+            $offered[$field] = $number($this->{'available_'.$field});
+            if ($field === 'length') {
+                $offered['length_min'] = $number($this->available_length_min);
+                $offered['length_max'] = $number($this->available_length_max);
+            }
+        }
+
+        return [
+            'quotation_item_id' => (int) $this->id,
+            'pr_item_id' => (int) $this->pr_item_id,
+            'shape' => $prItem?->shape,
+            'requested' => $requested,
+            'offered' => $offered,
+        ];
     }
 
     private static function status(string $code, string $label): array

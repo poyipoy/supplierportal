@@ -12,7 +12,7 @@
     />
     <x-purchasing.comparison-tabs active="historical" />
 
-    <div id="purchasingComparisonContent" data-server-tabs-content>
+    <div id="purchasingComparisonContent" class="tw-min-w-0 tw-max-w-full" data-server-tabs-content>
         @include('purchasing.comparison._historical_content')
     </div>
 </div>

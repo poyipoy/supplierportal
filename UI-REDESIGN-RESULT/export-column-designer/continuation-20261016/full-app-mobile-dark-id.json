@@ -1,0 +1,8 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Script ran on page and returned:\n```json\n{\"status\":\"PASS\",\"locale\":\"id\",\"theme\":\"dark\",\"viewport\":[390,844],\"catalogVisible\":24,\"coarse\":true,\"actions\":[{\"command\":\"hide\",\"height\":44,\"reachable\":true},{\"command\":\"unhide\",\"height\":44,\"reachable\":true},{\"command\":\"move-left\",\"height\":44,\"reachable\":true},{\"command\":\"move-right\",\"height\":44,\"reachable\":true},{\"command\":\"menu\",\"height\":44,\"reachable\":true},{\"command\":\"reset\",\"height\":44,\"reachable\":true}],\"moveRestore\":{\"key\":\"period\",\"beforeIndex\":1,\"afterIndex\":2,\"restoreIndex\":2},\"menu\":{\"inBounds\":true,\"focus\":true,\"hidden\":true},\"footerVisible\":true,\"bodyOverflow\":true,\"contain\":\"layout paint\"}\n```"
+    }
+  ]
+}

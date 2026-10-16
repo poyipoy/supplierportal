@@ -25,6 +25,20 @@
         'url' => route('local-invoice-documents.show', $d),
     ])->values()->all();
 
+    $existingPoDocs = $latestRevisionDocs->where('document_type', 'purchase_order')->map(fn($d) => [
+        'id' => $d->id,
+        'name' => $d->original_filename,
+        'size' => '',
+        'url' => route('local-invoice-documents.show', $d),
+    ])->values()->all();
+
+    $existingGrDocs = $latestRevisionDocs->where('document_type', 'goods_receipt')->map(fn($d) => [
+        'id' => $d->id,
+        'name' => $d->original_filename,
+        'size' => '',
+        'url' => route('local-invoice-documents.show', $d),
+    ])->values()->all();
+
     $existingDnDocs = $latestRevisionDocs->where('document_type', 'delivery_note')->map(fn($d) => [
         'id' => $d->id,
         'name' => $d->original_filename,
@@ -45,7 +59,8 @@
         'recovery_reason', 'business_document_valid'
     ]);
     $hasStep1Errors = $errors->hasAny([
-        'invoice', 'invoice.*', 'tax_invoice', 'tax_invoice.*', 'delivery_note', 'delivery_note.*', 'supporting', 'supporting.*'
+        'invoice', 'invoice.*', 'tax_invoice', 'tax_invoice.*', 'purchase_order', 'purchase_order.*',
+        'goods_receipt', 'goods_receipt.*', 'delivery_note', 'delivery_note.*', 'supporting', 'supporting.*'
     ]);
     $initialStep = ($hasStep2Errors && !$hasStep1Errors) ? 2 : 1;
 
@@ -124,6 +139,7 @@
     id="localInvoiceForm"
     data-async-submit
     @adasi:reveal-field="revealStepFor($event.detail.element)"
+    @adasi:files-changed="updateFileCount($event.detail)"
     x-data="localInvoiceWizard({
         initialStep: {{ $initialStep }},
         isPkp: @js($isPkp),
@@ -131,6 +147,8 @@
         isRevision: @js(isset($invoice)),
         existingInvoiceCount: {{ count($existingInvoiceDocs) }},
         existingTaxCount: {{ count($existingTaxDocs) }},
+        existingPoCount: {{ count($existingPoDocs) }},
+        existingGrCount: {{ count($existingGrDocs) }},
         existingDnCount: {{ count($existingDnDocs) }},
         existingSuppCount: {{ count($existingSuppDocs) }},
     })"
@@ -303,10 +321,10 @@
     {{-- ========================================================================= --}}
     {{-- TAHAP 1: UPLOAD DOKUMEN BERKAS LAMPIRAN                                     --}}
     {{-- ========================================================================= --}}
-    <div x-show="step === 1" x-cloak data-wizard-step="1" class="tw-grid tw-gap-6 lg:tw-grid-cols-12 tw-items-start">
-        <div class="lg:tw-col-span-8 tw-space-y-6">
-            <x-ui.form-section :title="__('local_invoice.labels.documents_grid')" :description="__('common.final_review.private_uploads')">
-                <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
+    <div x-show="step === 1" x-cloak data-wizard-step="1" class="tw-grid tw-grid-cols-1 tw-gap-6 lg:tw-grid-cols-12 tw-items-start">
+        <div class="tw-min-w-0 lg:tw-col-span-8 tw-space-y-6">
+            <x-ui.form-section :title="__('local_invoice.labels.documents_grid')" :description="__('local_invoice.documents.upload_rules')">
+                <div class="tw-grid tw-grid-cols-1 tw-min-w-0 tw-gap-4 sm:tw-grid-cols-2">
                     <x-ui.file-upload
                         name="invoice"
                         id="file_invoice"
@@ -329,6 +347,34 @@
                         :multiple="false"
                         :required="$isPkp && !isset($invoice)"
                         :existing-files="$existingTaxDocs"
+                    />
+
+                    <x-ui.file-upload
+                        name="purchase_order"
+                        id="file_purchase_order"
+                        :label="__('local_invoice.labels.purchase_order')"
+                        :helper="__('local_invoice.documents.purchase_order_description')"
+                        accept=".pdf"
+                        :allowed-extensions="['pdf']"
+                        :multiple="false"
+                        :max-files="1"
+                        :show-count="true"
+                        :required="true"
+                        :existing-files="$existingPoDocs"
+                    />
+
+                    <x-ui.file-upload
+                        name="goods_receipt"
+                        id="file_goods_receipt"
+                        :label="__('local_invoice.labels.goods_receipt')"
+                        :helper="__('local_invoice.documents.goods_receipt_description')"
+                        accept=".pdf"
+                        :allowed-extensions="['pdf']"
+                        :multiple="true"
+                        :max-files="5"
+                        :required="true"
+                        :show-count="true"
+                        :existing-files="$existingGrDocs"
                     />
 
                     @if($requiresDeliveryNote)
@@ -401,6 +447,19 @@
                             </div>
                             <span class="tw-text-[10px] tw-font-bold tw-uppercase" :class="hasTax ? 'tw-text-success' : (isPkp ? 'tw-text-error' : 'tw-text-on-surface-variant')" x-text="hasTax ? readyLabel : (isPkp ? requiredLabel : optionalLabel)"></span>
                         </div>
+
+                        @foreach(['purchase_order' => 'hasPo', 'goods_receipt' => 'hasGr'] as $documentType => $state)
+                            <div class="tw-flex tw-items-center tw-justify-between tw-gap-2 tw-p-2.5 tw-rounded-ui-sm tw-border ui-motion" :class="{{ $state }} ? 'tw-border-success/30 tw-bg-success/5' : 'tw-border-outline-variant tw-bg-surface-container'">
+                                <div class="tw-flex tw-items-center tw-gap-2.5 tw-min-w-0">
+                                    <div class="tw-w-5 tw-h-5 tw-rounded-full tw-flex tw-items-center tw-justify-center tw-shrink-0 ui-motion" :class="{{ $state }} ? 'tw-bg-success tw-text-white' : 'tw-bg-error/20 tw-text-error'">
+                                        <template x-if="{{ $state }}"><x-ui.icon name="check" size="sm" class="tw-w-3 tw-h-3" /></template>
+                                        <template x-if="!{{ $state }}"><x-ui.icon name="minus" size="sm" class="tw-w-3 tw-h-3" /></template>
+                                    </div>
+                                    <span class="tw-font-medium tw-text-on-surface tw-break-words">{{ __('local_invoice.labels.'.$documentType) }}</span>
+                                </div>
+                                <span class="tw-text-[10px] tw-font-bold tw-uppercase tw-shrink-0" :class="{{ $state }} ? 'tw-text-success' : 'tw-text-error'" x-text="{{ $state }} ? readyLabel : requiredLabel"></span>
+                            </div>
+                        @endforeach
 
                         {{-- Item Surat Jalan --}}
                         <div class="tw-flex tw-items-center tw-justify-between tw-p-2.5 tw-rounded-ui-sm tw-border ui-motion" :class="hasDn ? 'tw-border-success/30 tw-bg-success/5' : 'tw-border-outline-variant tw-bg-surface-container'">
@@ -840,13 +899,15 @@ function localInvoiceWizard(config) {
         isRevision: Boolean(config.isRevision),
         hasInvoice: (config.existingInvoiceCount > 0),
         hasTax: !config.isPkp || (config.existingTaxCount > 0),
+        hasPo: (config.existingPoCount === 1),
+        hasGr: (config.existingGrCount > 0 && config.existingGrCount <= 5),
         hasDn: !config.requiresDeliveryNote || (config.existingDnCount > 0),
         hasSupporting: (config.existingSuppCount > 0),
         errorMessage: '',
 
         init() {
-            this.checkFiles();
-            ['file_invoice', 'file_tax_invoice', 'file_delivery_note', 'file_supporting'].forEach(id => {
+            this.$nextTick(() => this.checkFiles());
+            ['file_invoice', 'file_tax_invoice', 'file_purchase_order', 'file_goods_receipt', 'file_delivery_note', 'file_supporting'].forEach(id => {
                 const el = document.getElementById(id);
                 el?.addEventListener('change', () => {
                     this.checkFiles();
@@ -857,20 +918,31 @@ function localInvoiceWizard(config) {
             });
         },
 
-        checkFiles() {
-            const inv = document.getElementById('file_invoice');
-            const tax = document.getElementById('file_tax_invoice');
-            const dn = document.getElementById('file_delivery_note');
-            const supp = document.getElementById('file_supporting');
+        updateFileCount({ id, count }) {
+            const states = {
+                file_invoice: 'hasInvoice', file_tax_invoice: 'hasTax',
+                file_purchase_order: 'hasPo', file_goods_receipt: 'hasGr',
+                file_delivery_note: 'hasDn', file_supporting: 'hasSupporting',
+            };
+            if (!states[id]) return;
+            this[states[id]] = count > 0;
+            if (id === 'file_purchase_order') this.hasPo = count === 1;
+            if (id === 'file_goods_receipt') this.hasGr = count > 0 && count <= 5;
+            if (!this.isPkp) this.hasTax = true;
+            if (!this.requiresDeliveryNote) this.hasDn = true;
+            if (this.isStep1Complete) this.errorMessage = '';
+        },
 
-            this.hasInvoice = (config.existingInvoiceCount > 0) || Boolean(inv?.files?.length > 0);
-            this.hasTax = !this.isPkp || (config.existingTaxCount > 0) || Boolean(tax?.files?.length > 0);
-            this.hasDn = !this.requiresDeliveryNote || (config.existingDnCount > 0) || Boolean(dn?.files?.length > 0);
-            this.hasSupporting = (config.existingSuppCount > 0) || Boolean(supp?.files?.length > 0);
+        checkFiles() {
+            ['file_invoice', 'file_tax_invoice', 'file_purchase_order', 'file_goods_receipt', 'file_delivery_note', 'file_supporting'].forEach(id => {
+                const input = document.getElementById(id);
+                const retained = input?.closest('[x-data]')?.querySelectorAll('input[name="kept_document_ids[]"]').length || 0;
+                this.updateFileCount({ id, count: retained + (input?.files?.length || 0) });
+            });
         },
 
         get isStep1Complete() {
-            return this.hasInvoice && this.hasTax && this.hasDn;
+            return this.hasInvoice && this.hasTax && this.hasPo && this.hasGr && this.hasDn;
         },
 
         goToStep(target) {
@@ -880,20 +952,28 @@ function localInvoiceWizard(config) {
                     const missing = [];
                     if (!this.hasInvoice) missing.push(@js(__('local_invoice.interaction.physical_invoice')));
                     if (!this.hasTax) missing.push(@js(__('local_invoice.interaction.tax_invoice')));
+                    if (!this.hasPo) missing.push(@js(__('local_invoice.labels.purchase_order')));
+                    if (!this.hasGr) missing.push(@js(__('local_invoice.labels.goods_receipt')));
                     if (!this.hasDn) missing.push(@js(__('local_invoice.interaction.delivery_note')));
                     this.errorMessage = @js(__('local_invoice.interaction.missing_files')).replace(':files', () => missing.join(', '));
+                    const firstMissing = [
+                        ['file_invoice', this.hasInvoice], ['file_tax_invoice', this.hasTax],
+                        ['file_purchase_order', this.hasPo], ['file_goods_receipt', this.hasGr],
+                        ['file_delivery_note', this.hasDn],
+                    ].find(([, present]) => !present);
+                    this.$nextTick(() => document.getElementById(firstMissing?.[0])?.closest('[x-data]')?.querySelector('[role="button"]')?.focus());
                     return;
                 }
                 this.errorMessage = '';
                 // Menghapus atribut required dari input file saat di step 2 agar browser tidak memblokir submit form karena input di-hidden
-                ['file_invoice', 'file_tax_invoice', 'file_delivery_note'].forEach(id => {
+                ['file_invoice', 'file_tax_invoice', 'file_purchase_order', 'file_goods_receipt', 'file_delivery_note'].forEach(id => {
                     document.getElementById(id)?.removeAttribute('required');
                 });
             } else if (target === 1) {
                 this.errorMessage = '';
             }
             this.step = target;
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            window.scrollTo({ top: 0, behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
         },
 
         // adasi:reveal-field from the async (file-preserving) submit: open the step holding the errored field.

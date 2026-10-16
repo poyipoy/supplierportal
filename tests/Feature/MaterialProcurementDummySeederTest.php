@@ -3,21 +3,24 @@
 namespace Tests\Feature;
 
 use App\Models\Attachment;
-use App\Models\FileInspection;
 use App\Models\MaterialClaim;
 use App\Models\PoItemProgressUpdate;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequisition;
 use App\Models\QcInspection;
 use App\Models\Shipment;
-use App\Models\User;
 use App\Services\FileSecurity\FileAccessGuard;
 use Database\Seeders\MaterialProcurementDummySeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class MaterialProcurementDummySeederTest extends TestCase
 {
+    // The seeder commits its own DB::transaction(); without this trait the 4 POs
+    // and PRs it creates leaked into every later test in the same process.
+    use RefreshDatabase;
+
     public function test_seeder_creates_all_six_curated_packages_with_valid_invariants(): void
     {
         $this->seed(MaterialProcurementDummySeeder::class);

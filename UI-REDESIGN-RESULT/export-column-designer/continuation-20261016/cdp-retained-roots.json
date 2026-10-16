@@ -1,0 +1,89 @@
+{
+  "status": "PASS",
+  "scope": "Three uniquely tagged DOM wrappers, independently checked by WeakRef and actual V8 heap property edges before/after destroy+remove+two forced GCs, following 60 open/close cycles. No remote DOM handles are returned or retained. This is one finite owned-browser probe, not a universal no-leak claim.",
+  "version": {
+    "protocolVersion": "1.3",
+    "product": "Chrome/155.0.8059.40",
+    "revision": "@cfaadc5a132d78e1828635aa8405a499f3e14864",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+    "jsVersion": "15.5.35.20"
+  },
+  "ownedPid": 24236,
+  "profileDir": "C:\\laragon\\www\\adasi_portal_supplier\\UI-REDESIGN-RESULT\\export-column-designer\\continuation-20261016\\owned-chrome-profiles\\retained-roots-1792116162317-2f8506d6-a565-444a-afc1-71d3aabf9004",
+  "before": {
+    "connected": [
+      true,
+      true,
+      true
+    ],
+    "weakRefsLive": [
+      true,
+      true,
+      true
+    ]
+  },
+  "cycles": {
+    "count": 60,
+    "layers": 0,
+    "backdrop": false,
+    "bodyLocked": false
+  },
+  "destroyed": {
+    "remainingRoots": 0,
+    "remainingLayers": 0,
+    "backdrops": 0,
+    "controllerGlobalExists": false,
+    "bodyLocked": false
+  },
+  "markers": [
+    "CDP_COLUMN_ROOT_ef01c07841cc425aafe4770697df53a6",
+    "CDP_COLUMN_MENU_508c0cdda6c64904838914731cf427df",
+    "CDP_COLUMN_UNHIDE_dd90de481df940fca1341fa5407480e9"
+  ],
+  "calibrated": true,
+  "weakRefsLive": [
+    false,
+    false,
+    false
+  ],
+  "liveSnapshot": {
+    "path": "C:\\laragon\\www\\adasi_portal_supplier\\UI-REDESIGN-RESULT\\export-column-designer\\continuation-20261016\\cdp-heap-live.heapsnapshot",
+    "bytes": 4405311,
+    "taggedObjects": {
+      "CDP_COLUMN_ROOT_ef01c07841cc425aafe4770697df53a6": [
+        {
+          "id": 43395,
+          "type": "native",
+          "name": "<div data-advanced-export=\"\" data-export-key=\"purchasing.po\" data-definition-url=\"http://127.0.0.1:8101/exports/definitions/purchasing.po?locale=en\" data-presets-url=\"http://127.0.0.1:8101/export-presets\" data-preset-store-url=\"http://127.0.0.1:8101/export-presets\" data-filter-selectors=\"[]\" data-initial-filters=\"[]\" data-export-copy=\"{&quot;loading&quot;:&quot;Preparing export options\\u2026&quot;,&quot;failed&quot;:&quot;Export options could not be loaded. Please try again.&quot;,&quot;default_columns&quot;:&quot;Default Configuration&quot;,&quot;saved&quot;:&quot;Preset saved.&quot;,&quot;required&quot;:&quot;Required&quot;,&quot;save_failed&quot;:&quot;The preset could not be saved.&quot;,&quot;invalid_columns&quot;:&quot;Select valid columns allowed for this export, including required columns.&quot;,&quot;visible_summary&quot;:&quot;:count visible \\u00b7 :hidden hidden&quot;,&quot;active_column&quot;:&quot;Active: :column&quot;,&quot;column_position&quot;:&quot;:column is column :position of :total.&quot;,&quot;move_left&quot;:&quot;Move Left: :column&quot;,&quot;move_right&quot;:&quot;Move Right: :column&quot;,&quot;hide_required&quot;:&quot;Required columns cannot be hidden.&quot;,&quot;hide_last&quot;:&quot;At least one column must remain visible.&quot;,&quot;hidden_none&quot;:&quot;There are no hidden columns.&quot;,&quot;restore_before&quot;:&quot;:column will appear before :before.&quot;,&quot;restore_end&quot;:&quot;:column will appear at the end.&quot;,&quot;hidden_restored&quot;:&quot;:column restored.&quot;,&quot;column_hidden&quot;:&quot;:column hidden.&quot;,&quot;columns_reset&quot;:&quot;Default columns restored.&quot;,&quot;drag_position&quot;:&quot;Move :column to position :position of :total.&quot;,&quot;drag_cancelled&quot;:&quot;Column move cancelled.&quot;,&quot;keyboard_hint&quot;:&quot;All visible columns are exported. Select a header for actions. Use arrow keys to navigate, or use the buttons to move and hide columns.&quot;,&quot;unhide&quot;:&quot;Unhide&quot;}\" data-export-table=\"\">"
+        }
+      ],
+      "CDP_COLUMN_MENU_508c0cdda6c64904838914731cf427df": [
+        {
+          "id": 44241,
+          "type": "native",
+          "name": "<div id=\"advanced-export-purchasing-po-menu\" data-column-menu=\"\" data-column-layer=\"\" class=\"ui-column-layer ui-column-menu\" role=\"menu\" aria-label=\"Column Menu\" hidden=\"\">"
+        }
+      ],
+      "CDP_COLUMN_UNHIDE_dd90de481df940fca1341fa5407480e9": [
+        {
+          "id": 44243,
+          "type": "native",
+          "name": "<div id=\"advanced-export-purchasing-po-unhide\" data-column-unhide=\"\" data-column-layer=\"\" class=\"ui-column-layer ui-column-unhide\" role=\"group\" aria-labelledby=\"advanced-export-purchasing-po-unhide-label\" hidden=\"\">"
+        }
+      ]
+    },
+    "count": 3,
+    "totalNodes": 55609
+  },
+  "destroyedSnapshot": {
+    "path": "C:\\laragon\\www\\adasi_portal_supplier\\UI-REDESIGN-RESULT\\export-column-designer\\continuation-20261016\\cdp-heap-destroyed.heapsnapshot",
+    "bytes": 4118757,
+    "taggedObjects": {
+      "CDP_COLUMN_ROOT_ef01c07841cc425aafe4770697df53a6": [],
+      "CDP_COLUMN_MENU_508c0cdda6c64904838914731cf427df": [],
+      "CDP_COLUMN_UNHIDE_dd90de481df940fca1341fa5407480e9": []
+    },
+    "count": 0,
+    "totalNodes": 50283
+  }
+}

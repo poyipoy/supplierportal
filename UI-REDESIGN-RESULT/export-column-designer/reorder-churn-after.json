@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "blankRowMutations": 0,
+  "headerReused": true,
+  "keys": [
+    "po_number",
+    "supplier",
+    "pr_number",
+    "material",
+    "currency",
+    "total_amount",
+    "total_idr",
+    "est_arrival",
+    "remark",
+    "status"
+  ]
+}

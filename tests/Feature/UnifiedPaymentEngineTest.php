@@ -122,6 +122,66 @@ class UnifiedPaymentEngineTest extends TestCase
         $this->assertEquals(11997500.0, $batch->total_net_amount);
     }
 
+    public function test_mixed_bank_batch_applies_fee_by_transfer_type_including_rtgs_above_the_llg_limit(): void
+    {
+        $finance = User::factory()->create(['role' => 'finance']);
+
+        $bca = $this->createSupplierWithBank('BCA', '111111');
+        $bcaLong = $this->createSupplierWithBank('Bank Central Asia', '121212');
+        $mandiri = $this->createSupplierWithBank('Mandiri', '222222');
+        $bri = $this->createSupplierWithBank('BRI', '333333');
+        $invoices = [
+            $this->createReadyToPayInvoice($bca, 5000000, 'INV-MIX-BCA'),
+            $this->createReadyToPayInvoice($bcaLong, 5000000, 'INV-MIX-BCA-LONG'),
+            $this->createReadyToPayInvoice($mandiri, 5000000, 'INV-MIX-MAN'),
+            $this->createReadyToPayInvoice($bri, 1500000000, 'INV-MIX-BRI'),
+        ];
+
+        $batch = $this->batchService->createSupplierBatch($finance, array_map(fn ($i) => $i->id, $invoices));
+        $fee = fn (string $account) => (float) $batch->groups->firstWhere('account_number', $account)->bank_fee;
+
+        $this->assertSame(0.0, $fee('111111'));
+        $this->assertSame(0.0, $fee('121212'), '"Bank Central Asia" is BCA for the fee as well as for the export.');
+        $this->assertSame(2500.0, $fee('222222'));
+        $this->assertSame(25000.0, $fee('333333'));
+        $bri = $batch->groups->firstWhere('account_number', '333333');
+        $this->assertEquals(1499975000.0, $bri->net_payment_amount);
+        $this->assertEquals(27500.0, $batch->total_bank_fee);
+    }
+
+    public function test_removing_an_item_recomputes_only_a_default_fee_when_the_transfer_type_changes(): void
+    {
+        $finance = User::factory()->create(['role' => 'finance']);
+        $supplier = $this->createSupplierWithBank('BRI', '333333');
+        $big = $this->createReadyToPayInvoice($supplier, 800000000, 'INV-RTGS-1');
+        $small = $this->createReadyToPayInvoice($supplier, 400000000, 'INV-RTGS-2');
+
+        $batch = $this->batchService->createSupplierBatch($finance, [$big->id, $small->id]);
+        $group = $batch->groups->first();
+        $this->assertEquals(25000.0, (float) $group->bank_fee, '1,2 miliar > batas LLG -> fee RTGS.');
+
+        $this->batchService->removeItem($group->items->firstWhere('payable_id', $small->id), $finance, 'Pisah transfer.');
+        $group->refresh();
+        $this->assertEquals(800000000.0, (float) $group->subtotal_amount);
+        $this->assertEquals(2500.0, (float) $group->bank_fee, 'Back under the LLG limit -> default LLG fee.');
+        $this->assertEquals(799997500.0, (float) $group->net_payment_amount);
+    }
+
+    public function test_removing_an_item_keeps_an_overridden_fee(): void
+    {
+        $finance = User::factory()->create(['role' => 'finance']);
+        $supplier = $this->createSupplierWithBank('BRI', '333333');
+        $a = $this->createReadyToPayInvoice($supplier, 800000000, 'INV-OVR-1');
+        $b = $this->createReadyToPayInvoice($supplier, 400000000, 'INV-OVR-2');
+
+        $batch = $this->batchService->createSupplierBatch($finance, [$a->id, $b->id]);
+        $group = $this->batchService->overrideGroupFee($batch->groups->first(), '10000.00', 'Tarif negosiasi bank', $finance);
+
+        $this->batchService->removeItem($group->items->firstWhere('payable_id', $b->id), $finance, 'Pisah transfer.');
+
+        $this->assertEquals(10000.0, (float) $group->refresh()->bank_fee);
+    }
+
     public function test_double_payment_protection_prevents_adding_invoice_to_multiple_active_drps(): void
     {
         $finance = User::factory()->create(['role' => 'finance']);

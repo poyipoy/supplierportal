@@ -1,0 +1,21 @@
+{
+  "auditStatus": "PASS",
+  "scope": "Independent reparse of all final raw compressed traces, exact hashes/main-thread single-frame Paint/missing-data guards,540 rows, p95 and fixed comparisons; does not waive acceptance failures.",
+  "trials": 18,
+  "samples": 540,
+  "singleFramePaintWindows": 540,
+  "issues": [],
+  "performanceFixedStatus": "FAIL",
+  "performancePairedStatus": "PASS",
+  "requiredRemaining": [
+    {
+      "size": 24,
+      "metric": "paint",
+      "B": 6.617,
+      "J": 1.298,
+      "limit": 7.915,
+      "actual": 9.57,
+      "status": "FAIL"
+    }
+  ]
+}

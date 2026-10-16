@@ -1,0 +1,74 @@
+{
+  "status": "PASS",
+  "scope": "Independent stdlib parsing; four actual POST-dispatch-worker-finalizer files; exact headings/values/order/BOM and no decorative rows or formulas.",
+  "cases": [
+    {
+      "file": "http-output-en.xlsx",
+      "sha256": "8e32e8a6ce4da16acbeef329789bfdb5af08304c06b0b8d8509c2e229b6c8253",
+      "status": "PASS",
+      "rows": [
+        [
+          "Remark",
+          "PO Number",
+          "Currency"
+        ],
+        [
+          "'=Pilot é, \"note\"",
+          "PO/08/2026/911",
+          "USD"
+        ]
+      ]
+    },
+    {
+      "file": "http-output-en.csv",
+      "sha256": "78fe57cc6152eb323d80943e8b0650fa4f90637c2eb208baf9940dfeae5c60c0",
+      "status": "PASS",
+      "rows": [
+        [
+          "Remark",
+          "PO Number",
+          "Currency"
+        ],
+        [
+          "'=Pilot é, \"note\"",
+          "PO/08/2026/911",
+          "USD"
+        ]
+      ]
+    },
+    {
+      "file": "http-output-id.xlsx",
+      "sha256": "ea72043df7667445aac75451061570b5acf83c9627271236d52c84bbc0afbb6f",
+      "status": "PASS",
+      "rows": [
+        [
+          "Catatan",
+          "Nomor PO",
+          "Mata Uang"
+        ],
+        [
+          "'=Pilot é, \"note\"",
+          "PO/08/2026/911",
+          "USD"
+        ]
+      ]
+    },
+    {
+      "file": "http-output-id.csv",
+      "sha256": "c6e45c854d664c10f68960bc066c1dbba33742e360a3ae63288ff8357859b5e4",
+      "status": "PASS",
+      "rows": [
+        [
+          "Catatan",
+          "Nomor PO",
+          "Mata Uang"
+        ],
+        [
+          "'=Pilot é, \"note\"",
+          "PO/08/2026/911",
+          "USD"
+        ]
+      ]
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "created": "2026-10-16T02:49:52.316Z",
+  "harnesses": [
+    {
+      "port": 8101,
+      "listening": false,
+      "result": "ECONNREFUSED"
+    },
+    {
+      "port": 8102,
+      "listening": false,
+      "result": "ECONNREFUSED"
+    },
+    {
+      "port": 8103,
+      "listening": false,
+      "result": "ECONNREFUSED"
+    }
+  ],
+  "stoppedUsingOwnedTerminalHandles": [
+    42383,
+    6785,
+    39802
+  ],
+  "ownedChromeCleanup": "launch helper finally invokes Browser.close on its own child; no user or MCP browser process killed",
+  "taskBrowserPagesClosed": [
+    4,
+    3,
+    2
+  ],
+  "testDatabase": "adasi_export_column_designer_20261015_test",
+  "testDatabaseRetained": true,
+  "sharedDatabaseReset": false,
+  "status": "PASS"
+}

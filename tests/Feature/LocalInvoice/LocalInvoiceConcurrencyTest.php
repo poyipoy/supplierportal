@@ -74,7 +74,7 @@ class LocalInvoiceConcurrencyTest extends TestCase
         foreach ([1, 2] as $i) {
             $grs[$i] = $masters->createGoodsReceipt($operator, $po, ['gr_number' => 'GR-CEIL-'.$i, 'gr_date' => '2026-09-02', 'uom' => 'pcs', 'qty' => 1.0]);
         }
-        $files = fn () => ['invoice' => NativeFileFixtures::upload('invoice.pdf'), 'tax_invoice' => NativeFileFixtures::upload('tax.pdf')];
+        $files = fn () => [...NativeFileFixtures::invoiceReferences(), 'invoice' => NativeFileFixtures::upload('invoice.pdf'), 'tax_invoice' => NativeFileFixtures::upload('tax.pdf')];
         $invoice = app(InvoiceSubmissionService::class)->submit($supplier, ['invoice_number' => 'CEIL-X', 'invoice_date' => '2026-09-10', 'local_purchase_order_id' => $po->id, 'goods_receipt_ids' => [$grs[1]->id], 'invoice_amount' => '100.00', 'tax_amount' => '0.00', 'ppn_scheme' => '0%'], $files());
         $invoice->update(['status' => LocalInvoice::STATUS_NEED_REVISION]);
         $invoice->statusHistories()->create(['from_status' => LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT, 'to_status' => LocalInvoice::STATUS_NEED_REVISION, 'actor_id' => $operator->id, 'event' => 'revision_requested', 'notes' => 'Revise', 'created_at' => now()]);
@@ -115,7 +115,7 @@ class LocalInvoiceConcurrencyTest extends TestCase
             $masters = app(LocalProcurementMasterService::class);
             $po = $masters->createPurchaseOrder($operator, ['supplier_id' => $supplier->id, 'po_number' => 'PO-RACE-'.$iteration, 'po_date' => '2026-09-01', 'total_amount' => '1000.00']);
             $gr = $masters->createGoodsReceipt($operator, $po, ['gr_number' => 'GR-RACE-'.$iteration, 'gr_date' => '2026-09-02', 'uom' => 'pcs', 'qty' => 1.0]);
-            $invoice = app(InvoiceSubmissionService::class)->submit($supplier, ['invoice_number' => 'RACE-'.$iteration, 'invoice_date' => today()->format('Y-m-d'), 'local_purchase_order_id' => $po->id, 'goods_receipt_ids' => [$gr->id], 'invoice_amount' => '1.00', 'tax_amount' => '0.00', 'ppn_scheme' => '0%'], ['invoice' => NativeFileFixtures::upload('invoice.pdf'), 'tax_invoice' => NativeFileFixtures::upload('tax.pdf')]);
+            $invoice = app(InvoiceSubmissionService::class)->submit($supplier, ['invoice_number' => 'RACE-'.$iteration, 'invoice_date' => today()->format('Y-m-d'), 'local_purchase_order_id' => $po->id, 'goods_receipt_ids' => [$gr->id], 'invoice_amount' => '1.00', 'tax_amount' => '0.00', 'ppn_scheme' => '0%'], [...NativeFileFixtures::invoiceReferences(), 'invoice' => NativeFileFixtures::upload('invoice.pdf'), 'tax_invoice' => NativeFileFixtures::upload('tax.pdf')]);
             app(InvoiceWorkflowService::class)->act($operator, $invoice, 'verifyPhysical');
             $start = microtime(true) + 3;
             $processes = array_map(fn ($action) => new Process([PHP_BINARY, base_path('tests/Support/local-invoice-concurrency-worker.php'), (string) $operator->id, (string) $invoice->id, $action, Storage::disk('private')->path(''), (string) $start], base_path(), ['APP_ENV' => 'testing']), $actions);

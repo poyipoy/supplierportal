@@ -1,0 +1,44 @@
+{
+  "status": "PASS",
+  "locale": "id",
+  "viewport": [
+    390,
+    844
+  ],
+  "pageWidth": 390,
+  "headers": 24,
+  "theme": "dark",
+  "menu": {
+    "x": 146.40000915527344,
+    "y": 188.90000915527344,
+    "right": 338.40000915527344,
+    "bottom": 426.50001525878906
+  },
+  "targets": [
+    {
+      "label": "Sembunyikan",
+      "height": 44
+    },
+    {
+      "label": "Tampilkan",
+      "height": 44
+    },
+    {
+      "label": "Geser Kiri",
+      "height": 44
+    },
+    {
+      "label": "Geser Kanan",
+      "height": 44
+    },
+    {
+      "label": "Menu Kolom",
+      "height": 44
+    },
+    {
+      "label": "Reset Kolom",
+      "height": 44
+    }
+  ],
+  "source": "Full Laravel application with isolated supplier/id test actor; theme is browser-only preview."
+}

@@ -79,6 +79,8 @@ class PrItemRemarkTest extends TestCase
             'created_by' => $this->purchasing->id,
             'notes' => 'Header note',
             'status' => 'draft',
+            'port_of_discharge' => 'TANJUNG_PRIOK',
+            'incoterm' => 'CIF',
         ]);
         $item = $pr->items()->create($this->materialPayload('Quick Submit Material', 'Keep this remark'));
 
@@ -110,6 +112,8 @@ class PrItemRemarkTest extends TestCase
             'created_by' => $this->purchasing->id,
             'notes' => 'Submit from requisition list',
             'status' => 'draft',
+            'port_of_discharge' => 'TANJUNG_PRIOK',
+            'incoterm' => 'CIF',
         ]);
         $item = $pr->items()->create($this->materialPayload('List Submit Material', 'Keep this remark'));
 

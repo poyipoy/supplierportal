@@ -1,0 +1,1316 @@
+{
+  "index": 8,
+  "pair": 4,
+  "batch": 1,
+  "size": 24,
+  "variant": "designer",
+  "source": "declared frozen production replay",
+  "readiness": {
+    "page": {
+      "href": "http://127.0.0.1:8103/designer",
+      "documentReady": "complete",
+      "visibility": "visible",
+      "viewport": [
+        1440,
+        900
+      ],
+      "dpr": 1,
+      "fonts": "loaded",
+      "modern": true,
+      "exportKey": "purchasing.po",
+      "scripts": [
+        "http://127.0.0.1:8103/vendor/bootstrap.js",
+        "http://127.0.0.1:8103/assets/designer/app.js"
+      ],
+      "stylesheets": [
+        "http://127.0.0.1:8103/vendor/bootstrap.css",
+        "http://127.0.0.1:8103/assets/designer/app.css"
+      ]
+    },
+    "loader": {
+      "waitedMs": 17.199999999254942,
+      "samples": [
+        {
+          "elapsed": 3.199999999254942,
+          "active": false,
+          "pending": 0
+        },
+        {
+          "elapsed": 10.199999999254942,
+          "active": false,
+          "pending": 0
+        },
+        {
+          "elapsed": 17.199999999254942,
+          "active": false,
+          "pending": 0
+        }
+      ],
+      "active": false,
+      "pending": 0,
+      "resetCalled": false
+    }
+  },
+  "viewport": [
+    1440,
+    900
+  ],
+  "animations": {
+    "dialog": false,
+    "backdrop": false
+  },
+  "metadataRequests": 66,
+  "closed": true,
+  "backdrops": 0,
+  "openLayers": 0,
+  "trace": {
+    "file": "counterbalanced-trace-designer-24-1.json.gz",
+    "gzipBytes": 414421,
+    "sha256": "c72276ecb2a1eaa8e343bbb43db36f6de70b931da486597a76ca938f05f40553",
+    "dataLossOccurred": false
+  },
+  "rows": [
+    {
+      "iteration": 0,
+      "ready": 22.118,
+      "paint": 9.096,
+      "command": 4.853,
+      "commandPaint": 7.456,
+      "openPaint": 31.214,
+      "selection": 6.949,
+      "paintCounts": {
+        "initial": 4,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-scroll'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-header'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 2.147,
+          "frameSeqId": 4730,
+          "layerTreeId": 10
+        },
+        "command": {
+          "afterPaintMs": 3.119,
+          "frameSeqId": 4735,
+          "layerTreeId": 10
+        }
+      }
+    },
+    {
+      "iteration": 1,
+      "ready": 19.509,
+      "paint": 7.463,
+      "command": 3.298,
+      "commandPaint": 4.626,
+      "openPaint": 26.972,
+      "selection": 5.158,
+      "paintCounts": {
+        "initial": 4,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-scroll'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-header'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 2.127,
+          "frameSeqId": 4741,
+          "layerTreeId": 10
+        },
+        "command": {
+          "afterPaintMs": 2.499,
+          "frameSeqId": 4745,
+          "layerTreeId": 10
+        }
+      }
+    },
+    {
+      "iteration": 2,
+      "ready": 16.225,
+      "paint": 7.583,
+      "command": 3.554,
+      "commandPaint": 4.848,
+      "openPaint": 23.808,
+      "selection": 4.251,
+      "paintCounts": {
+        "initial": 4,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-scroll'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-header'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 1.126,
+          "frameSeqId": 4750,
+          "layerTreeId": 10
+        },
+        "command": {
+          "afterPaintMs": 0.891,
+          "frameSeqId": 4754,
+          "layerTreeId": 10
+        }
+      }
+    },
+    {
+      "iteration": 3,
+      "ready": 19.016,
+      "paint": 7.509,
+      "command": 3.026,
+      "commandPaint": 4.149,
+      "openPaint": 26.525,
+      "selection": 6.228,
+      "paintCounts": {
+        "initial": 4,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-scroll'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-header'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 1.492,
+          "frameSeqId": 4760,
+          "layerTreeId": 10
+        },
+        "command": {
+          "afterPaintMs": 0.821,
+          "frameSeqId": 4764,
+          "layerTreeId": 10
+        }
+      }
+    },
+    {
+      "iteration": 4,
+      "ready": 18.933,
+      "paint": 6.843,
+      "command": 4.558,
+      "commandPaint": 5.98,
+      "openPaint": 25.776,
+      "selection": 4.651,
+      "paintCounts": {
+        "initial": 4,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-scroll'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-header'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 1.131,
+          "frameSeqId": 4770,
+          "layerTreeId": 10
+        },
+        "command": {
+          "afterPaintMs": 2.175,
+          "frameSeqId": 4775,
+          "layerTreeId": 10
+        }
+      }
+    },
+    {
+      "iteration": 5,
+      "ready": 15.935,
+      "paint": 6.248,
+      "command": 3.948,
+      "commandPaint": 5.78,
+      "openPaint": 22.183,
+      "selection": 4.253,
+      "paintCounts": {
+        "initial": 4,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-scroll'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-header'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 3.105,
+          "frameSeqId": 4780,
+          "layerTreeId": 10
+        },
+        "command": {
+          "afterPaintMs": 1.094,
+          "frameSeqId": 4783,
+          "layerTreeId": 10
+        }
+      }
+    },
+    {
+      "iteration": 6,
+      "ready": 21.796,
+      "paint": 11.886,
+      "command": 5.028,
+      "commandPaint": 7.806,
+      "openPaint": 33.682,
+      "selection": 5.98,
+      "paintCounts": {
+        "initial": 4,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-scroll'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-header'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 2.841,
+          "frameSeqId": 4791,
+          "layerTreeId": 10
+        },
+        "command": {
+          "afterPaintMs": 2.949,
+          "frameSeqId": 4795,
+          "layerTreeId": 10
+        }
+      }
+    },
+    {
+      "iteration": 7,
+      "ready": 16.186,
+      "paint": 9.104,
+      "command": 4.195,
+      "commandPaint": 6.262,
+      "openPaint": 25.29,
+      "selection": 6.047,
+      "paintCounts": {
+        "initial": 4,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-scroll'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-header'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 1.295,
+          "frameSeqId": 4800,
+          "layerTreeId": 10
+        },
+        "command": {
+          "afterPaintMs": 2.14,
+          "frameSeqId": 4805,
+          "layerTreeId": 10
+        }
+      }
+    },
+    {
+      "iteration": 8,
+      "ready": 17.039,
+      "paint": 9.192,
+      "command": 4.255,
+      "commandPaint": 5.937,
+      "openPaint": 26.231,
+      "selection": 4.469,
+      "paintCounts": {
+        "initial": 4,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-scroll'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-header'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 0.885,
+          "frameSeqId": 4810,
+          "layerTreeId": 10
+        },
+        "command": {
+          "afterPaintMs": 0.956,
+          "frameSeqId": 4814,
+          "layerTreeId": 10
+        }
+      }
+    },
+    {
+      "iteration": 9,
+      "ready": 14.529,
+      "paint": 6.145,
+      "command": 2.765,
+      "commandPaint": 3.76,
+      "openPaint": 20.674,
+      "selection": 2.469,
+      "paintCounts": {
+        "initial": 4,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-scroll'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-header'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 1.66,
+          "frameSeqId": 4820,
+          "layerTreeId": 10
+        },
+        "command": {
+          "afterPaintMs": 1.389,
+          "frameSeqId": 4823,
+          "layerTreeId": 10
+        }
+      }
+    },
+    {
+      "iteration": 10,
+      "ready": 12.505,
+      "paint": 5.729,
+      "command": 2.648,
+      "commandPaint": 3.706,
+      "openPaint": 18.234,
+      "selection": 4,
+      "paintCounts": {
+        "initial": 4,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-scroll'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-header'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 1.093,
+          "frameSeqId": 4828,
+          "layerTreeId": 10
+        },
+        "command": {
+          "afterPaintMs": 1.233,
+          "frameSeqId": 4832,
+          "layerTreeId": 10
+        }
+      }
+    },
+    {
+      "iteration": 11,
+      "ready": 14.288,
+      "paint": 7.047,
+      "command": 3.941,
+      "commandPaint": 5.359,
+      "openPaint": 21.335,
+      "selection": 3.21,
+      "paintCounts": {
+        "initial": 4,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-scroll'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-header'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 2.021,
+          "frameSeqId": 4838,
+          "layerTreeId": 10
+        },
+        "command": {
+          "afterPaintMs": 1.212,
+          "frameSeqId": 4841,
+          "layerTreeId": 10
+        }
+      }
+    },
+    {
+      "iteration": 12,
+      "ready": 19.655,
+      "paint": 9.464,
+      "command": 6.072,
+      "commandPaint": 8.646,
+      "openPaint": 29.119,
+      "selection": 6.493,
+      "paintCounts": {
+        "initial": 4,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-scroll'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-header'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 3.243,
+          "frameSeqId": 4848,
+          "layerTreeId": 10
+        },
+        "command": {
+          "afterPaintMs": 2.471,
+          "frameSeqId": 4853,
+          "layerTreeId": 10
+        }
+      }
+    },
+    {
+      "iteration": 13,
+      "ready": 24.697,
+      "paint": 8.899,
+      "command": 5.805,
+      "commandPaint": 8.033,
+      "openPaint": 33.596,
+      "selection": 5.481,
+      "paintCounts": {
+        "initial": 4,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-scroll'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-header'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 1.439,
+          "frameSeqId": 4860,
+          "layerTreeId": 10
+        },
+        "command": {
+          "afterPaintMs": 2.407,
+          "frameSeqId": 4865,
+          "layerTreeId": 10
+        }
+      }
+    },
+    {
+      "iteration": 14,
+      "ready": 19.767,
+      "paint": 9.313,
+      "command": 7.138,
+      "commandPaint": 9.23,
+      "openPaint": 29.08,
+      "selection": 5.853,
+      "paintCounts": {
+        "initial": 4,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-scroll'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-header'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 3.38,
+          "frameSeqId": 4871,
+          "layerTreeId": 10
+        },
+        "command": {
+          "afterPaintMs": 2.473,
+          "frameSeqId": 4876,
+          "layerTreeId": 10
+        }
+      }
+    },
+    {
+      "iteration": 15,
+      "ready": 21.219,
+      "paint": 8.353,
+      "command": 6.435,
+      "commandPaint": 10.12,
+      "openPaint": 29.572,
+      "selection": 7.489,
+      "paintCounts": {
+        "initial": 4,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-scroll'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-header'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 2.099,
+          "frameSeqId": 4882,
+          "layerTreeId": 10
+        },
+        "command": {
+          "afterPaintMs": 2.213,
+          "frameSeqId": 4887,
+          "layerTreeId": 10
+        }
+      }
+    },
+    {
+      "iteration": 16,
+      "ready": 19.439,
+      "paint": 11.463,
+      "command": 5.629,
+      "commandPaint": 7.579,
+      "openPaint": 30.902,
+      "selection": 7.161,
+      "paintCounts": {
+        "initial": 4,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-scroll'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-header'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 0.887,
+          "frameSeqId": 4893,
+          "layerTreeId": 10
+        },
+        "command": {
+          "afterPaintMs": 1.874,
+          "frameSeqId": 4898,
+          "layerTreeId": 10
+        }
+      }
+    },
+    {
+      "iteration": 17,
+      "ready": 17.216,
+      "paint": 5.909,
+      "command": 3.742,
+      "commandPaint": 4.885,
+      "openPaint": 23.125,
+      "selection": 5.194,
+      "paintCounts": {
+        "initial": 4,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-scroll'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-header'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 1.62,
+          "frameSeqId": 4903,
+          "layerTreeId": 10
+        },
+        "command": {
+          "afterPaintMs": 0.829,
+          "frameSeqId": 4907,
+          "layerTreeId": 10
+        }
+      }
+    },
+    {
+      "iteration": 18,
+      "ready": 21.379,
+      "paint": 7.086,
+      "command": 4.136,
+      "commandPaint": 5.125,
+      "openPaint": 28.465,
+      "selection": 3.399,
+      "paintCounts": {
+        "initial": 4,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-scroll'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-header'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 2.031,
+          "frameSeqId": 4914,
+          "layerTreeId": 10
+        },
+        "command": {
+          "afterPaintMs": 0.744,
+          "frameSeqId": 4917,
+          "layerTreeId": 10
+        }
+      }
+    },
+    {
+      "iteration": 19,
+      "ready": 15.452,
+      "paint": 4.683,
+      "command": 2.944,
+      "commandPaint": 4.127,
+      "openPaint": 20.135,
+      "selection": 5.045,
+      "paintCounts": {
+        "initial": 4,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-scroll'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-header'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 0.78,
+          "frameSeqId": 4922,
+          "layerTreeId": 10
+        },
+        "command": {
+          "afterPaintMs": 1.425,
+          "frameSeqId": 4926,
+          "layerTreeId": 10
+        }
+      }
+    },
+    {
+      "iteration": 20,
+      "ready": 15.044,
+      "paint": 4.388,
+      "command": 4.123,
+      "commandPaint": 5.269,
+      "openPaint": 19.432,
+      "selection": 5.202,
+      "paintCounts": {
+        "initial": 4,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-scroll'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-header'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 1.37,
+          "frameSeqId": 4931,
+          "layerTreeId": 10
+        },
+        "command": {
+          "afterPaintMs": 0.822,
+          "frameSeqId": 4935,
+          "layerTreeId": 10
+        }
+      }
+    },
+    {
+      "iteration": 21,
+      "ready": 17.332,
+      "paint": 8.144,
+      "command": 2.973,
+      "commandPaint": 4.09,
+      "openPaint": 25.476,
+      "selection": 5.684,
+      "paintCounts": {
+        "initial": 4,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-scroll'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-header'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 1.618,
+          "frameSeqId": 4941,
+          "layerTreeId": 10
+        },
+        "command": {
+          "afterPaintMs": 0.92,
+          "frameSeqId": 4945,
+          "layerTreeId": 10
+        }
+      }
+    },
+    {
+      "iteration": 22,
+      "ready": 14.998,
+      "paint": 7.177,
+      "command": 3.877,
+      "commandPaint": 6.181,
+      "openPaint": 22.175,
+      "selection": 3.443,
+      "paintCounts": {
+        "initial": 4,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-scroll'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-header'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 2.548,
+          "frameSeqId": 4951,
+          "layerTreeId": 10
+        },
+        "command": {
+          "afterPaintMs": 2.596,
+          "frameSeqId": 4955,
+          "layerTreeId": 10
+        }
+      }
+    },
+    {
+      "iteration": 23,
+      "ready": 19.358,
+      "paint": 5.915,
+      "command": 3.491,
+      "commandPaint": 4.452,
+      "openPaint": 25.273,
+      "selection": 4.096,
+      "paintCounts": {
+        "initial": 4,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-scroll'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-header'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 1.061,
+          "frameSeqId": 4960,
+          "layerTreeId": 10
+        },
+        "command": {
+          "afterPaintMs": 0.832,
+          "frameSeqId": 4964,
+          "layerTreeId": 10
+        }
+      }
+    },
+    {
+      "iteration": 24,
+      "ready": 12.732,
+      "paint": 4.76,
+      "command": 2.66,
+      "commandPaint": 3.664,
+      "openPaint": 17.492,
+      "selection": 2.699,
+      "paintCounts": {
+        "initial": 4,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-scroll'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-header'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 1.536,
+          "frameSeqId": 4969,
+          "layerTreeId": 10
+        },
+        "command": {
+          "afterPaintMs": 1.428,
+          "frameSeqId": 4972,
+          "layerTreeId": 10
+        }
+      }
+    },
+    {
+      "iteration": 25,
+      "ready": 10.55,
+      "paint": 6.223,
+      "command": 2.43,
+      "commandPaint": 3.583,
+      "openPaint": 16.773,
+      "selection": 3.52,
+      "paintCounts": {
+        "initial": 4,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-scroll'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-header'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 2.139,
+          "frameSeqId": 4977,
+          "layerTreeId": 10
+        },
+        "command": {
+          "afterPaintMs": 1.235,
+          "frameSeqId": 4980,
+          "layerTreeId": 10
+        }
+      }
+    },
+    {
+      "iteration": 26,
+      "ready": 11.738,
+      "paint": 5.183,
+      "command": 3.193,
+      "commandPaint": 4.282,
+      "openPaint": 16.921,
+      "selection": 4.328,
+      "paintCounts": {
+        "initial": 4,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-scroll'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-header'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 2.004,
+          "frameSeqId": 4985,
+          "layerTreeId": 10
+        },
+        "command": {
+          "afterPaintMs": 0.989,
+          "frameSeqId": 4988,
+          "layerTreeId": 10
+        }
+      }
+    },
+    {
+      "iteration": 27,
+      "ready": 12.254,
+      "paint": 6.274,
+      "command": 3.56,
+      "commandPaint": 4.529,
+      "openPaint": 18.528,
+      "selection": 3.786,
+      "paintCounts": {
+        "initial": 4,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-scroll'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-header'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 1.093,
+          "frameSeqId": 4993,
+          "layerTreeId": 10
+        },
+        "command": {
+          "afterPaintMs": 0.772,
+          "frameSeqId": 4997,
+          "layerTreeId": 10
+        }
+      }
+    },
+    {
+      "iteration": 28,
+      "ready": 18.149,
+      "paint": 7.651,
+      "command": 2.404,
+      "commandPaint": 3.399,
+      "openPaint": 25.8,
+      "selection": 5.081,
+      "paintCounts": {
+        "initial": 4,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-scroll'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-header'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 1.03,
+          "frameSeqId": 5003,
+          "layerTreeId": 10
+        },
+        "command": {
+          "afterPaintMs": 1.174,
+          "frameSeqId": 5007,
+          "layerTreeId": 10
+        }
+      }
+    },
+    {
+      "iteration": 29,
+      "ready": 11.356,
+      "paint": 4.151,
+      "command": 3.928,
+      "commandPaint": 6.014,
+      "openPaint": 15.507,
+      "selection": 2.995,
+      "paintCounts": {
+        "initial": 4,
+        "command": 4
+      },
+      "frameIds": [
+        "568F69B000D4BA6A10113C6C34196842"
+      ],
+      "paintNodeNames": {
+        "initial": [
+          "#document",
+          "HTML",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-scroll'"
+        ],
+        "command": [
+          "#document",
+          "DIV class='modal-body ui-export-designer__body tw-grid tw-gap-4'",
+          "DIV class='ui-column-header'"
+        ]
+      },
+      "uncorrelatedNextDrawFrameDiagnosticOnly": {
+        "open": {
+          "afterPaintMs": 1.541,
+          "frameSeqId": 5012,
+          "layerTreeId": 10
+        },
+        "command": {
+          "afterPaintMs": 1.07,
+          "frameSeqId": 5015,
+          "layerTreeId": 10
+        }
+      }
+    }
+  ],
+  "p95": {
+    "ready": 22.118,
+    "paint": 11.463,
+    "command": 6.435,
+    "commandPaint": 9.23,
+    "openPaint": 33.596
+  },
+  "loaderAfter": {
+    "active": false,
+    "pending": 0,
+    "resetCalled": false
+  }
+}

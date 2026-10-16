@@ -7,6 +7,7 @@
     'required' => false,
     'multiple' => false,
     'maxFiles' => 5,
+    'showCount' => false,
     'maxSizeMb' => 5,
     'disabled' => false,
     'accept' => null,
@@ -55,7 +56,7 @@
         allowedExtensions: @js($allowedExtensions),
         serverError: @js($message)
     })"
-    {{ $attributes->only('class')->class(['tw-h-full']) }}
+    {{ $attributes->only('class')->class(['tw-h-full tw-min-w-0']) }}
 >
     <span id="{{ $formatId }}" class="tw-sr-only">
         {{ $formatText }} @if($multiple) · {{ __('common.review.upload_maximum', ['count' => $maxFiles]) }} @endif
@@ -79,12 +80,16 @@
             <div class="tw-flex tw-items-start tw-justify-between tw-gap-2">
                 <label for="{{ $resolvedId }}" class="tw-text-ui-xs tw-font-bold tw-text-on-surface tw-cursor-pointer tw-mb-0 tw-leading-tight">
                     {{ $label }}
+                    @if($required)
+                        <span class="tw-text-error" aria-hidden="true">*</span>
+                        <span class="tw-sr-only">{{ __('common.upload.required') }}</span>
+                    @endif
                 </label>
 
                 {{-- Dynamic Status Badge --}}
-                <div class="tw-shrink-0">
-                    <template x-if="hasFiles">
-                        @if($multiple)
+                <div class="tw-shrink-0" aria-live="polite" aria-atomic="true">
+                    <template x-if="{{ $showCount ? 'true' : 'hasFiles' }}">
+                        @if($multiple || $showCount)
                             <span class="tw-inline-flex tw-items-center tw-gap-1 tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold tw-bg-primary/10 tw-text-primary">
                                 <x-ui.icon name="files" size="sm" />
                                 <span><span x-text="totalFilesCount"></span>/{{ $maxFiles }} {{ __('common.upload.files') }}</span>
@@ -96,7 +101,7 @@
                             </span>
                         @endif
                     </template>
-                    <template x-if="!hasFiles">
+                    <template x-if="{{ $showCount ? 'false' : '!hasFiles' }}">
                         @if($required)
                             <span class="tw-inline-flex tw-items-center tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold tw-bg-error/10 tw-text-error">
                                 {{ __('common.upload.required') }}

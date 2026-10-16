@@ -357,6 +357,10 @@
             @endforeach
         </div>
     </x-ui.card>
+
+    @if(\App\Support\Procurement\ProcurementFeatures::shipmentMtcEnabled() || $shipment->mtcAttachments->isNotEmpty())
+        @include('shipments._mtc_section', ['shipment' => $shipment, 'manageable' => true])
+    @endif
 </div>
 @endsection
 

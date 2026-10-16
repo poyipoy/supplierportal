@@ -458,6 +458,9 @@ class PurchaseRequisitionMaterialAutomationTest extends TestCase
             'period_id' => $this->period->id,
             'created_by' => $this->purchasing->id,
             'status' => 'draft',
+            // Logistics present, so this exercises the item revalidation.
+            'port_of_discharge' => 'TANJUNG_PRIOK',
+            'incoterm' => 'CIF',
         ]);
         $pr->items()->create([
             'material_master_id' => $scm->id,
@@ -640,6 +643,9 @@ class PurchaseRequisitionMaterialAutomationTest extends TestCase
             'period_id' => $this->period->id,
             'action' => $action,
             'notes' => 'Automation test',
+            // Decision 12: logistics are required on submit.
+            'port_of_discharge' => 'TANJUNG_PRIOK',
+            'incoterm' => 'CIF',
             'items' => $items,
         ];
     }

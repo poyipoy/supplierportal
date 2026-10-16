@@ -28,6 +28,11 @@ final class BankTransferMapping
 
     public const TRANSFER_TYPE_LLG = 'LLG';
 
+    /** "RTG" is the code used by the BCA transfer template Legend sheet. */
+    public const TRANSFER_TYPE_RTGS = 'RTG';
+
+    private const BCA_KEYS = ['BCA', 'BANK BCA', 'BANK CENTRAL ASIA', 'PT BANK CENTRAL ASIA'];
+
     /**
      * Known bank mappings: normalized_key => [sandi_bic, canonical_name].
      *
@@ -91,10 +96,7 @@ final class BankTransferMapping
      */
     public static function resolve(string $bankName): ?array
     {
-        $normalized = strtoupper(trim($bankName));
-
-        // Strip common parenthetical branch suffixes like "BCA (KCU Karawang)"
-        $normalized = preg_replace('/\s*\(.*\)$/', '', $normalized) ?: $normalized;
+        $normalized = self::normalize($bankName);
 
         if (! isset(self::MAPPINGS[$normalized])) {
             return null;
@@ -102,16 +104,43 @@ final class BankTransferMapping
 
         [$sandiBic, $canonicalName] = self::MAPPINGS[$normalized];
 
-        $isBca = str_starts_with($normalized, 'BCA')
-            || str_starts_with($normalized, 'BANK BCA')
-            || $normalized === 'BANK CENTRAL ASIA'
-            || str_starts_with($normalized, 'PT BANK CENTRAL ASIA');
-
         return [
-            'transfer_type' => $isBca ? self::TRANSFER_TYPE_BCA : self::TRANSFER_TYPE_LLG,
+            'transfer_type' => self::isBca($bankName) ? self::TRANSFER_TYPE_BCA : self::TRANSFER_TYPE_LLG,
             'sandi_bic' => $sandiBic,
             'bank_name' => $canonicalName,
         ];
+    }
+
+    /**
+     * Single source of truth for "is this a BCA account" (fee default and export type).
+     */
+    public static function isBca(string $bankName): bool
+    {
+        return in_array(self::normalize($bankName), self::BCA_KEYS, true);
+    }
+
+    /**
+     * Transfer type for a payment group. The basis is the group SUBTOTAL, not the net amount:
+     * the default fee depends on the type, so using net would make the two depend on each other.
+     * Non-BCA transfers above the SKNBI/LLG per-transaction limit must go through RTGS.
+     */
+    public static function transferType(string $bankName, string|int|float|null $subtotal, ?string $llgMaxAmount = null): string
+    {
+        if (self::isBca($bankName)) {
+            return self::TRANSFER_TYPE_BCA;
+        }
+
+        $limit = $llgMaxAmount ?? (string) config('finance.bank_transfer.llg_max_amount', '1000000000.00');
+
+        return Money::compare($subtotal, $limit) > 0 ? self::TRANSFER_TYPE_RTGS : self::TRANSFER_TYPE_LLG;
+    }
+
+    private static function normalize(string $bankName): string
+    {
+        $normalized = strtoupper(trim($bankName));
+
+        // Strip common parenthetical branch suffixes like "BCA (KCU Karawang)"
+        return preg_replace('/\s*\(.*\)$/', '', $normalized) ?: $normalized;
     }
 
     /**

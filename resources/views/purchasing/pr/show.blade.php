@@ -128,6 +128,8 @@
         />
     </div>
 
+    @include('partials.procurement-logistics', ['port' => $pr->port_of_discharge, 'incoterm' => $pr->incoterm])
+
     <div class="tw-grid tw-items-start tw-gap-4 xl:tw-grid-cols-[minmax(0,2fr)_minmax(19rem,1fr)]">
         {{-- Main Column --}}
         <div class="tw-grid tw-min-w-0 tw-gap-4">
@@ -161,6 +163,8 @@
 
             {{-- Material List Table --}}
             <x-ui.data-table
+                sticky
+                :scroll-label="__('procurement.tables.pr_items')"
                 :title="__('purchasing.page.material_count', ['count' => $pr->items->count()])"
                 :description="__('purchasing.copy.required_specifications_shapes_dimensions_and_computed_weights')"
             >
@@ -170,7 +174,7 @@
                             <th scope="col" style="width: 40px;">{{ __('purchasing.copy.no') }}</th>
                             <th scope="col">HS Code</th>
                             <th scope="col">{{ __('purchasing.copy.hs_status') }}</th>
-                            <th scope="col" class="text-start">{{ __('purchasing.copy.material') }}</th>
+                            <th scope="col" class="text-start ui-sticky-col">{{ __('purchasing.copy.material') }}</th>
                             <th scope="col">{{ __('purchasing.copy.shape') }}</th>
                             <th scope="col" class="text-start">{{ __('purchasing.copy.dimensions_mm') }}</th>
                             <th scope="col">{{ __('purchasing.copy.qty') }}</th>
@@ -205,7 +209,7 @@
                                 <td class="text-center">
                                     <span class="ui-status-chip {{ $hsStatusTone }}">{{ $hsStatusLabel }}</span>
                                 </td>
-                                <td class="text-start fw-bold tw-text-on-surface">{{ $item->material_name }}</td>
+                                <td class="text-start fw-bold tw-text-on-surface ui-sticky-col">{{ $item->material_name }}</td>
                                 <td class="text-center">{{ $item->shape ?: '-' }}</td>
                                 <td class="text-start tw-text-on-surface-variant">{{ $item->dimension_label }}</td>
                                 <td class="text-center fw-bold ui-tabular-nums">{{ number_format($item->quantity_value, 0) }}</td>
@@ -215,6 +219,18 @@
                             </tr>
                         @endforeach
                     </tbody>
+                    <tfoot id="prItemTotals" class="table-light">
+                        <tr>
+                            <th scope="row" colspan="6" class="text-end">{{ __('procurement.totals.total') }}</th>
+                            <td class="text-center fw-bold ui-tabular-nums">
+                                <span class="tw-sr-only">{{ __('procurement.totals.total_qty') }}:</span>
+                                {{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($totalQty)) }}
+                            </td>
+                            <td class="text-end tw-text-on-surface-variant">{{ __('procurement.totals.total_kg') }}</td>
+                            <td class="text-end fw-bold text-primary ui-tabular-nums">{{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($totalKg)) }}</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
                 </table>
             </x-ui.data-table>
 

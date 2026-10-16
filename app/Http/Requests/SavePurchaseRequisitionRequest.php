@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\PrItem;
 use App\Models\PurchaseRequisition;
+use App\Support\Procurement\LogisticsTerms;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -50,6 +51,9 @@ class SavePurchaseRequisitionRequest extends FormRequest
             'period_id' => ['required', 'integer', 'exists:periods,id'],
             'action' => ['required', Rule::in(['draft', 'submitted'])],
             'notes' => ['nullable', 'string', 'max:5000'],
+            // Optional on a draft, required on submit (decision 12).
+            'port_of_discharge' => ['nullable', 'required_if:action,submitted', 'string', Rule::in(LogisticsTerms::ports())],
+            'incoterm' => ['nullable', 'required_if:action,submitted', 'string', Rule::in(LogisticsTerms::incoterms())],
             'supplier_selection_present' => ['nullable', 'boolean'],
             'supplier_id' => ['nullable', 'integer', $activeSupplier],
             'supplier_ids' => ['nullable', 'array', 'max:50'],
@@ -83,6 +87,10 @@ class SavePurchaseRequisitionRequest extends FormRequest
             'items.*.quantity.min' => __('purchasing.validation.quantity_minimum'),
             'supplier_id.exists' => __('purchasing.validation.supplier_active'),
             'supplier_ids.*.exists' => __('purchasing.validation.supplier_active'),
+            'port_of_discharge.required_if' => __('procurement.logistics.port_required_on_submit'),
+            'port_of_discharge.in' => __('procurement.logistics.port_invalid'),
+            'incoterm.required_if' => __('procurement.logistics.incoterm_required_on_submit'),
+            'incoterm.in' => __('procurement.logistics.incoterm_invalid'),
         ];
     }
 }

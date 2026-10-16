@@ -1,9 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
-import vm from 'node:vm';
+import { bootFormats } from '../../resources/js/advanced-export.js';
 
-const source = await readFile(new URL('../../resources/js/advanced-export.js', import.meta.url), 'utf8');
 function boot({ unavailable = false, invalid = false } = {}) {
     let submit;
     const requests = [];
@@ -25,7 +23,9 @@ function boot({ unavailable = false, invalid = false } = {}) {
         return !invalid;
     } } };
     class FormData { constructor(target) { this.fields = target.fields; } [Symbol.iterator]() { return this.fields[Symbol.iterator](); } }
-    vm.runInNewContext(source, { document, window, FormData });
+    document.defaultView = window;
+    window.FormData = FormData;
+    bootFormats(document);
     return { form, button, error, attributes, requests, submit: () => submit({ preventDefault() {} }) };
 }
 

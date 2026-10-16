@@ -152,11 +152,13 @@ class PriceComparisonPerformanceRegressionTest extends TestCase
             $submittedPrice['detail_url'],
         );
 
+        // Mission 07 (decision 34, AGENTS.md A-1): matrix cells keep the document
+        // snapshot, while the analytics chart uses the evaluation-date benchmark (20,000).
         $chartData = $response->viewData('chartData');
         $submittedDataset = collect($chartData['datasets'])->firstWhere('label', $this->supplierA->name);
         $rejectedDataset = collect($chartData['datasets'])->firstWhere('label', $this->supplierB->name);
-        $this->assertSame(162000.0, (float) $submittedDataset['data'][0]);
-        $this->assertSame(142500.0, (float) $rejectedDataset['data'][0]);
+        $this->assertSame(202500.0, (float) $submittedDataset['data'][0]);
+        $this->assertSame(190000.0, (float) $rejectedDataset['data'][0]);
     }
 
     public function test_inter_supplier_query_growth_does_not_scale_with_eligible_requisition_count(): void
@@ -249,8 +251,9 @@ class PriceComparisonPerformanceRegressionTest extends TestCase
 
         $firstPage = $requestPage(1)
             ->assertOk()
-            ->assertJsonCount(51, 'chartData.labels')
-            ->assertJsonCount(51, 'chartData.pricesIdr')
+            // Mission 07 (12.3): one weighted-average point per month (Jan and Feb 2024).
+            ->assertJsonCount(2, 'chartData.labels')
+            ->assertJsonCount(2, 'chartData.pricesIdr')
             ->assertJsonCount(50, 'tableData')
             ->assertJsonPath('pagination.current_page', 1)
             ->assertJsonPath('pagination.last_page', 2)
@@ -258,8 +261,11 @@ class PriceComparisonPerformanceRegressionTest extends TestCase
             ->assertJsonPath('pagination.from', 1)
             ->assertJsonPath('pagination.to', 50);
 
-        $this->assertEqualsWithDelta(165000, (float) $firstPage->json('tableData.0.price_idr'), 0.0001);
-        $this->assertEqualsWithDelta(1650000, (float) $firstPage->json('tableData.0.total_idr'), 0.0001);
+        // Converted at the evaluation-date benchmark (16,000), not the PO snapshot (15,000).
+        $this->assertEqualsWithDelta(176000, (float) $firstPage->json('tableData.0.price_idr'), 0.0001);
+        $this->assertEqualsWithDelta(1760000, (float) $firstPage->json('tableData.0.total_idr'), 0.0001);
+        $this->assertSame(11.0, (float) $firstPage->json('tableData.0.price_per_kg'));
+        $this->assertSame('USD', $firstPage->json('tableData.0.currency'));
         $this->assertStringStartsWith(
             route('purchasing.requisitions.show', $requisitions->first()),
             (string) $firstPage->json('tableData.0.pr_url'),
@@ -267,7 +273,7 @@ class PriceComparisonPerformanceRegressionTest extends TestCase
 
         $secondPage = $requestPage(2)
             ->assertOk()
-            ->assertJsonCount(51, 'chartData.labels')
+            ->assertJsonCount(2, 'chartData.labels')
             ->assertJsonCount(1, 'tableData')
             ->assertJsonPath('pagination.current_page', 2)
             ->assertJsonPath('pagination.from', 51)
@@ -311,7 +317,8 @@ class PriceComparisonPerformanceRegressionTest extends TestCase
             currentAmount: 1,
         );
 
-        // The calculation must remain tied to document snapshots, not this newer rate.
+        // Mission 07 (decision 34, AGENTS.md A-1): analytics use the benchmark effective
+        // on the evaluation date (this newer rate), not the document snapshots.
         $this->createRate(20000, '2026-08-01');
 
         $response = $this->actingAs($this->purchasing);
@@ -341,7 +348,7 @@ class PriceComparisonPerformanceRegressionTest extends TestCase
             ->assertJsonPath('summary.average_diff_idr_per_kg', 40000);
 
         $row = $response->json('data.0');
-        $this->assertSame(120000.0, (float) $row['best_price_idr']);
+        $this->assertSame(160000.0, (float) $row['best_price_idr']);
         $this->assertEmpty(array_diff([
             'material_display',
             'current_price_display',
@@ -354,12 +361,12 @@ class PriceComparisonPerformanceRegressionTest extends TestCase
         $this->assertStringContainsString('Qty: 3', $row['material_display']);
         $this->assertStringContainsString('Berat/unit: 2.5 kg', $row['material_display']);
         $this->assertStringContainsString('Total weight: 7.5 kg', $row['material_display']);
-        $this->assertStringContainsString('Rp 160.000', $row['current_price_display']);
+        $this->assertStringContainsString('Rp 200.000', $row['current_price_display']);
         $this->assertStringContainsString('10 USD/kg', $row['current_price_display']);
-        $this->assertStringContainsString('Rp 120.000', $row['best_price_display']);
+        $this->assertStringContainsString('Rp 160.000', $row['best_price_display']);
         $this->assertStringContainsString('8 USD/kg', $row['best_price_display']);
         $this->assertStringContainsString('+Rp 40.000', $row['diff_display']);
-        $this->assertStringContainsString('+33.33%', $row['diff_display']);
+        $this->assertStringContainsString('+25%', $row['diff_display']);
         $this->assertStringContainsString('Rp 300.000', $row['potential_difference_display']);
         $this->assertStringContainsString('Above History', $row['status_badge']);
 

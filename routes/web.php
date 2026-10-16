@@ -56,6 +56,7 @@ use App\Http\Controllers\Purchasing\ExportController;
 use App\Http\Controllers\Purchasing\MaterialCalculationController;
 use App\Http\Controllers\Purchasing\MaterialClaimController;
 use App\Http\Controllers\Purchasing\MaterialMasterSearchController;
+use App\Http\Controllers\Purchasing\MaterialReferencePriceController;
 use App\Http\Controllers\Purchasing\PdfController;
 use App\Http\Controllers\Purchasing\PeriodController;
 use App\Http\Controllers\Purchasing\PoDocumentController;
@@ -441,6 +442,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('/hs-code-rules', [HsCodeRuleController::class, 'store'])->name('hs-code-rules.store');
     Route::put('/hs-code-rules/{hsCodeRule}', [HsCodeRuleController::class, 'update'])->name('hs-code-rules.update');
     Route::patch('/hs-code-rules/{hsCodeRule}/status', [HsCodeRuleController::class, 'status'])->name('hs-code-rules.status');
+    // Q3: guarded hard delete (refused while referenced).
+    Route::delete('/material-masters/{materialMaster}', [MaterialMasterController::class, 'destroy'])->name('material-masters.destroy');
+    Route::delete('/hs-code-rules/{hsCodeRule}', [HsCodeRuleController::class, 'destroy'])->name('hs-code-rules.destroy');
     Route::get('/requisitions/{requisition}', [PurchaseRequisitionController::class, 'show'])->name('requisitions.show');
     Route::post('/kurs/update', [AdminController::class, 'updateKurs'])->name('kurs.update');
     Route::get('/auth-audit-logs', [AuthAuditLogController::class, 'index'])->name('auth-audit-logs.index');
@@ -462,6 +466,32 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 | Purchasing Routes
 |--------------------------------------------------------------------------
 */
+/*
+| Purchasing → Master Data (decision 28 / Q3): the Material and HS Code
+| masters only, served by the Admin controllers under policy checks. No other
+| Admin area is exposed to Purchasing.
+*/
+Route::middleware(['auth', 'role:purchasing', 'purchasing.navigation'])->prefix('purchasing/master-data')->name('purchasing.master-data.')->group(function () {
+    Route::get('/material-hs-code', [MaterialHsCodeController::class, 'index'])->name('material-hs-code.index');
+    Route::get('/master-data-quality', [MaterialHsCodeController::class, 'quality'])->name('master-data-quality.index');
+    Route::get('/material-masters/data', [MaterialMasterController::class, 'data'])->name('material-masters.data');
+    Route::post('/material-masters', [MaterialMasterController::class, 'store'])->name('material-masters.store');
+    Route::put('/material-masters/{materialMaster}', [MaterialMasterController::class, 'update'])->name('material-masters.update');
+    Route::patch('/material-masters/{materialMaster}/status', [MaterialMasterController::class, 'status'])->name('material-masters.status');
+    Route::delete('/material-masters/{materialMaster}', [MaterialMasterController::class, 'destroy'])->name('material-masters.destroy');
+    Route::get('/hs-code-rules/data', [HsCodeRuleController::class, 'data'])->name('hs-code-rules.data');
+    Route::post('/hs-code-rules', [HsCodeRuleController::class, 'store'])->name('hs-code-rules.store');
+    Route::put('/hs-code-rules/{hsCodeRule}', [HsCodeRuleController::class, 'update'])->name('hs-code-rules.update');
+    Route::patch('/hs-code-rules/{hsCodeRule}/status', [HsCodeRuleController::class, 'status'])->name('hs-code-rules.status');
+    Route::delete('/hs-code-rules/{hsCodeRule}', [HsCodeRuleController::class, 'destroy'])->name('hs-code-rules.destroy');
+    // Mission 06B: Master Reference Price (no edit, no delete).
+    Route::get('/reference-prices', [MaterialReferencePriceController::class, 'index'])->name('reference-prices.index');
+    Route::post('/reference-prices', [MaterialReferencePriceController::class, 'store'])->name('reference-prices.store');
+    Route::post('/reference-prices/{referencePrice}/supersede', [MaterialReferencePriceController::class, 'supersede'])->name('reference-prices.supersede');
+    Route::post('/reference-prices/{referencePrice}/void', [MaterialReferencePriceController::class, 'void'])->name('reference-prices.void');
+    Route::patch('/reference-prices/{referencePrice}/notes', [MaterialReferencePriceController::class, 'notes'])->name('reference-prices.notes');
+});
+
 Route::middleware(['auth', 'role:purchasing', 'purchasing.navigation'])->prefix('purchasing')->name('purchasing.')->group(function () {
     Route::get('/dashboard', [PurchasingController::class, 'dashboard'])->name('dashboard');
     Route::post('/kurs/update', [PurchasingController::class, 'updateKurs'])->name('kurs.update');
@@ -637,6 +667,9 @@ Route::middleware(['auth', 'role:supplier', 'supplier.scope:import'])->prefix('s
     Route::post('/shipments/{id}/submit', [SupplierShipmentController::class, 'submit'])->name('shipments.submit');
     Route::post('/shipments/{id}/cancel', [SupplierShipmentController::class, 'cancel'])->name('shipments.cancel');
     Route::post('/shipments/{id}/documents/{document_id}', [SupplierShipmentController::class, 'uploadDocument'])->name('shipments.documents.upload');
+    // Mission 05 (Q6B): shipment MTC. Status allow-lists live in ShipmentService.
+    Route::post('/shipments/{id}/mtc', [SupplierShipmentController::class, 'storeMtc'])->name('shipments.mtc.store');
+    Route::delete('/shipments/{id}/mtc/{attachment}', [SupplierShipmentController::class, 'destroyMtc'])->name('shipments.mtc.destroy');
     Route::get('/claims', [ClaimController::class, 'index'])->name('claims.index');
     Route::get('/claims/{id}', [ClaimController::class, 'show'])->name('claims.show');
     Route::post('/claims/{id}/respond', [ClaimController::class, 'respond'])->name('claims.respond');

@@ -40,12 +40,22 @@ class AuthSplashTest extends TestCase
     {
         $defaults = require base_path('config/ui.php');
         $this->assertFalse($defaults['auth_splash']['enabled']);
+        $this->assertSame(2000, $defaults['auth_splash']['min_visible_ms']);
         config(['ui.auth_splash.enabled' => false]);
         $this->withSession(['ui.auth_splash' => $this->marker('/login', 'post-logout')])
             ->get('/login')->assertOk()->assertDontSee('data-auth-splash', false)
             ->assertSessionMissing('ui.auth_splash');
         config(['ui.auth_splash.enabled' => true]);
         $this->get('/login')->assertSee('data-splash-reason="login-page"', false);
+    }
+
+    public function test_minimum_visibility_is_shared_with_the_independent_bootstrap(): void
+    {
+        $this->get('/login')->assertOk()->assertSee('data-min-visible-ms="2000"', false);
+        foreach ([0, 500, 10000, 'invalid'] as $minimum) {
+            config(['ui.auth_splash.min_visible_ms' => $minimum]);
+            $this->get('/login')->assertOk()->assertSee('data-min-visible-ms="'.$minimum.'"', false);
+        }
     }
 
     #[DataProvider('loginFeedback')]

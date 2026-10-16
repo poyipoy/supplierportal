@@ -24,6 +24,7 @@ use App\Support\BusinessTime;
 use App\Support\Materials\DimensionRange;
 use App\Support\Materials\MaterialDimensionRules;
 use App\Support\NotificationCategory;
+use App\Support\Procurement\ProcurementFeatures;
 use App\Support\SpreadsheetImportReader;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -245,7 +246,10 @@ class QuotationController extends Controller
             ->mapWithKeys(fn ($rate) => [$rate->currency => (float) $rate->rate_to_idr])
             ->all();
 
-        return view('supplier.quotations.create', compact('pr', 'quotation', 'supplierCurrency', 'supplierRate', 'currencyOptions', 'currencyRates'));
+        $surplusOffersAllowed = ProcurementFeatures::surplusOffersAllowed();
+        $shipmentMtcEnabled = ProcurementFeatures::shipmentMtcEnabled();
+
+        return view('supplier.quotations.create', compact('pr', 'quotation', 'supplierCurrency', 'supplierRate', 'currencyOptions', 'currencyRates', 'surplusOffersAllowed', 'shipmentMtcEnabled'));
     }
 
     public function importTemplate($pr_id)
@@ -293,7 +297,7 @@ class QuotationController extends Controller
 
         return response()->json(
             $import->preview(),
-            $import->hasFileErrors() ? 422 : 200
+            $import->hasBlockingErrors() ? 422 : 200
         );
     }
 
@@ -367,8 +371,9 @@ class QuotationController extends Controller
             'items.*.available_length_input' => 'nullable',
             'items.*.offered_weight_per_unit' => 'nullable|numeric',
             'items.*.offered_weight_manual_override' => ['sometimes', 'boolean'],
-            'items.*.mtc_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
-            'items.*.copy_from_attachment_id' => 'nullable|integer',
+            // Mission 05 (Q6B): MTC moves to the shipment; new quotation MTC is refused.
+            'items.*.mtc_file' => ProcurementFeatures::shipmentMtcEnabled() ? 'prohibited' : 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'items.*.copy_from_attachment_id' => ProcurementFeatures::shipmentMtcEnabled() ? 'prohibited' : 'nullable|integer',
             'items.*.keep_existing_attachment' => ['sometimes', 'boolean'],
         ], [
             'currency.required' => __('supplier.copy.currency_is_required'),
@@ -378,6 +383,8 @@ class QuotationController extends Controller
             'validity_period.after_or_equal' => __('supplier.copy.quotation_validity_cannot_be_earlier_than_today'),
             'items.*.mtc_file.mimes' => __('supplier.copy.the_mtc_file_must_be_pdf_jpg_jpeg_or_png'),
             'items.*.mtc_file.max' => __('supplier.copy.the_mtc_file_size_must_not_exceed_5mb'),
+            'items.*.mtc_file.prohibited' => __('shipments.mtc.quotation_upload_retired'),
+            'items.*.copy_from_attachment_id.prohibited' => __('shipments.mtc.quotation_upload_retired'),
         ]);
         $validator->after(function ($validator) use ($request, $pr): void {
             $prItems = $pr->items->keyBy(fn (PrItem $item) => (int) $item->id);
@@ -441,10 +448,13 @@ class QuotationController extends Controller
                     );
                 }
 
-                // The cross-record ceiling always uses the persisted PR item.
-                // Historical surplus rows are left untouched; new saves are
-                // never allowed to create another surplus row.
-                if ($offeredQty !== null && $offeredQty > $prItem->quantity_value) {
+                // The persisted PR quantity is the ceiling until surplus offers
+                // are effective (Decision 01: only together with the
+                // ordered-quantity write path, so a surplus can never be
+                // ordered at the offer quantity by the legacy PO path).
+                if ($offeredQty !== null
+                    && ! ProcurementFeatures::surplusOffersAllowed()
+                    && $offeredQty > $prItem->quantity_value) {
                     $validator->errors()->add(
                         "items.{$index}.available_qty",
                         __('supplier.errors.quantity_ceiling', ['quantity' => $prItem->quantity_value])
@@ -708,7 +718,10 @@ class QuotationController extends Controller
                 $offer = $isAvailable
                     ? $this->resolveOfferedWeight($prItem, $rawItem, $length, $legacyPayload)
                     : ['weight' => null, 'source' => null, 'error' => null];
-                if ($isAvailable && $offeredQty !== null && $offeredQty > $prItem->quantity_value) {
+                if ($isAvailable
+                    && $offeredQty !== null
+                    && ! ProcurementFeatures::surplusOffersAllowed()
+                    && $offeredQty > $prItem->quantity_value) {
                     throw new \RuntimeException(__('supplier.copy.the_offered_quantity_no_longer_fits_the_current_requested_quantity_please_reload_the_requisition_and'));
                 }
                 if ($request->action === 'submitted'
@@ -750,6 +763,12 @@ class QuotationController extends Controller
                 $copyAttachmentId = filter_var($rawItem['copy_from_attachment_id'] ?? null, FILTER_VALIDATE_INT);
                 $copyAttachmentId = $copyAttachmentId === false ? null : $copyAttachmentId;
                 $keepExisting = filter_var($rawItem['keep_existing_attachment'] ?? true, FILTER_VALIDATE_BOOLEAN);
+                // Mission 05: historical quotation MTC is read-only and always kept.
+                if (ProcurementFeatures::shipmentMtcEnabled()) {
+                    $mtcFile = null;
+                    $copyAttachmentId = null;
+                    $keepExisting = true;
+                }
 
                 if ($mtcFile && $mtcFile->isValid()) {
                     $this->storeMtcAttachment($quotationItem, $mtcFile, $newlyCreatedFiles);

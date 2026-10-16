@@ -78,6 +78,23 @@ class MoneyTest extends TestCase
         $this->assertSame(1, Money::compare('100.01', '100.00'));
     }
 
+    public function test_allocate_splits_proportionally_and_always_adds_up_to_the_total(): void
+    {
+        // Lowest key absorbs the leftover cent: 1703.125 and 796.874 truncate to 1703.12 + 796.87 = 2499.99.
+        $shares = Money::allocate('2500.00', [12 => '637499.45', 11 => '1362500.55']);
+        $this->assertSame([11 => '1703.13', 12 => '796.87'], $shares);
+
+        // Three equal weights: 100.00 / 3 never loses a cent.
+        $thirds = Money::allocate('100.00', ['a' => '10.00', 'b' => '10.00', 'c' => '10.00']);
+        $this->assertSame('100.00', Money::sum($thirds));
+        $this->assertSame('33.34', $thirds['a']);
+
+        $this->assertSame(['x' => '2500.00'], Money::allocate('2500.00', ['x' => '1.00']));
+        $this->assertSame([5 => '10.00', 7 => '0.00'], Money::allocate('10.00', [7 => '0', 5 => '0']));
+        $this->assertSame([], Money::allocate('10.00', []));
+        $this->assertSame([1 => '0.00'], Money::allocate('0', [1 => '5.00']));
+    }
+
     public function test_at_least_zero_clamps_without_losing_positive_cents(): void
     {
         $this->assertSame('0.00', Money::atLeastZero('-0.01'));

@@ -1,0 +1,44 @@
+[
+  {
+    "entry": "node_modules/cally/dist/cally.js",
+    "file": "assets/cally-kj_bRPgQ.js",
+    "bytes": 24588,
+    "gzip": 9747,
+    "sha256": "6615aaec409e156a63c7e823599138891c25521e659a2a61edbed8e620f2bfad"
+  },
+  {
+    "entry": "resources/css/app.css",
+    "file": "assets/app-ChQwB2jD.css",
+    "bytes": 150891,
+    "gzip": 26390,
+    "sha256": "7bf6ae870b7fa31fe388ba749939a9aca07951d1de77715627773f70ae1316f6"
+  },
+  {
+    "entry": "resources/js/app.js",
+    "file": "assets/app-IkKtPNrf.js",
+    "bytes": 180004,
+    "gzip": 56201,
+    "sha256": "87f088c95e965a013aaa11b8d3b20f5f6c2c87d851329db6c994e3bdf67ef58e"
+  },
+  {
+    "entry": "resources/js/local-po-gr-table.js",
+    "file": "assets/local-po-gr-table-BnthzBmv.js",
+    "bytes": 4033,
+    "gzip": 1548,
+    "sha256": "e8082f8b0b28ed7d5ad623ece2dab67e5ae3bb0048ae6e09cbc622c967dd077f"
+  },
+  {
+    "entry": "resources/js/local-procurement-import.js",
+    "file": "assets/local-procurement-import-BQ-mkGYh.js",
+    "bytes": 24711,
+    "gzip": 7999,
+    "sha256": "795c897a49e3f7e7262f105e4a08c12ef8a9772445db7d943367f780e0b0bd5d"
+  },
+  {
+    "entry": "resources/js/registration-receipt.js",
+    "file": "assets/registration-receipt-bdzplG4C.js",
+    "bytes": 1124,
+    "gzip": 507,
+    "sha256": "fef195260742c513f8b2c01b1d4447bb7611307c65e1efe6a844aca9963f334c"
+  }
+]

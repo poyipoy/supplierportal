@@ -1,0 +1,134 @@
+{
+  "acceptance": "BLOCKED: baseline host/worktree no longer quiescent; observed envelope failures retained, not waived",
+  "rows": [
+    {
+      "size": 12,
+      "metric": "ready",
+      "baselineMedianP95": 163.40000000037253,
+      "baselineNoise": 1.400000000372529,
+      "limit": 164.80000000074506,
+      "currentMedianP95": 174.19999999925494,
+      "observed": "FAIL"
+    },
+    {
+      "size": 12,
+      "metric": "paint",
+      "baselineMedianP95": 9.900000000372529,
+      "baselineNoise": 0.599999999627471,
+      "limit": 10.5,
+      "currentMedianP95": 10.599999997764826,
+      "observed": "FAIL"
+    },
+    {
+      "size": 12,
+      "metric": "command",
+      "baselineMedianP95": 5.099999999627471,
+      "baselineNoise": 1.099999999627471,
+      "limit": 6.199999999254942,
+      "currentMedianP95": 6.399999998509884,
+      "observed": "FAIL"
+    },
+    {
+      "size": 12,
+      "metric": "commandPaint",
+      "baselineMedianP95": 13.900000000372529,
+      "baselineNoise": 0.09999999962747097,
+      "limit": 14,
+      "currentMedianP95": 19.099999997764826,
+      "observed": "FAIL"
+    },
+    {
+      "size": 24,
+      "metric": "ready",
+      "baselineMedianP95": 166.2000000011176,
+      "baselineNoise": 2.699999997392297,
+      "limit": 168.89999999850988,
+      "currentMedianP95": 177.19999999925494,
+      "observed": "FAIL"
+    },
+    {
+      "size": 24,
+      "metric": "paint",
+      "baselineMedianP95": 9.599999999627471,
+      "baselineNoise": 1.1999999973922968,
+      "limit": 10.799999997019768,
+      "currentMedianP95": 15.400000002235174,
+      "observed": "FAIL"
+    },
+    {
+      "size": 24,
+      "metric": "command",
+      "baselineMedianP95": 5.099999999627471,
+      "baselineNoise": 1.3999999985098839,
+      "limit": 6.499999998137355,
+      "currentMedianP95": 7.899999998509884,
+      "observed": "FAIL"
+    },
+    {
+      "size": 24,
+      "metric": "commandPaint",
+      "baselineMedianP95": 14.299999998882413,
+      "baselineNoise": 0.599999999627471,
+      "limit": 14.899999998509884,
+      "currentMedianP95": 20.300000000745058,
+      "observed": "FAIL"
+    },
+    {
+      "size": 64,
+      "metric": "ready",
+      "baselineMedianP95": 174.7999999988824,
+      "baselineNoise": 0.900000000372529,
+      "limit": 175.69999999925494,
+      "currentMedianP95": 178,
+      "observed": "FAIL"
+    },
+    {
+      "size": 64,
+      "metric": "paint",
+      "baselineMedianP95": 16.200000001117587,
+      "baselineNoise": 2.600000001490116,
+      "limit": 18.800000002607703,
+      "currentMedianP95": 11.399999998509884,
+      "observed": "PASS"
+    },
+    {
+      "size": 64,
+      "metric": "command",
+      "baselineMedianP95": 9.400000000372529,
+      "baselineNoise": 3.099999999627471,
+      "limit": 12.5,
+      "currentMedianP95": 8.800000000745058,
+      "observed": "PASS"
+    },
+    {
+      "size": 64,
+      "metric": "commandPaint",
+      "baselineMedianP95": 16.59999999962747,
+      "baselineNoise": 4.499999998137355,
+      "limit": 21.099999997764826,
+      "currentMedianP95": 20.5,
+      "observed": "PASS"
+    }
+  ],
+  "assets": [
+    {
+      "entry": "resources/css/app.css",
+      "rawBefore": 146364,
+      "rawAfter": 150870,
+      "gzipBefore": 25501,
+      "gzipAfter": 26377,
+      "gzipDelta": 876
+    },
+    {
+      "entry": "resources/js/app.js",
+      "rawBefore": 164141,
+      "rawAfter": 179911,
+      "gzipBefore": 50705,
+      "gzipAfter": 56176,
+      "gzipDelta": 5471
+    }
+  ],
+  "jsReviewTriggerBytes": 3657,
+  "jsReviewTriggerStatus": "FAIL",
+  "head": "78e8bf47fa722f622b58437d975824b81aae7190"
+}

@@ -30,7 +30,8 @@
         width: 100%;
         max-width: 100%;
         overflow-x: auto !important;
-        overflow-y: hidden;
+        /* Decision 09: bounded vertical scroll (.ui-table-sticky) keeps thead visible. */
+        overflow-y: auto;
         overscroll-behavior: auto;
         -webkit-overflow-scrolling: touch;
         position: relative;

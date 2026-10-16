@@ -87,7 +87,10 @@ class SupplierPurchaseOrderController extends Controller
 
                     return '<span title="'.e($notes).'">'.e($preview).'</span>';
                 })
-                ->addColumn('total_idr', fn ($po) => 'Rp '.$regionalFormatter->number(number_format((float) $po->resolved_total_idr, 0, ',', '.'), 'indonesian'))
+                // Q4C: a foreign PO without a snapshot rate has no IDR total.
+                ->addColumn('total_idr', fn ($po) => $po->resolved_total_idr === null
+                    ? '— ('.__('purchasing.copy.exchange_rate_unavailable').')'
+                    : 'Rp '.$regionalFormatter->number(number_format((float) $po->resolved_total_idr, 0, ',', '.'), 'indonesian'))
                 ->addColumn('status_badge', function ($po) {
                     $tone = match (true) {
                         $po->is_overdue => 'error',

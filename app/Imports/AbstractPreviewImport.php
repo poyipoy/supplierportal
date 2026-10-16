@@ -2,6 +2,7 @@
 
 namespace App\Imports;
 
+use App\Support\SpreadsheetCellSanitizer;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\RegistersEventListeners;
 use Maatwebsite\Excel\Concerns\WithReadFilter;
@@ -28,6 +29,13 @@ abstract class AbstractPreviewImport implements WithReadFilter
     protected int $invalidRowCount = 0;
 
     protected bool $fileInvalid = false;
+
+    /**
+     * Decision 05: when true, any row error makes the whole preview
+     * non-importable (rows: [], HTTP 422). Opt-in per import so the Local
+     * PO/GR pipelines keep their own contract.
+     */
+    protected bool $allOrNothing = false;
 
     /** Reject raw dimensions before the workbook is hydrated, including blank rows. */
     public function acceptsDimensions(int $rows, int $columns): bool
@@ -78,9 +86,13 @@ abstract class AbstractPreviewImport implements WithReadFilter
 
     public function preview(): array
     {
+        $blocked = $this->allOrNothing && $this->errors !== [];
+
         return [
             'success' => $this->errors === [],
-            'rows' => $this->rows,
+            // summary.valid still reports rows that passed individually so the
+            // operator sees the scale of the problem; none of them is importable.
+            'rows' => $blocked ? [] : $this->rows,
             'warnings' => $this->warnings,
             'summary' => [
                 'total' => $this->totalRowCount,
@@ -94,6 +106,12 @@ abstract class AbstractPreviewImport implements WithReadFilter
     public function hasFileErrors(): bool
     {
         return $this->fileInvalid;
+    }
+
+    /** Whether the preview must be answered with HTTP 422. */
+    public function hasBlockingErrors(): bool
+    {
+        return $this->fileInvalid || ($this->allOrNothing && $this->errors !== []);
     }
 
     protected function validateCollectionContract(
@@ -149,9 +167,15 @@ abstract class AbstractPreviewImport implements WithReadFilter
             ->all();
     }
 
-    protected function addRowError(?int $row, string $column, string $message): void
+    protected function addRowError(?int $row, string $column, string $message, mixed $value = null): void
     {
-        $this->errors[] = compact('row', 'column', 'message');
+        $error = compact('row', 'column', 'message');
+        if ($value !== null) {
+            // Echo the offending cell back safely (formula-neutralized, bounded).
+            $error['value'] = mb_substr(SpreadsheetCellSanitizer::text((string) $value), 0, 100);
+        }
+
+        $this->errors[] = $error;
     }
 
     protected function addFileError(?int $row, string $column, string $message): void

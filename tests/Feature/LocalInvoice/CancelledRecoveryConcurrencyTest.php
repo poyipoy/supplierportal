@@ -57,7 +57,7 @@ class CancelledRecoveryConcurrencyTest extends TestCase
             $target = $service->submit($supplier, ['invoice_number' => 'INV-RACE-RESTORE', 'invoice_date' => '2026-10-01',
                 'local_purchase_order_id' => $po->id, 'goods_receipt_ids' => [$gr->id],
                 'invoice_amount' => '100.00', 'tax_amount' => '0.00', 'ppn_scheme' => '0%'],
-                ['invoice' => NativeFileFixtures::upload('invoice.pdf')]);
+                [...NativeFileFixtures::invoiceReferences(), 'invoice' => NativeFileFixtures::upload('invoice.pdf')]);
             $service->cancel($supplier, $target);
         }
         $this->assertEqualsCanonicalizing(['accepted', 'rejected'], $this->race($actor, [[$target->id, $kind], [$target->id, $kind]]));

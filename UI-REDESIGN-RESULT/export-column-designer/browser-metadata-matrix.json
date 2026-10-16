@@ -1,0 +1,187 @@
+{
+  "status": "PASS",
+  "rows": [
+    {
+      "key": "purchasing.po",
+      "locale": "en",
+      "status": 200,
+      "count": 12,
+      "required": [
+        "po_number"
+      ],
+      "first": "PO Number"
+    },
+    {
+      "key": "supplier.po",
+      "locale": "en",
+      "status": 200,
+      "count": 12,
+      "required": [
+        "po_number"
+      ],
+      "first": "PO Number"
+    },
+    {
+      "key": "purchasing.quotations",
+      "locale": "en",
+      "status": 200,
+      "count": 24,
+      "required": [
+        "pr_number"
+      ],
+      "first": "PR Number"
+    },
+    {
+      "key": "supplier.quotations",
+      "locale": "en",
+      "status": 200,
+      "count": 24,
+      "required": [
+        "pr_number"
+      ],
+      "first": "PR Number"
+    },
+    {
+      "key": "purchasing.pr",
+      "locale": "en",
+      "status": 200,
+      "count": 11,
+      "required": [
+        "pr_number"
+      ],
+      "first": "PR Number"
+    },
+    {
+      "key": "purchasing.shipments",
+      "locale": "en",
+      "status": 200,
+      "count": 11,
+      "required": [
+        "shipment_number"
+      ],
+      "first": "Shipment Number"
+    },
+    {
+      "key": "qc.inspections",
+      "locale": "en",
+      "status": 200,
+      "count": 8,
+      "required": [
+        "po_number"
+      ],
+      "first": "PO Number"
+    },
+    {
+      "key": "finance.local-invoices",
+      "locale": "en",
+      "status": 200,
+      "count": 16,
+      "required": [
+        "submission"
+      ],
+      "first": "Submission"
+    },
+    {
+      "key": "accounting.local-invoices",
+      "locale": "en",
+      "status": 200,
+      "count": 16,
+      "required": [
+        "submission"
+      ],
+      "first": "Submission"
+    },
+    {
+      "key": "purchasing.po",
+      "locale": "id",
+      "status": 200,
+      "count": 12,
+      "required": [
+        "po_number"
+      ],
+      "first": "Nomor PO"
+    },
+    {
+      "key": "supplier.po",
+      "locale": "id",
+      "status": 200,
+      "count": 12,
+      "required": [
+        "po_number"
+      ],
+      "first": "Nomor PO"
+    },
+    {
+      "key": "purchasing.quotations",
+      "locale": "id",
+      "status": 200,
+      "count": 24,
+      "required": [
+        "pr_number"
+      ],
+      "first": "Nomor PR"
+    },
+    {
+      "key": "supplier.quotations",
+      "locale": "id",
+      "status": 200,
+      "count": 24,
+      "required": [
+        "pr_number"
+      ],
+      "first": "Nomor PR"
+    },
+    {
+      "key": "purchasing.pr",
+      "locale": "id",
+      "status": 200,
+      "count": 11,
+      "required": [
+        "pr_number"
+      ],
+      "first": "Nomor PR"
+    },
+    {
+      "key": "purchasing.shipments",
+      "locale": "id",
+      "status": 200,
+      "count": 11,
+      "required": [
+        "shipment_number"
+      ],
+      "first": "Nomor Pengiriman"
+    },
+    {
+      "key": "qc.inspections",
+      "locale": "id",
+      "status": 200,
+      "count": 8,
+      "required": [
+        "po_number"
+      ],
+      "first": "Nomor PO"
+    },
+    {
+      "key": "finance.local-invoices",
+      "locale": "id",
+      "status": 200,
+      "count": 16,
+      "required": [
+        "submission"
+      ],
+      "first": "Pengajuan"
+    },
+    {
+      "key": "accounting.local-invoices",
+      "locale": "id",
+      "status": 200,
+      "count": 16,
+      "required": [
+        "submission"
+      ],
+      "first": "Pengajuan"
+    }
+  ],
+  "foreignAudienceRejected": 404,
+  "scope": "Full Laravel HTTP GET metadata/role/locale chain in isolated task-owned application harness; authentication context is seeded test actor."
+}

@@ -1,0 +1,78 @@
+{
+    "status": "PASS",
+    "scope": "Real HTTP POST -> dispatcher -> worker -> finalizer in isolated MySQL feature tests",
+    "cases": [
+        {
+            "locale": "en",
+            "format": "xlsx",
+            "file": "http-output-en.xlsx",
+            "sha256": "38c799704ba82e3ff1403ea39223d5e5bbab54c55002f028c029b5c960bed649",
+            "rows": [
+                [
+                    "Remark",
+                    "PO Number",
+                    "Currency"
+                ],
+                [
+                    "'=Pilot é, \"note\"",
+                    "PO/08/2026/911",
+                    "USD"
+                ]
+            ]
+        },
+        {
+            "locale": "en",
+            "format": "csv",
+            "file": "http-output-en.csv",
+            "sha256": "78fe57cc6152eb323d80943e8b0650fa4f90637c2eb208baf9940dfeae5c60c0",
+            "rows": [
+                [
+                    "Remark",
+                    "PO Number",
+                    "Currency"
+                ],
+                [
+                    "'=Pilot é, \"note\"",
+                    "PO/08/2026/911",
+                    "USD"
+                ]
+            ]
+        },
+        {
+            "locale": "id",
+            "format": "xlsx",
+            "file": "http-output-id.xlsx",
+            "sha256": "9b208eff5d6de1bf7308c8fdab2311fc8859cdb7f223a617f13e850e0e958c8b",
+            "rows": [
+                [
+                    "Catatan",
+                    "Nomor PO",
+                    "Mata Uang"
+                ],
+                [
+                    "'=Pilot é, \"note\"",
+                    "PO/08/2026/911",
+                    "USD"
+                ]
+            ]
+        },
+        {
+            "locale": "id",
+            "format": "csv",
+            "file": "http-output-id.csv",
+            "sha256": "c6e45c854d664c10f68960bc066c1dbba33742e360a3ae63288ff8357859b5e4",
+            "rows": [
+                [
+                    "Catatan",
+                    "Nomor PO",
+                    "Mata Uang"
+                ],
+                [
+                    "'=Pilot é, \"note\"",
+                    "PO/08/2026/911",
+                    "USD"
+                ]
+            ]
+        }
+    ]
+}

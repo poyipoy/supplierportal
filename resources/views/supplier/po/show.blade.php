@@ -34,6 +34,9 @@
         </x-slot:actions>
     </x-ui.page-header>
 
+    {{-- PO logistics snapshot (Q1/Q7). --}}
+    @include('partials.procurement-logistics', ['port' => $po->port_of_discharge, 'incoterm' => $po->incoterm])
+
     {{-- 4-Key Tracking Dates Strip --}}
     <div class="tw-grid tw-gap-px tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline tw-bg-outline-variant sm:tw-grid-cols-2 lg:tw-grid-cols-4">
         @php
@@ -209,6 +212,9 @@
                         @php
                             $totalAmount = 0;
                             $totalIdr = 0;
+                            // I-15: ordered qty/KG/amount per line from the single resolver.
+                            $orderedLinesByItem = $po->orderedLines()->keyBy(fn ($line) => $line->quotationItem->id);
+                            $totalIdrUnavailable = false;
                             $no = 1;
                             $poRemark = trim((string) $po->notes);
                         @endphp
@@ -229,10 +235,13 @@
                             @endif
                             @foreach($quotation->items as $item)
                                 @php
-                                    $amount = $item->resolved_amount;
-                                    $idr = $amount * ($rate ? $rate->rate_to_idr : 1);
+                                    $orderedLine = $orderedLinesByItem->get($item->id);
+                                    $amount = $orderedLine ? (float) $orderedLine->amount : $item->resolved_amount;
+                                    // Q4C: IDR identity or snapshot rate; never an invented 1.
+                                    $lineRate = strtoupper((string) $quotation->currency) === 'IDR' ? 1.0 : ($rate && (float) $rate->rate_to_idr > 0 ? (float) $rate->rate_to_idr : null);
+                                    $idr = $lineRate === null ? null : $amount * $lineRate;
                                     $totalAmount += $amount;
-                                    $totalIdr += $idr;
+                                    if ($idr === null) { $totalIdrUnavailable = true; } else { $totalIdr += $idr; }
                                 @endphp
                                 <tr>
                                     <td class="text-center tw-text-on-surface-variant ui-tabular-nums">{{ $no++ }}</td>
@@ -265,7 +274,8 @@
                                     </td>
                                     <td class="text-center fw-bold ui-tabular-nums">
                                         @if($item->is_available)
-                                            {{ $item->available_qty ?? $item->prItem->quantity_value }}
+                                            {{ $orderedLine?->qty ?? $item->available_qty ?? $item->prItem->quantity_value }}
+                                            @include('procurement._ordered_delta', ['ordered' => $orderedLine?->qty, 'requested' => $item->prItem?->quantity_value])
                                         @else
                                             <span class="ui-status-chip ui-status-chip--error">{{ __('supplier.copy.not_available') }}</span>
                                         @endif
@@ -274,12 +284,12 @@
                                         {{ $item->is_available ? $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($item->offered_weight_per_unit ?? $item->prItem->weight_needed), 'decimal') : '—' }}
                                         @if($item->is_available && $item->is_estimated_weight)<span class="ui-status-chip ui-status-chip--warning ms-1">{{ __('supplier.copy.est_weight') }}</span>@endif
                                     </td>
-                                    <td class="text-end fw-bold text-primary ui-tabular-nums">{{ $item->is_available ? $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($item->offered_total_weight ?? $item->prItem->total_weight), 'decimal') : '—' }}</td>
+                                    <td class="text-end fw-bold text-primary ui-tabular-nums">{{ $item->is_available ? $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($orderedLine?->kg ?? $item->offered_total_weight ?? $item->prItem->total_weight), 'decimal') : '—' }}</td>
                                     <td class="text-end ui-tabular-nums">
                                         {{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($item->price_per_kg, 4), 'decimal') }}
                                     </td>
                                     <td class="text-end fw-semibold ui-tabular-nums">{{ $item->is_available ? $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($amount), 'decimal') : '—' }}</td>
-                                    <td class="text-end fw-bold tw-text-on-surface ui-tabular-nums">{{ $item->is_available ? 'Rp '.$regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($idr), 'decimal') : '—' }}</td>
+                                    <td class="text-end fw-bold tw-text-on-surface ui-tabular-nums">{{ ! $item->is_available ? '—' : ($idr === null ? '— ('.__('purchasing.copy.exchange_rate_unavailable').')' : 'Rp '.$regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($idr), 'decimal')) }}</td>
                                 </tr>
                             @endforeach
                         @endforeach
@@ -288,7 +298,7 @@
                         <tr>
                             <td colspan="8" class="text-end tw-text-on-surface">{{ __('common.fields.total') }}</td>
                             <td class="text-end tw-text-on-surface ui-tabular-nums">{{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($totalAmount), 'decimal') }} {{ $po->currency }}</td>
-                            <td class="text-end text-primary ui-tabular-nums fs-6">Rp {{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($totalIdr), 'decimal') }}</td>
+                            <td class="text-end text-primary ui-tabular-nums fs-6">{{ $totalIdrUnavailable ? '— ('.__('purchasing.copy.exchange_rate_unavailable').')' : 'Rp '.$regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($totalIdr), 'decimal') }}</td>
                         </tr>
                     </tfoot>
                 </table>

@@ -1,0 +1,141 @@
+{
+  "created": "2026-10-16T02:25:28.537Z",
+  "unchangedBudget": true,
+  "controls": [
+    {
+      "size": 12,
+      "metric": "ready",
+      "baselineB": 26.387,
+      "J": 3.8150000000000013,
+      "postDesignerLegacyP95": 12.912,
+      "delta": -13.475,
+      "absoluteDeltaExceedsJ": true
+    },
+    {
+      "size": 12,
+      "metric": "paint",
+      "baselineB": 9.48,
+      "J": 2.0360000000000005,
+      "postDesignerLegacyP95": 5.103,
+      "delta": -4.377000000000001,
+      "absoluteDeltaExceedsJ": true
+    },
+    {
+      "size": 12,
+      "metric": "command",
+      "baselineB": 8.215,
+      "J": 2.5699999999999985,
+      "postDesignerLegacyP95": 3.816,
+      "delta": -4.399,
+      "absoluteDeltaExceedsJ": true
+    },
+    {
+      "size": 12,
+      "metric": "commandPaint",
+      "baselineB": 15.222,
+      "J": 4.302999999999999,
+      "postDesignerLegacyP95": 8.426,
+      "delta": -6.795999999999999,
+      "absoluteDeltaExceedsJ": true
+    },
+    {
+      "size": 12,
+      "metric": "openPaint",
+      "baselineB": 32.588,
+      "J": 3.9879999999999995,
+      "postDesignerLegacyP95": 17.971,
+      "delta": -14.617,
+      "absoluteDeltaExceedsJ": true
+    },
+    {
+      "size": 24,
+      "metric": "ready",
+      "baselineB": 19.708,
+      "J": 6.157,
+      "postDesignerLegacyP95": 14.581,
+      "delta": -5.126999999999999,
+      "absoluteDeltaExceedsJ": false
+    },
+    {
+      "size": 24,
+      "metric": "paint",
+      "baselineB": 6.617,
+      "J": 1.298,
+      "postDesignerLegacyP95": 5.924,
+      "delta": -0.6929999999999996,
+      "absoluteDeltaExceedsJ": false
+    },
+    {
+      "size": 24,
+      "metric": "command",
+      "baselineB": 4.603,
+      "J": 3.6510000000000007,
+      "postDesignerLegacyP95": 3.717,
+      "delta": -0.8859999999999997,
+      "absoluteDeltaExceedsJ": false
+    },
+    {
+      "size": 24,
+      "metric": "commandPaint",
+      "baselineB": 9.223,
+      "J": 5.088000000000001,
+      "postDesignerLegacyP95": 9.911,
+      "delta": 0.6879999999999988,
+      "absoluteDeltaExceedsJ": false
+    },
+    {
+      "size": 24,
+      "metric": "openPaint",
+      "baselineB": 24.812,
+      "J": 10.296000000000003,
+      "postDesignerLegacyP95": 21.426,
+      "delta": -3.386000000000003,
+      "absoluteDeltaExceedsJ": false
+    },
+    {
+      "size": 64,
+      "metric": "ready",
+      "baselineB": 31.36,
+      "J": 10.056000000000001,
+      "postDesignerLegacyP95": 22.871,
+      "delta": -8.489,
+      "absoluteDeltaExceedsJ": false
+    },
+    {
+      "size": 64,
+      "metric": "paint",
+      "baselineB": 11.511,
+      "J": 3.0969999999999995,
+      "postDesignerLegacyP95": 11.201,
+      "delta": -0.3099999999999987,
+      "absoluteDeltaExceedsJ": false
+    },
+    {
+      "size": 64,
+      "metric": "command",
+      "baselineB": 9.307,
+      "J": 3.4349999999999987,
+      "postDesignerLegacyP95": 7.3,
+      "delta": -2.0070000000000006,
+      "absoluteDeltaExceedsJ": false
+    },
+    {
+      "size": 64,
+      "metric": "commandPaint",
+      "baselineB": 12.711,
+      "J": 5.892000000000001,
+      "postDesignerLegacyP95": 11.466,
+      "delta": -1.245000000000001,
+      "absoluteDeltaExceedsJ": false
+    },
+    {
+      "size": 64,
+      "metric": "openPaint",
+      "baselineB": 42.45,
+      "J": 13.298000000000002,
+      "postDesignerLegacyP95": 32.633,
+      "delta": -9.817,
+      "absoluteDeltaExceedsJ": false
+    }
+  ]
+}

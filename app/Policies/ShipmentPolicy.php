@@ -73,6 +73,21 @@ class ShipmentPolicy
         return in_array($user->role, ['purchasing', 'admin'], true);
     }
 
+    /**
+     * MTC changes (Q6B): owner only. The status allow-lists (upload: draft,
+     * submitted; delete: draft) are enforced by ShipmentService under the
+     * shipment lock and answered with 422, never by an implicit allow.
+     */
+    public function uploadMtc(User $user, Shipment $shipment): bool
+    {
+        return $user->role === 'supplier' && (int) $user->id === (int) $shipment->supplier_id;
+    }
+
+    public function deleteMtc(User $user, Shipment $shipment): bool
+    {
+        return $this->uploadMtc($user, $shipment);
+    }
+
     public function uploadDocument(User $user, Shipment $shipment): bool
     {
         return $user->role === 'supplier' && (int) $user->id === (int) $shipment->supplier_id;

@@ -1,0 +1,48 @@
+{
+  "status": "PASS",
+  "baseline": {
+    "root": 6,
+    "modal": 6,
+    "document": 16,
+    "window": 6,
+    "viewport": 0,
+    "frames": 0,
+    "nodes": 522,
+    "layers": 0
+  },
+  "samples": [
+    {
+      "cycle": 30,
+      "root": 6,
+      "modal": 6,
+      "document": 16,
+      "window": 6,
+      "viewport": 0,
+      "frames": 0,
+      "nodes": 522,
+      "layers": 0
+    },
+    {
+      "cycle": 60,
+      "root": 6,
+      "modal": 6,
+      "document": 16,
+      "window": 6,
+      "viewport": 0,
+      "frames": 0,
+      "nodes": 522,
+      "layers": 0
+    }
+  ],
+  "afterDestroy": {
+    "root": 0,
+    "modal": 0,
+    "document": 16,
+    "window": 5,
+    "viewport": 0,
+    "frames": 0,
+    "nodes": 407,
+    "layers": 0
+  },
+  "scope": "Real source modules/Blade; initialized Bootstrap baseline, exact listener/rAF/DOM counts; fade disabled for the loop, normal transitions tested separately; no forced-GC heap proof."
+}

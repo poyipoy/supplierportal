@@ -41,10 +41,11 @@ class QuotationImportTemplateExport implements FromCollection, ShouldAutoSize, W
             'requested_dimension',
             'price_per_kg',
             'available_qty',
+            // Q5: Thickness, Width, Outer Diameter, Inner Diameter, Length.
             'available_thickness',
-            'available_d_inner',
-            'available_d_outer',
             'available_width',
+            'available_d_outer',
+            'available_d_inner',
             'available_length',
             'notes',
             'availability',

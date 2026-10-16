@@ -1,0 +1,310 @@
+{
+  "status": "FAIL",
+  "scope": "Frozen production snapshots in same owned headless Chrome155, viewport1440x900, three33-iteration batches per catalog, counterbalanced order. Excludes both Bootstrap dialog/backdrop animations and fake metadata latency.",
+  "version": {
+    "protocolVersion": "1.3",
+    "product": "Chrome/155.0.8059.40",
+    "revision": "@cfaadc5a132d78e1828635aa8405a499f3e14864",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+    "jsVersion": "15.5.35.20"
+  },
+  "args": [
+    "--headless=new",
+    "--remote-debugging-port=0",
+    "--remote-debugging-address=127.0.0.1",
+    "--user-data-dir=C:\\laragon\\www\\adasi_portal_supplier\\UI-REDESIGN-RESULT\\export-column-designer\\continuation-20261016\\owned-chrome-profiles\\paired-performance-1792116626156-8b622e46-2480-4c65-a69b-9f3ce3596066",
+    "--window-size=1440,1000",
+    "--force-device-scale-factor=1",
+    "--no-first-run",
+    "--no-default-browser-check",
+    "--disable-extensions",
+    "--disable-background-networking",
+    "--disable-component-update",
+    "--disable-sync",
+    "--metrics-recording-only",
+    "about:blank"
+  ],
+  "created": "2026-10-16T02:10:55.550Z",
+  "cpuBefore": [
+    {
+      "user": 811187,
+      "nice": 0,
+      "sys": 484281,
+      "idle": 1861156,
+      "irq": 105234
+    },
+    {
+      "user": 624875,
+      "nice": 0,
+      "sys": 289656,
+      "idle": 2242000,
+      "irq": 34093
+    },
+    {
+      "user": 989812,
+      "nice": 0,
+      "sys": 432656,
+      "idle": 1734062,
+      "irq": 15890
+    },
+    {
+      "user": 739265,
+      "nice": 0,
+      "sys": 266218,
+      "idle": 2151046,
+      "irq": 11140
+    },
+    {
+      "user": 932421,
+      "nice": 0,
+      "sys": 356843,
+      "idle": 1867265,
+      "irq": 14312
+    },
+    {
+      "user": 786234,
+      "nice": 0,
+      "sys": 230937,
+      "idle": 2139359,
+      "irq": 9453
+    },
+    {
+      "user": 963953,
+      "nice": 0,
+      "sys": 299468,
+      "idle": 1893109,
+      "irq": 11781
+    },
+    {
+      "user": 888921,
+      "nice": 0,
+      "sys": 211187,
+      "idle": 2056421,
+      "irq": 8031
+    },
+    {
+      "user": 917375,
+      "nice": 0,
+      "sys": 302968,
+      "idle": 1936187,
+      "irq": 10937
+    },
+    {
+      "user": 773468,
+      "nice": 0,
+      "sys": 203140,
+      "idle": 2179921,
+      "irq": 7625
+    },
+    {
+      "user": 1010343,
+      "nice": 0,
+      "sys": 273015,
+      "idle": 1873171,
+      "irq": 9406
+    },
+    {
+      "user": 949250,
+      "nice": 0,
+      "sys": 231437,
+      "idle": 1975843,
+      "irq": 7718
+    }
+  ],
+  "cpuAfter": [
+    {
+      "user": 821234,
+      "nice": 0,
+      "sys": 492515,
+      "idle": 1871312,
+      "irq": 106546
+    },
+    {
+      "user": 634218,
+      "nice": 0,
+      "sys": 294375,
+      "idle": 2256375,
+      "irq": 34640
+    },
+    {
+      "user": 1003625,
+      "nice": 0,
+      "sys": 438312,
+      "idle": 1743031,
+      "irq": 16000
+    },
+    {
+      "user": 749140,
+      "nice": 0,
+      "sys": 271312,
+      "idle": 2164515,
+      "irq": 11359
+    },
+    {
+      "user": 944765,
+      "nice": 0,
+      "sys": 362531,
+      "idle": 1877671,
+      "irq": 14546
+    },
+    {
+      "user": 796671,
+      "nice": 0,
+      "sys": 235296,
+      "idle": 2153000,
+      "irq": 9562
+    },
+    {
+      "user": 976718,
+      "nice": 0,
+      "sys": 305093,
+      "idle": 1903156,
+      "irq": 11953
+    },
+    {
+      "user": 900312,
+      "nice": 0,
+      "sys": 215937,
+      "idle": 2068718,
+      "irq": 8171
+    },
+    {
+      "user": 929406,
+      "nice": 0,
+      "sys": 308218,
+      "idle": 1947343,
+      "irq": 11140
+    },
+    {
+      "user": 783234,
+      "nice": 0,
+      "sys": 207296,
+      "idle": 2194437,
+      "irq": 7734
+    },
+    {
+      "user": 1022484,
+      "nice": 0,
+      "sys": 278343,
+      "idle": 1884140,
+      "irq": 9593
+    },
+    {
+      "user": 958718,
+      "nice": 0,
+      "sys": 236609,
+      "idle": 1989640,
+      "irq": 7843
+    }
+  ],
+  "values": [
+    {
+      "size": 12,
+      "metric": "ready",
+      "B": 14.799999999813735,
+      "J": 2.8000000002793968,
+      "limit": 17.600000000093132,
+      "actual": 17.200000000186265,
+      "status": "PASS"
+    },
+    {
+      "size": 12,
+      "metric": "paint",
+      "B": 13,
+      "J": 1.0000000004656613,
+      "limit": 14.000000000465661,
+      "actual": 16.700000000186265,
+      "status": "FAIL"
+    },
+    {
+      "size": 12,
+      "metric": "command",
+      "B": 5.600000000093132,
+      "J": 0.9999999995343387,
+      "limit": 6.599999999627471,
+      "actual": 4.7999999998137355,
+      "status": "PASS"
+    },
+    {
+      "size": 12,
+      "metric": "commandPaint",
+      "B": 14.600000000093132,
+      "J": 1.2999999998137355,
+      "limit": 15.899999999906868,
+      "actual": 16.700000000186265,
+      "status": "FAIL"
+    },
+    {
+      "size": 24,
+      "metric": "ready",
+      "B": 18.800000000279397,
+      "J": 2.300000000745058,
+      "limit": 21.100000001024455,
+      "actual": 17.199999999720603,
+      "status": "PASS"
+    },
+    {
+      "size": 24,
+      "metric": "paint",
+      "B": 13.5,
+      "J": 1,
+      "limit": 14.5,
+      "actual": 15.100000000093132,
+      "status": "FAIL"
+    },
+    {
+      "size": 24,
+      "metric": "command",
+      "B": 6.7999999998137355,
+      "J": 0.6999999997206032,
+      "limit": 7.499999999534339,
+      "actual": 4.399999999906868,
+      "status": "PASS"
+    },
+    {
+      "size": 24,
+      "metric": "commandPaint",
+      "B": 14.600000000093132,
+      "J": 0.7999999998137355,
+      "limit": 15.399999999906868,
+      "actual": 15,
+      "status": "PASS"
+    },
+    {
+      "size": 64,
+      "metric": "ready",
+      "B": 36.89999999990687,
+      "J": 13,
+      "limit": 49.89999999990687,
+      "actual": 22.899999999906868,
+      "status": "PASS"
+    },
+    {
+      "size": 64,
+      "metric": "paint",
+      "B": 22.5,
+      "J": 3.6999999997206032,
+      "limit": 26.199999999720603,
+      "actual": 14.800000000279397,
+      "status": "PASS"
+    },
+    {
+      "size": 64,
+      "metric": "command",
+      "B": 11.200000000186265,
+      "J": 3.099999999627471,
+      "limit": 14.299999999813735,
+      "actual": 5.900000000372529,
+      "status": "PASS"
+    },
+    {
+      "size": 64,
+      "metric": "commandPaint",
+      "B": 22.899999999906868,
+      "J": 7.399999999906868,
+      "limit": 30.299999999813735,
+      "actual": 16.700000000186265,
+      "status": "PASS"
+    }
+  ]
+}

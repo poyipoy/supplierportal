@@ -26,6 +26,11 @@ class Shipment extends Model
 
     public const STATUS_CANCELLED = 'cancelled';
 
+    /** Q6B fail-closed allow-lists; every other status is refused (T-6). */
+    public const MTC_UPLOAD_STATUSES = [self::STATUS_DRAFT, self::STATUS_SUBMITTED];
+
+    public const MTC_DELETE_STATUSES = [self::STATUS_DRAFT];
+
     public const STATUSES = [
         self::STATUS_DRAFT,
         self::STATUS_SUBMITTED,
@@ -85,6 +90,15 @@ class Shipment extends Model
     public function attachments(): MorphMany
     {
         return $this->morphMany(Attachment::class, 'attachable');
+    }
+
+    /**
+     * Mill Test Certificates (Q6B). Shipment attachments are MTC only; the
+     * four customs documents keep their own ShipmentDocument rows.
+     */
+    public function mtcAttachments(): MorphMany
+    {
+        return $this->attachments()->orderBy('id');
     }
 
     // ─── Helpers ───

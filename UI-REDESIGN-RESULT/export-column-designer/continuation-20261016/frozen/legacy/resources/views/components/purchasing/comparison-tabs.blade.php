@@ -1,0 +1,40 @@
+@props(['active'])
+
+@php
+    $tabs = [
+        'inter-supplier' => [
+            'label' => __('purchasing.copy.inter_supplier'),
+            'icon' => 'users',
+            'route' => 'purchasing.comparison.inter-supplier',
+        ],
+        'historical' => [
+            'label' => __('purchasing.copy.historical'),
+            'icon' => 'chart-no-axes-combined',
+            'route' => 'purchasing.comparison.historical',
+        ],
+        'vs-best' => [
+            'label' => __('purchasing.copy.vs_best_price'),
+            'icon' => 'trophy',
+            'route' => 'purchasing.comparison.vs-best',
+        ],
+    ];
+@endphp
+
+<nav {{ $attributes->class(['tw-flex tw-gap-2 tw-overflow-x-auto tw-rounded-ui-md tw-border tw-border-outline tw-bg-surface-container tw-p-2 tw-shadow-none']) }} aria-label="{{ __('purchasing.copy.price_comparison_views') }}">
+    @foreach($tabs as $key => $tab)
+        <a
+            href="{{ \App\Support\PurchasingNavigation::listUrl($tab['route']) }}"
+            @if($active === $key) aria-current="page" @endif
+            @class([
+                'ui-focus-ring ui-motion tw-inline-flex tw-min-h-[var(--ui-control-height-sm)] tw-shrink-0 tw-items-center tw-gap-2 tw-rounded-ui-sm tw-px-3 tw-py-2 tw-text-ui-sm tw-font-semibold tw-no-underline',
+                'tw-bg-primary tw-text-primary-foreground' => $active === $key,
+                'tw-text-on-surface-variant hover:tw-bg-surface hover:tw-text-on-surface' => $active !== $key,
+            ])
+            data-server-tab
+            data-tab-name="{{ $key }}"
+        >
+            <x-ui.icon :name="$tab['icon']" />
+            <span>{{ $tab['label'] }}</span>
+        </a>
+    @endforeach
+</nav>

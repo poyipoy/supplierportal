@@ -2,23 +2,32 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\ResolvesMasterDataRoutes;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SaveHsCodeRuleRequest;
 use App\Models\HsCodeRule;
+use App\Models\MasterDataAuditLog;
 use App\Models\MaterialMaster;
 use App\Models\PrItem;
 use App\Services\Materials\HsCodeRuleConflictDetector;
+use App\Services\Materials\MasterDataDeletionService;
+use App\Support\BusinessTime;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Yajra\DataTables\Facades\DataTables;
 
 class HsCodeRuleController extends Controller
 {
+    use ResolvesMasterDataRoutes;
+
     public function data(Request $request): JsonResponse
     {
+        Gate::authorize('viewAny', HsCodeRule::class);
         $query = HsCodeRule::query()->orderBy('priority')->orderBy('id');
         $query->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')->toString()));
         $query->when($request->filled('category'), fn ($q) => $q->where('material_category', $request->string('category')->toString()));
@@ -38,7 +47,7 @@ class HsCodeRuleController extends Controller
             ->addColumn('source_display', fn (HsCodeRule $rule) => e(collect($rule->source_refs)
                 ->map(fn (array $ref) => basename($ref['file'] ?? __('admin.copy.admin')).' #'.implode(',', $ref['entries'] ?? []))
                 ->join('; ') ?: __('admin.copy.admin')))
-            ->addColumn('updated_date', fn (HsCodeRule $rule) => $rule->updated_at ? \App\Support\BusinessTime::format($rule->updated_at, 'd M Y', false) : '-')
+            ->addColumn('updated_date', fn (HsCodeRule $rule) => $rule->updated_at ? BusinessTime::format($rule->updated_at, 'd M Y', false) : '-')
             ->addColumn('action', function (HsCodeRule $rule) {
                 $payload = e(json_encode([
                     'id' => $rule->id,
@@ -56,7 +65,8 @@ class HsCodeRuleController extends Controller
                 return '<div class="d-inline-flex align-items-center gap-1">'
                     .'<button type="button" class="ui-data-action ui-data-action--primary ui-focus-ring btn-edit-rule" data-rule="'.$payload.'" aria-label="'.e(__('purchasing.action_names.edit_hs_code_rule', ['name' => $rule->hs_code])).'">'.e(__('admin.copy.edit')).'</button>'
                     .'<div class="dropdown"><button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="'.e(__('purchasing.action_names.more_actions_for_hs_code', ['name' => $rule->hs_code])).'">'.e(__('admin.copy.more')).'</button>'
-                    .'<ul class="dropdown-menu dropdown-menu-end"><li><button type="button" class="dropdown-item btn-toggle-rule" data-id="'.$rule->id.'" data-status="'.($rule->status === HsCodeRule::STATUS_ACTIVE ? 'inactive' : 'active').'">'.$stateLabel.'</button></li></ul></div>'
+                    .'<ul class="dropdown-menu dropdown-menu-end"><li><button type="button" class="dropdown-item btn-toggle-rule" data-id="'.$rule->id.'" data-status="'.($rule->status === HsCodeRule::STATUS_ACTIVE ? 'inactive' : 'active').'">'.$stateLabel.'</button></li>'
+                    .'<li><button type="button" class="dropdown-item text-danger btn-delete-rule" data-id="'.$rule->id.'" data-name="'.e($rule->hs_code).'">'.e(__('materials.master_data.delete')).'</button></li></ul></div>'
                     .'</div>';
             })
             ->rawColumns(['status_badge', 'action'])
@@ -67,9 +77,12 @@ class HsCodeRuleController extends Controller
     {
         $rule = new HsCodeRule($this->payload($request->validated(), true));
         $this->guardActivation($rule, $conflicts);
-        $rule->save();
+        DB::transaction(function () use ($rule): void {
+            $rule->save();
+            MasterDataAuditLog::record($rule, MasterDataAuditLog::CREATED, null, $rule->getAttributes(), auth()->user());
+        });
 
-        return redirect()->to(route('admin.material-hs-code.index').'#rules')
+        return redirect()->to($this->masterIndexUrl('rules'))
             ->with('success', __('admin.copy.hs_code_rule_successfully_created'));
     }
 
@@ -78,11 +91,15 @@ class HsCodeRuleController extends Controller
         HsCodeRule $hsCodeRule,
         HsCodeRuleConflictDetector $conflicts,
     ): RedirectResponse {
+        $before = $hsCodeRule->getAttributes();
         $hsCodeRule->fill($this->payload($request->validated(), false));
         $this->guardActivation($hsCodeRule, $conflicts);
-        $hsCodeRule->save();
+        DB::transaction(function () use ($hsCodeRule, $before): void {
+            $hsCodeRule->save();
+            MasterDataAuditLog::record($hsCodeRule, MasterDataAuditLog::UPDATED, $before, $hsCodeRule->getAttributes(), auth()->user());
+        });
 
-        return redirect()->to(route('admin.material-hs-code.index').'#rules')
+        return redirect()->to($this->masterIndexUrl('rules'))
             ->with('success', __('admin.copy.hs_code_rule_successfully_updated'));
     }
 
@@ -91,13 +108,35 @@ class HsCodeRuleController extends Controller
         HsCodeRule $hsCodeRule,
         HsCodeRuleConflictDetector $conflicts,
     ): JsonResponse {
+        Gate::authorize('toggleStatus', $hsCodeRule);
         $validated = $request->validate(['status' => ['required', 'in:active,inactive']]);
+        $before = $hsCodeRule->getAttributes();
         $hsCodeRule->status = $validated['status'];
         $hsCodeRule->updated_by = auth()->id();
         $this->guardActivation($hsCodeRule, $conflicts);
-        $hsCodeRule->save();
+        DB::transaction(function () use ($hsCodeRule, $before): void {
+            $hsCodeRule->save();
+            MasterDataAuditLog::record($hsCodeRule, MasterDataAuditLog::STATUS_CHANGED, $before, $hsCodeRule->getAttributes(), auth()->user());
+        });
 
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * Q3 guarded hard delete: refused (422, audited) while referenced.
+     */
+    public function destroy(HsCodeRule $hsCodeRule, MasterDataDeletionService $deletion): JsonResponse
+    {
+        Gate::authorize('delete', $hsCodeRule);
+        $outcome = $deletion->delete($hsCodeRule, auth()->user());
+
+        if (! $outcome->deleted) {
+            return response()->json(['message' => __('materials.master_data.delete_refused_rule', [
+                'pr_items' => $outcome->counts['pr_items'] ?? 0,
+            ]), 'counts' => $outcome->counts], 422);
+        }
+
+        return response()->json(['success' => true, 'message' => __('materials.master_data.deleted')]);
     }
 
     private function payload(array $validated, bool $creating): array

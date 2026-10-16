@@ -1,0 +1,19 @@
+{{-- Port of Discharge and Incoterms: optional on a draft, required on submit (decisions 11-13). --}}
+<x-ui.select
+    name="port_of_discharge"
+    id="port_of_discharge"
+    :label="__('procurement.logistics.port_of_discharge')"
+    :options="\App\Support\Procurement\LogisticsTerms::portOptions()"
+    :value="$pr?->port_of_discharge"
+    :placeholder="__('procurement.logistics.select_port')"
+    :helper="__('procurement.logistics.required_on_submit_hint')"
+/>
+<x-ui.select
+    name="incoterm"
+    id="incoterm"
+    :label="__('procurement.logistics.incoterm')"
+    :options="\App\Support\Procurement\LogisticsTerms::incotermOptions()"
+    :value="$pr?->incoterm"
+    :placeholder="__('procurement.logistics.select_incoterm')"
+    :helper="__('procurement.logistics.required_on_submit_hint')"
+/>

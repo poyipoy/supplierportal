@@ -15,7 +15,12 @@ class SaveHsCodeRuleRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user() && $this->user()->isAdmin();
+        // Decision 28: Admin and Purchasing through HsCodeRulePolicy.
+        $rule = $this->route('hsCodeRule');
+
+        return $this->user() !== null && ($rule instanceof HsCodeRule
+            ? $this->user()->can('update', $rule)
+            : $this->user()->can('create', HsCodeRule::class));
     }
 
     protected function prepareForValidation(): void

@@ -47,7 +47,7 @@ class RegionalInvoiceCalendarDisplayTest extends TestCase
             'gr_date' => '2026-09-02', 'qty' => '1', 'uom' => 'pcs']);
 
         $pdf = NativeFileFixtures::pdf();
-        $payload = [
+        $payload = [...NativeFileFixtures::invoiceReferences(),
             'invoice_number' => 'INV-REGIONAL-001',
             'invoice_date' => '2026-09-28',
             'local_purchase_order_id' => $po->id,

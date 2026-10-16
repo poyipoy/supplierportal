@@ -6,6 +6,7 @@ use App\Models\PrItem;
 use App\Models\QuotationItem;
 use App\Support\Materials\DimensionRange;
 use App\Support\Materials\MaterialDimensionRules;
+use App\Support\Procurement\ProcurementFeatures;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -24,9 +25,9 @@ class QuotationItemsImport extends AbstractPreviewImport implements SkipsEmptyRo
         'price_per_kg',
         'available_qty',
         'available_thickness',
-        'available_d_inner',
-        'available_d_outer',
         'available_width',
+        'available_d_outer',
+        'available_d_inner',
         'available_length',
         'notes',
         'availability',
@@ -42,6 +43,9 @@ class QuotationItemsImport extends AbstractPreviewImport implements SkipsEmptyRo
         'pr_item_id',
         'price_per_kg',
     ];
+
+    /** Decision 05: any row error makes the whole preview non-importable. */
+    protected bool $allOrNothing = true;
 
     private Collection $prItems;
 
@@ -175,10 +179,12 @@ class QuotationItemsImport extends AbstractPreviewImport implements SkipsEmptyRo
                         'message' => __('purchasing.copy.the_price_per_kg_field_must_be_greater_than_zero_for_an_available_row'),
                     ];
                 }
-                // Every newly imported offer uses the persisted PR quantity
-                // as its authoritative ceiling. Existing historical rows are
-                // not rewritten by preview/import.
-                if ($offeredQty !== null && (int) $offeredQty > $prItem->quantity_value) {
+                // The persisted PR quantity is the ceiling until surplus offers
+                // are effective (Decision 01; only with the ordered-quantity
+                // write path). Existing rows are not rewritten by preview/import.
+                if ($offeredQty !== null
+                    && ! ProcurementFeatures::surplusOffersAllowed()
+                    && (int) $offeredQty > $prItem->quantity_value) {
                     $rowErrors[] = [
                         'column' => 'available_qty',
                         'message' => __('purchasing.imports.quantity_ceiling', ['quantity' => $prItem->quantity_value]),
@@ -209,6 +215,26 @@ class QuotationItemsImport extends AbstractPreviewImport implements SkipsEmptyRo
                         'message' => __('purchasing.copy.the_price_per_kg_field_is_required_for_an_available_row'),
                     ];
                 }
+                // Decision 05: a dimension the requested shape does not use is
+                // an error, never a silently dropped value. Legacy items without
+                // a shape cannot be corrected by the Supplier and keep the
+                // existing sanitization.
+                $relevant = PrItem::relevantDimensionFields($prItem->shape);
+                foreach ($prItem->shape === null ? [] : PrItem::DIMENSION_FIELDS as $field) {
+                    $column = 'available_'.$field;
+                    $value = $raw[$column] ?? null;
+                    if ($value !== null && $value !== '' && ! in_array($field, $relevant, true)) {
+                        $rowErrors[] = [
+                            'column' => $column,
+                            'value' => $value,
+                            'message' => __('purchasing.imports.irrelevant_field_rejected', [
+                                'field' => $column,
+                                'value' => $value,
+                                'shape' => $prItem->shape,
+                            ]),
+                        ];
+                    }
+                }
             }
 
             if ($availabilityState === false) {
@@ -231,7 +257,7 @@ class QuotationItemsImport extends AbstractPreviewImport implements SkipsEmptyRo
             if ($rowErrors !== []) {
                 $this->markInvalidRow();
                 foreach ($rowErrors as $error) {
-                    $this->addRowError($rowNumber, $error['column'], $error['message']);
+                    $this->addRowError($rowNumber, $error['column'], $error['message'], $error['value'] ?? null);
                 }
 
                 continue;
@@ -253,12 +279,6 @@ class QuotationItemsImport extends AbstractPreviewImport implements SkipsEmptyRo
                 $availabilityField = 'available_'.$field;
                 if ($availability[$availabilityField] !== null) {
                     $availability[$availabilityField] = (float) $availability[$availabilityField];
-                } elseif (($data[$availabilityField] ?? null) !== null) {
-                    $this->addWarning(
-                        $rowNumber,
-                        $availabilityField,
-                        __('purchasing.imports.irrelevant_field', ['field' => $availabilityField, 'shape' => $prItem->shape])
-                    );
                 }
             }
 

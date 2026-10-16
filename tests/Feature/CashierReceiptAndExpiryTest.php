@@ -86,7 +86,7 @@ class CashierReceiptAndExpiryTest extends TestCase
                 'goods_receipt_ids' => [$gr->id],
                 'invoice_amount' => 2000000,
             ],
-            [
+            [...NativeFileFixtures::invoiceReferences(),
                 'invoice' => NativeFileFixtures::upload($invoiceNumber.'.pdf', 100),
                 'tax_invoice' => NativeFileFixtures::upload('tax-'.$invoiceNumber.'.pdf', 100),
                 'delivery_note' => NativeFileFixtures::upload('sj-'.$invoiceNumber.'.pdf', 100),
@@ -131,7 +131,7 @@ class CashierReceiptAndExpiryTest extends TestCase
                 'goods_receipt_ids' => [$gr->id],
                 'invoice_amount' => 5000000,
             ],
-            [
+            [...NativeFileFixtures::invoiceReferences(),
                 'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
                 'tax_invoice' => NativeFileFixtures::upload('tax.pdf', 100),
                 'delivery_note' => NativeFileFixtures::upload('sj.pdf', 100),
@@ -264,7 +264,7 @@ class CashierReceiptAndExpiryTest extends TestCase
                 'goods_receipt_ids' => [$gr->id],
                 'invoice_amount' => 2000000,
             ],
-            [
+            [...NativeFileFixtures::invoiceReferences(),
                 'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
                 'tax_invoice' => NativeFileFixtures::upload('tax.pdf', 100),
                 'delivery_note' => NativeFileFixtures::upload('sj.pdf', 100),
@@ -359,7 +359,7 @@ class CashierReceiptAndExpiryTest extends TestCase
                 'goods_receipt_ids' => [$gr->id],
                 'invoice_amount' => 2000000,
             ],
-            [
+            [...NativeFileFixtures::invoiceReferences(),
                 'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
                 'tax_invoice' => NativeFileFixtures::upload('tax.pdf', 100),
                 'delivery_note' => NativeFileFixtures::upload('sj.pdf', 100),

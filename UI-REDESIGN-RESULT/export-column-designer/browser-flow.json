@@ -1,0 +1,253 @@
+{
+  "status": "PASS",
+  "scope": "Real rendered DOM and module/controller; preset HTTP and SDK dispatch replaced with browser-memory adapters; no database writes.",
+  "cases": [
+    {
+      "name": "Reset is exact server defaults (10 of 12)",
+      "status": "PASS",
+      "actual": [
+        "po_number",
+        "pr_number",
+        "supplier",
+        "material",
+        "currency",
+        "total_amount",
+        "total_idr",
+        "est_arrival",
+        "remark",
+        "status"
+      ]
+    },
+    {
+      "name": "Three decorative empty rows and no inputs",
+      "status": "PASS",
+      "actual": 3
+    },
+    {
+      "name": "Required Hide disabled; required is still selectable",
+      "status": "PASS",
+      "actual": "Required columns cannot be hidden."
+    },
+    {
+      "name": "Unhide predicts retained slot",
+      "status": "PASS",
+      "actual": "Currency will appear before Total Amount."
+    },
+    {
+      "name": "Hide Move Unhide order",
+      "status": "PASS",
+      "actual": [
+        "po_number",
+        "pr_number",
+        "supplier",
+        "material",
+        "currency",
+        "total_amount",
+        "total_idr",
+        "remark",
+        "est_arrival",
+        "status"
+      ]
+    },
+    {
+      "name": "Restored column focused",
+      "status": "PASS",
+      "actual": "currency"
+    },
+    {
+      "name": "All optional hidden",
+      "status": "PASS",
+      "actual": [
+        "po_number"
+      ]
+    },
+    {
+      "name": "Last required cannot hide",
+      "status": "PASS",
+      "actual": "Required columns cannot be hidden."
+    },
+    {
+      "name": "Required may be reordered",
+      "status": "PASS",
+      "actual": [
+        "status",
+        "po_number"
+      ]
+    },
+    {
+      "name": "Output bridge ordered subset",
+      "status": "PASS",
+      "actual": [
+        "remark",
+        "po_number",
+        "currency"
+      ]
+    },
+    {
+      "name": "Save Reload Preset retains visible order",
+      "status": "PASS",
+      "actual": [
+        "remark",
+        "po_number",
+        "currency"
+      ]
+    },
+    {
+      "name": "Normal Export serializer and Save match",
+      "status": "PASS",
+      "actual": {
+        "post": {
+          "url": "http://127.0.0.1:8099/export-presets",
+          "method": "POST",
+          "columns": [
+            "remark",
+            "po_number",
+            "currency"
+          ],
+          "format": "csv",
+          "fields": [
+            "export_key",
+            "name",
+            "columns",
+            "filters",
+            "format",
+            "is_default"
+          ],
+          "csrf": true,
+          "credentials": "same-origin"
+        },
+        "export": {
+          "options": {
+            "columns": [
+              "remark",
+              "po_number",
+              "currency"
+            ],
+            "format": "csv"
+          }
+        }
+      }
+    },
+    {
+      "name": "Menu in modal trap and viewport",
+      "status": "PASS",
+      "actual": {
+        "x": 426.3999938964844,
+        "y": 490.1000061035156,
+        "width": 192,
+        "height": 182.60000610351562
+      }
+    },
+    {
+      "name": "First Escape closes menu only",
+      "status": "PASS",
+      "actual": {
+        "menuHidden": true,
+        "modalOpen": true
+      }
+    },
+    {
+      "name": "Keyboard End selects last visible header",
+      "status": "PASS",
+      "actual": "currency"
+    },
+    {
+      "name": "Keyboard Home selects first visible header",
+      "status": "PASS",
+      "actual": "remark"
+    },
+    {
+      "name": "Keyboard context menu focuses a command",
+      "status": "PASS",
+      "actual": "hide"
+    },
+    {
+      "name": "Close restores actual opener",
+      "status": "PASS",
+      "actual": "exportPurchaseOrdersBtn"
+    },
+    {
+      "name": "Quick uses identical serialized personal default",
+      "status": "PASS",
+      "actual": {
+        "columns": [
+          "remark",
+          "po_number",
+          "currency"
+        ],
+        "format": "csv"
+      }
+    },
+    {
+      "name": "Reset after preset restores defaults only",
+      "status": "PASS",
+      "actual": [
+        "po_number",
+        "pr_number",
+        "supplier",
+        "material",
+        "currency",
+        "total_amount",
+        "total_idr",
+        "est_arrival",
+        "remark",
+        "status"
+      ]
+    }
+  ],
+  "posts": [
+    {
+      "url": "http://127.0.0.1:8099/export-presets",
+      "method": "POST",
+      "columns": [
+        "remark",
+        "po_number",
+        "currency"
+      ],
+      "format": "csv",
+      "fields": [
+        "export_key",
+        "name",
+        "columns",
+        "filters",
+        "format",
+        "is_default"
+      ],
+      "csrf": true,
+      "credentials": "same-origin"
+    }
+  ],
+  "exports": [
+    {
+      "options": {
+        "columns": [
+          "remark",
+          "po_number",
+          "currency"
+        ],
+        "format": "csv"
+      }
+    },
+    {
+      "options": {
+        "columns": [
+          "remark",
+          "po_number",
+          "currency"
+        ],
+        "format": "csv"
+      }
+    }
+  ],
+  "headersForOutputBridge": [
+    "Remark",
+    "PO Number",
+    "Currency"
+  ],
+  "viewport": [
+    1536,
+    720
+  ],
+  "theme": "light",
+  "locale": "en"
+}

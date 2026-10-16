@@ -5,6 +5,7 @@ namespace App\Http\Requests\LocalInvoice;
 use App\Models\LocalInvoice;
 use App\Models\LocalInvoiceDocument;
 use App\Services\VendorMaster\VendorMasterService;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -18,6 +19,16 @@ class ResubmitLocalInvoiceRequest extends StoreLocalInvoiceRequest
     protected function prepareForValidation(): void
     {
         parent::prepareForValidation();
+
+        // Validate the shape before either retention query uses these IDs.
+        Validator::make($this->only('kept_document_ids'), [
+            'kept_document_ids' => ['nullable', 'array'],
+            'kept_document_ids.*' => ['required', 'integer'],
+        ], [
+            'kept_document_ids.array' => __('local_invoice.validation.retained_invalid'),
+            'kept_document_ids.*.required' => __('local_invoice.validation.retained_invalid'),
+            'kept_document_ids.*.integer' => __('local_invoice.validation.retained_invalid'),
+        ])->validate();
 
         if (is_string($this->input('recovery_reason'))) {
             $this->merge(['recovery_reason' => trim($this->input('recovery_reason'))]);
@@ -117,6 +128,11 @@ class ResubmitLocalInvoiceRequest extends StoreLocalInvoiceRequest
         if ($retainedDocs->where('document_type', 'delivery_note')->isNotEmpty()) {
             $rules = array_merge($rules, $this->fileRule('delivery_note', false));
         }
+        foreach (['purchase_order', 'goods_receipt'] as $type) {
+            if ($retainedDocs->where('document_type', $type)->isNotEmpty()) {
+                $rules = array_merge($rules, $this->fileRule($type, false));
+            }
+        }
 
         $rules['kept_document_ids'] = ['nullable', 'array'];
         $rules['kept_document_ids.*'] = ['integer'];
@@ -125,13 +141,13 @@ class ResubmitLocalInvoiceRequest extends StoreLocalInvoiceRequest
                 // IDOR verification: strictly check ownership
                 $validCount = $invoice->documents()->whereIn('id', $value)->count();
                 if ($validCount !== count(array_unique($value))) {
-                    $fail('Beberapa dokumen lampiran yang dipilih tidak valid untuk tagihan ini.');
+                    $fail(__('local_invoice.validation.retained_invalid'));
 
                     return;
                 }
             }
 
-            foreach (['invoice', 'tax_invoice', 'delivery_note', 'supporting'] as $type) {
+            foreach (['invoice', 'tax_invoice', 'purchase_order', 'goods_receipt', 'delivery_note', 'supporting'] as $type) {
                 $retainedCount = $retainedDocs->where('document_type', $type)->count();
                 $uploaded = $this->file($type);
                 $newCount = is_array($uploaded) ? count($uploaded) : ($uploaded ? 1 : 0);
@@ -139,7 +155,7 @@ class ResubmitLocalInvoiceRequest extends StoreLocalInvoiceRequest
 
                 // Revisi yang hanya mempertahankan berkas lama tidak diblokir:
                 // dokumen warisan boleh melebihi batas baru selama tidak ditambah.
-                if ($newCount > 0 && $retainedCount + $newCount > $max) {
+                if (($newCount > 0 || in_array($type, ['purchase_order', 'goods_receipt'], true)) && $retainedCount + $newCount > $max) {
                     $fail(__('local_invoice.validation.file_limit', [
                         'type' => __('local_invoice.labels.'.$type),
                         'count' => $max,

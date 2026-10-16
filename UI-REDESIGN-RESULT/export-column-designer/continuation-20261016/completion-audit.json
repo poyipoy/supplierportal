@@ -1,0 +1,43 @@
+{
+  "created": "2026-10-16T02:50:48.586Z",
+  "artifactIntegrityStatus": "PASS",
+  "sourceFiles": 19,
+  "sourceHashMismatches": [],
+  "checkedLocalLinks": 80,
+  "brokenLinks": [],
+  "continuationUnrelatedChanges": 0,
+  "authSplashUnchanged": true,
+  "traceRawAudit": "PASS",
+  "cleanupStatus": "PASS",
+  "objectiveAcceptanceAchieved": false,
+  "gates": {
+    "A": "PASS",
+    "B": "PASS",
+    "C": "PASS",
+    "D": "PASS",
+    "E": "FAIL_OPEN"
+  },
+  "performanceFixedStatus": "FAIL",
+  "performancePairedStatus": "PASS",
+  "requiredRemaining": [
+    {
+      "size": 24,
+      "metric": "paint",
+      "B": 6.617,
+      "J": 1.298,
+      "limit": 7.915,
+      "actual": 9.57,
+      "status": "FAIL"
+    }
+  ],
+  "optionalNotTested": [
+    "Connected screen reader",
+    "Physical touch devices",
+    "Other browsers",
+    "Representative-user study"
+  ],
+  "existingDefect": "Calendar panel outside Bootstrap focus trap, reproduced before and after; shared calendar not changed",
+  "goalRemainsActive": false,
+  "goalStatus": "blocked",
+  "blockedAudit": "continuation-20261016/BLOCKED-AUDIT.md"
+}

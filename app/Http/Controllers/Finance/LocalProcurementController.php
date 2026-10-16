@@ -67,7 +67,12 @@ class LocalProcurementController extends Controller
 
     public function create()
     {
-        return view('finance.local-procurement.form', ['purchaseOrder' => new LocalPurchaseOrder, 'suppliers' => $this->suppliers(), 'routePrefix' => $this->prefix()]);
+        return view('finance.local-procurement.form', [
+            'purchaseOrder' => new LocalPurchaseOrder,
+            'suppliers' => $this->suppliers(),
+            'routePrefix' => $this->prefix(),
+            'prOptions' => $this->prOptions(),
+        ]);
     }
 
     public function prSuggestions(Request $request)
@@ -103,7 +108,11 @@ class LocalProcurementController extends Controller
 
     public function edit(LocalPurchaseOrder $purchaseOrder)
     {
-        return view('finance.local-procurement.form', compact('purchaseOrder') + ['suppliers' => $this->suppliers(), 'routePrefix' => $this->prefix()]);
+        return view('finance.local-procurement.form', compact('purchaseOrder') + [
+            'suppliers' => $this->suppliers(),
+            'routePrefix' => $this->prefix(),
+            'prOptions' => $this->prOptions(),
+        ]);
     }
 
     public function update(SaveLocalPurchaseOrderRequest $request, LocalPurchaseOrder $purchaseOrder, LocalProcurementMasterService $service)
@@ -263,6 +272,24 @@ class LocalProcurementController extends Controller
         abort_unless($supplier instanceof User && $supplier->isLocalEligible(), 404);
 
         return $supplier;
+    }
+
+    private function prOptions(): array
+    {
+        return LocalPurchaseOrder::query()
+            ->whereNotNull('pr_number')
+            ->where('pr_number', '!=', '')
+            ->selectRaw('MIN(pr_number) as pr_number')
+            ->groupByRaw('BINARY LOWER(TRIM(pr_number))')
+            ->orderBy('pr_number')
+            ->limit(50)
+            ->get()
+            ->map(fn ($po) => [
+                'value' => $po->pr_number,
+                'label' => $po->pr_number,
+                'searchKeywords' => strtolower($po->pr_number),
+            ])
+            ->all();
     }
 
     private function prefix(): string

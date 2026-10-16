@@ -77,6 +77,8 @@
             <tr><td><div class="cell-line">{{ $label('date') }}</div></td><td><div class="cell-line">:</div></td><td class="date-value"><div class="cell-line">{{ $document['date'] }}</div></td></tr>
             <tr><td><div class="cell-line">{{ $label('receipt_date') }}</div></td><td><div class="cell-line">:</div></td><td class="date-value"><div class="cell-line">{{ $document['receipt_date'] }}</div></td></tr>
             <tr><td><div class="cell-line">{{ $label('currency') }}</div></td><td><div class="cell-line">:</div></td><td class="date-value"><div class="cell-line">{{ $document['currency'] }}</div></td></tr>
+            <tr><td><div class="cell-line">{{ $label('port_of_discharge') }}</div></td><td><div class="cell-line">:</div></td><td class="date-value"><div class="cell-line">{{ $document['port_of_discharge'] }}</div></td></tr>
+            <tr><td><div class="cell-line">{{ $label('incoterm') }}</div></td><td><div class="cell-line">:</div></td><td class="date-value"><div class="cell-line">{{ $document['incoterm'] }}</div></td></tr>
         </table>
         @if($page['note_lines'] !== [])
             <div class="closing-notes" style="top: {{ $document['table_top'] }}mm">

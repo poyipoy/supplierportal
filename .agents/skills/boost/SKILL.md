@@ -12,7 +12,7 @@ source: local
 tags: "[deep-think, adaptive-engineering, evidence-first, codebase-first, root-cause, scope-control, minimal-change, research, verification]"
 ---
 
-# Boost: Adaptive High-Effort Engineering
+# Boost: Adaptive Max-Effort Engineering
 
 Boost is an engineering protocol for solving software tasks with the maximum
 amount of investigation and reasoning justified by their complexity and risk.
@@ -23,7 +23,7 @@ It is designed around one principle:
 > **Gather evidence → build the correct model → make the smallest sufficient
 > change → verify the outcome honestly.**
 
-High reasoning effort does not mean verbose output, speculative analysis, or
+Max reasoning effort does not mean verbose output, speculative analysis, or
 performing every possible check.
 
 Use deeper investigation only when it can materially improve correctness,

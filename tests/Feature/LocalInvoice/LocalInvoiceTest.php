@@ -102,7 +102,7 @@ class LocalInvoiceTest extends TestCase
 
     private function files(): array
     {
-        return ['invoice' => NativeFileFixtures::upload('invoice.pdf', 100), 'tax_invoice' => NativeFileFixtures::upload('tax.pdf')];
+        return [...NativeFileFixtures::invoiceReferences(), 'invoice' => NativeFileFixtures::upload('invoice.pdf', 100), 'tax_invoice' => NativeFileFixtures::upload('tax.pdf')];
     }
 
     private function submit(): LocalInvoice
@@ -415,7 +415,7 @@ class LocalInvoiceTest extends TestCase
         $this->post(route('local-supplier.invoices.store'), array_merge($this->data(['invoice_amount' => '999999999999999999.99', 'ppn_scheme' => '0%', 'tax_amount' => '0.00']), $this->files(), ['supporting' => NativeFileFixtures::upload('support.pdf')]))->assertSessionHasNoErrors();
         $invoice = LocalInvoice::sole();
         $this->assertSame('999999999999999999.99', $invoice->invoice_amount);
-        $this->assertSame(3, $invoice->documents()->count());
+        $this->assertSame(5, $invoice->documents()->count());
         $this->get(route('local-supplier.invoices.show', $invoice))->assertOk()->assertSee('999999999999999999.99');
     }
 
@@ -468,7 +468,7 @@ class LocalInvoiceTest extends TestCase
 
     public function test_multi_file_upload_stores_multiple_documents_per_category(): void
     {
-        $multiFiles = [
+        $multiFiles = [...NativeFileFixtures::invoiceReferences(),
             // Invoice dan faktur pajak dibatasi satu berkas; kategori lain tetap berlembar.
             'invoice' => [
                 NativeFileFixtures::upload('inv-page1.pdf', 100),
@@ -491,7 +491,7 @@ class LocalInvoiceTest extends TestCase
         $this->actingAs($this->supplier)->post(route('local-supplier.invoices.store'), $payload)->assertSessionHasNoErrors();
 
         $invoice = LocalInvoice::where('invoice_number', 'INV-MULTI-01')->firstOrFail();
-        $this->assertCount(7, $invoice->documents);
+        $this->assertCount(9, $invoice->documents);
         $this->assertSame(1, $invoice->documents->where('document_type', 'invoice')->count());
         $this->assertSame(1, $invoice->documents->where('document_type', 'tax_invoice')->count());
         $this->assertSame(2, $invoice->documents->where('document_type', 'delivery_note')->count());
@@ -507,7 +507,7 @@ class LocalInvoiceTest extends TestCase
         // Invoice dan faktur pajak: satu berkas. Lebih dari itu ditolak walau
         // request mengirim array seperti form lama.
         $this->actingAs($this->supplier)
-            ->post(route('local-supplier.invoices.store'), array_merge($this->data(['invoice_number' => 'INV-FAIL-01']), [
+            ->post(route('local-supplier.invoices.store'), array_merge($this->data(['invoice_number' => 'INV-FAIL-01']), [...NativeFileFixtures::invoiceReferences(),
                 'invoice' => [
                     NativeFileFixtures::upload('1.pdf', 100),
                     NativeFileFixtures::upload('2.pdf', 100),
@@ -517,7 +517,7 @@ class LocalInvoiceTest extends TestCase
             ->assertSessionHasErrors('invoice');
 
         $this->actingAs($this->supplier)
-            ->post(route('local-supplier.invoices.store'), array_merge($this->data(['invoice_number' => 'INV-FAIL-02']), [
+            ->post(route('local-supplier.invoices.store'), array_merge($this->data(['invoice_number' => 'INV-FAIL-02']), [...NativeFileFixtures::invoiceReferences(),
                 'invoice' => [NativeFileFixtures::upload('1.pdf', 100)],
                 'tax_invoice' => [
                     NativeFileFixtures::upload('tax-1.pdf', 100),
@@ -528,7 +528,7 @@ class LocalInvoiceTest extends TestCase
 
         // Dokumen pendukung masih dibatasi lima berkas.
         $this->actingAs($this->supplier)
-            ->post(route('local-supplier.invoices.store'), array_merge($this->data(['invoice_number' => 'INV-FAIL-03']), [
+            ->post(route('local-supplier.invoices.store'), array_merge($this->data(['invoice_number' => 'INV-FAIL-03']), [...NativeFileFixtures::invoiceReferences(),
                 'invoice' => [NativeFileFixtures::upload('1.pdf', 100)],
                 'tax_invoice' => [NativeFileFixtures::upload('tax.pdf', 100)],
                 'supporting' => [
@@ -547,7 +547,7 @@ class LocalInvoiceTest extends TestCase
 
     public function test_resubmit_retains_existing_files_and_appends_new_files(): void
     {
-        $initialFiles = [
+        $initialFiles = [...NativeFileFixtures::invoiceReferences(),
             'invoice' => [NativeFileFixtures::upload('orig-inv.pdf', 100)],
             'tax_invoice' => [NativeFileFixtures::upload('orig-tax.pdf')],
         ];
@@ -574,7 +574,7 @@ class LocalInvoiceTest extends TestCase
         $resubmitPayload = array_merge(
             $this->data(['invoice_number' => 'INV-REVISE-01']),
             $newFiles,
-            ['kept_document_ids' => [$initialInvDoc->id]]
+            ['kept_document_ids' => [$initialInvDoc->id, ...$invoice->documents->whereIn('document_type', ['purchase_order', 'goods_receipt'])->modelKeys()]]
         );
 
         $this->actingAs($this->supplier)
@@ -605,7 +605,7 @@ class LocalInvoiceTest extends TestCase
     {
         $this->actingAs($this->supplier)->post(
             route('local-supplier.invoices.store'),
-            array_merge($this->data(['invoice_number' => 'INV-REPLACE-01']), [
+            array_merge($this->data(['invoice_number' => 'INV-REPLACE-01']), [...NativeFileFixtures::invoiceReferences(),
                 'invoice' => [NativeFileFixtures::upload('orig-inv.pdf', 100)],
                 'tax_invoice' => [NativeFileFixtures::upload('orig-tax.pdf')],
             ])
@@ -621,7 +621,7 @@ class LocalInvoiceTest extends TestCase
         // Berkas lama tetap dikirim sebagai kept, tetapi unggahan baru menggantikannya.
         $this->actingAs($this->supplier)->post(
             route('local-supplier.invoices.resubmit', $invoice),
-            array_merge($this->data(['invoice_number' => 'INV-REPLACE-01']), [
+            array_merge($this->data(['invoice_number' => 'INV-REPLACE-01']), [...NativeFileFixtures::invoiceReferences(),
                 'invoice' => NativeFileFixtures::upload('new-inv.pdf', 100),
                 'tax_invoice' => NativeFileFixtures::upload('revised-tax.pdf'),
                 'kept_document_ids' => $keptIds,

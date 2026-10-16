@@ -78,7 +78,7 @@ class LocalInvoiceSubmissionV2Test extends TestCase
 
     private function files(): array
     {
-        return [
+        return [...NativeFileFixtures::invoiceReferences(),
             'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
             'tax_invoice' => NativeFileFixtures::upload('tax.pdf', 100),
             'delivery_note' => NativeFileFixtures::upload('sj.pdf', 100),
@@ -197,7 +197,7 @@ class LocalInvoiceSubmissionV2Test extends TestCase
             'is_pkp' => false,
         ]);
 
-        // Submit with ONLY invoice document (no tax_invoice, no delivery_note)
+        // Invoice, PO and GR remain mandatory; tax and delivery note are optional.
         $invoice = $this->service->submit(
             $supplier,
             array_merge([
@@ -207,13 +207,13 @@ class LocalInvoiceSubmissionV2Test extends TestCase
                 'ppn_scheme' => '0%',
                 'scheduled_physical_delivery_date' => $this->nextWednesday(),
             ], $this->authoritative($supplier)),
-            [
+            [...NativeFileFixtures::invoiceReferences(),
                 'invoice' => NativeFileFixtures::upload('invoice_only.pdf', 100),
             ]
         );
 
         $this->assertNotNull($invoice);
-        $this->assertCount(1, $invoice->documents);
+        $this->assertCount(3, $invoice->documents);
         $this->assertSame('invoice', $invoice->documents->first()->document_type);
     }
 
@@ -392,7 +392,7 @@ class LocalInvoiceSubmissionV2Test extends TestCase
             'category' => 'Jasa',
         ]);
 
-        $response = $this->actingAs($supplier)->post(route('local-supplier.invoices.store'), array_merge([
+        $response = $this->actingAs($supplier)->post(route('local-supplier.invoices.store'), array_merge([...NativeFileFixtures::invoiceReferences(),
             'invoice_number' => 'INV-TAX-005',
             'invoice_date' => '2026-09-10',
             'invoice_amount' => 5000000,

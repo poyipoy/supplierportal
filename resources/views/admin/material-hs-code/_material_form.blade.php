@@ -1,6 +1,6 @@
 <div class="modal fade" id="materialModal" tabindex="-1" aria-labelledby="materialModalTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
-        <form id="materialForm" method="POST" action="{{ route('admin.material-masters.store') }}" class="modal-content">
+        <form id="materialForm" method="POST" action="{{ route($masterRoutePrefix.'.material-masters.store') }}" class="modal-content">
             @csrf
             <input type="hidden" id="materialFormMethod">
             <input type="hidden" name="form_context" value="material">

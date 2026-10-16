@@ -1,0 +1,17 @@
+{
+  "keys": [
+    "po_number",
+    "material",
+    "pr_number",
+    "supplier",
+    "status",
+    "currency",
+    "total_amount",
+    "total_idr",
+    "est_arrival",
+    "remark"
+  ],
+  "feedback": "Column move cancelled.",
+  "open": true,
+  "indicators": 0
+}

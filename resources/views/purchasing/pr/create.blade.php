@@ -68,6 +68,8 @@
                             :placeholder="__('purchasing.copy.e_g_required_delivery_cikarang_plant_strict_thickness_tolerance')"
                         />
                     </div>
+
+                    @include('purchasing.pr._logistics_fields', ['pr' => null])
                 </div>
             </x-ui.form-section>
 
@@ -87,7 +89,7 @@
                     </div>
                 </x-slot:actions>
 
-                <div class="table-responsive pr-form-table-scroll border rounded overflow-hidden">
+                <div class="table-responsive pr-form-table-scroll ui-table-sticky border rounded" role="region" tabindex="0" aria-label="{{ __('procurement.tables.pr_items') }}">
                     <table class="table table-bordered table-hover table-sm align-middle pr-items-table mb-0 tw-text-ui-xs" id="itemsTable">
                         <caption class="visually-hidden">{{ __('purchasing.copy.required_material_entry_table_with_shape_aware_dimension_columns') }}</caption>
                         <colgroup>
@@ -127,6 +129,7 @@
                                 @endforeach
                             @endif
                         </tbody>
+                        @include('purchasing.pr._form_totals')
                     </table>
                 </div>
 

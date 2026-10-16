@@ -26,6 +26,9 @@ class SupplierMtcBatchCopyTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        // Characterizes the pre-Mission-05 quotation MTC upload, which exists only
+        // while procurement.shipment_mtc_enabled is false (decisions 21/22).
+        config(['procurement.shipment_mtc_enabled' => false]);
 
         Storage::fake('private');
 

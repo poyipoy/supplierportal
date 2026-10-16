@@ -1,0 +1,8 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Script ran on page and returned:\n```json\n{\"calendar\":{\"visibleOnOpen\":true,\"layerParent\":\"DIV\",\"focusBefore\":{\"tag\":\"BUTTON\",\"id\":\"\",\"class\":\"btn-close\",\"inPanel\":false},\"focusAttempt\":{\"inPanel\":false,\"active\":\"btn-close\",\"modalContains\":true},\"oldLabel\":\"October\",\"moved\":\"November\",\"inputValue\":\"2026-10-16\",\"closedAfterToday\":true,\"focusAfter\":true},\"modalStillOpen\":true}\n```"
+    }
+  ]
+}

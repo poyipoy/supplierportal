@@ -10,6 +10,7 @@ return [
         'search' => 'Search PO or PR number...',
         'column_q' => 'Column Q: PR number (optional).',
         'mapping' => 'One PO may have one PR number; the same PR may be used by several POs. Repeat the same supplier, PO date, PO value and PR on repeated PO rows. The PO value is counted once. Reimporting can fill an empty PR; a registered PR cannot be replaced.',
+        'choose_placeholder' => 'Choose or search PR...',
         'filled' => 'POs receiving a PR',
     ],
     'pr_import' => [

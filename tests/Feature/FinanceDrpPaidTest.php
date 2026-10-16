@@ -234,7 +234,7 @@ class FinanceDrpPaidTest extends TestCase
             'invoice_amount' => '1000.00',
             'tax_amount' => '0.00',
             'ppn_scheme' => '0%',
-        ], ['invoice' => NativeFileFixtures::upload('inv.pdf', 10)]);
+        ], [...NativeFileFixtures::invoiceReferences(), 'invoice' => NativeFileFixtures::upload('inv.pdf', 10)]);
 
         app(LocalGrReservationService::class)->consume($invoice, $this->finance);
         $invoice->update(['status' => LocalInvoice::STATUS_READY_TO_PAY]);
@@ -350,7 +350,7 @@ class FinanceDrpPaidTest extends TestCase
             'invoice_amount' => '1000.00',
             'tax_amount' => '0.00',
             'ppn_scheme' => '0%',
-        ], ['invoice' => NativeFileFixtures::upload('inv.pdf', 10)]);
+        ], [...NativeFileFixtures::invoiceReferences(), 'invoice' => NativeFileFixtures::upload('inv.pdf', 10)]);
 
         app(LocalGrReservationService::class)->consume($invoice, $this->finance);
         $invoice->update(['status' => LocalInvoice::STATUS_READY_TO_PAY]);
@@ -455,7 +455,7 @@ class FinanceDrpPaidTest extends TestCase
             'invoice_amount' => '500.00',
             'tax_amount' => '0.00',
             'ppn_scheme' => '0%',
-        ], ['invoice' => NativeFileFixtures::upload('inv.pdf', 10)]);
+        ], [...NativeFileFixtures::invoiceReferences(), 'invoice' => NativeFileFixtures::upload('inv.pdf', 10)]);
 
         app(LocalGrReservationService::class)->consume($invoice, $this->finance);
         $invoice->update(['status' => LocalInvoice::STATUS_READY_TO_PAY]);
@@ -580,7 +580,7 @@ class FinanceDrpPaidTest extends TestCase
             'invoice_amount' => '500.00',
             'tax_amount' => '0.00',
             'ppn_scheme' => '0%',
-        ], ['invoice' => NativeFileFixtures::upload('inv.pdf', 10)]);
+        ], [...NativeFileFixtures::invoiceReferences(), 'invoice' => NativeFileFixtures::upload('inv.pdf', 10)]);
 
         app(LocalGrReservationService::class)->consume($invoice, $this->finance);
         $invoice->update(['status' => LocalInvoice::STATUS_READY_TO_PAY]);
@@ -851,7 +851,7 @@ class FinanceDrpPaidTest extends TestCase
             'invoice_amount' => '500.00',
             'tax_amount' => '0.00',
             'ppn_scheme' => '0%',
-        ], ['invoice' => NativeFileFixtures::upload('inv.pdf', 10)]);
+        ], [...NativeFileFixtures::invoiceReferences(), 'invoice' => NativeFileFixtures::upload('inv.pdf', 10)]);
 
         app(LocalGrReservationService::class)->consume($invoice, $this->finance);
         $invoice->update(['status' => LocalInvoice::STATUS_READY_TO_PAY]);
@@ -969,7 +969,7 @@ class FinanceDrpPaidTest extends TestCase
             'invoice_amount' => '500.00',
             'tax_amount' => '0.00',
             'ppn_scheme' => '0%',
-        ], ['invoice' => NativeFileFixtures::upload('inv.pdf', 10)]);
+        ], [...NativeFileFixtures::invoiceReferences(), 'invoice' => NativeFileFixtures::upload('inv.pdf', 10)]);
 
         app(LocalGrReservationService::class)->consume($invoice, $this->finance);
         $invoice->update(['status' => LocalInvoice::STATUS_READY_TO_PAY]);
@@ -1133,7 +1133,7 @@ class FinanceDrpPaidTest extends TestCase
             'invoice_amount' => '1000.00',
             'tax_amount' => '0.00',
             'ppn_scheme' => '0%',
-        ], ['invoice' => NativeFileFixtures::upload('INV-OP-FILTER-01.pdf', 10)]);
+        ], [...NativeFileFixtures::invoiceReferences(), 'invoice' => NativeFileFixtures::upload('INV-OP-FILTER-01.pdf', 10)]);
         app(LocalGrReservationService::class)->consume($inv1, $this->finance);
         $inv1->update(['status' => LocalInvoice::STATUS_READY_TO_PAY]);
         $inv1->currentVerification()->create([

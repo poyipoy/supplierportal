@@ -18,8 +18,10 @@ import './server-tabs';
 import { adasiFileUploadComponent } from './file-upload';
 import { customizationForm } from './customization-form';
 import { supplierAuditForm } from './supplier-audit-form';
+import { searchableSelect } from './searchable-select';
 
 window.Alpine = Alpine;
+Alpine.data('searchableSelect', searchableSelect);
 Alpine.data('searchableFreeInput', searchableFreeInput);
 Alpine.data('adasiFileUploadComponent', adasiFileUploadComponent);
 Alpine.data('customizationForm', customizationForm);

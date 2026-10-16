@@ -10,11 +10,14 @@ use App\Services\FileSecurity\FileInspectionService;
 use App\Services\LocalInvoice\Contracts\LocalPoProviderInterface;
 use App\Services\LocalInvoice\Providers\DatabaseLocalPoProvider;
 use App\Services\NotificationPreferenceService;
+use App\Services\Pricing\ExchangeRateResolver;
 use App\Services\QuickAccessService;
 use App\Services\RegionalDisplayFormatter;
 use App\Services\SupplierAudit\SupplierAuditInvoiceGate;
 use App\Services\UserPreferenceService;
 use App\Support\FinanceConfigurationGuard;
+use App\Support\Pricing\EvaluationContext;
+use App\Support\Procurement\ProcurementFeatures;
 use Illuminate\Broadcasting\BroadcastEvent;
 use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Notifications\Events\BroadcastNotificationCreated;
@@ -50,6 +53,11 @@ class AppServiceProvider extends ServiceProvider
         );
 
         $this->app->scoped(SupplierAuditInvoiceGate::class);
+
+        // One evaluation date and one rate memo per request (Q9, I-14); reset
+        // between queue jobs like every other scoped instance.
+        $this->app->scoped(EvaluationContext::class, fn (): EvaluationContext => EvaluationContext::forBusinessToday());
+        $this->app->scoped(ExchangeRateResolver::class);
     }
 
     /**
@@ -124,6 +132,16 @@ class AppServiceProvider extends ServiceProvider
             'supplier-registrations.index', 'supplier-registrations._attempts_content', 'supplier-registrations.show',
         ], function ($view): void {
             $view->with('regionalFormatter', app(RegionalDisplayFormatter::class));
+        });
+
+        // PO generation controls are rendered disabled while the kill switch is
+        // off. Presentation only: the service refuses regardless (I-20).
+        View::composer([
+            'purchasing.comparison._inter_supplier_content',
+            'purchasing.quotations.show',
+            'purchasing.po.consolidate-awards',
+        ], function ($view): void {
+            $view->with('poGenerationEnabled', ProcurementFeatures::poGenerationEnabled());
         });
 
         View::composer(['exports.index', 'profile.edit'], function ($view): void {

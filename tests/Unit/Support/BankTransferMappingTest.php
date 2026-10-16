@@ -90,6 +90,43 @@ class BankTransferMappingTest extends TestCase
         $this->assertSame($lower['sandi_bic'], $mixed['sandi_bic']);
     }
 
+    /**
+     * @dataProvider isBcaProvider
+     */
+    public function test_is_bca_is_the_single_source_for_every_bca_spelling(string $bankName, bool $expected): void
+    {
+        $this->assertSame($expected, BankTransferMapping::isBca($bankName));
+    }
+
+    public static function isBcaProvider(): array
+    {
+        return [
+            ['BCA', true],
+            ['bca', true],
+            ['Bank BCA', true],
+            ['Bank Central Asia', true],
+            ['PT Bank Central Asia', true],
+            ['BCA (KCU Karawang)', true],
+            ['  BCA  ', true],
+            ['Mandiri', false],
+            ['BRI', false],
+            ['BCA Syariah', false],
+            ['', false],
+        ];
+    }
+
+    public function test_transfer_type_depends_on_subtotal_and_the_llg_limit(): void
+    {
+        $limit = '1000000000.00';
+
+        // BCA is always internal, however large.
+        $this->assertSame('BCA', BankTransferMapping::transferType('Bank Central Asia', '5000000000.00', $limit));
+        // Exactly at the limit is still LLG; one cent above must go through RTGS.
+        $this->assertSame('LLG', BankTransferMapping::transferType('Mandiri', '1000000000.00', $limit));
+        $this->assertSame('RTG', BankTransferMapping::transferType('Mandiri', '1000000000.01', $limit));
+        $this->assertSame('LLG', BankTransferMapping::transferType('BRI', '2500000.00', $limit));
+    }
+
     public function test_whitespace_trimmed(): void
     {
         $result = BankTransferMapping::resolve('  BCA  ');

@@ -1,0 +1,9 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Error: Access denied: path \"C:\\\\laragon\\\\www\\\\adasi_portal_supplier\\\\UI-REDESIGN-RESULT\\\\export-column-designer\\\\cleanup.heapsnapshot\" (canonical: \"C:\\\\laragon\\\\www\\\\adasi_portal_supplier\\\\UI-REDESIGN-RESULT\\\\export-column-designer\\\\cleanup.heapsnapshot\") is not within any of the configured workspace roots."
+    }
+  ],
+  "isError": true
+}

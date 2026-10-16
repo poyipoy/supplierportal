@@ -1,0 +1,8 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Script ran on page and returned:\n```json\n{\"status\":\"FAIL\",\"criterion\":\"scrolling within menu keeps layer open\",\"before\":{\"visible\":true,\"height\":68,\"scrollHeight\":236},\"after\":{\"visible\":false,\"scrollTop\":0}}\n```"
+    }
+  ]
+}

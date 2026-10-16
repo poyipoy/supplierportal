@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "input": "Synthetic header contextmenu event in real renderer; keyboard/menu-button paths also tested natively.",
+  "defaultPrevented": true,
+  "menuInModal": true,
+  "active": "currency",
+  "bounds": {
+    "x": 922,
+    "y": 529.4000244140625,
+    "right": 1114,
+    "bottom": 712.0000305175781
+  }
+}

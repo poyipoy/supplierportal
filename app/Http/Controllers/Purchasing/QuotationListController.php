@@ -13,14 +13,19 @@ use App\Models\Quotation;
 use App\Models\QuotationItem;
 use App\Models\User;
 use App\Services\NotificationService;
+use App\Services\Pricing\ReferencePriceResolver;
 use App\Services\PrItemAwardService;
 use App\Services\PurchaseOrderGenerationService;
 use App\Support\NotificationCategory;
+use App\Support\Pricing\EvaluationContext;
+use App\Support\Procurement\OrderSelectionInput;
+use App\Support\Procurement\ProcurementFeatures;
 use App\Support\PurchasingNavigation;
 use App\Support\StatusHelper;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 class QuotationListController extends Controller
@@ -95,11 +100,18 @@ class QuotationListController extends Controller
                 default => null,
             };
 
+            $specDifferent = $item->is_available && $item->availability_comparison['specification']['code'] === 'different';
+
             return [
                 'item' => $item,
                 'eligible' => $eligible,
                 'skip_reason' => $skipReason,
                 'amount' => $eligible ? (float) $item->resolved_amount : 0.0,
+                // M04-W Order Qty controls (the award is reused when it points here).
+                'ordered_qty' => (int) $award?->quotation_item_id === (int) $item->id ? $award?->ordered_qty : null,
+                'spec_different' => $specDifferent,
+                'spec_accepted' => $specDifferent && (int) $award?->quotation_item_id === (int) $item->id
+                    && $award->isSpecAcceptanceCurrent($item->specificationSnapshot()),
             ];
         });
         $directPoTotalAmount = round((float) $directPoItems->sum('amount'), 4, PHP_ROUND_HALF_UP);
@@ -120,6 +132,13 @@ class QuotationListController extends Controller
             ?? $quotation->supplier->name
             ?? __('purchasing.copy.supplier');
 
+        $orderedQuantityWriteEnabled = ProcurementFeatures::orderedQuantityWriteEnabled();
+        // Mission 06B: live reference price at the request's evaluation date (never writes).
+        $referenceResolver = app(ReferencePriceResolver::class);
+        $referencePrices = $quotation->items
+            ->filter(fn (QuotationItem $item) => $item->is_available)
+            ->mapWithKeys(fn (QuotationItem $item) => [$item->id => $referenceResolver->resolve($item, EvaluationContext::current(), (string) $quotation->currency)]);
+
         return view('purchasing.quotations.show', compact(
             'quotation',
             'quotationRate',
@@ -131,7 +150,9 @@ class QuotationListController extends Controller
             'hasAvailableItems',
             'directPoItems',
             'directPoTotalAmount',
-            'directPoTotalIdr'
+            'directPoTotalIdr',
+            'orderedQuantityWriteEnabled',
+            'referencePrices'
         ));
     }
 
@@ -147,13 +168,17 @@ class QuotationListController extends Controller
         $validated = $request->validate([
             'estimated_arrival' => 'nullable|date',
             'notes' => 'nullable|string|max:1000',
+            // M04-W: values are validated per line by PrItemAwardService.
+            'order_qty' => 'nullable|array',
+            'accept_spec' => 'nullable|array',
         ]);
+        $orderSelections = OrderSelectionInput::fromRequest($request);
 
         $prId = Quotation::query()->whereKey($id)->value('pr_id');
         abort_if($prId === null, 404);
 
         try {
-            $po = DB::transaction(function () use ($id, $prId, $request, $validated, $awardService, $poService) {
+            $po = DB::transaction(function () use ($id, $prId, $request, $validated, $orderSelections, $awardService, $poService) {
                 $lockedPr = PurchaseRequisition::query()
                     ->whereKey($prId)
                     ->lockForUpdate()
@@ -222,7 +247,7 @@ class QuotationListController extends Controller
                     throw new InvalidArgumentException(__('purchasing.copy.no_available_quotation_items_remain_eligible_for_purchase_order_generation'));
                 }
 
-                $awards = $awardService->awardBatch($lockedPr, $selections, $request->user());
+                $awards = $awardService->awardBatch($lockedPr, $selections, $request->user(), $orderSelections);
                 $purchaseOrders = $poService->generateFromAwards($awards, $request->user(), [
                     'estimated_arrival' => $validated['estimated_arrival'] ?? null,
                     'notes' => $validated['notes'] ?? null,
@@ -234,6 +259,9 @@ class QuotationListController extends Controller
 
                 return $purchaseOrders->firstOrFail();
             });
+        } catch (ValidationException $exception) {
+            // Line-keyed order quantity / acceptance errors (M04-W).
+            throw $exception;
         } catch (InvalidArgumentException $exception) {
             return back()->withInput()->with('error', $exception->getMessage());
         } catch (UniqueConstraintViolationException $exception) {

@@ -78,7 +78,7 @@ class FinanceVerificationV2Test extends TestCase
                 'invoice_amount' => 10000000,
                 'ppn_scheme' => '11%',
             ],
-            [
+            [...NativeFileFixtures::invoiceReferences(),
                 'invoice' => NativeFileFixtures::upload('inv.pdf', 100),
                 'tax_invoice' => NativeFileFixtures::upload('tax.pdf', 100),
                 'delivery_note' => NativeFileFixtures::upload('sj.pdf', 100),
@@ -194,7 +194,7 @@ class FinanceVerificationV2Test extends TestCase
                 'invoice_amount' => $invoice->invoice_amount,
                 'tax_amount' => $invoice->tax_amount,
             ],
-            [
+            [...NativeFileFixtures::invoiceReferences(),
                 'invoice' => NativeFileFixtures::upload($invoice->invoice_number.'.pdf', 100),
                 'tax_invoice' => NativeFileFixtures::upload('tax_v2.pdf', 100),
                 'delivery_note' => NativeFileFixtures::upload('sj_v2.pdf', 100),

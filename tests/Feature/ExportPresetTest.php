@@ -44,7 +44,7 @@ class ExportPresetTest extends TestCase
     public function test_definition_catalog_is_authenticated_authorized_and_localized(): void
     {
         $this->getJson(route('exports.definitions.show', 'purchasing.po'))->assertUnauthorized();
-        $this->actingAs($this->owner)->getJson(route('exports.definitions.show', 'purchasing.po'))->assertOk()->assertJsonCount(10, 'columns')->assertJsonPath('columns.0.key', 'po_number')->assertJsonPath('columns.0.required', true);
+        $this->actingAs($this->owner)->getJson(route('exports.definitions.show', 'purchasing.po'))->assertOk()->assertJsonCount(12, 'columns')->assertJsonPath('columns.0.key', 'po_number')->assertJsonPath('columns.0.required', true);
         $this->getJson(route('exports.definitions.show', 'unknown.po'))->assertNotFound();
         $supplier = User::factory()->create(['role' => 'supplier']);
         $supplier->preference()->create([...config('user_preferences.defaults'), 'locale' => 'id']);

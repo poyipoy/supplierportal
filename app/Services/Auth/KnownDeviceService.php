@@ -53,6 +53,7 @@ class KnownDeviceService
         }
     }
 
+
     private function validToken(mixed $token): ?string
     {
         return is_string($token) && preg_match('/\A[a-f0-9]{64}\z/D', $token) === 1

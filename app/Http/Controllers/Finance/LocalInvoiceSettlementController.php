@@ -47,7 +47,7 @@ class LocalInvoiceSettlementController extends Controller
 
     public function printVoucher(Request $request, LocalInvoiceVoucher $voucher)
     {
-        $voucher->load(['invoice.supplier.supplier', 'batch', 'group']);
+        $voucher->load(['invoice.supplier.supplier', 'batch', 'group.activeItems.payable']);
         $filename = preg_replace('/[^A-Za-z0-9._-]+/', '-', (string) $voucher->voucher_number).'.pdf';
         $pdf = Pdf::loadView('finance.vouchers.print', compact('voucher'))->setPaper('a4');
         if ($request->boolean('download')) {
