@@ -14,6 +14,9 @@ class AddSecurityHeaders
 
         // Headers applicable to all response classes (HTML, JSON, binary streams)
         $response->headers->set('X-Content-Type-Options', 'nosniff');
+        if ($request->routeIs('passport.*', 'sso.*')) {
+            $response->headers->set('Referrer-Policy', 'no-referrer');
+        }
 
         // Explicitly prevent CDN, proxy, and browser storage of dynamic responses unless marked public
         if (! $response->headers->hasCacheControlDirective('public')) {
@@ -33,7 +36,8 @@ class AddSecurityHeaders
         }
 
         $response->headers->set('X-Frame-Options', 'DENY');
-        $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
+        $response->headers->set('Referrer-Policy', $request->routeIs('passport.*', 'sso.*')
+            ? 'no-referrer' : 'strict-origin-when-cross-origin');
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
         $response->headers->set('X-Robots-Tag', 'noindex, nofollow');
 

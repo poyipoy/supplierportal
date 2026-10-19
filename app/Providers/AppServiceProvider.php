@@ -72,6 +72,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Passport::useClientModel(Client::class);
+        // SSO issuance/revocation must be atomic on the portal's own connection.
+        config(['passport.connection' => null]);
+        Passport::authorizationView('auth.sso-authorize');
         Passport::tokensCan(['openid' => 'Sign in to ADASI Portal']);
         Passport::tokensExpireIn(new DateInterval('PT10M'));
         Passport::refreshTokensExpireIn(new DateInterval('PT10M'));

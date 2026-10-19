@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    @include('partials.auth-splash-bootstrap', ['authSplashLayout' => 'auth', 'authSplashReadiness' => request()->routeIs('login') ? 'native-login' : 'core'])
+    @include('partials.auth-splash-bootstrap', ['authSplashLayout' => 'auth', 'authSplashReadiness' => request()->routeIs('login', 'passport.authorizations.authorize') ? 'native-login' : 'core'])
     @include('partials.i18n-bootstrap')
     <meta name="robots" content="noindex, nofollow">
     @yield('meta')
@@ -363,7 +363,7 @@
 
     <x-ui.toast-container />
 
-    @if (! isset($exception) && request()->attributes->get('ui.auth_splash_rendered') && request()->routeIs('login'))
+    @if (! isset($exception) && request()->attributes->get('ui.auth_splash_rendered') && request()->routeIs('login', 'passport.authorizations.authorize'))
         <template data-auth-splash-layout-ready="auth" data-readiness="native-login"></template>
     @endif
 
@@ -372,7 +372,7 @@
     <script src="{{ asset('assets/js/adasi-alert.js') }}"></script>
     @yield('scripts')
     @stack('scripts')
-    @if (! isset($exception) && request()->attributes->get('ui.auth_splash_rendered') && ! request()->routeIs('login'))
+    @if (! isset($exception) && request()->attributes->get('ui.auth_splash_rendered') && ! request()->routeIs('login', 'passport.authorizations.authorize'))
         <template data-auth-splash-layout-ready="auth" data-readiness="core"></template>
     @endif
 </body>

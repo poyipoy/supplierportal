@@ -1,6 +1,15 @@
 <?php
 
 return [
+    'feedback.sso_restart' => 'Permintaan masuk kedaluwarsa atau tidak dapat diverifikasi. Silakan coba lagi.',
+    'sso.error_title' => 'Tidak dapat melanjutkan masuk',
+    'sso.invalid_request' => 'Permintaan masuk ini tidak valid. Mulai kembali dari halaman masuk portal.',
+    'sso.access_denied' => 'Permintaan masuk dibatalkan. Silakan coba lagi.',
+    'sso.back_to_login' => 'Kembali ke halaman masuk',
+    'sso.consent_title' => 'Otorisasi aplikasi',
+    'sso.consent_request' => ':client meminta izin untuk memproses masuk Anda.',
+    'sso.allow' => 'Izinkan',
+    'sso.deny' => 'Batal',
     'feedback.stale_challenge' => 'Tantangan masuk ini sudah tidak berlaku.',
     'registration_verification_failed' => 'Verifikasi keamanan gagal. Silakan coba lagi.',
     'confirmation.incorrect' => 'Kata sandi yang dimasukkan salah.',
