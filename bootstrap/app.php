@@ -26,6 +26,7 @@ use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
+use Laravel\Passport\Exceptions\OAuthServerException;
 use Laravel\Passport\Http\Controllers\AccessTokenController;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -40,7 +41,18 @@ return Application::configure(basePath: dirname(__DIR__))
             Route::post('/oauth/token', function () {
                 abort_unless(config('sso.enabled'), 404);
 
-                return app()->call([app(AccessTokenController::class), 'issueToken']);
+                try {
+                    $response = app()->call([app(AccessTokenController::class), 'issueToken']);
+                } catch (OAuthServerException $exception) {
+                    $response = $exception->getResponse();
+                } catch (Throwable) {
+                    // Never render/report raw protocol exceptions with request secrets.
+                    $response = response()->json(['error' => 'server_error'], 503);
+                }
+                $response->headers->set('Cache-Control', 'no-store, private');
+                $response->headers->set('Pragma', 'no-cache');
+
+                return $response;
             })->middleware('throttle:60,1')->name('passport.token');
         },
     )

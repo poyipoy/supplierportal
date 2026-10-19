@@ -604,8 +604,27 @@ class SsoAuthorizationFlowTest extends TestCase
         ]);
 
         $response->assertStatus(400)->assertHeaderMissing('Location');
+        $this->assertStringContainsString('no-store', (string) $response->headers->get('Cache-Control'));
+        $response->assertHeader('Pragma', 'no-cache')->assertCookieMissing(config('session.cookie'));
         $this->assertTrue(! str_contains($response->getContent(), $sentinel), 'OAuth errors must not echo submitted credentials.');
         $this->assertNoActiveTokens();
+    }
+
+    public function test_token_endpoint_configuration_failures_are_generic_private_and_do_not_log_secrets(): void
+    {
+        Log::spy();
+        $this->mock(AuthorizationServer::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('respondToAccessTokenRequest')->once()
+                ->andThrow(new RuntimeException('secret-code-that-must-never-be-rendered'));
+        });
+
+        $response = $this->postJson('/oauth/token', ['grant_type' => 'authorization_code']);
+
+        $response->assertStatus(503)->assertExactJson(['error' => 'server_error'])
+            ->assertHeader('Pragma', 'no-cache')->assertHeaderMissing('Location');
+        $this->assertStringContainsString('no-store', (string) $response->headers->get('Cache-Control'));
+        $this->assertNoActiveTokens();
+        Log::shouldNotHaveReceived('error');
     }
 
     public function test_success_and_failure_audits_and_application_logs_omit_oauth_secrets(): void
