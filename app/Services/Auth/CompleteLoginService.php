@@ -9,6 +9,7 @@ use App\Support\NotificationDomain;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class CompleteLoginService
 {
@@ -17,10 +18,26 @@ class CompleteLoginService
         private readonly SessionInventoryService $sessions,
         private readonly SessionRevocationService $revocation,
         private readonly NotificationService $notifications,
+        private readonly TwoFactorService $twoFactor,
     ) {}
 
     public function complete(Request $request, User $user, bool $remember): void
     {
+        $this->twoFactor->rejectAuthenticatedLogin($request);
+
+        $freshUser = User::query()->find($user->getKey());
+
+        if (! $freshUser?->isAuthenticationEligible()
+            || ! $freshUser->hasSameAuthenticationConfigurationAs($user)) {
+            $this->twoFactor->forgetPendingLoginFor($request, $user->getKey());
+
+            throw ValidationException::withMessages(['email' => trans('auth.failed')])
+                ->redirectTo(route('login'));
+        }
+
+        $user = $freshUser;
+        // Supersession: later failures must not restore obsolete pending proof.
+        $this->twoFactor->forgetPendingLogin($request);
         $request->attributes->set('auth_security.login_completed', true);
 
         Auth::guard('web')->login($user, $remember);

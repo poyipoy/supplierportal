@@ -24,6 +24,8 @@ class TwoFactorChallengeController extends Controller
         TwoFactorService $twoFactor,
         CompleteLoginService $completeLogin,
     ): RedirectResponse {
+        $twoFactor->rejectAuthenticatedLogin($request);
+
         $validated = $request->validate([
             'code' => ['required', 'string', 'max:32'],
         ]);
@@ -31,13 +33,22 @@ class TwoFactorChallengeController extends Controller
         $pending = $twoFactor->pendingLogin($request);
         $user = User::query()->find($pending['user_id'] ?? null);
 
-        if (! $user?->is_active || ! $user->hasTwoFactorAuthentication()) {
+        if (! $user?->isAuthenticationEligible() || ! $user->hasTwoFactorAuthentication()) {
             $twoFactor->forgetPendingLogin($request);
 
-            throw ValidationException::withMessages(['code' => trans('auth.failed')]);
+            throw ValidationException::withMessages(['email' => trans('auth.failed')])
+                ->redirectTo(route('login'));
         }
 
-        $method = $twoFactor->verifyUserCode($user, $validated['code']);
+        try {
+            $method = $twoFactor->verifyLoginCode($user, $validated['code']);
+        } catch (ValidationException $exception) {
+            if (array_key_exists('email', $exception->errors())) {
+                $twoFactor->forgetPendingLoginFor($request, $user->getKey());
+            }
+
+            throw $exception;
+        }
 
         if ($method === null) {
             event(new AuthSecurityEvent('mfa_challenge_failed', $user));
@@ -51,9 +62,16 @@ class TwoFactorChallengeController extends Controller
             (string) ($pending['intended'] ?? ''),
             route('dashboard', absolute: false)
         );
-        $twoFactor->forgetPendingLogin($request);
-        event(new AuthSecurityEvent($method === 'recovery' ? 'mfa_recovery_code_used' : 'mfa_challenge_succeeded', $user));
+        if ($method === 'recovery') {
+            // Consumption is a fact even if final admission or completion later fails.
+            event(new AuthSecurityEvent('mfa_recovery_code_used', $user));
+        }
+
         $completeLogin->complete($request, $user, $remember);
+
+        if ($method !== 'recovery') {
+            event(new AuthSecurityEvent('mfa_challenge_succeeded', $user));
+        }
 
         return redirect()->to($intended);
     }

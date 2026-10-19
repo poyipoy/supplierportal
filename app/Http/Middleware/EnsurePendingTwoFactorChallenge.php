@@ -13,6 +13,8 @@ class EnsurePendingTwoFactorChallenge
 
     public function handle(Request $request, Closure $next): Response
     {
+        $this->twoFactor->rejectAuthenticatedLogin($request);
+
         $pending = $this->twoFactor->pendingLogin($request);
         $lifetime = (int) config('auth_security.two_factor.pending_lifetime_seconds', 600);
 

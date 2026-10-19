@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'feedback.stale_challenge' => 'This sign-in challenge is no longer available.',
     'registration_verification_failed' => 'Security verification failed. Please try again.',
     'confirmation.incorrect' => 'The entered password is incorrect.',
     'confirmation.required' => 'Password confirmation required.',

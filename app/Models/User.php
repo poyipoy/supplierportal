@@ -83,6 +83,20 @@ class User extends Authenticatable
         ];
     }
 
+    public function isAuthenticationEligible(): bool
+    {
+        return $this->is_active && $this->account_status === self::ACCOUNT_STATUS_ACTIVE;
+    }
+
+    public function hasSameAuthenticationConfigurationAs(User $verified): bool
+    {
+        // Proof consumption changes the step/recovery list, not this configuration.
+        return $this->getAuthPassword() === $verified->getAuthPassword()
+            && (int) $this->auth_session_version === (int) $verified->auth_session_version
+            && $this->two_factor_secret === $verified->two_factor_secret
+            && $this->two_factor_confirmed_at?->getTimestamp() === $verified->two_factor_confirmed_at?->getTimestamp();
+    }
+
     // ─── Relationships ───
 
     public function supplier(): HasOne

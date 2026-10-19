@@ -94,7 +94,7 @@ class LoginRequest extends FormRequest
         // ~200ms a bcrypt comparison costs — a gap wide enough to enumerate
         // valid addresses remotely. Hashing against a precomputed dummy hash
         // on the miss path keeps both branches on the same CPU budget.
-        $isActiveAndEligible = ($user instanceof User && $user->is_active && $user->account_status === User::ACCOUNT_STATUS_ACTIVE);
+        $isActiveAndEligible = $user instanceof User && $user->isAuthenticationEligible();
 
         $targetHash = $isActiveAndEligible
             ? (string) $user->password

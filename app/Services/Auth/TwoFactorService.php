@@ -4,11 +4,13 @@ namespace App\Services\Auth;
 
 use App\Models\User;
 use chillerlan\QRCode\QRCode;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use PragmaRX\Google2FA\Google2FA;
 
 class TwoFactorService
@@ -67,6 +69,26 @@ class TwoFactorService
     public function forgetPendingLogin(Request $request): void
     {
         $request->session()->forget(self::PENDING_LOGIN_KEY);
+    }
+
+    public function rejectAuthenticatedLogin(Request $request): void
+    {
+        if (! Auth::guard('web')->check()) {
+            return;
+        }
+
+        $this->forgetPendingLogin($request);
+
+        throw new HttpResponseException($request->expectsJson()
+            ? response()->json(['message' => __('auth.feedback.stale_challenge')], 409)
+            : redirect()->route('dashboard'));
+    }
+
+    public function forgetPendingLoginFor(Request $request, int|string $userId): void
+    {
+        if ((string) ($this->pendingLogin($request)['user_id'] ?? '') === (string) $userId) {
+            $this->forgetPendingLogin($request);
+        }
     }
 
     public function startSetup(Request $request): string
@@ -132,10 +154,28 @@ class TwoFactorService
 
     public function verifyUserCode(User $user, string $code): ?string
     {
+        return $this->verifyCode($user, $code);
+    }
+
+    public function verifyLoginCode(User $user, string $code): ?string
+    {
+        // Keep the request's verified snapshot immutable for final admission.
+        return $this->verifyCode(clone $user, $code, forLogin: true);
+    }
+
+    private function verifyCode(User $user, string $code, bool $forLogin = false): ?string
+    {
         $normalized = $this->normalizeCode($code);
 
-        return DB::transaction(function () use ($user, $normalized): ?string {
+        return DB::transaction(function () use ($user, $normalized, $forLogin): ?string {
             $lockedUser = User::query()->lockForUpdate()->find($user->getKey());
+
+            if ($forLogin && (! $lockedUser?->isAuthenticationEligible()
+                || ! $lockedUser->hasTwoFactorAuthentication()
+                || ! $lockedUser->hasSameAuthenticationConfigurationAs($user))) {
+                throw ValidationException::withMessages(['email' => trans('auth.failed')])
+                    ->redirectTo(route('login'));
+            }
 
             if (! $lockedUser?->hasTwoFactorAuthentication()) {
                 return null;

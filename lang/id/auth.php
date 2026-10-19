@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'feedback.stale_challenge' => 'Tantangan masuk ini sudah tidak berlaku.',
     'registration_verification_failed' => 'Verifikasi keamanan gagal. Silakan coba lagi.',
     'confirmation.incorrect' => 'Kata sandi yang dimasukkan salah.',
     'confirmation.required' => 'Konfirmasi kata sandi diperlukan.',
