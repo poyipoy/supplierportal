@@ -194,7 +194,7 @@
     </div>
         </x-slot:analytics>
 
-        <x-slot:recent_requisitions class="lg:tw-col-span-5">
+        <x-slot:recent_requisitions>
 <x-ui.data-table :title="__('purchasing.copy.recent_requisitions')" :description="__('purchasing.copy.most_recently_created_purchase_requisitions')">
             <x-slot:toolbar>
                 <x-ui.button :href="route('purchasing.requisitions.index')" variant="ghost" size="sm">
@@ -229,7 +229,7 @@
         </x-ui.data-table>
         </x-slot:recent_requisitions>
 
-        <x-slot:arrivals class="lg:tw-col-span-7">
+        <x-slot:arrivals>
 <x-ui.data-table :title="__('purchasing.copy.upcoming_po_arrivals')" :description="__('purchasing.copy.active_orders_with_closest_estimated_arrival_dates')">
             <x-slot:toolbar>
                 <x-ui.button :href="route('purchasing.purchase-orders.index')" variant="ghost" size="sm">

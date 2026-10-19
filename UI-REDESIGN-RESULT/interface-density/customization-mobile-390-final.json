@@ -1,0 +1,359 @@
+{
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "levels": [
+    {
+      "density": "spacious",
+      "canonical": "spacious",
+      "label": "Spacious",
+      "valueText": "Spacious, 1 of 5",
+      "dirty": 1,
+      "slider": {
+        "x": 36,
+        "y": 297,
+        "width": 318.3999938964844,
+        "height": 44
+      },
+      "actions": {
+        "x": 16,
+        "y": 719.2000122070312,
+        "width": 358.3999938964844,
+        "height": 124.80000305175781
+      },
+      "save": {
+        "x": 238.40000915527344,
+        "y": 788,
+        "width": 120,
+        "height": 44
+      },
+      "frame": {
+        "x": 36,
+        "y": 445,
+        "width": 318.3999938964844,
+        "height": 369.8000183105469
+      },
+      "previewTable": {
+        "x": 36,
+        "y": 632.6000366210938,
+        "width": 318.3999938964844,
+        "height": 182.1999969482422
+      },
+      "activeLabel": {
+        "x": 36,
+        "y": 243,
+        "width": 318.3999938964844,
+        "height": 24
+      },
+      "unsavedVisible": true,
+      "discard": {
+        "x": 150,
+        "y": 788,
+        "width": 78.4000015258789,
+        "height": 44
+      },
+      "settingsPadding": "24px"
+    },
+    {
+      "density": "comfortable",
+      "canonical": "comfortable",
+      "label": "Comfortable",
+      "valueText": "Comfortable, 2 of 5",
+      "dirty": 0,
+      "slider": {
+        "x": 36,
+        "y": 297,
+        "width": 318.3999938964844,
+        "height": 44
+      },
+      "actions": {
+        "x": 16,
+        "y": 719.2000122070312,
+        "width": 358.3999938964844,
+        "height": 124.80000305175781
+      },
+      "save": {
+        "x": 238.40000915527344,
+        "y": 788,
+        "width": 120,
+        "height": 44
+      },
+      "frame": {
+        "x": 36,
+        "y": 445,
+        "width": 318.3999938964844,
+        "height": 369.8000183105469
+      },
+      "previewTable": {
+        "x": 36,
+        "y": 608.6000366210938,
+        "width": 318.3999938964844,
+        "height": 166.1999969482422
+      },
+      "activeLabel": {
+        "x": 36,
+        "y": 243,
+        "width": 318.3999938964844,
+        "height": 24
+      },
+      "unsavedVisible": false,
+      "discard": {
+        "x": 150,
+        "y": 788,
+        "width": 78.4000015258789,
+        "height": 44
+      },
+      "settingsPadding": "20px"
+    },
+    {
+      "density": "balanced",
+      "canonical": "balanced",
+      "label": "Balanced",
+      "valueText": "Balanced, 3 of 5",
+      "dirty": 1,
+      "slider": {
+        "x": 36,
+        "y": 297,
+        "width": 318.3999938964844,
+        "height": 44
+      },
+      "actions": {
+        "x": 16,
+        "y": 719.2000122070312,
+        "width": 358.3999938964844,
+        "height": 124.80000305175781
+      },
+      "save": {
+        "x": 238.40000915527344,
+        "y": 788,
+        "width": 120,
+        "height": 44
+      },
+      "frame": {
+        "x": 36,
+        "y": 445,
+        "width": 318.3999938964844,
+        "height": 369.8000183105469
+      },
+      "previewTable": {
+        "x": 36,
+        "y": 596.6000366210938,
+        "width": 318.3999938964844,
+        "height": 150.1999969482422
+      },
+      "activeLabel": {
+        "x": 36,
+        "y": 243,
+        "width": 318.3999938964844,
+        "height": 24
+      },
+      "unsavedVisible": true,
+      "discard": {
+        "x": 150,
+        "y": 788,
+        "width": 78.4000015258789,
+        "height": 44
+      },
+      "settingsPadding": "18px"
+    },
+    {
+      "density": "compact",
+      "canonical": "compact",
+      "label": "Compact",
+      "valueText": "Compact, 4 of 5",
+      "dirty": 1,
+      "slider": {
+        "x": 36,
+        "y": 297,
+        "width": 318.3999938964844,
+        "height": 44
+      },
+      "actions": {
+        "x": 16,
+        "y": 719.2000122070312,
+        "width": 358.3999938964844,
+        "height": 124.80000305175781
+      },
+      "save": {
+        "x": 238.40000915527344,
+        "y": 788,
+        "width": 120,
+        "height": 44
+      },
+      "frame": {
+        "x": 36,
+        "y": 445,
+        "width": 318.3999938964844,
+        "height": 369.8000183105469
+      },
+      "previewTable": {
+        "x": 36,
+        "y": 580.6000366210938,
+        "width": 318.3999938964844,
+        "height": 134.1999969482422
+      },
+      "activeLabel": {
+        "x": 36,
+        "y": 243,
+        "width": 318.3999938964844,
+        "height": 24
+      },
+      "unsavedVisible": true,
+      "discard": {
+        "x": 150,
+        "y": 788,
+        "width": 78.4000015258789,
+        "height": 44
+      },
+      "settingsPadding": "16px"
+    },
+    {
+      "density": "dense",
+      "canonical": "dense",
+      "label": "Dense",
+      "valueText": "Dense, 5 of 5",
+      "dirty": 1,
+      "slider": {
+        "x": 36,
+        "y": 297,
+        "width": 318.3999938964844,
+        "height": 44
+      },
+      "actions": {
+        "x": 16,
+        "y": 719.2000122070312,
+        "width": 358.3999938964844,
+        "height": 124.80000305175781
+      },
+      "save": {
+        "x": 238.40000915527344,
+        "y": 788,
+        "width": 120,
+        "height": 44
+      },
+      "frame": {
+        "x": 36,
+        "y": 445,
+        "width": 318.3999938964844,
+        "height": 369.8000183105469
+      },
+      "previewTable": {
+        "x": 36,
+        "y": 560.6000366210938,
+        "width": 318.3999938964844,
+        "height": 118.20000457763672
+      },
+      "activeLabel": {
+        "x": 36,
+        "y": 243,
+        "width": 318.3999938964844,
+        "height": 24
+      },
+      "unsavedVisible": true,
+      "discard": {
+        "x": 150,
+        "y": 788,
+        "width": 78.4000015258789,
+        "height": 44
+      },
+      "settingsPadding": "12px"
+    }
+  ],
+  "restored": {
+    "density": "comfortable",
+    "canonical": "comfortable",
+    "label": "Comfortable",
+    "valueText": "Comfortable, 2 of 5",
+    "dirty": 0,
+    "slider": {
+      "x": 36,
+      "y": 297,
+      "width": 318.3999938964844,
+      "height": 44
+    },
+    "actions": {
+      "x": 16,
+      "y": 719.2000122070312,
+      "width": 358.3999938964844,
+      "height": 124.80000305175781
+    },
+    "save": {
+      "x": 238.40000915527344,
+      "y": 788,
+      "width": 120,
+      "height": 44
+    },
+    "frame": {
+      "x": 36,
+      "y": 445,
+      "width": 318.3999938964844,
+      "height": 369.8000183105469
+    },
+    "previewTable": {
+      "x": 36,
+      "y": 608.6000366210938,
+      "width": 318.3999938964844,
+      "height": 166.1999969482422
+    },
+    "activeLabel": {
+      "x": 36,
+      "y": 243,
+      "width": 318.3999938964844,
+      "height": 24
+    },
+    "unsavedVisible": false,
+    "discard": {
+      "x": 150,
+      "y": 788,
+      "width": 78.4000015258789,
+      "height": 44
+    },
+    "settingsPadding": "20px"
+  },
+  "requests": 0,
+  "storageWrites": 0,
+  "redraws": 0,
+  "latencies": [
+    13.5,
+    13.5,
+    13.699999999254942,
+    13.700000001117587,
+    13.900000000372529,
+    14.100000001490116,
+    14.299999998882413,
+    17.299999998882413,
+    19.700000001117587,
+    20.09999999962747,
+    20.09999999962747,
+    20.59999999962747,
+    20.59999999962747,
+    20.59999999962747,
+    20.699999999254942,
+    20.699999999254942,
+    20.699999999254942,
+    20.699999999254942,
+    20.799999998882413,
+    20.799999998882413,
+    20.800000000745058,
+    20.90000000037253,
+    22.200000001117587,
+    25.5,
+    26.5,
+    27.200000001117587,
+    27.59999999962747,
+    34.70000000111759,
+    34.80000000074506,
+    37.09999999962747
+  ],
+  "p95": 34.80000000074506,
+  "longTasks": [],
+  "focusRetained": true,
+  "canonicalFields": [
+    [
+      "density",
+      "comfortable"
+    ]
+  ],
+  "note": "Real page input events through production adapter; native keyboard tested separately. Existing polling can appear if a sample crosses its interval."
+}

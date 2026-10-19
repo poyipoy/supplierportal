@@ -374,6 +374,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile/customization', [UserPreferenceController::class, 'edit'])->name('profile.customization');
     Route::patch('/profile/customization', [UserPreferenceController::class, 'update'])->name('profile.customization.update');
     Route::delete('/profile/customization', [UserPreferenceController::class, 'reset'])->name('profile.customization.reset');
+    Route::patch('/profile/dashboard-layout', [UserPreferenceController::class, 'updateDashboardLayout'])->name('profile.dashboard-layout.update');
     Route::middleware('role:admin,purchasing,supplier,qc,accounting,finance,ga')->group(function () {
         Route::get('/profile/notifications', [UserNotificationPreferenceController::class, 'index'])->name('profile.notifications');
         Route::patch('/profile/notifications', [UserNotificationPreferenceController::class, 'update'])->name('profile.notifications.update');

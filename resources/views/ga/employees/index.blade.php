@@ -135,7 +135,7 @@
                         </tr>
 
                         {{-- Edit Modal --}}
-                        <div class="modal fade" id="editEmployeeModal-{{ $emp->id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal fade ui-density-modal" id="editEmployeeModal-{{ $emp->id }}" tabindex="-1" aria-hidden="true">
                             <div class="modal-dialog">
                                 <form method="POST" action="{{ route('ga.employees.update', $emp) }}">
                                     @csrf
@@ -214,7 +214,7 @@
 </div>
 
 {{-- Add Employee Modal --}}
-<div class="modal fade" id="addEmployeeModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade ui-density-modal" id="addEmployeeModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <form method="POST" action="{{ route('ga.employees.store') }}">
             @csrf

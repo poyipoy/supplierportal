@@ -1,0 +1,365 @@
+{
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "levels": [
+    {
+      "density": "spacious",
+      "scrollY": 278.3999938964844,
+      "canonical": "spacious",
+      "label": "Spacious",
+      "valueText": "Spacious, 1 dari 5",
+      "dirty": 1,
+      "slider": {
+        "x": 36,
+        "y": 400.20001220703125,
+        "width": 318.3999938964844,
+        "height": 44
+      },
+      "actions": {
+        "x": 16,
+        "y": 719.2000122070312,
+        "width": 358.3999938964844,
+        "height": 124.80000305175781
+      },
+      "save": {
+        "x": 204.8000030517578,
+        "y": 788,
+        "width": 153.60000610351562,
+        "height": 44
+      },
+      "frame": {
+        "x": 36,
+        "y": 548.2000122070312,
+        "width": 318.3999938964844,
+        "height": 369.8000183105469
+      },
+      "previewTable": {
+        "x": 36,
+        "y": 735.7999877929688,
+        "width": 318.3999938964844,
+        "height": 182.1999969482422
+      },
+      "activeLabel": {
+        "x": 36,
+        "y": 346.20001220703125,
+        "width": 318.3999938964844,
+        "height": 24
+      },
+      "unsavedVisible": true,
+      "discard": {
+        "x": 109.20000457763672,
+        "y": 788,
+        "width": 85.5999984741211,
+        "height": 44
+      },
+      "settingsPadding": "24px"
+    },
+    {
+      "density": "comfortable",
+      "scrollY": 278.3999938964844,
+      "canonical": "comfortable",
+      "label": "Comfortable",
+      "valueText": "Comfortable, 2 dari 5",
+      "dirty": 1,
+      "slider": {
+        "x": 36,
+        "y": 400.20001220703125,
+        "width": 318.3999938964844,
+        "height": 44
+      },
+      "actions": {
+        "x": 16,
+        "y": 719.2000122070312,
+        "width": 358.3999938964844,
+        "height": 124.80000305175781
+      },
+      "save": {
+        "x": 204.8000030517578,
+        "y": 788,
+        "width": 153.60000610351562,
+        "height": 44
+      },
+      "frame": {
+        "x": 36,
+        "y": 548.2000122070312,
+        "width": 318.3999938964844,
+        "height": 369.8000183105469
+      },
+      "previewTable": {
+        "x": 36,
+        "y": 711.7999877929688,
+        "width": 318.3999938964844,
+        "height": 166.1999969482422
+      },
+      "activeLabel": {
+        "x": 36,
+        "y": 346.20001220703125,
+        "width": 318.3999938964844,
+        "height": 24
+      },
+      "unsavedVisible": true,
+      "discard": {
+        "x": 109.20000457763672,
+        "y": 788,
+        "width": 85.5999984741211,
+        "height": 44
+      },
+      "settingsPadding": "20px"
+    },
+    {
+      "density": "balanced",
+      "scrollY": 278.3999938964844,
+      "canonical": "balanced",
+      "label": "Balanced",
+      "valueText": "Balanced, 3 dari 5",
+      "dirty": 1,
+      "slider": {
+        "x": 36,
+        "y": 400.20001220703125,
+        "width": 318.3999938964844,
+        "height": 44
+      },
+      "actions": {
+        "x": 16,
+        "y": 719.2000122070312,
+        "width": 358.3999938964844,
+        "height": 124.80000305175781
+      },
+      "save": {
+        "x": 204.8000030517578,
+        "y": 788,
+        "width": 153.60000610351562,
+        "height": 44
+      },
+      "frame": {
+        "x": 36,
+        "y": 548.2000122070312,
+        "width": 318.3999938964844,
+        "height": 369.8000183105469
+      },
+      "previewTable": {
+        "x": 36,
+        "y": 699.7999877929688,
+        "width": 318.3999938964844,
+        "height": 150.1999969482422
+      },
+      "activeLabel": {
+        "x": 36,
+        "y": 346.20001220703125,
+        "width": 318.3999938964844,
+        "height": 24
+      },
+      "unsavedVisible": true,
+      "discard": {
+        "x": 109.20000457763672,
+        "y": 788,
+        "width": 85.5999984741211,
+        "height": 44
+      },
+      "settingsPadding": "18px"
+    },
+    {
+      "density": "compact",
+      "scrollY": 278.3999938964844,
+      "canonical": "compact",
+      "label": "Compact",
+      "valueText": "Compact, 4 dari 5",
+      "dirty": 0,
+      "slider": {
+        "x": 36,
+        "y": 400.20001220703125,
+        "width": 318.3999938964844,
+        "height": 44
+      },
+      "actions": {
+        "x": 16,
+        "y": 719.2000122070312,
+        "width": 358.3999938964844,
+        "height": 124.80000305175781
+      },
+      "save": {
+        "x": 204.8000030517578,
+        "y": 788,
+        "width": 153.60000610351562,
+        "height": 44
+      },
+      "frame": {
+        "x": 36,
+        "y": 548.2000122070312,
+        "width": 318.3999938964844,
+        "height": 369.8000183105469
+      },
+      "previewTable": {
+        "x": 36,
+        "y": 683.7999877929688,
+        "width": 318.3999938964844,
+        "height": 134.1999969482422
+      },
+      "activeLabel": {
+        "x": 36,
+        "y": 346.20001220703125,
+        "width": 318.3999938964844,
+        "height": 24
+      },
+      "unsavedVisible": false,
+      "discard": {
+        "x": 109.20000457763672,
+        "y": 788,
+        "width": 85.5999984741211,
+        "height": 44
+      },
+      "settingsPadding": "16px"
+    },
+    {
+      "density": "dense",
+      "scrollY": 278.3999938964844,
+      "canonical": "dense",
+      "label": "Dense",
+      "valueText": "Dense, 5 dari 5",
+      "dirty": 1,
+      "slider": {
+        "x": 36,
+        "y": 400.20001220703125,
+        "width": 318.3999938964844,
+        "height": 44
+      },
+      "actions": {
+        "x": 16,
+        "y": 719.2000122070312,
+        "width": 358.3999938964844,
+        "height": 124.80000305175781
+      },
+      "save": {
+        "x": 204.8000030517578,
+        "y": 788,
+        "width": 153.60000610351562,
+        "height": 44
+      },
+      "frame": {
+        "x": 36,
+        "y": 548.2000122070312,
+        "width": 318.3999938964844,
+        "height": 369.8000183105469
+      },
+      "previewTable": {
+        "x": 36,
+        "y": 663.7999877929688,
+        "width": 318.3999938964844,
+        "height": 118.20000457763672
+      },
+      "activeLabel": {
+        "x": 36,
+        "y": 346.20001220703125,
+        "width": 318.3999938964844,
+        "height": 24
+      },
+      "unsavedVisible": true,
+      "discard": {
+        "x": 109.20000457763672,
+        "y": 788,
+        "width": 85.5999984741211,
+        "height": 44
+      },
+      "settingsPadding": "12px"
+    }
+  ],
+  "restored": {
+    "density": "comfortable",
+    "scrollY": 278.3999938964844,
+    "canonical": "comfortable",
+    "label": "Comfortable",
+    "valueText": "Comfortable, 2 dari 5",
+    "dirty": 1,
+    "slider": {
+      "x": 36,
+      "y": 400.20001220703125,
+      "width": 318.3999938964844,
+      "height": 44
+    },
+    "actions": {
+      "x": 16,
+      "y": 719.2000122070312,
+      "width": 358.3999938964844,
+      "height": 124.80000305175781
+    },
+    "save": {
+      "x": 204.8000030517578,
+      "y": 788,
+      "width": 153.60000610351562,
+      "height": 44
+    },
+    "frame": {
+      "x": 36,
+      "y": 548.2000122070312,
+      "width": 318.3999938964844,
+      "height": 369.8000183105469
+    },
+    "previewTable": {
+      "x": 36,
+      "y": 711.7999877929688,
+      "width": 318.3999938964844,
+      "height": 166.1999969482422
+    },
+    "activeLabel": {
+      "x": 36,
+      "y": 346.20001220703125,
+      "width": 318.3999938964844,
+      "height": 24
+    },
+    "unsavedVisible": true,
+    "discard": {
+      "x": 109.20000457763672,
+      "y": 788,
+      "width": 85.5999984741211,
+      "height": 44
+    },
+    "settingsPadding": "20px"
+  },
+  "requests": 0,
+  "storageWrites": 0,
+  "redraws": 0,
+  "latencies": [
+    13,
+    13.400000000372529,
+    13.5,
+    13.599999999627471,
+    13.699999999254942,
+    13.699999999254942,
+    13.700000001117587,
+    13.799999998882413,
+    13.799999998882413,
+    13.799999998882413,
+    13.799999998882413,
+    13.799999998882413,
+    13.899999998509884,
+    13.900000000372529,
+    14,
+    14,
+    14.399999998509884,
+    19.700000001117587,
+    20.40000000037253,
+    20.700000001117587,
+    20.700000001117587,
+    20.90000000037253,
+    21,
+    21,
+    27,
+    27.699999999254942,
+    27.799999998882413,
+    27.800000000745058,
+    27.90000000037253,
+    32.5
+  ],
+  "p95": 27.90000000037253,
+  "longTasks": [],
+  "focusRetained": true,
+  "canonicalFields": [
+    [
+      "density",
+      "comfortable"
+    ]
+  ],
+  "note": "Real page input events through production adapter; native keyboard tested separately. Existing polling can appear if a sample crosses its interval."
+}

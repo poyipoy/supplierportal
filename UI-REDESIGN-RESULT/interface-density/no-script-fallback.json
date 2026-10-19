@@ -1,0 +1,32 @@
+{
+  "method": "Test harness response CSP script-src 'none'; application bootstrap and Alpine blocked; native select and native submit; normal authentication and Laravel save pipeline",
+  "initial": {
+    "bootstrapPresent": false,
+    "alpinePresent": false,
+    "selectVisible": "block",
+    "selectHidden": false,
+    "selectDisabled": false,
+    "options": [
+      "spacious",
+      "comfortable",
+      "balanced",
+      "compact",
+      "dense"
+    ],
+    "rangeHidden": true,
+    "rangeDisabled": true,
+    "rangeHasName": false,
+    "canonicalFields": [
+      [
+        "density",
+        "comfortable"
+      ]
+    ]
+  },
+  "afterSubmit": {
+    "saved": "dense",
+    "effective": "dense",
+    "canonical": "dense",
+    "dirty": 0
+  }
+}

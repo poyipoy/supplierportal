@@ -1,0 +1,74 @@
+{
+  "source": "Independent threshold calculation from executed browser artifacts; does not cover pending AT/pilot/protected acceptance.",
+  "rows": [
+    {
+      "viewport": "320",
+      "maxDelta": 0,
+      "p95": 34.09999999962747,
+      "requests": 0,
+      "storageWrites": 0,
+      "redraws": 0,
+      "longTasks": 0,
+      "minSave": 44,
+      "minDiscard": 44,
+      "pass": true
+    },
+    {
+      "viewport": "390",
+      "maxDelta": 0,
+      "p95": 20.800000000745058,
+      "requests": 0,
+      "storageWrites": 0,
+      "redraws": 0,
+      "longTasks": 0,
+      "minSave": 44,
+      "minDiscard": 44,
+      "pass": true
+    },
+    {
+      "viewport": "768",
+      "maxDelta": 0,
+      "p95": 25.90000000037253,
+      "requests": 0,
+      "storageWrites": 0,
+      "redraws": 0,
+      "longTasks": 0,
+      "minSave": 44,
+      "minDiscard": 44,
+      "pass": true
+    },
+    {
+      "viewport": "1280",
+      "maxDelta": 0,
+      "p95": 27.700000001117587,
+      "requests": 0,
+      "storageWrites": 0,
+      "redraws": 0,
+      "longTasks": 0,
+      "minSave": 44,
+      "minDiscard": 44,
+      "pass": true
+    },
+    {
+      "viewport": "1440",
+      "maxDelta": 0,
+      "p95": 27.5,
+      "requests": 0,
+      "storageWrites": 0,
+      "redraws": 0,
+      "longTasks": 0,
+      "minSave": 44,
+      "minDiscard": 44,
+      "pass": true
+    }
+  ],
+  "adjacentTextSteps": [
+    4,
+    4,
+    4,
+    3.999998092651367
+  ],
+  "denseActionReductionPercent": 21.891418173921153,
+  "sampledPass": true,
+  "overallGate2Acceptance": "INCOMPLETE"
+}

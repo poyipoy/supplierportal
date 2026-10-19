@@ -25,16 +25,44 @@ export function supplierAuditForm(config) {
         showIncomplete: false,
         activeSection: config.sections[0]?.code ?? null,
         submitting: false,
+        initialized: false,
+        cleanups: [],
 
         init() {
+            if (this.initialized) return;
+            this.initialized = true;
             this.observeSections();
-            this.$watch('activeSection', (code) => this.revealNavItem(code));
-            window.addEventListener('beforeunload', (event) => {
-                if (!this.submitting && this.hasUnsaved()) {
+            const unwatch = this.$watch('activeSection', (code) => this.revealNavItem(code));
+            if (typeof unwatch === 'function') this.cleanups.push(unwatch);
+            const unregister = window.AdasiUnsaved?.registerDirtySource?.(() => !this.submitting && this.hasUnpersistedAnswers());
+            if (unregister) this.cleanups.push(unregister);
+            const beforeUnload = (event) => {
+                if (!this.submitting && this.hasUnpersistedAnswers()) {
                     event.preventDefault();
                     event.returnValue = '';
                 }
-            });
+            };
+            window.addEventListener('beforeunload', beforeUnload);
+            this.cleanups.push(() => window.removeEventListener('beforeunload', beforeUnload));
+            const form = this.$refs?.form;
+            const recover = () => {
+                this.submitting = false;
+                window.AdasiUnsaved?.setSubmitting(false);
+            };
+            if (form) {
+                form.addEventListener('adasi:form-settled', recover);
+                form.addEventListener('invalid', recover, true);
+                this.cleanups.push(() => {
+                    form.removeEventListener('adasi:form-settled', recover);
+                    form.removeEventListener('invalid', recover, true);
+                });
+            }
+        },
+
+        destroy() {
+            this.cleanups.splice(0).forEach((cleanup) => cleanup());
+            clearTimeout(this.timer);
+            this.initialized = false;
         },
 
         // ─── Status & hitungan ───
@@ -86,6 +114,8 @@ export function supplierAuditForm(config) {
             this.timer = setTimeout(() => this.flush(), DEBOUNCE_MS);
         },
         hasUnsaved() { return this.inflight || Object.keys(this.pending).length > 0; },
+        // Rejected answers leave the retry queue but are still visible, unsaved edits.
+        hasUnpersistedAnswers() { return this.hasUnsaved() || Object.keys(this.serverErrors).length > 0; },
 
         // ─── Autosave ───
         get saveStatusText() {
@@ -184,6 +214,7 @@ export function supplierAuditForm(config) {
                 if (visible[0]) this.activeSection = visible[0].target.dataset.sectionCode;
             }, { rootMargin: '-96px 0px -60% 0px' });
             this.$root.querySelectorAll('[data-section-code]').forEach((el) => observer.observe(el));
+            this.cleanups.push(() => observer.disconnect());
         },
         // Keeps the active entry visible inside the nav list without moving the page itself.
         revealNavItem(code) {

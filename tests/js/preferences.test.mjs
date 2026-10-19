@@ -15,7 +15,8 @@ function headBootstrap() {
     return layout.slice(start, end);
 }
 
-function boot(payload, initialStorage = {}, storageAvailable = true) {
+function boot(payload, initialStorage = {}, storageAvailable = true, initialDensity = null) {
+    payload = { densityKeys: ['spacious', 'comfortable', 'balanced', 'compact', 'dense'], ...payload, densityPreview: initialDensity };
     const values = new Map(Object.entries(initialStorage));
     const mediaListeners = [];
     const events = [];
@@ -68,6 +69,93 @@ test('explicit themes override OS preference and live preview restores saved the
     state.windowRef.AdasiPreferences.restoreSaved();
     assert.equal(state.root.dataset.theme, 'light');
     assert.equal(state.root.dataset.density, 'comfortable');
+});
+
+test('five canonical density previews stay temporary and independent of other preferences', () => {
+    const densityKeys = ['spacious', 'comfortable', 'balanced', 'compact', 'dense'];
+    const state = boot({ theme: 'light', density: 'comfortable', densityKeys, accent: 'brand', accentKeys: ['brand', 'slate'], sidebarState: 'expanded', pageSize: 25, sidebarRevision: '1:1', accountId: '41' });
+    const beforeStorage = [...state.values];
+    state.windowRef.AdasiPreferences.previewTheme('dark');
+    state.windowRef.AdasiPreferences.previewAccent('slate');
+
+    for (const density of densityKeys) {
+        state.windowRef.AdasiPreferences.previewDensity(density);
+        assert.equal(state.root.dataset.density, density);
+        assert.equal(state.windowRef.AdasiPreferences.density, 'comfortable');
+        assert.equal(state.root.dataset.theme, 'dark');
+        assert.equal(state.root.dataset.accent, 'slate');
+        assert.equal(state.windowRef.AdasiPreferences.pageSize, 25);
+        assert.deepEqual([...state.values], beforeStorage);
+    }
+
+    for (const invalid of ['tiny', '2', 2, null, undefined, [], ['dense'], { density: 'dense' }]) {
+        state.windowRef.AdasiPreferences.previewDensity(invalid);
+        assert.equal(state.root.dataset.density, 'dense');
+    }
+
+    state.windowRef.AdasiPreferences.restoreSaved();
+    assert.equal(state.root.dataset.density, 'comfortable');
+    assert.equal(state.root.dataset.theme, 'light');
+    assert.equal(state.root.dataset.accent, 'brand');
+    assert.deepEqual([...state.values], beforeStorage);
+});
+
+test('valid server draft density is applied on bootstrap without replacing saved density', () => {
+    const densityKeys = ['spacious', 'comfortable', 'balanced', 'compact', 'dense'];
+    const state = boot({ theme: 'light', density: 'compact', densityKeys, sidebarState: 'expanded', pageSize: 25, sidebarRevision: '1:1', accountId: '41' }, {}, true, 'balanced');
+    assert.equal(state.root.dataset.density, 'balanced');
+    assert.equal(state.windowRef.AdasiPreferences.density, 'compact');
+    state.windowRef.AdasiPreferences.restoreSaved();
+    assert.equal(state.root.dataset.density, 'compact');
+});
+
+test('global appearance binding leaves Customization to its single form owner', async () => {
+    const { bindCustomizationPreviews } = await import('../../resources/js/preferences.js');
+    const calls = [];
+    const inside = { checked: true, value: 'compact', listeners: [], closest: () => ({}), addEventListener(_type, handler) { this.listeners.push(handler); } };
+    const outside = { checked: true, value: 'compact', listeners: [], closest: () => null, addEventListener(_type, handler) { this.listeners.push(handler); } };
+    const doc = { querySelectorAll: selector => selector.includes('density') ? [inside, outside] : [] };
+    const preferences = { previewDensity: value => calls.push(value) };
+    bindCustomizationPreviews(doc, preferences);
+    bindCustomizationPreviews(doc, preferences);
+    assert.equal(inside.listeners.length, 0);
+    assert.equal(outside.listeners.length, 1);
+    outside.listeners[0]();
+    assert.deepEqual(calls, ['compact']);
+});
+
+test('bfcache restoration delegates canonical form synchronization after one saved restore', async () => {
+    const { bindBackForwardRestoration } = await import('../../resources/js/preferences.js');
+    let pageshow;
+    let restores = 0;
+    const events = [];
+    const doc = {
+        querySelector: selector => selector === '#customizationForm' ? {} : null,
+        querySelectorAll: () => { throw new Error('form owner must synchronize its own controls'); },
+    };
+    const browser = { addEventListener(_type, handler) { pageshow = handler; }, dispatchEvent(event) { events.push(event.type); } };
+    bindBackForwardRestoration(browser, { restoreSaved() { restores++; } }, doc);
+    pageshow({ persisted: false });
+    assert.equal(restores, 0);
+    pageshow({ persisted: true });
+    assert.equal(restores, 1);
+    assert.deepEqual(events, ['adasi:preferences-restored']);
+});
+
+test('ordinary history restoration synchronizes browser-restored fields without bfcache', async () => {
+    const { bindBackForwardRestoration } = await import('../../resources/js/preferences.js');
+    let pageshow;
+    let restores = 0;
+    const events = [];
+    const browser = {
+        performance: { getEntriesByType: () => [{ type: 'back_forward' }] },
+        addEventListener(_type, handler) { pageshow = handler; },
+        dispatchEvent(event) { events.push(event.type); },
+    };
+    bindBackForwardRestoration(browser, { restoreSaved() { restores++; } }, { querySelector: () => ({}) });
+    pageshow({ persisted: false });
+    assert.equal(restores, 1);
+    assert.deepEqual(events, ['adasi:preferences-restored']);
 });
 
 test('sidebar cache is isolated per account and re-synced when server revision changes', () => {

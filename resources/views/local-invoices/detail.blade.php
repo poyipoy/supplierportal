@@ -405,10 +405,10 @@
     {{-- 2-Column Grid Layout --}}
     <div class="tw-grid tw-grid-cols-1 tw-gap-6 lg:tw-grid-cols-12 tw-items-start">
         {{-- Left Column: Main Detail & Documents --}}
-        <div class="tw-min-w-0 lg:tw-col-span-8 tw-space-y-6">
+        <div class="tw-min-w-0 lg:tw-col-span-8 ui-density-stack-list">
             {{-- Financial & Reference Information --}}
             <x-ui.card :title="__('local_invoice.labels.payment_summary')">
-                <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
+                <div class="ui-density-form-grid tw-grid sm:tw-grid-cols-2">
                     <div>
                         <span class="tw-text-ui-xs tw-text-on-surface-variant tw-block">{{ __('local_invoice.receipt.invoice_number') }}</span>
                         <span class="tw-font-semibold tw-text-ui-sm tw-text-on-surface">{{ $invoice->invoice_number }}</span>
@@ -560,7 +560,7 @@
             {{-- Revision History (if multiple revisions exist) --}}
             @if($invoice->revisions->count() > 1)
                 <x-ui.card :title="__('local_invoice.labels.revision_history')">
-                    <div class="tw-space-y-3">
+                    <div class="ui-density-list">
                         @foreach($invoice->revisions->sortByDesc('revision_number') as $rev)
                             <div class="tw-border tw-border-outline-variant tw-rounded-ui-sm tw-p-3.5 {{ $rev->revision_number === $invoice->revision_number ? 'tw-bg-surface-container-low' : 'tw-bg-surface' }}">
                                 <div class="tw-flex tw-items-center tw-justify-between tw-gap-2 tw-mb-2">
@@ -593,11 +593,11 @@
         </div>
 
         {{-- Right Column: Sticky Workflow Actions, Status Stepper & Information (Offset accounts for 56px navbar) --}}
-        <div class="lg:tw-col-span-4 tw-space-y-6 tw-sticky" style="top: calc(var(--topbar-height, 56px) + 1.25rem);">
+        <div class="lg:tw-col-span-4 ui-density-stack-list tw-sticky" style="top: calc(var(--topbar-height, 56px) + 1.25rem);">
             {{-- Payment & Due Date Card (Internal only, hidden from Supplier) --}}
             @if(!auth()->user()?->isSupplier() && ($portal ?? '') !== 'local-supplier')
             <x-ui.card :title="__('local_invoice.labels.payment_schedule')">
-                <div class="tw-space-y-3">
+                <div class="ui-density-list">
                     <div class="tw-flex tw-justify-between tw-text-ui-xs">
                         <span class="tw-text-on-surface-variant">{{ __('local_invoice.detail.payment_term') }}</span>
                         <span class="tw-font-semibold tw-text-on-surface">{{ trans_choice('local_invoice.table.term_days', $invoice->payment_term_days_snapshot ?? 0) }}</span>
@@ -728,7 +728,7 @@
 
             {{-- Status & Verification Timeline Stepper (Balanced in Right Column) --}}
             <x-ui.card :title="__('local_invoice.labels.verification_history')">
-                <div class="tw-relative tw-ps-6 tw-space-y-6 before:tw-absolute before:tw-left-2.5 before:tw-top-2 before:tw-bottom-2 before:tw-w-0.5 before:tw-bg-outline-variant">
+                <div class="tw-relative tw-ps-6 ui-density-stack-list before:tw-absolute before:tw-left-2.5 before:tw-top-2 before:tw-bottom-2 before:tw-w-0.5 before:tw-bg-outline-variant">
                     @forelse($invoice->statusHistories as $history)
                         <div class="tw-relative">
                             <div class="tw-absolute -tw-left-6 tw-top-0.5 tw-w-5 tw-h-5 tw-rounded-full tw-bg-surface tw-border-2 tw-border-primary tw-flex tw-items-center tw-justify-center">
@@ -766,7 +766,7 @@
 
             {{-- Physical Submission Guidelines Card --}}
             <x-ui.card :title="__('local_invoice.detail.physical_guidelines')">
-                <div class="tw-space-y-3 tw-text-ui-xs tw-text-on-surface-variant">
+                <div class="ui-density-list tw-text-ui-xs tw-text-on-surface-variant">
                     <div class="tw-flex tw-gap-2.5 tw-items-start">
                         <x-ui.icon name="map-pin" size="sm" class="tw-text-primary tw-mt-0.5 tw-shrink-0" />
                         <div>

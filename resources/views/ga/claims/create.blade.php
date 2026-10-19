@@ -21,7 +21,7 @@
         <x-ui.card :title="__('ga.labels.employee_form')">
             <form method="POST" action="{{ route('ga.claims.store') }}" enctype="multipart/form-data" data-async-submit>
                 @csrf
-                <div class="tw-space-y-4">
+                <div class="ui-density-form-stack">
                     {{-- Karyawan Dropdown (Searchable Select) --}}
                     @php
                         $resolvedEmployeeOptions = $employeeOptions ?? ($employees ?? collect())->map(function ($emp) {
@@ -65,7 +65,7 @@
 
 
                     {{-- Tipe Klaim & Tanggal --}}
-                    <div class="tw-grid tw-grid-cols-1 sm:tw-grid-cols-2 tw-gap-4">
+                    <div class="tw-grid tw-grid-cols-1 sm:tw-grid-cols-2 ui-density-form-grid">
                         <div>
                             <label for="claim_type" class="form-label tw-text-ui-xs tw-font-semibold">
                                 {{ __('ga.labels.claim_type') }} <span class="text-danger">*</span>

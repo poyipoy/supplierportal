@@ -13,15 +13,20 @@
         <meta name="user-id" content="{{ auth()->id() }}">
     @endauth
     @auth
+        @php
+            $preferenceFrontendPayload['densityPreview'] = $densityPreview ?? null;
+        @endphp
         <script>
             (() => {
                 const preferences = @js($preferenceFrontendPayload);
+                const densityKeys = preferences.densityKeys || [];
+                const initialDensity = preferences.densityPreview ?? null;
                 const root = document.documentElement;
                 const media = window.matchMedia('(prefers-color-scheme: dark)');
                 const storageKey = 'adasi.sidebar.' + preferences.accountId;
                 let sidebarCollapsed = preferences.sidebarState === 'collapsed';
                 let previewTheme = null;
-                let previewDensity = null;
+                let previewDensity = densityKeys.includes(initialDensity) ? initialDensity : null;
                 let previewAccent = null;
 
                 try {
@@ -35,7 +40,7 @@
                 }
 
                 const savedTheme = preferences.theme;
-                const savedDensity = preferences.density;
+                const savedDensity = densityKeys.includes(preferences.density) ? preferences.density : 'comfortable';
                 const savedAccent = preferences.accent || 'brand';
                 const accentKeys = preferences.accentKeys || ['brand'];
                 const applyAccent = () => {
@@ -188,7 +193,7 @@
                     accent: savedAccent,
                     previewAccent: (value) => { if (accentKeys.includes(value)) { previewAccent = value; applyAccent(); } },
                     previewTheme: (value) => { previewTheme = value; applyTheme(); },
-                    previewDensity: (value) => { previewDensity = value; applyDensity(); },
+                    previewDensity: (value) => { if (densityKeys.includes(value)) { previewDensity = value; applyDensity(); } },
                     restoreSaved: () => { previewTheme = null; previewDensity = null; previewAccent = null; applyTheme(); applyDensity(); applyAccent(); },
                 });
                 applyTheme();

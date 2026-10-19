@@ -118,7 +118,7 @@ class UserNotificationPreferencesTest extends TestCase
         }
         $xpath = new DOMXPath($document);
         $this->assertCount(1, $xpath->query('//h1[normalize-space(.)="Notifications"]'));
-        $this->assertCount(1, $xpath->query('//fieldset/legend[normalize-space(.)="Invoice submitted"]'));
+        $this->assertCount(1, $xpath->query('//div[@role="group" and @data-event-key="'.self::KEY.'"]//span[@id="notification-'.self::KEY.'-label" and normalize-space(.)="Invoice submitted"]'));
         $name = 'notification_preferences['.self::KEY.']';
         $checkbox = $xpath->query('//input[@type="checkbox" and @name="'.$name.'"]')->item(0);
         $this->assertSame($name, $checkbox->getAttribute('name'));
@@ -127,9 +127,18 @@ class UserNotificationPreferencesTest extends TestCase
         $this->assertNotSame('', $checkbox->getAttribute('aria-describedby'));
         $this->assertCount(1, $xpath->query('//label[@for="'.$checkbox->getAttribute('id').'"]'));
         $this->assertCount(1, $xpath->query('//input[@type="hidden" and @name="'.$name.'" and @value="0"]'));
+        // The Popup channel is a second checkbox for the same event, preceded by its silent fallback
+        $popup = $xpath->query('//input[@type="checkbox" and @name="notification_delivery['.self::KEY.']"]')->item(0);
+        $this->assertNotNull($popup);
+        $this->assertSame('normal', $popup->getAttribute('value'));
+        $this->assertTrue($popup->hasAttribute('checked'));
+        $this->assertCount(1, $xpath->query('//label[@for="'.$popup->getAttribute('id').'"]'));
+        $this->assertCount(1, $xpath->query('//input[@type="hidden" and @name="notification_delivery['.self::KEY.']" and @value="silent"]'));
         $this->assertCount(1, $xpath->query('//form[@action="'.route('profile.notifications.update').'" and input[@name="_method" and @value="PATCH"]]//input[@name="_token"]'));
         $this->assertCount(1, $xpath->query('//form//input[@name="_method" and @value="PATCH"]'));
-        $this->assertCount(19, $xpath->query('//input[@type="checkbox"]'));
+        $this->assertCount(19, $xpath->query('//input[@type="checkbox" and starts-with(@name, "notification_preferences[")]'));
+        $this->assertCount(19, $xpath->query('//input[@type="checkbox" and starts-with(@name, "notification_delivery[")]'));
+        $this->assertCount(0, $xpath->query('//select[starts-with(@name, "notification_delivery[")]'));
         $this->assertDatabaseMissing('user_preferences', ['user_id' => $user->id]);
     }
 

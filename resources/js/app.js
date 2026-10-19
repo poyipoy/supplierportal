@@ -8,6 +8,7 @@ import './unsaved-changes';
 import './number-input-helper';
 import './chart-theme';
 import './preferences';
+import './dashboard-editor';
 import './regional-sample';
 import './submit-guard';
 import './async-form-submit';
@@ -17,6 +18,7 @@ import './advanced-export';
 import './server-tabs';
 import { adasiFileUploadComponent } from './file-upload';
 import { customizationForm } from './customization-form';
+import { notificationPreferencesForm } from './notification-preferences';
 import { supplierAuditForm } from './supplier-audit-form';
 import { searchableSelect } from './searchable-select';
 
@@ -25,6 +27,7 @@ Alpine.data('searchableSelect', searchableSelect);
 Alpine.data('searchableFreeInput', searchableFreeInput);
 Alpine.data('adasiFileUploadComponent', adasiFileUploadComponent);
 Alpine.data('customizationForm', customizationForm);
+Alpine.data('notificationPreferencesForm', notificationPreferencesForm);
 Alpine.data('supplierAuditForm', supplierAuditForm);
 
 const toastState = Alpine.reactive({

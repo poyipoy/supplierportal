@@ -39,7 +39,7 @@
 
     <div class="tw-grid tw-grid-cols-1 lg:tw-grid-cols-12 tw-gap-6">
         {{-- Left Column: Details, Documents, Verification Sections --}}
-        <div class="lg:tw-col-span-8 tw-space-y-6">
+        <div class="lg:tw-col-span-8 ui-density-stack-list">
             {{-- Overview Card --}}
             <x-ui.card :title="__('local_invoice.labels.billing_information')">
                 <div class="tw-grid tw-grid-cols-2 sm:tw-grid-cols-3 tw-gap-4 tw-text-ui-xs">
@@ -149,7 +149,7 @@
                 >
                     <form method="POST" action="{{ route('finance.invoices.receive-physical', $invoice) }}">
                         @csrf
-                        <div class="tw-space-y-3">
+                        <div class="ui-density-list">
                             <div>
                                 <label for="receipt_qr" class="form-label tw-text-ui-xs tw-font-semibold">{{ __('finance.labels.scan_receipt') }}</label>
                                 <input type="text" name="receipt_qr" id="receipt_qr" class="form-control form-control-sm" inputmode="none" autocomplete="off" autofocus required maxlength="2048" placeholder="{{ __('finance.labels.scan_instruction') }}">
@@ -423,10 +423,10 @@
         </div>
 
         {{-- Right Column: Payment, Status Timeline & Final Actions --}}
-        <div class="lg:tw-col-span-4 tw-space-y-6">
+        <div class="lg:tw-col-span-4 ui-density-stack-list">
             {{-- Payment Schedule & Term Card --}}
             <x-ui.card :title="__('finance.copy_review.cashier_schedule')">
-                <div class="tw-space-y-3 tw-text-ui-xs">
+                <div class="ui-density-list tw-text-ui-xs">
                     <div class="tw-flex tw-justify-between">
                         <span class="tw-text-on-surface-variant">{{ __('finance.invoice_ui.cashier_date') }}</span>
                         <strong class="tw-text-on-surface">{{ $invoice->cashier_received_at ? $regionalFormatter->timestamp($invoice->cashier_received_at, 'datetime') : __('local_invoice.detail.await_physical') }}</strong>
@@ -490,7 +490,7 @@
             {{-- Final Approval Actions --}}
             @if(!$isLocked && $invoice->status === \App\Models\LocalInvoice::STATUS_UNDER_VERIFICATION)
                 <x-ui.card :title="__('finance.labels.final_approval')">
-                    <div class="tw-space-y-3">
+                    <div class="ui-density-list">
                         <form method="POST" action="{{ route('finance.invoices.approve-ready-to-pay', $invoice) }}">
                             @csrf
                             <x-ui.button
@@ -529,7 +529,7 @@
 
             {{-- Status Timeline --}}
             <x-ui.card :title="__('local_invoice.labels.timeline')">
-                <div class="tw-space-y-3 tw-text-ui-xs">
+                <div class="ui-density-list tw-text-ui-xs">
                     @forelse($invoice->statusHistories as $hist)
                         <div class="tw-p-2 tw-rounded tw-bg-surface-container">
                             <div class="tw-flex tw-justify-between">

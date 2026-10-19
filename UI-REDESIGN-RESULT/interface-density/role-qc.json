@@ -1,0 +1,856 @@
+[
+  {
+    "route": "/qc/dashboard",
+    "title": "QC Dashboard - ADASI Portal",
+    "viewport": [
+      1440,
+      900
+    ],
+    "saved": "comfortable",
+    "levels": [
+      {
+        "density": "spacious",
+        "page": [
+          {
+            "height": 946,
+            "width": 1168.800048828125,
+            "padding": "24px 28px",
+            "gap": "normal",
+            "minHeight": "844px"
+          }
+        ],
+        "dashboard": [
+          {
+            "height": 779,
+            "width": 1112.800048828125,
+            "padding": "0px",
+            "gap": "20px",
+            "minHeight": "auto"
+          }
+        ],
+        "metric": [
+          {
+            "height": 92,
+            "width": 277.45001220703125,
+            "padding": "20px",
+            "gap": "16px",
+            "minHeight": "auto"
+          },
+          {
+            "height": 92,
+            "width": 277.45001220703125,
+            "padding": "20px",
+            "gap": "16px",
+            "minHeight": "auto"
+          },
+          {
+            "height": 92,
+            "width": 277.45001220703125,
+            "padding": "20px",
+            "gap": "16px",
+            "minHeight": "auto"
+          },
+          {
+            "height": 92,
+            "width": 277.45001220703125,
+            "padding": "20px",
+            "gap": "16px",
+            "minHeight": "auto"
+          }
+        ],
+        "card": [
+          {
+            "height": 384,
+            "width": 365.6000061035156,
+            "padding": "0px",
+            "gap": "normal",
+            "minHeight": "auto"
+          },
+          {
+            "height": 384,
+            "width": 731.2000122070312,
+            "padding": "0px",
+            "gap": "normal",
+            "minHeight": "auto"
+          }
+        ],
+        "table": [
+          {
+            "height": 221,
+            "width": 1112.800048828125,
+            "padding": "0px",
+            "gap": "normal",
+            "minHeight": "0px"
+          }
+        ],
+        "cell": [],
+        "toolbar": [],
+        "form": [],
+        "sidebar": [
+          {
+            "height": 44,
+            "width": 239.1999969482422,
+            "padding": "10px 12px 10px 40px",
+            "gap": "normal",
+            "minHeight": "44px"
+          },
+          {
+            "height": 44,
+            "width": 239.1999969482422,
+            "padding": "10px 12px 10px 40px",
+            "gap": "normal",
+            "minHeight": "44px"
+          },
+          {
+            "height": 44,
+            "width": 239.1999969482422,
+            "padding": "10px 12px 10px 40px",
+            "gap": "normal",
+            "minHeight": "44px"
+          }
+        ],
+        "documentHeight": 1002,
+        "overflow": -15
+      },
+      {
+        "density": "comfortable",
+        "page": [
+          {
+            "height": 886,
+            "width": 1168.800048828125,
+            "padding": "20px 24px",
+            "gap": "normal",
+            "minHeight": "844px"
+          }
+        ],
+        "dashboard": [
+          {
+            "height": 735,
+            "width": 1120.800048828125,
+            "padding": "0px",
+            "gap": "16px",
+            "minHeight": "auto"
+          }
+        ],
+        "metric": [
+          {
+            "height": 84,
+            "width": 279.45001220703125,
+            "padding": "16px",
+            "gap": "16px",
+            "minHeight": "auto"
+          },
+          {
+            "height": 84,
+            "width": 279.45001220703125,
+            "padding": "16px",
+            "gap": "16px",
+            "minHeight": "auto"
+          },
+          {
+            "height": 84,
+            "width": 279.45001220703125,
+            "padding": "16px",
+            "gap": "16px",
+            "minHeight": "auto"
+          },
+          {
+            "height": 84,
+            "width": 279.45001220703125,
+            "padding": "16px",
+            "gap": "16px",
+            "minHeight": "auto"
+          }
+        ],
+        "card": [
+          {
+            "height": 368,
+            "width": 368.26251220703125,
+            "padding": "0px",
+            "gap": "normal",
+            "minHeight": "auto"
+          },
+          {
+            "height": 368,
+            "width": 736.5375366210938,
+            "padding": "0px",
+            "gap": "normal",
+            "minHeight": "auto"
+          }
+        ],
+        "table": [
+          {
+            "height": 213,
+            "width": 1120.800048828125,
+            "padding": "0px",
+            "gap": "normal",
+            "minHeight": "0px"
+          }
+        ],
+        "cell": [],
+        "toolbar": [],
+        "form": [],
+        "sidebar": [
+          {
+            "height": 40,
+            "width": 239.1999969482422,
+            "padding": "8px 12px 8px 40px",
+            "gap": "normal",
+            "minHeight": "40px"
+          },
+          {
+            "height": 40,
+            "width": 239.1999969482422,
+            "padding": "8px 12px 8px 40px",
+            "gap": "normal",
+            "minHeight": "40px"
+          },
+          {
+            "height": 40,
+            "width": 239.1999969482422,
+            "padding": "8px 12px 8px 40px",
+            "gap": "normal",
+            "minHeight": "40px"
+          }
+        ],
+        "documentHeight": 942,
+        "overflow": -15
+      },
+      {
+        "density": "balanced",
+        "page": [
+          {
+            "height": 852,
+            "width": 1168.800048828125,
+            "padding": "16px 20px",
+            "gap": "normal",
+            "minHeight": "844px"
+          }
+        ],
+        "dashboard": [
+          {
+            "height": 713,
+            "width": 1128.800048828125,
+            "padding": "0px",
+            "gap": "14px",
+            "minHeight": "auto"
+          }
+        ],
+        "metric": [
+          {
+            "height": 80,
+            "width": 281.45001220703125,
+            "padding": "14px",
+            "gap": "16px",
+            "minHeight": "auto"
+          },
+          {
+            "height": 80,
+            "width": 281.45001220703125,
+            "padding": "14px",
+            "gap": "16px",
+            "minHeight": "auto"
+          },
+          {
+            "height": 80,
+            "width": 281.45001220703125,
+            "padding": "14px",
+            "gap": "16px",
+            "minHeight": "auto"
+          },
+          {
+            "height": 80,
+            "width": 281.45001220703125,
+            "padding": "14px",
+            "gap": "16px",
+            "minHeight": "auto"
+          }
+        ],
+        "card": [
+          {
+            "height": 360,
+            "width": 370.9250183105469,
+            "padding": "0px",
+            "gap": "normal",
+            "minHeight": "auto"
+          },
+          {
+            "height": 360,
+            "width": 741.875,
+            "padding": "0px",
+            "gap": "normal",
+            "minHeight": "auto"
+          }
+        ],
+        "table": [
+          {
+            "height": 209,
+            "width": 1128.800048828125,
+            "padding": "0px",
+            "gap": "normal",
+            "minHeight": "0px"
+          }
+        ],
+        "cell": [],
+        "toolbar": [],
+        "form": [],
+        "sidebar": [
+          {
+            "height": 38,
+            "width": 239.1999969482422,
+            "padding": "6px 12px 6px 40px",
+            "gap": "normal",
+            "minHeight": "38px"
+          },
+          {
+            "height": 38,
+            "width": 239.1999969482422,
+            "padding": "6px 12px 6px 40px",
+            "gap": "normal",
+            "minHeight": "38px"
+          },
+          {
+            "height": 38,
+            "width": 239.1999969482422,
+            "padding": "6px 12px 6px 40px",
+            "gap": "normal",
+            "minHeight": "38px"
+          }
+        ],
+        "documentHeight": 908,
+        "overflow": -15
+      },
+      {
+        "density": "compact",
+        "page": [
+          {
+            "height": 844,
+            "width": 1184,
+            "padding": "12px 16px",
+            "gap": "normal",
+            "minHeight": "844px"
+          }
+        ],
+        "dashboard": [
+          {
+            "height": 691,
+            "width": 1152,
+            "padding": "0px",
+            "gap": "12px",
+            "minHeight": "auto"
+          }
+        ],
+        "metric": [
+          {
+            "height": 76,
+            "width": 287.25,
+            "padding": "12px",
+            "gap": "16px",
+            "minHeight": "auto"
+          },
+          {
+            "height": 76,
+            "width": 287.25,
+            "padding": "12px",
+            "gap": "16px",
+            "minHeight": "auto"
+          },
+          {
+            "height": 76,
+            "width": 287.25,
+            "padding": "12px",
+            "gap": "16px",
+            "minHeight": "auto"
+          },
+          {
+            "height": 76,
+            "width": 287.25,
+            "padding": "12px",
+            "gap": "16px",
+            "minHeight": "auto"
+          }
+        ],
+        "card": [
+          {
+            "height": 352,
+            "width": 378.6625061035156,
+            "padding": "0px",
+            "gap": "normal",
+            "minHeight": "auto"
+          },
+          {
+            "height": 352,
+            "width": 757.3375244140625,
+            "padding": "0px",
+            "gap": "normal",
+            "minHeight": "auto"
+          }
+        ],
+        "table": [
+          {
+            "height": 205,
+            "width": 1152,
+            "padding": "0px",
+            "gap": "normal",
+            "minHeight": "0px"
+          }
+        ],
+        "cell": [],
+        "toolbar": [],
+        "form": [],
+        "sidebar": [
+          {
+            "height": 36,
+            "width": 239.1999969482422,
+            "padding": "4px 12px 4px 40px",
+            "gap": "normal",
+            "minHeight": "36px"
+          },
+          {
+            "height": 36,
+            "width": 239.1999969482422,
+            "padding": "4px 12px 4px 40px",
+            "gap": "normal",
+            "minHeight": "36px"
+          },
+          {
+            "height": 36,
+            "width": 239.1999969482422,
+            "padding": "4px 12px 4px 40px",
+            "gap": "normal",
+            "minHeight": "36px"
+          }
+        ],
+        "documentHeight": 900,
+        "overflow": 0
+      },
+      {
+        "density": "dense",
+        "page": [
+          {
+            "height": 844,
+            "width": 1184,
+            "padding": "8px 12px",
+            "gap": "normal",
+            "minHeight": "844px"
+          }
+        ],
+        "dashboard": [
+          {
+            "height": 655,
+            "width": 1160,
+            "padding": "0px",
+            "gap": "8px",
+            "minHeight": "auto"
+          }
+        ],
+        "metric": [
+          {
+            "height": 68,
+            "width": 289.25,
+            "padding": "8px",
+            "gap": "16px",
+            "minHeight": "auto"
+          },
+          {
+            "height": 68,
+            "width": 289.25,
+            "padding": "8px",
+            "gap": "16px",
+            "minHeight": "auto"
+          },
+          {
+            "height": 68,
+            "width": 289.25,
+            "padding": "8px",
+            "gap": "16px",
+            "minHeight": "auto"
+          },
+          {
+            "height": 68,
+            "width": 289.25,
+            "padding": "8px",
+            "gap": "16px",
+            "minHeight": "auto"
+          }
+        ],
+        "card": [
+          {
+            "height": 340,
+            "width": 381.32501220703125,
+            "padding": "0px",
+            "gap": "normal",
+            "minHeight": "auto"
+          },
+          {
+            "height": 340,
+            "width": 762.6749877929688,
+            "padding": "0px",
+            "gap": "normal",
+            "minHeight": "auto"
+          }
+        ],
+        "table": [
+          {
+            "height": 201,
+            "width": 1160,
+            "padding": "0px",
+            "gap": "normal",
+            "minHeight": "0px"
+          }
+        ],
+        "cell": [],
+        "toolbar": [],
+        "form": [],
+        "sidebar": [
+          {
+            "height": 34,
+            "width": 239.1999969482422,
+            "padding": "2px 12px 2px 40px",
+            "gap": "normal",
+            "minHeight": "34px"
+          },
+          {
+            "height": 34,
+            "width": 239.1999969482422,
+            "padding": "2px 12px 2px 40px",
+            "gap": "normal",
+            "minHeight": "34px"
+          },
+          {
+            "height": 34,
+            "width": 239.1999969482422,
+            "padding": "2px 12px 2px 40px",
+            "gap": "normal",
+            "minHeight": "34px"
+          }
+        ],
+        "documentHeight": 900,
+        "overflow": 0
+      }
+    ],
+    "draws": 0,
+    "beforeRows": 0,
+    "afterRows": 0,
+    "lengthBefore": null,
+    "lengthAfter": null,
+    "requests": 0
+  },
+  {
+    "route": "/qc/inspections",
+    "title": "QC Inspections - ADASI Portal",
+    "viewport": [
+      1440,
+      900
+    ],
+    "saved": "comfortable",
+    "levels": [
+      {
+        "density": "spacious",
+        "page": [
+          {
+            "height": 844,
+            "width": 1184,
+            "padding": "24px 28px",
+            "gap": "normal",
+            "minHeight": "844px"
+          }
+        ],
+        "dashboard": [],
+        "metric": [],
+        "card": [],
+        "table": [],
+        "cell": [
+          {
+            "height": 42.79999923706055,
+            "width": 1078.4000244140625,
+            "padding": "12px 16px",
+            "gap": "normal",
+            "minHeight": "0px"
+          }
+        ],
+        "toolbar": [
+          {
+            "height": 0,
+            "width": 0,
+            "padding": "18px 20px",
+            "gap": "16px",
+            "minHeight": "0px"
+          }
+        ],
+        "form": [],
+        "sidebar": [
+          {
+            "height": 44,
+            "width": 239.1999969482422,
+            "padding": "10px 12px 10px 40px",
+            "gap": "normal",
+            "minHeight": "44px"
+          },
+          {
+            "height": 44,
+            "width": 239.1999969482422,
+            "padding": "10px 12px 10px 40px",
+            "gap": "normal",
+            "minHeight": "44px"
+          },
+          {
+            "height": 44,
+            "width": 239.1999969482422,
+            "padding": "10px 12px 10px 40px",
+            "gap": "normal",
+            "minHeight": "44px"
+          }
+        ],
+        "documentHeight": 900,
+        "overflow": 0
+      },
+      {
+        "density": "comfortable",
+        "page": [
+          {
+            "height": 844,
+            "width": 1184,
+            "padding": "20px 24px",
+            "gap": "normal",
+            "minHeight": "844px"
+          }
+        ],
+        "dashboard": [],
+        "metric": [],
+        "card": [],
+        "table": [],
+        "cell": [
+          {
+            "height": 38.79999923706055,
+            "width": 1086.4000244140625,
+            "padding": "10px 14px",
+            "gap": "normal",
+            "minHeight": "0px"
+          }
+        ],
+        "toolbar": [
+          {
+            "height": 0,
+            "width": 0,
+            "padding": "14px",
+            "gap": "12px",
+            "minHeight": "0px"
+          }
+        ],
+        "form": [],
+        "sidebar": [
+          {
+            "height": 40,
+            "width": 239.1999969482422,
+            "padding": "8px 12px 8px 40px",
+            "gap": "normal",
+            "minHeight": "40px"
+          },
+          {
+            "height": 40,
+            "width": 239.1999969482422,
+            "padding": "8px 12px 8px 40px",
+            "gap": "normal",
+            "minHeight": "40px"
+          },
+          {
+            "height": 40,
+            "width": 239.1999969482422,
+            "padding": "8px 12px 8px 40px",
+            "gap": "normal",
+            "minHeight": "40px"
+          }
+        ],
+        "documentHeight": 900,
+        "overflow": 0
+      },
+      {
+        "density": "balanced",
+        "page": [
+          {
+            "height": 844,
+            "width": 1184,
+            "padding": "16px 20px",
+            "gap": "normal",
+            "minHeight": "844px"
+          }
+        ],
+        "dashboard": [],
+        "metric": [],
+        "card": [],
+        "table": [],
+        "cell": [
+          {
+            "height": 34.79999923706055,
+            "width": 1094.4000244140625,
+            "padding": "8px 12px",
+            "gap": "normal",
+            "minHeight": "0px"
+          }
+        ],
+        "toolbar": [
+          {
+            "height": 0,
+            "width": 0,
+            "padding": "12px",
+            "gap": "10px",
+            "minHeight": "0px"
+          }
+        ],
+        "form": [],
+        "sidebar": [
+          {
+            "height": 38,
+            "width": 239.1999969482422,
+            "padding": "6px 12px 6px 40px",
+            "gap": "normal",
+            "minHeight": "38px"
+          },
+          {
+            "height": 38,
+            "width": 239.1999969482422,
+            "padding": "6px 12px 6px 40px",
+            "gap": "normal",
+            "minHeight": "38px"
+          },
+          {
+            "height": 38,
+            "width": 239.1999969482422,
+            "padding": "6px 12px 6px 40px",
+            "gap": "normal",
+            "minHeight": "38px"
+          }
+        ],
+        "documentHeight": 900,
+        "overflow": 0
+      },
+      {
+        "density": "compact",
+        "page": [
+          {
+            "height": 844,
+            "width": 1184,
+            "padding": "12px 16px",
+            "gap": "normal",
+            "minHeight": "844px"
+          }
+        ],
+        "dashboard": [],
+        "metric": [],
+        "card": [],
+        "table": [],
+        "cell": [
+          {
+            "height": 30.80000114440918,
+            "width": 1102.4000244140625,
+            "padding": "6px 10px",
+            "gap": "normal",
+            "minHeight": "0px"
+          }
+        ],
+        "toolbar": [
+          {
+            "height": 0,
+            "width": 0,
+            "padding": "8px 12px",
+            "gap": "8px",
+            "minHeight": "0px"
+          }
+        ],
+        "form": [],
+        "sidebar": [
+          {
+            "height": 36,
+            "width": 239.1999969482422,
+            "padding": "4px 12px 4px 40px",
+            "gap": "normal",
+            "minHeight": "36px"
+          },
+          {
+            "height": 36,
+            "width": 239.1999969482422,
+            "padding": "4px 12px 4px 40px",
+            "gap": "normal",
+            "minHeight": "36px"
+          },
+          {
+            "height": 36,
+            "width": 239.1999969482422,
+            "padding": "4px 12px 4px 40px",
+            "gap": "normal",
+            "minHeight": "36px"
+          }
+        ],
+        "documentHeight": 900,
+        "overflow": 0
+      },
+      {
+        "density": "dense",
+        "page": [
+          {
+            "height": 844,
+            "width": 1184,
+            "padding": "8px 12px",
+            "gap": "normal",
+            "minHeight": "844px"
+          }
+        ],
+        "dashboard": [],
+        "metric": [],
+        "card": [],
+        "table": [],
+        "cell": [
+          {
+            "height": 26.80000114440918,
+            "width": 1110.4000244140625,
+            "padding": "4px 8px",
+            "gap": "normal",
+            "minHeight": "0px"
+          }
+        ],
+        "toolbar": [
+          {
+            "height": 0,
+            "width": 0,
+            "padding": "6px 10px",
+            "gap": "6px",
+            "minHeight": "0px"
+          }
+        ],
+        "form": [],
+        "sidebar": [
+          {
+            "height": 34,
+            "width": 239.1999969482422,
+            "padding": "2px 12px 2px 40px",
+            "gap": "normal",
+            "minHeight": "34px"
+          },
+          {
+            "height": 34,
+            "width": 239.1999969482422,
+            "padding": "2px 12px 2px 40px",
+            "gap": "normal",
+            "minHeight": "34px"
+          },
+          {
+            "height": 34,
+            "width": 239.1999969482422,
+            "padding": "2px 12px 2px 40px",
+            "gap": "normal",
+            "minHeight": "34px"
+          }
+        ],
+        "documentHeight": 900,
+        "overflow": 0
+      }
+    ],
+    "draws": 0,
+    "beforeRows": 1,
+    "afterRows": 1,
+    "lengthBefore": 25,
+    "lengthAfter": 25,
+    "requests": 0
+  }
+]

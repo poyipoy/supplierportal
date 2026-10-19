@@ -1,33 +1,39 @@
 import { t } from './i18n.js';
+import { dropPlacement } from './dashboard-layout-core.js';
+
+const previewInputs = new WeakSet();
+const restorationTargets = new WeakSet();
+const reorderLists = new WeakSet();
+const dragLists = new WeakSet();
 
 export function resolveEffectiveTheme(choice, prefersDark) {
     return choice === 'system' ? (prefersDark ? 'dark' : 'light') : choice;
 }
 
 export function bindCustomizationPreviews(documentRef, preferences) {
-    documentRef.querySelectorAll('input[name="theme"]').forEach((input) => {
-        input.addEventListener('change', () => {
-            if (input.checked) preferences.previewTheme(input.value);
+    for (const [name, method] of Object.entries({ theme: 'previewTheme', accent: 'previewAccent', density: 'previewDensity' })) {
+        documentRef.querySelectorAll(`input[name="${name}"]`).forEach((input) => {
+            if (input.closest?.('#customizationForm') || previewInputs.has(input)) return;
+            previewInputs.add(input);
+            input.addEventListener('change', () => {
+                if (input.checked) preferences[method](input.value);
+            });
         });
-    });
-
-    documentRef.querySelectorAll('input[name="accent"]').forEach((input) => {
-        input.addEventListener('change', () => {
-            if (input.checked) preferences.previewAccent(input.value);
-        });
-    });
-
-    documentRef.querySelectorAll('input[name="density"]').forEach((input) => {
-        input.addEventListener('change', () => {
-            if (input.checked) preferences.previewDensity(input.value);
-        });
-    });
+    }
 }
 
 export function bindBackForwardRestoration(windowRef, preferences, documentRef = windowRef.document) {
+    if (restorationTargets.has(windowRef)) return;
+    restorationTargets.add(windowRef);
     windowRef.addEventListener('pageshow', (event) => {
-        if (!event.persisted) return;
+        // Chrome can restore form fields on ordinary history navigation too.
+        const historyNavigation = windowRef.performance?.getEntriesByType?.('navigation')?.[0]?.type === 'back_forward';
+        if (!event.persisted && !historyNavigation) return;
         preferences.restoreSaved();
+        if (documentRef?.querySelector?.('#customizationForm')) {
+            windowRef.dispatchEvent(new Event('adasi:preferences-restored'));
+            return;
+        }
         ['theme', 'density', 'accent'].forEach((name) => {
             documentRef?.querySelectorAll('input[name="' + name + '"]').forEach((input) => {
                 input.checked = input.value === preferences[name];
@@ -55,6 +61,8 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined' && window.A
 
 export function bindDashboardReorder(documentRef) {
     documentRef.querySelectorAll('[data-dashboard-controls]').forEach((list) => {
+        if (reorderLists.has(list)) return;
+        reorderLists.add(list);
         list.addEventListener('click', (event) => {
             const button = event.target.closest('[data-dashboard-move]');
             if (!button) return;
@@ -74,12 +82,15 @@ export function bindDashboardReorder(documentRef) {
             const status = list.closest('[data-dashboard-section]')?.querySelector('[data-dashboard-status]');
             if (status) status.textContent = t('js.dashboard.position', { label: row.dataset.widgetLabel, position: updated.indexOf(row) + 1, total: updated.length });
             button.focus();
+            if (updated.indexOf(row) !== index) list.dispatchEvent(new Event('adasi:dashboard-order-change', { bubbles: true }));
         });
     });
 }
 
 export function bindDashboardDragAndDrop(documentRef) {
     documentRef.querySelectorAll('[data-dashboard-controls]').forEach((list) => {
+        if (dragLists.has(list)) return;
+        dragLists.add(list);
         let draggedRow = null;
 
         const clearDragStyles = () => {
@@ -131,9 +142,12 @@ export function bindDashboardDragAndDrop(documentRef) {
 
             const targetRow = event.target.closest('[data-dashboard-choice]');
             if (targetRow && targetRow !== draggedRow && list.contains(targetRow)) {
+                const beforeIndex = Array.from(list.querySelectorAll('[data-dashboard-choice]')).indexOf(draggedRow);
                 const rect = typeof targetRow.getBoundingClientRect === 'function' ? targetRow.getBoundingClientRect() : null;
+                // Tiles can sit side by side in the wireframe, so the pointer is compared on both axes.
+                const listWidth = typeof list.getBoundingClientRect === 'function' ? list.getBoundingClientRect().width : 0;
                 const isAfter = rect && rect.height > 0 && typeof event.clientY === 'number'
-                    ? (event.clientY > rect.top + rect.height / 2)
+                    ? dropPlacement(rect, { x: event.clientX, y: event.clientY }, listWidth).position === 'after'
                     : false;
 
                 if (isAfter) {
@@ -145,8 +159,9 @@ export function bindDashboardDragAndDrop(documentRef) {
                 const updated = Array.from(list.querySelectorAll('[data-dashboard-choice]'));
                 const status = list.closest('[data-dashboard-section]')?.querySelector('[data-dashboard-status]');
                 if (status) {
-                status.textContent = t('js.dashboard.position', { label: draggedRow.dataset.widgetLabel, position: updated.indexOf(draggedRow) + 1, total: updated.length });
+                    status.textContent = t('js.dashboard.position', { label: draggedRow.dataset.widgetLabel, position: updated.indexOf(draggedRow) + 1, total: updated.length });
                 }
+                if (updated.indexOf(draggedRow) !== beforeIndex) list.dispatchEvent(new Event('adasi:dashboard-order-change', { bubbles: true }));
             }
 
             clearDragStyles();

@@ -173,7 +173,8 @@ class UserDashboardCustomizationTest extends TestCase
         $this->assertSame('brand', $values['accent']);
         $payload = $service->frontendPayload($user, $values);
         $this->assertSame('brand', $payload['accent']);
-        $this->assertEqualsCanonicalizing(['theme', 'density', 'accent', 'accentKeys', 'sidebarState', 'pageSize', 'sidebarRevision', 'accountId', 'regional', 'regionalRegistry'], array_keys($payload));
+        $this->assertEqualsCanonicalizing(['theme', 'density', 'densityKeys', 'accent', 'accentKeys', 'sidebarState', 'pageSize', 'sidebarRevision', 'accountId', 'regional', 'regionalRegistry'], array_keys($payload));
+        $this->assertSame(['spacious', 'comfortable', 'balanced', 'compact', 'dense'], $payload['densityKeys']);
         $this->assertNotContains('admin.rates', $values['dashboard_preferences']['admin']['hidden']);
     }
 

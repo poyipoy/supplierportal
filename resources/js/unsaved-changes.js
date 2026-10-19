@@ -14,8 +14,12 @@
     let isSubmitting = false;
     let hasPushedHistoryState = false;
     let userHasInteracted = false;
+    let leaveConfirmed = false;
+    let leaveConfirmedTimer = null;
+    let reloadConfirmation = null;
 
     const formSnapshots = new WeakMap();
+    const dirtySources = new Map();
 
     function getCopy() {
         const t = window.AdasiI18n.t;
@@ -45,6 +49,8 @@
     function shouldTrackForm(form) {
         if (!form || !(form instanceof HTMLFormElement)) return false;
         if (form.matches('[data-track-unsaved="false"]')) return false;
+        // Component-owned state (presets/autosave) is authoritative for its form.
+        if ([...dirtySources.values()].some((source) => source.form === form)) return false;
 
         // Skip auth/session action forms with no real form inputs
         const action = (form.getAttribute('action') || '').toLowerCase();
@@ -165,12 +171,13 @@
     }
 
     function syncDirtyState() {
-        if (isSubmitting) {
+        if (isSubmitting || leaveConfirmed) {
             window.isFormDirty = false;
             return false;
         }
 
-        const reallyDirty = isAnyFormDirty() || manualDirty;
+        const reallyDirty = isAnyFormDirty() || manualDirty
+            || [...dirtySources.values()].some((source) => source.isDirty());
         window.isFormDirty = reallyDirty;
 
         if (reallyDirty) {
@@ -182,7 +189,29 @@
         return reallyDirty;
     }
 
+    // The visitor already said "leave" in one of our own dialogs. For a few seconds page-level beforeunload handlers
+    // may still run (some of them persist drafts), but their request for the browser's native prompt is ignored, so
+    // the same decision is never asked twice ("Reload page?" followed by the browser's "Reload site?").
+    function confirmLeave() {
+        leaveConfirmed = true;
+        clearTimeout(leaveConfirmedTimer);
+        leaveConfirmedTimer = setTimeout(() => { leaveConfirmed = false; }, 4000);
+        AdasiUnsaved.markClean();
+    }
+
+    function ignoreNativePromptAfterConfirmedLeave(event) {
+        if (!leaveConfirmed) return;
+        event.preventDefault = () => {};
+        Object.defineProperty(event, 'returnValue', { configurable: true, get: () => '', set: () => {} });
+    }
+
     const AdasiUnsaved = {
+        registerDirtySource(isDirty, form = null) {
+            if (typeof isDirty !== 'function') throw new TypeError('A dirty-state check is required.');
+            const owner = Symbol('dirty-source');
+            dirtySources.set(owner, { isDirty, form });
+            return () => { dirtySources.delete(owner); };
+        },
         markDirty() {
             manualDirty = true;
             syncDirtyState();
@@ -228,7 +257,7 @@
                     cancelText: cancelText
                 }).then((result) => {
                     if (result && result.isConfirmed) {
-                        AdasiUnsaved.markClean();
+                        confirmLeave();
                         if (typeof onConfirm === 'function') onConfirm();
                     }
                 });
@@ -245,66 +274,76 @@
                     reverseButtons: true
                 }).then((result) => {
                     if (result && result.isConfirmed) {
-                        AdasiUnsaved.markClean();
+                        confirmLeave();
                         if (typeof onConfirm === 'function') onConfirm();
                     }
                 });
             } else {
                 if (window.confirm(`${title}\n\n${text}`)) {
-                    AdasiUnsaved.markClean();
+                    confirmLeave();
                     if (typeof onConfirm === 'function') onConfirm();
                 }
                 return Promise.resolve();
             }
         },
         showReloadConfirmation() {
-            const copy = getCopy();
-            const title = copy.reloadTitle;
-            const text = copy.reloadText;
-            const confirmText = copy.reloadButton;
-            const cancelText = copy.cancelButton;
+            if (reloadConfirmation) return reloadConfirmation;
+            const ask = () => {
+                const copy = getCopy();
+                const title = copy.reloadTitle;
+                const text = copy.reloadText;
+                const confirmText = copy.reloadButton;
+                const cancelText = copy.cancelButton;
 
-            if (window.AdasiAlert && typeof window.AdasiAlert.confirmDanger === 'function') {
-                return window.AdasiAlert.confirmDanger({
-                    title: title,
-                    text: text,
-                    confirmText: confirmText,
-                    cancelText: cancelText
-                }).then((result) => {
-                    if (result && result.isConfirmed) {
-                        AdasiUnsaved.markClean();
+                if (window.AdasiAlert && typeof window.AdasiAlert.confirmDanger === 'function') {
+                    return window.AdasiAlert.confirmDanger({
+                        title: title,
+                        text: text,
+                        confirmText: confirmText,
+                        cancelText: cancelText
+                    }).then((result) => {
+                        if (result && result.isConfirmed) {
+                            confirmLeave();
+                            window.location.reload();
+                        }
+                    });
+                } else if (window.Swal) {
+                    return window.Swal.fire({
+                        icon: 'warning',
+                        title: title,
+                        text: text,
+                        showCancelButton: true,
+                        confirmButtonText: confirmText,
+                        cancelButtonText: cancelText,
+                        confirmButtonColor: '#C0392B',
+                        cancelButtonColor: '#64748b',
+                        reverseButtons: true
+                    }).then((result) => {
+                        if (result && result.isConfirmed) {
+                            confirmLeave();
+                            window.location.reload();
+                        }
+                    });
+                } else {
+                    if (window.confirm(`${title}\n\n${text}`)) {
+                        confirmLeave();
                         window.location.reload();
                     }
-                });
-            } else if (window.Swal) {
-                return window.Swal.fire({
-                    icon: 'warning',
-                    title: title,
-                    text: text,
-                    showCancelButton: true,
-                    confirmButtonText: confirmText,
-                    cancelButtonText: cancelText,
-                    confirmButtonColor: '#C0392B',
-                    cancelButtonColor: '#64748b',
-                    reverseButtons: true
-                }).then((result) => {
-                    if (result && result.isConfirmed) {
-                        AdasiUnsaved.markClean();
-                        window.location.reload();
-                    }
-                });
-            } else {
-                if (window.confirm(`${title}\n\n${text}`)) {
-                    AdasiUnsaved.markClean();
-                    window.location.reload();
+                    return Promise.resolve();
                 }
-                return Promise.resolve();
-            }
+            };
+            reloadConfirmation = Promise.resolve().then(ask).finally(() => { reloadConfirmation = null; });
+            return reloadConfirmation;
         }
     };
 
     window.AdasiUnsaved = Object.freeze(AdasiUnsaved);
     window.isFormDirty = false;
+
+    // Capture phase on window: runs before any page-level beforeunload handler, so it can neutralise their prompt request.
+    window.addEventListener('beforeunload', ignoreNativePromptAfterConfirmedLeave, true);
+    // A page restored from the back/forward cache must start with no pending confirmation.
+    window.addEventListener('pageshow', () => { leaveConfirmed = false; });
 
     function initUnsavedTracker() {
         // Initial snapshot of server-rendered forms
@@ -380,7 +419,7 @@
                 } catch (e) {}
 
                 AdasiUnsaved.showLeaveConfirmation(() => {
-                    AdasiUnsaved.markClean();
+                    confirmLeave();
                     window.history.back();
                 });
             }

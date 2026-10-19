@@ -7,6 +7,16 @@ use App\Support\PortalContext;
 
 class DashboardWidgetService
 {
+    public const GRID_COLUMNS = 12;
+
+    /**
+     * Natural widths a widget may declare. The smallest is 3, so a widened last card in a
+     * row (12 minus what precedes it) always lands inside this set too.
+     */
+    public const SPANS = [3, 4, 5, 6, 7, 8, 9, 12];
+
+    public const KINDS = ['metrics', 'chart', 'table', 'list', 'summary'];
+
     public function audienceFor(User $user, ?string $routeName = null): ?string
     {
         if ($routeName !== null) {
@@ -33,6 +43,15 @@ class DashboardWidgetService
         return is_array($definition) && $this->eligible($user, $definition) ? $audience : null;
     }
 
+    /**
+     * Only the user's own audience is editable: an admin viewing the Finance dashboard, or
+     * Finance viewing Accounting, may read it but never rearranges it.
+     */
+    public function ownsAudience(User $user, string $audience): bool
+    {
+        return $this->audienceFor($user) === $audience;
+    }
+
     public function layoutFor(User $user, array $savedLayouts, ?string $audience = null): array
     {
         $audience ??= $this->audienceFor($user);
@@ -44,13 +63,81 @@ class DashboardWidgetService
         }
 
         $layout = $this->normalizeLayout($definition['widgets'], $savedLayouts[$audience] ?? []);
-        $result = [];
+        $rows = [];
         foreach ($layout['order'] as $key) {
             $metadata = $definition['widgets'][$key];
-            $result[] = ['key' => $key, ...$metadata, 'label' => __($metadata['label']), 'visible' => ! in_array($key, $layout['hidden'], true)];
+            $rows[] = [
+                'key' => $key,
+                ...$metadata,
+                'label' => __($metadata['label']),
+                'span' => self::normalizeSpan($metadata['span'] ?? null),
+                'kind' => self::normalizeKind($metadata['kind'] ?? null),
+                'visible' => ! in_array($key, $layout['hidden'], true),
+            ];
+        }
+
+        // A hidden row is absent from the map, so it keeps its natural span for the wireframe.
+        $effective = self::computeEffectiveSpans($rows);
+
+        return array_map(fn (array $row): array => [...$row, 'effective_span' => $effective[$row['key']] ?? $row['span']], $rows);
+    }
+
+    /**
+     * Smart span: lay the visible widgets out in order on a 12-column grid so no row is left short.
+     * A full-width widget gets its own row; a partial widget joins the current row while the total
+     * stays within 12, otherwise it starts a new one; a row that closes under 12 widens its last
+     * widget to fill it. Must stay identical to computeEffectiveSpans() in
+     * resources/js/dashboard-layout-core.js (both run the cases in tests/Fixtures/dashboard-smart-span-cases.json).
+     *
+     * @param  list<array{key: string, span?: mixed, visible?: mixed}>  $items
+     * @return array<string, int> effective span per visible key, in order
+     */
+    public static function computeEffectiveSpans(array $items): array
+    {
+        $rows = [];
+        $current = [];
+        $used = 0;
+
+        foreach ($items as $item) {
+            if (($item['visible'] ?? false) !== true) {
+                continue;
+            }
+
+            $span = self::normalizeSpan($item['span'] ?? null);
+            if ($used + $span > self::GRID_COLUMNS) {
+                $rows[] = $current;
+                $current = [];
+                $used = 0;
+            }
+
+            $current[] = [$item['key'], $span];
+            $used += $span;
+        }
+
+        if ($current !== []) {
+            $rows[] = $current;
+        }
+
+        $result = [];
+        foreach ($rows as $row) {
+            $total = array_sum(array_column($row, 1));
+            $lastIndex = array_key_last($row);
+            foreach ($row as $index => [$key, $span]) {
+                $result[$key] = $index === $lastIndex ? $span + (self::GRID_COLUMNS - $total) : $span;
+            }
         }
 
         return $result;
+    }
+
+    public static function normalizeSpan(mixed $span): int
+    {
+        return is_int($span) && in_array($span, self::SPANS, true) ? $span : self::GRID_COLUMNS;
+    }
+
+    public static function normalizeKind(mixed $kind): string
+    {
+        return is_string($kind) && in_array($kind, self::KINDS, true) ? $kind : 'list';
     }
 
     public function normalizeLayouts(User $user, array $savedLayouts): array

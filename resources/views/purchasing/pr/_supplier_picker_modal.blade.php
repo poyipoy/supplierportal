@@ -52,7 +52,7 @@
     @error('supplier_ids') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
     @error('supplier_ids.*') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
 
-    <div class="modal fade" id="{{ $modalId }}" tabindex="-1" aria-labelledby="{{ $modalId }}Label" aria-hidden="true">
+    <div class="modal fade ui-density-modal" id="{{ $modalId }}" tabindex="-1" aria-labelledby="{{ $modalId }}Label" aria-hidden="true">
         <div class="modal-dialog modal-dialog-scrollable modal-lg modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">

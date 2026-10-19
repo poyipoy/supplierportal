@@ -25,7 +25,7 @@
 
     <div class="tw-grid tw-grid-cols-1 lg:tw-grid-cols-12 tw-gap-6">
         {{-- Left: Information & Documents --}}
-        <div class="lg:tw-col-span-8 tw-space-y-6">
+        <div class="lg:tw-col-span-8 ui-density-stack-list">
             <x-ui.card :title="__('ga.labels.details')">
                 <div class="tw-grid tw-grid-cols-2 sm:tw-grid-cols-3 tw-gap-4 tw-text-ui-xs">
                     <div>
@@ -73,7 +73,7 @@
 
             {{-- Dokumen Pendukung --}}
             <x-ui.card :title="__('ga.labels.supporting_documents')">
-                <div class="tw-space-y-3">
+                <div class="ui-density-list">
                     @forelse($claim->documents as $doc)
                         <div class="tw-flex tw-items-center tw-justify-between tw-p-3 tw-rounded tw-border tw-border-outline-variant tw-bg-surface-container">
                             <div class="tw-flex tw-items-center tw-gap-2.5">
@@ -97,7 +97,7 @@
         </div>
 
         {{-- Right: Destination Bank & Actions --}}
-        <div class="lg:tw-col-span-4 tw-space-y-6">
+        <div class="lg:tw-col-span-4 ui-density-stack-list">
             {{-- Rekening Tujuan --}}
             <x-ui.card :title="__('ga.labels.bank_account')">
                 <div class="tw-space-y-2 tw-text-ui-xs">
@@ -119,7 +119,7 @@
             {{-- Action for GA: Need Revision Resubmit --}}
             @if($claim->status === \App\Models\GaClaim::STATUS_NEED_REVISION)
                 <x-ui.card :title="__('ga.detail.revision_request')">
-                    <div class="tw-space-y-3">
+                    <div class="ui-density-list">
                         <div class="tw-p-3 tw-rounded tw-bg-error/10 tw-border tw-border-error/20 tw-text-error tw-text-ui-xs">
                             <strong>{{ __('local_invoice.labels.revision_reason') }}:</strong>
                             <p class="tw-m-0 tw-mt-1">{{ $claim->revision_reason ?: __('ga.detail.revision_hint') }}</p>
@@ -138,7 +138,7 @@
                     <form method="POST" action="{{ route('ga.claims.basic-verify', $claim) }}">
                         <x-finance.maker-checker-override id="ga-basic-override" />
                         @csrf
-                        <div class="tw-space-y-3">
+                        <div class="ui-density-list">
                             <p class="tw-text-ui-xs tw-text-on-surface-variant">
                                 {{ __('ga.detail.basic_hint') }}
                             </p>
@@ -156,7 +156,7 @@
 
             {{-- Status Timeline --}}
             <x-ui.card :title="__('ga.labels.claim_history')">
-                <div class="tw-space-y-3 tw-text-ui-xs">
+                <div class="ui-density-list tw-text-ui-xs">
                     @forelse($claim->statusHistories as $hist)
                         <div class="tw-p-2 tw-rounded tw-bg-surface-container">
                             <div class="tw-flex tw-justify-between">

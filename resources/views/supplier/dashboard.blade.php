@@ -26,7 +26,7 @@
     @endif
 
     <x-ui.dashboard-layout audience="supplier.import">
-        <x-slot:metrics class="lg:tw-col-span-12">
+        <x-slot:metrics>
             {{-- Restrained operational summary provides high-level metrics at a glance. --}}
             <div class="tw-grid tw-gap-px tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-outline-variant sm:tw-grid-cols-2 lg:tw-grid-cols-4" aria-label="{{ __('supplier.copy.supplier_operational_summary') }}">
                 <x-ui.metric-card flat :label="__('supplier.copy.active_periods')" :value="$regionalFormatter->number((string) ($periodeAktif), 'plain')" icon="calendar" tone="neutral" :href="route('supplier.quotations.index')" />
@@ -36,7 +36,7 @@
             </div>
         </x-slot:metrics>
 
-        <x-slot:quotations class="lg:tw-col-span-12">
+        <x-slot:quotations>
             <x-ui.data-table
                 :title="__('supplier.copy.action_required_requisitions_awaiting_quotation')"
                 :description="__('supplier.copy.open_procurement_opportunities_from_adasi_purchasing_available_for_your_bid')"
@@ -87,7 +87,7 @@
             </x-ui.data-table>
         </x-slot:quotations>
 
-        <x-slot:orders class="lg:tw-col-span-8">
+        <x-slot:orders>
 <x-ui.data-table
                 :title="__('supplier.copy.latest_purchase_orders')"
                 :description="__('supplier.copy.active_orders_and_recent_deliveries_issued_to_your_supplier_account')"
@@ -146,7 +146,7 @@
             </x-ui.data-table>
         </x-slot:orders>
 
-        <x-slot:updates class="lg:tw-col-span-4">
+        <x-slot:updates>
         <aside class="tw-grid tw-gap-4">
             {{-- ADASI Announcements Card --}}
             <x-ui.card :title="__('supplier.copy.adasi_announcements')" padding="none">

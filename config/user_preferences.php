@@ -11,7 +11,7 @@ return [
         'violet' => 'Violet',
     ],
     'themes' => ['light', 'dark', 'system'],
-    'densities' => ['comfortable', 'compact'],
+    'densities' => ['spacious', 'comfortable', 'balanced', 'compact', 'dense'],
     'sidebar_states' => ['expanded', 'collapsed'],
     'page_sizes' => [10, 25, 50, 100],
     'quick_access_limit' => 6,

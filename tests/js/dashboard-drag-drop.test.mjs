@@ -32,11 +32,13 @@ function createMockElement(tagName, attributes = {}) {
             listeners[event].push(fn);
         },
         dispatchEvent(event) {
-            event.target = event.target || el;
+            // A real Event exposes a read-only target, so handlers receive a plain snapshot of it instead.
+            const dispatched = typeof Event !== 'undefined' && event instanceof Event ? { type: event.type } : event;
+            dispatched.target = dispatched.target || el;
             let current = el;
             while (current) {
-                const handlers = current._listeners[event.type] || [];
-                handlers.forEach(h => h(event));
+                const handlers = current._listeners[dispatched.type] || [];
+                handlers.forEach(h => h(dispatched));
                 current = current.parentNode;
             }
         },

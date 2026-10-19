@@ -298,6 +298,124 @@ class UserCustomizationTest extends TestCase
         $this->assertSame('brand', $user->fresh()->preference->accent);
     }
 
+    public function test_density_registry_has_exactly_five_ordered_strings_and_keeps_comfortable_default(): void
+    {
+        $this->assertSame(['spacious', 'comfortable', 'balanced', 'compact', 'dense'], config('user_preferences.densities'));
+        $this->assertSame('comfortable', config('user_preferences.defaults.density'));
+    }
+
+    public function test_all_five_density_levels_save_only_for_the_current_account(): void
+    {
+        $user = User::factory()->create(['role' => 'admin']);
+        $other = User::factory()->create(['role' => 'finance']);
+
+        foreach (['spacious', 'comfortable', 'balanced', 'compact', 'dense'] as $index => $density) {
+            $this->actingAs($user)
+                ->patch(route('profile.customization.update'), $this->validPreferences([
+                    'density' => $density,
+                    'user_id' => $other->id,
+                ]))
+                ->assertRedirect(route('profile.customization'))
+                ->assertSessionHasNoErrors();
+
+            $saved = $user->fresh()->preference;
+            $this->assertSame($density, $saved->density);
+            $this->assertSame($index + 1, $saved->revision);
+            $this->assertSame(25, $saved->page_size);
+            $this->assertSame('expanded', $saved->sidebar_state);
+            $this->assertDatabaseMissing('user_preferences', ['user_id' => $other->id]);
+        }
+
+        $this->delete(route('profile.customization.reset'))->assertRedirect(route('profile.customization'));
+        $this->assertSame('comfortable', $user->fresh()->preference->density);
+    }
+
+    public function test_invalid_density_values_never_overwrite_the_saved_value(): void
+    {
+        $user = User::factory()->create(['role' => 'admin']);
+        $stored = $user->preference()->create([
+            'theme' => 'dark', 'density' => 'compact', 'sidebar_state' => 'collapsed',
+            'page_size' => 50, 'quick_access' => [],
+        ]);
+        $stored->forceFill(['revision' => 7])->save();
+
+        foreach (['tiny', '2', 1, 2, 5, null, [], ['dense'], false] as $density) {
+            $this->actingAs($user)
+                ->patchJson(route('profile.customization.update'), $this->validPreferences(['density' => $density]))
+                ->assertUnprocessable()
+                ->assertJsonValidationErrors('density');
+
+            $saved = $user->fresh()->preference;
+            $this->assertSame('compact', $saved->density);
+            $this->assertSame('dark', $saved->theme);
+            $this->assertSame('collapsed', $saved->sidebar_state);
+            $this->assertSame(50, $saved->page_size);
+            $this->assertSame(7, $saved->revision);
+        }
+    }
+
+    public function test_unknown_stored_density_falls_back_without_writing_the_record(): void
+    {
+        $user = User::factory()->create(['role' => 'admin']);
+        $stored = $user->preference()->create([
+            'theme' => 'light', 'density' => 'legacy_density', 'sidebar_state' => 'expanded',
+            'page_size' => 25, 'quick_access' => [],
+        ]);
+        $revision = $stored->fresh()->revision;
+
+        $this->actingAs($user)->get(route('profile.customization'))
+            ->assertOk()
+            ->assertViewHas('preferences', fn (array $preferences): bool => $preferences['density'] === 'comfortable');
+
+        $this->assertSame('legacy_density', $stored->fresh()->density);
+        $this->assertSame($revision, $stored->fresh()->revision);
+    }
+
+    public function test_valid_old_density_is_preview_metadata_without_changing_the_saved_baseline(): void
+    {
+        $user = User::factory()->create(['role' => 'admin']);
+        $this->actingAs($user)
+            ->withSession(['_old_input' => ['density' => 'dense']])
+            ->get(route('profile.customization'))
+            ->assertOk()
+            ->assertViewHas('densityPreview', 'dense')
+            ->assertViewHas('preferences', fn (array $preferences): bool => $preferences['density'] === 'comfortable');
+
+        $this->assertDatabaseMissing('user_preferences', ['user_id' => $user->id]);
+    }
+
+    public function test_invalid_old_density_is_not_bootstrapped_as_a_preview(): void
+    {
+        $user = User::factory()->create(['role' => 'admin']);
+        foreach (['tiny', '2', ['dense']] as $density) {
+            $this->actingAs($user)
+                ->withSession(['_old_input' => ['density' => $density]])
+                ->get(route('profile.customization'))
+                ->assertOk()
+                ->assertViewHas('densityPreview', null);
+        }
+        $this->assertDatabaseMissing('user_preferences', ['user_id' => $user->id]);
+    }
+
+    public function test_density_slider_submits_one_canonical_select_and_keeps_numeric_position_unnamed(): void
+    {
+        $user = User::factory()->create(['role' => 'admin']);
+        $response = $this->actingAs($user)->get(route('profile.customization'))->assertOk();
+        $html = $response->getContent();
+        $this->assertSame(1, substr_count($html, 'name="density"'));
+        $this->assertMatchesRegularExpression('/<select[^>]*name="density"/', $html);
+        $this->assertMatchesRegularExpression('/<input[^>]*type="range"[^>]*min="1"[^>]*max="5"[^>]*step="1"/', $html);
+        preg_match('/<input[^>]*data-density-slider[^>]*>/', $html, $slider);
+        $this->assertNotEmpty($slider);
+        $this->assertStringNotContainsString('name=', $slider[0]);
+        $this->assertStringContainsString('hidden disabled', $slider[0]);
+        $this->assertStringContainsString('aria-valuetext="Comfortable, 2 of 5"', $slider[0]);
+        foreach (['spacious', 'comfortable', 'balanced', 'compact', 'dense'] as $density) {
+            $this->assertStringContainsString('value="'.$density.'"', $html);
+        }
+        $response->assertSee('data-density-label', false)->assertSee('ui-density-preview-frame', false);
+    }
+
     private function validPreferences(array $overrides = []): array
     {
         return array_merge([

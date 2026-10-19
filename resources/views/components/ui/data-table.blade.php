@@ -4,7 +4,7 @@
     'loading' => false,
     'empty' => false,
     'error' => null,
-    'density' => 'compact',
+    'density' => 'auto',
     // Opt-in bounded scroll with sticky header/footer (Decision 09). The
     // scroll region then needs an accessible name for keyboard users.
     'sticky' => false,
@@ -13,7 +13,7 @@
 
 <section {{ $attributes->class(['ui-data-table tw-min-w-0 tw-max-w-full tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline tw-bg-surface tw-shadow-none', 'ui-table--compact' => $density === 'compact']) }}>
     @if($title || $description || isset($toolbar) || isset($actions) || isset($filters))
-        <header class="tw-grid tw-gap-2.5 tw-border-b tw-border-outline-variant tw-bg-surface-container tw-p-3.5 shell:tw-px-4">
+        <header class="ui-data-table__header tw-grid tw-border-b tw-border-outline-variant tw-bg-surface-container ">
             <div class="tw-flex tw-flex-col tw-gap-2.5 shell:tw-flex-row shell:tw-items-center shell:tw-justify-between">
                 <div class="tw-min-w-0">
                     @if($title)<h2 class="tw-m-0 tw-text-sm tw-font-bold tw-text-on-surface">{{ $title }}</h2>@endif
@@ -45,5 +45,5 @@
         @endif
     @endif
 
-    @isset($pagination)<footer class="tw-border-t tw-border-outline-variant tw-bg-surface-low tw-p-3.5 shell:tw-px-4">{{ $pagination }}</footer>@endisset
+    @isset($pagination)<footer class="ui-data-table__footer tw-border-t tw-border-outline-variant tw-bg-surface-low ">{{ $pagination }}</footer>@endisset
 </section>

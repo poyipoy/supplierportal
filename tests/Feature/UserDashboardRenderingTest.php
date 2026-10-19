@@ -68,4 +68,58 @@ class UserDashboardRenderingTest extends TestCase
         $html = $response->getContent();
         $this->assertLessThan(strpos($html, 'data-dashboard-widget="admin.rates"'), strpos($html, 'data-dashboard-widget="admin.summary"'));
     }
+
+    public function test_default_dashboards_keep_the_column_widths_they_had_before_smart_span(): void
+    {
+        $cases = [
+            ['admin', 'admin', 'admin.dashboard', ['admin.summary' => 12, 'admin.rates' => 8, 'admin.shortcuts' => 4, 'admin.notifications' => 12]],
+            ['purchasing', 'purchasing', 'purchasing.dashboard', ['purchasing.exceptions' => 12, 'purchasing.metrics' => 12, 'purchasing.analytics' => 12, 'purchasing.recent_requisitions' => 5, 'purchasing.arrivals' => 7]],
+            ['supplier', 'supplier.import', 'supplier.dashboard', ['supplier.import.metrics' => 12, 'supplier.import.quotations' => 12, 'supplier.import.orders' => 8, 'supplier.import.updates' => 4]],
+        ];
+
+        foreach ($cases as [$role, $audience, $route, $widths]) {
+            $response = $this->actingAs($this->dashboardUser($role, $audience))->get(route($route))->assertOk();
+            foreach ($widths as $key => $span) {
+                $response->assertSee('class="tw-min-w-0 lg:tw-col-span-'.$span.'" data-dashboard-widget="'.$key.'"', false);
+            }
+        }
+    }
+
+    public function test_hiding_or_moving_a_card_never_leaves_its_row_short(): void
+    {
+        $admin = $this->dashboardUser('admin', 'admin', ['admin' => ['hidden' => ['admin.shortcuts'], 'order' => []]]);
+        $this->actingAs($admin)->get(route('admin.dashboard'))->assertOk()
+            ->assertDontSee('data-dashboard-widget="admin.shortcuts"', false)
+            ->assertSee('class="tw-min-w-0 lg:tw-col-span-12" data-dashboard-widget="admin.rates"', false);
+
+        $purchasing = $this->dashboardUser('purchasing', 'purchasing', ['purchasing' => [
+            'hidden' => ['purchasing.recent_requisitions'],
+            'order' => ['purchasing.exceptions', 'purchasing.arrivals', 'purchasing.metrics', 'purchasing.analytics', 'purchasing.recent_requisitions'],
+        ]]);
+        $this->actingAs($purchasing)->get(route('purchasing.dashboard'))->assertOk()
+            ->assertSee('class="tw-min-w-0 lg:tw-col-span-12" data-dashboard-widget="purchasing.arrivals"', false)
+            ->assertDontSee('data-dashboard-widget="purchasing.recent_requisitions"', false);
+    }
+
+    private function dashboardUser(string $role, string $audience, ?array $layouts = null): User
+    {
+        $user = User::factory()->create(['role' => $role]);
+        if ($role === 'supplier') {
+            $user->supplierScopes()->delete();
+            DB::table('supplier_scopes')->insert([
+                'supplier_id' => $user->id,
+                'scope' => str_ends_with($audience, '.local') ? 'local' : 'import',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+        if ($layouts !== null) {
+            $user->preference()->create([
+                ...array_diff_key(config('user_preferences.defaults'), ['sidebar_revision' => true]),
+                'dashboard_preferences' => $layouts,
+            ]);
+        }
+
+        return $user;
+    }
 }

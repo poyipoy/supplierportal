@@ -15,6 +15,12 @@ class UserPreferenceService
         return is_string($locale) && in_array($locale, ['en', 'id'], true) ? $locale : 'en';
     }
 
+    public static function normalizeDensity(mixed $density): string
+    {
+        return is_string($density) && in_array($density, config('user_preferences.densities'), true)
+            ? $density : config('user_preferences.defaults.density');
+    }
+
     public function __construct(
         private readonly QuickAccessService $quickAccess,
         private readonly DashboardWidgetService $dashboardWidgets,
@@ -36,7 +42,7 @@ class UserPreferenceService
                 ...$defaults,
                 ...$this->regionalValues($stored),
                 'theme' => $stored->theme,
-                'density' => $stored->density,
+                'density' => self::normalizeDensity($stored->density),
                 'sidebar_state' => $stored->sidebar_state,
                 'page_size' => $stored->page_size,
                 'quick_access' => is_array($stored->quick_access) ? $stored->quick_access : [],
@@ -157,6 +163,33 @@ class UserPreferenceService
         }, 3);
     }
 
+    /**
+     * Persists only the user's own audience layout; every other preference is left untouched.
+     * Mirrors saveLocale(): row lock, defaults for a first row, revision bump, cache invalidation.
+     */
+    public function saveDashboardLayout(User $user, array $dashboard): array
+    {
+        return DB::transaction(function () use ($user, $dashboard): array {
+            $lockedUser = User::query()->whereKey($user->getKey())->lockForUpdate()->firstOrFail();
+            $stored = $lockedUser->preference()->first();
+            $preference = $stored ?? new UserPreference;
+
+            if ($stored === null) {
+                $preference->fill(config('user_preferences.defaults'));
+                $preference->sidebar_revision = 1;
+            }
+
+            $savedLayouts = is_array($stored?->dashboard_preferences) ? $stored->dashboard_preferences : [];
+            $preference->dashboard_preferences = $this->dashboardWidgets->mergeLayout($lockedUser, $savedLayouts, $dashboard);
+            $preference->revision = ($stored?->revision ?? 0) + 1;
+            $lockedUser->preference()->save($preference);
+            request()->attributes->remove($this->requestCacheKey($lockedUser));
+            app(NotificationPreferenceService::class)->forget($lockedUser);
+
+            return $this->for($lockedUser->refresh());
+        }, 3);
+    }
+
     public function saveNotificationPreferences(User $user, array $preferences, array $delivery = []): array
     {
         return DB::transaction(function () use ($user, $preferences, $delivery): array {
@@ -230,6 +263,7 @@ class UserPreferenceService
         return [
             'theme' => $preferences['theme'],
             'density' => $preferences['density'],
+            'densityKeys' => config('user_preferences.densities'),
             'accent' => $preferences['accent'],
             'accentKeys' => array_keys(config('user_preferences.accents')),
             'sidebarState' => $preferences['sidebar_state'],

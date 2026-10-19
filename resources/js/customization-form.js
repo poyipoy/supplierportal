@@ -10,6 +10,8 @@
  * for suppliers without an operational dashboard.
  */
 
+import { syncWireframe } from './dashboard-wireframe.js';
+
 export function sameOrder(a, b) {
     return a.length === b.length && a.every((value, index) => value === b[index]);
 }
@@ -27,6 +29,8 @@ export function customizationForm(config) {
     return {
         saved: config.saved,
         defaults: config.defaults,
+        densityKeys: config.densityKeys || [],
+        densityLabels: config.densityLabels || {},
         otherContextCount: config.otherContextCount,
         quickAccessLimit: config.quickAccessLimit,
         hasServerErrors: config.hasServerErrors,
@@ -39,22 +43,91 @@ export function customizationForm(config) {
         quickAccessSelectedCount: 0,
         regionalSample: '',
         isSubmitting: false,
+        initialized: false,
+        cleanups: [],
+        navigationDirty: null,
 
         root() {
             return this.$root;
         },
 
         init() {
+            if (this.initialized) return;
+            this.initialized = true;
+            this.navigationDirty = null;
             this.syncDashboardVisibilityControls();
+            for (const [name, method] of Object.entries({ theme: 'previewTheme', accent: 'previewAccent', density: 'previewDensity' })) {
+                const value = this.val(name);
+                if (value !== this.saved[name] && (name !== 'density' || this.densityKeys.includes(value))) {
+                    window.AdasiPreferences?.[method](value);
+                }
+            }
             this.recompute();
             this.observeSections();
-            this.$root.addEventListener('submit', () => { this.isSubmitting = true; });
-            window.addEventListener('beforeunload', (event) => {
-                if (this.dirtyCount > 0 && !this.isSubmitting) {
+            this.listen(this.root(), 'input', (event) => {
+                if (event.target.hasAttribute?.('data-density-slider')) this.previewDensityPosition(event.target.value);
+            });
+            this.listen(this.root(), 'change', (event) => this.changed(event.target));
+            this.listen(this.root(), 'adasi:dashboard-order-change', () => this.recompute());
+            this.listen(this.root(), 'submit', (event) => {
+                // Other form handlers may cancel after this listener has run.
+                queueMicrotask(() => {
+                    if (!this.initialized) return;
+                    if (event.defaultPrevented) this.recoverSubmission();
+                    else {
+                        this.isSubmitting = true;
+                        this.syncDensityControl();
+                    }
+                });
+            });
+            this.listen(this.root(), 'invalid', () => this.recoverSubmission(), true);
+            this.listen(this.root(), 'adasi:form-settled', () => this.recoverSubmission());
+            this.listen(window, 'adasi:preferences-restored', () => {
+                ['theme', 'accent', 'density'].forEach((name) => this.setVal(name, this.saved[name]));
+                this.recoverSubmission();
+            });
+            this.listen(window, 'beforeunload', (event) => {
+                const needsConfirmation = window.AdasiUnsaved?.isDirty() ?? this.dirtyCount > 0;
+                if (needsConfirmation && this.dirtyCount > 0 && !this.isSubmitting) {
                     event.preventDefault();
                     event.returnValue = '';
                 }
             });
+        },
+
+        listen(target, name, handler, options) {
+            target.addEventListener(name, handler, options);
+            this.cleanups.push(() => target.removeEventListener(name, handler, options));
+        },
+
+        destroy() {
+            this.cleanups.forEach((cleanup) => cleanup());
+            this.cleanups = [];
+            this.sectionObserver?.disconnect();
+            this.initialized = false;
+        },
+
+        changed(field) {
+            if (field.hasAttribute?.('data-density-slider')) return;
+            const toggle = field.closest?.('[data-dashboard-visibility-toggle]');
+            if (toggle) {
+                const hidden = field.closest('[data-dashboard-choice]')?.querySelector('input[name="dashboard[hidden][]"]');
+                if (hidden) hidden.checked = !field.checked;
+            }
+            if (['theme', 'accent', 'density'].includes(field.name)) {
+                if (field.type === 'radio' && !field.checked) return;
+                const method = { theme: 'previewTheme', accent: 'previewAccent', density: 'previewDensity' }[field.name];
+                this[method](field.value);
+            } else {
+                this.recompute();
+            }
+        },
+
+        recoverSubmission() {
+            this.isSubmitting = false;
+            window.AdasiUnsaved?.setSubmitting(false);
+            this.navigationDirty = null;
+            this.recompute();
         },
 
         val(name) {
@@ -83,6 +156,8 @@ export function customizationForm(config) {
         },
 
         recompute() {
+            // Order, visibility toggles, reset and discard all end here, so the wireframe widths follow them.
+            syncWireframe(this.root().querySelector?.('[data-dashboard-controls]'));
             let count = 0;
             SIMPLE_FIELDS.forEach((field) => {
                 if (String(this.val(field) ?? '') !== String(this.saved[field] ?? '')) count++;
@@ -97,10 +172,17 @@ export function customizationForm(config) {
             this.quickAccessSelectedCount = this.quickAccessSelected().length + this.otherContextCount;
             this.applyQuickAccessLimit();
             this.updateRegionalSample();
+            this.syncDensityControl();
+            const dirty = count > 0;
+            if (!this.isSubmitting && this.navigationDirty !== dirty) {
+                if (dirty) window.AdasiUnsaved?.markDirty();
+                else window.AdasiUnsaved?.markClean();
+                this.navigationDirty = dirty;
+            }
         },
 
         get saveDisabled() {
-            return this.dirtyCount === 0 && !this.hasServerErrors;
+            return this.isSubmitting || (this.dirtyCount === 0 && !this.hasServerErrors);
         },
 
         applyQuickAccessLimit() {
@@ -110,9 +192,48 @@ export function customizationForm(config) {
             });
         },
 
-        previewTheme(value) { window.AdasiPreferences?.previewTheme(value); this.recompute(); },
-        previewAccent(value) { window.AdasiPreferences?.previewAccent(value); this.recompute(); },
-        previewDensity(value) { window.AdasiPreferences?.previewDensity(value); this.recompute(); },
+        previewTheme(value) { this.setVal('theme', value); window.AdasiPreferences?.previewTheme(value); this.recompute(); },
+        previewAccent(value) { this.setVal('accent', value); window.AdasiPreferences?.previewAccent(value); this.recompute(); },
+        previewDensity(value) {
+            if (!this.densityKeys.includes(value)) return;
+            this.setVal('density', value);
+            window.AdasiPreferences?.previewDensity(value);
+            this.recompute();
+        },
+
+        previewDensityPosition(value) {
+            if (!['string', 'number'].includes(typeof value) || String(value).trim() === '') return;
+            const position = Number(value);
+            if (!Number.isInteger(position) || position < 1 || position > this.densityKeys.length) return;
+            this.previewDensity(this.densityKeys[position - 1]);
+        },
+
+        get densityLabel() {
+            const density = this.val('density');
+            return this.densityLabels[density] || density;
+        },
+
+        get densityDirty() {
+            return this.val('density') !== this.saved.density;
+        },
+
+        syncDensityControl() {
+            const slider = this.root().querySelector('[data-density-slider]');
+            if (!slider) return;
+            const position = this.densityKeys.indexOf(this.val('density')) + 1;
+            if (position < 1) return;
+            slider.value = String(position);
+            slider.hidden = false;
+            slider.disabled = this.isSubmitting;
+            slider.setAttribute('aria-valuetext', (this.copy.densityValue || ':label, :position/:count')
+                .replace(':label', this.densityLabel).replace(':position', position).replace(':count', this.densityKeys.length));
+            const canonical = this.root().querySelector('[name="density"]');
+            if (canonical?.type === 'select-one') canonical.hidden = true;
+            const label = this.root().querySelector('[data-density-label]');
+            if (label) label.textContent = this.densityLabel;
+            const unsaved = this.root().querySelector('[data-density-unsaved]');
+            if (unsaved) unsaved.hidden = !this.densityDirty;
+        },
 
         updateRegionalSample() {
             if (!window.AdasiRegionalSample) return;
@@ -142,13 +263,6 @@ export function customizationForm(config) {
                 toggleWrap.classList.remove('tw-hidden');
                 toggleWrap.classList.add('tw-flex');
                 switchEl.checked = !checkbox.checked;
-                if (!switchEl.dataset.bound) {
-                    switchEl.dataset.bound = 'true';
-                    switchEl.addEventListener('change', () => {
-                        checkbox.checked = !switchEl.checked;
-                        this.recompute();
-                    });
-                }
             });
         },
 
@@ -163,11 +277,14 @@ export function customizationForm(config) {
 
         resetSection(section) {
             if (section === 'appearance') {
-                this.setVal('theme', this.defaults.theme); this.previewTheme(this.defaults.theme);
-                this.setVal('accent', this.defaults.accent); this.previewAccent(this.defaults.accent);
-                this.setVal('density', this.defaults.density); this.previewDensity(this.defaults.density);
+                this.setVal('theme', this.defaults.theme);
+                this.setVal('accent', this.defaults.accent);
+                this.setVal('density', this.defaults.density);
                 this.setVal('sidebar_state', this.defaults.sidebar_state);
                 this.setVal('page_size', this.defaults.page_size);
+                window.AdasiPreferences?.previewTheme(this.defaults.theme);
+                window.AdasiPreferences?.previewAccent(this.defaults.accent);
+                window.AdasiPreferences?.previewDensity(this.defaults.density);
             } else if (section === 'region') {
                 this.setVal('timezone', this.defaults.timezone);
                 this.setVal('date_format', this.defaults.date_format);
@@ -190,9 +307,6 @@ export function customizationForm(config) {
 
         discard() {
             SIMPLE_FIELDS.forEach((field) => { this.setVal(field, this.saved[field]); });
-            this.previewTheme(this.saved.theme);
-            this.previewAccent(this.saved.accent);
-            this.previewDensity(this.saved.density);
             this.applyDashboardOrder(this.saved.dashboardOrder);
             this.root().querySelectorAll('input[name="dashboard[hidden][]"]').forEach((el) => {
                 el.checked = this.saved.dashboardHidden.includes(el.value);
@@ -233,6 +347,7 @@ export function customizationForm(config) {
             }, { rootMargin: '-35% 0px -55% 0px', threshold: 0 });
 
             sectionEls.forEach((el) => observer.observe(el));
+            this.sectionObserver = observer;
         },
     };
 }

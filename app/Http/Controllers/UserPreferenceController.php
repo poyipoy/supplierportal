@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\UpdateDashboardLayoutRequest;
 use App\Http\Requests\UpdateUserPreferenceRequest;
 use App\Models\User;
 use App\Services\Dashboard\DashboardWidgetService;
 use App\Services\QuickAccessService;
 use App\Services\UserPreferenceService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -20,9 +22,12 @@ class UserPreferenceController extends Controller
         $effective = $preferences->for($user);
         $context = $quickAccess->contextFor($user);
         $dashboardDefaultRows = $dashboardWidgets->layoutFor($user, []);
+        $oldDensity = $request->old('density');
 
         return view('profile.customization', [
             'preferences' => $effective,
+            'densityPreview' => is_string($oldDensity) && in_array($oldDensity, config('user_preferences.densities'), true)
+                ? $oldDensity : null,
             'defaults' => config('user_preferences.defaults'),
             'accentChoices' => collect(config('user_preferences.accents'))->map(fn ($label, $key) => __('customization.accents.'.$key))->all(),
             'regionalChoices' => array_intersect_key(config('regional_display'), array_flip(['timezones', 'date_formats', 'time_formats', 'number_formats'])),
@@ -55,6 +60,26 @@ class UserPreferenceController extends Controller
         ]));
 
         return redirect()->route('profile.customization')->with('success', __('customization.saved', [], $saved['locale']));
+    }
+
+    public function updateDashboardLayout(
+        UpdateDashboardLayoutRequest $request,
+        UserPreferenceService $preferences,
+        DashboardWidgetService $dashboardWidgets,
+    ): RedirectResponse|JsonResponse {
+        $user = $request->user();
+        $saved = $preferences->saveDashboardLayout($user, $request->validated('dashboard'));
+        $message = __('customization.dashboard_saved', [], $saved['locale']);
+        // The audience's own dashboard, never a client-supplied Referer, is the redirect target.
+        $dashboard = route(config('dashboard_widgets.audiences')[$dashboardWidgets->audienceFor($user)]['route']);
+
+        if ($request->expectsJson()) {
+            $request->session()->flash('success', $message);
+
+            return response()->json(['redirect' => $dashboard]);
+        }
+
+        return redirect()->back(fallback: $dashboard)->with('success', $message);
     }
 
     public function reset(

@@ -40,6 +40,8 @@
     $dashboardSavedHidden = array_column(array_filter($dashboardWidgets, fn ($widget) => ! $widget['visible']), 'key');
 
     $alpineConfig = [
+        'densityKeys' => config('user_preferences.densities'),
+        'densityLabels' => __('customization.density_levels'),
         'saved' => [
             'theme' => $preferences['theme'], 'accent' => $preferences['accent'], 'density' => $preferences['density'],
             'sidebar_state' => $preferences['sidebar_state'], 'page_size' => (string) $preferences['page_size'],
@@ -63,6 +65,7 @@
         'registry' => $regionalFormatRegistry,
         'locale' => $preferences['locale'],
         'copy' => [
+            'densityValue' => __('customization.density_value'),
             'unsaved' => __('customization.unsaved_changes', ['count' => ':count']),
             'noChanges' => __('customization.no_unsaved_changes'),
             'sectionReset' => __('customization.reset_section_announcement'),
@@ -110,6 +113,7 @@
             method="POST"
             action="{{ route('profile.customization.update') }}"
             id="customizationForm"
+            data-track-unsaved="false"
             class="tw-grid tw-gap-5"
             x-data="customizationForm(@js($alpineConfig))"
         >
@@ -127,33 +131,19 @@
                     <x-ui.button type="button" variant="ghost" size="sm" x-on:click="resetSection('appearance')">{{ __('customization.reset_section') }}</x-ui.button>
                 </header>
                 <div class="tw-grid tw-gap-5 tw-p-5">
-                    <div class="tw-grid tw-grid-cols-1 tw-gap-5 shell:tw-grid-cols-2">
+                    <div class="ui-appearance-options">
                         <fieldset class="tw-grid tw-content-start tw-gap-2" aria-describedby="theme-help @error('theme') theme-error @enderror">
                             <legend class="tw-text-ui-sm tw-font-semibold">{{ __('customization.theme') }}</legend>
                             <p id="theme-help" class="tw-m-0 tw-text-ui-xs tw-text-on-surface-variant">{{ __('customization.theme_help') }}</p>
                             <div class="ui-segmented" role="radiogroup" aria-label="{{ __('customization.theme') }}">
                                 @foreach(['light' => __('customization.choices.light'), 'system' => __('customization.choices.system'), 'dark' => __('customization.choices.dark')] as $value => $label)
                                     <label class="ui-segmented__option">
-                                        <input type="radio" name="theme" value="{{ $value }}" @checked(old('theme', $preferences['theme']) === $value) aria-invalid="{{ $errors->has('theme') ? 'true' : 'false' }}" x-on:change="previewTheme('{{ $value }}')">
+                                        <input type="radio" name="theme" value="{{ $value }}" @checked(old('theme', $preferences['theme']) === $value) aria-invalid="{{ $errors->has('theme') ? 'true' : 'false' }}">
                                         <span>{{ $label }}</span>
                                     </label>
                                 @endforeach
                             </div>
                             @error('theme')<p id="theme-error" class="tw-m-0 tw-text-ui-xs tw-text-error">{{ $message }}</p>@enderror
-                        </fieldset>
-
-                        <fieldset class="tw-grid tw-content-start tw-gap-2" aria-describedby="density-help @error('density') density-error @enderror">
-                            <legend class="tw-text-ui-sm tw-font-semibold">{{ __('customization.density') }}</legend>
-                            <p id="density-help" class="tw-m-0 tw-text-ui-xs tw-text-on-surface-variant">{{ __('customization.density_help') }}</p>
-                            <div class="ui-segmented" role="radiogroup" aria-label="{{ __('customization.density') }}">
-                                @foreach(['comfortable' => __('customization.choices.comfortable'), 'compact' => __('customization.choices.compact')] as $value => $label)
-                                    <label class="ui-segmented__option">
-                                        <input type="radio" name="density" value="{{ $value }}" @checked(old('density', $preferences['density']) === $value) aria-invalid="{{ $errors->has('density') ? 'true' : 'false' }}" x-on:change="previewDensity('{{ $value }}')">
-                                        <span>{{ $label }}</span>
-                                    </label>
-                                @endforeach
-                            </div>
-                            @error('density')<p id="density-error" class="tw-m-0 tw-text-ui-xs tw-text-error">{{ $message }}</p>@enderror
                         </fieldset>
 
                         <fieldset class="tw-grid tw-content-start tw-gap-2" aria-describedby="sidebar-state-help @error('sidebar_state') sidebar-state-error @enderror">
@@ -182,13 +172,44 @@
                         </div>
                     </div>
 
+                    <fieldset id="density-fieldset" class="ui-density-fieldset" aria-describedby="density-help @error('density') density-error @enderror">
+                        <legend id="density-label" class="tw-text-ui-sm tw-font-semibold">{{ __('customization.density') }}</legend>
+                        <div class="ui-density-layout">
+                            <div class="ui-density-controls">
+                                <p id="density-help" class="tw-m-0 tw-text-ui-xs tw-text-on-surface-variant">{{ __('customization.density_help') }}</p>
+                                @php
+                                    $selectedDensity = $densityPreview ?? $preferences['density'];
+                                    $densityPosition = array_search($selectedDensity, config('user_preferences.densities'), true) + 1;
+                                @endphp
+                                <select id="density" name="density" aria-labelledby="density-label" aria-describedby="density-help density-direction density-preview-help @error('density') density-error @enderror" aria-invalid="{{ $errors->has('density') ? 'true' : 'false' }}" class="ui-input tw-min-h-11 tw-w-full">
+                                    @foreach(config('user_preferences.densities') as $value)
+                                        <option value="{{ $value }}" @selected($selectedDensity === $value)>{{ __('customization.density_levels.'.$value) }}</option>
+                                    @endforeach
+                                </select>
+                                <div class="ui-density-active">
+                                    <output for="density-range" aria-live="off" data-density-label>{{ __('customization.density_levels.'.$selectedDensity) }}</output>
+                                    <span class="ui-density-unsaved-slot tw-text-ui-xs tw-text-on-surface-variant"><span data-density-unsaved @if($selectedDensity === $preferences['density']) hidden @endif>{{ __('customization.density_unsaved') }}</span></span>
+                                </div>
+                                <input type="range" id="density-range" min="1" max="5" step="1" value="{{ $densityPosition }}" data-density-slider class="ui-density-range" aria-labelledby="density-label" aria-describedby="density-help density-direction density-preview-help @error('density') density-error @enderror" aria-valuetext="{{ __('customization.density_value', ['label' => __('customization.density_levels.'.$selectedDensity), 'position' => $densityPosition, 'count' => 5]) }}" aria-invalid="{{ $errors->has('density') ? 'true' : 'false' }}" hidden disabled>
+                                <div id="density-direction" class="ui-density-direction tw-text-ui-xs tw-text-on-surface-variant"><span>{{ __('customization.density_spacious_direction') }}</span><span>{{ __('customization.density_dense_direction') }}</span></div>
+                                <div class="ui-density-stops tw-text-ui-xs tw-text-on-surface-variant" aria-hidden="true">@foreach(config('user_preferences.densities') as $value)<span>{{ __('customization.density_levels.'.$value) }}</span>@endforeach</div>
+                                <p id="density-preview-help" class="tw-m-0 tw-text-ui-xs tw-text-on-surface-variant">{{ __('customization.density_preview_help') }}</p>
+                                @error('density')<p id="density-error" class="tw-m-0 tw-text-ui-xs tw-text-error">{{ $message }}</p>@enderror
+                            </div>
+                            <div class="ui-density-preview-frame" aria-hidden="true">
+                                <div class="ui-density-preview ui-density-preview__reserve">@include('profile.partials.density-preview')</div>
+                                <div class="ui-density-preview">@include('profile.partials.density-preview')</div>
+                            </div>
+                        </div>
+                    </fieldset>
+
                     <fieldset class="tw-grid tw-gap-2" aria-describedby="accent-help @error('accent') accent-error @enderror">
                         <legend class="tw-text-ui-sm tw-font-semibold">{{ __('customization.accent') }}</legend>
                         <p id="accent-help" class="tw-m-0 tw-text-ui-xs tw-text-on-surface-variant">{{ __('customization.accent_help') }}</p>
                         <div class="tw-flex tw-flex-wrap tw-items-center tw-gap-3" role="radiogroup" aria-label="{{ __('customization.accent') }}">
                             @foreach($accentChoices as $value => $label)
                                 <label class="ui-swatch-option">
-                                    <input type="radio" name="accent" value="{{ $value }}" @checked(old('accent', $preferences['accent']) === $value) aria-invalid="{{ $errors->has('accent') ? 'true' : 'false' }}" aria-label="{{ $label }}" x-on:change="previewAccent('{{ $value }}')">
+                                    <input type="radio" name="accent" value="{{ $value }}" @checked(old('accent', $preferences['accent']) === $value) aria-invalid="{{ $errors->has('accent') ? 'true' : 'false' }}" aria-label="{{ $label }}">
                                     <span class="ui-swatch" data-accent-swatch="{{ $value }}" aria-hidden="true"></span>
                                     <span class="tw-text-ui-xs">{{ $label }}</span>
                                 </label>
@@ -246,7 +267,7 @@
                         @foreach($regionalFields as $field => $control)
                             <div class="tw-grid tw-content-start tw-gap-2">
                                 <label for="regional-{{ $field }}" class="tw-text-ui-sm tw-font-semibold">{{ $control['label'] }}</label>
-                                <select id="regional-{{ $field }}" name="{{ $field }}" class="ui-input tw-min-h-10 tw-w-full" aria-describedby="regional-{{ $field }}-help{{ $errors->has($field) ? ' regional-'.$field.'-error' : '' }}" aria-invalid="{{ $errors->has($field) ? 'true' : 'false' }}" x-on:change="updateRegionalSample()">
+                                <select id="regional-{{ $field }}" name="{{ $field }}" class="ui-input tw-min-h-10 tw-w-full" aria-describedby="regional-{{ $field }}-help{{ $errors->has($field) ? ' regional-'.$field.'-error' : '' }}" aria-invalid="{{ $errors->has($field) ? 'true' : 'false' }}">
                                     @foreach($regionalChoices[$control['choices']] as $value => $choice)
                                         <option value="{{ $value }}" @selected(old($field, $preferences[$field]) === $value)>{{ __($choice['label']) }}</option>
                                     @endforeach
@@ -272,45 +293,68 @@
                         <p id="dashboard-layout-help" class="tw-m-0 tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">{{ __('customization.dashboard_help') }}</p>
                     </div>
                     @if(count($dashboardRows))
-                        <x-ui.button type="button" variant="ghost" size="sm" x-on:click="resetSection('dashboard')">{{ __('customization.reset_section') }}</x-ui.button>
+                        <div class="tw-flex tw-flex-wrap tw-items-center tw-gap-2">
+                            @if($dashboardAudience !== null)
+                                <x-ui.button :href="route(config('dashboard_widgets.audiences')[$dashboardAudience]['route'], ['customize' => 1])" variant="outline" size="sm"><x-ui.icon name="square-pen" size="xs" />{{ __('customization.dashboard_edit_on_dashboard') }}</x-ui.button>
+                            @endif
+                            <x-ui.button type="button" variant="ghost" size="sm" x-on:click="resetSection('dashboard')">{{ __('customization.reset_section') }}</x-ui.button>
+                        </div>
                     @endif
                 </header>
                 <div class="tw-grid tw-gap-3 tw-p-5">
                     @if(count($dashboardRows))
                         <fieldset aria-describedby="dashboard-layout-help dashboard-layout-error">
                             <legend class="tw-sr-only">{{ __('customization.panels') }}</legend>
-                            <ol class="tw-m-0 tw-grid tw-list-none tw-gap-2 tw-p-0" data-dashboard-controls>
+                            @php
+                                // Literal strings so the Tailwind scanner emits them. Keep identical to TILE_SPAN_CLASSES in resources/js/dashboard-layout-core.js.
+                                $tileSpanClasses = [
+                                    3 => 'tw-col-span-3', 4 => 'tw-col-span-4', 5 => 'tw-col-span-5', 6 => 'tw-col-span-6',
+                                    7 => 'tw-col-span-7', 8 => 'tw-col-span-8', 9 => 'tw-col-span-9', 12 => 'tw-col-span-12',
+                                ];
+                                $tileKindIcons = ['metrics' => 'gauge', 'chart' => 'chart-no-axes-combined', 'table' => 'table', 'list' => 'list', 'summary' => 'file-text'];
+                                $tileEffectiveSpans = \App\Services\Dashboard\DashboardWidgetService::computeEffectiveSpans(array_map(
+                                    fn (array $widget): array => ['key' => $widget['key'], 'span' => $widget['span'], 'visible' => ! in_array($widget['key'], $hiddenDashboardKeys, true)],
+                                    $dashboardRows,
+                                ));
+                            @endphp
+                            {{-- A miniature of the dashboard grid: each tile is as wide as its panel will be, so hiding or moving one shows its effect before saving. --}}
+                            <ol class="tw-m-0 tw-grid tw-list-none tw-grid-cols-12 tw-gap-2 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface-container tw-p-2" data-dashboard-controls>
                                 @foreach($dashboardRows as $widget)
-                                    <li class="tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-gap-3 tw-rounded-ui-sm tw-border tw-border-outline tw-p-3 tw-transition-colors" data-dashboard-choice data-widget-key="{{ $widget['key'] }}" data-widget-label="{{ $widget['label'] }}" draggable="true">
+                                    @php
+                                        $tileHidden = in_array($widget['key'], $hiddenDashboardKeys, true);
+                                        $tileSpan = $tileHidden ? $widget['span'] : ($tileEffectiveSpans[$widget['key']] ?? 12);
+                                    @endphp
+                                    <li class="{{ $tileSpanClasses[$tileSpan] ?? $tileSpanClasses[12] }} tw-flex tw-min-w-0 tw-flex-col tw-gap-2 tw-rounded-ui-sm tw-border tw-border-outline tw-bg-surface tw-p-2.5 tw-transition-colors{{ $tileHidden ? ' tw-border-dashed tw-opacity-70' : '' }}" data-dashboard-choice data-widget-key="{{ $widget['key'] }}" data-widget-label="{{ $widget['label'] }}" data-widget-span="{{ $widget['span'] }}" draggable="true">
                                         <input type="hidden" name="dashboard[order][]" value="{{ $widget['key'] }}" data-dashboard-order-input>
-                                        <div class="tw-flex tw-items-center tw-gap-3">
+                                        <div class="tw-flex tw-min-w-0 tw-items-start tw-gap-1.5">
                                             <span class="tw-hidden shell:tw-inline-flex tw-cursor-grab tw-items-center tw-text-on-surface-variant active:tw-cursor-grabbing" data-dashboard-handle title="{{ __('customization.drag', ['label' => $widget['label']]) }}" aria-hidden="true">
                                                 <x-ui.icon name="grip-vertical" size="sm" />
                                             </span>
-                                            <div class="tw-grid tw-gap-1">
-                                                <span class="tw-text-ui-sm tw-font-semibold">{{ $widget['label'] }}</span>
-                                                @if($widget['required'])
-                                                    <span class="tw-inline-flex tw-items-center tw-gap-1 tw-text-ui-xs tw-text-on-surface-variant">
-                                                        <x-ui.icon name="lock" size="xs" />{{ __('customization.always_shown') }}
-                                                    </span>
-                                                @else
-                                                    <label class="tw-flex tw-min-h-11 tw-cursor-pointer tw-items-center tw-gap-2 tw-text-ui-sm" data-dashboard-hide-fallback>
-                                                        <input class="tw-h-4 tw-w-4 tw-accent-primary" type="checkbox" name="dashboard[hidden][]" value="{{ $widget['key'] }}" @checked(in_array($widget['key'], $hiddenDashboardKeys, true)) aria-label="{{ __('customization.hide', ['label' => $widget['label']]) }}" aria-describedby="dashboard-layout-help">
-                                                        <span>{{ __('customization.hide_panel') }}</span>
-                                                    </label>
-                                                    <label class="tw-hidden tw-min-h-11 tw-cursor-pointer tw-items-center tw-gap-2 tw-text-ui-sm" data-dashboard-visibility-toggle>
-                                                        <x-ui.switch :checked="! in_array($widget['key'], $hiddenDashboardKeys, true)" aria-label="{{ __('customization.show', ['label' => $widget['label']]) }}" />
-                                                        <span>{{ __('customization.dashboard_visible') }}</span>
-                                                    </label>
-                                                @endif
-                                            </div>
+                                            <x-ui.icon :name="$tileKindIcons[$widget['kind']] ?? 'list'" size="xs" class="tw-mt-0.5 tw-shrink-0 tw-text-on-surface-variant" />
+                                            <span class="tw-min-w-0 tw-flex-1 tw-break-words tw-text-ui-xs tw-font-semibold tw-leading-snug">{{ $widget['label'] }}</span>
                                         </div>
-                                        @unless($widget['required'])
-                                            <div class="tw-flex tw-flex-wrap tw-gap-1.5">
+                                        <x-ui.widget-skeleton :kind="$widget['kind']" />
+                                        <div class="tw-mt-auto tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-gap-1.5">
+                                            @if($widget['required'])
+                                                <span class="tw-inline-flex tw-items-center tw-gap-1 tw-text-ui-xs tw-text-on-surface-variant">
+                                                    <x-ui.icon name="lock" size="xs" />{{ __('customization.always_shown') }}
+                                                </span>
+                                            @else
+                                                <label class="tw-flex tw-min-h-10 tw-cursor-pointer tw-items-center tw-gap-2 tw-text-ui-xs" data-dashboard-hide-fallback>
+                                                    <input class="tw-h-4 tw-w-4 tw-accent-primary" type="checkbox" name="dashboard[hidden][]" value="{{ $widget['key'] }}" @checked(in_array($widget['key'], $hiddenDashboardKeys, true)) aria-label="{{ __('customization.hide', ['label' => $widget['label']]) }}" aria-describedby="dashboard-layout-help">
+                                                    <span>{{ __('customization.hide_panel') }}</span>
+                                                </label>
+                                                <label class="tw-hidden tw-min-h-10 tw-cursor-pointer tw-items-center tw-gap-2 tw-text-ui-xs" data-dashboard-visibility-toggle>
+                                                    <x-ui.switch :checked="! $tileHidden" aria-label="{{ __('customization.show', ['label' => $widget['label']]) }}" />
+                                                    {{-- Narrow tiles have no room for the words; the switch keeps its accessible name. --}}
+                                                    <span class="tw-hidden sm:tw-inline">{{ __('customization.dashboard_visible') }}</span>
+                                                </label>
+                                            @endif
+                                            <div class="tw-flex tw-flex-wrap tw-gap-1">
                                                 <button type="button" class="ui-button ui-focus-ring tw-inline-flex tw-h-10 tw-w-10 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline tw-bg-surface hover:tw-bg-surface-container" data-dashboard-move="up" aria-label="{{ __('customization.move_up_label', ['label' => $widget['label']]) }}"><x-ui.icon name="arrow-up" size="sm" /></button>
                                                 <button type="button" class="ui-button ui-focus-ring tw-inline-flex tw-h-10 tw-w-10 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline tw-bg-surface hover:tw-bg-surface-container" data-dashboard-move="down" aria-label="{{ __('customization.move_down_label', ['label' => $widget['label']]) }}"><x-ui.icon name="arrow-down" size="sm" /></button>
                                             </div>
-                                        @endunless
+                                        </div>
                                     </li>
                                 @endforeach
                             </ol>
@@ -340,7 +384,7 @@
                         <x-ui.button type="button" variant="ghost" size="sm" x-on:click="resetSection('quick_access')">{{ __('customization.reset_section') }}</x-ui.button>
                     @endif
                 </header>
-                <div class="tw-grid tw-gap-2 tw-p-5">
+                <div class="ui-density-settings-body tw-grid tw-gap-2 tw-p-5">
                     @if(count($quickAccessChoices))
                         <div class="tw-grid tw-grid-cols-1 tw-gap-2 shell:tw-grid-cols-2">
                             @foreach($quickAccessChoices as $key => $choice)

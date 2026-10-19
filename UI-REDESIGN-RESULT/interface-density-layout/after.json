@@ -1,0 +1,452 @@
+[
+  {
+    "viewport": [
+      1440,
+      900
+    ],
+    "dpr": 1.0000000149011612,
+    "zoom": 1,
+    "locale": "en",
+    "theme": "light",
+    "density": "comfortable",
+    "font": "16px / 24px system-ui, -apple-system, \"Segoe UI\", Roboto, \"Helvetica Neue\", \"Noto Sans\", \"Liberation Sans\", Arial, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+    "fieldset": {
+      "x": 548,
+      "y": 406.6000061035156,
+      "width": 832.7999877929688,
+      "height": 398.8000183105469
+    },
+    "appearance": {
+      "x": 528,
+      "y": 169,
+      "width": 872.7999877929688,
+      "height": 913.4000244140625
+    },
+    "range": {
+      "x": 548,
+      "y": 533.6000366210938,
+      "width": 406.3999938964844,
+      "height": 44
+    },
+    "preview": {
+      "x": 974.4000244140625,
+      "y": 435.6000061035156,
+      "width": 406.3999938964844,
+      "height": 369.8000183105469
+    },
+    "groups": [
+      {
+        "name": "theme",
+        "box": {
+          "x": 548,
+          "y": 327,
+          "width": 205.60000610351562,
+          "height": 41.60000228881836
+        },
+        "last": {
+          "x": 692.4000244140625,
+          "y": 329.8000183105469,
+          "width": 58.400001525878906,
+          "height": 36
+        },
+        "endSpace": 2.7999801635742188,
+        "minOptionHeight": 36
+      },
+      {
+        "name": "sidebar_state",
+        "box": {
+          "x": 832.2625122070312,
+          "y": 345,
+          "width": 193.1999969482422,
+          "height": 41.60000228881836
+        },
+        "last": {
+          "x": 929.8624877929688,
+          "y": 347.8000183105469,
+          "width": 92.80000305175781,
+          "height": 36
+        },
+        "endSpace": 2.800018310546875,
+        "minOptionHeight": 36
+      },
+      {
+        "name": "locale",
+        "box": {
+          "x": 548,
+          "y": 1260.4000244140625,
+          "width": 224.40000915527344,
+          "height": 41.60000228881836
+        },
+        "last": {
+          "x": 628,
+          "y": 1263.2000732421875,
+          "width": 141.60000610351562,
+          "height": 36
+        },
+        "endSpace": 2.8000030517578125,
+        "minOptionHeight": 36
+      }
+    ],
+    "overflow": 0
+  },
+  {
+    "viewport": [
+      1280,
+      800
+    ],
+    "dpr": 1.0000000149011612,
+    "zoom": 1,
+    "locale": "en",
+    "theme": "light",
+    "density": "comfortable",
+    "font": "16px / 24px system-ui, -apple-system, \"Segoe UI\", Roboto, \"Helvetica Neue\", \"Noto Sans\", \"Liberation Sans\", Arial, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+    "fieldset": {
+      "x": 548,
+      "y": 521.6000366210938,
+      "width": 672.7999877929688,
+      "height": 398.8000183105469
+    },
+    "appearance": {
+      "x": 528,
+      "y": 169,
+      "width": 712.7999877929688,
+      "height": 1028.4000244140625
+    },
+    "range": {
+      "x": 548,
+      "y": 648.6000366210938,
+      "width": 326.3999938964844,
+      "height": 44
+    },
+    "preview": {
+      "x": 894.4000244140625,
+      "y": 550.6000366210938,
+      "width": 326.3999938964844,
+      "height": 369.8000183105469
+    },
+    "groups": [
+      {
+        "name": "theme",
+        "box": {
+          "x": 548,
+          "y": 327,
+          "width": 205.60000610351562,
+          "height": 41.60000228881836
+        },
+        "last": {
+          "x": 692.4000244140625,
+          "y": 329.8000183105469,
+          "width": 58.400001525878906,
+          "height": 36
+        },
+        "endSpace": 2.7999801635742188,
+        "minOptionHeight": 36
+      },
+      {
+        "name": "sidebar_state",
+        "box": {
+          "x": 894.4000244140625,
+          "y": 345,
+          "width": 193.1999969482422,
+          "height": 41.60000228881836
+        },
+        "last": {
+          "x": 992,
+          "y": 347.8000183105469,
+          "width": 92.80000305175781,
+          "height": 36
+        },
+        "endSpace": 2.800018310546875,
+        "minOptionHeight": 36
+      },
+      {
+        "name": "locale",
+        "box": {
+          "x": 548,
+          "y": 1375.4000244140625,
+          "width": 224.40000915527344,
+          "height": 41.60000228881836
+        },
+        "last": {
+          "x": 628,
+          "y": 1378.2000732421875,
+          "width": 141.60000610351562,
+          "height": 36
+        },
+        "endSpace": 2.8000030517578125,
+        "minOptionHeight": 36
+      }
+    ],
+    "overflow": 0
+  },
+  {
+    "viewport": [
+      768,
+      1024
+    ],
+    "dpr": 1.0000000149011612,
+    "zoom": 1,
+    "locale": "en",
+    "theme": "light",
+    "density": "comfortable",
+    "font": "16px / 24px system-ui, -apple-system, \"Segoe UI\", Roboto, \"Helvetica Neue\", \"Noto Sans\", \"Liberation Sans\", Arial, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+    "fieldset": {
+      "x": 36,
+      "y": 621.6000366210938,
+      "width": 680.7999877929688,
+      "height": 398.8000183105469
+    },
+    "appearance": {
+      "x": 16,
+      "y": 268,
+      "width": 720.7999877929688,
+      "height": 1039.4000244140625
+    },
+    "range": {
+      "x": 36,
+      "y": 748.6000366210938,
+      "width": 330.3999938964844,
+      "height": 44
+    },
+    "preview": {
+      "x": 386.3999938964844,
+      "y": 650.6000366210938,
+      "width": 330.3999938964844,
+      "height": 369.8000183105469
+    },
+    "groups": [
+      {
+        "name": "theme",
+        "box": {
+          "x": 36,
+          "y": 427,
+          "width": 205.60000610351562,
+          "height": 41.60000228881836
+        },
+        "last": {
+          "x": 180.40000915527344,
+          "y": 429.8000183105469,
+          "width": 58.400001525878906,
+          "height": 36
+        },
+        "endSpace": 2.7999954223632812,
+        "minOptionHeight": 36
+      },
+      {
+        "name": "sidebar_state",
+        "box": {
+          "x": 386.3999938964844,
+          "y": 445,
+          "width": 193.1999969482422,
+          "height": 41.60000228881836
+        },
+        "last": {
+          "x": 484,
+          "y": 447.8000183105469,
+          "width": 92.80000305175781,
+          "height": 36
+        },
+        "endSpace": 2.79998779296875,
+        "minOptionHeight": 36
+      },
+      {
+        "name": "locale",
+        "box": {
+          "x": 36,
+          "y": 1486.4000244140625,
+          "width": 224.40000915527344,
+          "height": 41.60000228881836
+        },
+        "last": {
+          "x": 116,
+          "y": 1489.2000732421875,
+          "width": 141.60000610351562,
+          "height": 36
+        },
+        "endSpace": 2.8000030517578125,
+        "minOptionHeight": 36
+      }
+    ],
+    "overflow": 0
+  },
+  {
+    "viewport": [
+      390,
+      844
+    ],
+    "dpr": 1.0000000149011612,
+    "zoom": 1,
+    "locale": "en",
+    "theme": "light",
+    "density": "comfortable",
+    "font": "16px / 24px system-ui, -apple-system, \"Segoe UI\", Roboto, \"Helvetica Neue\", \"Noto Sans\", \"Liberation Sans\", Arial, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+    "fieldset": {
+      "x": 36,
+      "y": 817.2000122070312,
+      "width": 318.3999938964844,
+      "height": 656.7999877929688
+    },
+    "appearance": {
+      "x": 16,
+      "y": 268,
+      "width": 358.3999938964844,
+      "height": 1619
+    },
+    "range": {
+      "x": 36,
+      "y": 944.2000122070312,
+      "width": 318.3999938964844,
+      "height": 44
+    },
+    "preview": {
+      "x": 36,
+      "y": 1104.2000732421875,
+      "width": 318.3999938964844,
+      "height": 369.8000183105469
+    },
+    "groups": [
+      {
+        "name": "theme",
+        "box": {
+          "x": 36,
+          "y": 482,
+          "width": 205.60000610351562,
+          "height": 49.60000228881836
+        },
+        "last": {
+          "x": 180.40000915527344,
+          "y": 484.8000183105469,
+          "width": 58.400001525878906,
+          "height": 44
+        },
+        "endSpace": 2.7999954223632812,
+        "minOptionHeight": 44
+      },
+      {
+        "name": "sidebar_state",
+        "box": {
+          "x": 36,
+          "y": 632.6000366210938,
+          "width": 193.1999969482422,
+          "height": 49.60000228881836
+        },
+        "last": {
+          "x": 133.60000610351562,
+          "y": 635.4000244140625,
+          "width": 92.80000305175781,
+          "height": 44
+        },
+        "endSpace": 2.79998779296875,
+        "minOptionHeight": 44
+      },
+      {
+        "name": "locale",
+        "box": {
+          "x": 36,
+          "y": 2139,
+          "width": 224.40000915527344,
+          "height": 49.60000228881836
+        },
+        "last": {
+          "x": 116,
+          "y": 2141.800048828125,
+          "width": 141.60000610351562,
+          "height": 44
+        },
+        "endSpace": 2.8000030517578125,
+        "minOptionHeight": 44
+      }
+    ],
+    "overflow": 0
+  },
+  {
+    "viewport": [
+      320,
+      844
+    ],
+    "dpr": 1.0000000149011612,
+    "zoom": 1,
+    "locale": "en",
+    "theme": "light",
+    "density": "comfortable",
+    "font": "16px / 24px system-ui, -apple-system, \"Segoe UI\", Roboto, \"Helvetica Neue\", \"Noto Sans\", \"Liberation Sans\", Arial, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+    "fieldset": {
+      "x": 36,
+      "y": 874.2000122070312,
+      "width": 248,
+      "height": 696.7999877929688
+    },
+    "appearance": {
+      "x": 16,
+      "y": 289,
+      "width": 288,
+      "height": 1747
+    },
+    "range": {
+      "x": 36,
+      "y": 1001.2000122070312,
+      "width": 248,
+      "height": 44
+    },
+    "preview": {
+      "x": 36,
+      "y": 1201.2000732421875,
+      "width": 248,
+      "height": 369.8000183105469
+    },
+    "groups": [
+      {
+        "name": "theme",
+        "box": {
+          "x": 36,
+          "y": 521,
+          "width": 205.60000610351562,
+          "height": 49.60000228881836
+        },
+        "last": {
+          "x": 180.40000915527344,
+          "y": 523.7999877929688,
+          "width": 58.400001525878906,
+          "height": 44
+        },
+        "endSpace": 2.7999954223632812,
+        "minOptionHeight": 44
+      },
+      {
+        "name": "sidebar_state",
+        "box": {
+          "x": 36,
+          "y": 671.6000366210938,
+          "width": 193.1999969482422,
+          "height": 49.60000228881836
+        },
+        "last": {
+          "x": 133.60000610351562,
+          "y": 674.4000244140625,
+          "width": 92.80000305175781,
+          "height": 44
+        },
+        "endSpace": 2.79998779296875,
+        "minOptionHeight": 44
+      },
+      {
+        "name": "locale",
+        "box": {
+          "x": 36,
+          "y": 2324,
+          "width": 224.40000915527344,
+          "height": 49.60000228881836
+        },
+        "last": {
+          "x": 116,
+          "y": 2326.800048828125,
+          "width": 141.60000610351562,
+          "height": 44
+        },
+        "endSpace": 2.8000030517578125,
+        "minOptionHeight": 44
+      }
+    ],
+    "overflow": 0
+  }
+]

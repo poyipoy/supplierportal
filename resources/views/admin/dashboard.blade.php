@@ -12,7 +12,7 @@
     </x-ui.page-header>
 
     <x-ui.dashboard-layout audience="admin">
-        <x-slot:summary class="lg:tw-col-span-12">
+        <x-slot:summary>
             <section class="tw-rounded-ui-sm tw-border tw-border-outline tw-bg-surface-container tw-overflow-hidden" aria-labelledby="admin-summary-title">
                 <h2 id="admin-summary-title" class="tw-sr-only">{{ __('admin.copy.operational_summary') }}</h2>
                 <dl class="tw-m-0 tw-grid tw-grid-cols-2 lg:tw-grid-cols-4">
@@ -40,7 +40,7 @@
             </section>
         </x-slot:summary>
 
-        <x-slot:rates class="lg:tw-col-span-8">
+        <x-slot:rates>
             <x-ui.data-table :title="__('admin.copy.administrative_attention')" :description="__('admin.copy.current_exchange_rate_readiness_from_the_configured_currency_set')">
                 <x-slot:toolbar>
                     <x-ui.button type="button" size="sm" data-bs-toggle="modal" data-bs-target="#kursModal"><x-ui.icon name="plus" /> {{ __('admin.copy.add_effective_rate') }}</x-ui.button>
@@ -68,7 +68,7 @@
             </x-ui.data-table>
         </x-slot:rates>
 
-        <x-slot:shortcuts class="lg:tw-col-span-4">
+        <x-slot:shortcuts>
             <section class="tw-border tw-border-outline tw-bg-surface" aria-labelledby="admin-shortcuts-title">
                 <header class="tw-border-b tw-border-outline-variant tw-bg-surface-container tw-px-4 tw-py-3">
                     <h2 id="admin-shortcuts-title" class="tw-m-0 tw-text-ui-sm tw-font-semibold">{{ __('admin.copy.administration_shortcuts_220ef8') }}</h2>
@@ -92,7 +92,7 @@
             </section>
         </x-slot:shortcuts>
 
-        <x-slot:notifications class="lg:tw-col-span-12">
+        <x-slot:notifications>
             <x-ui.data-table :title="__('admin.copy.recent_administrative_activity')" :description="__('admin.copy.latest_notifications_available_to_the_signed_in_administrator')">
                 <div class="tw-divide-y tw-divide-outline-variant">
                     @forelse($recentActivities as $act)

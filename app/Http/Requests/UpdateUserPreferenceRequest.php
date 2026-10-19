@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\ValidatesDashboardLayout;
 use App\Models\User;
 use App\Services\Dashboard\DashboardWidgetService;
 use App\Services\QuickAccessService;
@@ -12,6 +13,8 @@ use Illuminate\Validation\Validator;
 
 class UpdateUserPreferenceRequest extends FormRequest
 {
+    use ValidatesDashboardLayout;
+
     public function authorize(): bool
     {
         return $this->user() instanceof User;
@@ -19,11 +22,6 @@ class UpdateUserPreferenceRequest extends FormRequest
 
     public function rules(DashboardWidgetService $dashboardWidgets): array
     {
-        $user = $this->user();
-        $widgets = $user instanceof User ? $dashboardWidgets->layoutFor($user, []) : [];
-        $keys = array_column($widgets, 'key');
-        $optionalKeys = array_column(array_filter($widgets, fn (array $widget): bool => ! $widget['required']), 'key');
-
         return [
             'locale' => ['sometimes', 'required', 'string', Rule::in(['en', 'id'])],
             'timezone' => ['sometimes', 'required', 'string', Rule::in(array_keys(config('regional_display.timezones')))],
@@ -31,13 +29,9 @@ class UpdateUserPreferenceRequest extends FormRequest
             'time_format' => ['sometimes', 'required', 'string', Rule::in(array_keys(config('regional_display.time_formats')))],
             'number_format' => ['sometimes', 'required', 'string', Rule::in(array_keys(config('regional_display.number_formats')))],
             'accent' => ['sometimes', 'required', Rule::in(array_keys(config('user_preferences.accents')))],
-            'dashboard' => ['sometimes', 'array:hidden,order'],
-            'dashboard.hidden' => ['sometimes', 'array', 'list', 'max:'.count($optionalKeys)],
-            'dashboard.hidden.*' => ['string', 'distinct:strict', Rule::in($optionalKeys)],
-            'dashboard.order' => ['sometimes', 'array', 'list', 'max:'.count($keys)],
-            'dashboard.order.*' => ['string', 'distinct:strict', Rule::in($keys)],
+            ...$this->dashboardLayoutRules($dashboardWidgets, $this->user()),
             'theme' => ['required', Rule::in(config('user_preferences.themes'))],
-            'density' => ['required', Rule::in(config('user_preferences.densities'))],
+            'density' => ['required', 'string', Rule::in(config('user_preferences.densities'))],
             'sidebar_state' => ['required', Rule::in(config('user_preferences.sidebar_states'))],
             'page_size' => ['required', 'integer', Rule::in(config('user_preferences.page_sizes'))],
             'quick_access' => ['sometimes', 'array', 'max:'.(int) config('user_preferences.quick_access_limit')],

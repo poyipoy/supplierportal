@@ -1,0 +1,30 @@
+Emulating viewport: {"deviceScaleFactor":1,"isMobile":false,"hasTouch":false,"isLandscape":false,"width":1440,"height":900}
+Emulating color scheme: light
+Showing 1-4 of 34 (Page 1 of 9).
+Next page: 1
+Styles for td (uid: "5_26"):
+
+  .ui-data-table.ui-table--compact table>:not(caption)>*>* (app-B4C9nzHL.css:1) {
+    height: var(--ui-table-row-height-compact);
+    padding-block: var(--ui-space-1);
+  }
+
+  .ui-data-table table>:not(caption)>*>* (app-B4C9nzHL.css:1) {
+    [overloaded] border-color: var(--md-outline-variant);
+    [overloaded] padding: .625rem .875rem;
+    [overloaded] vertical-align: middle;
+  }
+
+  .table td (app-B4C9nzHL.css:1) {
+    border-color: var(--md-outline-variant) !important;
+    padding: .625rem .875rem !important;
+    vertical-align: middle !important;
+  }
+
+  .table>:not(caption)>*>* (bootstrap.min.css:5) {
+    [overloaded] padding: .5rem .5rem;
+    color: var(--bs-table-color-state,var(--bs-table-color-type,var(--bs-table-color)));
+    background-color: var(--bs-table-bg);
+    border-bottom-width: var(--bs-border-width);
+    box-shadow: inset 0 0 0 9999px var(--bs-table-bg-state,var(--bs-table-bg-type,var(--bs-table-accent-bg)));
+  }

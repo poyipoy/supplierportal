@@ -1,0 +1,118 @@
+[
+    {
+        "name": "a lone partial widget fills the row",
+        "items": [{"key": "a", "span": 5, "visible": true}],
+        "expected": {"a": 12}
+    },
+    {
+        "name": "complementary pair keeps its natural widths",
+        "items": [{"key": "a", "span": 5, "visible": true}, {"key": "b", "span": 7, "visible": true}],
+        "expected": {"a": 5, "b": 7}
+    },
+    {
+        "name": "short row widens its last widget",
+        "items": [{"key": "a", "span": 4, "visible": true}, {"key": "b", "span": 5, "visible": true}],
+        "expected": {"a": 4, "b": 8}
+    },
+    {
+        "name": "eight plus four is already a full row",
+        "items": [{"key": "a", "span": 8, "visible": true}, {"key": "b", "span": 4, "visible": true}],
+        "expected": {"a": 8, "b": 4}
+    },
+    {
+        "name": "a full-width widget closes the previous partial row",
+        "items": [{"key": "a", "span": 7, "visible": true}, {"key": "b", "span": 12, "visible": true}, {"key": "c", "span": 5, "visible": true}],
+        "expected": {"a": 12, "b": 12, "c": 12}
+    },
+    {
+        "name": "a hidden partner is ignored and the survivor fills the row",
+        "items": [{"key": "a", "span": 8, "visible": false}, {"key": "b", "span": 4, "visible": true}],
+        "expected": {"b": 12}
+    },
+    {
+        "name": "no widgets",
+        "items": [],
+        "expected": {}
+    },
+    {
+        "name": "every widget hidden",
+        "items": [{"key": "a", "span": 5, "visible": false}, {"key": "b", "span": 7, "visible": false}],
+        "expected": {}
+    },
+    {
+        "name": "three equal widgets",
+        "items": [{"key": "a", "span": 4, "visible": true}, {"key": "b", "span": 4, "visible": true}, {"key": "c", "span": 4, "visible": true}],
+        "expected": {"a": 4, "b": 4, "c": 4}
+    },
+    {
+        "name": "three narrow widgets widen only the last",
+        "items": [{"key": "a", "span": 3, "visible": true}, {"key": "b", "span": 3, "visible": true}, {"key": "c", "span": 3, "visible": true}],
+        "expected": {"a": 3, "b": 3, "c": 6}
+    },
+    {
+        "name": "overflow starts a new row",
+        "items": [{"key": "a", "span": 5, "visible": true}, {"key": "b", "span": 5, "visible": true}, {"key": "c", "span": 5, "visible": true}],
+        "expected": {"a": 5, "b": 7, "c": 12}
+    },
+    {
+        "name": "two wide widgets cannot share a row",
+        "items": [{"key": "a", "span": 8, "visible": true}, {"key": "b", "span": 8, "visible": true}],
+        "expected": {"a": 12, "b": 12}
+    },
+    {
+        "name": "nine plus three twice",
+        "items": [{"key": "a", "span": 9, "visible": true}, {"key": "b", "span": 3, "visible": true}, {"key": "c", "span": 9, "visible": true}, {"key": "d", "span": 3, "visible": true}],
+        "expected": {"a": 9, "b": 3, "c": 9, "d": 3}
+    },
+    {
+        "name": "unsupported, missing, null and string spans fall back to full width",
+        "items": [
+            {"key": "a", "span": 10, "visible": true},
+            {"key": "b", "span": 2, "visible": true},
+            {"key": "c", "span": null, "visible": true},
+            {"key": "d", "visible": true},
+            {"key": "e", "span": "5", "visible": true}
+        ],
+        "expected": {"a": 12, "b": 12, "c": 12, "d": 12, "e": 12}
+    },
+    {
+        "name": "purchasing default order",
+        "items": [
+            {"key": "exceptions", "span": 12, "visible": true},
+            {"key": "metrics", "span": 12, "visible": true},
+            {"key": "analytics", "span": 12, "visible": true},
+            {"key": "recent_requisitions", "span": 5, "visible": true},
+            {"key": "arrivals", "span": 7, "visible": true}
+        ],
+        "expected": {"exceptions": 12, "metrics": 12, "analytics": 12, "recent_requisitions": 5, "arrivals": 7}
+    },
+    {
+        "name": "purchasing with the requisitions hidden gives arrivals the whole row",
+        "items": [
+            {"key": "exceptions", "span": 12, "visible": true},
+            {"key": "recent_requisitions", "span": 5, "visible": false},
+            {"key": "arrivals", "span": 7, "visible": true}
+        ],
+        "expected": {"exceptions": 12, "arrivals": 12}
+    },
+    {
+        "name": "admin default order",
+        "items": [
+            {"key": "summary", "span": 12, "visible": true},
+            {"key": "rates", "span": 8, "visible": true},
+            {"key": "shortcuts", "span": 4, "visible": true},
+            {"key": "notifications", "span": 12, "visible": true}
+        ],
+        "expected": {"summary": 12, "rates": 8, "shortcuts": 4, "notifications": 12}
+    },
+    {
+        "name": "admin with shortcuts moved above rates",
+        "items": [
+            {"key": "summary", "span": 12, "visible": true},
+            {"key": "shortcuts", "span": 4, "visible": true},
+            {"key": "notifications", "span": 12, "visible": true},
+            {"key": "rates", "span": 8, "visible": true}
+        ],
+        "expected": {"summary": 12, "shortcuts": 12, "notifications": 12, "rates": 12}
+    }
+]

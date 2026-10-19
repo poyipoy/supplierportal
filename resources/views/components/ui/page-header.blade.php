@@ -5,7 +5,7 @@
     'breadcrumbs' => null,
 ])
 
-<header {{ $attributes->class(['tw-flex tw-flex-col tw-gap-3 tw-mb-5 shell:tw-flex-row shell:tw-items-start shell:tw-justify-between']) }}>
+<header {{ $attributes->class(['ui-page-header tw-flex tw-flex-col tw-gap-3 shell:tw-flex-row shell:tw-items-start shell:tw-justify-between']) }}>
     <div class="tw-min-w-0 tw-flex-1">
         @if($breadcrumbs || isset($breadcrumbSlot))
             <div class="tw-mb-2">

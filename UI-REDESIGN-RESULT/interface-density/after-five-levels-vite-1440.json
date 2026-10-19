@@ -1,0 +1,392 @@
+{
+  "browser": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+  "viewport": [
+    1440,
+    900
+  ],
+  "zoom": 1,
+  "font": "16px / 24px system-ui, -apple-system, \"Segoe UI\", Roboto, \"Helvetica Neue\", \"Noto Sans\", \"Liberation Sans\", Arial, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+  "fontSize": "16px",
+  "stylesheets": [
+    "https://cdn.jsdelivr.net/npm/@fontsource/inter@5.2.8/latin.css",
+    "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css",
+    "http://127.0.0.1:8129/build/assets/app-DI-AsKAD.css"
+  ],
+  "rows": [
+    {
+      "density": "spacious",
+      "textRow": {
+        "height": 45.79999923706055,
+        "width": 1112.800048828125,
+        "padding": "0px",
+        "gap": "normal",
+        "minHeight": "0px"
+      },
+      "textBody": {
+        "height": 1145.4000244140625,
+        "width": 1112.800048828125,
+        "padding": "0px",
+        "gap": "normal",
+        "minHeight": "0px"
+      },
+      "actionRow": {
+        "height": 58.79999923706055,
+        "width": 1112.800048828125,
+        "padding": "0px",
+        "gap": "normal",
+        "minHeight": "0px"
+      },
+      "actionBody": {
+        "height": 1470.4000244140625,
+        "width": 1112.800048828125,
+        "padding": "0px",
+        "gap": "normal",
+        "minHeight": "0px"
+      },
+      "card": {
+        "height": 128,
+        "width": 1112.800048828125,
+        "padding": "0px",
+        "gap": "normal",
+        "minHeight": "auto"
+      },
+      "metric": {
+        "height": 92,
+        "width": 1112.800048828125,
+        "padding": "20px",
+        "gap": "16px",
+        "minHeight": "auto"
+      },
+      "toolbar": {
+        "height": 92.5999984741211,
+        "width": 1112.800048828125,
+        "padding": "18px 20px",
+        "gap": "16px",
+        "minHeight": "auto"
+      },
+      "form": {
+        "height": 183.8000030517578,
+        "width": 1112.800048828125,
+        "padding": "0px",
+        "gap": "20px",
+        "minHeight": "auto"
+      },
+      "sidebar": {
+        "height": 44,
+        "width": 239.1999969482422,
+        "padding": "10px 12px 10px 40px",
+        "gap": "normal",
+        "minHeight": "44px"
+      },
+      "page": {
+        "height": 3745.800048828125,
+        "width": 1168.800048828125,
+        "padding": "24px 28px",
+        "gap": "normal",
+        "minHeight": "844px"
+      },
+      "documentHeight": 3746,
+      "rowsWithin600": 13
+    },
+    {
+      "density": "comfortable",
+      "textRow": {
+        "height": 41.79999923706055,
+        "width": 1120.800048828125,
+        "padding": "0px",
+        "gap": "normal",
+        "minHeight": "0px"
+      },
+      "textBody": {
+        "height": 1045.4000244140625,
+        "width": 1120.800048828125,
+        "padding": "0px",
+        "gap": "normal",
+        "minHeight": "0px"
+      },
+      "actionRow": {
+        "height": 54.79999923706055,
+        "width": 1120.800048828125,
+        "padding": "0px",
+        "gap": "normal",
+        "minHeight": "0px"
+      },
+      "actionBody": {
+        "height": 1370.4000244140625,
+        "width": 1120.800048828125,
+        "padding": "0px",
+        "gap": "normal",
+        "minHeight": "0px"
+      },
+      "card": {
+        "height": 112,
+        "width": 1120.800048828125,
+        "padding": "0px",
+        "gap": "normal",
+        "minHeight": "auto"
+      },
+      "metric": {
+        "height": 84,
+        "width": 1120.800048828125,
+        "padding": "16px",
+        "gap": "16px",
+        "minHeight": "auto"
+      },
+      "toolbar": {
+        "height": 84.5999984741211,
+        "width": 1120.800048828125,
+        "padding": "14px",
+        "gap": "12px",
+        "minHeight": "auto"
+      },
+      "form": {
+        "height": 171.8000030517578,
+        "width": 1120.800048828125,
+        "padding": "0px",
+        "gap": "16px",
+        "minHeight": "auto"
+      },
+      "sidebar": {
+        "height": 40,
+        "width": 239.1999969482422,
+        "padding": "8px 12px 8px 40px",
+        "gap": "normal",
+        "minHeight": "40px"
+      },
+      "page": {
+        "height": 3449.800048828125,
+        "width": 1168.800048828125,
+        "padding": "20px 24px",
+        "gap": "normal",
+        "minHeight": "844px"
+      },
+      "documentHeight": 3450,
+      "rowsWithin600": 14
+    },
+    {
+      "density": "balanced",
+      "textRow": {
+        "height": 37.79999923706055,
+        "width": 1128.800048828125,
+        "padding": "0px",
+        "gap": "normal",
+        "minHeight": "0px"
+      },
+      "textBody": {
+        "height": 945.4000244140625,
+        "width": 1128.800048828125,
+        "padding": "0px",
+        "gap": "normal",
+        "minHeight": "0px"
+      },
+      "actionRow": {
+        "height": 50.79999923706055,
+        "width": 1128.800048828125,
+        "padding": "0px",
+        "gap": "normal",
+        "minHeight": "0px"
+      },
+      "actionBody": {
+        "height": 1270.4000244140625,
+        "width": 1128.800048828125,
+        "padding": "0px",
+        "gap": "normal",
+        "minHeight": "0px"
+      },
+      "card": {
+        "height": 104,
+        "width": 1128.800048828125,
+        "padding": "0px",
+        "gap": "normal",
+        "minHeight": "auto"
+      },
+      "metric": {
+        "height": 80,
+        "width": 1128.800048828125,
+        "padding": "14px",
+        "gap": "16px",
+        "minHeight": "auto"
+      },
+      "toolbar": {
+        "height": 80.5999984741211,
+        "width": 1128.800048828125,
+        "padding": "12px",
+        "gap": "10px",
+        "minHeight": "auto"
+      },
+      "form": {
+        "height": 165.8000030517578,
+        "width": 1128.800048828125,
+        "padding": "0px",
+        "gap": "14px",
+        "minHeight": "auto"
+      },
+      "sidebar": {
+        "height": 38,
+        "width": 239.1999969482422,
+        "padding": "6px 12px 6px 40px",
+        "gap": "normal",
+        "minHeight": "38px"
+      },
+      "page": {
+        "height": 3189.800048828125,
+        "width": 1168.800048828125,
+        "padding": "16px 20px",
+        "gap": "normal",
+        "minHeight": "844px"
+      },
+      "documentHeight": 3190,
+      "rowsWithin600": 15
+    },
+    {
+      "density": "compact",
+      "textRow": {
+        "height": 33.79999923706055,
+        "width": 1136.800048828125,
+        "padding": "0px",
+        "gap": "normal",
+        "minHeight": "0px"
+      },
+      "textBody": {
+        "height": 845.4000244140625,
+        "width": 1136.800048828125,
+        "padding": "0px",
+        "gap": "normal",
+        "minHeight": "0px"
+      },
+      "actionRow": {
+        "height": 46.79999923706055,
+        "width": 1136.800048828125,
+        "padding": "0px",
+        "gap": "normal",
+        "minHeight": "0px"
+      },
+      "actionBody": {
+        "height": 1170.4000244140625,
+        "width": 1136.800048828125,
+        "padding": "0px",
+        "gap": "normal",
+        "minHeight": "0px"
+      },
+      "card": {
+        "height": 96,
+        "width": 1136.800048828125,
+        "padding": "0px",
+        "gap": "normal",
+        "minHeight": "auto"
+      },
+      "metric": {
+        "height": 76,
+        "width": 1136.800048828125,
+        "padding": "12px",
+        "gap": "16px",
+        "minHeight": "auto"
+      },
+      "toolbar": {
+        "height": 72.5999984741211,
+        "width": 1136.800048828125,
+        "padding": "8px 12px",
+        "gap": "8px",
+        "minHeight": "auto"
+      },
+      "form": {
+        "height": 159.8000030517578,
+        "width": 1136.800048828125,
+        "padding": "0px",
+        "gap": "12px",
+        "minHeight": "auto"
+      },
+      "sidebar": {
+        "height": 36,
+        "width": 239.1999969482422,
+        "padding": "4px 12px 4px 40px",
+        "gap": "normal",
+        "minHeight": "36px"
+      },
+      "page": {
+        "height": 2925.800048828125,
+        "width": 1168.800048828125,
+        "padding": "12px 16px",
+        "gap": "normal",
+        "minHeight": "844px"
+      },
+      "documentHeight": 2926,
+      "rowsWithin600": 17
+    },
+    {
+      "density": "dense",
+      "textRow": {
+        "height": 29.80000114440918,
+        "width": 1144.800048828125,
+        "padding": "0px",
+        "gap": "normal",
+        "minHeight": "0px"
+      },
+      "textBody": {
+        "height": 745.4000244140625,
+        "width": 1144.800048828125,
+        "padding": "0px",
+        "gap": "normal",
+        "minHeight": "0px"
+      },
+      "actionRow": {
+        "height": 42.79999923706055,
+        "width": 1144.800048828125,
+        "padding": "0px",
+        "gap": "normal",
+        "minHeight": "0px"
+      },
+      "actionBody": {
+        "height": 1070.4000244140625,
+        "width": 1144.800048828125,
+        "padding": "0px",
+        "gap": "normal",
+        "minHeight": "0px"
+      },
+      "card": {
+        "height": 84,
+        "width": 1144.800048828125,
+        "padding": "0px",
+        "gap": "normal",
+        "minHeight": "auto"
+      },
+      "metric": {
+        "height": 68,
+        "width": 1144.800048828125,
+        "padding": "8px",
+        "gap": "16px",
+        "minHeight": "auto"
+      },
+      "toolbar": {
+        "height": 68.5999984741211,
+        "width": 1144.800048828125,
+        "padding": "6px 10px",
+        "gap": "6px",
+        "minHeight": "auto"
+      },
+      "form": {
+        "height": 147.8000030517578,
+        "width": 1144.800048828125,
+        "padding": "0px",
+        "gap": "8px",
+        "minHeight": "auto"
+      },
+      "sidebar": {
+        "height": 34,
+        "width": 239.1999969482422,
+        "padding": "2px 12px 2px 40px",
+        "gap": "normal",
+        "minHeight": "34px"
+      },
+      "page": {
+        "height": 2649.800048828125,
+        "width": 1168.800048828125,
+        "padding": "8px 12px",
+        "gap": "normal",
+        "minHeight": "844px"
+      },
+      "documentHeight": 2650,
+      "rowsWithin600": 20
+    }
+  ]
+}

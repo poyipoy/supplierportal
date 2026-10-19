@@ -848,61 +848,6 @@
         background-color: var(--md-on-error);
     }
 
-    [data-density="compact"] .ui-switch {
-        width: 2.75rem;
-        height: 1.5rem;
-    }
-
-    [data-density="compact"] .ui-switch::before {
-        width: 0.875rem;
-        height: 0.875rem;
-        left: 0.2rem;
-    }
-
-    [data-density="compact"] .ui-switch:checked::before {
-        width: 1.125rem;
-        height: 1.125rem;
-        left: 0.15rem;
-        transform: translateY(-50%) translateX(1.15rem);
-    }
-
-    [data-density="compact"] {
-        --sidebar-item-height: 36px;
-        --ui-table-row-height-compact: 2.25rem;
-    }
-
-    [data-density="compact"] .table > :not(caption) > * > *,
-    [data-density="compact"] .ui-data-table:not(.ui-table--compact) table > :not(caption) > * > * {
-        padding-block: .375rem;
-    }
-
-    [data-density="compact"] .ui-toolbar {
-        gap: .5rem;
-        padding: .5rem .75rem;
-    }
-
-    [data-density="compact"] .ui-toolbar__left,
-    [data-density="compact"] .ui-toolbar__right {
-        gap: .375rem;
-    }
-
-    [data-density="compact"] .ui-data-table .dataTables_filter,
-    [data-density="compact"] .ui-data-table .dataTables_length,
-    [data-density="compact"] .ui-data-table .dataTables_info,
-    [data-density="compact"] .ui-data-table .dataTables_paginate {
-        padding: .375rem .625rem;
-    }
-
-    [data-density="compact"] .sidebar-menu .sidebar-link {
-        min-height: var(--sidebar-item-height);
-    }
-
-    @media (max-width: 991.98px) {
-        [data-density="compact"] .sidebar-menu .sidebar-link {
-            min-height: 44px;
-        }
-    }
-
     /* ── Asset Protection (Anti-Drag, Anti-Select & Decorative Pointer Shields) ── */
     img,
     .no-drag,
@@ -957,7 +902,7 @@ html[data-sidebar-motion-ready="true"] {
         font-weight: 700;
         inset-block-start: .75rem;
         inset-inline-start: .75rem;
-        padding: .625rem .875rem;
+        padding: var(--ui-table-cell-block, .625rem) var(--ui-table-cell-inline, .875rem);
         position: fixed;
         transform: translateY(calc(-100% - 1rem));
         transition: transform var(--ui-motion-fast) var(--ui-easing-standard);
@@ -1630,8 +1575,8 @@ html[data-sidebar-motion-ready="true"] {
         flex-wrap: wrap;
         align-items: center;
         justify-content: space-between;
-        gap: 0.75rem;
-        padding: 0.75rem 1rem;
+        gap: var(--ui-density-toolbar-gap, .75rem);
+        padding: var(--ui-density-toolbar-block, .875rem) var(--ui-density-toolbar-inline, .875rem);
         background: var(--ui-surface-secondary);
         border: 1px solid var(--ui-surface-border);
         border-radius: var(--md-shape-md);
@@ -1842,6 +1787,63 @@ html[data-sidebar-motion-ready="true"] {
         align-items: center;
         gap: 0.5rem;
         flex-wrap: wrap;
+    }
+
+    /* Dashboard layout editor (owner-only edit mode): tokens and borders only, no shadows. */
+    [data-dashboard-editing] > [data-dashboard-widget],
+    [data-dashboard-editing] > [data-dashboard-placeholder] {
+        outline: 1px dashed var(--md-on-surface-variant);
+        outline-offset: 4px;
+        position: relative;
+    }
+
+    [data-dashboard-editing] > [data-dragging] {
+        opacity: 0.5;
+    }
+
+    /* The insertion bar sits in the 1rem grid gap on the edge where the dragged panel will land. */
+    [data-dashboard-editing] > [data-drop-edge]::after {
+        background: var(--md-primary);
+        content: "";
+        pointer-events: none;
+        position: absolute;
+        z-index: 2;
+    }
+
+    [data-dashboard-editing] > [data-drop-edge="left"]::after {
+        bottom: 0;
+        left: -0.6875rem;
+        top: 0;
+        width: 0.1875rem;
+    }
+
+    [data-dashboard-editing] > [data-drop-edge="right"]::after {
+        bottom: 0;
+        right: -0.6875rem;
+        top: 0;
+        width: 0.1875rem;
+    }
+
+    [data-dashboard-editing] > [data-drop-edge="top"]::after {
+        height: 0.1875rem;
+        left: 0;
+        right: 0;
+        top: -0.6875rem;
+    }
+
+    [data-dashboard-editing] > [data-drop-edge="bottom"]::after {
+        bottom: -0.6875rem;
+        height: 0.1875rem;
+        left: 0;
+        right: 0;
+    }
+
+    /* Utility display classes (tw-flex, tw-grid) would otherwise override the hidden attribute. */
+    [data-editor-concealed],
+    [data-dashboard-audience] [data-editor-strip][hidden],
+    [data-dashboard-audience] [data-editor-ghost][hidden],
+    [data-dashboard-audience] [data-dashboard-placeholder][hidden] {
+        display: none !important;
     }
 
     .ui-dialog-open {
@@ -2280,13 +2282,13 @@ html[data-sidebar-motion-ready="true"] {
         text-transform: uppercase;
         font-size: var(--ui-font-size-xs);
         letter-spacing: 0.04em;
-        padding: 0.625rem 0.875rem !important;
+        padding: var(--ui-table-cell-block, .625rem) var(--ui-table-cell-inline, .875rem) !important;
         white-space: nowrap;
     }
 
     .table td {
         border-color: var(--md-outline-variant) !important;
-        padding: 0.625rem 0.875rem !important;
+        padding: var(--ui-table-cell-block, .625rem) var(--ui-table-cell-inline, .875rem) !important;
         vertical-align: middle !important;
     }
 
@@ -2317,7 +2319,7 @@ html[data-sidebar-motion-ready="true"] {
 
     .ui-data-table table > :not(caption) > * > * {
         border-color: var(--md-outline-variant);
-        padding: .625rem .875rem;
+        padding: var(--ui-table-cell-block, .625rem) var(--ui-table-cell-inline, .875rem);
         vertical-align: middle;
     }
 
@@ -2335,9 +2337,8 @@ html[data-sidebar-motion-ready="true"] {
         background: var(--ui-table-row-hover-bg);
     }
 
-    .ui-data-table.ui-table--compact table > :not(caption) > * > * {
-        height: var(--ui-table-row-height-compact);
-        padding-block: var(--ui-space-1);
+    .ui-data-table table > :not(caption) > * > * {
+        height: var(--ui-density-row-min, 2.5rem);
     }
 
     .ui-data-table .dataTables_wrapper {
@@ -2350,7 +2351,7 @@ html[data-sidebar-motion-ready="true"] {
     .ui-data-table .dataTables_paginate {
         color: var(--md-on-surface-variant);
         font-size: var(--ui-font-size-sm);
-        padding: .625rem .875rem;
+        padding: var(--ui-table-cell-block, .625rem) var(--ui-table-cell-inline, .875rem);
     }
 
     .qc-spec-grid,
@@ -4486,4 +4487,247 @@ div.dataTables_wrapper div.dataTables_processing {
 }
 @media (pointer: coarse) {
     .ui-column-ribbon .ui-button, .ui-column-layer button, .ui-column-layer select { min-height: 2.75rem; }
+}
+
+#customizationForm .ui-appearance-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); gap: 1.25rem; align-items: start; }
+#customizationForm .ui-appearance-options > * { min-width: 0; }
+#customizationForm .ui-segmented { width: fit-content; max-width: 100%; justify-self: start; }
+#customizationForm .ui-density-fieldset { min-width: 0; container-type: inline-size; }
+#customizationForm .ui-density-layout { display: grid; gap: 1.25rem; align-items: start; }
+#customizationForm .ui-density-controls { display: grid; gap: .5rem; align-content: start; min-width: 0; }
+@container (min-width: 640px) {
+    #customizationForm .ui-density-layout { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+}
+@media (any-pointer: coarse) {
+    #customizationForm .ui-segmented__option { min-height: 44px; }
+}
+.ui-density-active { display: grid; gap: .25rem; min-height: 2.875rem; align-content: start; }
+.ui-density-unsaved-slot { min-height: 1.125rem; }
+.ui-density-active output { font-weight: 600; }
+.ui-density-range { display: block; width: 100%; min-width: 0; height: 44px; accent-color: var(--ui-input-focus); cursor: pointer; }
+.ui-density-range::-webkit-slider-thumb { width: 24px; height: 24px; }
+.ui-density-range::-moz-range-thumb { width: 24px; height: 24px; }
+.ui-density-range:focus-visible { outline: 3px solid var(--ui-input-focus); outline-offset: 3px; }
+.ui-density-range:disabled { cursor: wait; opacity: .5; }
+#customizationForm .ui-action-bar .ui-button { min-height: 44px; }
+[data-density-slider][hidden], #density[hidden] { display: none !important; }
+.ui-density-direction { display: flex; justify-content: space-between; gap: .5rem; }
+.ui-density-stops { display: flex; justify-content: space-between; gap: .25rem; flex-wrap: wrap; }
+.ui-density-preview-frame { display: grid; min-width: 0; }
+.ui-density-preview { grid-area: 1 / 1; align-self: start; min-width: 0; display: grid; gap: var(--ui-density-stack-sm, 1rem); }
+.ui-density-preview .ui-toolbar { margin-bottom: 0; }
+.ui-density-preview__reserve {
+    visibility: hidden; pointer-events: none;
+    --ui-density-metric-padding: 1.25rem;
+    --ui-density-toolbar-block: 1.125rem;
+    --ui-density-toolbar-inline: 1.25rem;
+    --ui-density-toolbar-gap: 1rem;
+    --ui-density-stack-sm: 1.25rem;
+    --ui-table-cell-block: .75rem;
+    --ui-table-cell-inline: 1rem;
+    --ui-density-row-min: 2.75rem;
+}
+/* Interface density: screen-only semantic values. Protected geometry keeps its own defaults. */
+@media screen {
+    :root[data-density="spacious"] {
+        --ui-density-table-cell-block: 0.75rem;
+        --ui-density-table-cell-inline: 1rem;
+        --ui-density-row-min: 2.75rem;
+        --ui-density-page-block: 1.5rem;
+        --ui-density-page-inline: 1.75rem;
+        --ui-density-stack-sm: 1.25rem;
+        --ui-density-stack-md: 1.5rem;
+        --ui-density-stack-lg: 1.75rem;
+        --ui-density-card-padding: 1.5rem;
+        --ui-density-metric-padding: 1.25rem;
+        --ui-density-panel-block: 1.125rem;
+        --ui-density-panel-inline: 1.25rem;
+        --ui-density-toolbar-block: 1.125rem;
+        --ui-density-toolbar-inline: 1.25rem;
+        --ui-density-toolbar-gap: 1rem;
+        --ui-density-toolbar-left-gap: 0.75rem;
+        --ui-density-toolbar-right-gap: 0.75rem;
+        --ui-density-form-gap: 1.25rem;
+        --ui-density-list-block: 1rem;
+        --ui-density-sidebar-min: 2.75rem;
+        --ui-density-sidebar-block: 0.625rem;
+        --ui-density-modal-padding: 1.25rem;
+    }
+    :root[data-density="comfortable"] {
+        --ui-density-table-cell-block: 0.625rem;
+        --ui-density-table-cell-inline: 0.875rem;
+        --ui-density-row-min: 2.5rem;
+        --ui-density-page-block: 1.25rem;
+        --ui-density-page-inline: 1.5rem;
+        --ui-density-stack-sm: 1rem;
+        --ui-density-stack-md: 1.25rem;
+        --ui-density-stack-lg: 1.5rem;
+        --ui-density-card-padding: 1.25rem;
+        --ui-density-metric-padding: 1rem;
+        --ui-density-panel-block: 0.875rem;
+        --ui-density-panel-inline: 1rem;
+        --ui-density-toolbar-block: 0.875rem;
+        --ui-density-toolbar-inline: 0.875rem;
+        --ui-density-toolbar-gap: 0.75rem;
+        --ui-density-toolbar-left-gap: 0.625rem;
+        --ui-density-toolbar-right-gap: 0.5rem;
+        --ui-density-form-gap: 1rem;
+        --ui-density-list-block: 0.75rem;
+        --ui-density-sidebar-min: 2.5rem;
+        --ui-density-sidebar-block: 0.5rem;
+        --ui-density-modal-padding: 1rem;
+    }
+    :root[data-density="balanced"] {
+        --ui-density-table-cell-block: 0.5rem;
+        --ui-density-table-cell-inline: 0.75rem;
+        --ui-density-row-min: 2.25rem;
+        --ui-density-page-block: 1rem;
+        --ui-density-page-inline: 1.25rem;
+        --ui-density-stack-sm: 0.875rem;
+        --ui-density-stack-md: 1.125rem;
+        --ui-density-stack-lg: 1.25rem;
+        --ui-density-card-padding: 1.125rem;
+        --ui-density-metric-padding: 0.875rem;
+        --ui-density-panel-block: 0.75rem;
+        --ui-density-panel-inline: 0.875rem;
+        --ui-density-toolbar-block: 0.75rem;
+        --ui-density-toolbar-inline: 0.75rem;
+        --ui-density-toolbar-gap: 0.625rem;
+        --ui-density-toolbar-left-gap: 0.5rem;
+        --ui-density-toolbar-right-gap: 0.5rem;
+        --ui-density-form-gap: 0.875rem;
+        --ui-density-list-block: 0.625rem;
+        --ui-density-sidebar-min: 2.375rem;
+        --ui-density-sidebar-block: 0.375rem;
+        --ui-density-modal-padding: 0.875rem;
+    }
+    :root[data-density="compact"] {
+        --ui-density-table-cell-block: 0.375rem;
+        --ui-density-table-cell-inline: 0.625rem;
+        --ui-density-row-min: 2rem;
+        --ui-density-page-block: 0.75rem;
+        --ui-density-page-inline: 1rem;
+        --ui-density-stack-sm: 0.75rem;
+        --ui-density-stack-md: 1rem;
+        --ui-density-stack-lg: 1rem;
+        --ui-density-card-padding: 1rem;
+        --ui-density-metric-padding: 0.75rem;
+        --ui-density-panel-block: 0.625rem;
+        --ui-density-panel-inline: 0.75rem;
+        --ui-density-toolbar-block: 0.5rem;
+        --ui-density-toolbar-inline: 0.75rem;
+        --ui-density-toolbar-gap: 0.5rem;
+        --ui-density-toolbar-left-gap: 0.375rem;
+        --ui-density-toolbar-right-gap: 0.375rem;
+        --ui-density-form-gap: 0.75rem;
+        --ui-density-list-block: 0.5rem;
+        --ui-density-sidebar-min: 2.25rem;
+        --ui-density-sidebar-block: 0.25rem;
+        --ui-density-modal-padding: 0.75rem;
+    }
+    :root[data-density="dense"] {
+        --ui-density-table-cell-block: 0.25rem;
+        --ui-density-table-cell-inline: 0.5rem;
+        --ui-density-row-min: 1.75rem;
+        --ui-density-page-block: 0.5rem;
+        --ui-density-page-inline: 0.75rem;
+        --ui-density-stack-sm: 0.5rem;
+        --ui-density-stack-md: 0.75rem;
+        --ui-density-stack-lg: 0.75rem;
+        --ui-density-card-padding: 0.75rem;
+        --ui-density-metric-padding: 0.5rem;
+        --ui-density-panel-block: 0.5rem;
+        --ui-density-panel-inline: 0.625rem;
+        --ui-density-toolbar-block: 0.375rem;
+        --ui-density-toolbar-inline: 0.625rem;
+        --ui-density-toolbar-gap: 0.375rem;
+        --ui-density-toolbar-left-gap: 0.25rem;
+        --ui-density-toolbar-right-gap: 0.25rem;
+        --ui-density-form-gap: 0.5rem;
+        --ui-density-list-block: 0.375rem;
+        --ui-density-sidebar-min: 2.125rem;
+        --ui-density-sidebar-block: 0.125rem;
+        --ui-density-modal-padding: 0.625rem;
+    }
+
+    .content-area {
+        --ui-table-cell-block: var(--ui-density-table-cell-block, .625rem);
+        --ui-table-cell-inline: var(--ui-density-table-cell-inline, .875rem);
+        padding: var(--ui-density-page-block, 1.25rem) var(--ui-density-page-inline, 1.5rem);
+    }
+    /* Input matrices are functional editors, with measured legacy geometry. */
+    :is(.pr-items-table, .quotation-items-table, .qc-dimension-grid, .ui-export-designer-modal) {
+        --ui-table-cell-block: .625rem;
+        --ui-table-cell-inline: .875rem;
+        --ui-density-row-min: 2.5rem;
+    }
+    .sidebar-menu .sidebar-link {
+        min-height: var(--ui-density-sidebar-min, 2.5rem);
+        padding-block: var(--ui-density-sidebar-block, .5rem);
+    }
+    .ui-toolbar__left { gap: var(--ui-density-toolbar-left-gap, .625rem); }
+    .ui-toolbar__right { gap: var(--ui-density-toolbar-right-gap, .5rem); }
+    .ui-data-table :is(.dataTables_filter, .dataTables_length, .dataTables_info, .dataTables_paginate) {
+        padding: var(--ui-density-table-cell-block, .625rem) var(--ui-density-table-cell-inline, .875rem);
+    }
+    .ui-data-table__header, .ui-data-table__footer, .ui-card__header, .ui-card__footer {
+        padding: var(--ui-density-panel-block, .875rem) var(--ui-density-panel-inline, 1rem);
+    }
+    .ui-data-table__header { gap: var(--ui-density-toolbar-left-gap, .625rem); }
+    .ui-card__body--md, .ui-form-section__body { padding: var(--ui-density-card-padding, 1.25rem); }
+    .ui-card__body--sm { padding: var(--ui-density-panel-block, .875rem); }
+    .ui-metric-card { padding: var(--ui-density-metric-padding, 1rem); }
+    .ui-form-section { gap: var(--ui-density-form-gap, 1rem); margin-bottom: var(--ui-density-stack-lg, 1.5rem); }
+    .ui-form-section__header { padding: 1rem var(--ui-density-card-padding, 1.25rem); }
+    .ui-form-section__body { gap: var(--ui-density-form-gap, 1rem); }
+    .ui-page-header { margin-bottom: var(--ui-density-stack-md, 1.25rem); }
+    .ui-dashboard-layout { gap: var(--ui-density-stack-sm, 1rem); }
+    /* Editor drop markers rely on the existing one-rem grid gap. */
+    .ui-dashboard-layout[data-dashboard-editing] { gap: 1rem; }
+    .ui-density-stack { gap: var(--ui-density-stack-md, 1.25rem); }
+    .ui-density-form-grid { gap: var(--ui-density-form-gap, 1rem); }
+    .ui-density-form-stack > * + * { margin-top: var(--ui-density-form-gap, 1rem); }
+    .ui-density-list > * + * { margin-top: var(--ui-density-list-block, .75rem); }
+    .ui-density-stack-list > * + * { margin-top: var(--ui-density-stack-lg, 1.5rem); }
+    .ui-density-modal .modal-body, .local-import-modal .modal-body { padding: var(--ui-density-modal-padding, 1rem); }
+    .ui-density-modal, .local-import-modal {
+        --ui-table-cell-block: var(--ui-density-table-cell-block, .625rem);
+        --ui-table-cell-inline: var(--ui-density-table-cell-inline, .875rem);
+    }
+    .content-container > .tw-grid.tw-gap-4:not(.ui-account-shell) { gap: var(--ui-density-stack-sm, 1rem); }
+    .content-container > .tw-grid.tw-gap-5:not(.ui-account-shell) { gap: var(--ui-density-stack-md, 1.25rem); }
+    .content-container > .tw-grid.tw-gap-6:not(.ui-account-shell) { gap: var(--ui-density-stack-lg, 1.5rem); }
+    /* Control ancestors and action bars do not move while the user drags. */
+    .content-area:has(#customizationForm) { padding: 1.25rem 1.5rem; }
+    .ui-account-shell .ui-page-header { margin-bottom: 1.25rem; }
+    .ui-density-settings-body { padding: var(--ui-density-card-padding, 1.25rem); }
+    @media (max-width: 991.98px) {
+        .content-area { padding: max(1rem, var(--ui-density-page-block)) max(1rem, var(--ui-density-page-inline)); }
+        .content-area:has(#customizationForm) { padding: 1rem; }
+        .ui-card__body--md, .ui-form-section__body { padding: var(--ui-density-metric-padding, 1rem); }
+        .sidebar-menu .sidebar-link { min-height: 44px; }
+    }
+    @media (any-pointer: coarse), (max-width: 991.98px) {
+        .sidebar-menu .sidebar-link { min-height: 44px; }
+        .content-area:not(:has(.ui-account-shell)) :is(.ui-button, .ui-data-action),
+        #customizationForm .ui-button,
+        .ui-density-modal :is(.ui-button, .btn), .local-import-modal :is(.ui-button, .btn) { min-height: 44px; }
+        .ui-density-modal .btn-close, .local-import-modal .btn-close { min-width: 44px; min-height: 44px; box-sizing: border-box; }
+        .ui-form-section__body, .ui-density-form-grid { gap: max(.5rem, var(--ui-density-form-gap)); }
+        .ui-toolbar, .ui-toolbar__left, .ui-toolbar__right { gap: max(.5rem, var(--ui-density-toolbar-gap)); }
+    }
+}
+/* These fallbacks preserve the same component spacing for print/no density root. */
+@media print {
+    .ui-density-form-stack > * + * { margin-top: 1rem; }
+    .ui-form-section { gap: 1rem; margin-bottom: 1.5rem; }
+    .ui-form-section__header { padding: 1rem 1.25rem; }
+    .ui-density-list > * + * { margin-top: .75rem; }
+    .ui-density-stack-list > * + * { margin-top: 1.5rem; }
+    .ui-card__body--md, .ui-form-section__body { padding: 1.25rem; }
+    .ui-card__body--sm { padding: .875rem; }
+    .ui-metric-card { padding: 1rem; }
+    .ui-form-section__body, .ui-dashboard-layout { gap: 1rem; }
+    .ui-data-table__header, .ui-data-table__footer, .ui-card__header, .ui-card__footer { padding: .875rem 1rem; }
+    .ui-page-header { margin-bottom: 1.25rem; }
 }

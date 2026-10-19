@@ -1,0 +1,171 @@
+{
+  "route": "/ga/employees",
+  "submitted": false,
+  "result": [
+    {
+      "density": "spacious",
+      "padding": "20px",
+      "height": 505.20001220703125,
+      "buttons": [
+        {
+          "type": "button",
+          "width": 32,
+          "height": 32
+        },
+        {
+          "type": "button",
+          "width": 458.3999938964844,
+          "height": 40
+        },
+        {
+          "type": "button",
+          "width": 0,
+          "height": 0
+        },
+        {
+          "type": "button",
+          "width": 57.60000228881836,
+          "height": 34
+        },
+        {
+          "type": "submit",
+          "width": 126,
+          "height": 34
+        }
+      ],
+      "focusInside": true
+    },
+    {
+      "density": "comfortable",
+      "padding": "16px",
+      "height": 497.20001220703125,
+      "buttons": [
+        {
+          "type": "button",
+          "width": 32,
+          "height": 32
+        },
+        {
+          "type": "button",
+          "width": 466.3999938964844,
+          "height": 40
+        },
+        {
+          "type": "button",
+          "width": 0,
+          "height": 0
+        },
+        {
+          "type": "button",
+          "width": 57.60000228881836,
+          "height": 34
+        },
+        {
+          "type": "submit",
+          "width": 126,
+          "height": 34
+        }
+      ],
+      "focusInside": true
+    },
+    {
+      "density": "balanced",
+      "padding": "14px",
+      "height": 493.20001220703125,
+      "buttons": [
+        {
+          "type": "button",
+          "width": 32,
+          "height": 32
+        },
+        {
+          "type": "button",
+          "width": 470.3999938964844,
+          "height": 40
+        },
+        {
+          "type": "button",
+          "width": 0,
+          "height": 0
+        },
+        {
+          "type": "button",
+          "width": 57.60000228881836,
+          "height": 34
+        },
+        {
+          "type": "submit",
+          "width": 126,
+          "height": 34
+        }
+      ],
+      "focusInside": true
+    },
+    {
+      "density": "compact",
+      "padding": "12px",
+      "height": 489.20001220703125,
+      "buttons": [
+        {
+          "type": "button",
+          "width": 32,
+          "height": 32
+        },
+        {
+          "type": "button",
+          "width": 474.3999938964844,
+          "height": 40
+        },
+        {
+          "type": "button",
+          "width": 0,
+          "height": 0
+        },
+        {
+          "type": "button",
+          "width": 57.60000228881836,
+          "height": 34
+        },
+        {
+          "type": "submit",
+          "width": 126,
+          "height": 34
+        }
+      ],
+      "focusInside": true
+    },
+    {
+      "density": "dense",
+      "padding": "10px",
+      "height": 485.20001220703125,
+      "buttons": [
+        {
+          "type": "button",
+          "width": 32,
+          "height": 32
+        },
+        {
+          "type": "button",
+          "width": 478.3999938964844,
+          "height": 40
+        },
+        {
+          "type": "button",
+          "width": 0,
+          "height": 0
+        },
+        {
+          "type": "button",
+          "width": 57.60000228881836,
+          "height": 34
+        },
+        {
+          "type": "submit",
+          "width": 126,
+          "height": 34
+        }
+      ],
+      "focusInside": true
+    }
+  ]
+}

@@ -322,7 +322,7 @@
     {{-- TAHAP 1: UPLOAD DOKUMEN BERKAS LAMPIRAN                                     --}}
     {{-- ========================================================================= --}}
     <div x-show="step === 1" x-cloak data-wizard-step="1" class="tw-grid tw-grid-cols-1 tw-gap-6 lg:tw-grid-cols-12 tw-items-start">
-        <div class="tw-min-w-0 lg:tw-col-span-8 tw-space-y-6">
+        <div class="tw-min-w-0 lg:tw-col-span-8 ui-density-stack-list">
             <x-ui.form-section :title="__('local_invoice.labels.documents_grid')" :description="__('local_invoice.documents.upload_rules')">
                 <div class="tw-grid tw-grid-cols-1 tw-min-w-0 tw-gap-4 sm:tw-grid-cols-2">
                     <x-ui.file-upload
@@ -506,9 +506,9 @@
     {{-- TAHAP 2: INFORMASI INVOICE & ALOKASI PENERIMAAN BARANG (GR)               --}}
     {{-- ========================================================================= --}}
     <div x-show="step === 2" x-cloak data-wizard-step="2" class="tw-grid tw-gap-6 lg:tw-grid-cols-12 tw-items-start">
-        <div class="tw-min-w-0 lg:tw-col-span-8 tw-space-y-6">
+        <div class="tw-min-w-0 lg:tw-col-span-8 ui-density-stack-list">
             <x-ui.form-section :title="__('local_invoice.labels.po_gr_information')" :description="__('local_invoice.form.gr_requirement')">
-                <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
+                <div class="ui-density-form-grid tw-grid sm:tw-grid-cols-2">
                     <div>
                         <div class="tw-flex tw-items-center tw-justify-between tw-mb-1">
                             <label for="invoice-number" class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-mb-0">
@@ -783,7 +783,7 @@
                         />
                     </div>
                     @if($isCancelledRecovery)
-                        <div class="sm:tw-col-span-2 tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface-container tw-p-4 tw-space-y-3">
+                        <div class="sm:tw-col-span-2 tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface-container tw-p-4 ui-density-list">
                             <div data-async-error-anchor>
                                 <label for="invoiceRecoveryReason" class="form-label tw-text-ui-xs tw-font-semibold">{{ __('local_invoice.recovery.reason') }} <span class="tw-text-error" aria-hidden="true">*</span></label>
                                 <textarea id="invoiceRecoveryReason" name="recovery_reason" maxlength="1000" rows="3" required class="form-control @error('recovery_reason') is-invalid @enderror" aria-describedby="invoiceRecoveryReasonHint{{ $errors->has('recovery_reason') ? ' invoiceRecoveryReasonError' : '' }}" @error('recovery_reason') aria-invalid="true" @enderror>{{ old('recovery_reason') }}</textarea>
