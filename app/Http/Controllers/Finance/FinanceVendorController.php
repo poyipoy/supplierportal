@@ -22,6 +22,7 @@ class FinanceVendorController extends Controller
             ->paginate(20);
 
         $pendingRequests = SupplierChangeRequest::where('status', SupplierChangeRequest::STATUS_PENDING)
+            ->excludingContact()
             ->whereHas('supplier', fn ($q) => $q->localEligible())
             ->with(['supplier.supplier', 'requester'])
             ->latest('id')

@@ -32,13 +32,36 @@
     }
 
     .quotation-items-table {
+        /* Single source for column widths: the fixed layout, the table width and the
+           sticky offsets all read these, so the sticky columns cannot drift apart. */
+        --q-col-number: 48px;
+        --q-col-material: 230px;
+        --q-col-row-type: 88px;
+        --q-col-qty: 120px;
+        --q-col-dimension: 110px;
+        --q-col-length: 160px;
+        --q-col-weight: 145px;
+        --q-col-total-weight: 130px;
+        --q-col-commercial: 145px;
+        --q-col-amount: 160px;
+        --q-col-notes: 210px;
+        --q-col-mtc: 0px;
+        --q-col-availability: 160px;
+        --q-table-width: calc(var(--q-col-number) + var(--q-col-material) + var(--q-col-row-type) + var(--q-col-qty)
+            + 4 * var(--q-col-dimension) + var(--q-col-length) + var(--q-col-weight) + var(--q-col-total-weight)
+            + var(--q-col-commercial) + var(--q-col-amount) + var(--q-col-notes) + var(--q-col-mtc) + var(--q-col-availability));
         border-collapse: separate !important;
         border-spacing: 0;
         font-size: var(--ui-font-size-xs);
         max-width: none !important;
-        min-width: 2180px !important;
+        min-width: var(--q-table-width) !important;
         table-layout: fixed !important;
-        width: 2180px !important;
+        /* Exactly the column sum: a wider table would stretch every column and push them under the sticky ones. */
+        width: var(--q-table-width) !important;
+    }
+
+    .quotation-items-table.has-mtc-column {
+        --q-col-mtc: 210px;
     }
 
     .quotation-items-table th,
@@ -49,19 +72,19 @@
         vertical-align: middle !important;
     }
 
-    .quotation-col-number { width: 48px; }
-    .quotation-col-material { width: 230px; }
-    .quotation-col-row-type { width: 88px; }
-    .quotation-col-qty { width: 120px; }
-    .quotation-col-dimension { width: 110px; }
-    .quotation-col-length { width: 135px; }
-    .quotation-col-weight { width: 145px; }
-    .quotation-col-total-weight { width: 130px; }
-    .quotation-col-commercial { width: 145px; }
-    .quotation-col-amount { width: 160px; }
-    .quotation-col-notes { width: 210px; }
-    .quotation-col-mtc { width: 210px; }
-    .quotation-col-availability { width: 160px; }
+    .quotation-col-number { width: var(--q-col-number); }
+    .quotation-col-material { width: var(--q-col-material); }
+    .quotation-col-row-type { width: var(--q-col-row-type); }
+    .quotation-col-qty { width: var(--q-col-qty); }
+    .quotation-col-dimension { width: var(--q-col-dimension); }
+    .quotation-col-length { width: var(--q-col-length); }
+    .quotation-col-weight { width: var(--q-col-weight); }
+    .quotation-col-total-weight { width: var(--q-col-total-weight); }
+    .quotation-col-commercial { width: var(--q-col-commercial); }
+    .quotation-col-amount { width: var(--q-col-amount); }
+    .quotation-col-notes { width: var(--q-col-notes); }
+    .quotation-col-mtc { width: var(--q-col-mtc); }
+    .quotation-col-availability { width: var(--q-col-availability); }
 
     .quotation-items-table .quotation-field-header th {
         background: var(--md-surface-container-low) !important;
@@ -84,25 +107,28 @@
 
     .quotation-items-table .quotation-sticky-number {
         left: 0;
-        min-width: 48px;
-        width: 48px;
         z-index: 7;
     }
 
     .quotation-items-table .quotation-sticky-material {
         border-right: 1px solid var(--md-outline) !important;
-        left: 48px;
-        min-width: 230px;
-        width: 230px;
+        left: var(--q-col-number);
         z-index: 7;
     }
 
     .quotation-items-table .quotation-sticky-row-type {
         border-right: 1px solid var(--md-outline) !important;
-        left: 278px;
-        min-width: 88px;
-        width: 88px;
+        left: calc(var(--q-col-number) + var(--q-col-material));
         z-index: 6;
+    }
+
+    /* The footer label spans the three sticky columns, so it stays pinned with them. */
+    .quotation-items-table tfoot .quotation-sticky-total {
+        background: var(--md-surface-container-low) !important;
+        border-right: 1px solid var(--md-outline) !important;
+        left: 0;
+        position: sticky;
+        z-index: 7;
     }
 
     .quotation-items-table thead .quotation-sticky-number,
@@ -845,7 +871,7 @@
                     </div>
 
                     <div class="table-responsive quotation-table-scroll ui-table-sticky" role="region" tabindex="0" aria-label="{{ __('supplier.copy.material_quotation_price_entry') }}" aria-describedby="quotationTableScrollHint">
-                        <table class="table table-bordered align-middle mb-0 quotation-items-table tw-text-ui-xs">
+                        <table class="table table-bordered align-middle mb-0 quotation-items-table tw-text-ui-xs @unless($shipmentMtcEnabled) has-mtc-column @endunless">
                             <caption class="visually-hidden">{{ __('supplier.copy.supplier_quotation_entry_table_with_paired_requested_and_offer_rows_for_each_material') }}</caption>
                             <colgroup>
                                 <col class="quotation-col-number">
@@ -1021,7 +1047,7 @@
                                                     class="form-control form-control-sm availability-input offer-length-input offer-disable-when-unavailable quotation-editable text-end ui-tabular-nums @error("items.{$index}.available_length_input") is-invalid @enderror"
                                                     data-availability-field="length"
                                                     value="{{ old("items.{$index}.available_length_input", $storedLength) }}"
-                                                    placeholder="{{ __('supplier.copy.e_g_2300_or_2300_2500_mm') }}"
+                                                    placeholder="{{ __('supplier.copy.length_placeholder') }}"
                                                     aria-label="{{ __('supplier.a11y.offer_length', ['material' => $item->material_name]) }}"
                                                     aria-describedby="availableLengthHelp{{ $index }} availableLengthFeedback{{ $index }}"
                                                 >
@@ -1242,7 +1268,7 @@
                             @endforeach
                             <tfoot class="table-light fw-bold border-top">
                                 <tr>
-                                    <th scope="row" colspan="3" class="text-end tw-text-on-surface">{{ __('procurement.quotation.total_offered') }}</th>
+                                    <th scope="row" colspan="3" class="text-end tw-text-on-surface quotation-sticky-total">{{ __('procurement.quotation.total_offered') }}</th>
                                     <td class="text-end tw-text-on-surface ui-tabular-nums">
                                         <span id="totalOfferedQty" aria-label="{{ __('procurement.quotation.total_offered_qty') }}">0</span>
                                     </td>

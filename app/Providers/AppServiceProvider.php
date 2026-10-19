@@ -130,6 +130,7 @@ class AppServiceProvider extends ServiceProvider
         View::composer([
             'local-invoices.detail', 'finance.invoices.show', 'purchasing.local-vendors.invoice-show',
             'supplier-registrations.index', 'supplier-registrations._attempts_content', 'supplier-registrations.show',
+            'supplier.company-profile.show', 'purchasing.import-suppliers.show', 'supplier-contact._history',
         ], function ($view): void {
             $view->with('regionalFormatter', app(RegionalDisplayFormatter::class));
         });

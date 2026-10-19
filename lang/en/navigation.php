@@ -82,6 +82,8 @@ return [
     'price_history' => 'Price History',
     'supplier_overpayment' => 'Supplier Overpayment',
     'supplier_registrations' => 'Supplier Registrations',
+    'import_suppliers' => 'Import Suppliers',
+    'company_profile' => 'Company Profile',
     'reporting' => 'Reporting',
     'submit_claim' => 'Submit Claim',
     'physical_verification' => 'Physical Verification',

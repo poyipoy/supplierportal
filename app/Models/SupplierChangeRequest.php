@@ -16,6 +16,14 @@ class SupplierChangeRequest extends Model
 
     public const STATUS_CANCELLED = 'CANCELLED';
 
+    /** Full Vendor Master change proposed from the Local portal. */
+    public const TYPE_PROFILE = 'profile';
+
+    /** Contact-person-only change proposed from the Import portal; reviewed by Purchasing. */
+    public const TYPE_CONTACT = 'contact';
+
+    public const CONTACT_FIELDS = ['pic_name', 'pic_email', 'pic_phone'];
+
     protected $fillable = [
         'supplier_id',
         'change_type',
@@ -61,6 +69,21 @@ class SupplierChangeRequest extends Model
     public function scopePending(Builder $query): Builder
     {
         return $query->where('status', self::STATUS_PENDING);
+    }
+
+    public function scopeContact(Builder $query): Builder
+    {
+        return $query->where('change_type', self::TYPE_CONTACT);
+    }
+
+    public function scopeExcludingContact(Builder $query): Builder
+    {
+        return $query->where('change_type', '!=', self::TYPE_CONTACT);
+    }
+
+    public function isContactChange(): bool
+    {
+        return $this->change_type === self::TYPE_CONTACT;
     }
 
     public function isPending(): bool

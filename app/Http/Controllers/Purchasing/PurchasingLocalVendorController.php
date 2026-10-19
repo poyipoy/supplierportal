@@ -22,6 +22,7 @@ class PurchasingLocalVendorController extends Controller
             ->paginate(20);
 
         $pendingRequests = SupplierChangeRequest::where('status', SupplierChangeRequest::STATUS_PENDING)
+            ->excludingContact()
             ->with(['supplier.supplier', 'requester'])
             ->latest('id')
             ->get();

@@ -17,7 +17,7 @@
     >
         <x-ui.icon :name="$tab['icon']" size="xs" />
         <span>{{ $tab['label'] }}</span>
-        <span class="tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-bg-surface-container-high tw-px-2 tw-py-0.5 tw-text-[11px] tw-font-bold tw-text-on-surface group-aria-[current=page]:tw-bg-primary group-aria-[current=page]:tw-text-primary-foreground" data-tab-count="{{ $key }}">
+        <span class="tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-bg-surface-high tw-px-2 tw-py-0.5 tw-text-[11px] tw-font-bold tw-text-on-surface group-aria-[current=page]:tw-bg-primary group-aria-[current=page]:tw-text-primary-foreground" data-tab-count="{{ $key }}">
             {{ $counts[$key] ?? 0 }}
         </span>
     </a>

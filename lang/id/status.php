@@ -170,4 +170,10 @@ return [
         'result_published' => 'Hasil Terbit',
         'cancelled' => 'Dibatalkan',
     ],
+    'supplier_contact' => [
+        'pending' => 'Menunggu Review',
+        'approved' => 'Disetujui',
+        'rejected' => 'Ditolak',
+        'cancelled' => 'Digantikan',
+    ],
 ];

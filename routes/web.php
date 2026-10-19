@@ -53,6 +53,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Purchasing\AwardConsolidationController;
 use App\Http\Controllers\Purchasing\ConversationController;
 use App\Http\Controllers\Purchasing\ExportController;
+use App\Http\Controllers\Purchasing\ImportSupplierController;
 use App\Http\Controllers\Purchasing\MaterialCalculationController;
 use App\Http\Controllers\Purchasing\MaterialClaimController;
 use App\Http\Controllers\Purchasing\MaterialMasterSearchController;
@@ -78,6 +79,7 @@ use App\Http\Controllers\ReceiptVerificationController;
 use App\Http\Controllers\Supplier\ClaimController;
 use App\Http\Controllers\Supplier\ExportController as SupplierExportController;
 use App\Http\Controllers\Supplier\QuotationController;
+use App\Http\Controllers\Supplier\SupplierCompanyProfileController;
 use App\Http\Controllers\Supplier\SupplierController;
 use App\Http\Controllers\Supplier\SupplierPriceHistoryController;
 use App\Http\Controllers\Supplier\SupplierPurchaseOrderController;
@@ -579,6 +581,12 @@ Route::middleware(['auth', 'role:purchasing', 'purchasing.navigation'])->prefix(
     Route::post('/local-vendors/change-requests/{request}/approve', [PurchasingLocalVendorController::class, 'approveChange'])->name('local-vendors.change-requests.approve');
     Route::post('/local-vendors/change-requests/{request}/reject', [PurchasingLocalVendorController::class, 'rejectChange'])->name('local-vendors.change-requests.reject');
     Route::get('/local-invoices/{invoice}', [PurchasingLocalVendorController::class, 'showInvoice'])->name('local-invoices.show');
+    // Import supplier directory & contact person review
+    Route::get('/import-suppliers', [ImportSupplierController::class, 'index'])->name('import-suppliers.index');
+    Route::post('/import-suppliers/contact-requests/{changeRequest}/approve', [ImportSupplierController::class, 'approve'])->middleware('throttle:30,1')->name('import-suppliers.contact-requests.approve');
+    Route::post('/import-suppliers/contact-requests/{changeRequest}/reject', [ImportSupplierController::class, 'reject'])->middleware('throttle:30,1')->name('import-suppliers.contact-requests.reject');
+    Route::get('/import-suppliers/{vendor}', [ImportSupplierController::class, 'show'])->name('import-suppliers.show');
+    Route::patch('/import-suppliers/{vendor}/contact', [ImportSupplierController::class, 'updateContact'])->middleware('throttle:30,1')->name('import-suppliers.contact.update');
 
     Route::prefix('local-procurement')->name('local-procurement.')->controller(LocalProcurementController::class)->group(function () {
         Route::get('/imports', [LocalProcurementImportController::class, 'index'])->name('imports.index');
@@ -684,6 +692,9 @@ Route::middleware(['auth', 'role:supplier', 'supplier.scope:import'])->prefix('s
     // Announcements
     Route::get('/announcements', [App\Http\Controllers\Supplier\AnnouncementController::class, 'index'])->name('announcements.index');
     Route::get('/announcements/{announcement}', [App\Http\Controllers\Supplier\AnnouncementController::class, 'show'])->name('announcements.show');
+    // Company profile & contact person
+    Route::get('/company-profile', [SupplierCompanyProfileController::class, 'show'])->name('company-profile.show');
+    Route::post('/company-profile/contact-requests', [SupplierCompanyProfileController::class, 'storeContactRequest'])->middleware('throttle:10,1')->name('company-profile.contact-requests.store');
 });
 
 /*

@@ -189,6 +189,7 @@
 
                 <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 11;">{{ __('common.information') }}</span></div>
                 <x-ui.sidebar-item :href="route('supplier.announcements.index')" icon="info" :active="request()->routeIs('supplier.announcements.*')" :label="__('navigation.adasi_information')">{{ __('navigation.adasi_information') }}</x-ui.sidebar-item>
+                <x-ui.sidebar-item :href="route('supplier.company-profile.show')" icon="building-2" :active="request()->routeIs('supplier.company-profile.*')" :label="__('navigation.company_profile')">{{ __('navigation.company_profile') }}</x-ui.sidebar-item>
             @else
                 <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 6;">{{ __('navigation.portal') }}</span></div>
                 <div class="px-3 py-3 tw-text-ui-xs tw-text-on-surface-variant d-flex flex-column align-items-center text-center tw-gap-2">
@@ -235,6 +236,7 @@
             <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.periods.index')" icon="calendar-days" :active="request()->routeIs('purchasing.periods.*')" :label="__('navigation.period_management')">{{ __('navigation.period_management') }}</x-ui.sidebar-item>
             <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.requisitions.index')" icon="clipboard-list" :active="request()->routeIs('purchasing.requisitions.*')" :label="__('navigation.requisition')">{{ __('navigation.requisition') }}</x-ui.sidebar-item>
             <x-ui.sidebar-item :href="route('supplier-registrations.index')" icon="user-plus" :active="request()->routeIs('supplier-registrations.*')" :label="__('navigation.supplier_registrations')">{{ __('navigation.supplier_registrations') }}</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.import-suppliers.index')" icon="contact-round" :active="request()->routeIs('purchasing.import-suppliers.*')" :label="__('navigation.import_suppliers')">{{ __('navigation.import_suppliers') }}</x-ui.sidebar-item>
             <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.quotations.index')" icon="tags" :active="request()->routeIs('purchasing.quotations.*')" :label="__('navigation.quotation')">{{ __('navigation.quotation') }}</x-ui.sidebar-item>
             <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.comparison.inter-supplier')" icon="chart-no-axes-combined" :active="request()->routeIs('purchasing.comparison.*')" :label="__('navigation.price_comparison')">{{ __('navigation.price_comparison') }}</x-ui.sidebar-item>
             <x-ui.sidebar-item :href="\App\Support\PurchasingNavigation::listUrl('purchasing.purchase-orders.index')" icon="receipt" :active="request()->routeIs('purchasing.purchase-orders.*')" :label="__('navigation.purchase_order')">{{ __('navigation.purchase_order') }}</x-ui.sidebar-item>

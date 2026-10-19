@@ -119,14 +119,20 @@ BLADE);
         $this->assertStringContainsString('min-width: max-content;', $styles);
         $this->assertStringContainsString('padding-inline-end: 2.25rem !important;', $styles);
         $this->assertStringContainsString('.sorting_asc_disabled', $styles);
-        $this->assertStringContainsString('.quotation-col-weight { width: 145px; }', $supplierQuotation);
-        $this->assertStringContainsString('.quotation-col-total-weight { width: 130px; }', $supplierQuotation);
+        $this->assertStringContainsString('--q-col-weight: 145px;', $supplierQuotation);
+        $this->assertStringContainsString('--q-col-total-weight: 130px;', $supplierQuotation);
+        $this->assertStringContainsString('.quotation-col-weight { width: var(--q-col-weight); }', $supplierQuotation);
+        $this->assertStringContainsString('.quotation-col-total-weight { width: var(--q-col-total-weight); }', $supplierQuotation);
         $this->assertStringContainsString('<th scope="col">{{ __(\'supplier.copy.kg_per_unit\') }}</th>', $supplierQuotation);
         $this->assertStringContainsString('<th scope="col">{{ __(\'supplier.copy.total_kg\') }}</th>', $supplierQuotation);
         $this->assertSame('KG / Unit', __('supplier.copy.kg_per_unit', [], 'en'));
         $this->assertSame('Total KG', __('supplier.copy.total_kg', [], 'en'));
         $this->assertStringContainsString('.quotation-sticky-row-type', $supplierQuotation);
-        $this->assertStringContainsString('min-width: 2180px !important;', $supplierQuotation);
+        // The table is exactly the column sum and sticky offsets reuse the same widths, so they cannot overlap.
+        $this->assertStringContainsString('width: var(--q-table-width) !important;', $supplierQuotation);
+        $this->assertStringContainsString('left: var(--q-col-number);', $supplierQuotation);
+        $this->assertStringContainsString('left: calc(var(--q-col-number) + var(--q-col-material));', $supplierQuotation);
+        $this->assertStringNotContainsString('2180px', $supplierQuotation);
         $this->assertStringContainsString('.availability-toggle', $supplierQuotation);
         $this->assertStringContainsString('quotation-material-section', $supplierQuotation);
     }

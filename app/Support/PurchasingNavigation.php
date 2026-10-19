@@ -19,6 +19,7 @@ class PurchasingNavigation
         'purchasing.comparison.vs-best',
         'purchasing.purchase-orders.index',
         'purchasing.shipments.index',
+        'purchasing.import-suppliers.index',
         'purchasing.local-vendors.index',
         'purchasing.supplier-audits.index',
         'purchasing.local-procurement.index',

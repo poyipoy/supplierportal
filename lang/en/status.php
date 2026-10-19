@@ -170,4 +170,10 @@ return [
         'result_published' => 'Result Published',
         'cancelled' => 'Cancelled',
     ],
+    'supplier_contact' => [
+        'pending' => 'Awaiting Review',
+        'approved' => 'Approved',
+        'rejected' => 'Rejected',
+        'cancelled' => 'Superseded',
+    ],
 ];

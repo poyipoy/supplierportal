@@ -18,4 +18,16 @@ class SupplierPolicy
             && ($user->isFinance() || $user->isAdmin())
             && $supplier->user?->isLocalEligible() === true;
     }
+
+    /** Import supplier directory with contact-person review (Purchasing domain). */
+    public function viewImportDirectory(User $user): bool
+    {
+        return (bool) $user->is_active && ($user->isPurchasing() || $user->isAdmin());
+    }
+
+    /** Approve, reject, or directly set an Import supplier's contact person. */
+    public function manageImportContact(User $user): bool
+    {
+        return $this->viewImportDirectory($user);
+    }
 }

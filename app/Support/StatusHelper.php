@@ -91,6 +91,21 @@ class StatusHelper
         return self::label('registration', strtolower($status), $status);
     }
 
+    public static function contactRequestTone(string $status): string
+    {
+        return match (strtoupper($status)) {
+            'PENDING' => 'warning',
+            'APPROVED' => 'success',
+            'REJECTED' => 'error',
+            default => 'neutral',
+        };
+    }
+
+    public static function contactRequestLabel(string $status): string
+    {
+        return self::label('supplier_contact', strtolower($status), $status);
+    }
+
     public static function vendorCategoryLabel(?string $category): string
     {
         $key = match (strtolower(trim((string) $category))) {

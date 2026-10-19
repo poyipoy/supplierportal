@@ -6,13 +6,13 @@
 >
 > Diperbarui **8 Oktober 2026** untuk perubahan sesudahnya (migrasi sampai `2026_10_07_000003`): preferensi user dan lokalisasi, Advanced Export, UoM pada GR, kanonikalisasi tipe klaim GA, pencabutan `refund_reference`, penghapusan draft DRP oleh role GA, serta (migrasi `2026_10_08_000002`–`000003`) kuesioner & Company Profile registrasi supplier dan aturan berkas tidak hilang saat validasi gagal. **9 Oktober 2026:** fitur Supplier Audit (migrasi `2026_10_09_000001`–`000002`), lihat bagian "Supplier Audit". Bagian yang tidak menyebut perubahan itu terakhir dicocokkan penuh pada 28 September.
 
-> **File ini adalah satu-satunya sumber fakta proyek untuk semua agent.** [CLAUDE.md](CLAUDE.md) hanya berisi `@AGENTS.md` (import) agar Claude Code memuat file ini; jangan menaruh fakta proyek di `CLAUDE.md`. Perubahan aturan, skema, atau konvensi ditulis **di sini**, satu kali.
+> **File ini adalah satu-satunya sumber fakta proyek untuk semua agent.** [CLAUDE.md](CLAUDE.md) meng-import file ini (`@AGENTS.md`) dan hanya menambahkan *quick reference* berbahasa Inggris berupa ringkasan/penunjuk, tanpa fakta baru; file ini menang bila keduanya berbeda. Perubahan aturan, skema, atau konvensi ditulis **di sini**, satu kali.
 
 ## Inisialisasi Konteks dan Cara Kerja
 
 Sebelum merencanakan, menganalisis, mengubah, atau mereview kode pada setiap task baru:
 
-1. Baca `AGENTS.md` dan [claudes-cognitive-framework-for-laravel-development.md](claudes-cognitive-framework-for-laravel-development.md) sepenuhnya. [CLAUDE.md](CLAUDE.md) hanya meng-import file ini dan tidak menyimpan fakta proyek sendiri, jadi tidak perlu dibaca terpisah. Jika file tidak ada, nyatakan dan lanjutkan dengan panduan yang tersedia.
+1. Baca `AGENTS.md` dan [claudes-cognitive-framework-for-laravel-development.md](claudes-cognitive-framework-for-laravel-development.md) sepenuhnya. [CLAUDE.md](CLAUDE.md) meng-import file ini dan hanya memuat ringkasan penunjuk (dimuat otomatis oleh Claude Code). Jika file tidak ada, nyatakan dan lanjutkan dengan panduan yang tersedia.
 2. Cari `AGENTS.md` yang lebih spesifik pada direktori yang disentuh. Untuk Local Supplier, GA, vendor master, atau payment engine, baca [context.md](context.md) sebagai kontrak domain tambahan.
 3. Cocokkan dokumentasi dengan routes, middleware, requests, policies, models, migrations, services, konfigurasi, dan tests yang terlibat. Framework kognitif adalah metodologi, bukan sumber fakta skema atau versi proyek.
 4. Periksa `git status` dan diff awal. Pertahankan perubahan pengguna yang sudah ada; jangan melakukan commit, push, reset, clean, atau mutasi database tanpa instruksi yang sesuai.
@@ -502,6 +502,13 @@ Sisi supplier punya modul serupa yang terbatas pada datanya sendiri: `SupplierPr
 - Dokumen shipment terhubung ke `ShipmentDocument::attachments()`; `customsDocumentationSummary()` dan `reconcileCustomsDocumentationStatus()` menjaga status Invoice/BL/Packing List/Form E pada PO.
 - Perubahan award/alokasi/arrival/QC harus mempertahankan ownership supplier, FK/unique constraints, lock ordering, dan histori claim/replacement. Uji `ItemLevelAwardTest`, `PriceComparisonItemAwardTest`, `Purchasing/SplitAwardPoGenerationTest`, dan suite Shipment sesuai jalur yang disentuh.
 
+## Contact Person Supplier Impor
+
+- PIC tunggal di `suppliers.pic_name/pic_email/pic_phone`, dipakai bersama Impor dan Lokal (tanpa kolom PIC terpisah). Ditampilkan ke Purchasing lewat `quotations._supplier_pic` (Decision 10).
+- Supplier Impor mengusulkan PIC di `supplier.company-profile.*` → `SupplierChangeRequest` dengan `change_type = contact` (`TYPE_CONTACT`, payload hanya `CONTACT_FIELDS`). Request `profile` tetap jalur Vendor Profile Lokal dan tetap mensyaratkan `isLocalEligible()`.
+- Review di `purchasing.import-suppliers.*` oleh Purchasing (service juga menerima Admin; Finance ditolak). Antrean Finance Vendor Master dan Purchasing Local Vendors memakai `excludingContact()`.
+- Satu pending `contact` per supplier: submit baru dan edit langsung (`VendorChangeRequestService::updateContact()`, alasan wajib) meng-`CANCELLED` pending lama di bawah lock `users`. Approve menolak request stale bila PIC saat ini ≠ `current_data_snapshot`. Audit `vendor_contact_approved` / `vendor_contact_updated` di `local_finance_audit_logs`; notifikasi domain `import`. Uji: `ImportSupplierContactTest`.
+
 ---
 
 ## Local Supplier, GA, dan Unified Payment Engine
@@ -576,7 +583,7 @@ Rencana & keputusan: [docs/plans/IMPLEMENTATION-PLAN-SUPPLIER-AUDIT-20261008.md]
 - Export detail async (`SupplierAuditExport`, `GeneratesWorkbook`, 4 sheet, kolom Point/Temuan kosong, Sub Total `=SUM`) hanya pada `SUBMITTED`/`RESULT_PUBLISHED`.
 - Notifikasi: event supplier memakai domain `LOCAL`, event `supplier_audit.submitted` ke Purchasing memakai `GLOBAL`. Command terjadwal `supplier-audits:notify-invoice-blocked` hanya mengirim notifikasi (idempoten per deadline).
 
-**Drift dokumentasi yang sudah diketahui:** [context.md](context.md) masih memuat aturan bahwa jumlah nominal whole-GR harus sama dengan DPP, dan aturan "Polymorphic Storage Discipline" yang mewajibkan semua upload memakai `attachments`; keduanya sudah tidak berlaku (lihat bagian GR dan Attachment di atas). Selain dua hal itu, `context.md` tetap rujukan state machine dan rumus Local Supplier/GA/payment. `CLAUDE.md` tidak lagi menyimpan fakta sendiri sehingga tidak ada drift di sana. Untuk implementasi terbaru, verifikasi migrasi/model/service terkait; bagian lama tidak boleh menghidupkan kembali kolom/aturan yang sudah berubah.
+**Drift dokumentasi yang sudah diketahui:** [context.md](context.md) masih memuat aturan bahwa jumlah nominal whole-GR harus sama dengan DPP, dan aturan "Polymorphic Storage Discipline" yang mewajibkan semua upload memakai `attachments`; keduanya sudah tidak berlaku (lihat bagian GR dan Attachment di atas). Selain dua hal itu, `context.md` tetap rujukan state machine dan rumus Local Supplier/GA/payment. *Quick reference* di `CLAUDE.md` hanya meringkas file ini; bila berbeda, perbaiki `CLAUDE.md` agar mengikuti file ini. Untuk implementasi terbaru, verifikasi migrasi/model/service terkait; bagian lama tidak boleh menghidupkan kembali kolom/aturan yang sudah berubah.
 
 ---
 

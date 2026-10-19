@@ -1,6 +1,12 @@
 import defaultTheme from 'tailwindcss/defaultTheme';
 import forms from '@tailwindcss/forms';
 
+// Tokens are CSS variables, so Tailwind cannot split them into channels for `/10`-style
+// opacity modifiers; color-mix keeps the variable and applies <alpha-value> (1 when unmodified).
+const withAlpha = (value) => (typeof value === 'string'
+    ? `color-mix(in srgb, ${value} calc(<alpha-value> * 100%), transparent)`
+    : Object.fromEntries(Object.entries(value).map(([key, nested]) => [key, withAlpha(nested)])));
+
 /** @type {import('tailwindcss').Config} */
 export default {
     prefix: 'tw-',
@@ -31,7 +37,7 @@ export default {
             screens: {
                 shell: '993px',
             },
-            colors: {
+            colors: withAlpha({
                 background: 'var(--md-background)',
                 'on-primary': 'var(--md-on-primary)',
                 'on-primary-container': 'var(--md-on-primary-container)',
@@ -87,6 +93,11 @@ export default {
                     low: 'var(--md-surface-container-low)',
                     container: 'var(--md-surface-container)',
                     high: 'var(--md-surface-container-high)',
+                    // Material names used across the views; they map to the same variables.
+                    'container-lowest': 'var(--md-surface-container-lowest, var(--md-surface))',
+                    'container-low': 'var(--md-surface-container-low)',
+                    'container-high': 'var(--md-surface-container-high)',
+                    'container-highest': 'var(--md-surface-container-highest)',
                 },
                 outline: {
                     DEFAULT: 'var(--md-outline)',
@@ -95,7 +106,7 @@ export default {
                 },
                 'on-surface': 'var(--md-on-surface)',
                 'on-surface-variant': 'var(--md-on-surface-variant)',
-            },
+            }),
             fontFamily: {
                 sans: ['Inter', ...defaultTheme.fontFamily.sans],
             },

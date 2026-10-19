@@ -82,6 +82,8 @@ return [
     'price_history' => 'Riwayat Harga',
     'supplier_overpayment' => 'Lebih Bayar Supplier',
     'supplier_registrations' => 'Pendaftaran Supplier',
+    'import_suppliers' => 'Supplier Impor',
+    'company_profile' => 'Profil Perusahaan',
     'reporting' => 'Pelaporan',
     'submit_claim' => 'Ajukan Klaim',
     'physical_verification' => 'Verifikasi Fisik',
