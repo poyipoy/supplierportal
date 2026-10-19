@@ -80,7 +80,7 @@ return [
         'vendor_v2' => 'Master Vendor V2',
         'npwp_number' => 'Nomor NPWP:',
         'finance_department' => 'DEPARTEMEN FINANCE & UTANG USAHA',
-        'vendor_master' => 'Local Vendor Master',
+        'vendor_master' => 'Master Supplier Lokal',
         'purchasing' => 'Tim Pengadaan',
         'purchasing_vendor_help' => 'Pengadaan berwenang menyetujui atau menolak permohonan perubahan rekening atau profil vendor.',
         'vendor_reject' => 'Jelaskan alasan penolakan kepada vendor...',

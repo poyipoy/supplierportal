@@ -2,7 +2,7 @@
 
 return [
     'copy.material_progress_locked_po' => 'Material progress cannot be updated for a :status purchase order.',
-    'closure.vendor_list_title' => 'Local Vendor Master - Purchasing',
+    'closure.vendor_list_title' => 'Local Supplier Master - Purchasing',
     'closure.vendor_title' => 'Vendor Details :name - Purchasing',
     'closure.pr_draft' => 'Requisition Draft',
     'closure.quotation_title' => 'Quotation: :number',

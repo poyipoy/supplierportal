@@ -417,17 +417,17 @@ class PurchasingDrpReadOnlyTest extends TestCase
         $this->assertStringContainsString('Local Invoice', $html);
 
         // Must contain all 5 items
-        $this->assertStringContainsString('Local Vendors', $html);
+        $this->assertStringContainsString('Local Supplier', $html);
         $this->assertStringContainsString('Local PO &amp; GR', $html);
         $this->assertStringContainsString('DRP Supplier', $html);
         $this->assertStringContainsString('DRP GA', $html);
         $this->assertStringContainsString('DRP Paid', $html);
 
         // Check relative ordering of the sections and items in HTML using aria-label:
-        // "Procurement" heading -> "Local Invoice" heading -> "Local Vendors" -> "Local PO & GR" -> "DRP Supplier" -> "DRP GA" -> "DRP Paid" -> "Collaboration" heading
+        // "Procurement" heading -> "Local Invoice" heading -> "Local Supplier" -> "Local PO & GR" -> "DRP Supplier" -> "DRP GA" -> "DRP Paid" -> "Collaboration" heading
         $procurementPos = strpos($html, 'Procurement</span>');
         $localInvoicePos = strpos($html, 'Local Invoice</span>');
-        $localVendorsPos = strpos($html, 'aria-label="Local Vendors"');
+        $localVendorsPos = strpos($html, 'aria-label="Local Supplier"');
         $localPoGrPos = strpos($html, 'aria-label="Local PO &amp; GR"');
         $drpSupplierPos = strpos($html, 'aria-label="DRP Supplier"');
         $drpGaPos = strpos($html, 'aria-label="DRP GA"');
@@ -445,8 +445,8 @@ class PurchasingDrpReadOnlyTest extends TestCase
 
         // Verify order sequence
         $this->assertTrue($procurementPos < $localInvoicePos, 'Local Invoice heading must be after Procurement');
-        $this->assertTrue($localInvoicePos < $localVendorsPos, 'Local Vendors must be under Local Invoice');
-        $this->assertTrue($localVendorsPos < $localPoGrPos, 'Local PO & GR must be after Local Vendors');
+        $this->assertTrue($localInvoicePos < $localVendorsPos, 'Local Supplier must be under Local Invoice');
+        $this->assertTrue($localVendorsPos < $localPoGrPos, 'Local PO & GR must be after Local Supplier');
         $this->assertTrue($localPoGrPos < $drpSupplierPos, 'DRP Supplier must be after Local PO & GR');
         $this->assertTrue($drpSupplierPos < $drpGaPos, 'DRP GA must be after DRP Supplier');
         $this->assertTrue($drpGaPos < $drpPaidPos, 'DRP Paid must be after DRP GA');

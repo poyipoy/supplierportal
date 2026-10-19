@@ -81,7 +81,7 @@ return [
         'vendor_v2' => 'Vendor Master V2',
         'npwp_number' => 'NPWP Number:',
         'finance_department' => 'FINANCE & ACCOUNTS PAYABLE DEPARTMENT',
-        'vendor_master' => 'Local Vendor Master',
+        'vendor_master' => 'Local Supplier Master',
         'purchasing' => 'Purchasing Procurement',
         'purchasing_vendor_help' => 'Purchasing can approve or reject vendor bank account or profile change requests.',
         'vendor_reject' => 'Explain the rejection reason to the vendor...',
