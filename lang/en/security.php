@@ -76,6 +76,10 @@ return [
         'password_reset_blocked_inactive_account' => 'Password assistance blocked for an inactive account',
         'new_device_login' => 'Sign-in from a new device',
         'concurrent_session_limit_enforced' => 'Concurrent session limit enforced',
+        'sso_authorization_completed' => 'Portal sign-in authorized',
+        'sso_state_rejected' => 'Sign-in transaction rejected',
+        'sso_subject_mismatch' => 'Sign-in identity mismatch',
+        'sso_invalid_authorization_request' => 'Invalid sign-in authorization request',
         'global_login_anomaly_detected' => 'Sign-in anomaly detected',
     ],
 ];

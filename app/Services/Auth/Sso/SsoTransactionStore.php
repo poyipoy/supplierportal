@@ -35,6 +35,7 @@ class SsoTransactionStore
             'redirect_uri' => $redirectUri,
         ];
         $request->session()->put(self::SESSION_KEY, $transactions);
+        $request->session()->put('sso.intended', $transactions[$state]['intended']);
 
         return route('passport.authorizations.authorize').'?'.http_build_query([
             'client_id' => $clientId,

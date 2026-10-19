@@ -76,6 +76,10 @@ return [
         'password_reset_blocked_inactive_account' => 'Bantuan kata sandi diblokir untuk akun yang tidak aktif',
         'new_device_login' => 'Masuk dari perangkat baru',
         'concurrent_session_limit_enforced' => 'Batas sesi bersamaan diterapkan',
+        'sso_authorization_completed' => 'Masuk portal diotorisasi',
+        'sso_state_rejected' => 'Transaksi masuk ditolak',
+        'sso_subject_mismatch' => 'Identitas masuk tidak cocok',
+        'sso_invalid_authorization_request' => 'Permintaan otorisasi masuk tidak valid',
         'global_login_anomaly_detected' => 'Anomali masuk terdeteksi',
     ],
 ];
