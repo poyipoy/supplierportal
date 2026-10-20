@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Support\PortalPath;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Route;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -35,6 +37,31 @@ class PortalLegacyPathController extends Controller
             return new RedirectResponse($target.($query !== '' ? '?'.$query : ''), 301);
         }
 
+        $allowed = self::allowedMethods($request);
+        if ($allowed !== []) {
+            throw new MethodNotAllowedHttpException($allowed);
+        }
         abort(404);
+    }
+
+    public function options(Request $request): Response
+    {
+        $allowed = self::allowedMethods($request);
+        abort_if($allowed === [], 404);
+
+        return response('', 200, ['Allow' => implode(',', $allowed)]);
+    }
+
+    /** Match only real endpoints, so compatibility fallbacks cannot invent supported verbs. */
+    public static function allowedMethods(Request $request): array
+    {
+        $allowed = [];
+        foreach (Route::getRoutes()->getRoutes() as $route) {
+            if (! $route->isFallback && $route->matches($request, false)) {
+                $allowed = array_merge($allowed, $route->methods());
+            }
+        }
+
+        return array_values(array_intersect(Router::$verbs, $allowed));
     }
 }

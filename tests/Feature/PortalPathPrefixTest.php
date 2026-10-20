@@ -113,6 +113,21 @@ class PortalPathPrefixTest extends TestCase
         }
     }
 
+    public function test_fallback_preserves_404_405_and_options_for_existing_and_unknown_paths(): void
+    {
+        foreach ([false, true] as $prefix) {
+            $this->reloadPortalRoutes(['portal_urls.prefix.enabled' => $prefix]);
+            foreach (['/oauth/token', '/logout', '/password'] as $uri) {
+                $this->get($uri)->assertStatus(405)->assertHeader('Allow')->assertHeaderMissing('Location');
+                $this->call('HEAD', $uri)->assertStatus(405)->assertHeader('Allow');
+            }
+            foreach (['POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'] as $method) {
+                $this->call($method, '/unknown-url-page')->assertNotFound()->assertHeaderMissing('Location');
+            }
+            $this->call('OPTIONS', '/oauth/token')->assertOk()->assertHeader('Allow', 'POST');
+        }
+    }
+
     public function test_prefixed_polling_does_not_redirect_guests_or_unverified_sso_sessions(): void
     {
         $this->reloadPortalRoutes(['portal_urls.prefix.enabled' => true]);

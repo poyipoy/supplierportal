@@ -815,3 +815,6 @@ Route::middleware('auth')->group(function () {
 
 // Compatibility only matches paths. Session/security middleware runs on the destination.
 Route::fallback(PortalLegacyPathController::class)->withoutMiddleware('web');
+// Laravel otherwise treats the GET fallback as an available verb for every OPTIONS path.
+Route::options('/{portalOptionsPath}', [PortalLegacyPathController::class, 'options'])
+    ->where('portalOptionsPath', '.*')->fallback()->withoutMiddleware('web');
