@@ -205,7 +205,7 @@ class PurchasingNavigation
 
     private static function containsLegacyNumericIdentifier(string $url): bool
     {
-        $path = (string) (parse_url($url, PHP_URL_PATH) ?: '');
+        $path = PortalPath::strip((string) (parse_url($url, PHP_URL_PATH) ?: ''));
 
         if (preg_match(
             '~^/purchasing/(?:requisitions|quotations|purchase-orders|claims|conversations|comparison)(?:/[^/?#]*)*/\d+(?:/|$)~',

@@ -20,6 +20,9 @@
     <php>
         <env name="APP_ENV" value="testing"/>
         <env name="HASHIDS_SALT" value="adasi-isolated-test-salt-never-use-in-production" force="true"/>
+        <env name="PORTAL_LONG_HASHIDS_ENABLED" value="false" force="true"/>
+        <env name="PORTAL_PATH_PREFIX_ENABLED" value="false" force="true"/>
+        <env name="PORTAL_PAGE_REGISTRY_ENABLED" value="false" force="true"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <!-- Dummy verification hash for the constant-time login path. Cost must

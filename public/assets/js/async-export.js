@@ -24,10 +24,17 @@
 
     document.documentElement.dataset.asyncExportReady = 'true';
 
+    const portalPath = (path) => {
+        const prefix = window.AdasiPortal?.pathPrefix || '';
+        return prefix && path.startsWith(`/${prefix}/`)
+            ? path.slice(prefix.length + 1)
+            : path;
+    };
+
     const isAsyncExportUrl = (url) => {
         try {
             const target = new URL(url, window.location.origin);
-            const path = target.pathname.replace(/\/+$/, '');
+            const path = portalPath(target.pathname).replace(/\/+$/, '');
 
             return target.origin === window.location.origin && (
                 /^\/(purchasing|supplier|qc)\/export\//.test(path)
@@ -1003,7 +1010,7 @@
             lastProgressSignature: null,
             startedAt: Date.now(),
             csvProgressClock: options.body?.options?.format === 'csv'
-                && /^\/(?:(?:purchasing|supplier)\/export\/(?:requisitions|purchase-orders|quotations|shipments)|qc\/export\/inspections|finance\/master-invoices\/export|accounting\/reports\/export|supplier\/price-history\/export)\/?$/.test(new URL(endpointUrl).pathname),
+                && /^\/(?:(?:purchasing|supplier)\/export\/(?:requisitions|purchase-orders|quotations|shipments)|qc\/export\/inspections|finance\/master-invoices\/export|accounting\/reports\/export|supplier\/price-history\/export)\/?$/.test(portalPath(new URL(endpointUrl).pathname)),
             lastProgressAt: Date.now(),
         };
 

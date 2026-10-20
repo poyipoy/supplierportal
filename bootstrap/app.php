@@ -123,7 +123,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (AuthenticationException $exception, Request $request) {
             if ($request->expectsJson()
-                || $request->is('notifications/unread-count', 'conversations/unread-count', 'conversations/*/messages/latest', 'exports/*/status')) {
+                || $request->routeIs('notifications.unread-count', 'conversations.unread-count', 'conversations.messages.latest', 'exports.status')) {
                 return response()->json(['message' => 'Unauthenticated.'], 401);
             }
         });

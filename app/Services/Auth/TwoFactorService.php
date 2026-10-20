@@ -3,6 +3,7 @@
 namespace App\Services\Auth;
 
 use App\Models\User;
+use App\Support\PortalPath;
 use chillerlan\QRCode\QRCode;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
@@ -339,7 +340,7 @@ class TwoFactorService
             }
         }
 
-        $trimmedPath = ltrim((string) parse_url($path, PHP_URL_PATH), '/');
+        $trimmedPath = ltrim(PortalPath::strip((string) parse_url($path, PHP_URL_PATH)), '/');
         $disallowedPatterns = [
             'notifications/*',
             'conversations/*',
