@@ -371,6 +371,8 @@ Grup `admin` dan `qc` mengikuti pola yang sama. Route yang boleh diakses lebih d
 
 Penamaan route: `role.resource.action` — contoh: `purchasing.requisitions.create`
 
+URL gaya Infor bersifat opt-in melalui `config/portal_urls.php`: `PORTAL_PATH_PREFIX_ENABLED=false`, `PORTAL_PATH_PREFIX=v2/ADASI_PRD`, `PORTAL_LONG_HASHIDS_ENABLED=false`, `PORTAL_LONG_HASHIDS_LENGTH=24` (16–40), dan `PORTAL_PAGE_REGISTRY_ENABLED=false`. Prefix adalah string tetap dari `PortalPath`, bukan parameter tenant. Ketika aktif, seluruh route operasional/profile terautentikasi berprefix; `/`, login GET/POST, two-factor challenge GET/POST, logout, forgot-password, confirm-password GET/POST, password update, `oauth/*` (termasuk token), `sso/callback`, `verify-receipt/*`, registrasi supplier publik, `locale/*`, `up`, serta `broadcasting/auth` tetap di root. Nama route dan middleware tujuan tidak berubah. Prefix divalidasi saat boot (1–4 segmen alfanumerik/underscore/hyphen, maksimal 64 karakter, tanpa bentrokan segmen root atau direktori `public/`). Fallback murni hanya GET/HEAD melakukan 301 dua arah ke path yang cocok dengan route aktif, mempertahankan query, dan tidak menjalankan middleware/aksi tujuan; request berikutnya menegakkan akses. Metode mutasi tidak di-redirect. Registry memetakan UUID v4 literal stabil ke named route GET tanpa parameter wajib; `PageRegistry::url()` dipakai menu, `portal.page` hanya 302, dan `pageUuid` bukan parameter Hashids. Setiap perubahan flag/prefix memerlukan `config:cache` lalu `route:cache`; pertahankan prefix historis di `prefix.legacy_values` untuk rollback. Panduan: [INFOR-STYLE-URLS.md](docs/guides/INFOR-STYLE-URLS.md).
+
 `Finance\LocalProcurementController` dipakai oleh `finance.local-procurement.*` **dan** `purchasing.local-procurement.*` untuk dataset Local PO/GR yang sama. View `local-invoices/` dipakai bersama supplier, accounting, finance, dan purchasing; perubahan di sana harus mempertimbangkan seluruh audience.
 
 Shared document routes juga memakai role dan policy. Verifikasi receipt publik menggunakan signature QR dan throttle; jangan mengubahnya menjadi endpoint data invoice/GA tanpa proteksi. Registrasi publik merupakan pengecualian eksplisit terhadap grup `supplier.*` operasional.
@@ -384,10 +386,12 @@ Model dengan trait `HasHashids` mengembalikan hash pada `getRouteKey()`. Daftar 
 
 Periksa trait model sebelum menambah URL; daftar ini tidak berarti semua model/domain item memakai hashid.
 
+`App\Support\HashidCodec` menjadi satu-satunya pintu encode/decode aplikasi: koneksi `main` existing tetap dipertahankan, `long` memakai salt/alfabet sama dan panjang minimum default 24. Encode mengikuti flag; decode selalu menerima kedua format dengan round-trip tepat satu integer positif, termasuk saat rollback. Middleware `DecodeHashids` mengirim 301 GET/HEAD ke format aktif dengan query asli, termasuk implicit binding melalui parameter aslinya; metode mutasi menerima kedua format tanpa redirect. `HasHashids`, filter tersimpan yang memakai model binding, dan resolver notifikasi memakai codec tanpa menulis ulang notifikasi. Jangan mengganti `HASHIDS_SALT`/alfabet; salt produksi di bawah 32 karakter menghasilkan warning, sedangkan guard salt kosong/default/tes existing tetap berlaku.
+
 - Di view, pakai `$model->hash` atau kirim instance model ke `route()` — **jangan** `$model->id`.
 - Route yang memakai parameter mentah (`{id}`, `{pr_id}`, `{po_id}`, dsb.) di-decode oleh middleware `DecodeHashids`. Kalau menambah route dengan nama parameter hashed yang baru, **daftarkan nama parameter itu di `HASHED_PARAM_KEYS`**, kalau tidak controller akan menerima string hash padahal mengharapkan integer.
 - `Attachment` sekarang memakai hashid dan implicit binding pada `attachments.show`; jangan perlakukan sebagai ID plain integer atau menambahkannya kembali ke `PLAIN_ROUTE_PREFIXES`.
-- Route plain untuk Period, Notification, Announcement, ExchangeRate, PoDocument, dan PrItem mengikuti `PLAIN_ROUTE_PREFIXES`; `verification.verify` dikecualikan melalui `PLAIN_ROUTE_NAMES`. Parameter implicit binding lokal dan `attempt` juga tercakup dalam `HASHED_PARAM_KEYS`; jaga penolakan raw integer.
+- Route plain untuk Period, Notification, Announcement, ExchangeRate, PoDocument, dan PrItem mengikuti `PLAIN_ROUTE_PREFIXES`; pengecualian nama route mengikuti `PLAIN_ROUTE_NAMES` di middleware (endpoint email verification sudah tidak tersedia). Parameter implicit binding lokal dan `attempt` juga tercakup dalam `HASHED_PARAM_KEYS`; jaga penolakan raw integer.
 - Mengirim integer mentah ke parameter hashed akan `abort(404)` — itu memang disengaja. Dijaga oleh `tests/Feature/HashidUrlSecurityTest.php`.
 
 ---
@@ -919,6 +923,7 @@ php artisan optimize:clear
 | Auth / registrasi | `tests/Feature/Auth/`, `tests/Feature/SupplierRegistration/` |
 | Login OAuth / PKCE | `tests/Unit/Auth/SsoTransactionStoreTest.php`, `tests/Feature/Auth/SsoAuthorizationFlowTest.php` (RSA sementara, flag aktif; replay/expiry/MFA/gate/revocation/consent) |
 | Supplier isolation / hashids | `SupplierDataIsolationTest`, `LocalInvoice/LocalInvoiceScopeIsolationTest`, `HashidUrlSecurityTest` |
+| URL gaya Infor / transisi | `PortalPathTest`, `HashidCodecTest`, `PortalPathPrefixTest`, `LongHashidTransitionTest`, `PageRegistryTest`, `NotificationLegacyUrlTest`, `tests/js/async-export-prefix.test.mjs`; route/config cache diuji saat flag on/off |
 | Materials / offer / awards | `tests/Unit/Materials/`, `MaterialCalculationTest`, `PurchaseRequisitionMaterialAutomationTest`, `ItemLevelAwardTest`, `PriceComparisonItemAwardTest`, `Purchasing/SplitAwardPoGenerationTest` |
 | Shipment / QC / dokumen | `ShipmentAndPartialDeliveryTest`, `ShipmentDocumentsAndQcIntegrationTest`, `PoCustomsDocumentationShipmentSyncTest`, `ShipmentUiAndExportTest` |
 | Local PO/GR / invoice | `tests/Feature/LocalInvoice/`, `LocalInvoiceSubmissionV2Test`, `FinanceVerificationV2Test`, `CashierReceiptAndExpiryTest` |
