@@ -120,11 +120,26 @@
         @else
             <calendar-range data-calendar-day-grid months="2" first-day-of-week="1" page-by="single" locale="{{ app()->getLocale() === 'id' ? 'id-ID' : 'en-GB' }}">
                 <x-ui.icon slot="previous" name="chevron-left" size="sm" aria-hidden="true" />
-                <calendar-select-year slot="heading" max-years="15"></calendar-select-year>
+                <button type="button" slot="heading" class="ui-month-grid__year-toggle" data-calendar-year-toggle aria-label="{{ __('common.calendar.toggle_year') }}" aria-expanded="false">
+                    <span data-calendar-year-label>{{ $startResolvedValue ? substr($startResolvedValue, 0, 4) : date('Y') }}</span>
+                    <x-ui.icon name="chevron-down" size="xs" class="ui-month-grid__year-chevron" />
+                </button>
                 <x-ui.icon slot="next" name="chevron-right" size="sm" aria-hidden="true" />
                 <calendar-month></calendar-month>
                 <calendar-month offset="1"></calendar-month>
             </calendar-range>
+
+            <div class="ui-day-range__year-view" data-calendar-year-view hidden>
+                <div class="ui-month-grid__header">
+                    <button type="button" class="ui-calendar-icon-action" data-calendar-year-previous aria-label="{{ __('common.calendar.previous_year') }}"><x-ui.icon name="chevron-left" size="sm" /></button>
+                    <button type="button" class="ui-month-grid__year-toggle is-active" data-calendar-year-close aria-label="{{ __('common.calendar.toggle_year') }}" aria-expanded="true">
+                        <span data-calendar-decade-label>{{ $startResolvedValue ? substr($startResolvedValue, 0, 4) : date('Y') }}</span>
+                        <x-ui.icon name="chevron-down" size="xs" class="ui-month-grid__year-chevron" />
+                    </button>
+                    <button type="button" class="ui-calendar-icon-action" data-calendar-year-next aria-label="{{ __('common.calendar.next_year') }}"><x-ui.icon name="chevron-right" size="sm" /></button>
+                </div>
+                <div class="ui-month-grid__year-panel" data-calendar-year-panel hidden role="grid" aria-label="{{ __('common.calendar.years') }}"></div>
+            </div>
         @endif
 
         <div class="ui-calendar-panel__footer">

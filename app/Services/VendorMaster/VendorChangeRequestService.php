@@ -132,7 +132,7 @@ class VendorChangeRequestService
     /**
      * Approve a change request (Purchasing OR Finance).
      */
-    public function approve(SupplierChangeRequest $changeRequest, User $reviewer, ?string $notes = null): SupplierChangeRequest
+    public function approve(SupplierChangeRequest $changeRequest, User $reviewer, ?string $notes = null, ?int $bankConfirmationDocumentId = null): SupplierChangeRequest
     {
         if ($changeRequest->supplier_id === $reviewer->id) {
             throw new InvalidArgumentException(__('local_procurement.vendor_validation.self_approve'));
@@ -142,7 +142,7 @@ class VendorChangeRequestService
             throw new InvalidArgumentException(__('local_procurement.vendor_validation.approve_role'));
         }
 
-        return DB::transaction(function () use ($changeRequest, $reviewer, $notes) {
+        return DB::transaction(function () use ($changeRequest, $reviewer, $notes, $bankConfirmationDocumentId) {
             /** @var SupplierChangeRequest $req */
             $req = SupplierChangeRequest::where('id', $changeRequest->id)
                 ->lockForUpdate()
@@ -161,21 +161,35 @@ class VendorChangeRequestService
             }
 
             $bankFields = ['bank_name', 'account_number', 'account_holder_name'];
-            $hasBankChange = array_intersect($bankFields, array_keys($proposed)) !== [];
+            $hasBankChange = collect($bankFields)->contains(fn ($field) => trim((string) ($proposed[$field] ?? '')) !== '');
+            $document = null;
+
             if ($hasBankChange) {
                 if (collect($bankFields)->contains(fn ($field) => trim((string) ($proposed[$field] ?? '')) === '')) {
-                    throw ValidationException::withMessages(['bank_confirmation_document_id' => __('finance_controls.bank_document')]);
+                    throw ValidationException::withMessages(['bank_confirmation_document_id' => __('finance_controls.bank_fields_required_together')]);
                 }
-                $document = SupplierMasterDocument::whereKey($proposed['bank_confirmation_document_id'] ?? null)
+
+                $docId = $bankConfirmationDocumentId ?? ($proposed['bank_confirmation_document_id'] ?? null);
+
+                $document = SupplierMasterDocument::whereKey($docId)
                     ->where('supplier_id', $supplierUser->id)
-                    ->where('document_type', SupplierMasterDocument::TYPE_SURAT_PERNYATAAN_REKENING)->lockForUpdate()->first();
+                    ->where('document_type', SupplierMasterDocument::TYPE_SURAT_PERNYATAAN_REKENING)
+                    ->lockForUpdate()
+                    ->first();
+
                 if (! $document) {
-                    throw ValidationException::withMessages(['bank_confirmation_document_id' => __('finance_controls.bank_document')]);
+                    throw ValidationException::withMessages(['bank_confirmation_document_id' => __('finance_controls.bank_document_missing_for_approval')]);
                 }
+
                 try {
                     app(FileAccessGuard::class)->assertReadable($document);
                 } catch (HttpException) {
                     throw ValidationException::withMessages(['bank_confirmation_document_id' => __('finance_controls.bank_document')]);
+                }
+
+                if (($proposed['bank_confirmation_document_id'] ?? null) !== $document->id) {
+                    $proposed['bank_confirmation_document_id'] = $document->id;
+                    $req->proposed_data = $proposed;
                 }
             }
 

@@ -41,15 +41,48 @@
                                 </span>
                             </div>
 
+                            @php
+                                $proposal = $req->proposed_data ?? [];
+                                $hasBankChange = ! empty($proposal['bank_name']) || ! empty($proposal['account_number']) || ! empty($proposal['account_holder_name']);
+                                $supplierBankDocs = $req->supplier?->supplier?->masterDocuments
+                                    ?->where('document_type', \App\Models\SupplierMasterDocument::TYPE_SURAT_PERNYATAAN_REKENING) ?? collect();
+                                $hasValidDocAttached = $supplierBankDocs->contains(fn ($d) => (int) $d->id === (int) ($proposal['bank_confirmation_document_id'] ?? 0));
+                                $canApproveDirectly = ! $hasBankChange || $hasValidDocAttached;
+                                $canSelectDocToApprove = $hasBankChange && ! $hasValidDocAttached && $supplierBankDocs->isNotEmpty();
+                                $isBlockedNoDoc = $hasBankChange && ! $hasValidDocAttached && $supplierBankDocs->isEmpty();
+                            @endphp
+
                             <x-finance.vendor-bank-proposal :change-request="$req" />
                             <div class="tw-flex tw-items-center tw-gap-2">
-                                <form method="POST" action="{{ route('purchasing.local-vendors.change-requests.approve', $req) }}" onsubmit="event.preventDefault(); window.AdasiAlert.confirm({title: {{ json_encode(__('local_procurement.vendor_ui.approve_title'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}, text: {{ json_encode(__('local_procurement.vendor_ui.approve_help'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}, confirmText: {{ json_encode(__('local_procurement.vendor_ui.approve_yes'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}, cancelText: {{ json_encode(__('local_invoice.actions.cancel'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}}).then(r => { if (r.isConfirmed) this.submit(); });">
-                                    @csrf
-                                    <x-ui.button type="submit" variant="primary" size="sm">
+                                @if($canApproveDirectly)
+                                    <form method="POST" action="{{ route('purchasing.local-vendors.change-requests.approve', $req) }}" onsubmit="event.preventDefault(); window.AdasiAlert.confirm({title: {{ json_encode(__('local_procurement.vendor_ui.approve_title'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}, text: {{ json_encode(__('local_procurement.vendor_ui.approve_help'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}, confirmText: {{ json_encode(__('local_procurement.vendor_ui.approve_yes'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}, cancelText: {{ json_encode(__('local_invoice.actions.cancel'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}}).then(r => { if (r.isConfirmed) this.submit(); });">
+                                        @csrf
+                                        <x-ui.button type="submit" variant="primary" size="sm">
+                                            <x-ui.icon name="check" size="sm" />
+                                            <span>{{ __('local_procurement.vendor_ui.approve') }}</span>
+                                        </x-ui.button>
+                                    </form>
+                                @elseif($canSelectDocToApprove)
+                                    <button
+                                        type="button"
+                                        class="btn btn-primary btn-sm tw-inline-flex tw-items-center tw-gap-1.5"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#approveReqModal-{{ $req->id }}"
+                                    >
                                         <x-ui.icon name="check" size="sm" />
                                         <span>{{ __('local_procurement.vendor_ui.approve') }}</span>
-                                    </x-ui.button>
-                                </form>
+                                    </button>
+                                @else
+                                    <button
+                                        type="button"
+                                        class="btn btn-secondary btn-sm opacity-50"
+                                        disabled
+                                        title="{{ __('finance_controls.bank_document_missing_for_approval') }}"
+                                    >
+                                        <x-ui.icon name="check" size="sm" />
+                                        <span>{{ __('local_procurement.vendor_ui.approve') }}</span>
+                                    </button>
+                                @endif
 
                                 <button
                                     type="button"
@@ -66,6 +99,45 @@
                         {{-- Proposed changes comparison summary --}}
                         @include('partials.vendor-change-request-details', ['changeRequest' => $req])
                     </div>
+
+                    @if($canSelectDocToApprove)
+                        {{-- Approve with Document Selection Modal --}}
+                        <div class="modal fade" id="approveReqModal-{{ $req->id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <form method="POST" action="{{ route('purchasing.local-vendors.change-requests.approve', $req) }}">
+                                    @csrf
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title tw-text-ui-sm tw-font-bold">{{ __('local_procurement.vendor_ui.approve_title') }}</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('local_invoice.actions.close') }}"></button>
+                                        </div>
+                                        <div class="modal-body tw-space-y-3">
+                                            <div class="tw-p-2.5 tw-rounded tw-bg-info/10 tw-border tw-border-info/20 tw-text-info tw-text-ui-xs">
+                                                {{ __('finance_controls.bank_document_select_for_approval') }}
+                                            </div>
+                                            <div>
+                                                <label class="form-label tw-text-ui-xs tw-font-semibold">{{ __('finance_controls.bank_document_label') }} <span class="text-danger">*</span></label>
+                                                <select name="bank_confirmation_document_id" class="form-select form-select-sm" required>
+                                                    <option value="">{{ __('local_procurement.vendor_ui.document_select') }}</option>
+                                                    @foreach($supplierBankDocs as $doc)
+                                                        <option value="{{ $doc->id }}">{{ $doc->original_filename }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label class="form-label tw-text-ui-xs tw-font-semibold">{{ __('local_invoice.labels.review_notes') }}</label>
+                                                <textarea name="notes" class="form-control form-control-sm" rows="2" placeholder="{{ __('local_procurement.vendor_ui.approve_help') }}"></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{{ __('local_invoice.actions.cancel') }}</button>
+                                            <button type="submit" class="btn btn-primary btn-sm">{{ __('local_procurement.vendor_ui.approve') }}</button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    @endif
 
                     {{-- Reject Modal --}}
                     <div class="modal fade" id="rejectReqModal-{{ $req->id }}" tabindex="-1" aria-hidden="true">

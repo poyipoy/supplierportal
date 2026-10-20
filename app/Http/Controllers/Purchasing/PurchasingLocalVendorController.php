@@ -26,10 +26,9 @@ class PurchasingLocalVendorController extends Controller
             ->with(['supplier.supplier', 'requester'])
             ->latest('id')
             ->get();
-        $documentIds = $pendingRequests->pluck('proposed_data.bank_confirmation_document_id')->filter()->unique()->all();
         $pendingRequests->load(['supplier.supplier.masterDocuments' => fn ($query) => $query
-            ->whereKey($documentIds)->where('document_type', SupplierMasterDocument::TYPE_SURAT_PERNYATAAN_REKENING)
-            ->select(['id', 'supplier_id', 'original_filename'])]);
+            ->where('document_type', SupplierMasterDocument::TYPE_SURAT_PERNYATAAN_REKENING)
+            ->select(['id', 'supplier_id', 'document_type', 'original_filename'])]);
 
         return view('purchasing.local-vendors.index', compact('vendors', 'pendingRequests'));
     }
@@ -45,7 +44,11 @@ class PurchasingLocalVendorController extends Controller
 
     public function approveChange(SupplierChangeRequest $request, Request $req, VendorChangeRequestService $service)
     {
-        $service->approve($request, $req->user(), $req->input('notes'));
+        $validated = $req->validate([
+            'notes' => 'nullable|string|max:1000',
+            'bank_confirmation_document_id' => 'nullable|integer',
+        ]);
+        $service->approve($request, $req->user(), $validated['notes'] ?? null, $validated['bank_confirmation_document_id'] ?? null);
 
         return back()->with('success', __('local_procurement.vendor_ui.purchasing_approved'));
     }

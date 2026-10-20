@@ -60,6 +60,9 @@ BLADE);
         $styles = file_get_contents(resource_path('css/app.css'));
 
         $this->assertStringContainsString('calendar-range data-calendar-day-grid months="2" first-day-of-week="1"', $html);
+        $this->assertStringContainsString('data-calendar-year-toggle', $html);
+        $this->assertStringContainsString('data-calendar-year-view', $html);
+        $this->assertStringContainsString('data-calendar-year-panel', $html);
         $this->assertStringContainsString('data-calendar-cancel', $html);
         $this->assertStringContainsString('data-calendar-clear', $html);
         $this->assertStringContainsString('--ui-calendar-cell-size: 2rem;', $styles);

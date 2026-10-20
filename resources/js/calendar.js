@@ -387,6 +387,118 @@ class CalendarController {
 
         this.dayGrid.addEventListener('rangestart', (event) => this.selectRangeStart(asIsoDate(event.detail)));
         this.dayGrid.addEventListener('rangeend', (event) => this.selectRangeEnd(asIsoDate(event.detail)));
+
+        const yearToggleBtn = this.dayGrid.querySelector('[data-calendar-year-toggle]') || this.panel.querySelector('[data-calendar-year-toggle]');
+        yearToggleBtn?.addEventListener('click', (event) => {
+            event.stopPropagation();
+            this.toggleDayYearPanel();
+        });
+
+        const yearCloseBtn = this.panel.querySelector('[data-calendar-year-close]');
+        yearCloseBtn?.addEventListener('click', (event) => {
+            event.stopPropagation();
+            this.toggleDayYearPanel(false);
+        });
+
+        const yearView = this.panel.querySelector('[data-calendar-year-view]');
+        yearView?.querySelector('[data-calendar-year-panel]')?.addEventListener('keydown', (event) => this.onYearGridKeydown(event));
+        yearView?.querySelector('[data-calendar-year-previous]')?.addEventListener('click', () => {
+            this.displayYear -= 10;
+            this.buildDayYearPanel();
+            const startDecade = Math.floor(this.displayYear / 10) * 10;
+            this.announce(t('js.calendar.years', { start: startDecade, end: startDecade + 9 }));
+        });
+
+        yearView?.querySelector('[data-calendar-year-next]')?.addEventListener('click', () => {
+            this.displayYear += 10;
+            this.buildDayYearPanel();
+            const startDecade = Math.floor(this.displayYear / 10) * 10;
+            this.announce(t('js.calendar.years', { start: startDecade, end: startDecade + 9 }));
+        });
+
+        this.dayGrid.addEventListener('focusday', (event) => {
+            const dateIso = asIsoDate(event.detail);
+            if (!dateIso) return;
+            const year = Number(dateIso.slice(0, 4));
+            if (year && year !== this.displayYear) {
+                this.displayYear = year;
+                const label = this.dayGrid.querySelector('[data-calendar-year-label]');
+                if (label) label.textContent = String(year);
+            }
+        });
+    }
+
+    buildDayYearPanel() {
+        const yearView = this.panel.querySelector('[data-calendar-year-view]');
+        const panel = yearView?.querySelector('[data-calendar-year-panel]');
+        if (!panel) return;
+        const startDecade = Math.floor(this.displayYear / 10) * 10 - 1;
+        let html = '';
+        for (let y = startDecade; y < startDecade + 12; y++) {
+            const isCurrent = (y === this.displayYear);
+            const isOutside = (y === startDecade || y === startDecade + 11);
+            html += `<button type="button" class="ui-month-grid__year-cell${isCurrent ? ' is-current' : ''}${isOutside ? ' is-outside' : ''}" data-calendar-pick-year="${y}" role="gridcell" aria-pressed="${isCurrent}">${y}</button>`;
+        }
+        panel.innerHTML = html;
+        panel.hidden = false;
+
+        const decadeLabel = yearView.querySelector('[data-calendar-decade-label]');
+        if (decadeLabel) decadeLabel.textContent = `${startDecade + 1}–${startDecade + 10}`;
+
+        panel.querySelectorAll('[data-calendar-pick-year]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const pickedYear = parseInt(btn.dataset.calendarPickYear, 10);
+                this.selectDayYear(pickedYear);
+            });
+        });
+    }
+
+    selectDayYear(pickedYear) {
+        this.displayYear = pickedYear;
+        const currentFocus = this.dayGrid.focusedDate || this.draft.start || this.draft.end || localToday();
+        const monthPart = currentFocus && currentFocus.length >= 7 ? currentFocus.slice(5, 7) : '01';
+        const dayPart = currentFocus && currentFocus.length >= 10 ? currentFocus.slice(8, 10) : '01';
+
+        const lastDay = new Date(pickedYear, Number(monthPart), 0).getDate();
+        const clampedDay = String(Math.min(Number(dayPart), lastDay)).padStart(2, '0');
+        this.dayGrid.focusedDate = `${pickedYear}-${monthPart}-${clampedDay}`;
+
+        const label = this.dayGrid.querySelector('[data-calendar-year-label]');
+        if (label) label.textContent = String(pickedYear);
+
+        this.toggleDayYearPanel(false);
+        this.announce(t('js.calendar.year_selected', { year: pickedYear }));
+
+        const toggleBtn = this.dayGrid.querySelector('[data-calendar-year-toggle]');
+        toggleBtn?.focus({ preventScroll: true });
+    }
+
+    toggleDayYearPanel(force) {
+        const yearView = this.panel.querySelector('[data-calendar-year-view]');
+        const toggleBtn = this.dayGrid?.querySelector('[data-calendar-year-toggle]');
+        if (!yearView || !this.dayGrid) return;
+
+        const willOpen = force !== undefined ? force : yearView.hidden;
+        if (willOpen) {
+            const currentFocus = this.dayGrid.focusedDate || this.draft.start || this.draft.end || localToday();
+            this.displayYear = Number(currentFocus.slice(0, 4)) || new Date().getFullYear();
+            this.buildDayYearPanel();
+            this.dayGrid.hidden = true;
+            yearView.hidden = false;
+            toggleBtn?.setAttribute('aria-expanded', 'true');
+            toggleBtn?.classList.add('is-active');
+
+            const currentBtn = yearView.querySelector('.ui-month-grid__year-cell.is-current')
+                || yearView.querySelector('.ui-month-grid__year-cell');
+            currentBtn?.focus({ preventScroll: true });
+        } else {
+            yearView.hidden = true;
+            this.dayGrid.hidden = false;
+            toggleBtn?.setAttribute('aria-expanded', 'false');
+            toggleBtn?.classList.remove('is-active');
+            const label = this.dayGrid.querySelector('[data-calendar-year-label]');
+            if (label) label.textContent = String(this.displayYear);
+        }
     }
 
     installMonthGrid() {
@@ -488,6 +600,7 @@ class CalendarController {
             if (monthYearPanel && !monthYearPanel.hidden) {
                 if (this.type === 'single') this.toggleYearPanel(false);
                 if (this.granularity === 'month') this.toggleMonthYearPanel(false);
+                if (this.granularity === 'day') this.toggleDayYearPanel(false);
                 return;
             }
             this.close({ restoreFocus: true });
@@ -570,6 +683,9 @@ class CalendarController {
         }
         if (this.granularity === 'month') {
             this.toggleMonthYearPanel(false);
+        }
+        if (this.granularity === 'day') {
+            this.toggleDayYearPanel(false);
         }
         if (this.isMobile()) {
             document.body.classList.remove('ui-calendar-sheet-open');
@@ -848,6 +964,12 @@ class CalendarController {
             return;
         }
         if (this.dayGrid) {
+            this.toggleDayYearPanel(false);
+            const activeDate = this.draft[this.activeBoundary] || this.draft.start || this.draft.end || localToday();
+            this.displayYear = Number(activeDate.slice(0, 4)) || new Date().getFullYear();
+            const yearLabel = this.dayGrid.querySelector('[data-calendar-year-label]');
+            if (yearLabel) yearLabel.textContent = String(this.displayYear);
+
             this.dayGrid.value = this.draft.start && this.draft.end ? `${this.draft.start}/${this.draft.end}` : '';
             this.dayGrid.tentative = this.draft.start && !this.draft.end ? this.draft.start : '';
             this.dayGrid.focusedDate = this.draft[this.activeBoundary] || this.draft.start || this.draft.end || localToday();

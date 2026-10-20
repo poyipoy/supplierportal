@@ -19,6 +19,9 @@ class SupplierChangeRequest extends Model
     /** Full Vendor Master change proposed from the Local portal. */
     public const TYPE_PROFILE = 'profile';
 
+    /** Bank account change proposed from the Local portal. */
+    public const TYPE_BANK_ACCOUNT = 'bank_account';
+
     /** Contact-person-only change proposed from the Import portal; reviewed by Purchasing. */
     public const TYPE_CONTACT = 'contact';
 

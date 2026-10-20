@@ -2654,13 +2654,20 @@ html[data-sidebar-motion-ready="true"] {
         justify-content: center;
         width: 28px;
         cursor: pointer;
-        transition: background var(--ui-motion-standard), color var(--ui-motion-standard);
+        transition-property: background-color, color, transform;
+        transition-duration: var(--ui-motion-fast), var(--ui-motion-fast), 80ms;
+        transition-timing-function: var(--ui-easing-standard);
     }
 
     .ui-calendar-panel__close:hover,
     .ui-calendar-icon-action:hover {
         background: var(--md-surface-container);
         color: var(--md-on-surface);
+    }
+
+    .ui-calendar-panel__close:active,
+    .ui-calendar-icon-action:active {
+        transform: scale(0.92);
     }
 
     /* Single calendar navigation & year picker */
@@ -2898,6 +2905,14 @@ html[data-sidebar-motion-ready="true"] {
         --color-accent: var(--md-primary);
         --color-text-on-accent: var(--md-on-primary);
         display: block;
+    }
+
+    .ui-calendar-panel--day-range calendar-range[data-calendar-day-grid] {
+        transform-origin: center top;
+    }
+
+    .ui-calendar-panel--day-range calendar-range[data-calendar-day-grid]:not([hidden]) {
+        animation: ui-day-grid-in 120ms var(--ui-easing-standard);
     }
 
     .ui-calendar-panel calendar-range > calendar-month {
@@ -3254,12 +3269,18 @@ html[data-sidebar-motion-ready="true"] {
         height: 28px;
         min-height: 28px;
         padding-inline: var(--ui-space-2);
-        transition: background-color var(--ui-motion-fast) var(--ui-easing-standard), border-color var(--ui-motion-fast) var(--ui-easing-standard), color var(--ui-motion-fast) var(--ui-easing-standard);
+        transition-property: background-color, border-color, color, transform;
+        transition-duration: var(--ui-motion-fast), var(--ui-motion-fast), var(--ui-motion-fast), 80ms;
+        transition-timing-function: var(--ui-easing-standard);
     }
 
     .ui-month-grid__year-toggle:hover {
         background: var(--md-surface-container);
         border-color: var(--md-outline-strong);
+    }
+
+    .ui-month-grid__year-toggle:active:not(:disabled) {
+        transform: scale(0.96);
     }
 
     .ui-month-grid__year-toggle.is-active {
@@ -3285,6 +3306,64 @@ html[data-sidebar-motion-ready="true"] {
 
     .ui-month-grid__year-panel[hidden] {
         display: none !important;
+    }
+
+    .ui-day-range__year-view {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        min-height: 224px;
+        padding: var(--ui-space-1) 0;
+        transform-origin: center top;
+    }
+
+    .ui-day-range__year-view:not([hidden]) {
+        animation: ui-day-year-view-in 150ms var(--ui-easing-standard);
+    }
+
+    .ui-day-range__year-view[hidden] {
+        display: none !important;
+    }
+
+    .ui-day-range__year-view .ui-month-grid__year-panel {
+        gap: 6px;
+        margin-bottom: 0;
+    }
+
+    .ui-day-range__year-view .ui-month-grid__year-cell {
+        border-radius: 8px;
+        font-size: 13px;
+        height: 38px;
+        min-height: 38px;
+        transition-property: background-color, border-color, color, transform;
+        transition-duration: var(--ui-motion-fast), var(--ui-motion-fast), var(--ui-motion-fast), 80ms;
+        transition-timing-function: var(--ui-easing-standard);
+    }
+
+    .ui-day-range__year-view .ui-month-grid__year-cell:active:not(:disabled) {
+        transform: scale(0.96);
+    }
+
+    @keyframes ui-day-year-view-in {
+        from {
+            opacity: 0;
+            transform: translateY(-4px) scale(0.98);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    @keyframes ui-day-grid-in {
+        from {
+            opacity: 0;
+            transform: scale(0.99);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
     }
 
     .ui-month-grid__year-cell {
@@ -3569,7 +3648,12 @@ table.dataTable thead > tr > :is(th, td):is(.sorting, .sorting_asc, .sorting_des
     .adasi-toast__progress-ring-value,
     .adasi-toast__progress-bar,
     .ui-calendar-panel,
-    .ui-calendar-mobile-scrim {
+    .ui-calendar-mobile-scrim,
+    .ui-day-range__year-view,
+    .ui-calendar-panel--day-range calendar-range[data-calendar-day-grid],
+    .ui-month-grid__year-cell,
+    .ui-month-grid__year-toggle,
+    .ui-month-grid__year-chevron {
         animation-duration: .01ms !important;
         animation-iteration-count: 1 !important;
         scroll-behavior: auto !important;

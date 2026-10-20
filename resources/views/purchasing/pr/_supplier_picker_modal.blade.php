@@ -46,7 +46,7 @@
             {{ $selectedSupplierCount > 0 ? $selectedSupplierCount : __('purchasing.copy.all') }}
         </span>
     </x-ui.button>
-    <div id="{{ $modalId }}Summary" class="supplier-selected-summary tw-text-on-surface-variant tw-text-ui-xs tw-mt-0.5" data-empty-text=__('purchasing.copy.all_registered_suppliers')>
+    <div id="{{ $modalId }}Summary" class="supplier-selected-summary tw-text-on-surface-variant tw-text-ui-xs tw-mt-0.5" data-empty-text="{{ __('purchasing.copy.all_registered_suppliers') }}">
         {{ __('purchasing.copy.all_registered_suppliers') }}
     </div>
     @error('supplier_ids') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
