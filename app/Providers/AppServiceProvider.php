@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Listeners\ApplyNotificationPreferences;
+use App\Models\Passport\Client;
 use App\Models\SupplierAudit;
 use App\Models\User;
 use App\Notifications\SystemNotification;
@@ -18,6 +19,7 @@ use App\Services\UserPreferenceService;
 use App\Support\FinanceConfigurationGuard;
 use App\Support\Pricing\EvaluationContext;
 use App\Support\Procurement\ProcurementFeatures;
+use DateInterval;
 use Illuminate\Broadcasting\BroadcastEvent;
 use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Notifications\Events\BroadcastNotificationCreated;
@@ -30,6 +32,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Passport\Passport;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -38,6 +41,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        // Disable package routes before any provider boots; register only our OAuth surface.
+        Passport::ignoreRoutes();
+
         $this->app->scoped(NotificationPreferenceService::class);
         $this->app->scoped(FileInspectionService::class);
 
@@ -65,6 +71,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Passport::useClientModel(Client::class);
+        // SSO issuance/revocation must be atomic on the portal's own connection.
+        config(['passport.connection' => null]);
+        Passport::authorizationView('auth.sso-authorize');
+        Passport::tokensCan(['openid' => 'Sign in to ADASI Portal']);
+        Passport::tokensExpireIn(new DateInterval('PT10M'));
+        Passport::refreshTokensExpireIn(new DateInterval('PT10M'));
+
         app(FinanceConfigurationGuard::class)->assertProductionConfiguration();
 
         if ($this->app->environment('production')) {

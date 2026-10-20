@@ -24,6 +24,7 @@ class AuthAuditLogger
         'status',
         'method',
         'count',
+        'client_id',
     ];
 
     public function write(

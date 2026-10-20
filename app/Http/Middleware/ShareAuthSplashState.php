@@ -13,6 +13,20 @@ class ShareAuthSplashState
 {
     private const SESSION_KEY = 'ui.auth_splash';
 
+    public function shareLoginPage(Request $request): void
+    {
+        if (config('ui.auth_splash.enabled', false)
+            && $request->isMethod('GET') && $this->isDocumentNavigation($request)
+            && ! $request->attributes->has(self::SESSION_KEY) && $this->cleanLogin($request)) {
+            $pending = $request->session()->get(self::SESSION_KEY);
+            $reason = $this->validMarker($pending)
+                && $this->targetPath($request, $pending['target']) === $this->targetPath($request, $request->getRequestUri())
+                && $this->eligibleReason($request, $pending['reason'])
+                ? $pending['reason'] : 'login-page';
+            $request->attributes->set(self::SESSION_KEY, ['reason' => $reason]);
+        }
+    }
+
     public function handle(Request $request, Closure $next): Response
     {
         if (! config('ui.auth_splash.enabled', false)) {
@@ -26,7 +40,9 @@ class ShareAuthSplashState
         $pending = $request->session()->get(self::SESSION_KEY);
         $capturedId = is_array($pending) ? ($pending['id'] ?? null) : null;
 
-        if ($document && $pending !== null) {
+        // Guest OAuth requests must be validated before offering any splash.
+        $deferSsoLogin = $request->routeIs('passport.authorizations.authorize') && $request->user() === null;
+        if ($document && $pending !== null && ! $deferSsoLogin) {
             if (! $this->validMarker($pending)
                 || $this->targetPath($request, $pending['target'] ?? null) !== $this->targetPath($request, $request->getRequestUri())
                 || ! $this->eligibleReason($request, $pending['reason'] ?? null)) {
@@ -174,7 +190,8 @@ class ShareAuthSplashState
 
     private function cleanLogin(Request $request): bool
     {
-        if (! $request->routeIs('login') || $request->user() !== null
+        if (! $request->routeIs('login', 'passport.authorizations.authorize') || $request->user() !== null
+            || ($request->routeIs('passport.authorizations.authorize') && ! $request->attributes->get('sso.authorization_valid'))
             || $request->session()->has(TwoFactorService::PENDING_LOGIN_KEY)) {
             return false;
         }

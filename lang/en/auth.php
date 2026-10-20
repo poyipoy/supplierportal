@@ -1,6 +1,15 @@
 <?php
 
 return [
+    'feedback.sso_restart' => 'Your sign-in request expired or could not be verified. Please try again.',
+    'sso.error_title' => 'Unable to continue sign-in',
+    'sso.invalid_request' => 'This sign-in request is invalid. Start again from the portal sign-in page.',
+    'sso.access_denied' => 'The sign-in request was cancelled. Please try again.',
+    'sso.back_to_login' => 'Back to sign in',
+    'sso.consent_title' => 'Authorize application',
+    'sso.consent_request' => ':client is requesting permission to sign you in.',
+    'sso.allow' => 'Authorize',
+    'sso.deny' => 'Cancel',
     'feedback.stale_challenge' => 'This sign-in challenge is no longer available.',
     'registration_verification_failed' => 'Security verification failed. Please try again.',
     'confirmation.incorrect' => 'The entered password is incorrect.',

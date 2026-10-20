@@ -37,6 +37,10 @@ class AuthAuditLog extends Model
         'new_device_login',
         'concurrent_session_limit_enforced',
         'global_login_anomaly_detected',
+        'sso_authorization_completed',
+        'sso_state_rejected',
+        'sso_subject_mismatch',
+        'sso_invalid_authorization_request',
     ];
 
     public const UPDATED_AT = null;

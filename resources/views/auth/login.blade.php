@@ -9,7 +9,7 @@
     <p class="tw-m-0 tw-mt-1.5 tw-text-ui-sm tw-text-on-surface-variant">{{ __('auth.login.instructions') }}</p>
 </header>
 
-<form method="POST" action="{{ route('login') }}" class="tw-grid tw-gap-4">
+<form method="POST" action="{{ route('login.store') }}" class="tw-grid tw-gap-4">
     @csrf
 
     <div class="tw-grid tw-gap-1.5">

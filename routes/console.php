@@ -23,6 +23,12 @@ Schedule::command('imports:cleanup')
     ->timezone(config('app.business_timezone', 'Asia/Jakarta'))
     ->withoutOverlapping();
 
+Schedule::command('passport:purge')
+    ->dailyAt('02:40')
+    ->timezone(config('app.business_timezone', 'Asia/Jakarta'))
+    ->when(fn () => config('sso.enabled'))
+    ->withoutOverlapping();
+
 Schedule::command('local-invoices:send-delivery-reminders')
     ->dailyAt('08:00')
     ->timezone(config('app.business_timezone', 'Asia/Jakarta'))

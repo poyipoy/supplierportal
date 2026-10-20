@@ -9,6 +9,7 @@ use App\Http\Middleware\EnforceSupplierDomain;
 use App\Http\Middleware\EnsurePasswordConfirmation;
 use App\Http\Middleware\EnsurePendingTwoFactorChallenge;
 use App\Http\Middleware\EnsureRegistrationSession;
+use App\Http\Middleware\EnsureSsoSession;
 use App\Http\Middleware\LimitOperationalRequests;
 use App\Http\Middleware\NoStoreResponse;
 use App\Http\Middleware\RememberPurchasingListUrl;
@@ -24,6 +25,9 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Route;
+use Laravel\Passport\Exceptions\OAuthServerException;
+use Laravel\Passport\Http\Controllers\AccessTokenController;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withEvents(discover: false)
@@ -32,6 +36,25 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         channels: __DIR__.'/../routes/channels.php',
         health: '/up',
+        then: function (): void {
+            // OAuth token requests are stateless; never attach the web group here.
+            Route::post('/oauth/token', function () {
+                abort_unless(config('sso.enabled'), 404);
+
+                try {
+                    $response = app()->call([app(AccessTokenController::class), 'issueToken']);
+                } catch (OAuthServerException $exception) {
+                    $response = $exception->getResponse();
+                } catch (Throwable) {
+                    // Never render/report raw protocol exceptions with request secrets.
+                    $response = response()->json(['error' => 'server_error'], 503);
+                }
+                $response->headers->set('Cache-Control', 'no-store, private');
+                $response->headers->set('Pragma', 'no-cache');
+
+                return $response;
+            })->middleware('throttle:60,1')->name('passport.token');
+        },
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $trustedProxies = array_values(array_filter(
@@ -64,6 +87,7 @@ return Application::configure(basePath: dirname(__DIR__))
             ShareAuthSplashState::class,
             DecodeHashids::class,
             EnforceAuthSessionSecurity::class,
+            EnsureSsoSession::class,
             EnforcePasswordChange::class,
             AddSecurityHeaders::class,
             EnforceSupplierDomain::class,

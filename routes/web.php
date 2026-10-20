@@ -20,6 +20,9 @@ use App\Http\Controllers\Auth\PasswordAssistanceController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\ProfileTwoFactorController;
 use App\Http\Controllers\Auth\RevokeSessionController;
+use App\Http\Controllers\Auth\SsoAuthorizeController;
+use App\Http\Controllers\Auth\SsoCallbackController;
+use App\Http\Controllers\Auth\SsoEntryController;
 use App\Http\Controllers\Auth\SupplierRegistrationController;
 use App\Http\Controllers\Auth\TwoFactorChallengeController;
 use App\Http\Controllers\ConversationMessageController;
@@ -725,13 +728,24 @@ Route::middleware(['auth', 'role:qc,purchasing'])->prefix('qc')->name('qc.')->gr
 |--------------------------------------------------------------------------
 */
 Route::middleware('guest')->group(function () {
-    Route::get('login', [AuthenticatedSessionController::class, 'create'])
+    Route::get('login', [SsoEntryController::class, 'start'])
         ->middleware('no-store')->name('login');
 
     Route::post('login', [AuthenticatedSessionController::class, 'store'])
         ->middleware('no-store')->name('login.store');
 
 });
+
+// OAuth authorization uses the web session. Token exchange is registered
+// separately in bootstrap/app.php without web/session/CSRF middleware.
+Route::get('oauth/authorize', [SsoAuthorizeController::class, 'show'])
+    ->middleware(['no-store', 'throttle:60,1'])->block()->name('passport.authorizations.authorize');
+Route::get('sso/callback', SsoCallbackController::class)
+    ->middleware(['auth', 'no-store', 'throttle:60,1'])->block()->name('sso.callback');
+Route::post('oauth/authorize', [SsoAuthorizeController::class, 'approve'])
+    ->middleware(['auth', 'no-store', 'throttle:60,1'])->block()->name('passport.authorizations.approve');
+Route::delete('oauth/authorize', [SsoAuthorizeController::class, 'deny'])
+    ->middleware(['auth', 'no-store', 'throttle:60,1'])->block()->name('passport.authorizations.deny');
 
 // This is an informational assistance page only. Allow an authenticated account
 // to use its saved locale for the copied email template; no reset flow is added.
