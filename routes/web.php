@@ -53,6 +53,7 @@ use App\Http\Controllers\LocalSupplier\SupplierAuditController as LocalSupplierA
 use App\Http\Controllers\LocalSupplier\VendorProfileController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PortalLegacyPathController;
+use App\Http\Controllers\PortalPageController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Purchasing\AwardConsolidationController;
 use App\Http\Controllers\Purchasing\ConversationController;
@@ -727,6 +728,11 @@ Route::prefix(PortalPath::prefix())->group(function () {
     Route::middleware(['auth', 'role:qc,purchasing'])->prefix('qc')->name('qc.')->group(function () {
         Route::get('/inspections/{id}', [QcInspectionController::class, 'show'])->name('inspections.show');
     });
+
+    if (config('portal_urls.page_registry.enabled')) {
+        Route::get('/{pageUuid}', PortalPageController::class)->whereUuid('pageUuid')
+            ->middleware('auth')->name('portal.page');
+    }
 
 });
 

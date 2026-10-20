@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\User;
+use App\Support\PageRegistry;
 use App\Support\PortalContext;
 use App\Support\PurchasingNavigation;
 use Illuminate\Support\Facades\Route;
@@ -61,9 +62,9 @@ class QuickAccessService
                 'key' => $key,
                 ...$item,
                 'label' => __($item['label']),
-                'url' => ! empty($item['purchasing_list'])
+                'url' => PageRegistry::url($item['route'], ! empty($item['purchasing_list'])
                     ? PurchasingNavigation::listUrl($item['route'])
-                    : route($item['route']),
+                    : null),
                 'active' => request()->routeIs(...(array) ($item['active'] ?? $item['route'])),
             ];
         }
