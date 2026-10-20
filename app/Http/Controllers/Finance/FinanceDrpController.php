@@ -18,10 +18,10 @@ use App\Support\BankTransferMapping;
 use App\Support\BusinessTime;
 use App\Support\ExportConfirmation;
 use App\Support\ExportDispatcher;
+use App\Support\HashidCodec;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
-use Vinkla\Hashids\Facades\Hashids;
 
 class FinanceDrpController extends Controller
 {
@@ -245,17 +245,12 @@ class FinanceDrpController extends Controller
                 abort(422, __('finance.export_validation.raw_ids'));
             }
 
-            try {
-                $decoded = Hashids::decode($hashId);
-            } catch (\Throwable) {
-                $decoded = [];
-            }
-
-            if (count($decoded) !== 1 || (int) $decoded[0] <= 0) {
+            $id = HashidCodec::decode($hashId);
+            if ($id === null) {
                 abort(422, __('finance.export_validation.invalid_id', ['id' => $hashId]));
             }
 
-            $resolvedIds[] = (int) $decoded[0];
+            $resolvedIds[] = $id;
         }
 
         // Deduplicate

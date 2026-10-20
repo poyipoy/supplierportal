@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\PortalLegacyPathController;
 use App\Http\Middleware\AddSecurityHeaders;
 use App\Http\Middleware\ApplyUserLocale;
 use App\Http\Middleware\DecodeHashids;
@@ -28,6 +29,8 @@ use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
 use Laravel\Passport\Exceptions\OAuthServerException;
 use Laravel\Passport\Http\Controllers\AccessTokenController;
+use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withEvents(discover: false)
@@ -121,9 +124,23 @@ return Application::configure(basePath: dirname(__DIR__))
         });
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // A GET fallback must not turn unknown mutating paths into 405 responses.
+        $exceptions->map(function (MethodNotAllowedHttpException $exception) {
+            $request = request();
+            $allowed = PortalLegacyPathController::allowedMethods($request);
+            if ($allowed === []) {
+                return new NotFoundHttpException(sprintf('The route %s could not be found.', $request->path()));
+            }
+
+            return new MethodNotAllowedHttpException($allowed, sprintf(
+                'The %s method is not supported for route %s. Supported methods: %s.',
+                $request->method(), $request->path(), implode(', ', $allowed),
+            ));
+        });
+
         $exceptions->render(function (AuthenticationException $exception, Request $request) {
             if ($request->expectsJson()
-                || $request->is('notifications/unread-count', 'conversations/unread-count', 'conversations/*/messages/latest', 'exports/*/status')) {
+                || $request->routeIs('notifications.unread-count', 'conversations.unread-count', 'conversations.messages.latest', 'exports.status')) {
                 return response()->json(['message' => 'Unauthenticated.'], 401);
             }
         });

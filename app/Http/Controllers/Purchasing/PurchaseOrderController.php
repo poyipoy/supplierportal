@@ -13,13 +13,13 @@ use App\Services\MaterialProgressService;
 use App\Services\NotificationService;
 use App\Services\RegionalDisplayFormatter;
 use App\Support\BusinessTime;
+use App\Support\HashidCodec;
 use App\Support\NotificationCategory;
 use App\Support\PurchasingNavigation;
 use App\Support\StatusHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Vinkla\Hashids\Facades\Hashids;
 use Yajra\DataTables\Facades\DataTables;
 
 class PurchaseOrderController extends Controller
@@ -125,9 +125,9 @@ class PurchaseOrderController extends Controller
                     $html = '<div class="d-inline-flex gap-1 justify-content-end flex-wrap">';
                     if ($po->status === 'claim_needed') {
                         if ($po->active_claim_id) {
-                            $html .= '<a href="'.PurchasingNavigation::toRoute('purchasing.claims.show', Hashids::encode((int) $po->active_claim_id)).'" class="ui-data-action ui-data-action--danger ui-focus-ring">Claim</a>';
+                            $html .= '<a href="'.PurchasingNavigation::toRoute('purchasing.claims.show', HashidCodec::encode((int) $po->active_claim_id)).'" class="ui-data-action ui-data-action--danger ui-focus-ring">Claim</a>';
                         } elseif ($po->latest_ng_inspection_id) {
-                            $html .= '<a href="'.PurchasingNavigation::toRoute('purchasing.claims.create', Hashids::encode((int) $po->latest_ng_inspection_id)).'" class="ui-data-action ui-data-action--danger ui-focus-ring">Create Claim</a>';
+                            $html .= '<a href="'.PurchasingNavigation::toRoute('purchasing.claims.create', HashidCodec::encode((int) $po->latest_ng_inspection_id)).'" class="ui-data-action ui-data-action--danger ui-focus-ring">Create Claim</a>';
                         }
                     }
                     $html .= '<a href="'.PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $po).'" class="ui-data-action ui-data-action--primary ui-focus-ring">'.e(__('purchasing.copy.details')).'</a>';

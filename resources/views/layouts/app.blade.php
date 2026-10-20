@@ -5,6 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <script>
+        window.AdasiPortal = Object.assign(window.AdasiPortal || {}, { pathPrefix: @js(\App\Support\PortalPath::prefix()) });
+    </script>
     @include('partials.auth-splash-bootstrap', ['authSplashLayout' => 'app', 'authSplashReadiness' => 'core'])
     @include('partials.i18n-bootstrap')
     <meta name="robots" content="noindex, nofollow">
@@ -542,8 +545,8 @@
 
                     if (
                         targetUrl.origin !== window.location.origin
-                        || !targetUrl.pathname.startsWith('/purchasing/')
-                        || targetUrl.pathname.startsWith('/purchasing/export/')
+                        || !targetUrl.pathname.startsWith(@js(\App\Support\PortalPath::path('purchasing/')))
+                        || targetUrl.pathname.startsWith(@js(\App\Support\PortalPath::path('purchasing/export/')))
                         || listPaths.has(targetUrl.pathname)
                         || targetUrl.searchParams.has('return_url')
                     ) {
@@ -795,7 +798,7 @@
                     document.querySelector('meta[name="user-id"]')?.content;
 
                 const readUrlBase =
-                    @json(url('/notifications/__NOTIFICATION_ID__/read'));
+                    @json(route('notifications.read', '__NOTIFICATION_ID__'));
 
                 const allowedCategories = new Set(
                     @json(array_keys(\App\Support\NotificationCategory::options()))

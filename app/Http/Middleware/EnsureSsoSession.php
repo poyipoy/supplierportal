@@ -41,7 +41,7 @@ class EnsureSsoSession
 
         $request->session()->forget(['sso.verified_at', 'sso.client_id']);
         if ($request->expectsJson()
-            || $request->is('notifications/unread-count', 'conversations/unread-count', 'conversations/*/messages/latest', 'exports/*/status')) {
+            || $request->routeIs('notifications.unread-count', 'conversations.unread-count', 'conversations.messages.latest', 'exports.status')) {
             return response()->json(['message' => __('auth.feedback.unauthenticated')], 401)
                 ->header('Cache-Control', 'no-store, private');
         }

@@ -2,6 +2,8 @@ import { installI18n } from './i18n-fixture.mjs';
 globalThis.window = installI18n(globalThis.window || {});
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { runInNewContext } from 'node:vm';
 import {
     addLocalDays,
     addLocalMonths,
@@ -11,6 +13,27 @@ import {
     isIsoMonth,
     rangePresets,
 } from '../../resources/js/calendar-core.js';
+
+test('day range year selection clamps leap day without changing the selected range', () => {
+    const source = readFileSync(new URL('../../resources/js/calendar.js', import.meta.url), 'utf8');
+    const classSource = source.slice(source.indexOf('class CalendarController'), source.indexOf('export function initializeAdasiCalendars'));
+    const Controller = runInNewContext(`${classSource}; CalendarController`, { Date, t: () => '' });
+    const controller = Object.create(Controller.prototype);
+    const label = {};
+    controller.dayGrid = { focusedDate: '2024-02-29', querySelector: (selector) => selector === '[data-calendar-year-label]' ? label : null };
+    controller.draft = { start: '2024-02-29', end: '2024-03-02' };
+    controller.toggleDayYearPanel = () => {};
+    controller.announce = () => {};
+
+    controller.selectDayYear(2025);
+    assert.equal(controller.dayGrid.focusedDate, '2025-02-28');
+    assert.equal(label.textContent, '2025');
+    assert.deepEqual(controller.draft, { start: '2024-02-29', end: '2024-03-02' });
+
+    controller.dayGrid.focusedDate = '2024-02-29';
+    controller.selectDayYear(2028);
+    assert.equal(controller.dayGrid.focusedDate, '2028-02-29');
+});
 
 test('calendar core validates ISO day and month values without accepting invalid local dates', () => {
     assert.equal(isIsoDate('2026-02-28'), true);

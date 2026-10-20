@@ -34,6 +34,12 @@ return [
             'alphabet' => env('HASHIDS_ALPHABET', 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890'),
         ],
 
+        'long' => [
+            'salt' => (string) env('HASHIDS_SALT'),
+            'length' => (int) env('PORTAL_LONG_HASHIDS_LENGTH', 24),
+            'alphabet' => env('HASHIDS_ALPHABET', 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890'),
+        ],
+
     ],
 
 ];

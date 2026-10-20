@@ -1037,7 +1037,7 @@
         $(this).prop('disabled', true);
 
         $.ajax({
-            url: '/purchasing/po-documents/' + docId,
+            url: @js(route('purchasing.po-documents.update', '__DOCUMENT_ID__')).replace('__DOCUMENT_ID__', encodeURIComponent(docId)),
             method: 'PUT',
             data: {
                 _token: '{{ csrf_token() }}',

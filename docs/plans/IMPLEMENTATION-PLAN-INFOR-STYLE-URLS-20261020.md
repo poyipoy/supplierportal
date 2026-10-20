@@ -1,6 +1,6 @@
 # Implementation Plan — URL Halaman Gaya Infor (Prefix Path, Hashids Panjang, Page Registry)
 
-> Tanggal: 20 Oktober 2026 · Status: **disetujui, belum diimplementasikan**
+> Tanggal: 20 Oktober 2026 · Status: **diimplementasikan** — Phase 0/B/A/C1. Bukti dan batas verifikasi: [laporan hasil](../results/INFOR-STYLE-URLS-RESULT-20261020.md).
 >
 > Agent pelaksana wajib membaca `AGENTS.md` lebih dulu dan mencocokkan rencana ini dengan kode terbaru di `master`. Bila ada perbedaan, **kode, migrasi, dan tes yang menang**; laporkan perbedaannya.
 >
@@ -210,16 +210,16 @@ Prinsip:
 
 ## 11. Kriteria penerimaan
 
-- [ ] Semua flag off: seluruh tes lama lulus tanpa diubah, dan perilaku identik.
-- [ ] Flag prefix on: setiap halaman terautentikasi berada di `/<PORTAL_PATH_PREFIX>/…`, sedangkan route root tetap di root.
-- [ ] Prefix tidak valid atau bentrok → aplikasi menolak boot dengan pesan jelas.
-- [ ] Flag hashid on: URL baru 24 karakter, URL lama 8 karakter (GET) → 301, raw integer → 404.
-- [ ] Bookmark lama tanpa prefix → 301 ke URL berprefix; mematikan flag tidak merusak link berprefix.
-- [ ] Link notifikasi lama tetap membuka record yang benar.
-- [ ] Flag registry on: link menu berupa `/<prefix>/<uuid>` → 302 ke halaman; otorisasi tidak berubah.
-- [ ] SSO login, QR receipt, registrasi supplier, dan ganti bahasa tetap berfungsi.
-- [ ] `route:cache` berhasil dengan flag on dan off.
-- [ ] Tidak ada migrasi dan tidak ada package baru.
+- [ ] Semua flag off: seluruh tes lama lulus tanpa diubah, dan perilaku identik. **Hasil nonhijau baseline tetap dicatat**, tanpa mengubah tes lama atau snapshot audit historis; lihat laporan hasil untuk angka dan pembanding.
+- [x] Flag prefix on: setiap halaman terautentikasi berada di `/<PORTAL_PATH_PREFIX>/…`, sedangkan route root tetap di root.
+- [x] Prefix tidak valid atau bentrok → aplikasi menolak boot dengan pesan jelas.
+- [x] Flag hashid on: URL baru 24 karakter, URL lama 8 karakter (GET) → 301, raw integer → 404.
+- [x] Bookmark lama tanpa prefix → 301 ke URL berprefix; mematikan flag tidak merusak link berprefix.
+- [x] Link notifikasi lama tetap membuka record yang benar.
+- [x] Flag registry on: link menu berupa `/<prefix>/<uuid>` → 302 ke halaman; otorisasi tidak berubah.
+- [x] SSO login, QR receipt, registrasi supplier, dan ganti bahasa tetap berfungsi (coverage HTTP otomatis; SSO juga browser lokal, QR fisik belum diuji).
+- [x] `route:cache` berhasil dengan flag on dan off.
+- [x] Tidak ada migrasi dan tidak ada package baru.
 
 ## 12. Deploy dan rollback
 

@@ -12,6 +12,7 @@ use App\Services\VendorMaster\VendorChangeRequestService;
 use App\Services\VendorMaster\VendorMasterService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 use Tests\Support\NativeFileFixtures;
 use Tests\TestCase;
@@ -291,5 +292,201 @@ class VendorMasterV2Test extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Supplier cannot reject their own change request.');
         $this->changeRequestService->reject($req, $supplierUser, 'Rejecting myself');
+    }
+
+    public function test_reviewer_can_approve_bank_change_request_with_provided_document_id(): void
+    {
+        $supplierUser = User::factory()->create(['role' => 'supplier']);
+        $supplierUser->supplierScopes()->create(['scope' => 'local']);
+        Supplier::create([
+            'user_id' => $supplierUser->id,
+            'company_name' => 'PT Baja Mulia',
+            'vendor_category' => 'Barang',
+        ]);
+
+        $purchasing = User::factory()->create(['role' => 'purchasing']);
+
+        $stored = app(FileInspectionService::class)->storeUpload(
+            NativeFileFixtures::upload('bank.pdf', 10),
+            'vendor',
+            'vendor-documents/bank-review-test.pdf'
+        );
+        $document = SupplierMasterDocument::create([
+            'supplier_id' => $supplierUser->id,
+            'document_type' => SupplierMasterDocument::TYPE_SURAT_PERNYATAAN_REKENING,
+            'file_path' => $stored['file_path'],
+            'original_filename' => 'bank.pdf',
+            'mime_type' => $stored['file_type'],
+            'file_size' => $stored['file_size'],
+            'file_inspection_id' => $stored['file_inspection_id'],
+            'uploaded_by' => $supplierUser->id,
+        ]);
+
+        $req = SupplierChangeRequest::create([
+            'supplier_id' => $supplierUser->id,
+            'requested_by' => $supplierUser->id,
+            'requested_at' => now(),
+            'change_type' => SupplierChangeRequest::TYPE_BANK_ACCOUNT,
+            'status' => SupplierChangeRequest::STATUS_PENDING,
+            'current_data_snapshot' => ['company_name' => 'PT Baja Mulia'],
+            'proposed_data' => [
+                'bank_name' => 'BCA',
+                'account_number' => '8888888888',
+                'account_holder_name' => 'PT Baja Mulia',
+            ],
+        ]);
+
+        $this->changeRequestService->approve($req, $purchasing, 'Approved with selected doc', $document->id);
+
+        $req->refresh();
+        $this->assertSame(SupplierChangeRequest::STATUS_APPROVED, $req->status);
+        $this->assertSame($document->id, $req->proposed_data['bank_confirmation_document_id']);
+
+        $activeBank = $supplierUser->fresh()->activeSupplierBankAccount;
+        $this->assertNotNull($activeBank);
+        $this->assertSame('8888888888', $activeBank->account_number);
+        $this->assertSame(SupplierBankAccount::STATUS_VERIFIED, $activeBank->status);
+    }
+
+    public function test_reviewer_approval_fails_when_no_valid_document_is_available(): void
+    {
+        $supplierUser = User::factory()->create(['role' => 'supplier']);
+        $supplierUser->supplierScopes()->create(['scope' => 'local']);
+        Supplier::create([
+            'user_id' => $supplierUser->id,
+            'company_name' => 'PT Tanpa Dokumen',
+            'vendor_category' => 'Barang',
+        ]);
+
+        $finance = User::factory()->create(['role' => 'finance']);
+
+        $req = SupplierChangeRequest::create([
+            'supplier_id' => $supplierUser->id,
+            'requested_by' => $supplierUser->id,
+            'requested_at' => now(),
+            'change_type' => SupplierChangeRequest::TYPE_BANK_ACCOUNT,
+            'status' => SupplierChangeRequest::STATUS_PENDING,
+            'current_data_snapshot' => ['company_name' => 'PT Tanpa Dokumen'],
+            'proposed_data' => [
+                'bank_name' => 'BCA',
+                'account_number' => '11112222',
+                'account_holder_name' => 'PT Tanpa Dokumen',
+            ],
+        ]);
+
+        $this->expectException(ValidationException::class);
+        $this->changeRequestService->approve($req, $finance, 'Should fail without document');
+    }
+
+    public function test_purchasing_controller_can_approve_bank_change_request_with_selected_document(): void
+    {
+        $supplierUser = User::factory()->create(['role' => 'supplier']);
+        $supplierUser->supplierScopes()->create(['scope' => 'local']);
+        Supplier::create([
+            'user_id' => $supplierUser->id,
+            'company_name' => 'PT Supplier Purchasing',
+            'vendor_category' => 'Barang',
+        ]);
+
+        $purchasing = User::factory()->create(['role' => 'purchasing']);
+
+        $stored = app(FileInspectionService::class)->storeUpload(
+            NativeFileFixtures::upload('bank.pdf', 10),
+            'vendor',
+            'vendor-documents/bank-purchasing-test.pdf'
+        );
+        $document = SupplierMasterDocument::create([
+            'supplier_id' => $supplierUser->id,
+            'document_type' => SupplierMasterDocument::TYPE_SURAT_PERNYATAAN_REKENING,
+            'file_path' => $stored['file_path'],
+            'original_filename' => 'bank.pdf',
+            'mime_type' => $stored['file_type'],
+            'file_size' => $stored['file_size'],
+            'file_inspection_id' => $stored['file_inspection_id'],
+            'uploaded_by' => $supplierUser->id,
+        ]);
+
+        $req = SupplierChangeRequest::create([
+            'supplier_id' => $supplierUser->id,
+            'requested_by' => $supplierUser->id,
+            'requested_at' => now(),
+            'change_type' => SupplierChangeRequest::TYPE_BANK_ACCOUNT,
+            'status' => SupplierChangeRequest::STATUS_PENDING,
+            'current_data_snapshot' => ['company_name' => 'PT Supplier Purchasing'],
+            'proposed_data' => [
+                'bank_name' => 'Mandiri',
+                'account_number' => '77777777',
+                'account_holder_name' => 'PT Supplier Purchasing',
+            ],
+        ]);
+
+        $response = $this->actingAs($purchasing)->post(route('purchasing.local-vendors.change-requests.approve', $req), [
+            'bank_confirmation_document_id' => $document->id,
+            'review_notes' => 'Disetujui Purchasing dengan dokumen terverifikasi',
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+
+        $req->refresh();
+        $this->assertSame(SupplierChangeRequest::STATUS_APPROVED, $req->status);
+        $this->assertSame($purchasing->id, $req->reviewed_by);
+        $this->assertSame($document->id, $req->proposed_data['bank_confirmation_document_id']);
+    }
+
+    public function test_finance_controller_can_approve_bank_change_request_with_selected_document(): void
+    {
+        $supplierUser = User::factory()->create(['role' => 'supplier']);
+        $supplierUser->supplierScopes()->create(['scope' => 'local']);
+        Supplier::create([
+            'user_id' => $supplierUser->id,
+            'company_name' => 'PT Supplier Finance',
+            'vendor_category' => 'Barang',
+        ]);
+
+        $finance = User::factory()->create(['role' => 'finance']);
+
+        $stored = app(FileInspectionService::class)->storeUpload(
+            NativeFileFixtures::upload('bank.pdf', 10),
+            'vendor',
+            'vendor-documents/bank-finance-test.pdf'
+        );
+        $document = SupplierMasterDocument::create([
+            'supplier_id' => $supplierUser->id,
+            'document_type' => SupplierMasterDocument::TYPE_SURAT_PERNYATAAN_REKENING,
+            'file_path' => $stored['file_path'],
+            'original_filename' => 'bank.pdf',
+            'mime_type' => $stored['file_type'],
+            'file_size' => $stored['file_size'],
+            'file_inspection_id' => $stored['file_inspection_id'],
+            'uploaded_by' => $supplierUser->id,
+        ]);
+
+        $req = SupplierChangeRequest::create([
+            'supplier_id' => $supplierUser->id,
+            'requested_by' => $supplierUser->id,
+            'requested_at' => now(),
+            'change_type' => SupplierChangeRequest::TYPE_BANK_ACCOUNT,
+            'status' => SupplierChangeRequest::STATUS_PENDING,
+            'current_data_snapshot' => ['company_name' => 'PT Supplier Finance'],
+            'proposed_data' => [
+                'bank_name' => 'BCA',
+                'account_number' => '33333333',
+                'account_holder_name' => 'PT Supplier Finance',
+            ],
+        ]);
+
+        $response = $this->actingAs($finance)->post(route('finance.vendor-change-requests.approve', $req), [
+            'bank_confirmation_document_id' => $document->id,
+            'review_notes' => 'Disetujui Finance AP',
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+
+        $req->refresh();
+        $this->assertSame(SupplierChangeRequest::STATUS_APPROVED, $req->status);
+        $this->assertSame($finance->id, $req->reviewed_by);
+        $this->assertSame($document->id, $req->proposed_data['bank_confirmation_document_id']);
     }
 }

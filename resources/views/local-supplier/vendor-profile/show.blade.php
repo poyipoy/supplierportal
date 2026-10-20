@@ -196,6 +196,17 @@
                     <h4 class="tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-mb-3">{{ __('local_invoice.labels.proposed_bank') }}</h4>
                     <p class="tw-text-[11px] tw-text-on-surface-variant tw-mb-3">{{ __('local_invoice.labels.bank_change_help') }}</p>
 
+                    @php
+                        $supplierBankDocs = $documents->where('document_type', \App\Models\SupplierMasterDocument::TYPE_SURAT_PERNYATAAN_REKENING);
+                    @endphp
+
+                    @if($supplierBankDocs->isEmpty())
+                        <div class="tw-p-2.5 tw-mb-3 tw-rounded tw-bg-warning/10 tw-border tw-border-warning/30 tw-text-warning tw-text-ui-xs tw-flex tw-items-start tw-gap-2">
+                            <x-ui.icon name="alert-triangle" size="sm" class="tw-shrink-0 tw-mt-0.5" />
+                            <div>{{ __('finance_controls.bank_document_must_upload_first') }}</div>
+                        </div>
+                    @endif
+
                     <div class="tw-grid tw-grid-cols-1 sm:tw-grid-cols-3 tw-gap-4">
                         <div>
                             <x-ui.searchable-select
@@ -207,26 +218,38 @@
                                 :options="\App\Support\BankList::options(old('bank_name'))"
                                 :value="old('bank_name')"
                             />
+                            @error('bank_name')
+                                <div class="text-danger tw-text-[11px] tw-mt-1">{{ $message }}</div>
+                            @enderror
                         </div>
                         <div>
                             <label for="account_number" class="form-label tw-text-ui-xs tw-font-medium">{{ __('local_procurement.vendor_ui.bank_number') }}</label>
-                            <input type="text" id="account_number" name="account_number" class="form-control form-control-sm" placeholder="{{ __('local_procurement.vendor_ui.bank_number') }}" value="{{ old('account_number') }}">
+                            <input type="text" id="account_number" name="account_number" class="form-control form-control-sm @error('account_number') is-invalid @enderror" placeholder="{{ __('local_procurement.vendor_ui.bank_number') }}" value="{{ old('account_number') }}">
+                            @error('account_number')
+                                <div class="invalid-feedback tw-text-[11px]">{{ $message }}</div>
+                            @enderror
                         </div>
                         <div>
                             <label for="account_holder_name" class="form-label tw-text-ui-xs tw-font-medium">{{ __('local_procurement.vendor_ui.account_owner') }}</label>
-                            <input type="text" id="account_holder_name" name="account_holder_name" class="form-control form-control-sm" placeholder="{{ __('local_invoice.labels.account_book_name') }}" value="{{ old('account_holder_name') }}">
+                            <input type="text" id="account_holder_name" name="account_holder_name" class="form-control form-control-sm @error('account_holder_name') is-invalid @enderror" placeholder="{{ __('local_invoice.labels.account_book_name') }}" value="{{ old('account_holder_name') }}">
+                            @error('account_holder_name')
+                                <div class="invalid-feedback tw-text-[11px]">{{ $message }}</div>
+                            @enderror
                         </div>
                     </div>
 
                     <div class="tw-pt-2 tw-flex tw-justify-end">
                         <div class="tw-mr-3">
                             <label for="bank_confirmation_document_id" class="form-label tw-text-ui-xs">{{ __('finance_controls.bank_document_label') }}</label>
-                            <select id="bank_confirmation_document_id" name="bank_confirmation_document_id" class="form-select form-select-sm">
+                            <select id="bank_confirmation_document_id" name="bank_confirmation_document_id" class="form-select form-select-sm @error('bank_confirmation_document_id') is-invalid @enderror">
                                 <option value="">{{ __('finance_controls.bank_document_label') }}</option>
-                                @foreach($documents->where('document_type', \App\Models\SupplierMasterDocument::TYPE_SURAT_PERNYATAAN_REKENING) as $bankDocument)
+                                @foreach($supplierBankDocs as $bankDocument)
                                     <option value="{{ $bankDocument->hash }}" @selected(old('bank_confirmation_document_id') === $bankDocument->hash)>{{ $bankDocument->original_filename }}</option>
                                 @endforeach
                             </select>
+                            @error('bank_confirmation_document_id')
+                                <div class="invalid-feedback tw-text-[11px]">{{ $message }}</div>
+                            @enderror
                         </div>
                         <x-ui.button type="submit" variant="primary" size="sm">
                             <x-ui.icon name="send" size="sm" />

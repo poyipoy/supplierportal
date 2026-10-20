@@ -8,6 +8,7 @@ use App\Models\SupplierChangeRequest;
 use App\Models\SupplierMasterDocument;
 use App\Models\SupplierScope;
 use App\Models\User;
+use App\Services\FileSecurity\FileInspectionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Tests\Support\NativeFileFixtures;
@@ -79,16 +80,13 @@ class SupplierVendorProfileTest extends TestCase
         $response->assertSee('NIB_Baja_Unggul.pdf');
     }
 
-    public function test_supplier_submits_change_request(): void
+    public function test_supplier_submits_profile_only_change_request(): void
     {
         $user = $this->createLocalSupplier();
 
         $response = $this->actingAs($user)->post(route('local-supplier.vendor-profile.change-requests.store'), [
             'company_name' => 'PT Baja Unggul Mandiri',
             'phone' => '021-222222',
-            'bank_name' => 'Mandiri',
-            'account_number' => '987654321',
-            'account_holder_name' => 'PT Baja Unggul Mandiri',
         ]);
 
         $response->assertRedirect();
@@ -97,11 +95,102 @@ class SupplierVendorProfileTest extends TestCase
         $this->assertDatabaseHas('supplier_change_requests', [
             'supplier_id' => $user->id,
             'status' => SupplierChangeRequest::STATUS_PENDING,
+            'change_type' => SupplierChangeRequest::TYPE_PROFILE,
         ]);
 
         $cr = SupplierChangeRequest::where('supplier_id', $user->id)->first();
         $this->assertSame('PT Baja Unggul Mandiri', $cr->proposed_data['company_name']);
         $this->assertSame('PT Baja Unggul', $cr->current_data_snapshot['company_name']);
+        $this->assertArrayNotHasKey('bank_name', $cr->proposed_data);
+    }
+
+    public function test_supplier_cannot_submit_bank_change_without_confirmation_document(): void
+    {
+        $user = $this->createLocalSupplier();
+
+        $response = $this->actingAs($user)->from(route('local-supplier.vendor-profile.show'))->post(route('local-supplier.vendor-profile.change-requests.store'), [
+            'bank_name' => 'Mandiri',
+            'account_number' => '987654321',
+            'account_holder_name' => 'PT Baja Unggul Mandiri',
+        ]);
+
+        $response->assertRedirect(route('local-supplier.vendor-profile.show'));
+        $response->assertSessionHasErrors(['bank_confirmation_document_id']);
+        $this->assertDatabaseCount('supplier_change_requests', 0);
+    }
+
+    public function test_supplier_cannot_submit_incomplete_bank_account_fields(): void
+    {
+        $user = $this->createLocalSupplier();
+
+        $response = $this->actingAs($user)->from(route('local-supplier.vendor-profile.show'))->post(route('local-supplier.vendor-profile.change-requests.store'), [
+            'bank_name' => 'Mandiri',
+        ]);
+
+        $response->assertRedirect(route('local-supplier.vendor-profile.show'));
+        $response->assertSessionHasErrors(['account_number', 'account_holder_name', 'bank_confirmation_document_id']);
+        $this->assertDatabaseCount('supplier_change_requests', 0);
+    }
+
+    public function test_supplier_bank_document_identifier_rejects_non_scalar_values(): void
+    {
+        $user = $this->createLocalSupplier();
+
+        foreach ([[1], true] as $documentId) {
+            $this->actingAs($user)->postJson(route('local-supplier.vendor-profile.change-requests.store'), [
+                'bank_name' => 'Mandiri',
+                'account_number' => '987654321',
+                'account_holder_name' => 'PT Baja Unggul',
+                'bank_confirmation_document_id' => $documentId,
+            ])->assertUnprocessable()->assertJsonValidationErrors('bank_confirmation_document_id');
+        }
+
+        $this->assertDatabaseCount('supplier_change_requests', 0);
+    }
+
+    public function test_supplier_submits_bank_change_request_with_valid_document(): void
+    {
+        Storage::fake('private');
+        $user = $this->createLocalSupplier();
+
+        $stored = app(FileInspectionService::class)->storeUpload(
+            NativeFileFixtures::upload('bank.pdf', 10),
+            'vendor',
+            'vendor-documents/bank-test.pdf'
+        );
+        $document = SupplierMasterDocument::create([
+            'supplier_id' => $user->id,
+            'document_type' => SupplierMasterDocument::TYPE_SURAT_PERNYATAAN_REKENING,
+            'file_path' => $stored['file_path'],
+            'original_filename' => 'bank.pdf',
+            'mime_type' => $stored['file_type'],
+            'file_size' => $stored['file_size'],
+            'file_inspection_id' => $stored['file_inspection_id'],
+            'uploaded_by' => $user->id,
+        ]);
+
+        $response = $this->actingAs($user)->post(route('local-supplier.vendor-profile.change-requests.store'), [
+            'company_name' => 'PT Baja Unggul Mandiri',
+            'phone' => '021-222222',
+            'bank_name' => 'Mandiri',
+            'account_number' => '987654321',
+            'account_holder_name' => 'PT Baja Unggul Mandiri',
+            'bank_confirmation_document_id' => $document->id,
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+
+        $this->assertDatabaseHas('supplier_change_requests', [
+            'supplier_id' => $user->id,
+            'status' => SupplierChangeRequest::STATUS_PENDING,
+            'change_type' => SupplierChangeRequest::TYPE_BANK_ACCOUNT,
+        ]);
+
+        $cr = SupplierChangeRequest::where('supplier_id', $user->id)->first();
+        $this->assertSame('PT Baja Unggul Mandiri', $cr->proposed_data['company_name']);
+        $this->assertSame('Mandiri', $cr->proposed_data['bank_name']);
+        $this->assertSame($document->id, $cr->proposed_data['bank_confirmation_document_id']);
     }
 
     public function test_supplier_uploads_master_document(): void

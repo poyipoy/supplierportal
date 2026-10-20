@@ -5,12 +5,14 @@ namespace App\Http\Controllers\LocalSupplier;
 use App\Http\Controllers\Controller;
 use App\Models\SupplierChangeRequest;
 use App\Models\SupplierMasterDocument;
+use App\Services\FileSecurity\FileAccessGuard;
 use App\Services\FileSecurity\FileInspectionService;
 use App\Services\VendorMaster\VendorChangeRequestService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class VendorProfileController extends Controller
 {
@@ -47,19 +49,58 @@ class VendorProfileController extends Controller
             'bank_name' => 'nullable|string|max:100',
             'account_number' => 'nullable|string|max:50',
             'account_holder_name' => 'nullable|string|max:150',
-            'bank_confirmation_document_id' => ['nullable', 'string', 'max:100'],
+            'bank_confirmation_document_id' => ['nullable', 'regex:/\A[A-Za-z0-9]+\z/', 'max:100'],
         ]);
 
-        if (! empty($validated['bank_confirmation_document_id'])) {
+        $hasBankField = ! empty(trim((string) ($validated['bank_name'] ?? '')))
+            || ! empty(trim((string) ($validated['account_number'] ?? '')))
+            || ! empty(trim((string) ($validated['account_holder_name'] ?? '')))
+            || ! empty($validated['bank_confirmation_document_id']);
+
+        if ($hasBankField) {
+            $bankErrors = [];
+            if (empty(trim((string) ($validated['bank_name'] ?? '')))) {
+                $bankErrors['bank_name'] = __('finance_controls.bank_fields_required_together');
+            }
+            if (empty(trim((string) ($validated['account_number'] ?? '')))) {
+                $bankErrors['account_number'] = __('finance_controls.bank_fields_required_together');
+            }
+            if (empty(trim((string) ($validated['account_holder_name'] ?? '')))) {
+                $bankErrors['account_holder_name'] = __('finance_controls.bank_fields_required_together');
+            }
+            if (empty($validated['bank_confirmation_document_id'])) {
+                $bankErrors['bank_confirmation_document_id'] = __('finance_controls.bank_document');
+            }
+
+            if (! empty($bankErrors)) {
+                throw ValidationException::withMessages($bankErrors);
+            }
+
             $hash = $validated['bank_confirmation_document_id'];
-            $document = ! ctype_digit($hash) ? (new SupplierMasterDocument)->resolveRouteBinding($hash) : null;
+            $document = ! ctype_digit((string) $hash)
+                ? (new SupplierMasterDocument)->resolveRouteBinding($hash)
+                : SupplierMasterDocument::find((int) $hash);
+
             if (! $document || (int) $document->supplier_id !== (int) $request->user()->id || $document->document_type !== SupplierMasterDocument::TYPE_SURAT_PERNYATAAN_REKENING) {
                 throw ValidationException::withMessages(['bank_confirmation_document_id' => __('finance_controls.bank_document')]);
             }
+
+            try {
+                app(FileAccessGuard::class)->assertReadable($document);
+            } catch (HttpException) {
+                throw ValidationException::withMessages(['bank_confirmation_document_id' => __('finance_controls.bank_document')]);
+            }
+
             $validated['bank_confirmation_document_id'] = $document->id;
+            $changeType = SupplierChangeRequest::TYPE_BANK_ACCOUNT;
+        } else {
+            unset($validated['bank_name'], $validated['account_number'], $validated['account_holder_name'], $validated['bank_confirmation_document_id']);
+            $changeType = SupplierChangeRequest::TYPE_PROFILE;
         }
 
-        $service->submitChangeRequest($request->user(), array_filter($validated, fn ($v) => $v !== null));
+        $proposedData = array_filter($validated, fn ($v) => $v !== null && (! is_string($v) || trim($v) !== ''));
+
+        $service->submitChangeRequest($request->user(), $proposedData, $changeType);
 
         return back()->with('success', __('local_procurement.vendor_ui.change_submitted'));
     }
