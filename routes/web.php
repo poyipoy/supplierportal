@@ -729,10 +729,9 @@ Route::prefix(PortalPath::prefix())->group(function () {
         Route::get('/inspections/{id}', [QcInspectionController::class, 'show'])->name('inspections.show');
     });
 
-    if (config('portal_urls.page_registry.enabled')) {
-        Route::get('/{pageUuid}', PortalPageController::class)->whereUuid('pageUuid')
-            ->middleware('auth')->name('portal.page');
-    }
+    // Keep published UUID bookmarks valid when the menu-generation flag is rolled back.
+    Route::get('/{pageUuid}', PortalPageController::class)->whereUuid('pageUuid')
+        ->middleware('auth')->name('portal.page');
 
 });
 

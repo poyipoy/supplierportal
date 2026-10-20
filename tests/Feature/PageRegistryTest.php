@@ -52,11 +52,25 @@ class PageRegistryTest extends TestCase
 
     public function test_flag_off_preserves_direct_urls_and_purchasing_filter_memory(): void
     {
-        $this->assertFalse(Route::has('portal.page'));
+        $this->assertTrue(Route::has('portal.page'));
         $this->assertSame(route('finance.invoices.index'), PageRegistry::url('finance.invoices.index'));
         $stored = route('purchasing.purchase-orders.index', ['status' => 'active']);
         PurchasingNavigation::rememberListUrl('purchasing.purchase-orders.index', $stored);
         $this->assertSame($stored, PageRegistry::url('purchasing.purchase-orders.index', PurchasingNavigation::listUrl('purchasing.purchase-orders.index')));
+    }
+
+    public function test_published_uuid_bookmarks_survive_disabling_both_menu_and_prefix_flags(): void
+    {
+        $user = User::factory()->create(['role' => 'purchasing']);
+        $uuid = array_search('purchasing.purchase-orders.index', config('page_registry'), true);
+        foreach ([false, true] as $prefix) {
+            $this->reloadPortalRoutes(['portal_urls.page_registry.enabled' => false, 'portal_urls.prefix.enabled' => $prefix]);
+            $canonical = ($prefix ? '/v2/ADASI_PRD' : '').'/'.$uuid;
+            $old = ($prefix ? '' : '/v2/ADASI_PRD').'/'.$uuid;
+            $this->actingAs($user)->get($old)->assertStatus(301)->assertHeader('Location', $canonical);
+            $this->get($canonical)->assertStatus(302)->assertRedirect(route('purchasing.purchase-orders.index'));
+            $this->assertSame(route('purchasing.purchase-orders.index'), PageRegistry::url('purchasing.purchase-orders.index'));
+        }
     }
 
     public function test_menu_uuid_redirects_to_real_routes_with_or_without_prefix(): void
