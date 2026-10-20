@@ -1,6 +1,6 @@
 # Implementation Plan — Logout Lintas Tab, Pembersihan Storage, dan Opsi "Keluar dari Semua Perangkat"
 
-> Tanggal: 20 Oktober 2026 · Status: **disetujui, belum diimplementasikan**
+> Tanggal: 20 Oktober 2026 · Status: **diimplementasikan** — verifikasi browser/staging/produksi masih pending; hasil eksekusi dan perbedaan source dicatat di [laporan hasil](../results/LOGOUT-CROSS-TAB-RESULT-20261020.md).
 >
 > Agent pelaksana wajib membaca `AGENTS.md` lebih dulu dan mencocokkan rencana ini dengan kode terbaru di `master`. Bila ada perbedaan, **kode, migrasi, dan tes yang menang**; laporkan perbedaannya.
 >

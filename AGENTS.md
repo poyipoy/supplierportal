@@ -821,6 +821,8 @@ Lapisan di atas jalur export di atas untuk **export daftar**. Baca [docs/guides/
 
 ### Auth dan Konfigurasi
 
+- Logout lintas tab: `config/portal_session.php` mengatur `PORTAL_CROSS_TAB_LOGOUT_ENABLED=true` (BroadcastChannel + fallback storage dan redirect polling 401), `PORTAL_STORAGE_CLEANUP_ENABLED=true`, serta checkbox `PORTAL_LOGOUT_ALL_DEVICES_ENABLED=false` (opt-in; revokasi versi sesi sebelum logout lokal). POST + CSRF, cookie known-device dan header keamanan tetap. Cleanup hanya menghapus `adasi:pending-export-jobs:v1` dan key numerik `^quotation_draft_\d+$`; draft baru `quotation_draft_<userId>_<prHash>` bertahan dan key hash lama menjadi orphan. Draft registrasi, sessionStorage chat dan preferensi sidebar dipertahankan. Panduan deploy/rollback dan batas verifikasi: [LOGOUT-CROSS-TAB.md](docs/guides/LOGOUT-CROSS-TAB.md).
+
 - Login OAuth + PKCE in-app bersifat opt-in (`SSO_LOGIN_ENABLED=false`, `SSO_CLIENT_ID`, `SSO_STATE_PREFIX`; `config/sso.php`). `/login` dan `login.store` tetap ada; flag aktif merender form existing di `/oauth/authorize`, lalu callback `/sso/callback` menukar code secara in-process melalui Passport. Ini OAuth, bukan implementasi OIDC/ID Token. Panduan: [docs/guides/SSO-OAUTH-LOGIN.md](docs/guides/SSO-OAUTH-LOGIN.md).
 - Passport membuat lima tabel `oauth_*` di database portal yang sama; keberadaan migrasi bukan bukti diterapkan. Client public dibuat/dipakai ulang melalui `sso:install-client`; hanya ID client terkonfigurasi yang melewati consent. State/verifier acak disimpan per transaksi sesi, sekali pakai, TTL 600 detik, maksimum lima pending. Callback memverifikasi JWT/sub/aud lalu mencabut access dan refresh token dalam transaksi database sebelum menandai sesi SSO. Tidak ada token operasional baru atau guard API.
 - Middleware SSO mengikuti `EnforceAuthSessionSecurity`; sesi existing memulai authorization langsung agar tidak loop melalui guest `/login`. MFA, forced password change dan isolasi role/supplier tetap berlaku. Route authorize/callback memakai session locks; cache deployment harus mendukung atomic locks. `passport:purge` berjalan 02:40 zona bisnis dengan `withoutOverlapping` ketika flag aktif.
@@ -921,6 +923,7 @@ php artisan optimize:clear
 | Area perubahan | Coverage utama (pilih sesuai scope) |
 |---|---|
 | Auth / registrasi | `tests/Feature/Auth/`, `tests/Feature/SupplierRegistration/` |
+| Logout lintas tab / semua perangkat | `tests/Feature/Auth/LogoutAllDevicesTest.php`, `tests/js/session-sync.test.mjs` (transport/storage mock), `UserAccountNavigationTest`, `KnownDeviceSecurityTest` |
 | Login OAuth / PKCE | `tests/Unit/Auth/SsoTransactionStoreTest.php`, `tests/Feature/Auth/SsoAuthorizationFlowTest.php` (RSA sementara, flag aktif; replay/expiry/MFA/gate/revocation/consent) |
 | Supplier isolation / hashids | `SupplierDataIsolationTest`, `LocalInvoice/LocalInvoiceScopeIsolationTest`, `HashidUrlSecurityTest` |
 | URL gaya Infor / transisi | `PortalPathTest`, `HashidCodecTest`, `PortalPathPrefixTest`, `LongHashidTransitionTest`, `PageRegistryTest`, `NotificationLegacyUrlTest`, `tests/js/async-export-prefix.test.mjs`; route/config cache diuji saat flag on/off |
