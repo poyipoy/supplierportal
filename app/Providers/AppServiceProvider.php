@@ -81,11 +81,19 @@ class AppServiceProvider extends ServiceProvider
 
         app(FinanceConfigurationGuard::class)->assertProductionConfiguration();
 
+        $hashLength = (int) config('portal_urls.long_hashids.length', 24);
+        if ($hashLength < 16 || $hashLength > 40) {
+            throw new \RuntimeException('PORTAL_LONG_HASHIDS_LENGTH must be between 16 and 40.');
+        }
+
         if ($this->app->environment('production')) {
             $salt = strtolower(trim((string) config('hashids.connections.main.salt')));
             if ($salt === '' || in_array($salt, ['adasiportalsupplier2026_secure', 'adasi-isolated-test-salt-never-use-in-production'], true)
                 || preg_match('/^(?:change[ _-]?me|your[ _-])/', $salt)) {
                 throw new \RuntimeException('Set HASHIDS_SALT to a unique, stable secret before starting production.');
+            }
+            if (strlen($salt) < 32) {
+                Log::warning('HASHIDS_SALT is shorter than 32 characters. Preserve the existing salt; changing it invalidates published URLs.');
             }
         }
 

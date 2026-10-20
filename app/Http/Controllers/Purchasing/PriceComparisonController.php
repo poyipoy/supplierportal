@@ -17,6 +17,7 @@ use App\Services\Pricing\ReferencePriceResolver;
 use App\Services\PrItemAwardService;
 use App\Services\PurchaseOrderGenerationService;
 use App\Services\RegionalDisplayFormatter;
+use App\Support\HashidCodec;
 use App\Support\Money;
 use App\Support\NumberFormat;
 use App\Support\Pricing\EvaluationContext;
@@ -32,7 +33,6 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
-use Vinkla\Hashids\Facades\Hashids;
 use Yajra\DataTables\Facades\DataTables;
 
 class PriceComparisonController extends Controller
@@ -109,7 +109,6 @@ class PriceComparisonController extends Controller
             if ($itemCount > 3) {
                 $previewMaterials .= ' ('.__('purchasing.copy.more_materials_count', ['count' => $itemCount - 3]).')';
             }
-
 
             return [
                 'id' => $pr->getRouteKey(),
@@ -548,7 +547,7 @@ class PriceComparisonController extends Controller
             ->addColumn('material_display', function ($row) use ($returnUrl) {
                 $prUrl = $this->routeWithReturn(
                     'purchasing.requisitions.show',
-                    Hashids::encode((int) $row->current_pr_id),
+                    HashidCodec::encode((int) $row->current_pr_id),
                     $returnUrl
                 );
 
@@ -574,7 +573,7 @@ class PriceComparisonController extends Controller
                 if ($row->best_pr_id) {
                     $bestPrUrl = $this->routeWithReturn(
                         'purchasing.requisitions.show',
-                        Hashids::encode((int) $row->best_pr_id),
+                        HashidCodec::encode((int) $row->best_pr_id),
                         $returnUrl
                     );
                     $html .= '<a href="'.e($bestPrUrl).'" class="small text-primary text-decoration-none">'
@@ -613,7 +612,7 @@ class PriceComparisonController extends Controller
             ->addColumn('action', function ($row) use ($returnUrl) {
                 $currentQuotationUrl = $this->routeWithReturn(
                     'purchasing.quotations.show',
-                    Hashids::encode((int) $row->current_quotation_id),
+                    HashidCodec::encode((int) $row->current_quotation_id),
                     $returnUrl
                 );
                 $html = '<div class="d-inline-flex align-items-center gap-1" role="group" aria-label="'.e(__('purchasing.copy.quotation_comparison_actions')).'">'
@@ -622,7 +621,7 @@ class PriceComparisonController extends Controller
                 if ($row->best_quotation_id) {
                     $bestQuotationUrl = $this->routeWithReturn(
                         'purchasing.quotations.show',
-                        Hashids::encode((int) $row->best_quotation_id),
+                        HashidCodec::encode((int) $row->best_quotation_id),
                         $returnUrl
                     );
                     $html .= '<a href="'.e($bestQuotationUrl).'" class="ui-data-action ui-data-action--success ui-focus-ring" aria-label="'.e(__('purchasing.copy.view_historical_best_quotation')).'">'.e(__('purchasing.copy.best')).'</a>';
@@ -681,7 +680,6 @@ class PriceComparisonController extends Controller
             ->fromSub($rankedHistory, 'ranked_best')
             ->where('rn', 1)
             ->select(['material_name', 'best_item_id']);
-
 
         $query = DB::table('quotation_items as current_items')
             ->join('quotations as current_quotes', 'current_items.quotation_id', '=', 'current_quotes.id')
@@ -1285,7 +1283,7 @@ class PriceComparisonController extends Controller
                 'purchase_order_at_display' => $purchaseAt ? $this->regionalFormatter->timestamp($purchaseAt, 'date') : '-',
                 'pr_id' => $line['pr_id'],
                 'pr_number' => $line['pr_number'] ?? '-',
-                'pr_url' => $line['pr_id'] ? route('purchasing.requisitions.show', Hashids::encode($line['pr_id'])) : null,
+                'pr_url' => $line['pr_id'] ? route('purchasing.requisitions.show', HashidCodec::encode($line['pr_id'])) : null,
                 'supplier' => $line['supplier'] ?? '-',
                 'price_per_kg' => (float) $line['price_per_kg'],
                 'currency' => $line['currency'],

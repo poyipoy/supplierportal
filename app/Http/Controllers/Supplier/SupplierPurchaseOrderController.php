@@ -8,10 +8,10 @@ use App\Models\MaterialClaim;
 use App\Models\PurchaseOrder;
 use App\Services\MaterialProgressService;
 use App\Services\RegionalDisplayFormatter;
+use App\Support\HashidCodec;
 use App\Support\StatusHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Vinkla\Hashids\Facades\Hashids;
 use Yajra\DataTables\Facades\DataTables;
 
 class SupplierPurchaseOrderController extends Controller
@@ -115,9 +115,9 @@ class SupplierPurchaseOrderController extends Controller
                 ->addColumn('action', function ($po) {
                     $html = '<div class="d-inline-flex gap-1 justify-content-end flex-wrap">';
                     if ($po->pending_claim_id) {
-                        $html .= '<a href="'.route('supplier.claims.show', Hashids::encode((int) $po->pending_claim_id)).'" class="ui-data-action ui-data-action--danger ui-focus-ring">Claim Response</a>';
+                        $html .= '<a href="'.route('supplier.claims.show', HashidCodec::encode((int) $po->pending_claim_id)).'" class="ui-data-action ui-data-action--danger ui-focus-ring">Claim Response</a>';
                     } elseif ($po->latest_claim_id) {
-                        $html .= '<a href="'.route('supplier.claims.show', Hashids::encode((int) $po->latest_claim_id)).'" class="ui-data-action ui-data-action--danger ui-focus-ring">View Claim</a>';
+                        $html .= '<a href="'.route('supplier.claims.show', HashidCodec::encode((int) $po->latest_claim_id)).'" class="ui-data-action ui-data-action--danger ui-focus-ring">View Claim</a>';
                     }
                     $html .= '<a href="'.route('supplier.purchase-orders.show', $po).'" class="ui-data-action ui-data-action--primary ui-focus-ring">'.e(__('supplier.copy.details')).'</a>';
                     $html .= '</div>';

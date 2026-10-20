@@ -2,9 +2,13 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\HashidCodec;
+use App\Traits\HasHashids;
 use Closure;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Vinkla\Hashids\Facades\Hashids;
+use Illuminate\Support\Facades\URL;
 
 class DecodeHashids
 {
@@ -96,8 +100,18 @@ class DecodeHashids
             }
 
             $parameters = $route->parameters();
+            $canonical = $route->originalParameters();
+            $needsRedirect = false;
 
             foreach ($parameters as $key => $value) {
+                // Implicit models can have keys outside the scalar allow-list (e.g. attachment).
+                if ($value instanceof Model && in_array(HasHashids::class, class_uses_recursive($value), true)) {
+                    $canonical[$key] = $value->getRouteKey();
+                    $needsRedirect = $needsRedirect || $canonical[$key] !== $route->originalParameter($key);
+
+                    continue;
+                }
+
                 // Only decode parameters for known hashed models
                 if (! in_array($key, self::HASHED_PARAM_KEYS, true)) {
                     continue;
@@ -108,24 +122,19 @@ class DecodeHashids
                     continue;
                 }
 
-                if (ctype_digit($value)) {
-                    abort(404);
-                }
+                $id = HashidCodec::decode($value);
+                abort_if($id === null, 404);
 
-                try {
-                    $decoded = Hashids::decode($value);
-                } catch (\Throwable) {
-                    $decoded = [];
-                }
+                $canonical[$key] = HashidCodec::encode($id);
+                $needsRedirect = $needsRedirect || $canonical[$key] !== $value;
+                $route->setParameter($key, $id);
+            }
 
-                abort_unless(
-                    count($decoded) === 1
-                    && (int) $decoded[0] > 0
-                    && Hashids::encode((int) $decoded[0]) === $value,
-                    404
-                );
+            if ($needsRedirect && in_array($request->method(), ['GET', 'HEAD'], true)) {
+                $path = URL::toRoute($route, $canonical, false);
+                $query = $request->server->get('QUERY_STRING', '');
 
-                $route->setParameter($key, (int) $decoded[0]);
+                return new RedirectResponse($path.($query !== '' ? '?'.$query : ''), 301);
             }
         }
 

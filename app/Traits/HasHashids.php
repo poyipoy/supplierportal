@@ -2,8 +2,8 @@
 
 namespace App\Traits;
 
+use App\Support\HashidCodec;
 use Illuminate\Database\Eloquent\Model;
-use Vinkla\Hashids\Facades\Hashids;
 
 trait HasHashids
 {
@@ -15,7 +15,7 @@ trait HasHashids
      */
     public function getRouteKey()
     {
-        return Hashids::encode($this->getKey());
+        return HashidCodec::encode($this->getKey());
     }
 
     /**
@@ -36,15 +36,8 @@ trait HasHashids
             return null;
         }
 
-        try {
-            $decoded = Hashids::decode($value);
-        } catch (\Throwable) {
-            return null;
-        }
-
-        $id = count($decoded) === 1 ? (int) $decoded[0] : null;
-
-        if (! $id || Hashids::encode($id) !== $value) {
+        $id = HashidCodec::decode($value);
+        if ($id === null) {
             return null;
         }
 
@@ -56,6 +49,6 @@ trait HasHashids
      */
     public function getHashAttribute(): string
     {
-        return Hashids::encode($this->getKey());
+        return HashidCodec::encode($this->getKey());
     }
 }
