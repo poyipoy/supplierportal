@@ -16,6 +16,7 @@ use App\Models\Shipment;
 use App\Models\User;
 use App\Support\NotificationDomain;
 use App\Support\PortalContext;
+use App\Support\PortalPath;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\DatabaseNotification;
@@ -59,15 +60,23 @@ class NotificationUrlResolver
         $storedUrl = $this->normalize((string) ($notification->data['url'] ?? ''));
 
         if ($storedUrl !== null) {
-            $legacyUrl = $this->resolveLegacyRequirementUrl($storedUrl, $user);
+            $legacyUrl = $this->resolveLegacyRequirementUrl($storedUrl, $user)
+                ?? $this->resolveLegacyRequirementUrl(PortalPath::strip($storedUrl), $user);
             if ($legacyUrl !== null) {
                 return $legacyUrl;
             }
 
-            if ($this->isAllowedRoute($storedUrl, $notification->id, $user)) {
-                $canonicalUrl = $this->canonicalizeAllowedUrl($storedUrl, $user);
-                if ($canonicalUrl !== null) {
-                    return $canonicalUrl;
+            $parts = parse_url($storedUrl);
+            $suffix = (isset($parts['query']) ? '?'.$parts['query'] : '')
+                .(isset($parts['fragment']) ? '#'.$parts['fragment'] : '');
+            $paths = [$parts['path'], PortalPath::path($parts['path']), PortalPath::path(PortalPath::strip($parts['path']))];
+            foreach (array_unique($paths) as $path) {
+                $candidate = $path.$suffix;
+                if ($this->isAllowedRoute($candidate, $notification->id, $user)) {
+                    $canonicalUrl = $this->canonicalizeAllowedUrl($candidate, $user);
+                    if ($canonicalUrl !== null) {
+                        return $canonicalUrl;
+                    }
                 }
             }
         }

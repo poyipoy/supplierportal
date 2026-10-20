@@ -3,6 +3,7 @@
 namespace App\Services\Auth\Sso;
 
 use App\Services\Auth\TwoFactorService;
+use App\Support\PortalPath;
 use Illuminate\Http\Request;
 use RuntimeException;
 
@@ -92,10 +93,12 @@ class SsoTransactionStore
             if ($segment === '..') {
                 array_pop($segments);
             } elseif ($segment !== '' && $segment !== '.') {
-                $segments[] = strtolower($segment);
+                $segments[] = $segment;
             }
         }
-        if (in_array($segments[0] ?? '', [
+        $portalPath = PortalPath::strip('/'.implode('/', $segments));
+        $firstSegment = strtolower(explode('/', ltrim($portalPath, '/'), 2)[0]);
+        if (in_array($firstSegment, [
             'oauth', 'sso', 'login', 'logout', 'two-factor-challenge', 'confirm-password',
         ], true)) {
             return $default;

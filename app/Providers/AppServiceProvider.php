@@ -17,6 +17,7 @@ use App\Services\RegionalDisplayFormatter;
 use App\Services\SupplierAudit\SupplierAuditInvoiceGate;
 use App\Services\UserPreferenceService;
 use App\Support\FinanceConfigurationGuard;
+use App\Support\PortalPath;
 use App\Support\Pricing\EvaluationContext;
 use App\Support\Procurement\ProcurementFeatures;
 use DateInterval;
@@ -80,6 +81,7 @@ class AppServiceProvider extends ServiceProvider
         Passport::refreshTokensExpireIn(new DateInterval('PT10M'));
 
         app(FinanceConfigurationGuard::class)->assertProductionConfiguration();
+        PortalPath::assertValid();
 
         $hashLength = (int) config('portal_urls.long_hashids.length', 24);
         if ($hashLength < 16 || $hashLength > 40) {
