@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Models\Period;
+use App\Models\PurchaseRequisition;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -36,6 +38,22 @@ class LogoutAllDevicesTest extends TestCase
             foreach (['notifications.unread-count', 'conversations.unread-count'] as $route) {
                 $this->getJson(route($route))->assertUnauthorized()->assertHeaderMissing('Location');
             }
+        }
+    }
+
+    public function test_quotation_draft_key_uses_the_current_user_and_preserves_the_pr_hash(): void
+    {
+        $supplier = User::factory()->create();
+        $other = User::factory()->create();
+        $period = Period::create(['name' => 'Logout test', 'year' => 2026, 'month' => 10, 'status' => 'open', 'created_by' => $supplier->id]);
+        $pr = PurchaseRequisition::create(['period_id' => $period->id, 'created_by' => $supplier->id, 'status' => 'bidding']);
+        $pr->invitedSuppliers()->attach([$supplier->id, $other->id]);
+
+        foreach ([$supplier, $other] as $user) {
+            $this->actingAs($user)->get(route('supplier.quotations.create', $pr))->assertOk()
+                ->assertSee('const draftUserId = '.$user->id.';', false)
+                ->assertSee("const prId = '{$pr->hash}';", false)
+                ->assertSee("const draftKey = 'quotation_draft_' + draftUserId + '_' + prId;", false);
         }
     }
 }

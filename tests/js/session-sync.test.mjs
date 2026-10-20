@@ -1,14 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { bootSessionSync, SESSION_CHANNEL, SESSION_EVENT_KEY, sessionEndedByResponse } from '../../resources/js/session-sync.js';
+import { bootSessionSync, SESSION_CHANNEL, SESSION_EVENT_KEY, sessionEndedByResponse, PENDING_EXPORT_STORAGE_KEY, storageKeysToClear, clearUserScopedStorage } from '../../resources/js/session-sync.js';
 
-function fixture({ session = { crossTab: true, cleanup: false, userId: 41 }, login = null, broadcast = true, blocked = false } = {}) {
+function fixture({ session = { crossTab: true, cleanup: false, userId: 41 }, login = null, broadcast = true, blocked = false, initialStorage = [] } = {}) {
     const win = new EventTarget();
     const doc = Object.assign(new EventTarget(), { querySelector: () => login });
     const redirects = [];
     const sent = [];
-    const values = new Map();
+    const values = new Map(initialStorage.map((key) => [key, 'saved']));
     let disconnects = 0;
     let channel;
     Object.assign(win, {
@@ -135,4 +135,51 @@ test('ended sessions suppress native dirty prompts while allowing draft-saving h
     f.win.dispatchEvent(event);
     assert.equal(saved, true);
     assert.equal(event.defaultPrevented, false);
+});
+
+const removable = [PENDING_EXPORT_STORAGE_KEY, 'quotation_draft_123', 'quotation_draft_0'];
+const retained = ['quotation_draft_41_123', 'quotation_draft_42_123', 'quotation_draft_41_hash', 'quotation_draft_hash', 'quotation_draft_123_extra', 'adasi_supplier_reg_draft', 'adasi.sidebar.41', 'adasi_chat_draft_41_1', 'supplierAuditScoreGuide'];
+
+test('cleanup removes only the exact export key and numeric legacy drafts, retaining account drafts and other state', () => {
+    assert.deepEqual(storageKeysToClear([...removable, ...retained]), removable);
+    for (const trigger of ['submit', 'receive', 'poll', 'login']) {
+        const f = fixture({
+            session: trigger === 'login' ? null : { crossTab: true, cleanup: true, userId: 41 },
+            login: trigger === 'login' ? { dataset: { sessionCrossTab: '1', sessionCleanup: '1' } } : null,
+            initialStorage: [...removable, ...retained],
+        });
+        if (trigger === 'submit') f.submit();
+        if (trigger === 'receive') f.receive({ type: 'signed-out' });
+        if (trigger === 'poll') f.api.handlePollResponse({ status: 401 });
+        assert.deepEqual([...f.values.keys()], retained, trigger);
+    }
+});
+
+test('cleanup is independent of cross-tab sync and honours its own disabled flag', () => {
+    const f = fixture({ session: { crossTab: false, cleanup: true, userId: 41 }, initialStorage: removable });
+    f.api.handlePollResponse({ status: 401 });
+    assert.equal(f.redirects.length, 0);
+    assert.equal(f.values.size, removable.length);
+    f.submit();
+    assert.equal(f.values.size, 0);
+    assert.equal(f.sent.length, removable.length);
+    const g = fixture({ initialStorage: removable });
+    g.submit();
+    assert.equal(g.values.size, removable.length);
+});
+
+test('cleanup tolerates blocked access, failed enumeration and individual failed removals', () => {
+    const f = fixture({ session: { crossTab: true, cleanup: true, userId: 41 }, blocked: true });
+    assert.doesNotThrow(() => f.submit());
+    assert.doesNotThrow(() => f.receive({ type: 'signed-out' }));
+    assert.equal(f.redirects.length, 1);
+    assert.doesNotThrow(() => clearUserScopedStorage({ localStorage: { get length() { throw Error('blocked'); } } }));
+    const removed = [];
+    clearUserScopedStorage({ localStorage: { length: 2, key: (i) => removable[i], removeItem(key) { if (key === removable[0]) throw Error('blocked'); removed.push(key); } } });
+    assert.deepEqual(removed, [removable[1]]);
+});
+
+test('classic export storage key stays in sync with cleanup', async () => {
+    const source = await readFile(new URL('../../public/assets/js/async-export.js', import.meta.url), 'utf8');
+    assert.ok(source.includes(`const pendingExportStorageKey = '${PENDING_EXPORT_STORAGE_KEY}';`));
 });
