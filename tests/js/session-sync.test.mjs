@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { bootSessionSync, SESSION_CHANNEL, SESSION_EVENT_KEY, sessionEndedByResponse, PENDING_EXPORT_STORAGE_KEY, storageKeysToClear, clearUserScopedStorage } from '../../resources/js/session-sync.js';
 
-function fixture({ session = { crossTab: true, cleanup: false, userId: 41 }, login = null, broadcast = true, blocked = false, initialStorage = [] } = {}) {
+function fixture({ session = { crossTab: true, cleanup: false, userId: 41 }, login = null, broadcast = true, blocked = false, initialStorage = [], channelFailure = null } = {}) {
     const win = new EventTarget();
     const doc = Object.assign(new EventTarget(), { querySelector: () => login });
     const redirects = [];
@@ -16,8 +16,8 @@ function fixture({ session = { crossTab: true, cleanup: false, userId: 41 }, log
         location: { assign: (url) => redirects.push(url) },
         Echo: { disconnect: () => { disconnects++; } },
         BroadcastChannel: broadcast ? class extends EventTarget {
-            constructor(name) { super(); assert.equal(name, SESSION_CHANNEL); channel = this; }
-            postMessage(message) { sent.push(message); }
+            constructor(name) { super(); if (channelFailure === 'constructor') throw Error('blocked channel'); assert.equal(name, SESSION_CHANNEL); channel = this; }
+            postMessage(message) { if (channelFailure === 'post') throw Error('closed channel'); sent.push(message); }
         } : undefined,
     });
     const storage = {
@@ -182,4 +182,19 @@ test('cleanup tolerates blocked access, failed enumeration and individual failed
 test('classic export storage key stays in sync with cleanup', async () => {
     const source = await readFile(new URL('../../public/assets/js/async-export.js', import.meta.url), 'utf8');
     assert.ok(source.includes(`const pendingExportStorageKey = '${PENDING_EXPORT_STORAGE_KEY}';`));
+});
+
+test('BroadcastChannel construction or send failures use transient storage fallback', () => {
+    for (const channelFailure of ['constructor', 'post']) {
+        const f = fixture({ channelFailure });
+        assert.doesNotThrow(() => f.submit());
+        assert.equal(f.sent[0].key, SESSION_EVENT_KEY);
+        assert.equal(f.values.has(SESSION_EVENT_KEY), false);
+    }
+});
+
+test('a BroadcastChannel-capable tab also receives storage fallback from another tab', () => {
+    const f = fixture();
+    f.storageEvent('{"type":"signed-out"}');
+    assert.equal(f.redirects.length, 1);
 });
