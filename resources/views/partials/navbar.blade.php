@@ -159,7 +159,7 @@
                     <hr class="dropdown-divider my-1">
                 </li>
                 <li>
-                    <form action="{{ route('logout') }}" method="POST">
+                    <form action="{{ route('logout') }}" method="POST" data-logout-form>
                         @csrf
                         <button type="submit" class="dropdown-item text-danger tw-py-1.5 small">
                             <x-ui.icon name="log-out" class="me-2" />{{ __('navigation.logout') }}
