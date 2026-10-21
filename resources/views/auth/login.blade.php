@@ -3,7 +3,7 @@
 @section('title', __('auth.login.title'))
 
 @section('content')
-<header class="tw-mb-5">
+<header class="tw-mb-5" @guest data-auth-login-page data-session-cross-tab="{{ config('portal_session.cross_tab_logout') ? '1' : '0' }}" data-session-cleanup="{{ config('portal_session.scoped_storage_cleanup') ? '1' : '0' }}" @endguest>
     <p class="tw-m-0 tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-primary">{{ __('common.review.supplier_portal') }}</p>
     <h2 class="tw-m-0 tw-mt-1.5 tw-text-ui-xl tw-font-bold tw-tracking-tight tw-text-on-surface">{{ __('auth.login.heading') }}</h2>
     <p class="tw-m-0 tw-mt-1.5 tw-text-ui-sm tw-text-on-surface-variant">{{ __('auth.login.instructions') }}</p>

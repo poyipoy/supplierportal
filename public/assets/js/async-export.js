@@ -9,6 +9,7 @@
     const pollTimeoutMs = 660000;
     const maxConsecutivePollFailures = 5;
     const completedExportRetentionMs = 30000;
+    // Logout cleanup in resources/js/session-sync.js shares this key (parity tested).
     const pendingExportStorageKey = 'adasi:pending-export-jobs:v1';
     const downloadClaimStoragePrefix = 'adasi:export-download-claim:';
     const progressStageLabels = Object.freeze({

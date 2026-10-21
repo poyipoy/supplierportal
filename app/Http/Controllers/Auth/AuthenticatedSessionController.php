@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Events\AuthSecurityEvent;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Services\Auth\CompleteLoginService;
 use App\Services\Auth\LoginRateLimiter;
+use App\Services\Auth\SessionRevocationService;
 use App\Services\Auth\TurnstileVerifier;
 use App\Services\Auth\TwoFactorService;
 use Illuminate\Http\RedirectResponse;
@@ -67,8 +69,17 @@ class AuthenticatedSessionController extends Controller
     /**
      * Destroy an authenticated session.
      */
-    public function destroy(Request $request): RedirectResponse
+    public function destroy(Request $request, SessionRevocationService $revocation): RedirectResponse
     {
+        if (config('portal_session.logout_all_devices', false) && $request->boolean('logout_all')) {
+            $user = $request->user();
+            $revocation->revokeOtherSessions($user, $request);
+            event(new AuthSecurityEvent('other_device_logout', $user, metadata: [
+                'guard' => 'web',
+                'reason' => 'logout_checkbox',
+            ]));
+        }
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();

@@ -5,6 +5,7 @@ import { searchableFreeInput } from './searchable-free-input';
 import './password-assistance';
 import { bootAdasiCalendars } from './calendar';
 import './unsaved-changes';
+import './session-sync';
 import './number-input-helper';
 import './chart-theme';
 import './preferences';

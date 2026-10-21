@@ -6,6 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <script>
+        window.AdasiLoginUrl = @js(route('login'));
+        window.AdasiSession = @js(auth()->check() && (config('portal_session.cross_tab_logout') || config('portal_session.scoped_storage_cleanup')) ? ['crossTab' => (bool) config('portal_session.cross_tab_logout'), 'cleanup' => (bool) config('portal_session.scoped_storage_cleanup'), 'userId' => (int) auth()->id()] : null);
+    </script>
+    <script>
         window.AdasiPortal = Object.assign(window.AdasiPortal || {}, { pathPrefix: @js(\App\Support\PortalPath::prefix()) });
     </script>
     @include('partials.auth-splash-bootstrap', ['authSplashLayout' => 'app', 'authSplashReadiness' => 'core'])
@@ -431,7 +435,10 @@
                     headers,
                     signal: notifCtrl.signal
                 })
-                    .then(r => r.ok ? r.json() : null)
+                    .then(r => {
+                        window.AdasiSessionSync?.handlePollResponse(r);
+                        return r.ok ? r.json() : null;
+                    })
                     .then(data => {
                         if (!data) return;
                         document.querySelectorAll('.notif-badge').forEach(badge => {
@@ -463,7 +470,10 @@
                         headers,
                         signal: chatCtrl.signal
                     })
-                        .then(r => r.ok ? r.json() : null)
+                        .then(r => {
+                            window.AdasiSessionSync?.handlePollResponse(r);
+                            return r.ok ? r.json() : null;
+                        })
                         .then(data => {
                             if (!data) return;
                             document.querySelectorAll('.chat-badge').forEach(badge => {

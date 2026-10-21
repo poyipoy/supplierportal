@@ -2774,7 +2774,7 @@
             cancelText: @json(__('supplier.copy.cancel'))
         }).then((result) => {
             if (result.isConfirmed) {
-                localStorage.removeItem(draftKey);
+                try { localStorage.removeItem(draftKey); } catch (error) { /* Storage may be blocked. */ }
                 const submitBtn = document.getElementById('btnSubmitQuotation');
                 if (form && submitBtn) {
                     form._lastClickedButton = submitBtn;
@@ -2791,7 +2791,8 @@
 
     // Auto-save logic
     const prId = '{{ $pr->hash }}';
-    const draftKey = 'quotation_draft_' + prId;
+    const draftUserId = @json((int) auth()->id());
+    const draftKey = 'quotation_draft_' + draftUserId + '_' + prId;
 
     function saveDraft() {
         $('#autoSaveBadge').removeClass('d-none ui-status-chip--success').addClass('ui-status-chip--neutral').html('<span class="spinner-border spinner-border-sm me-1"></span>' + @json(__('supplier.audit_ui.saving')));
@@ -2818,9 +2819,11 @@
     }
 
     function loadDraft() {
-        const saved = localStorage.getItem(draftKey);
+        let saved;
+        try { saved = localStorage.getItem(draftKey); } catch (error) { return; }
         if(saved) {
-            const data = JSON.parse(saved);
+            let data;
+            try { data = JSON.parse(saved); } catch (error) { return; }
             for(const key in data) {
                 const element = $(`[name="${key}"]`);
                 if(element.length > 0 && !element.val()) {

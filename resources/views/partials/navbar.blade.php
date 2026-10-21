@@ -123,7 +123,7 @@
         {{-- User Dropdown --}}
         <div class="dropdown">
             <button class="topbar-user-trigger dropdown-toggle" type="button"
-                data-bs-toggle="dropdown" aria-expanded="false" aria-label="{{ __('navigation.open_user') }}">
+                data-bs-toggle="dropdown" @if(config('portal_session.logout_all_devices')) data-bs-auto-close="outside" @endif aria-expanded="false" aria-label="{{ __('navigation.open_user') }}">
                 <x-ui.user-chip :name="auth()->user()->name" :meta="auth()->user()->email" class="topbar-user-chip" />
             </button>
             <ul class="dropdown-menu dropdown-menu-end shadow-sm border">
@@ -159,8 +159,14 @@
                     <hr class="dropdown-divider my-1">
                 </li>
                 <li>
-                    <form action="{{ route('logout') }}" method="POST">
+                    <form action="{{ route('logout') }}" method="POST" data-logout-form>
                         @csrf
+                        @if(config('portal_session.logout_all_devices'))
+                            <label class="tw-flex tw-items-center tw-gap-2 tw-px-4 tw-py-2 tw-text-ui-xs tw-cursor-pointer" for="logout-all-devices">
+                                <input id="logout-all-devices" type="checkbox" name="logout_all" value="1" class="form-check-input tw-m-0">
+                                <span>{{ __('navigation.logout_all_devices') }}</span>
+                            </label>
+                        @endif
                         <button type="submit" class="dropdown-item text-danger tw-py-1.5 small">
                             <x-ui.icon name="log-out" class="me-2" />{{ __('navigation.logout') }}
                         </button>

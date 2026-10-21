@@ -8,6 +8,7 @@ return [
     'customization' => 'Customization',
     'account_nav' => ['label' => 'Account navigation', 'group' => 'Account'],
     'logout' => 'Logout',
+    'logout_all_devices' => 'Sign out of all devices',
     'primary' => 'Primary navigation',
     'sidebar_controls' => 'Sidebar controls',
     'toggle_sidebar' => 'Toggle sidebar',
