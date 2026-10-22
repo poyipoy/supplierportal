@@ -39,7 +39,7 @@ The formats/removal revision adds no package or schema migration. Existing stagi
 php artisan migrate --path=database/migrations/2026_10_08_000001_create_local_procurement_import_staging.php
 ```
 
-Imports require the same database queue connection as their state, with `after_commit=false`, and `DB_QUEUE_RETRY_AFTER=660`. Keep the existing `exports,default` worker. Add **one separate** imports worker:
+Imports require the same database queue connection as their state, with `after_commit=false`, and `DB_QUEUE_RETRY_AFTER=660`. Keep the `exports` and `default` workers described in [CPANEL-PERFORMANCE-RUNTIME.md](CPANEL-PERFORMANCE-RUNTIME.md) §5, and add **one separate** imports worker (never with `--stop-when-empty`):
 
 ```text
 php artisan queue:work database --queue=imports --sleep=1 --tries=3 --timeout=300 --memory=384
@@ -51,7 +51,9 @@ On cPanel, use a separate `flock` file and log, never the export worker lock:
 * * * * * /usr/bin/flock -n <APP>/storage/framework/import-worker.lock <PHP> <APP>/artisan queue:work database --queue=imports --sleep=1 --max-time=50 --tries=3 --timeout=300 --memory=384 >> <APP>/storage/logs/import-worker.log 2>&1
 ```
 
-`--max-time` is checked between jobs; it does not interrupt an active import. Keep the scheduler running. `imports:cleanup` runs at 02:30 business time: it expires unused previews, recovers abandoned reading attempts, and removes terminal staging/uploads after three days while retaining summary/audit history. Never delete an active import or manually copy queue payloads. Fencing prevents older deliveries from publishing/failing a newer live attempt.
+`--max-time` is checked between jobs; it does not interrupt an active import.
+
+Confirm holds its row locks for the whole file transaction (measured locally: about 20–30 s for 70,000 rows). While it runs, a supplier who submits an invoice on a PO in a GR file, or whose registered PO appears in a PO file, waits until the import commits. A PO import takes the supplier `users` locks before the PO locks, the same order invoice submission uses, so the two wait for each other instead of deadlocking. Run imports of tens of thousands of rows outside the hours when suppliers submit invoices. If confirm exceeds the 60 s budget, it is rolled back, marked FAILED once (`large_import.budget_exceeded`) and not retried; recheck the stored file and save again. Keep the scheduler running. `imports:cleanup` runs at 02:30 business time: it expires unused previews, recovers abandoned reading attempts, and removes terminal staging/uploads after three days while retaining summary/audit history. Never delete an active import or manually copy queue payloads. Fencing prevents older deliveries from publishing/failing a newer live attempt.
 
 For this revision, pause only import admission via the internal cache key `local_procurement_imports.paused=true` while deploying. Existing preview/confirm jobs continue draining. Wait for active processing to finish, run `imports:cleanup` to retire unsupported previews, gracefully reload existing queue workers through their current supervision, rebuild assets/views, then forget the pause key. The key affects start/confirm only; other application modules remain available. Do not kill a busy worker or start a duplicate.
 

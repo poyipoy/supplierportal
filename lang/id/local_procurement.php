@@ -608,6 +608,7 @@ return [
         'not_ready' => 'Import ini belum siap dikonfirmasi.',
         'group_conflict' => 'Baris pada dokumen yang sama memiliki nilai berbeda.',
         'failed' => 'Pemrosesan import gagal. Hubungi operator atau unggah file baru.',
+        'budget_exceeded' => 'Penyimpanan melebihi batas waktu sehingga tidak ada data yang disimpan. Periksa ulang file tersimpan lalu simpan kembali di luar jam sibuk, atau bagi file menjadi beberapa file yang lebih kecil.',
         'progress' => 'Progres import',
         'previous' => 'Sebelumnya',
         'next' => 'Berikutnya',

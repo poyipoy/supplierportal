@@ -30,7 +30,7 @@ Verify and approve positive runtime/slice, disk/reserve, active/backlog/per-user
 
 Keep global database `after_commit=false`: existing exports/imports depend on same-database transactional enqueue. PO document jobs use their own after-commit handoff and recoverable dispatch intent. They use queue `po-documents` and scalar identities. Initial execution is serialized by private filesystem locks; do not assume multiple workers provide additional capacity.
 
-A separately approved worker may listen to `po-documents` without changing `exports,default` or `imports`. Choose its timeout below effective `retry_after`, with overlap protection and PCNTL or an independently verified watchdog. `--max-time` is checked between jobs, not a hard job deadline. No production worker or cron was installed by this task.
+A separately approved worker may listen to `po-documents` without changing the `exports`, `imports` or `default` workers. Choose its timeout below effective `retry_after`, with overlap protection and PCNTL or an independently verified watchdog. `--max-time` is checked between jobs, not a hard job deadline. No production worker or cron was installed by this task.
 
 `po-documents:reconcile` is scheduled in source every minute with `withoutOverlapping()`. It coordinates with admission/processing locks, repairs missed dispatch and expired leases, discards interrupted staging, preserves verified prepared files and removes abandoned originals from this component's own namespace. Accepted batch retention remains configuration-controlled. Generic non-ZIP crash-orphan sweeps are not implemented; ordinary exception compensation is implemented.
 

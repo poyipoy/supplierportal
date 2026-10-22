@@ -8,7 +8,7 @@ This auth stack includes optional two-factor authentication, layered login throt
 2. Store a recoverable copy of the existing `APP_KEY`. Do not rotate it during this deployment; TOTP secrets depend on it.
 3. Confirm the cPanel domain is served directly over HTTPS using AutoSSL or Let's Encrypt.
 4. Run `composer install --no-dev --optimize-autoloader` in the release directory.
-5. Confirm the database queue worker is active for `exports,default` and inspect `php artisan queue:failed`.
+5. Confirm the database queue workers for `exports`, `imports` and `default` are active (see `CPANEL-PERFORMANCE-RUNTIME.md` §5) and inspect `php artisan queue:failed`.
 
 ## Environment
 
@@ -75,13 +75,9 @@ php artisan config:clear
 php artisan config:cache
 ```
 
-The production worker must listen to `exports,default` so exports keep priority while queued security mail is also processed:
+Queue workers (`exports`, `imports`, `default`) are configured as described in [CPANEL-PERFORMANCE-RUNTIME.md](CPANEL-PERFORMANCE-RUNTIME.md) §5. The current code defines no queued mail class; `default` carries realtime notification pushes. Do not use `--stop-when-empty` on Cron workers.
 
-```sh
-php artisan queue:work database --queue=exports,default --sleep=1 --stop-when-empty --max-time=50 --tries=3 --timeout=600
-```
-
-Then submit the Forgot Password form using a real staging account. Check both Inbox and Spam, open the HTTPS reset link from a separate device, set a compliant new password, and log in again. Confirm the queued job leaves the `jobs` table and no new entry appears in `failed_jobs`.
+Then submit the Forgot Password form using a real staging account. Check both Inbox and Spam, open the HTTPS reset link from a separate device, set a compliant new password, and log in again. Confirm that no new entry appears in `failed_jobs`.
 
 ## Additive migrations
 
