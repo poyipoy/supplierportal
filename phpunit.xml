@@ -3,6 +3,7 @@
          xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
          bootstrap="vendor/autoload.php"
          colors="true"
+         defaultTestSuite="Unit,Feature"
 >
     <testsuites>
         <testsuite name="Unit">
@@ -10,6 +11,79 @@
         </testsuite>
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
+        </testsuite>
+        <!-- `composer test:parallel` only. Parallel + Serial = Unit + Feature.
+             Serial lists tests pinned to adasi_portal_test: subprocess workers,
+             migration/rollback tests and the database safety guard. -->
+        <testsuite name="Parallel">
+            <directory>tests/Unit</directory>
+            <directory>tests/Feature</directory>
+            <exclude>tests/Feature/AdvancedExportBaselineTest.php</exclude>
+            <exclude>tests/Feature/AdvancedExportConcurrencyTest.php</exclude>
+            <exclude>tests/Feature/AdvancedExportPerformanceTest.php</exclude>
+            <exclude>tests/Feature/AdvancedExportQueuedCsvBaselineTest.php</exclude>
+            <exclude>tests/Feature/GaClaimTypeMigrationTest.php</exclude>
+            <exclude>tests/Feature/LocalInvoice/CancelledRecoveryConcurrencyTest.php</exclude>
+            <exclude>tests/Feature/LocalInvoice/LegacyDatabaseUpgradeTest.php</exclude>
+            <exclude>tests/Feature/LocalInvoice/LocalGrReservationConcurrencyTest.php</exclude>
+            <exclude>tests/Feature/LocalInvoice/LocalImportProgressTest.php</exclude>
+            <exclude>tests/Feature/LocalInvoice/LocalImportRevalidationConcurrencyTest.php</exclude>
+            <exclude>tests/Feature/LocalInvoice/LocalImportRevalidationTest.php</exclude>
+            <exclude>tests/Feature/LocalInvoice/LocalInvoiceConcurrencyTest.php</exclude>
+            <exclude>tests/Feature/LocalInvoice/LocalInvoiceMigrationTest.php</exclude>
+            <exclude>tests/Feature/LocalInvoice/LocalPoPrReferenceConcurrencyTest.php</exclude>
+            <exclude>tests/Feature/LocalInvoice/ManualPoPrConcurrencyTest.php</exclude>
+            <exclude>tests/Feature/LocaleRuntimeTest.php</exclude>
+            <exclude>tests/Feature/LocalizationExportTest.php</exclude>
+            <exclude>tests/Feature/LocalizationPerformanceTest.php</exclude>
+            <exclude>tests/Feature/LocalizationRenderingTest.php</exclude>
+            <exclude>tests/Feature/NotificationLocaleTest.php</exclude>
+            <exclude>tests/Feature/Procurement/MasterDataDeletionDurabilityTest.php</exclude>
+            <exclude>tests/Feature/Procurement/OrderedQuantityShipmentConcurrencyTest.php</exclude>
+            <exclude>tests/Feature/Procurement/ReferencePriceConcurrencyTest.php</exclude>
+            <exclude>tests/Feature/Procurement/ShipmentSubmissionConcurrencyTest.php</exclude>
+            <exclude>tests/Feature/SupplierRegistration/SupplierRegistrationSubmissionRaceTest.php</exclude>
+            <exclude>tests/Feature/TestingEnvironmentDatabaseSafetyTest.php</exclude>
+            <exclude>tests/Feature/UserLocalePreferenceMigrationTest.php</exclude>
+            <exclude>tests/Feature/UserLocalePreferencesTest.php</exclude>
+            <exclude>tests/Feature/UserNotificationPreferenceMigrationTest.php</exclude>
+            <exclude>tests/Feature/UserPreferenceConcurrencyTest.php</exclude>
+            <exclude>tests/Feature/UserPreferenceMigrationTest.php</exclude>
+            <exclude>tests/Feature/UserRegionalPreferencesTest.php</exclude>
+        </testsuite>
+        <testsuite name="Serial">
+            <file>tests/Feature/AdvancedExportBaselineTest.php</file>
+            <file>tests/Feature/AdvancedExportConcurrencyTest.php</file>
+            <file>tests/Feature/AdvancedExportPerformanceTest.php</file>
+            <file>tests/Feature/AdvancedExportQueuedCsvBaselineTest.php</file>
+            <file>tests/Feature/GaClaimTypeMigrationTest.php</file>
+            <file>tests/Feature/LocalInvoice/CancelledRecoveryConcurrencyTest.php</file>
+            <file>tests/Feature/LocalInvoice/LegacyDatabaseUpgradeTest.php</file>
+            <file>tests/Feature/LocalInvoice/LocalGrReservationConcurrencyTest.php</file>
+            <file>tests/Feature/LocalInvoice/LocalImportProgressTest.php</file>
+            <file>tests/Feature/LocalInvoice/LocalImportRevalidationConcurrencyTest.php</file>
+            <file>tests/Feature/LocalInvoice/LocalImportRevalidationTest.php</file>
+            <file>tests/Feature/LocalInvoice/LocalInvoiceConcurrencyTest.php</file>
+            <file>tests/Feature/LocalInvoice/LocalInvoiceMigrationTest.php</file>
+            <file>tests/Feature/LocalInvoice/LocalPoPrReferenceConcurrencyTest.php</file>
+            <file>tests/Feature/LocalInvoice/ManualPoPrConcurrencyTest.php</file>
+            <file>tests/Feature/LocaleRuntimeTest.php</file>
+            <file>tests/Feature/LocalizationExportTest.php</file>
+            <file>tests/Feature/LocalizationPerformanceTest.php</file>
+            <file>tests/Feature/LocalizationRenderingTest.php</file>
+            <file>tests/Feature/NotificationLocaleTest.php</file>
+            <file>tests/Feature/Procurement/MasterDataDeletionDurabilityTest.php</file>
+            <file>tests/Feature/Procurement/OrderedQuantityShipmentConcurrencyTest.php</file>
+            <file>tests/Feature/Procurement/ReferencePriceConcurrencyTest.php</file>
+            <file>tests/Feature/Procurement/ShipmentSubmissionConcurrencyTest.php</file>
+            <file>tests/Feature/SupplierRegistration/SupplierRegistrationSubmissionRaceTest.php</file>
+            <file>tests/Feature/TestingEnvironmentDatabaseSafetyTest.php</file>
+            <file>tests/Feature/UserLocalePreferenceMigrationTest.php</file>
+            <file>tests/Feature/UserLocalePreferencesTest.php</file>
+            <file>tests/Feature/UserNotificationPreferenceMigrationTest.php</file>
+            <file>tests/Feature/UserPreferenceConcurrencyTest.php</file>
+            <file>tests/Feature/UserPreferenceMigrationTest.php</file>
+            <file>tests/Feature/UserRegionalPreferencesTest.php</file>
         </testsuite>
     </testsuites>
     <source>

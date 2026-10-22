@@ -64,13 +64,21 @@ class NotificationSummaryService
 
     private function summary(array $categories, Collection $notifications, Collection $unreadNotifications): array
     {
-        $groups = collect($categories)->mapWithKeys(function ($option, string $key) use ($notifications): array {
-            return [$key => $this->filterByCategory($notifications, $key)->values()];
+        // Classify each notification once; classification decodes its JSON data,
+        // and repeating it per category made the unread count O(categories × unread).
+        $loadedKeys = $notifications->map(fn ($notification) => NotificationCategory::key($notification))->all();
+        $unreadTally = $unreadNotifications->map(fn ($notification) => NotificationCategory::key($notification))->countBy()->all();
+        $loadedTally = array_count_values($loadedKeys);
+
+        $groups = collect($categories)->mapWithKeys(function ($option, string $key) use ($notifications, $loadedKeys): array {
+            return [$key => $key === NotificationCategory::ALL
+                ? $notifications->values()
+                : $notifications->filter(fn ($notification, $index) => $loadedKeys[$index] === $key)->values()];
         });
 
-        $counts = collect($categories)->mapWithKeys(function ($option, string $key) use ($notifications, $unreadNotifications): array {
-            $unreadCount = $this->filterByCategory($unreadNotifications, $key)->count();
-            $loadedTotal = $this->filterByCategory($notifications, $key)->count();
+        $counts = collect($categories)->mapWithKeys(function ($option, string $key) use ($notifications, $unreadNotifications, $unreadTally, $loadedTally): array {
+            $unreadCount = $key === NotificationCategory::ALL ? $unreadNotifications->count() : ($unreadTally[$key] ?? 0);
+            $loadedTotal = $key === NotificationCategory::ALL ? $notifications->count() : ($loadedTally[$key] ?? 0);
 
             return [$key => [
                 'total' => max($unreadCount, $loadedTotal),
@@ -85,16 +93,5 @@ class NotificationSummaryService
             'count' => $unreadNotifications->count(),
             'category_counts' => $counts,
         ];
-    }
-
-    private function filterByCategory(Collection $notifications, string $category): Collection
-    {
-        if ($category === NotificationCategory::ALL) {
-            return $notifications;
-        }
-
-        return $notifications->filter(
-            fn ($notification) => NotificationCategory::key($notification) === $category,
-        );
     }
 }

@@ -27,6 +27,8 @@ use Illuminate\Notifications\Events\BroadcastNotificationCreated;
 use Illuminate\Notifications\Events\NotificationFailed;
 use Illuminate\Notifications\Events\NotificationSending;
 use Illuminate\Queue\Events\JobFailed;
+use Illuminate\Queue\Events\JobProcessing;
+use Illuminate\Routing\Events\RouteMatched;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
@@ -102,6 +104,9 @@ class AppServiceProvider extends ServiceProvider
         Blade::directive('bizdt', fn ($expr) => "<?php echo e(\\App\\Support\\BusinessTime::format($expr)); ?>");
 
         Event::listen(NotificationSending::class, ApplyNotificationPreferences::class);
+        // Supplier scope memos live for one request or job only.
+        Event::listen(RouteMatched::class, fn () => User::resetSupplierScopeMemos());
+        Event::listen(JobProcessing::class, fn () => User::resetSupplierScopeMemos());
 
         // Enforce safety: testing environment (--env=testing or APP_ENV=testing) MUST NEVER touch adasi_portal
         if ($this->app->environment('testing') || (isset($_SERVER['argv']) && in_array('--env=testing', $_SERVER['argv'], true))) {
@@ -115,7 +120,9 @@ class AppServiceProvider extends ServiceProvider
             if (in_array($command, ['migrate', 'migrate:fresh', 'migrate:reset', 'migrate:rollback', 'db:wipe', 'db:seed'], true)) {
                 $isTestingEnv = app()->environment('testing') || (isset($_SERVER['argv']) && in_array('--env=testing', $_SERVER['argv'], true));
                 $activeDb = (string) config('database.connections.mysql.database');
-                if ($isTestingEnv && ($activeDb === 'adasi_portal' || (! str_ends_with($activeDb, '_test') && ! str_ends_with($activeDb, '_testing')))) {
+                // Accepts *_test / *_testing and the per-process copies created by
+                // `php artisan test --parallel` (e.g. adasi_portal_test_test_3).
+                if ($isTestingEnv && ($activeDb === 'adasi_portal' || ! preg_match('/_(test|testing)(_test_\d+)?$/', $activeDb))) {
                     throw new \RuntimeException("CRITICAL SAFETY GUARD: Command '{$command}' was invoked under testing mode (--env=testing or APP_ENV=testing), but active database is '{$activeDb}'. Testing migrations MUST target a test database (e.g. 'adasi_portal_test'). Aborting immediately to prevent data loss on local database.");
                 }
             }

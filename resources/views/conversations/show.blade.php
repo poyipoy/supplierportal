@@ -129,6 +129,13 @@
 
         {{-- Chat Body (Scrollable) --}}
         <div id="chat-messages" style="flex: 1; overflow-y: auto; padding: 1rem 1.25rem;">
+            @if($hasMoreMessages ?? false)
+                <div class="tw-flex tw-justify-center tw-py-2" data-chat-older>
+                    <button type="button" id="chat-load-older" class="ui-focus-ring tw-inline-flex tw-h-7 tw-items-center tw-gap-1 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-px-2.5 tw-text-ui-xs tw-font-medium tw-text-on-surface hover:tw-bg-surface-low">
+                        {{ __('common.chat.load_older') }}
+                    </button>
+                </div>
+            @endif
             @forelse($conversation->messages as $msg)
                 @php $isMe = $msg->sender_id === auth()->id(); @endphp
                 <div class="chat-message-row {{ $isMe ? 'is-me justify-content-end' : 'is-partner justify-content-start' }}" data-message-id="{{ $msg->id }}">
@@ -218,6 +225,7 @@
     const sendButtonDefaultDisabled = sendButton.disabled;
     const quickActionUrl = `{{ route('conversations.quick-action', $conversation) }}`;
     let lastMessageId = {{ $conversation->messages->last()->id ?? 0 }};
+    let oldestMessageId = {{ $conversation->messages->first()->id ?? 0 }};
     let isSending = false;
 
     function setSendButtonLoading(loading) {
@@ -354,7 +362,7 @@
     });
 
     // Append single message to DOM
-    function appendMessage(msg, isMe) {
+    function appendMessage(msg, isMe, insert = (html) => chatContainer.insertAdjacentHTML('beforeend', html)) {
         const timeLocale = window.AdasiI18n.locale === 'id' ? 'id-ID' : 'en-GB';
         const time = new Date(msg.created_at).toLocaleTimeString(timeLocale, { hour: '2-digit', minute: '2-digit' });
         const name = isMe ? '' : (msg.sender_name || msg.sender?.name || window.AdasiI18n.t('js.chat.unknown_sender'));
@@ -379,8 +387,42 @@
                 </div>
             </div>
         `;
-        chatContainer.insertAdjacentHTML('beforeend', html);
+        insert(html);
     }
+
+    // History loads 50 messages at a time; earlier pages are fetched by id
+    // (keyset) and inserted above the current ones, keeping the scroll position.
+    const loadOlderButton = document.getElementById('chat-load-older');
+    loadOlderButton?.addEventListener('click', () => {
+        const control = loadOlderButton.closest('[data-chat-older]');
+        loadOlderButton.disabled = true;
+        fetch(`{{ route('conversations.messages.older', $conversation) }}?before=${oldestMessageId}`, {
+            headers: { 'Accept': 'application/json' }
+        })
+        .then(res => {
+            if (!res.ok) throw new Error();
+            return res.json();
+        })
+        .then(data => {
+            const previousHeight = chatContainer.scrollHeight;
+            data.messages.slice().reverse().forEach(msg => {
+                if (!chatContainer.querySelector(`[data-message-id="${msg.id}"]`)) {
+                    appendMessage(msg, msg.sender_id === myId, (html) => control.insertAdjacentHTML('afterend', html));
+                }
+            });
+            if (data.messages.length > 0) oldestMessageId = data.messages[0].id;
+            chatContainer.scrollTop += chatContainer.scrollHeight - previousHeight;
+            if (data.has_more) {
+                loadOlderButton.disabled = false;
+            } else {
+                control.remove();
+            }
+        })
+        .catch(() => {
+            loadOlderButton.disabled = false;
+            loadOlderButton.title = @js(__('common.chat.load_older_error'));
+        });
+    });
 
     document.querySelectorAll('[data-chat-template]').forEach((button) => {
         button.addEventListener('click', () => {
@@ -484,6 +526,8 @@
 
     // Polling new messages
     setInterval(() => {
+        // A hidden tab skips the poll; the next visible poll catches up by id.
+        if (document.visibilityState === 'hidden') return;
         fetch(`{{ route('conversations.messages.latest', $conversation) }}?after=${lastMessageId}`, {
             headers: { 'Accept': 'application/json' }
         })

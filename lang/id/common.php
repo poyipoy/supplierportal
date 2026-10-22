@@ -240,6 +240,8 @@ return [
     'chat.title' => 'Negosiasi & Percakapan',
     'chat.loading' => 'Memuat percakapan...',
     'chat.messages_loading' => 'Memuat pesan...',
+    'chat.load_older' => 'Muat pesan sebelumnya',
+    'chat.load_older_error' => 'Pesan sebelumnya gagal dimuat. Coba lagi.',
     'chat.list' => 'Daftar percakapan aktif',
     'chat.empty' => 'Percakapan ditampilkan setelah dibuat dari PR atau PO.',
     'chat.back' => 'Kembali ke Daftar Percakapan',

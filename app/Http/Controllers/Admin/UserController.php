@@ -150,6 +150,7 @@ class UserController extends Controller
                 foreach ($request->input('supplier_scopes') as $scope) {
                     $user->supplierScopes()->firstOrCreate(['scope' => $scope]);
                 }
+                $user->forgetSupplierScopes();
             }
             DB::commit();
 
@@ -277,6 +278,7 @@ class UserController extends Controller
                 foreach ($request->input('supplier_scopes') as $scope) {
                     $user->supplierScopes()->firstOrCreate(['scope' => $scope]);
                 }
+                $user->forgetSupplierScopes();
             }
             DB::commit();
 

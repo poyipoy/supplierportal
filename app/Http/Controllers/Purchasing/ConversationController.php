@@ -32,7 +32,7 @@ class ConversationController extends Controller
      */
     public function show($id)
     {
-        $conversation = Conversation::with(['conversable', 'supplierUser', 'purchasingUser', 'messages.sender'])
+        $conversation = Conversation::with(['conversable', 'supplierUser', 'purchasingUser', 'latestMessage.sender'])
             ->findOrFail($id);
 
         $this->authorize('view', $conversation);
@@ -43,13 +43,13 @@ class ConversationController extends Controller
             ->whereNull('read_at')
             ->update(['read_at' => now()]);
 
-        $conversation->load(['messages.sender', 'messages.attachments', 'latestMessage.sender']);
+        $hasMoreMessages = $conversation->loadRecentMessages();
 
         $chatContext = ConversationPresenter::context($conversation, auth()->user());
         $quickActions = ConversationPresenter::quickActions($conversation, auth()->user());
         $messageTemplates = ConversationPresenter::templates($conversation, auth()->user());
 
-        return view('conversations.show', compact('conversation', 'chatContext', 'quickActions', 'messageTemplates'));
+        return view('conversations.show', compact('conversation', 'chatContext', 'quickActions', 'messageTemplates', 'hasMoreMessages'));
     }
 
     /**

@@ -70,7 +70,8 @@ class InvoiceQuery
             $query->whereMonth('invoice_date', $filters['month']);
         }
         if (! empty($filters['overdue'])) {
-            $query->whereDate('due_date', '<', BusinessTime::today()->toDateString())->whereIn('status', [LocalInvoice::STATUS_READY_TO_PAY, 'APPROVED', 'PAYMENT_SCHEDULED']);
+            // due_date is a DATE column: a plain comparison is identical and can use its index.
+            $query->where('due_date', '<', BusinessTime::today()->toDateString())->whereIn('status', [LocalInvoice::STATUS_READY_TO_PAY, 'APPROVED', 'PAYMENT_SCHEDULED']);
         }
 
         return $query;
@@ -82,7 +83,7 @@ class InvoiceQuery
 
         return [
             'counts' => (clone $query)->select('status')->selectRaw('COUNT(*) as total')->groupBy('status')->pluck('total', 'status'),
-            'overdue' => (clone $query)->whereIn('status', [LocalInvoice::STATUS_READY_TO_PAY, 'APPROVED', 'PAYMENT_SCHEDULED'])->whereDate('due_date', '<', BusinessTime::today()->toDateString())->count(),
+            'overdue' => (clone $query)->whereIn('status', [LocalInvoice::STATUS_READY_TO_PAY, 'APPROVED', 'PAYMENT_SCHEDULED'])->where('due_date', '<', BusinessTime::today()->toDateString())->count(),
             'invoices' => $query->latest('id')->limit(5)->get(),
         ];
     }

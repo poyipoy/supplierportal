@@ -23,6 +23,7 @@
         "yajra/laravel-datatables-oracle": "~12.0"
     },
     "require-dev": {
+        "brianium/paratest": "7.8.5",
         "fakerphp/faker": "^1.23",
         "laravel/breeze": "^2.4",
         "laravel/pail": "^1.2.2",
@@ -55,12 +56,18 @@
         ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",
-            "npx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74\" \"php artisan serve\" \"php artisan queue:listen --queue=exports,default --tries=3 --timeout=600\" \"php artisan pail --timeout=0\" \"npm run dev\" --names=server,queue,logs,vite --kill-others"
+            "npx concurrently -c \"#93c5fd,#c4b5fd,#a7f3d0,#fb7185,#fdba74\" \"php artisan serve\" \"php artisan queue:listen --queue=exports,default --tries=3 --timeout=600\" \"php artisan queue:listen --queue=imports --tries=3 --timeout=300\" \"php artisan pail --timeout=0\" \"npm run dev\" --names=server,queue,imports,logs,vite --kill-others"
         ],
         "test": [
             "Composer\\Config::disableProcessTimeout",
             "@php artisan config:clear --ansi",
             "@php artisan test"
+        ],
+        "test:parallel": [
+            "Composer\\Config::disableProcessTimeout",
+            "@php artisan config:clear --ansi",
+            "@php artisan test --parallel --processes=4 --testsuite=Parallel",
+            "@php artisan test --testsuite=Serial"
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",

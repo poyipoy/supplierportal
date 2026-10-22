@@ -80,7 +80,6 @@ class ConversationMessageController extends Controller
             'conversable',
             'purchasingUser.supplier',
             'supplierUser.supplier',
-            'messages.sender',
             'latestMessage.sender',
         ])
             ->findOrFail($id);
@@ -92,7 +91,7 @@ class ConversationMessageController extends Controller
             ->whereNull('read_at')
             ->update(['read_at' => now()]);
 
-        $conversation->load(['messages.sender', 'messages.attachments']);
+        $hasMore = $conversation->loadRecentMessages();
 
         return response()->json([
             'conversation' => $this->formatConversation($conversation),
@@ -100,6 +99,7 @@ class ConversationMessageController extends Controller
             'quick_actions' => ConversationPresenter::quickActions($conversation, auth()->user()),
             'templates' => ConversationPresenter::templates($conversation, auth()->user()),
             'messages' => $conversation->messages->map(fn (Message $message) => $this->formatMessage($message)),
+            'has_more_messages' => $hasMore,
         ]);
     }
 
@@ -345,10 +345,10 @@ class ConversationMessageController extends Controller
         $conversation = Conversation::findOrFail($id);
         $this->authorize('view', $conversation);
 
-        $afterId = $request->query('after', 0);
+        $afterId = max(0, (int) $request->query('after', 0));
 
         $messages = $conversation->messages()
-            ->with('sender')
+            ->with(['sender', 'attachments'])
             ->where('id', '>', $afterId)
             ->get();
 
@@ -373,6 +373,23 @@ class ConversationMessageController extends Controller
                     'read_at' => $message->read_at?->toIso8601String(),
                     'read_at_display' => $message->read_at?->format('H:i'),
                 ]),
+        ]);
+    }
+
+    /**
+     * The page of messages before ?before=<id>, oldest first, for "load earlier".
+     */
+    public function older(Request $request, $id)
+    {
+        $conversation = Conversation::findOrFail($id);
+        $this->authorize('view', $conversation);
+        $before = (int) $request->validate(['before' => ['required', 'integer', 'min:1']])['before'];
+
+        [$messages, $hasMore] = $conversation->messagesBefore($before);
+
+        return response()->json([
+            'messages' => $messages->map(fn (Message $message) => $this->formatMessage($message))->values(),
+            'has_more' => $hasMore,
         ]);
     }
 

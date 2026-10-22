@@ -240,6 +240,8 @@ return [
     'chat.title' => 'Negotiation & Chat',
     'chat.loading' => 'Loading chats...',
     'chat.messages_loading' => 'Loading messages...',
+    'chat.load_older' => 'Load earlier messages',
+    'chat.load_older_error' => 'Earlier messages could not be loaded. Try again.',
     'chat.list' => 'Active conversation list',
     'chat.empty' => 'Conversations will appear after they are created from a PR or PO.',
     'chat.back' => 'Back to Chat List',

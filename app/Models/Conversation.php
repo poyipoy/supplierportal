@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Traits\HasHashids;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -60,6 +61,41 @@ class Conversation extends Model
     public function messages(): HasMany
     {
         return $this->hasMany(Message::class)->orderBy('created_at', 'asc');
+    }
+
+    public const MESSAGE_PAGE_SIZE = 50;
+
+    /**
+     * Load the newest page of messages (oldest first, with sender and
+     * attachments) into the `messages` relation. Returns whether older
+     * messages exist. Pages are keyed by id, which follows insertion order.
+     */
+    public function loadRecentMessages(int $limit = self::MESSAGE_PAGE_SIZE): bool
+    {
+        [$page, $hasMore] = $this->messagePage(null, $limit);
+        $this->setRelation('messages', $page);
+
+        return $hasMore;
+    }
+
+    /**
+     * The page of messages directly before $beforeId, oldest first.
+     *
+     * @return array{0: Collection, 1: bool}
+     */
+    public function messagesBefore(int $beforeId, int $limit = self::MESSAGE_PAGE_SIZE): array
+    {
+        return $this->messagePage($beforeId, $limit);
+    }
+
+    private function messagePage(?int $beforeId, int $limit): array
+    {
+        $page = $this->messages()->reorder()->with(['sender', 'attachments'])
+            ->when($beforeId !== null, fn ($query) => $query->where('id', '<', $beforeId))
+            ->orderByDesc('id')->limit($limit + 1)->get();
+        $hasMore = $page->count() > $limit;
+
+        return [$page->take($limit)->reverse()->values(), $hasMore];
     }
 
     // ─── Scopes ───

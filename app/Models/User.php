@@ -21,6 +21,14 @@ class User extends Authenticatable implements OAuthenticatable
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, HasHashids, Notifiable;
 
+    /** @var list<string>|null Per-instance memo; see supplierScopeValues(). */
+    private ?array $supplierScopeValues = null;
+
+    private int $supplierScopeGeneration = -1;
+
+    /** Bumped at the start of every request and job; see resetSupplierScopeMemos(). */
+    private static int $scopeGeneration = 0;
+
     public const ACCOUNT_STATUS_PENDING = 'PENDING';
 
     public const ACCOUNT_STATUS_REVISION = 'REVISION';
@@ -118,7 +126,45 @@ class User extends Authenticatable implements OAuthenticatable
 
     public function hasSupplierScope(string $scope): bool
     {
-        return $this->isSupplier() && $this->supplierScopes()->where('scope', $scope)->exists();
+        return $this->isSupplier() && in_array($scope, $this->supplierScopeValues(), true);
+    }
+
+    /**
+     * Scope values read once per model instance and per request or job. The memo
+     * is discarded when a new request or job starts, even if the same instance is
+     * reused (as the authenticated user is in tests); code that changes the
+     * scopes of an instance it keeps using must call forgetSupplierScopes().
+     *
+     * @return list<string>
+     */
+    public function supplierScopeValues(): array
+    {
+        if ($this->supplierScopeValues === null || $this->supplierScopeGeneration !== self::$scopeGeneration) {
+            $this->supplierScopeValues = $this->supplierScopes()->pluck('scope')->all();
+            $this->supplierScopeGeneration = self::$scopeGeneration;
+        }
+
+        return $this->supplierScopeValues;
+    }
+
+    /** Invalidate every instance's scope memo; called when a request or job starts. */
+    public static function resetSupplierScopeMemos(): void
+    {
+        self::$scopeGeneration++;
+    }
+
+    public function forgetSupplierScopes(): static
+    {
+        $this->supplierScopeValues = null;
+
+        return $this;
+    }
+
+    public function refresh()
+    {
+        $this->supplierScopeValues = null;
+
+        return parent::refresh();
     }
 
     public function isLocalOperator(): bool
