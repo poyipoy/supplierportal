@@ -66,6 +66,7 @@ return [
     'sppkp' => 'Taxable Enterprise Confirmation Letter (SPPKP)',
     'sppkp_help' => 'Required if your company is a registered taxable enterprise.',
     'sppkp_required' => 'Attach a readable SPPKP document for a PKP company.',
+    'sknr_required_on_bank_change' => 'Attach a new bank account declaration (SKNR) when the bank account details change.',
     'additional_documents' => 'Additional Documents',
     'skd' => 'Domicile Certificate (SKD)',
     'skd_help' => 'Attach if the factory/office operating address differs from the NIB.',

@@ -113,6 +113,8 @@
                                     <td>
                                         @if($b->status === 'VERIFIED')
                                             <span class="tw-inline-flex tw-px-2 tw-py-0.5 tw-rounded tw-text-[10px] tw-bg-primary/10 tw-text-primary tw-font-bold">{{ __('local_procurement.vendor_ui.active_account') }}</span>
+                                        @elseif($b->status === 'PENDING')
+                                            <span class="tw-text-on-surface-variant">{{ __('local_procurement.vendor_ui.pending_verification') }}</span>
                                         @else
                                             <span class="tw-text-on-surface-variant">{{ __('local_procurement.vendor_ui.inactive_history') }}</span>
                                         @endif

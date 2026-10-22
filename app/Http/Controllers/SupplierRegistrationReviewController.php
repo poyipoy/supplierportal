@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Http\Requests\SupplierRegistration\ApproveRegistrationRequest;
 use App\Http\Requests\SupplierRegistration\RejectRegistrationRequest;
 use App\Http\Requests\SupplierRegistration\RevisionRequest;
+use App\Models\SupplierBankAccount;
 use App\Models\SupplierMasterDocument;
 use App\Models\SupplierRegistrationAttempt;
+use App\Models\SupplierRegistrationAudit;
 use App\Services\FileSecurity\FileAccessGuard;
 use App\Services\SupplierRegistrationService;
 use App\Support\BusinessTime;
@@ -14,6 +16,7 @@ use App\Support\ServerTabsResponse;
 use App\Support\StatusHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Yajra\DataTables\Facades\DataTables;
 
 class SupplierRegistrationReviewController extends Controller
@@ -224,11 +227,25 @@ class SupplierRegistrationReviewController extends Controller
                 attempt: $attempt,
                 reviewer: $request->user(),
                 scopes: $request->validated('scopes'),
+                vendorCategory: $request->validated('vendor_category'),
                 notes: $request->validated('notes'),
+                confirmBankDeclaration: $request->boolean('confirm_bank_declaration'),
             );
 
-            return redirect()->route('supplier-registrations.show', $attempt->hash)
+            $redirect = redirect()->route('supplier-registrations.show', $attempt->hash)
                 ->with('success', __('local_procurement.registration.approved_feedback'));
+
+            // Report what the service actually decided, not a re-derivation of it.
+            $bankVerified = SupplierRegistrationAudit::query()
+                ->where('attempt_id', $attempt->id)->where('event', 'bank_account_verified')->exists();
+
+            if (! $bankVerified && $attempt->user->supplierBankAccounts()->where('status', SupplierBankAccount::STATUS_PENDING)->exists()) {
+                $redirect->with('warning', __('local_procurement.registration.approved_bank_pending'));
+            }
+
+            return $redirect;
+        } catch (ValidationException $e) {
+            return back()->withErrors($e->errors());
         } catch (\DomainException $e) {
             return back()->with('error', $e->getMessage());
         } catch (\Throwable $e) {

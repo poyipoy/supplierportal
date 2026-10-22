@@ -64,13 +64,13 @@ class SupplierRegistrationConcurrencyTest extends TestCase
         $reviewer2 = User::factory()->create(['role' => 'purchasing', 'is_active' => true]);
 
         // First approval succeeds
-        $service->approveRegistration($attempt, $reviewer1, ['import']);
+        $service->approveRegistration($attempt, $reviewer1, ['import'], 'Barang');
         $attempt->refresh();
         $this->assertSame(SupplierRegistrationAttempt::STATUS_APPROVED, $attempt->status);
 
         // Second approval attempt on already approved record must fail safely
         $this->expectException(\DomainException::class);
-        $service->approveRegistration($attempt, $reviewer2, ['local']);
+        $service->approveRegistration($attempt, $reviewer2, ['local'], 'Barang');
 
         // Assert user still has only 1 scope ('import') and no duplicate scopes
         $user = $attempt->user->fresh();

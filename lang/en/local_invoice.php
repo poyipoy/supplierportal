@@ -44,6 +44,7 @@ return [
         'tax_description' => 'PPN e-Faktur / Official Tax Withholding Proof',
         'purchase_order_description' => 'Required: one PDF for the selected PO, up to 5 MiB.',
         'goods_receipt_description' => 'Required: 1–5 PDFs, up to 5 MiB each. One PDF may contain several selected GR numbers.',
+        'delivery_note_optional_help' => 'Optional for non-goods vendors: attach a delivery note PDF if you have one (up to 5 PDFs, 5 MiB each).',
         'delivery_description' => 'Physical shipment & goods handover proof',
         'supporting_title' => 'Additional Supporting Documents',
         'supporting_description' => 'Handover report or other supplementary attachments',

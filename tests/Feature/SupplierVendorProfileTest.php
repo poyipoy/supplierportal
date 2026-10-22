@@ -242,4 +242,40 @@ class SupplierVendorProfileTest extends TestCase
         $formResponse->assertDontSee('Termin Pembayaran');
         $formResponse->assertDontSee('ketentuan termin pembayaran resmi');
     }
+
+    public function test_invoice_form_always_offers_the_delivery_note_upload_and_requires_it_only_for_goods_vendors(): void
+    {
+        $goods = $this->createLocalSupplier(['vendor_category' => 'Barang']);
+        $services = $this->createLocalSupplier(['vendor_category' => 'Jasa', 'category' => 'Jasa']);
+        $legacy = $this->createLocalSupplier(['vendor_category' => null, 'category' => 'Supplier']);
+
+        $goodsHtml = $this->actingAs($goods)->get(route('local-supplier.invoices.create'))->assertOk()->getContent();
+        $this->assertStringContainsString('id="file_delivery_note"', $goodsHtml);
+        $this->assertStringContainsString('requiresDeliveryNote: true', $goodsHtml);
+        $this->assertStringContainsString('hasDn: (config.existingDnCount > 0)', $goodsHtml);
+
+        foreach ([$services, $legacy] as $optional) {
+            $html = $this->actingAs($optional)->get(route('local-supplier.invoices.create'))->assertOk()->getContent();
+            $this->assertStringContainsString('id="file_delivery_note"', $html);
+            $this->assertStringContainsString('requiresDeliveryNote: false', $html);
+            $this->assertStringContainsString(e(__('local_invoice.documents.delivery_note_optional_help')), $html);
+        }
+    }
+
+    public function test_pending_bank_account_is_not_labelled_inactive(): void
+    {
+        $user = $this->createLocalSupplier();
+        SupplierBankAccount::create([
+            'supplier_id' => $user->id,
+            'bank_name' => 'AMAR BANK',
+            'account_number' => '987654321234',
+            'account_holder_name' => 'SWED',
+            'status' => SupplierBankAccount::STATUS_PENDING,
+        ]);
+
+        $this->actingAs($user)->get(route('local-supplier.vendor-profile.show'))
+            ->assertOk()
+            ->assertSee(__('local_procurement.vendor_ui.pending_verification'))
+            ->assertDontSee(__('local_procurement.vendor_ui.inactive_history'));
+    }
 }
