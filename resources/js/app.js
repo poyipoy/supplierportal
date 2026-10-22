@@ -3,33 +3,59 @@ import { t } from './i18n.js';
 import Alpine from 'alpinejs';
 import { searchableFreeInput } from './searchable-free-input';
 import './password-assistance';
-import { bootAdasiCalendars } from './calendar';
 import './unsaved-changes';
 import './session-sync';
 import './number-input-helper';
 import './chart-theme';
 import './preferences';
-import './dashboard-editor';
-import './regional-sample';
 import './submit-guard';
 import './async-form-submit';
 import './adasi-loader';
 import './asset-protection';
-import './advanced-export';
 import './server-tabs';
 import { adasiFileUploadComponent } from './file-upload';
-import { customizationForm } from './customization-form';
-import { notificationPreferencesForm } from './notification-preferences';
-import { supplierAuditForm } from './supplier-audit-form';
 import { searchableSelect } from './searchable-select';
 
 window.Alpine = Alpine;
 Alpine.data('searchableSelect', searchableSelect);
 Alpine.data('searchableFreeInput', searchableFreeInput);
 Alpine.data('adasiFileUploadComponent', adasiFileUploadComponent);
-Alpine.data('customizationForm', customizationForm);
-Alpine.data('notificationPreferencesForm', notificationPreferencesForm);
-Alpine.data('supplierAuditForm', supplierAuditForm);
+
+// Page-specific modules load only where their markup is present. Module scripts run after parsing,
+// so the markers are already in the DOM here.
+const hasMarker = (selector) => document.querySelector(selector) !== null;
+
+// Alpine components must be registered before Alpine.start(), so their imports are awaited below.
+const pageComponents = [
+    ['[x-data^="customizationForm"]', () => Promise.all([import('./regional-sample'), import('./customization-form')])
+        .then(([, module]) => Alpine.data('customizationForm', module.customizationForm))],
+    ['[x-data^="notificationPreferencesForm"]', () => import('./notification-preferences')
+        .then((module) => Alpine.data('notificationPreferencesForm', module.notificationPreferencesForm))],
+    ['[x-data^="supplierAuditForm"]', () => import('./supplier-audit-form')
+        .then((module) => Alpine.data('supplierAuditForm', module.supplierAuditForm))],
+].filter(([selector]) => hasMarker(selector)).map(([, load]) => load());
+
+// Calendars initialize asynchronously (the engine itself is lazy), so this module loads on demand.
+// Until it does, this stand-in serves later callers such as server-tab swaps; calendar.js replaces it.
+const CALENDAR_SELECTOR = '[data-adasi-date-picker], [data-adasi-date-range]';
+let calendarModule = null;
+const loadCalendars = () => (calendarModule ??= import('./calendar').then(async (module) => {
+    await module.bootAdasiCalendars();
+    return module;
+}));
+window.AdasiCalendar = Object.freeze({
+    initialize: (root = document) => {
+        if (root?.matches?.(CALENDAR_SELECTOR) || root?.querySelector?.(CALENDAR_SELECTOR)) {
+            loadCalendars().then((module) => module.initializeAdasiCalendars(root));
+        }
+    },
+    // Nothing can be open or need a reset before the module has loaded.
+    reset: () => {},
+    closeActive: () => {},
+});
+
+// A failed chunk only leaves its own component unregistered; the shell and toasts still start.
+if (pageComponents.length) await Promise.allSettled(pageComponents);
 
 const toastState = Alpine.reactive({
     visible: [],
@@ -462,10 +488,12 @@ Alpine.data('adasiShell', () => ({
 }));
 
 Alpine.start();
-bootAdasiCalendars();
+window.AdasiCalendar.initialize(document);
 const bootImports = () => {
     if (document.querySelector('[data-local-import]')) import('./local-procurement-import');
     if (document.querySelector('[data-gr-table]')) import('./local-po-gr-table').then(module => module.bootLocalPoGrTable());
+    if (hasMarker('[data-advanced-export], [data-format-export-form]')) import('./advanced-export');
+    if (hasMarker('[data-dashboard-audience] [data-editor-config]')) import('./dashboard-editor');
 };
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootImports);
 else bootImports();

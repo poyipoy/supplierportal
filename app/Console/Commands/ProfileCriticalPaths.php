@@ -2,37 +2,33 @@
 
 namespace App\Console\Commands;
 
-use App\Http\Controllers\ConversationMessageController;
-use App\Http\Controllers\Purchasing\MaterialClaimController;
-use App\Http\Controllers\Purchasing\PriceComparisonController;
-use App\Http\Controllers\Purchasing\PurchaseOrderController;
-use App\Http\Controllers\Purchasing\PurchaseRequisitionController;
-use App\Http\Controllers\Purchasing\PurchasingController;
-use App\Http\Controllers\Purchasing\QuotationListController;
-use App\Http\Controllers\Qc\QcInspectionController;
-use App\Http\Controllers\Supplier\SupplierController;
+use App\Models\Conversation;
+use App\Models\LocalPurchaseOrder;
 use App\Models\User;
-use App\Services\NotificationSummaryService;
 use Illuminate\Console\Command;
-use Illuminate\Contracts\View\View;
+use Illuminate\Contracts\Http\Kernel as HttpKernel;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\View as ViewFacade;
-use Illuminate\Support\ViewErrorBag;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 use Throwable;
 
+/**
+ * Sends real GET requests through the HTTP kernel in-process (middleware, route binding, policies, view composers),
+ * so controller signature changes cannot break the profiler. Every request runs inside a transaction that is rolled
+ * back, so GET side effects such as marking messages read never persist.
+ */
 class ProfileCriticalPaths extends Command
 {
     protected $signature = 'performance:profile-critical
         {--json : Emit machine-readable JSON}
-        {--length=25 : DataTable page size}';
+        {--length=25 : DataTable page size}
+        {--runs=1 : Measured runs per path after one warm-up run; P50/P95 are taken over these}
+        {--only= : Comma-separated path names to profile}';
 
     protected $description = 'Profile representative read-only application paths in a local environment';
 
-    public function handle(NotificationSummaryService $notificationSummary): int
+    public function handle(HttpKernel $kernel): int
     {
         if (! app()->environment(['local', 'testing'])) {
             $this->error('This profiler is restricted to local and testing environments.');
@@ -40,41 +36,89 @@ class ProfileCriticalPaths extends Command
             return self::FAILURE;
         }
 
-        $purchasing = User::query()
-            ->where('role', 'purchasing')
-            ->where('is_active', true)
-            ->first();
-        $supplier = User::query()
-            ->where('role', 'supplier')
-            ->where('is_active', true)
-            ->first();
-        $qc = User::query()
-            ->where('role', 'qc')
-            ->where('is_active', true)
-            ->first();
+        // Sessions stay in memory; nothing is written to the session store. The profiled user is already signed in,
+        // so the SSO proof that a real session carries is out of scope (tests run with SSO off as well).
+        config(['session.driver' => 'array', 'sso.enabled' => false]);
 
-        if (! $purchasing || ! $supplier || ! $qc) {
-            $this->error('Active purchasing, supplier, and QC users are required.');
+        $users = [
+            'purchasing' => $this->activeUser('purchasing'),
+            'qc' => $this->activeUser('qc'),
+            'finance' => $this->activeUser('finance'),
+            'supplier_import' => User::query()->importEligible()->orderBy('id')->first(),
+            'supplier_local' => User::query()->localEligible()->orderBy('id')->first(),
+        ];
+        $length = max(1, min(100, (int) $this->option('length')));
+        $runs = max(1, min(100, (int) $this->option('runs')));
+        $only = array_filter(array_map('trim', explode(',', (string) $this->option('only'))));
 
-            return self::FAILURE;
+        $profiles = [];
+        foreach ($this->paths($users, $length) as $name => [$role, $resolve]) {
+            if ($only && ! in_array($name, $only, true)) {
+                continue;
+            }
+            $profiles[] = $this->profile($kernel, $name, $role, $users[$role] ?? null, $resolve, $runs);
         }
 
-        $length = max(1, min(100, (int) $this->option('length')));
-        $profiles = [];
+        $payload = [
+            'environment' => [
+                'app_env' => app()->environment(),
+                'php' => PHP_VERSION,
+                'laravel' => app()->version(),
+                'database' => DB::connection()->getDatabaseName(),
+                'runs_per_path' => $runs,
+            ],
+            'dataset' => $this->datasetCounts(),
+            'profiles' => $profiles,
+        ];
 
-        // Direct controller rendering does not pass through ShareErrorsFromSession.
-        ViewFacade::share('errors', new ViewErrorBag);
+        if ($this->option('json')) {
+            $this->line((string) json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+        } else {
+            $this->table(
+                ['Path', 'Role', 'Queries', 'SQL ms', 'P50 ms', 'P95 ms', 'Peak MB', 'Bytes', 'Status'],
+                array_map(fn (array $profile): array => [
+                    $profile['path'], $profile['role'], $profile['query_count'], $profile['sql_ms'], $profile['p50_ms'],
+                    $profile['p95_ms'], $profile['peak_mb'], $profile['response_bytes'], $profile['status'],
+                ], $profiles),
+            );
+            foreach ($profiles as $profile) {
+                if ($profile['error']) {
+                    $this->warn("{$profile['path']}: {$profile['error']}");
+                }
+            }
+        }
 
-        $profiles[] = $this->profile('purchasing.dashboard', $purchasing, function () {
-            return app(PurchasingController::class)->dashboard();
-        });
+        return collect($profiles)->contains(fn (array $profile): bool => $profile['status'] === 'error')
+            ? self::FAILURE
+            : self::SUCCESS;
+    }
 
-        $profiles[] = $this->profile('supplier.dashboard', $supplier, function () {
-            return app(SupplierController::class)->dashboard();
-        });
+    /**
+     * Path name => [role, resolver]. A resolver returns [url, query, ajax] or a string explaining why the path has
+     * no data to profile in this dataset.
+     *
+     * @return array<string, array{0: string, 1: callable(): (array{0: string, 1: array, 2: bool}|string)}>
+     */
+    private function paths(array $users, int $length): array
+    {
+        $page = fn (string $route, array $parameters = [], array $query = []) => fn () => [route($route, $parameters), $query, false];
+        $table = fn (string $route, array $columns, array $query = [], array $parameters = []) => fn () => [route($route, $parameters), $this->dataTableQuery($columns, $length, $query), true];
+        $json = fn (string $route) => fn () => [route($route), [], true];
+        $vsBestColumns = [
+            ['data' => 'material_display', 'name' => 'current_pr_items.material_name'],
+            ['data' => 'current_price_display', 'name' => 'current_price_idr'],
+            ['data' => 'best_price_display', 'name' => 'best_price_idr'],
+            ['data' => 'diff_display', 'name' => 'diff_idr_per_kg'],
+            ['data' => 'potential_difference_display', 'name' => 'potential_difference_idr'],
+            ['data' => 'status_badge', 'name' => 'status_badge', 'searchable' => false],
+            ['data' => 'action', 'name' => 'action', 'searchable' => false, 'orderable' => false],
+        ];
+        $vsBestRange = ['date_from' => '2020-01', 'date_to' => '2035-12'];
 
-        $profiles[] = $this->profile('purchasing.requisitions.data', $purchasing, function () use ($length) {
-            $request = $this->dataTableRequest('/purchasing/requisitions', [
+        return [
+            'purchasing.dashboard' => ['purchasing', $page('purchasing.dashboard')],
+            'supplier.dashboard' => ['supplier_import', $page('supplier.dashboard')],
+            'purchasing.requisitions.data' => ['purchasing', $table('purchasing.requisitions.index', [
                 ['data' => 'DT_RowIndex', 'name' => 'DT_RowIndex', 'searchable' => false, 'orderable' => false],
                 ['data' => 'pr_number_display', 'name' => 'pr_number'],
                 ['data' => 'period_name', 'name' => 'period.name'],
@@ -85,13 +129,8 @@ class ProfileCriticalPaths extends Command
                 ['data' => 'status_badge', 'name' => 'status', 'searchable' => false],
                 ['data' => 'created_date', 'name' => 'created_at'],
                 ['data' => 'action', 'name' => 'action', 'searchable' => false, 'orderable' => false],
-            ], $length);
-
-            return app(PurchaseRequisitionController::class)->index($request);
-        });
-
-        $profiles[] = $this->profile('purchasing.purchase-orders.data', $purchasing, function () use ($length) {
-            $request = $this->dataTableRequest('/purchasing/purchase-orders', [
+            ])],
+            'purchasing.purchase-orders.data' => ['purchasing', $table('purchasing.purchase-orders.index', [
                 ['data' => 'po_number_display', 'name' => 'po_number'],
                 ['data' => 'supplier_name', 'name' => 'supplier_name', 'orderable' => false],
                 ['data' => 'period_name', 'name' => 'period_name', 'orderable' => false],
@@ -101,75 +140,45 @@ class ProfileCriticalPaths extends Command
                 ['data' => 'status_badge', 'name' => 'status'],
                 ['data' => 'estimated_date', 'name' => 'estimated_arrival'],
                 ['data' => 'action', 'name' => 'action', 'searchable' => false, 'orderable' => false],
-            ], $length);
+            ])],
+            'purchasing.comparison.inter-supplier' => ['purchasing', $page('purchasing.comparison.inter-supplier')],
+            'purchasing.comparison.historical' => ['purchasing', function () use ($users) {
+                $supplier = $users['supplier_import'];
+                $material = $supplier ? DB::table('pr_items')
+                    ->join('quotation_items', 'quotation_items.pr_item_id', '=', 'pr_items.id')
+                    ->join('quotations', 'quotations.id', '=', 'quotation_items.quotation_id')
+                    ->join('po_quotations', 'po_quotations.quotation_id', '=', 'quotations.id')
+                    ->where('quotations.supplier_id', $supplier->getKey())
+                    ->whereNull('quotations.deleted_at')
+                    ->orderBy('pr_items.id')
+                    ->value('pr_items.material_name') : null;
 
-            return app(PurchaseOrderController::class)->index($request);
-        });
+                return [route('purchasing.comparison.historical'), array_filter([
+                    'supplier_id' => $supplier?->getRouteKey(),
+                    'material_name' => $material,
+                    'period_view' => 'monthly',
+                    'range' => 'all',
+                ]), false];
+            }],
+            'purchasing.comparison.vs-best.data' => ['purchasing', $table('purchasing.comparison.vs-best.data', $vsBestColumns, $vsBestRange)],
+            'purchasing.comparison.vs-best.data.keyword' => ['purchasing', function () use ($table, $vsBestColumns, $vsBestRange) {
+                $material = (string) DB::table('pr_items')->whereNotNull('material_name')->orderBy('id')->value('material_name');
+                $keyword = mb_substr(trim($material), 0, 4);
 
-        $profiles[] = $this->profile('purchasing.comparison.inter-supplier', $purchasing, function () {
-            $request = $this->request('/purchasing/comparison/inter-supplier');
-
-            return app(PriceComparisonController::class)->interSupplier($request);
-        });
-
-        $historicalMaterial = DB::table('pr_items')
-            ->join('quotation_items', 'quotation_items.pr_item_id', '=', 'pr_items.id')
-            ->join('quotations', 'quotations.id', '=', 'quotation_items.quotation_id')
-            ->join('po_quotations', 'po_quotations.quotation_id', '=', 'quotations.id')
-            ->where('quotations.supplier_id', $supplier->getKey())
-            ->whereNull('quotations.deleted_at')
-            ->orderBy('pr_items.id')
-            ->value('pr_items.material_name');
-
-        $profiles[] = $this->profile('purchasing.comparison.historical', $purchasing, function () use ($supplier, $historicalMaterial) {
-            $request = $this->request('/purchasing/comparison/historical', array_filter([
-                'supplier_id' => $supplier->getRouteKey(),
-                'material_name' => $historicalMaterial,
-                'period_view' => 'monthly',
-                'range' => 'all',
-            ]));
-
-            return app(PriceComparisonController::class)->historical($request);
-        });
-
-        $profiles[] = $this->profile('purchasing.comparison.vs-best.data', $purchasing, function () use ($length) {
-            $request = $this->dataTableRequest('/purchasing/comparison/vs-best/data', [
-                ['data' => 'material_display', 'name' => 'current_pr_items.material_name'],
-                ['data' => 'current_price_display', 'name' => 'current_price_idr'],
-                ['data' => 'best_price_display', 'name' => 'best_price_idr'],
-                ['data' => 'diff_display', 'name' => 'diff_idr_per_kg'],
-                ['data' => 'potential_difference_display', 'name' => 'potential_difference_idr'],
-                ['data' => 'status_badge', 'name' => 'status_badge', 'searchable' => false],
-                ['data' => 'action', 'name' => 'action', 'searchable' => false, 'orderable' => false],
-            ], $length, [
-                'date_from' => '2020-01',
-                'date_to' => '2035-12',
-            ]);
-
-            return app(PriceComparisonController::class)->vsBestPriceData($request);
-        });
-
-        $profiles[] = $this->profile('purchasing.quotations.index', $purchasing, function () {
-            return app(QuotationListController::class)->index(
-                $this->request('/purchasing/quotations'),
-            );
-        });
-
-        $profiles[] = $this->profile('qc.inspections.history.data', $qc, function () use ($length) {
-            $request = $this->dataTableRequest('/qc/inspections/data-history', [
+                return $keyword === ''
+                    ? 'no material name to search for'
+                    : $table('purchasing.comparison.vs-best.data', $vsBestColumns, $vsBestRange + ['search' => ['value' => $keyword, 'regex' => false]])();
+            }],
+            'purchasing.quotations.index' => ['purchasing', $page('purchasing.quotations.index')],
+            'qc.inspections.data-history' => ['qc', $table('qc.inspections.data-history', [
                 ['data' => 'po_number', 'name' => 'purchaseOrder.po_number'],
                 ['data' => 'supplier_name', 'name' => 'purchaseOrder.supplier.name'],
                 ['data' => 'inspected_date', 'name' => 'inspected_at'],
                 ['data' => 'status_badge', 'name' => 'status'],
                 ['data' => 'inspector_name', 'name' => 'inspector.name'],
                 ['data' => 'action', 'name' => 'action', 'searchable' => false, 'orderable' => false],
-            ], $length);
-
-            return app(QcInspectionController::class)->dataHistory($request);
-        });
-
-        $profiles[] = $this->profile('purchasing.claims.history.data', $purchasing, function () use ($length) {
-            $request = $this->dataTableRequest('/purchasing/claims/data-history', [
+            ])],
+            'purchasing.claims.data-history' => ['purchasing', $table('purchasing.claims.data-history', [
                 ['data' => 'claim_id', 'name' => 'id'],
                 ['data' => 'po_number', 'name' => 'purchaseOrder.po_number'],
                 ['data' => 'supplier_name', 'name' => 'purchaseOrder.supplier.name'],
@@ -177,115 +186,135 @@ class ProfileCriticalPaths extends Command
                 ['data' => 'deadline_display', 'name' => 'deadline'],
                 ['data' => 'status_badge', 'name' => 'status'],
                 ['data' => 'action', 'name' => 'action', 'searchable' => false, 'orderable' => false],
-            ], $length);
+            ])],
+            'finance.dashboard' => ['finance', $page('finance.dashboard')],
+            'finance.invoices.index' => ['finance', $page('finance.invoices.index')],
+            'finance.local-procurement.index' => ['finance', $page('finance.local-procurement.index')],
+            'finance.local-procurement.goods-receipts.data' => ['finance', function () {
+                $purchaseOrder = LocalPurchaseOrder::query()->withCount('goodsReceipts')->orderByDesc('goods_receipts_count')->orderBy('id')->first();
 
-            return app(MaterialClaimController::class)->dataHistory($request);
-        });
+                return $purchaseOrder
+                    ? [route('finance.local-procurement.goods-receipts.data', $purchaseOrder), ['draw' => 1, 'start' => 0, 'length' => 25], true]
+                    : 'no local purchase order';
+            }],
+            'local-supplier.invoices.index' => ['supplier_local', $page('local-supplier.invoices.index')],
+            'notifications.unread-count' => ['purchasing', $json('notifications.unread-count')],
+            'notifications.summary' => ['purchasing', $json('notifications.summary')],
+            'conversations.unread-count' => ['purchasing', $json('conversations.unread-count')],
+            'conversations.drawer.show' => ['purchasing', function () use ($users) {
+                $conversation = Conversation::query()
+                    ->where('purchasing_user_id', $users['purchasing']?->getKey())
+                    ->withCount('messages')
+                    ->orderByDesc('messages_count')
+                    ->orderBy('id')
+                    ->first();
 
-        $profiles[] = $this->profile('notifications.counts', $purchasing, function () use ($notificationSummary, $purchasing) {
-            return response()->json($notificationSummary->countsForUser($purchasing));
-        });
-
-        $profiles[] = $this->profile('notifications.summary', $purchasing, function () use ($notificationSummary, $purchasing) {
-            return response()->json($notificationSummary->forUser($purchasing));
-        });
-
-        $profiles[] = $this->profile('conversations.unread-count', $purchasing, function () {
-            return app(ConversationMessageController::class)->unreadCount();
-        });
-
-        $payload = [
-            'environment' => [
-                'app_env' => app()->environment(),
-                'php' => PHP_VERSION,
-                'laravel' => app()->version(),
-                'database' => DB::connection()->getDatabaseName(),
-            ],
-            'dataset' => $this->datasetCounts(),
-            'profiles' => $profiles,
+                return $conversation
+                    ? [route('conversations.drawer.show', $conversation), [], true]
+                    : 'no conversation for the purchasing user';
+            }],
         ];
-
-        if ($this->option('json')) {
-            $this->line((string) json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
-
-            return self::SUCCESS;
-        }
-
-        $this->table(
-            ['Path', 'Queries', 'SQL ms', 'Response ms', 'Peak MB', 'Bytes', 'Status'],
-            array_map(fn (array $profile): array => [
-                $profile['path'],
-                $profile['query_count'],
-                $profile['sql_ms'],
-                $profile['response_ms'],
-                $profile['peak_mb'],
-                $profile['response_bytes'],
-                $profile['status'],
-            ], $profiles),
-        );
-
-        return collect($profiles)->contains(fn (array $profile): bool => $profile['status'] !== 'ok')
-            ? self::FAILURE
-            : self::SUCCESS;
     }
 
-    private function profile(string $path, User $user, callable $operation): array
+    private function profile(HttpKernel $kernel, string $path, string $role, ?User $user, callable $resolve, int $runs): array
     {
-        Auth::guard('web')->setUser($user);
+        $result = ['path' => $path, 'role' => $role, 'query_count' => 0, 'sql_ms' => 0.0, 'response_ms' => 0.0, 'p50_ms' => 0.0,
+            'p95_ms' => 0.0, 'runs' => 0, 'peak_mb' => 0.0, 'response_bytes' => 0, 'http_status' => null, 'status' => 'ok',
+            'error' => null, 'slowest_queries' => []];
 
-        DB::flushQueryLog();
-        DB::enableQueryLog();
+        if (! $user) {
+            return ['status' => 'skipped', 'error' => "no active {$role} user"] + $result;
+        }
+
+        try {
+            Auth::guard('web')->setUser($user);
+            $target = $resolve();
+        } catch (Throwable $exception) {
+            return ['status' => 'error', 'error' => $exception::class.': '.$exception->getMessage()] + $result;
+        }
+        if (is_string($target)) {
+            return ['status' => 'skipped', 'error' => $target] + $result;
+        }
+
+        [$url, $query, $ajax] = $target;
+        $timings = [];
         if (function_exists('memory_reset_peak_usage')) {
             memory_reset_peak_usage();
         }
 
-        $startedAt = hrtime(true);
-        $status = 'ok';
-        $responseBytes = 0;
-        $error = null;
+        for ($run = 0; $run <= $runs; $run++) {
+            Auth::guard('web')->setUser($user);
+            DB::beginTransaction();
+            DB::flushQueryLog();
+            DB::enableQueryLog();
+            $startedAt = hrtime(true);
 
-        try {
-            $result = $operation();
-            $responseBytes = strlen($this->responseContent($result));
-        } catch (Throwable $exception) {
-            $status = 'error';
-            $error = $exception::class.': '.$exception->getMessage();
-        }
+            try {
+                $request = Request::create($url, 'GET', $query, [], [], $ajax
+                    ? ['HTTP_ACCEPT' => 'application/json', 'HTTP_X_REQUESTED_WITH' => 'XMLHttpRequest']
+                    : ['HTTP_ACCEPT' => 'text/html']);
+                $response = $kernel->handle($request);
+                $content = (string) $response->getContent();
+                $kernel->terminate($request, $response);
+            } catch (Throwable $exception) {
+                $response = null;
+                $content = '';
+                $result['status'] = 'error';
+                $result['error'] = $exception::class.': '.$exception->getMessage();
+            } finally {
+                $elapsed = (hrtime(true) - $startedAt) / 1_000_000;
+                $queries = DB::getQueryLog();
+                DB::disableQueryLog();
+                DB::rollBack();
+            }
 
-        $responseMs = round((hrtime(true) - $startedAt) / 1_000_000, 2);
-        $queries = DB::getQueryLog();
-        DB::disableQueryLog();
+            if ($run === 0) {
+                continue; // Warm-up: view compilation, config and opcache.
+            }
 
-        usort($queries, fn (array $left, array $right): int => ($right['time'] ?? 0) <=> ($left['time'] ?? 0));
-
-        return [
-            'path' => $path,
-            'query_count' => count($queries),
-            'sql_ms' => round((float) collect($queries)->sum('time'), 2),
-            'response_ms' => $responseMs,
-            'peak_mb' => round(memory_get_peak_usage(true) / 1_048_576, 2),
-            'response_bytes' => $responseBytes,
-            'status' => $status,
-            'error' => $error,
-            'slowest_queries' => array_map(fn (array $query): array => [
+            $timings[] = $elapsed;
+            usort($queries, fn (array $left, array $right): int => ($right['time'] ?? 0) <=> ($left['time'] ?? 0));
+            $result['query_count'] = count($queries);
+            $result['sql_ms'] = round((float) collect($queries)->sum('time'), 2);
+            $result['response_bytes'] = strlen($content);
+            $result['http_status'] = $response?->getStatusCode();
+            $result['slowest_queries'] = array_map(fn (array $query): array => [
                 'time_ms' => round((float) ($query['time'] ?? 0), 2),
                 'sql' => $query['query'] ?? '',
-            ], array_slice($queries, 0, 3)),
-        ];
+            ], array_slice($queries, 0, 3));
+
+            if ($response && $response->getStatusCode() !== SymfonyResponse::HTTP_OK) {
+                $result['status'] = 'error';
+                $result['error'] = 'HTTP '.$response->getStatusCode()
+                    .($response->headers->has('Location') ? ' to '.$response->headers->get('Location') : '')
+                    .(($exception = property_exists($response, 'exception') ? $response->exception : null) ? ': '.$exception::class.': '.$exception->getMessage() : '');
+            }
+        }
+
+        sort($timings);
+
+        return array_merge($result, [
+            'runs' => count($timings),
+            'response_ms' => round($timings[intdiv(count($timings) - 1, 2)], 2),
+            'p50_ms' => round($timings[intdiv(count($timings) - 1, 2)], 2),
+            'p95_ms' => round($timings[(int) ceil(0.95 * count($timings)) - 1], 2),
+            'peak_mb' => round(memory_get_peak_usage(true) / 1_048_576, 2),
+        ]);
     }
 
-    private function request(string $uri, array $parameters = []): Request
+    private function activeUser(string $role): ?User
     {
-        $request = Request::create($uri, 'GET', $parameters);
-        $request->setUserResolver(fn () => Auth::user());
-        app()->instance('request', $request);
-
-        return $request;
+        return User::query()
+            ->where('role', $role)
+            ->where('is_active', true)
+            ->where('account_status', User::ACCOUNT_STATUS_ACTIVE)
+            ->orderBy('id')
+            ->first();
     }
 
-    private function dataTableRequest(string $uri, array $columns, int $length, array $parameters = []): Request
+    private function dataTableQuery(array $columns, int $length, array $parameters = []): array
     {
-        $parameters = array_merge([
+        return array_merge([
             'draw' => 1,
             'start' => 0,
             'length' => $length,
@@ -299,32 +328,6 @@ class ProfileCriticalPaths extends Command
             ], $columns),
             'order' => [],
         ], $parameters);
-
-        $request = Request::create($uri, 'GET', $parameters, [], [], [
-            'HTTP_ACCEPT' => 'application/json',
-            'HTTP_X_REQUESTED_WITH' => 'XMLHttpRequest',
-        ]);
-        $request->setUserResolver(fn () => Auth::user());
-        app()->instance('request', $request);
-
-        return $request;
-    }
-
-    private function responseContent(mixed $result): string
-    {
-        if ($result instanceof View) {
-            return $result->render();
-        }
-
-        if ($result instanceof SymfonyResponse) {
-            return (string) $result->getContent();
-        }
-
-        if ($result instanceof Response) {
-            return (string) $result->getContent();
-        }
-
-        return is_string($result) ? $result : (string) json_encode($result);
     }
 
     private function datasetCounts(): array
@@ -337,6 +340,9 @@ class ProfileCriticalPaths extends Command
             'quotation_items',
             'purchase_orders',
             'po_quotations',
+            'local_purchase_orders',
+            'local_goods_receipts',
+            'local_invoices',
             'notifications',
             'conversations',
             'messages',

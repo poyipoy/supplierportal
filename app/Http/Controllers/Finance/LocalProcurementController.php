@@ -29,7 +29,7 @@ class LocalProcurementController extends Controller
     public function index(Request $request)
     {
         $supplier = $this->resolveSupplierFilter($request->query('supplier_id'));
-        $query = LocalPurchaseOrder::with('supplier.supplier')->withCount(['goodsReceipts as active_gr_count' => fn ($q) => $q->where('status', '!=', LocalGoodsReceipt::STATUS_CANCELLED)]);
+        $query = LocalPurchaseOrder::with(['supplier.supplier', 'latestPoAttachment'])->withCount(['goodsReceipts as active_gr_count' => fn ($q) => $q->where('status', '!=', LocalGoodsReceipt::STATUS_CANCELLED)]);
         if ($request->filled('q')) {
             $search = '%'.addcslashes((string) $request->string('q'), '%_').'%';
             $query->where(function ($q) use ($search) {
