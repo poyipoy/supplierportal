@@ -942,6 +942,8 @@ php artisan optimize:clear
 | Teks UI baru / terjemahan | `tests/Unit/TranslationParityTest.php`, `TranslationContentTest`, `UserFacingCopyInventoryTest`, `Localization*Test`, `tests/js/localization*.test.mjs` |
 | Format regional / preferensi user | `Regional*Test`, `tests/Unit/RegionalDisplayFormatterTest.php`, `UserLocalePreferencesTest`, `UserRegionalPreferencesTest`, `tests/js/regional-*.test.mjs` |
 
+CI GitHub Actions (`.github/workflows/tests.yml`) menjalankan subset regresi cepat (isolasi/otorisasi, auth, registrasi, import PO/GR, Finance, notifikasi, chat, aset, terjemahan, ledger copy) di MySQL, test JS, dan build pada setiap PR serta push ke `master`; pint hanya untuk file PHP yang berubah di PR. Full suite tetap dijalankan lokal (`composer test` atau `composer test:parallel`). Tambahkan test baru ke subset itu bila menjaga boundary di atas.
+
 Untuk perubahan dokumentasi saja, inspeksi sumber, pemeriksaan path/tautan, review diff, dan `git diff --check` memadai; tidak perlu menjalankan feature suite/build tanpa perubahan runtime.
 
 Sebelum menyatakan selesai, cek requirement, authorization/validation, snapshot/data integrity, race/duplicate/partial failure, compatibility, query/memory cost, dan hasil verifikasi yang benar-benar dieksekusi. Laporkan terpisah automated/static, browser/cross-role, staging/migration, PDF/print, dan produksi yang belum diverifikasi. Passing tests tidak otomatis berarti production-ready.
