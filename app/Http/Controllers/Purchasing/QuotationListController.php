@@ -125,6 +125,8 @@ class QuotationListController extends Controller
             && ! $quotation->isExpired()
             && $directPoItems->contains('eligible', true);
 
+        // Review controls follow the same rule the review actions enforce.
+        $reviewLocked = $quotation->isReferencedByAwardOrPurchaseOrder();
         $canRequestRevision = $quotation->canRequestRevision()
             && $quotation->purchaseRequisition->status !== 'completed';
         $chatAvailable = in_array($quotation->status, ['submitted', 'revision_requested', 'accepted', 'all_unavailable'], true);
@@ -145,6 +147,7 @@ class QuotationListController extends Controller
             'latestRate',
             'canCreatePo',
             'canRequestRevision',
+            'reviewLocked',
             'chatAvailable',
             'supplierDisplayName',
             'hasAvailableItems',
@@ -287,8 +290,9 @@ class QuotationListController extends Controller
 
         try {
             $quotation = DB::transaction(function () use ($id, $request) {
-                $quotation = Quotation::whereKey($id)->lockForUpdate()->firstOrFail();
+                $quotation = $this->lockQuotationForReview($id);
                 $quotation->load(['supplier', 'purchaseRequisition', 'purchaseOrders', 'items']);
+                $this->assertNotReferencedByAwardOrPurchaseOrder($quotation);
 
                 if (! $quotation->canApproveBy(auth()->user())) {
                     throw new InvalidArgumentException(__('purchasing.copy.this_quotation_cannot_be_accepted'));
@@ -328,8 +332,9 @@ class QuotationListController extends Controller
 
         try {
             $quotation = DB::transaction(function () use ($id, $request) {
-                $quotation = Quotation::whereKey($id)->lockForUpdate()->firstOrFail();
+                $quotation = $this->lockQuotationForReview($id);
                 $quotation->load(['supplier', 'purchaseRequisition', 'purchaseOrders', 'items']);
+                $this->assertNotReferencedByAwardOrPurchaseOrder($quotation);
 
                 if (! $quotation->canApproveBy(auth()->user())) {
                     throw new InvalidArgumentException(__('purchasing.copy.this_quotation_cannot_be_rejected'));
@@ -370,8 +375,9 @@ class QuotationListController extends Controller
         $revisionNote = trim((string) $request->input('revision_note', ''));
         try {
             $quotation = DB::transaction(function () use ($id, $revisionNote) {
-                $quotation = Quotation::whereKey($id)->lockForUpdate()->firstOrFail();
+                $quotation = $this->lockQuotationForReview($id);
                 $quotation->load(['supplier.supplier', 'purchaseRequisition', 'purchaseOrders', 'items']);
+                $this->assertNotReferencedByAwardOrPurchaseOrder($quotation);
 
                 if ($quotation->purchaseRequisition->status === 'completed') {
                     throw new InvalidArgumentException(__('purchasing.copy.the_pr_is_completed_a_quotation_revision_cannot_be_requested'));
@@ -429,6 +435,28 @@ class QuotationListController extends Controller
 
         return redirect()->route('purchasing.quotations.show', $showParameters)
             ->with('success', __('purchasing.copy.quotation_revision_request_has_been_sent_to_the_supplier'));
+    }
+
+    /**
+     * Lock the requisition before the quotation, the order every award, PO,
+     * supplier and conversation writer uses, so a review cannot interleave with
+     * an award being saved for the same quotation.
+     */
+    private function lockQuotationForReview($id): Quotation
+    {
+        $prId = Quotation::query()->whereKey($id)->value('pr_id');
+        abort_if($prId === null, 404);
+
+        PurchaseRequisition::query()->whereKey($prId)->lockForUpdate()->firstOrFail();
+
+        return Quotation::query()->whereKey($id)->where('pr_id', $prId)->lockForUpdate()->firstOrFail();
+    }
+
+    private function assertNotReferencedByAwardOrPurchaseOrder(Quotation $quotation): void
+    {
+        if ($quotation->isReferencedByAwardOrPurchaseOrder()) {
+            throw new InvalidArgumentException(__('notifications.conversation.quotation_in_use'));
+        }
     }
 
     private function notifySupplierOfReview(Quotation $quotation, string $eventSuffix, string $title, string $message): void

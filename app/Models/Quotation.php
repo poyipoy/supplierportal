@@ -75,10 +75,25 @@ class Quotation extends Model
         return $this->validity_period !== null && $this->validity_period->lt(BusinessTime::today());
     }
 
+    /**
+     * An item award or a Purchase Order (soft-deleted ones included) that refers
+     * to this quotation freezes it: its review status may no longer change and
+     * the supplier may no longer revise it. Callers that write hold the
+     * requisition and quotation row locks before asking.
+     */
+    public function isReferencedByAwardOrPurchaseOrder(): bool
+    {
+        return $this->purchaseOrders()->withTrashed()->exists()
+            || PrItemAward::query()
+                ->where('quotation_id', $this->id)
+                ->orWhereIn('quotation_item_id', $this->items()->select('id'))
+                ->exists();
+    }
+
     public function canRequestRevision(): bool
     {
         return in_array($this->status, [self::STATUS_SUBMITTED, self::STATUS_ALL_UNAVAILABLE], true)
-            && $this->purchaseOrders()->count() === 0;
+            && ! $this->isReferencedByAwardOrPurchaseOrder();
     }
 
     public function isDraft(): bool
@@ -113,7 +128,7 @@ class Quotation extends Model
     {
         return $user->role === 'purchasing'
             && $this->status === self::STATUS_SUBMITTED
-            && $this->purchaseOrders()->count() === 0;
+            && ! $this->isReferencedByAwardOrPurchaseOrder();
     }
 
     public function statusLabel(): string
