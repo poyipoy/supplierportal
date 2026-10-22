@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Route;
+use PragmaRX\Google2FA\Google2FA;
 use Tests\TestCase;
 
 class AuthRateLimitingTest extends TestCase
@@ -39,7 +40,12 @@ class AuthRateLimitingTest extends TestCase
 
     public function test_mfa_code_challenge_is_limited_by_pending_user(): void
     {
+        // The challenge only verifies codes for users with confirmed 2FA; others are sent back to login.
         $user = User::factory()->create();
+        $user->forceFill([
+            'two_factor_secret' => app(Google2FA::class)->generateSecretKey(),
+            'two_factor_confirmed_at' => now(),
+        ])->save();
 
         for ($attempt = 1; $attempt <= 5; $attempt++) {
             $this->withSession([
