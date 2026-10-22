@@ -2,12 +2,13 @@
 
 namespace Tests\Feature\LocalInvoice;
 
+use App\Models\LocalGoodsReceipt;
 use App\Models\LocalInvoice;
 use App\Models\LocalInvoiceReceipt;
+use App\Models\LocalInvoiceVerification;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Services\LocalInvoice\InvoiceSubmissionService;
-use App\Services\LocalInvoice\InvoiceWorkflowService;
 use App\Services\LocalInvoice\LocalProcurementMasterService;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Support\Facades\DB;
@@ -101,7 +102,13 @@ class LocalInvoiceConcurrencyTest extends TestCase
         $this->assertLessThanOrEqual(0, bccomp((string) $active, '1000.00', 2), "Active DPP {$active} exceeds the 1000.00 PO ceiling.");
     }
 
-    public function test_conflicting_transitions_from_two_connections_have_one_winner(): void
+    /**
+     * Two Finance users decide the same invoice from separate connections on the
+     * authoritative path (InvoiceVerificationService). Exactly one decision may
+     * win, and the invoice, its verification lock and its whole GR must all
+     * reflect that winner.
+     */
+    public function test_conflicting_ready_to_pay_decisions_from_two_connections_have_one_winner(): void
     {
         $this->assertSame('adasi_portal_test', DB::connection()->getDatabaseName());
         Storage::fake('private');
@@ -110,13 +117,25 @@ class LocalInvoiceConcurrencyTest extends TestCase
         $supplier->supplierScopes()->create(['scope' => 'local']);
         Supplier::create(['user_id' => $supplier->id, 'company_name' => 'Concurrency', 'address' => 'Test', 'phone' => '1', 'npwp' => '1', 'category' => 'Test', 'payment_term_days' => 30]);
         $operator = User::factory()->create(['role' => 'finance']);
-        foreach ([['approve', 'approve'], ['approve', 'requestRevision']] as $iteration => $actions) {
+        $expected = [
+            'lockAndApprove' => [LocalInvoice::STATUS_READY_TO_PAY, true, LocalGoodsReceipt::STATUS_INVOICED],
+            'requestRevision' => [LocalInvoice::STATUS_NEED_REVISION, false, LocalGoodsReceipt::STATUS_RESERVED],
+            'reject' => [LocalInvoice::STATUS_REJECTED, false, LocalGoodsReceipt::STATUS_AVAILABLE],
+        ];
+
+        foreach ([['lockAndApprove', 'lockAndApprove'], ['lockAndApprove', 'requestRevision'], ['lockAndApprove', 'reject']] as $iteration => $actions) {
             // Each submission needs its own authoritative PO and available whole GR.
             $masters = app(LocalProcurementMasterService::class);
             $po = $masters->createPurchaseOrder($operator, ['supplier_id' => $supplier->id, 'po_number' => 'PO-RACE-'.$iteration, 'po_date' => '2026-09-01', 'total_amount' => '1000.00']);
             $gr = $masters->createGoodsReceipt($operator, $po, ['gr_number' => 'GR-RACE-'.$iteration, 'gr_date' => '2026-09-02', 'uom' => 'pcs', 'qty' => 1.0]);
             $invoice = app(InvoiceSubmissionService::class)->submit($supplier, ['invoice_number' => 'RACE-'.$iteration, 'invoice_date' => today()->format('Y-m-d'), 'local_purchase_order_id' => $po->id, 'goods_receipt_ids' => [$gr->id], 'invoice_amount' => '1.00', 'tax_amount' => '0.00', 'ppn_scheme' => '0%'], [...NativeFileFixtures::invoiceReferences(), 'invoice' => NativeFileFixtures::upload('invoice.pdf'), 'tax_invoice' => NativeFileFixtures::upload('tax.pdf')]);
-            app(InvoiceWorkflowService::class)->act($operator, $invoice, 'verifyPhysical');
+            // Physical receipt and both verification sections are done; only the decision races.
+            $invoice->update(['status' => LocalInvoice::STATUS_UNDER_VERIFICATION, 'cashier_received_at' => now(), 'cashier_received_by' => $operator->id]);
+            LocalInvoiceVerification::create(['local_invoice_id' => $invoice->id, 'revision_number' => $invoice->revision_number,
+                'is_section_a_passed' => true, 'is_section_b_passed' => true, 'section_a_verified_by' => $operator->id, 'section_b_verified_by' => $operator->id]);
+            $this->assertSame(LocalGoodsReceipt::STATUS_RESERVED, $gr->fresh()->status);
+            $histories = $invoice->statusHistories()->count();
+
             $start = microtime(true) + 3;
             $processes = array_map(fn ($action) => new Process([PHP_BINARY, base_path('tests/Support/local-invoice-concurrency-worker.php'), (string) $operator->id, (string) $invoice->id, $action, Storage::disk('private')->path(''), (string) $start], base_path(), ['APP_ENV' => 'testing']), $actions);
             foreach ($processes as $process) {
@@ -126,8 +145,15 @@ class LocalInvoiceConcurrencyTest extends TestCase
                 $process->wait();
                 $this->assertTrue($process->isSuccessful(), $process->getErrorOutput());
             }
-            $this->assertEqualsCanonicalizing(['accepted', 'rejected'], array_map(fn ($process) => trim($process->getOutput()), $processes));
-            $this->assertSame(3, $invoice->statusHistories()->count());
+
+            $outcomes = array_map(fn ($process) => trim($process->getOutput()), $processes);
+            $this->assertEqualsCanonicalizing(['accepted', 'rejected'], $outcomes);
+            $winner = $actions[array_search('accepted', $outcomes, true)];
+            [$status, $locked, $grStatus] = $expected[$winner];
+            $this->assertSame($histories + 1, $invoice->statusHistories()->count(), "Only the {$winner} winner may write history.");
+            $this->assertSame($status, $invoice->fresh()->status);
+            $this->assertSame($locked, (bool) $invoice->currentVerification()->first()->is_locked);
+            $this->assertSame($grStatus, $gr->fresh()->status);
         }
     }
 }
