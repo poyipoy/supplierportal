@@ -2,13 +2,16 @@
 
 namespace Tests\Feature\SupplierRegistration;
 
+use App\Models\SupplierBankAccount;
 use App\Models\SupplierMasterDocument;
 use App\Models\SupplierRegistrationAttempt;
+use App\Models\SupplierRegistrationAudit;
 use App\Models\User;
 use App\Services\SupplierRegistrationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Tests\Support\NativeFileFixtures;
 use Tests\TestCase;
 
@@ -95,6 +98,7 @@ class SupplierRegistrationReviewTest extends TestCase
         // Purchasing approves with both scopes
         $response = $this->actingAs($purchasingReviewer)->post(route('supplier-registrations.approve', $attempt->hash), [
             'scopes' => ['import', 'local'],
+            'vendor_category' => 'Barang',
             'notes' => 'Supplier verified and approved for both import and local procurement.',
         ]);
 
@@ -116,6 +120,207 @@ class SupplierRegistrationReviewTest extends TestCase
         $this->assertNotNull($user->registrationAccesses()->latest()->first()->revoked_at);
     }
 
+    public function test_approval_with_confirmation_assigns_vendor_category_and_verifies_the_bank_account(): void
+    {
+        $attempt = $this->createPendingAttempt();
+        $reviewer = User::factory()->create(['role' => 'finance', 'is_active' => true]);
+        $user = $attempt->user;
+
+        $this->assertSame(SupplierBankAccount::STATUS_PENDING, $user->supplierBankAccounts()->sole()->status);
+        $this->assertNull($user->supplier->vendor_category);
+        $this->assertFalse($user->supplier->requiresSuratJalan());
+
+        $this->actingAs($reviewer)->post(route('supplier-registrations.approve', $attempt->hash), [
+            'scopes' => ['local'],
+            'vendor_category' => 'Barang',
+            'confirm_bank_declaration' => '1',
+        ])->assertRedirect(route('supplier-registrations.show', $attempt->hash))
+            ->assertSessionMissing('warning');
+
+        $account = $user->supplierBankAccounts()->sole()->fresh();
+        $this->assertSame(SupplierBankAccount::STATUS_VERIFIED, $account->status);
+        $this->assertSame($reviewer->id, $account->verified_by);
+        $this->assertNotNull($account->activated_at);
+        $this->assertTrue($user->supplier->fresh()->requiresSuratJalan());
+        $this->assertSame($account->id, $user->supplier->fresh()->activeBankAccount?->id);
+
+        $this->assertDatabaseHas('supplier_registration_audits', [
+            'attempt_id' => $attempt->id,
+            'event' => 'bank_account_verified',
+            'actor_id' => $reviewer->id,
+        ]);
+    }
+
+    public function test_approval_without_a_bank_declaration_document_keeps_the_account_pending(): void
+    {
+        $attempt = $this->createPendingAttempt();
+        $reviewer = User::factory()->create(['role' => 'purchasing', 'is_active' => true]);
+        $user = $attempt->user;
+
+        SupplierMasterDocument::query()
+            ->where('supplier_id', $user->id)
+            ->where('document_type', SupplierMasterDocument::TYPE_SURAT_PERNYATAAN_REKENING)
+            ->delete();
+
+        app(SupplierRegistrationService::class)->approveRegistration($attempt, $reviewer, ['local'], 'Jasa', null, true);
+
+        $this->assertSame(SupplierBankAccount::STATUS_PENDING, $user->supplierBankAccounts()->sole()->fresh()->status);
+        $this->assertSame('Jasa', $user->supplier->fresh()->vendor_category);
+        $this->assertFalse($user->supplier->fresh()->requiresSuratJalan());
+        $this->assertDatabaseMissing('supplier_registration_audits', [
+            'attempt_id' => $attempt->id,
+            'event' => 'bank_account_verified',
+        ]);
+    }
+
+    public function test_approval_without_the_reviewer_confirmation_keeps_the_account_pending_and_warns(): void
+    {
+        $attempt = $this->createPendingAttempt();
+        $reviewer = User::factory()->create(['role' => 'finance', 'is_active' => true]);
+        $user = $attempt->user;
+
+        $this->actingAs($reviewer)->post(route('supplier-registrations.approve', $attempt->hash), [
+            'scopes' => ['local'],
+            'vendor_category' => 'Barang',
+        ])->assertRedirect(route('supplier-registrations.show', $attempt->hash))
+            ->assertSessionHas('warning', __('local_procurement.registration.approved_bank_pending'));
+
+        $this->assertSame(SupplierBankAccount::STATUS_PENDING, $user->supplierBankAccounts()->sole()->fresh()->status);
+        $this->assertSame(SupplierRegistrationAttempt::STATUS_APPROVED, $attempt->fresh()->status);
+        $this->assertSame('Barang', $user->supplier->fresh()->vendor_category);
+    }
+
+    public function test_approval_does_not_verify_an_account_that_differs_from_the_submitted_snapshot(): void
+    {
+        $attempt = $this->createPendingAttempt();
+        $reviewer = User::factory()->create(['role' => 'finance', 'is_active' => true]);
+        $user = $attempt->user;
+
+        // The row changed after the reviewer-visible submission; the SKNR no longer vouches for it.
+        $user->supplierBankAccounts()->sole()->update(['account_number' => '999000111222']);
+
+        app(SupplierRegistrationService::class)->approveRegistration($attempt, $reviewer, ['local'], 'Barang', null, true);
+
+        $this->assertSame(SupplierBankAccount::STATUS_PENDING, $user->supplierBankAccounts()->sole()->fresh()->status);
+        $this->assertSame(SupplierRegistrationAttempt::STATUS_APPROVED, $attempt->fresh()->status);
+    }
+
+    public function test_approval_does_not_verify_when_the_declaration_is_linked_to_another_account(): void
+    {
+        $attempt = $this->createPendingAttempt();
+        $reviewer = User::factory()->create(['role' => 'finance', 'is_active' => true]);
+        $user = $attempt->user;
+
+        $other = SupplierBankAccount::create([
+            'supplier_id' => $user->id,
+            'bank_name' => 'MANDIRI',
+            'account_number' => '123123123',
+            'account_holder_name' => 'PT Lain',
+            'status' => SupplierBankAccount::STATUS_INACTIVE,
+        ]);
+        SupplierMasterDocument::query()
+            ->where('supplier_id', $user->id)
+            ->where('document_type', SupplierMasterDocument::TYPE_SURAT_PERNYATAAN_REKENING)
+            ->update(['supplier_bank_account_id' => $other->id]);
+
+        app(SupplierRegistrationService::class)->approveRegistration($attempt, $reviewer, ['local'], 'Barang', null, true);
+
+        $this->assertSame(
+            SupplierBankAccount::STATUS_PENDING,
+            $user->supplierBankAccounts()->where('account_number', '888000111222')->sole()->status,
+        );
+    }
+
+    public function test_approval_rejects_an_unknown_vendor_category_at_the_service_boundary(): void
+    {
+        $attempt = $this->createPendingAttempt();
+        $reviewer = User::factory()->create(['role' => 'finance', 'is_active' => true]);
+
+        try {
+            app(SupplierRegistrationService::class)->approveRegistration($attempt, $reviewer, ['local'], 'Supplier');
+            $this->fail('An unknown vendor category must not be accepted.');
+        } catch (ValidationException $e) {
+            $this->assertArrayHasKey('vendor_category', $e->errors());
+        }
+
+        $this->assertSame(SupplierRegistrationAttempt::STATUS_PENDING, $attempt->fresh()->status);
+    }
+
+    public function test_approve_modal_shows_the_submitted_bank_account_and_the_confirmation_checkbox(): void
+    {
+        $attempt = $this->createPendingAttempt();
+        $reviewer = User::factory()->create(['role' => 'purchasing', 'is_active' => true]);
+
+        $this->actingAs($reviewer)->get(route('supplier-registrations.show', $attempt->hash))
+            ->assertOk()
+            ->assertSee('name="confirm_bank_declaration"', false)
+            ->assertSee('888000111222');
+    }
+
+    public function test_approval_audit_records_the_previous_vendor_category_and_bank_outcome(): void
+    {
+        $attempt = $this->createPendingAttempt();
+        $reviewer = User::factory()->create(['role' => 'finance', 'is_active' => true]);
+
+        app(SupplierRegistrationService::class)->approveRegistration($attempt, $reviewer, ['local'], 'Jasa', null, false);
+
+        $audit = SupplierRegistrationAudit::query()
+            ->where('attempt_id', $attempt->id)->where('event', 'registration_approved')->sole();
+        $this->assertArrayHasKey('vendor_category_before', $audit->metadata);
+        $this->assertNull($audit->metadata['vendor_category_before']);
+        $this->assertSame('Jasa', $audit->metadata['vendor_category']);
+        $this->assertSame('not_confirmed', $audit->metadata['bank_account']['reason']);
+    }
+
+    public function test_approval_does_not_verify_when_the_declaration_file_is_unreadable(): void
+    {
+        $attempt = $this->createPendingAttempt();
+        $reviewer = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $user = $attempt->user;
+
+        $document = SupplierMasterDocument::query()
+            ->where('supplier_id', $user->id)
+            ->where('document_type', SupplierMasterDocument::TYPE_SURAT_PERNYATAAN_REKENING)
+            ->sole();
+        Storage::disk('private')->delete($document->file_path);
+
+        app(SupplierRegistrationService::class)->approveRegistration($attempt, $reviewer, ['local'], 'Barang', null, true);
+
+        $this->assertSame(SupplierBankAccount::STATUS_PENDING, $user->supplierBankAccounts()->sole()->fresh()->status);
+    }
+
+    public function test_bank_verification_on_approval_is_written_to_the_finance_audit_log(): void
+    {
+        $attempt = $this->createPendingAttempt();
+        $reviewer = User::factory()->create(['role' => 'purchasing', 'is_active' => true]);
+
+        app(SupplierRegistrationService::class)->approveRegistration($attempt, $reviewer, ['local'], 'Barang', null, true);
+
+        $account = $attempt->user->supplierBankAccounts()->sole();
+        $this->assertDatabaseHas('local_finance_audit_logs', [
+            'auditable_type' => SupplierBankAccount::class,
+            'auditable_id' => $account->id,
+            'action' => 'vendor_bank_verified_on_registration',
+            'actor_id' => $reviewer->id,
+        ]);
+    }
+
+    public function test_approval_requires_a_known_vendor_category_and_changes_nothing_without_it(): void
+    {
+        $attempt = $this->createPendingAttempt();
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+
+        foreach ([null, 'Supplier'] as $invalid) {
+            $this->actingAs($admin)->post(route('supplier-registrations.approve', $attempt->hash), array_filter([
+                'scopes' => ['import'],
+                'vendor_category' => $invalid,
+            ]))->assertSessionHasErrors('vendor_category');
+        }
+
+        $this->assertSame(SupplierRegistrationAttempt::STATUS_PENDING, $attempt->fresh()->status);
+        $this->assertSame(SupplierBankAccount::STATUS_PENDING, $attempt->user->supplierBankAccounts()->sole()->status);
+    }
+
     public function test_approval_requires_at_least_one_valid_scope(): void
     {
         $attempt = $this->createPendingAttempt();
@@ -123,6 +328,7 @@ class SupplierRegistrationReviewTest extends TestCase
 
         $response = $this->actingAs($admin)->post(route('supplier-registrations.approve', $attempt->hash), [
             'scopes' => [],
+            'vendor_category' => 'Barang',
         ]);
 
         $response->assertSessionHasErrors('scopes');

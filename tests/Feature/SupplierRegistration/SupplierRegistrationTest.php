@@ -82,7 +82,7 @@ class SupplierRegistrationTest extends TestCase
         $this->assertStringContainsString($payload['company_name'], $submitted->data['message']);
         $this->assertStringContainsString($result['reference'], $submitted->data['message']);
         $this->assertSame('id', app()->getLocale());
-        $service->approveRegistration($result['attempt'], $english, ['import', 'local']);
+        $service->approveRegistration($result['attempt'], $english, ['import', 'local'], 'Barang');
         $en = $english->notifications()->where('data->event', 'supplier_registration.approved')->sole();
         $id = $indonesian->notifications()->where('data->event', 'supplier_registration.approved')->sole();
         $this->assertStringContainsString('Material Procurement, Local Supplier', $en->data['message']);
@@ -278,6 +278,44 @@ class SupplierRegistrationTest extends TestCase
         $this->assertSame(2, $newAttempt->attempt_number);
         $this->assertSame(SupplierRegistrationAttempt::STATUS_PENDING, $newAttempt->status);
         $this->assertSame('021-99998888', $user->supplier->fresh()->phone);
+    }
+
+    public function test_resubmission_that_changes_the_bank_account_requires_a_new_declaration(): void
+    {
+        /** @var SupplierRegistrationService $service */
+        $service = app(SupplierRegistrationService::class);
+        $result = $service->submitInitialRegistration(
+            data: $this->validRegistrationPayload(),
+            files: [
+                'nib_file' => NativeFileFixtures::upload('nib.pdf', 500),
+                'npwp_file' => UploadedFile::fake()->image('npwp.jpg', 20, 20),
+                'sknr_file' => NativeFileFixtures::upload('sknr.pdf', 600),
+                'sppkp_file' => NativeFileFixtures::upload('sppkp.pdf', 600),
+            ],
+        );
+        $attempt = $result['attempt'];
+        $reviewer = User::factory()->create(['role' => 'purchasing', 'is_active' => true]);
+        $service->requestRevision($attempt, $reviewer, 'Bank details need a correction.');
+
+        $this->post(route('supplier.registration.access'), [
+            'reference' => $result['reference'],
+            'access_key' => $result['access_key'],
+        ]);
+
+        $changedBank = array_merge($this->validRegistrationPayload([
+            'account_number' => '555000111999',
+        ]), ['nib_file' => null, 'npwp_file' => null, 'sknr_file' => null, 'sppkp_file' => null]);
+
+        $this->post(route('supplier.registration.resubmit'), $changedBank)
+            ->assertSessionHasErrors('sknr_file');
+        $this->assertSame(1, $attempt->user->fresh()->registrationAttempts()->count());
+
+        $changedBank['sknr_file'] = NativeFileFixtures::upload('sknr-new.pdf', 600);
+        $this->post(route('supplier.registration.resubmit'), $changedBank)
+            ->assertRedirect(route('supplier.registration.status'));
+
+        $this->assertSame(2, $attempt->user->fresh()->registrationAttempts()->count());
+        $this->assertSame('555000111999', $attempt->user->supplierBankAccounts()->sole()->account_number);
     }
 
     public function test_rejected_applicant_can_re_register_using_same_identifiers(): void

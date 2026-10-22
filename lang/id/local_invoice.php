@@ -44,6 +44,7 @@ return [
         'tax_description' => 'e-Faktur PPN / Bukti Potong Pajak Resmi',
         'purchase_order_description' => 'Wajib: satu PDF untuk PO yang dipilih, maksimal 5 MiB.',
         'goods_receipt_description' => 'Wajib: 1–5 PDF, maksimal 5 MiB per berkas. Satu PDF boleh memuat beberapa nomor GR yang dipilih.',
+        'delivery_note_optional_help' => 'Opsional untuk vendor non-barang: lampirkan PDF surat jalan bila ada (maksimal 5 PDF, 5 MiB per berkas).',
         'delivery_description' => 'Bukti fisik ekspedisi & serah terima barang',
         'supporting_title' => 'Dokumen Pendukung Tambahan',
         'supporting_description' => 'BAP atau lampiran pelengkap lainnya',

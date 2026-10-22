@@ -276,6 +276,7 @@
                                         'registration_approved' => __('local_procurement.registration.event_approved'),
                                         'scope_assigned' => __('local_procurement.registration.event_scope'),
                                         'account_activated' => __('local_procurement.registration.event_activated'),
+                                        'bank_account_verified' => __('local_procurement.registration.event_bank_verified'),
                                         'status_accessed_credentials' => __('local_procurement.registration.event_status_accessed'),
                                         default => str_replace('_', ' ', strtoupper($audit->event)),
                                     } }}</span>
@@ -441,6 +442,64 @@
                             </div>
                         </label>
                     </div>
+                </div>
+
+                {{-- VENDOR CATEGORY (decides whether a Surat Jalan is required on invoices) --}}
+                <div class="tw-rounded-ui-xs tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-4 tw-mb-4">
+                    <label for="approve_vendor_category" class="tw-block tw-text-ui-sm tw-font-bold tw-text-on-surface tw-mb-2">
+                        {{ __('local_procurement.registration.assign_vendor_category') }} <span class="tw-text-error">*</span>
+                    </label>
+                    <select
+                        id="approve_vendor_category"
+                        name="vendor_category"
+                        required
+                        class="ui-motion tw-h-10 tw-w-full tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-px-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary/20"
+                    >
+                        <option value="">{{ __('local_procurement.registration.select_vendor_category') }}</option>
+                        @foreach (\App\Models\Supplier::VENDOR_CATEGORIES as $vendorCategoryOption)
+                            <option value="{{ $vendorCategoryOption }}" @selected(old('vendor_category', $supplier?->vendor_category) === $vendorCategoryOption)>
+                                {{ \App\Support\StatusHelper::vendorCategoryLabel($vendorCategoryOption) }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('vendor_category')
+                        <p class="tw-m-0 tw-mt-1 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>
+                    @enderror
+                    <p class="tw-m-0 tw-mt-1.5 tw-text-ui-xs tw-text-on-surface-variant">{{ __('local_procurement.registration.vendor_category_help') }}</p>
+                </div>
+
+                {{-- BANK ACCOUNT CONFIRMATION (the reviewer vouches that the SKNR matches the submitted account) --}}
+                @php
+                    $snapshotBank = $attempt->submission_snapshot['bank'] ?? [];
+                    $declarationId = (int) ($attempt->submission_snapshot['documents'][\App\Models\SupplierMasterDocument::TYPE_SURAT_PERNYATAAN_REKENING]['document_id'] ?? 0);
+                    $declarationDoc = $user->supplierMasterDocuments->firstWhere('id', $declarationId);
+                @endphp
+                <div class="tw-rounded-ui-xs tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-4 tw-mb-4">
+                    <p class="tw-m-0 tw-mb-2 tw-text-ui-sm tw-font-bold tw-text-on-surface">{{ __('local_procurement.registration.bank_confirm_title') }}</p>
+                    <dl class="tw-m-0 tw-mb-3 tw-grid tw-grid-cols-3 tw-gap-x-3 tw-gap-y-1 tw-text-ui-xs">
+                        <dt class="tw-text-on-surface-variant">{{ __('local_procurement.vendor_ui.bank_name') }}</dt>
+                        <dd class="tw-col-span-2 tw-m-0 tw-font-semibold tw-text-on-surface">{{ $snapshotBank['bank_name'] ?? '-' }}</dd>
+                        <dt class="tw-text-on-surface-variant">{{ __('local_procurement.vendor_ui.bank_number') }}</dt>
+                        <dd class="tw-col-span-2 tw-m-0 tw-font-mono tw-font-semibold tw-text-on-surface">{{ $snapshotBank['account_number'] ?? '-' }}</dd>
+                        <dt class="tw-text-on-surface-variant">{{ __('local_invoice.labels.account_name') }}</dt>
+                        <dd class="tw-col-span-2 tw-m-0 tw-font-semibold tw-text-on-surface">{{ $snapshotBank['account_holder_name'] ?? '-' }}</dd>
+                    </dl>
+                    @if ($declarationDoc)
+                        <a
+                            href="{{ route('supplier-registrations.document', ['attempt' => $attempt->hash, 'document' => $declarationDoc->hash]) }}"
+                            class="ui-focus-ring tw-mb-3 tw-inline-flex tw-items-center tw-gap-1 tw-text-ui-xs tw-font-semibold tw-text-primary hover:tw-underline tw-no-underline"
+                        >
+                            <x-ui.icon name="download" size="xs" />
+                            <span>{{ __('local_procurement.registration.doc_bank_declaration') }}: {{ $declarationDoc->original_filename }}</span>
+                        </a>
+                    @else
+                        <p class="tw-m-0 tw-mb-3 tw-text-ui-xs tw-font-medium tw-text-error">{{ __('local_procurement.registration.bank_declaration_missing') }}</p>
+                    @endif
+                    <label class="tw-flex tw-items-start tw-gap-2.5 tw-cursor-pointer">
+                        <input type="checkbox" name="confirm_bank_declaration" value="1" class="form-check-input tw-mt-0.5" @disabled(! $declarationDoc)>
+                        <span class="tw-text-ui-sm tw-text-on-surface">{{ __('local_procurement.registration.bank_confirm_checkbox') }}</span>
+                    </label>
+                    <p class="tw-m-0 tw-mt-1.5 tw-text-ui-xs tw-text-on-surface-variant">{{ __('local_procurement.registration.bank_confirm_help') }}</p>
                 </div>
 
                 {{-- OPTIONAL APPROVAL NOTES --}}

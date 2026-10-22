@@ -186,7 +186,7 @@ class SupplierRegistrationCredentialAccessTest extends TestCase
         $reviewer = User::factory()->create(['role' => 'purchasing']);
         $attempt = $user->registrationAttempts()->orderByDesc('attempt_number')->firstOrFail();
         if ($status === SupplierRegistrationAttempt::STATUS_APPROVED) {
-            $service->approveRegistration($attempt, $reviewer, ['local']);
+            $service->approveRegistration($attempt, $reviewer, ['local'], 'Barang');
         } else {
             $service->rejectRegistration($attempt, $reviewer, 'Bank declaration does not match the legal company.');
         }

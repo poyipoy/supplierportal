@@ -12,6 +12,8 @@ use App\Models\SupplierRegistrationAudit;
 use App\Models\User;
 use App\Services\FileSecurity\FileAccessGuard;
 use App\Services\FileSecurity\FileInspectionService;
+use App\Services\LocalInvoice\LocalFinanceAuditService;
+use App\Services\VendorMaster\VendorMasterService;
 use App\Support\BusinessTime;
 use App\Support\NotificationCategory;
 use App\Support\NotificationDomain;
@@ -662,9 +664,21 @@ class SupplierRegistrationService
      *
      * @param  list<string>  $scopes  ('import', 'local', or both)
      */
-    public function approveRegistration(SupplierRegistrationAttempt $attempt, User $reviewer, array $scopes, ?string $notes = null): SupplierRegistrationAttempt
-    {
-        return DB::transaction(function () use ($attempt, $reviewer, $scopes, $notes) {
+    public function approveRegistration(
+        SupplierRegistrationAttempt $attempt,
+        User $reviewer,
+        array $scopes,
+        string $vendorCategory,
+        ?string $notes = null,
+        bool $confirmBankDeclaration = false,
+    ): SupplierRegistrationAttempt {
+        if (! in_array($vendorCategory, Supplier::VENDOR_CATEGORIES, true)) {
+            throw ValidationException::withMessages([
+                'vendor_category' => __('validation.in', ['attribute' => 'vendor_category']),
+            ]);
+        }
+
+        return DB::transaction(function () use ($attempt, $reviewer, $scopes, $notes, $vendorCategory, $confirmBankDeclaration) {
             $attempt = SupplierRegistrationAttempt::query()->whereKey($attempt->id)->lockForUpdate()->firstOrFail();
             $user = User::query()->whereKey($attempt->user_id)->lockForUpdate()->firstOrFail();
 
@@ -700,6 +714,15 @@ class SupplierRegistrationService
             }
             $user->forgetSupplierScopes();
 
+            // 3b. The reviewer-assigned vendor category decides whether a Surat Jalan is required.
+            $supplier = Supplier::query()->where('user_id', $user->id)->firstOrFail();
+            $previousVendorCategory = $supplier->vendor_category;
+            $supplier->update(['vendor_category' => $vendorCategory]);
+
+            // 3c. The reviewer's explicit confirmation that the declaration matches the submitted
+            // account activates it here, instead of leaving the supplier to file a change request.
+            $bankAccount = $this->verifyRegistrationBankAccount($attempt, $user, $reviewer, $confirmBankDeclaration);
+
             // 4. Revoke registration access credential
             SupplierRegistrationAccess::query()
                 ->where('user_id', $user->id)
@@ -714,8 +737,25 @@ class SupplierRegistrationService
                 actorId: $reviewer->id,
                 actorRole: $reviewer->role,
                 notes: $notes,
-                metadata: ['reviewer_name' => $reviewer->name, 'scopes' => $validScopes],
+                metadata: [
+                    'reviewer_name' => $reviewer->name,
+                    'scopes' => $validScopes,
+                    'vendor_category_before' => $previousVendorCategory,
+                    'vendor_category' => $vendorCategory,
+                    'bank_account' => $bankAccount,
+                ],
             );
+
+            if ($bankAccount['verified']) {
+                SupplierRegistrationAudit::record(
+                    attemptId: $attempt->id,
+                    userId: $user->id,
+                    event: 'bank_account_verified',
+                    actorId: $reviewer->id,
+                    actorRole: $reviewer->role,
+                    metadata: ['bank_account_id' => $bankAccount['id']],
+                );
+            }
 
             SupplierRegistrationAudit::record(
                 attemptId: $attempt->id,
@@ -748,6 +788,69 @@ class SupplierRegistrationService
 
             return $attempt;
         });
+    }
+
+    /**
+     * Activate the bank account the reviewer actually saw in the attempt snapshot, but only when
+     * the reviewer confirmed it and that account's own Surat Pernyataan Rekening (the document in
+     * the snapshot) is still readable. Anything else leaves it PENDING for the Vendor Master flow.
+     *
+     * @return array{id: int|null, verified: bool, reason: string}
+     */
+    private function verifyRegistrationBankAccount(SupplierRegistrationAttempt $attempt, User $user, User $reviewer, bool $confirmed): array
+    {
+        $snapshot = $attempt->submission_snapshot ?? [];
+        $bank = $snapshot['bank'] ?? [];
+
+        $account = SupplierBankAccount::query()
+            ->where('supplier_id', $user->id)
+            ->where('status', SupplierBankAccount::STATUS_PENDING)
+            ->where('bank_name', $bank['bank_name'] ?? null)
+            ->where('account_number', $bank['account_number'] ?? null)
+            ->where('account_holder_name', $bank['account_holder_name'] ?? null)
+            ->orderByDesc('id')
+            ->first();
+
+        if (! $account) {
+            return ['id' => null, 'verified' => false, 'reason' => 'no_matching_account'];
+        }
+
+        if (! $confirmed) {
+            return ['id' => $account->id, 'verified' => false, 'reason' => 'not_confirmed'];
+        }
+
+        $documentId = (int) ($snapshot['documents'][SupplierMasterDocument::TYPE_SURAT_PERNYATAAN_REKENING]['document_id'] ?? 0);
+        $document = $documentId > 0
+            ? SupplierMasterDocument::query()
+                ->whereKey($documentId)
+                ->where('supplier_id', $user->id)
+                ->where('document_type', SupplierMasterDocument::TYPE_SURAT_PERNYATAAN_REKENING)
+                ->where('supplier_bank_account_id', $account->id)
+                ->first()
+            : null;
+
+        if (! $document) {
+            return ['id' => $account->id, 'verified' => false, 'reason' => 'no_declaration'];
+        }
+
+        try {
+            app(FileAccessGuard::class)->assertReadable($document);
+        } catch (HttpException) {
+            return ['id' => $account->id, 'verified' => false, 'reason' => 'declaration_unreadable'];
+        }
+
+        app(VendorMasterService::class)->verifyBankAccount($account, $reviewer);
+
+        app(LocalFinanceAuditService::class)->record(
+            $account,
+            'vendor_bank_verified_on_registration',
+            $reviewer,
+            ['status' => SupplierBankAccount::STATUS_PENDING],
+            ['status' => SupplierBankAccount::STATUS_VERIFIED],
+            ['supplier_user_id' => $user->id, 'declaration_document_id' => $document->id],
+        );
+
+        return ['id' => $account->id, 'verified' => true, 'reason' => 'verified'];
     }
 
     /**

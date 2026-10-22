@@ -5,8 +5,8 @@
     $companyName = $supplier?->company_name ?: auth()->user()->name;
     $isPkp = (bool) ($supplier?->is_pkp ?? false);
     $selectedPpnScheme = $isPkp ? old('ppn_scheme', $invoice->ppn_scheme ?? '11%') : '0%';
-    $vendorCategory = $supplier?->vendor_category ?: $supplier?->category ?: 'Barang';
-    $requiresDeliveryNote = $vendorCategory === 'Barang';
+    $vendorCategory = $supplier?->vendor_category ?: $supplier?->category ?: '-';
+    $requiresDeliveryNote = (bool) $supplier?->requiresSuratJalan();
     $selectedPo = old('local_purchase_order_id', $invoice->local_purchase_order_id ?? '');
     $selectedGrs = collect(old('goods_receipt_ids', $invoice?->goodsReceiptHistories?->whereIn('state', ['RESERVED', 'CONSUMED'])->pluck('local_goods_receipt_id')->all() ?? []))->map(fn ($v) => (string) $v)->all();
 
@@ -377,20 +377,19 @@
                         :existing-files="$existingGrDocs"
                     />
 
-                    @if($requiresDeliveryNote)
-                        <x-ui.file-upload
-                            name="delivery_note"
-                            id="file_delivery_note"
-                            :label="__('local_invoice.labels.delivery_note')"
-                            :helper="__('common.final_copy.delivery_note_help')"
-                            accept=".pdf"
-                            :allowed-extensions="['pdf']"
-                            :multiple="true"
-                            :max-files="5"
-                            :required="!isset($invoice)"
-                            :existing-files="$existingDnDocs"
-                        />
-                    @endif
+                    <x-ui.file-upload
+                        name="delivery_note"
+                        id="file_delivery_note"
+                        :label="__('local_invoice.labels.delivery_note')"
+                        :helper="$requiresDeliveryNote ? __('common.final_copy.delivery_note_help') : __('local_invoice.documents.delivery_note_optional_help')"
+                        accept=".pdf"
+                        :allowed-extensions="['pdf']"
+                        :multiple="true"
+                        :max-files="5"
+                        :required="$requiresDeliveryNote && !isset($invoice)"
+                        :existing-files="$existingDnDocs"
+                    />
+
 
                     <x-ui.file-upload
                         name="supporting"
@@ -902,7 +901,7 @@ function localInvoiceWizard(config) {
         hasTax: (config.existingTaxCount > 0),
         hasPo: (config.existingPoCount === 1),
         hasGr: (config.existingGrCount > 0 && config.existingGrCount <= 5),
-        hasDn: !config.requiresDeliveryNote || (config.existingDnCount > 0),
+        hasDn: (config.existingDnCount > 0),
         hasSupporting: (config.existingSuppCount > 0),
         errorMessage: '',
 
@@ -929,7 +928,6 @@ function localInvoiceWizard(config) {
             this[states[id]] = count > 0;
             if (id === 'file_purchase_order') this.hasPo = count === 1;
             if (id === 'file_goods_receipt') this.hasGr = count > 0 && count <= 5;
-            if (!this.requiresDeliveryNote) this.hasDn = true;
             if (this.isStep1Complete) this.errorMessage = '';
         },
 
@@ -942,7 +940,7 @@ function localInvoiceWizard(config) {
         },
 
         get isStep1Complete() {
-            return this.hasInvoice && (!this.isPkp || this.hasTax) && this.hasPo && this.hasGr && this.hasDn;
+            return this.hasInvoice && (!this.isPkp || this.hasTax) && this.hasPo && this.hasGr && (!this.requiresDeliveryNote || this.hasDn);
         },
 
         goToStep(target) {
@@ -954,12 +952,12 @@ function localInvoiceWizard(config) {
                     if (this.isPkp && !this.hasTax) missing.push(@js(__('local_invoice.interaction.tax_invoice')));
                     if (!this.hasPo) missing.push(@js(__('local_invoice.labels.purchase_order')));
                     if (!this.hasGr) missing.push(@js(__('local_invoice.labels.goods_receipt')));
-                    if (!this.hasDn) missing.push(@js(__('local_invoice.interaction.delivery_note')));
+                    if (this.requiresDeliveryNote && !this.hasDn) missing.push(@js(__('local_invoice.interaction.delivery_note')));
                     this.errorMessage = @js(__('local_invoice.interaction.missing_files')).replace(':files', () => missing.join(', '));
                     const firstMissing = [
                         ['file_invoice', this.hasInvoice], ['file_tax_invoice', !this.isPkp || this.hasTax],
                         ['file_purchase_order', this.hasPo], ['file_goods_receipt', this.hasGr],
-                        ['file_delivery_note', this.hasDn],
+                        ['file_delivery_note', !this.requiresDeliveryNote || this.hasDn],
                     ].find(([, present]) => !present);
                     this.$nextTick(() => document.getElementById(firstMissing?.[0])?.closest('[x-data]')?.querySelector('[role="button"]')?.focus());
                     return;

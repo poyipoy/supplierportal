@@ -217,6 +217,31 @@ class LocalInvoiceSubmissionV2Test extends TestCase
         $this->assertSame('invoice', $invoice->documents->first()->document_type);
     }
 
+    public function test_service_vendor_may_attach_an_optional_surat_jalan(): void
+    {
+        $supplier = $this->createLocalSupplier([
+            'vendor_category' => 'Jasa',
+            'is_pkp' => false,
+        ]);
+
+        $invoice = $this->service->submit(
+            $supplier,
+            array_merge([
+                'invoice_number' => 'INV-JASA-DN-001',
+                'invoice_date' => '2026-09-10',
+                'invoice_amount' => 5000000,
+                'ppn_scheme' => '0%',
+                'scheduled_physical_delivery_date' => $this->nextWednesday(),
+            ], $this->authoritative($supplier)),
+            [...NativeFileFixtures::invoiceReferences(),
+                'invoice' => NativeFileFixtures::upload('invoice_only.pdf', 100),
+                'delivery_note' => [NativeFileFixtures::upload('optional-sj.pdf', 100)],
+            ]
+        );
+
+        $this->assertSame(1, $invoice->documents()->where('document_type', 'delivery_note')->count());
+    }
+
     public function test_wednesday_delivery_schedule_is_enforced(): void
     {
         $supplier = $this->createLocalSupplier();

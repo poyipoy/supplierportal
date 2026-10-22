@@ -9,6 +9,9 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Supplier extends Model
 {
+    /** Vendor categories a reviewer can assign; only `Barang` requires a Surat Jalan. */
+    public const VENDOR_CATEGORIES = ['Barang', 'Jasa', 'Lainnya'];
+
     protected $fillable = [
         'user_id',
         'company_title',

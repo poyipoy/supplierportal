@@ -45,7 +45,7 @@ class ResubmitRegistrationRequest extends FormRequest
             // Documents (Optional upon resubmission: replaces old document if provided)
             'nib_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
             'npwp_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
-            'sknr_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
+            'sknr_file' => [Rule::requiredIf(fn () => $this->bankDetailsChanged()), 'nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
             'sppkp_file' => [Rule::requiredIf(fn () => $this->boolean('is_pkp')
                 && ! app(SupplierRegistrationService::class)->hasReusableSppkp($this->attributes->get('registrationAccess')?->user)),
                 'nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
@@ -63,7 +63,31 @@ class ResubmitRegistrationRequest extends FormRequest
 
     public function messages(): array
     {
-        return ['sppkp_file.required' => __('registration.sppkp_required')];
+        return [
+            'sppkp_file.required' => __('registration.sppkp_required'),
+            'sknr_file.required' => __('registration.sknr_required_on_bank_change'),
+        ];
+    }
+
+    /**
+     * A carried-forward Surat Pernyataan Rekening vouches for the old account details only, so
+     * changing the account on resubmit must come with a new declaration.
+     */
+    private function bankDetailsChanged(): bool
+    {
+        $account = $this->attributes->get('registrationAccess')?->user?->supplierBankAccounts()->latest('id')->first();
+
+        if (! $account) {
+            return true;
+        }
+
+        foreach (['bank_name', 'account_number', 'account_holder_name'] as $field) {
+            if (trim((string) $this->input($field)) !== trim((string) $account->{$field})) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function safeResubmitData(): array

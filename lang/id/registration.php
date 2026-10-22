@@ -66,6 +66,7 @@ return [
     'sppkp' => 'Surat Pengukuhan PKP (SPPKP)',
     'sppkp_help' => 'Wajib dilampirkan apabila perusahaan Anda berstatus Pengusaha Kena Pajak.',
     'sppkp_required' => 'Lampirkan dokumen SPPKP yang dapat dibaca untuk perusahaan PKP.',
+    'sknr_required_on_bank_change' => 'Lampirkan surat pernyataan rekening (SKNR) baru bila data rekening bank berubah.',
     'additional_documents' => 'Dokumen Tambahan',
     'skd' => 'Surat Keterangan Domisili (SKD)',
     'skd_help' => 'Lampirkan jika domisili operasional pabrik/kantor berbeda dengan NIB.',
