@@ -46,7 +46,7 @@ return new class extends Migration
         if (DB::getDriverName() === 'mysql') {
             DB::statement(<<<'SQL'
                 ALTER TABLE shipment_items
-                DROP CHECK shipment_items_shipped_quantity_positive
+                DROP CONSTRAINT shipment_items_shipped_quantity_positive
                 SQL);
         }
 
