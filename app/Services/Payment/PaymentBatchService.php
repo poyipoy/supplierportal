@@ -2,6 +2,8 @@
 
 namespace App\Services\Payment;
 
+use App\Exceptions\BusinessRuleArgumentException;
+use App\Exceptions\BusinessRuleException;
 use App\Models\Employee;
 use App\Models\GaClaim;
 use App\Models\LocalInvoice;
@@ -18,8 +20,6 @@ use App\Support\FinanceConfigurationGuard;
 use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-use InvalidArgumentException;
-use RuntimeException;
 
 class PaymentBatchService
 {
@@ -29,11 +29,11 @@ class PaymentBatchService
     public function createSupplierBatch(User $actor, array $invoiceIds, ?string $notes = null): PaymentBatch
     {
         if (! $actor->isFinance() && ! $actor->isAdmin()) {
-            throw new InvalidArgumentException(__('finance.batch_validation.supplier_role'));
+            throw new BusinessRuleArgumentException(__('finance.batch_validation.supplier_role'));
         }
 
         if (empty($invoiceIds)) {
-            throw new InvalidArgumentException(__('finance.batch_validation.invoice_select'));
+            throw new BusinessRuleArgumentException(__('finance.batch_validation.invoice_select'));
         }
 
         return DB::transaction(function () use ($actor, $invoiceIds, $notes) {
@@ -56,7 +56,7 @@ class PaymentBatchService
             $invoices = LocalInvoice::whereIn('id', $invoiceIds)->lockForUpdate()->get();
 
             if ($invoices->count() !== count($invoiceIds)) {
-                throw new InvalidArgumentException(__('finance.batch_validation.invoice_missing'));
+                throw new BusinessRuleArgumentException(__('finance.batch_validation.invoice_missing'));
             }
 
             // Check if any invoice is already in an active (non-cancelled, non-paid) payment item
@@ -69,21 +69,21 @@ class PaymentBatchService
                 ->exists();
 
             if ($alreadyBatched) {
-                throw new RuntimeException(__('finance.batch_validation.invoice_reserved'));
+                throw new BusinessRuleException(__('finance.batch_validation.invoice_reserved'));
             }
 
             // Group by Supplier + Active Bank Account
             $grouped = [];
             foreach ($invoices as $invoice) {
                 if (! $invoice->isReadyToPay()) {
-                    throw new RuntimeException(__('finance.batch_validation.invoice_status', ['number' => $invoice->invoice_number, 'status' => $invoice->status]));
+                    throw new BusinessRuleException(__('finance.batch_validation.invoice_status', ['number' => $invoice->invoice_number, 'status' => $invoice->status]));
                 }
 
                 $supplierUser = $invoice->supplier;
                 $activeBank = $supplierUser->activeSupplierBankAccount;
 
                 if (! $activeBank) {
-                    throw new RuntimeException(__('finance.batch_validation.supplier_bank', ['name' => $supplierUser->name]));
+                    throw new BusinessRuleException(__('finance.batch_validation.supplier_bank', ['name' => $supplierUser->name]));
                 }
 
                 $groupKey = $supplierUser->id.'_'.$activeBank->id;
@@ -168,11 +168,11 @@ class PaymentBatchService
     public function createGaBatch(User $actor, array $claimIds, ?string $notes = null): PaymentBatch
     {
         if (! $actor->isFinance() && ! $actor->isAdmin()) {
-            throw new InvalidArgumentException(__('finance.batch_validation.ga_role'));
+            throw new BusinessRuleArgumentException(__('finance.batch_validation.ga_role'));
         }
 
         if (empty($claimIds)) {
-            throw new InvalidArgumentException(__('finance.batch_validation.claim_select'));
+            throw new BusinessRuleArgumentException(__('finance.batch_validation.claim_select'));
         }
 
         return DB::transaction(function () use ($actor, $claimIds, $notes) {
@@ -196,7 +196,7 @@ class PaymentBatchService
             $claims = GaClaim::whereIn('id', $claimIds)->lockForUpdate()->get();
 
             if ($claims->count() !== count($claimIds)) {
-                throw new InvalidArgumentException(__('finance.batch_validation.claim_missing'));
+                throw new BusinessRuleArgumentException(__('finance.batch_validation.claim_missing'));
             }
 
             $alreadyBatched = PaymentItem::where('payable_type', GaClaim::class)
@@ -208,20 +208,20 @@ class PaymentBatchService
                 ->exists();
 
             if ($alreadyBatched) {
-                throw new RuntimeException(__('finance.batch_validation.claim_reserved'));
+                throw new BusinessRuleException(__('finance.batch_validation.claim_reserved'));
             }
 
             // Group by Employee + Bank details
             $grouped = [];
             foreach ($claims as $claim) {
                 if ($claim->status !== GaClaim::STATUS_READY_TO_PAY) {
-                    throw new RuntimeException(__('finance.batch_validation.claim_status', ['number' => $claim->claim_number, 'status' => $claim->status]));
+                    throw new BusinessRuleException(__('finance.batch_validation.claim_status', ['number' => $claim->claim_number, 'status' => $claim->status]));
                 }
 
                 $employee = $employees->get($claim->employee_id);
                 if (! $employee || collect([$employee->bank_name, $employee->account_number, $employee->account_holder_name])
                     ->contains(fn ($value) => trim((string) $value) === '')) {
-                    throw new RuntimeException(__('finance.batch_validation.employee_bank', ['number' => $claim->claim_number]));
+                    throw new BusinessRuleException(__('finance.batch_validation.employee_bank', ['number' => $claim->claim_number]));
                 }
                 $snapshot = app(GaVerificationService::class)->assertBankSnapshot($claim, $employee);
                 app(FinanceConfigurationGuard::class)->amount($claim->amount, 'ga_claim_max_amount', 'amount', '0.01');
@@ -296,7 +296,7 @@ class PaymentBatchService
     public function removeItem(PaymentItem $item, User $actor, string $reason): void
     {
         if (trim($reason) === '') {
-            throw new InvalidArgumentException(__('finance.batch_validation.removal_reason'));
+            throw new BusinessRuleArgumentException(__('finance.batch_validation.removal_reason'));
         }
 
         DB::transaction(function () use ($item, $actor, $reason) {
@@ -305,11 +305,11 @@ class PaymentBatchService
             $group = $it->group()->lockForUpdate()->firstOrFail();
             $batch = $group->batch()->lockForUpdate()->firstOrFail();
             if ($batch->transfer_exported_at) {
-                throw new RuntimeException(__('finance_controls.transfer_locked'));
+                throw new BusinessRuleException(__('finance_controls.transfer_locked'));
             }
 
             if ($batch->status !== PaymentBatch::STATUS_DRAFT) {
-                throw new RuntimeException(__('finance.batch_validation.removal_draft', ['status' => $batch->status]));
+                throw new BusinessRuleException(__('finance.batch_validation.removal_draft', ['status' => $batch->status]));
             }
 
             if ($it->status !== PaymentItem::STATUS_ACTIVE) {
@@ -360,22 +360,22 @@ class PaymentBatchService
     public function cancelBatch(PaymentBatch $batch, User $actor, string $reason): PaymentBatch
     {
         if (! $actor->isFinance() && ! $actor->isAdmin()) {
-            throw new InvalidArgumentException(__('finance.batch_validation.cancel_role'));
+            throw new BusinessRuleArgumentException(__('finance.batch_validation.cancel_role'));
         }
 
         if (trim($reason) === '') {
-            throw new InvalidArgumentException(__('finance.batch_validation.cancel_reason'));
+            throw new BusinessRuleArgumentException(__('finance.batch_validation.cancel_reason'));
         }
 
         return DB::transaction(function () use ($batch, $actor, $reason) {
             /** @var PaymentBatch $b */
             $b = PaymentBatch::where('id', $batch->id)->lockForUpdate()->firstOrFail();
             if ($b->transfer_exported_at) {
-                throw new RuntimeException(__('finance_controls.transfer_locked'));
+                throw new BusinessRuleException(__('finance_controls.transfer_locked'));
             }
 
             if ($b->status !== PaymentBatch::STATUS_DRAFT) {
-                throw new RuntimeException(__('finance.batch_validation.cancel_draft', ['status' => $b->status]));
+                throw new BusinessRuleException(__('finance.batch_validation.cancel_draft', ['status' => $b->status]));
             }
 
             // Lock and cancel all active items in all groups
@@ -427,11 +427,11 @@ class PaymentBatchService
     public function overrideGroupFee(PaymentGroup $group, string|int|float $newFee, string $reason, User $actor): PaymentGroup
     {
         if (! $actor->is_active || (! $actor->isFinance() && ! $actor->isAdmin())) {
-            throw new InvalidArgumentException(__('finance.batch_validation.finalize_role'));
+            throw new BusinessRuleArgumentException(__('finance.batch_validation.finalize_role'));
         }
 
         if (trim($reason) === '') {
-            throw new InvalidArgumentException(__('finance.batch_validation.fee_reason'));
+            throw new BusinessRuleArgumentException(__('finance.batch_validation.fee_reason'));
         }
 
         return DB::transaction(function () use ($group, $newFee, $reason, $actor) {
@@ -439,11 +439,11 @@ class PaymentBatchService
             $grp = PaymentGroup::where('id', $group->id)->lockForUpdate()->firstOrFail();
             $batch = $grp->batch()->lockForUpdate()->firstOrFail();
             if ($batch->transfer_exported_at) {
-                throw new RuntimeException(__('finance_controls.transfer_locked'));
+                throw new BusinessRuleException(__('finance_controls.transfer_locked'));
             }
 
             if ($batch->status !== PaymentBatch::STATUS_DRAFT) {
-                throw new RuntimeException(__('finance.batch_validation.fee_draft'));
+                throw new BusinessRuleException(__('finance.batch_validation.fee_draft'));
             }
 
             $fee = app(FinanceConfigurationGuard::class)->amount($newFee, 'bank_fee_max_amount', 'bank_fee');
@@ -476,7 +476,7 @@ class PaymentBatchService
     public function finalizeBatch(PaymentBatch $batch, User $actor, ?string $overrideReason = null): PaymentBatch
     {
         if (! $actor->isFinance() && ! $actor->isAdmin()) {
-            throw new InvalidArgumentException(__('finance.batch_validation.finalize_role'));
+            throw new BusinessRuleArgumentException(__('finance.batch_validation.finalize_role'));
         }
 
         return DB::transaction(function () use ($batch, $actor) {
@@ -484,7 +484,7 @@ class PaymentBatchService
             $b = PaymentBatch::where('id', $batch->id)->lockForUpdate()->firstOrFail();
 
             if ($b->status !== PaymentBatch::STATUS_DRAFT) {
-                throw new RuntimeException(__('finance.batch_validation.finalize_draft', ['status' => $b->status]));
+                throw new BusinessRuleException(__('finance.batch_validation.finalize_draft', ['status' => $b->status]));
             }
             app(MakerCheckerService::class)->assertActorsRecorded('batch_finalize', $b, $actor, [$b->created_by], $b->actor_tracking_required);
 
@@ -495,7 +495,7 @@ class PaymentBatchService
                 ->lockForUpdate()->get();
 
             if ($activeItems->isEmpty()) {
-                throw new RuntimeException(__('finance.batch_validation.finalize_empty'));
+                throw new BusinessRuleException(__('finance.batch_validation.finalize_empty'));
             }
 
             // 2. Each payable must still be in READY_TO_PAY status
@@ -503,23 +503,23 @@ class PaymentBatchService
                 if ($item->payable_type === LocalInvoice::class) {
                     $inv = LocalInvoice::find($item->payable_id);
                     if (! $inv || ! $inv->isReadyToPay()) {
-                        throw new RuntimeException(__('finance.batch_validation.finalize_invoice', ['number' => $inv?->invoice_number ?? $item->payable_id]));
+                        throw new BusinessRuleException(__('finance.batch_validation.finalize_invoice', ['number' => $inv?->invoice_number ?? $item->payable_id]));
                     }
                 } elseif ($item->payable_type === GaClaim::class) {
                     $employeeId = GaClaim::whereKey($item->payable_id)->value('employee_id');
                     $employee = Employee::whereKey($employeeId)->lockForUpdate()->first();
                     $clm = GaClaim::whereKey($item->payable_id)->lockForUpdate()->first();
                     if (! $clm || $clm->status !== GaClaim::STATUS_READY_TO_PAY) {
-                        throw new RuntimeException(__('finance.batch_validation.finalize_claim', ['number' => $clm?->claim_number ?? $item->payable_id]));
+                        throw new BusinessRuleException(__('finance.batch_validation.finalize_claim', ['number' => $clm?->claim_number ?? $item->payable_id]));
                     }
                     if (! $employee) {
-                        throw new RuntimeException(__('finance_controls.bank_snapshot'));
+                        throw new BusinessRuleException(__('finance_controls.bank_snapshot'));
                     }
                     $snapshot = app(GaVerificationService::class)->assertBankSnapshot($clm, $employee);
                     $group = $item->group;
                     foreach (Employee::BANK_FIELDS as $field) {
                         if ((string) $group->{$field} !== $snapshot[$field]) {
-                            throw new RuntimeException(__('finance_controls.bank_snapshot'));
+                            throw new BusinessRuleException(__('finance_controls.bank_snapshot'));
                         }
                     }
                 }

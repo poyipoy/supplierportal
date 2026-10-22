@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Finance;
 
+use App\Exceptions\BusinessRuleViolation;
 use App\Exports\LocalInvoicesExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Export\AdvancedExportRequest;
@@ -83,7 +84,7 @@ class FinanceInvoiceController extends Controller
 
         try {
             $verification = $service->verifySectionA($invoice, $data, $request->user());
-        } catch (\InvalidArgumentException|\RuntimeException $e) {
+        } catch (\InvalidArgumentException|BusinessRuleViolation $e) {
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
                     'success' => false,
@@ -129,7 +130,7 @@ class FinanceInvoiceController extends Controller
 
         try {
             $verification = $service->verifySectionB($invoice, $data, $request->user());
-        } catch (\InvalidArgumentException|\RuntimeException $e) {
+        } catch (\InvalidArgumentException|BusinessRuleViolation $e) {
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
                     'success' => false,

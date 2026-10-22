@@ -2,6 +2,8 @@
 
 namespace App\Services\Ga;
 
+use App\Exceptions\BusinessRuleArgumentException;
+use App\Exceptions\BusinessRuleException;
 use App\Models\Employee;
 use App\Models\GaClaim;
 use App\Models\PaymentBatch;
@@ -12,8 +14,6 @@ use App\Services\LocalInvoice\LocalFinanceAuditService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
-use InvalidArgumentException;
-use RuntimeException;
 
 class GaVerificationService
 {
@@ -23,11 +23,11 @@ class GaVerificationService
     public function financeVerify(GaClaim $claim, User $financeActor, bool $approve, ?string $reason = null): GaClaim
     {
         if (! $financeActor->isFinance() && ! $financeActor->isAdmin()) {
-            throw new InvalidArgumentException(__('ga.validation.finance_role'));
+            throw new BusinessRuleArgumentException(__('ga.validation.finance_role'));
         }
 
         if (! $approve && empty(trim((string) $reason))) {
-            throw new InvalidArgumentException(__('ga.validation.revision_reason'));
+            throw new BusinessRuleArgumentException(__('ga.validation.revision_reason'));
         }
 
         return DB::transaction(function () use ($claim, $financeActor, $approve, $reason) {
@@ -36,7 +36,7 @@ class GaVerificationService
             $clm = GaClaim::where('id', $claim->id)->lockForUpdate()->firstOrFail();
 
             if ($clm->status !== GaClaim::STATUS_BASIC_VERIFIED) {
-                throw new RuntimeException(__('ga.validation.basic_required'));
+                throw new BusinessRuleException(__('ga.validation.basic_required'));
             }
 
             if ($approve) {
@@ -60,7 +60,7 @@ class GaVerificationService
                 ]);
             } else {
                 if (empty(trim((string) $reason))) {
-                    throw new InvalidArgumentException(__('ga.validation.revision_reason'));
+                    throw new BusinessRuleArgumentException(__('ga.validation.revision_reason'));
                 }
 
                 $clm->update([
