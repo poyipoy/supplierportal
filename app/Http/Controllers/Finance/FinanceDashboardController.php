@@ -16,20 +16,22 @@ class FinanceDashboardController extends Controller
     {
         $dashboardData = $query->dashboard();
 
+        // Same unscoped table and status lists as the former per-KPI counts,
+        // taken from the status breakdown the dashboard already loads.
+        $statusCount = fn (array $statuses): int => (int) collect($dashboardData['counts'])->only($statuses)->sum();
         $kpis = [
-            'waiting_physical' => LocalInvoice::where('status', LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT)->count(),
-            'under_verification' => LocalInvoice::whereIn('status', [LocalInvoice::STATUS_UNDER_VERIFICATION, 'UNDER_REVIEW'])->count(),
-            'need_revision' => LocalInvoice::where('status', LocalInvoice::STATUS_NEED_REVISION)->count(),
-            'ready_to_pay' => LocalInvoice::whereIn('status', [LocalInvoice::STATUS_READY_TO_PAY, 'APPROVED', 'PAYMENT_SCHEDULED'])->count(),
-            'paid' => LocalInvoice::whereIn('status', [LocalInvoice::STATUS_PAID, 'COMPLETED'])->count(),
-            'expired' => LocalInvoice::where('status', LocalInvoice::STATUS_EXPIRED)->count(),
+            'waiting_physical' => $statusCount([LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT]),
+            'under_verification' => $statusCount([LocalInvoice::STATUS_UNDER_VERIFICATION, 'UNDER_REVIEW']),
+            'need_revision' => $statusCount([LocalInvoice::STATUS_NEED_REVISION]),
+            'ready_to_pay' => $statusCount([LocalInvoice::STATUS_READY_TO_PAY, 'APPROVED', 'PAYMENT_SCHEDULED']),
+            'paid' => $statusCount([LocalInvoice::STATUS_PAID, 'COMPLETED']),
+            'expired' => $statusCount([LocalInvoice::STATUS_EXPIRED]),
             'overdue' => $dashboardData['overdue'] ?? 0,
         ];
 
         $selectedMonth = $request->query('month', BusinessTime::now()->format('Y-m'));
         $availableMonths = $forecastService->getAvailableMonths();
-        $weeklyForecast = $forecastService->getWeeklyForecast($selectedMonth);
-        $monthlyForecast = $forecastService->getMonthlyForecast();
+        ['weekly' => $weeklyForecast, 'monthly' => $monthlyForecast] = $forecastService->getDashboardForecasts($selectedMonth);
         $readyToPaySummary = $forecastService->getCurrentReadyToPaySummary();
 
         $recentBatches = PaymentBatch::with('creator')->latest('id')->limit(5)->get();
@@ -51,11 +53,13 @@ class FinanceDashboardController extends Controller
     {
         $selectedMonth = $request->query('month', BusinessTime::now()->format('Y-m'));
 
+        ['weekly' => $weekly, 'monthly' => $monthly] = $forecastService->getDashboardForecasts($selectedMonth);
+
         return response()->json([
             'selected_month' => $selectedMonth,
             'available_months' => $forecastService->getAvailableMonths(),
-            'weekly' => $forecastService->getWeeklyForecast($selectedMonth),
-            'monthly' => $forecastService->getMonthlyForecast(),
+            'weekly' => $weekly,
+            'monthly' => $monthly,
             'summary' => $forecastService->getCurrentReadyToPaySummary(),
         ]);
     }

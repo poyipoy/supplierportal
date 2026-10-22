@@ -435,6 +435,7 @@ Route::prefix(PortalPath::prefix())->group(function () {
         Route::post('/conversations/{id}/unmute', [ConversationMessageController::class, 'unmute'])
             ->middleware('throttle:60,1');
         Route::get('/conversations/{id}/messages/latest', [ConversationMessageController::class, 'latest'])->name('conversations.messages.latest');
+        Route::get('/conversations/{id}/messages/older', [ConversationMessageController::class, 'older'])->name('conversations.messages.older');
         Route::get('/conversations/unread-count', [ConversationMessageController::class, 'unreadCount'])->name('conversations.unread-count');
     });
 

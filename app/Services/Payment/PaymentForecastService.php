@@ -55,34 +55,76 @@ class PaymentForecastService
      */
     public function getWeeklyForecast(string|CarbonInterface|int|null $month = null, ?CarbonInterface $referenceDate = null): array
     {
-        if (is_int($month)) {
-            $ref = $this->businessRef($referenceDate);
-        } elseif ($month instanceof CarbonInterface) {
-            $ref = $this->businessRef($month);
-        } elseif (is_string($month) && ! empty($month)) {
-            $ref = Carbon::parse($month, BusinessTime::tz())->startOfMonth();
-        } else {
-            $ref = $this->businessRef($referenceDate);
-        }
-
-        return $this->aggregateWeeklyByMonth($ref);
+        return $this->aggregateWeeklyByMonth($this->weeklyRef($month, $referenceDate));
     }
 
     /**
-     * Aggregate weekly Ready-to-Pay events for a specific calendar month.
+     * Weekly forecast for $month plus the rolling monthly forecast, built from a
+     * single read of the invoices that fall in either window. Results are the
+     * same as getWeeklyForecast($month) and getMonthlyForecast().
+     *
+     * @return array{weekly: array, monthly: array}
      */
-    protected function aggregateWeeklyByMonth(Carbon $ref): array
+    public function getDashboardForecasts(string|CarbonInterface|int|null $month = null, int $monthsCount = self::DEFAULT_MONTHLY_PERIODS, ?CarbonInterface $referenceDate = null): array
+    {
+        $weeklyRef = $this->weeklyRef($month, $referenceDate);
+        [$weeklyStart, $weeklyEnd] = $this->weeklyWindow($weeklyRef);
+        [$monthlyStart, $monthlyEnd] = $this->monthlyWindow($monthsCount, $referenceDate);
+        // Each period below filters by its own event date, so a wider fetch window
+        // cannot add an invoice to a period it does not belong to.
+        $invoices = $this->eventInvoices(
+            $weeklyStart->lessThan($monthlyStart) ? $weeklyStart : $monthlyStart,
+            $weeklyEnd->greaterThan($monthlyEnd) ? $weeklyEnd : $monthlyEnd,
+            ['id', 'status', 'invoice_amount', 'tax_amount', 'ready_to_pay_at', 'approved_at'],
+        );
+
+        return [
+            'weekly' => $this->aggregateWeeklyByMonth($weeklyRef, $invoices),
+            'monthly' => $this->aggregateMonthlyForecast($monthsCount, $referenceDate, $invoices),
+        ];
+    }
+
+    private function weeklyRef(string|CarbonInterface|int|null $month, ?CarbonInterface $referenceDate): Carbon
+    {
+        if (is_int($month)) {
+            return $this->businessRef($referenceDate);
+        }
+        if ($month instanceof CarbonInterface) {
+            return $this->businessRef($month);
+        }
+        if (is_string($month) && ! empty($month)) {
+            return Carbon::parse($month, BusinessTime::tz())->startOfMonth();
+        }
+
+        return $this->businessRef($referenceDate);
+    }
+
+    /** @return array{0: Carbon, 1: Carbon} business-time bounds of the weekly forecast month */
+    private function weeklyWindow(Carbon $ref): array
     {
         $targetMonth = (clone $ref)->startOfMonth();
-        $daysInMonth = $targetMonth->daysInMonth;
-        $monthStart = (clone $targetMonth)->startOfDay();
-        $monthEnd = (clone $targetMonth)->endOfMonth()->endOfDay();
 
-        $storageStart = BusinessTime::toStorage($monthStart);
-        $storageEnd = BusinessTime::toStorage($monthEnd);
+        return [(clone $targetMonth)->startOfDay(), (clone $targetMonth)->endOfMonth()->endOfDay()];
+    }
 
-        // 1. Fetch invoices within this month
-        $invoices = LocalInvoice::with('currentVerification')
+    /** @return array{0: Carbon, 1: Carbon} business-time bounds of the rolling monthly forecast */
+    private function monthlyWindow(int $periodCount, ?CarbonInterface $referenceDate): array
+    {
+        $ref = $this->businessRef($referenceDate);
+
+        return [(clone $ref)->startOfMonth()->subMonths($periodCount - 1)->startOfDay(), (clone $ref)->endOfMonth()->endOfDay()];
+    }
+
+    /**
+     * Invoices whose Ready-to-Pay event (ready_to_pay_at, else approved_at) falls
+     * inside the business-time window, excluding rejected and cancelled ones.
+     */
+    private function eventInvoices(Carbon $windowStart, Carbon $windowEnd, array $columns = ['*'])
+    {
+        $storageStart = BusinessTime::toStorage($windowStart);
+        $storageEnd = BusinessTime::toStorage($windowEnd);
+
+        return LocalInvoice::with('currentVerification')
             ->where(function ($q) use ($storageStart, $storageEnd) {
                 $q->whereBetween('ready_to_pay_at', [$storageStart, $storageEnd])
                     ->orWhere(function ($sub) use ($storageStart, $storageEnd) {
@@ -94,7 +136,19 @@ class PaymentForecastService
                 LocalInvoice::STATUS_REJECTED,
                 LocalInvoice::STATUS_CANCELLED,
             ])
-            ->get();
+            ->get($columns);
+    }
+
+    /**
+     * Aggregate weekly Ready-to-Pay events for a specific calendar month.
+     */
+    protected function aggregateWeeklyByMonth(Carbon $ref, $invoices = null): array
+    {
+        $targetMonth = (clone $ref)->startOfMonth();
+        $daysInMonth = $targetMonth->daysInMonth;
+
+        // 1. Fetch invoices within this month
+        $invoices ??= $this->eventInvoices(...$this->weeklyWindow($ref));
 
         // 2. Define 7-day week intervals
         $weekDefinitions = [
@@ -199,28 +253,11 @@ class PaymentForecastService
     /**
      * Aggregate monthly payment forecast based on ready_to_pay_at events.
      */
-    protected function aggregateMonthlyForecast(int $periodCount, ?CarbonInterface $referenceDate = null): array
+    protected function aggregateMonthlyForecast(int $periodCount, ?CarbonInterface $referenceDate = null, $invoices = null): array
     {
-        $ref = $this->businessRef($referenceDate);
-        $windowStart = (clone $ref)->startOfMonth()->subMonths($periodCount - 1)->startOfDay();
-        $windowEnd = (clone $ref)->endOfMonth()->endOfDay();
+        [$windowStart] = $this->monthlyWindow($periodCount, $referenceDate);
 
-        $storageStart = BusinessTime::toStorage($windowStart);
-        $storageEnd = BusinessTime::toStorage($windowEnd);
-
-        $invoices = LocalInvoice::with('currentVerification')
-            ->where(function ($q) use ($storageStart, $storageEnd) {
-                $q->whereBetween('ready_to_pay_at', [$storageStart, $storageEnd])
-                    ->orWhere(function ($sub) use ($storageStart, $storageEnd) {
-                        $sub->whereNull('ready_to_pay_at')
-                            ->whereBetween('approved_at', [$storageStart, $storageEnd]);
-                    });
-            })
-            ->whereNotIn('status', [
-                LocalInvoice::STATUS_REJECTED,
-                LocalInvoice::STATUS_CANCELLED,
-            ])
-            ->get();
+        $invoices ??= $this->eventInvoices(...$this->monthlyWindow($periodCount, $referenceDate));
 
         $periods = [];
         $cumulativeAmount = Money::zero();

@@ -883,10 +883,8 @@ return [
         'pr_number' => 'PR Number',
         'supplier' => 'Supplier',
         'price_kg' => 'Price/Kg',
-        'total_price_idr' => 'Total Price IDR',
         'po_date' => 'PO Date',
         'change' => 'Change',
-        'average_price_kg_idr' => 'Average Price/Kg (IDR)',
         'progress_history' => 'Progress History: :material',
         'import_added' => [
             'zero' => 'No material rows were added to the form.',
@@ -905,7 +903,6 @@ return [
             'one' => ':count requisition',
             'other' => ':count requisitions',
         ],
-        'history_select_supplier_first' => 'Select a supplier first',
         'history_select_material' => 'Select material',
         'history_no_material' => 'No historical material available',
         'purchase_order_count' => [

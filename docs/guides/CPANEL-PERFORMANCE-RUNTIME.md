@@ -73,9 +73,18 @@ composer install --no-dev --optimize-autoloader
 <PHP_BINARY> artisan config:cache
 <PHP_BINARY> artisan route:cache
 <PHP_BINARY> artisan view:cache
+<PHP_BINARY> artisan icons:cache
+<PHP_BINARY> artisan queue:restart
 ```
 
 Run `migrate --force` only after confirming the active database and backup, and only when the release contains approved migrations. It is intentionally not a database preflight command.
+
+Never end a deployment with `optimize:clear` alone: it leaves every cache empty, so each request recompiles configuration, routes and views. `<PHP_BINARY> artisan optimize` builds the same caches in one command (it also runs `event:cache`, which is harmless here because event auto-discovery is off). `icons:cache` writes the blade-icons manifest so the first icon in each PHP process does not scan the icon directories.
+
+- `view:cache` is mandatory whenever a release changes Blade components. Since Gate 2 Stage 3, `<x-ui.icon>` is the class component `App\View\Components\Ui\Icon`; views compiled by an older release keep working through `resources/views/components/ui/icon.blade.php`, but only recompiled views use the faster class. A rollback to a release without that class **must** recompile views (see §3.1 and §10), otherwise every page with an icon fails with "class not found".
+- `queue:restart` makes Cron workers exit after their current job, so the next invocation runs the new job code (import commit, notification push). It does not interrupt a running export or import.
+
+All four caches were built successfully on the Stage 3 code locally (21 October 2026) and then cleared; this proves the commands, not the production host.
 
 Read-only/cache checks after deployment:
 
@@ -99,12 +108,14 @@ If the host uses release directories or symlinks, build caches from the active r
 If a deployment must be rolled back:
 
 1. **Application Code & Asset Rollback:**
-   Revert application source files and `public/build/` to the prior release commit, then clear/rebuild caches:
+   Revert application source files and `public/build/` to the prior release commit, then clear/rebuild caches. `optimize:clear` removes the compiled views, which is what makes a rollback across the `<x-ui.icon>` class change safe:
    ```sh
    <PHP_BINARY> artisan optimize:clear
    <PHP_BINARY> artisan config:cache
    <PHP_BINARY> artisan route:cache
    <PHP_BINARY> artisan view:cache
+   <PHP_BINARY> artisan icons:cache
+   <PHP_BINARY> artisan queue:restart
    ```
 
 2. **Schema Rollback Pre-requisites:**
@@ -120,6 +131,39 @@ If a deployment must be rolled back:
      ```sh
      <PHP_BINARY> artisan migrate:rollback --step=1
      ```
+
+### 3.2 Read-only host evidence
+
+Run as the hosting account user before the first performance release and record the output in §11. Every command only reads. The PHP extension, PCNTL, `flock` and writable-path checks are in [PRODUCTION-CRON-COMMANDS-20261012.md](PRODUCTION-CRON-COMMANDS-20261012.md) §3; run them with the CLI binary used by Cron, and read the web SAPI values from cPanel PHP Info/MultiPHP INI (they can differ).
+
+```sh
+cd <APPLICATION_PATH>
+<PHP_BINARY> artisan about --only=environment,cache,drivers
+<PHP_BINARY> -i | grep -Ei '^(opcache\.(enable|enable_cli|memory_consumption|max_accelerated_files|validate_timestamps|revalidate_freq)|memory_limit|max_execution_time) '
+ulimit -u; ulimit -n
+crontab -l
+mysql --defaults-extra-file=<CLIENT_CNF> -e "SELECT VERSION(); SHOW VARIABLES WHERE Variable_name IN ('max_connections','innodb_lock_wait_timeout','wait_timeout');"
+<PHP_BINARY> -r '$m = json_decode(file_get_contents("public/build/manifest.json"), true); $missing = []; foreach ($m as $entry) { foreach (array_merge([$entry["file"]], $entry["css"] ?? []) as $file) { if (! is_file("public/build/".$file)) { $missing[] = $file; } } } echo $missing ? "MISSING:\n".implode("\n", $missing) : "manifest OK (".count($m)." entries)", "\n";'
+```
+
+- `ulimit -u` is the per-user process limit. Each Cron worker is one PHP process (plus `flock`); three workers and the scheduler need four concurrent PHP processes at the top of each minute, on top of web PHP processes. If the limit or the provider's entry-process limit cannot accommodate that, use the two-worker fallback in §5.2.
+- PCNTL must be available to the CLI binary: without it, `--timeout` cannot stop a hung job and only `retry_after` (660 s) recovers it.
+- `<CLIENT_CNF>` is an option file readable only by the account (`chmod 600`), so the database password never appears in the shell history or process list. Do not paste `.env` values into tickets or chat.
+- The production engine was recorded as `11.4.13-MariaDB-cll-lve` (owner screenshot, 21 October 2026). MariaDB 11.4 supports the window functions, `JSON_EXTRACT`/`JSON_UNQUOTE` and `FORCE INDEX` used by Gate 2; it does not support MySQL's `EXPLAIN ANALYZE` (use `ANALYZE FORMAT=JSON` on staging only).
+- The manifest check must print `manifest OK`; any `MISSING` line means `public/build` was uploaded from a different build than `manifest.json` and pages will lose their JavaScript.
+
+### 3.3 Gate 2 performance release (Stages 1–3)
+
+The Gate 2 changes contain no migrations and no `.env` change. Order:
+
+1. Record the current Cron lines verbatim (`crontab -l`) and run §3.2.
+2. Pause import admission with the cache key `local_procurement_imports.paused=true` and let running imports finish, as described in [LOCAL-PROCUREMENT-IMPORTS.md](LOCAL-PROCUREMENT-IMPORTS.md). Exports may keep running.
+3. Upload the application source and the complete `public/build` set from the same build (`npm.cmd run build` on the release commit). Keep the previous `public/build/assets` files until the rollback window closes; the hashed names do not collide.
+4. Run the §3 command block without `migrate --force` (no migration is part of this release), including `view:cache`, `icons:cache` and `queue:restart`.
+5. Remove the pause key, then run the smoke checks in §9, plus: one PO and one GR import preview and confirm, a dashboard with the layout editor, a list page with the advanced export modal and a date filter, `/profile/customization`, `/profile/notifications`, and a chat with more than 50 messages using "Load earlier messages".
+6. Optional Cron change (separate change window, one worker at a time): split `exports,default` into `exports` and `default` as in §5.2, after §3.2 shows the process budget allows it.
+
+Rollback: steps 2–4 with the previous release (§3.1); the previous Cron lines from step 1 if step 6 was applied. No data migration is needed in either direction.
 
 ## 4. Scheduler Cron
 
@@ -137,78 +181,92 @@ Verify it with:
 
 During staging validation, temporarily send Cron output to a file under `storage/logs`, confirm at least two invocations, then return routine output to `/dev/null`. The scheduled commands already use Laravel's `withoutOverlapping()` lock; the configured database cache must remain available for that lock.
 
-## 5. Short-lived queue worker Cron
+## 5. Queue workers on cPanel (short-lived Cron workers)
 
-Exports are dispatched to the `exports` queue. Password-reset mail, new-device alert mail, and queued repeated-lockout alerts use the `default` queue. The worker must listen to `exports,default` in that order. A worker that listens only to `default` leaves exports queued indefinitely; a worker that listens only to `exports` leaves security mail queued indefinitely.
+This section is the canonical worker configuration. Other guides and the README point here.
 
-Preferred template when the host provides `flock`:
+### 5.1 Which queues exist
+
+Verified against the code on 21 October 2026:
+
+| Queue | Producers | Job timeout | Notes |
+|---|---|---|---|
+| `exports` | `ExportDispatcher` → `ProcessExportJob`, `GenerateWorkbookJob`, `FinalizeExportJob` | 600 s | Export state and queue row are written in one transaction on the same connection |
+| `imports` | `ProcessLocalProcurementImport` (PO/GR preview and confirm) | 300 s | Confirm runs one whole-file transaction with a 60 s commit budget |
+| `default` | `BroadcastNotificationCreated` for every `SystemNotification` (realtime Pusher push) and any job dispatched without a queue name | short | No queued mail or notification class exists today |
+| `po-documents` | `LocalPoDocumentBatchService` | not set | Off (`po_documents.async_enabled=false`); do not add a worker until it is approved |
+
+Earlier versions of this guide said `default` carried password-reset and new-device mail. Those are not queued in the current code. `default` now carries the realtime notification pushes. If no worker serves `default`, notifications are still stored and the 30-second badge polling still works, but no realtime toast or push arrives.
+
+### 5.2 Recommended topology: three workers
+
+One worker per queue, each with its own lock file and log. A long export (up to 600 s) or import (up to 300 s) then never delays a realtime push.
 
 ```cron
-* * * * * <FLOCK_BINARY> -n <APPLICATION_PATH>/storage/framework/async-export-worker.lock <PHP_BINARY> <APPLICATION_PATH>/artisan queue:work database --queue=exports,default --sleep=1 --stop-when-empty --max-time=50 --tries=3 --timeout=600 >> <APPLICATION_PATH>/storage/logs/queue-worker.log 2>&1
+* * * * * cd <APPLICATION_PATH> && <FLOCK_BINARY> -n <APPLICATION_PATH>/storage/framework/async-export-worker.lock <PHP_BINARY> artisan queue:work database --queue=exports --sleep=1 --max-time=50 --tries=3 --timeout=600 >> <APPLICATION_PATH>/storage/logs/queue-worker.log 2>&1
+* * * * * cd <APPLICATION_PATH> && <FLOCK_BINARY> -n <APPLICATION_PATH>/storage/framework/import-worker.lock <PHP_BINARY> artisan queue:work database --queue=imports --sleep=1 --max-time=50 --tries=3 --timeout=300 --memory=384 >> <APPLICATION_PATH>/storage/logs/import-worker.log 2>&1
+* * * * * cd <APPLICATION_PATH> && <FLOCK_BINARY> -n <APPLICATION_PATH>/storage/framework/default-worker.lock <PHP_BINARY> artisan queue:work database --queue=default --sleep=1 --max-time=50 --tries=3 --timeout=60 >> <APPLICATION_PATH>/storage/logs/default-worker.log 2>&1
 ```
 
-Minimal template when the provider guarantees Cron commands cannot overlap:
+Plus the scheduler entry from §4. That is four Cron entries.
+
+Keep the existing lock name `async-export-worker.lock` for the export worker. A worker started by the old `exports,default` line then still holds the same lock, so the new export worker cannot start beside it during the switch. The new `default` worker may briefly run beside an old `exports,default` worker; both reserve rows from the database queue, so a job is still processed once.
+
+**Fallback when the host does not allow a third resident process:** two workers.
 
 ```cron
-* * * * * cd <APPLICATION_PATH> && <PHP_BINARY> artisan queue:work database --queue=exports,default --sleep=1 --stop-when-empty --max-time=50 --tries=3 --timeout=600 >> storage/logs/queue-worker.log 2>&1
+* * * * * cd <APPLICATION_PATH> && <FLOCK_BINARY> -n <APPLICATION_PATH>/storage/framework/async-export-worker.lock <PHP_BINARY> artisan queue:work database --queue=default,exports --sleep=1 --max-time=50 --tries=3 --timeout=600 >> <APPLICATION_PATH>/storage/logs/queue-worker.log 2>&1
+* * * * * cd <APPLICATION_PATH> && <FLOCK_BINARY> -n <APPLICATION_PATH>/storage/framework/import-worker.lock <PHP_BINARY> artisan queue:work database --queue=imports --sleep=1 --max-time=50 --tries=3 --timeout=300 --memory=384 >> <APPLICATION_PATH>/storage/logs/import-worker.log 2>&1
 ```
 
-Do not use the minimal template merely because `flock` is unavailable. A running job can continue beyond `--max-time`; `--max-time` is checked between jobs and is not a per-job kill switch. If an export can run longer than the one-minute Cron interval, overlapping workers are possible unless cPanel or a lock prevents them. Ask the provider for an overlap-safe mechanism or use an approved lock wrapper.
+`default,exports` takes pushes before *queued* exports, but a push still waits while that process is *running* an export (up to 600 s). Choose this only when the three-worker layout exceeds the account's process or memory limit.
 
-The timeout relationship is deliberate:
+### 5.3 Do not use `--stop-when-empty`
+
+`--stop-when-empty` makes a Cron worker exit as soon as the queue is empty. Every new job then waits for the next Cron minute, so exports, imports and pushes sit in "Queued" for 0–60 s. Without it, the worker keeps polling (`--sleep=1`) until `--max-time=50` ends it, and Cron starts the next one. The remaining gap is about 10 s per minute.
+
+Idle cost per worker: one PHP CLI process for about 50 s of each minute (tens of MiB) and one `jobs` poll per second. Measure it against the account's process and memory limits before enabling all three workers.
+
+`--max-time` is checked between jobs, so a worker that is running a job keeps going past 50 s. `flock -n` stops a second copy from starting meanwhile. Do not drop `flock` unless the provider guarantees that Cron commands never overlap.
+
+### 5.4 Timeouts and retries
 
 ```text
-worker --timeout = 600 seconds
-DB_QUEUE_RETRY_AFTER = 660 seconds
+exports job timeout   600 s
+imports job timeout   300 s   (confirm transaction budget 60 s, preview lease 600 s)
+default worker        60 s
+DB_QUEUE_RETRY_AFTER  660 s   (connection-wide; must stay above every job timeout)
 ```
 
-`retry_after` must remain greater than the worker timeout so a still-running job is not released to another worker. Re-measure before changing either value. `--tries=3` means jobs must remain retry-safe; failed jobs are retained in `failed_jobs` for operator review.
+If `retry_after` were shorter than a running job, another worker could take the same job while it is still running. Re-measure before changing any of these values. Jobs are retried up to three times. An import whose confirm transaction exceeds the 60 s budget is rolled back, marked `FAILED` once, and recorded in `failed_jobs` without further retries.
 
-Operational checks:
+Timeouts need the PCNTL extension in the CLI PHP. Check `<PHP_BINARY> -m | grep pcntl` on the host; without it `--timeout` cannot interrupt a stuck job.
+
+### 5.5 Deploy, restart, rollback
+
+1. Before changing Cron, copy the existing lines verbatim into the change record.
+2. Deploy code, rebuild caches (§3), then run `<PHP_BINARY> artisan queue:restart`. Running workers finish their current job and exit; Cron starts workers with the new code.
+3. For imports, pause admission first (`local_procurement_imports.paused=true` in the cache), wait for active imports to finish, deploy, restart, then remove the pause (see `LOCAL-PROCUREMENT-IMPORTS.md`).
+4. Change one Cron line at a time and watch its log for two minutes.
+5. Rollback: restore the recorded lines, run `queue:restart`, and check that no job is stuck in `jobs` with `reserved_at` set for longer than 660 s.
+
+### 5.6 Verification and monitoring
 
 ```sh
 <PHP_BINARY> artisan queue:failed
 <PHP_BINARY> artisan schedule:list
+ps -u <ACCOUNT_USER> -o pid,etime,args | grep '[a]rtisan queue:work'
 ```
 
-Then trigger one small export from an authorized staging account and one queued security email. Verify the export UI lifecycle `queued -> processing -> completed`, the private download works, both queues return to their prior depth, and no new failed job appears. Record completion latency. Do not use production as a stress-test target.
+On staging, check one small export (`queued → processing → completed`, private download works), one PO and one GR import, and one realtime notification push while a long export is running. Record the push latency. Confirm that each queue returns to its previous depth and that no new failed job appears. Do not use production as a stress-test target.
 
-Monitor at minimum:
+Monitor at minimum: oldest pending job age per queue, pending count per queue, failed jobs by exception class, export and import duration, and log growth. Log rotation is provider-specific; do not let the worker logs grow without a rotation or retention policy.
 
-- oldest pending job age;
-- pending `exports` and `default` job count;
-- failed job count and exception class;
-- export completion duration;
-- queue-worker log growth and filesystem quota.
+Status: this topology was prepared from the repository only. The live Cron lines, `flock` path, PCNTL and the account's process and memory limits are **not verified**.
 
-Log rotation is provider-specific. Do not allow `queue-worker.log` to grow without a cPanel-supported rotation/retention policy.
+### 5.7 Alternative: long-lived workers (VPS only)
 
-### 5.1 Alternative: Long-Lived Worker Supervision (Supervisor / Systemd)
-
-If deploying to a dedicated VPS or Linux server where permanent daemons are supported instead of short-lived cPanel Cron tasks:
-
-**Supervisor configuration template (`/etc/supervisor/conf.d/adasi-worker.conf`):**
-
-```ini
-[program:adasi-worker]
-process_name=%(program_name)s_%(process_num)02d
-command=php /path/to/application/artisan queue:work database --queue=exports,default --sleep=1 --tries=3 --timeout=600
-autostart=true
-autorestart=true
-user=www-data
-numprocs=2
-redirect_stderr=true
-stdout_logfile=/path/to/application/storage/logs/supervisor-worker.log
-stopwaitsecs=660
-```
-
-**Worker Lifecycle & Deployment Rules:**
-- `stopwaitsecs` must be at least 660s (greater than the worker's `--timeout=600`) so Supervisor does not SIGKILL a running export during deployment restarts.
-- On every application code deployment, execute `php artisan queue:restart` to instruct all running queue workers to finish their current job and exit, allowing Supervisor to restart them with the new application code.
-- Ensure the crontab scheduler remains active:
-  ```cron
-  * * * * * cd /path/to/application && php artisan schedule:run >> /dev/null 2>&1
-  ```
+Where permanent daemons are supported (Supervisor/systemd on a VPS), run one long-lived program per queue with the same `--queue`, `--timeout` and `--tries` values as §5.2, without `--max-time`. Set the Supervisor `stopwaitsecs` above the longest job timeout (at least 660 s for exports) so a deployment restart does not kill a running export. Run `php artisan queue:restart` on every deployment, and keep the scheduler Cron entry.
 
 ## 6. OPcache and PHP limits
 
@@ -296,7 +354,7 @@ After caches and Cron are configured, use staging or a controlled production smo
 - notification summary/unread/read actions;
 - chat drawer and unread count;
 - one small queued export through download;
-- one password-reset mail job and one new-device alert mail job through the `default` queue;
+- one realtime notification push through the `default` queue;
 - first-device in-app alert, same-device no-repeat behavior, and the `/profile#active-sessions` link;
 - a fourth concurrent login evicting only the oldest active session;
 - `/up` health endpoint;
@@ -309,10 +367,10 @@ Confirm supplier data isolation with accounts from two different suppliers. Do n
 For an application rollback:
 
 1. pause the queue Cron and allow an active locked worker to finish;
-2. inspect pending `default` jobs and drain security notifications or keep their serialized notification classes compatible with the rollback release;
+2. inspect pending `default`, `exports` and `imports` jobs; drain them or keep their serialized job classes compatible with the rollback release;
 3. restore the previous matching application source, `public/build/manifest.json`, and `public/build/assets` set;
 4. restore the previous `.htaccess` if the static policy itself is being rolled back;
-5. run `artisan optimize:clear`, then `config:cache`, `route:cache`, and `view:cache` from the restored release;
+5. run `artisan optimize:clear`, then `config:cache`, `route:cache`, `view:cache`, `icons:cache` and `queue:restart` from the restored release (recompiling views is required when rolling back across the `<x-ui.icon>` class change, §3);
 6. resume scheduler/worker Cron;
 7. repeat the smoke checks and inspect logs/failed jobs.
 
@@ -328,11 +386,17 @@ Do not roll back a migration without reviewing whether production data now depen
 | Config cache | successful production command and smoke | NOT MEASURED — ENVIRONMENT REQUIRED |
 | Route cache | successful production command and route smoke | NOT MEASURED — ENVIRONMENT REQUIRED |
 | View cache | successful production command and rendered-page smoke | NOT MEASURED — ENVIRONMENT REQUIRED |
+| Icons cache | `icons:cache` output; `bootstrap/cache/blade-icons.php` present | NOT MEASURED — ENVIRONMENT REQUIRED |
+| Build set consistency | §3.2 manifest check prints `manifest OK` | NOT MEASURED — ENVIRONMENT REQUIRED |
+| PCNTL on the Cron CLI binary | §3.2 / cron guide §3 output | NOT MEASURED — ENVIRONMENT REQUIRED |
+| Process budget for Cron workers | `ulimit -u` and provider entry-process limit | NOT MEASURED — ENVIRONMENT REQUIRED |
+| Database engine and limits | `SELECT VERSION()`, `max_connections`, `innodb_lock_wait_timeout` | Engine RECORDED 21 Oct 2026 from owner screenshot (`11.4.13-MariaDB-cll-lve`); limits NOT MEASURED |
+| Current Cron lines | `crontab -l` before any change | RECORDED 21 Oct 2026 from owner screenshot (scheduler, `exports,default`, `imports`, none with `--stop-when-empty`); re-record before editing |
 | Browser cache headers | public-host curl headers | NOT MEASURED — ENVIRONMENT REQUIRED |
 | Brotli/gzip | public-host `Content-Encoding` | NOT MEASURED — ENVIRONMENT REQUIRED |
 | HTTP/2 | public-host protocol negotiation | NOT MEASURED — ENVIRONMENT REQUIRED |
 | HTTPS | redirect, certificate, secure-cookie smoke | NOT MEASURED — ENVIRONMENT REQUIRED |
 | Scheduler Cron | timestamped Cron evidence plus scheduled cleanup | NOT MEASURED — ENVIRONMENT REQUIRED |
-| Queue Cron | end-to-end export, default security mail, and no overlap | NOT MEASURED — ENVIRONMENT REQUIRED |
+| Queue Cron | end-to-end export, import, realtime push on `default`, and no overlap | NOT MEASURED — ENVIRONMENT REQUIRED |
 
 Do not replace these statuses with "verified" based solely on repository configuration or the local Windows/Laragon environment.

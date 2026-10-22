@@ -82,7 +82,7 @@ class PortalContext
             return null;
         }
 
-        $scopes = $user->supplierScopes()->pluck('scope')->all();
+        $scopes = $user->supplierScopeValues();
 
         if (count($scopes) === 1) {
             return $scopes[0];

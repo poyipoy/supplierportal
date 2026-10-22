@@ -883,10 +883,8 @@ return [
         'pr_number' => 'Nomor PR',
         'supplier' => 'Supplier',
         'price_kg' => 'Harga/Kg',
-        'total_price_idr' => 'Total Harga IDR',
         'po_date' => 'Tanggal PO',
         'change' => 'Perubahan',
-        'average_price_kg_idr' => 'Harga Rata-rata/Kg (IDR)',
         'progress_history' => 'Riwayat Progres: :material',
         'import_added' => [
             'zero' => 'Tidak ada baris material ditambahkan ke formulir.',
@@ -905,7 +903,6 @@ return [
             'one' => ':count permintaan pembelian',
             'other' => ':count permintaan pembelian',
         ],
-        'history_select_supplier_first' => 'Pilih supplier terlebih dahulu',
         'history_select_material' => 'Pilih material',
         'history_no_material' => 'Tidak ada data historis untuk material ini',
         'purchase_order_count' => [

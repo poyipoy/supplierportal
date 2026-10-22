@@ -30,7 +30,12 @@ class LocalPoImportService
         ]);
     }
 
-    public function validate(array $rows): array
+    /**
+     * $checkDatabase=false skips the registered-PO lookup. Only the confirm
+     * stage uses it: LocalProcurementMasterService::createImportBatch() repeats
+     * every registered-PO check (cancelled, identity, PR) under row locks.
+     */
+    public function validate(array $rows, bool $checkDatabase = true): array
     {
         $errors = [];
         $normalized = [];
@@ -119,9 +124,11 @@ class LocalPoImportService
             ];
         }
 
-        $dbResult = $this->checkDatabaseConflicts($normalized);
-        $errors = array_merge($errors, $dbResult['errors']);
-        $normalized = $dbResult['rows'];
+        if ($checkDatabase) {
+            $dbResult = $this->checkDatabaseConflicts($normalized);
+            $errors = array_merge($errors, $dbResult['errors']);
+            $normalized = $dbResult['rows'];
+        }
         $prByPo = [];
         foreach ($normalized as $row) {
             $key = mb_strtolower($row['po_number']);

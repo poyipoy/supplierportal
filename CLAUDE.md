@@ -13,10 +13,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Stack & commands
 - PHP 8.2, Laravel 12, MySQL (Laragon). Blade + Bootstrap 5 compat layer + Tailwind 3 with the `tw-` prefix, Alpine, Vite 7. Server-rendered; no API layer.
 - Install: `composer install` and `npm.cmd install`. Do not use `composer setup` on an existing DB (it runs `migrate --force`).
-- Run: `composer dev` (serve + `queue:listen --queue=exports,default` + pail + vite).
-- Test: `composer test` (full suite, serial, several minutes), `php artisan test --filter=Name`, `node --test tests/js/<file>.test.mjs`.
+- Run: `composer dev` (serve + `queue:listen --queue=exports,default` + `queue:listen --queue=imports` + pail + vite).
+- Test: `composer test` (full suite, serial, several minutes), `php artisan test --filter=Name`, `node --test tests/js/<file>.test.mjs`. CI (`.github/workflows/tests.yml`) runs a regression subset, JS tests and the build on PRs and pushes to `master` (AGENTS.md, Workflow Verifikasi).
 - Lint: `vendor/bin/pint --test <files>` (Laravel preset). There is no PHPStan/Larastan.
-- Build: `npm.cmd run build` after Blade class, CSS, or JS changes.
+- Build: `npm.cmd run build` after Blade class, CSS, or JS changes. Page-specific JS modules are dynamic imports gated by DOM markers in `resources/js/app.js`, not static imports (AGENTS.md, Panduan UI).
 - Seed: `DatabaseSeeder` (calls `LocalInvoiceSampleSeeder`). Accounts and the full check flow are in the `/verify` skill.
 
 ### Architecture map

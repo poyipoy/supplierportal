@@ -13,7 +13,7 @@ class PurchaseOrderController extends Controller
     public function index(Request $request)
     {
         $query = LocalPurchaseOrder::where('supplier_id', $request->user()->id)
-            ->with(['attachments' => fn ($q) => $q->latest('id')])
+            ->with('latestPoAttachment')
             ->withCount(['goodsReceipts as active_gr_count' => fn ($q) => $q->where('status', '!=', LocalGoodsReceipt::STATUS_CANCELLED)])
             ->withSum(['invoices as invoiced_amount' => fn ($q) => $q->whereNotIn('status', [LocalInvoice::STATUS_REJECTED, LocalInvoice::STATUS_CANCELLED])], 'invoice_amount');
 

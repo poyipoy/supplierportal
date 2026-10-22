@@ -42,6 +42,9 @@ class LocalProcurementMasterService
             $eligible = User::localEligible()->whereIn('id', $supplierIds)->orderBy('id')->sharedLock()->pluck('id')->all();
             $scoped = SupplierScope::whereIn('supplier_id', $supplierIds)->where('scope', 'local')->orderBy('supplier_id')->sharedLock()->pluck('supplier_id')->all();
             $eligible = array_map('intval', array_intersect($eligible, $scoped));
+            // Registered-PO conflicts are collected for the whole batch (first ten,
+            // in row order) so the operator sees every conflict at once, as before.
+            $conflicts = [];
             foreach ($records as $record) {
                 $row = $valuesByRow->get($record->source_row);
                 $existing = $poMap->get(mb_strtolower($row['po_number']));
@@ -52,17 +55,23 @@ class LocalProcurementMasterService
                 }
                 if ($existing) {
                     if ($existing->status === LocalPurchaseOrder::STATUS_CANCELLED) {
-                        throw ValidationException::withMessages(['po_number' => __('local_procurement.import.po_cancelled', ['po' => $row['po_number'], 'row' => $record->source_row])]);
+                        $conflicts[] = __('local_procurement.import.po_cancelled', ['po' => $row['po_number'], 'row' => $record->source_row]);
+
+                        continue;
                     }
                     if ((int) $existing->supplier_id !== (int) $row['supplier_id'] || $existing->po_date->format('Y-m-d') !== $row['po_date']
                         || bccomp((string) $existing->total_amount, $amount, 2) !== 0) {
-                        throw ValidationException::withMessages(['po_number' => __('local_procurement.import.po_existing_conflict', ['po' => $row['po_number']])]);
+                        $conflicts[] = __('local_procurement.import.po_existing_conflict', ['po' => $row['po_number']]);
+
+                        continue;
                     }
                     $counts['existingPo']++;
 
                     if ($prNumber !== null) {
                         if (filled($existing->pr_number) && LocalPoPrNumber::key($existing->pr_number) !== LocalPoPrNumber::key($prNumber)) {
-                            throw ValidationException::withMessages(['pr_number' => __('local_procurement.pr_import.conflict', ['po' => $existing->po_number])]);
+                            $conflicts[] = __('local_procurement.pr_import.conflict', ['po' => $row['po_number']]);
+
+                            continue;
                         }
                         if (blank($existing->pr_number)) {
                             $prFills[] = ['id' => $existing->id, 'pr_number' => $prNumber];
@@ -81,6 +90,9 @@ class LocalProcurementMasterService
                     'description' => 'Imported via Infor ERP Purchase Order',
                     'source' => LocalPurchaseOrder::SOURCE_IMPORT, 'created_by' => $actor->id, 'updated_by' => $actor->id,
                     'created_at' => now(), 'updated_at' => now()];
+            }
+            if ($conflicts) {
+                throw ValidationException::withMessages(['import_file' => array_slice($conflicts, 0, 10)]);
             }
             if ($inserts) {
                 LocalPurchaseOrder::insert($inserts);

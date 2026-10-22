@@ -759,6 +759,8 @@ Bootstrap 5 tetap menjadi compatibility layer. Pertahankan integrasi DataTables,
 
 Bootstrap, jQuery, SweetAlert2, dan dependency halaman tetap lewat CDN; DataTables hanya dimuat pada halaman yang mendeklarasikan `@section('uses-datatables', true)`, Chart.js per halaman. Vite membundel `resources/css/app.css` dan `resources/js/app.js`, dengan modul kalender/shell dimuat sesuai pola aktif.
 
+**Modul JS per halaman dimuat lazy (Gate 2 Stage 3).** Entry `app.js` hanya berisi modul yang dipakai global atau dipanggil sinkron oleh script inline (Alpine, toast/shell, `AdasiServerTabs`, `AdasiChart`, unsaved-changes, async submit, file upload, searchable select). Kalender, advanced export, editor dashboard, form customization/notifikasi/audit supplier, import lokal, dan tabel GR di-`import()` hanya bila penanda DOM-nya ada. Komponen Alpine khusus halaman didaftarkan di `pageComponents` pada `app.js` (selektor `[x-data^="namaKomponen"]`) dan import-nya ditunggu sebelum `Alpine.start()`. `window.AdasiCalendar` adalah stand-in yang memuat `calendar.js` saat `initialize(root)` menemukan date picker (mis. fragmen server tabs). Modul halaman baru mengikuti pola ini, bukan `import` statis; kontraknya dijaga `tests/js/app-lazy-modules.test.mjs`. `<x-ui.icon>` adalah kelas `App\View\Components\Ui\Icon` (alias di `Icon::ALIASES`, output dikunci `tests/Feature/UiIconComponentTest.php`); rilis yang mengubah komponen Blade wajib `view:cache`, termasuk saat rollback.
+
 Class yang dirender dari sisi server (mis. tombol aksi DataTables) tidak terbaca oleh content scanner Tailwind — kalau menambah class semacam itu, daftarkan di `safelist` pada `tailwind.config.js`.
 
 Komponen kalender sendiri merender native `type="date"` sebagai progressive-enhancement base; ini disengaja, bukan pelanggaran larangan menulis native date input langsung pada halaman. Upgrade berada di `resources/js/calendar.js`; helper tanggal murni di `calendar-core.js`, dengan lazy import `cally`. Untuk jadwal fisik lokal, gunakan `allowed-days-of-week`, dan tetap validasi Rabu di backend `DeliveryScheduleValidator`.
@@ -805,7 +807,7 @@ Target UI adalah enterprise ERP yang ringkas dan padat, akrab bagi operator ERP.
 - Export operasional memakai `ExportDispatcher::dispatch()` → `ExportJob` → `ProcessExportJob` pada queue `exports`, private disk, status polling `public/assets/js/async-export.js`, dan download berotorisasi. Tambahkan export class baru ke `SUPPORTED_EXPORT_CLASSES`; kirim argumen scalar/filter/ID yang JSON-serializable, bukan Eloquent model.
 - Handoff export saat ini **atomik pada database yang sama**: `ExportJob` dan queue database dimasukkan dalam transaksi bersama. `assertAtomicQueueConfiguration()` mensyaratkan database driver, connection yang sama, dan `after_commit=false` (sync diterima untuk tests). Jangan mengubahnya menjadi dispatch setelah commit atau Redis tanpa mendesain ulang jaminan handoff tersebut.
 - Template import tetap direct download. Jangan mengubah export operasional menjadi render inline atau meniadakan ownership saat polling/download.
-- `composer dev` sudah mendengarkan `exports,default`. Deployment tetap membutuhkan worker dan scheduler sesuai [README.md](README.md).
+- `composer dev` mendengarkan `exports,default` dan `imports` (dua listener). Queue `default` membawa push notifikasi realtime (`BroadcastNotificationCreated`). Deployment membutuhkan scheduler dan worker `exports`, `imports`, `default` tanpa `--stop-when-empty`, sesuai [CPANEL-PERFORMANCE-RUNTIME.md](docs/guides/CPANEL-PERFORMANCE-RUNTIME.md) §5.
 - `routes/console.php`: prune `AuthAuditLog` 02:10, `exports:cleanup` 02:20 (retensi tiga hari), reminder/expiry invoice lokal 08:00, notifikasi blok invoice Supplier Audit 00:10, semuanya memakai business timezone dan `withoutOverlapping()`. Produksi membutuhkan cron `schedule:run` selain worker queue.
 - Queue memakai driver `database` dengan `DB_QUEUE_RETRY_AFTER=660`; tests memakai `sync`.
 
@@ -909,6 +911,7 @@ php artisan local-invoices:reconcile --json
 composer dev            # serve + queue:listen + pail + vite
 npm run dev             # vite saja
 php artisan queue:work database --queue=exports,default --tries=3 --timeout=600
+php artisan queue:work database --queue=imports --tries=3 --timeout=300 --memory=384
 php artisan schedule:run
 php artisan optimize:clear
 ```
@@ -939,6 +942,8 @@ php artisan optimize:clear
 | Advanced Export | `AdvancedExport*Test`, `AdvancedPurchaseOrderExportTest`, `ExportPresetTest`, `tests/Unit/OperationalWorkbookPresentationTest.php`, `tests/js/advanced-export-*.test.mjs` |
 | Teks UI baru / terjemahan | `tests/Unit/TranslationParityTest.php`, `TranslationContentTest`, `UserFacingCopyInventoryTest`, `Localization*Test`, `tests/js/localization*.test.mjs` |
 | Format regional / preferensi user | `Regional*Test`, `tests/Unit/RegionalDisplayFormatterTest.php`, `UserLocalePreferencesTest`, `UserRegionalPreferencesTest`, `tests/js/regional-*.test.mjs` |
+
+CI GitHub Actions (`.github/workflows/tests.yml`) menjalankan subset regresi cepat (isolasi/otorisasi, auth, registrasi, import PO/GR, Finance, notifikasi, chat, aset, terjemahan, ledger copy) di MySQL, test JS, dan build pada setiap PR serta push ke `master`; pint hanya untuk file PHP yang berubah di PR. Full suite tetap dijalankan lokal (`composer test` atau `composer test:parallel`). Tambahkan test baru ke subset itu bila menjaga boundary di atas.
 
 Untuk perubahan dokumentasi saja, inspeksi sumber, pemeriksaan path/tautan, review diff, dan `git diff --check` memadai; tidak perlu menjalankan feature suite/build tanpa perubahan runtime.
 

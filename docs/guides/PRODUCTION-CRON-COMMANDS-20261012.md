@@ -1,6 +1,8 @@
 # Cron produksi ADASI Portal Supplier — 12 Oktober 2026
 
-Rekomendasi untuk cPanel pada screenshot: **tiga cron setiap menit**. Scheduler menjalankan jadwal aplikasi; worker pertama melayani `exports,default`; worker kedua khusus `imports`. Worker `po-documents` bersifat kondisional karena fitur async tersebut masih OFF di working tree.
+> **Diperbarui 21 Oktober 2026 (Gate 2 Stage 1):** queue `default` ternyata membawa push notifikasi realtime (`BroadcastNotificationCreated`), bukan email. Topologi yang direkomendasikan kini **empat cron setiap menit**: scheduler, worker `exports`, worker `imports`, dan worker `default`, semuanya **tanpa `--stop-when-empty`**. Sumber kanonik: [CPANEL-PERFORMANCE-RUNTIME.md](CPANEL-PERFORMANCE-RUNTIME.md) §5. Kondisi produksi per screenshot cPanel 21 Oktober 2026: tiga entry (scheduler, `exports,default`, `imports`), semuanya **sudah tanpa** `--stop-when-empty`; database `MariaDB 11.4.13-cll-lve`. Perubahan yang masih disarankan hanya dua: ubah entry worker export menjadi `--queue=exports` (bagian B), lalu tambahkan worker `default` (bagian B2). PCNTL dan batas proses akun belum diverifikasi; jalankan pemeriksaan bagian 3 lebih dulu dan catat baris lama sebelum mengubahnya.
+
+Rekomendasi untuk cPanel pada screenshot: **empat cron setiap menit**. Scheduler menjalankan jadwal aplikasi; worker pertama khusus `exports`; worker kedua khusus `imports`; worker ketiga khusus `default`. Worker `po-documents` bersifat kondisional karena fitur async tersebut masih OFF di working tree.
 
 Path berikut diambil dari screenshot, bukan pemeriksaan SSH produksi:
 
@@ -28,20 +30,28 @@ Repo sudah memakai `withoutOverlapping()` untuk setiap tugas. Lock aplikasi meme
 
 Saat setup, simpan output scheduler ke log agar kegagalan terlihat. Setelah operasi stabil, pemilik dapat memilih output rutin `/dev/null` dengan monitoring error lain yang sudah terbukti. Rotasi log tetap diperlukan jika output dipertahankan.
 
-### B. Worker export dan default — wajib
+### B. Worker export — wajib
 
 ```sh
-cd /home/adaw2196/supplierportal && /usr/bin/flock -n /home/adaw2196/supplierportal/storage/framework/async-export-worker.lock /usr/local/bin/ea-php83 artisan queue:work database --queue=exports,default --sleep=1 --stop-when-empty --max-time=50 --tries=3 --timeout=600 >> /home/adaw2196/supplierportal/storage/logs/queue-worker.log 2>&1
+cd /home/adaw2196/supplierportal && /usr/bin/flock -n /home/adaw2196/supplierportal/storage/framework/async-export-worker.lock /usr/local/bin/ea-php83 artisan queue:work database --queue=exports --sleep=1 --max-time=50 --tries=3 --timeout=600 >> /home/adaw2196/supplierportal/storage/logs/queue-worker.log 2>&1
 ```
 
 Pertahankan nama lock existing `async-export-worker.lock` ketika mengedit command. Jika worker lama masih berjalan, lock yang sama mencegah worker cron baru berjalan bersamaan. `flock -n` melewati invocation jika lock sedang dipakai; lock dilepas ketika proses pemegangnya selesai. Filesystem lock harus diuji pada hosting, terutama jika storage memakai NFS/CIFS. [util-linux flock manual](https://manpages.debian.org/bookworm/util-linux/flock.1.en.html).
 
-`exports` memuat job export aplikasi. `default` dipertahankan untuk queue umum/kompatibilitas. Urutan ini memprioritaskan export; jika job default sering menunggu, ukur queue age lalu pertimbangkan worker default terpisah dengan anggaran hosting yang jelas.
+`exports` memuat job export aplikasi (timeout 600 detik). Jangan menambahkan `--stop-when-empty`: flag itu membuat worker keluar ketika antrean kosong sehingga setiap job baru menunggu cron menit berikutnya (0–60 detik "Queued"). Tanpa flag itu, worker tetap polling hingga `--max-time=50`.
+
+### B2. Worker default (push notifikasi realtime) — wajib
+
+```sh
+cd /home/adaw2196/supplierportal && /usr/bin/flock -n /home/adaw2196/supplierportal/storage/framework/default-worker.lock /usr/local/bin/ea-php83 artisan queue:work database --queue=default --sleep=1 --max-time=50 --tries=3 --timeout=60 >> /home/adaw2196/supplierportal/storage/logs/default-worker.log 2>&1
+```
+
+Setiap `SystemNotification` mengantrikan `BroadcastNotificationCreated` ke `default`. Jika `default` dilayani worker yang sama dengan `exports`, push realtime menunggu export yang sedang berjalan (hingga 600 detik). Jika batas proses akun tidak mengizinkan worker ketiga, gunakan fallback dua worker pada [CPANEL-PERFORMANCE-RUNTIME.md](CPANEL-PERFORMANCE-RUNTIME.md) §5.2 (`--queue=default,exports`).
 
 ### C. Worker import PO/GR — wajib untuk background import
 
 ```sh
-cd /home/adaw2196/supplierportal && /usr/bin/flock -n /home/adaw2196/supplierportal/storage/framework/import-worker.lock /usr/local/bin/ea-php83 artisan queue:work database --queue=imports --sleep=1 --stop-when-empty --max-time=50 --tries=3 --timeout=300 --memory=384 >> /home/adaw2196/supplierportal/storage/logs/import-worker.log 2>&1
+cd /home/adaw2196/supplierportal && /usr/bin/flock -n /home/adaw2196/supplierportal/storage/framework/import-worker.lock /usr/local/bin/ea-php83 artisan queue:work database --queue=imports --sleep=1 --max-time=50 --tries=3 --timeout=300 --memory=384 >> /home/adaw2196/supplierportal/storage/logs/import-worker.log 2>&1
 ```
 
 Queue `imports` ditetapkan di `config/local_procurement_imports.php`, dengan timeout job 300 detik. Blueprint existing ada di [LOCAL-PROCUREMENT-IMPORTS.md](LOCAL-PROCUREMENT-IMPORTS.md). Memisahkan worker mencegah export panjang menahan import di belakangnya. Lock dan log imports harus berbeda dari exports.
@@ -55,7 +65,7 @@ Queue `imports` ditetapkan di `config/local_procurement_imports.php`, dengan tim
 Setelah kapasitas host dan semua anggarannya disetujui, worker tersendiri menggunakan pola:
 
 ```sh
-cd /home/adaw2196/supplierportal && /usr/bin/flock -n /home/adaw2196/supplierportal/storage/framework/po-documents-worker.lock /usr/local/bin/ea-php83 artisan queue:work database --queue=po-documents --sleep=1 --stop-when-empty --max-time=50 --tries=RETRY_YANG_DISETUJUI --timeout=TIMEOUT_YANG_DISETUJUI >> /home/adaw2196/supplierportal/storage/logs/po-documents-worker.log 2>&1
+cd /home/adaw2196/supplierportal && /usr/bin/flock -n /home/adaw2196/supplierportal/storage/framework/po-documents-worker.lock /usr/local/bin/ea-php83 artisan queue:work database --queue=po-documents --sleep=1 --max-time=50 --tries=RETRY_YANG_DISETUJUI --timeout=TIMEOUT_YANG_DISETUJUI >> /home/adaw2196/supplierportal/storage/logs/po-documents-worker.log 2>&1
 ```
 
 Template D mengandung placeholder dan **belum siap dipasang**. Timeout job dari config juga harus selaras; lihat [NATIVE-FILE-SECURITY.md](NATIVE-FILE-SECURITY.md).
@@ -111,7 +121,7 @@ APP_DEBUG=false
 
 Relasi saat ini: export job 600 detik, import job 300 detik, database `retry_after=660`. Timeout harus lebih pendek dari retry_after untuk mencegah job aktif diambil kembali. Timeout yang ditetapkan pada class job mengalahkan `--timeout` CLI; PCNTL diperlukan. [Laravel job timeout](https://laravel.com/docs/12.x/queues#timeout).
 
-Source vendor terpasang (`Illuminate\Queue\Worker`) memeriksa `--max-time` dan ambang memori di antara job. Jadi `--max-time=50` bisa menghasilkan proses yang hidup lebih dari 50 detik ketika job aktif masih berjalan. `--stop-when-empty` membuat worker cron keluar ketika tidak ada job. Kombinasi ini memerlukan lock worker yang tetap terpegang selama job berjalan.
+Source vendor terpasang (`Illuminate\Queue\Worker`) memeriksa `--max-time` dan ambang memori di antara job. Jadi `--max-time=50` bisa menghasilkan proses yang hidup lebih dari 50 detik ketika job aktif masih berjalan. Karena itu lock worker harus tetap terpegang selama job berjalan. Jangan memakai `--stop-when-empty` (lihat bagian B).
 
 Benchmark lokal existing: CSV 50.000 baris/100 chunks, 655,26 detik, peak sekitar 296 MiB, driver sync. Ini bukan timing per-job database worker dan bukan bukti host produksi cukup. Khususnya, chain queued dapat membagi pekerjaan menjadi beberapa job. Karena itu hasil tersebut merupakan risiko performa yang perlu diuji pada staging, bukan alasan langsung menaikkan timeout cron. Source pengukuran: `storage/logs/advance-export-performance.json` dan [hasil remediasi](../results/SECURITY-REMEDIATION-R3-R5-20261012.md).
 
@@ -124,9 +134,13 @@ Berikut command sekali jalan, **bukan cron per menit**. Jalankan sesuai prosedur
 ```sh
 cd /home/adaw2196/supplierportal
 /usr/local/bin/ea-php83 artisan config:cache
+/usr/local/bin/ea-php83 artisan route:cache
 /usr/local/bin/ea-php83 artisan view:cache
+/usr/local/bin/ea-php83 artisan icons:cache
 /usr/local/bin/ea-php83 artisan queue:restart
 ```
+
+Urutan lengkap, termasuk `optimize:clear` di awal, upload `public/build` dari build yang sama, prosedur rilis Gate 2, dan rollback, ada di [CPANEL-PERFORMANCE-RUNTIME.md](CPANEL-PERFORMANCE-RUNTIME.md) §3–§3.3. `view:cache` wajib pada setiap rilis yang mengubah komponen Blade; rollback ke rilis sebelum `<x-ui.icon>` menjadi kelas komponen wajib mengompilasi ulang view.
 
 `queue:restart` menyimpan sinyal cache agar worker keluar setelah job aktif selesai. Cron berikutnya atau process manager menjalankan worker baru. [Laravel queue deployment](https://laravel.com/docs/12.x/queues#queue-workers-and-deployment).
 
@@ -156,7 +170,7 @@ Contoh konfigurasi Supervisor untuk **satu** worker export/default; tambah progr
 ```ini
 [program:adasi-exports]
 directory=/home/adaw2196/supplierportal
-command=/usr/local/bin/ea-php83 artisan queue:work database --queue=exports,default --sleep=1 --tries=3 --timeout=600 --max-time=3600
+command=/usr/local/bin/ea-php83 artisan queue:work database --queue=exports --sleep=1 --tries=3 --timeout=600 --max-time=3600
 user=adaw2196
 numprocs=1
 autostart=true

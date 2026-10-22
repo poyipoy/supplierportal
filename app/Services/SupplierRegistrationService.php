@@ -698,6 +698,7 @@ class SupplierRegistrationService
             foreach ($validScopes as $scope) {
                 $user->supplierScopes()->firstOrCreate(['scope' => $scope]);
             }
+            $user->forgetSupplierScopes();
 
             // 4. Revoke registration access credential
             SupplierRegistrationAccess::query()

@@ -100,6 +100,7 @@
                         storeUrlTemplate: '{{ route('conversations.messages.store', ['id' => '__ID__']) }}',
                         quickActionUrlTemplate: '{{ route('conversations.quick-action', ['id' => '__ID__']) }}',
                         latestUrlTemplate: '{{ route('conversations.messages.latest', ['id' => '__ID__']) }}',
+                        olderUrlTemplate: '{{ route('conversations.messages.older', ['id' => '__ID__']) }}',
                         muteUrlTemplate: '{{ route('conversations.mute', ['id' => '__ID__']) }}',
                     };
 
@@ -133,6 +134,7 @@
                     let conversations = [];
                     let activeConversationId = null;
                     let lastMessageId = 0;
+                    let oldestMessageId = 0;
                     let pollTimer = null;
                     let searchTimer = null;
                     let isSending = false;
@@ -509,14 +511,14 @@
                         });
                     };
 
-                    const renderMessage = (message) => {
+                    const renderMessage = (message, insert = (html) => messagesEl.insertAdjacentHTML('beforeend', html)) => {
                         const normalized = normalizeMessage(message);
                         const wrapperClass = normalized.isMe ? 'justify-content-end' : 'justify-content-start';
                         const alignClass = normalized.isMe ? 'align-items-end' : 'align-items-start';
                         const bubbleClass = normalized.isMe ? 'is-me' : 'is-partner';
                         const senderLabel = normalized.senderName;
-                       
-                        messagesEl.insertAdjacentHTML('beforeend', `
+
+                        insert(`
                             <div class="chat-message-row ${normalized.isMe ? 'is-me' : 'is-partner'} ${wrapperClass}" data-message-id="${normalized.id}">
                                 <div class="chat-message-stack ${alignClass}">
                                     <div class="chat-message-bubble ${bubbleClass}">
@@ -537,6 +539,54 @@
                     const scrollMessagesToBottom = () => {
                         messagesEl.scrollTop = messagesEl.scrollHeight;
                     };
+
+                    // History loads 50 messages at a time; earlier pages are fetched
+                    // by id (keyset) and inserted above, keeping the scroll position.
+                    const olderControlHtml = () => `
+                        <div class="tw-flex tw-justify-center tw-py-2" data-chat-older>
+                            <button type="button" class="ui-focus-ring tw-inline-flex tw-h-7 tw-items-center tw-gap-1 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-px-2.5 tw-text-ui-xs tw-font-medium tw-text-on-surface hover:tw-bg-surface-low" data-chat-load-older>
+                                {{ __('common.chat.load_older') }}
+                            </button>
+                        </div>
+                    `;
+
+                    const loadOlderMessages = (button) => {
+                        const conversationId = activeConversationId;
+                        const control = button.closest('[data-chat-older]');
+                        button.disabled = true;
+                        fetch(`${buildUrl(config.olderUrlTemplate, conversationId)}?before=${oldestMessageId}`, {
+                            headers: { 'Accept': 'application/json' }
+                        })
+                            .then((response) => {
+                                if (!response.ok) throw new Error();
+                                return response.json();
+                            })
+                            .then((data) => {
+                                if (activeConversationId !== conversationId) return;
+                                const previousHeight = messagesEl.scrollHeight;
+                                data.messages.slice().reverse().forEach((message) => {
+                                    if (!messagesEl.querySelector(`[data-message-id="${message.id}"]`)) {
+                                        renderMessage(message, (html) => control.insertAdjacentHTML('afterend', html));
+                                    }
+                                });
+                                if (data.messages.length > 0) oldestMessageId = data.messages[0].id;
+                                messagesEl.scrollTop += messagesEl.scrollHeight - previousHeight;
+                                if (data.has_more) {
+                                    button.disabled = false;
+                                } else {
+                                    control.remove();
+                                }
+                            })
+                            .catch(() => {
+                                button.disabled = false;
+                                button.title = @js(__('common.chat.load_older_error'));
+                            });
+                    };
+
+                    messagesEl.addEventListener('click', (event) => {
+                        const button = event.target.closest('[data-chat-load-older]');
+                        if (button && !button.disabled) loadOlderMessages(button);
+                    });
 
                     const loadConversation = (conversationId) => {
                         const nextConversationId = String(conversationId);
@@ -584,7 +634,11 @@
                                         </div>
                                     `;
                                 } else {
-                                    data.messages.forEach(renderMessage);
+                                    data.messages.forEach((message) => renderMessage(message));
+                                    oldestMessageId = data.messages[0].id;
+                                    if (data.has_more_messages) {
+                                        messagesEl.insertAdjacentHTML('afterbegin', olderControlHtml());
+                                    }
                                     scrollMessagesToBottom();
                                 }
 

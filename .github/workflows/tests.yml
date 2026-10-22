@@ -1,0 +1,99 @@
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  php:
+    runs-on: ubuntu-24.04
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+          MYSQL_DATABASE: adasi_portal_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          extensions: pdo_mysql, bcmath, mbstring, zip, intl, gd, fileinfo, xmlreader, dom
+          coverage: none
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Build assets (feature tests render @vite and need the manifest)
+        run: |
+          npm ci
+          npm run build
+      - name: Prepare environments
+        run: |
+          cp .env.example .env
+          php artisan key:generate --no-interaction
+          cp .env.testing.example .env.testing
+          php artisan key:generate --env=testing --no-interaction
+      - name: Pint (changed PHP files)
+        if: github.event_name == 'pull_request'
+        run: |
+          files=$(git diff --name-only --diff-filter=ACMR "origin/${{ github.base_ref }}...HEAD" -- '*.php')
+          if [ -n "$files" ]; then vendor/bin/pint --test $files; fi
+      - name: Regression subset
+        run: >-
+          php artisan test
+          tests/Feature/TestingEnvironmentDatabaseSafetyTest.php
+          tests/Feature/SupplierDataIsolationTest.php
+          tests/Feature/LocalInvoice/LocalInvoiceScopeIsolationTest.php
+          tests/Feature/HashidUrlSecurityTest.php
+          tests/Feature/SupplierScopeMemoTest.php
+          tests/Feature/Auth
+          tests/Feature/SupplierRegistration
+          tests/Feature/LocalInvoice/LocalProcurementCommitRevalidationTest.php
+          tests/Feature/LocalInvoice/LocalProcurementCommitBudgetTest.php
+          tests/Feature/LocalInvoice/LocalProcurementBackgroundImportTest.php
+          tests/Feature/LocalInvoice/LocalPoLatestDocumentListTest.php
+          tests/Feature/Finance/FinanceDashboardEquivalenceTest.php
+          tests/Feature/PaymentForecastAndReportingTest.php
+          tests/Feature/NotificationSummaryEquivalenceTest.php
+          tests/Feature/ConversationHistoryPaginationTest.php
+          tests/Feature/UiIconComponentTest.php
+          tests/Feature/RenderedComponentTest.php
+          tests/Feature/FrontendAssetLoadingTest.php
+          tests/Feature/ProfileCriticalPathsCommandTest.php
+          tests/Feature/LocalizationPerformanceTest.php
+          tests/Unit/TranslationParityTest.php
+          tests/Unit/UserFacingCopyInventoryTest.php
+
+  node:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: JavaScript tests
+        run: node --test tests/js/*.test.mjs
+      - name: Build assets
+        run: npm run build

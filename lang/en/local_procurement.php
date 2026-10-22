@@ -613,6 +613,7 @@ return [
         'not_ready' => 'This import is not ready for confirmation.',
         'group_conflict' => 'Rows for the same document have conflicting values.',
         'failed' => 'Import processing failed. Please contact an operator or upload a new file.',
+        'budget_exceeded' => 'Saving took longer than the allowed time, so nothing was saved. Recheck the stored file and save again outside busy hours, or split the file into smaller files.',
         'progress' => 'Import progress',
         'previous' => 'Previous',
         'next' => 'Next',

@@ -3,6 +3,7 @@
 namespace App\Services\LocalInvoice;
 
 use App\Exceptions\ImportAttemptSuperseded;
+use App\Exceptions\ImportBudgetExceeded;
 use App\Jobs\ProcessLocalProcurementImport;
 use App\Models\LocalProcurementImport;
 use App\Models\LocalPurchaseOrder;
@@ -233,23 +234,6 @@ class LocalProcurementImportService
             }
             $this->ownedUpdate($import, ['status' => 'VALIDATING', 'warnings' => $reader->warnings]);
             $this->consolidate($import, $import->kind, $started);
-            foreach ($this->recordBatches($import) as $records) {
-                $result = $this->validator($import->kind)->validate($records->map(fn ($r) => json_decode($r->values, true))->all());
-                $errorsByRow = collect($result['errors'])->groupBy('row');
-                $normalized = collect($result['rows'])->keyBy('_row');
-                $updates = [];
-                foreach ($records as $record) {
-                    $values = json_decode($record->values, true);
-                    $values = array_merge($values, $normalized->get($record->source_row, []));
-                    $errors = array_merge(json_decode($record->errors ?? '[]', true), $errorsByRow->get($record->source_row, collect())->all());
-                    $updates[] = ['id' => $record->id, 'import_id' => $record->import_id, 'attempt' => $record->attempt,
-                        'kind' => $record->kind, 'document_key' => $record->document_key, 'source_row' => $record->source_row,
-                        'source_count' => $record->source_count, 'values' => json_encode($values), 'errors' => json_encode($errors)];
-                }
-                DB::table('local_procurement_import_records')->upsert($updates, ['id'], ['values', 'errors']);
-                $this->ownedUpdate($import, ['lease_expires_at' => now()->addSeconds(600)]);
-                $this->deadline($started, (int) config('local_procurement_imports.timeout_seconds'));
-            }
             $summary = $this->summary($import);
             $noNewRecords = $summary['invalid'] === 0 && ($summary[$import->kind === 'PO' ? 'new_po' : 'new_gr'] + ($import->kind === 'PO' ? $summary['po_pr_filled'] : 0)) === 0;
             $failed = $summary['invalid'] > 0 || $noNewRecords;
@@ -300,6 +284,19 @@ class LocalProcurementImportService
                     ->where('attempt', $import->attempt)->where('kind', $import->kind)->count();
                 $telemetry->write($import, $executionNumber > 1 ? 'RETRYING' : 'PREPARING', 0, $totalRecords, $execution);
                 Gate::forUser($actor)->authorize('confirm', $import);
+                if ($import->kind === 'PO') {
+                    // Supplier users before POs, the order InvoiceSubmissionService uses.
+                    // createImportBatch() takes these same shared locks per batch; taking
+                    // them first prevents a deadlock with a concurrent invoice submission
+                    // when the file repeats one of that supplier's registered POs.
+                    $supplierIds = DB::table('local_procurement_import_records')->where('import_id', $id)
+                        ->where('attempt', $import->attempt)->where('kind', 'PO')
+                        ->selectRaw("DISTINCT JSON_UNQUOTE(JSON_EXTRACT(`values`, '$.supplier_id')) AS supplier_id")
+                        ->pluck('supplier_id')->map(fn ($value) => (int) $value)->filter(fn (int $value) => $value > 0)->unique()->sort()->values()->all();
+                    foreach (array_chunk($supplierIds, $this->batchSize()) as $chunk) {
+                        User::whereIn('id', $chunk)->orderBy('id')->sharedLock()->pluck('id');
+                    }
+                }
                 // Lock existing parents once, globally ordered, before any GR writes.
                 $ids = [];
                 foreach ($this->sourceBatches($import, 'po_key') as $rows) {
@@ -309,7 +306,7 @@ class LocalProcurementImportService
                 sort($ids, SORT_NUMERIC);
                 foreach (array_chunk($ids, $this->batchSize()) as $chunk) {
                     LocalPurchaseOrder::whereIn('id', $chunk)->orderBy('id')->lockForUpdate()->get(['id']);
-                    $this->deadline($started, (int) config('local_procurement_imports.commit_seconds'));
+                    $this->commitDeadline($started);
                 }
                 $counts = ['newPo' => 0, 'existingPo' => 0, 'newGr' => 0, 'existingGr' => 0, 'filledPoPr' => 0,
                     'sourceRows' => $import->source_rows, 'totalConsolidated' => (int) ($import->summary['consolidated_gr'] ?? 0), 'total' => $import->source_rows];
@@ -323,7 +320,9 @@ class LocalProcurementImportService
                         // Re-running workbook grouping here would duplicate that work.
                         $normalized = $rows;
                     } else {
-                        $result = $this->validator($import->kind)->validate($rows);
+                        // Supplier names are matched again at commit time. The
+                        // registered-PO checks run once, under lock, in createImportBatch().
+                        $result = app(LocalPoImportService::class)->validate($rows, checkDatabase: false);
                         if (! $result['success']) {
                             throw ValidationException::withMessages(['import_file' => array_slice(array_column($result['errors'], 'message'), 0, 10)]);
                         }
@@ -335,7 +334,7 @@ class LocalProcurementImportService
                     }
                     $processedRecords += $records->count();
                     $telemetry->write($import, $processedRecords >= $totalRecords ? 'FINALIZING' : 'SAVING', $processedRecords, $totalRecords, $execution);
-                    $this->deadline($started, (int) config('local_procurement_imports.commit_seconds'));
+                    $this->commitDeadline($started);
                 }
                 if ($counts['newPo'] + $counts['newGr'] + $counts['filledPoPr'] === 0) {
                     throw ValidationException::withMessages(['import_file' => __('local_procurement.import.no_new_records')]);
@@ -354,6 +353,12 @@ class LocalProcurementImportService
         } catch (ValidationException $exception) {
             LocalProcurementImport::whereKey($id)->where('owner_job_key', $owner)->where('status', 'IMPORTING')->update(['status' => 'VALIDATION_FAILED',
                 'failure' => implode(' ', $exception->validator->errors()->all()), 'finished_at' => now()]);
+        } catch (ImportBudgetExceeded $exception) {
+            // The transaction has already rolled back every master and audit row.
+            // Fenced like the other terminal writes: a newer attempt keeps its state.
+            LocalProcurementImport::whereKey($id)->where('owner_job_key', $owner)->where('status', 'IMPORTING')->update(['status' => 'FAILED',
+                'failure' => __('local_procurement.large_import.budget_exceeded'), 'finished_at' => now(), 'lease_expires_at' => null]);
+            throw $exception;
         } finally {
             $finished = LocalProcurementImport::find($id);
             if ($finished && $finished->owner_job_key === $owner) {
@@ -421,7 +426,7 @@ class LocalProcurementImportService
                     $pending[] = $this->finishGroup($group, $import, $kind);
                     $group = null;
                     if (count($pending) === $this->batchSize()) {
-                        DB::table('local_procurement_import_records')->insert($pending);
+                        $this->insertValidatedRecords($import, $pending, $started);
                         $pending = [];
                     }
                 }
@@ -470,8 +475,29 @@ class LocalProcurementImportService
             $pending[] = $this->finishGroup($group, $import, $kind);
         }
         if ($pending) {
-            DB::table('local_procurement_import_records')->insert($pending);
+            $this->insertValidatedRecords($import, $pending, $started);
         }
+    }
+
+    /**
+     * Validates one batch of consolidated records against live master data and
+     * writes it once. Batches hold the same records, in the same order, as the
+     * former insert-then-upsert pass over 500 records ordered by id.
+     */
+    private function insertValidatedRecords(LocalProcurementImport $import, array $records, float $started): void
+    {
+        $result = $this->validator($import->kind)->validate(array_map(fn (array $record) => json_decode($record['values'], true), $records));
+        $errorsByRow = collect($result['errors'])->groupBy('row');
+        $normalized = collect($result['rows'])->keyBy('_row');
+        foreach ($records as &$record) {
+            $values = array_merge(json_decode($record['values'], true), $normalized->get($record['source_row'], []));
+            $record['values'] = json_encode($values);
+            $record['errors'] = json_encode(array_merge(json_decode($record['errors'], true), $errorsByRow->get($record['source_row'], collect())->all()));
+        }
+        unset($record);
+        DB::table('local_procurement_import_records')->insert($records);
+        $this->ownedUpdate($import, ['lease_expires_at' => now()->addSeconds(600)]);
+        $this->deadline($started, (int) config('local_procurement_imports.timeout_seconds'));
     }
 
     private function finishGroup(array $group, LocalProcurementImport $import, string $kind): array
@@ -515,10 +541,16 @@ class LocalProcurementImportService
 
     private function recordBatches(LocalProcurementImport $import): \Generator
     {
+        $records = fn () => DB::table('local_procurement_import_records')->where('import_id', $import->id)
+            ->where('attempt', $import->attempt)->where('kind', $import->kind);
+        $maxId = (int) $records()->max('id');
         $last = 0;
         do {
-            $batch = DB::table('local_procurement_import_records')->where('import_id', $import->id)->where('attempt', $import->attempt)
-                ->where('kind', $import->kind)->where('id', '>', $last)->orderBy('id')->limit($this->batchSize())->get();
+            // Without the hint MySQL sometimes picks local_import_document_unique and
+            // filesorts every record of the import for each batch (seen in EXPLAIN).
+            // The bounded primary-key range returns the same rows in the same order.
+            $batch = $records()->forceIndex('PRIMARY')->where('id', '>', $last)->where('id', '<=', $maxId)
+                ->orderBy('id')->limit($this->batchSize())->get();
             if ($batch->isEmpty()) {
                 break;
             }
@@ -575,6 +607,13 @@ class LocalProcurementImportService
     {
         if (microtime(true) - $started > $seconds) {
             throw new RuntimeException('Import processing time budget exceeded.');
+        }
+    }
+
+    private function commitDeadline(float $started): void
+    {
+        if (microtime(true) - $started > (int) config('local_procurement_imports.commit_seconds')) {
+            throw new ImportBudgetExceeded('Import commit transaction time budget exceeded.');
         }
     }
 

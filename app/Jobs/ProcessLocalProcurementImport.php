@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Exceptions\ImportAttemptSuperseded;
+use App\Exceptions\ImportBudgetExceeded;
 use App\Models\LocalProcurementImport;
 use App\Services\LocalInvoice\LocalProcurementImportProgress;
 use App\Services\LocalInvoice\LocalProcurementImportService;
@@ -49,6 +50,11 @@ class ProcessLocalProcurementImport implements ShouldQueue
         } catch (ImportAttemptSuperseded $exception) {
             // An older delivery must acknowledge quietly, never fail the newer attempt.
             return;
+        } catch (ImportBudgetExceeded $exception) {
+            // Already rolled back and marked FAILED by the service. A retry would
+            // repeat the same work under the same locks, so fail this delivery
+            // once (recorded in failed_jobs) instead of releasing it.
+            $this->fail($exception);
         } finally {
             app()->setLocale($previous);
         }

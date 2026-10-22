@@ -39,6 +39,11 @@ $historyCount = (int) ($argv[3] ?? 500000);
 $commitBudget = (int) ($argv[4] ?? 60);
 $scenario = $argv[5] ?? 'new';
 $format = $argv[6] ?? 'xlsx';
+// Unrelated registered POs that lookups must search past (PO-history scale).
+$poHistoryCount = (int) ($argv[7] ?? 0);
+if ($poHistoryCount < 0 || $poHistoryCount > 500000) {
+    throw new RuntimeException('Invalid PO history count.');
+}
 if (! in_array($scenario, ['new', 'existing'], true)) {
     throw new RuntimeException('Invalid benchmark scenario.');
 }
@@ -56,7 +61,7 @@ SupplierScope::create(['supplier_id' => $supplier->id, 'scope' => 'local']);
 Supplier::create(['user_id' => $supplier->id, 'company_name' => 'PT Capacity '.$supplier->id, 'category' => 'Parts', 'is_pkp' => false, 'payment_term_days' => 30]);
 $prefix = 'CAP-'.$actor->id.'-';
 $parent = LocalPurchaseOrder::create(['po_number' => $prefix.'PARENT', 'supplier_id' => $supplier->id, 'po_date' => '2026-10-01', 'total_amount' => '100000000.00', 'currency' => 'IDR', 'status' => 'OPEN', 'source' => 'MANUAL']);
-$metrics = ['kind' => $kind, 'format' => $format, 'rows' => $count, 'existing_gr' => $historyCount, 'database' => $benchmarkDatabase, 'commit_budget_seconds' => $commitBudget, 'scenario' => $scenario];
+$metrics = ['kind' => $kind, 'format' => $format, 'rows' => $count, 'existing_gr' => $historyCount, 'existing_po' => $poHistoryCount, 'database' => $benchmarkDatabase, 'commit_budget_seconds' => $commitBudget, 'scenario' => $scenario];
 $phase = 'prepare';
 $sql = [];
 $plans = [];
@@ -103,6 +108,21 @@ DB::listen(function ($query) use (&$phase, &$sql, &$plans) {
         $forced = str_replace('from `local_purchase_orders`', 'from `local_purchase_orders` force index (`local_purchase_orders_po_number_unique`)', $query->sql);
         $plans['forced'] = $query->connection->select('EXPLAIN '.$forced, $query->bindings);
     }
+    // Record the access path of one slow and one fast staged-record batch read
+    // during confirm (the keyset read in LocalProcurementImportService::recordBatches()).
+    if ($phase === 'confirm' && str_starts_with($query->sql, 'select') && str_contains($query->sql, 'from `local_procurement_import_records`')
+        && str_contains($query->sql, '`id` >')) {
+        $bucket = $query->time >= 30 ? 'slow' : 'fast';
+        if (! isset($plans['record_batches'][$bucket])) {
+            $plans['record_batches'][$bucket] = ['sql_ms' => $query->time, 'explain' => $query->connection->select('EXPLAIN '.$query->sql, $query->bindings)];
+        }
+    }
+    // Record the access path of the first large GR-number lookup per phase.
+    // Plain EXPLAIN does not execute or lock, so the measured budget is unaffected.
+    if (in_array($phase, ['preview', 'confirm'], true) && ! isset($plans['gr_lookup'][$phase]) && count($query->bindings) >= 200
+        && str_starts_with($query->sql, 'select') && str_contains($query->sql, 'from `local_goods_receipts`') && str_contains($query->sql, '`gr_number` in')) {
+        $plans['gr_lookup'][$phase] = ['sql_ms' => $query->time, 'explain' => $query->connection->select('EXPLAIN '.$query->sql, $query->bindings)];
+    }
 });
 try {
     echo json_encode(['phase' => $phase, 'rows' => $count, 'kind' => $kind]).PHP_EOL;
@@ -115,6 +135,13 @@ try {
             $batch[] = ['gr_number' => $prefix.'HISTORY-'.$i, 'local_purchase_order_id' => $parent->id, 'gr_date' => '2026-09-30', 'qty' => '1.0000', 'uom' => 'pcs', 'status' => 'AVAILABLE', 'source' => 'IMPORT'];
         }
         LocalGoodsReceipt::insert($batch);
+    }
+    for ($offset = 0; $offset < $poHistoryCount; $offset += 500) {
+        $batch = [];
+        for ($i = $offset; $i < min($offset + 500, $poHistoryCount); $i++) {
+            $batch[] = ['po_number' => $prefix.'HIST-PO-'.$i, 'supplier_id' => $supplier->id, 'po_date' => '2026-09-30', 'total_amount' => '1000.00', 'currency' => 'IDR', 'status' => 'OPEN', 'source' => 'IMPORT'];
+        }
+        LocalPurchaseOrder::insert($batch);
     }
     if ($scenario === 'existing') {
         for ($offset = 0; $offset < $count; $offset += 500) {

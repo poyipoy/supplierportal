@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Validation\ValidationException;
 
 class LocalPurchaseOrder extends Model
@@ -78,9 +79,15 @@ class LocalPurchaseOrder extends Model
         return $this->morphMany(Attachment::class, 'attachable');
     }
 
+    public function latestPoAttachment(): MorphOne
+    {
+        return $this->morphOne(Attachment::class, 'attachable')->latestOfMany('id');
+    }
+
+    /** Read once per instance; list pages eager-load `latestPoAttachment` instead of querying per row. */
     public function latestPoDocument(): ?Attachment
     {
-        return $this->attachments()->latest('id')->first();
+        return $this->loadMissing('latestPoAttachment')->latestPoAttachment;
     }
 
     public function getOrderDateAttribute()
