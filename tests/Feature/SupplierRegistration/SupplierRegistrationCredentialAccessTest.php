@@ -7,10 +7,15 @@ use App\Models\SupplierRegistrationAccess;
 use App\Models\SupplierRegistrationAttempt;
 use App\Models\SupplierRegistrationAudit;
 use App\Models\User;
+use App\Services\SupplierRegistrationService;
+use App\Support\BusinessTime;
 use App\Support\SupplierComplianceQuestionnaire;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Storage;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Support\NativeFileFixtures;
 use Tests\TestCase;
 
@@ -51,6 +56,7 @@ class SupplierRegistrationCredentialAccessTest extends TestCase
             'nib_file' => NativeFileFixtures::upload('nib.pdf', 500),
             'npwp_file' => UploadedFile::fake()->image('npwp.jpg', 20, 20),
             'sknr_file' => NativeFileFixtures::upload('sknr.pdf', 600),
+            'sppkp_file' => NativeFileFixtures::upload('sppkp.pdf', 600),
             'questionnaire' => SupplierComplianceQuestionnaire::QUESTIONS,
         ]);
 
@@ -169,27 +175,172 @@ class SupplierRegistrationCredentialAccessTest extends TestCase
             ->assertSessionMissing('_old_input.password');
     }
 
-    public function test_decided_registrations_cannot_use_credential_access(): void
+    public static function finalAccessMethods(): array
+    {
+        return [['APPROVED', 'key'], ['APPROVED', 'password'], ['REJECTED', 'key'], ['REJECTED', 'password']];
+    }
+
+    private function decide(User $user, string $status): void
+    {
+        $service = app(SupplierRegistrationService::class);
+        $reviewer = User::factory()->create(['role' => 'purchasing']);
+        $attempt = $user->registrationAttempts()->orderByDesc('attempt_number')->firstOrFail();
+        if ($status === SupplierRegistrationAttempt::STATUS_APPROVED) {
+            $service->approveRegistration($attempt, $reviewer, ['local']);
+        } else {
+            $service->rejectRegistration($attempt, $reviewer, 'Bank declaration does not match the legal company.');
+        }
+    }
+
+    #[DataProvider('finalAccessMethods')]
+    public function test_final_decisions_are_readable_without_restoring_workflow_access(string $status, string $method): void
     {
         $user = $this->register();
+        $receipt = session('registration_receipt');
+        $this->decide($user, $status);
+        $revokedAt = $user->registrationAccesses()->sole()->revoked_at;
+        $this->assertNotNull($revokedAt);
 
-        foreach ([SupplierRegistrationAttempt::STATUS_REJECTED, SupplierRegistrationAttempt::STATUS_APPROVED] as $status) {
-            $user->registrationAttempts()->update(['status' => $status]);
+        $response = $method === 'key'
+            ? $this->post(route('supplier.registration.access'), ['reference' => $receipt['reference'], 'access_key' => $receipt['access_key']])
+            : $this->post(route('supplier.registration.access.credentials'), $this->credentials());
+        $response->assertRedirect(route('supplier.registration.status'));
+        $result = $this->get(route('supplier.registration.status'))->assertOk()
+            ->assertViewIs('auth.supplier-registration-result')
+            ->assertHeader('Cache-Control', 'no-store, private')
+            ->assertSee($receipt['reference'])
+            ->assertSee(BusinessTime::format($user->registrationAttempts()->latest('attempt_number')->first()->reviewed_at))
+            ->assertDontSee('1230009876543')->assertDontSee('01.234.567.8-412.000')
+            ->assertDontSee('nib.pdf')->assertDontSee(self::EMAIL)
+            ->assertDontSee(__('registration.submitted_details'))
+            ->assertDontSee(__('registration.documents'));
+        if ($status === SupplierRegistrationAttempt::STATUS_REJECTED) {
+            $result->assertSee('Bank declaration does not match the legal company.')
+                ->assertSee(route('supplier.register'), false);
+        } else {
+            $result->assertSee(__('registration.approved'))->assertSee(route('login'), false);
+        }
+        $this->assertGuest();
+        $this->assertTrue($revokedAt->equalTo($user->registrationAccesses()->sole()->revoked_at));
 
-            $this->assertGenericFailure(
-                $this->post(route('supplier.registration.access.credentials'), $this->credentials())
-            );
+        $this->get(route('supplier.registration.edit'))->assertForbidden();
+        $this->post(route('supplier.registration.resubmit'), [])->assertForbidden();
+        $document = $user->supplierMasterDocuments()->firstOrFail();
+        $this->get(route('supplier.registration.document.download', $document))->assertForbidden();
+        $this->get(route('supplier.dashboard'))->assertRedirect(route('login'));
+        $this->get(route('local-supplier.dashboard'))->assertRedirect(route('login'));
+        $this->post(route('supplier.registration.logout'))->assertRedirect(route('supplier.registration.access-form'));
+        $this->assertNull(session('registration_access_id'));
+    }
+
+    public function test_expired_final_key_requires_password_proof_to_renew_tracking(): void
+    {
+        $user = $this->register();
+        $receipt = session('registration_receipt');
+        $this->decide($user, SupplierRegistrationAttempt::STATUS_REJECTED);
+        $access = $user->registrationAccesses()->sole();
+        $access->update(['expires_at' => now()->subDay()]);
+        $revokedAt = $access->revoked_at;
+
+        $this->post(route('supplier.registration.access'), ['reference' => $receipt['reference'], 'access_key' => $receipt['access_key']])
+            ->assertSessionHas('error', __('registration.feedback.invalid_access'));
+        $this->assertNull(session('registration_access_id'));
+        $this->post(route('supplier.registration.access.credentials'), $this->credentials())
+            ->assertRedirect(route('supplier.registration.status'));
+        $this->assertTrue($access->fresh()->expires_at->isAfter(now()->addDays(29)));
+        $this->assertTrue($revokedAt->equalTo($access->fresh()->revoked_at));
+        $this->get(route('supplier.registration.status'))->assertOk();
+    }
+
+    public function test_open_tracking_session_becomes_result_only_after_a_decision(): void
+    {
+        $user = $this->register();
+        $this->post(route('supplier.registration.access.credentials'), $this->credentials())
+            ->assertRedirect(route('supplier.registration.status'));
+        $this->decide($user, SupplierRegistrationAttempt::STATUS_APPROVED);
+        $this->get(route('supplier.registration.status'))->assertOk()->assertViewIs('auth.supplier-registration-result');
+        $this->get(route('supplier.registration.edit'))->assertForbidden();
+    }
+
+    public function test_wrong_final_credentials_do_not_open_a_result_session(): void
+    {
+        $user = $this->register();
+        $receipt = session('registration_receipt');
+        $this->decide($user, SupplierRegistrationAttempt::STATUS_APPROVED);
+        $this->assertGenericFailure($this->post(route('supplier.registration.access.credentials'), $this->credentials(['password' => 'WrongPassword1!'])));
+        $this->post(route('supplier.registration.access'), ['reference' => $receipt['reference'], 'access_key' => 'wrong-key'])
+            ->assertSessionHas('error', __('registration.feedback.invalid_access'));
+        $this->assertNull(session('registration_access_id'));
+    }
+
+    public function test_final_result_session_expires_and_rejects_mismatched_identity(): void
+    {
+        $user = $this->register();
+        $this->decide($user, SupplierRegistrationAttempt::STATUS_REJECTED);
+        $access = $user->registrationAccesses()->sole();
+        $this->post(route('supplier.registration.access.credentials'), $this->credentials())
+            ->assertRedirect(route('supplier.registration.status'));
+
+        $this->withSession(['registration_user_id' => $user->id + 1])
+            ->get(route('supplier.registration.status'))->assertRedirect(route('supplier.registration.access-form'));
+        $this->assertNull(session('registration_access_id'));
+
+        $this->post(route('supplier.registration.access.credentials'), $this->credentials())
+            ->assertRedirect(route('supplier.registration.status'));
+        $access->update(['expires_at' => now()]);
+        $this->get(route('supplier.registration.status'))->assertRedirect(route('supplier.registration.access-form'));
+        $this->assertNull(session('registration_access_id'));
+    }
+
+    public function test_non_supplier_role_cannot_use_final_access_key(): void
+    {
+        $user = $this->register();
+        $receipt = session('registration_receipt');
+        $this->decide($user, SupplierRegistrationAttempt::STATUS_APPROVED);
+        $user->update(['role' => 'purchasing']);
+        $this->post(route('supplier.registration.access'), ['reference' => $receipt['reference'], 'access_key' => $receipt['access_key']])
+            ->assertSessionHas('error', __('registration.feedback.invalid_access'));
+        $this->assertNull(session('registration_access_id'));
+    }
+
+    public function test_final_result_rechecks_reference_after_loading_the_session(): void
+    {
+        $user = $this->register();
+        $this->decide($user, SupplierRegistrationAttempt::STATUS_REJECTED);
+        $this->post(route('supplier.registration.access.credentials'), $this->credentials())
+            ->assertRedirect(route('supplier.registration.status'));
+        $accessId = $user->registrationAccesses()->sole()->id;
+        $changed = false;
+        $event = 'eloquent.retrieved: '.SupplierRegistrationAccess::class;
+        Event::listen($event, function (SupplierRegistrationAccess $access) use ($accessId, &$changed): void {
+            if ($access->id === $accessId && ! $changed) {
+                $changed = true;
+                DB::table('supplier_registration_access')->where('id', $accessId)
+                    ->update(['registration_reference' => 'REG-REPLACED-CYCLE']);
+            }
+        });
+
+        try {
+            $this->get(route('supplier.registration.status'))->assertForbidden()
+                ->assertDontSee('Bank declaration does not match the legal company.');
+            $this->assertTrue($changed);
+        } finally {
+            Event::forget($event);
         }
     }
 
     public function test_revoked_access_row_fails_closed(): void
     {
         $user = $this->register();
+        $receipt = session('registration_receipt');
         SupplierRegistrationAccess::where('user_id', $user->id)->update(['revoked_at' => now()]);
 
         $this->assertGenericFailure(
             $this->post(route('supplier.registration.access.credentials'), $this->credentials())
         );
+        $this->post(route('supplier.registration.access'), ['reference' => $receipt['reference'], 'access_key' => $receipt['access_key']])
+            ->assertSessionHas('error', __('registration.feedback.invalid_access'));
+        $this->assertNull(session('registration_access_id'));
     }
 
     public function test_non_supplier_role_cannot_use_credential_access(): void

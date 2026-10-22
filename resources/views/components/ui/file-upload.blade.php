@@ -5,6 +5,7 @@
     'helper' => null,
     'error' => null,
     'required' => false,
+    'requiredWhen' => null,
     'multiple' => false,
     'maxFiles' => 5,
     'showCount' => false,
@@ -80,7 +81,12 @@
             <div class="tw-flex tw-items-start tw-justify-between tw-gap-2">
                 <label for="{{ $resolvedId }}" class="tw-text-ui-xs tw-font-bold tw-text-on-surface tw-cursor-pointer tw-mb-0 tw-leading-tight">
                     {{ $label }}
-                    @if($required)
+                    @if($requiredWhen !== null)
+                        <span x-show="{{ $requiredWhen }}" @if(!$required) style="display: none" @endif>
+                            <span class="tw-text-error" aria-hidden="true">*</span>
+                            <span class="tw-sr-only">{{ __('common.upload.required') }}</span>
+                        </span>
+                    @elseif($required)
                         <span class="tw-text-error" aria-hidden="true">*</span>
                         <span class="tw-sr-only">{{ __('common.upload.required') }}</span>
                     @endif
@@ -102,7 +108,10 @@
                         @endif
                     </template>
                     <template x-if="{{ $showCount ? 'false' : '!hasFiles' }}">
-                        @if($required)
+                        @if($requiredWhen !== null)
+                            <span x-show="{{ $requiredWhen }}" @if(!$required) style="display: none" @endif class="tw-inline-flex tw-items-center tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold tw-bg-error/10 tw-text-error">{{ __('common.upload.required') }}</span>
+                            <span x-show="!({{ $requiredWhen }})" @if($required) style="display: none" @endif class="tw-inline-flex tw-items-center tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-medium tw-bg-surface-high tw-text-on-surface-variant">{{ __('common.fields.optional') }}</span>
+                        @elseif($required)
                             <span class="tw-inline-flex tw-items-center tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold tw-bg-error/10 tw-text-error">
                                 {{ __('common.upload.required') }}
                             </span>
@@ -305,6 +314,10 @@
             type="file"
             class="tw-sr-only"
             @required($required && !$hasExisting)
+            @if($requiredWhen !== null)
+                :required="({{ $requiredWhen }}) && existingFiles.length === 0"
+                :aria-required="Boolean({{ $requiredWhen }})"
+            @endif
             @disabled($disabled)
             @if($multiple) multiple @endif
             @if($accept) accept="{{ $accept }}" @endif

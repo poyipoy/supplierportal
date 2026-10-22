@@ -90,7 +90,7 @@
     </div>
 @endif
 
-<form id="supplierRegistrationReviseForm" method="POST" action="{{ route('supplier.registration.resubmit') }}" enctype="multipart/form-data" class="tw-grid tw-gap-6" data-async-submit x-data="{ companyTitle: '{{ old('company_title', $supplier?->company_title ?? 'PT') }}', isOtherTitle: {{ in_array(old('company_title', $supplier?->company_title), ['PT', 'CV', 'UD', 'PD', 'VPD', 'Firma', 'Koperasi', 'Yayasan', 'Company']) ? 'false' : 'true' }} }">
+<form id="supplierRegistrationReviseForm" method="POST" action="{{ route('supplier.registration.resubmit') }}" enctype="multipart/form-data" class="tw-grid tw-gap-6" data-async-submit x-data="{ companyTitle: '{{ old('company_title', $supplier?->company_title ?? 'PT') }}', isOtherTitle: {{ in_array(old('company_title', $supplier?->company_title), ['PT', 'CV', 'UD', 'PD', 'VPD', 'Firma', 'Koperasi', 'Yayasan', 'Company']) ? 'false' : 'true' }}, isPkp: @js((bool) old('is_pkp', $supplier?->is_pkp)) }">
     @csrf
 
     {{-- Async (file-preserving) validation summary is rendered here by async-form-submit.js --}}
@@ -190,7 +190,7 @@
 
             <div class="tw-grid tw-content-start tw-gap-1.5 md:tw-col-span-2">
                 <label class="tw-flex tw-items-center tw-gap-2.5 tw-cursor-pointer" for="is_pkp">
-                    <input type="checkbox" name="is_pkp" id="is_pkp" value="1" class="form-check-input tw-mt-0" {{ old('is_pkp', $supplier?->is_pkp) ? 'checked' : '' }}>
+                    <input type="checkbox" name="is_pkp" id="is_pkp" value="1" x-model="isPkp" class="form-check-input tw-mt-0" {{ old('is_pkp', $supplier?->is_pkp) ? 'checked' : '' }}>
                     <span class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.pkp_edit') }}</span>
                 </label>
             </div>
@@ -498,12 +498,13 @@
             {{-- SPPKP File --}}
             <div class="tw-grid tw-content-start tw-gap-1.5">
                 <div class="tw-flex tw-items-center tw-justify-between">
-                    <label for="sppkp_file" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.sppkp_optional') }}</label>
-                    @if (isset($documents['SPPKP']))
+                    <label for="sppkp_file" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.sppkp') }} <span x-text="isPkp ? @js(__('common.upload.required')) : @js(__('common.fields.optional'))"></span></label>
+                    @if ($hasReusableSppkp)
                         <span class="tw-text-[11px] tw-text-success tw-font-semibold">{{ __('common.review.current_file') }} {{ $documents['SPPKP']->original_filename }}</span>
                     @endif
                 </div>
-                <input id="sppkp_file" type="file" name="sppkp_file" accept=".pdf,.jpg,.jpeg,.png" class="ui-motion tw-block tw-w-full tw-text-ui-xs tw-text-on-surface-variant file:tw-mr-3 file:tw-py-2 file:tw-px-3 file:tw-rounded-ui-xs file:tw-border-0 file:tw-text-ui-xs file:tw-font-semibold file:tw-bg-surface-container-high file:tw-text-on-surface hover:file:tw-bg-surface-container-highest">
+                <input id="sppkp_file" type="file" name="sppkp_file" accept=".pdf,.jpg,.jpeg,.png" :required="isPkp && !@js($hasReusableSppkp)" :aria-required="isPkp" @required(old('is_pkp', $supplier?->is_pkp) && !$hasReusableSppkp) class="ui-motion tw-block tw-w-full tw-text-ui-xs tw-text-on-surface-variant file:tw-mr-3 file:tw-py-2 file:tw-px-3 file:tw-rounded-ui-xs file:tw-border-0 file:tw-text-ui-xs file:tw-font-semibold file:tw-bg-surface-container-high file:tw-text-on-surface hover:file:tw-bg-surface-container-highest">
+                <p class="tw-m-0 tw-text-ui-xs tw-text-on-surface-variant">{{ __('registration.sppkp_help') }}</p>
                 @error('sppkp_file')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
             </div>
 

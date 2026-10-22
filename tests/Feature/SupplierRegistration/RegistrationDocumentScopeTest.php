@@ -145,6 +145,19 @@ class RegistrationDocumentScopeTest extends TestCase
         $this->assertNull(session('registration_access_id'));
     }
 
+    public function test_rejected_cycle_key_cannot_open_the_replacement_application(): void
+    {
+        [$old, $current] = $this->newCycle();
+        $this->post(route('supplier.registration.logout'));
+        $this->post(route('supplier.registration.access'), [
+            'reference' => $old['reference'], 'access_key' => $old['access_key'],
+        ])->assertSessionHas('error', __('registration.feedback.invalid_access'));
+        $this->assertNull(session('registration_access_id'));
+        $this->post(route('supplier.registration.access'), [
+            'reference' => $current['reference'], 'access_key' => $current['access_key'],
+        ])->assertRedirect(route('supplier.registration.status'));
+    }
+
     public function test_resubmit_rechecks_the_registration_cycle_inside_the_transaction(): void
     {
         [$old, $current, , $reviewer] = $this->newCycle();

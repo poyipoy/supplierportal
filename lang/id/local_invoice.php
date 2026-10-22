@@ -402,6 +402,7 @@ return [
         'ready' => 'Siap',
         'required' => 'Wajib',
         'optional_short' => 'Opsional',
+        'not_required' => 'Tidak diwajibkan',
         'uploaded' => 'Terunggah',
         'next_step' => 'Lanjut ke Informasi Tagihan',
         'from_filename' => 'Dari Nama Berkas',

@@ -6,6 +6,7 @@ use App\Enums\TurnstileStatus;
 use App\Services\Auth\TurnstileVerifier;
 use App\Support\SupplierComplianceQuestionnaire;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 
@@ -70,7 +71,7 @@ class SupplierRegistrationRequest extends FormRequest
             'sknr_file' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
 
             // Optional Documents
-            'sppkp_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
+            'sppkp_file' => [Rule::requiredIf(fn () => $this->boolean('is_pkp')), 'nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
             'skd_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
             'company_profile_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
 
@@ -82,6 +83,11 @@ class SupplierRegistrationRequest extends FormRequest
     public function attributes(): array
     {
         return SupplierComplianceQuestionnaire::attributes();
+    }
+
+    public function messages(): array
+    {
+        return ['sppkp_file.required' => __('registration.sppkp_required')];
     }
 
     /**

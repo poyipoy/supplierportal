@@ -52,6 +52,7 @@ class SupplierRegistrationTest extends TestCase
             'nib_file' => NativeFileFixtures::upload('nib.pdf', 500),
             'npwp_file' => UploadedFile::fake()->image('npwp.jpg', 20, 20),
             'sknr_file' => NativeFileFixtures::upload('sknr.pdf', 600),
+            'sppkp_file' => NativeFileFixtures::upload('sppkp.pdf', 600),
             'questionnaire' => self::expectedAnswers(),
         ], $overrides);
     }
@@ -73,6 +74,7 @@ class SupplierRegistrationTest extends TestCase
         $service = app(SupplierRegistrationService::class);
         $result = $service->submitInitialRegistration($payload, [
             'nib_file' => $payload['nib_file'], 'npwp_file' => $payload['npwp_file'], 'sknr_file' => $payload['sknr_file'],
+            'sppkp_file' => $payload['sppkp_file'],
         ]);
         $submitted = $english->notifications()->where('data->event', 'supplier_registration.submitted')->sole();
         $this->assertSame('New Supplier Registration', $submitted->data['title']);
@@ -122,7 +124,7 @@ class SupplierRegistrationTest extends TestCase
 
         // Verify Master Documents
         $docs = SupplierMasterDocument::where('supplier_id', $user->id)->get();
-        $this->assertCount(3, $docs);
+        $this->assertCount(4, $docs);
         $sknrDoc = $docs->firstWhere('document_type', SupplierMasterDocument::TYPE_SURAT_PERNYATAAN_REKENING);
         $this->assertNotNull($sknrDoc);
         $this->assertSame($bankAccount->id, $sknrDoc->supplier_bank_account_id);
@@ -193,6 +195,7 @@ class SupplierRegistrationTest extends TestCase
                 'nib_file' => NativeFileFixtures::upload('nib.pdf', 500),
                 'npwp_file' => UploadedFile::fake()->image('npwp.jpg', 20, 20),
                 'sknr_file' => NativeFileFixtures::upload('sknr.pdf', 600),
+                'sppkp_file' => NativeFileFixtures::upload('sppkp.pdf', 600),
             ],
         );
 
@@ -227,6 +230,7 @@ class SupplierRegistrationTest extends TestCase
                 'nib_file' => NativeFileFixtures::upload('nib.pdf', 500),
                 'npwp_file' => UploadedFile::fake()->image('npwp.jpg', 20, 20),
                 'sknr_file' => NativeFileFixtures::upload('sknr.pdf', 600),
+                'sppkp_file' => NativeFileFixtures::upload('sppkp.pdf', 600),
             ],
         );
 
@@ -259,6 +263,7 @@ class SupplierRegistrationTest extends TestCase
             'nib_file' => null,
             'npwp_file' => null,
             'sknr_file' => null, // preserve existing files
+            'sppkp_file' => null,
         ]);
 
         $resubmitResponse = $this->post(route('supplier.registration.resubmit'), $resubmitPayload);
@@ -285,6 +290,7 @@ class SupplierRegistrationTest extends TestCase
                 'nib_file' => NativeFileFixtures::upload('nib.pdf', 500),
                 'npwp_file' => UploadedFile::fake()->image('npwp.jpg', 20, 20),
                 'sknr_file' => NativeFileFixtures::upload('sknr.pdf', 600),
+                'sppkp_file' => NativeFileFixtures::upload('sppkp.pdf', 600),
             ],
         );
 
@@ -449,6 +455,7 @@ class SupplierRegistrationTest extends TestCase
                 'nib_file' => NativeFileFixtures::upload('nib.pdf', 500),
                 'npwp_file' => UploadedFile::fake()->image('npwp.jpg', 20, 20),
                 'sknr_file' => NativeFileFixtures::upload('sknr.pdf', 600),
+                'sppkp_file' => NativeFileFixtures::upload('sppkp.pdf', 600),
             ],
         );
         $reviewer = User::factory()->create(['role' => 'purchasing', 'is_active' => true]);

@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests\SupplierRegistration;
 
+use App\Services\SupplierRegistrationService;
 use App\Support\SupplierComplianceQuestionnaire;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class ResubmitRegistrationRequest extends FormRequest
 {
@@ -44,7 +46,9 @@ class ResubmitRegistrationRequest extends FormRequest
             'nib_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
             'npwp_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
             'sknr_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
-            'sppkp_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
+            'sppkp_file' => [Rule::requiredIf(fn () => $this->boolean('is_pkp')
+                && ! app(SupplierRegistrationService::class)->hasReusableSppkp($this->attributes->get('registrationAccess')?->user)),
+                'nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
             'skd_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
             'company_profile_file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
 
@@ -55,6 +59,11 @@ class ResubmitRegistrationRequest extends FormRequest
     public function attributes(): array
     {
         return SupplierComplianceQuestionnaire::attributes();
+    }
+
+    public function messages(): array
+    {
+        return ['sppkp_file.required' => __('registration.sppkp_required')];
     }
 
     public function safeResubmitData(): array

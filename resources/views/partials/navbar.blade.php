@@ -167,8 +167,11 @@
                                 <span>{{ __('navigation.logout_all_devices') }}</span>
                             </label>
                         @endif
-                        <button type="submit" class="dropdown-item text-danger tw-py-1.5 small">
-                            <x-ui.icon name="log-out" class="me-2" />{{ __('navigation.logout') }}
+                        <button type="submit"
+                            class="dropdown-item ui-focus-ring text-danger tw-flex tw-min-h-9 tw-items-center tw-gap-2 tw-whitespace-nowrap tw-py-1.5 small"
+                            data-loading-text="{{ __('navigation.logging_out') }}">
+                            <x-ui.icon name="log-out" size="sm" />
+                            <span>{{ __('navigation.logout') }}</span>
                         </button>
                     </form>
                 </li>

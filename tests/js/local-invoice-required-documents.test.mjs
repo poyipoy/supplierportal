@@ -8,7 +8,7 @@ const blade = readFileSync(new URL('../../resources/views/local-invoices/form.bl
 const wizardSource = blade.match(/function localInvoiceWizard\(config\) \{[\s\S]*?\n\}/)[0]
     .replace(/@js\(__\('([^']+)'\)\)/g, (_, key) => JSON.stringify(key));
 
-function wizardFixture({ retainedPo = 0, retainedGr = 0, reducedMotion = false } = {}) {
+function wizardFixture({ retainedPo = 0, retainedGr = 0, retainedTax = 0, isPkp = false, reducedMotion = false } = {}) {
     const focus = [];
     const scroll = [];
     const inputs = Object.fromEntries(['invoice', 'tax_invoice', 'purchase_order', 'goods_receipt', 'delivery_note', 'supporting'].map(type => {
@@ -22,15 +22,55 @@ function wizardFixture({ retainedPo = 0, retainedGr = 0, reducedMotion = false }
     }));
     inputs.file_purchase_order.kept = retainedPo;
     inputs.file_goods_receipt.kept = retainedGr;
+    inputs.file_tax_invoice.kept = retainedTax;
     const create = vm.runInNewContext(`(${wizardSource})`, {
         document: { getElementById: id => inputs[id] },
         window: { scrollTo: value => scroll.push(value), matchMedia: () => ({ matches: reducedMotion }) },
     });
-    const state = create({ isPkp: false, requiresDeliveryNote: false, existingPoCount: retainedPo, existingGrCount: retainedGr });
+    const state = create({ isPkp, requiresDeliveryNote: false, existingPoCount: retainedPo, existingGrCount: retainedGr, existingTaxCount: retainedTax });
     state.$nextTick = callback => callback();
     state.init();
     return { state, inputs, focus, scroll };
 }
+
+test('non-PKP tax presence stays false while optional tax does not block navigation or steal missing-file focus', () => {
+    const { state, inputs, focus } = wizardFixture();
+    assert.equal(state.hasTax, false);
+    state.goToStep(2);
+    assert.equal(focus.at(-1), 'file_purchase_order');
+    inputs.file_purchase_order.files = [{}];
+    inputs.file_goods_receipt.files = [{}];
+    state.goToStep(2);
+    assert.equal(state.step, 2);
+    assert.equal(state.hasTax, false);
+});
+
+test('PKP requires real new or retained tax documents and removal invalidates completeness', () => {
+    const { state, inputs, focus } = wizardFixture({ isPkp: true, retainedPo: 1, retainedGr: 1, retainedTax: 1 });
+    assert.equal(state.hasTax, true);
+    assert.equal(state.isStep1Complete, true);
+    inputs.file_tax_invoice.kept = 0;
+    state.goToStep(2);
+    assert.equal(state.step, 1);
+    assert.equal(focus.at(-1), 'file_tax_invoice');
+    inputs.file_tax_invoice.files = [{}];
+    state.goToStep(2);
+    assert.equal(state.step, 2);
+});
+
+test('tax checklist stays neutral and not required for non-PKP even with an optional uploaded file', () => {
+    const markup = blade.slice(blade.indexOf('{{-- Item Faktur Pajak --}}'), blade.indexOf("@foreach(['purchase_order'"));
+    const textExpression = markup.match(/x-text="([^"]+)"/)[1];
+    const borderExpression = markup.match(/:class="([^"]+)"/)[1];
+    const labels = { readyLabel: 'Ready', requiredLabel: 'Required', notRequiredLabel: 'Not required' };
+    for (const hasTax of [false, true]) {
+        const state = { isPkp: false, hasTax, ...labels };
+        assert.equal(vm.runInNewContext(textExpression, state), 'Not required');
+        assert.doesNotMatch(vm.runInNewContext(borderExpression, state), /success/);
+    }
+    assert.equal(vm.runInNewContext(textExpression, { isPkp: true, hasTax: false, ...labels }), 'Required');
+    assert.equal(vm.runInNewContext(textExpression, { isPkp: true, hasTax: true, ...labels }), 'Ready');
+});
 
 test('the wizard requires both PO and GR and focuses the first missing upload', () => {
     const { state, inputs, focus } = wizardFixture();

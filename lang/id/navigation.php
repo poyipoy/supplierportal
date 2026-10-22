@@ -8,6 +8,7 @@ return [
     'customization' => 'Kustomisasi',
     'account_nav' => ['label' => 'Navigasi akun', 'group' => 'Akun'],
     'logout' => 'Keluar',
+    'logging_out' => 'Sedang keluar…',
     'logout_all_devices' => 'Keluar dari semua perangkat',
     'primary' => 'Navigasi utama',
     'sidebar_controls' => 'Kontrol sidebar',
