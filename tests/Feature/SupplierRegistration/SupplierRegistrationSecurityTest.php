@@ -54,6 +54,7 @@ class SupplierRegistrationSecurityTest extends TestCase
             'nib_file' => NativeFileFixtures::upload('nib.pdf', 500),
             'npwp_file' => UploadedFile::fake()->image('npwp.jpg', 20, 20),
             'sknr_file' => NativeFileFixtures::upload('sknr.pdf', 600),
+            'sppkp_file' => NativeFileFixtures::upload('sppkp.pdf', 600),
             'questionnaire' => SupplierComplianceQuestionnaire::QUESTIONS,
         ], $overrides);
     }
@@ -358,6 +359,7 @@ class SupplierRegistrationSecurityTest extends TestCase
                 'nib_file' => NativeFileFixtures::upload('nib.pdf', 500),
                 'npwp_file' => UploadedFile::fake()->image('npwp.jpg', 20, 20),
                 'sknr_file' => NativeFileFixtures::upload('sknr.pdf', 600),
+                'sppkp_file' => NativeFileFixtures::upload('sppkp.pdf', 600),
             ],
         );
 
@@ -394,6 +396,7 @@ class SupplierRegistrationSecurityTest extends TestCase
                 'nib_file' => NativeFileFixtures::upload('nib.pdf', 500),
                 'npwp_file' => UploadedFile::fake()->image('npwp.jpg', 20, 20),
                 'sknr_file' => NativeFileFixtures::upload('sknr.pdf', 600),
+                'sppkp_file' => NativeFileFixtures::upload('sppkp.pdf', 600),
             ],
         );
 
@@ -420,6 +423,7 @@ class SupplierRegistrationSecurityTest extends TestCase
                 'nib_file' => NativeFileFixtures::upload('nib1.pdf', 500),
                 'npwp_file' => UploadedFile::fake()->image('npwp1.jpg', 20, 20),
                 'sknr_file' => NativeFileFixtures::upload('sknr1.pdf', 600),
+                'sppkp_file' => NativeFileFixtures::upload('sppkp1.pdf', 600),
             ],
         );
 
@@ -430,6 +434,7 @@ class SupplierRegistrationSecurityTest extends TestCase
                 'nib_file' => NativeFileFixtures::upload('nib2.pdf', 500),
                 'npwp_file' => UploadedFile::fake()->image('npwp2.jpg', 20, 20),
                 'sknr_file' => NativeFileFixtures::upload('sknr2.pdf', 600),
+                'sppkp_file' => NativeFileFixtures::upload('sppkp2.pdf', 600),
             ],
         );
 

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class SupplierRegistrationAccess extends Model
 {
@@ -36,6 +37,12 @@ class SupplierRegistrationAccess extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function latestAttempt(): HasOne
+    {
+        return $this->hasOne(SupplierRegistrationAttempt::class, 'user_id', 'user_id')
+            ->ofMany('attempt_number', 'max');
+    }
+
     // ─── Helpers ───
 
     public function isRevoked(): bool
@@ -51,5 +58,19 @@ class SupplierRegistrationAccess extends Model
     public function isValid(): bool
     {
         return ! $this->isRevoked() && ! $this->isExpired();
+    }
+
+    public function hasFinalResult(): bool
+    {
+        return $this->latestAttempt?->isApproved() || $this->latestAttempt?->isRejected();
+    }
+
+    /** A final decision revokes workflow access, but its result remains readable. */
+    public function canViewStatus(): bool
+    {
+        return $this->user?->isSupplier()
+            && $this->latestAttempt !== null
+            && $this->expires_at?->isFuture()
+            && (! $this->isRevoked() || $this->hasFinalResult());
     }
 }

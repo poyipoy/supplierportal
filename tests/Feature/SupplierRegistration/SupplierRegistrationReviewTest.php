@@ -221,22 +221,28 @@ class SupplierRegistrationReviewTest extends TestCase
         ]))->assertForbidden();
     }
 
-    public function test_reviewer_view_renders_structured_snapshot_and_raw_json_toggle(): void
+    public function test_reviewer_view_keeps_business_details_without_technical_snapshot_controls(): void
     {
         $attempt = $this->createPendingAttempt();
+        $submitted = $attempt->submission_snapshot;
+        $submitted['revision_notes'] = 'Updated the bank declaration requested by the reviewer.';
+        $attempt->update([
+            'submission_snapshot' => $submitted,
+            'submission_checksum' => hash('sha256', json_encode($submitted)),
+        ]);
         $finance = User::factory()->create(['role' => 'finance', 'is_active' => true]);
+        $snapshot = $attempt->submission_snapshot;
+        $checksum = $attempt->submission_checksum;
 
         $response = $this->actingAs($finance)->get(route('supplier-registrations.show', $attempt->hash));
 
         $response->assertOk();
 
-        // 1. Snapshot title and verified hash
-        $response->assertSee(__('local_procurement.registration.snapshot', ['attempt' => $attempt->attempt_number]));
-        $response->assertSee('SHA-256 Verified');
-        $response->assertSee($attempt->submission_checksum);
+        $response->assertDontSee(__('local_procurement.registration.snapshot', ['attempt' => $attempt->attempt_number]));
+        $response->assertDontSee('SHA-256 Verified');
+        $response->assertDontSee($checksum);
 
-        // 2. Structured categories & company data
-        $response->assertSee(__('local_procurement.registration.snapshot_company_tax'));
+        $response->assertSee(__('local_procurement.registration.company_tax'));
         $response->assertSee('PT Logam Jaya Perkasa');
         $response->assertSee('8888888888888'); // NIB
         $response->assertSee('88.888.888.8-888.000'); // NPWP
@@ -244,14 +250,15 @@ class SupplierRegistrationReviewTest extends TestCase
         $response->assertSee('BCA'); // Bank
         $response->assertSee('888000111222'); // Account number
 
-        // 3. Documents archive snapshot
-        $response->assertSee(__('local_procurement.registration.snapshot_documents'));
         $response->assertSee('nib.pdf');
+        $response->assertSee($submitted['revision_notes']);
+        $response->assertSee(__('local_procurement.registration.attempts'));
+        $response->assertSee(__('local_procurement.registration.audit_trail'));
 
-        // 4. Mode toggle and Copy JSON controls
-        $response->assertSee(__('local_procurement.registration.snapshot_view_structured'));
-        $response->assertSee(__('local_procurement.registration.snapshot_view_raw'));
-        $response->assertSee(__('local_procurement.registration.snapshot_copy_json'));
-        $response->assertSee('x-ref="rawJsonContent"', false);
+        $response->assertDontSee(__('local_procurement.registration.snapshot_view_raw'));
+        $response->assertDontSee(__('local_procurement.registration.snapshot_copy_json'));
+        $response->assertDontSee('x-ref="rawJsonContent"', false);
+        $this->assertSame($snapshot, $attempt->fresh()->submission_snapshot);
+        $this->assertSame($checksum, $attempt->fresh()->submission_checksum);
     }
 }

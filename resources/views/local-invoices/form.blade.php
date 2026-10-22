@@ -437,15 +437,15 @@
                         </div>
 
                         {{-- Item Faktur Pajak --}}
-                        <div class="tw-flex tw-items-center tw-justify-between tw-p-2.5 tw-rounded-ui-sm tw-border ui-motion" :class="hasTax ? 'tw-border-success/30 tw-bg-success/5' : 'tw-border-outline-variant tw-bg-surface-container'">
+                        <div class="tw-flex tw-items-center tw-justify-between tw-p-2.5 tw-rounded-ui-sm tw-border ui-motion" :class="isPkp && hasTax ? 'tw-border-success/30 tw-bg-success/5' : 'tw-border-outline-variant tw-bg-surface-container'">
                             <div class="tw-flex tw-items-center tw-gap-2.5 tw-min-w-0">
-                                <div class="tw-w-5 tw-h-5 tw-rounded-full tw-flex tw-items-center tw-justify-center tw-shrink-0 ui-motion" :class="hasTax ? 'tw-bg-success tw-text-white' : (isPkp ? 'tw-bg-error/20 tw-text-error' : 'tw-bg-surface-high tw-text-on-surface-variant')">
-                                    <template x-if="hasTax"><x-ui.icon name="check" size="sm" class="tw-w-3 tw-h-3" /></template>
-                                    <template x-if="!hasTax"><x-ui.icon name="minus" size="sm" class="tw-w-3 tw-h-3" /></template>
+                                <div class="tw-w-5 tw-h-5 tw-rounded-full tw-flex tw-items-center tw-justify-center tw-shrink-0 ui-motion" :class="isPkp && hasTax ? 'tw-bg-success tw-text-white' : (isPkp ? 'tw-bg-error/20 tw-text-error' : 'tw-bg-surface-high tw-text-on-surface-variant')">
+                                    <template x-if="isPkp && hasTax"><x-ui.icon name="check" size="sm" class="tw-w-3 tw-h-3" /></template>
+                                    <template x-if="!isPkp || !hasTax"><x-ui.icon name="minus" size="sm" class="tw-w-3 tw-h-3" /></template>
                                 </div>
                                 <span class="tw-font-medium tw-text-on-surface tw-truncate">{{ __('local_invoice.labels.tax_invoice') }}</span>
                             </div>
-                            <span class="tw-text-[10px] tw-font-bold tw-uppercase" :class="hasTax ? 'tw-text-success' : (isPkp ? 'tw-text-error' : 'tw-text-on-surface-variant')" x-text="hasTax ? readyLabel : (isPkp ? requiredLabel : optionalLabel)"></span>
+                            <span class="tw-text-[10px] tw-font-bold tw-uppercase" :class="isPkp ? (hasTax ? 'tw-text-success' : 'tw-text-error') : 'tw-text-on-surface-variant'" x-text="isPkp ? (hasTax ? readyLabel : requiredLabel) : notRequiredLabel"></span>
                         </div>
 
                         @foreach(['purchase_order' => 'hasPo', 'goods_receipt' => 'hasGr'] as $documentType => $state)
@@ -892,13 +892,14 @@ function localInvoiceWizard(config) {
         readyLabel: @js(__('local_invoice.form.ready')),
         requiredLabel: @js(__('local_invoice.form.required')),
         optionalLabel: @js(__('local_invoice.form.optional_short')),
+        notRequiredLabel: @js(__('local_invoice.form.not_required')),
         uploadedLabel: @js(__('local_invoice.form.uploaded')),
         step: config.initialStep || 1,
         isPkp: Boolean(config.isPkp),
         requiresDeliveryNote: Boolean(config.requiresDeliveryNote),
         isRevision: Boolean(config.isRevision),
         hasInvoice: (config.existingInvoiceCount > 0),
-        hasTax: !config.isPkp || (config.existingTaxCount > 0),
+        hasTax: (config.existingTaxCount > 0),
         hasPo: (config.existingPoCount === 1),
         hasGr: (config.existingGrCount > 0 && config.existingGrCount <= 5),
         hasDn: !config.requiresDeliveryNote || (config.existingDnCount > 0),
@@ -928,7 +929,6 @@ function localInvoiceWizard(config) {
             this[states[id]] = count > 0;
             if (id === 'file_purchase_order') this.hasPo = count === 1;
             if (id === 'file_goods_receipt') this.hasGr = count > 0 && count <= 5;
-            if (!this.isPkp) this.hasTax = true;
             if (!this.requiresDeliveryNote) this.hasDn = true;
             if (this.isStep1Complete) this.errorMessage = '';
         },
@@ -942,7 +942,7 @@ function localInvoiceWizard(config) {
         },
 
         get isStep1Complete() {
-            return this.hasInvoice && this.hasTax && this.hasPo && this.hasGr && this.hasDn;
+            return this.hasInvoice && (!this.isPkp || this.hasTax) && this.hasPo && this.hasGr && this.hasDn;
         },
 
         goToStep(target) {
@@ -951,13 +951,13 @@ function localInvoiceWizard(config) {
                 if (!this.isStep1Complete) {
                     const missing = [];
                     if (!this.hasInvoice) missing.push(@js(__('local_invoice.interaction.physical_invoice')));
-                    if (!this.hasTax) missing.push(@js(__('local_invoice.interaction.tax_invoice')));
+                    if (this.isPkp && !this.hasTax) missing.push(@js(__('local_invoice.interaction.tax_invoice')));
                     if (!this.hasPo) missing.push(@js(__('local_invoice.labels.purchase_order')));
                     if (!this.hasGr) missing.push(@js(__('local_invoice.labels.goods_receipt')));
                     if (!this.hasDn) missing.push(@js(__('local_invoice.interaction.delivery_note')));
                     this.errorMessage = @js(__('local_invoice.interaction.missing_files')).replace(':files', () => missing.join(', '));
                     const firstMissing = [
-                        ['file_invoice', this.hasInvoice], ['file_tax_invoice', this.hasTax],
+                        ['file_invoice', this.hasInvoice], ['file_tax_invoice', !this.isPkp || this.hasTax],
                         ['file_purchase_order', this.hasPo], ['file_goods_receipt', this.hasGr],
                         ['file_delivery_note', this.hasDn],
                     ].find(([, present]) => !present);

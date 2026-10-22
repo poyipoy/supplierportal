@@ -225,6 +225,18 @@ class SupplierRegistrationController extends Controller
     {
         /** @var SupplierRegistrationAccess $access */
         $access = $request->attributes->get('registrationAccess');
+        if ($access->hasFinalResult()) {
+            $attempt = $access->latestAttempt;
+            $this->assertCurrentAccess($access, allowFinalResult: true);
+
+            return response()->view('auth.supplier-registration-result', [
+                'reference' => $access->registration_reference,
+                'approved' => $attempt->isApproved(),
+                'decidedAt' => $attempt->isApproved() ? $attempt->approved_at : $attempt->rejected_at,
+                'rejectionReason' => $attempt->rejection_reason,
+            ])->header('Cache-Control', 'no-store, private');
+        }
+
         $user = $access->user->load([
             'supplier',
             'supplierBankAccounts' => fn ($q) => $q->orderBy('id'),
@@ -273,6 +285,7 @@ class SupplierRegistrationController extends Controller
             'bankAccount' => $user->supplierBankAccounts->last(),
             'attempt' => $latestAttempt,
             'documents' => $documents,
+            'hasReusableSppkp' => $this->registrationService->hasReusableSppkp($user),
         ]);
     }
 
@@ -351,10 +364,14 @@ class SupplierRegistrationController extends Controller
             ->with('info', __('registration.feedback.exited'));
     }
 
-    private function assertCurrentAccess(SupplierRegistrationAccess $access): void
+    private function assertCurrentAccess(SupplierRegistrationAccess $access, bool $allowFinalResult = false): void
     {
-        $current = $access->fresh();
-        abort_unless($current?->isValid() && hash_equals($access->registration_reference, $current->registration_reference),
+        $current = $access->fresh(['user', 'latestAttempt']);
+        abort_unless($current?->canViewStatus()
+            && ($allowFinalResult || ! $current->hasFinalResult())
+            && $access->latestAttempt?->id === $current->latestAttempt?->id
+            && $access->latestAttempt?->status === $current->latestAttempt?->status
+            && hash_equals($access->registration_reference, $current->registration_reference),
             403, __('auth.registration_session.expired'));
     }
 }

@@ -1208,7 +1208,7 @@
                     <span class="tw-inline-flex tw-items-center tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-bold tw-bg-error/10 tw-text-error">
                         {{ __('registration.required_documents') }}
                     </span>
-                    <span class="tw-text-[11px] tw-text-on-surface-variant">{{ __('registration.required_documents_help') }}</span>
+                    <span class="tw-text-[11px] tw-text-on-surface-variant" x-text="@js(__('registration.required_documents_help', ['count' => ':count'])).replace(':count', formData.is_pkp ? '4' : '3')">{{ __('registration.required_documents_help', ['count' => old('is_pkp', false) ? 4 : 3]) }}</span>
                 </div>
 
                 <div class="tw-grid tw-gap-4 md:tw-grid-cols-2 tw-items-start">
@@ -1253,7 +1253,7 @@
             <div class="tw-pt-4 tw-border-t tw-border-outline-variant">
                 <div class="tw-flex tw-items-center tw-gap-2 tw-mb-3">
                     <span class="tw-inline-flex tw-items-center tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-bold tw-bg-surface-high tw-text-on-surface-variant">
-                        {{ __('registration.optional_documents') }}
+                        {{ __('registration.additional_documents') }}
                     </span>
                     <span class="tw-text-[11px] tw-text-on-surface-variant">{{ __('registration.optional_help') }}</span>
                 </div>
@@ -1267,7 +1267,8 @@
                         :helper="__('registration.sppkp_help')"
                         accept=".pdf,.jpg,.jpeg,.png"
                         :max-size-mb="5"
-                        :required="false"
+                        :required="(bool) old('is_pkp', false)"
+                        required-when="formData.is_pkp"
                     />
 
                     {{-- SKD File Dropzone --}}
@@ -1466,7 +1467,7 @@
                 </div>
                 <div class="tw-flex tw-items-center tw-justify-between tw-p-2 tw-rounded tw-bg-surface">
                     <span class="tw-font-medium tw-text-on-surface">{{ __('registration.summary.sppkp_document') }}</span>
-                    <span class="tw-text-on-surface-variant" x-text="docs.sppkp ? (docs.sppkp.name + ' (' + docs.sppkp.size + ')') : @js(__('registration.js.not_attached'))"></span>
+                    <span class="tw-text-on-surface-variant" x-text="docs.sppkp ? (docs.sppkp.name + ' (' + docs.sppkp.size + ')') : (formData.is_pkp ? @js(__('common.upload.required')) : @js(__('common.fields.optional')))"></span>
                 </div>
                 <div class="tw-flex tw-items-center tw-justify-between tw-p-2 tw-rounded tw-bg-surface">
                     <span class="tw-font-medium tw-text-on-surface">{{ __('registration.summary.skd_document') }}</span>
@@ -2247,6 +2248,11 @@ document.addEventListener('alpine:init', () => {
                 if (!sknrInput || !sknrInput.files || sknrInput.files.length === 0) {
                     missingDocs.push('SKNR');
                     if (!firstMissingId) firstMissingId = 'sknr_file';
+                }
+                const sppkpInput = document.getElementById('sppkp_file');
+                if (this.formData.is_pkp && !sppkpInput?.files?.length) {
+                    missingDocs.push('SPPKP');
+                    if (!firstMissingId) firstMissingId = 'sppkp_file';
                 }
 
                 if (missingDocs.length > 0) {

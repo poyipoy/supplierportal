@@ -402,6 +402,7 @@ return [
         'ready' => 'Ready',
         'required' => 'Required',
         'optional_short' => 'Optional',
+        'not_required' => 'Not required',
         'uploaded' => 'Uploaded',
         'next_step' => 'Continue to Invoice Information',
         'from_filename' => 'From Filename',

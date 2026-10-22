@@ -10,7 +10,7 @@ use Symfony\Component\HttpFoundation\Response;
 class EnsureRegistrationSession
 {
     /**
-     * Ensure the applicant has an active, unexpired, and unrevoked registration session.
+     * Validate tracking proof and restrict final decisions to their result page.
      */
     public function handle(Request $request, Closure $next): Response
     {
@@ -24,19 +24,20 @@ class EnsureRegistrationSession
 
         /** @var SupplierRegistrationAccess|null $access */
         $access = SupplierRegistrationAccess::query()
-            ->with(['user'])
+            ->with(['user', 'latestAttempt'])
             ->whereKey($accessId)
             ->where('user_id', $userId)
-            ->whereNull('revoked_at')
-            ->where('expires_at', '>', now())
             ->first();
 
-        if (! $access || ! hash_equals($access->registration_reference, (string) $request->session()->get('registration_cycle_reference', ''))) {
+        if (! $access || ! $access->canViewStatus()
+            || ! hash_equals($access->registration_reference, (string) $request->session()->get('registration_cycle_reference', ''))) {
             $request->session()->forget(['registration_access_id', 'registration_user_id', 'registration_cycle_reference']);
 
             return redirect()->route('supplier.registration.access-form')
                 ->with('error', __('auth.registration_session.expired'));
         }
+
+        abort_if($access->hasFinalResult() && ! $request->routeIs('supplier.registration.status'), 403);
 
         $request->attributes->set('registrationAccess', $access);
 

@@ -10,6 +10,7 @@ use App\Models\SupplierRegistrationAccess;
 use App\Models\SupplierRegistrationAttempt;
 use App\Models\SupplierRegistrationAudit;
 use App\Models\User;
+use App\Services\FileSecurity\FileAccessGuard;
 use App\Services\FileSecurity\FileInspectionService;
 use App\Support\BusinessTime;
 use App\Support\NotificationCategory;
@@ -23,6 +24,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class SupplierRegistrationService
 {
@@ -57,6 +59,38 @@ class SupplierRegistrationService
             ->map(fn ($id) => (int) $id)->filter(fn ($id) => $id > 0)->unique()->values()->all();
 
         return $user->supplierMasterDocuments()->whereKey($ids)->orderBy('id')->get();
+    }
+
+    public function hasReusableSppkp(?User $user): bool
+    {
+        $document = $user ? $this->currentCycleDocuments($user)->where('document_type', SupplierMasterDocument::TYPE_SPPKP)->last() : null;
+        if (! $document) {
+            return false;
+        }
+
+        try {
+            app(FileAccessGuard::class)->assertReadable($document);
+
+            return true;
+        } catch (HttpException) {
+            return false;
+        }
+    }
+
+    private function assertPkpDocument(array $data, array $files, ?User $user = null): void
+    {
+        if (empty($data['is_pkp'])) {
+            return;
+        }
+
+        $file = $files['sppkp_file'] ?? null;
+        if ($file instanceof UploadedFile && $file->isValid()) {
+            return;
+        }
+
+        if ($file !== null || ! $this->hasReusableSppkp($user)) {
+            throw ValidationException::withMessages(['sppkp_file' => __('registration.sppkp_required')]);
+        }
     }
 
     /**
@@ -138,6 +172,7 @@ class SupplierRegistrationService
      */
     public function submitInitialRegistration(array $data, array $files, ?string $ip = null, ?string $userAgent = null): array
     {
+        $this->assertPkpDocument($data, $files);
         // File errors must be identical whether or not an identity already exists.
         foreach (self::DOCUMENT_TYPES as $inputKey => $documentType) {
             if (($files[$inputKey] ?? null) instanceof UploadedFile) {
@@ -372,6 +407,8 @@ class SupplierRegistrationService
                 if (! $lastAttempt || $lastAttempt->status !== SupplierRegistrationAttempt::STATUS_REVISION) {
                     throw new \DomainException(__('local_procurement.registration.attempt_revision'));
                 }
+
+                $this->assertPkpDocument($data, $files, $user);
 
                 $this->checkDuplicates($data['email'] ?? $user->email, $data['nib'], $data['npwp'], $user->id);
 
@@ -724,33 +761,30 @@ class SupplierRegistrationService
             return null;
         }
 
-        $access = SupplierRegistrationAccess::query()
-            ->with(['user'])
-            ->where('registration_reference', $reference)
-            ->whereNull('revoked_at')
-            ->where('expires_at', '>', now())
-            ->first();
+        return DB::transaction(function () use ($reference, $key) {
+            $access = SupplierRegistrationAccess::query()
+                ->with(['user', 'latestAttempt'])
+                ->where('registration_reference', $reference)
+                ->lockForUpdate()
+                ->first();
 
-        if (! $access) {
-            return null;
-        }
+            if (! $access || ! $access->canViewStatus()
+                || ! hash_equals($access->token_hash, hash('sha256', $key))) {
+                return null;
+            }
 
-        $providedHash = hash('sha256', $key);
-        if (! hash_equals($access->token_hash, $providedHash)) {
-            return null;
-        }
+            $access->update(['last_used_at' => now()]);
 
-        $access->update(['last_used_at' => now()]);
-
-        return $access;
+            return $access;
+        });
     }
 
     /**
      * Authenticate an applicant via registered email + password so a lost access key
      * does not lock them out of status tracking. Never authenticates the web guard.
      *
-     * Eligible only while the latest attempt is PENDING/REVISION and the access row is
-     * not revoked. Approve/reject revoke access, so final decisions end tracking.
+     * Pending/revision access must not be revoked. Final decisions allow result-only
+     * tracking even though approval/rejection has revoked workflow access.
      */
     public function authenticateWithCredentials(string $email, string $password): ?SupplierRegistrationAccess
     {
@@ -766,6 +800,8 @@ class SupplierRegistrationService
             && in_array($latestAttempt->status, [
                 SupplierRegistrationAttempt::STATUS_PENDING,
                 SupplierRegistrationAttempt::STATUS_REVISION,
+                SupplierRegistrationAttempt::STATUS_APPROVED,
+                SupplierRegistrationAttempt::STATUS_REJECTED,
             ], true);
 
         // Constant-time: always run one bcrypt comparison, even for unknown/ineligible accounts.
@@ -781,18 +817,18 @@ class SupplierRegistrationService
             $lockedUser = User::whereKey($user->id)->lockForUpdate()->firstOrFail();
             $currentAttempt = $lockedUser->registrationAttempts()->orderByDesc('attempt_number')->first();
             if ($currentAttempt?->id !== $latestAttempt->id
-                || ! in_array($currentAttempt->status, [SupplierRegistrationAttempt::STATUS_PENDING, SupplierRegistrationAttempt::STATUS_REVISION], true)
+                || $currentAttempt->status !== $latestAttempt->status
                 || ! hash_equals($user->password, $lockedUser->password)) {
                 return null;
             }
 
             $access = SupplierRegistrationAccess::query()
+                ->with(['user', 'latestAttempt'])
                 ->where('user_id', $user->id)
-                ->whereNull('revoked_at')
                 ->lockForUpdate()
                 ->first();
 
-            if (! $access) {
+            if (! $access || ($access->isRevoked() && ! $access->hasFinalResult())) {
                 return null;
             }
 
