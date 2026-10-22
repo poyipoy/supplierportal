@@ -8,6 +8,7 @@ use Illuminate\Validation\ValidationException;
 use OpenSpout\Common\Entity\Row;
 use OpenSpout\Writer\XLSX\Writer;
 use PhpOffice\PhpSpreadsheet\Shared\Date;
+use Tests\Support\InforExportFixtures;
 use Tests\TestCase;
 
 class LocalProcurementStreamingReaderTest extends TestCase
@@ -135,25 +136,36 @@ class LocalProcurementStreamingReaderTest extends TestCase
         }
     }
 
-    public function test_real_infor_files_keep_positions_physical_rows_and_blank_uom_header(): void
+    public function test_infor_exports_keep_positions_physical_rows_and_blank_uom_header(): void
     {
         $reader = app(LocalProcurementStreamingReader::class);
-        $rows = iterator_to_array($reader->rows(base_path('whinh3512m600_0520_20260924-134847_116644.xlsx'), 'GR'));
-        $this->assertCount(48, $rows);
+        $rows = iterator_to_array($reader->rows(InforExportFixtures::goodsReceipts(), 'GR'));
+        $this->assertCount(InforExportFixtures::GR_ROWS, $rows);
         $this->assertSame('pcs', $rows[0]['uom']);
         $this->assertSame(2, $rows[0]['_row']);
         $this->assertNotEmpty($rows[0]['description']);
-        $this->assertCount(1, $reader->warnings);
-        $poRows = iterator_to_array($reader->rows(base_path('tdpur4100m000_0520_20260924-133401_101112.xlsx'), 'PO'));
-        $this->assertCount(4, $poRows);
+        // The only warning is the extra `enums` sheet; the headers match.
+        $this->assertSame(['worksheet'], array_column($reader->warnings, 'column'));
+        $poRows = iterator_to_array($reader->rows(InforExportFixtures::purchaseOrders(), 'PO'));
+        $this->assertCount(InforExportFixtures::PO_ROWS, $poRows);
         $this->assertNotEmpty($poRows[0]['po_number']);
         $this->assertNotEmpty($poRows[0]['supplier_name']);
     }
 
     public function test_row_limit_counts_meaningful_rows_and_rejects_without_returning_a_ready_file(): void
     {
-        config(['local_procurement_imports.max_rows' => 47]);
+        $limit = InforExportFixtures::GR_ROWS - 1;
+        config(['local_procurement_imports.max_rows' => $limit]);
+        $path = InforExportFixtures::goodsReceipts();
+        // Rejected for the row limit, not because the file is unreadable.
         $this->expectException(ValidationException::class);
-        iterator_to_array(app(LocalProcurementStreamingReader::class)->rows(base_path('whinh3512m600_0520_20260924-134847_116644.xlsx'), 'GR'));
+        $this->expectExceptionMessage(__('local_procurement.import.row_limit', ['count' => $limit]));
+        iterator_to_array(app(LocalProcurementStreamingReader::class)->rows($path, 'GR'));
+    }
+
+    protected function tearDown(): void
+    {
+        InforExportFixtures::cleanup();
+        parent::tearDown();
     }
 }

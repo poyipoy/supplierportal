@@ -10,6 +10,7 @@ use App\Services\LocalInvoice\LocalPoImportService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Tests\Support\InforExportFixtures;
 use Tests\TestCase;
 
 class LocalPoImportTest extends TestCase
@@ -259,11 +260,8 @@ class LocalPoImportTest extends TestCase
 
     public function test_http_preview_and_confirm_routes(): void
     {
-        foreach ([
-            'PT PRIMA NANO COATING',
-            'PT. BINTANG UTAMA ENGINEERING',
-            'CV SUMBER RIZKI SENTOSA',
-        ] as $company) {
+        // Every supplier in the export is an active Local Supplier.
+        foreach (InforExportFixtures::PO_SUPPLIERS as $company) {
             $u = User::factory()->create(['role' => 'supplier', 'is_active' => true]);
             SupplierScope::create(['supplier_id' => $u->id, 'scope' => 'local']);
             Supplier::create([
@@ -273,7 +271,7 @@ class LocalPoImportTest extends TestCase
             ]);
         }
 
-        $filePath = base_path('tdpur4100m000_0520_20260924-133401_101112.xlsx');
+        $filePath = InforExportFixtures::purchaseOrders();
         $this->assertFileExists($filePath);
 
         $uploaded = new UploadedFile($filePath, 'tdpur_sample.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
@@ -298,8 +296,14 @@ class LocalPoImportTest extends TestCase
 
         $confirmResponse->assertOk()->assertJsonPath('status', 'COMPLETED');
         $this->assertDatabaseHas('local_purchase_orders', [
-            'po_number' => 'PNR261178',
+            'po_number' => InforExportFixtures::FIRST_PO_NUMBER,
         ]);
+    }
+
+    protected function tearDown(): void
+    {
+        InforExportFixtures::cleanup();
+        parent::tearDown();
     }
 
     public function test_template_download_route(): void
