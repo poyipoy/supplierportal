@@ -37,8 +37,20 @@ jobs:
           php-version: "8.2"
           extensions: pdo_mysql, bcmath, mbstring, zip, intl, gd, fileinfo, xmlreader, dom
           coverage: none
+      # Composer's post-autoload-dump runs `artisan package:discover`, which boots
+      # the app. Without an .env the app defaults to production and its HASHIDS_SALT
+      # and finance guards abort, so the non-production test env must exist first.
+      # .env.example is a production template and would trip the same guards.
+      - name: Prepare environments
+        run: |
+          cp .env.testing.example .env
+          cp .env.testing.example .env.testing
       - name: Install PHP dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Generate application keys
+        run: |
+          php artisan key:generate --no-interaction
+          php artisan key:generate --env=testing --no-interaction
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -47,12 +59,6 @@ jobs:
         run: |
           npm ci
           npm run build
-      - name: Prepare environments
-        run: |
-          cp .env.example .env
-          php artisan key:generate --no-interaction
-          cp .env.testing.example .env.testing
-          php artisan key:generate --env=testing --no-interaction
       - name: Pint (changed PHP files)
         if: github.event_name == 'pull_request'
         run: |
@@ -88,6 +94,16 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+      # po-progress-history and regional-export-history resolve translation keys
+      # through `php -r "require 'vendor/autoload.php'; ..."`. They only need the
+      # Composer autoloader, so scripts (package:discover, app boot) are skipped.
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          extensions: mbstring
+          coverage: none
+      - name: Install PHP autoloader for PHP-backed JS tests
+        run: composer install --no-interaction --prefer-dist --no-progress --no-scripts
       - uses: actions/setup-node@v4
         with:
           node-version: 22
