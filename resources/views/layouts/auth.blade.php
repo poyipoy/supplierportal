@@ -140,6 +140,72 @@
             color: rgba(var(--md-on-primary-rgb), 0.38);
         }
 
+        .auth-shell[data-login-screen] .auth-brand-panel__image img {
+            object-position: 60% center;
+        }
+        .auth-shell[data-login-screen] .auth-brand-panel__overlay {
+            background: rgba(var(--md-scrim-rgb), 0.58);
+        }
+        .auth-shell[data-login-screen] .auth-brand-headline > p {
+            color: rgba(var(--md-on-primary-rgb), 0.90);
+        }
+        .auth-shell[data-login-screen] .auth-brand-logo__sub {
+            color: rgba(var(--md-on-primary-rgb), 0.85);
+        }
+        .auth-registration-actions {
+            margin-top: 1.25rem;
+            border: 1px solid var(--md-outline-variant);
+            border-radius: var(--md-shape-sm);
+            overflow: hidden;
+        }
+        .auth-next-step {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            text-decoration: none;
+            color: inherit;
+            transition: background-color 160ms ease;
+        }
+        .auth-next-step + .auth-next-step {
+            border-top: 1px solid var(--md-outline-variant);
+        }
+        .auth-next-step:hover,
+        .auth-next-step:focus-visible {
+            background: var(--md-surface-container-low);
+        }
+        .auth-next-step__icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2rem;
+            height: 2rem;
+            flex-shrink: 0;
+            border-radius: var(--md-shape-xs);
+            background: var(--md-surface-container-high);
+            color: var(--md-primary);
+        }
+        .auth-next-step__text {
+            display: flex;
+            flex-direction: column;
+            gap: 0.0625rem;
+            min-width: 0;
+            flex: 1;
+        }
+        .auth-next-step__label {
+            font-size: var(--ui-font-size-sm);
+            font-weight: 600;
+            color: var(--md-on-surface);
+        }
+        .auth-next-step__hint {
+            font-size: var(--ui-font-size-xs);
+            color: var(--md-on-surface-variant);
+        }
+        .auth-next-step__chevron {
+            flex-shrink: 0;
+            color: var(--md-on-surface-variant);
+        }
+
         /* ── Auth Form Panel ── */
         .auth-form-panel {
             display: flex;
