@@ -4,7 +4,7 @@
 @section('page-title', __('supplier.copy.announcements'))
 
 @section('content')
-<div class="tw-grid tw-gap-4">
+<div class="tw:grid tw:gap-4">
     {{-- Breadcrumb & Compact Page Header --}}
     <x-ui.breadcrumb :items="[
         __('purchasing.breadcrumbs.dashboard') => route('supplier.dashboard'),
@@ -23,17 +23,17 @@
             @forelse($announcements as $ann)
                 <div class="list-group-item p-4 border-bottom">
                     <div class="d-flex justify-content-between align-items-start gap-3 mb-2">
-                        <h6 class="mb-0 fw-bold tw-text-ui-base">
-                            <a href="{{ route('supplier.announcements.show', $ann->id) }}" class="tw-text-on-surface text-decoration-none hover:tw-text-primary">
+                        <h6 class="mb-0 fw-bold tw:text-ui-base">
+                            <a href="{{ route('supplier.announcements.show', $ann->id) }}" class="tw:text-on-surface text-decoration-none tw:hover:text-primary">
                                 {{ $ann->title }}
                             </a>
                         </h6>
-                        <div class="tw-text-on-surface-variant tw-text-ui-xs d-flex align-items-center gap-1 flex-shrink-0 ui-tabular-nums">
+                        <div class="tw:text-on-surface-variant tw:text-ui-xs d-flex align-items-center gap-1 flex-shrink-0 ui-tabular-nums">
                             <x-ui.icon name="clock" size="sm" />
                             <span>{{ $regionalFormatter->timestamp($ann->published_at, 'datetime_comma') }}</span>
                         </div>
                     </div>
-                    <div class="tw-text-on-surface-variant tw-text-ui-xs mb-3 leading-relaxed">
+                    <div class="tw:text-on-surface-variant tw:text-ui-xs mb-3 leading-relaxed">
                         {{ Str::limit($ann->content, 220) }}
                     </div>
                         <x-ui.button :href="route('supplier.announcements.show', $ann->id)" variant="ghost" size="sm">
@@ -42,7 +42,7 @@
                     </x-ui.button>
                 </div>
             @empty
-                <div class="p-5 text-center tw-text-outline tw-text-ui-sm">
+                <div class="p-5 text-center tw:text-outline tw:text-ui-sm">
                     {{ __('supplier.copy.no_announcements_published_yet') }}
                 </div>
             @endforelse
@@ -50,7 +50,7 @@
 
         @if($announcements->hasPages())
             <x-slot:footer>
-                <div class="tw-flex tw-justify-center">
+                <div class="tw:flex tw:justify-center">
                     {{ $announcements->links('pagination::bootstrap-5') }}
                 </div>
             </x-slot:footer>

@@ -4,12 +4,12 @@
             <div class="modal-header">
                 <div>
                     <h6 class="modal-title fw-bold" id="prImportModalLabel">{{ __('purchasing.copy.import_pr_materials_from_spreadsheet') }}</h6>
-                    <div class="tw-text-on-surface-variant tw-text-ui-xs tw-mt-0.5">{{ __('purchasing.copy.validate_your_excel_spreadsheet_xlsx_xls_csv_before_inserting_into_the_requisition') }}</div>
+                    <div class="tw:text-on-surface-variant tw:text-ui-xs tw:mt-0.5">{{ __('purchasing.copy.validate_your_excel_spreadsheet_xlsx_xls_csv_before_inserting_into_the_requisition') }}</div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('purchasing.copy.close') }}"></button>
             </div>
-            <div class="modal-body tw-p-3.5">
-                <div class="tw-grid tw-gap-4 md:tw-grid-cols-[minmax(0,1.4fr)_minmax(14rem,1fr)]">
+            <div class="modal-body tw:p-3.5">
+                <div class="tw:grid tw:gap-4 tw:md:grid-cols-[minmax(0,1.4fr)_minmax(14rem,1fr)]">
                     <x-ui.file-upload
                         name="import_file"
                         id="prImportFile"
@@ -22,27 +22,27 @@
                             <option value="replace" selected>{{ __('purchasing.copy.replace_current_rows') }}</option>
                             <option value="append">{{ __('purchasing.copy.append_to_current_rows') }}</option>
                         </x-ui.select>
-                        <div id="prImportModeHelp" class="form-text tw-text-ui-xs" aria-live="polite"></div>
+                        <div id="prImportModeHelp" class="form-text tw:text-ui-xs" aria-live="polite"></div>
                     </div>
                 </div>
 
                 <div id="prImportResult" class="d-none mt-4">
-                    <div id="prImportSummary" class="tw-mb-3 tw-rounded-ui-sm tw-border tw-border-outline tw-bg-surface-container tw-px-3 tw-py-2 tw-text-ui-xs tw-font-semibold tw-text-on-surface" role="status"></div>
+                    <div id="prImportSummary" class="tw:mb-3 tw:rounded-ui-sm tw:border tw:border-outline tw:bg-surface-container tw:px-3 tw:py-2 tw:text-ui-xs tw:font-semibold tw:text-on-surface" role="status"></div>
 
-                    <div id="prImportWarningsPanel" class="d-none tw-rounded-ui-sm tw-border-s-4 tw-border-warning tw-bg-warning-container tw-px-3 tw-py-2.5 tw-text-ui-xs tw-text-warning-container-foreground" role="status">
-                        <div class="fw-bold mb-1 d-flex align-items-center tw-gap-1.5"><x-ui.icon name="triangle-alert" size="sm" /> {{ __('purchasing.copy.warnings') }}</div>
+                    <div id="prImportWarningsPanel" class="d-none tw:rounded-ui-sm tw:border-s-4 tw:border-warning tw:bg-warning-container tw:px-3 tw:py-2.5 tw:text-ui-xs tw:text-warning-container-foreground" role="status">
+                        <div class="fw-bold mb-1 d-flex align-items-center tw:gap-1.5"><x-ui.icon name="triangle-alert" size="sm" /> {{ __('purchasing.copy.warnings') }}</div>
                         <ul id="prImportWarnings" class="mb-0 ps-3"></ul>
                     </div>
 
-                    <div id="prImportErrorsPanel" class="d-none tw-rounded-ui-sm tw-border-s-4 tw-border-error tw-bg-error-container tw-px-3 tw-py-2.5 tw-text-ui-xs tw-text-error-container-foreground" role="alert">
-                        <div class="fw-bold mb-1 d-flex align-items-center tw-gap-1.5"><x-ui.icon name="circle-x" size="sm" /> {{ __('purchasing.copy.import_errors') }}</div>
+                    <div id="prImportErrorsPanel" class="d-none tw:rounded-ui-sm tw:border-s-4 tw:border-error tw:bg-error-container tw:px-3 tw:py-2.5 tw:text-ui-xs tw:text-error-container-foreground" role="alert">
+                        <div class="fw-bold mb-1 d-flex align-items-center tw:gap-1.5"><x-ui.icon name="circle-x" size="sm" /> {{ __('purchasing.copy.import_errors') }}</div>
                         <ul id="prImportErrors" class="mb-0 ps-3"></ul>
                     </div>
 
                     <div id="prImportPreviewPanel" class="d-none">
-                        <div class="fw-bold tw-text-on-surface tw-text-ui-sm mb-2">{{ __('purchasing.copy.parsed_materials_preview') }}</div>
+                        <div class="fw-bold tw:text-on-surface tw:text-ui-sm mb-2">{{ __('purchasing.copy.parsed_materials_preview') }}</div>
                         <div class="pr-import-preview table-responsive border rounded">
-                            <table class="table table-sm table-striped table-hover align-middle mb-0 tw-text-ui-xs">
+                            <table class="table table-sm table-striped table-hover align-middle mb-0 tw:text-ui-xs">
                                 <thead class="table-light sticky-top">
                                     <tr>
                                         <th scope="col" style="width: 40px;" class="text-center">{{ __('purchasing.copy.row') }}</th>
@@ -60,7 +60,7 @@
                     </div>
                 </div>
             </div>
-            <div class="modal-footer tw-bg-surface-low border-top">
+            <div class="modal-footer tw:bg-surface-low border-top">
                 <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('purchasing.copy.cancel') }}</x-ui.button>
                 <x-ui.button type="button" variant="outline" size="sm" id="btnParsePrImport">
                     <span class="spinner-border spinner-border-sm me-1 d-none" id="prImportSpinner"></span>

@@ -41,28 +41,28 @@
     };
 @endphp
 
-<div class="tw-mt-3 tw-bg-surface tw-border tw-border-outline-variant tw-rounded-ui-sm tw-overflow-hidden">
-    <div class="tw-px-3 tw-py-2 tw-bg-surface-container-low tw-border-b tw-border-outline-variant tw-flex tw-items-center tw-justify-between">
-        <span class="tw-text-ui-xs tw-font-semibold tw-text-on-surface tw-flex tw-items-center tw-gap-1.5">
-            <x-ui.icon name="file-text" size="sm" class="tw-text-primary" />
+<div class="tw:mt-3 tw:bg-surface tw:border tw:border-outline-variant tw:rounded-ui-sm tw:overflow-hidden">
+    <div class="tw:px-3 tw:py-2 tw:bg-surface-container-low tw:border-b tw:border-outline-variant tw:flex tw:items-center tw:justify-between">
+        <span class="tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:flex tw:items-center tw:gap-1.5">
+            <x-ui.icon name="file-text" size="sm" class="tw:text-primary" />
             <span>{{ __('local_procurement.change_details.heading') }}</span>
         </span>
-        <span class="tw-text-[11px] tw-text-on-surface-variant">
+        <span class="tw:text-[11px] tw:text-on-surface-variant">
             {{ __('local_procurement.change_details.help') }}
         </span>
     </div>
 
     @if(!empty($proposed))
         <div class="table-responsive">
-            <table class="table table-sm table-hover tw-m-0 tw-text-ui-xs align-middle">
-                <thead class="tw-bg-surface-container-lowest tw-border-b tw-border-outline-variant/60">
+            <table class="table table-sm table-hover tw:m-0 tw:text-ui-xs align-middle">
+                <thead class="tw:bg-surface-container-lowest tw:border-b tw:border-outline-variant/60">
                     <tr>
-                        <th class="tw-py-2 tw-ps-3 tw-text-on-surface-variant tw-font-semibold" style="width: 25%;">{{ __('local_procurement.change_details.field') }}</th>
-                        <th class="tw-py-2 tw-text-on-surface-variant tw-font-semibold" style="width: 35%;">{{ __('local_procurement.change_details.current') }}</th>
-                        <th class="tw-py-2 tw-text-on-surface-variant tw-font-semibold" style="width: 40%;">{{ __('local_procurement.change_details.proposed') }}</th>
+                        <th class="tw:py-2 tw:ps-3 tw:text-on-surface-variant tw:font-semibold" style="width: 25%;">{{ __('local_procurement.change_details.field') }}</th>
+                        <th class="tw:py-2 tw:text-on-surface-variant tw:font-semibold" style="width: 35%;">{{ __('local_procurement.change_details.current') }}</th>
+                        <th class="tw:py-2 tw:text-on-surface-variant tw:font-semibold" style="width: 40%;">{{ __('local_procurement.change_details.proposed') }}</th>
                     </tr>
                 </thead>
-                <tbody class="tw-divide-y tw-divide-outline-variant/30">
+                <tbody class="tw:divide-y tw:divide-outline-variant/30">
                     @foreach($proposed as $key => $newValRaw)
                         @php
                             $meta = $fieldMeta[$key] ?? [
@@ -75,26 +75,26 @@
                             $isChanged = ($oldValRaw !== null && (string) $oldValRaw !== (string) $newValRaw);
                             $isNew = ($oldValRaw === null);
                         @endphp
-                        <tr class="{{ $isChanged ? 'tw-bg-primary/[0.03]' : '' }}">
-                            <td class="tw-py-2.5 tw-ps-3 tw-text-on-surface">
-                                <div class="tw-flex tw-items-center tw-gap-2">
-                                    <x-ui.icon :name="$meta['icon']" size="sm" class="tw-text-on-surface-variant/70 tw-shrink-0" />
-                                    <span class="tw-font-medium">{{ $meta['label'] }}</span>
+                        <tr class="{{ $isChanged ? 'tw:bg-primary/[0.03]' : '' }}">
+                            <td class="tw:py-2.5 tw:ps-3 tw:text-on-surface">
+                                <div class="tw:flex tw:items-center tw:gap-2">
+                                    <x-ui.icon :name="$meta['icon']" size="sm" class="tw:text-on-surface-variant/70 tw:shrink-0" />
+                                    <span class="tw:font-medium">{{ $meta['label'] }}</span>
                                 </div>
                             </td>
-                            <td class="tw-py-2.5 tw-text-on-surface-variant">
+                            <td class="tw:py-2.5 tw:text-on-surface-variant">
                                 @if($oldVal !== null)
-                                    <span class="{{ $isChanged ? 'tw-line-through tw-text-on-surface-variant/60' : '' }}">{{ $oldVal }}</span>
+                                    <span class="{{ $isChanged ? 'tw:line-through tw:text-on-surface-variant/60' : '' }}">{{ $oldVal }}</span>
                                 @else
-                                    <span class="tw-text-on-surface-variant/40 tw-italic">{{ __('local_procurement.change_details.missing') }}</span>
+                                    <span class="tw:text-on-surface-variant/40 tw:italic">{{ __('local_procurement.change_details.missing') }}</span>
                                 @endif
                             </td>
-                            <td class="tw-py-2.5">
-                                <div class="tw-flex tw-items-center tw-gap-2 tw-flex-wrap">
+                            <td class="tw:py-2.5">
+                                <div class="tw:flex tw:items-center tw:gap-2 tw:flex-wrap">
                                     @if($newVal !== null)
-                                        <strong class="{{ $isChanged ? 'tw-text-primary' : 'tw-text-on-surface' }}">{{ $newVal }}</strong>
+                                        <strong class="{{ $isChanged ? 'tw:text-primary' : 'tw:text-on-surface' }}">{{ $newVal }}</strong>
                                     @else
-                                        <span class="tw-text-on-surface-variant/40 tw-italic">{{ __('local_procurement.change_details.cleared') }}</span>
+                                        <span class="tw:text-on-surface-variant/40 tw:italic">{{ __('local_procurement.change_details.cleared') }}</span>
                                     @endif
 
                                     @if($isChanged)
@@ -114,7 +114,7 @@
             </table>
         </div>
     @else
-        <div class="tw-p-4 tw-text-center tw-text-ui-xs tw-text-on-surface-variant">
+        <div class="tw:p-4 tw:text-center tw:text-ui-xs tw:text-on-surface-variant">
             {{ __('local_procurement.change_details.empty') }}
         </div>
     @endif

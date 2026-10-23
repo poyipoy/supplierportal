@@ -4,7 +4,7 @@
 @section('page-title', __('navigation.export_history'))
 
 @section('content')
-<div class="tw-grid tw-gap-5">
+<div class="tw:grid tw:gap-5">
     <x-ui.page-header
         :title="__('navigation.quick.exports')"
         :description="__('common.export_history.description')"
@@ -18,13 +18,13 @@
         </x-slot:meta>
     </x-ui.page-header>
 
-    <section class="tw-border tw-border-outline tw-bg-surface" aria-labelledby="export-table-title">
-        <header class="tw-border-b tw-border-outline-variant tw-bg-surface-container tw-px-5 tw-py-3">
-            <h2 id="export-table-title" class="tw-m-0 tw-text-ui-sm tw-font-semibold">{{ __('common.export_history.generated') }}</h2>
-            <p class="tw-m-0 tw-mt-0.5 tw-text-ui-xs tw-text-on-surface-variant">{{ __('common.export_history.status_help') }}</p>
+    <section class="tw:border tw:border-outline tw:bg-surface" aria-labelledby="export-table-title">
+        <header class="tw:border-b tw:border-outline-variant tw:bg-surface-container tw:px-5 tw:py-3">
+            <h2 id="export-table-title" class="tw:m-0 tw:text-ui-sm tw:font-semibold">{{ __('common.export_history.generated') }}</h2>
+            <p class="tw:m-0 tw:mt-0.5 tw:text-ui-xs tw:text-on-surface-variant">{{ __('common.export_history.status_help') }}</p>
         </header>
-        <div class="ui-data-table__scroll tw-overflow-x-auto">
-            <table class="table table-hover align-middle tw-m-0 tw-w-full tw-text-ui-sm">
+        <div class="ui-data-table__scroll tw:overflow-x-auto">
+            <table class="table table-hover align-middle tw:m-0 tw:w-full tw:text-ui-sm">
                 <thead class="table-light">
                     <tr>
                         <th scope="col">{{ __('common.export_history.export') }}</th>
@@ -38,9 +38,9 @@
                     @forelse($items as $item)
                         <tr>
                             <td>
-                                <div class="tw-font-semibold">{{ $item['label'] }}</div>
-                                <span class="tw-text-ui-xs tw-font-semibold">{{ strtoupper($item['format']) }}</span>
-                                <div class="tw-text-ui-xs tw-text-on-surface-variant tw-break-all">{{ $item['file_name'] }}</div>
+                                <div class="tw:font-semibold">{{ $item['label'] }}</div>
+                                <span class="tw:text-ui-xs tw:font-semibold">{{ strtoupper($item['format']) }}</span>
+                                <div class="tw:text-ui-xs tw:text-on-surface-variant tw:break-all">{{ $item['file_name'] }}</div>
                             </td>
                             <td>
                                 @php
@@ -54,8 +54,8 @@
                                 @endphp
                                 <x-ui.status-chip :tone="$tone">{{ __('common.export_history.'.$item['status']) }}</x-ui.status-chip>
                             </td>
-                            <td class="tw-text-ui-xs tw-text-on-surface-variant tw-whitespace-nowrap">{{ $item['created_at'] ? $regionalFormatter->timestamp(\Carbon\Carbon::parse($item['created_at']), 'datetime') : '-' }}</td>
-                            <td class="tw-text-ui-xs tw-text-on-surface-variant">
+                            <td class="tw:text-ui-xs tw:text-on-surface-variant tw:whitespace-nowrap">{{ $item['created_at'] ? $regionalFormatter->timestamp(\Carbon\Carbon::parse($item['created_at']), 'datetime') : '-' }}</td>
+                            <td class="tw:text-ui-xs tw:text-on-surface-variant">
                                 @if($item['completed_at'])
                                     <span>{{ __('common.export_history.completed_at', ['date' => $regionalFormatter->timestamp(\Carbon\Carbon::parse($item['completed_at']), 'datetime')]) }}</span><br>
                                 @endif
@@ -67,17 +67,17 @@
                             </td>
                             <td class="text-end">
                                 @if($item['download_url'])
-                                    <a href="{{ $item['download_url'] }}" class="ui-focus-ring tw-inline-flex tw-h-8 tw-items-center tw-gap-1.5 tw-rounded-ui-sm tw-border tw-border-success/60 tw-bg-transparent tw-px-2.5 tw-text-ui-xs tw-font-medium tw-text-success tw-no-underline hover:tw-bg-success/5">
+                                    <a href="{{ $item['download_url'] }}" class="ui-focus-ring tw:inline-flex tw:h-8 tw:items-center tw:gap-1.5 tw:rounded-ui-sm tw:border tw:border-success/60 tw:bg-transparent tw:px-2.5 tw:text-ui-xs tw:font-medium tw:text-success tw:no-underline tw:hover:bg-success/5">
                                         <x-ui.icon name="download" />{{ __('common.actions.download') }}
                                     </a>
                                 @else
-                                    <span class="tw-text-ui-xs tw-text-on-surface-variant">-</span>
+                                    <span class="tw:text-ui-xs tw:text-on-surface-variant">-</span>
                                 @endif
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="tw-py-12 tw-text-center">
+                            <td colspan="5" class="tw:py-12 tw:text-center">
                                 <x-empty-state icon="inbox" :title="__('common.export_history.empty')" :text="__('common.export_history.empty_help')" />
                             </td>
                         </tr>
@@ -86,7 +86,7 @@
             </table>
         </div>
         @if($jobs->hasPages())
-            <div class="tw-border-t tw-border-outline-variant tw-bg-surface-low tw-px-5 tw-py-3">{{ $jobs->links('pagination::bootstrap-5') }}</div>
+            <div class="tw:border-t tw:border-outline-variant tw:bg-surface-low tw:px-5 tw:py-3">{{ $jobs->links('pagination::bootstrap-5') }}</div>
         @endif
     </section>
 </div>
@@ -145,7 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const renderRows = (items) => {
         if (!items.length) {
-            body.innerHTML = `<tr><td colspan="5" class="tw-py-12 tw-text-center"><div class="tw-text-on-surface-variant"><x-ui.icon name="inbox" class="tw-mb-2" /><div class="tw-text-ui-sm tw-font-medium">${escapeHtml(copy.empty)}</div></div></td></tr>`;
+            body.innerHTML = `<tr><td colspan="5" class="tw:py-12 tw:text-center"><div class="tw:text-on-surface-variant"><x-ui.icon name="inbox" class="tw:mb-2" /><div class="tw:text-ui-sm tw:font-medium">${escapeHtml(copy.empty)}</div></div></td></tr>`;
             return;
         }
 
@@ -153,14 +153,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const completed = item.completed_at ? `<span>${escapeHtml(datedLabel('completed_at', item.completed_at))}</span><br>` : '';
             const expiry = item.expires_at ? `<span>${escapeHtml(datedLabel('expires_at', item.expires_at))}</span>` : '-';
             const action = item.download_url
-                ? `<a href="${escapeHtml(item.download_url)}" class="ui-focus-ring tw-inline-flex tw-h-8 tw-items-center tw-gap-1.5 tw-rounded-ui-sm tw-border tw-border-success/60 tw-bg-transparent tw-px-2.5 tw-text-ui-xs tw-font-medium tw-text-success tw-no-underline hover:tw-bg-success/5"><x-ui.icon name="download" />${escapeHtml(copy.download)}</a>`
-                : '<span class="tw-text-ui-xs tw-text-on-surface-variant">-</span>';
+                ? `<a href="${escapeHtml(item.download_url)}" class="ui-focus-ring tw:inline-flex tw:h-8 tw:items-center tw:gap-1.5 tw:rounded-ui-sm tw:border tw:border-success/60 tw:bg-transparent tw:px-2.5 tw:text-ui-xs tw:font-medium tw:text-success tw:no-underline tw:hover:bg-success/5"><x-ui.icon name="download" />${escapeHtml(copy.download)}</a>`
+                : '<span class="tw:text-ui-xs tw:text-on-surface-variant">-</span>';
 
             return `<tr>
-                <td><div class="tw-font-semibold">${escapeHtml(item.label)}</div><span class="tw-text-ui-xs tw-font-semibold">${escapeHtml(String(item.format || 'xlsx').toUpperCase())}</span><div class="tw-text-ui-xs tw-text-on-surface-variant tw-break-all">${escapeHtml(item.file_name)}</div></td>
+                <td><div class="tw:font-semibold">${escapeHtml(item.label)}</div><span class="tw:text-ui-xs tw:font-semibold">${escapeHtml(String(item.format || 'xlsx').toUpperCase())}</span><div class="tw:text-ui-xs tw:text-on-surface-variant tw:break-all">${escapeHtml(item.file_name)}</div></td>
                 <td><span class="${badgeClass(item.status)}">${escapeHtml(statusLabel(item.status))}</span></td>
-                <td class="tw-text-ui-xs tw-text-on-surface-variant tw-whitespace-nowrap">${escapeHtml(regionalTimestamp(item.created_at))}</td>
-                <td class="tw-text-ui-xs tw-text-on-surface-variant">${completed}${expiry}</td>
+                <td class="tw:text-ui-xs tw:text-on-surface-variant tw:whitespace-nowrap">${escapeHtml(regionalTimestamp(item.created_at))}</td>
+                <td class="tw:text-ui-xs tw:text-on-surface-variant">${completed}${expiry}</td>
                 <td class="text-end">${action}</td>
             </tr>`;
         }).join('');

@@ -14,7 +14,7 @@
 @endpush
 
 @section('content')
-<div class="tw-grid tw-gap-4">
+<div class="tw:grid tw:gap-4">
     {{-- 1. Compact Page Header --}}
     <x-ui.page-header
         :title="__('purchasing.copy.purchase_orders')"
@@ -32,7 +32,7 @@
     <x-ui.toolbar :sticky="true">
         <x-slot:search>
             <div class="input-group input-group-sm">
-                <span class="input-group-text tw-bg-surface border-end-0 tw-text-outline">
+                <span class="input-group-text tw:bg-surface border-end-0 tw:text-outline">
                     <x-ui.icon name="search" size="sm" />
                 </span>
                 <input
@@ -77,13 +77,13 @@
                     <span>{{ __('purchasing.copy.reset') }}</span>
                 </x-ui.button>
             </div>
-            <div id="filterChips" class="d-none flex-wrap tw-gap-1.5 align-items-center ms-2" aria-live="polite"></div>
+            <div id="filterChips" class="d-none flex-wrap tw:gap-1.5 align-items-center ms-2" aria-live="polite"></div>
         </x-slot:filters>
     </x-ui.toolbar>
 
     {{-- 3. Balanced Data Table --}}
     <x-ui.data-table density="compact">
-        <table class="table table-hover align-middle mb-0 tw-text-ui-sm w-100" id="poTable">
+        <table class="table table-hover align-middle mb-0 tw:text-ui-sm w-100" id="poTable">
             <thead class="table-light">
                 <tr>
                     <th scope="col">{{ __('purchasing.copy.po_number') }}</th>
@@ -121,14 +121,14 @@
                 }
             },
             columns: [
-                { data: 'po_number_display', name: 'po_number', className: 'fw-bold tw-text-on-surface' },
+                { data: 'po_number_display', name: 'po_number', className: 'fw-bold tw:text-on-surface' },
                 { data: 'supplier_name', name: 'supplier_name', orderable: false },
                 { data: 'period_name', name: 'period_name', orderable: false },
                 { data: 'pr_reference', name: 'pr_reference', orderable: false },
-                { data: 'remark_display', name: 'remark_display', orderable: false, className: 'tw-text-on-surface-variant' },
-                { data: 'total_idr', name: 'total_idr', className: 'text-end fw-semibold tw-text-on-surface ui-tabular-nums', orderable: false, searchable: false },
+                { data: 'remark_display', name: 'remark_display', orderable: false, className: 'tw:text-on-surface-variant' },
+                { data: 'total_idr', name: 'total_idr', className: 'text-end fw-semibold tw:text-on-surface ui-tabular-nums', orderable: false, searchable: false },
                 { data: 'status_badge', name: 'status', className: 'text-center' },
-                { data: 'estimated_date', name: 'estimated_arrival', className: 'tw-text-on-surface-variant' },
+                { data: 'estimated_date', name: 'estimated_arrival', className: 'tw:text-on-surface-variant' },
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
             ],
             language: {},
@@ -173,7 +173,7 @@
                 });
                 const $remove = $('<button>', {
                     type: 'button',
-                    class: 'ui-focus-ring tw-inline-flex tw-h-5 tw-w-5 tw-items-center tw-justify-center tw-rounded-ui-xs tw-border-0 tw-bg-transparent tw-p-0 tw-text-primary hover:tw-bg-primary/10',
+                    class: 'ui-focus-ring tw:inline-flex tw:h-5 tw:w-5 tw:items-center tw:justify-center tw:rounded-ui-xs tw:border-0 tw:bg-transparent tw:p-0 tw:text-primary tw:hover:bg-primary/10',
                     'aria-label': window.AdasiI18n.t('js.filters.remove', { label }),
                     text: '×'
                 });

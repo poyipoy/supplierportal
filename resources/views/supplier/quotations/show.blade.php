@@ -4,7 +4,7 @@
 @section('page-title', __('supplier.copy.quotation_details'))
 
 @section('content')
-<div class="tw-grid tw-gap-4">
+<div class="tw:grid tw:gap-4">
     {{-- Breadcrumb & Compact Page Header --}}
     <x-ui.breadcrumb :items="[
         __('purchasing.breadcrumbs.dashboard') => route('supplier.dashboard'),
@@ -35,37 +35,37 @@
 
     {{-- 1. Procurement Context --}}
     <x-ui.card :title="__('procurement.quotation.procurement_context')" data-quotation-section="context">
-        <div class="tw-grid tw-gap-3 sm:tw-grid-cols-2 lg:tw-grid-cols-3">
-            <div class="tw-p-2.5 tw-bg-surface-low border rounded">
-                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('supplier.copy.procurement_period') }}</div>
-                <div class="fw-bold tw-text-on-surface tw-text-ui-sm tw-mt-0.5">{{ $quotation->purchaseRequisition->period->display_label ?? '-' }}</div>
+        <div class="tw:grid tw:gap-3 tw:sm:grid-cols-2 tw:lg:grid-cols-3">
+            <div class="tw:p-2.5 tw:bg-surface-low border rounded">
+                <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('supplier.copy.procurement_period') }}</div>
+                <div class="fw-bold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">{{ $quotation->purchaseRequisition->period->display_label ?? '-' }}</div>
             </div>
-            <div class="tw-p-2.5 tw-bg-surface-low border rounded">
-                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('supplier.copy.requisition_reference') }}</div>
-                <div class="fw-bold text-primary tw-text-ui-sm tw-mt-0.5">{{ $quotation->purchaseRequisition->pr_number ?? '-' }}</div>
+            <div class="tw:p-2.5 tw:bg-surface-low border rounded">
+                <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('supplier.copy.requisition_reference') }}</div>
+                <div class="fw-bold text-primary tw:text-ui-sm tw:mt-0.5">{{ $quotation->purchaseRequisition->pr_number ?? '-' }}</div>
             </div>
-            <div class="sm:tw-col-span-2 lg:tw-col-span-1 tw-p-2.5 tw-bg-surface-low border rounded">
-                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('supplier.copy.purchasing_instructions') }}</div>
-                <div class="tw-text-on-surface tw-text-ui-xs tw-mt-0.5">{{ $quotation->purchaseRequisition->notes ?: __('supplier.copy.no_additional_notes_provided') }}</div>
+            <div class="tw:sm:col-span-2 tw:lg:col-span-1 tw:p-2.5 tw:bg-surface-low border rounded">
+                <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('supplier.copy.purchasing_instructions') }}</div>
+                <div class="tw:text-on-surface tw:text-ui-xs tw:mt-0.5">{{ $quotation->purchaseRequisition->notes ?: __('supplier.copy.no_additional_notes_provided') }}</div>
             </div>
         </div>
-        <div class="tw-mt-3">
+        <div class="tw:mt-3">
             @include('partials.procurement-logistics', ['port' => $quotation->purchaseRequisition->port_of_discharge, 'incoterm' => $quotation->purchaseRequisition->incoterm])
         </div>
     </x-ui.card>
 
     {{-- 2. Commercial Terms & Logistics --}}
     <x-ui.card :title="__('procurement.quotation.commercial_terms')" data-quotation-section="terms">
-        <div class="tw-grid tw-gap-3 sm:tw-grid-cols-2 lg:tw-grid-cols-3">
-            <div class="tw-p-2.5 tw-bg-surface-low border rounded">
-                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('supplier.copy.date_submitted') }}</div>
-                <div class="fw-semibold tw-text-on-surface tw-text-ui-sm tw-mt-0.5">
+        <div class="tw:grid tw:gap-3 tw:sm:grid-cols-2 tw:lg:grid-cols-3">
+            <div class="tw:p-2.5 tw:bg-surface-low border rounded">
+                <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('supplier.copy.date_submitted') }}</div>
+                <div class="fw-semibold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">
                     {{ $quotation->submitted_at ? $regionalFormatter->timestamp($quotation->submitted_at, 'datetime_comma') : '-' }}
                 </div>
             </div>
-            <div class="tw-p-2.5 tw-bg-surface-low border rounded">
-                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('supplier.copy.exchange_rate_snapshot') }}</div>
-                <div class="fw-bold tw-text-on-surface tw-text-ui-sm tw-mt-0.5">
+            <div class="tw:p-2.5 tw:bg-surface-low border rounded">
+                <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('supplier.copy.exchange_rate_snapshot') }}</div>
+                <div class="fw-bold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">
                     @if($quotation->exchange_rate)
                         1 {{ $quotation->currency }} = Rp {{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($quotation->exchange_rate->rate_to_idr), 'decimal') }}
                     @else
@@ -73,26 +73,26 @@
                     @endif
                 </div>
             </div>
-            <div class="tw-p-2.5 tw-bg-surface-low border rounded">
-                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('supplier.copy.supplier_estimate_delivery') }}</div>
-                <div class="fw-semibold tw-text-on-surface tw-text-ui-sm tw-mt-0.5">
+            <div class="tw:p-2.5 tw:bg-surface-low border rounded">
+                <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('supplier.copy.supplier_estimate_delivery') }}</div>
+                <div class="fw-semibold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">
                     {{ $quotation->estimated_delivery ? $regionalFormatter->date(\Carbon\Carbon::parse($quotation->estimated_delivery), 'full_human') : '-' }}
                 </div>
             </div>
-            <div class="tw-p-2.5 tw-bg-surface-low border rounded">
-                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('supplier.copy.valid_until') }}</div>
-                <div class="fw-semibold tw-text-on-surface tw-text-ui-sm tw-mt-0.5">
+            <div class="tw:p-2.5 tw:bg-surface-low border rounded">
+                <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('supplier.copy.valid_until') }}</div>
+                <div class="fw-semibold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">
                     {{ $quotation->validity_period ? $regionalFormatter->date(\Carbon\Carbon::parse($quotation->validity_period), 'full_human') : '-' }}
                 </div>
             </div>
-            <div class="sm:tw-col-span-2 tw-p-2.5 tw-bg-surface-low border rounded">
-                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('supplier.copy.payment_terms') }}</div>
-                <div class="tw-text-on-surface tw-text-ui-xs tw-mt-0.5">{{ $quotation->payment_terms ?: __('supplier.copy.standard_terms') }}</div>
+            <div class="tw:sm:col-span-2 tw:p-2.5 tw:bg-surface-low border rounded">
+                <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('supplier.copy.payment_terms') }}</div>
+                <div class="tw:text-on-surface tw:text-ui-xs tw:mt-0.5">{{ $quotation->payment_terms ?: __('supplier.copy.standard_terms') }}</div>
             </div>
             @if($quotation->general_notes)
-                <div class="sm:tw-col-span-2 lg:tw-col-span-3 tw-p-2.5 tw-bg-surface-low border rounded">
-                    <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('supplier.copy.general_notes') }}</div>
-                    <div class="tw-text-on-surface tw-text-ui-xs tw-mt-0.5">{{ $quotation->general_notes }}</div>
+                <div class="tw:sm:col-span-2 tw:lg:col-span-3 tw:p-2.5 tw:bg-surface-low border rounded">
+                    <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('supplier.copy.general_notes') }}</div>
+                    <div class="tw:text-on-surface tw:text-ui-xs tw:mt-0.5">{{ $quotation->general_notes }}</div>
                 </div>
             @endif
         </div>
@@ -101,15 +101,15 @@
     {{-- 3. Status & Follow-up --}}
     <x-ui.card :title="__('procurement.quotation.status_follow_up')" data-quotation-section="status">
         @if($quotation->reviewer_notes)
-            <div class="tw-mb-3 tw-p-2.5 bg-warning-subtle border border-warning-subtle rounded text-warning-emphasis">
-                <div class="fw-bold tw-text-ui-xs tw-uppercase tw-mb-0.5"><x-ui.icon name="square-pen" size="sm" class="me-1" />{{ __('supplier.copy.purchasing_reviewer_notes') }}</div>
-                <div class="tw-text-ui-xs">{{ $quotation->reviewer_notes }}</div>
+            <div class="tw:mb-3 tw:p-2.5 bg-warning-subtle border border-warning-subtle rounded text-warning-emphasis">
+                <div class="fw-bold tw:text-ui-xs tw:uppercase tw:mb-0.5"><x-ui.icon name="square-pen" size="sm" class="me-1" />{{ __('supplier.copy.purchasing_reviewer_notes') }}</div>
+                <div class="tw:text-ui-xs">{{ $quotation->reviewer_notes }}</div>
             </div>
         @endif
 
         @if($quotation->status === 'revision_requested')
-            <x-ui.alert tone="warning" :title="__('supplier.copy.revision_requested')" class="tw-mb-3">{{ __('supplier.copy.purchasing_requested_a_revision_update_unit_prices_estimated_delivery_and_validity_date_before_resub') }}</x-ui.alert>
-            <div class="d-flex flex-wrap tw-gap-2">
+            <x-ui.alert tone="warning" :title="__('supplier.copy.revision_requested')" class="tw:mb-3">{{ __('supplier.copy.purchasing_requested_a_revision_update_unit_prices_estimated_delivery_and_validity_date_before_resub') }}</x-ui.alert>
+            <div class="d-flex flex-wrap tw:gap-2">
                 <x-ui.button :href="route('supplier.quotations.create', $quotation->purchaseRequisition)" variant="primary" size="sm">
                     <x-ui.icon name="square-pen" size="sm" />
                     <span>{{ __('supplier.copy.revise_quotation') }}</span>
@@ -135,10 +135,10 @@
             @else
                 <x-ui.alert tone="success" :title="__('supplier.copy.quotation_selected')">{{ __('supplier.copy.an_official_po_will_be_issued_through_the_procurement_workflow') }}</x-ui.alert>
             @endif
-            <ul class="list-unstyled tw-m-0 tw-mt-3 tw-grid tw-gap-1.5 tw-text-ui-xs">
+            <ul class="list-unstyled tw:m-0 tw:mt-3 tw:grid tw:gap-1.5 tw:text-ui-xs">
                 @foreach($quotation->items as $item)
-                    <li class="d-flex flex-wrap align-items-center tw-gap-2">
-                        <span class="fw-semibold tw-text-on-surface">{{ $item->prItem->material_name ?? '-' }}</span>
+                    <li class="d-flex flex-wrap align-items-center tw:gap-2">
+                        <span class="fw-semibold tw:text-on-surface">{{ $item->prItem->material_name ?? '-' }}</span>
                         @if($item->award && $item->award->purchase_order_id)
                             <span class="ui-status-chip ui-status-chip--success">
                                 <x-ui.icon name="check-circle" size="sm" class="me-1" /> {{ __('supplier.copy.awarded') }} ({{ $item->award->purchaseOrder?->po_number ?? 'PO' }})
@@ -157,7 +157,7 @@
     </x-ui.card>
 
     {{-- 4. Detail Quotation --}}
-    <div class="tw-min-w-0" data-quotation-section="detail">
+    <div class="tw:min-w-0" data-quotation-section="detail">
         @include('quotations._items_readonly_table', ['quotation' => $quotation])
     </div>
 </div>

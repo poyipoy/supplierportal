@@ -3,13 +3,13 @@
     <tr>
         <th scope="row" colspan="4" class="text-end">
             {{ __('procurement.totals.total') }}
-            <span class="tw-ml-1 tw-font-normal tw-text-on-surface-variant">({{ __('procurement.totals.preview_hint') }})</span>
+            <span class="tw:ml-1 tw:font-normal tw:text-on-surface-variant">({{ __('procurement.totals.preview_hint') }})</span>
         </th>
         <td class="text-center fw-bold ui-tabular-nums">
-            <span class="tw-sr-only">{{ __('procurement.totals.total_qty') }}:</span>
+            <span class="tw:sr-only">{{ __('procurement.totals.total_qty') }}:</span>
             <output id="prFormTotalQty" aria-live="polite">0</output>
         </td>
-        <td colspan="{{ count(\App\Models\PrItem::FIXED_DIMENSION_ORDER) }}" class="text-end tw-text-on-surface-variant">{{ __('procurement.totals.total_kg') }}</td>
+        <td colspan="{{ count(\App\Models\PrItem::FIXED_DIMENSION_ORDER) }}" class="text-end tw:text-on-surface-variant">{{ __('procurement.totals.total_kg') }}</td>
         <td class="text-end fw-bold ui-tabular-nums">
             <output id="prFormTotalKg" aria-live="polite">0</output>
         </td>

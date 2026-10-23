@@ -3,7 +3,7 @@
 @section('page-title', __('admin.copy.create_user'))
 
 @section('content')
-<div class="tw-grid tw-gap-6 tw-pb-24">
+<div class="tw:grid tw:gap-6 tw:pb-24">
     <x-ui.page-header
         :title="__('admin.copy.add_user')"
         :description="__('admin.copy.create_an_account_with_the_approved_role_and_supplier_organization_context')"
@@ -24,9 +24,9 @@
             :title="__('admin.copy.account_identity_and_access')"
             :description="__('admin.copy.identity_credentials_role_and_activation_status_for_this_account')"
         >
-            <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
+            <div class="tw:grid tw:gap-4 tw:sm:grid-cols-2">
                 <div>
-                    <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="user-name">
+                    <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="user-name">
                         {{ __('admin.copy.full_name') }} <span class="text-danger">*</span>
                     </label>
                     <input
@@ -44,7 +44,7 @@
                 </div>
 
                 <div>
-                    <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="user-email">
+                    <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="user-email">
                         {{ __('admin.copy.email_address') }} <span class="text-danger">*</span>
                     </label>
                     <input
@@ -62,7 +62,7 @@
                 </div>
 
                 <div>
-                    <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="role-select">
+                    <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="role-select">
                         {{ __('admin.copy.portal_role') }} <span class="text-danger">*</span>
                     </label>
                     <select name="role" id="role-select" class="form-select @error('role') is-invalid @enderror" required>
@@ -79,17 +79,17 @@
                     @enderror
                 </div>
 
-                <div class="tw-flex tw-items-center tw-pt-6">
+                <div class="tw:flex tw:items-center tw:pt-6">
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" name="is_active" id="isActive" value="1" {{ old('is_active', true) ? 'checked' : '' }}>
-                        <label class="form-check-label tw-text-ui-sm tw-font-medium tw-text-on-surface" for="isActive">
+                        <label class="form-check-label tw:text-ui-sm tw:font-medium tw:text-on-surface" for="isActive">
                             {{ __('admin.copy.active_account_allowed_to_sign_in') }}
                         </label>
                     </div>
                 </div>
 
                 <div>
-                    <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="user-password">
+                    <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="user-password">
                         {{ __('admin.copy.initial_password') }} <span class="text-danger">*</span>
                     </label>
                     <input
@@ -103,14 +103,14 @@
                         autocomplete="new-password"
                         placeholder="{{ __('admin.copy.minimum_12_characters') }}"
                     >
-                    <small class="tw-text-ui-xs tw-text-on-surface-variant tw-mt-1 tw-block">{{ __('admin.copy.must_be_at_least_12_characters_long') }}</small>
+                    <small class="tw:text-ui-xs tw:text-on-surface-variant tw:mt-1 tw:block">{{ __('admin.copy.must_be_at_least_12_characters_long') }}</small>
                     @error('password')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
 
                 <div>
-                    <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="user-password-confirmation">
+                    <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="user-password-confirmation">
                         {{ __('admin.copy.confirm_initial_password') }} <span class="text-danger">*</span>
                     </label>
                     <input
@@ -136,9 +136,9 @@
                 :title="__('admin.copy.supplier_organization')"
                 :description="__('admin.copy.company_identity_contact_details_and_material_category')"
             >
-                <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
+                <div class="tw:grid tw:gap-4 tw:sm:grid-cols-2">
                     <div>
-                        <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="supplier-company-name">
+                        <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="supplier-company-name">
                             {{ __('admin.copy.company_legal_name_pt_cv_corp') }} <span class="text-danger">*</span>
                         </label>
                         <input
@@ -155,7 +155,7 @@
                     </div>
 
                     <div>
-                        <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="supplier-category">
+                        <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="supplier-category">
                             {{ __('admin.copy.material_supply_category') }} <span class="text-danger">*</span>
                         </label>
                         <input
@@ -172,7 +172,7 @@
                     </div>
 
                     <div>
-                        <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="supplier-phone">
+                        <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="supplier-phone">
                             {{ __('admin.copy.phone_contact_number') }} <span class="text-danger">*</span>
                         </label>
                         <input
@@ -189,7 +189,7 @@
                     </div>
 
                     <div>
-                        <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="supplier-npwp">
+                        <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="supplier-npwp">
                             {{ __('admin.copy.tax_id_npwp') }} <span class="text-danger">*</span>
                         </label>
                         <input
@@ -205,8 +205,8 @@
                         @enderror
                     </div>
 
-                    <div class="sm:tw-col-span-2">
-                        <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="supplier-address">
+                    <div class="tw:sm:col-span-2">
+                        <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="supplier-address">
                             {{ __('admin.copy.registered_office_address') }} <span class="text-danger">*</span>
                         </label>
                         <textarea

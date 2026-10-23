@@ -38,7 +38,7 @@
 @endpush
 
 @section('content')
-<div class="tw-grid tw-gap-4">
+<div class="tw:grid tw:gap-4">
     {{-- Breadcrumb & Page Header --}}
     <x-ui.breadcrumb :items="[
         __('purchasing.breadcrumbs.dashboard') => route('supplier.dashboard'),
@@ -73,12 +73,12 @@
             @if($isEditing) @method('PUT') @endif
             <input type="hidden" name="action" id="shipmentFormAction" value="draft">
             @if(\App\Support\Procurement\ProcurementFeatures::shipmentMtcEnabled())
-                <x-ui.alert tone="info" class="tw-mb-3">{{ __('shipments.mtc.create_hint') }}</x-ui.alert>
+                <x-ui.alert tone="info" class="tw:mb-3">{{ __('shipments.mtc.create_hint') }}</x-ui.alert>
             @endif
 
             {{-- 1. General Logistics Information --}}
             <x-ui.card :title="__('shipments.copy.shipment_logistics_information')" :description="__('shipments.copy.set_key_dispatch_details_and_container_or_forwarding_notes_for_this_consignment')">
-                <div class="tw-grid tw-gap-3 sm:tw-grid-cols-3">
+                <div class="tw:grid tw:gap-3 tw:sm:grid-cols-3">
                     <div>
                         <x-ui.date-picker
                             name="shipment_date"
@@ -100,7 +100,7 @@
                     </div>
 
                     <div>
-                        <label for="shipmentNotes" class="form-label tw-text-ui-xs fw-semibold">
+                        <label for="shipmentNotes" class="form-label tw:text-ui-xs fw-semibold">
                             {{ __('shipments.copy.logistics_notes_remarks') }}
                         </label>
                         <input
@@ -122,9 +122,9 @@
                 $globalIndex = 0;
             @endphp
 
-            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 p-3 tw-bg-surface-low border tw-border-outline-variant rounded">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 p-3 tw:bg-surface-low border tw:border-outline-variant rounded">
                 <div class="d-flex align-items-center gap-2">
-                    <span class="fw-bold tw-text-ui-sm tw-text-on-surface">{{ __('shipments.copy.material_allocation') }}</span>
+                    <span class="fw-bold tw:text-ui-sm tw:text-on-surface">{{ __('shipments.copy.material_allocation') }}</span>
                     <span class="ui-status-chip ui-status-chip--info ui-tabular-nums">
                         {{ __('shipments.page.allocation_counts', ['pos' => $groupedByPo->count(), 'items' => $poItems->count()]) }}
                     </span>
@@ -132,7 +132,7 @@
 
                 <div class="d-flex align-items-center gap-2" style="min-width: 260px;">
                     <div class="input-group input-group-sm">
-                        <span class="input-group-text tw-bg-surface border-end-0 tw-text-outline">
+                        <span class="input-group-text tw:bg-surface border-end-0 tw:text-outline">
                             <x-ui.icon name="search" size="sm" />
                         </span>
                         <input
@@ -147,7 +147,7 @@
             </div>
 
             {{-- 3. PO-Grouped Allocation Cards --}}
-            <div class="tw-grid tw-gap-4 mt-2" id="poGroupsContainer">
+            <div class="tw:grid tw:gap-4 mt-2" id="poGroupsContainer">
                 @foreach($groupedByPo as $poId => $itemsInPo)
                     @php
                         $firstItem = $itemsInPo->first();
@@ -157,30 +157,30 @@
                     <div class="po-group-card" data-po-number="{{ strtolower($po->po_number) }}">
                         <div class="po-group-header d-flex flex-wrap align-items-center justify-content-between gap-2">
                             <div class="d-flex align-items-center gap-2">
-                                <span class="fw-bold tw-text-ui-sm text-primary">{{ $po->po_number }}</span>
+                                <span class="fw-bold tw:text-ui-sm text-primary">{{ $po->po_number }}</span>
                                 @if($po->pr_reference)
-                                    <span class="ui-status-chip ui-status-chip--neutral tw-text-ui-xs">
+                                    <span class="ui-status-chip ui-status-chip--neutral tw:text-ui-xs">
                                         {{ __('purchasing.copy.pr_no') }}: {{ $po->pr_reference }}
                                     </span>
                                 @endif
-                                <span class="tw-text-on-surface-variant tw-text-ui-xs">
+                                <span class="tw:text-on-surface-variant tw:text-ui-xs">
                                     ({{ trans_choice('shipments.audit_ui.pending_items', $itemsInPo->count(), ['count' => $itemsInPo->count()]) }})
                                 </span>
                             </div>
 
                             <div class="d-flex align-items-center gap-2">
-                                <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2 tw-text-ui-xs po-select-all-btn">
+                                <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2 tw:text-ui-xs po-select-all-btn">
                                     <x-ui.icon name="check-check" size="sm" />
                                     <span>{{ __('shipments.copy.select_all_in_po') }}</span>
                                 </button>
-                                <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2 tw-text-ui-xs po-clear-btn">
+                                <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2 tw:text-ui-xs po-clear-btn">
                                     <span>{{ __('shipments.copy.clear') }}</span>
                                 </button>
                             </div>
                         </div>
 
                         <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0 tw-text-ui-xs w-100">
+                            <table class="table table-hover align-middle mb-0 tw:text-ui-xs w-100">
                                 <thead class="table-light">
                                     <tr>
                                         <th scope="col" style="width: 44px;" class="text-center">{{ __('shipments.copy.select') }}</th>
@@ -212,10 +212,10 @@
                                                 >
                                             </td>
                                             <td>
-                                                <div class="fw-semibold tw-text-on-surface">
+                                                <div class="fw-semibold tw:text-on-surface">
                                                     {{ $prItem->material_name }}
                                                 </div>
-                                                <div class="tw-text-on-surface-variant tw-text-ui-xs">
+                                                <div class="tw:text-on-surface-variant tw:text-ui-xs">
                                                     {{ __('purchasing.copy.shape') }}: {{ $prItem->shape ?? '-' }}
                                                     @if($prItem?->thickness) | T: {{ $prItem->thickness }}mm @endif
                                                     @if($prItem?->width) | W: {{ $prItem->width }}mm @endif
@@ -223,10 +223,10 @@
                                                     @if($prItem?->d_outer) | OD: {{ $prItem->d_outer }}mm @endif
                                                 </div>
                                             </td>
-                                            <td class="text-end ui-tabular-nums tw-text-on-surface-variant">
+                                            <td class="text-end ui-tabular-nums tw:text-on-surface-variant">
                                                 {{ number_format($itemData['ordered_qty'] ?? $itemData['ordered']) }} pcs
                                             </td>
-                                            <td class="text-end ui-tabular-nums tw-text-on-surface-variant">
+                                            <td class="text-end ui-tabular-nums tw:text-on-surface-variant">
                                                 {{ number_format($itemData['allocated_qty'] ?? $itemData['allocated']) }} pcs
                                             </td>
                                             <td class="text-end fw-bold text-primary ui-tabular-nums">
@@ -277,14 +277,14 @@
             {{-- 4. Sticky Bottom Submission Summary Bar --}}
             <div class="sticky-summary-bar mt-4 rounded d-flex flex-wrap align-items-center justify-content-between gap-3">
                 <div class="d-flex align-items-center gap-3">
-                    <div class="d-inline-flex align-items-center justify-content-center tw-h-9 tw-w-9 rounded-circle tw-bg-primary-container text-primary">
+                    <div class="d-inline-flex align-items-center justify-content-center tw:h-9 tw:w-9 rounded-circle tw:bg-primary-container text-primary">
                         <x-ui.icon name="truck" size="sm" />
                     </div>
                     <div>
-                        <div class="fw-bold tw-text-ui-sm tw-text-on-surface" id="shipmentSummaryTitle">
+                        <div class="fw-bold tw:text-ui-sm tw:text-on-surface" id="shipmentSummaryTitle">
                             {{ __('shipments.copy.consignment_allocation_summary') }}
                         </div>
-                        <div class="tw-text-ui-xs tw-text-on-surface-variant" id="shipmentSummaryText">
+                        <div class="tw:text-ui-xs tw:text-on-surface-variant" id="shipmentSummaryText">
                             {{ __('shipments.copy.0_item_s_allocated_for_delivery') }}
                         </div>
                     </div>

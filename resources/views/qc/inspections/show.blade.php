@@ -24,7 +24,7 @@
 @endphp
 
 @section('content')
-<div class="tw-grid tw-gap-4">
+<div class="tw:grid tw:gap-4">
     {{-- Breadcrumb & Compact Page Header --}}
     <x-ui.breadcrumb :items="[
         __('purchasing.breadcrumbs.dashboard') => $breadcrumbDashboard,
@@ -38,7 +38,7 @@
         :description="__('qc.copy.technical_measurement_verification_tolerance_comparison_and_photographic_evidence')"
     >
         <x-slot:actions>
-            <div class="tw-flex tw-flex-wrap tw-items-center tw-gap-2">
+            <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-2">
                 @if($inspection->status === 'ok')
                     <span class="ui-status-chip ui-status-chip--success">
                     <x-ui.icon name="circle-check" size="sm" />
@@ -77,28 +77,28 @@
 
     {{-- Inspection Metadata & Order Overview --}}
         <x-ui.card :title="__('qc.copy.inspection_and_arrival_summary')">
-        <div class="tw-grid tw-gap-3 sm:tw-grid-cols-2 lg:tw-grid-cols-5">
-            <div class="tw-p-2.5 tw-bg-surface-container border rounded">
-                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('qc.copy.supplier') }}</div>
-                <div class="fw-bold tw-text-on-surface tw-text-ui-xs tw-mt-0.5">{{ $inspection->purchaseOrder->supplier->company_name ?? $inspection->purchaseOrder->supplier->name ?? '-' }}</div>
+        <div class="tw:grid tw:gap-3 tw:sm:grid-cols-2 tw:lg:grid-cols-5">
+            <div class="tw:p-2.5 tw:bg-surface-container border rounded">
+                <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('qc.copy.supplier') }}</div>
+                <div class="fw-bold tw:text-on-surface tw:text-ui-xs tw:mt-0.5">{{ $inspection->purchaseOrder->supplier->company_name ?? $inspection->purchaseOrder->supplier->name ?? '-' }}</div>
             </div>
-            <div class="tw-p-2.5 tw-bg-surface-container border rounded">
-                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('qc.copy.shipment_package') }}</div>
-                <div class="fw-bold text-primary tw-text-ui-xs tw-mt-0.5">
+            <div class="tw:p-2.5 tw:bg-surface-container border rounded">
+                <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('qc.copy.shipment_package') }}</div>
+                <div class="fw-bold text-primary tw:text-ui-xs tw:mt-0.5">
                     {{ $inspection->shipment ? $inspection->shipment->shipment_number : __('qc.copy.direct_delivery_legacy') }}
                 </div>
             </div>
-            <div class="tw-p-2.5 tw-bg-surface-container border rounded">
-                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('qc.copy.inspected_by') }}</div>
-                <div class="fw-bold tw-text-on-surface tw-text-ui-xs tw-mt-0.5">{{ $inspection->inspector->name ?? '-' }}</div>
+            <div class="tw:p-2.5 tw:bg-surface-container border rounded">
+                <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('qc.copy.inspected_by') }}</div>
+                <div class="fw-bold tw:text-on-surface tw:text-ui-xs tw:mt-0.5">{{ $inspection->inspector->name ?? '-' }}</div>
             </div>
-            <div class="tw-p-2.5 tw-bg-surface-container border rounded">
-                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('qc.copy.inspection_timestamp') }}</div>
-                <div class="fw-bold tw-text-on-surface tw-text-ui-xs tw-mt-0.5 ui-tabular-nums">{{ $inspection->inspected_at ? $regionalFormatter->timestamp($inspection->inspected_at, 'datetime_comma') : '-' }}</div>
+            <div class="tw:p-2.5 tw:bg-surface-container border rounded">
+                <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('qc.copy.inspection_timestamp') }}</div>
+                <div class="fw-bold tw:text-on-surface tw:text-ui-xs tw:mt-0.5 ui-tabular-nums">{{ $inspection->inspected_at ? $regionalFormatter->timestamp($inspection->inspected_at, 'datetime_comma') : '-' }}</div>
             </div>
-            <div class="tw-p-2.5 tw-bg-surface-container border rounded">
-                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('qc.copy.material_arrival_date') }}</div>
-                <div class="fw-bold tw-text-on-surface tw-text-ui-xs tw-mt-0.5 ui-tabular-nums">{{ $inspection->purchaseOrder->actual_arrival ? $regionalFormatter->date($inspection->purchaseOrder->actual_arrival, 'human') : '-' }}</div>
+            <div class="tw:p-2.5 tw:bg-surface-container border rounded">
+                <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('qc.copy.material_arrival_date') }}</div>
+                <div class="fw-bold tw:text-on-surface tw:text-ui-xs tw:mt-0.5 ui-tabular-nums">{{ $inspection->purchaseOrder->actual_arrival ? $regionalFormatter->date($inspection->purchaseOrder->actual_arrival, 'human') : '-' }}</div>
             </div>
         </div>
     </x-ui.card>
@@ -120,7 +120,7 @@
     @endphp
 
     {{-- Line Items Inspection Matrix --}}
-    <div class="tw-grid tw-gap-4">
+    <div class="tw:grid tw:gap-4">
         @foreach($inspection->items as $index => $item)
             @php
                 $prItem = $item->prItem;
@@ -133,9 +133,9 @@
                 $weight = compareValues($item->actual_weight, $prItem->weight_needed);
             @endphp
 
-            <div class="tw-overflow-hidden tw-rounded-ui-sm tw-border tw-bg-surface {{ $item->status === 'ng' ? 'tw-border-error' : 'tw-border-outline' }}">
-                <div class="tw-flex tw-items-center tw-justify-between tw-border-b tw-px-3.5 tw-py-2.5 {{ $item->status === 'ng' ? 'tw-border-error/30 tw-bg-error-container' : 'tw-border-outline-variant tw-bg-surface-container' }}">
-                    <div class="tw-flex tw-items-center tw-gap-2 tw-text-ui-xs tw-font-bold {{ $item->status === 'ng' ? 'tw-text-error' : 'tw-text-on-surface' }}">
+            <div class="tw:overflow-hidden tw:rounded-ui-sm tw:border tw:bg-surface {{ $item->status === 'ng' ? 'tw:border-error' : 'tw:border-outline' }}">
+                <div class="tw:flex tw:items-center tw:justify-between tw:border-b tw:px-3.5 tw:py-2.5 {{ $item->status === 'ng' ? 'tw:border-error/30 tw:bg-error-container' : 'tw:border-outline-variant tw:bg-surface-container' }}">
+                    <div class="tw:flex tw:items-center tw:gap-2 tw:text-ui-xs tw:font-bold {{ $item->status === 'ng' ? 'tw:text-error' : 'tw:text-on-surface' }}">
                         <span class="ui-status-chip {{ $item->status === 'ng' ? 'ui-status-chip--error' : 'ui-status-chip--info' }}">{{ __('common.final_copy.item_number', ['number' => $index + 1]) }}</span>
                         <span>{{ $prItem->material_name }}</span>
                         @if($item->shipmentItem)
@@ -158,7 +158,7 @@
 
                 <div class="p-0">
                     <div class="table-responsive">
-                        <table class="table table-bordered align-middle mb-0 tw-text-ui-xs w-100">
+                        <table class="table table-bordered align-middle mb-0 tw:text-ui-xs w-100">
                             <thead class="table-light text-center">
                                 <tr>
                                     <th scope="col" class="text-start" style="width: 110px;">{{ __('qc.copy.parameter') }}</th>
@@ -175,26 +175,26 @@
                             <tbody>
                                 {{-- Requested Specification Row --}}
                                 <tr class="text-center">
-                                    <td class="text-start tw-text-on-surface-variant fw-semibold tw-bg-surface-container">{{ __('qc.copy.requested') }}</td>
-                                    <td class="tw-text-on-surface">{{ $prItem->shape ?? '-' }}</td>
-                                    <td class="tw-text-on-surface ui-tabular-nums">{{ $prItem->thickness ?? '-' }}</td>
-                                    <td class="tw-text-on-surface ui-tabular-nums">{{ $prItem->d_inner ?? '-' }}</td>
-                                    <td class="tw-text-on-surface ui-tabular-nums">{{ $prItem->d_outer ?? '-' }}</td>
-                                    <td class="tw-text-on-surface ui-tabular-nums">{{ $prItem->width ?? '-' }}</td>
-                                    <td class="tw-text-on-surface ui-tabular-nums">{{ $prItem->length ?? '-' }}</td>
-                                    <td class="tw-text-on-surface ui-tabular-nums">{{ number_format($prItem->quantity_value, 0) }}</td>
-                                    <td class="tw-text-on-surface ui-tabular-nums">{{ $prItem->weight_needed ?? '-' }}</td>
+                                    <td class="text-start tw:text-on-surface-variant fw-semibold tw:bg-surface-container">{{ __('qc.copy.requested') }}</td>
+                                    <td class="tw:text-on-surface">{{ $prItem->shape ?? '-' }}</td>
+                                    <td class="tw:text-on-surface ui-tabular-nums">{{ $prItem->thickness ?? '-' }}</td>
+                                    <td class="tw:text-on-surface ui-tabular-nums">{{ $prItem->d_inner ?? '-' }}</td>
+                                    <td class="tw:text-on-surface ui-tabular-nums">{{ $prItem->d_outer ?? '-' }}</td>
+                                    <td class="tw:text-on-surface ui-tabular-nums">{{ $prItem->width ?? '-' }}</td>
+                                    <td class="tw:text-on-surface ui-tabular-nums">{{ $prItem->length ?? '-' }}</td>
+                                    <td class="tw:text-on-surface ui-tabular-nums">{{ number_format($prItem->quantity_value, 0) }}</td>
+                                    <td class="tw:text-on-surface ui-tabular-nums">{{ $prItem->weight_needed ?? '-' }}</td>
                                 </tr>
                                 {{-- Actual Inspected Row --}}
                                 <tr class="text-center">
-                                    <td class="text-start fw-bold text-primary tw-bg-surface-container">{{ __('qc.copy.actual') }}</td>
-                                    <td class="tw-text-on-surface">{{ $prItem->shape ?? '-' }}</td>
+                                    <td class="text-start fw-bold text-primary tw:bg-surface-container">{{ __('qc.copy.actual') }}</td>
+                                    <td class="tw:text-on-surface">{{ $prItem->shape ?? '-' }}</td>
                                     <td class="ui-tabular-nums {{ $thick['class'] }}">{{ $thick['val'] }}</td>
                                     <td class="ui-tabular-nums {{ $dInner['class'] }}">{{ $dInner['val'] }}</td>
                                     <td class="ui-tabular-nums {{ $dOuter['class'] }}">{{ $dOuter['val'] }}</td>
                                     <td class="ui-tabular-nums {{ $width['class'] }}">{{ $width['val'] }}</td>
                                     <td class="ui-tabular-nums {{ $length['class'] }}">{{ $length['val'] }}</td>
-                                    <td class="tw-text-on-surface ui-tabular-nums">{{ number_format($prItem->quantity_value, 0) }}</td>
+                                    <td class="tw:text-on-surface ui-tabular-nums">{{ number_format($prItem->quantity_value, 0) }}</td>
                                     <td class="ui-tabular-nums {{ $weight['class'] }}">{{ $weight['val'] }}</td>
                                 </tr>
                             </tbody>
@@ -202,9 +202,9 @@
                     </div>
 
                     @if($item->notes)
-                        <div class="p-3 border-top tw-bg-surface-container">
-                            <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase mb-1">{{ __('qc.copy.inspector_notes') }}</div>
-                            <p class="mb-0 tw-text-on-surface tw-text-ui-xs">{{ $item->notes }}</p>
+                        <div class="p-3 border-top tw:bg-surface-container">
+                            <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase mb-1">{{ __('qc.copy.inspector_notes') }}</div>
+                            <p class="mb-0 tw:text-on-surface tw:text-ui-xs">{{ $item->notes }}</p>
                         </div>
                     @endif
                 </div>
@@ -229,16 +229,16 @@
                         <div class="col-6 col-md-4 col-lg-3">
                             <a
                                 href="{{ route('attachments.show', $att) }}"
-                                class="tw-relative tw-block tw-h-40 tw-overflow-hidden tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface-container hover:tw-opacity-95 image-preview-trigger"
+                                class="tw:relative tw:block tw:h-40 tw:overflow-hidden tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container tw:hover:opacity-95 image-preview-trigger"
                                 title="{{ $att->file_name }}"
                             >
                                 <img
                                     src="{{ route('attachments.show', $att) }}"
                                     alt="{{ $att->file_name }}"
-                                    class="tw-h-full tw-w-full tw-object-cover"
+                                    class="tw:h-full tw:w-full tw:object-cover"
                                 >
                             </a>
-                            <div class="tw-mt-1 tw-truncate tw-text-ui-xs tw-text-on-surface-variant" title="{{ $att->file_name }}">
+                            <div class="tw:mt-1 tw:truncate tw:text-ui-xs tw:text-on-surface-variant" title="{{ $att->file_name }}">
                                 {{ $att->file_name }}
                             </div>
                         </div>
@@ -253,7 +253,7 @@
                 <div class="border-top mt-4 pt-3">
                     <form action="{{ route('qc.inspections.attachments.store', $inspection) }}" method="POST" enctype="multipart/form-data" data-async-submit>
                         @csrf
-                        <label class="tw-text-on-surface tw-text-ui-xs fw-semibold mb-1" for="inspection-attachments">{{ __('qc.copy.add_supplemental_ng_evidence_photos') }}</label>
+                        <label class="tw:text-on-surface tw:text-ui-xs fw-semibold mb-1" for="inspection-attachments">{{ __('qc.copy.add_supplemental_ng_evidence_photos') }}</label>
                         <div class="d-flex flex-column flex-sm-row gap-2">
                             <div class="flex-grow-1">
                                 <input
@@ -266,18 +266,18 @@
                                     required
                                     aria-describedby="inspection-attachments-help"
                                 >
-                                <div class="tw-text-on-surface-variant tw-text-ui-xs mt-1" id="inspection-attachments-help">
+                                <div class="tw:text-on-surface-variant tw:text-ui-xs mt-1" id="inspection-attachments-help">
                                     {{ __('qc.copy.jpg_jpeg_or_png_format_maximum_10mb_per_file') }}
                                 </div>
                                 @error('attachments')
-                                    <div class="text-danger tw-text-ui-xs mt-1">{{ $message }}</div>
+                                    <div class="text-danger tw:text-ui-xs mt-1">{{ $message }}</div>
                                 @enderror
                                 @error('attachments.*')
-                                    <div class="text-danger tw-text-ui-xs mt-1">{{ $message }}</div>
+                                    <div class="text-danger tw:text-ui-xs mt-1">{{ $message }}</div>
                                 @enderror
                             </div>
                             <div>
-                                <x-ui.button type="submit" variant="danger" size="sm" class="tw-w-full sm:tw-w-auto">
+                                <x-ui.button type="submit" variant="danger" size="sm" class="tw:w-full tw:sm:w-auto">
                                     <x-ui.icon name="upload" size="sm" />
                                     <span>{{ __('qc.copy.upload_photos') }}</span>
                                 </x-ui.button>

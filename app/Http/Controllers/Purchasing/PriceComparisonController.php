@@ -587,7 +587,7 @@ class PriceComparisonController extends Controller
             })
             ->addColumn('diff_display', function ($row) use ($currency) {
                 $diff = $row->diff_idr_per_kg !== null ? (float) $row->diff_idr_per_kg : null;
-                $class = $diff > 0 ? 'tw-text-error' : ($diff < 0 ? 'tw-text-success' : 'tw-text-on-surface-variant');
+                $class = $diff > 0 ? 'tw:text-error' : ($diff < 0 ? 'tw:text-success' : 'tw:text-on-surface-variant');
 
                 return '<div class="fw-bold '.$class.'">'.$this->formatAnalyticAmount($diff, $currency, true).'</div>'
                     .'<div class="small '.$class.'">'.$this->formatPercent($row->diff_percent).'</div>';

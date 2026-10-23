@@ -1,20 +1,20 @@
 @auth
     @if(auth()->user()->isPurchasing() || \App\Support\PortalContext::isImport(auth()->user()))
         <div class="offcanvas offcanvas-end chat-drawer" tabindex="-1" id="chatDrawer" aria-labelledby="chatDrawerTitle">
-            <div class="offcanvas-header tw-flex tw-items-center tw-justify-between tw-gap-3 tw-border-b tw-border-outline-variant tw-bg-surface tw-px-4 tw-py-3">
-                <div class="tw-flex tw-flex-1 tw-min-w-0 tw-items-center tw-gap-2.5">
-                    <button type="button" class="ui-focus-ring tw-inline-flex tw-h-8 tw-w-8 tw-shrink-0 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container d-none" id="chatDrawerBack" title="{{ __('common.chat.back') }}" aria-label="{{ __('common.chat.back_lower') }}">
+            <div class="offcanvas-header tw:flex tw:items-center tw:justify-between tw:gap-3 tw:border-b tw:border-outline-variant tw:bg-surface tw:px-4 tw:py-3">
+                <div class="tw:flex tw:flex-1 tw:min-w-0 tw:items-center tw:gap-2.5">
+                    <button type="button" class="ui-focus-ring tw:inline-flex tw:h-8 tw:w-8 tw:shrink-0 tw:items-center tw:justify-center tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:text-on-surface-variant tw:hover:bg-surface-container d-none" id="chatDrawerBack" title="{{ __('common.chat.back') }}" aria-label="{{ __('common.chat.back_lower') }}">
                         <x-ui.icon name="arrow-left" />
                     </button>
-                    <div class="tw-flex-1 tw-min-w-0 tw-overflow-hidden">
-                        <h6 class="offcanvas-title tw-m-0 tw-truncate tw-text-ui-sm tw-font-semibold" id="chatDrawerTitle">{{ __('common.chat.title') }}</h6>
-                        <span class="tw-block tw-truncate tw-text-ui-xs tw-text-on-surface-variant" id="chatDrawerSubtitle">{{ __('common.chat.list') }}</span>
+                    <div class="tw:flex-1 tw:min-w-0 tw:overflow-hidden">
+                        <h6 class="offcanvas-title tw:m-0 tw:truncate tw:text-ui-sm tw:font-semibold" id="chatDrawerTitle">{{ __('common.chat.title') }}</h6>
+                        <span class="tw:block tw:truncate tw:text-ui-xs tw:text-on-surface-variant" id="chatDrawerSubtitle">{{ __('common.chat.list') }}</span>
                     </div>
                 </div>
-                <div class="tw-flex tw-shrink-0 tw-items-center tw-gap-2 ms-auto">
-                    <div class="d-none align-items-center tw-shrink-0" id="chatDrawerMuteContainer">
+                <div class="tw:flex tw:shrink-0 tw:items-center tw:gap-2 ms-auto">
+                    <div class="d-none align-items-center tw:shrink-0" id="chatDrawerMuteContainer">
                         <button type="button"
-                            class="ui-focus-ring ui-motion tw-inline-flex tw-h-8 tw-w-8 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container hover:tw-text-on-surface"
+                            class="ui-focus-ring ui-motion tw:inline-flex tw:h-8 tw:w-8 tw:items-center tw:justify-center tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:text-on-surface-variant tw:hover:bg-surface-container tw:hover:text-on-surface"
                             id="chatDrawerMuteToggle"
                             aria-pressed="false"
                             title="{{ __('common.chat.mute_help') }}"
@@ -25,11 +25,11 @@
                             <span class="chat-drawer-mute-icon-muted d-none">
                                 <x-ui.icon name="bell-off" />
                             </span>
-                            <span class="tw-sr-only" id="chatDrawerMuteSrLabel">{{ __('common.chat.mute') }}</span>
+                            <span class="tw:sr-only" id="chatDrawerMuteSrLabel">{{ __('common.chat.mute') }}</span>
                         </button>
                     </div>
                     <button type="button"
-                        class="ui-focus-ring ui-motion tw-inline-flex tw-h-8 tw-w-8 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container hover:tw-text-on-surface"
+                        class="ui-focus-ring ui-motion tw:inline-flex tw:h-8 tw:w-8 tw:items-center tw:justify-center tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:text-on-surface-variant tw:hover:bg-surface-container tw:hover:text-on-surface"
                         data-bs-dismiss="offcanvas"
                         title="{{ __('common.actions.close') }}"
                         aria-label="{{ __('common.actions.close') }}">
@@ -40,46 +40,46 @@
 
             <div class="offcanvas-body">
                 <div class="chat-drawer-pane" id="chatDrawerListPane">
-                    <div class="tw-border-b tw-border-outline-variant tw-bg-surface tw-p-3">
-                        <div class="tw-relative">
-                            <div class="tw-absolute tw-inset-y-0 tw-start-0 tw-flex tw-items-center tw-pl-2.5 tw-pointer-events-none tw-text-on-surface-variant"><x-ui.icon name="search" /></div>
-                            <input type="search" class="tw-h-9 tw-w-full tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-pl-8 tw-pr-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary" id="chatDrawerSearch" placeholder="{{ __('common.chat.search') }}">
+                    <div class="tw:border-b tw:border-outline-variant tw:bg-surface tw:p-3">
+                        <div class="tw:relative">
+                            <div class="tw:absolute tw:inset-y-0 tw:start-0 tw:flex tw:items-center tw:pl-2.5 tw:pointer-events-none tw:text-on-surface-variant"><x-ui.icon name="search" /></div>
+                            <input type="search" class="tw:h-9 tw:w-full tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:pl-8 tw:pr-3 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary" id="chatDrawerSearch" placeholder="{{ __('common.chat.search') }}">
                         </div>
                     </div>
                     <div class="chat-thread-list" id="chatDrawerList">
-                        <div class="tw-flex tw-flex-col tw-items-center tw-justify-center tw-py-8 tw-text-on-surface-variant">
+                        <div class="tw:flex tw:flex-col tw:items-center tw:justify-center tw:py-8 tw:text-on-surface-variant">
                             <span class="ui-spinner" aria-hidden="true"></span>
-                            <span class="tw-mt-2 tw-text-ui-xs">{{ __('common.chat.loading') }}</span>
+                            <span class="tw:mt-2 tw:text-ui-xs">{{ __('common.chat.loading') }}</span>
                         </div>
                     </div>
                 </div>
 
                 <div class="chat-drawer-pane d-none" id="chatDrawerConversationPane">
-                    <div class="chat-context-panel tw-border-b tw-border-outline-variant tw-bg-surface tw-p-3 d-none" id="chatDrawerContext"></div>
-                    <div class="chat-action-panel tw-border-b tw-border-outline-variant tw-bg-surface-low tw-p-2 d-none" id="chatDrawerActions"></div>
+                    <div class="chat-context-panel tw:border-b tw:border-outline-variant tw:bg-surface tw:p-3 d-none" id="chatDrawerContext"></div>
+                    <div class="chat-action-panel tw:border-b tw:border-outline-variant tw:bg-surface-low tw:p-2 d-none" id="chatDrawerActions"></div>
                     <div class="chat-message-list p-3" id="chatDrawerMessages"></div>
-                    <div class="tw-border-t tw-border-outline-variant tw-bg-surface tw-p-3">
+                    <div class="tw:border-t tw:border-outline-variant tw:bg-surface tw:p-3">
                         <form id="chatDrawerForm" data-managed-submit>
                             <div class="chat-composer-tools d-flex align-items-center justify-content-between gap-2 mb-2">
                                 <div class="dropdown d-none" id="chatDrawerTemplates">
-                                    <button class="ui-focus-ring tw-inline-flex tw-h-7 tw-items-center tw-gap-1 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-px-2.5 tw-text-ui-xs tw-font-medium tw-text-on-surface hover:tw-bg-surface-low" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <button class="ui-focus-ring tw:inline-flex tw:h-7 tw:items-center tw:gap-1 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:px-2.5 tw:text-ui-xs tw:font-medium tw:text-on-surface tw:hover:bg-surface-low" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                         <x-ui.icon name="zap" /> {{ __('common.chat.template') }}
                                     </button>
                                     <div class="dropdown-menu p-2 chat-template-menu" id="chatDrawerTemplateMenu"></div>
                                 </div>
-                                <div class="tw-flex-1 tw-text-end tw-text-ui-xs tw-text-on-surface-variant d-none" id="chatDrawerAttachmentList"></div>
+                                <div class="tw:flex-1 tw:text-end tw:text-ui-xs tw:text-on-surface-variant d-none" id="chatDrawerAttachmentList"></div>
                             </div>
-                            <div class="tw-flex tw-gap-2 tw-items-end">
-                                <textarea class="tw-flex-1 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-px-3 tw-py-2 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary tw-resize-none" id="chatDrawerInput" rows="2" maxlength="2000" placeholder="{{ __('common.chat.type') }}" aria-label="{{ __('common.fields.message') }}"></textarea>
-                                <label class="ui-focus-ring tw-inline-flex tw-h-10 tw-w-10 tw-shrink-0 tw-cursor-pointer tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container tw-mb-0" for="chatDrawerAttachments" title="{{ __('common.upload.attach') }}" aria-label="{{ __('common.upload.attach') }}">
+                            <div class="tw:flex tw:gap-2 tw:items-end">
+                                <textarea class="tw:flex-1 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:px-3 tw:py-2 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary tw:resize-none" id="chatDrawerInput" rows="2" maxlength="2000" placeholder="{{ __('common.chat.type') }}" aria-label="{{ __('common.fields.message') }}"></textarea>
+                                <label class="ui-focus-ring tw:inline-flex tw:h-10 tw:w-10 tw:shrink-0 tw:cursor-pointer tw:items-center tw:justify-center tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:text-on-surface-variant tw:hover:bg-surface-container tw:mb-0" for="chatDrawerAttachments" title="{{ __('common.upload.attach') }}" aria-label="{{ __('common.upload.attach') }}">
                                     <x-ui.icon name="paperclip" />
                                 </label>
                                 <input type="file" class="d-none" id="chatDrawerAttachments" name="attachments[]" multiple accept=".jpg,.jpeg,.png,.pdf,.xlsx,.xls,.doc,.docx">
-                                <button type="submit" class="ui-focus-ring tw-inline-flex tw-h-10 tw-w-10 tw-shrink-0 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border-0 tw-bg-primary tw-text-primary-foreground hover:tw-brightness-95" id="chatDrawerSend" aria-label="{{ __('common.chat.send') }}">
+                                <button type="submit" class="ui-focus-ring tw:inline-flex tw:h-10 tw:w-10 tw:shrink-0 tw:items-center tw:justify-center tw:rounded-ui-sm tw:border-0 tw:bg-primary tw:text-primary-foreground tw:hover:brightness-95" id="chatDrawerSend" aria-label="{{ __('common.chat.send') }}">
                                     <x-ui.icon name="send" />
                                 </button>
                             </div>
-                            <div class="tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">{{ __('common.chat.enter_send') }}</div>
+                            <div class="tw:mt-1 tw:text-ui-xs tw:text-on-surface-variant">{{ __('common.chat.enter_send') }}</div>
                         </form>
                     </div>
                 </div>
@@ -179,7 +179,7 @@
 
                         if (loading) {
                             sendButton.setAttribute('aria-busy', 'true');
-                            sendButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span><span class="tw-sr-only">{{ __('common.chat.sending') }}</span>';
+                            sendButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span><span class="tw:sr-only">{{ __('common.chat.sending') }}</span>';
                             return;
                         }
 
@@ -197,25 +197,25 @@
 
                     const chipClass = (source = '') => {
                         const value = String(source).toLowerCase();
-                        const base = 'tw-inline-flex tw-items-center tw-rounded-ui-xs tw-border tw-px-2 tw-py-0.5 tw-text-ui-xs tw-font-semibold';
+                        const base = 'tw:inline-flex tw:items-center tw:rounded-ui-xs tw:border tw:px-2 tw:py-0.5 tw:text-ui-xs tw:font-semibold';
 
-                        if (value.includes('danger')) return `${base} tw-border-error/40 tw-bg-error-container tw-text-error-container-foreground`;
-                        if (value.includes('warning')) return `${base} tw-border-warning/40 tw-bg-warning-container tw-text-warning-container-foreground`;
-                        if (value.includes('success')) return `${base} tw-border-success/40 tw-bg-success-container tw-text-success-container-foreground`;
-                        if (value.includes('primary')) return `${base} tw-border-primary/40 tw-bg-primary-container tw-text-primary-container-foreground`;
+                        if (value.includes('danger')) return `${base} tw:border-error/40 tw:bg-error-container tw:text-error-container-foreground`;
+                        if (value.includes('warning')) return `${base} tw:border-warning/40 tw:bg-warning-container tw:text-warning-container-foreground`;
+                        if (value.includes('success')) return `${base} tw:border-success/40 tw:bg-success-container tw:text-success-container-foreground`;
+                        if (value.includes('primary')) return `${base} tw:border-primary/40 tw:bg-primary-container tw:text-primary-container-foreground`;
 
-                        return `${base} tw-border-outline-variant tw-bg-surface-container tw-text-on-surface-variant`;
+                        return `${base} tw:border-outline-variant tw:bg-surface-container tw:text-on-surface-variant`;
                     };
 
                     const actionClass = (variant = '') => {
                         const value = String(variant).toLowerCase();
-                        const base = 'ui-focus-ring tw-inline-flex tw-min-h-[var(--ui-control-height-sm)] tw-items-center tw-justify-center tw-whitespace-nowrap tw-rounded-ui-sm tw-border tw-px-2.5 tw-py-1 tw-text-ui-xs tw-font-semibold tw-no-underline';
+                        const base = 'ui-focus-ring tw:inline-flex tw:min-h-[var(--ui-control-height-sm)] tw:items-center tw:justify-center tw:whitespace-nowrap tw:rounded-ui-sm tw:border tw:px-2.5 tw:py-1 tw:text-ui-xs tw:font-semibold tw:no-underline';
 
-                        if (value.includes('danger')) return `${base} tw-border-error tw-bg-transparent tw-text-error hover:tw-bg-error-container`;
-                        if (value.includes('warning')) return `${base} tw-border-warning tw-bg-warning-container tw-text-warning-container-foreground hover:tw-brightness-95`;
-                        if (value.includes('success')) return `${base} tw-border-transparent tw-bg-success tw-text-success-foreground hover:tw-brightness-95`;
+                        if (value.includes('danger')) return `${base} tw:border-error tw:bg-transparent tw:text-error tw:hover:bg-error-container`;
+                        if (value.includes('warning')) return `${base} tw:border-warning tw:bg-warning-container tw:text-warning-container-foreground tw:hover:brightness-95`;
+                        if (value.includes('success')) return `${base} tw:border-transparent tw:bg-success tw:text-success-foreground tw:hover:brightness-95`;
 
-                        return `${base} tw-border-outline tw-bg-transparent tw-text-on-surface hover:tw-bg-surface-container`;
+                        return `${base} tw:border-outline tw:bg-transparent tw:text-on-surface tw:hover:bg-surface-container`;
                     };
 
                     const normalizeMessage = (message) => {
@@ -250,8 +250,8 @@
                                 muteIconMuted.classList.remove('d-none');
                                 muteIconMuted.classList.add('d-inline-flex');
                             }
-                            muteToggle.classList.add('tw-bg-surface-container', 'tw-text-on-surface');
-                            muteToggle.classList.remove('tw-bg-transparent', 'tw-text-on-surface-variant');
+                            muteToggle.classList.add('tw:bg-surface-container', 'tw:text-on-surface');
+                            muteToggle.classList.remove('tw:bg-transparent', 'tw:text-on-surface-variant');
                         } else {
                             muteToggle.setAttribute('aria-label', @js(__('common.chat.mute')));
                             muteToggle.setAttribute('title', @js(__('common.chat.mute_help')));
@@ -264,8 +264,8 @@
                                 muteIconMuted.classList.add('d-none');
                                 muteIconMuted.classList.remove('d-inline-flex');
                             }
-                            muteToggle.classList.remove('tw-bg-surface-container', 'tw-text-on-surface');
-                            muteToggle.classList.add('tw-bg-transparent', 'tw-text-on-surface-variant');
+                            muteToggle.classList.remove('tw:bg-surface-container', 'tw:text-on-surface');
+                            muteToggle.classList.add('tw:bg-transparent', 'tw:text-on-surface-variant');
                         }
                     };
 
@@ -333,9 +333,9 @@
                                 <div class="d-flex justify-content-between gap-2 mb-1">
                                     <div class="fw-semibold text-truncate d-flex align-items-center gap-1.5">
                                         <span>${escapeHtml(conversation.partner_name)}</span>
-                                        ${conversation.muted ? `<span class="tw-inline-flex tw-items-center tw-text-on-surface-variant" title="${escapeHtml(window.AdasiI18n.t('js.chat.muted_help'))}"><x-ui.icon name="bell-off" size="xs" /></span>` : ''}
+                                        ${conversation.muted ? `<span class="tw:inline-flex tw:items-center tw:text-on-surface-variant" title="${escapeHtml(window.AdasiI18n.t('js.chat.muted_help'))}"><x-ui.icon name="bell-off" size="xs" /></span>` : ''}
                                     </div>
-                                    ${conversation.unread_count > 0 ? `<span class="tw-inline-flex tw-min-w-5 tw-items-center tw-justify-center tw-rounded-full tw-bg-error tw-px-1.5 tw-text-ui-xs tw-font-semibold tw-text-error-foreground">${conversation.unread_count}</span>` : ''}
+                                    ${conversation.unread_count > 0 ? `<span class="tw:inline-flex tw:min-w-5 tw:items-center tw:justify-center tw:rounded-full tw:bg-error tw:px-1.5 tw:text-ui-xs tw:font-semibold tw:text-error-foreground">${conversation.unread_count}</span>` : ''}
                                 </div>
                                 <div class="d-flex align-items-center gap-2 mb-1">
                                     <span class="${chipClass(conversation.context_type === 'PR' ? 'primary' : 'success')}">${escapeHtml(conversation.context_type)}</span>
@@ -373,7 +373,7 @@
                             })
                             .catch(() => {
                                 listEl.innerHTML = `
-                                    <div class="tw-m-3 tw-rounded-ui-sm tw-border-s-4 tw-border-error tw-bg-error-container tw-p-3 tw-text-ui-sm tw-text-error-container-foreground" role="alert">
+                                    <div class="tw:m-3 tw:rounded-ui-sm tw:border-s-4 tw:border-error tw:bg-error-container tw:p-3 tw:text-ui-sm tw:text-error-container-foreground" role="alert">
                                         {{ __('common.chat.failed_list') }}
                                     </div>
                                 `;
@@ -396,18 +396,18 @@
 
                         contextEl.innerHTML = `
                             <div class="chat-context-compact d-flex justify-content-between gap-2 align-items-center">
-                                <div class="tw-min-w-0">
-                                    <div class="d-flex align-items-center gap-2 tw-min-w-0">
+                                <div class="tw:min-w-0">
+                                    <div class="d-flex align-items-center gap-2 tw:min-w-0">
                                         <span class="${chipClass(context.type === 'PO' ? 'success' : 'primary')}">${escapeHtml(context.type || 'DOC')}</span>
                                         <div class="fw-bold text-truncate">${escapeHtml(context.title || '-')}</div>
                                     </div>
                                     <div class="small text-muted text-truncate mt-1">${escapeHtml(context.subtitle || '')}</div>
                                 </div>
                                 <div class="d-flex gap-1 flex-shrink-0">
-                                    <button type="button" class="ui-focus-ring tw-inline-flex tw-h-8 tw-w-8 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-text-on-surface-variant hover:tw-bg-surface-container" data-chat-context-toggle title="{{ __('common.chat.toggle') }}" aria-label="{{ __('common.chat.toggle_context') }}">
+                                    <button type="button" class="ui-focus-ring tw:inline-flex tw:h-8 tw:w-8 tw:items-center tw:justify-center tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:text-on-surface-variant tw:hover:bg-surface-container" data-chat-context-toggle title="{{ __('common.chat.toggle') }}" aria-label="{{ __('common.chat.toggle_context') }}">
                                         <x-ui.icon name="chevron-down" />
                                     </button>
-                                    ${context.url ? `<a href="${escapeHtml(context.url)}" class="ui-focus-ring tw-inline-flex tw-h-8 tw-w-8 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container" title="${escapeHtml(@js(__('common.accessibility.open_details')))}" aria-label="${escapeHtml(@js(__('common.accessibility.open_context')))}"><x-ui.icon name="external-link" /></a>` : ''}
+                                    ${context.url ? `<a href="${escapeHtml(context.url)}" class="ui-focus-ring tw:inline-flex tw:h-8 tw:w-8 tw:items-center tw:justify-center tw:rounded-ui-sm tw:border tw:border-outline tw:bg-transparent tw:text-on-surface-variant tw:hover:bg-surface-container" title="${escapeHtml(@js(__('common.accessibility.open_details')))}" aria-label="${escapeHtml(@js(__('common.accessibility.open_context')))}"><x-ui.icon name="external-link" /></a>` : ''}
                                 </div>
                             </div>
                             <div class="chat-context-grid d-none mt-2" id="chatContextDetail">${fields}</div>
@@ -543,8 +543,8 @@
                     // History loads 50 messages at a time; earlier pages are fetched
                     // by id (keyset) and inserted above, keeping the scroll position.
                     const olderControlHtml = () => `
-                        <div class="tw-flex tw-justify-center tw-py-2" data-chat-older>
-                            <button type="button" class="ui-focus-ring tw-inline-flex tw-h-7 tw-items-center tw-gap-1 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-px-2.5 tw-text-ui-xs tw-font-medium tw-text-on-surface hover:tw-bg-surface-low" data-chat-load-older>
+                        <div class="tw:flex tw:justify-center tw:py-2" data-chat-older>
+                            <button type="button" class="ui-focus-ring tw:inline-flex tw:h-7 tw:items-center tw:gap-1 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:px-2.5 tw:text-ui-xs tw:font-medium tw:text-on-surface tw:hover:bg-surface-low" data-chat-load-older>
                                 {{ __('common.chat.load_older') }}
                             </button>
                         </div>
@@ -651,7 +651,7 @@
                                     return;
                                 }
                                 messagesEl.innerHTML = `
-                                    <div class="tw-m-3 tw-rounded-ui-sm tw-border-s-4 tw-border-error tw-bg-error-container tw-p-3 tw-text-ui-sm tw-text-error-container-foreground" role="alert">
+                                    <div class="tw:m-3 tw:rounded-ui-sm tw:border-s-4 tw:border-error tw:bg-error-container tw:p-3 tw:text-ui-sm tw:text-error-container-foreground" role="alert">
                                         {{ __('common.chat.failed_details') }}
                                     </div>
                                 `;

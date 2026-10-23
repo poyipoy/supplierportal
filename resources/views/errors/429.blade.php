@@ -4,42 +4,42 @@
 @section('meta')<meta name="robots" content="noindex, nofollow">@endsection
 
 @section('content')
-<div aria-labelledby="error-title" class="tw-text-left">
-    <header class="tw-mb-5">
-        <div class="tw-flex tw-items-center tw-gap-2">
+<div aria-labelledby="error-title" class="tw:text-left">
+    <header class="tw:mb-5">
+        <div class="tw:flex tw:items-center tw:gap-2">
             <span class="ui-status-chip ui-status-chip--warning">{{ __('common.review.error_code', ['code' => 429]) }}</span>
-            <span class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-on-surface-variant">{{ __('auth.rate_limit.heading') }}</span>
+            <span class="tw:text-ui-xs tw:font-semibold tw:uppercase tw:tracking-wider tw:text-on-surface-variant">{{ __('auth.rate_limit.heading') }}</span>
         </div>
-        <h1 id="error-title" class="tw-m-0 tw-mt-2 tw-text-ui-xl tw-font-bold tw-tracking-tight tw-text-on-surface">
+        <h1 id="error-title" class="tw:m-0 tw:mt-2 tw:text-ui-xl tw:font-bold tw:tracking-tight tw:text-on-surface">
             {{ __('auth.rate_limit.heading') }}
         </h1>
-        <p class="tw-m-0 tw-mt-1.5 tw-text-ui-sm tw-text-on-surface-variant">
+        <p class="tw:m-0 tw:mt-1.5 tw:text-ui-sm tw:text-on-surface-variant">
             {{ __('common.review.rate_description') }}
         </p>
     </header>
 
-    <div class="tw-mb-5 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface-container tw-p-3.5 tw-text-ui-xs tw-text-on-surface-variant">
-        <div class="tw-flex tw-items-center tw-gap-2.5">
-            <x-ui.icon name="clock" size="sm" class="tw-flex-shrink-0 tw-text-warning" />
+    <div class="tw:mb-5 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container tw:p-3.5 tw:text-ui-xs tw:text-on-surface-variant">
+        <div class="tw:flex tw:items-center tw:gap-2.5">
+            <x-ui.icon name="clock" size="sm" class="tw:shrink-0 tw:text-warning" />
             <span>{{ __('common.review.rate_help') }}</span>
         </div>
     </div>
 
-    <div class="tw-grid tw-grid-cols-1 tw-gap-3 sm:tw-grid-cols-2">
+    <div class="tw:grid tw:grid-cols-1 tw:gap-3 tw:sm:grid-cols-2">
         <button type="button" onclick="window.history.length > 1 ? window.history.back() : window.location.assign('{{ url('/') }}')"
-            class="ui-focus-ring ui-motion tw-flex tw-h-11 tw-w-full tw-items-center tw-justify-center tw-gap-2 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-px-4 tw-text-ui-sm tw-font-semibold tw-text-on-surface hover:tw-bg-surface-container">
+            class="ui-focus-ring ui-motion tw:flex tw:h-11 tw:w-full tw:items-center tw:justify-center tw:gap-2 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:px-4 tw:text-ui-sm tw:font-semibold tw:text-on-surface tw:hover:bg-surface-container">
             <x-ui.icon name="arrow-left" size="sm" />
             <span>{{ __('common.actions.back') }}</span>
         </button>
 
         <a href="{{ auth()->check() ? route('dashboard') : route('login') }}"
-            class="ui-focus-ring ui-motion tw-flex tw-h-11 tw-w-full tw-items-center tw-justify-center tw-gap-2 tw-rounded-ui-sm tw-border-0 tw-bg-primary tw-px-4 tw-text-ui-sm tw-font-semibold tw-text-primary-foreground tw-no-underline hover:tw-brightness-95">
+            class="ui-focus-ring ui-motion tw:flex tw:h-11 tw:w-full tw:items-center tw:justify-center tw:gap-2 tw:rounded-ui-sm tw:border-0 tw:bg-primary tw:px-4 tw:text-ui-sm tw:font-semibold tw:text-primary-foreground tw:no-underline tw:hover:brightness-95">
             <x-ui.icon name="{{ auth()->check() ? 'layout-dashboard' : 'log-in' }}" size="sm" />
             <span>{{ auth()->check() ? __('navigation.dashboard') : __('common.review.sign_in_page') }}</span>
         </a>
     </div>
 
-    <p class="tw-m-0 tw-mt-4 tw-text-center tw-text-ui-xs tw-text-on-surface-variant">
+    <p class="tw:m-0 tw:mt-4 tw:text-center tw:text-ui-xs tw:text-on-surface-variant">
         PT Astra Daido Steel Indonesia &copy; {{ now()->year }}
     </p>
 </div>

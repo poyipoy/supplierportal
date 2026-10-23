@@ -3,7 +3,7 @@
 @section('page-title', __('admin.copy.create_announcement'))
 
 @section('content')
-<div class="tw-grid tw-gap-6 tw-pb-24">
+<div class="tw:grid tw:gap-6 tw:pb-24">
     <x-ui.page-header
         :title="__('admin.copy.create_announcement')"
         :description="__('admin.copy.prepare_a_portal_wide_notice_and_choose_its_initial_publication_state')"
@@ -23,9 +23,9 @@
             :title="__('admin.copy.announcement_content')"
             :description="__('admin.copy.keep_the_title_specific_and_the_body_operationally_useful')"
         >
-            <div class="tw-grid tw-gap-4">
+            <div class="tw:grid tw:gap-4">
                 <div>
-                    <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="annTitle">
+                    <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="annTitle">
                         {{ __('admin.copy.notice_title') }} <span class="text-danger">*</span>
                     </label>
                     <input
@@ -43,7 +43,7 @@
                 </div>
 
                 <div>
-                    <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="annContent">
+                    <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="annContent">
                         {{ __('admin.copy.announcement_body_description') }} <span class="text-danger">*</span>
                     </label>
                     <textarea
@@ -59,7 +59,7 @@
                     @enderror
                 </div>
 
-                <div class="tw-pt-2">
+                <div class="tw:pt-2">
                     <div class="form-check form-switch">
                         <input
                             class="form-check-input"
@@ -69,7 +69,7 @@
                             value="1"
                             {{ old('is_published', true) ? 'checked' : '' }}
                         >
-                        <label class="form-check-label tw-text-ui-sm tw-font-medium tw-text-on-surface" for="is_published">
+                        <label class="form-check-label tw:text-ui-sm tw:font-medium tw:text-on-surface" for="is_published">
                             {{ __('admin.copy.publish_notice_immediately_broadcast_to_all_active_users') }}
                         </label>
                     </div>

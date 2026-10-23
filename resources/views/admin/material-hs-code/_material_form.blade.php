@@ -8,16 +8,16 @@
 
             <div class="modal-header">
                 <div>
-                    <h2 class="modal-title fs-6 fw-bold tw-text-on-surface" id="materialModalTitle">{{ __('admin.copy.add_material_master') }}</h2>
-                    <p class="tw-m-0 tw-mt-0.5 tw-text-ui-xs tw-text-on-surface-variant">{{ __('admin.copy.configure_material_identity_hs_classification_category_density_profile_and_manufacturer_scope') }}</p>
+                    <h2 class="modal-title fs-6 fw-bold tw:text-on-surface" id="materialModalTitle">{{ __('admin.copy.add_material_master') }}</h2>
+                    <p class="tw:m-0 tw:mt-0.5 tw:text-ui-xs tw:text-on-surface-variant">{{ __('admin.copy.configure_material_identity_hs_classification_category_density_profile_and_manufacturer_scope') }}</p>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('admin.copy.close') }}"></button>
             </div>
 
-            <div class="modal-body tw-grid tw-gap-4 tw-p-5">
-                <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
+            <div class="modal-body tw:grid tw:gap-4 tw:p-5">
+                <div class="tw:grid tw:gap-4 tw:sm:grid-cols-2">
                     <div>
-                        <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="materialCode">
+                        <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="materialCode">
                             {{ __('admin.copy.material_code') }} <span class="text-danger">*</span>
                         </label>
                         <input
@@ -33,8 +33,8 @@
                     </div>
 
                     <div>
-                        <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="materialRawCategory">
-                            {{ __('admin.copy.raw_material_category') }} <span class="tw-text-on-surface-variant tw-font-normal">{{ __('admin.copy.optional') }}</span>
+                        <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="materialRawCategory">
+                            {{ __('admin.copy.raw_material_category') }} <span class="tw:text-on-surface-variant tw:font-normal">{{ __('admin.copy.optional') }}</span>
                         </label>
                         <input
                             type="text"
@@ -48,8 +48,8 @@
                     </div>
 
                     <div>
-                        <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="materialHsCategory">
-                            {{ __('admin.copy.hs_code_category') }} <span class="tw-text-on-surface-variant tw-font-normal">{{ __('admin.copy.optional') }}</span>
+                        <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="materialHsCategory">
+                            {{ __('admin.copy.hs_code_category') }} <span class="tw:text-on-surface-variant tw:font-normal">{{ __('admin.copy.optional') }}</span>
                         </label>
                         <select name="hs_category" id="materialHsCategory" class="form-select">
                             <option value="">{{ __('admin.copy.unmapped_generic') }}</option>
@@ -60,7 +60,7 @@
                     </div>
 
                     <div>
-                        <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="materialDensity">
+                        <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="materialDensity">
                             {{ __('admin.copy.density_profile') }} <span class="text-danger">*</span>
                         </label>
                         <select name="density_profile" id="materialDensity" class="form-select" required>
@@ -70,8 +70,8 @@
                         </select>
                     </div>
 
-                    <div class="sm:tw-col-span-2">
-                        <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="materialManufacturer">
+                    <div class="tw:sm:col-span-2">
+                        <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="materialManufacturer">
                             {{ __('admin.copy.manufacturer_scope') }} <span class="text-danger">*</span>
                         </label>
                         <select name="manufacturer_scope" id="materialManufacturer" class="form-select" required>
@@ -81,11 +81,11 @@
                         </select>
                     </div>
 
-                    <div class="sm:tw-col-span-2 tw-pt-2">
+                    <div class="tw:sm:col-span-2 tw:pt-2">
                         <input type="hidden" name="is_active" value="0">
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" name="is_active" value="1" id="materialActive" checked>
-                            <label class="form-check-label tw-text-ui-sm tw-font-medium tw-text-on-surface" for="materialActive">
+                            <label class="form-check-label tw:text-ui-sm tw:font-medium tw:text-on-surface" for="materialActive">
                                 {{ __('admin.copy.active_selectable_in_requisition_items') }}
                             </label>
                         </div>
@@ -93,7 +93,7 @@
                 </div>
             </div>
 
-            <div class="modal-footer tw-border-t tw-border-outline-variant tw-bg-surface-low tw-px-5 tw-py-3">
+            <div class="modal-footer tw:border-t tw:border-outline-variant tw:bg-surface-low tw:px-5 tw:py-3">
                 <x-ui.button type="button" variant="ghost" data-bs-dismiss="modal">{{ __('admin.copy.cancel') }}</x-ui.button>
                 <x-ui.button type="submit" id="btnSaveMaterial">
                     <span class="spinner-border spinner-border-sm d-none me-1" id="spinnerSaveMaterial"></span>

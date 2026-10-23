@@ -235,8 +235,8 @@ test('tabs inside a server-rendered nav only move aria-current, while legacy pil
 
         assert.equal(navTabA.getAttribute('aria-current'), null);
         assert.equal(navTabB.getAttribute('aria-current'), 'page');
-        assert.equal(navTabB.classList.contains('tw-bg-primary'), false, 'nav tabs are styled by aria-current, not by JS class lists');
-        assert.equal(legacyPill.classList.contains('tw-bg-primary'), true, 'DRP/comparison pills keep the old behaviour');
+        assert.equal(navTabB.classList.contains('tw:bg-primary'), false, 'nav tabs are styled by aria-current, not by JS class lists');
+        assert.equal(legacyPill.classList.contains('tw:bg-primary'), true, 'DRP/comparison pills keep the old behaviour');
     } finally {
         restoreNetwork();
     }

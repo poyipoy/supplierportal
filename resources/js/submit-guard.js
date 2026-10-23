@@ -63,7 +63,7 @@
             iconWrapper.parentNode.insertBefore(spinner, iconWrapper);
         } else {
             // Prepend spinner before the first child or text
-            spinner.classList.add('tw-mr-1.5');
+            spinner.classList.add('tw:mr-1.5');
             btn.prepend(spinner);
         }
 

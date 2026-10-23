@@ -80,7 +80,7 @@ class UserDashboardRenderingTest extends TestCase
         foreach ($cases as [$role, $audience, $route, $widths]) {
             $response = $this->actingAs($this->dashboardUser($role, $audience))->get(route($route))->assertOk();
             foreach ($widths as $key => $span) {
-                $response->assertSee('class="tw-min-w-0 lg:tw-col-span-'.$span.'" data-dashboard-widget="'.$key.'"', false);
+                $response->assertSee('class="tw:min-w-0 tw:lg:col-span-'.$span.'" data-dashboard-widget="'.$key.'"', false);
             }
         }
     }
@@ -90,14 +90,14 @@ class UserDashboardRenderingTest extends TestCase
         $admin = $this->dashboardUser('admin', 'admin', ['admin' => ['hidden' => ['admin.shortcuts'], 'order' => []]]);
         $this->actingAs($admin)->get(route('admin.dashboard'))->assertOk()
             ->assertDontSee('data-dashboard-widget="admin.shortcuts"', false)
-            ->assertSee('class="tw-min-w-0 lg:tw-col-span-12" data-dashboard-widget="admin.rates"', false);
+            ->assertSee('class="tw:min-w-0 tw:lg:col-span-12" data-dashboard-widget="admin.rates"', false);
 
         $purchasing = $this->dashboardUser('purchasing', 'purchasing', ['purchasing' => [
             'hidden' => ['purchasing.recent_requisitions'],
             'order' => ['purchasing.exceptions', 'purchasing.arrivals', 'purchasing.metrics', 'purchasing.analytics', 'purchasing.recent_requisitions'],
         ]]);
         $this->actingAs($purchasing)->get(route('purchasing.dashboard'))->assertOk()
-            ->assertSee('class="tw-min-w-0 lg:tw-col-span-12" data-dashboard-widget="purchasing.arrivals"', false)
+            ->assertSee('class="tw:min-w-0 tw:lg:col-span-12" data-dashboard-widget="purchasing.arrivals"', false)
             ->assertDontSee('data-dashboard-widget="purchasing.recent_requisitions"', false);
     }
 

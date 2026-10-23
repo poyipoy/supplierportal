@@ -3,7 +3,7 @@
 @section('page-title', __('finance.drp.paid_monitor_title'))
 
 @section('content')
-<div id="drpPaidContainer" class="tw-flex tw-flex-col tw-gap-6 tw-pb-16 tw-w-full tw-min-w-0 tw-max-w-full" data-server-tabs-container>
+<div id="drpPaidContainer" class="tw:flex tw:flex-col tw:gap-6 tw:pb-16 tw:w-full tw:min-w-0 tw:max-w-full" data-server-tabs-container>
     <x-ui.page-header
         :title="__('finance.drp.paid_title')"
         :description="__('common.final_review.paid_help')"
@@ -22,11 +22,11 @@
                 <x-ui.icon name="credit-card" size="sm" />
                 <span>DRP GA</span>
             </x-ui.button>
-            <x-ui.button :href="route('finance.overpayments.index')" variant="outline" size="sm" class="tw-relative">
-                <x-ui.icon name="alert-circle" size="sm" class="{{ ($openOverpaymentsCount ?? 0) > 0 ? 'tw-text-amber-500' : '' }}" />
+            <x-ui.button :href="route('finance.overpayments.index')" variant="outline" size="sm" class="tw:relative">
+                <x-ui.icon name="alert-circle" size="sm" class="{{ ($openOverpaymentsCount ?? 0) > 0 ? 'tw:text-amber-500' : '' }}" />
                 <span>{{ __('finance.refund.title') }}</span>
                 @if(($openOverpaymentsCount ?? 0) > 0)
-                    <span class="tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-bg-amber-500 tw-text-white tw-text-[10px] tw-font-bold tw-px-1.5 tw-py-0.2 ui-tabular-nums" data-overpayment-count>
+                    <span class="tw:inline-flex tw:items-center tw:justify-center tw:rounded-full tw:bg-amber-500 tw:text-white tw:text-[10px] tw:font-bold tw:px-1.5 tw-py-0.2 ui-tabular-nums" data-overpayment-count>
                         {{ $openOverpaymentsCount }}
                     </span>
                 @endif
@@ -35,7 +35,7 @@
     </x-ui.page-header>
 
     {{-- KPI Metric Cards Grid --}}
-    <div class="tw-grid tw-grid-cols-1 sm:tw-grid-cols-3 tw-gap-4 tw-w-full tw-min-w-0">
+    <div class="tw:grid tw:grid-cols-1 tw:sm:grid-cols-3 tw:gap-4 tw:w-full tw:min-w-0">
         <x-ui.metric-card
             :label="__('finance.labels.total_batches')"
             :value="number_format($metrics['total_batches'])"
@@ -77,41 +77,41 @@
     </div>
 
     {{-- Status Tabs Navigation (Segmented Pill Bar) --}}
-    <div class="tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-gap-3 tw-w-full tw-min-w-0">
-        <nav class="tw-inline-flex tw-items-center tw-gap-1.5 tw-rounded-ui-md tw-border tw-border-outline tw-bg-surface-container tw-p-1.5 tw-shadow-none" aria-label="{{ __('finance.drp_surface.settlement_tabs') }}">
+    <div class="tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-3 tw:w-full tw:min-w-0">
+        <nav class="tw:inline-flex tw:items-center tw:gap-1.5 tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface-container tw:p-1.5 tw:shadow-none" aria-label="{{ __('finance.drp_surface.settlement_tabs') }}">
             <a
                 href="{{ route('finance.drp.paid.index', array_merge(request()->query(), ['tab' => 'unpaid'])) }}"
-                class="ui-focus-ring ui-motion tw-inline-flex tw-items-center tw-gap-2 tw-rounded-ui-sm tw-px-3.5 tw-py-1.5 tw-text-ui-xs tw-font-semibold tw-no-underline {{ $tab === 'unpaid' ? 'tw-bg-primary tw-text-primary-foreground tw-shadow-xs' : 'tw-text-on-surface-variant hover:tw-bg-surface hover:tw-text-on-surface' }}"
+                class="ui-focus-ring ui-motion tw:inline-flex tw:items-center tw:gap-2 tw:rounded-ui-sm tw:px-3.5 tw:py-1.5 tw:text-ui-xs tw:font-semibold tw:no-underline {{ $tab === 'unpaid' ? 'tw:bg-primary tw:text-primary-foreground tw-shadow-xs' : 'tw:text-on-surface-variant tw:hover:bg-surface tw:hover:text-on-surface' }}"
                 data-server-tab
                 data-tab-name="unpaid"
             >
                 <x-ui.icon name="clock" size="sm" />
                 <span>{{ __('finance.drp.unpaid') }}</span>
-                <span class="drp-paid-tab-count tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-px-2 tw-py-0.5 tw-text-[11px] tw-font-bold ui-tabular-nums {{ $tab === 'unpaid' ? 'tw-bg-primary-foreground/20 tw-text-primary-foreground' : 'tw-bg-surface tw-text-on-surface-variant' }}" data-tab-count="unpaid">
+                <span class="drp-paid-tab-count tw:inline-flex tw:items-center tw:justify-center tw:rounded-full tw:px-2 tw:py-0.5 tw:text-[11px] tw:font-bold ui-tabular-nums {{ $tab === 'unpaid' ? 'tw:bg-primary-foreground/20 tw:text-primary-foreground' : 'tw:bg-surface tw:text-on-surface-variant' }}" data-tab-count="unpaid">
                     {{ $metrics['unpaid_count'] }}
                 </span>
             </a>
             <a
                 href="{{ route('finance.drp.paid.index', array_merge(request()->query(), ['tab' => 'paid'])) }}"
-                class="ui-focus-ring ui-motion tw-inline-flex tw-items-center tw-gap-2 tw-rounded-ui-sm tw-px-3.5 tw-py-1.5 tw-text-ui-xs tw-font-semibold tw-no-underline {{ $tab === 'paid' ? 'tw-bg-primary tw-text-primary-foreground tw-shadow-xs' : 'tw-text-on-surface-variant hover:tw-bg-surface hover:tw-text-on-surface' }}"
+                class="ui-focus-ring ui-motion tw:inline-flex tw:items-center tw:gap-2 tw:rounded-ui-sm tw:px-3.5 tw:py-1.5 tw:text-ui-xs tw:font-semibold tw:no-underline {{ $tab === 'paid' ? 'tw:bg-primary tw:text-primary-foreground tw-shadow-xs' : 'tw:text-on-surface-variant tw:hover:bg-surface tw:hover:text-on-surface' }}"
                 data-server-tab
                 data-tab-name="paid"
             >
                 <x-ui.icon name="badge-check" size="sm" />
                 <span>{{ __('finance.drp.paid') }}</span>
-                <span class="drp-paid-tab-count tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-px-2 tw-py-0.5 tw-text-[11px] tw-font-bold ui-tabular-nums {{ $tab === 'paid' ? 'tw-bg-primary-foreground/20 tw-text-primary-foreground' : 'tw-bg-surface tw-text-on-surface-variant' }}" data-tab-count="paid">
+                <span class="drp-paid-tab-count tw:inline-flex tw:items-center tw:justify-center tw:rounded-full tw:px-2 tw:py-0.5 tw:text-[11px] tw:font-bold ui-tabular-nums {{ $tab === 'paid' ? 'tw:bg-primary-foreground/20 tw:text-primary-foreground' : 'tw:bg-surface tw:text-on-surface-variant' }}" data-tab-count="paid">
                     {{ $metrics['paid_count'] }}
                 </span>
             </a>
             <a
                 href="{{ route('finance.drp.paid.index', array_merge(request()->query(), ['tab' => 'all'])) }}"
-                class="ui-focus-ring ui-motion tw-inline-flex tw-items-center tw-gap-2 tw-rounded-ui-sm tw-px-3.5 tw-py-1.5 tw-text-ui-xs tw-font-semibold tw-no-underline {{ $tab === 'all' ? 'tw-bg-primary tw-text-primary-foreground tw-shadow-xs' : 'tw-text-on-surface-variant hover:tw-bg-surface hover:tw-text-on-surface' }}"
+                class="ui-focus-ring ui-motion tw:inline-flex tw:items-center tw:gap-2 tw:rounded-ui-sm tw:px-3.5 tw:py-1.5 tw:text-ui-xs tw:font-semibold tw:no-underline {{ $tab === 'all' ? 'tw:bg-primary tw:text-primary-foreground tw-shadow-xs' : 'tw:text-on-surface-variant tw:hover:bg-surface tw:hover:text-on-surface' }}"
                 data-server-tab
                 data-tab-name="all"
             >
                 <x-ui.icon name="layers" size="sm" />
                 <span>{{ __('finance.drp.all_batches') }}</span>
-                <span class="drp-paid-tab-count tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-px-2 tw-py-0.5 tw-text-[11px] tw-font-bold ui-tabular-nums {{ $tab === 'all' ? 'tw-bg-primary-foreground/20 tw-text-primary-foreground' : 'tw-bg-surface tw-text-on-surface-variant' }}" data-tab-count="all">
+                <span class="drp-paid-tab-count tw:inline-flex tw:items-center tw:justify-center tw:rounded-full tw:px-2 tw:py-0.5 tw:text-[11px] tw:font-bold ui-tabular-nums {{ $tab === 'all' ? 'tw:bg-primary-foreground/20 tw:text-primary-foreground' : 'tw:bg-surface tw:text-on-surface-variant' }}" data-tab-count="all">
                     {{ $metrics['total_batches'] }}
                 </span>
             </a>
@@ -119,19 +119,19 @@
     </div>
 
     {{-- Search & Filter Toolbar --}}
-    <form method="GET" action="{{ route('finance.drp.paid.index') }}" id="drpPaidFilterForm" class="tw-m-0 tw-w-full tw-min-w-0" data-server-tabs-form>
+    <form method="GET" action="{{ route('finance.drp.paid.index') }}" id="drpPaidFilterForm" class="tw:m-0 tw:w-full tw:min-w-0" data-server-tabs-form>
         <input type="hidden" name="tab" value="{{ $tab }}">
 
         <x-ui.toolbar aria-label="{{ __('finance.drp_surface.batch_filters') }}">
             <x-slot:search>
-                <div class="tw-relative tw-w-full">
+                <div class="tw:relative tw:w-full">
                     <input
                         type="search"
                         name="q"
                         id="drp-paid-search"
                         value="{{ $q }}"
                         placeholder="{{ __('finance.drp.filter_placeholder') }}"
-                        class="form-control form-control-sm tw-text-ui-xs"
+                        class="form-control form-control-sm tw:text-ui-xs"
                         maxlength="100"
                         autocomplete="off"
                     >
@@ -139,19 +139,19 @@
             </x-slot:search>
 
             <x-slot:filters>
-                <div class="tw-flex tw-flex-wrap tw-items-center tw-gap-2.5 tw-w-full sm:tw-w-auto">
-                    <div class="tw-w-full sm:tw-w-36">
+                <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-2.5 tw:w-full tw:sm:w-auto">
+                    <div class="tw:w-full tw:sm:w-36">
                         <label for="drp-type" class="visually-hidden">{{ __('finance.drp.type') }}</label>
-                        <select id="drp-type" name="type" class="form-select form-select-sm tw-text-ui-xs">
+                        <select id="drp-type" name="type" class="form-select form-select-sm tw:text-ui-xs">
                             <option value="">{{ __('local_invoice.labels.all_types') }}</option>
                             <option value="SUPPLIER" @selected($type === 'SUPPLIER')>{{ __('local_invoice.labels.supplier') }}</option>
                             <option value="GA" @selected($type === 'GA')>{{ __('navigation.general_affairs') }}</option>
                         </select>
                     </div>
 
-                    <div class="tw-w-full sm:tw-w-44">
+                    <div class="tw:w-full tw:sm:w-44">
                         <label for="drp-overpayment-status" class="visually-hidden">{{ __('finance.drp_surface.overpayment_status') }}</label>
-                        <select id="drp-overpayment-status" name="overpayment_status" class="form-select form-select-sm tw-text-ui-xs">
+                        <select id="drp-overpayment-status" name="overpayment_status" class="form-select form-select-sm tw:text-ui-xs">
                             <option value="all" @selected(($overpaymentStatus ?? 'all') === 'all')>{{ __('finance.refund.all') }}</option>
                             <option value="has_overpayment" @selected(($overpaymentStatus ?? '') === 'has_overpayment')>{{ __('local_invoice.labels.overpayment') }}</option>
                             <option value="open" @selected(($overpaymentStatus ?? '') === 'open')>{{ __('local_invoice.filters.refund_open') }}</option>
@@ -159,7 +159,7 @@
                         </select>
                     </div>
 
-                    <div class="tw-w-full sm:tw-w-64 tw-max-w-full">
+                    <div class="tw:w-full tw:sm:w-64 tw:max-w-full">
                         <x-ui.date-range-picker
                             id="paid-date-range"
                             start-name="date_from"
@@ -190,7 +190,7 @@
     </form>
 
     {{-- Data Table Section (AJAX-swappable container) --}}
-    <div id="drpPaidTableContent" class="tw-w-full tw-min-w-0 tw-max-w-full" data-server-tabs-content>
+    <div id="drpPaidTableContent" class="tw:w-full tw:min-w-0 tw:max-w-full" data-server-tabs-content>
         @include('finance.drp._paid_table_content', ['batches' => $batches])
     </div>
 
@@ -230,49 +230,49 @@
                         @csrf
                         <div class="modal-content">
                             <div class="modal-header">
-                                <h5 class="modal-title tw-text-ui-sm tw-font-bold tw-text-on-surface tw-flex tw-items-center tw-gap-2">
-                                    <x-ui.icon name="badge-check" size="sm" class="tw-text-success" />
+                                <h5 class="modal-title tw:text-ui-sm tw:font-bold tw:text-on-surface tw:flex tw:items-center tw:gap-2">
+                                    <x-ui.icon name="badge-check" size="sm" class="tw:text-success" />
                                     <span>{{ __('finance.drp_ui.mark_paid_title', ['number' => $batch->batch_number]) }}</span>
                                 </h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('local_invoice.actions.close') }}"></button>
                             </div>
-                            <div class="modal-body tw-space-y-3">
-                                <div class="tw-rounded-lg tw-bg-surface-container tw-p-3 tw-text-ui-xs tw-space-y-1">
-                                    <div class="tw-flex tw-justify-between">
-                                        <span class="tw-text-on-surface-variant">{{ __('finance.drp.batch_type') }}:</span>
-                                        <span class="tw-font-semibold">{{ __('finance.closure.batch_type_'.strtolower($batch->batch_type)) }}</span>
+                            <div class="modal-body tw:space-y-3">
+                                <div class="tw:rounded-lg tw:bg-surface-container tw:p-3 tw:text-ui-xs tw:space-y-1">
+                                    <div class="tw:flex tw:justify-between">
+                                        <span class="tw:text-on-surface-variant">{{ __('finance.drp.batch_type') }}:</span>
+                                        <span class="tw:font-semibold">{{ __('finance.closure.batch_type_'.strtolower($batch->batch_type)) }}</span>
                                     </div>
-                                    <div class="tw-flex tw-justify-between">
-                                        <span class="tw-text-on-surface-variant">{{ __('finance.drp_ui.account_count_label') }}</span>
-                                        <span class="tw-font-semibold">{{ trans_choice('finance.drp_ui.account_count', $batch->groups_count) }}</span>
+                                    <div class="tw:flex tw:justify-between">
+                                        <span class="tw:text-on-surface-variant">{{ __('finance.drp_ui.account_count_label') }}</span>
+                                        <span class="tw:font-semibold">{{ trans_choice('finance.drp_ui.account_count', $batch->groups_count) }}</span>
                                     </div>
-                                    <div class="tw-flex tw-justify-between tw-border-t tw-border-outline-variant tw-pt-1">
-                                        <span class="tw-text-on-surface-variant">{{ __('finance.drp.total_net') }}:</span>
-                                        <span class="tw-font-bold tw-font-mono tw-text-on-surface">
+                                    <div class="tw:flex tw:justify-between tw:border-t tw:border-outline-variant tw:pt-1">
+                                        <span class="tw:text-on-surface-variant">{{ __('finance.drp.total_net') }}:</span>
+                                        <span class="tw:font-bold tw:font-mono tw:text-on-surface">
                                             Rp {{ number_format($batch->total_net_amount, 0, ',', '.') }}
                                         </span>
                                     </div>
                                     @if($batch->status === \App\Models\PaymentBatch::STATUS_PARTIALLY_PAID)
-                                        <div class="tw-flex tw-justify-between">
-                                            <span class="tw-text-on-surface-variant">{{ __('local_invoice.labels.paid') }}:</span>
-                                            <span class="tw-font-bold tw-font-mono tw-text-success">
+                                        <div class="tw:flex tw:justify-between">
+                                            <span class="tw:text-on-surface-variant">{{ __('local_invoice.labels.paid') }}:</span>
+                                            <span class="tw:font-bold tw:font-mono tw:text-success">
                                                 Rp {{ number_format($batch->actual_paid_amount, 0, ',', '.') }}
                                             </span>
                                         </div>
-                                        <div class="tw-flex tw-justify-between tw-border-t tw-border-outline-variant tw-pt-1">
-                                            <span class="tw-text-warning-container-foreground tw-font-semibold">{{ __('local_invoice.labels.remaining') }}:</span>
-                                            <span class="tw-font-bold tw-font-mono tw-text-warning-container-foreground">
+                                        <div class="tw:flex tw:justify-between tw:border-t tw:border-outline-variant tw:pt-1">
+                                            <span class="tw:text-warning-container-foreground tw:font-semibold">{{ __('local_invoice.labels.remaining') }}:</span>
+                                            <span class="tw:font-bold tw:font-mono tw:text-warning-container-foreground">
                                                 Rp {{ number_format($batch->remaining_amount, 0, ',', '.') }}
                                             </span>
                                         </div>
                                     @endif
                                 </div>
 
-                                <p class="tw-text-ui-xs tw-text-on-surface-variant">
+                                <p class="tw:text-ui-xs tw:text-on-surface-variant">
                                     {{ __('finance.drp_ui.confirm_payment_help') }}
                                 </p>
 
-                                <div class="tw-space-y-3">
+                                <div class="tw:space-y-3">
                                     <div>
                                         <x-ui.date-picker
                                             id="transfer_date_{{ $batch->id }}"
@@ -284,7 +284,7 @@
                                     </div>
 
                                     <div>
-                                        <label class="form-label tw-text-ui-xs tw-font-semibold">
+                                        <label class="form-label tw:text-ui-xs tw:font-semibold">
                                             {{ __('finance.drp_ui.reference_label') }} <span class="text-danger">*</span>
                                         </label>
                                         <input
@@ -298,7 +298,7 @@
                                     </div>
 
                                     <div>
-                                        <label class="form-label tw-text-ui-xs tw-font-semibold">
+                                        <label class="form-label tw:text-ui-xs tw:font-semibold">
                                             {{ __('finance.payment.settlement_notes') }}
                                         </label>
                                         <textarea
@@ -311,14 +311,14 @@
                                     </div>
 
                                     @if($batch->batch_type === \App\Models\PaymentBatch::TYPE_SUPPLIER)
-                                        <div class="tw-pt-3 tw-border-t tw-border-outline-variant">
-                                            <div class="form-check tw-mb-2">
+                                        <div class="tw:pt-3 tw:border-t tw:border-outline-variant">
+                                            <div class="form-check tw:mb-2">
                                                 <input class="form-check-input"
                                                        type="checkbox"
                                                        id="has_adjustment_{{ $batch->id }}"
                                                        x-model="hasAdjustment"
                                                 >
-                                                <label class="form-check-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="has_adjustment_{{ $batch->id }}">
+                                                <label class="form-check-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="has_adjustment_{{ $batch->id }}">
                                                     {{ __('finance.payment.actual_adjustment') }}
                                                 </label>
                                             </div>
@@ -326,27 +326,27 @@
                                             <div x-show="hasAdjustment"
                                                  x-transition
                                                  style="display: none;"
-                                                 class="tw-space-y-3 tw-bg-surface-container/50 tw-p-3 tw-rounded-lg tw-border tw-border-outline-variant">
-                                                <p class="tw-text-[11px] tw-text-on-surface-variant tw-m-0">
+                                                 class="tw:space-y-3 tw:bg-surface-container/50 tw:p-3 tw:rounded-lg tw:border tw:border-outline-variant">
+                                                <p class="tw:text-[11px] tw:text-on-surface-variant tw:m-0">
                                                     {{ __('finance.drp_ui.adjustment_help') }}
                                                 </p>
 
                                                 <template x-if="hasAdjustment && totalOverpayment > 0.009">
-                                                    <div class="tw-rounded-lg tw-border tw-border-amber-300 tw-bg-amber-50 dark:tw-bg-amber-950/40 dark:tw-border-amber-700 tw-p-3 tw-text-ui-xs">
-                                                        <div class="tw-flex tw-items-center tw-gap-2 tw-text-amber-800 dark:tw-text-amber-300 tw-font-bold">
+                                                    <div class="tw:rounded-lg tw:border tw:border-amber-300 tw:bg-amber-50 tw:dark:bg-amber-950/40 tw:dark:border-amber-700 tw:p-3 tw:text-ui-xs">
+                                                        <div class="tw:flex tw:items-center tw:gap-2 tw:text-amber-800 tw:dark:text-amber-300 tw:font-bold">
                                                             <x-ui.icon name="alert-circle" size="sm" />
                                                             <span>{{ __('finance.drp_ui.overpayment_warning') }}</span>
                                                         </div>
-                                                        <div class="tw-mt-1 tw-text-on-surface">
+                                                        <div class="tw:mt-1 tw:text-on-surface">
                                                             <span x-text="{{ json_encode(__('finance.drp_ui.overpayment_summary'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}.replace(':amount', () => totalOverpayment.toLocaleString('id-ID')).replace(':count', () => String(overpaidCount))"></span>
                                                         </div>
-                                                        <p class="tw-text-[11px] tw-text-on-surface-variant tw-mt-1 tw-mb-0">
+                                                        <p class="tw:text-[11px] tw:text-on-surface-variant tw:mt-1 tw:mb-0">
                                                             {{ __('finance.drp_ui.overpayment_notice') }}
                                                         </p>
                                                     </div>
                                                 </template>
 
-                                                <div class="tw-space-y-2.5">
+                                                <div class="tw:space-y-2.5">
                                                     @php $hasActiveItem = false; @endphp
                                                     @foreach($batch->groups as $group)
                                                         @foreach($group->items as $item)
@@ -363,23 +363,23 @@
                                                                     $defaultPayAmount = $isCorrectionRequired ? $itemRemaining : $expectedAmount;
                                                                 @endphp
                                                                 @if($isAlreadyFinal)
-                                                                    <div class="tw-bg-surface tw-p-2.5 tw-rounded tw-border tw-border-outline-variant tw-opacity-80">
-                                                                        <div class="tw-flex tw-justify-between tw-items-center">
+                                                                    <div class="tw:bg-surface tw:p-2.5 tw:rounded-sm tw:border tw:border-outline-variant tw:opacity-80">
+                                                                        <div class="tw:flex tw:justify-between tw:items-center">
                                                                             <div>
-                                                                                <span class="tw-font-semibold tw-text-ui-xs tw-text-on-surface">{{ $group->payee_name }}</span>
-                                                                                <span class="tw-text-[11px] tw-text-on-surface-variant tw-block">
+                                                                                <span class="tw:font-semibold tw:text-ui-xs tw:text-on-surface">{{ $group->payee_name }}</span>
+                                                                                <span class="tw:text-[11px] tw:text-on-surface-variant tw:block">
                                                                                     {{ __('finance.drp_ui.invoice_reference', ['invoice' => $item->payable?->invoice_number ?? $item->item_reference, 'po' => $item->payable?->po_number ?? '-']) }}
                                                                                 </span>
                                                                             </div>
-                                                                            <div class="tw-text-end">
-                                                                                <span class="tw-inline-flex tw-items-center tw-gap-1 tw-px-2 tw-py-0.5 tw-rounded-full tw-text-[11px] tw-font-semibold tw-bg-success/10 tw-text-success">
+                                                                            <div class="tw:text-end">
+                                                                                <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-full tw:text-[11px] tw:font-semibold tw:bg-success/10 tw:text-success">
                                                                                     <x-ui.icon name="check-circle" size="sm" /> {{ __('finance.drp_ui.settled_amount', ['amount' => number_format($alreadyPaid, 0, ',', '.')]) }}
                                                                                 </span>
                                                                             </div>
                                                                         </div>
                                                                     </div>
                                                                 @else
-                                                                    <div class="tw-bg-surface tw-p-2.5 tw-rounded tw-border tw-border-outline-variant"
+                                                                    <div class="tw:bg-surface tw:p-2.5 tw:rounded-sm tw:border tw:border-outline-variant"
                                                                          x-data="{
                                                                              expected: {{ (float) $defaultPayAmount }},
                                                                              actual: '{{ (float) $defaultPayAmount }}',
@@ -391,38 +391,38 @@
                                                                                  this.$watch('actual', val => updateItem('{{ $item->id }}', this.expected, val));
                                                                              }
                                                                          }">
-                                                                        <div class="tw-flex tw-justify-between tw-items-start tw-mb-1.5">
+                                                                        <div class="tw:flex tw:justify-between tw:items-start tw:mb-1.5">
                                                                             <div>
-                                                                                <div class="tw-flex tw-items-center tw-gap-1.5">
-                                                                                    <span class="tw-font-semibold tw-text-ui-xs tw-text-on-surface">{{ $group->payee_name }}</span>
+                                                                                <div class="tw:flex tw:items-center tw:gap-1.5">
+                                                                                    <span class="tw:font-semibold tw:text-ui-xs tw:text-on-surface">{{ $group->payee_name }}</span>
                                                                                     @if($isCorrectionRequired)
-                                                                                        <span class="tw-inline-flex tw-items-center tw-px-1.5 tw-py-0.2 tw-rounded tw-text-[10px] tw-font-semibold tw-bg-warning/10 tw-text-warning-container-foreground">
+                                                                                        <span class="tw:inline-flex tw:items-center tw:px-1.5 tw-py-0.2 tw:rounded-sm tw:text-[10px] tw:font-semibold tw:bg-warning/10 tw:text-warning-container-foreground">
                                                                                             {{ __('finance.drp_ui.underpaid') }}
                                                                                         </span>
                                                                                     @endif
                                                                                 </div>
-                                                                                <span class="tw-text-[11px] tw-text-on-surface-variant tw-block">
+                                                                                <span class="tw:text-[11px] tw:text-on-surface-variant tw:block">
                                                                                     {{ __('finance.drp_ui.invoice_reference', ['invoice' => $item->payable?->invoice_number ?? $item->item_reference, 'po' => $item->payable?->po_number ?? '-']) }}
                                                                                 </span>
                                                                             </div>
-                                                                            <div class="tw-text-end">
+                                                                            <div class="tw:text-end">
                                                                                 @if($isCorrectionRequired)
-                                                                                    <div class="tw-text-[11px] tw-text-on-surface-variant">
-                                                                                        {{ __('common.labels_review.voucher_label') }} <span class="tw-font-mono tw-font-semibold tw-text-on-surface">Rp {{ number_format($expectedAmount, 0, ',', '.') }}</span>
+                                                                                    <div class="tw:text-[11px] tw:text-on-surface-variant">
+                                                                                        {{ __('common.labels_review.voucher_label') }} <span class="tw:font-mono tw:font-semibold tw:text-on-surface">Rp {{ number_format($expectedAmount, 0, ',', '.') }}</span>
                                                                                     </div>
-                                                                                    <div class="tw-text-[11px] tw-font-mono">
-                                                                                        <span class="tw-text-success tw-font-medium">{{ __('finance.paid_ui.paid_amount', ['amount' => number_format($alreadyPaid, 0, ',', '.')]) }}</span>
-                                                                                        <span class="tw-text-on-surface-variant">·</span>
-                                                                                        <span class="tw-text-warning-container-foreground tw-font-bold">{{ __('finance.paid_ui.remaining', ['amount' => number_format($itemRemaining, 0, ',', '.')]) }}</span>
+                                                                                    <div class="tw:text-[11px] tw:font-mono">
+                                                                                        <span class="tw:text-success tw:font-medium">{{ __('finance.paid_ui.paid_amount', ['amount' => number_format($alreadyPaid, 0, ',', '.')]) }}</span>
+                                                                                        <span class="tw:text-on-surface-variant">·</span>
+                                                                                        <span class="tw:text-warning-container-foreground tw:font-bold">{{ __('finance.paid_ui.remaining', ['amount' => number_format($itemRemaining, 0, ',', '.')]) }}</span>
                                                                                     </div>
                                                                                 @else
-                                                                                    <span class="tw-text-[11px] tw-text-on-surface-variant">{{ __('common.labels_review.voucher_label') }}</span>
+                                                                                    <span class="tw:text-[11px] tw:text-on-surface-variant">{{ __('common.labels_review.voucher_label') }}</span>
                                                                                     @if($voucher)
-                                                                                        <span class="tw-font-mono tw-text-ui-xs tw-font-bold tw-text-primary">
+                                                                                        <span class="tw:font-mono tw:text-ui-xs tw:font-bold tw:text-primary">
                                                                                             Rp {{ number_format($expectedAmount, 0, ',', '.') }}
                                                                                         </span>
                                                                                     @else
-                                                                                        <span class="tw-font-mono tw-text-ui-xs tw-font-bold tw-text-warning" title="{{ __('finance.voucher.no_voucher') }}">
+                                                                                        <span class="tw:font-mono tw:text-ui-xs tw:font-bold tw:text-warning" title="{{ __('finance.voucher.no_voucher') }}">
                                                                                             {{ __('finance.drp_ui.estimated_amount', ['amount' => number_format($expectedAmount, 0, ',', '.')]) }}
                                                                                         </span>
                                                                                     @endif
@@ -432,7 +432,7 @@
 
                                                                         <div class="row g-2 align-items-end">
                                                                             <div class="col-12 col-md-6">
-                                                                                <label class="form-label tw-text-[11px] tw-font-semibold mb-1">
+                                                                                <label class="form-label tw:text-[11px] tw:font-semibold mb-1">
                                                                                     {{ $isCorrectionRequired ? __('finance.drp_ui.remaining_transfer') : __('finance.drp_ui.actual_transfer') }}
                                                                                 </label>
                                                                                 <input
@@ -441,33 +441,33 @@
                                                                                     min="0.01"
                                                                                     name="custom_amounts[{{ $item->id }}]"
                                                                                     x-model="actual"
-                                                                                    class="form-control form-control-sm tw-font-mono"
+                                                                                    class="form-control form-control-sm tw:font-mono"
                                                                                     :disabled="!hasAdjustment"
                                                                                     :required="hasAdjustment"
                                                                                 >
                                                                             </div>
                                                                             <div class="col-12 col-md-6">
                                                                                 <template x-if="diff > 0.009">
-                                                                                    <div class="tw-text-[11px] tw-font-semibold tw-text-primary tw-py-1">
+                                                                                    <div class="tw:text-[11px] tw:font-semibold tw:text-primary tw:py-1">
                                                                                         <x-ui.icon name="arrow-up-right" size="sm" /> <span x-text="{{ json_encode(__('finance.drp_ui.overpayment_diff'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}.replace(':amount', () => Math.abs(diff).toLocaleString('id-ID'))"></span>
                                                                                     </div>
                                                                                 </template>
                                                                                 <template x-if="diff < -0.009">
                                                                                     <div>
-                                                                                        <div class="tw-text-[11px] tw-font-semibold tw-text-warning tw-py-1">
+                                                                                        <div class="tw:text-[11px] tw:font-semibold tw:text-warning tw:py-1">
                                                                                             <x-ui.icon name="arrow-down-right" size="sm" /> <span x-text="{{ json_encode(__('finance.drp_ui.underpayment_diff'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) }}.replace(':amount', () => Math.abs(diff).toLocaleString('id-ID'))"></span>
                                                                                         </div>
                                                                                         <input
                                                                                             type="text"
                                                                                             name="correction_reasons[{{ $item->id }}]"
                                                                                             placeholder="{{ __('finance.payment.underpayment_reason') }}"
-                                                                                            class="form-control form-control-sm tw-text-[11px] mt-1"
+                                                                                            class="form-control form-control-sm tw:text-[11px] mt-1"
                                                                                             :disabled="!hasAdjustment"
                                                                                         >
                                                                                     </div>
                                                                                 </template>
                                                                                 <template x-if="Math.abs(diff) <= 0.009">
-                                                                                    <div class="tw-text-[11px] tw-text-success tw-py-1">
+                                                                                    <div class="tw:text-[11px] tw:text-success tw:py-1">
                                                                                         <x-ui.icon name="check" size="sm" /> {{ __($isCorrectionRequired ? 'finance.closure.remaining_settlement' : 'finance.closure.matches_voucher') }}
                                                                                     </div>
                                                                                 </template>
@@ -480,7 +480,7 @@
                                                     @endforeach
 
                                                     @if(! $hasActiveItem)
-                                                        <div class="tw-p-2 tw-rounded tw-bg-surface tw-border tw-border-outline-variant tw-text-ui-xs tw-text-on-surface-variant text-center">
+                                                        <div class="tw:p-2 tw:rounded-sm tw:bg-surface tw:border tw:border-outline-variant tw:text-ui-xs tw:text-on-surface-variant text-center">
                                                             {{ __('finance.drp.empty_items') }}
                                                         </div>
                                                     @endif
@@ -537,9 +537,9 @@ document.addEventListener('DOMContentLoaded', function () {
         btnExport.disabled = count === 0;
         if (count > 0) {
             countBadge.textContent = count;
-            countBadge.classList.remove('tw-hidden');
+            countBadge.classList.remove('tw:hidden');
         } else {
-            countBadge.classList.add('tw-hidden');
+            countBadge.classList.add('tw:hidden');
         }
         if (allBoxes.length > 0 && selectAll) {
             selectAll.checked = count === allBoxes.length;

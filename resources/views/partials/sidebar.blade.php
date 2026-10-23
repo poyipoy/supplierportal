@@ -23,7 +23,7 @@
             icon="panel-left"
             :label="__('navigation.toggle_sidebar')"
             size="lg"
-            class="sidebar-toggle sidebar-toggle--desktop tw-text-on-surface-variant"
+            class="sidebar-toggle sidebar-toggle--desktop tw:text-on-surface-variant"
             x-on:click="$dispatch('ui-sidebar-toggle', { trigger: $el })"
             x-bind:aria-label="sidebarToggleLabel"
             x-bind:title="sidebarToggleLabel"
@@ -65,7 +65,7 @@
                 aria-label="{{ __('navigation.current_portal', ['portal' => $currentLabel ?: __('navigation.portal')]) }}"
             >
                 <span class="sidebar-portal-switcher-icon" aria-hidden="true">
-                    <span class="tw-w-6 tw-h-6 tw-rounded tw-bg-primary/10 tw-text-primary tw-flex tw-items-center tw-justify-center tw-shrink-0">
+                    <span class="tw:w-6 tw:h-6 tw:rounded-sm tw:bg-primary/10 tw:text-primary tw:flex tw:items-center tw:justify-center tw:shrink-0">
                         <x-ui.icon :name="$currentIcon" size="sm" />
                     </span>
                 </span>
@@ -74,31 +74,31 @@
                     <x-ui.icon name="chevron-down" size="xs" />
                 </span>
             </button>
-            <div class="dropdown-menu dropdown-menu-start tw-shadow-xl tw-border tw-border-outline-variant tw-rounded-xl tw-p-1.5 tw-min-w-[270px] tw-bg-surface tw-animate-in tw-fade-in-0 tw-zoom-in-95" aria-labelledby="portalContextSwitcherDropdown">
-                <div class="tw-px-2.5 tw-pt-1.5 tw-pb-2 tw-flex tw-items-center tw-justify-between">
-                    <span class="tw-text-[10px] tw-font-bold tw-text-on-surface-variant tw-uppercase tw-tracking-wider">{{ __('navigation.choose_portal') }}</span>
-                    <span class="tw-text-[10px] tw-text-on-surface-variant/70 tw-font-mono">{{ __('navigation.dual_scope') }}</span>
+            <div class="dropdown-menu dropdown-menu-start tw:shadow-xl tw:border tw:border-outline-variant tw:rounded-xl tw:p-1.5 tw:min-w-[270px] tw:bg-surface tw-animate-in tw-fade-in-0 tw-zoom-in-95" aria-labelledby="portalContextSwitcherDropdown">
+                <div class="tw:px-2.5 tw:pt-1.5 tw:pb-2 tw:flex tw:items-center tw:justify-between">
+                    <span class="tw:text-[10px] tw:font-bold tw:text-on-surface-variant tw:uppercase tw:tracking-wider">{{ __('navigation.choose_portal') }}</span>
+                    <span class="tw:text-[10px] tw:text-on-surface-variant/70 tw:font-mono">{{ __('navigation.dual_scope') }}</span>
                 </div>
-                <div class="tw-space-y-1">
+                <div class="tw:space-y-1">
                     {{-- Local Supplier Option --}}
                     <form method="POST" action="{{ route('supplier-context.store') }}" class="m-0">
                         @csrf
                         <input type="hidden" name="context" value="local">
                         <button
                             type="submit"
-                            class="dropdown-item tw-w-full tw-flex tw-items-center tw-justify-between tw-gap-3 tw-p-2.5 tw-rounded-lg tw-transition-colors tw-text-start {{ $currentScope === 'local' ? 'tw-bg-primary/10 tw-border tw-border-primary/20' : 'tw-bg-transparent hover:tw-bg-surface-container tw-border tw-border-transparent' }}"
+                            class="dropdown-item tw:w-full tw:flex tw:items-center tw:justify-between tw:gap-3 tw:p-2.5 tw:rounded-lg tw:transition-colors tw:text-start {{ $currentScope === 'local' ? 'tw:bg-primary/10 tw:border tw:border-primary/20' : 'tw:bg-transparent tw:hover:bg-surface-container tw:border tw:border-transparent' }}"
                         >
-                            <div class="tw-flex tw-items-center tw-gap-3">
-                                <span class="tw-w-8 tw-h-8 tw-rounded-lg tw-flex tw-items-center tw-justify-center tw-shrink-0 {{ $currentScope === 'local' ? 'tw-bg-primary tw-text-on-primary tw-shadow-sm' : 'tw-bg-surface-container-high tw-text-on-surface-variant' }}">
+                            <div class="tw:flex tw:items-center tw:gap-3">
+                                <span class="tw:w-8 tw:h-8 tw:rounded-lg tw:flex tw:items-center tw:justify-center tw:shrink-0 {{ $currentScope === 'local' ? 'tw:bg-primary tw:text-on-primary tw:shadow-xs' : 'tw:bg-surface-container-high tw:text-on-surface-variant' }}">
                                     <x-ui.icon name="receipt-text" size="sm" />
                                 </span>
-                                <div class="tw-flex tw-flex-col">
-                                    <span class="tw-font-semibold tw-text-ui-sm {{ $currentScope === 'local' ? 'tw-text-primary' : 'tw-text-on-surface' }}">{{ __('navigation.local_supplier') }}</span>
-                                    <span class="tw-text-ui-xs tw-text-on-surface-variant">{{ __('navigation.local_summary') }}</span>
+                                <div class="tw:flex tw:flex-col">
+                                    <span class="tw:font-semibold tw:text-ui-sm {{ $currentScope === 'local' ? 'tw:text-primary' : 'tw:text-on-surface' }}">{{ __('navigation.local_supplier') }}</span>
+                                    <span class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('navigation.local_summary') }}</span>
                                 </div>
                             </div>
                             @if($currentScope === 'local')
-                                <span class="tw-w-5 tw-h-5 tw-rounded-full tw-bg-primary tw-text-on-primary tw-flex tw-items-center tw-justify-center tw-shrink-0 tw-shadow-xs">
+                                <span class="tw:w-5 tw:h-5 tw:rounded-full tw:bg-primary tw:text-on-primary tw:flex tw:items-center tw:justify-center tw:shrink-0 tw-shadow-xs">
                                     <x-ui.icon name="check" size="xs" />
                                 </span>
                             @endif
@@ -111,19 +111,19 @@
                         <input type="hidden" name="context" value="import">
                         <button
                             type="submit"
-                            class="dropdown-item tw-w-full tw-flex tw-items-center tw-justify-between tw-gap-3 tw-p-2.5 tw-rounded-lg tw-transition-colors tw-text-start {{ $currentScope === 'import' ? 'tw-bg-primary/10 tw-border tw-border-primary/20' : 'tw-bg-transparent hover:tw-bg-surface-container tw-border tw-border-transparent' }}"
+                            class="dropdown-item tw:w-full tw:flex tw:items-center tw:justify-between tw:gap-3 tw:p-2.5 tw:rounded-lg tw:transition-colors tw:text-start {{ $currentScope === 'import' ? 'tw:bg-primary/10 tw:border tw:border-primary/20' : 'tw:bg-transparent tw:hover:bg-surface-container tw:border tw:border-transparent' }}"
                         >
-                            <div class="tw-flex tw-items-center tw-gap-3">
-                                <span class="tw-w-8 tw-h-8 tw-rounded-lg tw-flex tw-items-center tw-justify-center tw-shrink-0 {{ $currentScope === 'import' ? 'tw-bg-primary tw-text-on-primary tw-shadow-sm' : 'tw-bg-surface-container-high tw-text-on-surface-variant' }}">
+                            <div class="tw:flex tw:items-center tw:gap-3">
+                                <span class="tw:w-8 tw:h-8 tw:rounded-lg tw:flex tw:items-center tw:justify-center tw:shrink-0 {{ $currentScope === 'import' ? 'tw:bg-primary tw:text-on-primary tw:shadow-xs' : 'tw:bg-surface-container-high tw:text-on-surface-variant' }}">
                                     <x-ui.icon name="globe" size="sm" />
                                 </span>
-                                <div class="tw-flex tw-flex-col">
-                                    <span class="tw-font-semibold tw-text-ui-sm {{ $currentScope === 'import' ? 'tw-text-primary' : 'tw-text-on-surface' }}">{{ __('navigation.material_procurement') }}</span>
-                                    <span class="tw-text-ui-xs tw-text-on-surface-variant">{{ __('navigation.import_summary') }}</span>
+                                <div class="tw:flex tw:flex-col">
+                                    <span class="tw:font-semibold tw:text-ui-sm {{ $currentScope === 'import' ? 'tw:text-primary' : 'tw:text-on-surface' }}">{{ __('navigation.material_procurement') }}</span>
+                                    <span class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('navigation.import_summary') }}</span>
                                 </div>
                             </div>
                             @if($currentScope === 'import')
-                                <span class="tw-w-5 tw-h-5 tw-rounded-full tw-bg-primary tw-text-on-primary tw-flex tw-items-center tw-justify-center tw-shrink-0 tw-shadow-xs">
+                                <span class="tw:w-5 tw:h-5 tw:rounded-full tw:bg-primary tw:text-on-primary tw:flex tw:items-center tw:justify-center tw:shrink-0 tw-shadow-xs">
                                     <x-ui.icon name="check" size="xs" />
                                 </span>
                             @endif
@@ -163,7 +163,7 @@
                     {{ __('navigation.supplier_audit') }}
                     @if($supplierAuditPending ?? null)
                         <x-slot:trailing>
-                            <span class="chat-badge tw-inline-flex tw-min-w-5 tw-items-center tw-justify-center tw-rounded-full tw-px-1.5 tw-text-ui-xs tw-font-semibold {{ $supplierAuditPending->isLate() ? 'tw-bg-error tw-text-error-foreground' : 'tw-bg-primary tw-text-primary-foreground' }}" data-supplier-audit-badge aria-hidden="true">1</span>
+                            <span class="chat-badge tw:inline-flex tw:min-w-5 tw:items-center tw:justify-center tw:rounded-full tw:px-1.5 tw:text-ui-xs tw:font-semibold {{ $supplierAuditPending->isLate() ? 'tw:bg-error tw:text-error-foreground' : 'tw:bg-primary tw:text-primary-foreground' }}" data-supplier-audit-badge aria-hidden="true">1</span>
                         </x-slot:trailing>
                     @endif
                 </x-ui.sidebar-item>
@@ -180,7 +180,7 @@
                 <x-ui.sidebar-item :href="\App\Support\PageRegistry::url('supplier.conversations.index')" icon="message-circle-more" :active="request()->routeIs('supplier.conversations.*')" :label="__('navigation.chat_title')">
                     {{ __('common.chat.title') }}
                     <x-slot:trailing>
-                        <span class="chat-badge tw-inline-flex tw-min-w-5 tw-items-center tw-justify-center tw-rounded-full tw-bg-error tw-px-1.5 tw-text-ui-xs tw-font-semibold tw-text-error-foreground {{ $initChatCount > 0 ? '' : 'd-none' }}" aria-label="{{ __('navigation.unread_chats', ['count' => $initChatCount]) }}">{{ $initChatCount }}</span>
+                        <span class="chat-badge tw:inline-flex tw:min-w-5 tw:items-center tw:justify-center tw:rounded-full tw:bg-error tw:px-1.5 tw:text-ui-xs tw:font-semibold tw:text-error-foreground {{ $initChatCount > 0 ? '' : 'd-none' }}" aria-label="{{ __('navigation.unread_chats', ['count' => $initChatCount]) }}">{{ $initChatCount }}</span>
                     </x-slot:trailing>
                 </x-ui.sidebar-item>
                 <x-ui.sidebar-item :href="\App\Support\PageRegistry::url('supplier.claims.index')" icon="shield-alert" :active="request()->routeIs('supplier.claims.*')" :label="__('navigation.material_claim')">{{ __('navigation.material_claim') }}</x-ui.sidebar-item>
@@ -192,8 +192,8 @@
                 <x-ui.sidebar-item :href="\App\Support\PageRegistry::url('supplier.company-profile.show')" icon="building-2" :active="request()->routeIs('supplier.company-profile.*')" :label="__('navigation.company_profile')">{{ __('navigation.company_profile') }}</x-ui.sidebar-item>
             @else
                 <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 6;">{{ __('navigation.portal') }}</span></div>
-                <div class="px-3 py-3 tw-text-ui-xs tw-text-on-surface-variant d-flex flex-column align-items-center text-center tw-gap-2">
-                    <x-ui.icon name="info" size="sm" class="tw-text-on-surface-variant tw-shrink-0" />
+                <div class="px-3 py-3 tw:text-ui-xs tw:text-on-surface-variant d-flex flex-column align-items-center text-center tw:gap-2">
+                    <x-ui.icon name="info" size="sm" class="tw:text-on-surface-variant tw:shrink-0" />
                     <span>{{ __('navigation.choose_first') }}</span>
                 </div>
             @endif
@@ -258,7 +258,7 @@
             <x-ui.sidebar-item :href="\App\Support\PageRegistry::url('purchasing.conversations.index', \App\Support\PurchasingNavigation::listUrl('purchasing.conversations.index'))" icon="message-circle-more" :active="request()->routeIs('purchasing.conversations.*')" :label="__('navigation.chat_title')">
                 {{ __('common.chat.title') }}
                 <x-slot:trailing>
-                    <span class="chat-badge tw-inline-flex tw-min-w-5 tw-items-center tw-justify-center tw-rounded-full tw-bg-error tw-px-1.5 tw-text-ui-xs tw-font-semibold tw-text-error-foreground {{ $initChatCount > 0 ? '' : 'd-none' }}" aria-label="{{ __('navigation.unread_chats', ['count' => $initChatCount]) }}">{{ $initChatCount }}</span>
+                    <span class="chat-badge tw:inline-flex tw:min-w-5 tw:items-center tw:justify-center tw:rounded-full tw:bg-error tw:px-1.5 tw:text-ui-xs tw:font-semibold tw:text-error-foreground {{ $initChatCount > 0 ? '' : 'd-none' }}" aria-label="{{ __('navigation.unread_chats', ['count' => $initChatCount]) }}">{{ $initChatCount }}</span>
                 </x-slot:trailing>
             </x-ui.sidebar-item>
             <x-ui.sidebar-item :href="\App\Support\PageRegistry::url('purchasing.claims.index', \App\Support\PurchasingNavigation::listUrl('purchasing.claims.index'))" icon="shield-alert" :active="request()->routeIs('purchasing.claims.*')" :label="__('navigation.material_claim')">{{ __('navigation.material_claim') }}</x-ui.sidebar-item>

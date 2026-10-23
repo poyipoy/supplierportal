@@ -16,6 +16,9 @@ function userFacingCopyIsCssClassList(string $text): bool
     $classPattern = '/^(?:tw-[\w\/.%\[\]-]+|ui-[\w-]+|text-[\w.-]+|fw-[\w-]+|d-(?:flex|inline-flex|inline-block|block|none|grid)|justify-content-[\w-]+|align-items-[\w-]+|gap-[\w.-]+|font-[\w-]+|table-[\w-]+|btn(?:-[\w-]+)?|m[trblxy]?-[\w.-]+|p[trblxy]?-[\w.-]+|[wh]-[\w.-]+|(?:is|has)-[\w-]+|[\w-]+--[\w-]+|(?:small|font-monospace|text-nowrap|text-truncate|ui-tabular-nums|rounded(?:-[\w-]+)?))$/i';
 
     foreach ($tokens as $token) {
+        if (str_starts_with($token, 'tw:')) {
+            continue;
+        }
         if (! preg_match($classPattern, $token)) {
             return false;
         }

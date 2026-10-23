@@ -124,10 +124,10 @@ function renderInlineError(field, message) {
 
     const anchor = field.closest('fieldset')
         || field.closest('[data-async-error-anchor]')
-        || (field.parentElement?.classList.contains('tw-relative') ? field.parentElement : field);
+        || (field.parentElement?.classList.contains('tw:relative') ? field.parentElement : field);
 
     const note = document.createElement('p');
-    note.className = 'tw-m-0 tw-mt-1 tw-text-ui-xs tw-font-medium tw-text-error';
+    note.className = 'tw:m-0 tw:mt-1 tw:text-ui-xs tw:font-medium tw:text-error';
     note.setAttribute('data-async-error', '');
     note.textContent = message;
     anchor.insertAdjacentElement('afterend', note);
@@ -135,26 +135,26 @@ function renderInlineError(field, message) {
 
 function renderSummary(form, items) {
     const summary = errorSummary(form);
-    summary.className = 'tw-mb-5 tw-rounded-ui-sm tw-border tw-border-error/40 tw-bg-error-container tw-p-3.5 tw-text-on-error-container';
+    summary.className = 'tw:mb-5 tw:rounded-ui-sm tw:border tw:border-error/40 tw:bg-error-container tw:p-3.5 tw:text-on-error-container';
     summary.setAttribute('role', 'alert');
     summary.setAttribute('tabindex', '-1');
     summary.setAttribute('data-error-summary', '');
 
     const title = document.createElement('p');
-    title.className = 'tw-m-0 tw-text-ui-sm tw-font-semibold';
+    title.className = 'tw:m-0 tw:text-ui-sm tw:font-semibold';
     title.textContent = t('js.async_form.errors_title');
 
     const kept = document.createElement('p');
-    kept.className = 'tw-m-0 tw-mt-0.5 tw-text-ui-xs';
+    kept.className = 'tw:m-0 tw:mt-0.5 tw:text-ui-xs';
     kept.textContent = t('js.async_form.files_kept');
 
     const list = document.createElement('ul');
-    list.className = 'tw-m-0 tw-mt-2 tw-ps-5 tw-text-ui-xs tw-space-y-1';
+    list.className = 'tw:m-0 tw:mt-2 tw:ps-5 tw:text-ui-xs tw:space-y-1';
     items.forEach(({ key, message }) => {
         const li = document.createElement('li');
         const link = document.createElement('button');
         link.type = 'button';
-        link.className = 'ui-focus-ring tw-border-0 tw-bg-transparent tw-p-0 tw-text-start tw-font-medium tw-text-on-error-container tw-underline tw-underline-offset-2';
+        link.className = 'ui-focus-ring tw:border-0 tw:bg-transparent tw:p-0 tw:text-start tw:font-medium tw:text-on-error-container tw:underline tw:underline-offset-2';
         link.setAttribute('data-error-field', key);
         link.textContent = message;
         li.append(link);

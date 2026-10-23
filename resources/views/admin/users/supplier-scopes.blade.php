@@ -17,9 +17,9 @@
         $isPaymentTermRequired = in_array($initialPreset, ['local', 'both'], true);
     @endphp
 
-    <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
+    <div class="tw:grid tw:gap-4 tw:sm:grid-cols-2">
         <div>
-            <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="supplier-scope-preset">
+            <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="supplier-scope-preset">
                 {{ __('admin.copy.business_operations_scope') }} <span class="text-danger">*</span>
             </label>
             <select
@@ -34,11 +34,11 @@
             </select>
 
             {{-- Dynamic Scope Access Summary --}}
-            <div id="scope-help-text" class="tw-mt-2.5 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface-container-low tw-p-3 tw-transition-all">
-                <div class="tw-flex tw-items-start tw-gap-2">
-                    <x-ui.icon name="info" size="sm" class="tw-mt-0.5 tw-shrink-0 tw-text-primary" />
-                    <div class="tw-min-w-0">
-                        <p id="scope-description" class="tw-m-0 tw-text-ui-xs tw-text-on-surface-variant tw-leading-relaxed">
+            <div id="scope-help-text" class="tw:mt-2.5 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container-low tw:p-3 tw:transition-all">
+                <div class="tw:flex tw:items-start tw:gap-2">
+                    <x-ui.icon name="info" size="sm" class="tw:mt-0.5 tw:shrink-0 tw:text-primary" />
+                    <div class="tw:min-w-0">
+                        <p id="scope-description" class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant tw:leading-relaxed">
                             @if($initialPreset === 'both')
                                 {{ __('admin.audit_ui.scope_both') }}
                             @elseif($initialPreset === 'local')
@@ -72,7 +72,7 @@
         </div>
 
         <div id="payment-term-container" class="{{ $isPaymentTermRequired ? '' : 'd-none' }}">
-            <label for="payment-term-days" class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface">
+            <label for="payment-term-days" class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface">
                 {{ __('admin.copy.payment_term_days') }} <span class="text-danger">*</span>
             </label>
             <input
@@ -86,7 +86,7 @@
                 value="{{ old('payment_term_days', isset($user) ? $user->supplier?->payment_term_days : '') }}"
                 {{ $isPaymentTermRequired ? 'required' : '' }}
             >
-            <small class="tw-text-ui-xs tw-text-on-surface-variant tw-mt-1 tw-block">
+            <small class="tw:text-ui-xs tw:text-on-surface-variant tw:mt-1 tw:block">
                 {{ __('admin.copy.default_payment_terms_1_365_days_required_for_local_invoice_processing') }}
             </small>
             @error('payment_term_days')

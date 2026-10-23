@@ -12,7 +12,7 @@
 @endpush
 
 @section('content')
-<div class="tw-grid tw-gap-5">
+<div class="tw:grid tw:gap-5">
     {{-- Page Header --}}
     <x-ui.page-header
         :title="__('purchasing.copy.purchasing_dashboard')"
@@ -47,26 +47,26 @@
             @endif
         </x-slot:toolbar>
 
-        <table class="table table-hover align-middle mb-0 op-queue-table tw-text-ui-sm">
+        <table class="table table-hover align-middle mb-0 op-queue-table tw:text-ui-sm">
             <thead class="table-light">
                 <tr>
                     <th scope="col">{{ __('purchasing.copy.operational_checklist_item') }}</th>
-                    <th scope="col" class="tw-w-40 text-center">{{ __('purchasing.copy.count_severity') }}</th>
+                    <th scope="col" class="tw:w-40 text-center">{{ __('purchasing.copy.count_severity') }}</th>
                     <th scope="col">{{ __('purchasing.copy.description_workflow_impact') }}</th>
-                    <th scope="col" class="tw-w-32 text-end">{{ __('purchasing.copy.action') }}</th>
+                    <th scope="col" class="tw:w-32 text-end">{{ __('purchasing.copy.action') }}</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach($operationalChecks as $check)
                     @php
                         $checkTone = $check['class'] === 'danger' ? 'error' : ($check['class'] === 'warning' ? 'warning' : ($check['class'] === 'success' ? 'success' : 'info'));
-                        $checkIconClass = $checkTone === 'error' ? 'tw-text-error' : ($checkTone === 'warning' ? 'tw-text-warning' : ($checkTone === 'success' ? 'tw-text-success' : 'tw-text-primary'));
+                        $checkIconClass = $checkTone === 'error' ? 'tw:text-error' : ($checkTone === 'warning' ? 'tw:text-warning' : ($checkTone === 'success' ? 'tw:text-success' : 'tw:text-primary'));
                     @endphp
                     <tr>
                         <td>
-                            <div class="d-flex align-items-center tw-gap-2.5">
-                                <x-ui.icon :name="$check['icon']" size="md" class="{{ $checkIconClass }} tw-shrink-0" />
-                                <span class="fw-bold tw-text-on-surface">{{ $check['label'] }}</span>
+                            <div class="d-flex align-items-center tw:gap-2.5">
+                                <x-ui.icon :name="$check['icon']" size="md" class="{{ $checkIconClass }} tw:shrink-0" />
+                                <span class="fw-bold tw:text-on-surface">{{ $check['label'] }}</span>
                             </div>
                         </td>
                         <td class="text-center">
@@ -80,7 +80,7 @@
                                 </span>
                             @endif
                         </td>
-                        <td class="tw-text-on-surface-variant tw-text-ui-xs">
+                        <td class="tw:text-on-surface-variant tw:text-ui-xs">
                             {{ $check['description'] }}
                         </td>
                         <td class="text-end">
@@ -98,7 +98,7 @@
 
         <x-slot:metrics>
 {{-- 2. Restrained Operational Summary Metric Strip --}}
-    <div class="tw-grid tw-gap-px tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-outline-variant sm:tw-grid-cols-2 xl:tw-grid-cols-4" aria-label="{{ __('purchasing.copy.purchasing_operational_summary') }}">
+    <div class="tw:grid tw:gap-px tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-outline-variant tw:sm:grid-cols-2 tw:xl:grid-cols-4" aria-label="{{ __('purchasing.copy.purchasing_operational_summary') }}">
         <x-ui.metric-card
             flat
             :label="__('purchasing.copy.active_requisitions')"
@@ -136,28 +136,28 @@
 
         <x-slot:analytics>
 {{-- 3. Analytics & Quick Reference --}}
-    <div class="tw-grid tw-gap-5 lg:tw-grid-cols-[minmax(0,2fr)_minmax(19rem,1fr)]">
+    <div class="tw:grid tw:gap-5 tw:lg:grid-cols-[minmax(0,2fr)_minmax(19rem,1fr)]">
         {{-- PR Monthly Inflow Chart --}}
         <x-ui.card
             :title="__('purchasing.copy.purchase_requisitions_trend')"
             :description="__('purchasing.copy.monthly_creation_volume_over_the_past_6_month_window')"
-            class="tw-min-w-0"
+            class="tw:min-w-0"
         >
-            <div class="tw-h-[16rem]">
+            <div class="tw:h-[16rem]">
                 <canvas id="prChart" role="img" aria-label="{{ __('purchasing.copy.purchase_requisition_volume_by_month') }}">{{ __('purchasing.copy.monthly_requisition_volume_trend_chart') }}</canvas>
             </div>
         </x-ui.card>
 
         {{-- PO Status Distribution & Exchange Rate --}}
-        <div class="tw-grid tw-gap-5">
+        <div class="tw:grid tw:gap-5">
             <x-ui.card
                 :title="__('purchasing.copy.po_workload_distribution')"
                 :description="__('purchasing.copy.current_purchase_order_states')"
-                class="tw-min-w-0"
+                class="tw:min-w-0"
             >
-                <div class="tw-flex tw-min-h-[11rem] tw-items-center tw-justify-center">
+                <div class="tw:flex tw:min-h-[11rem] tw:items-center tw:justify-center">
                     @if(count($poStatusDist) > 0)
-                        <div class="tw-h-[10.5rem] tw-w-[10.5rem]">
+                        <div class="tw:h-[10.5rem] tw:w-[10.5rem]">
                             <canvas id="poDonut" role="img" aria-label="{{ __('purchasing.copy.purchase_order_status_distribution') }}">{{ __('purchasing.copy.po_status_distribution_chart') }}</canvas>
                         </div>
                     @else
@@ -178,16 +178,16 @@
                     @foreach(\App\Models\ExchangeRate::CURRENCIES as $currency)
                         @php $rate = $latestRates[$currency] ?? null; @endphp
                         <div class="col-6">
-                            <div class="tw-p-2.5 tw-bg-surface-low border rounded text-center">
-                                <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ $currency }} → IDR</div>
-                                <div class="fw-bold tw-text-on-surface fs-6 tw-mt-0.5">Rp {{ $rate ? $regionalFormatter->number(number_format($rate->rate_to_idr, 0, ',', '.'), 'indonesian') : '-' }}</div>
+                            <div class="tw:p-2.5 tw:bg-surface-low border rounded text-center">
+                                <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ $currency }} → IDR</div>
+                                <div class="fw-bold tw:text-on-surface fs-6 tw:mt-0.5">Rp {{ $rate ? $regionalFormatter->number(number_format($rate->rate_to_idr, 0, ',', '.'), 'indonesian') : '-' }}</div>
                             </div>
                         </div>
                     @endforeach
                 </div>
                 @php $lastRateUpdated = $latestRates->filter()->sortByDesc('valid_from')->first()?->valid_from; @endphp
                 @if($lastRateUpdated)
-                    <div class="tw-text-outline text-center mt-2 tw-text-ui-xs">{{ __('purchasing.page.rate_updated', ['date' => $regionalFormatter->date($lastRateUpdated, 'human')]) }}</div>
+                    <div class="tw:text-outline text-center mt-2 tw:text-ui-xs">{{ __('purchasing.page.rate_updated', ['date' => $regionalFormatter->date($lastRateUpdated, 'human')]) }}</div>
                 @endif
             </x-ui.card>
         </div>
@@ -202,7 +202,7 @@
                     <x-ui.icon name="arrow-right" size="sm" />
                 </x-ui.button>
             </x-slot:toolbar>
-            <table class="table table-hover align-middle mb-0 tw-text-ui-sm">
+            <table class="table table-hover align-middle mb-0 tw:text-ui-sm">
                 <thead class="table-light">
                     <tr>
                         <th scope="col">{{ __('purchasing.copy.pr_no') }}</th>
@@ -214,7 +214,7 @@
                 <tbody>
                     @forelse($prTerbaru as $pr)
                         <tr>
-                            <td class="fw-bold tw-text-on-surface">{{ $pr->pr_number ?? __('purchasing.copy.draft') }}</td>
+                            <td class="fw-bold tw:text-on-surface">{{ $pr->pr_number ?? __('purchasing.copy.draft') }}</td>
                             <td>{{ $pr->period->display_label ?? $pr->period->name }}</td>
                             <td><x-status-badge type="pr" :status="$pr->status" /></td>
                             <td class="text-end">
@@ -237,7 +237,7 @@
                     <x-ui.icon name="arrow-right" size="sm" />
                 </x-ui.button>
             </x-slot:toolbar>
-            <table class="table table-hover align-middle mb-0 tw-text-ui-sm">
+            <table class="table table-hover align-middle mb-0 tw:text-ui-sm">
                 <thead class="table-light">
                     <tr>
                         <th scope="col">{{ __('purchasing.copy.po_no') }}</th>
@@ -250,7 +250,7 @@
                 <tbody>
                     @forelse($poTerdekat as $po)
                         <tr>
-                            <td class="fw-bold tw-text-on-surface">{{ $po->po_number }}</td>
+                            <td class="fw-bold tw:text-on-surface">{{ $po->po_number }}</td>
                             <td>{{ $po->supplier->name }}</td>
                             <td>{{ $regionalFormatter->date($po->estimated_arrival, 'human') }}</td>
                             <td><x-status-badge type="po" :status="$po->status" :is-overdue="$po->is_overdue ?? false" /></td>
@@ -296,7 +296,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <x-ui.button type="submit" size="sm" class="tw-w-full">{{ __('purchasing.copy.save_rate') }}</x-ui.button>
+                    <x-ui.button type="submit" size="sm" class="tw:w-full">{{ __('purchasing.copy.save_rate') }}</x-ui.button>
                 </div>
             </form>
         </div>

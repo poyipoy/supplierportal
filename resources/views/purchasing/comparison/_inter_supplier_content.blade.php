@@ -47,14 +47,14 @@ thead th.col-sticky-material {
 }
 </style>
 
-<x-ui.toolbar class="tw-mb-0">
-    <form method="GET" action="{{ route('purchasing.comparison.inter-supplier') }}" class="tw-grid tw-w-full tw-gap-4 md:tw-grid-cols-[minmax(0,1fr)_auto] md:tw-items-end" id="interSupplierFilterForm" data-server-tabs-form>
+<x-ui.toolbar class="tw:mb-0">
+    <form method="GET" action="{{ route('purchasing.comparison.inter-supplier') }}" class="tw:grid tw:w-full tw:gap-4 tw:md:grid-cols-[minmax(0,1fr)_auto] tw:md:items-end" id="interSupplierFilterForm" data-server-tabs-form>
         <div>
             <label for="comparisonPrSearch" class="form-label small fw-bold">{{ __('purchasing.copy.purchase_requisition') }}</label>
             <div class="position-relative">
                 <input type="hidden" name="pr_id" id="comparisonPrId" value="{{ $selectedPrOption['id'] ?? '' }}">
                 <div class="input-group input-group-sm">
-                    <span class="input-group-text tw-bg-surface"><x-ui.icon name="search" /></span>
+                    <span class="input-group-text tw:bg-surface"><x-ui.icon name="search" /></span>
                     <input type="text"
                             class="form-control"
                             id="comparisonPrSearch"
@@ -66,16 +66,16 @@ thead th.col-sticky-material {
                         :label="__('purchasing.copy.clear_pr_selection')"
                         size="sm"
                         id="comparisonPrClear"
-                        class="tw-rounded-none {{ $selectedPrOption ? '' : 'd-none' }}"
+                        class="tw:rounded-none {{ $selectedPrOption ? '' : 'd-none' }}"
                     />
                 </div>
-                <div class="list-group position-absolute w-100 shadow-sm d-none tw-z-[1050] tw-max-h-[260px] tw-overflow-y-auto"
+                <div class="list-group position-absolute w-100 shadow-sm d-none tw:z-[1050] tw:max-h-[260px] tw:overflow-y-auto"
                      id="comparisonPrSuggestions"></div>
             </div>
             <div class="form-text">{{ __('purchasing.copy.type_to_display_pr_options_then_select_one_option') }}</div>
         </div>
         <div>
-            <x-ui.button type="submit" size="sm" class="tw-w-full md:tw-w-auto">
+            <x-ui.button type="submit" size="sm" class="tw:w-full tw:md:w-auto">
                 <x-slot:leading><x-ui.icon name="search" /></x-slot:leading>
                 {{ __('purchasing.copy.compare') }}
             </x-ui.button>
@@ -135,7 +135,7 @@ thead th.col-sticky-material {
             :title="__('purchasing.copy.commercial_overview')"
             :description="__('purchasing.copy.ranked_supplier_totals_and_line_item_price_leadership_for_the_selected_pr')"
         >
-            <table class="table table-hover align-middle mb-0 tw-text-ui-xs">
+            <table class="table table-hover align-middle mb-0 tw:text-ui-xs">
                 <thead class="table-light">
                     <tr>
                         <th scope="col">{{ __('purchasing.copy.supplier') }}</th>
@@ -147,7 +147,7 @@ thead th.col-sticky-material {
                 <tbody>
                     @foreach($validTotals as $qid => $data)
                         <tr>
-                            <td class="fw-semibold tw-text-on-surface">{{ $data['name'] }}</td>
+                            <td class="fw-semibold tw:text-on-surface">{{ $data['name'] }}</td>
                             <td class="text-end fw-bold ui-tabular-nums {{ $recommendedSupId === $qid ? 'text-success' : 'text-primary' }}">
                                 Rp {{ \App\Support\NumberFormat::maxDecimals($data['total']) }}
                             </td>
@@ -169,7 +169,7 @@ thead th.col-sticky-material {
     {{-- Grafik Batang --}}
     <x-ui.card :title="__('purchasing.comparison_analytics.chart_title', ['currency' => $currency])">
         <x-slot:actions>
-            <div class="tw-min-w-60">
+            <div class="tw:min-w-60">
                 <label class="form-label small fw-bold mb-1" for="comparisonMaterialFilter">{{ __('purchasing.copy.material') }}</label>
                 <select class="form-select form-select-sm" id="comparisonMaterialFilter">
                     <option value="">{{ __('purchasing.copy.all_material') }}</option>
@@ -179,26 +179,26 @@ thead th.col-sticky-material {
                 </select>
             </div>
         </x-slot:actions>
-        <div class="tw-min-h-[280px]">
+        <div class="tw:min-h-[280px]">
             <canvas id="comparisonChart" height="280" role="img" aria-label="{{ __('purchasing.copy.supplier_quotation_price_comparison') }}">{{ __('purchasing.copy.supplier_quotation_price_comparison_chart') }}</canvas>
         </div>
     </x-ui.card>
 
     {{-- Item-Level Selection Coverage Banner --}}
     @if($awardCoverage)
-        <div class="tw-p-4 tw-rounded tw-border tw-border-outline-variant tw-bg-surface-container tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-gap-3">
-            <div class="tw-flex tw-items-center tw-gap-3">
-                <div class="tw-rounded-full tw-p-2.5 tw-bg-primary-container tw-text-primary">
+        <div class="tw:p-4 tw:rounded-sm tw:border tw:border-outline-variant tw:bg-surface-container tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-3">
+            <div class="tw:flex tw:items-center tw:gap-3">
+                <div class="tw:rounded-full tw:p-2.5 tw:bg-primary-container tw:text-primary">
                     <x-ui.icon name="clipboard-check" size="md" />
                 </div>
                 <div>
-                    <div class="fw-bold tw-text-ui-sm tw-text-on-surface">{{ __('purchasing.copy.item_selection_status') }}</div>
-                    <div class="tw-text-ui-xs tw-text-on-surface-variant">
+                    <div class="fw-bold tw:text-ui-sm tw:text-on-surface">{{ __('purchasing.copy.item_selection_status') }}</div>
+                    <div class="tw:text-ui-xs tw:text-on-surface-variant">
                         {{ trans_choice('purchasing.page.selection_coverage', $awardCoverage['total_items'], ['awarded' => $awardCoverage['awarded_items'], 'total' => $awardCoverage['total_items'], 'percentage' => $awardCoverage['coverage_percentage']]) }}
                     </div>
                 </div>
             </div>
-            <div class="tw-flex tw-items-center tw-gap-2">
+            <div class="tw:flex tw:items-center tw:gap-2">
                 @if($awardCoverage['is_fully_awarded'])
                     <span class="ui-status-chip ui-status-chip--success">{{ __('purchasing.copy.100_fully_selected') }}</span>
                 @else
@@ -208,13 +208,13 @@ thead th.col-sticky-material {
         </div>
     @endif
 
-    <form method="POST" action="{{ route('purchasing.comparison.save-awards') }}" id="itemAwardForm" class="tw-min-w-0 tw-max-w-full">
+    <form method="POST" action="{{ route('purchasing.comparison.save-awards') }}" id="itemAwardForm" class="tw:min-w-0 tw:max-w-full">
         @csrf
         <input type="hidden" name="pr_id" value="{{ $selectedPr->getRouteKey() }}">
 
         {{-- Side-by-side comparison table --}}
-        <x-ui.data-table sticky :scroll-label="__('procurement.tables.comparison_matrix')" :title="__('purchasing.page.comparison_title', ['pr' => $selectedPr->pr_number])" :description="__('purchasing.copy.select_supplier_offers_per_pr_item_maximum_one_offer_per_item')" class="tw-min-w-0 tw-max-w-full">
-                <table class="table table-bordered table-hover align-middle mb-0 tw-text-ui-xs comparison-matrix-table">
+        <x-ui.data-table sticky :scroll-label="__('procurement.tables.comparison_matrix')" :title="__('purchasing.page.comparison_title', ['pr' => $selectedPr->pr_number])" :description="__('purchasing.copy.select_supplier_offers_per_pr_item_maximum_one_offer_per_item')" class="tw:min-w-0 tw:max-w-full">
+                <table class="table table-bordered table-hover align-middle mb-0 tw:text-ui-xs comparison-matrix-table">
                     <thead class="table-light text-center">
                         <tr>
                             <th scope="col" rowspan="2" class="align-middle col-sticky-material">{{ __('purchasing.copy.material') }}</th>
@@ -223,17 +223,17 @@ thead th.col-sticky-material {
                             <th scope="col" rowspan="2" class="align-middle col-ref-total-weight text-center">{{ __('purchasing.copy.total_weight_kg') }}</th>
                             @foreach($comparison['suppliers'] as $sup)
                                 <th scope="colgroup" colspan="3" class="text-center col-supplier-group">
-                                    <div class="fw-bold tw-text-on-surface">{{ $sup['name'] }}</div>
-                                    <div class="tw-mt-1">
+                                    <div class="fw-bold tw:text-on-surface">{{ $sup['name'] }}</div>
+                                    <div class="tw:mt-1">
                                         <x-ui.status-chip :tone="$sup['status'] === 'accepted' ? 'success' : ($sup['status'] === 'rejected' ? 'error' : 'info')" size="sm">
                                             {{ \App\Support\StatusHelper::quotationLabel($sup['status']) }}
                                         </x-ui.status-chip>
                                     </div>
-                                    <div class="tw-mt-1.5 tw-text-ui-xs tw-text-on-surface-variant" title="{{ __('purchasing.copy.supplier_estimate_delivery') }}">
+                                    <div class="tw:mt-1.5 tw:text-ui-xs tw:text-on-surface-variant" title="{{ __('purchasing.copy.supplier_estimate_delivery') }}">
                                         <span class="fw-semibold">{{ __('purchasing.copy.supplier_estimate_delivery_prefix') }}</span>
-                                        <span class="tw-text-on-surface">{{ $sup['estimated_delivery_formatted'] ?? '-' }}</span>
+                                        <span class="tw:text-on-surface">{{ $sup['estimated_delivery_formatted'] ?? '-' }}</span>
                                     </div>
-                                    <div class="text-start tw-font-normal">
+                                    <div class="text-start tw:font-normal">
                                         @include('quotations._supplier_pic', ['profile' => $sup['profile'] ?? null])
                                     </div>
                                 </th>
@@ -259,7 +259,7 @@ thead th.col-sticky-material {
                             @endphp
                             <tr data-comparison-row data-material-id="{{ $row['item']->id }}" class="{{ ($row['spread_pct'] ?? 0) > 15 ? 'bg-warning bg-opacity-10' : '' }}">
                                 <td class="fw-medium col-sticky-material">
-                                    <div class="tw-font-semibold tw-text-on-surface">{{ $row['item']->material_name }}</div>
+                                    <div class="tw:font-semibold tw:text-on-surface">{{ $row['item']->material_name }}</div>
                                     @if(($row['spread_pct'] ?? 0) > 15)
                                         <div class="small text-danger mt-1" data-bs-toggle="tooltip" title="{{ __('purchasing.copy.high_price_spread_15') }}">
                                             <x-ui.icon name="triangle-alert" class="me-1" />{{ __('purchasing.copy.price_spread') }} {{ isset($regionalFormatter) ? $regionalFormatter->number(number_format($row['spread_pct'], 1, ',', '.'), 'indonesian') : number_format($row['spread_pct'], 1) }}%
@@ -275,13 +275,13 @@ thead th.col-sticky-material {
                                         <td class="text-center" colspan="3">
                                             <span class="ui-status-chip ui-status-chip--error">{{ __('purchasing.copy.not_available') }}</span>
                                             @if($p['detail_url'])
-                                                <x-ui.icon-button :href="$p['detail_url']" icon="external-link" :label="__('purchasing.copy.open_quotation_details')" size="sm" class="tw-ms-1" />
+                                                <x-ui.icon-button :href="$p['detail_url']" icon="external-link" :label="__('purchasing.copy.open_quotation_details')" size="sm" class="tw:ms-1" />
                                             @endif
                                         </td>
                                     @elseif($p && $p['price_per_kg'])
                                         <td class="text-end">
                                             {{ $formatNumber($p['price_per_kg'], 4) }}
-                                            <div class="tw-text-on-surface-variant tw-text-ui-xs tw-mt-0.5">
+                                            <div class="tw:text-on-surface-variant tw:text-ui-xs tw:mt-0.5">
                                                 {{ __('common.fields.qty') }} {{ $p['available_qty'] ?? '-' }} · {{ $formatNumber($p['offered_total_weight']) }} kg
                                                 @if($p['is_estimated_weight']) · {{ __('purchasing.copy.est_weight') }} @endif
                                             </div>
@@ -292,20 +292,20 @@ thead th.col-sticky-material {
                                                 <x-ui.icon name="circle-check" class="ms-1" />
                                             @endif
                                             @if($p['detail_url'])
-                                                <x-ui.icon-button :href="$p['detail_url']" icon="external-link" :label="__('purchasing.copy.open_quotation_details')" size="sm" class="tw-ms-1" />
+                                                <x-ui.icon-button :href="$p['detail_url']" icon="external-link" :label="__('purchasing.copy.open_quotation_details')" size="sm" class="tw:ms-1" />
                                             @endif
                                         </td>
                                         <td class="text-end fw-semibold ui-tabular-nums">
                                             {{ $formatNumber($p['offer_amount']) }} {{ $p['currency'] }}
-                                            <div class="tw-text-on-surface-variant tw-text-ui-xs">Rp {{ $formatNumber($p['offer_amount_idr']) }}</div>
+                                            <div class="tw:text-on-surface-variant tw:text-ui-xs">Rp {{ $formatNumber($p['offer_amount_idr']) }}</div>
                                             @if(!empty($p['is_selectable']))
-                                                <div class="tw-mt-2 tw-pt-1.5 tw-border-t tw-border-outline-variant text-center">
-                                                    <label class="tw-inline-flex tw-items-center tw-gap-1.5 tw-cursor-pointer">
+                                                <div class="tw:mt-2 tw:pt-1.5 tw:border-t tw:border-outline-variant text-center">
+                                                    <label class="tw:inline-flex tw:items-center tw:gap-1.5 tw:cursor-pointer">
                                                         <input type="radio"
                                                                name="awards[{{ $row['item']->id }}]"
                                                                value="{{ $p['quotation_item_id'] }}"
                                                                {{ !empty($p['is_awarded']) ? 'checked' : '' }}
-                                                               class="form-check-input tw-mt-0 award-radio"
+                                                               class="form-check-input tw:mt-0 award-radio"
                                                                data-pr-item-id="{{ $row['item']->id }}"
                                                                data-pr-item-name="{{ $row['item']->material_name }}"
                                                                data-supplier-id="{{ $sup['id'] }}"
@@ -313,7 +313,7 @@ thead th.col-sticky-material {
                                                                data-supplier-estimated-ready="{{ $sup['estimated_delivery'] ?? '' }}"
                                                                data-price="Rp {{ \App\Support\NumberFormat::maxDecimals($p['price_idr'] ?? 0) }}"
                                                         >
-                                                        <span class="tw-text-ui-xs fw-bold {{ !empty($p['is_awarded']) ? 'text-success' : 'text-primary' }}">
+                                                        <span class="tw:text-ui-xs fw-bold {{ !empty($p['is_awarded']) ? 'text-success' : 'text-primary' }}">
                                                             {{ !empty($p['is_awarded']) ? __('purchasing.copy.selected_offer') : __('purchasing.copy.select_offer') }}
                                                         </span>
                                                     </label>
@@ -334,16 +334,16 @@ thead th.col-sticky-material {
                                                     @endif
                                                 </div>
                                             @elseif(!empty($p['is_awarded']))
-                                                <div class="tw-mt-2 tw-pt-1.5 tw-border-t tw-border-outline-variant text-center">
+                                                <div class="tw:mt-2 tw:pt-1.5 tw:border-t tw:border-outline-variant text-center">
                                                     <span class="ui-status-chip ui-status-chip--success">
                                                         <x-ui.icon name="check" size="sm" /> {{ __('purchasing.copy.po_created') }}
                                                     </span>
                                                     @if(!empty($p['purchase_order_url']))
-                                                        <a href="{{ $p['purchase_order_url'] }}" class="d-block tw-mt-1 tw-text-ui-xs text-primary fw-semibold text-decoration-underline">
+                                                        <a href="{{ $p['purchase_order_url'] }}" class="d-block tw:mt-1 tw:text-ui-xs text-primary fw-semibold text-decoration-underline">
                                                             {{ $p['purchase_order_number'] ?? __('purchasing.copy.view_purchase_order') }}
                                                         </a>
                                                     @else
-                                                        <span class="d-block tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">{{ __('purchasing.copy.purchase_order_assigned') }}</span>
+                                                        <span class="d-block tw:mt-1 tw:text-ui-xs tw:text-on-surface-variant">{{ __('purchasing.copy.purchase_order_assigned') }}</span>
                                                     @endif
                                                 </div>
                                             @endif
@@ -359,48 +359,48 @@ thead th.col-sticky-material {
         </x-ui.data-table>
 
         {{-- Mission 07: benchmark indicators per PR item --}}
-        <div class="tw-mt-4">@include('purchasing.comparison._price_indicators', ['matrix' => $comparison['matrix'], 'currency' => $currency])</div>
+        <div class="tw:mt-4">@include('purchasing.comparison._price_indicators', ['matrix' => $comparison['matrix'], 'currency' => $currency])</div>
 
         @if($hasActionableAwardSelections)
             {{-- Existing PO assignments remain visible while unassigned items stay actionable. --}}
             @if($assignedPurchaseOrders->isNotEmpty() || $assignedPurchaseOrderCount > 0)
-                <x-ui.card :title="__('purchasing.copy.existing_purchase_order_s')" class="tw-mt-4">
-                    <div class="tw-flex tw-flex-wrap tw-gap-2">
+                <x-ui.card :title="__('purchasing.copy.existing_purchase_order_s')" class="tw:mt-4">
+                    <div class="tw:flex tw:flex-wrap tw:gap-2">
                         @forelse($assignedPurchaseOrders as $assignedPurchaseOrder)
                             <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $assignedPurchaseOrder) }}" class="ui-status-chip ui-status-chip--success text-decoration-none">
                                 <x-ui.icon name="receipt" size="sm" /> {{ $assignedPurchaseOrder->po_number }}
                             </a>
                         @empty
-                            <span class="tw-text-ui-xs tw-text-on-surface-variant">{{ __('purchasing.copy.purchase_order_assignment_is_recorded_but_its_detail_is_unavailable') }}</span>
+                            <span class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('purchasing.copy.purchase_order_assignment_is_recorded_but_its_detail_is_unavailable') }}</span>
                         @endforelse
                     </div>
                 </x-ui.card>
             @endif
 
             {{-- Offer Selection & PO Grouping Preview Card --}}
-            <x-ui.card :title="__('purchasing.copy.offer_selection_po_grouping_preview')" class="tw-mt-4">
-                <div class="tw-grid tw-gap-4 md:tw-grid-cols-2">
+            <x-ui.card :title="__('purchasing.copy.offer_selection_po_grouping_preview')" class="tw:mt-4">
+                <div class="tw:grid tw:gap-4 tw:md:grid-cols-2">
                     <div>
-                        <div class="fw-bold tw-text-ui-sm tw-text-on-surface tw-mb-2">
+                        <div class="fw-bold tw:text-ui-sm tw:text-on-surface tw:mb-2">
                             <x-ui.icon name="check-check" size="sm" class="me-1 text-primary" />
                             {{ __('purchasing.copy.selected_line_item_offers') }}
                         </div>
-                        <div id="awardPreviewItems" class="tw-border tw-border-outline-variant tw-rounded tw-p-3 tw-bg-surface tw-text-ui-xs">
-                            <span class="tw-text-on-surface-variant">{{ __('purchasing.copy.select_offers_in_the_table_above_to_preview_selection_and_supplier_po_groups') }}</span>
+                        <div id="awardPreviewItems" class="tw:border tw:border-outline-variant tw:rounded-sm tw:p-3 tw:bg-surface tw:text-ui-xs">
+                            <span class="tw:text-on-surface-variant">{{ __('purchasing.copy.select_offers_in_the_table_above_to_preview_selection_and_supplier_po_groups') }}</span>
                         </div>
                     </div>
                     <div>
-                        <div class="fw-bold tw-text-ui-sm tw-text-on-surface tw-mb-2">
+                        <div class="fw-bold tw:text-ui-sm tw:text-on-surface tw:mb-2">
                             <x-ui.icon name="building" size="sm" class="me-1 text-primary" />
                             {{ __('purchasing.copy.resulting_po_grouping_preview_1_po_per_selected_supplier') }}
                         </div>
-                        <div id="supplierGroupPreview" class="tw-border tw-border-outline-variant tw-rounded tw-p-3 tw-bg-surface-container tw-text-ui-xs">
-                            <span class="tw-text-on-surface-variant">{{ __('purchasing.copy.1_po_will_be_created_per_selected_supplier_group_upon_confirmation') }}</span>
+                        <div id="supplierGroupPreview" class="tw:border tw:border-outline-variant tw:rounded-sm tw:p-3 tw:bg-surface-container tw:text-ui-xs">
+                            <span class="tw:text-on-surface-variant">{{ __('purchasing.copy.1_po_will_be_created_per_selected_supplier_group_upon_confirmation') }}</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="tw-mt-4 tw-pt-4 tw-border-t tw-border-outline-variant tw-grid tw-gap-3 sm:tw-grid-cols-2">
+                <div class="tw:mt-4 tw:pt-4 tw:border-t tw:border-outline-variant tw:grid tw:gap-3 tw:sm:grid-cols-2">
                     <div>
                         <x-ui.date-picker
                             id="poEstimatedArrival"
@@ -408,11 +408,11 @@ thead th.col-sticky-material {
                             :label="__('purchasing.copy.po_target_arrival_date')"
                             :value="now()->addDays(14)->format('Y-m-d')"
                         />
-                        <div class="form-text tw-text-ui-xs tw-text-on-surface-variant tw-mt-1">
+                        <div class="form-text tw:text-ui-xs tw:text-on-surface-variant tw:mt-1">
                             <span class="fw-semibold">{{ __('purchasing.copy.supplier_estimate_delivery_prefix') }}</span> {{ __('purchasing.copy.when_supplier_expects_material_ready_to_send') }}<br>
                             <span class="fw-semibold">{{ __('purchasing.copy.po_target_arrival_date_21ee07') }}</span> {{ __('purchasing.copy.when_purchasing_expects_material_at_adsi') }}
                         </div>
-                        <div id="targetArrivalWarning" class="alert alert-warning py-1.5 px-2.5 tw-text-ui-xs tw-mt-2 d-none" role="alert">
+                        <div id="targetArrivalWarning" class="alert alert-warning py-1.5 px-2.5 tw:text-ui-xs tw:mt-2 d-none" role="alert">
                             <x-ui.icon name="triangle-alert" size="sm" class="me-1 text-warning" />
                             <span>{{ __('purchasing.copy.po_target_earlier_than_supplier_estimate_delivery') }}</span>
                         </div>
@@ -424,11 +424,11 @@ thead th.col-sticky-material {
                 </div>
 
                 @unless($poGenerationEnabled)
-                    <x-ui.alert tone="warning" class="tw-mt-3">{{ __('procurement.po_generation.disabled_notice') }}</x-ui.alert>
+                    <x-ui.alert tone="warning" class="tw:mt-3">{{ __('procurement.po_generation.disabled_notice') }}</x-ui.alert>
                 @endunless
 
                 <x-slot:actions>
-                    <div class="tw-flex tw-flex-wrap tw-gap-2">
+                    <div class="tw:flex tw:flex-wrap tw:gap-2">
                         <x-ui.button type="submit" name="action" value="save" variant="outline" size="sm">
                             <x-slot:leading><x-ui.icon name="save" size="sm" /></x-slot:leading>
                             {{ __('purchasing.copy.save_selected_offers') }}
@@ -441,25 +441,25 @@ thead th.col-sticky-material {
                 </x-slot:actions>
             </x-ui.card>
         @elseif($allItemsAssignedToPurchaseOrder)
-            <x-ui.card :title="__('purchasing.copy.purchase_order_s_already_generated')" class="tw-mt-4">
-                <div class="tw-flex tw-flex-col tw-gap-3">
-                    <div class="tw-text-ui-sm tw-text-on-surface-variant">
+            <x-ui.card :title="__('purchasing.copy.purchase_order_s_already_generated')" class="tw:mt-4">
+                <div class="tw:flex tw:flex-col tw:gap-3">
+                    <div class="tw:text-ui-sm tw:text-on-surface-variant">
                         {{ __('purchasing.copy.all_pr_items_have_been_assigned_to_purchase_order_s_no_additional_selection_or_po_action_is_required') }}
                     </div>
-                    <div class="tw-flex tw-flex-wrap tw-gap-2">
+                    <div class="tw:flex tw:flex-wrap tw:gap-2">
                         @forelse($assignedPurchaseOrders as $assignedPurchaseOrder)
                             <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $assignedPurchaseOrder) }}" class="ui-status-chip ui-status-chip--success text-decoration-none">
                                 <x-ui.icon name="receipt" size="sm" /> {{ $assignedPurchaseOrder->po_number }}
                             </a>
                         @empty
-                            <span class="tw-text-ui-xs tw-text-on-surface-variant">{{ __('purchasing.copy.purchase_order_assignment_is_recorded_but_its_detail_is_unavailable') }}</span>
+                            <span class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('purchasing.copy.purchase_order_assignment_is_recorded_but_its_detail_is_unavailable') }}</span>
                         @endforelse
                     </div>
                 </div>
             </x-ui.card>
         @else
-            <x-ui.card :title="__('purchasing.copy.item_selection_status')" class="tw-mt-4">
-                <div class="tw-text-ui-sm tw-text-on-surface-variant">{{ __('purchasing.copy.no_additional_offer_selections_are_currently_available_for_this_pr') }}</div>
+            <x-ui.card :title="__('purchasing.copy.item_selection_status')" class="tw:mt-4">
+                <div class="tw:text-ui-sm tw:text-on-surface-variant">{{ __('purchasing.copy.no_additional_offer_selections_are_currently_available_for_this_pr') }}</div>
             </x-ui.card>
         @endif
     </form>

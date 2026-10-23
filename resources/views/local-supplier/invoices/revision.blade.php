@@ -3,7 +3,7 @@
 @section('page-title', $invoice->status === 'CANCELLED' ? __('local_invoice.recovery.action') : __('local_invoice.actions.revise'))
 
 @section('content')
-<div class="tw-grid tw-gap-6 tw-pb-16">
+<div class="tw:grid tw:gap-6 tw:pb-16">
     <x-ui.page-header
         :title="__($invoice->status === 'CANCELLED' ? 'local_invoice.recovery.heading' : 'local_invoice.form.revision_heading', ['number' => $invoice->submission_number])"
         :description="__($invoice->status === 'CANCELLED' ? 'local_invoice.recovery.description' : 'local_invoice.form.revision_description')"

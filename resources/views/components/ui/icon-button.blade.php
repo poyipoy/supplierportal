@@ -9,21 +9,21 @@
 
 @php
     $variants = [
-        'ghost' => 'tw-border-transparent tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container hover:tw-text-on-surface',
-        'outline' => 'tw-border-outline tw-bg-transparent tw-text-on-surface hover:tw-bg-surface-container hover:tw-text-on-surface',
-        'secondary' => 'tw-border-outline-variant tw-bg-secondary-container tw-text-secondary-container-foreground hover:tw-brightness-95',
-        'primary' => 'tw-border-transparent tw-bg-primary tw-text-primary-foreground hover:tw-brightness-95',
-        'danger' => 'tw-border-transparent tw-bg-error-container tw-text-error-container-foreground hover:tw-brightness-95',
+        'ghost' => 'tw:border-transparent tw:bg-transparent tw:text-on-surface-variant tw:hover:bg-surface-container tw:hover:text-on-surface',
+        'outline' => 'tw:border-outline tw:bg-transparent tw:text-on-surface tw:hover:bg-surface-container tw:hover:text-on-surface',
+        'secondary' => 'tw:border-outline-variant tw:bg-secondary-container tw:text-secondary-container-foreground tw:hover:brightness-95',
+        'primary' => 'tw:border-transparent tw:bg-primary tw:text-primary-foreground tw:hover:brightness-95',
+        'danger' => 'tw:border-transparent tw:bg-error-container tw:text-error-container-foreground tw:hover:brightness-95',
     ];
 
     $sizes = [
-        'sm' => 'tw-h-8 tw-w-8',
-        'md' => 'tw-h-9 tw-w-9',
-        'lg' => 'tw-h-11 tw-w-11',
+        'sm' => 'tw:h-8 tw:w-8',
+        'md' => 'tw:h-9 tw:w-9',
+        'lg' => 'tw:h-11 tw:w-11',
     ];
 
     $classes = implode(' ', [
-        'ui-motion ui-focus-ring tw-relative tw-inline-flex tw-shrink-0 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border disabled:tw-cursor-not-allowed disabled:tw-opacity-50',
+        'ui-motion ui-focus-ring tw:relative tw:inline-flex tw:shrink-0 tw:items-center tw:justify-center tw:rounded-ui-sm tw:border tw:disabled:cursor-not-allowed tw:disabled:opacity-50',
         $variants[$variant] ?? $variants['ghost'],
         $sizes[$size] ?? $sizes['md'],
     ]);
@@ -43,7 +43,7 @@
             <x-ui.icon :name="$icon" :size="$size === 'sm' ? 'sm' : 'md'" />
         @endisset
         @isset($badge){{ $badge }}@endisset
-        <span class="tw-sr-only">{{ $label }}</span>
+        <span class="tw:sr-only">{{ $label }}</span>
     </a>
 @else
     <button
@@ -59,6 +59,6 @@
             <x-ui.icon :name="$icon" :size="$size === 'sm' ? 'sm' : 'md'" />
         @endisset
         @isset($badge){{ $badge }}@endisset
-        <span class="tw-sr-only">{{ $label }}</span>
+        <span class="tw:sr-only">{{ $label }}</span>
     </button>
 @endif

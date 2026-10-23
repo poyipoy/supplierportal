@@ -4,7 +4,7 @@
 @section('page-title', __('local_procurement.payment_term.title'))
 
 @section('content')
-<div class="tw-grid tw-gap-6 tw-pb-24">
+<div class="tw:grid tw:gap-6 tw:pb-24">
     <x-ui.page-header
         :title="__('local_procurement.payment_term.title')"
         :description="$company"
@@ -25,10 +25,10 @@
             :title="__('local_procurement.payment_term.section')"
             :description="__('local_procurement.payment_term.section_help')"
         >
-            <div class="tw-grid tw-gap-4 tw-max-w-xl">
+            <div class="tw:grid tw:gap-4 tw:max-w-xl">
                 <div>
-                    <span class="tw-block tw-text-ui-xs tw-text-on-surface-variant">{{ __('local_procurement.payment_term.current') }}</span>
-                    <strong class="tw-text-ui-sm tw-text-on-surface">
+                    <span class="tw:block tw:text-ui-xs tw:text-on-surface-variant">{{ __('local_procurement.payment_term.current') }}</span>
+                    <strong class="tw:text-ui-sm tw:text-on-surface">
                         {{ $supplier->payment_term_days ? trans_choice('local_invoice.table.term_days', $supplier->payment_term_days) : '—' }}
                     </strong>
                 </div>
@@ -44,7 +44,7 @@
                     max="365"
                     step="1"
                     inputmode="numeric"
-                    class="tw-max-w-[12rem]"
+                    class="tw:max-w-[12rem]"
                 />
 
                 <x-ui.textarea

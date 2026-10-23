@@ -4,7 +4,7 @@
 @section('page-title', __('purchasing.titles.periods_page', []))
 
 @section('content')
-    <div class="tw-grid tw-gap-4">
+    <div class="tw:grid tw:gap-4">
         {{-- 1. Compact Page Header --}}
         <x-ui.page-header
             :title="__('purchasing.copy.quotation_periods')"
@@ -21,7 +21,7 @@
 
         {{-- 2. Balanced Data Table --}}
         <x-ui.data-table density="compact">
-            <table class="table table-hover align-middle mb-0 tw-text-ui-sm w-100" id="periodsTable">
+            <table class="table table-hover align-middle mb-0 tw:text-ui-sm w-100" id="periodsTable">
                 <thead class="table-light">
                     <tr>
                         <th scope="col">{{ __('purchasing.copy.period_name') }}</th>
@@ -48,7 +48,7 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('purchasing.copy.close') }}"></button>
                     </div>
                     <div class="modal-body">
-                        <div class="tw-grid tw-gap-3">
+                        <div class="tw:grid tw:gap-3">
                             <x-ui.input name="year" type="number" :label="__('purchasing.copy.year')" :value="now()->year" min="2000" required />
                             <x-ui.select name="status" :label="__('purchasing.copy.status')" :helper="__('purchasing.copy.prs_and_quotations_can_only_be_created_in_open_periods')" required>
                                 <option value="open">{{ __('purchasing.copy.open_accepting_quotations') }}</option>
@@ -56,7 +56,7 @@
                             </x-ui.select>
                         </div>
                     </div>
-                    <div class="modal-footer tw-bg-surface-low border-top">
+                    <div class="modal-footer tw:bg-surface-low border-top">
                         <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('purchasing.copy.cancel') }}</x-ui.button>
                         <x-ui.button type="submit" size="sm">{{ __('purchasing.copy.save_period') }}</x-ui.button>
                     </div>
@@ -77,9 +77,9 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('purchasing.copy.close') }}"></button>
                     </div>
                     <div class="modal-body">
-                        <div class="tw-grid tw-gap-3">
+                        <div class="tw:grid tw:gap-3">
                             <x-ui.input name="name" id="editName" :label="__('purchasing.copy.period_name_922e05')" required />
-                            <div class="tw-grid tw-gap-3 sm:tw-grid-cols-2">
+                            <div class="tw:grid tw:gap-3 tw:sm:grid-cols-2">
                                 <x-ui.select name="month" id="editMonth" :label="__('purchasing.copy.scope_legacy_month_optional')" :helper="__('purchasing.copy.leave_annual_for_a_year_based_procurement_period')">
                                     <option value="">{{ __('purchasing.copy.annual') }}</option>
                                     @for($m=1; $m<=12; $m++)
@@ -94,7 +94,7 @@
                             </x-ui.select>
                         </div>
                     </div>
-                    <div class="modal-footer tw-bg-surface-low border-top">
+                    <div class="modal-footer tw:bg-surface-low border-top">
                         <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('purchasing.copy.cancel') }}</x-ui.button>
                         <x-ui.button type="submit" size="sm">{{ __('purchasing.copy.save_changes') }}</x-ui.button>
                     </div>
@@ -112,11 +112,11 @@
             serverSide: true,
             ajax: '{{ route("purchasing.periods.index") }}',
             columns: [
-                { data: 'name_display', name: 'name', className: 'fw-bold tw-text-on-surface' },
-                { data: 'month_display', name: 'month', className: 'tw-text-on-surface-variant' },
-                { data: 'year_display', name: 'year', className: 'tw-text-on-surface-variant' },
+                { data: 'name_display', name: 'name', className: 'fw-bold tw:text-on-surface' },
+                { data: 'month_display', name: 'month', className: 'tw:text-on-surface-variant' },
+                { data: 'year_display', name: 'year', className: 'tw:text-on-surface-variant' },
                 { data: 'status_badge', name: 'status', searchable: false, className: 'text-center' },
-                { data: 'creator_name', name: 'creator_name', orderable: false, className: 'tw-text-on-surface-variant' },
+                { data: 'creator_name', name: 'creator_name', orderable: false, className: 'tw:text-on-surface-variant' },
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
             ],
             language: {},

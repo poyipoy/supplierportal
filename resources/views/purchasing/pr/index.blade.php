@@ -14,7 +14,7 @@
 @endpush
 
 @section('content')
-<div class="tw-grid tw-gap-4">
+<div class="tw:grid tw:gap-4">
     {{-- 1. Compact Page Header --}}
     <x-ui.page-header
         :title="__('purchasing.copy.purchase_requisition')"
@@ -59,13 +59,13 @@
                     <span>{{ __('purchasing.copy.reset') }}</span>
                 </x-ui.button>
             </div>
-            <div id="filterChips" class="d-none flex-wrap tw-gap-1.5 align-items-center ms-2" aria-live="polite"></div>
+            <div id="filterChips" class="d-none flex-wrap tw:gap-1.5 align-items-center ms-2" aria-live="polite"></div>
         </x-slot:filters>
     </x-ui.toolbar>
 
     {{-- 3. Balanced Data Table --}}
     <x-ui.data-table density="compact">
-        <table class="table table-hover align-middle mb-0 tw-text-ui-sm w-100" id="prTable">
+        <table class="table table-hover align-middle mb-0 tw:text-ui-sm w-100" id="prTable">
             <thead class="table-light text-center">
                 <tr>
                     <th scope="col" style="width: 40px;">{{ __('purchasing.copy.no') }}</th>
@@ -101,14 +101,14 @@
             },
             columns: [
                 { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-center' },
-                { data: 'pr_number_display', name: 'pr_number', className: 'fw-bold tw-text-on-surface' },
+                { data: 'pr_number_display', name: 'pr_number', className: 'fw-bold tw:text-on-surface' },
                 { data: 'period_name', name: 'period.name' },
                 { data: 'creator_name', name: 'creator.name' },
                 { data: 'supplier_count', name: 'invited_suppliers_count', searchable: false, className: 'text-center' },
                 { data: 'item_count', name: 'item_count', searchable: false, className: 'text-center' },
-                { data: 'total_kg', name: 'total_kg', searchable: false, className: 'text-end fw-semibold tw-text-on-surface ui-tabular-nums' },
+                { data: 'total_kg', name: 'total_kg', searchable: false, className: 'text-end fw-semibold tw:text-on-surface ui-tabular-nums' },
                 { data: 'status_badge', name: 'status', searchable: false, className: 'text-center' },
-                { data: 'created_date', name: 'created_at', className: 'tw-text-on-surface-variant' },
+                { data: 'created_date', name: 'created_at', className: 'tw:text-on-surface-variant' },
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-center' }
             ],
             language: {},
@@ -127,7 +127,7 @@
                 });
                 const $remove = $('<button>', {
                     type: 'button',
-                    class: 'ui-focus-ring tw-inline-flex tw-h-5 tw-w-5 tw-items-center tw-justify-center tw-rounded-ui-xs tw-border-0 tw-bg-transparent tw-p-0 tw-text-primary hover:tw-bg-primary/10',
+                    class: 'ui-focus-ring tw:inline-flex tw:h-5 tw:w-5 tw:items-center tw:justify-center tw:rounded-ui-xs tw:border-0 tw:bg-transparent tw:p-0 tw:text-primary tw:hover:bg-primary/10',
                     'aria-label': window.AdasiI18n.t('js.filters.remove', { label }),
                     text: '×'
                 });

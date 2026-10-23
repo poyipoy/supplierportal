@@ -1129,14 +1129,14 @@ class CalendarController {
     setError(message) {
         if (!this.error || !this.errorMessage) return;
         this.errorMessage.textContent = message;
-        this.error.classList.remove('tw-hidden');
+        this.error.classList.remove('tw:hidden');
         this.wrapper.dataset.calendarInvalid = 'true';
         const target = this.type === 'single' ? this.trigger : this.boundaryTriggers[0];
         target?.setAttribute('aria-invalid', 'true');
     }
 
     clearError() {
-        this.error?.classList.add('tw-hidden');
+        this.error?.classList.add('tw:hidden');
         this.wrapper.dataset.calendarInvalid = 'false';
         this.trigger?.removeAttribute('aria-invalid');
         this.boundaryTriggers.forEach((button) => button.removeAttribute('aria-invalid'));

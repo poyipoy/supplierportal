@@ -48,7 +48,7 @@ class NotificationPreferencesUiTest extends TestCase
             $label = $labels->item(0);
             $this->assertNotNull($label);
             $this->assertCount(1, $xpath->query('ancestor::label', $checkbox));
-            $channel = $xpath->query('.//span[contains(@class, "md:tw-sr-only")]', $label);
+            $channel = $xpath->query('.//span[contains(@class, "tw:md:sr-only")]', $label);
             $this->assertCount(1, $channel);
             $this->assertSame('Inbox', trim($channel->item(0)->textContent));
 
@@ -71,7 +71,7 @@ class NotificationPreferencesUiTest extends TestCase
             $label = $labels->item(0);
             $this->assertNotNull($label);
             $this->assertCount(1, $xpath->query('ancestor::label', $checkbox));
-            $channel = $xpath->query('.//span[contains(@class, "md:tw-sr-only")]', $label);
+            $channel = $xpath->query('.//span[contains(@class, "tw:md:sr-only")]', $label);
             $this->assertCount(1, $channel);
             $this->assertSame('Popup', trim($channel->item(0)->textContent));
 
@@ -171,10 +171,10 @@ class NotificationPreferencesUiTest extends TestCase
             // The selected look must come from aria-pressed only. A static "selected" utility next to the idle ones
             // used to win some properties and lose others, leaving no segment visibly selected.
             $classes = $button->item(0)->getAttribute('class');
-            $this->assertDoesNotMatchRegularExpression('/(^|\s)tw-(bg-primary|text-on-primary|border-primary)(\s|$)/', $classes);
-            $this->assertStringContainsString('aria-pressed:tw-bg-primary', $classes);
-            $this->assertStringContainsString('aria-pressed:tw-text-on-primary', $classes);
-            $this->assertStringContainsString('aria-pressed:tw-border-primary', $classes);
+            $this->assertDoesNotMatchRegularExpression('/(^|\s)tw:(bg-primary|text-on-primary|border-primary)(\s|$)/', $classes);
+            $this->assertStringContainsString('tw:aria-pressed:bg-primary', $classes);
+            $this->assertStringContainsString('tw:aria-pressed:text-on-primary', $classes);
+            $this->assertStringContainsString('tw:aria-pressed:border-primary', $classes);
             $this->assertFalse($button->item(0)->hasAttribute(':class'), 'Alpine must not toggle state classes next to the static ones');
         }
         $this->assertCount(0, $xpath->query('.//button[normalize-space(.)="Enabled" or normalize-space(.)="Muted" or normalize-space(.)="Silent"]', $filterGroup));
@@ -673,10 +673,10 @@ class NotificationPreferencesUiTest extends TestCase
         $this->assertCount(0, $filterGroup, 'The filter group label must be translated');
 
         // Channel names inside each event row follow the locale
-        $label = $xpath->query('//label[@for="notification-local_invoice_submitted"]//span[contains(@class, "md:tw-sr-only")]')->item(0);
+        $label = $xpath->query('//label[@for="notification-local_invoice_submitted"]//span[contains(@class, "tw:md:sr-only")]')->item(0);
         $this->assertNotNull($label);
         $this->assertSame('Kotak masuk', trim($label->textContent));
-        $popup = $xpath->query('//label[@for="notification-local_invoice_submitted-popup"]//span[contains(@class, "md:tw-sr-only")]')->item(0);
+        $popup = $xpath->query('//label[@for="notification-local_invoice_submitted-popup"]//span[contains(@class, "tw:md:sr-only")]')->item(0);
         $this->assertNotNull($popup);
         $this->assertSame('Pop-up', trim($popup->textContent));
 

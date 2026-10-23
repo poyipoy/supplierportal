@@ -5,7 +5,7 @@
 @section('page-title', __('admin.copy.authentication_audit'))
 
 @section('content')
-<div class="tw-grid tw-gap-6">
+<div class="tw:grid tw:gap-6">
     <x-ui.page-header :title="__('admin.copy.authentication_audit')" :description="__('admin.page.retention', ['days' => config('auth_security.audit.retention_days', 180)])" :eyebrow="__('admin.copy.admin_security')" />
 
     <x-ui.toolbar aria-label="{{ __('admin.copy.authentication_audit_filters') }}">
@@ -13,12 +13,12 @@
             <x-ui.input name="audit_email" id="auditEmail" type="search" :label="__('admin.copy.attempted_email')" :placeholder="__('admin.copy.search_attempted_email')" maxlength="255" autocomplete="off" />
         </x-slot:search>
         <x-slot:filters>
-            <x-ui.select name="audit_event" id="auditEvent" :label="__('admin.copy.event')" :placeholder="__('admin.copy.all_events')" class="tw-min-w-48">
+            <x-ui.select name="audit_event" id="auditEvent" :label="__('admin.copy.event')" :placeholder="__('admin.copy.all_events')" class="tw:min-w-48">
                 @foreach ($events as $event)
                     <option value="{{ $event }}">{{ __('security.audit_events.'.$event) }}</option>
                 @endforeach
             </x-ui.select>
-            <x-ui.button variant="outline" size="sm" class="tw-self-end" type="button" data-bs-toggle="collapse" data-bs-target="#auditMoreFilters" aria-expanded="false" aria-controls="auditMoreFilters">
+            <x-ui.button variant="outline" size="sm" class="tw:self-end" type="button" data-bs-toggle="collapse" data-bs-target="#auditMoreFilters" aria-expanded="false" aria-controls="auditMoreFilters">
                 <x-ui.icon name="sliders-horizontal" /> {{ __('admin.copy.more_filters') }}
             </x-ui.button>
         </x-slot:filters>
@@ -28,8 +28,8 @@
     </x-ui.toolbar>
 
     <div class="collapse" id="auditMoreFilters">
-        <div class="tw-mb-4 tw-border tw-border-outline tw-bg-surface-container tw-p-4">
-            <div class="tw-grid tw-gap-3 md:tw-grid-cols-3" id="auditFilters">
+        <div class="tw:mb-4 tw:border tw:border-outline tw:bg-surface-container tw:p-4">
+            <div class="tw:grid tw:gap-3 tw:md:grid-cols-3" id="auditFilters">
                 <x-ui.select name="audit_user" id="auditUser" :label="__('admin.copy.actor')" :placeholder="__('admin.copy.all_users')">
                     @foreach ($users as $user)
                         <option value="{{ $user->getRouteKey() }}">{{ $user->name }} - {{ $user->email }}</option>
@@ -49,8 +49,8 @@
     </div>
 
     <x-ui.data-table :title="__('admin.copy.security_event_log')" :description="__('admin.copy.events_are_shown_with_actor_time_network_context_and_retained_metadata')">
-        <div class="ui-data-table__scroll tw-overflow-x-auto">
-            <table id="authAuditTable" class="table table-hover align-middle w-100 tw-m-0 tw-text-ui-sm">
+        <div class="ui-data-table__scroll tw:overflow-x-auto">
+            <table id="authAuditTable" class="table table-hover align-middle w-100 tw:m-0 tw:text-ui-sm">
                 <thead class="table-light">
                     <tr>
                         <th scope="col">{{ __('admin.copy.date_time') }}</th>

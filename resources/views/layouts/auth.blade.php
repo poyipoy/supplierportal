@@ -304,7 +304,7 @@
         }
     </style>
 </head>
-<body class="tw-m-0 tw-min-h-screen tw-bg-surface tw-font-sans tw-text-on-surface tw-antialiased">
+<body class="tw:m-0 tw:min-h-screen tw:bg-surface tw:font-sans tw:text-on-surface tw:antialiased">
     <x-ui.auth-splash :error="isset($exception)" />
     <main class="auth-shell" @yield('shell-attributes')>
         @hasSection('brand-panel')

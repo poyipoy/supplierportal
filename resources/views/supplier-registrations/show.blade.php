@@ -3,7 +3,7 @@
 @section('page-title', __('local_procurement.registration.review_heading'))
 
 @section('content')
-<div class="tw-grid tw-gap-6" x-data="{ approveModal: false, revisionModal: false, rejectModal: false }">
+<div class="tw:grid tw:gap-6" x-data="{ approveModal: false, revisionModal: false, rejectModal: false }">
     {{-- PAGE HEADER --}}
     <x-ui.page-header
         :title="$supplier?->company_name ?? $user->name"
@@ -11,7 +11,7 @@
         :eyebrow="__('local_procurement.registration.eyebrow')"
     >
         <x-slot:actions>
-            <a href="{{ route('supplier-registrations.index') }}" class="ui-focus-ring tw-inline-flex tw-items-center tw-gap-1.5 tw-px-3.5 tw-py-2 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-text-ui-sm tw-font-semibold tw-text-on-surface hover:tw-bg-surface-container tw-no-underline">
+            <a href="{{ route('supplier-registrations.index') }}" class="ui-focus-ring tw:inline-flex tw:items-center tw:gap-1.5 tw:px-3.5 tw:py-2 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:text-ui-sm tw:font-semibold tw:text-on-surface tw:hover:bg-surface-container tw:no-underline">
                 <x-ui.icon name="arrow-left" size="xs" />
                 <span>{{ __('local_procurement.registration.back') }}</span>
             </a>
@@ -19,38 +19,38 @@
     </x-ui.page-header>
 
     @if (session('success'))
-        <div class="tw-rounded-ui-sm tw-bg-success/15 tw-p-3.5 tw-text-on-surface tw-flex tw-items-center tw-gap-2.5 tw-text-ui-sm tw-font-medium" role="alert">
-            <x-ui.icon name="check-circle" size="sm" class="tw-text-success tw-shrink-0" />
+        <div class="tw:rounded-ui-sm tw:bg-success/15 tw:p-3.5 tw:text-on-surface tw:flex tw:items-center tw:gap-2.5 tw:text-ui-sm tw:font-medium" role="alert">
+            <x-ui.icon name="check-circle" size="sm" class="tw:text-success tw:shrink-0" />
             <span>{{ session('success') }}</span>
         </div>
     @endif
 
     @if (session('error'))
-        <div class="tw-rounded-ui-sm tw-bg-error-container tw-p-3.5 tw-text-on-error-container tw-flex tw-items-center tw-gap-2.5 tw-text-ui-sm tw-font-medium" role="alert">
-            <x-ui.icon name="alert-circle" size="sm" class="tw-shrink-0" />
+        <div class="tw:rounded-ui-sm tw:bg-error-container tw:p-3.5 tw:text-on-error-container tw:flex tw:items-center tw:gap-2.5 tw:text-ui-sm tw:font-medium" role="alert">
+            <x-ui.icon name="alert-circle" size="sm" class="tw:shrink-0" />
             <span>{{ session('error') }}</span>
         </div>
     @endif
 
     {{-- CURRENT STATUS CARD & REVIEWER ACTIONS --}}
-    <div class="tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-p-5 tw-shadow-xs">
-        <div class="tw-flex tw-flex-col md:tw-flex-row md:tw-items-center md:tw-justify-between tw-gap-4">
+    <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:p-5 tw-shadow-xs">
+        <div class="tw:flex tw:flex-col tw:md:flex-row tw:md:items-center tw:md:justify-between tw:gap-4">
             <div>
-                <div class="tw-flex tw-items-center tw-gap-2.5">
-                    <span class="tw-text-ui-xs tw-font-bold tw-text-on-surface-variant tw-uppercase tw-tracking-wider">{{ __('local_procurement.registration.application_status') }}</span>
+                <div class="tw:flex tw:items-center tw:gap-2.5">
+                    <span class="tw:text-ui-xs tw:font-bold tw:text-on-surface-variant tw:uppercase tw:tracking-wider">{{ __('local_procurement.registration.application_status') }}</span>
                     <x-ui.status-chip :tone="\App\Support\StatusHelper::registrationTone($attempt->status)">
                         {{ \App\Support\StatusHelper::registrationLabel($attempt->status) }}
                     </x-ui.status-chip>
                 </div>
 
                 @if ($attempt->reviewed_by)
-                    <p class="tw-m-0 tw-mt-1.5 tw-text-ui-xs tw-text-on-surface-variant">
+                    <p class="tw:m-0 tw:mt-1.5 tw:text-ui-xs tw:text-on-surface-variant">
                         {{ __('local_procurement.registration.last_review', ['name' => $attempt->reviewer?->name ?? __('local_procurement.registration.reviewer'), 'role' => $attempt->reviewer?->role, 'date' => $attempt->reviewed_at ? $regionalFormatter->timestamp($attempt->reviewed_at, 'datetime_comma') : '-']) }}
                     </p>
                 @endif
 
                 @if ($attempt->reviewer_notes)
-                    <div class="tw-mt-2 tw-text-ui-xs tw-text-on-surface tw-bg-surface-container tw-p-2.5 tw-rounded-ui-xs">
+                    <div class="tw:mt-2 tw:text-ui-xs tw:text-on-surface tw:bg-surface-container tw:p-2.5 tw:rounded-ui-xs">
                         <strong>{{ __('local_procurement.registration.review_notes') }}</strong> {{ $attempt->reviewer_notes }}
                     </div>
                 @endif
@@ -58,11 +58,11 @@
 
             {{-- ACTION BUTTONS FOR REVIEWER --}}
             @if ($attempt->status === \App\Models\SupplierRegistrationAttempt::STATUS_PENDING)
-                <div class="tw-flex tw-items-center tw-gap-2 tw-flex-wrap">
+                <div class="tw:flex tw:items-center tw:gap-2 tw:flex-wrap">
                     {{-- REQUEST REVISION BUTTON --}}
                     <button
                         type="button"
-                        class="ui-focus-ring tw-inline-flex tw-items-center tw-gap-1.5 tw-px-3.5 tw-py-2 tw-rounded-ui-sm tw-border tw-border-info tw-bg-info/10 tw-text-info tw-text-ui-sm tw-font-semibold hover:tw-bg-info/20"
+                        class="ui-focus-ring tw:inline-flex tw:items-center tw:gap-1.5 tw:px-3.5 tw:py-2 tw:rounded-ui-sm tw:border tw:border-info tw:bg-info/10 tw:text-info tw:text-ui-sm tw:font-semibold tw:hover:bg-info/20"
                         @click="revisionModal = true"
                     >
                         <x-ui.icon name="edit" size="xs" />
@@ -72,7 +72,7 @@
                     {{-- REJECT BUTTON --}}
                     <button
                         type="button"
-                        class="ui-focus-ring tw-inline-flex tw-items-center tw-gap-1.5 tw-px-3.5 tw-py-2 tw-rounded-ui-sm tw-border tw-border-error tw-bg-error/10 tw-text-error tw-text-ui-sm tw-font-semibold hover:tw-bg-error/20"
+                        class="ui-focus-ring tw:inline-flex tw:items-center tw:gap-1.5 tw:px-3.5 tw:py-2 tw:rounded-ui-sm tw:border tw:border-error tw:bg-error/10 tw:text-error tw:text-ui-sm tw:font-semibold tw:hover:bg-error/20"
                         @click="rejectModal = true"
                     >
                         <x-ui.icon name="x-circle" size="xs" />
@@ -82,7 +82,7 @@
                     {{-- APPROVE & ACTIVATE BUTTON --}}
                     <button
                         type="button"
-                        class="ui-focus-ring tw-inline-flex tw-items-center tw-gap-1.5 tw-px-4 tw-py-2 tw-rounded-ui-sm tw-bg-success tw-text-on-success tw-text-ui-sm tw-font-semibold tw-border-0 hover:tw-brightness-95 tw-shadow-xs"
+                        class="ui-focus-ring tw:inline-flex tw:items-center tw:gap-1.5 tw:px-4 tw:py-2 tw:rounded-ui-sm tw:bg-success tw:text-on-success tw:text-ui-sm tw:font-semibold tw:border-0 tw:hover:brightness-95 tw-shadow-xs"
                         @click="approveModal = true"
                     >
                         <x-ui.icon name="check-circle" size="xs" />
@@ -94,40 +94,40 @@
     </div>
 
     {{-- 2-COLUMN DETAILS GRID --}}
-    <div class="tw-grid tw-grid-cols-1 lg:tw-grid-cols-3 tw-gap-6">
+    <div class="tw:grid tw:grid-cols-1 tw:lg:grid-cols-3 tw:gap-6">
         {{-- LEFT COLUMN: COMPANY & PIC & BANK (2 cols) --}}
-        <div class="lg:tw-col-span-2 tw-space-y-6">
+        <div class="tw:lg:col-span-2 tw:space-y-6">
             {{-- COMPANY & TAX IDENTIFIER CARD --}}
-            <div class="tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-p-5 tw-shadow-xs">
-                <div class="tw-flex tw-items-center tw-gap-2 tw-mb-4 tw-text-primary">
+            <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:p-5 tw-shadow-xs">
+                <div class="tw:flex tw:items-center tw:gap-2 tw:mb-4 tw:text-primary">
                     <x-ui.icon name="building-2" size="sm" />
-                    <h3 class="tw-m-0 tw-text-ui-base tw-font-bold tw-text-on-surface">{{ __('local_procurement.registration.company_tax') }}</h3>
+                    <h3 class="tw:m-0 tw:text-ui-base tw:font-bold tw:text-on-surface">{{ __('local_procurement.registration.company_tax') }}</h3>
                 </div>
 
-                <dl class="tw-grid tw-grid-cols-1 md:tw-grid-cols-2 tw-gap-x-4 tw-gap-y-3 tw-text-ui-sm tw-m-0">
+                <dl class="tw:grid tw:grid-cols-1 tw:md:grid-cols-2 tw:gap-x-4 tw:gap-y-3 tw:text-ui-sm tw:m-0">
                     <div>
-                        <dt class="tw-text-ui-xs tw-text-on-surface-variant">{{ __('local_procurement.registration.legal_title') }}</dt>
-                        <dd class="tw-font-medium tw-text-on-surface tw-m-0">{{ $supplier?->company_title ?: __('local_procurement.registration.not_specified') }}</dd>
+                        <dt class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('local_procurement.registration.legal_title') }}</dt>
+                        <dd class="tw:font-medium tw:text-on-surface tw:m-0">{{ $supplier?->company_title ?: __('local_procurement.registration.not_specified') }}</dd>
                     </div>
                     <div>
-                        <dt class="tw-text-ui-xs tw-text-on-surface-variant">{{ __('local_procurement.registration.company_name') }}</dt>
-                        <dd class="tw-font-semibold tw-text-on-surface tw-m-0">{{ $supplier?->company_name ?? $user->name }}</dd>
+                        <dt class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('local_procurement.registration.company_name') }}</dt>
+                        <dd class="tw:font-semibold tw:text-on-surface tw:m-0">{{ $supplier?->company_name ?? $user->name }}</dd>
                     </div>
                     <div>
-                        <dt class="tw-text-ui-xs tw-text-on-surface-variant">{{ __('registration.nib') }}</dt>
-                        <dd class="tw-font-mono tw-font-semibold tw-text-on-surface tw-m-0">{{ $supplier?->nib ?? '-' }}</dd>
+                        <dt class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('registration.nib') }}</dt>
+                        <dd class="tw:font-mono tw:font-semibold tw:text-on-surface tw:m-0">{{ $supplier?->nib ?? '-' }}</dd>
                     </div>
                     <div>
-                        <dt class="tw-text-ui-xs tw-text-on-surface-variant">{{ __('local_procurement.registration.tax_identity') }}</dt>
-                        <dd class="tw-font-mono tw-font-semibold tw-text-on-surface tw-m-0">{{ $supplier?->npwp ?? '-' }}</dd>
+                        <dt class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('local_procurement.registration.tax_identity') }}</dt>
+                        <dd class="tw:font-mono tw:font-semibold tw:text-on-surface tw:m-0">{{ $supplier?->npwp ?? '-' }}</dd>
                     </div>
                     <div>
-                        <dt class="tw-text-ui-xs tw-text-on-surface-variant">{{ __('local_procurement.registration.business_category') }}</dt>
-                        <dd class="tw-font-medium tw-text-on-surface tw-m-0">{{ $supplier?->category ?? '-' }}</dd>
+                        <dt class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('local_procurement.registration.business_category') }}</dt>
+                        <dd class="tw:font-medium tw:text-on-surface tw:m-0">{{ $supplier?->category ?? '-' }}</dd>
                     </div>
                     <div>
-                        <dt class="tw-text-ui-xs tw-text-on-surface-variant">{{ __('local_procurement.registration.pkp') }}</dt>
-                        <dd class="tw-font-medium tw-text-on-surface tw-m-0">
+                        <dt class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('local_procurement.registration.pkp') }}</dt>
+                        <dd class="tw:font-medium tw:text-on-surface tw:m-0">
                             @if ($supplier?->is_pkp)
                                 <span class="ui-status-chip ui-status-chip--success">{{ __('local_procurement.registration.pkp_verified') }}</span>
                             @else
@@ -135,63 +135,63 @@
                             @endif
                         </dd>
                     </div>
-                    <div class="md:tw-col-span-2">
-                        <dt class="tw-text-ui-xs tw-text-on-surface-variant">{{ __('local_procurement.registration.legal_address') }}</dt>
-                        <dd class="tw-font-medium tw-text-on-surface tw-m-0">{{ $supplier?->address ?? '-' }}</dd>
+                    <div class="tw:md:col-span-2">
+                        <dt class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('local_procurement.registration.legal_address') }}</dt>
+                        <dd class="tw:font-medium tw:text-on-surface tw:m-0">{{ $supplier?->address ?? '-' }}</dd>
                     </div>
                     <div>
-                        <dt class="tw-text-ui-xs tw-text-on-surface-variant">{{ __('local_invoice.labels.company_phone') }}</dt>
-                        <dd class="tw-font-medium tw-text-on-surface tw-m-0">{{ $supplier?->phone ?? '-' }}</dd>
+                        <dt class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('local_invoice.labels.company_phone') }}</dt>
+                        <dd class="tw:font-medium tw:text-on-surface tw:m-0">{{ $supplier?->phone ?? '-' }}</dd>
                     </div>
                     <div>
-                        <dt class="tw-text-ui-xs tw-text-on-surface-variant">{{ __('local_procurement.registration.portal_email') }}</dt>
-                        <dd class="tw-font-medium tw-text-on-surface tw-m-0">{{ $user->email }}</dd>
+                        <dt class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('local_procurement.registration.portal_email') }}</dt>
+                        <dd class="tw:font-medium tw:text-on-surface tw:m-0">{{ $user->email }}</dd>
                     </div>
                 </dl>
             </div>
 
             {{-- PIC & BANK ACCOUNT CARD --}}
-            <div class="tw-grid tw-grid-cols-1 md:tw-grid-cols-2 tw-gap-6">
+            <div class="tw:grid tw:grid-cols-1 tw:md:grid-cols-2 tw:gap-6">
                 {{-- PIC CARD --}}
-                <div class="tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-p-5 tw-shadow-xs">
-                    <div class="tw-flex tw-items-center tw-gap-2 tw-mb-3 tw-text-primary">
+                <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:p-5 tw-shadow-xs">
+                    <div class="tw:flex tw:items-center tw:gap-2 tw:mb-3 tw:text-primary">
                         <x-ui.icon name="user" size="sm" />
-                    <h3 class="tw-m-0 tw-text-ui-sm tw-font-bold tw-text-on-surface">{{ __('local_procurement.registration.pic') }}</h3>
+                    <h3 class="tw:m-0 tw:text-ui-sm tw:font-bold tw:text-on-surface">{{ __('local_procurement.registration.pic') }}</h3>
                     </div>
-                    <div class="tw-space-y-2 tw-text-ui-sm">
+                    <div class="tw:space-y-2 tw:text-ui-sm">
                         <div>
-                            <span class="tw-text-ui-xs tw-text-on-surface-variant tw-block">{{ __('common.fields.full_name') }}</span>
-                            <span class="tw-font-medium tw-text-on-surface">{{ $supplier?->pic_name ?? '-' }}</span>
+                            <span class="tw:text-ui-xs tw:text-on-surface-variant tw:block">{{ __('common.fields.full_name') }}</span>
+                            <span class="tw:font-medium tw:text-on-surface">{{ $supplier?->pic_name ?? '-' }}</span>
                         </div>
                         <div>
-                            <span class="tw-text-ui-xs tw-text-on-surface-variant tw-block">{{ __('common.fields.email') }}</span>
-                            <span class="tw-font-medium tw-text-on-surface">{{ $supplier?->pic_email ?? '-' }}</span>
+                            <span class="tw:text-ui-xs tw:text-on-surface-variant tw:block">{{ __('common.fields.email') }}</span>
+                            <span class="tw:font-medium tw:text-on-surface">{{ $supplier?->pic_email ?? '-' }}</span>
                         </div>
                         <div>
-                        <span class="tw-text-ui-xs tw-text-on-surface-variant tw-block">{{ __('local_procurement.registration.phone') }}</span>
-                            <span class="tw-font-medium tw-text-on-surface">{{ $supplier?->pic_phone ?? '-' }}</span>
+                        <span class="tw:text-ui-xs tw:text-on-surface-variant tw:block">{{ __('local_procurement.registration.phone') }}</span>
+                            <span class="tw:font-medium tw:text-on-surface">{{ $supplier?->pic_phone ?? '-' }}</span>
                         </div>
                     </div>
                 </div>
 
                 {{-- BANK ACCOUNT CARD --}}
-                <div class="tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-p-5 tw-shadow-xs">
-                    <div class="tw-flex tw-items-center tw-gap-2 tw-mb-3 tw-text-primary">
+                <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:p-5 tw-shadow-xs">
+                    <div class="tw:flex tw:items-center tw:gap-2 tw:mb-3 tw:text-primary">
                         <x-ui.icon name="credit-card" size="sm" />
-                    <h3 class="tw-m-0 tw-text-ui-sm tw-font-bold tw-text-on-surface">{{ __('local_procurement.registration.bank_details') }}</h3>
+                    <h3 class="tw:m-0 tw:text-ui-sm tw:font-bold tw:text-on-surface">{{ __('local_procurement.registration.bank_details') }}</h3>
                     </div>
-                    <div class="tw-space-y-2 tw-text-ui-sm">
+                    <div class="tw:space-y-2 tw:text-ui-sm">
                         <div>
-                            <span class="tw-text-ui-xs tw-text-on-surface-variant tw-block">{{ __('registration.bank') }}</span>
-                            <span class="tw-font-medium tw-text-on-surface">{{ $bankAccount?->bank_name ?? '-' }}</span>
+                            <span class="tw:text-ui-xs tw:text-on-surface-variant tw:block">{{ __('registration.bank') }}</span>
+                            <span class="tw:font-medium tw:text-on-surface">{{ $bankAccount?->bank_name ?? '-' }}</span>
                         </div>
                         <div>
-                            <span class="tw-text-ui-xs tw-text-on-surface-variant tw-block">{{ __('registration.account_number') }}</span>
-                            <span class="tw-font-mono tw-font-semibold tw-text-on-surface">{{ $bankAccount?->account_number ?? '-' }}</span>
+                            <span class="tw:text-ui-xs tw:text-on-surface-variant tw:block">{{ __('registration.account_number') }}</span>
+                            <span class="tw:font-mono tw:font-semibold tw:text-on-surface">{{ $bankAccount?->account_number ?? '-' }}</span>
                         </div>
                         <div>
-                            <span class="tw-text-ui-xs tw-text-on-surface-variant tw-block">{{ __('local_invoice.labels.account_name') }}</span>
-                            <span class="tw-font-medium tw-text-on-surface">{{ $bankAccount?->account_holder_name ?? '-' }}</span>
+                            <span class="tw:text-ui-xs tw:text-on-surface-variant tw:block">{{ __('local_invoice.labels.account_name') }}</span>
+                            <span class="tw:font-medium tw:text-on-surface">{{ $bankAccount?->account_holder_name ?? '-' }}</span>
                         </div>
                     </div>
                 </div>
@@ -204,14 +204,14 @@
                     : \App\Support\SupplierComplianceQuestionnaire::answersFrom($supplier?->compliance_questionnaire);
                 $flaggedAnswers = \App\Support\SupplierComplianceQuestionnaire::flagged($snapshotAnswers);
             @endphp
-            <div class="tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-p-5 tw-shadow-xs">
-                <div class="tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-gap-2 tw-mb-3">
-                    <div class="tw-flex tw-items-center tw-gap-2 tw-text-primary">
+            <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:p-5 tw-shadow-xs">
+                <div class="tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-2 tw:mb-3">
+                    <div class="tw:flex tw:items-center tw:gap-2 tw:text-primary">
                         <x-ui.icon name="clipboard-check" size="sm" />
-                        <h3 class="tw-m-0 tw-text-ui-sm tw-font-bold tw-text-on-surface">{{ __('local_procurement.registration.questionnaire') }}</h3>
+                        <h3 class="tw:m-0 tw:text-ui-sm tw:font-bold tw:text-on-surface">{{ __('local_procurement.registration.questionnaire') }}</h3>
                     </div>
                     @if ($snapshotAnswers !== [])
-                        <span class="tw-inline-flex tw-items-center tw-gap-1 tw-text-ui-xs tw-font-semibold {{ $flaggedAnswers ? 'tw-text-warning' : 'tw-text-on-surface-variant' }}">
+                        <span class="tw:inline-flex tw:items-center tw:gap-1 tw:text-ui-xs tw:font-semibold {{ $flaggedAnswers ? 'tw:text-warning' : 'tw:text-on-surface-variant' }}">
                             <x-ui.icon :name="$flaggedAnswers ? 'alert-triangle' : 'check-circle'" size="xs" />
                             {{ trans_choice('local_procurement.registration.questionnaire_flagged', count($flaggedAnswers), ['count' => count($flaggedAnswers)]) }}
                         </span>
@@ -219,22 +219,22 @@
                 </div>
 
                 @if ($snapshotAnswers === [])
-                    <p class="tw-m-0 tw-text-ui-xs tw-text-on-surface-variant">{{ __('local_procurement.registration.questionnaire_missing') }}</p>
+                    <p class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ __('local_procurement.registration.questionnaire_missing') }}</p>
                 @else
-                    <dl class="tw-m-0 tw-grid tw-gap-1.5 tw-text-ui-sm">
+                    <dl class="tw:m-0 tw:grid tw:gap-1.5 tw:text-ui-sm">
                         @foreach (\App\Support\SupplierComplianceQuestionnaire::keys() as $index => $questionKey)
                             @php
                                 $answer = $snapshotAnswers[$questionKey] ?? null;
                                 $isFlagged = \App\Support\SupplierComplianceQuestionnaire::isFlagged($questionKey, $answer);
                             @endphp
-                            <div class="tw-flex tw-items-start tw-justify-between tw-gap-3 tw-rounded-ui-xs tw-border tw-px-3 tw-py-2 {{ $isFlagged ? 'tw-border-warning/50 tw-bg-warning/5' : 'tw-border-outline-variant' }}">
-                                <dt class="tw-text-on-surface tw-text-pretty">{{ $index + 1 }}. {{ __('registration.questionnaire.questions.'.$questionKey) }}</dt>
-                                <dd class="tw-m-0 tw-shrink-0 tw-text-end">
-                                    <span class="tw-font-semibold tw-text-on-surface">
+                            <div class="tw:flex tw:items-start tw:justify-between tw:gap-3 tw:rounded-ui-xs tw:border tw:px-3 tw:py-2 {{ $isFlagged ? 'tw:border-warning/50 tw:bg-warning/5' : 'tw:border-outline-variant' }}">
+                                <dt class="tw:text-on-surface tw:text-pretty">{{ $index + 1 }}. {{ __('registration.questionnaire.questions.'.$questionKey) }}</dt>
+                                <dd class="tw:m-0 tw:shrink-0 tw:text-end">
+                                    <span class="tw:font-semibold tw:text-on-surface">
                                         {{ $answer === null ? __('registration.questionnaire.not_answered') : __('registration.questionnaire.'.$answer) }}
                                     </span>
                                     @if ($isFlagged)
-                                        <span class="tw-mt-0.5 tw-flex tw-items-center tw-justify-end tw-gap-1 tw-text-[11px] tw-font-semibold tw-text-warning">
+                                        <span class="tw:mt-0.5 tw:flex tw:items-center tw:justify-end tw:gap-1 tw:text-[11px] tw:font-semibold tw:text-warning">
                                             <x-ui.icon name="alert-triangle" size="xs" />
                                             {{ __('registration.questionnaire.needs_attention') }}
                                         </span>
@@ -247,28 +247,28 @@
             </div>
 
             @if(filled($attempt->snapshot['revision_notes'] ?? null))
-                <div class="tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-p-5">
-                    <h3 class="tw-m-0 tw-text-ui-sm tw-font-bold tw-text-on-surface">{{ __('local_procurement.registration.snapshot_revision_notes') }}</h3>
-                    <p class="tw-m-0 tw-mt-2 tw-text-ui-sm tw-text-on-surface-variant tw-whitespace-pre-line">{{ $attempt->snapshot['revision_notes'] }}</p>
+                <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:p-5">
+                    <h3 class="tw:m-0 tw:text-ui-sm tw:font-bold tw:text-on-surface">{{ __('local_procurement.registration.snapshot_revision_notes') }}</h3>
+                    <p class="tw:m-0 tw:mt-2 tw:text-ui-sm tw:text-on-surface-variant tw:whitespace-pre-line">{{ $attempt->snapshot['revision_notes'] }}</p>
                 </div>
             @endif
 
             {{-- AUDIT TRAIL LOG --}}
-            <div class="tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-p-5 tw-shadow-xs">
-                <div class="tw-flex tw-items-center tw-gap-2 tw-mb-4 tw-text-primary">
+            <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:p-5 tw-shadow-xs">
+                <div class="tw:flex tw:items-center tw:gap-2 tw:mb-4 tw:text-primary">
                     <x-ui.icon name="shield-check" size="sm" />
-                    <h3 class="tw-m-0 tw-text-ui-base tw-font-bold tw-text-on-surface">{{ __('local_procurement.registration.audit_trail') }}</h3>
+                    <h3 class="tw:m-0 tw:text-ui-base tw:font-bold tw:text-on-surface">{{ __('local_procurement.registration.audit_trail') }}</h3>
                 </div>
 
-                <div class="tw-space-y-3">
+                <div class="tw:space-y-3">
                     @forelse ($audits as $audit)
-                        <div class="tw-flex tw-items-start tw-gap-3 tw-text-ui-xs tw-border-b tw-border-outline-variant tw-pb-2.5 last:tw-border-0">
-                            <span class="tw-inline-flex tw-items-center tw-justify-center tw-w-6 tw-h-6 tw-rounded-full tw-bg-primary/10 tw-text-primary tw-shrink-0 tw-mt-0.5">
+                        <div class="tw:flex tw:items-start tw:gap-3 tw:text-ui-xs tw:border-b tw:border-outline-variant tw:pb-2.5 tw:last:border-0">
+                            <span class="tw:inline-flex tw:items-center tw:justify-center tw:w-6 tw:h-6 tw:rounded-full tw:bg-primary/10 tw:text-primary tw:shrink-0 tw:mt-0.5">
                                 <x-ui.icon name="activity" size="xs" />
                             </span>
-                            <div class="tw-flex-1">
-                                <div class="tw-flex tw-items-center tw-justify-between">
-                                    <span class="tw-font-semibold tw-text-on-surface">{{ match($audit->event) {
+                            <div class="tw:flex-1">
+                                <div class="tw:flex tw:items-center tw:justify-between">
+                                    <span class="tw:font-semibold tw:text-on-surface">{{ match($audit->event) {
                                         'registration_submitted' => __('local_procurement.registration.event_submitted'),
                                         'registration_resubmitted' => __('local_procurement.registration.event_resubmitted'),
                                         'revision_requested' => __('local_procurement.registration.event_revision'),
@@ -280,53 +280,53 @@
                                         'status_accessed_credentials' => __('local_procurement.registration.event_status_accessed'),
                                         default => str_replace('_', ' ', strtoupper($audit->event)),
                                     } }}</span>
-                                    <span class="tw-text-on-surface-variant">{{ $regionalFormatter->timestamp($audit->created_at, 'datetime_comma') }}</span>
+                                    <span class="tw:text-on-surface-variant">{{ $regionalFormatter->timestamp($audit->created_at, 'datetime_comma') }}</span>
                                 </div>
-                                <div class="tw-text-on-surface-variant tw-mt-0.5">
+                                <div class="tw:text-on-surface-variant tw:mt-0.5">
                                     {{ __('local_procurement.registration.actor', ['name' => $audit->actor?->name ?? __('local_procurement.registration.system_applicant'), 'role' => $audit->actor_role]) }}
                                 </div>
                                 @if ($audit->notes)
-                                    <div class="tw-mt-1 tw-text-on-surface tw-bg-surface-container tw-p-2 tw-rounded-ui-xs">
+                                    <div class="tw:mt-1 tw:text-on-surface tw:bg-surface-container tw:p-2 tw:rounded-ui-xs">
                                         {{ $audit->notes }}
                                     </div>
                                 @endif
                             </div>
                         </div>
                     @empty
-                        <p class="tw-text-ui-xs tw-text-on-surface-variant tw-m-0">{{ __('local_procurement.registration.audit_empty') }}</p>
+                        <p class="tw:text-ui-xs tw:text-on-surface-variant tw:m-0">{{ __('local_procurement.registration.audit_empty') }}</p>
                     @endforelse
                 </div>
             </div>
         </div>
 
         {{-- RIGHT COLUMN: DOCUMENTS & ATTEMPT HISTORY (1 col) --}}
-        <div class="tw-space-y-6">
+        <div class="tw:space-y-6">
             {{-- DOCUMENTS CARD --}}
-            <div class="tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-p-5 tw-shadow-xs">
-                <div class="tw-flex tw-items-center tw-gap-2 tw-mb-4 tw-text-primary">
+            <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:p-5 tw-shadow-xs">
+                <div class="tw:flex tw:items-center tw:gap-2 tw:mb-4 tw:text-primary">
                     <x-ui.icon name="file-text" size="sm" />
-                    <h3 class="tw-m-0 tw-text-ui-sm tw-font-bold tw-text-on-surface">{{ __('registration.js.step3') }}</h3>
+                    <h3 class="tw:m-0 tw:text-ui-sm tw:font-bold tw:text-on-surface">{{ __('registration.js.step3') }}</h3>
                 </div>
 
-                <div class="tw-space-y-2.5">
+                <div class="tw:space-y-2.5">
                     @forelse ($documents as $doc)
-                        <div class="tw-p-3 tw-rounded-ui-xs tw-border tw-border-outline-variant tw-bg-surface-container-lowest">
-                            <div class="tw-flex tw-items-center tw-justify-between tw-mb-1">
-                                <span class="tw-font-semibold tw-text-ui-xs tw-text-primary">{{ match($doc->document_type) {
+                        <div class="tw:p-3 tw:rounded-ui-xs tw:border tw:border-outline-variant tw:bg-surface-container-lowest">
+                            <div class="tw:flex tw:items-center tw:justify-between tw:mb-1">
+                                <span class="tw:font-semibold tw:text-ui-xs tw:text-primary">{{ match($doc->document_type) {
                                     'SURAT_PERNYATAAN_REKENING' => __('local_procurement.registration.doc_bank_declaration'),
                                     'SKD' => __('local_procurement.registration.doc_domicile'),
                                     'COMPANY_PROFILE' => __('local_procurement.registration.doc_company_profile'),
                                     'OTHER' => __('local_procurement.registration.doc_other'),
                                     default => $doc->document_type,
                                 } }}</span>
-                                <span class="tw-text-[11px] tw-text-on-surface-variant">{{ number_format($doc->file_size / 1024, 1) }} KB</span>
+                                <span class="tw:text-[11px] tw:text-on-surface-variant">{{ number_format($doc->file_size / 1024, 1) }} KB</span>
                             </div>
-                            <p class="tw-m-0 tw-text-[11px] tw-text-on-surface-variant tw-truncate" title="{{ $doc->original_filename }}">{{ $doc->original_filename }}</p>
+                            <p class="tw:m-0 tw:text-[11px] tw:text-on-surface-variant tw:truncate" title="{{ $doc->original_filename }}">{{ $doc->original_filename }}</p>
 
-                            <div class="tw-mt-2 tw-pt-2 tw-border-t tw-border-outline-variant tw-flex tw-justify-end">
+                            <div class="tw:mt-2 tw:pt-2 tw:border-t tw:border-outline-variant tw:flex tw:justify-end">
                                 <a
                                     href="{{ route('supplier-registrations.document', ['attempt' => $attempt->hash, 'document' => $doc->hash]) }}"
-                                    class="ui-focus-ring tw-inline-flex tw-items-center tw-gap-1 tw-text-ui-xs tw-font-semibold tw-text-primary hover:tw-underline tw-no-underline"
+                                    class="ui-focus-ring tw:inline-flex tw:items-center tw:gap-1 tw:text-ui-xs tw:font-semibold tw:text-primary tw:hover:underline tw:no-underline"
                                 >
                                     <x-ui.icon name="download" size="xs" />
                                     <span>{{ __('local_procurement.registration.download') }}</span>
@@ -334,33 +334,33 @@
                             </div>
                         </div>
                     @empty
-                        <p class="tw-text-ui-xs tw-text-on-surface-variant tw-m-0">{{ __('local_procurement.registration.documents_empty') }}</p>
+                        <p class="tw:text-ui-xs tw:text-on-surface-variant tw:m-0">{{ __('local_procurement.registration.documents_empty') }}</p>
                     @endforelse
                 </div>
             </div>
 
             {{-- ATTEMPT HISTORY CARD --}}
-            <div class="tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-p-5 tw-shadow-xs">
-                <div class="tw-flex tw-items-center tw-gap-2 tw-mb-3 tw-text-primary">
+            <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:p-5 tw-shadow-xs">
+                <div class="tw:flex tw:items-center tw:gap-2 tw:mb-3 tw:text-primary">
                     <x-ui.icon name="history" size="sm" />
-                    <h3 class="tw-m-0 tw-text-ui-sm tw-font-bold tw-text-on-surface">{{ __('local_procurement.registration.attempts') }}</h3>
+                    <h3 class="tw:m-0 tw:text-ui-sm tw:font-bold tw:text-on-surface">{{ __('local_procurement.registration.attempts') }}</h3>
                 </div>
 
-                <div class="tw-space-y-2">
+                <div class="tw:space-y-2">
                     @foreach ($history as $h)
-                        <div class="tw-p-2.5 tw-rounded-ui-xs {{ $h->id === $attempt->id ? 'tw-bg-primary/10 tw-border tw-border-primary/30' : 'tw-bg-surface-container tw-border tw-border-outline-variant' }}">
-                            <div class="tw-flex tw-items-center tw-justify-between">
-                                <span class="tw-font-bold tw-text-ui-xs">{{ __('local_procurement.registration.attempt', ['attempt' => $h->attempt_number]) }}</span>
+                        <div class="tw:p-2.5 tw:rounded-ui-xs {{ $h->id === $attempt->id ? 'tw:bg-primary/10 tw:border tw:border-primary/30' : 'tw:bg-surface-container tw:border tw:border-outline-variant' }}">
+                            <div class="tw:flex tw:items-center tw:justify-between">
+                                <span class="tw:font-bold tw:text-ui-xs">{{ __('local_procurement.registration.attempt', ['attempt' => $h->attempt_number]) }}</span>
                                 <x-ui.status-chip :tone="\App\Support\StatusHelper::registrationTone($h->status)">
                                     {{ \App\Support\StatusHelper::registrationLabel($h->status) }}
                                 </x-ui.status-chip>
                             </div>
-                            <div class="tw-text-[11px] tw-text-on-surface-variant tw-mt-1">
+                            <div class="tw:text-[11px] tw:text-on-surface-variant tw:mt-1">
                                 {{ $h->submitted_at ? $regionalFormatter->timestamp($h->submitted_at, 'datetime_comma') : '-' }}
                             </div>
                             @if ($h->id !== $attempt->id)
-                                <div class="tw-mt-2">
-                                    <a href="{{ route('supplier-registrations.show', $h->hash) }}" class="tw-text-ui-xs tw-font-semibold tw-text-primary hover:tw-underline tw-no-underline">
+                                <div class="tw:mt-2">
+                                    <a href="{{ route('supplier-registrations.show', $h->hash) }}" class="tw:text-ui-xs tw:font-semibold tw:text-primary tw:hover:underline tw:no-underline">
                                         {{ __('local_procurement.registration.view_attempt') }} &rarr;
                                     </a>
                                 </div>
@@ -376,30 +376,30 @@
     <div
         x-show="approveModal"
         style="display: none;"
-        class="tw-fixed tw-inset-0 tw-z-50 tw-flex tw-items-center tw-justify-center tw-bg-black/60 tw-p-4"
-        x-transition:enter="tw-transition tw-ease-out tw-duration-200"
-        x-transition:enter-start="tw-opacity-0"
-        x-transition:enter-end="tw-opacity-100"
-        x-transition:leave="tw-transition tw-ease-in tw-duration-150"
-        x-transition:leave-start="tw-opacity-100"
-        x-transition:leave-end="tw-opacity-0"
+        class="tw:fixed tw:inset-0 tw:z-50 tw:flex tw:items-center tw:justify-center tw:bg-black/60 tw:p-4"
+        x-transition:enter="tw:transition tw:ease-out tw:duration-200"
+        x-transition:enter-start="tw:opacity-0"
+        x-transition:enter-end="tw:opacity-100"
+        x-transition:leave="tw:transition tw:ease-in tw:duration-150"
+        x-transition:leave-start="tw:opacity-100"
+        x-transition:leave-end="tw:opacity-0"
     >
         <div
-            class="tw-w-full tw-max-w-lg tw-rounded-ui-sm tw-bg-surface tw-p-6 tw-shadow-xl tw-border tw-border-outline-variant"
+            class="tw:w-full tw:max-w-lg tw:rounded-ui-sm tw:bg-surface tw:p-6 tw:shadow-xl tw:border tw:border-outline-variant"
             @click.away="approveModal = false"
             x-data="{ scopeImport: true, scopeLocal: false }"
         >
-            <div class="tw-flex tw-items-center tw-justify-between tw-mb-4">
-                <div class="tw-flex tw-items-center tw-gap-2.5 tw-text-success">
+            <div class="tw:flex tw:items-center tw:justify-between tw:mb-4">
+                <div class="tw:flex tw:items-center tw:gap-2.5 tw:text-success">
                     <x-ui.icon name="check-circle" size="md" />
-                    <h3 class="tw-m-0 tw-text-ui-lg tw-font-bold tw-text-on-surface">{{ __('local_procurement.registration.approve_supplier') }}</h3>
+                    <h3 class="tw:m-0 tw:text-ui-lg tw:font-bold tw:text-on-surface">{{ __('local_procurement.registration.approve_supplier') }}</h3>
                 </div>
-                <button type="button" class="tw-border-0 tw-bg-transparent tw-text-on-surface-variant hover:tw-text-on-surface" @click="approveModal = false">
+                <button type="button" class="tw:border-0 tw:bg-transparent tw:text-on-surface-variant tw:hover:text-on-surface" @click="approveModal = false">
                     <x-ui.icon name="x" size="sm" />
                 </button>
             </div>
 
-            <p class="tw-m-0 tw-text-ui-sm tw-text-on-surface-variant tw-mb-4">
+            <p class="tw:m-0 tw:text-ui-sm tw:text-on-surface-variant tw:mb-4">
                 {{ __('local_procurement.registration.approve_help', ['attempt' => $attempt->attempt_number, 'email' => $user->email]) }}
             </p>
 
@@ -407,53 +407,53 @@
                 @csrf
 
                 {{-- SCOPE ASSIGNMENT --}}
-                <div class="tw-rounded-ui-xs tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-4 tw-mb-4">
-                    <label class="tw-block tw-text-ui-sm tw-font-bold tw-text-on-surface tw-mb-2">
-                        {{ __('local_procurement.registration.assign_scopes') }} <span class="tw-text-error">*</span>
+                <div class="tw:rounded-ui-xs tw:border tw:border-outline-variant tw:bg-surface-container-lowest tw:p-4 tw:mb-4">
+                    <label class="tw:block tw:text-ui-sm tw:font-bold tw:text-on-surface tw:mb-2">
+                        {{ __('local_procurement.registration.assign_scopes') }} <span class="tw:text-error">*</span>
                     </label>
 
                     {{-- PRESET SHORTCUTS --}}
-                    <div class="tw-flex tw-gap-2 tw-mb-3">
-                        <button type="button" class="ui-focus-ring tw-px-2.5 tw-py-1 tw-rounded-ui-xs tw-border tw-border-outline-variant tw-bg-surface tw-text-ui-xs tw-font-medium hover:tw-bg-surface-container" @click="scopeImport = true; scopeLocal = false">
+                    <div class="tw:flex tw:gap-2 tw:mb-3">
+                        <button type="button" class="ui-focus-ring tw:px-2.5 tw:py-1 tw:rounded-ui-xs tw:border tw:border-outline-variant tw:bg-surface tw:text-ui-xs tw:font-medium tw:hover:bg-surface-container" @click="scopeImport = true; scopeLocal = false">
                             {{ __('local_procurement.registration.import_only') }}
                         </button>
-                        <button type="button" class="ui-focus-ring tw-px-2.5 tw-py-1 tw-rounded-ui-xs tw-border tw-border-outline-variant tw-bg-surface tw-text-ui-xs tw-font-medium hover:tw-bg-surface-container" @click="scopeImport = false; scopeLocal = true">
+                        <button type="button" class="ui-focus-ring tw:px-2.5 tw:py-1 tw:rounded-ui-xs tw:border tw:border-outline-variant tw:bg-surface tw:text-ui-xs tw:font-medium tw:hover:bg-surface-container" @click="scopeImport = false; scopeLocal = true">
                             {{ __('local_procurement.registration.local_only') }}
                         </button>
-                        <button type="button" class="ui-focus-ring tw-px-2.5 tw-py-1 tw-rounded-ui-xs tw-border tw-border-outline-variant tw-bg-surface tw-text-ui-xs tw-font-medium hover:tw-bg-surface-container" @click="scopeImport = true; scopeLocal = true">
+                        <button type="button" class="ui-focus-ring tw:px-2.5 tw:py-1 tw:rounded-ui-xs tw:border tw:border-outline-variant tw:bg-surface tw:text-ui-xs tw:font-medium tw:hover:bg-surface-container" @click="scopeImport = true; scopeLocal = true">
                             {{ __('local_procurement.registration.both') }}
                         </button>
                     </div>
 
-                    <div class="tw-space-y-2">
-                        <label class="tw-flex tw-items-center tw-gap-2.5 tw-cursor-pointer">
-                            <input type="checkbox" name="scopes[]" value="import" x-model="scopeImport" class="form-check-input tw-mt-0">
+                    <div class="tw:space-y-2">
+                        <label class="tw:flex tw:items-center tw:gap-2.5 tw:cursor-pointer">
+                            <input type="checkbox" name="scopes[]" value="import" x-model="scopeImport" class="form-check-input tw:mt-0">
                             <div>
-                                <span class="tw-text-ui-sm tw-font-semibold tw-text-on-surface">{{ __('local_procurement.registration.import_scope') }}</span>
-                                <span class="tw-text-ui-xs tw-text-on-surface-variant tw-block">{{ __('local_procurement.registration.import_scope_help') }}</span>
+                                <span class="tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('local_procurement.registration.import_scope') }}</span>
+                                <span class="tw:text-ui-xs tw:text-on-surface-variant tw:block">{{ __('local_procurement.registration.import_scope_help') }}</span>
                             </div>
                         </label>
 
-                        <label class="tw-flex tw-items-center tw-gap-2.5 tw-cursor-pointer">
-                            <input type="checkbox" name="scopes[]" value="local" x-model="scopeLocal" class="form-check-input tw-mt-0">
+                        <label class="tw:flex tw:items-center tw:gap-2.5 tw:cursor-pointer">
+                            <input type="checkbox" name="scopes[]" value="local" x-model="scopeLocal" class="form-check-input tw:mt-0">
                             <div>
-                                <span class="tw-text-ui-sm tw-font-semibold tw-text-on-surface">{{ __('local_procurement.registration.local_scope') }}</span>
-                                <span class="tw-text-ui-xs tw-text-on-surface-variant tw-block">{{ __('local_procurement.registration.local_scope_help') }}</span>
+                                <span class="tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('local_procurement.registration.local_scope') }}</span>
+                                <span class="tw:text-ui-xs tw:text-on-surface-variant tw:block">{{ __('local_procurement.registration.local_scope_help') }}</span>
                             </div>
                         </label>
                     </div>
                 </div>
 
                 {{-- VENDOR CATEGORY (decides whether a Surat Jalan is required on invoices) --}}
-                <div class="tw-rounded-ui-xs tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-4 tw-mb-4">
-                    <label for="approve_vendor_category" class="tw-block tw-text-ui-sm tw-font-bold tw-text-on-surface tw-mb-2">
-                        {{ __('local_procurement.registration.assign_vendor_category') }} <span class="tw-text-error">*</span>
+                <div class="tw:rounded-ui-xs tw:border tw:border-outline-variant tw:bg-surface-container-lowest tw:p-4 tw:mb-4">
+                    <label for="approve_vendor_category" class="tw:block tw:text-ui-sm tw:font-bold tw:text-on-surface tw:mb-2">
+                        {{ __('local_procurement.registration.assign_vendor_category') }} <span class="tw:text-error">*</span>
                     </label>
                     <select
                         id="approve_vendor_category"
                         name="vendor_category"
                         required
-                        class="ui-motion tw-h-10 tw-w-full tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-px-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary/20"
+                        class="ui-motion tw:h-10 tw:w-full tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:px-3 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary/20"
                     >
                         <option value="">{{ __('local_procurement.registration.select_vendor_category') }}</option>
                         @foreach (\App\Models\Supplier::VENDOR_CATEGORIES as $vendorCategoryOption)
@@ -463,9 +463,9 @@
                         @endforeach
                     </select>
                     @error('vendor_category')
-                        <p class="tw-m-0 tw-mt-1 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>
+                        <p class="tw:m-0 tw:mt-1 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>
                     @enderror
-                    <p class="tw-m-0 tw-mt-1.5 tw-text-ui-xs tw-text-on-surface-variant">{{ __('local_procurement.registration.vendor_category_help') }}</p>
+                    <p class="tw:m-0 tw:mt-1.5 tw:text-ui-xs tw:text-on-surface-variant">{{ __('local_procurement.registration.vendor_category_help') }}</p>
                 </div>
 
                 {{-- BANK ACCOUNT CONFIRMATION (the reviewer vouches that the SKNR matches the submitted account) --}}
@@ -474,56 +474,56 @@
                     $declarationId = (int) ($attempt->submission_snapshot['documents'][\App\Models\SupplierMasterDocument::TYPE_SURAT_PERNYATAAN_REKENING]['document_id'] ?? 0);
                     $declarationDoc = $user->supplierMasterDocuments->firstWhere('id', $declarationId);
                 @endphp
-                <div class="tw-rounded-ui-xs tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-4 tw-mb-4">
-                    <p class="tw-m-0 tw-mb-2 tw-text-ui-sm tw-font-bold tw-text-on-surface">{{ __('local_procurement.registration.bank_confirm_title') }}</p>
-                    <dl class="tw-m-0 tw-mb-3 tw-grid tw-grid-cols-3 tw-gap-x-3 tw-gap-y-1 tw-text-ui-xs">
-                        <dt class="tw-text-on-surface-variant">{{ __('local_procurement.vendor_ui.bank_name') }}</dt>
-                        <dd class="tw-col-span-2 tw-m-0 tw-font-semibold tw-text-on-surface">{{ $snapshotBank['bank_name'] ?? '-' }}</dd>
-                        <dt class="tw-text-on-surface-variant">{{ __('local_procurement.vendor_ui.bank_number') }}</dt>
-                        <dd class="tw-col-span-2 tw-m-0 tw-font-mono tw-font-semibold tw-text-on-surface">{{ $snapshotBank['account_number'] ?? '-' }}</dd>
-                        <dt class="tw-text-on-surface-variant">{{ __('local_invoice.labels.account_name') }}</dt>
-                        <dd class="tw-col-span-2 tw-m-0 tw-font-semibold tw-text-on-surface">{{ $snapshotBank['account_holder_name'] ?? '-' }}</dd>
+                <div class="tw:rounded-ui-xs tw:border tw:border-outline-variant tw:bg-surface-container-lowest tw:p-4 tw:mb-4">
+                    <p class="tw:m-0 tw:mb-2 tw:text-ui-sm tw:font-bold tw:text-on-surface">{{ __('local_procurement.registration.bank_confirm_title') }}</p>
+                    <dl class="tw:m-0 tw:mb-3 tw:grid tw:grid-cols-3 tw:gap-x-3 tw:gap-y-1 tw:text-ui-xs">
+                        <dt class="tw:text-on-surface-variant">{{ __('local_procurement.vendor_ui.bank_name') }}</dt>
+                        <dd class="tw:col-span-2 tw:m-0 tw:font-semibold tw:text-on-surface">{{ $snapshotBank['bank_name'] ?? '-' }}</dd>
+                        <dt class="tw:text-on-surface-variant">{{ __('local_procurement.vendor_ui.bank_number') }}</dt>
+                        <dd class="tw:col-span-2 tw:m-0 tw:font-mono tw:font-semibold tw:text-on-surface">{{ $snapshotBank['account_number'] ?? '-' }}</dd>
+                        <dt class="tw:text-on-surface-variant">{{ __('local_invoice.labels.account_name') }}</dt>
+                        <dd class="tw:col-span-2 tw:m-0 tw:font-semibold tw:text-on-surface">{{ $snapshotBank['account_holder_name'] ?? '-' }}</dd>
                     </dl>
                     @if ($declarationDoc)
                         <a
                             href="{{ route('supplier-registrations.document', ['attempt' => $attempt->hash, 'document' => $declarationDoc->hash]) }}"
-                            class="ui-focus-ring tw-mb-3 tw-inline-flex tw-items-center tw-gap-1 tw-text-ui-xs tw-font-semibold tw-text-primary hover:tw-underline tw-no-underline"
+                            class="ui-focus-ring tw:mb-3 tw:inline-flex tw:items-center tw:gap-1 tw:text-ui-xs tw:font-semibold tw:text-primary tw:hover:underline tw:no-underline"
                         >
                             <x-ui.icon name="download" size="xs" />
                             <span>{{ __('local_procurement.registration.doc_bank_declaration') }}: {{ $declarationDoc->original_filename }}</span>
                         </a>
                     @else
-                        <p class="tw-m-0 tw-mb-3 tw-text-ui-xs tw-font-medium tw-text-error">{{ __('local_procurement.registration.bank_declaration_missing') }}</p>
+                        <p class="tw:m-0 tw:mb-3 tw:text-ui-xs tw:font-medium tw:text-error">{{ __('local_procurement.registration.bank_declaration_missing') }}</p>
                     @endif
-                    <label class="tw-flex tw-items-start tw-gap-2.5 tw-cursor-pointer">
-                        <input type="checkbox" name="confirm_bank_declaration" value="1" class="form-check-input tw-mt-0.5" @disabled(! $declarationDoc)>
-                        <span class="tw-text-ui-sm tw-text-on-surface">{{ __('local_procurement.registration.bank_confirm_checkbox') }}</span>
+                    <label class="tw:flex tw:items-start tw:gap-2.5 tw:cursor-pointer">
+                        <input type="checkbox" name="confirm_bank_declaration" value="1" class="form-check-input tw:mt-0.5" @disabled(! $declarationDoc)>
+                        <span class="tw:text-ui-sm tw:text-on-surface">{{ __('local_procurement.registration.bank_confirm_checkbox') }}</span>
                     </label>
-                    <p class="tw-m-0 tw-mt-1.5 tw-text-ui-xs tw-text-on-surface-variant">{{ __('local_procurement.registration.bank_confirm_help') }}</p>
+                    <p class="tw:m-0 tw:mt-1.5 tw:text-ui-xs tw:text-on-surface-variant">{{ __('local_procurement.registration.bank_confirm_help') }}</p>
                 </div>
 
                 {{-- OPTIONAL APPROVAL NOTES --}}
-                <div class="tw-mb-4">
-                    <label for="approval_notes" class="tw-block tw-text-ui-sm tw-font-medium tw-text-on-surface tw-mb-1">
+                <div class="tw:mb-4">
+                    <label for="approval_notes" class="tw:block tw:text-ui-sm tw:font-medium tw:text-on-surface tw:mb-1">
                         {{ __('local_procurement.registration.approval_notes') }}
                     </label>
                     <textarea
                         id="approval_notes"
                         name="notes"
                         rows="2"
-                        class="ui-motion tw-w-full tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-p-2.5 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary"
+                        class="ui-motion tw:w-full tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:p-2.5 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary"
                         placeholder="{{ __('local_procurement.registration.approval_example') }}"
                     ></textarea>
                 </div>
 
-                <div class="tw-flex tw-items-center tw-justify-end tw-gap-2.5">
-                    <button type="button" class="ui-focus-ring tw-px-4 tw-py-2 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-text-ui-sm tw-font-semibold tw-text-on-surface hover:tw-bg-surface-container" @click="approveModal = false">
+                <div class="tw:flex tw:items-center tw:justify-end tw:gap-2.5">
+                    <button type="button" class="ui-focus-ring tw:px-4 tw:py-2 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:text-ui-sm tw:font-semibold tw:text-on-surface tw:hover:bg-surface-container" @click="approveModal = false">
                         {{ __('local_invoice.actions.cancel') }}
                     </button>
                     <button
                         type="submit"
                         :disabled="!scopeImport && !scopeLocal"
-                        class="ui-focus-ring tw-px-5 tw-py-2 tw-rounded-ui-sm tw-bg-success tw-text-on-success tw-text-ui-sm tw-font-semibold tw-border-0 hover:tw-brightness-95 disabled:tw-opacity-50"
+                        class="ui-focus-ring tw:px-5 tw:py-2 tw:rounded-ui-sm tw:bg-success tw:text-on-success tw:text-ui-sm tw:font-semibold tw:border-0 tw:hover:brightness-95 tw:disabled:opacity-50"
                     >
                         {{ __('local_procurement.registration.confirm_approval') }}
                     </button>
@@ -536,51 +536,51 @@
     <div
         x-show="revisionModal"
         style="display: none;"
-        class="tw-fixed tw-inset-0 tw-z-50 tw-flex tw-items-center tw-justify-center tw-bg-black/60 tw-p-4"
-        x-transition:enter="tw-transition tw-ease-out tw-duration-200"
-        x-transition:enter-start="tw-opacity-0"
-        x-transition:enter-end="tw-opacity-100"
-        x-transition:leave="tw-transition tw-ease-in tw-duration-150"
-        x-transition:leave-start="tw-opacity-100"
-        x-transition:leave-end="tw-opacity-0"
+        class="tw:fixed tw:inset-0 tw:z-50 tw:flex tw:items-center tw:justify-center tw:bg-black/60 tw:p-4"
+        x-transition:enter="tw:transition tw:ease-out tw:duration-200"
+        x-transition:enter-start="tw:opacity-0"
+        x-transition:enter-end="tw:opacity-100"
+        x-transition:leave="tw:transition tw:ease-in tw:duration-150"
+        x-transition:leave-start="tw:opacity-100"
+        x-transition:leave-end="tw:opacity-0"
     >
-        <div class="tw-w-full tw-max-w-lg tw-rounded-ui-sm tw-bg-surface tw-p-6 tw-shadow-xl tw-border tw-border-outline-variant" @click.away="revisionModal = false">
-            <div class="tw-flex tw-items-center tw-justify-between tw-mb-4">
-                <div class="tw-flex tw-items-center tw-gap-2.5 tw-text-info">
+        <div class="tw:w-full tw:max-w-lg tw:rounded-ui-sm tw:bg-surface tw:p-6 tw:shadow-xl tw:border tw:border-outline-variant" @click.away="revisionModal = false">
+            <div class="tw:flex tw:items-center tw:justify-between tw:mb-4">
+                <div class="tw:flex tw:items-center tw:gap-2.5 tw:text-info">
                     <x-ui.icon name="edit" size="md" />
-                    <h3 class="tw-m-0 tw-text-ui-lg tw-font-bold tw-text-on-surface">{{ __('local_procurement.registration.revision_title') }}</h3>
+                    <h3 class="tw:m-0 tw:text-ui-lg tw:font-bold tw:text-on-surface">{{ __('local_procurement.registration.revision_title') }}</h3>
                 </div>
-                <button type="button" class="tw-border-0 tw-bg-transparent tw-text-on-surface-variant hover:tw-text-on-surface" @click="revisionModal = false">
+                <button type="button" class="tw:border-0 tw:bg-transparent tw:text-on-surface-variant tw:hover:text-on-surface" @click="revisionModal = false">
                     <x-ui.icon name="x" size="sm" />
                 </button>
             </div>
 
-            <p class="tw-m-0 tw-text-ui-sm tw-text-on-surface-variant tw-mb-4">
+            <p class="tw:m-0 tw:text-ui-sm tw:text-on-surface-variant tw:mb-4">
                 {{ __('local_procurement.registration.revision_help') }}
             </p>
 
             <form method="POST" action="{{ route('supplier-registrations.revision', $attempt->hash) }}">
                 @csrf
 
-                <div class="tw-mb-4">
-                    <label for="revision_reason" class="tw-block tw-text-ui-sm tw-font-bold tw-text-on-surface tw-mb-1">
-                        {{ __('local_procurement.registration.revision_reason') }} <span class="tw-text-error">*</span>
+                <div class="tw:mb-4">
+                    <label for="revision_reason" class="tw:block tw:text-ui-sm tw:font-bold tw:text-on-surface tw:mb-1">
+                        {{ __('local_procurement.registration.revision_reason') }} <span class="tw:text-error">*</span>
                     </label>
                     <textarea
                         id="revision_reason"
                         name="reason"
                         rows="4"
-                        class="ui-motion tw-w-full tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-p-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary"
+                        class="ui-motion tw:w-full tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:p-3 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary"
                         placeholder="{{ __('local_procurement.registration.revision_example') }}"
                         required
                     ></textarea>
                 </div>
 
-                <div class="tw-flex tw-items-center tw-justify-end tw-gap-2.5">
-                    <button type="button" class="ui-focus-ring tw-px-4 tw-py-2 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-text-ui-sm tw-font-semibold tw-text-on-surface hover:tw-bg-surface-container" @click="revisionModal = false">
+                <div class="tw:flex tw:items-center tw:justify-end tw:gap-2.5">
+                    <button type="button" class="ui-focus-ring tw:px-4 tw:py-2 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:text-ui-sm tw:font-semibold tw:text-on-surface tw:hover:bg-surface-container" @click="revisionModal = false">
                         {{ __('local_invoice.actions.cancel') }}
                     </button>
-                    <button type="submit" class="ui-focus-ring tw-px-5 tw-py-2 tw-rounded-ui-sm tw-bg-info tw-text-on-info tw-text-ui-sm tw-font-semibold tw-border-0 hover:tw-brightness-95">
+                    <button type="submit" class="ui-focus-ring tw:px-5 tw:py-2 tw:rounded-ui-sm tw:bg-info tw:text-on-info tw:text-ui-sm tw:font-semibold tw:border-0 tw:hover:brightness-95">
                         {{ __('local_procurement.registration.send_revision') }}
                     </button>
                 </div>
@@ -592,51 +592,51 @@
     <div
         x-show="rejectModal"
         style="display: none;"
-        class="tw-fixed tw-inset-0 tw-z-50 tw-flex tw-items-center tw-justify-center tw-bg-black/60 tw-p-4"
-        x-transition:enter="tw-transition tw-ease-out tw-duration-200"
-        x-transition:enter-start="tw-opacity-0"
-        x-transition:enter-end="tw-opacity-100"
-        x-transition:leave="tw-transition tw-ease-in tw-duration-150"
-        x-transition:leave-start="tw-opacity-100"
-        x-transition:leave-end="tw-opacity-0"
+        class="tw:fixed tw:inset-0 tw:z-50 tw:flex tw:items-center tw:justify-center tw:bg-black/60 tw:p-4"
+        x-transition:enter="tw:transition tw:ease-out tw:duration-200"
+        x-transition:enter-start="tw:opacity-0"
+        x-transition:enter-end="tw:opacity-100"
+        x-transition:leave="tw:transition tw:ease-in tw:duration-150"
+        x-transition:leave-start="tw:opacity-100"
+        x-transition:leave-end="tw:opacity-0"
     >
-        <div class="tw-w-full tw-max-w-lg tw-rounded-ui-sm tw-bg-surface tw-p-6 tw-shadow-xl tw-border tw-border-outline-variant" @click.away="rejectModal = false">
-            <div class="tw-flex tw-items-center tw-justify-between tw-mb-4">
-                <div class="tw-flex tw-items-center tw-gap-2.5 tw-text-error">
+        <div class="tw:w-full tw:max-w-lg tw:rounded-ui-sm tw:bg-surface tw:p-6 tw:shadow-xl tw:border tw:border-outline-variant" @click.away="rejectModal = false">
+            <div class="tw:flex tw:items-center tw:justify-between tw:mb-4">
+                <div class="tw:flex tw:items-center tw:gap-2.5 tw:text-error">
                     <x-ui.icon name="alert-triangle" size="md" />
-                    <h3 class="tw-m-0 tw-text-ui-lg tw-font-bold tw-text-on-surface">{{ __('local_procurement.registration.reject_title') }}</h3>
+                    <h3 class="tw:m-0 tw:text-ui-lg tw:font-bold tw:text-on-surface">{{ __('local_procurement.registration.reject_title') }}</h3>
                 </div>
-                <button type="button" class="tw-border-0 tw-bg-transparent tw-text-on-surface-variant hover:tw-text-on-surface" @click="rejectModal = false">
+                <button type="button" class="tw:border-0 tw:bg-transparent tw:text-on-surface-variant tw:hover:text-on-surface" @click="rejectModal = false">
                     <x-ui.icon name="x" size="sm" />
                 </button>
             </div>
 
-            <p class="tw-m-0 tw-text-ui-sm tw-text-on-surface-variant tw-mb-4">
+            <p class="tw:m-0 tw:text-ui-sm tw:text-on-surface-variant tw:mb-4">
                 {{ __('local_procurement.registration.reject_help') }}
             </p>
 
             <form method="POST" action="{{ route('supplier-registrations.reject', $attempt->hash) }}">
                 @csrf
 
-                <div class="tw-mb-4">
-                    <label for="reject_reason" class="tw-block tw-text-ui-sm tw-font-bold tw-text-on-surface tw-mb-1">
-                        {{ __('local_procurement.registration.reject_reason') }} <span class="tw-text-error">*</span>
+                <div class="tw:mb-4">
+                    <label for="reject_reason" class="tw:block tw:text-ui-sm tw:font-bold tw:text-on-surface tw:mb-1">
+                        {{ __('local_procurement.registration.reject_reason') }} <span class="tw:text-error">*</span>
                     </label>
                     <textarea
                         id="reject_reason"
                         name="reason"
                         rows="3"
-                        class="ui-motion tw-w-full tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-p-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary"
+                        class="ui-motion tw:w-full tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:p-3 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary"
                         placeholder="{{ __('local_procurement.registration.reject_example') }}"
                         required
                     ></textarea>
                 </div>
 
-                <div class="tw-flex tw-items-center tw-justify-end tw-gap-2.5">
-                    <button type="button" class="ui-focus-ring tw-px-4 tw-py-2 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-text-ui-sm tw-font-semibold tw-text-on-surface hover:tw-bg-surface-container" @click="rejectModal = false">
+                <div class="tw:flex tw:items-center tw:justify-end tw:gap-2.5">
+                    <button type="button" class="ui-focus-ring tw:px-4 tw:py-2 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:text-ui-sm tw:font-semibold tw:text-on-surface tw:hover:bg-surface-container" @click="rejectModal = false">
                         {{ __('local_invoice.actions.cancel') }}
                     </button>
-                    <button type="submit" class="ui-focus-ring tw-px-5 tw-py-2 tw-rounded-ui-sm tw-bg-error tw-text-on-error tw-text-ui-sm tw-font-semibold tw-border-0 hover:tw-brightness-95">
+                    <button type="submit" class="ui-focus-ring tw:px-5 tw:py-2 tw:rounded-ui-sm tw:bg-error tw:text-on-error tw:text-ui-sm tw:font-semibold tw:border-0 tw:hover:brightness-95">
                         {{ __('local_procurement.registration.confirm_rejection') }}
                     </button>
                 </div>

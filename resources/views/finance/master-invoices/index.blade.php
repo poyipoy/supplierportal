@@ -3,7 +3,7 @@
 @section('page-title', __('common.final_review.master_reporting'))
 
 @section('content')
-<div class="tw-grid tw-gap-6 tw-pb-16">
+<div class="tw:grid tw:gap-6 tw:pb-16">
     <x-ui.page-header
         :title="__('common.final_review.master_reporting')"
         :description="__('finance.copy_review.master_help')"
@@ -19,7 +19,7 @@
     </x-ui.page-header>
 
     {{-- Filter Quick Tabs: All, Unpaid, Paid --}}
-    <div class="tw-flex tw-flex-wrap tw-items-center tw-gap-2">
+    <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-2">
         <a href="{{ route('finance.master-invoices') }}" class="btn btn-sm {{ empty(request('payment_status')) ? 'btn-primary' : 'btn-outline-secondary' }}">
             {{ __('local_invoice.filters.all_invoices') }}
         </a>

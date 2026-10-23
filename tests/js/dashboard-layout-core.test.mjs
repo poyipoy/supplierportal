@@ -41,20 +41,20 @@ test('spans outside the supported set are treated as full width', () => {
 
 test('the Blade component and this module declare the same literal col-span classes', async () => {
     const blade = await readFile(new URL('../../resources/views/components/ui/dashboard-layout.blade.php', import.meta.url), 'utf8');
-    const fromBlade = Object.fromEntries([...blade.matchAll(/(\d+)\s*=>\s*'(lg:tw-col-span-\d+)'/g)].map(([, span, name]) => [span, name]));
+    const fromBlade = Object.fromEntries([...blade.matchAll(/(\d+)\s*=>\s*'(tw:lg:col-span-\d+)'/g)].map(([, span, name]) => [span, name]));
     assert.deepEqual(fromBlade, SPAN_CLASSES);
 });
 
 test('the Customization wireframe declares the same unprefixed tile classes as this module', async () => {
     const blade = await readFile(new URL('../../resources/views/profile/customization.blade.php', import.meta.url), 'utf8');
-    const fromBlade = Object.fromEntries([...blade.matchAll(/(\d+)\s*=>\s*'(tw-col-span-\d+)'/g)].map(([, span, name]) => [span, name]));
+    const fromBlade = Object.fromEntries([...blade.matchAll(/(\d+)\s*=>\s*'(tw:col-span-\d+)'/g)].map(([, span, name]) => [span, name]));
     assert.deepEqual(fromBlade, TILE_SPAN_CLASSES);
-    for (const span of ALLOWED_SPANS) assert.equal(tileSpanClass(span), `tw-col-span-${span}`);
-    assert.equal(tileSpanClass(10), 'tw-col-span-12');
+    for (const span of ALLOWED_SPANS) assert.equal(tileSpanClass(span), `tw:col-span-${span}`);
+    assert.equal(tileSpanClass(10), 'tw:col-span-12');
 });
 
 test('every allowed span has a literal col-span class and unknown spans fall back to full width', () => {
     assert.deepEqual(Object.keys(SPAN_CLASSES).map(Number), [...ALLOWED_SPANS]);
-    for (const span of ALLOWED_SPANS) assert.equal(spanClass(span), `lg:tw-col-span-${span}`);
-    assert.equal(spanClass(10), 'lg:tw-col-span-12');
+    for (const span of ALLOWED_SPANS) assert.equal(spanClass(span), `tw:lg:col-span-${span}`);
+    assert.equal(spanClass(10), 'tw:lg:col-span-12');
 });

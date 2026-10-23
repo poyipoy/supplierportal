@@ -3,7 +3,7 @@
 @section('page-title', __('local_invoice.actions.submit'))
 
 @section('content')
-<div class="tw-grid tw-gap-6 tw-pb-16">
+<div class="tw:grid tw:gap-6 tw:pb-16">
     <x-ui.page-header
         :title="__('local_invoice.actions.submit_local')"
         :description="__('local_invoice.form.invoice_details_help')"

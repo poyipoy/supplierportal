@@ -6,7 +6,7 @@
 import { TILE_SPAN_CLASSES, computeEffectiveSpans, tileSpanClass } from './dashboard-layout-core.js';
 
 const TILE_SPAN_CLASS_LIST = Object.values(TILE_SPAN_CLASSES);
-const HIDDEN_TILE_CLASSES = ['tw-border-dashed', 'tw-opacity-70'];
+const HIDDEN_TILE_CLASSES = ['tw:border-dashed', 'tw:opacity-70'];
 
 export function syncWireframe(list) {
     if (!list || typeof list.querySelectorAll !== 'function') return;

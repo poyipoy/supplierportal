@@ -3,7 +3,7 @@
 @section('page-title', __('accounting.overview.title'))
 
 @section('content')
-<div class="tw-grid tw-gap-6 tw-pb-16">
+<div class="tw:grid tw:gap-6 tw:pb-16">
     <x-ui.page-header
         :title="__('local_invoice.dashboard.page_heading')"
         :description="__('accounting.overview.description')"
@@ -33,7 +33,7 @@
         $scheduledTotal = ($counts['APPROVED'] ?? 0) + ($counts['PAYMENT_SCHEDULED'] ?? 0);
     @endphp
 
-    <div class="tw-grid tw-grid-cols-2 md:tw-grid-cols-3 lg:tw-grid-cols-5 tw-gap-4">
+    <div class="tw:grid tw:grid-cols-2 tw:md:grid-cols-3 tw:lg:grid-cols-5 tw:gap-4">
         <x-ui.metric-card
             :label="__('accounting.overview.total')"
             :value="$regionalFormatter->number((string) ($totalInvoices), 'plain')"
@@ -75,26 +75,26 @@
     <x-slot:lifecycle>
     {{-- Secondary Status Funnel / Pipeline Overview --}}
     <x-ui.card>
-        <div class="tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-gap-4">
-            <div class="tw-min-w-0">
-                <span class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-on-surface-variant">{{ __('accounting.overview.lifecycle') }}</span>
-                <span class="tw-block tw-text-ui-xs tw-text-on-surface-variant tw-mt-0.5">{{ __('accounting.overview.lifecycle_help') }}</span>
+        <div class="tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-4">
+            <div class="tw:min-w-0">
+                <span class="tw:text-ui-xs tw:font-semibold tw:uppercase tw:tracking-wider tw:text-on-surface-variant">{{ __('accounting.overview.lifecycle') }}</span>
+                <span class="tw:block tw:text-ui-xs tw:text-on-surface-variant tw:mt-0.5">{{ __('accounting.overview.lifecycle_help') }}</span>
             </div>
-            <div class="tw-flex tw-flex-wrap tw-items-center tw-gap-2.5">
-                <span class="tw-inline-flex tw-items-center tw-gap-1.5 tw-px-2.5 tw-py-1 tw-rounded-full tw-text-ui-xs tw-bg-surface-container tw-text-on-surface">
-                    <span class="tw-w-2 tw-h-2 tw-rounded-full tw-bg-primary"></span>
+            <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-2.5">
+                <span class="tw:inline-flex tw:items-center tw:gap-1.5 tw:px-2.5 tw:py-1 tw:rounded-full tw:text-ui-xs tw:bg-surface-container tw:text-on-surface">
+                    <span class="tw:w-2 tw:h-2 tw:rounded-full tw:bg-primary"></span>
                     {{ __('local_invoice.labels.submitted') }}: <strong>{{ $regionalFormatter->number((string) ($counts['SUBMITTED'] ?? 0), 'plain') }}</strong>
                 </span>
-                <span class="tw-inline-flex tw-items-center tw-gap-1.5 tw-px-2.5 tw-py-1 tw-rounded-full tw-text-ui-xs tw-bg-surface-container tw-text-on-surface">
-                    <span class="tw-w-2 tw-h-2 tw-rounded-full tw-bg-info"></span>
+                <span class="tw:inline-flex tw:items-center tw:gap-1.5 tw:px-2.5 tw:py-1 tw:rounded-full tw:text-ui-xs tw:bg-surface-container tw:text-on-surface">
+                    <span class="tw:w-2 tw:h-2 tw:rounded-full tw:bg-info"></span>
                     {{ __('status.local_invoice.under_review') }}: <strong>{{ $regionalFormatter->number((string) ($counts['UNDER_REVIEW'] ?? 0), 'plain') }}</strong>
                 </span>
-                <span class="tw-inline-flex tw-items-center tw-gap-1.5 tw-px-2.5 tw-py-1 tw-rounded-full tw-text-ui-xs tw-bg-surface-container tw-text-on-surface">
-                    <span class="tw-w-2 tw-h-2 tw-rounded-full tw-bg-success"></span>
+                <span class="tw:inline-flex tw:items-center tw:gap-1.5 tw:px-2.5 tw:py-1 tw:rounded-full tw:text-ui-xs tw:bg-surface-container tw:text-on-surface">
+                    <span class="tw:w-2 tw:h-2 tw:rounded-full tw:bg-success"></span>
                     {{ __('local_invoice.payment_category.completed') }}: <strong>{{ $regionalFormatter->number((string) ($counts['COMPLETED'] ?? 0), 'plain') }}</strong>
                 </span>
-                <span class="tw-inline-flex tw-items-center tw-gap-1.5 tw-px-2.5 tw-py-1 tw-rounded-full tw-text-ui-xs tw-bg-surface-container tw-text-on-surface">
-                    <span class="tw-w-2 tw-h-2 tw-rounded-full tw-bg-error"></span>
+                <span class="tw:inline-flex tw:items-center tw:gap-1.5 tw:px-2.5 tw:py-1 tw:rounded-full tw:text-ui-xs tw:bg-surface-container tw:text-on-surface">
+                    <span class="tw:w-2 tw:h-2 tw:rounded-full tw:bg-error"></span>
                     {{ __('terms.rejected') }}: <strong>{{ $regionalFormatter->number((string) ($counts['REJECTED'] ?? 0), 'plain') }}</strong>
                 </span>
             </div>

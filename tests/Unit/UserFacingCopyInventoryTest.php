@@ -6,6 +6,15 @@ use PHPUnit\Framework\TestCase;
 
 class UserFacingCopyInventoryTest extends TestCase
 {
+    public function test_tailwind_v4_variants_are_classes_while_visible_copy_remains_reviewable(): void
+    {
+        require_once dirname(__DIR__).'/Support/user-facing-copy-inventory.php';
+
+        $this->assertTrue(userFacingCopyIsCssClassList('tw:flex tw:lg:grid-cols-3 tw:aria-[current=page]:bg-primary tw:-translate-x-full'));
+        $this->assertTrue(userFacingCopyIsCssClassList('tw-bg-primary ui-focus-ring'));
+        $this->assertFalse(userFacingCopyIsCssClassList('Ready for payment'));
+    }
+
     private function scanFixture(string $name, string $path): array
     {
         require_once dirname(__DIR__).'/Support/user-facing-copy-inventory.php';

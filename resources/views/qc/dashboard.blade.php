@@ -4,7 +4,7 @@
 @section('page-title', __('qc.copy.quality_control_dashboard'))
 
 @section('content')
-<div class="tw-grid tw-gap-4">
+<div class="tw:grid tw:gap-4">
     {{-- Page Header --}}
     <x-ui.page-header
         :title="__('qc.copy.quality_control_dashboard')"
@@ -17,7 +17,7 @@
 {{-- Operational Action Queue Banner if Waiting Inspections Exist --}}
     @if($waitingInspections > 0)
         <x-ui.alert tone="warning" :title="__('qc.copy.inspection_queue_requires_attention')">
-            <div class="tw-flex tw-flex-col tw-gap-3 sm:tw-flex-row sm:tw-items-center sm:tw-justify-between">
+            <div class="tw:flex tw:flex-col tw:gap-3 tw:sm:flex-row tw:sm:items-center tw:sm:justify-between">
                 <span>{{ trans_choice('qc.summary.waiting_shipments', $waitingInspections, ['count' => $waitingInspections]) }}</span>
                 @if($firstWaitingPo)
                     <x-ui.button :href="route('qc.inspections.create', $firstWaitingPo)" size="sm">
@@ -57,7 +57,7 @@
             />
         </x-slot:emptyState>
 
-        <table class="table table-hover align-middle mb-0 tw-text-ui-xs w-100">
+        <table class="table table-hover align-middle mb-0 tw:text-ui-xs w-100">
             <thead class="table-light">
                 <tr>
                     <th scope="col">{{ __('qc.copy.po_number') }}</th>
@@ -71,10 +71,10 @@
             <tbody>
                 @foreach($recentInspections as $insp)
                     <tr>
-                        <td class="fw-bold tw-text-on-surface">{{ $insp->purchaseOrder->po_number ?? '-' }}</td>
-                        <td class="tw-text-on-surface fw-medium">{{ $insp->purchaseOrder->supplier->name ?? '-' }}</td>
-                        <td class="tw-text-on-surface-variant ui-tabular-nums">{{ $insp->inspected_at ? $regionalFormatter->timestamp($insp->inspected_at, 'datetime_comma') : '-' }}</td>
-                        <td class="tw-text-on-surface-variant">{{ $insp->inspector->name ?? '-' }}</td>
+                        <td class="fw-bold tw:text-on-surface">{{ $insp->purchaseOrder->po_number ?? '-' }}</td>
+                        <td class="tw:text-on-surface fw-medium">{{ $insp->purchaseOrder->supplier->name ?? '-' }}</td>
+                        <td class="tw:text-on-surface-variant ui-tabular-nums">{{ $insp->inspected_at ? $regionalFormatter->timestamp($insp->inspected_at, 'datetime_comma') : '-' }}</td>
+                        <td class="tw:text-on-surface-variant">{{ $insp->inspector->name ?? '-' }}</td>
                         <td class="text-center">
                             <x-status-badge type="qc" :status="$insp->status" />
                         </td>
@@ -93,7 +93,7 @@
 
         <x-slot:metrics>
 {{-- Restrained operational summary --}}
-    <div class="tw-grid tw-gap-px tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-outline-variant sm:tw-grid-cols-2 xl:tw-grid-cols-4" aria-label="{{ __('qc.copy.quality_control_summary') }}">
+    <div class="tw:grid tw:gap-px tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-outline-variant tw:sm:grid-cols-2 tw:xl:grid-cols-4" aria-label="{{ __('qc.copy.quality_control_summary') }}">
         <x-ui.metric-card flat :label="__('qc.copy.total_inspections')" :value="$regionalFormatter->number((string) ($totalInspections), 'plain')" icon="clipboard-check" tone="neutral" :href="route('qc.inspections.index')" />
         <x-ui.metric-card flat :label="__('qc.copy.material_ok')" :value="$regionalFormatter->number((string) ($totalOk), 'plain')" icon="circle-check" tone="success" :href="route('qc.inspections.index', ['status' => 'ok'])" />
         <x-ui.metric-card flat :label="__('qc.copy.material_ng_defective')" :value="$regionalFormatter->number((string) ($totalNg), 'plain')" icon="circle-x" :tone="$totalNg > 0 ? 'error' : 'neutral'" :href="route('qc.inspections.index', ['status' => 'ng'])" />
@@ -103,27 +103,27 @@
 
         <x-slot:charts>
 {{-- Restrained Quality Charts Grid --}}
-    <div class="tw-grid tw-grid-cols-1 tw-gap-4 lg:tw-grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+    <div class="tw:grid tw:grid-cols-1 tw:gap-4 tw:lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
         {{-- Quality Ratio Doughnut Chart --}}
-        <x-ui.card :title="__('qc.copy.quality_pass_fail_ratio')" :description="__('qc.copy.aggregate_ok_vs_ng_outcome_ratio')" class="tw-h-full">
-            <div class="tw-flex tw-flex-col tw-items-center tw-justify-center tw-py-2">
+        <x-ui.card :title="__('qc.copy.quality_pass_fail_ratio')" :description="__('qc.copy.aggregate_ok_vs_ng_outcome_ratio')" class="tw:h-full">
+            <div class="tw:flex tw:flex-col tw:items-center tw:justify-center tw:py-2">
                 @if($totalInspections > 0)
-                    <div class="tw-h-[220px] tw-w-[220px] position-relative">
+                    <div class="tw:h-[220px] tw:w-[220px] position-relative">
                         <canvas id="qualityChart" role="img" aria-label="{{ __('qc.copy.qc_ok_and_ng_distribution') }}">{{ __('qc.copy.qc_ok_and_ng_distribution_chart') }}</canvas>
                     </div>
-                    <div class="d-flex flex-wrap justify-content-center gap-4 mt-3 tw-text-ui-xs">
-                        <div class="d-flex align-items-center tw-gap-1.5">
+                    <div class="d-flex flex-wrap justify-content-center gap-4 mt-3 tw:text-ui-xs">
+                        <div class="d-flex align-items-center tw:gap-1.5">
                             <span class="d-inline-block rounded-circle bg-success" style="width: 10px; height: 10px;"></span>
-                            <span class="tw-text-on-surface fw-semibold">OK: {{ $totalOk }} ({{ $totalInspections > 0 ? round(($totalOk / $totalInspections) * 100) : 0 }}%)</span>
+                            <span class="tw:text-on-surface fw-semibold">OK: {{ $totalOk }} ({{ $totalInspections > 0 ? round(($totalOk / $totalInspections) * 100) : 0 }}%)</span>
                         </div>
-                        <div class="d-flex align-items-center tw-gap-1.5">
+                        <div class="d-flex align-items-center tw:gap-1.5">
                             <span class="d-inline-block rounded-circle bg-danger" style="width: 10px; height: 10px;"></span>
-                            <span class="tw-text-on-surface fw-semibold">NG: {{ $totalNg }} ({{ $totalInspections > 0 ? round(($totalNg / $totalInspections) * 100) : 0 }}%)</span>
+                            <span class="tw:text-on-surface fw-semibold">NG: {{ $totalNg }} ({{ $totalInspections > 0 ? round(($totalNg / $totalInspections) * 100) : 0 }}%)</span>
                         </div>
                     </div>
                 @else
-                    <div class="tw-text-outline text-center py-5 tw-text-ui-xs">
-                        <x-ui.icon name="chart-pie" size="lg" class="mb-2 tw-text-outline" />
+                    <div class="tw:text-outline text-center py-5 tw:text-ui-xs">
+                        <x-ui.icon name="chart-pie" size="lg" class="mb-2 tw:text-outline" />
                         <p class="mb-0">{{ __('qc.copy.no_inspection_records_available') }}</p>
                     </div>
                 @endif
@@ -131,8 +131,8 @@
         </x-ui.card>
 
         {{-- OK vs NG 6-Month Trend Chart --}}
-        <x-ui.card :title="__('qc.copy.inspection_outcomes_trend_6_month')" :description="__('qc.copy.monthly_distribution_of_inspected_material_quality')" class="tw-h-full">
-            <div class="tw-h-[260px] w-100">
+        <x-ui.card :title="__('qc.copy.inspection_outcomes_trend_6_month')" :description="__('qc.copy.monthly_distribution_of_inspected_material_quality')" class="tw:h-full">
+            <div class="tw:h-[260px] w-100">
                 <canvas id="trendChart" role="img" aria-label="{{ __('qc.copy.qc_ok_and_ng_trend_by_period') }}">{{ __('qc.copy.qc_ok_and_ng_trend_chart_by_period') }}</canvas>
             </div>
         </x-ui.card>

@@ -41,7 +41,7 @@
 </x-ui.toolbar>
 
 {{-- Summary Metrics Strip --}}
-<div class="tw-grid tw-gap-px tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-outline-variant sm:tw-grid-cols-2 xl:tw-grid-cols-4" aria-label="{{ __('purchasing.copy.historical_benchmark_summary') }}">
+<div class="tw:grid tw:gap-px tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-outline-variant tw:sm:grid-cols-2 tw:xl:grid-cols-4" aria-label="{{ __('purchasing.copy.historical_benchmark_summary') }}">
     <x-ui.metric-card flat :label="__('purchasing.copy.total_compared_data')" :value="$summary['total_rows']" icon="list-check" tone="neutral" value-id="vsBestTotalRows" />
     <x-ui.metric-card flat :label="__('purchasing.copy.competitive_safe')" :value="$summary['competitive_count']" icon="shield-check" tone="success" value-id="vsBestCompetitiveCount" />
     <x-ui.metric-card flat :label="__('purchasing.copy.above_history')" :value="$summary['above_count']" icon="trending-up" tone="{{ $summary['above_count'] > 0 ? 'warning' : 'neutral' }}" value-id="vsBestAboveCount" />
@@ -49,7 +49,7 @@
 </div>
 
 <x-ui.data-table :title="__('purchasing.copy.price_benchmark_details')" :description="__('purchasing.copy.server_side_results_are_ordered_by_the_largest_potential_difference')">
-    <table class="table table-hover align-middle mb-0 w-100 tw-text-ui-sm" id="vsBestTable">
+    <table class="table table-hover align-middle mb-0 w-100 tw:text-ui-sm" id="vsBestTable">
         <thead class="table-light text-center">
             <tr>
                 <th scope="col" class="text-start">{{ __('purchasing.copy.material') }}</th>

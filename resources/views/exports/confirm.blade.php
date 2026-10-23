@@ -5,7 +5,7 @@
 
 @section('content')
 <x-ui.page-header :title="__('exports.confirmation.title')" :description="$label" />
-<section class="tw-mt-4 tw-border tw-border-outline tw-bg-surface tw-p-5">
+<section class="tw:mt-4 tw:border tw:border-outline tw:bg-surface tw:p-5">
     <p>{{ __('exports.confirmation.help') }}</p>
     <form method="POST" action="{{ $action }}" data-async-export
           data-export-source-singular="{{ __('js.export.record') }}"

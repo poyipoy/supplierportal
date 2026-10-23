@@ -3,7 +3,7 @@
 @section('page-title', __('admin.copy.edit_user'))
 
 @section('content')
-<div class="tw-grid tw-gap-6 tw-pb-24">
+<div class="tw:grid tw:gap-6 tw:pb-24">
     <x-ui.breadcrumb :items="['Users' => route('admin.users.index'), $user->name => null]" />
 
     <x-ui.page-header
@@ -44,9 +44,9 @@
             :title="__('admin.copy.account_identity')"
             :description="__('profile.account_help')"
         >
-            <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
+            <div class="tw:grid tw:gap-4 tw:sm:grid-cols-2">
                 <div>
-                    <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="user-name">
+                    <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="user-name">
                         {{ __('admin.copy.full_name') }} <span class="text-danger">*</span>
                     </label>
                     <input
@@ -63,11 +63,11 @@
                 </div>
 
                 <div>
-                    <div class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface">{{ __('profile.login_email') }}</div>
-                    <p class="tw-m-0 tw-break-all tw-text-ui-sm tw-font-semibold">{{ $user->email }}</p>
-                    <p class="tw-m-0 tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">{{ __('profile.email_help') }}</p>
+                    <div class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface">{{ __('profile.login_email') }}</div>
+                    <p class="tw:m-0 tw:break-all tw:text-ui-sm tw:font-semibold">{{ $user->email }}</p>
+                    <p class="tw:m-0 tw:mt-1 tw:text-ui-xs tw:text-on-surface-variant">{{ __('profile.email_help') }}</p>
                     @error('email')
-                        <p class="tw-m-0 tw-mt-1 tw-text-ui-xs tw-text-error" role="alert">{{ $message }}</p>
+                        <p class="tw:m-0 tw:mt-1 tw:text-ui-xs tw:text-error" role="alert">{{ $message }}</p>
                     @enderror
                 </div>
             </div>
@@ -78,9 +78,9 @@
             :title="__('admin.copy.access_role_and_activation')"
             :description="__('admin.copy.modifying_role_or_status_will_automatically_invalidate_existing_active_sessions_for_security')"
         >
-            <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
+            <div class="tw:grid tw:gap-4 tw:sm:grid-cols-2">
                 <div>
-                    <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="role-select">
+                    <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="role-select">
                         {{ __('admin.copy.portal_role') }} <span class="text-danger">*</span>
                     </label>
                     <select name="role" id="role-select" class="form-select @error('role') is-invalid @enderror" required>
@@ -97,10 +97,10 @@
                     @enderror
                 </div>
 
-                <div class="tw-flex tw-items-center tw-pt-6">
+                <div class="tw:flex tw:items-center tw:pt-6">
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" name="is_active" id="isActive" value="1" {{ old('is_active', $user->is_active) ? 'checked' : '' }}>
-                        <label class="form-check-label tw-text-ui-sm tw-font-medium tw-text-on-surface" for="isActive">
+                        <label class="form-check-label tw:text-ui-sm tw:font-medium tw:text-on-surface" for="isActive">
                             {{ __('admin.copy.active_account_allowed_to_sign_in') }}
                         </label>
                     </div>
@@ -113,9 +113,9 @@
             :title="__('admin.copy.credential_management')"
             :description="__('admin.copy.leave_both_password_inputs_blank_if_you_do_not_wish_to_reset_the_user_s_password')"
         >
-            <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
+            <div class="tw:grid tw:gap-4 tw:sm:grid-cols-2">
                 <div>
-                    <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="user-password">
+                    <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="user-password">
                         {{ __('admin.copy.new_password') }}
                     </label>
                     <input
@@ -128,14 +128,14 @@
                         autocomplete="new-password"
                         placeholder="{{ __('admin.copy.leave_blank_to_retain_current_password') }}"
                     >
-                    <small class="tw-text-ui-xs tw-text-on-surface-variant tw-mt-1 tw-block">{{ __('admin.copy.minimum_12_characters_if_updating') }}</small>
+                    <small class="tw:text-ui-xs tw:text-on-surface-variant tw:mt-1 tw:block">{{ __('admin.copy.minimum_12_characters_if_updating') }}</small>
                     @error('password')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
 
                 <div>
-                    <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="user-password-confirmation">
+                    <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="user-password-confirmation">
                         {{ __('admin.copy.confirm_new_password') }}
                     </label>
                     <input
@@ -160,9 +160,9 @@
                 :title="__('admin.copy.supplier_organization')"
                 :description="__('admin.copy.company_identity_contact_details_and_material_category')"
             >
-                <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
+                <div class="tw:grid tw:gap-4 tw:sm:grid-cols-2">
                     <div>
-                        <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="supplier-company-name">
+                        <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="supplier-company-name">
                             {{ __('admin.copy.company_legal_name_pt_cv_corp') }} <span class="text-danger">*</span>
                         </label>
                         <input
@@ -178,7 +178,7 @@
                     </div>
 
                     <div>
-                        <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="supplier-category">
+                        <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="supplier-category">
                             {{ __('admin.copy.material_supply_category') }} <span class="text-danger">*</span>
                         </label>
                         <input
@@ -195,7 +195,7 @@
                     </div>
 
                     <div>
-                        <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="supplier-phone">
+                        <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="supplier-phone">
                             {{ __('admin.copy.phone_contact_number') }} <span class="text-danger">*</span>
                         </label>
                         <input
@@ -211,7 +211,7 @@
                     </div>
 
                     <div>
-                        <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="supplier-npwp">
+                        <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="supplier-npwp">
                             {{ __('admin.copy.tax_id_npwp') }} <span class="text-danger">*</span>
                         </label>
                         <input
@@ -226,8 +226,8 @@
                         @enderror
                     </div>
 
-                    <div class="sm:tw-col-span-2">
-                        <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="supplier-address">
+                    <div class="tw:sm:col-span-2">
+                        <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="supplier-address">
                             {{ __('admin.copy.registered_office_address') }} <span class="text-danger">*</span>
                         </label>
                         <textarea
@@ -247,7 +247,7 @@
         {{-- Sticky Action Bar --}}
         <x-ui.action-bar>
             <x-slot:left>
-                <span class="tw-text-ui-xs tw-text-on-surface-variant">
+                <span class="tw:text-ui-xs tw:text-on-surface-variant">
                     {{ __('common.final_review.last_updated', ['date' => $user->updated_at ? $regionalFormatter->timestamp($user->updated_at, 'datetime_comma') : '-']) }}
                 </span>
             </x-slot:left>
@@ -265,15 +265,15 @@
 
     {{-- Section 5: Security / Two-Factor Authentication Reset (if applicable) --}}
     @if ($user->hasTwoFactorAuthentication() && $user->id !== auth()->id())
-        <div class="tw-border tw-border-error/40 tw-rounded-ui-sm tw-bg-surface-low tw-p-5">
-            <div class="tw-flex tw-flex-col tw-gap-4 md:tw-flex-row md:tw-items-center md:tw-justify-between">
+        <div class="tw:border tw:border-error/40 tw:rounded-ui-sm tw:bg-surface-low tw:p-5">
+            <div class="tw:flex tw:flex-col tw:gap-4 tw:md:flex-row tw:md:items-center tw:md:justify-between">
                 <div>
-                    <h3 class="tw-m-0 tw-text-ui-sm tw-font-semibold tw-text-error">{{ __('admin.copy.two_factor_authentication_security') }}</h3>
-                    <p class="tw-m-0 tw-mt-1 tw-text-ui-xs tw-text-on-surface-variant">
+                    <h3 class="tw:m-0 tw:text-ui-sm tw:font-semibold tw:text-error">{{ __('admin.copy.two_factor_authentication_security') }}</h3>
+                    <p class="tw:m-0 tw:mt-1 tw:text-ui-xs tw:text-on-surface-variant">
                         {{ __('admin.copy.reset_mfa_only_after_confirming_the_user_has_permanently_lost_access_to_their_authenticator_device_a') }}
                     </p>
                 </div>
-                <form method="POST" action="{{ route('admin.users.two-factor.destroy', $user) }}" class="mfa-reset-form tw-shrink-0">
+                <form method="POST" action="{{ route('admin.users.two-factor.destroy', $user) }}" class="mfa-reset-form tw:shrink-0">
                     @csrf
 
                     @method('DELETE')

@@ -13,7 +13,7 @@
 @endphp
 <x-ui.card :title="__('shipments.mtc.section_title')" :description="__('shipments.mtc.section_description')" id="shipmentMtc" data-shipment-mtc>
     @if($manageable)
-        <x-ui.alert tone="info" class="tw-mb-3">
+        <x-ui.alert tone="info" class="tw:mb-3">
             @if($shipment->status === \App\Models\Shipment::STATUS_DRAFT)
                 {{ __('shipments.mtc.required_hint') }}
             @elseif($shipment->status === \App\Models\Shipment::STATUS_SUBMITTED)
@@ -23,13 +23,13 @@
             @endif
         </x-ui.alert>
     @endif
-    @error('mtc')<x-ui.alert tone="error" class="tw-mb-3">{{ $message }}</x-ui.alert>@enderror
+    @error('mtc')<x-ui.alert tone="error" class="tw:mb-3">{{ $message }}</x-ui.alert>@enderror
 
     @if($mtcFiles->isEmpty())
-        <p class="tw-m-0 tw-text-ui-xs tw-text-on-surface-variant">{{ __('shipments.mtc.none') }}</p>
+        <p class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ __('shipments.mtc.none') }}</p>
     @else
         <div class="table-responsive">
-            <table class="table table-sm align-middle mb-0 tw-text-ui-xs">
+            <table class="table table-sm align-middle mb-0 tw:text-ui-xs">
                 <caption class="visually-hidden">{{ __('shipments.mtc.section_title') }}</caption>
                 <thead class="table-light">
                     <tr>
@@ -64,7 +64,7 @@
                             </td>
                             @if($canRemove)
                                 <td class="text-end">
-                                    <form method="POST" action="{{ route('supplier.shipments.mtc.destroy', [$shipment, $file]) }}" class="tw-m-0">
+                                    <form method="POST" action="{{ route('supplier.shipments.mtc.destroy', [$shipment, $file]) }}" class="tw:m-0">
                                         @csrf
                                         @method('DELETE')
                                         <x-ui.button type="submit" variant="ghost" size="sm" :aria-label="__('shipments.mtc.remove').' '.$file->file_name">
@@ -82,7 +82,7 @@
     @endif
 
     @if($canUpload)
-        <form method="POST" action="{{ route('supplier.shipments.mtc.store', $shipment) }}" enctype="multipart/form-data" data-async-submit class="tw-mt-3 tw-grid tw-gap-2 tw-border-t tw-border-outline-variant tw-pt-3">
+        <form method="POST" action="{{ route('supplier.shipments.mtc.store', $shipment) }}" enctype="multipart/form-data" data-async-submit class="tw:mt-3 tw:grid tw:gap-2 tw:border-t tw:border-outline-variant tw:pt-3">
             @csrf
             <x-ui.file-upload
                 name="mtc_files[]"
