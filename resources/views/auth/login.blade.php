@@ -1,6 +1,7 @@
 @extends('layouts.auth')
 
 @section('title', __('auth.login.title'))
+@section('shell-attributes', 'data-login-screen')
 
 @section('content')
 <header class="tw:mb-5" @guest data-auth-login-page data-session-cross-tab="{{ config('portal_session.cross_tab_logout') ? '1' : '0' }}" data-session-cleanup="{{ config('portal_session.scoped_storage_cleanup') ? '1' : '0' }}" @endguest>
@@ -79,9 +80,23 @@
     </button>
 </form>
 
-<div class="tw:mt-4 tw:pt-4 tw:border-t tw:border-outline-variant tw:text-center tw:text-ui-xs tw:text-on-surface-variant">
-    <p class="tw:m-0">{{ __('auth.login.new_supplier') }} <a href="{{ route('supplier.register') }}" class="tw:font-semibold tw:text-primary tw:hover:underline">{{ __('common.review.register_company') }}</a></p>
-    <p class="tw:m-0 tw:mt-1.5"><a href="{{ route('supplier.registration.access-form') }}" class="tw:text-on-surface-variant tw:hover:text-primary tw:hover:underline">{{ __('auth.login.registration_status') }}</a></p>
+<div class="auth-registration-actions">
+    <a href="{{ route('supplier.register') }}" class="auth-next-step ui-focus-ring">
+        <span class="auth-next-step__icon"><x-ui.icon name="user-plus" size="sm" /></span>
+        <span class="auth-next-step__text">
+            <span class="auth-next-step__label">{{ __('auth.login.new_supplier') }}</span>
+            <span class="auth-next-step__hint">{{ __('common.review.register_company') }}</span>
+        </span>
+        <x-ui.icon name="chevron-right" size="sm" class="auth-next-step__chevron" />
+    </a>
+    <a href="{{ route('supplier.registration.access-form') }}" class="auth-next-step ui-focus-ring">
+        <span class="auth-next-step__icon"><x-ui.icon name="search" size="sm" /></span>
+        <span class="auth-next-step__text">
+            <span class="auth-next-step__label">{{ __('auth.login.already_applied') }}</span>
+            <span class="auth-next-step__hint">{{ __('auth.login.registration_status') }}</span>
+        </span>
+        <x-ui.icon name="chevron-right" size="sm" class="auth-next-step__chevron" />
+    </a>
 </div>
 @endsection
 
