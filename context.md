@@ -252,9 +252,9 @@ sequenceDiagram
 - Finance can request a revision (status `NEED_REVISION`). Finance can also reject or cancel, following the workflow service.
 - Resubmission creates a revision and history entry. It resets `cashier_received_at`, review dates, `due_date`, `payment_term_days_snapshot`, and `missed_delivery_count` (to `NULL`, `NULL`, `0`), so a fresh physical receipt is required.
 
-#### 8. Legacy approval path (do not use)
-- `InvoiceWorkflowService` contains a legacy `approve` action (`UNDER_REVIEW → APPROVED`). It recomputes `due_date` from a UTC `startOfDay()` of `now()`, which does not follow the business calendar.
-- Its controller, `Accounting\InvoiceWorkflowController`, has **no routes**, so the path is unreachable over HTTP. The live Ready to Pay path is `InvoiceVerificationService::lockAndApprove`. See [§11](#11-reconciliation-log-and-open-discrepancies).
+#### 8. Legacy approval path (removed)
+- `InvoiceWorkflowService` held a legacy state machine (`UNDER_REVIEW → APPROVED → PAYMENT_SCHEDULED → COMPLETED`) that recomputed `due_date` from the approval date and skipped GR consumption. It had no runtime callers and no routes, so it was removed with its policy abilities. Historical rows in those statuses are still read through the compatibility paths (`InvoiceQuery`).
+- The only Ready to Pay path is `InvoiceVerificationService::lockAndApprove`. Its two-connection race is covered by `LocalInvoice/LocalInvoiceConcurrencyTest`. See [§11](#11-reconciliation-log-and-open-discrepancies).
 
 ---
 
@@ -615,7 +615,7 @@ The following statements in v2.0 were wrong and have been corrected above:
 1. **Dead route for group payment.** `POST /finance/drp-groups/{group}/pay` (`finance.drp.mark-paid`) calls `FinanceDrpController::markPaid`, which does not exist. Calling it raises a runtime error. No view or test uses the route. Either implement the handler through `PaymentExecutionService::markGroupPaid` or remove the route.
 2. **Forecast precedence not implemented.** [AGENTS.md](AGENTS.md) says `PaymentForecastService` gives DRP items priority, then unbatched Ready to Pay items, and excludes items under review, to avoid double counting. The code counts only Local invoices by Ready to Pay event date, ignores GA claims and DRP items, and keeps `PAID` invoices in the window. Confirm the intended behavior with the Finance owner before changing either side.
 3. **Quantity precision.** [AGENTS.md](AGENTS.md) says GR `qty` allows up to four decimals. `LocalGoodsReceipt::QUANTITY_PATTERN` (used by the request) allows up to **three** decimals and eight integer digits. The column is `decimal(12,4)`. The request is the stricter rule and is what users hit.
-4. **Legacy due-date recompute.** `InvoiceWorkflowService::approve` recomputes `due_date` from a UTC `startOfDay()`. It has no routes, so it is not reachable over HTTP. Do not reuse it. Remove or convert it when the legacy workflow is cleaned up.
+4. **Legacy due-date recompute (resolved).** `InvoiceWorkflowService::approve` recomputed `due_date` from a UTC `startOfDay()`. The service had no callers and has been removed (see §8).
 5. **AGENTS.md drift note.** AGENTS.md still describes `context.md` as drifting on whole-GR and polymorphic-storage rules. Those rules are now corrected here. AGENTS.md was not edited in this update.
 
 ### 11.3 Not verified in this update

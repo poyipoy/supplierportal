@@ -101,7 +101,7 @@ return new class extends Migration
             ->exists();
 
         if ($exists) {
-            DB::statement('ALTER TABLE '.self::TABLE." DROP CHECK {$name}");
+            DB::statement('ALTER TABLE '.self::TABLE." DROP CONSTRAINT {$name}");
         }
     }
 };

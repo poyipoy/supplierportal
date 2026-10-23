@@ -187,6 +187,9 @@
             {{-- Review Actions Card --}}
             <x-ui.card :title="__('purchasing.copy.commercial_review_actions')" :description="__('purchasing.copy.actions_based_on_quotation_state')">
                 @if(in_array($quotation->status, ['submitted', 'all_unavailable'], true) && $quotation->purchaseOrders->isEmpty() && !$quotation->isExpired())
+                    @if($reviewLocked)
+                        <x-ui.alert tone="info" class="tw-mb-2.5">{{ __('notifications.conversation.quotation_in_use') }}</x-ui.alert>
+                    @else
                     @if($hasAvailableItems && $quotation->status === 'submitted')
                         <form action="{{ route('purchasing.quotations.accept', $quotation) }}" method="POST" class="tw-mb-2.5">
                             @csrf
@@ -201,6 +204,7 @@
                         </x-ui.alert>
                     @endif
 
+                    @if($canRequestRevision)
                     <form action="{{ route('purchasing.quotations.request-revision', $quotation) }}" method="POST" class="tw-mb-2.5" id="requestRevisionForm" data-managed-submit>
                         @csrf
                         <input type="hidden" name="return_url" value="{{ request('return_url') }}">
@@ -213,6 +217,7 @@
                             {{ __('purchasing.copy.request_revision') }}
                         </x-ui.button>
                     </form>
+                    @endif
 
                     @if($hasAvailableItems)
                         <form action="{{ route('purchasing.quotations.reject', $quotation) }}" method="POST" class="tw-mb-2.5">
@@ -226,6 +231,7 @@
                                 {{ __('purchasing.copy.reject_quotation') }}
                             </x-ui.button>
                         </form>
+                    @endif
                     @endif
                 @endif
 

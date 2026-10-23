@@ -2,6 +2,7 @@
 
 namespace App\Services\Payment;
 
+use App\Exceptions\BusinessRuleException;
 use App\Models\LocalGoodsReceipt;
 use App\Models\LocalInvoice;
 use App\Models\LocalInvoiceGoodsReceipt;
@@ -14,7 +15,6 @@ use App\Services\LocalInvoice\MakerCheckerService;
 use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-use RuntimeException;
 
 class LocalInvoiceVoucherService
 {
@@ -49,7 +49,7 @@ class LocalInvoiceVoucherService
 
             $invoice = LocalInvoice::whereKey($lockedItem->payable_id)->lockForUpdate()->firstOrFail();
             if (! $invoice->isReadyToPay()) {
-                throw new RuntimeException(__('finance.validation.invoice_not_ready', ['number' => $invoice->invoice_number]));
+                throw new BusinessRuleException(__('finance.validation.invoice_not_ready', ['number' => $invoice->invoice_number]));
             }
             $verification = $invoice->currentVerification()->lockForUpdate()->first();
             if (! $verification || ! $verification->is_locked) {

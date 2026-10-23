@@ -12,6 +12,7 @@ use App\Services\LocalInvoice\LocalProcurementStreamingReader;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Tests\Support\InforExportFixtures;
 use Tests\TestCase;
 
 class LocalGrImportTest extends TestCase
@@ -369,9 +370,15 @@ class LocalGrImportTest extends TestCase
         ]);
     }
 
+    protected function tearDown(): void
+    {
+        InforExportFixtures::cleanup();
+        parent::tearDown();
+    }
+
     public function test_http_preview_and_confirm_routes(): void
     {
-        $path = base_path('whinh3512m600_0520_20260924-134847_116644.xlsx');
+        $path = InforExportFixtures::goodsReceipts();
         $reader = app(LocalProcurementStreamingReader::class);
         foreach ($reader->rows($path, 'GR') as $row) {
             LocalPurchaseOrder::firstOrCreate(['po_number' => $row['po_number']], [
@@ -388,9 +395,9 @@ class LocalGrImportTest extends TestCase
         $this->assertGreaterThan(0, LocalGoodsReceipt::count());
     }
 
-    public function test_real_whinh_file_preview_with_seeded_pos(): void
+    public function test_infor_receipt_export_preview_with_seeded_pos(): void
     {
-        $filePath = base_path('whinh3512m600_0520_20260924-134847_116644.xlsx');
+        $filePath = InforExportFixtures::goodsReceipts();
         $this->assertFileExists($filePath);
 
         $base = ['rows' => iterator_to_array(app(LocalProcurementStreamingReader::class)->rows($filePath, 'GR'))];
@@ -400,7 +407,7 @@ class LocalGrImportTest extends TestCase
         $this->assertSame('pcs', $firstRow['uom']);
         $this->assertNotEmpty($firstRow['description']);
 
-        // Collect all unique POs referenced in the real whinh file and seed them
+        // Collect all unique POs referenced in the receipt export and seed them
         $poNumbers = collect($base['rows'])->pluck('po_number')->unique()->filter()->values();
         foreach ($poNumbers as $poNum) {
             LocalPurchaseOrder::firstOrCreate(

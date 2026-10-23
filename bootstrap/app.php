@@ -1,5 +1,6 @@
 <?php
 
+use App\Exceptions\BusinessRuleViolation;
 use App\Http\Controllers\PortalLegacyPathController;
 use App\Http\Middleware\AddSecurityHeaders;
 use App\Http\Middleware\ApplyUserLocale;
@@ -143,6 +144,20 @@ return Application::configure(basePath: dirname(__DIR__))
                 || $request->routeIs('notifications.unread-count', 'conversations.unread-count', 'conversations.messages.latest', 'exports.status')) {
                 return response()->json(['message' => 'Unauthenticated.'], 401);
             }
+        });
+
+        // A business-rule refusal carries a translated, user-safe message, so it
+        // is feedback rather than a server error. Only this marker is mapped;
+        // every other exception (database, filesystem, bugs) stays generic.
+        $exceptions->dontReport(BusinessRuleViolation::class);
+        $exceptions->render(function (BusinessRuleViolation $exception, Request $request) {
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => $exception->getMessage()], 422);
+            }
+
+            return back()
+                ->withInput($request->except(['password', 'password_confirmation', 'current_password']))
+                ->with('error', $exception->getMessage());
         });
 
         $exceptions->render(function (ThrottleRequestsException $exception, Request $request) {

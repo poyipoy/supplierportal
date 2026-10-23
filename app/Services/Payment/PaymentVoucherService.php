@@ -2,6 +2,7 @@
 
 namespace App\Services\Payment;
 
+use App\Exceptions\BusinessRuleArgumentException;
 use App\Models\PaymentBatch;
 use App\Models\PaymentGroup;
 use App\Models\User;
@@ -10,7 +11,6 @@ use App\Services\LocalInvoice\MakerCheckerService;
 use App\Support\BusinessTime;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-use InvalidArgumentException;
 
 class PaymentVoucherService
 {
@@ -31,7 +31,7 @@ class PaymentVoucherService
     public function assignVoucher(PaymentGroup $group, string $voucherNumber, string $voucherDate, User $actor, ?string $overrideReason = null): PaymentGroup
     {
         if (! $actor->isFinance() && ! $actor->isAdmin()) {
-            throw new InvalidArgumentException(__('finance.validation.voucher_role'));
+            throw new BusinessRuleArgumentException(__('finance.validation.voucher_role'));
         }
 
         return DB::transaction(function () use ($group, $voucherNumber, $voucherDate, $actor) {

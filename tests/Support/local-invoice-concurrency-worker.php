@@ -1,9 +1,10 @@
 <?php
 
+use App\Exceptions\BusinessRuleViolation;
 use App\Models\LocalInvoice;
 use App\Models\User;
 use App\Services\LocalInvoice\InvoiceSubmissionService;
-use App\Services\LocalInvoice\InvoiceWorkflowService;
+use App\Services\LocalInvoice\InvoiceVerificationService;
 use App\Services\LocalInvoice\LocalProcurementMasterService;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\DB;
@@ -45,11 +46,17 @@ try {
         $concurrentGr = $concurrentMasters->createGoodsReceipt($concurrentOperator, $concurrentPo, ['gr_number' => 'GR-CONC-'.$actor->id, 'gr_date' => '2026-09-02', 'uom' => 'pcs', 'qty' => 1.0]);
         app(InvoiceSubmissionService::class)->submit($actor, ['invoice_number' => $argv[2], 'invoice_date' => today()->format('Y-m-d'), 'local_purchase_order_id' => $concurrentPo->id, 'goods_receipt_ids' => [$concurrentGr->id], 'invoice_amount' => '1.00', 'tax_amount' => '0.00', 'ppn_scheme' => '0%'], [...NativeFileFixtures::invoiceReferences(), 'invoice' => NativeFileFixtures::upload('invoice.pdf'), 'tax_invoice' => NativeFileFixtures::upload('tax.pdf')]);
     } else {
+        // The authoritative Finance decisions on an invoice under verification.
         $invoice = LocalInvoice::findOrFail($argv[2]);
-        app(InvoiceWorkflowService::class)->act($actor, $invoice, $argv[3], ['notes' => 'Concurrent action']);
+        $verification = app(InvoiceVerificationService::class);
+        match ($argv[3]) {
+            'lockAndApprove' => $verification->lockAndApprove($invoice, $actor),
+            'requestRevision' => $verification->requestRevision($invoice, 'Concurrent revision request', $actor),
+            'reject' => $verification->reject($invoice, 'Concurrent rejection', $actor),
+        };
     }
     echo 'accepted';
-} catch (ValidationException $exception) {
+} catch (ValidationException|BusinessRuleViolation $exception) {
     echo 'rejected';
 } catch (Throwable $exception) {
     fwrite(STDERR, get_class($exception).': '.$exception->getMessage());

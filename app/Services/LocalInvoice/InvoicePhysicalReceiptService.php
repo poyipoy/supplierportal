@@ -2,6 +2,8 @@
 
 namespace App\Services\LocalInvoice;
 
+use App\Exceptions\BusinessRuleArgumentException;
+use App\Exceptions\BusinessRuleException;
 use App\Models\LocalInvoice;
 use App\Models\LocalInvoicePhysicalVerification;
 use App\Models\LocalInvoiceVerification;
@@ -11,8 +13,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\ValidationException;
-use InvalidArgumentException;
-use RuntimeException;
 
 class InvoicePhysicalReceiptService
 {
@@ -23,7 +23,7 @@ class InvoicePhysicalReceiptService
     public function recordReceipt(User $cashier, LocalInvoice $invoice, ?string $notes = null, ?string $scannedReceiptQr = null): LocalInvoice
     {
         if (! $cashier->isFinance() && ! $cashier->isAdmin()) {
-            throw new InvalidArgumentException(__('local_invoice.validation.receipt_role'));
+            throw new BusinessRuleArgumentException(__('local_invoice.validation.receipt_role'));
         }
 
         return DB::transaction(function () use ($cashier, $invoice, $notes, $scannedReceiptQr) {
@@ -31,7 +31,7 @@ class InvoicePhysicalReceiptService
             $inv = LocalInvoice::where('id', $invoice->id)->lockForUpdate()->firstOrFail();
 
             if ($inv->status !== LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT) {
-                throw new RuntimeException(__('local_invoice.validation.receipt_status', ['status' => $inv->status]));
+                throw new BusinessRuleException(__('local_invoice.validation.receipt_status', ['status' => $inv->status]));
             }
 
             $receiptNumber = $inv->receipt?->receipt_number;
@@ -78,7 +78,7 @@ class InvoicePhysicalReceiptService
             $supplierProfile = $inv->supplier?->supplier;
             $termRaw = $supplierProfile?->payment_term_days;
             if ($termRaw === null || ! is_numeric($termRaw) || (int) $termRaw < 1 || (int) $termRaw > 365) {
-                throw new InvalidArgumentException(__('local_invoice.validation.receipt_term', ['supplier' => $inv->supplier?->name]));
+                throw new BusinessRuleArgumentException(__('local_invoice.validation.receipt_term', ['supplier' => $inv->supplier?->name]));
             }
             $paymentTermDays = (int) $termRaw;
 

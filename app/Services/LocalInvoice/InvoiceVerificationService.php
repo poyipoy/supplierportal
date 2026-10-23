@@ -2,13 +2,13 @@
 
 namespace App\Services\LocalInvoice;
 
+use App\Exceptions\BusinessRuleArgumentException;
+use App\Exceptions\BusinessRuleException;
 use App\Models\LocalInvoice;
 use App\Models\LocalInvoiceVerification;
 use App\Models\User;
 use App\Support\Money;
 use Illuminate\Support\Facades\DB;
-use InvalidArgumentException;
-use RuntimeException;
 
 class InvoiceVerificationService
 {
@@ -29,7 +29,7 @@ class InvoiceVerificationService
             $inv = LocalInvoice::where('id', $invoice->id)->lockForUpdate()->firstOrFail();
 
             if ($inv->status !== LocalInvoice::STATUS_UNDER_VERIFICATION) {
-                throw new RuntimeException(__('local_invoice.validation.verify_status', ['status' => $inv->status]));
+                throw new BusinessRuleException(__('local_invoice.validation.verify_status', ['status' => $inv->status]));
             }
 
             /** @var LocalInvoiceVerification $verification */
@@ -39,7 +39,7 @@ class InvoiceVerificationService
             ]);
 
             if ($verification->is_locked) {
-                throw new RuntimeException(__('local_invoice.validation.verification_locked'));
+                throw new BusinessRuleException(__('local_invoice.validation.verification_locked'));
             }
 
             $before = $verification->exists ? $verification->toArray() : null;
@@ -55,17 +55,17 @@ class InvoiceVerificationService
                 $notes = $data["{$check}_notes"] ?? null;
 
                 if ($check === 'tax_invoice' && $status === LocalInvoiceVerification::CHECK_NOT_APPLICABLE && $isPkp) {
-                    throw new InvalidArgumentException(__('local_invoice.validation.pkp_tax_required'));
+                    throw new BusinessRuleArgumentException(__('local_invoice.validation.pkp_tax_required'));
                 }
 
                 if ($check === 'delivery_note' && $status === LocalInvoiceVerification::CHECK_NOT_APPLICABLE && $requiresSuratJalan) {
-                    throw new InvalidArgumentException(__('local_invoice.validation.goods_dn_required'));
+                    throw new BusinessRuleArgumentException(__('local_invoice.validation.goods_dn_required'));
                 }
 
                 if ($status === LocalInvoiceVerification::CHECK_NOT_OK) {
                     $allPassed = false;
                     if (empty(trim((string) $notes))) {
-                        throw new InvalidArgumentException(__('local_invoice.validation.check_notes', ['check' => $check]));
+                        throw new BusinessRuleArgumentException(__('local_invoice.validation.check_notes', ['check' => $check]));
                     }
                 }
 
@@ -94,7 +94,7 @@ class InvoiceVerificationService
             $inv = LocalInvoice::where('id', $invoice->id)->lockForUpdate()->firstOrFail();
 
             if ($inv->status !== LocalInvoice::STATUS_UNDER_VERIFICATION) {
-                throw new RuntimeException(__('local_invoice.validation.verify_current_status', ['status' => $inv->status]));
+                throw new BusinessRuleException(__('local_invoice.validation.verify_current_status', ['status' => $inv->status]));
             }
 
             /** @var LocalInvoiceVerification $verification */
@@ -103,21 +103,21 @@ class InvoiceVerificationService
                 ->firstOrFail();
 
             if ($verification->is_locked) {
-                throw new RuntimeException(__('local_invoice.validation.verification_locked'));
+                throw new BusinessRuleException(__('local_invoice.validation.verification_locked'));
             }
 
             if (! $verification->is_section_a_passed) {
-                throw new RuntimeException(__('local_invoice.validation.section_a_required'));
+                throw new BusinessRuleException(__('local_invoice.validation.section_a_required'));
             }
 
             $before = $verification->toArray();
             $ppnStatus = $data['ppn_status'] ?? LocalInvoiceVerification::PPN_SESUAI;
             if ($ppnStatus === LocalInvoiceVerification::PPN_TIDAK_SESUAI) {
                 if (! isset($data['verified_ppn']) || $data['verified_ppn'] === null || $data['verified_ppn'] === '') {
-                    throw new InvalidArgumentException(__('local_invoice.validation.corrected_ppn'));
+                    throw new BusinessRuleArgumentException(__('local_invoice.validation.corrected_ppn'));
                 }
                 if (empty(trim((string) ($data['tax_notes'] ?? '')))) {
-                    throw new InvalidArgumentException(__('local_invoice.validation.ppn_notes'));
+                    throw new BusinessRuleArgumentException(__('local_invoice.validation.ppn_notes'));
                 }
             }
 
@@ -152,7 +152,7 @@ class InvoiceVerificationService
             $verification->pph_21_amount = $verification->pph_21_applicable && isset($data['pph_21_amount']) ? Money::normalize($data['pph_21_amount']) : Money::ZERO;
 
             if (Money::compare($verification->netPayableExact($inv->invoice_amount), Money::zero()) <= 0) {
-                throw new InvalidArgumentException(__('local_invoice.validation.net_payable_positive'));
+                throw new BusinessRuleArgumentException(__('local_invoice.validation.net_payable_positive'));
             }
 
             $verification->tax_notes = $data['tax_notes'] ?? null;
@@ -177,11 +177,11 @@ class InvoiceVerificationService
             $inv = LocalInvoice::where('id', $invoice->id)->lockForUpdate()->firstOrFail();
 
             if ($inv->status !== LocalInvoice::STATUS_UNDER_VERIFICATION) {
-                throw new RuntimeException(__('local_invoice.validation.approve_status', ['status' => $inv->status]));
+                throw new BusinessRuleException(__('local_invoice.validation.approve_status', ['status' => $inv->status]));
             }
 
             if (! $inv->cashier_received_at) {
-                throw new RuntimeException(__('local_invoice.validation.cashier_required'));
+                throw new BusinessRuleException(__('local_invoice.validation.cashier_required'));
             }
 
             /** @var LocalInvoiceVerification $verification */
@@ -191,7 +191,7 @@ class InvoiceVerificationService
                 ->firstOrFail();
 
             if (! $verification->is_section_a_passed || ! $verification->is_section_b_passed) {
-                throw new RuntimeException(__('local_invoice.validation.sections_required'));
+                throw new BusinessRuleException(__('local_invoice.validation.sections_required'));
             }
 
             if (config('finance.maker_checker.ready_to_pay', true)) {
@@ -239,7 +239,7 @@ class InvoiceVerificationService
         $this->assertFinanceOrAdmin($reviewer);
 
         if (trim($reason) === '') {
-            throw new InvalidArgumentException(__('local_invoice.validation.revision_reason'));
+            throw new BusinessRuleArgumentException(__('local_invoice.validation.revision_reason'));
         }
 
         return DB::transaction(function () use ($invoice, $reason, $reviewer) {
@@ -247,7 +247,7 @@ class InvoiceVerificationService
             $inv = LocalInvoice::where('id', $invoice->id)->lockForUpdate()->firstOrFail();
 
             if (! in_array($inv->status, [LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT, LocalInvoice::STATUS_UNDER_VERIFICATION], true)) {
-                throw new RuntimeException(__('local_invoice.validation.revision_status', ['status' => $inv->status]));
+                throw new BusinessRuleException(__('local_invoice.validation.revision_status', ['status' => $inv->status]));
             }
 
             $now = now();
@@ -276,13 +276,13 @@ class InvoiceVerificationService
     {
         $this->assertFinanceOrAdmin($reviewer);
         if (trim($reason) === '') {
-            throw new InvalidArgumentException(__('local_invoice.validation.rejection_reason'));
+            throw new BusinessRuleArgumentException(__('local_invoice.validation.rejection_reason'));
         }
 
         return DB::transaction(function () use ($invoice, $reason, $reviewer) {
             $inv = LocalInvoice::whereKey($invoice->id)->lockForUpdate()->firstOrFail();
             if (! in_array($inv->status, [LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT, LocalInvoice::STATUS_UNDER_VERIFICATION, LocalInvoice::STATUS_NEED_REVISION], true)) {
-                throw new RuntimeException(__('local_invoice.validation.rejection_status', ['status' => $inv->status]));
+                throw new BusinessRuleException(__('local_invoice.validation.rejection_status', ['status' => $inv->status]));
             }
             $from = $inv->status;
             $this->reservations->release($inv, $reviewer);
@@ -297,7 +297,7 @@ class InvoiceVerificationService
     private function assertFinanceOrAdmin(User $user): void
     {
         if (! $user->isFinance() && ! $user->isAdmin()) {
-            throw new InvalidArgumentException(__('local_invoice.validation.verification_role'));
+            throw new BusinessRuleArgumentException(__('local_invoice.validation.verification_role'));
         }
     }
 }

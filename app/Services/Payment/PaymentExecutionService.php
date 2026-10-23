@@ -2,6 +2,8 @@
 
 namespace App\Services\Payment;
 
+use App\Exceptions\BusinessRuleArgumentException;
+use App\Exceptions\BusinessRuleException;
 use App\Models\GaClaim;
 use App\Models\LocalInvoice;
 use App\Models\LocalInvoicePayment;
@@ -14,8 +16,6 @@ use App\Services\LocalInvoice\InvoiceNotificationService;
 use App\Services\LocalInvoice\MakerCheckerService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-use InvalidArgumentException;
-use RuntimeException;
 
 class PaymentExecutionService
 {
@@ -40,15 +40,15 @@ class PaymentExecutionService
     public function markGroupPaid(PaymentGroup $group, array $data, User $actor): PaymentGroup
     {
         if (! $actor->isFinance() && ! $actor->isAdmin()) {
-            throw new InvalidArgumentException(__('finance.execution_validation.role'));
+            throw new BusinessRuleArgumentException(__('finance.execution_validation.role'));
         }
 
         if (empty($data['transfer_reference'])) {
-            throw new InvalidArgumentException(__('finance.execution_validation.reference'));
+            throw new BusinessRuleArgumentException(__('finance.execution_validation.reference'));
         }
 
         if (empty($data['transfer_date'])) {
-            throw new InvalidArgumentException(__('finance.execution_validation.date'));
+            throw new BusinessRuleArgumentException(__('finance.execution_validation.date'));
         }
 
         return DB::transaction(function () use ($group, $data, $actor) {
@@ -76,16 +76,16 @@ class PaymentExecutionService
                 });
 
                 if ($hasAuthoritativeInvoice) {
-                    throw new RuntimeException(__('finance.execution_validation.invoice_settlement'));
+                    throw new BusinessRuleException(__('finance.execution_validation.invoice_settlement'));
                 }
             }
 
             if (! in_array($batch->status, [PaymentBatch::STATUS_FINALIZED, PaymentBatch::STATUS_PARTIALLY_PAID], true)) {
-                throw new RuntimeException(__('finance.execution_validation.batch_status', ['status' => $batch->status]));
+                throw new BusinessRuleException(__('finance.execution_validation.batch_status', ['status' => $batch->status]));
             }
 
             if ($grp->status === PaymentGroup::STATUS_PAID) {
-                throw new RuntimeException(__('finance.execution_validation.group_paid'));
+                throw new BusinessRuleException(__('finance.execution_validation.group_paid'));
             }
 
             $now = now();
@@ -106,7 +106,7 @@ class PaymentExecutionService
                     $inv = LocalInvoice::where('id', $item->payable_id)->lockForUpdate()->first();
                     if ($inv && $inv->status !== LocalInvoice::STATUS_PAID) {
                         if (! $inv->isReadyToPay()) {
-                            throw new RuntimeException(__('finance.execution_validation.invoice_status', ['number' => $inv->invoice_number, 'status' => $inv->status]));
+                            throw new BusinessRuleException(__('finance.execution_validation.invoice_status', ['number' => $inv->invoice_number, 'status' => $inv->status]));
                         }
 
                         $originalStatus = $inv->status;
@@ -133,7 +133,7 @@ class PaymentExecutionService
                     $clm = GaClaim::where('id', $item->payable_id)->lockForUpdate()->first();
                     if ($clm && $clm->status !== GaClaim::STATUS_PAID) {
                         if ($clm->status !== GaClaim::STATUS_READY_TO_PAY) {
-                            throw new RuntimeException(__('finance.execution_validation.claim_status', ['number' => $clm->claim_number, 'status' => $clm->status]));
+                            throw new BusinessRuleException(__('finance.execution_validation.claim_status', ['number' => $clm->claim_number, 'status' => $clm->status]));
                         }
 
                         $originalStatus = $clm->status;
@@ -183,17 +183,17 @@ class PaymentExecutionService
     public function markEntireBatchPaid(PaymentBatch $batch, array $data, User $actor): PaymentBatch
     {
         if (! $actor->isFinance() && ! $actor->isAdmin()) {
-            throw new InvalidArgumentException(__('finance.execution_validation.role'));
+            throw new BusinessRuleArgumentException(__('finance.execution_validation.role'));
         }
 
         $transferRef = trim((string) ($data['transfer_reference'] ?? ''));
         if ($transferRef === '') {
-            throw new InvalidArgumentException(__('finance.execution_validation.reference'));
+            throw new BusinessRuleArgumentException(__('finance.execution_validation.reference'));
         }
 
         $transferDate = $data['transfer_date'] ?? null;
         if (empty($transferDate)) {
-            throw new InvalidArgumentException(__('finance.execution_validation.date'));
+            throw new BusinessRuleArgumentException(__('finance.execution_validation.date'));
         }
 
         return DB::transaction(function () use ($batch, $data, $actor) {
@@ -202,11 +202,11 @@ class PaymentExecutionService
             app(MakerCheckerService::class)->assertActorsRecorded('voucher_settlement', $lockedBatch, $actor, [$lockedBatch->finalized_by], $lockedBatch->actor_tracking_required);
 
             if ($lockedBatch->status === PaymentBatch::STATUS_PAID) {
-                throw new RuntimeException(__('finance.execution_validation.batch_paid', ['number' => $lockedBatch->batch_number]));
+                throw new BusinessRuleException(__('finance.execution_validation.batch_paid', ['number' => $lockedBatch->batch_number]));
             }
 
             if (! in_array($lockedBatch->status, [PaymentBatch::STATUS_FINALIZED, PaymentBatch::STATUS_PARTIALLY_PAID], true)) {
-                throw new RuntimeException(__('finance.execution_validation.paid_status', ['status' => $lockedBatch->status]));
+                throw new BusinessRuleException(__('finance.execution_validation.paid_status', ['status' => $lockedBatch->status]));
             }
 
             if ($lockedBatch->batch_type === PaymentBatch::TYPE_GA) {

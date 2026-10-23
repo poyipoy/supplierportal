@@ -2,6 +2,7 @@
 
 namespace App\Services\Payment;
 
+use App\Exceptions\BusinessRuleException;
 use App\Models\LocalInvoice;
 use App\Models\LocalInvoicePayment;
 use App\Models\LocalInvoicePaymentTransfer;
@@ -16,7 +17,6 @@ use App\Services\LocalInvoice\LocalFinanceAuditService;
 use App\Services\LocalInvoice\MakerCheckerService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-use RuntimeException;
 
 class LocalInvoicePaymentService
 {
@@ -32,14 +32,14 @@ class LocalInvoicePaymentService
             $batch = $lockedVoucher->batch()->lockForUpdate()->firstOrFail();
             app(MakerCheckerService::class)->assertActorsRecorded('voucher_settlement', $batch, $actor, [$batch->finalized_by], $batch->actor_tracking_required);
             if ($lockedVoucher->status !== LocalInvoiceVoucher::STATUS_FINAL) {
-                throw new RuntimeException(__('finance.validation.final_voucher'));
+                throw new BusinessRuleException(__('finance.validation.final_voucher'));
             }
             if (LocalInvoicePayment::where('local_invoice_id', $lockedVoucher->local_invoice_id)->lockForUpdate()->exists()) {
                 throw ValidationException::withMessages(['payment' => __('finance.validation.settlement_exists')]);
             }
             $invoice = LocalInvoice::whereKey($lockedVoucher->local_invoice_id)->lockForUpdate()->firstOrFail();
             if (! $invoice->isReadyToPay()) {
-                throw new RuntimeException(__('finance.validation.not_ready'));
+                throw new BusinessRuleException(__('finance.validation.not_ready'));
             }
             $amount = (string) $data['amount'];
             if (bccomp($amount, (string) $lockedVoucher->amount, 2) < 0 && trim((string) ($data['correction_reason'] ?? '')) === '') {

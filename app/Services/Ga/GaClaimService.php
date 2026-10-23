@@ -2,6 +2,8 @@
 
 namespace App\Services\Ga;
 
+use App\Exceptions\BusinessRuleArgumentException;
+use App\Exceptions\BusinessRuleException;
 use App\Models\Employee;
 use App\Models\GaClaim;
 use App\Models\User;
@@ -14,8 +16,6 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
-use InvalidArgumentException;
-use RuntimeException;
 use Throwable;
 
 class GaClaimService
@@ -26,12 +26,12 @@ class GaClaimService
     public function submitClaim(User $actor, array $data, array $files = []): GaClaim
     {
         if (! $actor->isGa() && ! $actor->isAdmin()) {
-            throw new InvalidArgumentException(__('ga.validation.submit_role'));
+            throw new BusinessRuleArgumentException(__('ga.validation.submit_role'));
         }
 
         $employee = Employee::where('id', $data['employee_id'] ?? null)->where('is_active', true)->first();
         if (! $employee) {
-            throw new InvalidArgumentException(__('ga.validation.employee_active'));
+            throw new BusinessRuleArgumentException(__('ga.validation.employee_active'));
         }
 
         $supportingFile = $files['supporting'] ?? $files['attachment'] ?? null;
@@ -46,7 +46,7 @@ class GaClaimService
             return DB::transaction(function () use ($actor, $employee, $data, $supportingFile, &$written) {
                 $employee = Employee::whereKey($employee->id)->where('is_active', true)->lockForUpdate()->first();
                 if (! $employee) {
-                    throw new InvalidArgumentException(__('ga.validation.employee_active'));
+                    throw new BusinessRuleArgumentException(__('ga.validation.employee_active'));
                 }
                 $year = BusinessTime::now()->year;
                 DB::table('local_invoice_sequences')->insertOrIgnore(['year' => $year, 'last_number' => 0]);
@@ -122,7 +122,7 @@ class GaClaimService
     public function resubmitClaim(User $actor, GaClaim $claim, array $data, array $files = []): GaClaim
     {
         if (! $actor->isGa() && ! $actor->isAdmin()) {
-            throw new InvalidArgumentException(__('ga.validation.resubmit_role'));
+            throw new BusinessRuleArgumentException(__('ga.validation.resubmit_role'));
         }
         Gate::forUser($actor)->authorize('resubmit', $claim);
 
@@ -142,7 +142,7 @@ class GaClaimService
                 Gate::forUser($actor)->authorize('resubmit', $clm);
 
                 if ($clm->status !== GaClaim::STATUS_NEED_REVISION) {
-                    throw new RuntimeException(__('ga.validation.resubmit_status', ['status' => $clm->status]));
+                    throw new BusinessRuleException(__('ga.validation.resubmit_status', ['status' => $clm->status]));
                 }
 
                 $newRev = $clm->revision_number + 1;
@@ -224,7 +224,7 @@ class GaClaimService
     public function basicVerify(GaClaim $claim, User $gaActor, ?string $notes = null, ?string $overrideReason = null): GaClaim
     {
         if (! $gaActor->isGa() && ! $gaActor->isAdmin()) {
-            throw new InvalidArgumentException(__('ga.validation.basic_role'));
+            throw new BusinessRuleArgumentException(__('ga.validation.basic_role'));
         }
 
         return DB::transaction(function () use ($claim, $gaActor, $notes, $overrideReason) {
@@ -233,7 +233,7 @@ class GaClaimService
             $clm = GaClaim::where('id', $claim->id)->lockForUpdate()->firstOrFail();
 
             if ($clm->status !== GaClaim::STATUS_SUBMITTED) {
-                throw new RuntimeException(__('ga.validation.basic_status', ['status' => $clm->status]));
+                throw new BusinessRuleException(__('ga.validation.basic_status', ['status' => $clm->status]));
             }
 
             app(MakerCheckerService::class)->assertDifferent('ga_basic_verify', $clm, $gaActor, [$clm->submitted_by], $overrideReason, true);

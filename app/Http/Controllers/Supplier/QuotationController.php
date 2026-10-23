@@ -11,7 +11,6 @@ use App\Models\Conversation;
 use App\Models\ExchangeRate;
 use App\Models\Period;
 use App\Models\PrItem;
-use App\Models\PrItemAward;
 use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
 use App\Models\QuotationItem;
@@ -226,6 +225,12 @@ class QuotationController extends Controller
         if ($quotation && ! $quotation->canBeRevisedBySupplier()) {
             return redirect()->route('supplier.quotations.show', $quotation)
                 ->with('info', __('supplier.copy.you_have_already_submitted_a_quotation_for_this_requisition'));
+        }
+        // store() refuses to revise a quotation an award or PO refers to; do not
+        // offer a form that can only be refused.
+        if ($quotation && $quotation->isReferencedByAwardOrPurchaseOrder()) {
+            return redirect()->route('supplier.quotations.show', $quotation)
+                ->with('error', __('supplier.copy.this_quotation_is_locked_or_used_by_an_award_or_purchase_order_and_cannot_be_changed'));
         }
         if ($quotation) {
             Gate::authorize('update', $quotation);
@@ -573,9 +578,7 @@ class QuotationController extends Controller
             $quotation = Quotation::where('pr_id', $pr->id)
                 ->where('supplier_id', auth()->id())->lockForUpdate()->first();
             if ($quotation && (! $quotation->canBeRevisedBySupplier()
-                || $quotation->purchaseOrders()->withTrashed()->exists()
-                || PrItemAward::where('quotation_id', $quotation->id)
-                    ->orWhereIn('quotation_item_id', $quotation->items()->select('id'))->exists())) {
+                || $quotation->isReferencedByAwardOrPurchaseOrder())) {
                 throw new \RuntimeException(__('supplier.copy.this_quotation_is_locked_or_used_by_an_award_or_purchase_order_and_cannot_be_changed'));
             }
             $wasRevisionRequested = $quotation?->status === Quotation::STATUS_REVISION_REQUESTED;

@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\NotificationMute;
-use App\Models\PrItemAward;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
@@ -284,9 +283,7 @@ class ConversationMessageController extends Controller
             $quotation->setRelation('purchaseRequisition', $pr);
 
             if (in_array($validated['action'], ['request_price_revision', 'accept_quotation', 'reject_quotation'], true)
-                && ($quotation->purchaseOrders()->withTrashed()->exists()
-                    || PrItemAward::where('quotation_id', $quotation->id)
-                        ->orWhereIn('quotation_item_id', $quotation->items()->select('id'))->exists())) {
+                && $quotation->isReferencedByAwardOrPurchaseOrder()) {
                 throw ValidationException::withMessages([
                     'action' => __('notifications.conversation.quotation_in_use'),
                 ]);

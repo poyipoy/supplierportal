@@ -34,7 +34,7 @@ return new class extends Migration
             if ($hasCheck) {
                 DB::statement(<<<'SQL'
                     ALTER TABLE shipment_items
-                    DROP CHECK shipment_items_shipped_quantity_positive
+                    DROP CONSTRAINT shipment_items_shipped_quantity_positive
                     SQL);
             }
         }
@@ -75,7 +75,7 @@ return new class extends Migration
             if ($hasQtyCheck) {
                 DB::statement(<<<'SQL'
                     ALTER TABLE shipment_items
-                    DROP CHECK shipment_items_shipped_qty_positive
+                    DROP CONSTRAINT shipment_items_shipped_qty_positive
                     SQL);
             }
 
@@ -87,7 +87,7 @@ return new class extends Migration
             if ($hasWeightCheck) {
                 DB::statement(<<<'SQL'
                     ALTER TABLE shipment_items
-                    DROP CHECK shipment_items_actual_weight_kg_positive
+                    DROP CONSTRAINT shipment_items_actual_weight_kg_positive
                     SQL);
             }
         }

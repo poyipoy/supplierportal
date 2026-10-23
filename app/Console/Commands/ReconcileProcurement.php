@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\PrItemAward;
+use App\Models\Quotation;
 use App\Support\BusinessTime;
 use App\Support\Money;
 use App\Support\Procurement\ProcurementFeatures;
@@ -26,6 +27,7 @@ class ReconcileProcurement extends Command
             'po_generation_enabled' => ProcurementFeatures::poGenerationEnabled(),
             ...$this->logisticsMetrics(),
             ...$this->orderedQuantityMetrics(),
+            ...$this->awardEligibilityMetrics(),
             ...$this->referenceSnapshotMetrics(),
             'inconsistent_feature_flags' => ProcurementFeatures::hasInconsistentFlags(),
         ];
@@ -81,6 +83,25 @@ class ReconcileProcurement extends Command
             'unassigned_selected_award_count' => PrItemAward::query()
                 ->whereNull('purchase_order_id')
                 ->where(fn ($query) => $query->whereNotNull('ordered_qty')->orWhereNotNull('spec_accepted_at'))
+                ->count(),
+        ];
+    }
+
+    /**
+     * An award that is not on a PO yet can only become one while its quotation
+     * is award-eligible. Before quotation review refused awarded quotations, the
+     * Purchasing page could reject or reopen them; this counts what is left.
+     *
+     * @return array<string, int>
+     */
+    private function awardEligibilityMetrics(): array
+    {
+        return [
+            'unassigned_award_on_ineligible_quotation_count' => PrItemAward::query()
+                ->whereNull('purchase_order_id')
+                ->whereHas('quotation', fn ($query) => $query->withTrashed()->where(fn ($quotation) => $quotation
+                    ->whereNotIn('status', Quotation::AWARD_ELIGIBLE_STATUSES)
+                    ->orWhereNotNull('deleted_at')))
                 ->count(),
         ];
     }
