@@ -1,0 +1,240 @@
+{
+  "environment": "Local PHP HTTP kernel on verified adasi_portal_test; synthetic actors, array mail, null broadcasting, private QA file storage; no production/development DB",
+  "cases": [
+    {
+      "role": "purchasing",
+      "url": "/purchasing/dashboard",
+      "title": "Purchasing Dashboard - ADASI Portal",
+      "heading": "Purchasing Dashboard",
+      "viewport": 1440,
+      "bodyWidth": 1425,
+      "jsErrors": [],
+      "networkErrors": []
+    },
+    {
+      "role": "purchasing",
+      "url": "/purchasing/requisitions/create",
+      "title": "Create Purchase Requisition - ADASI Portal",
+      "heading": "Create Purchase Requisition",
+      "viewport": 1440,
+      "bodyWidth": 1425,
+      "jsErrors": [],
+      "networkErrors": []
+    },
+    {
+      "role": "purchasing",
+      "url": "/purchasing/comparison/inter-supplier",
+      "title": "Inter-Supplier Comparison - ADASI Portal",
+      "heading": "Price Comparison",
+      "viewport": 1440,
+      "bodyWidth": 1440,
+      "jsErrors": [],
+      "networkErrors": []
+    },
+    {
+      "role": "purchasing",
+      "url": "/purchasing/purchase-orders",
+      "title": "Purchase Order List - ADASI Portal",
+      "heading": "Purchase Orders",
+      "viewport": 1440,
+      "bodyWidth": 1440,
+      "jsErrors": [],
+      "networkErrors": []
+    },
+    {
+      "role": "purchasing",
+      "url": "/purchasing/shipments",
+      "title": "Shipments & Logistics - ADASI Portal",
+      "heading": "Physical Shipments & Deliveries",
+      "viewport": 1440,
+      "bodyWidth": 1440,
+      "jsErrors": [],
+      "networkErrors": []
+    },
+    {
+      "role": "supplier",
+      "url": "/supplier/dashboard",
+      "title": "Supplier Dashboard - ADASI Portal",
+      "heading": "Supplier Dashboard",
+      "viewport": 1440,
+      "bodyWidth": 1440,
+      "jsErrors": [],
+      "networkErrors": []
+    },
+    {
+      "role": "supplier",
+      "url": "/supplier/quotations",
+      "title": "Quotation Period List - ADASI Portal",
+      "heading": "Quotation Periods",
+      "viewport": 1440,
+      "bodyWidth": 1440,
+      "jsErrors": [],
+      "networkErrors": []
+    },
+    {
+      "role": "supplier",
+      "url": "/supplier/purchase-orders",
+      "title": "Purchase Order List - ADASI Portal",
+      "heading": "My Purchase Orders",
+      "viewport": 1440,
+      "bodyWidth": 1440,
+      "jsErrors": [],
+      "networkErrors": []
+    },
+    {
+      "role": "local",
+      "url": "/local-supplier/dashboard",
+      "title": "Local Supplier Dashboard - ADASI Portal",
+      "heading": "Local Supplier Dashboard",
+      "viewport": 1440,
+      "bodyWidth": 1440,
+      "jsErrors": [],
+      "networkErrors": []
+    },
+    {
+      "role": "local",
+      "url": "/local-supplier/invoices/create",
+      "title": "Submit Invoice",
+      "heading": "Submit Local Invoice",
+      "viewport": 1440,
+      "bodyWidth": 1425,
+      "jsErrors": [],
+      "networkErrors": []
+    },
+    {
+      "role": "local",
+      "url": "/local-supplier/purchase-orders",
+      "title": "Purchase Orders - Local Supplier",
+      "heading": "Purchase Order Register",
+      "viewport": 1440,
+      "bodyWidth": 1440,
+      "jsErrors": [],
+      "networkErrors": []
+    },
+    {
+      "role": "qc",
+      "url": "/qc/dashboard",
+      "title": "QC Dashboard - ADASI Portal",
+      "heading": "Quality Control Dashboard",
+      "viewport": 1440,
+      "bodyWidth": 1440,
+      "jsErrors": [],
+      "networkErrors": []
+    },
+    {
+      "role": "qc",
+      "url": "/qc/inspections",
+      "title": "QC Inspections - ADASI Portal",
+      "heading": "QC Inspections",
+      "viewport": 1440,
+      "bodyWidth": 1440,
+      "jsErrors": [],
+      "networkErrors": []
+    },
+    {
+      "role": "ga",
+      "url": "/ga/dashboard",
+      "title": "GA Claims Dashboard - ADASI",
+      "heading": "General Affairs (GA) Dashboard",
+      "viewport": 1440,
+      "bodyWidth": 1440,
+      "jsErrors": [],
+      "networkErrors": []
+    },
+    {
+      "role": "ga",
+      "url": "/ga/claims",
+      "title": "GA Claims - ADASI",
+      "heading": "General Affairs Claim Submissions",
+      "viewport": 1440,
+      "bodyWidth": 1440,
+      "jsErrors": [],
+      "networkErrors": []
+    },
+    {
+      "role": "ga",
+      "url": "/ga/claims/create",
+      "title": "New GA Claim - ADASI",
+      "heading": "Employee Claim Submission (GA)",
+      "viewport": 1440,
+      "bodyWidth": 1440,
+      "jsErrors": [],
+      "networkErrors": []
+    },
+    {
+      "role": "admin",
+      "url": "/admin/dashboard",
+      "title": "Admin Dashboard - ADASI Portal",
+      "heading": "Administration Overview",
+      "viewport": 1440,
+      "bodyWidth": 1440,
+      "jsErrors": [],
+      "networkErrors": []
+    },
+    {
+      "role": "admin",
+      "url": "/admin/users",
+      "title": "Users - ADASI Portal",
+      "heading": "Users",
+      "viewport": 1440,
+      "bodyWidth": 1425,
+      "jsErrors": [],
+      "networkErrors": []
+    },
+    {
+      "role": "admin",
+      "url": "/profile/customization",
+      "title": "Customization - ADASI Supplier Portal",
+      "heading": "Customization",
+      "viewport": 1440,
+      "bodyWidth": 1425,
+      "jsErrors": [],
+      "networkErrors": []
+    }
+  ],
+  "finance": {
+    "login": true,
+    "dashboard": true,
+    "invoiceVerification": {
+      "path": "/finance/invoices/olejRejN",
+      "status": "UNDER_VERIFICATION",
+      "sectionA": true,
+      "sectionB": true,
+      "revisionModalOpenEscapeClose": true,
+      "focusReturnedToTrigger": true,
+      "noSubmission": true
+    },
+    "localPurchaseOrder": {
+      "path": "/finance/local-procurement/olejRejN",
+      "goodsReceipt": "TW4-QA-GR-001",
+      "ajaxFeedStatus": 200
+    },
+    "mobile": {
+      "width": 375,
+      "bodyWidth": 375,
+      "darkInvoice": true,
+      "sidebarOpenClose": true,
+      "userDropdown": true
+    },
+    "logout": true
+  },
+  "keyboard": {
+    "emailFocus": true,
+    "forgotPasswordFocusVisible": true,
+    "passwordFocusVisible": true,
+    "passwordToggleEnter": true
+  },
+  "console": {
+    "screenChecksErrors": 0,
+    "screenChecksNetworkErrors": 0,
+    "finalLogoutNativeBrowserMessage": "InvalidStateError: Transition was aborted because of invalid state. ViewTransition opt-in disabled",
+    "attribution": "Reproduced on both migrated frontend and baseline df39a2dc templates/assets with the same synthetic Finance login/logout journey. Baseline Composer dependencies reused unchanged. Logout returned to the login page successfully in both cases.",
+    "baselineCss": "app-B2HJsVBQ.css",
+    "localGoodsReceiptNetworkFeed": "HTTP 200, one synthetic reserved GR displayed"
+  },
+  "limitations": [
+    "Snapshot comparisons use synthetic mostly empty lists, not every populated detail/document state.",
+    "Live smoke verifies navigation/rendering/selected interactions; no browser settlement, award or invoice approval.",
+    "Chromium only; Safari/Firefox and screen-reader manual review not executed."
+  ]
+}

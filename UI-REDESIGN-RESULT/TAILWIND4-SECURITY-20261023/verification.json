@@ -1,0 +1,173 @@
+{
+  "baseline": {
+    "master": "df39a2dc0f68ae5315881da8acdac5c8dd26d9bd",
+    "pr": 9,
+    "implementation": "c58b5e50",
+    "branch": "fix/tailwind-v4-security-remediation"
+  },
+  "commands": [
+    {
+      "command": "php artisan test --filter=TestingEnvironmentDatabaseSafetyTest --compact",
+      "exit": 0,
+      "tests": 2,
+      "assertions": 4
+    },
+    {
+      "command": "npm.cmd run build (before migration)",
+      "exit": 0
+    },
+    {
+      "command": "node --test --test-concurrency=1 tests/js/*.test.mjs (before migration)",
+      "exit": 0,
+      "tests": 541
+    },
+    {
+      "command": "php vendor/phpunit/phpunit/phpunit tests/Feature/RenderedComponentTest.php tests/Feature/FrontendAssetLoadingTest.php tests/Feature/UiIconComponentTest.php (before migration)",
+      "exit": 0,
+      "tests": 32,
+      "assertions": 653
+    },
+    {
+      "command": "npm.cmd audit --json (before migration)",
+      "exit": 1,
+      "high": 5
+    },
+    {
+      "command": "npm.cmd ci",
+      "exit": 0
+    },
+    {
+      "command": "npm.cmd run build (final)",
+      "exit": 0,
+      "warnings": 2
+    },
+    {
+      "command": "node --test --test-concurrency=1 tests/js/*.test.mjs (final)",
+      "exit": 0,
+      "tests": 547,
+      "passed": 547,
+      "failed": 0
+    },
+    {
+      "command": "php artisan test --parallel --processes=4 --testsuite=Parallel",
+      "exit": 0,
+      "tests": 2925,
+      "assertions": 236724,
+      "skipped": 2,
+      "deprecations": 6,
+      "seconds": 651.817
+    },
+    {
+      "command": "php artisan test --testsuite=Serial",
+      "exit": 0,
+      "passed": 137,
+      "assertions": 4585,
+      "seconds": 1180.98
+    },
+    {
+      "command": "php vendor/phpunit/phpunit/phpunit tests/Feature/TestingEnvironmentDatabaseSafetyTest.php tests/Feature/RenderedComponentTest.php tests/Feature/FrontendAssetLoadingTest.php tests/Feature/UiIconComponentTest.php tests/Unit/UserFacingCopyInventoryTest.php (final)",
+      "exit": 0,
+      "tests": 63,
+      "assertions": 93394
+    },
+    {
+      "command": "php vendor/bin/pint --test <14 changed non-Blade PHP files>",
+      "exit": 0
+    },
+    {
+      "command": "php -l <each of 14 changed non-Blade PHP files>",
+      "exit": 0,
+      "files": 14
+    },
+    {
+      "command": "php artisan view:cache --env=testing",
+      "exit": 0
+    },
+    {
+      "command": "php scripts/check-tracked-artifacts.php",
+      "exit": 0
+    },
+    {
+      "command": "npm.cmd audit --json (final)",
+      "exit": 0,
+      "vulnerabilities": 0
+    },
+    {
+      "command": "npm.cmd audit --audit-level=high",
+      "exit": 0,
+      "vulnerabilities": 0
+    },
+    {
+      "command": "npm.cmd ls braces postcss-selector-parser",
+      "exit": 1,
+      "result": "empty graph, expected npm ls exit 1 for absent packages"
+    },
+    {
+      "command": "composer audit --locked --no-interaction (retry)",
+      "exit": 0,
+      "vulnerabilities": 0
+    },
+    {
+      "command": "git diff df39a2dc..HEAD --check",
+      "exit": 0
+    }
+  ],
+  "cleanCheckout": {
+    "commit": "c58b5e50",
+    "detached": true,
+    "trackedWorktreeChanges": 0,
+    "commands": [
+      {
+        "command": "composer install --no-interaction --prefer-dist --no-progress",
+        "exit": 0
+      },
+      {
+        "command": "php artisan key:generate --no-interaction",
+        "exit": 0
+      },
+      {
+        "command": "php artisan key:generate --env=testing --no-interaction",
+        "exit": 0
+      },
+      {
+        "command": "npm.cmd ci",
+        "exit": 0
+      },
+      {
+        "command": "npm.cmd run build",
+        "exit": 0
+      },
+      {
+        "command": "node --test --test-concurrency=1 tests/js/*.test.mjs",
+        "exit": 0,
+        "tests": 547
+      }
+    ]
+  },
+  "qualification": {
+    "database": "adasi_portal_test and Laravel parallel test copies, safety guard executed before DB suites; no dev or production DB",
+    "runtime": "Windows, PHP 8.2.30, Node 24.14.0, npm 11.9.0",
+    "ci": "Reviewed Node 22 configuration and package engine compatibility; GitHub Actions not executed for this local branch",
+    "mariadb": "Not executed in this task"
+  },
+  "failedAttempts": [
+    {
+      "command": "node --test --test-isolation=none tests/js/*.test.mjs",
+      "result": "Shared-global test interference; corrected runner retained process isolation and used concurrency 1. No test assertions weakened."
+    },
+    {
+      "command": "npx @tailwindcss/upgrade@4.3.3",
+      "result": "Could not fully migrate functional JS token config; trial output isolated/discarded. Manual migration followed official upgrade guidance."
+    },
+    {
+      "command": "composer audit --locked --no-interaction (first final attempt)",
+      "exit": 1,
+      "result": "Packagist curl error 28 timeout; retry succeeded."
+    },
+    {
+      "command": "Focused PHP before copy ledger refresh",
+      "exit": 1,
+      "result": "Only the source-offset/class-copy ledger was stale. Refreshed existing audit with identical 24068 record count and reverified 63 tests."
+    }
+  ]
+}
