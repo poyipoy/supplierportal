@@ -30,7 +30,7 @@
 @endpush
 
 @section('content')
-<div class="tw-grid tw-gap-4">
+<div class="tw:grid tw:gap-4">
     {{-- 1. Compact Page Header --}}
     <x-ui.page-header
         :title="__('claims.copy.material_claims')"
@@ -39,8 +39,8 @@
     />
 
     {{-- 2. Tabbed Data Card --}}
-    <x-ui.card padding="none" class="tw-overflow-hidden">
-        <div class="tw-border-b tw-border-outline-variant tw-px-4 tw-pt-1 tw-bg-surface-low">
+    <x-ui.card padding="none" class="tw:overflow-hidden">
+        <div class="tw:border-b tw:border-outline-variant tw:px-4 tw:pt-1 tw:bg-surface-low">
             <ul class="nav claim-nav-tabs" id="claimTabs" role="tablist">
                 <li class="nav-item" role="presentation">
                     <button class="nav-link active d-inline-flex align-items-center gap-2" id="action-tab" data-bs-toggle="tab" data-bs-target="#action" type="button" role="tab" aria-controls="action" aria-selected="true">
@@ -60,14 +60,14 @@
             </ul>
         </div>
 
-        <div class="tw-p-3.5 shell:p-4">
+        <div class="tw:p-3.5 shell:p-4">
             <div class="tab-content" id="claimTabsContent">
                 {{-- Tab 1: Action Required --}}
                 <div class="tab-pane fade show active" id="action" role="tabpanel" aria-labelledby="action-tab" tabindex="0">
-                    <x-ui.alert tone="warning" :title="__('claims.copy.claim_initiation_required')" class="tw-mb-3">{{ __('claims.copy.the_purchase_orders_below_failed_qc_inspection_with_an_ng_result_submit_a_formal_claim_to_initiate_r') }}</x-ui.alert>
+                    <x-ui.alert tone="warning" :title="__('claims.copy.claim_initiation_required')" class="tw:mb-3">{{ __('claims.copy.the_purchase_orders_below_failed_qc_inspection_with_an_ng_result_submit_a_formal_claim_to_initiate_r') }}</x-ui.alert>
 
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0 tw-text-ui-sm w-100" id="actionTable">
+                        <table class="table table-hover align-middle mb-0 tw:text-ui-sm w-100" id="actionTable">
                             <thead class="table-light">
                                 <tr>
                                     <th scope="col">{{ __('claims.copy.po_number') }}</th>
@@ -85,7 +85,7 @@
                 {{-- Tab 2: Claim History --}}
                 <div class="tab-pane fade" id="history" role="tabpanel" aria-labelledby="history-tab" tabindex="0">
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0 tw-text-ui-sm w-100" id="historyTable">
+                        <table class="table table-hover align-middle mb-0 tw:text-ui-sm w-100" id="historyTable">
                             <thead class="table-light">
                                 <tr>
                                     <th scope="col">{{ __('claims.copy.claim_id') }}</th>
@@ -121,9 +121,9 @@
             serverSide: true,
             ajax: '{{ route("purchasing.claims.data-action") }}',
             columns: [
-                { data: 'po_number_display', name: 'po_number', className: 'fw-bold tw-text-on-surface' },
+                { data: 'po_number_display', name: 'po_number', className: 'fw-bold tw:text-on-surface' },
                 { data: 'supplier_name', name: 'supplier_name', orderable: false },
-                { data: 'inspection_date', name: 'inspection_date', orderable: false, searchable: false, className: 'tw-text-on-surface-variant' },
+                { data: 'inspection_date', name: 'inspection_date', orderable: false, searchable: false, className: 'tw:text-on-surface-variant' },
                 { data: 'status_badge', name: 'status', className: 'text-center', searchable: false },
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
             ],
@@ -139,11 +139,11 @@
                     serverSide: true,
                     ajax: '{{ route("purchasing.claims.data-history") }}',
                     columns: [
-                        { data: 'claim_id', name: 'id', className: 'fw-bold tw-text-on-surface' },
+                        { data: 'claim_id', name: 'id', className: 'fw-bold tw:text-on-surface' },
                         { data: 'po_number', name: 'po_number', orderable: false },
                         { data: 'supplier_name', name: 'supplier_name', orderable: false },
-                        { data: 'created_date', name: 'created_at', className: 'tw-text-on-surface-variant' },
-                        { data: 'deadline_display', name: 'deadline', className: 'tw-text-on-surface-variant' },
+                        { data: 'created_date', name: 'created_at', className: 'tw:text-on-surface-variant' },
+                        { data: 'deadline_display', name: 'deadline', className: 'tw:text-on-surface-variant' },
                         { data: 'status_badge', name: 'status', className: 'text-center', searchable: false },
                         { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
                     ],

@@ -5,7 +5,7 @@
 @section('page-title', __('supplier.copy.my_purchase_orders'))
 
 @section('content')
-<div class="tw-grid tw-gap-4">
+<div class="tw:grid tw:gap-4">
     {{-- Breadcrumb & Compact Page Header --}}
     <x-ui.breadcrumb :items="[
         __('purchasing.breadcrumbs.dashboard') => route('supplier.dashboard'),
@@ -27,7 +27,7 @@
         :title="__('supplier.copy.received_purchase_orders')"
         :description="__('supplier.copy.search_export_and_inspect_order_details_without_exposing_other_suppliers_data')"
     >
-        <table class="table table-hover align-middle mb-0 tw-text-ui-xs w-100" id="poTable">
+        <table class="table table-hover align-middle mb-0 tw:text-ui-xs w-100" id="poTable">
             <thead class="table-light">
                 <tr>
                     <th scope="col">{{ __('supplier.copy.po_number') }}</th>
@@ -58,13 +58,13 @@
                 ['po_number', 'status', 'start_date', 'end_date'].forEach((name) => { if (params.has(name)) d[name] = params.get(name); });
             } },
             columns: [
-                { data: 'po_number_display', name: 'po_number', className: 'fw-bold tw-text-on-surface' },
-                { data: 'period_name', name: 'period_name', orderable: false, className: 'tw-text-on-surface-variant' },
+                { data: 'po_number_display', name: 'po_number', className: 'fw-bold tw:text-on-surface' },
+                { data: 'period_name', name: 'period_name', orderable: false, className: 'tw:text-on-surface-variant' },
                 { data: 'pr_reference', name: 'pr_reference', orderable: false },
-                { data: 'remark_display', name: 'remark_display', orderable: false, className: 'tw-text-on-surface-variant tw-text-ui-xs' },
+                { data: 'remark_display', name: 'remark_display', orderable: false, className: 'tw:text-on-surface-variant tw:text-ui-xs' },
                 { data: 'total_idr', name: 'total_idr', className: 'text-end fw-bold text-primary ui-tabular-nums', orderable: false, searchable: false },
                 { data: 'status_badge', name: 'status', className: 'text-center' },
-                { data: 'estimated_date', name: 'estimated_arrival', className: 'ui-tabular-nums tw-text-on-surface-variant' },
+                { data: 'estimated_date', name: 'estimated_arrival', className: 'ui-tabular-nums tw:text-on-surface-variant' },
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
             ],
             language: {},

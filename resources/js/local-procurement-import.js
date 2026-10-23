@@ -123,20 +123,20 @@ export function bootLocalProcurementImports(root = document) {
         const confirmText = confirmLabel?.textContent ?? '';
         const progress = document.createElement('div');
         // Tanpa pesan, baris status tidak boleh menyisakan celah di atas panel.
-        progress.className = 'tw-m-0 tw-text-ui-sm tw-font-semibold tw-text-on-surface';
+        progress.className = 'tw:m-0 tw:text-ui-sm tw:font-semibold tw:text-on-surface';
         progress.setAttribute('role', 'status');
         progress.setAttribute('aria-live', 'polite');
         progress.id = `local${name}ImportProgressLabel`;
         const statusPanel = document.createElement('section');
-        statusPanel.className = 'tw-w-full tw-min-w-0 tw-rounded-ui-sm tw-border tw-border-solid tw-border-outline-variant tw-bg-surface-container tw-p-3 tw-space-y-1.5';
+        statusPanel.className = 'tw:w-full tw:min-w-0 tw:rounded-ui-sm tw:border tw:border-solid tw:border-outline-variant tw:bg-surface-container tw:p-3 tw:space-y-1.5';
         statusPanel.hidden = true;
         const filename = document.createElement('div');
-        filename.className = 'tw-text-ui-xs tw-text-on-surface-variant tw-break-all';
+        filename.className = 'tw:text-ui-xs tw:text-on-surface-variant tw:break-all';
         const countLabel = document.createElement('div');
-        countLabel.className = 'tw-text-ui-xs tw-text-on-surface-variant tw-tabular-nums';
+        countLabel.className = 'tw:text-ui-xs tw:text-on-surface-variant tw:tabular-nums';
         const meter = document.createElement('div');
         const helper = document.createElement('p');
-        helper.className = 'tw-m-0 tw-text-ui-xs tw-text-on-surface-variant tw-text-pretty';
+        helper.className = 'tw:m-0 tw:text-ui-xs tw:text-on-surface-variant tw:text-pretty';
         const retry = document.createElement('button');
         retry.type = 'button'; retry.className = 'btn btn-outline-secondary btn-sm'; retry.hidden = true;
         retry.textContent = t('js.local_import.retry_status');
@@ -148,7 +148,7 @@ export function bootLocalProcurementImports(root = document) {
         const warnings = document.createElement('ul');
         modal.querySelector('.modal-body').append(warnings);
         const controls = document.createElement('div');
-        controls.className = 'tw-flex tw-items-center tw-gap-2 tw-py-2';
+        controls.className = 'tw:flex tw:items-center tw:gap-2 tw:py-2';
         const previous = document.createElement('button');
         const next = document.createElement('button');
         const cancel = document.createElement('button');
@@ -247,7 +247,7 @@ export function bootLocalProcurementImports(root = document) {
         function recoveryRow(entry, index) {
             const item = document.createElement('li');
             // Lebar border default browser "medium": nolkan dulu, lalu hanya garis atas di antara baris.
-            item.className = 'tw-flex tw-flex-col lg:tw-flex-row tw-items-start lg:tw-items-center tw-gap-x-3 tw-gap-y-2 tw-py-2.5 tw-border-0 tw-border-t tw-border-solid tw-border-outline-variant first:tw-border-t-0';
+            item.className = 'tw:flex tw:flex-col tw:lg:flex-row tw:items-start tw:lg:items-center tw:gap-x-3 tw:gap-y-2 tw:py-2.5 tw:border-0 tw:border-t tw:border-solid tw:border-outline-variant tw:first:border-t-0';
             item.dataset.importUrl = entry.status_url;
             const noNew = entry.status === 'VALIDATION_FAILED' && entry.summary?.invalid === 0
                 && entry.summary?.[entry.kind === 'PO' ? 'new_po' : 'new_gr'] === 0
@@ -256,25 +256,25 @@ export function bootLocalProcurementImports(root = document) {
             const chip = fillSlot(fromTemplate(`[data-recovery-chip="${chipKey(entry.status)}"]`, 'span'), '[data-chip-label]', t(noNew ? 'js.local_import.no_new_title' : `js.local_import.status.${entry.status}`));
             // Kolom status selebar tetap agar nama file antarbaris sejajar dan mudah dipindai.
             const status = document.createElement('div');
-            status.className = 'tw-shrink-0 lg:tw-w-56';
+            status.className = 'tw:shrink-0 tw:lg:w-56';
             status.append(chip);
             const text = document.createElement('div');
-            text.className = 'tw-min-w-0 tw-flex-1';
+            text.className = 'tw:min-w-0 tw:flex-1';
             const file = document.createElement('p');
             file.id = `local${name}ImportRecoveryFile${index}`;
-            file.className = 'tw-m-0 tw-break-all tw-text-ui-sm tw-font-medium tw-text-on-surface';
+            file.className = 'tw:m-0 tw:break-all tw:text-ui-sm tw:font-medium tw:text-on-surface';
             file.textContent = entry.filename;
             const meta = document.createElement('p');
-            meta.className = 'tw-m-0 tw-text-ui-xs tw-text-on-surface-variant tw-tabular-nums';
+            meta.className = 'tw:m-0 tw:text-ui-xs tw:text-on-surface-variant tw:tabular-nums';
             meta.textContent = t('js.local_import.recovery_meta', { kind: entry.kind, time: entry.created_at ?? '—', rows: number(entry.processed_rows ?? 0) });
             chip.id = `local${name}ImportRecoveryStatus${index}`;
             const detail = document.createElement('div');
-            detail.className = 'tw-text-ui-xs tw-tabular-nums tw-text-on-surface-variant tw-mt-1';
+            detail.className = 'tw:text-ui-xs tw:tabular-nums tw:text-on-surface-variant tw:mt-1';
             detail.textContent = progressDetails(entry, entry.kind, number);
             text.append(file, meta);
             text.append(progressMeter(entry, chip.id), detail);
             const actions = document.createElement('div');
-            actions.className = 'lg:tw-ms-auto tw-flex tw-shrink-0 tw-flex-wrap tw-items-center tw-gap-3';
+            actions.className = 'tw:lg:ms-auto tw:flex tw:shrink-0 tw:flex-wrap tw:items-center tw:gap-3';
             const primary = fillSlot(fromTemplate('[data-recovery-action]', 'button'), '[data-button-label]',
                 t(active.has(entry.status) ? 'js.local_import.recovery_progress' : 'js.local_import.recovery_review'));
             // Nama aksi tetap label yang terlihat; file ditautkan sebagai deskripsi (WCAG 2.5.3).
@@ -285,7 +285,7 @@ export function bootLocalProcurementImports(root = document) {
             let secondary;
             if (entry.status === 'IMPORTING') {
                 secondary = document.createElement('span');
-                secondary.className = 'tw-text-ui-xs tw-text-on-surface-variant';
+                secondary.className = 'tw:text-ui-xs tw:text-on-surface-variant';
                 secondary.textContent = t('js.local_import.recovery_saving');
             } else {
                 secondary = fillSlot(fromTemplate('[data-recovery-cancel]', 'button'), '[data-button-label]', config.dataset.cancel);
@@ -409,7 +409,7 @@ export function bootLocalProcurementImports(root = document) {
                 const column = ['po_number','pr_number','gr_number','qty','uom','gr_date','po_date','po_amount','supplier_name'].includes(error.column) ? error.column : 'other';
                 item.textContent = t('js.local_import.row_error', { row: error.row ?? '—', column: t(`js.local_import.column.${column}`), message: error.message });
                 const hint = document.createElement('p');
-                hint.className = 'tw-mt-1 tw-mb-1 tw-text-ui-xs';
+                hint.className = 'tw:mt-1 tw:mb-1 tw:text-ui-xs';
                 hint.textContent = t(['PO_NOT_FOUND', 'PO_CANCELLED', 'PO_CLOSED', 'GR_CANCELLED', 'IDENTITY_CONFLICT'].includes(error.code)
                     ? `js.local_import.fix_${error.code}` : 'js.local_import.generic_fix');
                 item.append(hint);
@@ -417,7 +417,7 @@ export function bootLocalProcurementImports(root = document) {
                 if (target) {
                     const link = document.createElement('a');
                     link.href = target.href; link.target = '_blank'; link.rel = 'noopener noreferrer';
-                    link.className = 'ui-focus-ring tw-font-semibold';
+                    link.className = 'ui-focus-ring tw:font-semibold';
                     link.textContent = `${error.action.label} (${t('js.local_import.new_tab')})`;
                     item.append(link);
                 }

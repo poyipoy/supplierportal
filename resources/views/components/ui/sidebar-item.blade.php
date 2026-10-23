@@ -21,7 +21,7 @@
         {{ $attributes->class(['sidebar-link sidebar-link--disabled ui-motion ui-focus-ring']) }}
     >
         <span class="sidebar-link-icon" aria-hidden="true">
-            <x-ui.icon :name="$icon" size="sm" class="tw-shrink-0" />
+            <x-ui.icon :name="$icon" size="sm" class="tw:shrink-0" />
         </span>
         <span class="sidebar-link-label sidebar-type-text" style="--sidebar-type-steps: {{ $typingSteps }};">{{ $slot }}</span>
         <span class="sidebar-link-trailing" aria-hidden="true"><x-ui.icon name="lock" size="sm" /></span>
@@ -37,7 +37,7 @@
     {{ $attributes->class(['sidebar-link ui-motion ui-focus-ring', 'active' => $active]) }}
 >
     <span class="sidebar-link-icon" aria-hidden="true">
-        <x-ui.icon :name="$icon" size="sm" class="tw-shrink-0" />
+        <x-ui.icon :name="$icon" size="sm" class="tw:shrink-0" />
     </span>
     <span class="sidebar-link-label sidebar-type-text" style="--sidebar-type-steps: {{ $typingSteps }};">{{ $slot }}</span>
     @isset($trailing)<span class="sidebar-link-trailing">{{ $trailing }}</span>@endisset

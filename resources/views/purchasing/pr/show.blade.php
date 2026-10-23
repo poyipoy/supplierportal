@@ -64,7 +64,7 @@
     $hasReachedBidding = in_array($pr->status, ['bidding', 'completed'], true);
 @endphp
 
-<div class="tw-grid tw-gap-4">
+<div class="tw:grid tw:gap-4">
     {{-- Breadcrumb & Compact Page Header --}}
     <x-ui.breadcrumb :items="[
         __('purchasing.breadcrumbs.dashboard') => route('purchasing.dashboard'),
@@ -85,7 +85,7 @@
             <x-status-badge type="pr" :status="$pr->status" size="lg" />
             @if($pr->status === 'bidding')
                 <span
-                    class="ui-tabular-nums tw-inline-flex tw-items-center tw-rounded-ui-xs tw-border tw-border-primary tw-bg-primary-container tw-px-2.5 tw-py-1.5 tw-text-ui-xs tw-font-semibold tw-text-primary-container-foreground"
+                    class="ui-tabular-nums tw:inline-flex tw:items-center tw:rounded-ui-xs tw:border tw:border-primary tw:bg-primary-container tw:px-2.5 tw:py-1.5 tw:text-ui-xs tw:font-semibold tw:text-primary-container-foreground"
                     title="{{ __('purchasing.a11y.quotation_count', ['count' => $submittedQuotationCount]) }}"
                     aria-label="{{ __('purchasing.a11y.quotation_count', ['count' => $submittedQuotationCount]) }}"
                 >
@@ -97,7 +97,7 @@
     </x-ui.page-header>
 
     {{-- 4-Column Key Metrics Strip --}}
-    <div class="tw-grid tw-gap-px tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-outline-variant sm:tw-grid-cols-2 xl:tw-grid-cols-4">
+    <div class="tw:grid tw:gap-px tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-outline-variant tw:sm:grid-cols-2 tw:xl:grid-cols-4">
         <x-ui.metric-card
             flat
             :label="__('purchasing.copy.procurement_period')"
@@ -130,18 +130,18 @@
 
     @include('partials.procurement-logistics', ['port' => $pr->port_of_discharge, 'incoterm' => $pr->incoterm])
 
-    <div class="tw-grid tw-items-start tw-gap-4 xl:tw-grid-cols-[minmax(0,2fr)_minmax(19rem,1fr)]">
+    <div class="tw:grid tw:items-start tw:gap-4 tw:xl:grid-cols-[minmax(0,2fr)_minmax(19rem,1fr)]">
         {{-- Main Column --}}
-        <div class="tw-grid tw-min-w-0 tw-gap-4">
+        <div class="tw:grid tw:min-w-0 tw:gap-4">
             {{-- Audience & Notes Card --}}
         <x-ui.card :title="__('purchasing.copy.audience_and_instructions')">
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <span class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase d-block mb-1">{{ __('purchasing.copy.invited_suppliers') }}</span>
+                        <span class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase d-block mb-1">{{ __('purchasing.copy.invited_suppliers') }}</span>
                         @if($pr->invitedSuppliers->isEmpty())
                             <span class="ui-status-chip ui-status-chip--neutral">{{ __('purchasing.copy.all_registered_suppliers') }}</span>
                         @else
-                            <div class="d-flex flex-wrap tw-gap-1.5">
+                            <div class="d-flex flex-wrap tw:gap-1.5">
                                 @foreach($pr->invitedSuppliers as $supplier)
                                     <span class="ui-status-chip ui-status-chip--info">
                                         {{ $supplier->supplier->company_name ?? $supplier->name }}
@@ -151,11 +151,11 @@
                         @endif
                     </div>
                     <div class="col-md-6">
-                        <span class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase d-block mb-1">{{ __('purchasing.copy.requisition_notes') }}</span>
+                        <span class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase d-block mb-1">{{ __('purchasing.copy.requisition_notes') }}</span>
                         @if($pr->notes)
-                            <div class="tw-text-on-surface tw-text-ui-sm tw-whitespace-pre-line">{{ $pr->notes }}</div>
+                            <div class="tw:text-on-surface tw:text-ui-sm tw:whitespace-pre-line">{{ $pr->notes }}</div>
                         @else
-                            <span class="tw-text-outline tw-text-ui-sm fst-italic">{{ __('purchasing.copy.no_additional_instructions_provided') }}</span>
+                            <span class="tw:text-outline tw:text-ui-sm fst-italic">{{ __('purchasing.copy.no_additional_instructions_provided') }}</span>
                         @endif
                     </div>
                 </div>
@@ -168,7 +168,7 @@
                 :title="__('purchasing.page.material_count', ['count' => $pr->items->count()])"
                 :description="__('purchasing.copy.required_specifications_shapes_dimensions_and_computed_weights')"
             >
-                <table class="table table-hover align-middle mb-0 tw-text-ui-xs w-100">
+                <table class="table table-hover align-middle mb-0 tw:text-ui-xs w-100">
                     <thead class="table-light text-center">
                         <tr>
                             <th scope="col" style="width: 40px;">{{ __('purchasing.copy.no') }}</th>
@@ -202,20 +202,20 @@
                                 };
                             @endphp
                             <tr>
-                                <td class="text-center tw-text-on-surface-variant ui-tabular-nums">{{ $index + 1 }}</td>
-                                <td class="text-center fw-semibold tw-text-on-surface">
+                                <td class="text-center tw:text-on-surface-variant ui-tabular-nums">{{ $index + 1 }}</td>
+                                <td class="text-center fw-semibold tw:text-on-surface">
                                     {{ $item->hs_code ?? '-' }}
                                 </td>
                                 <td class="text-center">
                                     <span class="ui-status-chip {{ $hsStatusTone }}">{{ $hsStatusLabel }}</span>
                                 </td>
-                                <td class="text-start fw-bold tw-text-on-surface ui-sticky-col">{{ $item->material_name }}</td>
+                                <td class="text-start fw-bold tw:text-on-surface ui-sticky-col">{{ $item->material_name }}</td>
                                 <td class="text-center">{{ $item->shape ?: '-' }}</td>
-                                <td class="text-start tw-text-on-surface-variant">{{ $item->dimension_label }}</td>
+                                <td class="text-start tw:text-on-surface-variant">{{ $item->dimension_label }}</td>
                                 <td class="text-center fw-bold ui-tabular-nums">{{ number_format($item->quantity_value, 0) }}</td>
-                                <td class="text-end ui-tabular-nums tw-text-on-surface">{{ \App\Support\NumberFormat::maxDecimals($item->weight_needed) }}</td>
+                                <td class="text-end ui-tabular-nums tw:text-on-surface">{{ \App\Support\NumberFormat::maxDecimals($item->weight_needed) }}</td>
                                 <td class="text-end fw-bold text-primary ui-tabular-nums">{{ \App\Support\NumberFormat::maxDecimals($item->total_weight) }}</td>
-                                <td class="text-start tw-text-on-surface-variant">{{ $item->remark ?: '-' }}</td>
+                                <td class="text-start tw:text-on-surface-variant">{{ $item->remark ?: '-' }}</td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -223,10 +223,10 @@
                         <tr>
                             <th scope="row" colspan="6" class="text-end">{{ __('procurement.totals.total') }}</th>
                             <td class="text-center fw-bold ui-tabular-nums">
-                                <span class="tw-sr-only">{{ __('procurement.totals.total_qty') }}:</span>
+                                <span class="tw:sr-only">{{ __('procurement.totals.total_qty') }}:</span>
                                 {{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($totalQty)) }}
                             </td>
-                            <td class="text-end tw-text-on-surface-variant">{{ __('procurement.totals.total_kg') }}</td>
+                            <td class="text-end tw:text-on-surface-variant">{{ __('procurement.totals.total_kg') }}</td>
                             <td class="text-end fw-bold text-primary ui-tabular-nums">{{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($totalKg)) }}</td>
                             <td></td>
                         </tr>
@@ -248,7 +248,7 @@
                     />
                 </x-slot:emptyState>
 
-                <table class="table table-hover align-middle mb-0 tw-text-ui-xs w-100">
+                <table class="table table-hover align-middle mb-0 tw:text-ui-xs w-100">
                     <thead class="table-light text-center">
                         <tr>
                             <th scope="col">{{ __('purchasing.copy.supplier') }}</th>
@@ -270,7 +270,7 @@
                                 $supplierName = $quotation->supplier->supplier->company_name ?? $quotation->supplier->name ?? '-';
                             @endphp
                             <tr class="{{ $isLowest ? 'pr-best-quotation' : '' }}">
-                                <td class="fw-bold tw-text-on-surface">{{ $supplierName }}</td>
+                                <td class="fw-bold tw:text-on-surface">{{ $supplierName }}</td>
                                 <td class="text-center"><span class="ui-status-chip ui-status-chip--neutral">{{ $quotation->currency }}</span></td>
                                 <td class="text-end ui-tabular-nums fw-semibold">{{ \App\Support\NumberFormat::maxDecimals($quotation->total_amount) }}</td>
                                 <td class="text-end fw-bold ui-tabular-nums">
@@ -280,14 +280,14 @@
                                             <x-ui.icon name="circle-check" class="ms-1 text-success" aria-label="{{ __('purchasing.copy.lowest_estimated_total') }}" />
                                         @endif
                                     @else
-                                        <span class="tw-text-outline">-</span>
+                                        <span class="tw:text-outline">-</span>
                                     @endif
                                 </td>
-                                <td class="text-center ui-tabular-nums tw-text-on-surface-variant">{{ $quotation->estimated_delivery ? date('d M Y', strtotime($quotation->estimated_delivery)) : '-' }}</td>
-                                <td class="text-center ui-tabular-nums tw-text-on-surface-variant">{{ $quotation->submitted_at ? $regionalFormatter->timestamp($quotation->submitted_at, 'datetime_comma') : '-' }}</td>
+                                <td class="text-center ui-tabular-nums tw:text-on-surface-variant">{{ $quotation->estimated_delivery ? date('d M Y', strtotime($quotation->estimated_delivery)) : '-' }}</td>
+                                <td class="text-center ui-tabular-nums tw:text-on-surface-variant">{{ $quotation->submitted_at ? $regionalFormatter->timestamp($quotation->submitted_at, 'datetime_comma') : '-' }}</td>
                                 <td class="text-center"><x-status-badge type="quotation" :status="$quotation->status" /></td>
                                 <td class="text-end">
-                                    <div class="d-inline-flex align-items-center tw-gap-1.5 justify-content-end">
+                                    <div class="d-inline-flex align-items-center tw:gap-1.5 justify-content-end">
                                         <x-ui.icon-button
                                             :href="route('purchasing.quotations.show', [$quotation, \App\Support\PurchasingNavigation::RETURN_URL_KEY => request()->fullUrl()])"
                                             icon="eye"
@@ -313,15 +313,15 @@
         </div>
 
         {{-- Sidebar Column --}}
-        <aside class="tw-grid tw-gap-4" aria-label="{{ __('purchasing.copy.requisition_actions_and_progress') }}">
+        <aside class="tw:grid tw:gap-4" aria-label="{{ __('purchasing.copy.requisition_actions_and_progress') }}">
             {{-- Action Card --}}
             <x-ui.card :title="__('purchasing.copy.workflow_actions')">
-                <div class="tw-grid tw-gap-3">
+                <div class="tw:grid tw:gap-3">
                     @if($pr->created_by !== auth()->id())
                         <x-ui.alert tone="info" :title="__('purchasing.copy.read_only_access')">{{ __('common.final_review.created_by', ['name' => $pr->creator->name ?? __('purchasing.copy.another_purchasing_user')]) }}</x-ui.alert>
                     @elseif($pr->status === 'draft')
                         <x-ui.alert tone="warning" :title="__('purchasing.copy.draft_requisition')">{{ __('purchasing.copy.complete_the_material_list_before_submitting_this_requisition') }}</x-ui.alert>
-                        <div class="tw-grid tw-gap-2">
+                        <div class="tw:grid tw:gap-2">
                             <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.edit', $pr)" variant="outline" size="sm">
                                 <x-ui.icon name="square-pen" size="sm" />
                                 <span>{{ __('purchasing.copy.edit_draft') }}</span>
@@ -330,7 +330,7 @@
                                 @csrf
                                 @method('PUT')
                                 <input type="hidden" name="return_url" value="{{ request('return_url') }}">
-                                <x-ui.button type="button" class="btn-submit tw-w-full" size="sm">
+                                <x-ui.button type="button" class="btn-submit tw:w-full" size="sm">
                                     <x-ui.icon name="send" size="sm" />
                                     <span>{{ __('purchasing.copy.submit_requisition') }}</span>
                                 </x-ui.button>
@@ -351,12 +351,12 @@
             {{-- Supplier Chat Channels --}}
             @if($pr->quotations && $pr->quotations->whereIn('status', ['submitted', 'revision_requested', 'accepted'])->count() > 0)
                 <x-ui.card :title="__('purchasing.copy.supplier_discussions')" :description="__('purchasing.copy.open_direct_supplier_chat_threads_for_this_pr')">
-                    <div class="tw-grid tw-gap-2">
+                    <div class="tw:grid tw:gap-2">
                         @foreach($pr->quotations->whereIn('status', ['submitted', 'revision_requested', 'accepted'])->unique('supplier_id') as $quotation)
                             <form action="{{ route('purchasing.conversations.start.pr', ['pr_id' => $pr, 'supplier_id' => $quotation->supplier]) }}" method="POST" data-chat-start-form data-managed-submit>
                                 @csrf
                                 <input type="hidden" name="return_url" value="{{ \App\Support\PurchasingNavigation::currentUrlForReturn() }}">
-                                <x-ui.button type="submit" variant="outline" size="sm" class="tw-w-full tw-justify-start">
+                                <x-ui.button type="submit" variant="outline" size="sm" class="tw:w-full tw:justify-start">
                                     <x-ui.icon name="message-square" size="sm" class="text-primary flex-shrink-0" />
                                     <span class="text-truncate fw-medium">{{ $quotation->supplier->supplier->company_name ?? $quotation->supplier->name }}</span>
                                 </x-ui.button>
@@ -371,19 +371,19 @@
                 <ol class="pr-timeline">
                     <li class="pr-timeline-item is-complete">
                         <span class="pr-timeline-marker" aria-hidden="true"></span>
-                        <div class="tw-text-ui-sm fw-bold text-primary">{{ __('purchasing.copy.created_draft') }}</div>
-                        <time class="ui-tabular-nums tw-text-on-surface-variant tw-text-ui-xs" datetime="{{ $pr->created_at->toIso8601String() }}">{{ $regionalFormatter->timestamp($pr->created_at, 'datetime_comma') }}</time>
+                        <div class="tw:text-ui-sm fw-bold text-primary">{{ __('purchasing.copy.created_draft') }}</div>
+                        <time class="ui-tabular-nums tw:text-on-surface-variant tw:text-ui-xs" datetime="{{ $pr->created_at->toIso8601String() }}">{{ $regionalFormatter->timestamp($pr->created_at, 'datetime_comma') }}</time>
                     </li>
                     <li class="pr-timeline-item {{ $hasReachedSubmitted ? 'is-complete' : '' }}">
                         <span class="pr-timeline-marker" aria-hidden="true"></span>
-                        <div class="tw-text-ui-sm fw-bold {{ $hasReachedSubmitted ? 'text-primary' : 'tw-text-outline' }}">{{ __('purchasing.copy.submitted') }}</div>
+                        <div class="tw:text-ui-sm fw-bold {{ $hasReachedSubmitted ? 'text-primary' : 'tw:text-outline' }}">{{ __('purchasing.copy.submitted') }}</div>
                         @if($hasReachedSubmitted)
-                            <time class="ui-tabular-nums tw-text-on-surface-variant tw-text-ui-xs" datetime="{{ $pr->updated_at->toIso8601String() }}">{{ $regionalFormatter->timestamp($pr->updated_at, 'datetime_comma') }}</time>
+                            <time class="ui-tabular-nums tw:text-on-surface-variant tw:text-ui-xs" datetime="{{ $pr->updated_at->toIso8601String() }}">{{ $regionalFormatter->timestamp($pr->updated_at, 'datetime_comma') }}</time>
                         @endif
                     </li>
                     <li class="pr-timeline-item {{ $hasReachedBidding ? 'is-current' : '' }}">
                         <span class="pr-timeline-marker" aria-hidden="true"></span>
-                        <div class="tw-text-ui-sm fw-bold {{ $hasReachedBidding ? 'text-warning' : 'tw-text-outline' }}">{{ __('purchasing.copy.supplier_bidding') }}</div>
+                        <div class="tw:text-ui-sm fw-bold {{ $hasReachedBidding ? 'text-warning' : 'tw:text-outline' }}">{{ __('purchasing.copy.supplier_bidding') }}</div>
                     </li>
                 </ol>
             </x-ui.card>

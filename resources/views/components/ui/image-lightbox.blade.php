@@ -718,7 +718,7 @@
                 e.stopPropagation();
 
                 // Find all image triggers within the same parent section or container for gallery mode
-                const container = trigger.closest('.row, .tw-grid, .card, [data-lightbox-group]') || document;
+                const container = trigger.closest('.row, [class~="tw:grid"], .card, [data-lightbox-group]') || document;
                 const triggers = Array.from(container.querySelectorAll('[data-lightbox-image], a.image-preview-trigger, a[data-lightbox-preview], a[href*="/attachments/"]:has(img), a.qc-evidence-preview'));
 
                 const gallery = triggers.map(t => {

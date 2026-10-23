@@ -4,7 +4,7 @@
 @section('page-title', __('purchasing.copy.price_comparison'))
 
 @section('content')
-<div id="purchasingComparisonContainer" class="tw-grid tw-gap-6 tw-min-w-0 tw-max-w-full" data-server-tabs-container>
+<div id="purchasingComparisonContainer" class="tw:grid tw:gap-6 tw:min-w-0 tw:max-w-full" data-server-tabs-container>
     <x-ui.page-header
         :title="__('purchasing.copy.price_comparison')"
         :description="__('purchasing.copy.compare_supplier_offers_for_a_pr_inspect_historical_movement_and_benchmark_current_prices')"
@@ -12,7 +12,7 @@
     />
     <x-purchasing.comparison-tabs active="inter-supplier" />
 
-    <div id="purchasingComparisonContent" class="tw-min-w-0 tw-max-w-full" data-server-tabs-content>
+    <div id="purchasingComparisonContent" class="tw:min-w-0 tw:max-w-full" data-server-tabs-content>
         @include('purchasing.comparison._inter_supplier_content')
     </div>
 </div>

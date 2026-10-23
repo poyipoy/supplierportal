@@ -18,7 +18,7 @@
     $rowMasterId = $itemData['material_master_id'] ?? '';
 @endphp
 <tr class="item-row">
-    <td class="pr-sticky-number text-center tw-text-on-surface-variant ui-tabular-nums" data-pr-row-number>
+    <td class="pr-sticky-number text-center tw:text-on-surface-variant ui-tabular-nums" data-pr-row-number>
         {{ is_numeric($index) ? ((int) $index + 1) : '' }}
     </td>
     <td class="pr-sticky-material">
@@ -38,7 +38,7 @@
                 value="{{ $itemData['material_name'] ?? '' }}"
             >
             <div
-                class="material-search-results list-group shadow-sm d-none tw-absolute tw-left-0 tw-top-full tw-mt-1 tw-w-full tw-bg-surface tw-z-[1000] tw-max-h-[220px] tw-overflow-y-auto tw-rounded-md tw-border tw-border-outline-variant"
+                class="material-search-results list-group shadow-sm d-none tw:absolute tw:left-0 tw:top-full tw:mt-1 tw:w-full tw:bg-surface tw:z-[1000] tw:max-h-[220px] tw:overflow-y-auto tw:rounded-md tw:border tw:border-outline-variant"
                 role="listbox"
             ></div>
         </div>

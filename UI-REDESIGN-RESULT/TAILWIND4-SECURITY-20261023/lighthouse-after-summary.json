@@ -1,0 +1,475 @@
+﻿{
+    "lighthouseVersion":  "13.5.0",
+    "fetchTime":  "2026-10-23T05:17:35.063Z",
+    "finalDisplayedUrl":  "http://127.0.0.1:8768/after/login.html",
+    "categories":  {
+                       "accessibility":  {
+                                             "title":  "Accessibility",
+                                             "description":  "These checks highlight opportunities to [improve the accessibility of your web app](https://developer.chrome.com/docs/lighthouse/accessibility/). Automatic detection can only detect a subset of issues and does not guarantee the accessibility of your web app, so [manual testing](https://web.dev/articles/how-to-review) is also encouraged.",
+                                             "manualDescription":  "These items address areas which an automated testing tool cannot cover. Learn more in our guide on [conducting an accessibility review](https://web.dev/articles/how-to-review).",
+                                             "supportedModes":  [
+                                                                    "navigation",
+                                                                    "snapshot"
+                                                                ],
+                                             "auditRefs":  [
+                                                               {
+                                                                   "id":  "accesskeys",
+                                                                   "weight":  0,
+                                                                   "group":  "a11y-navigation"
+                                                               },
+                                                               {
+                                                                   "id":  "aria-allowed-attr",
+                                                                   "weight":  10,
+                                                                   "group":  "a11y-aria"
+                                                               },
+                                                               {
+                                                                   "id":  "aria-command-name",
+                                                                   "weight":  0,
+                                                                   "group":  "a11y-aria"
+                                                               },
+                                                               {
+                                                                   "id":  "aria-conditional-attr",
+                                                                   "weight":  7,
+                                                                   "group":  "a11y-aria"
+                                                               },
+                                                               {
+                                                                   "id":  "aria-deprecated-role",
+                                                                   "weight":  0,
+                                                                   "group":  "a11y-aria"
+                                                               },
+                                                               {
+                                                                   "id":  "aria-dialog-name",
+                                                                   "weight":  0,
+                                                                   "group":  "a11y-aria"
+                                                               },
+                                                               {
+                                                                   "id":  "aria-hidden-body",
+                                                                   "weight":  10,
+                                                                   "group":  "a11y-aria"
+                                                               },
+                                                               {
+                                                                   "id":  "aria-hidden-focus",
+                                                                   "weight":  7,
+                                                                   "group":  "a11y-aria"
+                                                               },
+                                                               {
+                                                                   "id":  "aria-input-field-name",
+                                                                   "weight":  0,
+                                                                   "group":  "a11y-aria"
+                                                               },
+                                                               {
+                                                                   "id":  "aria-meter-name",
+                                                                   "weight":  0,
+                                                                   "group":  "a11y-aria"
+                                                               },
+                                                               {
+                                                                   "id":  "aria-progressbar-name",
+                                                                   "weight":  0,
+                                                                   "group":  "a11y-aria"
+                                                               },
+                                                               {
+                                                                   "id":  "aria-prohibited-attr",
+                                                                   "weight":  7,
+                                                                   "group":  "a11y-aria"
+                                                               },
+                                                               {
+                                                                   "id":  "aria-required-attr",
+                                                                   "weight":  0,
+                                                                   "group":  "a11y-aria"
+                                                               },
+                                                               {
+                                                                   "id":  "aria-required-children",
+                                                                   "weight":  0,
+                                                                   "group":  "a11y-aria"
+                                                               },
+                                                               {
+                                                                   "id":  "aria-required-parent",
+                                                                   "weight":  0,
+                                                                   "group":  "a11y-aria"
+                                                               },
+                                                               {
+                                                                   "id":  "aria-roles",
+                                                                   "weight":  0,
+                                                                   "group":  "a11y-aria"
+                                                               },
+                                                               {
+                                                                   "id":  "aria-text",
+                                                                   "weight":  0,
+                                                                   "group":  "a11y-aria"
+                                                               },
+                                                               {
+                                                                   "id":  "aria-toggle-field-name",
+                                                                   "weight":  0,
+                                                                   "group":  "a11y-aria"
+                                                               },
+                                                               {
+                                                                   "id":  "aria-tooltip-name",
+                                                                   "weight":  0,
+                                                                   "group":  "a11y-aria"
+                                                               },
+                                                               {
+                                                                   "id":  "aria-treeitem-name",
+                                                                   "weight":  0,
+                                                                   "group":  "a11y-aria"
+                                                               },
+                                                               {
+                                                                   "id":  "aria-valid-attr-value",
+                                                                   "weight":  10,
+                                                                   "group":  "a11y-aria"
+                                                               },
+                                                               {
+                                                                   "id":  "aria-valid-attr",
+                                                                   "weight":  10,
+                                                                   "group":  "a11y-aria"
+                                                               },
+                                                               {
+                                                                   "id":  "button-name",
+                                                                   "weight":  10,
+                                                                   "group":  "a11y-names-labels"
+                                                               },
+                                                               {
+                                                                   "id":  "bypass",
+                                                                   "weight":  0,
+                                                                   "group":  "a11y-navigation"
+                                                               },
+                                                               {
+                                                                   "id":  "color-contrast",
+                                                                   "weight":  7,
+                                                                   "group":  "a11y-color-contrast"
+                                                               },
+                                                               {
+                                                                   "id":  "definition-list",
+                                                                   "weight":  0,
+                                                                   "group":  "a11y-tables-lists"
+                                                               },
+                                                               {
+                                                                   "id":  "dlitem",
+                                                                   "weight":  0,
+                                                                   "group":  "a11y-tables-lists"
+                                                               },
+                                                               {
+                                                                   "id":  "document-title",
+                                                                   "weight":  7,
+                                                                   "group":  "a11y-names-labels"
+                                                               },
+                                                               {
+                                                                   "id":  "duplicate-id-aria",
+                                                                   "weight":  0,
+                                                                   "group":  "a11y-aria"
+                                                               },
+                                                               {
+                                                                   "id":  "form-field-multiple-labels",
+                                                                   "weight":  0,
+                                                                   "group":  "a11y-names-labels"
+                                                               },
+                                                               {
+                                                                   "id":  "frame-title",
+                                                                   "weight":  0,
+                                                                   "group":  "a11y-names-labels"
+                                                               },
+                                                               {
+                                                                   "id":  "heading-order",
+                                                                   "weight":  3,
+                                                                   "group":  "a11y-navigation"
+                                                               },
+                                                               {
+                                                                   "id":  "html-has-lang",
+                                                                   "weight":  7,
+                                                                   "group":  "a11y-language"
+                                                               },
+                                                               {
+                                                                   "id":  "html-lang-valid",
+                                                                   "weight":  7,
+                                                                   "group":  "a11y-language"
+                                                               },
+                                                               {
+                                                                   "id":  "html-xml-lang-mismatch",
+                                                                   "weight":  0,
+                                                                   "group":  "a11y-language"
+                                                               },
+                                                               {
+                                                                   "id":  "image-alt",
+                                                                   "weight":  10,
+                                                                   "group":  "a11y-names-labels"
+                                                               },
+                                                               {
+                                                                   "id":  "input-button-name",
+                                                                   "weight":  0,
+                                                                   "group":  "a11y-names-labels"
+                                                               },
+                                                               {
+                                                                   "id":  "input-image-alt",
+                                                                   "weight":  0,
+                                                                   "group":  "a11y-names-labels"
+                                                               },
+                                                               {
+                                                                   "id":  "label",
+                                                                   "weight":  10,
+                                                                   "group":  "a11y-names-labels"
+                                                               },
+                                                               {
+                                                                   "id":  "link-in-text-block",
+                                                                   "weight":  0,
+                                                                   "group":  "a11y-color-contrast"
+                                                               },
+                                                               {
+                                                                   "id":  "link-name",
+                                                                   "weight":  7,
+                                                                   "group":  "a11y-names-labels"
+                                                               },
+                                                               {
+                                                                   "id":  "list",
+                                                                   "weight":  0,
+                                                                   "group":  "a11y-tables-lists"
+                                                               },
+                                                               {
+                                                                   "id":  "listitem",
+                                                                   "weight":  0,
+                                                                   "group":  "a11y-tables-lists"
+                                                               },
+                                                               {
+                                                                   "id":  "meta-refresh",
+                                                                   "weight":  0,
+                                                                   "group":  "a11y-best-practices"
+                                                               },
+                                                               {
+                                                                   "id":  "meta-viewport",
+                                                                   "weight":  10,
+                                                                   "group":  "a11y-best-practices"
+                                                               },
+                                                               {
+                                                                   "id":  "object-alt",
+                                                                   "weight":  0,
+                                                                   "group":  "a11y-names-labels"
+                                                               },
+                                                               {
+                                                                   "id":  "select-name",
+                                                                   "weight":  0,
+                                                                   "group":  "a11y-names-labels"
+                                                               },
+                                                               {
+                                                                   "id":  "skip-link",
+                                                                   "weight":  0,
+                                                                   "group":  "a11y-names-labels"
+                                                               },
+                                                               {
+                                                                   "id":  "tabindex",
+                                                                   "weight":  0,
+                                                                   "group":  "a11y-navigation"
+                                                               },
+                                                               {
+                                                                   "id":  "target-size",
+                                                                   "weight":  7,
+                                                                   "group":  "a11y-best-practices"
+                                                               },
+                                                               {
+                                                                   "id":  "td-headers-attr",
+                                                                   "weight":  0,
+                                                                   "group":  "a11y-tables-lists"
+                                                               },
+                                                               {
+                                                                   "id":  "th-has-data-cells",
+                                                                   "weight":  0,
+                                                                   "group":  "a11y-tables-lists"
+                                                               },
+                                                               {
+                                                                   "id":  "valid-lang",
+                                                                   "weight":  0,
+                                                                   "group":  "a11y-language"
+                                                               },
+                                                               {
+                                                                   "id":  "video-caption",
+                                                                   "weight":  0,
+                                                                   "group":  "a11y-audio-video"
+                                                               },
+                                                               {
+                                                                   "id":  "landmark-one-main",
+                                                                   "weight":  3,
+                                                                   "group":  "a11y-best-practices"
+                                                               },
+                                                               {
+                                                                   "id":  "autocomplete-valid",
+                                                                   "weight":  1,
+                                                                   "group":  "a11y-best-practices"
+                                                               },
+                                                               {
+                                                                   "id":  "presentation-role-conflict",
+                                                                   "weight":  1,
+                                                                   "group":  "a11y-best-practices"
+                                                               },
+                                                               {
+                                                                   "id":  "svg-img-alt",
+                                                                   "weight":  0,
+                                                                   "group":  "a11y-best-practices"
+                                                               },
+                                                               {
+                                                                   "id":  "focusable-controls",
+                                                                   "weight":  0
+                                                               },
+                                                               {
+                                                                   "id":  "interactive-element-affordance",
+                                                                   "weight":  0
+                                                               },
+                                                               {
+                                                                   "id":  "logical-tab-order",
+                                                                   "weight":  0
+                                                               },
+                                                               {
+                                                                   "id":  "visual-order-follows-dom",
+                                                                   "weight":  0
+                                                               },
+                                                               {
+                                                                   "id":  "focus-traps",
+                                                                   "weight":  0
+                                                               },
+                                                               {
+                                                                   "id":  "managed-focus",
+                                                                   "weight":  0
+                                                               },
+                                                               {
+                                                                   "id":  "use-landmarks",
+                                                                   "weight":  0
+                                                               },
+                                                               {
+                                                                   "id":  "offscreen-content-hidden",
+                                                                   "weight":  0
+                                                               },
+                                                               {
+                                                                   "id":  "custom-controls-labels",
+                                                                   "weight":  0
+                                                               },
+                                                               {
+                                                                   "id":  "custom-controls-roles",
+                                                                   "weight":  0
+                                                               },
+                                                               {
+                                                                   "id":  "table-duplicate-name",
+                                                                   "weight":  0,
+                                                                   "group":  "a11y-best-practices"
+                                                               },
+                                                               {
+                                                                   "id":  "empty-heading",
+                                                                   "weight":  0,
+                                                                   "group":  "a11y-best-practices"
+                                                               },
+                                                               {
+                                                                   "id":  "aria-allowed-role",
+                                                                   "weight":  0,
+                                                                   "group":  "a11y-best-practices"
+                                                               },
+                                                               {
+                                                                   "id":  "image-redundant-alt",
+                                                                   "weight":  0,
+                                                                   "group":  "a11y-names-labels"
+                                                               },
+                                                               {
+                                                                   "id":  "identical-links-same-purpose",
+                                                                   "weight":  0,
+                                                                   "group":  "a11y-best-practices"
+                                                               },
+                                                               {
+                                                                   "id":  "label-content-name-mismatch",
+                                                                   "weight":  0,
+                                                                   "group":  "hidden"
+                                                               },
+                                                               {
+                                                                   "id":  "table-fake-caption",
+                                                                   "weight":  0,
+                                                                   "group":  "hidden"
+                                                               },
+                                                               {
+                                                                   "id":  "td-has-header",
+                                                                   "weight":  0,
+                                                                   "group":  "hidden"
+                                                               }
+                                                           ],
+                                             "id":  "accessibility",
+                                             "score":  1
+                                         },
+                       "best-practices":  {
+                                              "title":  "Best Practices",
+                                              "supportedModes":  [
+                                                                     "navigation",
+                                                                     "timespan",
+                                                                     "snapshot"
+                                                                 ],
+                                              "auditRefs":  [
+                                                                {
+                                                                    "id":  "paste-preventing-inputs",
+                                                                    "weight":  3,
+                                                                    "group":  "best-practices-ux"
+                                                                },
+                                                                {
+                                                                    "id":  "image-aspect-ratio",
+                                                                    "weight":  1,
+                                                                    "group":  "best-practices-ux"
+                                                                },
+                                                                {
+                                                                    "id":  "image-size-responsive",
+                                                                    "weight":  1,
+                                                                    "group":  "best-practices-ux"
+                                                                },
+                                                                {
+                                                                    "id":  "doctype",
+                                                                    "weight":  1,
+                                                                    "group":  "best-practices-browser-compat"
+                                                                },
+                                                                {
+                                                                    "id":  "js-libraries",
+                                                                    "weight":  0,
+                                                                    "group":  "best-practices-general"
+                                                                }
+                                                            ],
+                                              "id":  "best-practices",
+                                              "score":  1
+                                          },
+                       "seo":  {
+                                   "title":  "SEO",
+                                   "description":  "These checks ensure that your page is following basic search engine optimization advice. There are many additional factors Lighthouse does not score here that may affect your search ranking, including performance on [Core Web Vitals](https://web.dev/explore/vitals). [Learn more about Google Search Essentials](https://support.google.com/webmasters/answer/35769).",
+                                   "manualDescription":  "Run these additional validators on your site to check additional SEO best practices.",
+                                   "supportedModes":  [
+                                                          "navigation",
+                                                          "snapshot"
+                                                      ],
+                                   "auditRefs":  [
+                                                     {
+                                                         "id":  "document-title",
+                                                         "weight":  1,
+                                                         "group":  "seo-content"
+                                                     },
+                                                     {
+                                                         "id":  "meta-description",
+                                                         "weight":  1,
+                                                         "group":  "seo-content"
+                                                     },
+                                                     {
+                                                         "id":  "link-text",
+                                                         "weight":  1,
+                                                         "group":  "seo-content"
+                                                     },
+                                                     {
+                                                         "id":  "crawlable-anchors",
+                                                         "weight":  1,
+                                                         "group":  "seo-crawl"
+                                                     },
+                                                     {
+                                                         "id":  "robots-txt",
+                                                         "weight":  1,
+                                                         "group":  "seo-crawl"
+                                                     },
+                                                     {
+                                                         "id":  "image-alt",
+                                                         "weight":  1,
+                                                         "group":  "seo-content"
+                                                     },
+                                                     {
+                                                         "id":  "structured-data",
+                                                         "weight":  0
+                                                     }
+                                                 ],
+                                   "id":  "seo",
+                                   "score":  0.83
+                               }
+                   },
+    "failedAuditIds":  "meta-description"
+}

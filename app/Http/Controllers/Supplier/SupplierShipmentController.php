@@ -72,7 +72,7 @@ class SupplierShipmentController extends Controller
                 ->addColumn('po_references', function ($shp) {
                     $pos = $shp->purchaseOrders();
                     if ($pos->isEmpty()) {
-                        return '<span class="tw-text-outline">-</span>';
+                        return '<span class="tw:text-outline">-</span>';
                     }
 
                     return $pos->map(fn ($po) => '<span class="ui-status-chip ui-status-chip--neutral me-1">'.e($po->po_number).'</span>')->implode('');
@@ -111,7 +111,7 @@ class SupplierShipmentController extends Controller
                     $secondaryActions = [];
 
                     if ($isOwner && $shp->status === 'draft') {
-                        $primaryAction = '<form action="'.route('supplier.shipments.submit', $shp).'" method="POST" class="draft-submit-form tw-m-0">'
+                        $primaryAction = '<form action="'.route('supplier.shipments.submit', $shp).'" method="POST" class="draft-submit-form tw:m-0">'
                             .csrf_field()
                             .'<button type="button" class="ui-data-action ui-data-action--primary ui-focus-ring btn-submit-draft" aria-label="'.e(__('purchasing.action_names.submit_draft', ['name' => $shp->shipment_number])).'">'
                             .__('shipments.copy.submit')

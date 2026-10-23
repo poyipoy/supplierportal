@@ -119,7 +119,7 @@ class PurchaseRequisitionController extends Controller
                     $secondaryActions = [];
 
                     if ($pr->created_by === auth()->id() && $pr->status === 'draft') {
-                        $primaryAction = '<form action="'.route('purchasing.requisitions.submit', $pr).'" method="POST" class="draft-submit-form tw-m-0">'
+                        $primaryAction = '<form action="'.route('purchasing.requisitions.submit', $pr).'" method="POST" class="draft-submit-form tw:m-0">'
                             .csrf_field()
                             .method_field('PUT')
                             .'<button type="button" class="ui-data-action ui-data-action--primary ui-focus-ring btn-submit-draft" aria-label="'.e(__('purchasing.action_names.submit_draft', ['name' => $pr->pr_number])).'">'

@@ -36,7 +36,7 @@
 @endphp
 
 <div
-    {{ $attributes->only('class')->class(['ui-calendar ui-date-picker tw-grid tw-gap-1.5']) }}
+    {{ $attributes->only('class')->class(['ui-calendar ui-date-picker tw:grid tw:gap-1.5']) }}
     data-adasi-date-picker
     data-calendar-required="{{ $required ? 'true' : 'false' }}"
     @if($allowedDaysAttr !== null) data-calendar-allowed-days="{{ $allowedDaysAttr }}" @endif
@@ -44,9 +44,9 @@
 >
     <div data-calendar-native>
         @if($label)
-            <label id="{{ $labelId }}" for="{{ $resolvedId }}" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
+            <label id="{{ $labelId }}" for="{{ $resolvedId }}" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">
                 {{ $label }}
-                @if($required)<span class="tw-text-error" aria-hidden="true">*</span><span class="tw-sr-only"> {{ __('common.required') }}</span>@endif
+                @if($required)<span class="tw:text-error" aria-hidden="true">*</span><span class="tw:sr-only"> {{ __('common.required') }}</span>@endif
             </label>
         @endif
 
@@ -64,18 +64,18 @@
             @if($describedBy) aria-describedby="{{ $describedBy }}" @endif
             @if($message) aria-invalid="true" @endif
             {{ $attributes->except('class')->class([
-                'ui-calendar__native-input ui-motion tw-min-h-[var(--ui-control-height-md)] tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-px-3 tw-py-2 tw-text-ui-sm tw-text-on-surface tw-shadow-none placeholder:tw-text-on-surface-variant focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary disabled:tw-cursor-not-allowed disabled:tw-bg-surface-container disabled:tw-opacity-50',
-                'tw-border-error' => $message,
-                'tw-border-outline-strong' => !$message,
+                'ui-calendar__native-input ui-motion tw:min-h-[var(--ui-control-height-md)] tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:px-3 tw:py-2 tw:text-ui-sm tw:text-on-surface tw:shadow-none tw:placeholder:text-on-surface-variant tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary tw:disabled:cursor-not-allowed tw:disabled:bg-surface-container tw:disabled:opacity-50',
+                'tw:border-error' => $message,
+                'tw:border-outline-strong' => !$message,
             ]) }}
         >
     </div>
 
     <div data-calendar-enhanced hidden>
         @if($label)
-            <span id="{{ $labelId }}-enhanced" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
+            <span id="{{ $labelId }}-enhanced" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">
                 {{ $label }}
-                @if($required)<span class="tw-text-error" aria-hidden="true">*</span><span class="tw-sr-only"> {{ __('common.required') }}</span>@endif
+                @if($required)<span class="tw:text-error" aria-hidden="true">*</span><span class="tw:sr-only"> {{ __('common.required') }}</span>@endif
             </span>
         @endif
         <button
@@ -96,10 +96,10 @@
     </div>
 
     @if($helper)
-        <p id="{{ $helperId }}" class="tw-m-0 tw-text-ui-xs tw-text-on-surface-variant">{{ $helper }}</p>
+        <p id="{{ $helperId }}" class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ $helper }}</p>
     @endif
-    <p id="{{ $errorId }}" data-calendar-error class="tw-m-0 tw-flex tw-items-start tw-gap-1.5 tw-text-ui-xs tw-font-medium tw-text-error {{ $message ? '' : 'tw-hidden' }}" role="alert">
-        <x-ui.icon name="circle-alert" size="sm" class="tw-mt-0.5" />
+    <p id="{{ $errorId }}" data-calendar-error class="tw:m-0 tw:flex tw:items-start tw:gap-1.5 tw:text-ui-xs tw:font-medium tw:text-error {{ $message ? '' : 'tw:hidden' }}" role="alert">
+        <x-ui.icon name="circle-alert" size="sm" class="tw:mt-0.5" />
         <span data-calendar-error-message>{{ $message }}</span>
     </p>
 
@@ -136,7 +136,7 @@
         <div class="ui-calendar-panel__footer ui-calendar-panel__footer--single">
             <button type="button" class="ui-calendar-footer-btn" data-calendar-today>{{ __('common.calendar.today') }}</button>
             @if(!$required)<button type="button" class="ui-calendar-footer-btn ui-calendar-footer-btn--primary" data-calendar-clear>{{ __('common.actions.clear') }}</button>@endif
-            <span class="tw-sr-only" data-calendar-live aria-live="polite" aria-atomic="true"></span>
+            <span class="tw:sr-only" data-calendar-live aria-live="polite" aria-atomic="true"></span>
         </div>
     </div>
 </div>

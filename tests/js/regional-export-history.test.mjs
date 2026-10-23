@@ -177,7 +177,7 @@ test('polling System mode keeps the browser Intl renderer instead of the server 
     assert.match(body.innerHTML, new RegExp(expectedBrowser.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
     assert.equal(expectedBrowser, '28 Sept 2026, 16:35');
     assert.notEqual(expectedBrowser, '28 Sep 2026 23:35');
-    assert.match(body.innerHTML, /<td class="tw-text-ui-xs tw-text-on-surface-variant">-<\/td>/);
+    assert.match(body.innerHTML, /<td class="tw:text-ui-xs tw:text-on-surface-variant">-<\/td>/);
     assert.equal(timers[0].delay, 5000);
     } finally {
         if (previousTimeZone === undefined) delete process.env.TZ;

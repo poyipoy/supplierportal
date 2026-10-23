@@ -13,14 +13,14 @@ export const ALLOWED_SPANS = Object.freeze([3, 4, 5, 6, 7, 8, 9, 12]);
 // Literal strings on purpose: the Tailwind content scanner only emits classes it can read in the
 // source. Keep this map identical to the one in components/ui/dashboard-layout.blade.php.
 export const SPAN_CLASSES = Object.freeze({
-    3: 'lg:tw-col-span-3',
-    4: 'lg:tw-col-span-4',
-    5: 'lg:tw-col-span-5',
-    6: 'lg:tw-col-span-6',
-    7: 'lg:tw-col-span-7',
-    8: 'lg:tw-col-span-8',
-    9: 'lg:tw-col-span-9',
-    12: 'lg:tw-col-span-12',
+    3: 'tw:lg:col-span-3',
+    4: 'tw:lg:col-span-4',
+    5: 'tw:lg:col-span-5',
+    6: 'tw:lg:col-span-6',
+    7: 'tw:lg:col-span-7',
+    8: 'tw:lg:col-span-8',
+    9: 'tw:lg:col-span-9',
+    12: 'tw:lg:col-span-12',
 });
 
 export function normalizeSpan(span) {
@@ -34,14 +34,14 @@ export function spanClass(span) {
 // The Customization wireframe is a miniature of the dashboard grid at every screen width, so its classes carry no
 // breakpoint prefix. Keep identical to the map in profile/customization.blade.php.
 export const TILE_SPAN_CLASSES = Object.freeze({
-    3: 'tw-col-span-3',
-    4: 'tw-col-span-4',
-    5: 'tw-col-span-5',
-    6: 'tw-col-span-6',
-    7: 'tw-col-span-7',
-    8: 'tw-col-span-8',
-    9: 'tw-col-span-9',
-    12: 'tw-col-span-12',
+    3: 'tw:col-span-3',
+    4: 'tw:col-span-4',
+    5: 'tw:col-span-5',
+    6: 'tw:col-span-6',
+    7: 'tw:col-span-7',
+    8: 'tw:col-span-8',
+    9: 'tw:col-span-9',
+    12: 'tw:col-span-12',
 });
 
 export function tileSpanClass(span) {

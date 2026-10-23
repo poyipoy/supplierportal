@@ -30,7 +30,7 @@ class DashboardSmartSpanTest extends TestCase
 
     public function test_default_layouts_keep_the_widths_the_dashboards_had_before_smart_span(): void
     {
-        // Widths previously hard-coded as `class="lg:tw-col-span-N"` on the view slots; everything else was 12.
+        // Widths previously hard-coded as `class="tw:lg:col-span-N"` on the view slots; everything else was 12.
         $legacy = [
             'purchasing' => ['purchasing.recent_requisitions' => 5, 'purchasing.arrivals' => 7],
             'admin' => ['admin.rates' => 8, 'admin.shortcuts' => 4],

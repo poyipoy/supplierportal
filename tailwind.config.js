@@ -1,43 +1,52 @@
-import defaultTheme from 'tailwindcss/defaultTheme';
 import forms from '@tailwindcss/forms';
 
-// Tokens are CSS variables, so Tailwind cannot split them into channels for `/10`-style
-// opacity modifiers; color-mix keeps the variable and applies <alpha-value> (1 when unmodified).
-const withAlpha = (value) => (typeof value === 'string'
-    ? `color-mix(in srgb, ${value} calc(<alpha-value> * 100%), transparent)`
-    : Object.fromEntries(Object.entries(value).map(([key, nested]) => [key, withAlpha(nested)])));
+// Preserve the v3 palette shades already used by operational screens.
+const legacyColors = {
+    "emerald": {
+        "100": "#d1fae5",
+        "300": "#6ee7b7",
+        "400": "#34d399",
+        "500": "#10b981",
+        "600": "#059669",
+        "700": "#047857",
+        "800": "#065f46",
+        "950": "#022c22"
+    },
+    "amber": {
+        "50": "#fffbeb",
+        "100": "#fef3c7",
+        "300": "#fcd34d",
+        "400": "#fbbf24",
+        "500": "#f59e0b",
+        "600": "#d97706",
+        "700": "#b45309",
+        "800": "#92400e",
+        "950": "#451a03"
+    },
+    "rose": {
+        "100": "#ffe4e6",
+        "800": "#9f1239"
+    },
+    "slate": {
+        "100": "#f1f5f9",
+        "800": "#1e293b"
+    },
+    "teal": {
+        "600": "#0d9488"
+    }
+};
 
 /** @type {import('tailwindcss').Config} */
 export default {
-    prefix: 'tw-',
-
-    content: [
-        './vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php',
-        './storage/framework/views/*.php',
-        './resources/views/**/*.blade.php',
-        './resources/js/**/*.js',
-    ],
-
-    // These controls are rendered by server-side DataTables presenters, so
-    // their classes do not appear in Blade/JS content scanning.
-    safelist: [
-        'ui-data-action',
-        'ui-data-action--primary',
-        'ui-data-action--danger',
-        'ui-data-action--success',
-        'ui-data-action--warning',
-    ],
-
-    corePlugins: {
-        preflight: false,
-    },
-
+    // Loaded explicitly by app.css. Sources and prefix are configured there;
+    // token values remain shared with Bootstrap and the existing design system.
     theme: {
         extend: {
             screens: {
                 shell: '993px',
             },
-            colors: withAlpha({
+            colors: {
+                ...legacyColors,
                 background: 'var(--md-background)',
                 'on-primary': 'var(--md-on-primary)',
                 'on-primary-container': 'var(--md-on-primary-container)',
@@ -106,9 +115,9 @@ export default {
                 },
                 'on-surface': 'var(--md-on-surface)',
                 'on-surface-variant': 'var(--md-on-surface-variant)',
-            }),
+            },
             fontFamily: {
-                sans: ['Inter', ...defaultTheme.fontFamily.sans],
+                sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif', '"Apple Color Emoji"', '"Segoe UI Emoji"', '"Segoe UI Symbol"', '"Noto Color Emoji"'],
             },
             fontSize: {
                 'ui-xs': ['var(--ui-font-size-xs)', { lineHeight: 'var(--ui-line-height-normal)' }],
@@ -128,6 +137,7 @@ export default {
                 'ui-8': 'var(--ui-space-8)',
             },
             borderRadius: {
+                full: '9999px',
                 'ui-xs': 'var(--md-shape-xs)',
                 'ui-sm': 'var(--md-shape-sm)',
                 'ui-md': 'var(--md-shape-md)',

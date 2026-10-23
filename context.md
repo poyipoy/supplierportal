@@ -41,7 +41,7 @@
 | Layer | Technologies & Libraries | Technical Specifications & Invariants |
 |---|---|---|
 | **Backend Runtime** | PHP `^8.2` + Laravel `^12` (MVC) | Strict typing, FormRequest boundaries, transaction-locked services. |
-| **Frontend Architecture** | Blade Templates + Bootstrap 5 compatibility + Tailwind CSS (`tw-` prefix) | Tailwind `preflight: false`. Bootstrap, jQuery, DataTables, SweetAlert2, and Chart.js load via CDN. Vite compiles `resources/css/app.css` and `resources/js/app.js`. |
+| **Frontend Architecture** | Blade Templates + Bootstrap 5 compatibility + Tailwind CSS 4 (`tw:` prefix) | Tailwind imports theme and utilities only; Preflight is omitted. Bootstrap, jQuery, DataTables, SweetAlert2, and Chart.js load via CDN. Vite compiles `resources/css/app.css` and `resources/js/app.js`. |
 | **Database & ORM** | MySQL (InnoDB) + Eloquent ORM. Tests also run on MySQL (`adasi_portal_test`), not SQLite | Foreign keys and unique constraints are business invariants. Decimal money uses `Money`/BCMath. Soft deletes only on the legal records listed in §8. |
 | **Interactivity & State** | Alpine.js (shell and toasts), jQuery, DataTables server-side (`yajra/laravel-datatables`) | High-volume tables use server-side endpoints. Other lists use `->paginate()`. |
 | **Realtime & Messaging** | Pusher Channels via Laravel Echo (`broadcasting.default = pusher`) | Unread-count polling every 30 seconds is the fallback. Reverb is installed but not used. |

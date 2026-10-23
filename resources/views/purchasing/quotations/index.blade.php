@@ -50,7 +50,7 @@
 @endpush
 
 @section('content')
-    <div class="tw-grid tw-gap-4">
+    <div class="tw:grid tw:gap-4">
         {{-- 1. Compact Page Header --}}
         <x-ui.page-header
             :title="__('purchasing.copy.supplier_quotations')"
@@ -146,7 +146,7 @@
         {{-- 3. Balanced Data Table --}}
         <x-ui.data-table density="compact">
             <div class="table-responsive" id="quotationTableContainer">
-                <table class="table table-hover align-middle mb-0 tw-text-ui-sm w-100">
+                <table class="table table-hover align-middle mb-0 tw:text-ui-sm w-100">
                     <thead class="table-light">
                         <tr>
                             <th scope="col" style="width: 40px;" class="text-center">{{ __('purchasing.copy.no') }}</th>
@@ -167,11 +167,11 @@
                     <tbody>
                         @forelse($quotations as $i => $q)
                             <tr>
-                                <td class="text-center tw-text-on-surface-variant">{{ $quotations->firstItem() + $i }}</td>
+                                <td class="text-center tw:text-on-surface-variant">{{ $quotations->firstItem() + $i }}</td>
                                 <td>
                                     <div class="d-flex align-items-center gap-2">
                                         <x-ui.icon name="building" size="sm" class="text-primary flex-shrink-0" />
-                                        <span class="fw-bold tw-text-on-surface">{{ $q->supplier->name }}</span>
+                                        <span class="fw-bold tw:text-on-surface">{{ $q->supplier->name }}</span>
                                     </div>
                                 </td>
                                 <td>
@@ -183,13 +183,13 @@
                                 <td class="text-center">
                                     <x-status-badge type="quotation" :status="$q->status" />
                                 </td>
-                                <td class="tw-text-on-surface-variant">{{ $q->submitted_at ? $regionalFormatter->timestamp($q->submitted_at, 'datetime_comma') : '-' }}</td>
+                                <td class="tw:text-on-surface-variant">{{ $q->submitted_at ? $regionalFormatter->timestamp($q->submitted_at, 'datetime_comma') : '-' }}</td>
                                 <td>
                                     @php
                                         $validityMeta = \App\Support\StatusHelper::quotationValidityMeta($q->validity_period, $q->status);
                                     @endphp
                                     @if($q->validity_period)
-                                        <div class="fw-semibold tw-text-on-surface">{{ $regionalFormatter->date($q->validity_period, 'human') }}</div>
+                                        <div class="fw-semibold tw:text-on-surface">{{ $regionalFormatter->date($q->validity_period, 'human') }}</div>
                                         {!! \App\Support\StatusHelper::badgeWithTooltip($validityMeta['class'], $validityMeta['label'], $validityMeta['description']) !!}
                                     @else
                                         {!! \App\Support\StatusHelper::badgeWithTooltip($validityMeta['class'], $validityMeta['label'], $validityMeta['description']) !!}
@@ -218,7 +218,7 @@
             </div>
 
             <x-slot:pagination>
-                <div class="quotation-pagination tw-w-full" id="quotationPaginationContainer">
+                <div class="quotation-pagination tw:w-full" id="quotationPaginationContainer">
                     {{ $quotations->onEachSide(1)->links('pagination::bootstrap-5') }}
                 </div>
             </x-slot:pagination>
@@ -244,7 +244,7 @@
                 dateRangeControl.classList.toggle('is-invalid', show);
                 dateRangeControl.dataset.calendarInvalid = String(show);
                 dateError.querySelector('[data-calendar-error-message]').textContent = @json(__('purchasing.copy.end_month_cannot_be_before_start_month'));
-                dateError.classList.toggle('tw-hidden', !show);
+                dateError.classList.toggle('tw:hidden', !show);
             };
 
             const hasInvalidDateRange = () => dateFrom.value && dateTo.value && dateTo.value < dateFrom.value;

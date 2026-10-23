@@ -673,7 +673,7 @@
 @endpush
 
 @section('content')
-<div class="quotation-page tw-grid tw-min-w-0 tw-max-w-full tw-gap-4">
+<div class="quotation-page tw:grid tw:min-w-0 tw:max-w-full tw:gap-4">
     {{-- Breadcrumb & Compact Page Header --}}
     <x-ui.breadcrumb :items="[
         __('purchasing.breadcrumbs.dashboard') => route('supplier.dashboard'),
@@ -711,28 +711,28 @@
         @csrf
         <input type="hidden" name="action" id="formAction" value="draft">
 
-        <div class="tw-grid tw-gap-5">
+        <div class="tw:grid tw:gap-5">
             {{-- Section 1: Procurement Context --}}
             <x-ui.form-section
                 :title="__('supplier.copy.procurement_context')"
                 :description="__('supplier.copy.general_requisition_parameters_and_notes_established_by_adasi_purchasing')"
             >
-                <div class="tw-grid tw-gap-3 sm:tw-grid-cols-2 lg:tw-grid-cols-3">
-                    <div class="tw-p-2.5 tw-bg-surface-low border rounded">
-                        <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('supplier.copy.procurement_period') }}</div>
-                        <div class="fw-bold tw-text-on-surface tw-text-ui-sm tw-mt-0.5">{{ $pr->period->display_label }}</div>
+                <div class="tw:grid tw:gap-3 tw:sm:grid-cols-2 tw:lg:grid-cols-3">
+                    <div class="tw:p-2.5 tw:bg-surface-low border rounded">
+                        <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('supplier.copy.procurement_period') }}</div>
+                        <div class="fw-bold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">{{ $pr->period->display_label }}</div>
                     </div>
-                    <div class="tw-p-2.5 tw-bg-surface-low border rounded">
-                        <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('supplier.copy.requisition_reference') }}</div>
-                        <div class="fw-bold text-primary tw-text-ui-sm tw-mt-0.5">{{ $pr->pr_number ?? 'PR -' }}</div>
+                    <div class="tw:p-2.5 tw:bg-surface-low border rounded">
+                        <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('supplier.copy.requisition_reference') }}</div>
+                        <div class="fw-bold text-primary tw:text-ui-sm tw:mt-0.5">{{ $pr->pr_number ?? 'PR -' }}</div>
                     </div>
-                    <div class="sm:tw-col-span-2 lg:tw-col-span-1 tw-p-2.5 tw-bg-surface-low border rounded">
-                        <div class="tw-text-on-surface-variant tw-text-ui-xs fw-semibold tw-uppercase">{{ __('supplier.copy.purchasing_instructions') }}</div>
-                        <div class="tw-text-on-surface tw-text-ui-xs tw-mt-0.5">{{ $pr->notes ?: __('supplier.copy.no_additional_notes_provided') }}</div>
+                    <div class="tw:sm:col-span-2 tw:lg:col-span-1 tw:p-2.5 tw:bg-surface-low border rounded">
+                        <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('supplier.copy.purchasing_instructions') }}</div>
+                        <div class="tw:text-on-surface tw:text-ui-xs tw:mt-0.5">{{ $pr->notes ?: __('supplier.copy.no_additional_notes_provided') }}</div>
                     </div>
                 </div>
 
-                <div class="tw-mt-3">
+                <div class="tw:mt-3">
                     @include('partials.procurement-logistics', ['port' => $pr->port_of_discharge, 'incoterm' => $pr->incoterm])
                 </div>
             </x-ui.form-section>
@@ -742,11 +742,11 @@
                 :title="__('supplier.copy.commercial_terms_and_logistics')"
                 :description="__('supplier.copy.specify_estimated_delivery_timeline_proposal_validity_duration_and_payment_arrangements')"
             >
-                <x-ui.alert id="allUnavailableTermsNotice" tone="info" class="tw-mb-4 d-none">
+                <x-ui.alert id="allUnavailableTermsNotice" tone="info" class="tw:mb-4 d-none">
                     {{ __('common.final_review.all_unavailable') }}
                 </x-ui.alert>
 
-                <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2">
+                <div class="tw:grid tw:gap-4 tw:sm:grid-cols-2">
                     <x-ui.date-picker
                         name="estimated_delivery"
                         :label="__('supplier.copy.supplier_estimate_delivery')"
@@ -787,8 +787,8 @@
                 :description="__('procurement.quotation.status_follow_up_description')"
                 data-quotation-section="status"
             >
-                <div class="d-flex flex-wrap align-items-center tw-gap-2">
-                    <span class="tw-text-ui-xs fw-semibold tw-uppercase tw-text-on-surface-variant">{{ __('procurement.quotation.current_status') }}</span>
+                <div class="d-flex flex-wrap align-items-center tw:gap-2">
+                    <span class="tw:text-ui-xs fw-semibold tw:uppercase tw:text-on-surface-variant">{{ __('procurement.quotation.current_status') }}</span>
                     @if($quotation)
                         <x-status-badge type="quotation" :status="$quotation->status" />
                     @else
@@ -796,17 +796,17 @@
                     @endif
                 </div>
                 @if($quotation?->status === 'revision_requested')
-                    <x-ui.alert tone="warning" :title="__('supplier.copy.quotation_revision_requested')" class="tw-mt-3">
+                    <x-ui.alert tone="warning" :title="__('supplier.copy.quotation_revision_requested')" class="tw:mt-3">
                         {{ __('supplier.copy.purchasing_asked_this_quotation_to_be_resubmitted_update_unit_prices_delivery_schedule_validity_date') }}
                     </x-ui.alert>
                 @endif
                 @if($quotation?->reviewer_notes)
-                    <div class="tw-mt-3 tw-p-2.5 bg-warning-subtle border border-warning-subtle rounded tw-text-ui-xs text-warning-emphasis">
-                        <span class="fw-bold d-block tw-mb-0.5"><x-ui.icon name="square-pen" size="sm" class="me-1" />{{ __('supplier.copy.purchasing_reviewer_notes') }}</span>
+                    <div class="tw:mt-3 tw:p-2.5 bg-warning-subtle border border-warning-subtle rounded tw:text-ui-xs text-warning-emphasis">
+                        <span class="fw-bold d-block tw:mb-0.5"><x-ui.icon name="square-pen" size="sm" class="me-1" />{{ __('supplier.copy.purchasing_reviewer_notes') }}</span>
                         {{ $quotation->reviewer_notes }}
                     </div>
                 @elseif($quotation?->status !== 'revision_requested')
-                    <p class="tw-m-0 tw-mt-2 tw-text-ui-xs tw-text-on-surface-variant">{{ __('procurement.quotation.no_follow_up') }}</p>
+                    <p class="tw:m-0 tw:mt-2 tw:text-ui-xs tw:text-on-surface-variant">{{ __('procurement.quotation.no_follow_up') }}</p>
                 @endif
             </x-ui.form-section>
 
@@ -833,8 +833,8 @@
                         </x-ui.button>
 
                         {{-- Currency Select --}}
-                        <div class="d-flex align-items-center tw-gap-1.5 ps-2 border-start">
-                            <label for="quotationCurrency" class="small fw-semibold tw-text-on-surface mb-0">{{ __('supplier.copy.currency_b66c8f') }}</label>
+                        <div class="d-flex align-items-center tw:gap-1.5 ps-2 border-start">
+                            <label for="quotationCurrency" class="small fw-semibold tw:text-on-surface mb-0">{{ __('supplier.copy.currency_b66c8f') }}</label>
                             <select name="currency" id="quotationCurrency" class="form-select form-select-sm fw-bold @error('currency') is-invalid @enderror" style="width: 100px;" required>
                                 <option value="" disabled @selected($supplierCurrency === '')>{{ __('supplier.copy.select') }}</option>
                                 @foreach($currencyOptions as $currency)
@@ -848,12 +848,12 @@
                     </div>
                 </x-slot:actions>
 
-                <x-ui.alert id="currencyRateWarning" tone="warning" :title="__('supplier.copy.exchange_rate_required')" class="tw-mb-2 {{ $supplierCurrency && ! $supplierRate ? '' : 'd-none' }}">
+                <x-ui.alert id="currencyRateWarning" tone="warning" :title="__('supplier.copy.exchange_rate_required')" class="tw:mb-2 {{ $supplierCurrency && ! $supplierRate ? '' : 'd-none' }}">
                     {{ __('supplier.copy.exchange_rate_for') }} <strong id="currencyWarningLabel">{{ $supplierCurrency ?: '-' }}</strong> {{ __('supplier.copy.is_not_recorded_in_master_exchange_rates_contact_admin_before_final_submission') }}
                 </x-ui.alert>
 
                 @if($surplusOffersAllowed)
-                    <x-ui.alert tone="info" class="tw-mb-2">{{ __('procurement.quotation.surplus_hint') }}</x-ui.alert>
+                    <x-ui.alert tone="info" class="tw:mb-2">{{ __('procurement.quotation.surplus_hint') }}</x-ui.alert>
                 @endif
                 @php
                     $quotationDimensionOrder = \App\Models\PrItem::FIXED_DIMENSION_ORDER;
@@ -865,13 +865,13 @@
 
                 {{-- Material Entry Table --}}
                 <div class="border rounded overflow-hidden">
-                    <div id="quotationTableScrollHint" class="tw-bg-surface-low border-bottom px-3 tw-py-1.5 tw-text-on-surface-variant tw-text-ui-xs d-flex align-items-center tw-gap-1.5">
+                    <div id="quotationTableScrollHint" class="tw:bg-surface-low border-bottom px-3 tw:py-1.5 tw:text-on-surface-variant tw:text-ui-xs d-flex align-items-center tw:gap-1.5">
                         <x-ui.icon name="move-horizontal" size="sm" />
                         <span>{{ __('supplier.copy.scroll_horizontally_to_compare_requested_and_offer_values_for_each_material') }}</span>
                     </div>
 
                     <div class="table-responsive quotation-table-scroll ui-table-sticky" role="region" tabindex="0" aria-label="{{ __('supplier.copy.material_quotation_price_entry') }}" aria-describedby="quotationTableScrollHint">
-                        <table class="table table-bordered align-middle mb-0 quotation-items-table tw-text-ui-xs @unless($shipmentMtcEnabled) has-mtc-column @endunless">
+                        <table class="table table-bordered align-middle mb-0 quotation-items-table tw:text-ui-xs @unless($shipmentMtcEnabled) has-mtc-column @endunless">
                             <caption class="visually-hidden">{{ __('supplier.copy.supplier_quotation_entry_table_with_paired_requested_and_offer_rows_for_each_material') }}</caption>
                             <colgroup>
                                 <col class="quotation-col-number">
@@ -943,20 +943,20 @@
                                     data-requested-total-weight="{{ $item->total_weight }}"
                                 >
                                     <tr class="quotation-requested-row">
-                                        <td rowspan="2" class="text-center quotation-sticky-number tw-text-on-surface-variant ui-tabular-nums">{{ $index + 1 }}</td>
+                                        <td rowspan="2" class="text-center quotation-sticky-number tw:text-on-surface-variant ui-tabular-nums">{{ $index + 1 }}</td>
                                         <td rowspan="2" class="quotation-sticky-material align-top">
-                                            <div class="fw-bold tw-text-on-surface">{{ $item->material_name }}</div>
-                                            <div class="tw-text-on-surface-variant tw-text-ui-xs tw-mt-0.5">
+                                            <div class="fw-bold tw:text-on-surface">{{ $item->material_name }}</div>
+                                            <div class="tw:text-on-surface-variant tw:text-ui-xs tw:mt-0.5">
                                                 {{ $item->hs_code ? 'HS '.$item->hs_code.' · ' : '' }}{{ $item->shape ?: '-' }}
                                             </div>
                                             @if($item->remark)
-                                                <div class="tw-text-on-surface-variant tw-text-ui-xs tw-mt-1">{{ $item->remark }}</div>
+                                                <div class="tw:text-on-surface-variant tw:text-ui-xs tw:mt-1">{{ $item->remark }}</div>
                                             @endif
                                             <x-ui.button
                                                 type="button"
                                                 variant="outline"
                                                 size="sm"
-                                                class="copy-from-pr-btn tw-mt-2"
+                                                class="copy-from-pr-btn tw:mt-2"
                                                 data-requested-qty="{{ $item->quantity_value }}"
                                                 data-requested-thickness="{{ $item->thickness !== null ? (float) $item->thickness : '' }}"
                                                 data-requested-d-outer="{{ $item->d_outer !== null ? (float) $item->d_outer : '' }}"
@@ -971,28 +971,28 @@
                                             <input type="hidden" name="items[{{ $index }}][pr_item_id]" value="{{ $item->id }}">
                                             <input type="hidden" name="items[{{ $index }}][is_available]" class="item-availability-input" value="{{ $itemIsAvailable ? '1' : '0' }}">
                                             @error("items.{$index}.pr_item_id")
-                                                <div class="text-danger small tw-mt-1">{{ $message }}</div>
+                                                <div class="text-danger small tw:mt-1">{{ $message }}</div>
                                             @enderror
                                         </td>
                                         <td class="quotation-sticky-row-type"><span class="quotation-row-label">{{ __('supplier.copy.requested') }}</span></td>
                                         <td class="text-center fw-semibold ui-tabular-nums">{{ $item->quantity_value }}</td>
                                         @foreach($quotationScalarDimensionOrder as $dimension)
-                                            <td class="text-end ui-tabular-nums tw-text-on-surface-variant">
+                                            <td class="text-end ui-tabular-nums tw:text-on-surface-variant">
                                                 {{ in_array($dimension, $relevantDimensions, true) ? \App\Support\NumberFormat::maxDecimals($item->{$dimension}) : '—' }}
                                             </td>
                                         @endforeach
-                                        <td class="text-end ui-tabular-nums tw-text-on-surface-variant">
+                                        <td class="text-end ui-tabular-nums tw:text-on-surface-variant">
                                             {{ in_array('length', $relevantDimensions, true) ? \App\Support\NumberFormat::maxDecimals($item->length) : '—' }}
                                         </td>
-                                        <td class="text-end ui-tabular-nums tw-text-on-surface-variant">{{ \App\Support\NumberFormat::maxDecimals($item->weight_needed) }}</td>
+                                        <td class="text-end ui-tabular-nums tw:text-on-surface-variant">{{ \App\Support\NumberFormat::maxDecimals($item->weight_needed) }}</td>
                                         <td class="text-end fw-semibold ui-tabular-nums">{{ \App\Support\NumberFormat::maxDecimals($item->total_weight) }}</td>
                                         <td class="text-end ui-tabular-nums requested-price-display">—</td>
                                         <td class="text-end ui-tabular-nums">
                                             <span class="requested-amount-display quotation-calculated" aria-live="polite">—</span>
                                         </td>
-                                        <td class="text-start tw-text-on-surface-variant">{{ $item->remark ?: '—' }}</td>
+                                        <td class="text-start tw:text-on-surface-variant">{{ $item->remark ?: '—' }}</td>
                                         @unless($shipmentMtcEnabled)
-                                        <td class="text-center tw-text-outline">—</td>
+                                        <td class="text-center tw:text-outline">—</td>
                                         @endunless
                                         <td class="text-center"><span class="ui-status-chip ui-status-chip--neutral">{{ __('supplier.copy.requested') }}</span></td>
                                     </tr>
@@ -1033,7 +1033,7 @@
                                                     >
                                                     @error("items.{$index}.available_{$dimension}")<div class="invalid-feedback">{{ $message }}</div>@enderror
                                                 @else
-                                                    <div class="text-center tw-text-outline" aria-label="{{ __('supplier.copy.not_applicable') }}">—</div>
+                                                    <div class="text-center tw:text-outline" aria-label="{{ __('supplier.copy.not_applicable') }}">—</div>
                                                 @endif
                                             </td>
                                         @endforeach
@@ -1056,7 +1056,7 @@
                                                     @error("items.{$index}.available_length_input"){{ $message }}@enderror
                                                 </div>
                                             @else
-                                                <div class="text-center tw-text-outline" aria-label="{{ __('supplier.copy.not_applicable') }}">—</div>
+                                                <div class="text-center tw:text-outline" aria-label="{{ __('supplier.copy.not_applicable') }}">—</div>
                                             @endif
                                         </td>
                                         <td>
@@ -1212,13 +1212,13 @@
                                                             <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="font-size: 0.75rem; min-width: 220px; z-index: 1060;">
                                                                 <li>
                                                                     <button type="button" class="dropdown-item py-1.5 px-3 d-flex align-items-center gap-1.5" data-mtc-apply="same_material">
-                                                                        <x-ui.icon name="layers" size="sm" class="tw-text-on-surface-variant flex-shrink-0" />
+                                                                        <x-ui.icon name="layers" size="sm" class="tw:text-on-surface-variant flex-shrink-0" />
                                                                         <span>{{ __('supplier.copy.apply_to_same_material') }}<strong class="text-truncate d-inline-block align-bottom" style="max-width: 105px;">{{ $item->material_name }}</strong>)</span>
                                                                     </button>
                                                                 </li>
                                                                 <li>
                                                                     <button type="button" class="dropdown-item py-1.5 px-3 d-flex align-items-center gap-1.5" data-mtc-apply="all_available">
-                                                                        <x-ui.icon name="check-check" size="sm" class="tw-text-on-surface-variant flex-shrink-0" />
+                                                                        <x-ui.icon name="check-check" size="sm" class="tw:text-on-surface-variant flex-shrink-0" />
                                                                         <span>{{ __('supplier.copy.apply_to_all_available_items') }}</span>
                                                                     </button>
                                                                 </li>
@@ -1268,16 +1268,16 @@
                             @endforeach
                             <tfoot class="table-light fw-bold border-top">
                                 <tr>
-                                    <th scope="row" colspan="3" class="text-end tw-text-on-surface quotation-sticky-total">{{ __('procurement.quotation.total_offered') }}</th>
-                                    <td class="text-end tw-text-on-surface ui-tabular-nums">
+                                    <th scope="row" colspan="3" class="text-end tw:text-on-surface quotation-sticky-total">{{ __('procurement.quotation.total_offered') }}</th>
+                                    <td class="text-end tw:text-on-surface ui-tabular-nums">
                                         <span id="totalOfferedQty" aria-label="{{ __('procurement.quotation.total_offered_qty') }}">0</span>
                                     </td>
                                     <td colspan="6"></td>
-                                    <td class="text-end tw-text-on-surface ui-tabular-nums">
+                                    <td class="text-end tw:text-on-surface ui-tabular-nums">
                                         <span id="totalOfferedKg" aria-label="{{ __('procurement.quotation.total_offered_kg') }}">0</span>
                                     </td>
-                                    <td class="text-end tw-text-on-surface">{{ __('supplier.copy.total_offer_amount') }}</td>
-                                    <td class="text-end tw-text-on-surface ui-tabular-nums">
+                                    <td class="text-end tw:text-on-surface">{{ __('supplier.copy.total_offer_amount') }}</td>
+                                    <td class="text-end tw:text-on-surface ui-tabular-nums">
                                         <span id="totalAmount">0</span>
                                     </td>
                                     <td colspan="{{ $shipmentMtcEnabled ? 2 : 3 }}"></td>
@@ -1291,7 +1291,7 @@
         </div>
 
         {{-- Sticky Action Bar --}}
-        <x-ui.action-bar class="tw-mt-6">
+        <x-ui.action-bar class="tw:mt-6">
             <x-slot:left>
                 <x-ui.button :href="route('supplier.quotations.period', $pr->period_id)" variant="ghost" size="sm">
                     <x-ui.icon name="arrow-left" size="sm" />
@@ -1319,44 +1319,44 @@
             <div class="modal-header">
                 <div>
                     <h6 class="modal-title fw-bold" id="quotationImportModalLabel">{{ __('supplier.copy.import_quotation_items_from_spreadsheet') }}</h6>
-                    <div class="tw-text-on-surface-variant tw-text-ui-xs">{{ __('supplier.copy.imported_values_are_mapped_by_pr_item_id_and_are_not_committed_to_database_until_saved') }}</div>
+                    <div class="tw:text-on-surface-variant tw:text-ui-xs">{{ __('supplier.copy.imported_values_are_mapped_by_pr_item_id_and_are_not_committed_to_database_until_saved') }}</div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('supplier.copy.close') }}"></button>
             </div>
             <div class="modal-body p-4">
                 <div class="row g-3">
                     <div class="col-md-7">
-                        <label for="quotationImportFile" class="form-label small fw-semibold tw-text-on-surface">{{ __('supplier.copy.spreadsheet_file_xlsx_xls_csv') }}</label>
+                        <label for="quotationImportFile" class="form-label small fw-semibold tw:text-on-surface">{{ __('supplier.copy.spreadsheet_file_xlsx_xls_csv') }}</label>
                         <input type="file" id="quotationImportFile" class="form-control form-control-sm" accept=".xlsx,.xls,.csv">
-                        <div class="form-text tw-text-ui-xs">{{ __('supplier.copy.use_the_template_for_this_pr_max_10_mb_and_1_000_data_rows') }}</div>
+                        <div class="form-text tw:text-ui-xs">{{ __('supplier.copy.use_the_template_for_this_pr_max_10_mb_and_1_000_data_rows') }}</div>
                     </div>
                     <div class="col-md-5">
-                        <label for="quotationImportMode" class="form-label small fw-semibold tw-text-on-surface">{{ __('supplier.copy.import_mode') }}</label>
+                        <label for="quotationImportMode" class="form-label small fw-semibold tw:text-on-surface">{{ __('supplier.copy.import_mode') }}</label>
                         <select id="quotationImportMode" class="form-select form-select-sm" aria-describedby="quotationImportModeHelp">
                             <option value="fill_empty" selected>{{ __('supplier.copy.fill_empty_fields_only') }}</option>
                             <option value="replace">{{ __('supplier.copy.replace_imported_fields') }}</option>
                         </select>
-                        <div id="quotationImportModeHelp" class="form-text tw-text-ui-xs" aria-live="polite"></div>
+                        <div id="quotationImportModeHelp" class="form-text tw:text-ui-xs" aria-live="polite"></div>
                     </div>
                 </div>
 
                 <div id="quotationImportResult" class="d-none mt-3">
-                    <div id="quotationImportSummary" class="tw-mb-2.5 tw-rounded-ui-sm tw-border tw-border-outline tw-bg-surface-container tw-px-3 tw-py-2 tw-text-ui-xs tw-font-semibold tw-text-on-surface" role="status"></div>
+                    <div id="quotationImportSummary" class="tw:mb-2.5 tw:rounded-ui-sm tw:border tw:border-outline tw:bg-surface-container tw:px-3 tw:py-2 tw:text-ui-xs tw:font-semibold tw:text-on-surface" role="status"></div>
 
-                    <div id="quotationImportWarningsPanel" class="d-none tw-mb-2.5 tw-rounded-ui-sm tw-border-s-4 tw-border-warning tw-bg-warning-container tw-px-3 tw-py-2 tw-text-ui-xs tw-text-warning-container-foreground" role="status">
+                    <div id="quotationImportWarningsPanel" class="d-none tw:mb-2.5 tw:rounded-ui-sm tw:border-s-4 tw:border-warning tw:bg-warning-container tw:px-3 tw:py-2 tw:text-ui-xs tw:text-warning-container-foreground" role="status">
                         <div class="fw-bold mb-1"><x-ui.icon name="triangle-alert" size="sm" class="me-1" />{{ __('supplier.copy.warnings') }}</div>
                         <ul id="quotationImportWarnings" class="mb-0 ps-3"></ul>
                     </div>
 
-                    <div id="quotationImportErrorsPanel" class="d-none tw-mb-2.5 tw-rounded-ui-sm tw-border-s-4 tw-border-error tw-bg-error-container tw-px-3 tw-py-2 tw-text-ui-xs tw-text-error-container-foreground" role="alert">
+                    <div id="quotationImportErrorsPanel" class="d-none tw:mb-2.5 tw:rounded-ui-sm tw:border-s-4 tw:border-error tw:bg-error-container tw:px-3 tw:py-2 tw:text-ui-xs tw:text-error-container-foreground" role="alert">
                         <div class="fw-bold mb-1"><x-ui.icon name="circle-x" size="sm" class="me-1" />{{ __('supplier.copy.import_errors') }}</div>
                         <ul id="quotationImportErrors" class="mb-0 ps-3"></ul>
                     </div>
 
                     <div id="quotationImportPreviewPanel" class="d-none">
-                        <div class="fw-bold tw-text-on-surface tw-text-ui-xs tw-mb-1.5">{{ __('supplier.copy.parsed_item_preview') }}</div>
-                        <div class="table-responsive border rounded tw-max-h-64">
-                            <table class="table table-sm table-striped align-middle mb-0 tw-text-ui-xs">
+                        <div class="fw-bold tw:text-on-surface tw:text-ui-xs tw:mb-1.5">{{ __('supplier.copy.parsed_item_preview') }}</div>
+                        <div class="table-responsive border rounded tw:max-h-64">
+                            <table class="table table-sm table-striped align-middle mb-0 tw:text-ui-xs">
                                 <thead class="table-light sticky-top">
                                     <tr>
                                         <th scope="col">{{ __('supplier.copy.pr_item_id') }}</th>
@@ -1376,7 +1376,7 @@
                     </div>
                 </div>
             </div>
-            <div class="modal-footer tw-bg-surface-low border-top">
+            <div class="modal-footer tw:bg-surface-low border-top">
                 <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('supplier.copy.cancel') }}</x-ui.button>
                 <x-ui.button type="button" variant="outline" size="sm" id="btnParseQuotationImport">
                     <span class="spinner-border spinner-border-sm me-1 d-none" id="quotationImportSpinner"></span>
@@ -1900,19 +1900,19 @@
             $deliveryInput.removeAttr('required').removeClass('is-invalid').prop('disabled', true).attr('aria-disabled', 'true');
             $deliveryTrigger.prop('disabled', true).attr('aria-disabled', 'true').attr('tabindex', '-1');
             $deliveryPicker.attr('data-calendar-required', 'false').attr('data-calendar-disabled', 'true').addClass('is-disabled');
-            $deliveryPicker.find('.tw-text-error').addClass('d-none');
+            $deliveryPicker.find('[class~="tw:text-error"]').addClass('d-none');
             $deliveryPicker[0]?.dispatchEvent(new CustomEvent('adasi:calendar-close'));
 
             // Payment Terms: disable textarea, remove validation, hide asterisks
-            $paymentTerms.removeAttr('required').removeClass('is-invalid').prop('disabled', true).attr('aria-disabled', 'true').addClass('tw-bg-surface-container tw-opacity-50 tw-cursor-not-allowed');
-            $paymentTermsGroup.find('.tw-text-error').addClass('d-none');
+            $paymentTerms.removeAttr('required').removeClass('is-invalid').prop('disabled', true).attr('aria-disabled', 'true').addClass('tw:bg-surface-container tw:opacity-50 tw:cursor-not-allowed');
+            $paymentTermsGroup.find('[class~="tw:text-error"]').addClass('d-none');
 
             // Validity Period: disable input and trigger, remove validation, hide asterisks
             $validityPeriod.removeAttr('required').removeClass('is-invalid').prop('disabled', true).attr('aria-disabled', 'true');
             $validityTrigger.prop('disabled', true).attr('aria-disabled', 'true').attr('tabindex', '-1');
             $validityPicker.attr('data-calendar-required', 'false').attr('data-calendar-disabled', 'true').addClass('is-disabled');
-            $validityPicker.find('.tw-text-error').addClass('d-none');
-            $validityPicker.find('#validityPeriod-help').addClass('tw-opacity-40');
+            $validityPicker.find('[class~="tw:text-error"]').addClass('d-none');
+            $validityPicker.find('#validityPeriod-help').addClass('tw:opacity-40');
             $validityPicker[0]?.dispatchEvent(new CustomEvent('adasi:calendar-close'));
 
             $rateWarning.addClass('d-none');
@@ -1924,18 +1924,18 @@
             $deliveryInput.attr('required', 'required').prop('disabled', false).removeAttr('aria-disabled');
             $deliveryTrigger.prop('disabled', false).removeAttr('aria-disabled').removeAttr('tabindex');
             $deliveryPicker.attr('data-calendar-required', 'true').attr('data-calendar-disabled', 'false').removeClass('is-disabled');
-            $deliveryPicker.find('.tw-text-error').removeClass('d-none');
+            $deliveryPicker.find('[class~="tw:text-error"]').removeClass('d-none');
 
             // Payment Terms: enable textarea, restore validation, show asterisks
-            $paymentTerms.attr('required', 'required').prop('disabled', false).removeAttr('aria-disabled').removeClass('tw-bg-surface-container tw-opacity-50 tw-cursor-not-allowed');
-            $paymentTermsGroup.find('.tw-text-error').removeClass('d-none');
+            $paymentTerms.attr('required', 'required').prop('disabled', false).removeAttr('aria-disabled').removeClass('tw:bg-surface-container tw:opacity-50 tw:cursor-not-allowed');
+            $paymentTermsGroup.find('[class~="tw:text-error"]').removeClass('d-none');
 
             // Validity Period: enable input and trigger, restore validation, show asterisks
             $validityPeriod.prop('disabled', false).removeAttr('aria-disabled');
             $validityTrigger.prop('disabled', false).removeAttr('aria-disabled').removeAttr('tabindex');
             $validityPicker.attr('data-calendar-disabled', 'false').removeClass('is-disabled');
-            $validityPicker.find('.tw-text-error').removeClass('d-none');
-            $validityPicker.find('#validityPeriod-help').removeClass('tw-opacity-40');
+            $validityPicker.find('[class~="tw:text-error"]').removeClass('d-none');
+            $validityPicker.find('#validityPeriod-help').removeClass('tw:opacity-40');
 
             $termsNotice.addClass('d-none');
             refreshCurrencyState();

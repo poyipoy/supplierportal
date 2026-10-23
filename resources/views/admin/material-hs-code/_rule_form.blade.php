@@ -9,17 +9,17 @@
 
             <div class="modal-header">
                 <div>
-                    <h2 class="modal-title fs-6 fw-bold tw-text-on-surface" id="ruleModalTitle">{{ __('admin.copy.add_hs_code_classification_rule') }}</h2>
-                    <p class="tw-m-0 tw-mt-0.5 tw-text-ui-xs tw-text-on-surface-variant">{{ __('admin.copy.deterministic_rule_configuration_matching_material_category_cross_section_shape_and_dimension_parame') }}</p>
+                    <h2 class="modal-title fs-6 fw-bold tw:text-on-surface" id="ruleModalTitle">{{ __('admin.copy.add_hs_code_classification_rule') }}</h2>
+                    <p class="tw:m-0 tw:mt-0.5 tw:text-ui-xs tw:text-on-surface-variant">{{ __('admin.copy.deterministic_rule_configuration_matching_material_category_cross_section_shape_and_dimension_parame') }}</p>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('admin.copy.close') }}"></button>
             </div>
 
-            <div class="modal-body tw-grid tw-gap-5 tw-p-5">
+            <div class="modal-body tw:grid tw:gap-5 tw:p-5">
                 {{-- Rule Primary Parameters --}}
-                <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2 lg:tw-grid-cols-5">
+                <div class="tw:grid tw:gap-4 tw:sm:grid-cols-2 tw:lg:grid-cols-5">
                     <div>
-                        <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="ruleHsCode">
+                        <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="ruleHsCode">
                             {{ __('common.fields.hs_code') }} <span class="text-danger">*</span>
                         </label>
                         <input
@@ -34,7 +34,7 @@
                     </div>
 
                     <div>
-                        <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="ruleCategory">
+                        <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="ruleCategory">
                             {{ __('admin.copy.material_category') }} <span class="text-danger">*</span>
                         </label>
                         <select name="material_category" id="ruleCategory" class="form-select" required>
@@ -45,7 +45,7 @@
                     </div>
 
                     <div>
-                        <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="ruleShape">
+                        <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="ruleShape">
                             {{ __('admin.copy.cross_section_shape') }} <span class="text-danger">*</span>
                         </label>
                         <select name="shape" id="ruleShape" class="form-select" required>
@@ -56,7 +56,7 @@
                     </div>
 
                     <div>
-                        <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="rulePriority">
+                        <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="rulePriority">
                             {{ __('admin.copy.evaluation_priority') }} <span class="text-danger">*</span>
                         </label>
                         <input
@@ -69,11 +69,11 @@
                             value="100"
                             required
                         >
-                        <small class="tw-text-ui-xs tw-text-on-surface-variant">{{ __('admin.copy.lower_numbers_evaluate_first') }}</small>
+                        <small class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('admin.copy.lower_numbers_evaluate_first') }}</small>
                     </div>
 
                     <div>
-                        <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="ruleStatus">
+                        <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="ruleStatus">
                             {{ __('admin.copy.rule_status') }} <span class="text-danger">*</span>
                         </label>
                         <select name="status" id="ruleStatus" class="form-select">
@@ -85,14 +85,14 @@
                 </div>
 
                 {{-- Dimension Threshold Matrix --}}
-                <div class="tw-border tw-border-outline tw-rounded-ui-sm tw-p-4 tw-bg-surface-container">
-                    <div class="tw-flex tw-items-center tw-justify-between tw-mb-3">
-                        <span class="tw-text-ui-sm tw-font-bold tw-text-on-surface">{{ __('admin.copy.dimensional_boundary_conditions_mm') }}</span>
-                        <span class="tw-text-ui-xs tw-text-on-surface-variant">{{ __('admin.copy.leave_bounds_empty_if_dimension_is_unconstrained') }}</span>
+                <div class="tw:border tw:border-outline tw:rounded-ui-sm tw:p-4 tw:bg-surface-container">
+                    <div class="tw:flex tw:items-center tw:justify-between tw:mb-3">
+                        <span class="tw:text-ui-sm tw:font-bold tw:text-on-surface">{{ __('admin.copy.dimensional_boundary_conditions_mm') }}</span>
+                        <span class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('admin.copy.leave_bounds_empty_if_dimension_is_unconstrained') }}</span>
                     </div>
 
                     <div class="table-responsive">
-                        <table class="table table-sm table-hover align-middle mb-0 tw-text-ui-xs">
+                        <table class="table table-sm table-hover align-middle mb-0 tw:text-ui-xs">
                             <thead class="table-light">
                                 <tr>
                                     <th scope="col" style="width: 180px;">{{ __('admin.copy.dimension') }}</th>
@@ -106,7 +106,7 @@
                                 @foreach(\App\Models\PrItem::DIMENSION_FIELDS as $dimension)
                                     <tr class="rule-condition-row" data-dimension="{{ $dimension }}">
                                         <td>
-                                            <span class="fw-semibold tw-text-on-surface">{{ \App\Models\PrItem::dimensionLabel($dimension) }}</span>
+                                            <span class="fw-semibold tw:text-on-surface">{{ \App\Models\PrItem::dimensionLabel($dimension) }}</span>
                                             <span class="text-muted small">({{ $dimension }})</span>
                                         </td>
                                         <td>
@@ -153,13 +153,13 @@
                         </table>
                     </div>
                 </div>
-                <p id="ruleConditionError" class="d-none tw-m-0 tw-text-ui-xs tw-font-semibold tw-text-error" role="alert" tabindex="-1">
+                <p id="ruleConditionError" class="d-none tw:m-0 tw:text-ui-xs tw:font-semibold tw:text-error" role="alert" tabindex="-1">
                     {{ __('admin.copy.define_at_least_one_minimum_or_maximum_dimensional_boundary_before_saving_this_rule') }}
                 </p>
 
                 <div>
-                    <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="ruleNotes">
-                        {{ __('admin.copy.tariff_notes_legal_reference') }} <span class="tw-text-on-surface-variant tw-font-normal">{{ __('admin.copy.optional') }}</span>
+                    <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="ruleNotes">
+                        {{ __('admin.copy.tariff_notes_legal_reference') }} <span class="tw:text-on-surface-variant tw:font-normal">{{ __('admin.copy.optional') }}</span>
                     </label>
                     <textarea
                         name="notes"
@@ -172,7 +172,7 @@
                 </div>
             </div>
 
-            <div class="modal-footer tw-border-t tw-border-outline-variant tw-bg-surface-low tw-px-5 tw-py-3">
+            <div class="modal-footer tw:border-t tw:border-outline-variant tw:bg-surface-low tw:px-5 tw:py-3">
                 <x-ui.button type="button" variant="ghost" data-bs-dismiss="modal">{{ __('admin.copy.cancel') }}</x-ui.button>
                 <x-ui.button type="submit" id="btnSaveRule">
                     <span class="spinner-border spinner-border-sm d-none me-1" id="spinnerSaveRule"></span>

@@ -622,7 +622,7 @@
                             icon.style.display = 'none';
                             icon.parentNode.insertBefore(spinner, icon);
                         } else {
-                            spinner.classList.add('tw-mr-1.5');
+                            spinner.classList.add('tw:mr-1.5');
                             activeSubmitter.prepend(spinner);
                         }
                     }
@@ -886,7 +886,7 @@
                         document.createElement('div');
 
                     content.className =
-                        'tw-min-w-0 flex-grow-1';
+                        'tw:min-w-0 flex-grow-1';
 
                     const heading =
                         document.createElement('div');

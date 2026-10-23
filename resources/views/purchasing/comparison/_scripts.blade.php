@@ -311,12 +311,12 @@
             };
 
             if (radios.length === 0) {
-                previewContainer.replaceChildren(textElement('span', 'tw-text-on-surface-variant', @json(__('purchasing.copy.no_items_selected_yet_select_supplier_offers_above'))));
-                groupContainer.replaceChildren(textElement('span', 'tw-text-on-surface-variant', @json(__('purchasing.copy.1_po_will_be_created_per_selected_supplier_group_upon_confirmation'))));
+                previewContainer.replaceChildren(textElement('span', 'tw:text-on-surface-variant', @json(__('purchasing.copy.no_items_selected_yet_select_supplier_offers_above'))));
+                groupContainer.replaceChildren(textElement('span', 'tw:text-on-surface-variant', @json(__('purchasing.copy.1_po_will_be_created_per_selected_supplier_group_upon_confirmation'))));
                 return;
             }
 
-            const itemsList = textElement('ul', 'tw-list-disc tw-ps-4 tw-space-y-1', '');
+            const itemsList = textElement('ul', 'tw:list-disc tw:ps-4 tw:space-y-1', '');
             const supplierMap = new Map();
 
             radios.forEach(radio => {
@@ -341,14 +341,14 @@
             });
             previewContainer.replaceChildren(itemsList);
 
-            const groups = textElement('div', 'tw-space-y-2', '');
+            const groups = textElement('div', 'tw:space-y-2', '');
             let poCount = 0;
             for (const supplier of supplierMap.values()) {
                 poCount++;
-                const group = textElement('div', 'tw-p-2 tw-rounded tw-bg-surface tw-border tw-border-outline-variant', '');
+                const group = textElement('div', 'tw:p-2 tw:rounded-sm tw:bg-surface tw:border tw:border-outline-variant', '');
                 group.append(
-                    textElement('div', 'fw-bold tw-text-ui-xs text-primary', `PO #${poCount} • ${supplier.name}`),
-                    textElement('div', 'tw-text-on-surface-variant tw-text-ui-xs', `${window.AdasiI18n.choice('purchasing.js.item_count', supplier.items.length, { count: supplier.items.length })}: ${supplier.items.join(', ')}`),
+                    textElement('div', 'fw-bold tw:text-ui-xs text-primary', `PO #${poCount} • ${supplier.name}`),
+                    textElement('div', 'tw:text-on-surface-variant tw:text-ui-xs', `${window.AdasiI18n.choice('purchasing.js.item_count', supplier.items.length, { count: supplier.items.length })}: ${supplier.items.join(', ')}`),
                 );
                 groups.append(group);
             }
@@ -488,18 +488,18 @@
         }
 
         function changeHtml(value) {
-            if (value === null || value === undefined) return '<span class="tw-text-on-surface-variant">-</span>';
+            if (value === null || value === undefined) return '<span class="tw:text-on-surface-variant">-</span>';
             const numberValue = Number(value);
 
             if (numberValue > 0) {
-                return `<span class="tw-font-semibold tw-text-error">+${formatNumber(numberValue)}%</span>`;
+                return `<span class="tw:font-semibold tw:text-error">+${formatNumber(numberValue)}%</span>`;
             }
 
             if (numberValue < 0) {
-                return `<span class="tw-font-semibold tw-text-success">&minus;${formatNumber(Math.abs(numberValue))}%</span>`;
+                return `<span class="tw:font-semibold tw:text-success">&minus;${formatNumber(Math.abs(numberValue))}%</span>`;
             }
 
-            return '<span class="tw-font-semibold tw-text-on-surface-variant">0%</span>';
+            return '<span class="tw:font-semibold tw:text-on-surface-variant">0%</span>';
         }
 
         function renderRangeOptions(view, preferredValue) {
@@ -538,10 +538,10 @@
         function clearHistorycalResults(message) {
             if (!resultsContainer) return;
             resultsContainer.innerHTML = `
-                <div class="tw-rounded-ui-md tw-border tw-border-outline tw-bg-surface">
-                    <div class="tw-flex tw-flex-col tw-items-center tw-justify-center tw-px-4 tw-py-8 tw-text-center">
-                        <span class="tw-text-on-surface-variant" style="font-size: 2rem;">&#128200;</span>
-                        <p class="tw-m-0 tw-mt-3 tw-text-ui-sm tw-text-on-surface-variant">${escapeOptionText(message)}</p>
+                <div class="tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface">
+                    <div class="tw:flex tw:flex-col tw:items-center tw:justify-center tw:px-4 tw:py-8 tw:text-center">
+                        <span class="tw:text-on-surface-variant" style="font-size: 2rem;">&#128200;</span>
+                        <p class="tw:m-0 tw:mt-3 tw:text-ui-sm tw:text-on-surface-variant">${escapeOptionText(message)}</p>
                     </div>
                 </div>
             `;
@@ -776,8 +776,8 @@
 
         function updateSummaryClass(element, value) {
             if (!element) return;
-            element.classList.remove('tw-text-error', 'tw-text-success', 'tw-text-on-surface-variant');
-            element.classList.add(value > 0 ? 'tw-text-error' : (value < 0 ? 'tw-text-success' : 'tw-text-on-surface-variant'));
+            element.classList.remove('tw:text-error', 'tw:text-success', 'tw:text-on-surface-variant');
+            element.classList.add(value > 0 ? 'tw:text-error' : (value < 0 ? 'tw:text-success' : 'tw:text-on-surface-variant'));
         }
 
         function renderSummary(summary) {
@@ -850,11 +850,11 @@
                 <tr>
                     <td class="text-center fw-medium">
                         ${row.pr_url
-                            ? `<a href="${escapeOptionText(row.pr_url)}" class="text-primary text-decoration-none hover:tw-underline">${escapeOptionText(row.pr_number || '-')} →</a>`
+                            ? `<a href="${escapeOptionText(row.pr_url)}" class="text-primary text-decoration-none tw:hover:underline">${escapeOptionText(row.pr_number || '-')} →</a>`
                             : escapeOptionText(row.pr_number || '-')}
                     </td>
                     <td class="text-center">${escapeOptionText(row.supplier || '-')}</td>
-                    <td class="text-end ui-tabular-nums">${formatMaxDecimals(row.price_per_kg, 4)} <span class="ui-status-chip ui-status-chip--neutral tw-ms-1">${escapeOptionText(row.currency)}</span></td>
+                    <td class="text-end ui-tabular-nums">${formatMaxDecimals(row.price_per_kg, 4)} <span class="ui-status-chip ui-status-chip--neutral tw:ms-1">${escapeOptionText(row.currency)}</span></td>
                     <td class="text-end text-primary fw-bold ui-tabular-nums">${formatRupiah(row.total_idr)}</td>
                     <td class="text-center">${row.purchase_order_at_display ? escapeOptionText(row.purchase_order_at_display) : '<span class="ui-status-chip ui-status-chip--neutral">' + escapeOptionText(@json(__('purchasing.copy.draft'))) + '</span>'}</td>
                     <td class="text-center">${changeHtml(row.change_pct)}</td>
@@ -891,43 +891,43 @@
 
         function historicalResultShellHtml() {
             return `
-                <section class="tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline tw-bg-surface" aria-labelledby="historicalChartTitle">
-                    <header class="tw-border-b tw-border-outline-variant tw-bg-surface-container tw-px-4 tw-py-3">
-                        <h2 class="tw-m-0 tw-flex tw-items-center tw-gap-2 tw-text-ui-sm tw-font-semibold tw-text-on-surface" id="historicalChartTitle"></h2>
+                <section class="tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface" aria-labelledby="historicalChartTitle">
+                    <header class="tw:border-b tw:border-outline-variant tw:bg-surface-container tw:px-4 tw:py-3">
+                        <h2 class="tw:m-0 tw:flex tw:items-center tw:gap-2 tw:text-ui-sm tw:font-semibold tw:text-on-surface" id="historicalChartTitle"></h2>
                     </header>
-                    <div class="tw-h-72 tw-p-4">
+                    <div class="tw:h-72 tw:p-4">
                         <canvas id="historicalChart" role="img" aria-label="${escapeOptionText(@js(__('common.accessibility.history_trend')))}">${escapeOptionText(@js(__('common.accessibility.history_chart')))}</canvas>
                     </div>
                 </section>
 
-                <section class="tw-grid tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline tw-bg-surface-container sm:tw-grid-cols-2 sm:tw-divide-x sm:tw-divide-outline-variant" id="historicalSummary" aria-label="${escapeOptionText(@js(__('common.accessibility.history_summary')))}">
-                    <div class="tw-p-4">
-                        <div class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-on-surface-variant">${escapeOptionText(@js(__('common.accessibility.average_change')))}</div>
-                        <div class="ui-tabular-nums tw-mt-1 tw-text-ui-2xl tw-font-semibold tw-text-on-surface-variant" id="averageChangeValue">-</div>
+                <section class="tw:grid tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface-container tw:sm:grid-cols-2 tw:sm:divide-x tw:sm:divide-outline-variant" id="historicalSummary" aria-label="${escapeOptionText(@js(__('common.accessibility.history_summary')))}">
+                    <div class="tw:p-4">
+                        <div class="tw:text-ui-xs tw:font-semibold tw:uppercase tw:tracking-wider tw:text-on-surface-variant">${escapeOptionText(@js(__('common.accessibility.average_change')))}</div>
+                        <div class="ui-tabular-nums tw:mt-1 tw:text-ui-2xl tw:font-semibold tw:text-on-surface-variant" id="averageChangeValue">-</div>
                     </div>
-                    <div class="tw-border-t tw-border-outline-variant tw-p-4 sm:tw-border-t-0">
-                        <div class="tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-on-surface-variant">${escapeOptionText(@js(__('common.accessibility.initial_latest')))}</div>
-                        <div class="ui-tabular-nums tw-mt-1 tw-text-ui-2xl tw-font-semibold tw-text-on-surface-variant" id="totalChangeValue">-</div>
+                    <div class="tw:border-t tw:border-outline-variant tw:p-4 tw:sm:border-t-0">
+                        <div class="tw:text-ui-xs tw:font-semibold tw:uppercase tw:tracking-wider tw:text-on-surface-variant">${escapeOptionText(@js(__('common.accessibility.initial_latest')))}</div>
+                        <div class="ui-tabular-nums tw:mt-1 tw:text-ui-2xl tw:font-semibold tw:text-on-surface-variant" id="totalChangeValue">-</div>
                     </div>
                 </section>
 
-                <section class="ui-data-table tw-overflow-hidden tw-rounded-ui-md tw-border tw-border-outline tw-bg-surface tw-shadow-none">
-                    <header class="tw-border-b tw-border-outline-variant tw-bg-surface-container tw-px-4 tw-py-3">
-                        <h2 class="tw-m-0 tw-text-sm tw-font-bold tw-text-on-surface">Supporting Data</h2>
-                        <p class="tw-m-0 tw-mt-0.5 tw-text-ui-xs tw-text-on-surface-variant">Quotation values and period changes for the selected supplier and exact material specification.</p>
+                <section class="ui-data-table tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-none">
+                    <header class="tw:border-b tw:border-outline-variant tw:bg-surface-container tw:px-4 tw:py-3">
+                        <h2 class="tw:m-0 tw:text-sm tw:font-bold tw:text-on-surface">Supporting Data</h2>
+                        <p class="tw:m-0 tw:mt-0.5 tw:text-ui-xs tw:text-on-surface-variant">Quotation values and period changes for the selected supplier and exact material specification.</p>
                     </header>
-                    <div class="ui-data-table__scroll tw-overflow-x-auto tw-w-full">
-                        <table class="table table-hover align-middle mb-0 tw-text-ui-sm">
+                    <div class="ui-data-table__scroll tw:overflow-x-auto tw:w-full">
+                        <table class="table table-hover align-middle mb-0 tw:text-ui-sm">
                             <thead class="table-light text-center" id="historicalTableHead"></thead>
                             <tbody id="historicalTableBody"></tbody>
                         </table>
                     </div>
-                    <div id="historicalPagination" class="d-none tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-gap-3 tw-border-t tw-border-outline-variant tw-bg-surface-low tw-px-4 tw-py-3">
-                        <span id="historicalPaginationSummary" class="tw-text-ui-xs tw-text-on-surface-variant"></span>
-                        <div class="tw-flex tw-items-center tw-gap-2">
-                            <button type="button" id="historicalPreviousPage" data-history-page="1" class="ui-button ui-motion ui-focus-ring tw-inline-flex tw-min-h-[var(--ui-control-height-sm)] tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline tw-bg-transparent tw-px-2.5 tw-py-1 tw-text-ui-xs tw-font-semibold tw-text-on-surface disabled:tw-cursor-not-allowed disabled:tw-opacity-50">${escapeOptionText(@js(__('pagination.previous')))}</button>
-                            <span id="historicalPaginationPage" class="tw-min-w-20 tw-text-center tw-text-ui-xs tw-font-semibold tw-text-on-surface"></span>
-                            <button type="button" id="historicalNextPage" data-history-page="1" class="ui-button ui-motion ui-focus-ring tw-inline-flex tw-min-h-[var(--ui-control-height-sm)] tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline tw-bg-transparent tw-px-2.5 tw-py-1 tw-text-ui-xs tw-font-semibold tw-text-on-surface disabled:tw-cursor-not-allowed disabled:tw-opacity-50">${escapeOptionText(@js(__('pagination.next')))}</button>
+                    <div id="historicalPagination" class="d-none tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-3 tw:border-t tw:border-outline-variant tw:bg-surface-low tw:px-4 tw:py-3">
+                        <span id="historicalPaginationSummary" class="tw:text-ui-xs tw:text-on-surface-variant"></span>
+                        <div class="tw:flex tw:items-center tw:gap-2">
+                            <button type="button" id="historicalPreviousPage" data-history-page="1" class="ui-button ui-motion ui-focus-ring tw:inline-flex tw:min-h-[var(--ui-control-height-sm)] tw:items-center tw:justify-center tw:rounded-ui-sm tw:border tw:border-outline tw:bg-transparent tw:px-2.5 tw:py-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:disabled:cursor-not-allowed tw:disabled:opacity-50">${escapeOptionText(@js(__('pagination.previous')))}</button>
+                            <span id="historicalPaginationPage" class="tw:min-w-20 tw:text-center tw:text-ui-xs tw:font-semibold tw:text-on-surface"></span>
+                            <button type="button" id="historicalNextPage" data-history-page="1" class="ui-button ui-motion ui-focus-ring tw:inline-flex tw:min-h-[var(--ui-control-height-sm)] tw:items-center tw:justify-center tw:rounded-ui-sm tw:border tw:border-outline tw:bg-transparent tw:px-2.5 tw:py-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:disabled:cursor-not-allowed tw:disabled:opacity-50">${escapeOptionText(@js(__('pagination.next')))}</button>
                         </div>
                     </div>
                 </section>
@@ -944,10 +944,10 @@
 
                 if (resultsContainer) {
                     resultsContainer.innerHTML = `
-                        <div class="tw-rounded-ui-md tw-border tw-border-outline tw-bg-surface">
-                            <div class="tw-flex tw-flex-col tw-items-center tw-justify-center tw-px-4 tw-py-8 tw-text-center">
-                                <span class="tw-text-on-surface-variant" style="font-size: 2rem;">&#128200;</span>
-                                <p class="tw-m-0 tw-mt-3 tw-text-ui-sm tw-text-on-surface-variant">
+                        <div class="tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface">
+                            <div class="tw:flex tw:flex-col tw:items-center tw:justify-center tw:px-4 tw:py-8 tw:text-center">
+                                <span class="tw:text-on-surface-variant" style="font-size: 2rem;">&#128200;</span>
+                                <p class="tw:m-0 tw:mt-3 tw:text-ui-sm tw:text-on-surface-variant">
                                     ${escapeOptionText(payload.materialName
                                         ? @json(__('purchasing.copy.comparison_no_quotation_data'))
                                         : @json(__('purchasing.copy.comparison_select_supplier_and_material')))}
@@ -972,7 +972,7 @@
                 const title = @json(__('purchasing.copy.comparison_price_trend_title', ['material' => ':material', 'supplier' => ':supplier']))
                     .replace(':material', escapeOptionText(payload.materialName))
                     .replace(':supplier', escapeOptionText(payload.supplierName || @json(__('purchasing.comparison_analytics.all_suppliers'))));
-                titleEl.innerHTML = `<span class="tw-text-primary me-1">&#128200;</span><span>${title}</span>`;
+                titleEl.innerHTML = `<span class="tw:text-primary me-1">&#128200;</span><span>${title}</span>`;
             }
         }
 
@@ -1025,8 +1025,8 @@
             } catch (error) {
                 if (resultsContainer) {
                     resultsContainer.innerHTML = `
-                        <div class="tw-flex tw-items-start tw-gap-3 tw-rounded-ui-sm tw-border-s-4 tw-border-warning tw-bg-warning-container tw-p-4 tw-text-warning-container-foreground" role="status">
-                            <div class="tw-text-ui-sm">${escapeOptionText(@json(__('purchasing.copy.comparison_failed_historical_data')))}</div>
+                        <div class="tw:flex tw:items-start tw:gap-3 tw:rounded-ui-sm tw:border-s-4 tw:border-warning tw:bg-warning-container tw:p-4 tw:text-warning-container-foreground" role="status">
+                            <div class="tw:text-ui-sm">${escapeOptionText(@json(__('purchasing.copy.comparison_failed_historical_data')))}</div>
                         </div>
                     `;
                 }

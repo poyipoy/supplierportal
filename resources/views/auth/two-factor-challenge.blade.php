@@ -3,20 +3,20 @@
 @section('title', __('auth.two_factor.verification').' - ADASI Supplier Portal')
 
 @section('content')
-<header class="tw-mb-5">
-    <p class="tw-m-0 tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-primary">{{ __('auth.two_factor.verification') }}</p>
-    <h2 class="tw-m-0 tw-mt-1.5 tw-text-ui-xl tw-font-bold tw-tracking-tight tw-text-on-surface">{{ __('auth.two_factor.identity') }}</h2>
-    <p class="tw-m-0 tw-mt-1.5 tw-text-ui-sm tw-text-on-surface-variant">{{ __('auth.two_factor.help') }}</p>
+<header class="tw:mb-5">
+    <p class="tw:m-0 tw:text-ui-xs tw:font-semibold tw:uppercase tw:tracking-wider tw:text-primary">{{ __('auth.two_factor.verification') }}</p>
+    <h2 class="tw:m-0 tw:mt-1.5 tw:text-ui-xl tw:font-bold tw:tracking-tight tw:text-on-surface">{{ __('auth.two_factor.identity') }}</h2>
+    <p class="tw:m-0 tw:mt-1.5 tw:text-ui-sm tw:text-on-surface-variant">{{ __('auth.two_factor.help') }}</p>
 </header>
 
-<form method="POST" action="{{ route('two-factor.challenge') }}" class="tw-grid tw-gap-4">
+<form method="POST" action="{{ route('two-factor.challenge') }}" class="tw:grid tw:gap-4">
     @csrf
-    <x-ui.input name="code" id="code" type="text" :label="__('security.authentication_code')" inputmode="text" autocomplete="one-time-code" maxlength="32" class="[&_input]:tw-text-center [&_input]:tw-font-mono [&_input]:tw-text-ui-lg [&_input]:tw-tracking-[0.25em]" required autofocus />
+    <x-ui.input name="code" id="code" type="text" :label="__('security.authentication_code')" inputmode="text" autocomplete="one-time-code" maxlength="32" class="tw:[&_input]:text-center tw:[&_input]:font-mono tw:[&_input]:text-ui-lg tw:[&_input]:tracking-[0.25em]" required autofocus />
 
-    <button type="submit" class="ui-focus-ring ui-motion tw-flex tw-h-11 tw-w-full tw-items-center tw-justify-center tw-gap-2 tw-rounded-ui-sm tw-border-0 tw-bg-primary tw-text-ui-sm tw-font-semibold tw-text-primary-foreground hover:tw-brightness-95 active:tw-brightness-90">
+    <button type="submit" class="ui-focus-ring ui-motion tw:flex tw:h-11 tw:w-full tw:items-center tw:justify-center tw:gap-2 tw:rounded-ui-sm tw:border-0 tw:bg-primary tw:text-ui-sm tw:font-semibold tw:text-primary-foreground tw:hover:brightness-95 tw:active:brightness-90">
         {{ __('common.review.verify') }}
     </button>
 </form>
 
-<p class="tw-m-0 tw-mt-4 tw-text-center tw-text-ui-xs tw-text-on-surface-variant">{{ __('auth.two_factor.expiry') }}</p>
+<p class="tw:m-0 tw:mt-4 tw:text-center tw:text-ui-xs tw:text-on-surface-variant">{{ __('auth.two_factor.expiry') }}</p>
 @endsection

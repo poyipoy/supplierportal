@@ -95,7 +95,7 @@ export function bindDashboardDragAndDrop(documentRef) {
 
         const clearDragStyles = () => {
             list.querySelectorAll('[data-dashboard-choice]').forEach((item) => {
-                item.classList.remove('tw-opacity-40', 'tw-border-primary', 'tw-bg-surface-container');
+                item.classList.remove('tw:opacity-40', 'tw:border-primary', 'tw:bg-surface-container');
             });
         };
 
@@ -108,7 +108,7 @@ export function bindDashboardDragAndDrop(documentRef) {
                 event.dataTransfer.effectAllowed = 'move';
                 event.dataTransfer.setData('text/plain', row.dataset.widgetKey || '');
             }
-            row.classList.add('tw-opacity-40');
+            row.classList.add('tw:opacity-40');
         });
 
         list.addEventListener('dragover', (event) => {
@@ -122,17 +122,17 @@ export function bindDashboardDragAndDrop(documentRef) {
             if (targetRow && targetRow !== draggedRow && list.contains(targetRow)) {
                 list.querySelectorAll('[data-dashboard-choice]').forEach((item) => {
                     if (item !== targetRow && item !== draggedRow) {
-                        item.classList.remove('tw-border-primary', 'tw-bg-surface-container');
+                        item.classList.remove('tw:border-primary', 'tw:bg-surface-container');
                     }
                 });
-                targetRow.classList.add('tw-border-primary', 'tw-bg-surface-container');
+                targetRow.classList.add('tw:border-primary', 'tw:bg-surface-container');
             }
         });
 
         list.addEventListener('dragleave', (event) => {
             const targetRow = event.target.closest('[data-dashboard-choice]');
             if (targetRow && event.relatedTarget && !targetRow.contains(event.relatedTarget)) {
-                targetRow.classList.remove('tw-border-primary', 'tw-bg-surface-container');
+                targetRow.classList.remove('tw:border-primary', 'tw:bg-surface-container');
             }
         });
 

@@ -4,7 +4,7 @@
 @section('page-title', __('purchasing.copy.price_comparison'))
 
 @section('content')
-<div id="purchasingComparisonContainer" class="tw-grid tw-gap-6 tw-min-w-0 tw-max-w-full" data-server-tabs-container>
+<div id="purchasingComparisonContainer" class="tw:grid tw:gap-6 tw:min-w-0 tw:max-w-full" data-server-tabs-container>
     <x-ui.page-header
         :title="__('purchasing.copy.current_vs_best_price')"
         :description="__('purchasing.copy.prioritize_price_gaps_against_the_historical_best_after_exchange_rate_conversion')"
@@ -12,7 +12,7 @@
     />
     <x-purchasing.comparison-tabs active="vs-best" />
 
-    <div id="purchasingComparisonContent" class="tw-min-w-0 tw-max-w-full" data-server-tabs-content>
+    <div id="purchasingComparisonContent" class="tw:min-w-0 tw:max-w-full" data-server-tabs-content>
         @include('purchasing.comparison._vs_best_content')
     </div>
 </div>

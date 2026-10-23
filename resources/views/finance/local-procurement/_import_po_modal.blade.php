@@ -1,24 +1,24 @@
 <div class="modal fade local-import-modal" id="localPoImportModal" tabindex="-1" aria-labelledby="localPoImportModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header tw-border-b tw-border-outline-variant tw-flex-wrap tw-gap-2">
-                <div class="tw-min-w-0 tw-flex-1">
-                    <h6 class="modal-title fw-bold tw-text-on-surface" id="localPoImportModalLabel">
+            <div class="modal-header tw:border-b tw:border-outline-variant tw:flex-wrap tw:gap-2">
+                <div class="tw:min-w-0 tw:flex-1">
+                    <h6 class="modal-title fw-bold tw:text-on-surface" id="localPoImportModalLabel">
                         {{ __('local_procurement.import.po_title') }}
                     </h6>
-                    <div class="tw-text-on-surface-variant tw-text-ui-xs tw-mt-0.5">
+                    <div class="tw:text-on-surface-variant tw:text-ui-xs tw:mt-0.5">
                         {{ __('local_procurement.import.po_help') }}
                     </div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('local_invoice.actions.close') }}"></button>
-                <div class="tw-w-full">@include('finance.local-procurement._import_workflow')</div>
+                <div class="tw:w-full">@include('finance.local-procurement._import_workflow')</div>
             </div>
 
-            <div class="modal-body tw-p-4 tw-space-y-4">
+            <div class="modal-body tw:p-4 tw:space-y-4">
                 @include('finance.local-procurement._import_recovery', ['importName' => 'Po'])
                 {{-- Area Upload File & Download Template --}}
-                <div class="tw-grid tw-gap-3">
-                    <div class="tw-space-y-2" data-import-file-picker>
+                <div class="tw:grid tw:gap-3">
+                    <div class="tw:space-y-2" data-import-file-picker>
                         <x-ui.file-upload
                             name="import_file"
                             id="localPoImportFile"
@@ -29,18 +29,18 @@
                         />
                     </div>
 
-                    <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface-container tw-p-3.5 tw-space-y-3">
-                        <div class="tw-flex tw-items-center tw-justify-between">
-                            <span class="tw-text-ui-xs tw-font-bold tw-text-on-surface">{{ __('local_procurement.import.po_template') }}</span>
+                    <div class="tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container tw:p-3.5 tw:space-y-3">
+                        <div class="tw:flex tw:items-center tw:justify-between">
+                            <span class="tw:text-ui-xs tw:font-bold tw:text-on-surface">{{ __('local_procurement.import.po_template') }}</span>
                             <x-ui.button :href="route($routePrefix.'.import.po.template')" variant="outline" size="sm">
                                 <x-ui.icon name="download" size="sm" />
                                 <span>{{ __('local_procurement.import.template') }}</span>
                             </x-ui.button>
                         </div>
-                        <details class="tw-text-ui-xs tw-text-on-surface-variant tw-leading-relaxed">
-                            <summary class="tw-cursor-pointer tw-font-medium tw-text-on-surface">{{ __('local_procurement.import.mapping_guide') }}</summary>
-                            <p class="tw-mb-1.5 tw-font-semibold tw-text-on-surface">{{ __('finance.review.po_mapping') }}</p>
-                            <ul class="tw-list-disc tw-ps-3.5 tw-space-y-1 tw-mb-0">
+                        <details class="tw:text-ui-xs tw:text-on-surface-variant tw:leading-relaxed">
+                            <summary class="tw:cursor-pointer tw:font-medium tw:text-on-surface">{{ __('local_procurement.import.mapping_guide') }}</summary>
+                            <p class="tw:mb-1.5 tw:font-semibold tw:text-on-surface">{{ __('finance.review.po_mapping') }}</p>
+                            <ul class="tw:list-disc tw:ps-3.5 tw:space-y-1 tw:mb-0">
                                 <li>{{ __('finance.review.column_e') }}</li>
                                 <li>{{ __('finance.review.column_g') }}</li>
                                 <li>{{ __('finance.review.column_j_po') }}</li>
@@ -53,58 +53,58 @@
                 </div>
 
                 {{-- Panel Hasil Validasi / Preview --}}
-                <div id="localPoImportResult" class="d-none tw-space-y-4">
+                <div id="localPoImportResult" class="d-none tw:space-y-4">
                     @include('finance.local-procurement._import_review_banner', ['importName' => 'Po'])
                     {{-- Panel Error Terstruktur --}}
-                    <div id="localPoImportErrorsPanel" class="d-none tw-rounded-ui-md tw-border-s-4 tw-border-error tw-bg-error-container tw-p-3.5 tw-text-ui-xs tw-text-error-container-foreground" role="region" aria-labelledby="localPoImportErrorsTitle">
-                        <div class="fw-bold mb-1.5 d-flex align-items-center tw-gap-1.5 tw-text-ui-sm">
+                    <div id="localPoImportErrorsPanel" class="d-none tw:rounded-ui-md tw:border-s-4 tw:border-error tw:bg-error-container tw:p-3.5 tw:text-ui-xs tw:text-error-container-foreground" role="region" aria-labelledby="localPoImportErrorsTitle">
+                        <div class="fw-bold mb-1.5 d-flex align-items-center tw:gap-1.5 tw:text-ui-sm">
                             <x-ui.icon name="circle-x" size="sm" />
                             <span id="localPoImportErrorsTitle">{{ __('local_procurement.import.po_error') }}</span>
                         </div>
-                        <p class="tw-mb-1.5 tw-text-[11px]">
+                        <p class="tw:mb-1.5 tw:text-[11px]">
                             {{ __('local_procurement.import.errors_help') }}:
                         </p>
-                        <ul id="localPoImportErrorsList" class="tw-mb-0 tw-ps-4 tw-space-y-0.5"></ul>
+                        <ul id="localPoImportErrorsList" class="tw:mb-0 tw:ps-4 tw:space-y-0.5"></ul>
                     </div>
 
                     {{-- KPI Summary Pills --}}
-                    <div data-import-metrics class="local-import-preview-metrics tw-grid tw-grid-cols-2 sm:tw-grid-cols-6 tw-gap-1 tw-border tw-border-outline-variant tw-rounded-ui-sm tw-p-2">
-                        <div class="tw-min-w-0 tw-py-1 tw-px-2">
-                            <div class="tw-text-[11px] tw-text-on-surface-variant tw-font-medium">{{ __('local_procurement.import.rows') }}</div>
-                            <div class="tw-text-ui-sm tw-tabular-nums tw-font-bold tw-text-on-surface" id="kpiPoTotalRows">0</div>
+                    <div data-import-metrics class="local-import-preview-metrics tw:grid tw:grid-cols-2 tw:sm:grid-cols-6 tw:gap-1 tw:border tw:border-outline-variant tw:rounded-ui-sm tw:p-2">
+                        <div class="tw:min-w-0 tw:py-1 tw:px-2">
+                            <div class="tw:text-[11px] tw:text-on-surface-variant tw:font-medium">{{ __('local_procurement.import.rows') }}</div>
+                            <div class="tw:text-ui-sm tw:tabular-nums tw:font-bold tw:text-on-surface" id="kpiPoTotalRows">0</div>
                         </div>
-                        <div class="tw-min-w-0 tw-py-1 tw-px-2">
-                            <div class="tw-text-[11px] tw-text-on-surface-variant tw-font-medium">{{ __('finance.review.new_po') }}</div>
-                            <div class="tw-text-ui-sm tw-tabular-nums tw-font-bold tw-text-primary" id="kpiPoNew">0</div>
+                        <div class="tw:min-w-0 tw:py-1 tw:px-2">
+                            <div class="tw:text-[11px] tw:text-on-surface-variant tw:font-medium">{{ __('finance.review.new_po') }}</div>
+                            <div class="tw:text-ui-sm tw:tabular-nums tw:font-bold tw:text-primary" id="kpiPoNew">0</div>
                         </div>
-                        <div class="tw-min-w-0 tw-py-1 tw-px-2">
-                            <div class="tw-text-[11px] tw-text-on-surface-variant tw-font-medium">{{ __('local_procurement.pr.filled') }}</div>
-                            <div class="tw-text-ui-sm tw-tabular-nums tw-font-bold tw-text-primary" id="kpiPoPrFilled">0</div>
+                        <div class="tw:min-w-0 tw:py-1 tw:px-2">
+                            <div class="tw:text-[11px] tw:text-on-surface-variant tw:font-medium">{{ __('local_procurement.pr.filled') }}</div>
+                            <div class="tw:text-ui-sm tw:tabular-nums tw:font-bold tw:text-primary" id="kpiPoPrFilled">0</div>
                         </div>
-                        <div class="tw-min-w-0 tw-py-1 tw-px-2">
-                            <div class="tw-text-[11px] tw-text-on-surface-variant tw-font-medium">{{ __('finance.review.existing_po') }}</div>
-                            <div class="tw-text-ui-sm tw-tabular-nums tw-font-bold tw-text-on-surface" id="kpiPoExisting">0</div>
+                        <div class="tw:min-w-0 tw:py-1 tw:px-2">
+                            <div class="tw:text-[11px] tw:text-on-surface-variant tw:font-medium">{{ __('finance.review.existing_po') }}</div>
+                            <div class="tw:text-ui-sm tw:tabular-nums tw:font-bold tw:text-on-surface" id="kpiPoExisting">0</div>
                         </div>
-                        <div class="tw-min-w-0 tw-py-1 tw-px-2">
-                            <div class="tw-text-[11px] tw-text-on-surface-variant tw-font-medium">{{ __('finance.review.header_conflict') }}</div>
-                            <div class="tw-text-ui-sm tw-tabular-nums tw-font-bold tw-text-warning" id="kpiPoConflict">0</div>
+                        <div class="tw:min-w-0 tw:py-1 tw:px-2">
+                            <div class="tw:text-[11px] tw:text-on-surface-variant tw:font-medium">{{ __('finance.review.header_conflict') }}</div>
+                            <div class="tw:text-ui-sm tw:tabular-nums tw:font-bold tw:text-warning" id="kpiPoConflict">0</div>
                         </div>
-                        <div class="tw-min-w-0 tw-py-1 tw-px-2">
-                            <div class="tw-text-[11px] tw-text-on-surface-variant tw-font-medium">{{ __('local_procurement.import.error_rows') }}</div>
-                            <div class="tw-text-ui-sm tw-tabular-nums tw-font-bold tw-text-error" id="kpiPoInvalidRows">0</div>
+                        <div class="tw:min-w-0 tw:py-1 tw:px-2">
+                            <div class="tw:text-[11px] tw:text-on-surface-variant tw:font-medium">{{ __('local_procurement.import.error_rows') }}</div>
+                            <div class="tw:text-ui-sm tw:tabular-nums tw:font-bold tw:text-error" id="kpiPoInvalidRows">0</div>
                         </div>
                     </div>
 
                     {{-- Tabel Pratinjau Parsed Data --}}
-                    <div id="localPoImportPreviewPanel" class="d-none tw-space-y-2">
-                        <div class="tw-flex tw-items-center tw-justify-between">
-                            <div class="tw-font-bold tw-text-on-surface tw-text-ui-sm">
+                    <div id="localPoImportPreviewPanel" class="d-none tw:space-y-2">
+                        <div class="tw:flex tw:items-center tw:justify-between">
+                            <div class="tw:font-bold tw:text-on-surface tw:text-ui-sm">
                                 {{ __('finance.review.po_preview') }}
                             </div>
-                            <span class="tw-text-[11px] tw-text-on-surface-variant" id="localPoImportRowCount"></span>
+                            <span class="tw:text-[11px] tw:text-on-surface-variant" id="localPoImportRowCount"></span>
                         </div>
-                        <div class="local-po-import-preview-scroll table-responsive tw-border tw-border-outline-variant tw-rounded-ui-md">
-                            <table class="table table-sm table-striped table-hover align-middle mb-0 tw-text-ui-xs">
+                        <div class="local-po-import-preview-scroll table-responsive tw:border tw:border-outline-variant tw:rounded-ui-md">
+                            <table class="table table-sm table-striped table-hover align-middle mb-0 tw:text-ui-xs">
                                 <thead class="table-light sticky-top">
                                     <tr>
                                         <th scope="col" style="width: 45px;" class="text-center">{{ __('local_procurement.import.row') }}</th>
@@ -123,7 +123,7 @@
                 </div>
             </div>
 
-            <div class="modal-footer tw-bg-surface-container-lowest tw-border-t tw-border-outline-variant">
+            <div class="modal-footer tw:bg-surface-container-lowest tw:border-t tw:border-outline-variant">
                 <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">
                     {{ __('local_invoice.actions.close') }}
                 </x-ui.button>

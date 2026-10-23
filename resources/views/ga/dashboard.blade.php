@@ -3,7 +3,7 @@
 @section('page-title', __('ga.dashboard.title'))
 
 @section('content')
-<div class="tw-grid tw-gap-6 tw-pb-16">
+<div class="tw:grid tw:gap-6 tw:pb-16">
     <x-ui.page-header
         :title="__('ga.dashboard.title')"
         :description="__('ga.review.help')"
@@ -20,7 +20,7 @@
     <x-ui.dashboard-layout audience="ga">
         <x-slot:statuses>
 {{-- KPI Cards --}}
-    <div class="tw-grid tw-grid-cols-2 md:tw-grid-cols-5 tw-gap-4">
+    <div class="tw:grid tw:grid-cols-2 tw:md:grid-cols-5 tw:gap-4">
         <x-ui.metric-card
             :label="__('local_invoice.labels.submitted')"
             :value="$regionalFormatter->number((string) ($kpis['submitted'] ?? 0), 'plain')"
@@ -73,35 +73,35 @@
         </x-slot:toolbar>
 
         <div class="table-responsive">
-            <table class="table table-hover align-middle tw-m-0 tw-text-ui-sm w-100">
+            <table class="table table-hover align-middle tw:m-0 tw:text-ui-sm w-100">
                 <thead class="table-light">
                     <tr>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('ga.detail.number') }}</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('ga.labels.employee') }}</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('ga.labels.claim_type') }}</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('local_invoice.labels.date') }}</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">{{ __('ga.labels.claim_amount') }}</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('local_invoice.labels.status') }}</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">{{ __('local_invoice.labels.actions') }}</th>
+                        <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('ga.detail.number') }}</th>
+                        <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('ga.labels.employee') }}</th>
+                        <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('ga.labels.claim_type') }}</th>
+                        <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.labels.date') }}</th>
+                        <th scope="col" class="tw:text-ui-xs tw:font-semibold text-end">{{ __('ga.labels.claim_amount') }}</th>
+                        <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.labels.status') }}</th>
+                        <th scope="col" class="tw:text-ui-xs tw:font-semibold text-end">{{ __('local_invoice.labels.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($recentClaims as $c)
                         <tr>
                             <td>
-                                <strong class="tw-font-mono tw-text-on-surface">{{ $c->claim_number }}</strong>
+                                <strong class="tw:font-mono tw:text-on-surface">{{ $c->claim_number }}</strong>
                             </td>
                             <td>
-                                <strong class="tw-text-on-surface">{{ $c->employee?->name }}</strong>
-                                <span class="tw-block tw-text-ui-xs tw-text-on-surface-variant">{{ $c->employee?->department }}</span>
+                                <strong class="tw:text-on-surface">{{ $c->employee?->name }}</strong>
+                                <span class="tw:block tw:text-ui-xs tw:text-on-surface-variant">{{ $c->employee?->department }}</span>
                             </td>
                             <td>
-                                <span class="tw-inline-flex tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold tw-bg-primary/10 tw-text-primary">
+                                <span class="tw:inline-flex tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-semibold tw:bg-primary/10 tw:text-primary">
                                     {{ \App\Models\GaClaim::claimTypeLabel($c->claim_type) }}
                                 </span>
                             </td>
                             <td>{{ $c->claim_date ? $regionalFormatter->date($c->claim_date, 'human') : '' }}</td>
-                            <td class="text-end tw-font-mono tw-font-bold tw-text-on-surface">
+                            <td class="text-end tw:font-mono tw:font-bold tw:text-on-surface">
                                 Rp {{ $regionalFormatter->number(number_format($c->amount, 0, ',', '.'), 'indonesian') }}
                             </td>
                             <td>
@@ -118,7 +118,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="text-center tw-py-8 tw-text-on-surface-variant tw-text-ui-sm">
+                            <td colspan="7" class="text-center tw:py-8 tw:text-on-surface-variant tw:text-ui-sm">
                                 {{ __('ga.list.empty_recent') }}
                             </td>
                         </tr>

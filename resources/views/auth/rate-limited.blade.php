@@ -10,25 +10,25 @@
 @endphp
 
 <div aria-labelledby="rate-limit-title">
-    <header class="tw-mb-5">
-        <p class="tw-m-0 tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-error">{{ __('auth.rate_limit.request_limited') }}</p>
-        <h1 id="rate-limit-title" class="tw-m-0 tw-mt-1.5 tw-text-ui-xl tw-font-bold tw-tracking-tight tw-text-on-surface">{{ __('auth.rate_limit.wait') }}</h1>
-        <p class="tw-m-0 tw-mt-1.5 tw-text-ui-sm tw-text-on-surface-variant">{{ __('auth.rate_limit.help') }}</p>
+    <header class="tw:mb-5">
+        <p class="tw:m-0 tw:text-ui-xs tw:font-semibold tw:uppercase tw:tracking-wider tw:text-error">{{ __('auth.rate_limit.request_limited') }}</p>
+        <h1 id="rate-limit-title" class="tw:m-0 tw:mt-1.5 tw:text-ui-xl tw:font-bold tw:tracking-tight tw:text-on-surface">{{ __('auth.rate_limit.wait') }}</h1>
+        <p class="tw:m-0 tw:mt-1.5 tw:text-ui-sm tw:text-on-surface-variant">{{ __('auth.rate_limit.help') }}</p>
     </header>
 
-    <x-ui.alert tone="warning" class="tw-mb-4">
+    <x-ui.alert tone="warning" class="tw:mb-4">
         {{ __('auth.feedback.wait_before') }} <strong id="retry-countdown" data-seconds="{{ $retryAfter }}">{{ $waitLabel }}</strong> {{ __('auth.feedback.wait_after') }}
     </x-ui.alert>
 
-    <div class="tw-grid tw-grid-cols-1 tw-gap-3 md:tw-grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)]">
-        <button type="button" id="go-back" class="ui-focus-ring ui-motion tw-flex tw-h-11 tw-w-full tw-items-center tw-justify-center tw-gap-2 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-px-3 tw-text-ui-sm tw-font-semibold tw-text-on-surface hover:tw-bg-surface-container">
-            <x-ui.icon name="arrow-left" size="sm" /> <span class="tw-whitespace-nowrap">{{ __('common.actions.back') }}</span>
+    <div class="tw:grid tw:grid-cols-1 tw:gap-3 tw:md:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)]">
+        <button type="button" id="go-back" class="ui-focus-ring ui-motion tw:flex tw:h-11 tw:w-full tw:items-center tw:justify-center tw:gap-2 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:px-3 tw:text-ui-sm tw:font-semibold tw:text-on-surface tw:hover:bg-surface-container">
+            <x-ui.icon name="arrow-left" size="sm" /> <span class="tw:whitespace-nowrap">{{ __('common.actions.back') }}</span>
         </button>
-        <a href="{{ $returnUrl }}" class="ui-focus-ring ui-motion tw-flex tw-h-11 tw-w-full tw-items-center tw-justify-center tw-gap-2 tw-rounded-ui-sm tw-border-0 tw-bg-primary tw-px-3 tw-text-ui-sm tw-font-semibold tw-text-primary-foreground tw-no-underline hover:tw-brightness-95">
-            <span class="tw-whitespace-nowrap">{{ $returnLabel }}</span>
+        <a href="{{ $returnUrl }}" class="ui-focus-ring ui-motion tw:flex tw:h-11 tw:w-full tw:items-center tw:justify-center tw:gap-2 tw:rounded-ui-sm tw:border-0 tw:bg-primary tw:px-3 tw:text-ui-sm tw:font-semibold tw:text-primary-foreground tw:no-underline tw:hover:brightness-95">
+            <span class="tw:whitespace-nowrap">{{ $returnLabel }}</span>
         </a>
     </div>
-    <p class="tw-m-0 tw-mt-4 tw-text-center tw-text-ui-xs tw-text-on-surface-variant">{{ __('auth.rate_limit.support') }}</p>
+    <p class="tw:m-0 tw:mt-4 tw:text-center tw:text-ui-xs tw:text-on-surface-variant">{{ __('auth.rate_limit.support') }}</p>
 </div>
 @endsection
 

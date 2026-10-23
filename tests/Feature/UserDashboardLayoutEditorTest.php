@@ -95,7 +95,7 @@ class UserDashboardLayoutEditorTest extends TestCase
         ]);
 
         $html = $this->actingAs($admin)->get(route('admin.dashboard'))->assertOk()->getContent();
-        $this->assertMatchesRegularExpression('/<div class="tw-min-w-0 lg:tw-col-span-12" data-dashboard-placeholder="admin\.notifications" hidden>/', $html);
+        $this->assertMatchesRegularExpression('/<div class="tw:min-w-0 tw:lg:col-span-12" data-dashboard-placeholder="admin\.notifications" hidden>/', $html);
         $this->assertMatchesRegularExpression('/<button type="button"[^>]*data-editor-enter hidden>/s', $html, 'the button stays hidden until the script boots');
     }
 
@@ -113,9 +113,9 @@ class UserDashboardLayoutEditorTest extends TestCase
             $response->assertSee($contract, false);
         }
 
-        $this->assertMatchesRegularExpression('/<li class="tw-col-span-12 [^"]*" data-dashboard-choice data-widget-key="admin\.summary"/', $html);
-        $this->assertMatchesRegularExpression('/<li class="tw-col-span-8 [^"]*" data-dashboard-choice data-widget-key="admin\.rates"/', $html);
-        $this->assertMatchesRegularExpression('/<li class="tw-col-span-4 [^"]*" data-dashboard-choice data-widget-key="admin\.shortcuts"/', $html);
+        $this->assertMatchesRegularExpression('/<li class="tw:col-span-12 [^"]*" data-dashboard-choice data-widget-key="admin\.summary"/', $html);
+        $this->assertMatchesRegularExpression('/<li class="tw:col-span-8 [^"]*" data-dashboard-choice data-widget-key="admin\.rates"/', $html);
+        $this->assertMatchesRegularExpression('/<li class="tw:col-span-4 [^"]*" data-dashboard-choice data-widget-key="admin\.shortcuts"/', $html);
         $this->assertSame(4, substr_count($html, 'data-dashboard-move="up"'), 'every tile, required or not, can be moved without dragging');
         $response->assertSee('data-widget-skeleton="table"', false)->assertSee('data-widget-skeleton="list"', false);
     }
@@ -130,8 +130,8 @@ class UserDashboardLayoutEditorTest extends TestCase
 
         $html = $this->actingAs($admin)->get(route('profile.customization'))->assertOk()->getContent();
 
-        $this->assertMatchesRegularExpression('/<li class="tw-col-span-12 [^"]*" data-dashboard-choice data-widget-key="admin\.rates"/', $html);
-        $this->assertMatchesRegularExpression('/<li class="tw-col-span-4 [^"]*tw-border-dashed tw-opacity-70" data-dashboard-choice data-widget-key="admin\.shortcuts"/', $html);
+        $this->assertMatchesRegularExpression('/<li class="tw:col-span-12 [^"]*" data-dashboard-choice data-widget-key="admin\.rates"/', $html);
+        $this->assertMatchesRegularExpression('/<li class="tw:col-span-4 [^"]*tw:border-dashed tw:opacity-70" data-dashboard-choice data-widget-key="admin\.shortcuts"/', $html);
     }
 
     public function test_customization_offers_to_edit_on_the_dashboard_only_to_users_who_have_one(): void

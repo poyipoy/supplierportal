@@ -45,7 +45,7 @@ class ShipmentController extends Controller
                 ->addColumn('consolidated_pos', function ($shp) {
                     $pos = $shp->purchaseOrders();
                     if ($pos->isEmpty()) {
-                        return '<span class="tw-text-outline">-</span>';
+                        return '<span class="tw:text-outline">-</span>';
                     }
 
                     return $pos->map(fn ($po) => '<span class="ui-status-chip ui-status-chip--neutral me-1">'.e($po->po_number).'</span>')->implode('');
@@ -76,7 +76,7 @@ class ShipmentController extends Controller
                         return '<span class="ui-tabular-nums text-success fw-semibold">'.e($regionalFormatter->date($shp->actual_arrival_date, 'human')).'</span>';
                     }
 
-                    return '<span class="tw-text-outline">-</span>';
+                    return '<span class="tw:text-outline">-</span>';
                 })
                 ->addColumn('status_badge', function ($shp) {
                     return StatusHelper::badge(

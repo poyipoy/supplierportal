@@ -412,7 +412,7 @@ class LocalPoPrReferenceTest extends TestCase
         $this->actingAs($this->supplier)->getJson(route('local-supplier.purchase-orders.search', ['q' => '0']))
             ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.pr_number', '0');
         $response = $this->get(route('local-supplier.purchase-orders.show', $po))->assertOk();
-        $this->assertMatchesRegularExpression('/class="[^"]*tw-font-mono[^\"]*"[^>]*>\s*0\s*<\/span>/', $response->getContent());
+        $this->assertMatchesRegularExpression('/class="[^"]*tw:font-mono[^\"]*"[^>]*>\s*0\s*<\/span>/', $response->getContent());
         $this->get(route('local-supplier.invoices.create'))->assertOk()->assertSee(__('local_procurement.pr.label').': 0');
     }
 

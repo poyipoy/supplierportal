@@ -5,7 +5,7 @@
 
 @section('content')
 <x-account.shell active="security">
-    <div class="tw-grid tw-gap-6">
+    <div class="tw:grid tw:gap-6">
         @if($user->must_change_password)
             <div class="alert alert-warning" role="alert">{{ __('finance_controls.password_required') }}</div>
         @endif
@@ -14,38 +14,38 @@
             :description="__('security.description')"
         />
 
-        <section class="tw-border tw-border-outline tw-bg-surface" aria-labelledby="security-password-title">
-            <header class="tw-border-b tw-border-outline-variant tw-bg-surface-container tw-px-5 tw-py-4">
-                <h2 id="security-password-title" class="tw-m-0 tw-text-ui-sm tw-font-semibold">{{ __('security.change_password') }}</h2>
+        <section class="tw:border tw:border-outline tw:bg-surface" aria-labelledby="security-password-title">
+            <header class="tw:border-b tw:border-outline-variant tw:bg-surface-container tw:px-5 tw:py-4">
+                <h2 id="security-password-title" class="tw:m-0 tw:text-ui-sm tw:font-semibold">{{ __('security.change_password') }}</h2>
             </header>
-            <div class="tw-p-5">
+            <div class="tw:p-5">
                 @include('profile.partials.update-password-form')
             </div>
         </section>
 
-        <section class="tw-border tw-border-outline tw-bg-surface" aria-labelledby="security-two-factor-title">
-            <header class="tw-border-b tw-border-outline-variant tw-bg-surface-container tw-px-5 tw-py-4">
-                <h2 id="security-two-factor-title" class="tw-m-0 tw-text-ui-sm tw-font-semibold">{{ __('security.two_factor') }}</h2>
+        <section class="tw:border tw:border-outline tw:bg-surface" aria-labelledby="security-two-factor-title">
+            <header class="tw:border-b tw:border-outline-variant tw:bg-surface-container tw:px-5 tw:py-4">
+                <h2 id="security-two-factor-title" class="tw:m-0 tw:text-ui-sm tw:font-semibold">{{ __('security.two_factor') }}</h2>
             </header>
-            <div class="tw-p-5">
+            <div class="tw:p-5">
                 @include('profile.partials.two-factor-authentication-form')
             </div>
         </section>
 
-        <section class="tw-border tw-border-outline tw-bg-surface" aria-labelledby="security-active-sessions-title">
-            <header class="tw-border-b tw-border-outline-variant tw-bg-surface-container tw-px-5 tw-py-4">
-                <h2 id="security-active-sessions-title" class="tw-m-0 tw-text-ui-sm tw-font-semibold">{{ __('security.active_sessions') }}</h2>
+        <section class="tw:border tw:border-outline tw:bg-surface" aria-labelledby="security-active-sessions-title">
+            <header class="tw:border-b tw:border-outline-variant tw:bg-surface-container tw:px-5 tw:py-4">
+                <h2 id="security-active-sessions-title" class="tw:m-0 tw:text-ui-sm tw:font-semibold">{{ __('security.active_sessions') }}</h2>
             </header>
-            <div class="tw-p-5">
+            <div class="tw:p-5">
                 @include('profile.partials.active-sessions')
             </div>
         </section>
 
-        <section class="tw-border tw-border-outline tw-bg-surface" aria-labelledby="security-logout-other-devices-title">
-            <header class="tw-border-b tw-border-outline-variant tw-bg-surface-container tw-px-5 tw-py-4">
-                <h2 id="security-logout-other-devices-title" class="tw-m-0 tw-text-ui-sm tw-font-semibold">{{ __('security.logout_devices') }}</h2>
+        <section class="tw:border tw:border-outline tw:bg-surface" aria-labelledby="security-logout-other-devices-title">
+            <header class="tw:border-b tw:border-outline-variant tw:bg-surface-container tw:px-5 tw:py-4">
+                <h2 id="security-logout-other-devices-title" class="tw:m-0 tw:text-ui-sm tw:font-semibold">{{ __('security.logout_devices') }}</h2>
             </header>
-            <div class="tw-p-5">
+            <div class="tw:p-5">
                 @include('profile.partials.logout-other-devices-form')
             </div>
         </section>

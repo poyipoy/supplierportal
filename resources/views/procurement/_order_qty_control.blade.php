@@ -23,8 +23,8 @@
     $specErrorKey = "accept_spec.{$prItemId}";
     $delta = is_numeric($default) ? (int) $default - $requested : null;
 @endphp
-<div class="tw-mt-2 tw-grid tw-gap-1 text-start" data-order-qty-control data-pr-item-id="{{ $prItemId }}" data-requested="{{ $requested }}" @if($disabled) hidden @endif>
-    <label for="{{ $inputId }}" class="tw-text-ui-xs tw-font-semibold tw-text-on-surface">{{ __('procurement.ordered_quantity.order_qty') }}</label>
+<div class="tw:mt-2 tw:grid tw:gap-1 text-start" data-order-qty-control data-pr-item-id="{{ $prItemId }}" data-requested="{{ $requested }}" @if($disabled) hidden @endif>
+    <label for="{{ $inputId }}" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface">{{ __('procurement.ordered_quantity.order_qty') }}</label>
     <input
         type="number"
         id="{{ $inputId }}"
@@ -40,7 +40,7 @@
         aria-describedby="{{ $hintId }}"
         data-order-qty-input
     >
-    <div id="{{ $hintId }}" class="tw-text-ui-xs tw-text-on-surface-variant ui-tabular-nums" data-order-qty-hint
+    <div id="{{ $hintId }}" class="tw:text-ui-xs tw:text-on-surface-variant ui-tabular-nums" data-order-qty-hint
          data-template="{{ __('procurement.ordered_quantity.order_qty_hint', ['requested' => $requested, 'offered' => $offered, 'delta' => '__DELTA__']) }}">
         {{ __('procurement.ordered_quantity.order_qty_hint', ['requested' => $requested, 'offered' => $offered, 'delta' => $delta === null ? '—' : ($delta > 0 ? '+'.$delta : (string) $delta)]) }}
     </div>
@@ -48,12 +48,12 @@
 
     @if($specDifferent)
         <input type="hidden" name="accept_spec[{{ $prItemId }}]" value="0" @if($disabled) disabled @endif>
-        <div class="form-check tw-mt-1">
+        <div class="form-check tw:mt-1">
             <input type="checkbox" class="form-check-input @error($specErrorKey) is-invalid @enderror" id="acceptSpec{{ $idSuffix }}"
                    name="accept_spec[{{ $prItemId }}]" value="1" @checked(old("accept_spec.{$prItemId}", $specAccepted)) @if($disabled) disabled @endif data-accept-spec-input>
-            <label class="form-check-label tw-text-ui-xs" for="acceptSpec{{ $idSuffix }}">
+            <label class="form-check-label tw:text-ui-xs" for="acceptSpec{{ $idSuffix }}">
                 {{ __('procurement.ordered_quantity.accept_spec') }}
-                <span class="d-block tw-text-on-surface-variant">{{ __('procurement.ordered_quantity.accept_spec_detail', ['requested' => $requestedSpec ?? '—', 'offered' => $offeredSpec ?? '—']) }}</span>
+                <span class="d-block tw:text-on-surface-variant">{{ __('procurement.ordered_quantity.accept_spec_detail', ['requested' => $requestedSpec ?? '—', 'offered' => $offeredSpec ?? '—']) }}</span>
             </label>
             @error($specErrorKey)<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
         </div>

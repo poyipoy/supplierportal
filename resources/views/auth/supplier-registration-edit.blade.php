@@ -39,27 +39,27 @@
     }
 </style>
 
-<header class="tw-mb-4">
-    <div class="tw-flex tw-items-center tw-justify-between">
+<header class="tw:mb-4">
+    <div class="tw:flex tw:items-center tw:justify-between">
         <div>
-            <p class="tw-m-0 tw-text-ui-xs tw-font-semibold tw-uppercase tw-tracking-wider tw-text-primary">{{ __('registration.onboarding') }}</p>
-            <h2 class="tw-m-0 tw-mt-1 tw-text-ui-xl tw-font-bold tw-tracking-tight tw-text-on-surface">{{ __('registration.revise') }}</h2>
+            <p class="tw:m-0 tw:text-ui-xs tw:font-semibold tw:uppercase tw:tracking-wider tw:text-primary">{{ __('registration.onboarding') }}</p>
+            <h2 class="tw:m-0 tw:mt-1 tw:text-ui-xl tw:font-bold tw:tracking-tight tw:text-on-surface">{{ __('registration.revise') }}</h2>
         </div>
-        <a href="{{ route('supplier.registration.status') }}" class="ui-focus-ring tw-inline-flex tw-items-center tw-gap-1 tw-px-3 tw-py-1.5 tw-rounded-ui-xs tw-border tw-border-outline-variant tw-bg-surface tw-text-ui-xs tw-font-medium tw-text-on-surface hover:tw-bg-surface-container tw-no-underline">
+        <a href="{{ route('supplier.registration.status') }}" class="ui-focus-ring tw:inline-flex tw:items-center tw:gap-1 tw:px-3 tw:py-1.5 tw:rounded-ui-xs tw:border tw:border-outline-variant tw:bg-surface tw:text-ui-xs tw:font-medium tw:text-on-surface tw:hover:bg-surface-container tw:no-underline">
             <x-ui.icon name="arrow-left" size="xs" />
             <span>{{ __('registration.back_status') }}</span>
         </a>
     </div>
-    <p class="tw-m-0 tw-mt-1 tw-text-ui-sm tw-text-on-surface-variant">{{ __('registration.revise_help') }}</p>
+    <p class="tw:m-0 tw:mt-1 tw:text-ui-sm tw:text-on-surface-variant">{{ __('registration.revise_help') }}</p>
 </header>
 
 {{-- REVIEWER REVISION REASON ALERT --}}
-<div class="tw-rounded-ui-sm tw-border tw-border-info/30 tw-bg-info/10 tw-p-4 tw-mb-5">
-    <div class="tw-flex tw-items-start tw-gap-3">
-        <x-ui.icon name="alert-circle" size="md" class="tw-text-info tw-shrink-0 tw-mt-0.5" />
+<div class="tw:rounded-ui-sm tw:border tw:border-info/30 tw:bg-info/10 tw:p-4 tw:mb-5">
+    <div class="tw:flex tw:items-start tw:gap-3">
+        <x-ui.icon name="alert-circle" size="md" class="tw:text-info tw:shrink-0 tw:mt-0.5" />
         <div>
-            <h3 class="tw-m-0 tw-text-ui-sm tw-font-bold tw-text-on-surface">{{ __('registration.reviewer_request') }}</h3>
-            <p class="tw-m-0 tw-mt-1 tw-text-ui-sm tw-text-on-surface tw-whitespace-pre-line">{{ $attempt->reviewer_notes ?: __('auth.feedback.registration_update') }}</p>
+            <h3 class="tw:m-0 tw:text-ui-sm tw:font-bold tw:text-on-surface">{{ __('registration.reviewer_request') }}</h3>
+            <p class="tw:m-0 tw:mt-1 tw:text-ui-sm tw:text-on-surface tw:whitespace-pre-line">{{ $attempt->reviewer_notes ?: __('auth.feedback.registration_update') }}</p>
         </div>
     </div>
 </div>
@@ -72,16 +72,16 @@
 @endphp
 
 @if ($errors->any())
-    <div class="tw-rounded-ui-sm tw-border tw-border-error/40 tw-bg-error-container tw-p-3.5 tw-text-on-error-container tw-mb-4" role="alert" tabindex="-1" data-error-summary="supplierRegistrationReviseForm">
-        <div class="tw-flex tw-items-center tw-gap-2 tw-font-semibold tw-text-ui-sm">
+    <div class="tw:rounded-ui-sm tw:border tw:border-error/40 tw:bg-error-container tw:p-3.5 tw:text-on-error-container tw:mb-4" role="alert" tabindex="-1" data-error-summary="supplierRegistrationReviseForm">
+        <div class="tw:flex tw:items-center tw:gap-2 tw:font-semibold tw:text-ui-sm">
             <x-ui.icon name="alert-triangle" size="sm" />
             <span>{{ __('registration.correct_errors') }}</span>
         </div>
-        <p class="tw-m-0 tw-mt-0.5 tw-text-ui-xs">{{ __('registration.errors_jump_help') }}</p>
-        <ul class="tw-m-0 tw-mt-2 tw-ps-5 tw-text-ui-xs tw-space-y-1">
+        <p class="tw:m-0 tw:mt-0.5 tw:text-ui-xs">{{ __('registration.errors_jump_help') }}</p>
+        <ul class="tw:m-0 tw:mt-2 tw:ps-5 tw:text-ui-xs tw:space-y-1">
             @foreach ($errors->messages() as $field => $messages)
                 <li>
-                    <button type="button" class="ui-focus-ring tw-border-0 tw-bg-transparent tw-p-0 tw-text-start tw-font-medium tw-text-on-error-container tw-underline tw-underline-offset-2" data-error-field="{{ $field }}">
+                    <button type="button" class="ui-focus-ring tw:border-0 tw:bg-transparent tw:p-0 tw:text-start tw:font-medium tw:text-on-error-container tw:underline tw:underline-offset-2" data-error-field="{{ $field }}">
                         {{ $messages[0] }}
                     </button>
                 </li>
@@ -90,27 +90,27 @@
     </div>
 @endif
 
-<form id="supplierRegistrationReviseForm" method="POST" action="{{ route('supplier.registration.resubmit') }}" enctype="multipart/form-data" class="tw-grid tw-gap-6" data-async-submit x-data="{ companyTitle: '{{ old('company_title', $supplier?->company_title ?? 'PT') }}', isOtherTitle: {{ in_array(old('company_title', $supplier?->company_title), ['PT', 'CV', 'UD', 'PD', 'VPD', 'Firma', 'Koperasi', 'Yayasan', 'Company']) ? 'false' : 'true' }}, isPkp: @js((bool) old('is_pkp', $supplier?->is_pkp)) }">
+<form id="supplierRegistrationReviseForm" method="POST" action="{{ route('supplier.registration.resubmit') }}" enctype="multipart/form-data" class="tw:grid tw:gap-6" data-async-submit x-data="{ companyTitle: '{{ old('company_title', $supplier?->company_title ?? 'PT') }}', isOtherTitle: {{ in_array(old('company_title', $supplier?->company_title), ['PT', 'CV', 'UD', 'PD', 'VPD', 'Firma', 'Koperasi', 'Yayasan', 'Company']) ? 'false' : 'true' }}, isPkp: @js((bool) old('is_pkp', $supplier?->is_pkp)) }">
     @csrf
 
     {{-- Async (file-preserving) validation summary is rendered here by async-form-submit.js --}}
     <div data-async-error-summary hidden></div>
 
     {{-- SECTION 1: COMPANY INFORMATION --}}
-    <div class="tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-4">
+    <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container-lowest tw:p-4">
         <div class="form-section-title">
             <x-ui.icon name="building-2" size="sm" />
             <span>{{ __('registration.steps.company_edit') }}</span>
         </div>
 
-        <div class="tw-grid tw-gap-4 md:tw-grid-cols-2 tw-items-start">
-            <div class="tw-grid tw-content-start tw-gap-1.5">
-                <label for="company_title_select" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.legal_form') }} <span class="tw-text-error">*</span></label>
+        <div class="tw:grid tw:gap-4 tw:md:grid-cols-2 tw:items-start">
+            <div class="tw:grid tw:content-start tw:gap-1.5">
+                <label for="company_title_select" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('registration.legal_form') }} <span class="tw:text-error">*</span></label>
                 <select
                     id="company_title_select"
                     x-model="companyTitle"
                     @change="isOtherTitle = (companyTitle === 'Other')"
-                    class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-px-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary tw-border-outline-variant"
+                    class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:px-3 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary tw:border-outline-variant"
                 >
                     <option value="PT">{{ __('registration.legal.pt') }}</option>
                     <option value="CV">{{ __('registration.legal.cv') }}</option>
@@ -126,101 +126,101 @@
                 <input type="hidden" name="company_title" :value="companyTitle">
             </div>
 
-            <div class="tw-grid tw-content-start tw-gap-1.5" x-show="isOtherTitle" style="display: none;">
-                <label for="custom_company_title" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.entity_title') }}</label>
+            <div class="tw:grid tw:content-start tw:gap-1.5" x-show="isOtherTitle" style="display: none;">
+                <label for="custom_company_title" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('registration.entity_title') }}</label>
                 <input
                     id="custom_company_title"
                     type="text"
                     name="custom_company_title"
-                    class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-px-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary tw-border-outline-variant"
+                    class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:px-3 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary tw:border-outline-variant"
                     placeholder="{{ __('registration.legal_example_edit') }}"
                     x-on:input="companyTitle = $el.value"
                     value="{{ old('custom_company_title', $supplier?->company_title) }}"
                 >
             </div>
 
-            <div class="tw-grid tw-content-start tw-gap-1.5" :class="isOtherTitle ? 'md:tw-col-span-2' : ''">
-                <label for="company_name" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.company') }} <span class="tw-text-error">*</span></label>
+            <div class="tw:grid tw:content-start tw:gap-1.5" :class="isOtherTitle ? 'tw:md:col-span-2' : ''">
+                <label for="company_name" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('registration.company') }} <span class="tw:text-error">*</span></label>
                 <input
                     id="company_name"
                     type="text"
                     name="company_name"
-                    class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-px-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary {{ $errors->has('company_name') ? 'tw-border-error' : 'tw-border-outline-variant' }}"
+                    class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:px-3 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary {{ $errors->has('company_name') ? 'tw:border-error' : 'tw:border-outline-variant' }}"
                     value="{{ old('company_name', $supplier?->company_name) }}"
                     required
                 >
-                @error('company_name')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
+                @error('company_name')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
             </div>
 
-            <div class="tw-grid tw-content-start tw-gap-1.5 md:tw-col-span-2">
-                <label for="address" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.address') }} <span class="tw-text-error">*</span></label>
+            <div class="tw:grid tw:content-start tw:gap-1.5 tw:md:col-span-2">
+                <label for="address" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('registration.address') }} <span class="tw:text-error">*</span></label>
                 <textarea
                     id="address"
                     name="address"
                     rows="3"
-                    class="ui-motion tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-p-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary {{ $errors->has('address') ? 'tw-border-error' : 'tw-border-outline-variant' }}"
+                    class="ui-motion tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:p-3 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary {{ $errors->has('address') ? 'tw:border-error' : 'tw:border-outline-variant' }}"
                     required
                 >{{ old('address', $supplier?->address) }}</textarea>
-                @error('address')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
+                @error('address')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
             </div>
 
-            <div class="tw-grid tw-content-start tw-gap-1.5">
-                <label for="phone" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.phone') }} <span class="tw-text-error">*</span></label>
+            <div class="tw:grid tw:content-start tw:gap-1.5">
+                <label for="phone" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('registration.phone') }} <span class="tw:text-error">*</span></label>
                 <input
                     id="phone"
                     type="text"
                     name="phone"
-                    class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-px-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary {{ $errors->has('phone') ? 'tw-border-error' : 'tw-border-outline-variant' }}"
+                    class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:px-3 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary {{ $errors->has('phone') ? 'tw:border-error' : 'tw:border-outline-variant' }}"
                     value="{{ old('phone', $supplier?->phone) }}"
                     required
                 >
-                @error('phone')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
+                @error('phone')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
             </div>
 
-            <div class="tw-grid tw-content-start tw-gap-1.5">
-                <label for="category" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.category') }}</label>
+            <div class="tw:grid tw:content-start tw:gap-1.5">
+                <label for="category" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('registration.category') }}</label>
                 <input
                     id="category"
                     type="text"
                     name="category"
-                    class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-px-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary tw-border-outline-variant"
+                    class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:px-3 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary tw:border-outline-variant"
                     value="{{ old('category', $supplier?->category) }}"
                 >
             </div>
 
-            <div class="tw-grid tw-content-start tw-gap-1.5 md:tw-col-span-2">
-                <label class="tw-flex tw-items-center tw-gap-2.5 tw-cursor-pointer" for="is_pkp">
-                    <input type="checkbox" name="is_pkp" id="is_pkp" value="1" x-model="isPkp" class="form-check-input tw-mt-0" {{ old('is_pkp', $supplier?->is_pkp) ? 'checked' : '' }}>
-                    <span class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.pkp_edit') }}</span>
+            <div class="tw:grid tw:content-start tw:gap-1.5 tw:md:col-span-2">
+                <label class="tw:flex tw:items-center tw:gap-2.5 tw:cursor-pointer" for="is_pkp">
+                    <input type="checkbox" name="is_pkp" id="is_pkp" value="1" x-model="isPkp" class="form-check-input tw:mt-0" {{ old('is_pkp', $supplier?->is_pkp) ? 'checked' : '' }}>
+                    <span class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('registration.pkp_edit') }}</span>
                 </label>
             </div>
         </div>
     </div>
 
     {{-- SECTION 2: QUALITY & COMPLIANCE QUESTIONNAIRE --}}
-    <div class="tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-4">
+    <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container-lowest tw:p-4">
         <div class="form-section-title">
             <x-ui.icon name="clipboard-check" size="sm" />
             <span>{{ __('registration.steps.questionnaire_edit') }}</span>
         </div>
-        <p class="tw-m-0 tw-mb-3 tw-text-ui-xs tw-text-on-surface-variant tw-text-pretty">{{ __('registration.questionnaire.help') }}</p>
+        <p class="tw:m-0 tw:mb-3 tw:text-ui-xs tw:text-on-surface-variant tw:text-pretty">{{ __('registration.questionnaire.help') }}</p>
 
-        <div class="tw-grid tw-gap-3">
+        <div class="tw:grid tw:gap-3">
             @foreach ($questionnaireKeys as $index => $questionKey)
-                <fieldset class="tw-m-0 tw-min-w-0 tw-rounded-ui-sm tw-border tw-bg-surface tw-px-4 tw-py-3 {{ $errors->has('questionnaire.'.$questionKey) ? 'tw-border-error' : 'tw-border-outline-variant' }}">
-                    <legend class="tw-float-left tw-m-0 tw-w-full tw-p-0 tw-text-ui-sm tw-font-medium tw-text-on-surface tw-text-pretty">
-                        <span class="tw-tabular-nums tw-text-on-surface-variant">{{ $index + 1 }}.</span>
+                <fieldset class="tw:m-0 tw:min-w-0 tw:rounded-ui-sm tw:border tw:bg-surface tw:px-4 tw:py-3 {{ $errors->has('questionnaire.'.$questionKey) ? 'tw:border-error' : 'tw:border-outline-variant' }}">
+                    <legend class="tw:float-left tw:m-0 tw:w-full tw:p-0 tw:text-ui-sm tw:font-medium tw:text-on-surface tw:text-pretty">
+                        <span class="tw:tabular-nums tw:text-on-surface-variant">{{ $index + 1 }}.</span>
                         {{ __('registration.questionnaire.questions.'.$questionKey) }}
-                        <span class="tw-text-error">*</span>
+                        <span class="tw:text-error">*</span>
                     </legend>
-                    <div class="tw-clear-both tw-mt-2 tw-flex tw-flex-wrap tw-gap-2">
+                    <div class="tw:clear-both tw:mt-2 tw:flex tw:flex-wrap tw:gap-2">
                         @foreach ([\App\Support\SupplierComplianceQuestionnaire::YES => __('registration.questionnaire.yes'), \App\Support\SupplierComplianceQuestionnaire::NO => __('registration.questionnaire.no')] as $answerValue => $answerLabel)
-                            <label class="tw-inline-flex tw-min-h-10 tw-cursor-pointer tw-items-center tw-gap-2 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-px-3.5 tw-text-ui-sm tw-text-on-surface hover:tw-bg-surface-container has-[:checked]:tw-border-primary has-[:checked]:tw-bg-primary/5 has-[:checked]:tw-font-semibold">
+                            <label class="tw:inline-flex tw:min-h-10 tw:cursor-pointer tw:items-center tw:gap-2 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:px-3.5 tw:text-ui-sm tw:text-on-surface tw:hover:bg-surface-container tw:has-[:checked]:border-primary tw:has-[:checked]:bg-primary/5 tw:has-[:checked]:font-semibold">
                                 <input
                                     type="radio"
                                     name="questionnaire[{{ $questionKey }}]"
                                     value="{{ $answerValue }}"
-                                    class="form-check-input tw-m-0 tw-h-4 tw-w-4"
+                                    class="form-check-input tw:m-0 tw:h-4 tw:w-4"
                                     @checked(($questionnaireAnswers[$questionKey] ?? null) === $answerValue)
                                     required
                                 >
@@ -228,103 +228,103 @@
                             </label>
                         @endforeach
                     </div>
-                    @error('questionnaire.'.$questionKey)<p class="tw-m-0 tw-mt-1.5 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
+                    @error('questionnaire.'.$questionKey)<p class="tw:m-0 tw:mt-1.5 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
                 </fieldset>
             @endforeach
         </div>
     </div>
 
     {{-- SECTION 3: TAX & LEGAL IDENTIFICATION --}}
-    <div class="tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-4">
+    <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container-lowest tw:p-4">
         <div class="form-section-title">
             <x-ui.icon name="file-badge" size="sm" />
             <span>{{ __('registration.steps.tax_edit') }}</span>
         </div>
 
-        <div class="reg-tax-grid tw-grid tw-gap-4 md:tw-grid-cols-2 tw-items-start">
-            <div class="reg-tax-col tw-grid tw-content-start tw-gap-1.5">
-                <div class="tw-flex tw-items-start tw-justify-between tw-gap-2 reg-tax-header-sync" style="min-height: 48px;">
-                    <label for="nib" class="tw-text-ui-sm tw-font-medium tw-text-on-surface" style="text-wrap: balance;">{{ __('registration.nib') }} <span class="tw-text-error">*</span></label>
+        <div class="reg-tax-grid tw:grid tw:gap-4 tw:md:grid-cols-2 tw:items-start">
+            <div class="reg-tax-col tw:grid tw:content-start tw:gap-1.5">
+                <div class="tw:flex tw:items-start tw:justify-between tw:gap-2 reg-tax-header-sync" style="min-height: 48px;">
+                    <label for="nib" class="tw:text-ui-sm tw:font-medium tw:text-on-surface" style="text-wrap: balance;">{{ __('registration.nib') }} <span class="tw:text-error">*</span></label>
                 </div>
                 <input
                     id="nib"
                     type="text"
                     name="nib"
-                    class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-px-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary {{ $errors->has('nib') ? 'tw-border-error' : 'tw-border-outline-variant' }}"
+                    class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:px-3 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary {{ $errors->has('nib') ? 'tw:border-error' : 'tw:border-outline-variant' }}"
                     value="{{ old('nib', $supplier?->nib) }}"
                     required
                 >
-                <div class="tw-min-h-0">
-                    @error('nib')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
+                <div class="tw:min-h-0">
+                    @error('nib')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
                 </div>
             </div>
 
-            <div class="reg-tax-col tw-grid tw-content-start tw-gap-1.5">
-                <div class="tw-flex tw-items-start tw-justify-between tw-gap-2 reg-tax-header-sync" style="min-height: 48px;">
-                    <label for="npwp" class="tw-text-ui-sm tw-font-medium tw-text-on-surface" style="text-wrap: balance;">{{ __('registration.npwp') }} <span class="tw-text-error">*</span></label>
+            <div class="reg-tax-col tw:grid tw:content-start tw:gap-1.5">
+                <div class="tw:flex tw:items-start tw:justify-between tw:gap-2 reg-tax-header-sync" style="min-height: 48px;">
+                    <label for="npwp" class="tw:text-ui-sm tw:font-medium tw:text-on-surface" style="text-wrap: balance;">{{ __('registration.npwp') }} <span class="tw:text-error">*</span></label>
                 </div>
                 <input
                     id="npwp"
                     type="text"
                     name="npwp"
-                    class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-px-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary {{ $errors->has('npwp') ? 'tw-border-error' : 'tw-border-outline-variant' }}"
+                    class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:px-3 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary {{ $errors->has('npwp') ? 'tw:border-error' : 'tw:border-outline-variant' }}"
                     value="{{ old('npwp', $supplier?->npwp) }}"
                     required
                 >
-                <div class="tw-min-h-0">
-                    @error('npwp')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
+                <div class="tw:min-h-0">
+                    @error('npwp')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
                 </div>
             </div>
         </div>
     </div>
 
     {{-- SECTION 3: PIC --}}
-    <div class="tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-4">
+    <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container-lowest tw:p-4">
         <div class="form-section-title">
             <x-ui.icon name="user" size="sm" />
             <span>{{ __('registration.steps.pic_edit') }}</span>
         </div>
 
-        <div class="tw-grid tw-gap-4 md:tw-grid-cols-3 tw-items-start">
-            <div class="tw-grid tw-content-start tw-gap-1.5">
-                <label for="pic_name" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.pic') }} <span class="tw-text-error">*</span></label>
+        <div class="tw:grid tw:gap-4 tw:md:grid-cols-3 tw:items-start">
+            <div class="tw:grid tw:content-start tw:gap-1.5">
+                <label for="pic_name" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('registration.pic') }} <span class="tw:text-error">*</span></label>
                 <input
                     id="pic_name"
                     type="text"
                     name="pic_name"
-                    class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-px-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary {{ $errors->has('pic_name') ? 'tw-border-error' : 'tw-border-outline-variant' }}"
+                    class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:px-3 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary {{ $errors->has('pic_name') ? 'tw:border-error' : 'tw:border-outline-variant' }}"
                     value="{{ old('pic_name', $supplier?->pic_name) }}"
                     required
                 >
-                @error('pic_name')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
+                @error('pic_name')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
             </div>
 
-            <div class="tw-grid tw-content-start tw-gap-1.5">
-                <label for="pic_email" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.pic_email') }} <span class="tw-text-error">*</span></label>
+            <div class="tw:grid tw:content-start tw:gap-1.5">
+                <label for="pic_email" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('registration.pic_email') }} <span class="tw:text-error">*</span></label>
                 <input
                     id="pic_email"
                     type="email"
                     name="pic_email"
-                    class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-px-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary {{ $errors->has('pic_email') ? 'tw-border-error' : 'tw-border-outline-variant' }}"
+                    class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:px-3 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary {{ $errors->has('pic_email') ? 'tw:border-error' : 'tw:border-outline-variant' }}"
                     value="{{ old('pic_email', $supplier?->pic_email) }}"
                     required
                 >
-                @error('pic_email')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
+                @error('pic_email')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
             </div>
 
-            <div class="tw-grid tw-content-start tw-gap-1.5">
-                <label for="pic_phone" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.pic_phone') }} <span class="tw-text-error">*</span></label>
+            <div class="tw:grid tw:content-start tw:gap-1.5">
+                <label for="pic_phone" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('registration.pic_phone') }} <span class="tw:text-error">*</span></label>
                 <input
                     id="pic_phone"
                     type="text"
                     name="pic_phone"
-                    class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-px-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary {{ $errors->has('pic_phone') ? 'tw-border-error' : 'tw-border-outline-variant' }}"
+                    class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:px-3 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary {{ $errors->has('pic_phone') ? 'tw:border-error' : 'tw:border-outline-variant' }}"
                     value="{{ old('pic_phone', $supplier?->pic_phone) }}"
                     required
                 >
-                @error('pic_phone')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
+                @error('pic_phone')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
             </div>
-                @error('pic_phone')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
+                @error('pic_phone')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
             </div>
         </div>
     </div>
@@ -348,14 +348,14 @@
             'searchKeywords' => 'lainnya other asing luar negeri manual',
         ];
     @endphp
-    <div class="tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-4">
+    <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container-lowest tw:p-4">
         <div class="form-section-title">
             <x-ui.icon name="credit-card" size="sm" />
             <span>{{ __('registration.steps.bank_edit') }}</span>
         </div>
 
         <div
-            class="tw-grid tw-gap-4 md:tw-grid-cols-3 tw-items-start"
+            class="tw:grid tw:gap-4 tw:md:grid-cols-3 tw:items-start"
             x-data="{
                 bankSelect: @js(old('bank_select', $initialBankSelect)),
                 otherBankName: @js(old('other_bank_name', $initialOtherBankName)),
@@ -372,7 +372,7 @@
                 }
             }"
         >
-            <div class="tw-grid tw-content-start tw-gap-1.5">
+            <div class="tw:grid tw:content-start tw:gap-1.5">
                 <input type="hidden" name="bank_name" :value="finalBankName">
                 <x-ui.searchable-select
                     name="bank_select"
@@ -389,47 +389,47 @@
                 />
             </div>
 
-            <div class="tw-grid tw-content-start tw-gap-1.5">
-                <label for="account_number" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.account_number') }} <span class="tw-text-error">*</span></label>
+            <div class="tw:grid tw:content-start tw:gap-1.5">
+                <label for="account_number" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('registration.account_number') }} <span class="tw:text-error">*</span></label>
                 <input
                     id="account_number"
                     type="text"
                     name="account_number"
-                    class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-px-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary {{ $errors->has('account_number') ? 'tw-border-error' : 'tw-border-outline-variant' }}"
+                    class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:px-3 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary {{ $errors->has('account_number') ? 'tw:border-error' : 'tw:border-outline-variant' }}"
                     value="{{ old('account_number', $bankAccount?->account_number) }}"
                     required
                 >
-                @error('account_number')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
+                @error('account_number')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
             </div>
 
-            <div class="tw-grid tw-content-start tw-gap-1.5">
-                <label for="account_holder_name" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.account_holder') }} <span class="tw-text-error">*</span></label>
+            <div class="tw:grid tw:content-start tw:gap-1.5">
+                <label for="account_holder_name" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('registration.account_holder') }} <span class="tw:text-error">*</span></label>
                 <input
                     id="account_holder_name"
                     type="text"
                     name="account_holder_name"
-                    class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-px-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary {{ $errors->has('account_holder_name') ? 'tw-border-error' : 'tw-border-outline-variant' }}"
+                    class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:px-3 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary {{ $errors->has('account_holder_name') ? 'tw:border-error' : 'tw:border-outline-variant' }}"
                     value="{{ old('account_holder_name', $bankAccount?->account_holder_name) }}"
                     required
                 >
-                @error('account_holder_name')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
+                @error('account_holder_name')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
             </div>
 
             {{-- Expandable Custom Bank Input with smooth transition --}}
             <div
                 x-show="bankSelect === 'OTHER'"
                 x-cloak
-                x-transition:enter="ui-motion tw-transition-all tw-ease-out tw-duration-200"
-                x-transition:enter-start="tw-opacity-0 tw--translate-y-2"
-                x-transition:enter-end="tw-opacity-100 tw-translate-y-0"
-                x-transition:leave="ui-motion tw-transition-all tw-ease-in tw-duration-150"
-                x-transition:leave-start="tw-opacity-100 tw-translate-y-0"
-                x-transition:leave-end="tw-opacity-0 tw--translate-y-2"
-                class="md:tw-col-span-3 tw-grid tw-content-start tw-gap-1.5 tw-p-3.5 tw-rounded-ui-sm tw-border tw-border-primary/25 tw-bg-primary/5"
+                x-transition:enter="ui-motion tw:transition-all tw:ease-out tw:duration-200"
+                x-transition:enter-start="tw:opacity-0 tw:-translate-y-2"
+                x-transition:enter-end="tw:opacity-100 tw:translate-y-0"
+                x-transition:leave="ui-motion tw:transition-all tw:ease-in tw:duration-150"
+                x-transition:leave-start="tw:opacity-100 tw:translate-y-0"
+                x-transition:leave-end="tw:opacity-0 tw:-translate-y-2"
+                class="tw:md:col-span-3 tw:grid tw:content-start tw:gap-1.5 tw:p-3.5 tw:rounded-ui-sm tw:border tw:border-primary/25 tw:bg-primary/5"
             >
-                <label for="other_bank_name" class="tw-text-ui-xs tw-font-semibold tw-text-primary tw-flex tw-items-center tw-gap-1.5">
+                <label for="other_bank_name" class="tw:text-ui-xs tw:font-semibold tw:text-primary tw:flex tw:items-center tw:gap-1.5">
                     <x-ui.icon name="landmark" size="xs" />
-                    <span>{{ __('registration.other_bank_edit') }} <span class="tw-text-error">*</span></span>
+                    <span>{{ __('registration.other_bank_edit') }} <span class="tw:text-error">*</span></span>
                 </label>
                 <input
                     id="other_bank_name"
@@ -437,11 +437,11 @@
                     x-ref="otherBankInput"
                     type="text"
                     x-model="otherBankName"
-                    class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-px-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary {{ $errors->has('bank_name') ? 'tw-border-error' : 'tw-border-outline-variant' }}"
+                    class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:px-3 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary {{ $errors->has('bank_name') ? 'tw:border-error' : 'tw:border-outline-variant' }}"
                     placeholder="{{ __('registration.bank_example_edit') }}"
                     :required="bankSelect === 'OTHER'"
                 >
-                <p class="tw-m-0 tw-text-[11px] tw-text-on-surface-variant">
+                <p class="tw:m-0 tw:text-[11px] tw:text-on-surface-variant">
                     {{ __('registration.other_bank_edit_help') }}
                 </p>
             </div>
@@ -449,94 +449,94 @@
     </div>
 
     {{-- SECTION 5: DOCUMENTS REPLACEMENT / UPLOAD --}}
-    <div class="tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-4">
+    <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container-lowest tw:p-4">
         <div class="form-section-title">
             <x-ui.icon name="file-text" size="sm" />
             <span>{{ __('registration.steps.doc_edit') }}</span>
         </div>
-        <p class="tw-m-0 tw-mb-3 tw-text-ui-xs tw-text-on-surface-variant">
+        <p class="tw:m-0 tw:mb-3 tw:text-ui-xs tw:text-on-surface-variant">
             {{ __('registration.new_files_help') }}
         </p>
 
-        <div class="tw-grid tw-gap-4 md:tw-grid-cols-2 tw-items-start">
+        <div class="tw:grid tw:gap-4 tw:md:grid-cols-2 tw:items-start">
             {{-- NIB File --}}
-            <div class="tw-grid tw-content-start tw-gap-1.5">
-                <div class="tw-flex tw-items-center tw-justify-between">
-                    <label for="nib_file" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.nib_file') }}</label>
+            <div class="tw:grid tw:content-start tw:gap-1.5">
+                <div class="tw:flex tw:items-center tw:justify-between">
+                    <label for="nib_file" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('registration.nib_file') }}</label>
                     @if (isset($documents['NIB']))
-                        <span class="tw-text-[11px] tw-text-success tw-font-semibold">{{ __('common.review.current_file') }} {{ $documents['NIB']->original_filename }}</span>
+                        <span class="tw:text-[11px] tw:text-success tw:font-semibold">{{ __('common.review.current_file') }} {{ $documents['NIB']->original_filename }}</span>
                     @endif
                 </div>
-                <input id="nib_file" type="file" name="nib_file" accept=".pdf,.jpg,.jpeg,.png" class="ui-motion tw-block tw-w-full tw-text-ui-xs tw-text-on-surface-variant file:tw-mr-3 file:tw-py-2 file:tw-px-3 file:tw-rounded-ui-xs file:tw-border-0 file:tw-text-ui-xs file:tw-font-semibold file:tw-bg-primary/10 file:tw-text-primary hover:file:tw-bg-primary/20">
-                @error('nib_file')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
+                <input id="nib_file" type="file" name="nib_file" accept=".pdf,.jpg,.jpeg,.png" class="ui-motion tw:block tw:w-full tw:text-ui-xs tw:text-on-surface-variant tw:file:mr-3 tw:file:py-2 tw:file:px-3 tw:file:rounded-ui-xs tw:file:border-0 tw:file:text-ui-xs tw:file:font-semibold tw:file:bg-primary/10 tw:file:text-primary tw:hover:file:bg-primary/20">
+                @error('nib_file')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
             </div>
 
             {{-- NPWP File --}}
-            <div class="tw-grid tw-content-start tw-gap-1.5">
-                <div class="tw-flex tw-items-center tw-justify-between">
-                    <label for="npwp_file" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.npwp_file') }}</label>
+            <div class="tw:grid tw:content-start tw:gap-1.5">
+                <div class="tw:flex tw:items-center tw:justify-between">
+                    <label for="npwp_file" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('registration.npwp_file') }}</label>
                     @if (isset($documents['NPWP']))
-                        <span class="tw-text-[11px] tw-text-success tw-font-semibold">{{ __('common.review.current_file') }} {{ $documents['NPWP']->original_filename }}</span>
+                        <span class="tw:text-[11px] tw:text-success tw:font-semibold">{{ __('common.review.current_file') }} {{ $documents['NPWP']->original_filename }}</span>
                     @endif
                 </div>
-                <input id="npwp_file" type="file" name="npwp_file" accept=".pdf,.jpg,.jpeg,.png" class="ui-motion tw-block tw-w-full tw-text-ui-xs tw-text-on-surface-variant file:tw-mr-3 file:tw-py-2 file:tw-px-3 file:tw-rounded-ui-xs file:tw-border-0 file:tw-text-ui-xs file:tw-font-semibold file:tw-bg-primary/10 file:tw-text-primary hover:file:tw-bg-primary/20">
-                @error('npwp_file')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
+                <input id="npwp_file" type="file" name="npwp_file" accept=".pdf,.jpg,.jpeg,.png" class="ui-motion tw:block tw:w-full tw:text-ui-xs tw:text-on-surface-variant tw:file:mr-3 tw:file:py-2 tw:file:px-3 tw:file:rounded-ui-xs tw:file:border-0 tw:file:text-ui-xs tw:file:font-semibold tw:file:bg-primary/10 tw:file:text-primary tw:hover:file:bg-primary/20">
+                @error('npwp_file')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
             </div>
 
             {{-- SKNR File --}}
-            <div class="tw-grid tw-content-start tw-gap-1.5 md:tw-col-span-2">
-                <div class="tw-flex tw-items-center tw-justify-between">
-                    <label for="sknr_file" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.sknr_file') }}</label>
+            <div class="tw:grid tw:content-start tw:gap-1.5 tw:md:col-span-2">
+                <div class="tw:flex tw:items-center tw:justify-between">
+                    <label for="sknr_file" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('registration.sknr_file') }}</label>
                     @if (isset($documents['SURAT_PERNYATAAN_REKENING']))
-                        <span class="tw-text-[11px] tw-text-success tw-font-semibold">{{ __('common.review.current_file') }} {{ $documents['SURAT_PERNYATAAN_REKENING']->original_filename }}</span>
+                        <span class="tw:text-[11px] tw:text-success tw:font-semibold">{{ __('common.review.current_file') }} {{ $documents['SURAT_PERNYATAAN_REKENING']->original_filename }}</span>
                     @endif
                 </div>
-                <input id="sknr_file" type="file" name="sknr_file" accept=".pdf,.jpg,.jpeg,.png" class="ui-motion tw-block tw-w-full tw-text-ui-xs tw-text-on-surface-variant file:tw-mr-3 file:tw-py-2 file:tw-px-3 file:tw-rounded-ui-xs file:tw-border-0 file:tw-text-ui-xs file:tw-font-semibold file:tw-bg-primary/10 file:tw-text-primary hover:file:tw-bg-primary/20">
-                @error('sknr_file')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
+                <input id="sknr_file" type="file" name="sknr_file" accept=".pdf,.jpg,.jpeg,.png" class="ui-motion tw:block tw:w-full tw:text-ui-xs tw:text-on-surface-variant tw:file:mr-3 tw:file:py-2 tw:file:px-3 tw:file:rounded-ui-xs tw:file:border-0 tw:file:text-ui-xs tw:file:font-semibold tw:file:bg-primary/10 tw:file:text-primary tw:hover:file:bg-primary/20">
+                @error('sknr_file')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
             </div>
 
             {{-- SPPKP File --}}
-            <div class="tw-grid tw-content-start tw-gap-1.5">
-                <div class="tw-flex tw-items-center tw-justify-between">
-                    <label for="sppkp_file" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.sppkp') }} <span x-text="isPkp ? @js(__('common.upload.required')) : @js(__('common.fields.optional'))"></span></label>
+            <div class="tw:grid tw:content-start tw:gap-1.5">
+                <div class="tw:flex tw:items-center tw:justify-between">
+                    <label for="sppkp_file" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('registration.sppkp') }} <span x-text="isPkp ? @js(__('common.upload.required')) : @js(__('common.fields.optional'))"></span></label>
                     @if ($hasReusableSppkp)
-                        <span class="tw-text-[11px] tw-text-success tw-font-semibold">{{ __('common.review.current_file') }} {{ $documents['SPPKP']->original_filename }}</span>
+                        <span class="tw:text-[11px] tw:text-success tw:font-semibold">{{ __('common.review.current_file') }} {{ $documents['SPPKP']->original_filename }}</span>
                     @endif
                 </div>
-                <input id="sppkp_file" type="file" name="sppkp_file" accept=".pdf,.jpg,.jpeg,.png" :required="isPkp && !@js($hasReusableSppkp)" :aria-required="isPkp" @required(old('is_pkp', $supplier?->is_pkp) && !$hasReusableSppkp) class="ui-motion tw-block tw-w-full tw-text-ui-xs tw-text-on-surface-variant file:tw-mr-3 file:tw-py-2 file:tw-px-3 file:tw-rounded-ui-xs file:tw-border-0 file:tw-text-ui-xs file:tw-font-semibold file:tw-bg-surface-container-high file:tw-text-on-surface hover:file:tw-bg-surface-container-highest">
-                <p class="tw-m-0 tw-text-ui-xs tw-text-on-surface-variant">{{ __('registration.sppkp_help') }}</p>
-                @error('sppkp_file')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
+                <input id="sppkp_file" type="file" name="sppkp_file" accept=".pdf,.jpg,.jpeg,.png" :required="isPkp && !@js($hasReusableSppkp)" :aria-required="isPkp" @required(old('is_pkp', $supplier?->is_pkp) && !$hasReusableSppkp) class="ui-motion tw:block tw:w-full tw:text-ui-xs tw:text-on-surface-variant tw:file:mr-3 tw:file:py-2 tw:file:px-3 tw:file:rounded-ui-xs tw:file:border-0 tw:file:text-ui-xs tw:file:font-semibold tw:file:bg-surface-container-high tw:file:text-on-surface tw:hover:file:bg-surface-container-highest">
+                <p class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ __('registration.sppkp_help') }}</p>
+                @error('sppkp_file')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
             </div>
 
             {{-- SKD File --}}
-            <div class="tw-grid tw-content-start tw-gap-1.5">
-                <div class="tw-flex tw-items-center tw-justify-between">
-                    <label for="skd_file" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.skd_optional') }}</label>
+            <div class="tw:grid tw:content-start tw:gap-1.5">
+                <div class="tw:flex tw:items-center tw:justify-between">
+                    <label for="skd_file" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('registration.skd_optional') }}</label>
                     @if (isset($documents['SKD']))
-                        <span class="tw-text-[11px] tw-text-success tw-font-semibold">{{ __('common.review.current_file') }} {{ $documents['SKD']->original_filename }}</span>
+                        <span class="tw:text-[11px] tw:text-success tw:font-semibold">{{ __('common.review.current_file') }} {{ $documents['SKD']->original_filename }}</span>
                     @endif
                 </div>
-                <input id="skd_file" type="file" name="skd_file" accept=".pdf,.jpg,.jpeg,.png" class="ui-motion tw-block tw-w-full tw-text-ui-xs tw-text-on-surface-variant file:tw-mr-3 file:tw-py-2 file:tw-px-3 file:tw-rounded-ui-xs file:tw-border-0 file:tw-text-ui-xs file:tw-font-semibold file:tw-bg-surface-container-high file:tw-text-on-surface hover:file:tw-bg-surface-container-highest">
-                @error('skd_file')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
+                <input id="skd_file" type="file" name="skd_file" accept=".pdf,.jpg,.jpeg,.png" class="ui-motion tw:block tw:w-full tw:text-ui-xs tw:text-on-surface-variant tw:file:mr-3 tw:file:py-2 tw:file:px-3 tw:file:rounded-ui-xs tw:file:border-0 tw:file:text-ui-xs tw:file:font-semibold tw:file:bg-surface-container-high tw:file:text-on-surface tw:hover:file:bg-surface-container-highest">
+                @error('skd_file')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
             </div>
 
             {{-- Company Profile File (optional, max 10 MB) --}}
-            <div class="tw-grid tw-content-start tw-gap-1.5 md:tw-col-span-2">
-                <div class="tw-flex tw-items-center tw-justify-between tw-gap-2">
-                    <label for="company_profile_file" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">{{ __('registration.company_profile_optional') }}</label>
+            <div class="tw:grid tw:content-start tw:gap-1.5 tw:md:col-span-2">
+                <div class="tw:flex tw:items-center tw:justify-between tw:gap-2">
+                    <label for="company_profile_file" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('registration.company_profile_optional') }}</label>
                     @if (isset($documents['COMPANY_PROFILE']))
-                        <span class="tw-min-w-0 tw-truncate tw-text-[11px] tw-text-success tw-font-semibold">{{ __('common.review.current_file') }} {{ $documents['COMPANY_PROFILE']->original_filename }}</span>
+                        <span class="tw:min-w-0 tw:truncate tw:text-[11px] tw:text-success tw:font-semibold">{{ __('common.review.current_file') }} {{ $documents['COMPANY_PROFILE']->original_filename }}</span>
                     @endif
                 </div>
-                <input id="company_profile_file" type="file" name="company_profile_file" accept=".pdf,.jpg,.jpeg,.png" aria-describedby="company_profile_file_help" class="ui-motion tw-block tw-w-full tw-text-ui-xs tw-text-on-surface-variant file:tw-mr-3 file:tw-py-2 file:tw-px-3 file:tw-rounded-ui-xs file:tw-border-0 file:tw-text-ui-xs file:tw-font-semibold file:tw-bg-surface-container-high file:tw-text-on-surface hover:file:tw-bg-surface-container-highest">
-                <p id="company_profile_file_help" class="tw-m-0 tw-text-[11px] tw-text-on-surface-variant">{{ __('registration.company_profile_help') }}</p>
-                @error('company_profile_file')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
+                <input id="company_profile_file" type="file" name="company_profile_file" accept=".pdf,.jpg,.jpeg,.png" aria-describedby="company_profile_file_help" class="ui-motion tw:block tw:w-full tw:text-ui-xs tw:text-on-surface-variant tw:file:mr-3 tw:file:py-2 tw:file:px-3 tw:file:rounded-ui-xs tw:file:border-0 tw:file:text-ui-xs tw:file:font-semibold tw:file:bg-surface-container-high tw:file:text-on-surface tw:hover:file:bg-surface-container-highest">
+                <p id="company_profile_file_help" class="tw:m-0 tw:text-[11px] tw:text-on-surface-variant">{{ __('registration.company_profile_help') }}</p>
+                @error('company_profile_file')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
             </div>
         </div>
     </div>
 
     {{-- SECTION 6: REVISION NOTES --}}
-    <div class="tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-4">
+    <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container-lowest tw:p-4">
         <div class="form-section-title">
             <x-ui.icon name="message-square" size="sm" />
             <span>{{ __('registration.steps.notes_edit') }}</span>
@@ -545,13 +545,13 @@
             id="revision_notes"
             name="revision_notes"
             rows="2"
-            class="ui-motion tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-p-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary tw-border-outline-variant"
+            class="ui-motion tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:p-3 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary tw:border-outline-variant"
             placeholder="{{ __('registration.revision_notes') }}"
         >{{ old('revision_notes') }}</textarea>
     </div>
 
     {{-- SUBMIT REVISED APPLICATION --}}
-    <button type="submit" class="ui-focus-ring ui-motion tw-flex tw-h-11 tw-w-full tw-items-center tw-justify-center tw-gap-2 tw-rounded-ui-sm tw-border-0 tw-bg-primary tw-text-ui-sm tw-font-semibold tw-text-primary-foreground hover:tw-brightness-95 active:tw-brightness-90">
+    <button type="submit" class="ui-focus-ring ui-motion tw:flex tw:h-11 tw:w-full tw:items-center tw:justify-center tw:gap-2 tw:rounded-ui-sm tw:border-0 tw:bg-primary tw:text-ui-sm tw:font-semibold tw:text-primary-foreground tw:hover:brightness-95 tw:active:brightness-90">
         <x-ui.icon name="send" size="sm" />
         <span>{{ __('registration.resubmit') }}</span>
     </button>

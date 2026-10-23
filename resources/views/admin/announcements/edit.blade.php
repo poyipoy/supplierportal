@@ -3,7 +3,7 @@
 @section('page-title', __('admin.copy.edit_announcement'))
 
 @section('content')
-<div class="tw-grid tw-gap-6 tw-pb-24">
+<div class="tw:grid tw:gap-6 tw:pb-24">
     <x-ui.breadcrumb :items="[__('purchasing.breadcrumbs.announcements') => route('admin.announcements.index'), $announcement->title => null]" />
 
     <x-ui.page-header
@@ -31,9 +31,9 @@
             :title="__('admin.copy.announcement_content_and_publication')"
             :description="__('admin.copy.revisions_to_published_announcements_will_take_effect_immediately_upon_saving')"
         >
-            <div class="tw-grid tw-gap-4">
+            <div class="tw:grid tw:gap-4">
                 <div>
-                    <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="annTitle">
+                    <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="annTitle">
                         {{ __('admin.copy.notice_title') }} <span class="text-danger">*</span>
                     </label>
                     <input
@@ -50,7 +50,7 @@
                 </div>
 
                 <div>
-                    <label class="form-label tw-text-ui-xs tw-font-semibold tw-text-on-surface" for="annContent">
+                    <label class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="annContent">
                         {{ __('admin.copy.announcement_body_description') }} <span class="text-danger">*</span>
                     </label>
                     <textarea
@@ -65,7 +65,7 @@
                     @enderror
                 </div>
 
-                <div class="tw-pt-2">
+                <div class="tw:pt-2">
                     <div class="form-check form-switch">
                         <input
                             class="form-check-input"
@@ -75,7 +75,7 @@
                             value="1"
                             {{ old('is_published', $announcement->published_at) ? 'checked' : '' }}
                         >
-                        <label class="form-check-label tw-text-ui-sm tw-font-medium tw-text-on-surface" for="is_published">
+                        <label class="form-check-label tw:text-ui-sm tw:font-medium tw:text-on-surface" for="is_published">
                             {{ __('admin.copy.published_visible_on_user_dashboards') }}
                         </label>
                     </div>
@@ -86,7 +86,7 @@
         {{-- Sticky Action Bar --}}
         <x-ui.action-bar>
             <x-slot:left>
-                <span class="tw-text-ui-xs tw-text-on-surface-variant">
+                <span class="tw:text-ui-xs tw:text-on-surface-variant">
                     {{ __('common.final_review.created_by_date', ['name' => $announcement->creator->name ?? __('admin.copy.admin'), 'date' => $regionalFormatter->timestamp($announcement->created_at, 'datetime_comma')]) }}
                 </span>
             </x-slot:left>

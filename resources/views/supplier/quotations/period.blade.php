@@ -5,7 +5,7 @@
 @section('page-title', __('supplier.titles.requisitions_page', ['period' => $period->display_label]))
 
 @section('content')
-<div class="tw-grid tw-gap-4">
+<div class="tw:grid tw:gap-4">
     {{-- Breadcrumb & Compact Page Header --}}
     <x-ui.breadcrumb :items="[
         __('purchasing.breadcrumbs.dashboard') => route('supplier.dashboard'),
@@ -35,11 +35,11 @@
         <x-slot:filters>
             <div class="row g-2 align-items-end">
                 <div class="col-md-5 col-lg-4">
-                    <label class="form-label small fw-semibold tw-text-on-surface mb-1" for="filter_pr_number">{{ __('supplier.copy.pr_number') }}</label>
+                    <label class="form-label small fw-semibold tw:text-on-surface mb-1" for="filter_pr_number">{{ __('supplier.copy.pr_number') }}</label>
                     <input type="text" id="filter_pr_number" class="form-control form-control-sm" placeholder="{{ __('supplier.copy.e_g_req_05_2026_001') }}">
                 </div>
                 <div class="col-md-4 col-lg-3">
-                    <label class="form-label small fw-semibold tw-text-on-surface mb-1" for="filter_status">{{ __('supplier.copy.my_quotation_status') }}</label>
+                    <label class="form-label small fw-semibold tw:text-on-surface mb-1" for="filter_status">{{ __('supplier.copy.my_quotation_status') }}</label>
                     <select id="filter_status" class="form-select form-select-sm">
                         <option value="">{{ __('supplier.copy.all_statuses') }}</option>
                         <option value="unresponded">{{ __('supplier.copy.awaiting_quotation') }}</option>
@@ -50,8 +50,8 @@
                         <option value="rejected">{{ __('supplier.copy.rejected') }}</option>
                     </select>
                 </div>
-                <div class="col-md-3 col-lg-2 d-flex tw-gap-1.5">
-                    <x-ui.button type="button" size="sm" class="tw-flex-1" id="applyFilter">
+                <div class="col-md-3 col-lg-2 d-flex tw:gap-1.5">
+                    <x-ui.button type="button" size="sm" class="tw:flex-1" id="applyFilter">
                         <x-ui.icon name="search" size="sm" class="me-1" />{{ __('supplier.copy.filter') }}
                     </x-ui.button>
                     <x-ui.icon-button icon="rotate-ccw" :label="__('supplier.copy.reset_filters')" variant="outline" size="sm" id="resetFilter" />
@@ -59,7 +59,7 @@
             </div>
         </x-slot:filters>
 
-        <table class="table table-hover align-middle mb-0 tw-text-ui-xs w-100" id="prTable">
+        <table class="table table-hover align-middle mb-0 tw:text-ui-xs w-100" id="prTable">
             <thead class="table-light">
                 <tr>
                     <th scope="col" style="width: 40px;">{{ __('supplier.copy.no') }}</th>
@@ -90,9 +90,9 @@
                 }
             },
             columns: [
-                { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-center tw-text-on-surface-variant' },
+                { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-center tw:text-on-surface-variant' },
                 { data: 'pr_number_display', name: 'pr_number', className: 'fw-bold text-primary' },
-                { data: 'updated_date', name: 'updated_at', className: 'ui-tabular-nums tw-text-on-surface-variant' },
+                { data: 'updated_date', name: 'updated_at', className: 'ui-tabular-nums tw:text-on-surface-variant' },
                 { data: 'item_count', name: 'item_count', orderable: false, searchable: false, className: 'text-center fw-medium ui-tabular-nums' },
                 { data: 'status_badge', name: 'status', searchable: false, className: 'text-center' },
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }

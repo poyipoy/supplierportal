@@ -259,9 +259,9 @@ export function customizationForm(config) {
                 if (!checkbox || !toggleWrap) return;
                 const fallback = row.querySelector('[data-dashboard-hide-fallback]');
                 const switchEl = toggleWrap.querySelector('input[type="checkbox"]');
-                fallback?.classList.add('tw-hidden');
-                toggleWrap.classList.remove('tw-hidden');
-                toggleWrap.classList.add('tw-flex');
+                fallback?.classList.add('tw:hidden');
+                toggleWrap.classList.remove('tw:hidden');
+                toggleWrap.classList.add('tw:flex');
                 switchEl.checked = !checkbox.checked;
             });
         },

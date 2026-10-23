@@ -3,7 +3,7 @@
 @section('page-title', __('finance.drp.supplier_heading'))
 
 @section('content')
-<div class="tw-grid tw-gap-6 tw-pb-16">
+<div class="tw:grid tw:gap-6 tw:pb-16">
     <x-ui.page-header
         :title="__('finance.drp.supplier_title')"
         :description="__('finance.drp_surface.supplier_help')"
@@ -26,10 +26,10 @@
         :title="__('finance.drp.create_supplier')"
         :description="__('common.final_review.ready_invoice_help')"
     >
-        <form method="GET" action="{{ route('finance.drp.supplier') }}" class="tw-mb-4 tw-flex tw-flex-wrap tw-items-end tw-gap-3">
+        <form method="GET" action="{{ route('finance.drp.supplier') }}" class="tw:mb-4 tw:flex tw:flex-wrap tw:items-end tw:gap-3">
             <input type="hidden" name="sort" value="{{ $candidateSort }}">
             <input type="hidden" name="direction" value="{{ $candidateDirection }}">
-            <div><label for="candidate_supplier" class="form-label tw-text-ui-xs">{{ __('finance.drp_surface.supplier_filter') }}</label><select id="candidate_supplier" name="supplier_id" class="form-select form-select-sm"><option value="">{{ __('finance.drp_surface.local_suppliers') }}</option>@foreach(($suppliers ?? []) as $supplier)<option value="{{ $supplier->hash }}" @selected($supplierFilter?->id === $supplier->id)>{{ $supplier->supplier?->company_name ?: $supplier->name }}</option>@endforeach</select></div>
+            <div><label for="candidate_supplier" class="form-label tw:text-ui-xs">{{ __('finance.drp_surface.supplier_filter') }}</label><select id="candidate_supplier" name="supplier_id" class="form-select form-select-sm"><option value="">{{ __('finance.drp_surface.local_suppliers') }}</option>@foreach(($suppliers ?? []) as $supplier)<option value="{{ $supplier->hash }}" @selected($supplierFilter?->id === $supplier->id)>{{ $supplier->supplier?->company_name ?: $supplier->name }}</option>@endforeach</select></div>
             <x-ui.date-range-picker id="candidate-due-range" start-name="due_date_from" end-name="due_date_to" :start-label="__('finance.candidates.due_from')" :end-label="__('finance.candidates.due_to')" :start-value="request('due_date_from')" :end-value="request('due_date_to')" :compact="true" />
             <x-ui.date-range-picker id="candidate-verification-range" start-name="verification_date_from" end-name="verification_date_to" :start-label="__('finance.candidates.verification_from')" :end-label="__('finance.candidates.verification_to')" :start-value="request('verification_date_from')" :end-value="request('verification_date_to')" :compact="true" />
             <x-ui.button type="submit" size="sm" variant="outline">{{ __('common.labels_review.filter') }}</x-ui.button>
@@ -37,25 +37,25 @@
         </form>
         <form method="POST" action="{{ route('finance.drp.supplier.create') }}">
             @csrf
-            <div class="tw-space-y-4">
+            <div class="tw:space-y-4">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle tw-m-0 tw-text-ui-sm w-100">
+                    <table class="table table-hover align-middle tw:m-0 tw:text-ui-sm w-100">
                         <thead class="table-light">
                             <tr>
                                 <th scope="col" style="width: 40px;">{{ __('common.actions.choose') }}</th>
-                                <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('finance.drp.payee_account') }}</th>
-                                <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('finance.drp_surface.invoice_po') }}</th>
+                                <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('finance.drp.payee_account') }}</th>
+                                <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('finance.drp_surface.invoice_po') }}</th>
                                 @foreach(['due_date' => __('local_invoice.labels.due_date'), 'verification_date' => __('finance.candidates.verification_date')] as $sortKey => $sortLabel)
-                                    <th scope="col" class="tw-text-ui-xs tw-font-semibold" aria-sort="{{ $candidateSort === $sortKey ? ($candidateDirection === 'asc' ? 'ascending' : 'descending') : 'none' }}">
-                                        <a class="tw-inline-flex tw-items-center tw-gap-1 tw-min-h-6" href="{{ route('finance.drp.supplier', array_merge(request()->except('candidate_page'), ['sort' => $sortKey, 'direction' => $candidateSort === $sortKey && $candidateDirection === 'asc' ? 'desc' : 'asc'])) }}">
+                                    <th scope="col" class="tw:text-ui-xs tw:font-semibold" aria-sort="{{ $candidateSort === $sortKey ? ($candidateDirection === 'asc' ? 'ascending' : 'descending') : 'none' }}">
+                                        <a class="tw:inline-flex tw:items-center tw:gap-1 tw:min-h-6" href="{{ route('finance.drp.supplier', array_merge(request()->except('candidate_page'), ['sort' => $sortKey, 'direction' => $candidateSort === $sortKey && $candidateDirection === 'asc' ? 'desc' : 'asc'])) }}">
                                             {{ $sortLabel }}
                                             @if($candidateSort === $sortKey)<x-ui.icon :name="$candidateDirection === 'asc' ? 'arrow-up' : 'arrow-down'" size="sm" />@endif
                                         </a>
                                     </th>
                                 @endforeach
-                                <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">{{ __('local_invoice.labels.dpp_amount') }}</th>
-                                <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">{{ __('finance.drp_ui.ppn_amount') }}</th>
-                                <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">{{ __('finance.drp.total_payment') }}</th>
+                                <th scope="col" class="tw:text-ui-xs tw:font-semibold text-end">{{ __('local_invoice.labels.dpp_amount') }}</th>
+                                <th scope="col" class="tw:text-ui-xs tw:font-semibold text-end">{{ __('finance.drp_ui.ppn_amount') }}</th>
+                                <th scope="col" class="tw:text-ui-xs tw:font-semibold text-end">{{ __('finance.drp.total_payment') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -69,30 +69,30 @@
                                         <input type="checkbox" name="invoice_ids[]" value="{{ $inv->id }}" class="form-check-input" aria-label="{{ __('finance.candidates.select_invoice', ['number' => $inv->invoice_number]) }}">
                                     </td>
                                     <td>
-                                        <strong class="tw-text-on-surface">{{ $inv->supplier->supplier?->company_name ?: $inv->supplier->name }}</strong>
-                                        <span class="tw-block tw-text-ui-xs tw-text-on-surface-variant">
+                                        <strong class="tw:text-on-surface">{{ $inv->supplier->supplier?->company_name ?: $inv->supplier->name }}</strong>
+                                        <span class="tw:block tw:text-ui-xs tw:text-on-surface-variant">
                                             {{ $bank ? __('finance.drp_ui.bank_details', ['bank' => $bank->bank_name, 'account' => $bank->account_number, 'holder' => $bank->account_holder_name]) : __('finance.drp_ui.no_active_bank_account') }}
                                         </span>
                                     </td>
                                     <td>
-                                        <span class="tw-font-medium">{{ $inv->invoice_number }}</span>
-                                        <span class="tw-block tw-text-ui-xs tw-text-on-surface-variant">{{ __('finance.drp_ui.po_reference', ['number' => $inv->po_number]) }}</span>
+                                        <span class="tw:font-medium">{{ $inv->invoice_number }}</span>
+                                        <span class="tw:block tw:text-ui-xs tw:text-on-surface-variant">{{ __('finance.drp_ui.po_reference', ['number' => $inv->po_number]) }}</span>
                                     </td>
                                     <td>
-                                        <span class="tw-text-ui-xs {{ $inv->isOverdue() ? 'tw-text-error tw-font-bold' : '' }}">
+                                        <span class="tw:text-ui-xs {{ $inv->isOverdue() ? 'tw:text-error tw:font-bold' : '' }}">
                                             {{ $regionalFormatter->date($inv->due_date, 'human') ?? '—' }}
                                         </span>
                                     </td>
-                                    <td class="tw-text-ui-xs">@bizdt($inv->ready_to_pay_at)</td>
-                                    <td class="text-end tw-font-mono">Rp {{ number_format($inv->invoice_amount, 0, ',', '.') }}</td>
-                                    <td class="text-end tw-font-mono">Rp {{ number_format($inv->tax_amount, 0, ',', '.') }}</td>
-                                    <td class="text-end tw-font-mono tw-font-bold tw-text-primary">
+                                    <td class="tw:text-ui-xs">@bizdt($inv->ready_to_pay_at)</td>
+                                    <td class="text-end tw:font-mono">Rp {{ number_format($inv->invoice_amount, 0, ',', '.') }}</td>
+                                    <td class="text-end tw:font-mono">Rp {{ number_format($inv->tax_amount, 0, ',', '.') }}</td>
+                                    <td class="text-end tw:font-mono tw:font-bold tw:text-primary">
                                         Rp {{ number_format($totalNominal, 0, ',', '.') }}
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="8" class="text-center tw-py-8 tw-text-on-surface-variant tw-text-ui-sm">
+                                    <td colspan="8" class="text-center tw:py-8 tw:text-on-surface-variant tw:text-ui-sm">
                                         {{ __('finance.drp.empty_supplier_candidates') }}
                                     </td>
                                 </tr>
@@ -103,8 +103,8 @@
                 {{ $eligibleInvoices->links() }}
 
                 @if($eligibleInvoices->isNotEmpty())
-                    <div class="tw-flex tw-flex-col sm:tw-flex-row sm:tw-items-center sm:tw-justify-between tw-gap-3 tw-border-t tw-border-outline-variant tw-pt-3">
-                        <div class="tw-flex-1">
+                    <div class="tw:flex tw:flex-col tw:sm:flex-row tw:sm:items-center tw:sm:justify-between tw:gap-3 tw:border-t tw:border-outline-variant tw:pt-3">
+                        <div class="tw:flex-1">
                             <input type="text" name="notes" class="form-control form-control-sm" aria-label="{{ __('common.final_review.batch_notes') }}" placeholder="{{ __('common.final_review.batch_notes') }}">
                         </div>
                         <x-ui.button type="submit" variant="primary" size="sm">
@@ -133,24 +133,24 @@
             >
                 <x-ui.icon name="download" size="sm" />
                 <span>{{ __('exports.actions.transfer') }}</span>
-                <span id="exportTransferCount" class="tw-hidden tw-ml-1.5 tw-inline-flex tw-items-center tw-justify-center tw-rounded-full tw-bg-white/20 tw-text-white tw-text-[10px] tw-font-bold tw-px-1.5 tw-py-0.5"></span>
+                <span id="exportTransferCount" class="tw:hidden tw:ml-1.5 tw:inline-flex tw:items-center tw:justify-center tw:rounded-full tw:bg-white/20 tw:text-white tw:text-[10px] tw:font-bold tw:px-1.5 tw:py-0.5"></span>
             </x-ui.button>
         </x-slot:toolbar>
 
         <div class="table-responsive">
-            <table class="table table-hover align-middle tw-m-0 tw-text-ui-sm w-100" id="drpBatchTable">
+            <table class="table table-hover align-middle tw:m-0 tw:text-ui-sm w-100" id="drpBatchTable">
                 <thead class="table-light">
                     <tr>
                         <th scope="col" style="width: 40px;">
                             <input type="checkbox" class="form-check-input" id="selectAllBatches" title="{{ __('finance.drp_surface.all_batches') }}">
                         </th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('finance.drp_surface.batch_number') }}</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('local_invoice.labels.date') }}</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('finance.drp.group_payee') }}</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">{{ __('finance.drp.total_amount_rp') }}</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">{{ __('finance.drp.total_fee_rp') }}</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold">{{ __('local_invoice.labels.status') }}</th>
-                        <th scope="col" class="tw-text-ui-xs tw-font-semibold text-end">{{ __('local_invoice.labels.actions') }}</th>
+                        <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('finance.drp_surface.batch_number') }}</th>
+                        <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.labels.date') }}</th>
+                        <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('finance.drp.group_payee') }}</th>
+                        <th scope="col" class="tw:text-ui-xs tw:font-semibold text-end">{{ __('finance.drp.total_amount_rp') }}</th>
+                        <th scope="col" class="tw:text-ui-xs tw:font-semibold text-end">{{ __('finance.drp.total_fee_rp') }}</th>
+                        <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.labels.status') }}</th>
+                        <th scope="col" class="tw:text-ui-xs tw:font-semibold text-end">{{ __('local_invoice.labels.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -162,14 +162,14 @@
                                 @endif
                             </td>
                             <td>
-                                <strong class="tw-font-mono tw-text-on-surface">{{ $batch->batch_number }}</strong>
+                                <strong class="tw:font-mono tw:text-on-surface">{{ $batch->batch_number }}</strong>
                             </td>
                             <td>{{ $regionalFormatter->date($batch->created_at, 'human') }}</td>
                             <td>{{ trans_choice('finance.copy_review.accounts_count', $batch->groups_count, ['count' => $batch->groups_count]) }}</td>
-                            <td class="text-end tw-font-mono tw-font-semibold">
+                            <td class="text-end tw:font-mono tw:font-semibold">
                                 Rp {{ number_format($batch->total_subtotal, 0, ',', '.') }}
                             </td>
-                            <td class="text-end tw-font-mono tw-text-on-surface-variant">
+                            <td class="text-end tw:font-mono tw:text-on-surface-variant">
                                 Rp {{ number_format($batch->total_bank_fee, 0, ',', '.') }}
                             </td>
                             <td>
@@ -186,7 +186,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="text-center tw-py-8 tw-text-on-surface-variant tw-text-ui-sm">
+                            <td colspan="8" class="text-center tw:py-8 tw:text-on-surface-variant tw:text-ui-sm">
                                 {{ __('finance.drp.empty_supplier') }}
                             </td>
                         </tr>
@@ -220,9 +220,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (count > 0) {
             countBadge.textContent = count;
-            countBadge.classList.remove('tw-hidden');
+            countBadge.classList.remove('tw:hidden');
         } else {
-            countBadge.classList.add('tw-hidden');
+            countBadge.classList.add('tw:hidden');
         }
 
         // Update select-all checkbox state

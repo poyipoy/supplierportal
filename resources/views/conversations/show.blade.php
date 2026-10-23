@@ -4,56 +4,56 @@
 
 @section('content')
     <div class="chat-fullpage-shell">
-    <div class="tw-mb-2">
+    <div class="tw:mb-2">
         @php
             $backRoute = auth()->user()->role === 'purchasing'
                 ? \App\Support\PurchasingNavigation::backUrl('purchasing.conversations.index')
                 : route('supplier.conversations.index');
         @endphp
-        <a href="{{ $backRoute }}" class="ui-focus-ring tw-inline-flex tw-items-center tw-gap-1.5 tw-rounded-ui-xs tw-text-ui-sm tw-font-medium tw-text-on-surface-variant tw-no-underline hover:tw-text-on-surface">
+        <a href="{{ $backRoute }}" class="ui-focus-ring tw:inline-flex tw:items-center tw:gap-1.5 tw:rounded-ui-xs tw:text-ui-sm tw:font-medium tw:text-on-surface-variant tw:no-underline tw:hover:text-on-surface">
             <x-ui.icon name="arrow-left" /> {{ __('purchasing.copy.back_to_chat_list') }}
         </a>
     </div>
 
     @isset($chatContext)
-        <div class="tw-border tw-border-outline tw-bg-surface-container tw-mb-2">
-            <div class="tw-flex tw-flex-wrap tw-items-start tw-justify-between tw-gap-3 tw-px-4 tw-py-3">
-                <div class="tw-min-w-0">
-                    <div class="tw-flex tw-items-center tw-gap-2 tw-mb-0.5">
+        <div class="tw:border tw:border-outline tw:bg-surface-container tw:mb-2">
+            <div class="tw:flex tw:flex-wrap tw:items-start tw:justify-between tw:gap-3 tw:px-4 tw:py-3">
+                <div class="tw:min-w-0">
+                    <div class="tw:flex tw:items-center tw:gap-2 tw:mb-0.5">
                         <x-ui.status-chip :tone="$chatContext['type'] === 'PO' ? 'success' : 'info'" size="sm">{{ $chatContext['type'] }}</x-ui.status-chip>
-                        <span class="tw-text-ui-sm tw-font-semibold tw-truncate">{{ $chatContext['title'] }}</span>
+                        <span class="tw:text-ui-sm tw:font-semibold tw:truncate">{{ $chatContext['title'] }}</span>
                     </div>
-                    <span class="tw-text-ui-xs tw-text-on-surface-variant">{{ $chatContext['subtitle'] }}</span>
+                    <span class="tw:text-ui-xs tw:text-on-surface-variant">{{ $chatContext['subtitle'] }}</span>
                 </div>
                 @if($chatContext['url'])
-                    <a href="{{ $chatContext['url'] }}" class="ui-focus-ring tw-inline-flex tw-h-8 tw-items-center tw-gap-1.5 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-px-2.5 tw-text-ui-xs tw-font-medium tw-text-primary tw-no-underline hover:tw-bg-surface-low">
+                    <a href="{{ $chatContext['url'] }}" class="ui-focus-ring tw:inline-flex tw:h-8 tw:items-center tw:gap-1.5 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:px-2.5 tw:text-ui-xs tw:font-medium tw:text-primary tw:no-underline tw:hover:bg-surface-low">
                         <x-ui.icon name="external-link" /> {{ __('purchasing.copy.open_details') }}
                     </a>
                 @endif
             </div>
             @if(!empty($chatContext['fields']))
-                <details class="tw-border-t tw-border-outline-variant">
-                    <summary class="tw-cursor-pointer tw-px-4 tw-py-2 tw-text-ui-xs tw-font-semibold tw-text-primary hover:tw-bg-surface-low">{{ __('purchasing.copy.context_details') }}</summary>
-                    <div class="chat-context-grid tw-px-4 tw-pb-3 tw-pt-1">
+                <details class="tw:border-t tw:border-outline-variant">
+                    <summary class="tw:cursor-pointer tw:px-4 tw:py-2 tw:text-ui-xs tw:font-semibold tw:text-primary tw:hover:bg-surface-low">{{ __('purchasing.copy.context_details') }}</summary>
+                    <div class="chat-context-grid tw:px-4 tw:pb-3 tw:pt-1">
                         @foreach($chatContext['fields'] as $field)
                             <div class="chat-context-field">
-                                <div class="tw-text-ui-xs tw-text-on-surface-variant">{{ $field['label'] }}</div>
-                                <div class="tw-font-semibold tw-truncate">{{ $field['value'] }}</div>
+                                <div class="tw:text-ui-xs tw:text-on-surface-variant">{{ $field['label'] }}</div>
+                                <div class="tw:font-semibold tw:truncate">{{ $field['value'] }}</div>
                             </div>
                         @endforeach
                     </div>
                 </details>
             @endif
             @if(!empty($quickActions))
-                <div class="chat-action-panel tw-border-t tw-border-outline-variant tw-px-4 tw-py-2 tw-flex tw-flex-nowrap tw-gap-2 tw-overflow-x-auto" id="chatQuickActions">
+                <div class="chat-action-panel tw:border-t tw:border-outline-variant tw:px-4 tw:py-2 tw:flex tw:flex-nowrap tw:gap-2 tw:overflow-x-auto" id="chatQuickActions">
                     @foreach($quickActions as $action)
                         @if(($action['type'] ?? '') === 'link')
-                            <a href="{{ $action['url'] }}" class="ui-focus-ring tw-inline-flex tw-h-7 tw-shrink-0 tw-items-center tw-gap-1 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-px-2.5 tw-text-ui-xs tw-font-medium tw-text-on-surface tw-no-underline hover:tw-bg-surface-low">
+                            <a href="{{ $action['url'] }}" class="ui-focus-ring tw:inline-flex tw:h-7 tw:shrink-0 tw:items-center tw:gap-1 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:px-2.5 tw:text-ui-xs tw:font-medium tw:text-on-surface tw:no-underline tw:hover:bg-surface-low">
                                 <x-ui.icon :name="$action['icon'] ?? 'arrow-right'" />{{ $action['label'] }}
                             </a>
                         @else
                             <button type="button"
-                                class="ui-focus-ring tw-inline-flex tw-h-7 tw-shrink-0 tw-items-center tw-gap-1 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-px-2.5 tw-text-ui-xs tw-font-medium tw-text-on-surface hover:tw-bg-surface-low"
+                                class="ui-focus-ring tw:inline-flex tw:h-7 tw:shrink-0 tw:items-center tw:gap-1 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:px-2.5 tw:text-ui-xs tw:font-medium tw:text-on-surface tw:hover:bg-surface-low"
                                 data-chat-action="{{ $action['key'] }}"
                                 data-chat-action-label="{{ $action['label'] }}"
                                 data-chat-action-note="{{ !empty($action['requires_note']) ? '1' : '0' }}"
@@ -80,39 +80,39 @@
 
     <div class="chat-fullpage-card">
         {{-- Chat Header --}}
-        <div class="tw-flex tw-items-center tw-justify-between tw-gap-3 tw-border-b tw-border-outline-variant tw-bg-surface-container tw-px-4 tw-py-2.5">
-            <div class="tw-flex tw-items-center tw-gap-3 tw-min-w-0">
+        <div class="tw:flex tw:items-center tw:justify-between tw:gap-3 tw:border-b tw:border-outline-variant tw:bg-surface-container tw:px-4 tw:py-2.5">
+            <div class="tw:flex tw:items-center tw:gap-3 tw:min-w-0">
                 <x-ui.avatar :name="$partnerName" size="sm" />
-                <div class="tw-min-w-0">
-                    <div class="tw-text-ui-sm tw-font-semibold tw-truncate">{{ $partnerName }}</div>
-                    <div class="tw-text-ui-xs tw-text-on-surface-variant">{{ ucfirst($partner->role) }}</div>
+                <div class="tw:min-w-0">
+                    <div class="tw:text-ui-sm tw:font-semibold tw:truncate">{{ $partnerName }}</div>
+                    <div class="tw:text-ui-xs tw:text-on-surface-variant">{{ ucfirst($partner->role) }}</div>
                 </div>
             </div>
-            <div class="tw-flex tw-items-center tw-gap-2 tw-shrink-0">
+            <div class="tw:flex tw:items-center tw:gap-2 tw:shrink-0">
                 @if($isParticipant)
                     @if($isMuted)
-                        <form method="POST" action="{{ route('conversations.unmute', $conversation) }}" class="tw-inline">
+                        <form method="POST" action="{{ route('conversations.unmute', $conversation) }}" class="tw:inline">
                             @csrf
                             @method('DELETE')
                             <button type="submit"
-                                class="ui-focus-ring ui-motion tw-inline-flex tw-h-8 tw-w-8 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface-container tw-text-on-surface hover:tw-bg-surface-container-high"
+                                class="ui-focus-ring ui-motion tw:inline-flex tw:h-8 tw:w-8 tw:items-center tw:justify-center tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container tw:text-on-surface tw:hover:bg-surface-container-high"
                                 aria-pressed="true"
                                 title="{{ __('purchasing.copy.notifications_are_currently_muted_click_to_unmute') }}"
                                 aria-label="{{ __('purchasing.copy.unmute_conversation_notifications') }}">
                                 <x-ui.icon name="bell-off" />
-                                <span class="tw-sr-only">{{ __('purchasing.copy.unmute_conversation_notifications') }}</span>
+                                <span class="tw:sr-only">{{ __('purchasing.copy.unmute_conversation_notifications') }}</span>
                             </button>
                         </form>
                     @else
-                        <form method="POST" action="{{ route('conversations.mute', $conversation) }}" class="tw-inline">
+                        <form method="POST" action="{{ route('conversations.mute', $conversation) }}" class="tw:inline">
                             @csrf
                             <button type="submit"
-                                class="ui-focus-ring ui-motion tw-inline-flex tw-h-8 tw-w-8 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container hover:tw-text-on-surface"
+                                class="ui-focus-ring ui-motion tw:inline-flex tw:h-8 tw:w-8 tw:items-center tw:justify-center tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:text-on-surface-variant tw:hover:bg-surface-container tw:hover:text-on-surface"
                                 aria-pressed="false"
                                 title="{{ __('purchasing.copy.muting_silences_notification_popups_and_unread_badges_for_this_conversation_you_will_still_see_messa') }}"
                                 aria-label="{{ __('purchasing.copy.mute_conversation_notifications') }}">
                                 <x-ui.icon name="bell" />
-                                <span class="tw-sr-only">{{ __('purchasing.copy.mute_conversation_notifications') }}</span>
+                                <span class="tw:sr-only">{{ __('purchasing.copy.mute_conversation_notifications') }}</span>
                             </button>
                         </form>
                     @endif
@@ -123,15 +123,15 @@
                 @else
                     <x-ui.status-chip tone="success" size="sm">PO</x-ui.status-chip>
                 @endif
-                <span class="tw-text-ui-sm tw-font-semibold">{{ $conversation->context_label }}</span>
+                <span class="tw:text-ui-sm tw:font-semibold">{{ $conversation->context_label }}</span>
             </div>
         </div>
 
         {{-- Chat Body (Scrollable) --}}
         <div id="chat-messages" style="flex: 1; overflow-y: auto; padding: 1rem 1.25rem;">
             @if($hasMoreMessages ?? false)
-                <div class="tw-flex tw-justify-center tw-py-2" data-chat-older>
-                    <button type="button" id="chat-load-older" class="ui-focus-ring tw-inline-flex tw-h-7 tw-items-center tw-gap-1 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-px-2.5 tw-text-ui-xs tw-font-medium tw-text-on-surface hover:tw-bg-surface-low">
+                <div class="tw:flex tw:justify-center tw:py-2" data-chat-older>
+                    <button type="button" id="chat-load-older" class="ui-focus-ring tw:inline-flex tw:h-7 tw:items-center tw:gap-1 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:px-2.5 tw:text-ui-xs tw:font-medium tw:text-on-surface tw:hover:bg-surface-low">
                         {{ __('common.chat.load_older') }}
                     </button>
                 </div>
@@ -145,11 +145,11 @@
                                 <div class="chat-message-text">{{ $msg->body }}</div>
                             @endif
                             @if($msg->attachments->isNotEmpty())
-                                <div class="chat-attachment-stack tw-mt-1.5">
+                                <div class="chat-attachment-stack tw:mt-1.5">
                                     @foreach($msg->attachments as $attachment)
                                         <a href="{{ route('attachments.show', $attachment) }}" target="_blank" class="chat-attachment-link">
-                                            <x-ui.icon name="paperclip" class="tw-mr-1 tw-shrink-0" />
-                                            <span class="tw-truncate">{{ $attachment->file_name }}</span>
+                                            <x-ui.icon name="paperclip" class="tw:mr-1 tw:shrink-0" />
+                                            <span class="tw:truncate">{{ $attachment->file_name }}</span>
                                         </a>
                                     @endforeach
                                 </div>
@@ -171,19 +171,19 @@
                     </div>
                 </div>
             @empty
-                <div class="tw-flex tw-flex-col tw-items-center tw-justify-center tw-py-12 tw-text-center" id="empty-state">
-                    <x-ui.icon name="message-circle-more" class="tw-text-on-surface-variant tw-mb-2" />
-                    <p class="tw-m-0 tw-text-ui-sm tw-text-on-surface-variant">{{ __('common.final_review.start_conversation', ['name' => $partnerName]) }}</p>
+                <div class="tw:flex tw:flex-col tw:items-center tw:justify-center tw:py-12 tw:text-center" id="empty-state">
+                    <x-ui.icon name="message-circle-more" class="tw:text-on-surface-variant tw:mb-2" />
+                    <p class="tw:m-0 tw:text-ui-sm tw:text-on-surface-variant">{{ __('common.final_review.start_conversation', ['name' => $partnerName]) }}</p>
                 </div>
             @endforelse
         </div>
 
         {{-- Chat Form --}}
-        <div class="tw-border-t tw-border-outline-variant tw-px-4 tw-py-2.5">
+        <div class="tw:border-t tw:border-outline-variant tw:px-4 tw:py-2.5">
             <form id="chat-form" data-managed-submit onsubmit="sendMessage(event)">
                 @if(!empty($messageTemplates))
-                    <div class="dropdown tw-mb-2">
-                        <button class="ui-focus-ring tw-inline-flex tw-h-7 tw-items-center tw-gap-1 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-px-2.5 tw-text-ui-xs tw-font-medium tw-text-on-surface hover:tw-bg-surface-low" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <div class="dropdown tw:mb-2">
+                        <button class="ui-focus-ring tw:inline-flex tw:h-7 tw:items-center tw:gap-1 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:px-2.5 tw:text-ui-xs tw:font-medium tw:text-on-surface tw:hover:bg-surface-low" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <x-ui.icon name="zap" />{{ __('purchasing.copy.template') }}
                         </button>
                         <div class="dropdown-menu p-2 chat-template-menu">
@@ -195,14 +195,14 @@
                         </div>
                     </div>
                 @endif
-                <div class="tw-text-ui-xs tw-text-on-surface-variant tw-mb-1.5 d-none" id="message-attachments-preview"></div>
-                <div class="tw-flex tw-gap-2 tw-items-end">
-                    <textarea id="message-body" class="tw-flex-1 tw-rounded-ui-sm tw-border tw-border-outline-strong tw-bg-surface tw-px-3 tw-py-2 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary tw-resize-none" rows="2" placeholder="{{ __('purchasing.copy.type_a_message_enter_to_send_shift_enter_for_new_line') }}" aria-label="{{ __('purchasing.copy.message') }}"></textarea>
-                    <label for="message-attachments" class="ui-focus-ring tw-inline-flex tw-h-10 tw-w-10 tw-shrink-0 tw-cursor-pointer tw-items-center tw-justify-center tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container" title="{{ __('purchasing.copy.attach_files') }}" aria-label="{{ __('purchasing.copy.attach_files') }}">
+                <div class="tw:text-ui-xs tw:text-on-surface-variant tw:mb-1.5 d-none" id="message-attachments-preview"></div>
+                <div class="tw:flex tw:gap-2 tw:items-end">
+                    <textarea id="message-body" class="tw:flex-1 tw:rounded-ui-sm tw:border tw:border-outline-strong tw:bg-surface tw:px-3 tw:py-2 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary tw:resize-none" rows="2" placeholder="{{ __('purchasing.copy.type_a_message_enter_to_send_shift_enter_for_new_line') }}" aria-label="{{ __('purchasing.copy.message') }}"></textarea>
+                    <label for="message-attachments" class="ui-focus-ring tw:inline-flex tw:h-10 tw:w-10 tw:shrink-0 tw:cursor-pointer tw:items-center tw:justify-center tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-transparent tw:text-on-surface-variant tw:hover:bg-surface-container" title="{{ __('purchasing.copy.attach_files') }}" aria-label="{{ __('purchasing.copy.attach_files') }}">
                         <x-ui.icon name="paperclip" />
                     </label>
                     <input type="file" id="message-attachments" class="d-none" multiple accept=".jpg,.jpeg,.png,.pdf,.xlsx,.xls,.doc,.docx">
-                    <button type="submit" class="ui-focus-ring tw-inline-flex tw-h-10 tw-w-10 tw-shrink-0 tw-items-center tw-justify-center tw-rounded-ui-sm tw-border-0 tw-bg-primary tw-text-primary-foreground hover:tw-brightness-95" id="btn-send" aria-label="{{ __('purchasing.copy.send_message') }}">
+                    <button type="submit" class="ui-focus-ring tw:inline-flex tw:h-10 tw:w-10 tw:shrink-0 tw:items-center tw:justify-center tw:rounded-ui-sm tw:border-0 tw:bg-primary tw:text-primary-foreground tw:hover:brightness-95" id="btn-send" aria-label="{{ __('purchasing.copy.send_message') }}">
                         <x-ui.icon name="send" />
                     </button>
                 </div>
@@ -233,7 +233,7 @@
 
         if (loading) {
             sendButton.setAttribute('aria-busy', 'true');
-            sendButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span><span class="tw-sr-only">' + @json(__('common.chat.sending')) + '</span>';
+            sendButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span><span class="tw:sr-only">' + @json(__('common.chat.sending')) + '</span>';
             return;
         }
 
@@ -261,7 +261,7 @@
         }
 
         attachmentPreview.innerHTML = files.map((file) => `
-            <span class="tw-inline-flex tw-items-center tw-gap-1 tw-rounded-ui-xs tw-border tw-border-outline-variant tw-bg-surface-low tw-px-2 tw-py-0.5 tw-text-ui-xs tw-mr-1 tw-mb-1">
+            <span class="tw:inline-flex tw:items-center tw:gap-1 tw:rounded-ui-xs tw:border tw:border-outline-variant tw:bg-surface-low tw:px-2 tw:py-0.5 tw:text-ui-xs tw:mr-1 tw:mb-1">
                 <x-ui.icon name="paperclip" />${escapeHtml(file.name)}
             </span>
         `).join('');
@@ -284,10 +284,10 @@
     function attachmentHtml(attachments, isMe) {
         if (!attachments || attachments.length === 0) return '';
 
-        return `<div class="chat-attachment-stack tw-mt-1.5">
+        return `<div class="chat-attachment-stack tw:mt-1.5">
             ${attachments.map((attachment) => `
                 <a href="${escapeHtml(attachment.url)}" target="_blank" class="chat-attachment-link">
-                    <x-ui.icon name="paperclip" class="tw-mr-1 tw-shrink-0" /><span class="tw-truncate">${escapeHtml(attachment.name)}</span>
+                    <x-ui.icon name="paperclip" class="tw:mr-1 tw:shrink-0" /><span class="tw:truncate">${escapeHtml(attachment.name)}</span>
                 </a>
             `).join('')}
         </div>`;

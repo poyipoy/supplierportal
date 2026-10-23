@@ -4,7 +4,7 @@
 @section('page-title', __('admin.copy.users'))
 
 @section('content')
-<div class="tw-grid tw-gap-6">
+<div class="tw:grid tw:gap-6">
     <x-ui.page-header
         :title="__('admin.copy.users')"
         :description="__('admin.copy.manage_identity_role_access_account_status_mfa_and_supplier_organization_records')"
@@ -23,17 +23,17 @@
             <x-ui.input name="user_search" id="userSearch" type="search" :placeholder="__('admin.copy.search_name_or_email')" aria-label="{{ __('admin.copy.search_users') }}" autocomplete="off" />
         </x-slot:search>
         <x-slot:filters>
-            <label class="tw-grid tw-gap-1 tw-text-ui-xs tw-font-medium" for="userRoleFilter">{{ __('admin.copy.role') }}
-                <select id="userRoleFilter" class="form-select form-select-sm tw-min-w-36"><option value="">{{ __('admin.copy.all_roles') }}</option><option value="admin">{{ __('admin.copy.admin') }}</option><option value="purchasing">{{ __('admin.copy.purchasing') }}</option><option value="supplier">{{ __('admin.copy.supplier') }}</option><option value="qc">QC</option><option value="finance">{{ __('admin.copy.finance') }}</option><option value="ga">{{ __('admin.copy.general_affairs') }}</option></select>
+            <label class="tw:grid tw:gap-1 tw:text-ui-xs tw:font-medium" for="userRoleFilter">{{ __('admin.copy.role') }}
+                <select id="userRoleFilter" class="form-select form-select-sm tw:min-w-36"><option value="">{{ __('admin.copy.all_roles') }}</option><option value="admin">{{ __('admin.copy.admin') }}</option><option value="purchasing">{{ __('admin.copy.purchasing') }}</option><option value="supplier">{{ __('admin.copy.supplier') }}</option><option value="qc">QC</option><option value="finance">{{ __('admin.copy.finance') }}</option><option value="ga">{{ __('admin.copy.general_affairs') }}</option></select>
             </label>
-            <x-ui.button variant="outline" size="sm" class="tw-self-end" type="button" data-bs-toggle="collapse" data-bs-target="#userMoreFilters" aria-expanded="false" aria-controls="userMoreFilters"><x-ui.icon name="sliders-horizontal" /> {{ __('admin.copy.more_filters') }}</x-ui.button>
+            <x-ui.button variant="outline" size="sm" class="tw:self-end" type="button" data-bs-toggle="collapse" data-bs-target="#userMoreFilters" aria-expanded="false" aria-controls="userMoreFilters"><x-ui.icon name="sliders-horizontal" /> {{ __('admin.copy.more_filters') }}</x-ui.button>
         </x-slot:filters>
         <x-slot:actions><x-ui.button type="button" variant="ghost" size="sm" id="resetUserFilters"><x-ui.icon name="rotate-ccw" /> {{ __('admin.copy.reset') }}</x-ui.button></x-slot:actions>
     </x-ui.toolbar>
 
     <div class="collapse" id="userMoreFilters">
-        <div class="tw-mb-4 tw-border tw-border-outline tw-bg-surface-container tw-p-4">
-            <label class="tw-grid tw-max-w-xs tw-gap-1 tw-text-ui-xs tw-font-medium" for="userStatusFilter">{{ __('admin.copy.account_status') }}
+        <div class="tw:mb-4 tw:border tw:border-outline tw:bg-surface-container tw:p-4">
+            <label class="tw:grid tw:max-w-xs tw:gap-1 tw:text-ui-xs tw:font-medium" for="userStatusFilter">{{ __('admin.copy.account_status') }}
                 <select id="userStatusFilter" class="form-select form-select-sm"><option value="">{{ __('admin.copy.all_statuses') }}</option><option value="1">{{ __('admin.copy.active') }}</option><option value="0">{{ __('admin.copy.inactive') }}</option></select>
             </label>
         </div>
@@ -43,8 +43,8 @@
         :title="__('admin.copy.user_directory')"
         :description="__('admin.copy.edit_is_the_primary_row_action_destructive_actions_remain_in_the_overflow_menu')"
     >
-        <div class="ui-data-table__scroll tw-overflow-x-auto">
-            <table class="table table-hover align-middle w-100 tw-m-0 tw-text-ui-sm" id="usersTable">
+        <div class="ui-data-table__scroll tw:overflow-x-auto">
+            <table class="table table-hover align-middle w-100 tw:m-0 tw:text-ui-sm" id="usersTable">
                 <thead class="table-light">
                     <tr>
                         <th scope="col" style="width: 50px;">{{ __('admin.copy.no') }}</th>

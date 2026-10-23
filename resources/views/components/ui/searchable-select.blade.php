@@ -56,7 +56,7 @@
 @endphp
 
 <div
-    {{ $attributes->class(['tw-grid tw-gap-1.5 tw-relative']) }}
+    {{ $attributes->class(['tw:grid tw:gap-1.5 tw:relative']) }}
     x-data="searchableSelect({
         selectedValue: @js((string) ($resolvedValue ?? '')),
         options: @js($normalizedOptions),
@@ -69,9 +69,9 @@
     x-on:set-select-value.window="if ($event.detail?.name === '{{ $name }}' || $event.detail?.id === '{{ $resolvedId }}') { selectedValue = String($event.detail.value ?? ''); syncNativeSelect(selectedValue); }"
 >
     @if($label)
-        <label for="{{ $resolvedId }}" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
+        <label for="{{ $resolvedId }}" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">
             {{ $label }}
-            @if($required)<span class="tw-text-error" aria-hidden="true">*</span><span class="tw-sr-only"> {{ __('common.required') }}</span>@endif
+            @if($required)<span class="tw:text-error" aria-hidden="true">*</span><span class="tw:sr-only"> {{ __('common.required') }}</span>@endif
         </label>
     @endif
 
@@ -108,32 +108,32 @@
         aria-haspopup="listbox"
         :aria-expanded="open"
         :aria-controls="'{{ $resolvedId }}-listbox'"
-        class="ui-motion tw-flex tw-min-h-[var(--ui-control-height-md)] tw-w-full tw-items-center tw-justify-between tw-rounded-ui-sm tw-border tw-bg-surface tw-px-3 tw-py-2 tw-text-start tw-text-ui-sm tw-text-on-surface tw-shadow-none ui-focus-ring disabled:tw-cursor-not-allowed disabled:tw-bg-surface-container disabled:tw-opacity-50"
+        class="ui-motion tw:flex tw:min-h-[var(--ui-control-height-md)] tw:w-full tw:items-center tw:justify-between tw:rounded-ui-sm tw:border tw:bg-surface tw:px-3 tw:py-2 tw:text-start tw:text-ui-sm tw:text-on-surface tw:shadow-none ui-focus-ring tw:disabled:cursor-not-allowed tw:disabled:bg-surface-container tw:disabled:opacity-50"
         :class="{
-            'tw-border-error': {{ $message ? 'true' : 'false' }},
-            'tw-border-outline-strong': !{{ $message ? 'true' : 'false' }} && !open,
-            'tw-border-primary tw-ring-2 tw-ring-primary/20': open
+            'tw:border-error': {{ $message ? 'true' : 'false' }},
+            'tw:border-outline-strong': !{{ $message ? 'true' : 'false' }} && !open,
+            'tw:border-primary tw:ring-2 tw:ring-primary/20': open
         }"
     >
-        <div class="tw-flex-1 tw-min-w-0 tw-truncate tw-pe-2">
+        <div class="tw:flex-1 tw:min-w-0 tw:truncate tw:pe-2">
             <template x-if="selectedOption">
                 @if($showSub)
-                    <div class="tw-flex tw-flex-col tw-gap-0.5">
-                        <span class="tw-font-medium tw-text-on-surface tw-truncate" :class="{ 'tw-font-mono': allowCustom }" x-text="selectedOption.label"></span>
+                    <div class="tw:flex tw:flex-col tw:gap-0.5">
+                        <span class="tw:font-medium tw:text-on-surface tw:truncate" :class="{ 'tw:font-mono': allowCustom }" x-text="selectedOption.label"></span>
                         <template x-if="selectedOption.sublabel">
-                            <span class="tw-text-ui-xs tw-text-on-surface-variant tw-truncate" x-text="selectedOption.sublabel"></span>
+                            <span class="tw:text-ui-xs tw:text-on-surface-variant tw:truncate" x-text="selectedOption.sublabel"></span>
                         </template>
                     </div>
                 @else
-                    <span class="tw-font-medium tw-text-on-surface tw-truncate tw-block" :class="{ 'tw-font-mono': allowCustom }" x-text="selectedOption.label"></span>
+                    <span class="tw:font-medium tw:text-on-surface tw:truncate tw:block" :class="{ 'tw:font-mono': allowCustom }" x-text="selectedOption.label"></span>
                 @endif
             </template>
             <template x-if="!selectedOption">
-                <span class="tw-text-on-surface-variant">{{ $placeholder }}</span>
+                <span class="tw:text-on-surface-variant">{{ $placeholder }}</span>
             </template>
         </div>
 
-        <div class="tw-flex tw-items-center tw-gap-1 tw-shrink-0">
+        <div class="tw:flex tw:items-center tw:gap-1 tw:shrink-0">
             <template x-if="selectedOption && !{{ $disabled ? 'true' : 'false' }}">
                 <span
                     @click.stop="clear()"
@@ -141,18 +141,18 @@
                     @keydown.space.stop.prevent="clear()"
                     role="button"
                     tabindex="0"
-                    class="tw-p-1 tw-rounded-full tw-text-on-surface-variant hover:tw-text-error hover:tw-bg-surface-container tw-cursor-pointer ui-motion"
+                    class="tw:p-1 tw:rounded-full tw:text-on-surface-variant tw:hover:text-error tw:hover:bg-surface-container tw:cursor-pointer ui-motion"
                     title="{{ __('common.select.clear') }}"
                     aria-label="{{ __('common.select.clear') }}"
                 >
-                    <x-ui.icon name="x" size="sm" class="tw-w-3.5 tw-h-3.5" />
+                    <x-ui.icon name="x" size="sm" class="tw:w-3.5 tw:h-3.5" />
                 </span>
             </template>
             <x-ui.icon
                 name="chevron-down"
                 size="sm"
-                class="tw-text-on-surface-variant ui-motion"
-                x-bind:class="{ 'tw-rotate-180': open }"
+                class="tw:text-on-surface-variant ui-motion"
+                x-bind:class="{ 'tw:rotate-180': open }"
             />
         </div>
     </button>
@@ -162,20 +162,20 @@
         id="{{ $resolvedId }}-listbox"
         x-show="open"
         x-cloak
-        x-transition:enter="ui-motion tw-transition tw-ease-out tw-duration-150"
-        x-transition:enter-start="tw-opacity-0 tw-translate-y-1"
-        x-transition:enter-end="tw-opacity-100 tw-translate-y-0"
-        x-transition:leave="ui-motion tw-transition tw-ease-in tw-duration-100"
-        x-transition:leave-start="tw-opacity-100 tw-translate-y-0"
-        x-transition:leave-end="tw-opacity-0 tw-translate-y-1"
-        class="tw-absolute tw-top-full tw-left-0 tw-right-0 tw-mt-1.5 tw-z-50 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-shadow-lg tw-overflow-hidden"
+        x-transition:enter="ui-motion tw:transition tw:ease-out tw:duration-150"
+        x-transition:enter-start="tw:opacity-0 tw:translate-y-1"
+        x-transition:enter-end="tw:opacity-100 tw:translate-y-0"
+        x-transition:leave="ui-motion tw:transition tw:ease-in tw:duration-100"
+        x-transition:leave-start="tw:opacity-100 tw:translate-y-0"
+        x-transition:leave-end="tw:opacity-0 tw:translate-y-1"
+        class="tw:absolute tw:top-full tw:left-0 tw:right-0 tw:mt-1.5 tw:z-50 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:shadow-lg tw:overflow-hidden"
         role="listbox"
     >
         {{-- Search Input in Popover --}}
-        <div class="tw-p-2 tw-border-b tw-border-outline-variant/60 tw-bg-surface-container-lowest">
+        <div class="tw:p-2 tw:border-b tw:border-outline-variant/60 tw:bg-surface-container-lowest">
             <div style="position: relative; display: flex; align-items: center; width: 100%;">
-                <span style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; pointer-events: none; display: flex; align-items: center; justify-content: center; z-index: 2;" class="tw-text-on-surface-variant">
-                    <x-ui.icon name="search" size="sm" class="tw-w-4 tw-h-4" />
+                <span style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; pointer-events: none; display: flex; align-items: center; justify-content: center; z-index: 2;" class="tw:text-on-surface-variant">
+                    <x-ui.icon name="search" size="sm" class="tw:w-4 tw:h-4" />
                 </span>
                 <input
                     id="{{ $resolvedId }}-search"
@@ -196,10 +196,10 @@
                     x-show="search.length > 0"
                     @click="search = ''; $refs.searchInput.focus()"
                     style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; background: transparent; border: 0; padding: 0; cursor: pointer; z-index: 2;"
-                    class="tw-text-on-surface-variant hover:tw-text-on-surface hover:tw-bg-surface-container tw-rounded-full ui-motion"
+                    class="tw:text-on-surface-variant tw:hover:text-on-surface tw:hover:bg-surface-container tw:rounded-full ui-motion"
                     aria-label="{{ __('common.select.clear_search') }}"
                 >
-                    <x-ui.icon name="x" size="sm" class="tw-w-3.5 tw-h-3.5" />
+                    <x-ui.icon name="x" size="sm" class="tw:w-3.5 tw:h-3.5" />
                 </button>
             </div>
         </div>
@@ -207,7 +207,7 @@
         {{-- Options List --}}
         <div
             x-ref="optionsList"
-            class="tw-max-h-60 tw-overflow-y-auto tw-p-1 tw-divide-y tw-divide-outline-variant/30"
+            class="tw:max-h-60 tw:overflow-y-auto tw:p-1 tw:divide-y tw:divide-outline-variant/30"
         >
             <template x-for="(opt, idx) in filteredOptions" :key="opt.value">
                 <div
@@ -215,36 +215,36 @@
                     @mouseenter="highlightedIndex = idx"
                     role="option"
                     :aria-selected="String(opt.value) === String(selectedValue)"
-                    class="tw-flex tw-items-center tw-justify-between tw-p-2.5 tw-rounded-ui-sm tw-cursor-pointer ui-motion"
+                    class="tw:flex tw:items-center tw:justify-between tw:p-2.5 tw:rounded-ui-sm tw:cursor-pointer ui-motion"
                     :class="{
-                        'tw-bg-primary/10 tw-text-primary': idx === highlightedIndex,
-                        'tw-bg-surface-container-low': String(opt.value) === String(selectedValue) && idx !== highlightedIndex,
-                        'hover:tw-bg-surface-container': idx !== highlightedIndex
+                        'tw:bg-primary/10 tw:text-primary': idx === highlightedIndex,
+                        'tw:bg-surface-container-low': String(opt.value) === String(selectedValue) && idx !== highlightedIndex,
+                        'tw:hover:bg-surface-container': idx !== highlightedIndex
                     }"
                 >
-                    <div class="tw-flex tw-flex-col tw-gap-0.5 tw-min-w-0 tw-flex-1 tw-pe-2">
-                        <div class="tw-flex tw-items-center tw-gap-2">
-                            <span class="tw-text-ui-sm tw-font-semibold tw-text-on-surface tw-truncate" :class="{ 'tw-font-mono': allowCustom }" x-text="opt.label"></span>
+                    <div class="tw:flex tw:flex-col tw:gap-0.5 tw:min-w-0 tw:flex-1 tw:pe-2">
+                        <div class="tw:flex tw:items-center tw:gap-2">
+                            <span class="tw:text-ui-sm tw:font-semibold tw:text-on-surface tw:truncate" :class="{ 'tw:font-mono': allowCustom }" x-text="opt.label"></span>
                             <template x-if="opt.badge">
                                 <span
-                                    class="tw-inline-flex tw-items-center tw-px-1.5 tw-py-0.2 tw-rounded-full tw-text-[10px] tw-font-bold tw-uppercase tw-tracking-wider"
+                                    class="tw:inline-flex tw:items-center tw:px-1.5 tw-py-0.2 tw:rounded-full tw:text-[10px] tw:font-bold tw:uppercase tw:tracking-wider"
                                     :class="{
-                                        'tw-bg-emerald-100 tw-text-emerald-800': opt.badgeTone === 'success' || opt.badge === 'OPEN',
-                                        'tw-bg-amber-100 tw-text-amber-800': opt.badgeTone === 'warning',
-                                        'tw-bg-rose-100 tw-text-rose-800': opt.badgeTone === 'error',
-                                        'tw-bg-slate-100 tw-text-slate-800': opt.badgeTone === 'neutral'
+                                        'tw:bg-emerald-100 tw:text-emerald-800': opt.badgeTone === 'success' || opt.badge === 'OPEN',
+                                        'tw:bg-amber-100 tw:text-amber-800': opt.badgeTone === 'warning',
+                                        'tw:bg-rose-100 tw:text-rose-800': opt.badgeTone === 'error',
+                                        'tw:bg-slate-100 tw:text-slate-800': opt.badgeTone === 'neutral'
                                     }"
                                     x-text="opt.badge"
                                 ></span>
                             </template>
                         </div>
                         <template x-if="opt.sublabel">
-                            <span class="tw-text-ui-xs tw-text-on-surface-variant tw-truncate" x-text="opt.sublabel"></span>
+                            <span class="tw:text-ui-xs tw:text-on-surface-variant tw:truncate" x-text="opt.sublabel"></span>
                         </template>
                     </div>
 
-                    <div class="tw-shrink-0" x-show="String(opt.value) === String(selectedValue)">
-                        <x-ui.icon name="check" size="sm" class="tw-text-primary" />
+                    <div class="tw:shrink-0" x-show="String(opt.value) === String(selectedValue)">
+                        <x-ui.icon name="check" size="sm" class="tw:text-primary" />
                     </div>
                 </div>
             </template>
@@ -255,13 +255,13 @@
                     @click="selectCustom(search.trim())"
                     @mouseenter="highlightedIndex = filteredOptions.length"
                     role="option"
-                    class="tw-flex tw-items-center tw-gap-2 tw-p-2.5 tw-rounded-ui-sm tw-cursor-pointer tw-border tw-border-dashed tw-border-primary/40 tw-bg-primary/5 hover:tw-bg-primary/10 ui-motion"
-                    :class="{ 'tw-ring-1 tw-ring-primary tw-bg-primary/10': highlightedIndex === filteredOptions.length }"
+                    class="tw:flex tw:items-center tw:gap-2 tw:p-2.5 tw:rounded-ui-sm tw:cursor-pointer tw:border tw:border-dashed tw:border-primary/40 tw:bg-primary/5 tw:hover:bg-primary/10 ui-motion"
+                    :class="{ 'tw:ring-1 tw:ring-primary tw:bg-primary/10': highlightedIndex === filteredOptions.length }"
                 >
-                    <x-ui.icon name="plus-circle" size="sm" class="tw-text-primary tw-shrink-0" />
-                    <div class="tw-min-w-0 tw-flex-1 tw-text-ui-xs">
-                        <span class="tw-text-on-surface-variant">{{ __('common.select.use_custom') }}: </span>
-                        <span class="tw-font-mono tw-font-bold tw-text-primary" x-text="search.trim()"></span>
+                    <x-ui.icon name="plus-circle" size="sm" class="tw:text-primary tw:shrink-0" />
+                    <div class="tw:min-w-0 tw:flex-1 tw:text-ui-xs">
+                        <span class="tw:text-on-surface-variant">{{ __('common.select.use_custom') }}: </span>
+                        <span class="tw:font-mono tw:font-bold tw:text-primary" x-text="search.trim()"></span>
                     </div>
                 </div>
             </template>
@@ -270,18 +270,18 @@
             <div
                 x-show="filteredOptions.length === 0 && !showCustomOption"
                 x-cloak
-                class="tw-py-6 tw-px-3 tw-text-center tw-text-on-surface-variant"
+                class="tw:py-6 tw:px-3 tw:text-center tw:text-on-surface-variant"
             >
-                <x-ui.icon name="search-x" size="md" class="tw-mx-auto tw-mb-1 tw-opacity-50" />
-                <p class="tw-text-ui-xs tw-m-0">{{ $emptyMessage }}</p>
+                <x-ui.icon name="search-x" size="md" class="tw:mx-auto tw:mb-1 tw:opacity-50" />
+                <p class="tw:text-ui-xs tw:m-0">{{ $emptyMessage }}</p>
             </div>
         </div>
     </div>
 
-    @if($helper)<p id="{{ $helperId }}" class="tw-m-0 tw-text-ui-xs tw-text-on-surface-variant">{{ $helper }}</p>@endif
+    @if($helper)<p id="{{ $helperId }}" class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ $helper }}</p>@endif
     @if($message)
-        <p id="{{ $errorId }}" class="tw-m-0 tw-flex tw-items-start tw-gap-1.5 tw-text-ui-xs tw-font-medium tw-text-error" role="alert">
-            <x-ui.icon name="circle-alert" size="sm" class="tw-mt-0.5" /><span>{{ $message }}</span>
+        <p id="{{ $errorId }}" class="tw:m-0 tw:flex tw:items-start tw:gap-1.5 tw:text-ui-xs tw:font-medium tw:text-error" role="alert">
+            <x-ui.icon name="circle-alert" size="sm" class="tw:mt-0.5" /><span>{{ $message }}</span>
         </p>
     @endif
 </div>

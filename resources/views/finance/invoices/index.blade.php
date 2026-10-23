@@ -3,7 +3,7 @@
 @section('page-title', $title ?? __('local_invoice.list.title'))
 
 @section('content')
-<div class="tw-grid tw-gap-6">
+<div class="tw:grid tw:gap-6">
     <x-ui.page-header
         :title="$title ?? __('local_invoice.list.title')"
         :description="__('finance.labels.invoice_list_help')"

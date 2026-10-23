@@ -8,7 +8,7 @@
 @endphp
 
 @section('content')
-<div class="tw-grid tw-gap-4">
+<div class="tw:grid tw:gap-4">
     <x-ui.page-header :title="__($rp.'.title')" :description="__($rp.'.description')" :eyebrow="__('navigation.master_data')">
         <x-slot:actions>
             <x-ui.button type="button" size="sm" data-bs-toggle="modal" data-bs-target="#referencePriceCreateModal">
@@ -20,13 +20,13 @@
 
     @if($errors->any())
         <x-ui.alert tone="error">
-            <ul class="tw-m-0 tw-ps-4">
+            <ul class="tw:m-0 tw:ps-4">
                 @foreach($errors->all() as $message)<li>{{ $message }}</li>@endforeach
             </ul>
         </x-ui.alert>
     @endif
 
-    <form method="GET" class="tw-flex tw-flex-wrap tw-items-end tw-gap-2" role="search">
+    <form method="GET" class="tw:flex tw:flex-wrap tw:items-end tw:gap-2" role="search">
         <x-ui.input name="search" id="referencePriceSearch" :label="__($rp.'.material_code')" :value="$filters['search'] ?? ''" :placeholder="__($rp.'.search_placeholder')" />
         <x-ui.select name="shape" id="referencePriceShapeFilter" :label="__($rp.'.shape')">
             <option value="">{{ __($rp.'.all_shapes') }}</option>
@@ -46,7 +46,7 @@
     </form>
 
     <x-ui.data-table density="compact" sticky :scroll-label="__($rp.'.title')">
-        <table class="table table-hover align-middle mb-0 tw-text-ui-sm w-100" data-reference-prices>
+        <table class="table table-hover align-middle mb-0 tw:text-ui-sm w-100" data-reference-prices>
             <caption class="visually-hidden">{{ __($rp.'.title') }}</caption>
             <thead class="table-light">
                 <tr>
@@ -81,10 +81,10 @@
                                 {{ __($rp.'.status_'.$price->status) }}
                             </x-ui.status-chip>
                             @if($price->status === 'void')
-                                <div class="tw-text-ui-xs tw-text-on-surface-variant">{{ __($rp.'.voided_info', ['user' => $price->voider?->name ?? '-', 'date' => $price->voided_at ? \App\Support\BusinessTime::format($price->voided_at, 'd M Y', false) : '-', 'reason' => $price->void_reason]) }}</div>
+                                <div class="tw:text-ui-xs tw:text-on-surface-variant">{{ __($rp.'.voided_info', ['user' => $price->voider?->name ?? '-', 'date' => $price->voided_at ? \App\Support\BusinessTime::format($price->voided_at, 'd M Y', false) : '-', 'reason' => $price->void_reason]) }}</div>
                             @endif
                         </td>
-                        <td class="tw-text-ui-xs" style="max-width: 16rem;">{{ $price->notes ?? '—' }}</td>
+                        <td class="tw:text-ui-xs" style="max-width: 16rem;">{{ $price->notes ?? '—' }}</td>
                         <td class="text-end">
                             <div class="d-inline-flex gap-1">
                                 <button type="button" class="ui-data-action ui-focus-ring" data-bs-toggle="modal" data-bs-target="#referencePriceNotesModal"
@@ -102,7 +102,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="10" class="text-center tw-text-on-surface-variant">{{ __($rp.'.empty') }}</td></tr>
+                    <tr><td colspan="10" class="text-center tw:text-on-surface-variant">{{ __($rp.'.empty') }}</td></tr>
                 @endforelse
             </tbody>
         </table>
@@ -119,7 +119,7 @@
                 <h2 class="modal-title tw-text-ui-md fw-bold" id="referencePriceCreateTitle">{{ __($rp.'.add') }}</h2>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __($rp.'.cancel') }}"></button>
             </div>
-            <div class="modal-body tw-grid tw-items-start tw-gap-3 md:tw-grid-cols-2">
+            <div class="modal-body tw:grid tw:items-start tw:gap-3 tw:md:grid-cols-2">
                 <x-ui.searchable-select name="material_code" id="referencePriceMaterialCode" :label="__($rp.'.material_code')" :options="$materialOptions" :show-sublabel-on-trigger="false" required />
                 <x-ui.select name="shape" id="referencePriceShape" :label="__($rp.'.shape')" required>
                     @foreach($shapes as $shape)<option value="{{ $shape }}" @selected(old('shape') === $shape)>{{ $shape }}</option>@endforeach
@@ -132,7 +132,7 @@
                 <x-ui.input name="price_per_kg" id="referencePricePrice" type="number" step="0.0001" min="0.0001" :label="__($rp.'.price_per_kg')" :value="old('price_per_kg')" required />
                 <x-ui.date-picker name="valid_from" id="referencePriceValidFrom" :label="__($rp.'.valid_from')" :value="old('valid_from')" required />
                 <x-ui.date-picker name="valid_until" id="referencePriceValidUntil" :label="__($rp.'.valid_until')" :value="old('valid_until')" :helper="__($rp.'.open_ended')" />
-                <div class="md:tw-col-span-2">
+                <div class="tw:md:col-span-2">
                     <x-ui.textarea name="notes" id="referencePriceNotes" :label="__($rp.'.notes')" :value="old('notes')" rows="2" maxlength="1000" />
                 </div>
             </div>
@@ -153,8 +153,8 @@
                 <h2 class="modal-title tw-text-ui-md fw-bold" id="referencePriceSupersedeTitle" data-title-template="{{ __($rp.'.supersede_title', ['material' => '__MATERIAL__']) }}">{{ __($rp.'.supersede') }}</h2>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __($rp.'.cancel') }}"></button>
             </div>
-            <div class="modal-body tw-grid tw-gap-3">
-                <p class="tw-m-0 tw-text-ui-xs tw-text-on-surface-variant">{{ __($rp.'.supersede_help') }}</p>
+            <div class="modal-body tw:grid tw:gap-3">
+                <p class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ __($rp.'.supersede_help') }}</p>
                 <x-ui.input name="price_per_kg" id="supersedePrice" type="number" step="0.0001" min="0.0001" :label="__($rp.'.price_per_kg')" required />
                 <x-ui.date-picker name="valid_from" id="supersedeValidFrom" :label="__($rp.'.valid_from')" required />
                 <x-ui.date-picker name="valid_until" id="supersedeValidUntil" :label="__($rp.'.valid_until')" :helper="__($rp.'.open_ended')" />

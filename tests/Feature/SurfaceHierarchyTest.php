@@ -41,20 +41,20 @@ class SurfaceHierarchyTest extends TestCase
         foreach ($componentPaths as $componentPath) {
             $source = file_get_contents(resource_path($componentPath));
 
-            $this->assertStringContainsString('tw-border-outline', $source, "Missing strong outer border in {$componentPath}");
-            $this->assertStringNotContainsString('tw-shadow-ui-1', $source, "Static elevation remains in {$componentPath}");
+            $this->assertStringContainsString('tw:border-outline', $source, "Missing strong outer border in {$componentPath}");
+            $this->assertStringNotContainsString('tw:shadow-ui-1', $source, "Static elevation remains in {$componentPath}");
         }
 
         $dataTable = Blade::render('<x-ui.data-table title="Records"><table><tbody><tr><td>One</td></tr></tbody></table></x-ui.data-table>');
         $formSection = Blade::render('<x-ui.form-section title="Details"><x-ui.input name="name" label="Name" /></x-ui.form-section>');
         $metric = Blade::render('<x-ui.metric-card label="Open records" value="12" icon="clipboard-list" />');
 
-        $this->assertStringContainsString('tw-bg-surface-container', $dataTable);
-        $this->assertStringContainsString('tw-shadow-none', $dataTable);
-        $this->assertStringContainsString('tw-bg-surface-container', $formSection);
-        $this->assertStringContainsString('tw-border-outline-strong', $formSection);
-        $this->assertStringContainsString('tw-bg-surface-container', $metric);
-        $this->assertStringContainsString('tw-shadow-none', $metric);
+        $this->assertStringContainsString('tw:bg-surface-container', $dataTable);
+        $this->assertStringContainsString('tw:shadow-none', $dataTable);
+        $this->assertStringContainsString('tw:bg-surface-container', $formSection);
+        $this->assertStringContainsString('tw:border-outline-strong', $formSection);
+        $this->assertStringContainsString('tw:bg-surface-container', $metric);
+        $this->assertStringContainsString('tw:shadow-none', $metric);
     }
 
     public function test_active_internal_views_do_not_bypass_surface_tokens_or_restore_static_card_shadows(): void
@@ -88,7 +88,7 @@ class SurfaceHierarchyTest extends TestCase
                     "Raw white surface bypass remains in {$relativePath}",
                 );
                 $this->assertStringNotContainsString(
-                    'tw-shadow-ui-1',
+                    'tw:shadow-ui-1',
                     $source,
                     "Default static-container shadow remains in {$relativePath}",
                 );

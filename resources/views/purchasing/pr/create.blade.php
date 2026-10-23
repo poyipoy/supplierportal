@@ -8,7 +8,7 @@
 @endpush
 
 @section('content')
-<div class="tw-grid tw-gap-4">
+<div class="tw:grid tw:gap-4">
     {{-- Breadcrumb & Compact Page Header --}}
     <x-ui.breadcrumb :items="[
         'Purchase Requisition' => \App\Support\PurchasingNavigation::backUrl('purchasing.requisitions.index'),
@@ -28,13 +28,13 @@
         <input type="hidden" name="action" id="formAction" value="draft">
         <input type="hidden" name="supplier_selection_present" value="1">
 
-        <div class="tw-grid tw-gap-5">
+        <div class="tw:grid tw:gap-5">
             {{-- Section 1: General Information --}}
             <x-ui.form-section
                 :title="__('purchasing.copy.general_information')"
                 :description="__('purchasing.copy.define_the_procurement_context_invitation_scope_and_requisition_remarks')"
             >
-                <div class="tw-grid tw-gap-4 sm:tw-grid-cols-2 lg:tw-grid-cols-3">
+                <div class="tw:grid tw:gap-4 tw:sm:grid-cols-2 tw:lg:grid-cols-3">
                     <x-ui.select name="period_id" id="period_id" :label="__('purchasing.copy.quotation_period')" class="pr-period-field" required>
                         <option value="">{{ __('purchasing.copy.select_period') }}</option>
                         @foreach($periods as $period)
@@ -44,7 +44,7 @@
                         @endforeach
                     </x-ui.select>
 
-                    <div class="tw-min-w-0">
+                    <div class="tw:min-w-0">
                         @php
                             $selectedSupplierIds = collect(old('supplier_ids', []));
                             if (old('supplier_id')) {
@@ -58,7 +58,7 @@
                         ])
                     </div>
 
-                    <div class="sm:tw-col-span-2 lg:tw-col-span-1">
+                    <div class="tw:sm:col-span-2 tw:lg:col-span-1">
                         <x-ui.textarea
                             name="notes"
                             id="notes"
@@ -90,7 +90,7 @@
                 </x-slot:actions>
 
                 <div class="table-responsive pr-form-table-scroll ui-table-sticky border rounded" role="region" tabindex="0" aria-label="{{ __('procurement.tables.pr_items') }}">
-                    <table class="table table-bordered table-hover table-sm align-middle pr-items-table mb-0 tw-text-ui-xs" id="itemsTable">
+                    <table class="table table-bordered table-hover table-sm align-middle pr-items-table mb-0 tw:text-ui-xs" id="itemsTable">
                         <caption class="visually-hidden">{{ __('purchasing.copy.required_material_entry_table_with_shape_aware_dimension_columns') }}</caption>
                         <colgroup>
                             <col style="width: 48px; min-width: 48px;">
@@ -133,13 +133,13 @@
                     </table>
                 </div>
 
-                @error('items') <div class="text-danger small tw-mt-1.5">{{ $message }}</div> @enderror
-                <div id="noItemAlert" class="text-danger small tw-mt-1.5 d-none" role="alert" aria-live="assertive">{{ __('purchasing.copy.at_least_1_material_row_is_required_before_saving_or_submitting') }}</div>
+                @error('items') <div class="text-danger small tw:mt-1.5">{{ $message }}</div> @enderror
+                <div id="noItemAlert" class="text-danger small tw:mt-1.5 d-none" role="alert" aria-live="assertive">{{ __('purchasing.copy.at_least_1_material_row_is_required_before_saving_or_submitting') }}</div>
             </x-ui.form-section>
         </div>
 
         {{-- Sticky Action Bar --}}
-        <x-ui.action-bar class="tw-mt-6">
+        <x-ui.action-bar class="tw:mt-6">
             <x-slot:left>
                 <x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.requisitions.index')" variant="ghost" size="sm">
                     <x-ui.icon name="arrow-left" size="sm" />

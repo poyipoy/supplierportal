@@ -3,7 +3,7 @@
 @section('page-title', __('finance.ga.register_title'))
 
 @section('content')
-<div class="tw-grid tw-gap-6 tw-pb-16">
+<div class="tw:grid tw:gap-6 tw:pb-16">
     <x-ui.page-header
         :title="__('finance.ga.register_title')"
         :description="__('finance.ga.register_help')"
@@ -22,7 +22,7 @@
     </x-ui.page-header>
 
     @if(session('success'))
-        <div class="tw-p-4 tw-rounded-lg tw-bg-success/10 tw-border tw-border-success/20 tw-text-success tw-text-ui-sm tw-flex tw-items-center tw-gap-3">
+        <div class="tw:p-4 tw:rounded-lg tw:bg-success/10 tw:border tw:border-success/20 tw:text-success tw:text-ui-sm tw:flex tw:items-center tw:gap-3">
             <x-ui.icon name="check-circle" size="md" />
             <span>{{ session('success') }}</span>
         </div>
@@ -30,8 +30,8 @@
 
     {{-- Filter Card --}}
     <x-ui.card>
-        <form method="GET" action="{{ route('finance.ga-claims.index') }}" class="tw-flex tw-flex-col sm:tw-flex-row sm:tw-items-center tw-gap-3">
-            <div class="tw-flex-1">
+        <form method="GET" action="{{ route('finance.ga-claims.index') }}" class="tw:flex tw:flex-col tw:sm:flex-row tw:sm:items-center tw:gap-3">
+            <div class="tw:flex-1">
                 <input
                     type="text"
                     name="search"
@@ -40,7 +40,7 @@
                     value="{{ request('search') }}"
                 >
             </div>
-            <div class="tw-w-44">
+            <div class="tw:w-44">
                 <select name="status" class="form-select form-select-sm">
                     <option value="">{{ __('local_invoice.labels.all_statuses') }}</option>
                     <option value="SUBMITTED" @selected(request('status') === 'SUBMITTED')>{{ __('local_invoice.labels.submitted') }}</option>
@@ -50,7 +50,7 @@
                     <option value="PAID" @selected(request('status') === 'PAID')>{{ __('local_invoice.labels.paid') }}</option>
                 </select>
             </div>
-            <div class="tw-w-48">
+            <div class="tw:w-48">
                 <select name="employee_id" class="form-select form-select-sm">
                     <option value="">{{ __('ga.filters.all_employees') }}</option>
                     @foreach($employees as $emp)
@@ -60,7 +60,7 @@
                     @endforeach
                 </select>
             </div>
-            <div class="tw-flex tw-gap-2">
+            <div class="tw:flex tw:gap-2">
                 <x-ui.button type="submit" variant="primary" size="sm">
                     <x-ui.icon name="search" size="sm" />
                     <span>{{ __('common.labels_review.filter') }}</span>
@@ -80,7 +80,7 @@
         :description="__('finance.ga.verification_help')"
     >
         <div class="table-responsive">
-            <table class="table table-hover align-middle tw-m-0 tw-text-ui-xs w-100">
+            <table class="table table-hover align-middle tw:m-0 tw:text-ui-xs w-100">
                 <thead class="table-light">
                     <tr>
                         <th scope="col">{{ __('finance.ga.claim_number') }}</th>
@@ -96,22 +96,22 @@
                 <tbody>
                     @forelse($claims as $claim)
                         <tr>
-                            <td><strong class="tw-font-mono tw-text-primary">{{ $claim->claim_number }}</strong></td>
+                            <td><strong class="tw:font-mono tw:text-primary">{{ $claim->claim_number }}</strong></td>
                             <td>{{ $regionalFormatter->date($claim->claim_date, 'dmy') }}</td>
                             <td>
-                                <strong class="tw-text-on-surface tw-block">{{ $claim->employee?->name }}</strong>
-                                <span class="tw-text-on-surface-variant tw-text-[11px]">{{ $claim->employee?->department }}</span>
+                                <strong class="tw:text-on-surface tw:block">{{ $claim->employee?->name }}</strong>
+                                <span class="tw:text-on-surface-variant tw:text-[11px]">{{ $claim->employee?->department }}</span>
                             </td>
                             <td>
-                                <span class="tw-inline-flex tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold tw-bg-primary/10 tw-text-primary">
+                                <span class="tw:inline-flex tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-semibold tw:bg-primary/10 tw:text-primary">
                                     {{ \App\Models\GaClaim::claimTypeLabel($claim->claim_type) }}
                                 </span>
                             </td>
-                            <td><strong class="tw-font-mono tw-text-ui-sm">Rp {{ $regionalFormatter->number(number_format($claim->amount, 0, ',', '.'), 'indonesian') }}</strong></td>
+                            <td><strong class="tw:font-mono tw:text-ui-sm">Rp {{ $regionalFormatter->number(number_format($claim->amount, 0, ',', '.'), 'indonesian') }}</strong></td>
                             <td>
-                                <span class="tw-font-semibold">{{ $claim->employee?->bank_name }}</span> ·
-                                <span class="tw-font-mono">{{ $claim->employee?->account_number }}</span>
-                                <span class="tw-block tw-text-[11px] tw-text-on-surface-variant">{{ __('finance.drp_surface.account_holder') }} {{ $claim->employee?->account_holder_name }}</span>
+                                <span class="tw:font-semibold">{{ $claim->employee?->bank_name }}</span> ·
+                                <span class="tw:font-mono">{{ $claim->employee?->account_number }}</span>
+                                <span class="tw:block tw:text-[11px] tw:text-on-surface-variant">{{ __('finance.drp_surface.account_holder') }} {{ $claim->employee?->account_holder_name }}</span>
                             </td>
                             <td>
                                 <x-ui.status-chip :tone="\App\Support\StatusHelper::gaClaimTone($claim->status)">
@@ -127,7 +127,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="text-center tw-py-8 tw-text-on-surface-variant">{{ __('finance.copy_review.ga_empty') }}</td>
+                            <td colspan="8" class="text-center tw:py-8 tw:text-on-surface-variant">{{ __('finance.copy_review.ga_empty') }}</td>
                         </tr>
                     @endforelse
                 </tbody>

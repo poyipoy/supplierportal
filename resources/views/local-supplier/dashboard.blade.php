@@ -3,7 +3,7 @@
 @section('page-title', __('local_invoice.dashboard.page_heading'))
 
 @section('content')
-<div class="tw-grid tw-gap-6 tw-pb-16">
+<div class="tw:grid tw:gap-6 tw:pb-16">
     <x-ui.page-header
         :title="__('local_invoice.dashboard.heading')"
         :description="__('local_invoice.dashboard.description')"
@@ -32,7 +32,7 @@
         $readyToPay = ($counts['APPROVED'] ?? 0) + ($counts['PAYMENT_SCHEDULED'] ?? 0);
     @endphp
 
-    <div class="tw-grid tw-grid-cols-2 md:tw-grid-cols-3 lg:tw-grid-cols-5 tw-gap-4">
+    <div class="tw:grid tw:grid-cols-2 tw:md:grid-cols-3 tw:lg:grid-cols-5 tw:gap-4">
         <x-ui.metric-card
             :label="__('local_invoice.dashboard.submitted')"
             :value="$regionalFormatter->number((string) ($totalInvoices), 'plain')"
@@ -74,17 +74,17 @@
     <x-slot:company>
     {{-- Vendor Organization Quick Status --}}
     <x-ui.card>
-        <div class="tw-flex tw-flex-col sm:tw-flex-row sm:tw-items-center sm:tw-justify-between tw-gap-4">
-            <div class="tw-flex tw-items-center tw-gap-3">
-                <div class="tw-w-10 tw-h-10 tw-rounded-full tw-bg-primary/10 tw-text-primary tw-flex tw-items-center tw-justify-center tw-shrink-0">
+        <div class="tw:flex tw:flex-col tw:sm:flex-row tw:sm:items-center tw:sm:justify-between tw:gap-4">
+            <div class="tw:flex tw:items-center tw:gap-3">
+                <div class="tw:w-10 tw:h-10 tw:rounded-full tw:bg-primary/10 tw:text-primary tw:flex tw:items-center tw:justify-center tw:shrink-0">
                     <x-ui.icon name="building-2" size="md" />
                 </div>
                 <div>
-                    <h3 class="tw-m-0 tw-text-ui-sm tw-font-semibold tw-text-on-surface">
+                    <h3 class="tw:m-0 tw:text-ui-sm tw:font-semibold tw:text-on-surface">
                         {{ auth()->user()->supplier?->company_name ?: auth()->user()->name }}
                     </h3>
                     @if(auth()->user()->supplier?->npwp)
-                        <span class="tw-text-ui-xs tw-text-on-surface-variant">
+                        <span class="tw:text-ui-xs tw:text-on-surface-variant">
                             NPWP: {{ auth()->user()->supplier->npwp }}
                         </span>
                     @endif

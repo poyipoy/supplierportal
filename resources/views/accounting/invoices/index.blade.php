@@ -3,7 +3,7 @@
 @section('page-title', $title)
 
 @section('content')
-<div class="tw-grid tw-gap-6">
+<div class="tw:grid tw:gap-6">
     <x-ui.page-header
         :title="$title"
         :description="__('finance.labels.invoice_filter_help')"

@@ -2,7 +2,7 @@
 @section('title', __('purchasing.copy.consolidate_selected_items_adasi_portal'))
 @section('page-title', __('purchasing.copy.consolidate_selected_items'))
 @section('content')
-<div class="tw-grid tw-gap-4">
+<div class="tw:grid tw:gap-4">
     <x-ui.page-header :title="__('purchasing.copy.consolidate_selected_items')" :eyebrow="__('purchasing.copy.purchasing')"
         :description="__('purchasing.copy.select_previously_chosen_item_offers_from_one_supplier_and_currency_to_combine_into_a_purchase_order')">
         <x-slot:actions>
@@ -28,12 +28,12 @@
     <form id="awardConsolidationForm" method="POST" action="{{ route('purchasing.purchase-orders.consolidate-awards.store') }}">
         @csrf
         @unless($poGenerationEnabled)
-            <x-ui.alert tone="warning" class="tw-mb-3">{{ __('procurement.po_generation.disabled_notice') }}</x-ui.alert>
+            <x-ui.alert tone="warning" class="tw:mb-3">{{ __('procurement.po_generation.disabled_notice') }}</x-ui.alert>
         @endunless
         @error('award_ids')<div class="alert alert-danger">{{ $message }}</div>@enderror
         @php($orderQtyEnabled = \App\Support\Procurement\ProcurementFeatures::orderedQuantityWriteEnabled())
         {{-- Q1 pre-warning only; the server guard is authoritative. --}}
-        <x-ui.alert id="mixedLogisticsWarning" tone="warning" class="tw-mb-3 d-none" role="status">{{ __('procurement.logistics.mixed_selection_warning') }}</x-ui.alert>
+        <x-ui.alert id="mixedLogisticsWarning" tone="warning" class="tw:mb-3 d-none" role="status">{{ __('procurement.logistics.mixed_selection_warning') }}</x-ui.alert>
         <div class="table-responsive">
             <table class="table table-hover align-middle">
                 <thead><tr><th>{{ __('purchasing.copy.select') }}</th><th>PR</th><th>{{ __('purchasing.copy.material') }}</th><th>{{ __('purchasing.copy.supplier') }}</th><th>{{ __('purchasing.copy.quotation') }}</th><th>{{ __('purchasing.copy.currency') }}</th><th class="text-end">{{ __('purchasing.copy.weight') }}</th><th class="text-end">{{ __('purchasing.copy.amount') }}</th><th>{{ __('procurement.logistics.port_of_discharge') }}</th><th>{{ __('procurement.logistics.incoterm') }}</th>@if($orderQtyEnabled)<th style="min-width: 11rem;">{{ __('procurement.ordered_quantity.order_qty') }}</th>@endif</tr></thead>

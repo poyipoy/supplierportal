@@ -33,8 +33,8 @@
 
 {{-- Validation errors --}}
 @if(isset($errors) && $errors->any() && ! request()->routeIs('local-supplier.invoices.create', 'local-supplier.invoices.revision'))
-    <x-ui.alert tone="error" :title="__('common.validation.review')" class="tw-mb-4">
-        <ul class="tw-mb-0 tw-ps-4">
+    <x-ui.alert tone="error" :title="__('common.validation.review')" class="tw:mb-4">
+        <ul class="tw:mb-0 tw:ps-4">
             @foreach($errors->all() as $error)
                 <li>{{ $error }}</li>
             @endforeach

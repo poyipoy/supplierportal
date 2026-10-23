@@ -207,11 +207,11 @@ function strip({ required = false } = {}) {
 const ghost = () => el('div', { 'data-editor-ghost': '', hidden: '' }, [el('p', { 'data-editor-ghost-status': '' })]);
 
 function buildDom({ href = 'https://portal.test/admin/dashboard', fetch = async () => ({ ok: true }) } = {}) {
-    const classes = { 'admin.summary': 'lg:tw-col-span-12', 'admin.rates': 'lg:tw-col-span-8', 'admin.shortcuts': 'lg:tw-col-span-4', 'admin.notifications': 'lg:tw-col-span-12' };
-    const widget = (key, { required = false } = {}) => el('div', { class: `tw-min-w-0 ${classes[key]}`, 'data-dashboard-widget': key, 'data-widget-has-content': 'true' }, [
+    const classes = { 'admin.summary': 'tw:lg:col-span-12', 'admin.rates': 'tw:lg:col-span-8', 'admin.shortcuts': 'tw:lg:col-span-4', 'admin.notifications': 'tw:lg:col-span-12' };
+    const widget = (key, { required = false } = {}) => el('div', { class: `tw:min-w-0 ${classes[key]}`, 'data-dashboard-widget': key, 'data-widget-has-content': 'true' }, [
         strip({ required }), el('div', { class: `content-${key}` }), ghost(),
     ]);
-    const placeholder = el('div', { class: `tw-min-w-0 ${classes['admin.notifications']}`, 'data-dashboard-placeholder': 'admin.notifications', hidden: '' }, [strip(), ghost()]);
+    const placeholder = el('div', { class: `tw:min-w-0 ${classes['admin.notifications']}`, 'data-dashboard-placeholder': 'admin.notifications', hidden: '' }, [strip(), ghost()]);
     placeholder.querySelector('[data-editor-visibility]').checked = false;
 
     const config = el('script', { 'data-editor-config': '' });
@@ -257,7 +257,7 @@ function buildDom({ href = 'https://portal.test/admin/dashboard', fetch = async 
     const order = () => grid.children
         .filter((child) => child.hasAttribute('data-dashboard-widget') || child.hasAttribute('data-dashboard-placeholder'))
         .map((child) => child.dataset.dashboardWidget ?? child.dataset.dashboardPlaceholder);
-    const spanOf = (key) => [...wrapper(key).classes].find((name) => name.startsWith('lg:tw-col-span-'));
+    const spanOf = (key) => [...wrapper(key).classes].find((name) => name.startsWith('tw:lg:col-span-'));
 
     return { editor, grid, calls, $, wrapper, content, order, spanOf };
 }
@@ -274,8 +274,8 @@ test('boot reveals the customize button and leaves the page exactly as rendered'
     assert.equal($('[data-editor-enter]').hidden, false);
     assert.equal($('[data-editor-actionbar]').hidden, true);
     assert.deepEqual(order(), DEFAULT_ORDER);
-    assert.equal(spanOf('admin.rates'), 'lg:tw-col-span-8');
-    assert.equal(spanOf('admin.shortcuts'), 'lg:tw-col-span-4');
+    assert.equal(spanOf('admin.rates'), 'tw:lg:col-span-8');
+    assert.equal(spanOf('admin.shortcuts'), 'tw:lg:col-span-4');
     assert.equal(wrapper('admin.notifications').hidden, true, 'a placeholder exists only while editing');
     assert.equal(wrapper('admin.summary').querySelector('[data-editor-strip]').hidden, true);
 });
@@ -308,8 +308,8 @@ test('moving a panel reorders the DOM, rebalances widths, counts the change and 
 
     assert.deepEqual(order(), ['admin.rates', 'admin.summary', 'admin.shortcuts', 'admin.notifications']);
     assert.ok(grid.children.indexOf($('[data-editor-actionbar]')) > grid.children.indexOf(wrapper('admin.notifications')), 'panels stay before the action bar');
-    assert.equal(spanOf('admin.rates'), 'lg:tw-col-span-12', 'rates no longer shares a row, so it widens');
-    assert.equal(spanOf('admin.shortcuts'), 'lg:tw-col-span-12');
+    assert.equal(spanOf('admin.rates'), 'tw:lg:col-span-12', 'rates no longer shares a row, so it widens');
+    assert.equal(spanOf('admin.shortcuts'), 'tw:lg:col-span-12');
     assert.equal($('[data-editor-status]').textContent, '1 unsaved changes');
     assert.equal($('[data-editor-save]').disabled, false);
     assert.equal(FakeElement.focused, down);
@@ -327,15 +327,15 @@ test('hiding a panel conceals its content behind a placeholder and widens its ro
     assert.equal(content('admin.shortcuts').hasAttribute('data-editor-concealed'), true);
     assert.equal(wrapper('admin.shortcuts').querySelector('[data-editor-ghost]').hidden, false);
     assert.equal(wrapper('admin.shortcuts').querySelector('[data-editor-strip-status]').textContent, 'Hidden');
-    assert.equal(spanOf('admin.rates'), 'lg:tw-col-span-12');
-    assert.equal(spanOf('admin.shortcuts'), 'lg:tw-col-span-4', 'the placeholder keeps its natural width');
+    assert.equal(spanOf('admin.rates'), 'tw:lg:col-span-12');
+    assert.equal(spanOf('admin.shortcuts'), 'tw:lg:col-span-4', 'the placeholder keeps its natural width');
     assert.equal($('[data-editor-status]').textContent, '1 unsaved changes');
     assert.equal(calls.markDirty, 1);
 
     toggle.checked = true;
     toggle.dispatch('change');
     assert.equal(content('admin.shortcuts').hasAttribute('data-editor-concealed'), false, 'showing it again needs no reload');
-    assert.equal(spanOf('admin.rates'), 'lg:tw-col-span-8');
+    assert.equal(spanOf('admin.rates'), 'tw:lg:col-span-8');
     assert.equal($('[data-editor-status]').textContent, 'No unsaved changes');
     assert.equal(calls.markClean, 1);
 });
@@ -364,7 +364,7 @@ test('cancel restores order, widths and visibility, closes the editor and return
     assert.equal(editor.isEditing(), false);
     assert.equal(grid.hasAttribute('data-dashboard-editing'), false);
     assert.deepEqual(order(), DEFAULT_ORDER);
-    assert.equal(spanOf('admin.rates'), 'lg:tw-col-span-8');
+    assert.equal(spanOf('admin.rates'), 'tw:lg:col-span-8');
     assert.equal(toggle.checked, true);
     assert.equal(content('admin.shortcuts').hasAttribute('data-editor-concealed'), false);
     assert.equal(content('admin.summary').inert, false);

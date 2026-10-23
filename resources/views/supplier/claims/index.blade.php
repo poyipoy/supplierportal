@@ -5,7 +5,7 @@
 @section('page-title', __('claims.copy.material_claims'))
 
 @section('content')
-<div class="tw-grid tw-gap-4">
+<div class="tw:grid tw:gap-4">
     {{-- Breadcrumb & Compact Page Header --}}
     <x-ui.breadcrumb :items="[
         __('purchasing.breadcrumbs.dashboard') => route('supplier.dashboard'),
@@ -25,7 +25,7 @@
         :title="__('claims.copy.discrepancy_claims_from_adasi')"
         :description="__('claims.copy.the_list_is_scoped_strictly_to_purchase_orders_issued_to_your_company')"
     >
-        <table class="table table-hover align-middle mb-0 tw-text-ui-xs w-100" id="claimTable">
+        <table class="table table-hover align-middle mb-0 tw:text-ui-xs w-100" id="claimTable">
             <thead class="table-light">
                 <tr>
                     <th scope="col">{{ __('claims.copy.claim_id') }}</th>
@@ -50,9 +50,9 @@
             serverSide: true,
             ajax: '{{ route("supplier.claims.index") }}',
             columns: [
-                { data: 'claim_id', name: 'id', className: 'fw-semibold tw-text-on-surface' },
-                { data: 'po_number', name: 'po_number', className: 'fw-bold tw-text-on-surface', orderable: false },
-                { data: 'created_date', name: 'created_at', className: 'ui-tabular-nums tw-text-on-surface-variant' },
+                { data: 'claim_id', name: 'id', className: 'fw-semibold tw:text-on-surface' },
+                { data: 'po_number', name: 'po_number', className: 'fw-bold tw:text-on-surface', orderable: false },
+                { data: 'created_date', name: 'created_at', className: 'ui-tabular-nums tw:text-on-surface-variant' },
                 { data: 'deadline_display', name: 'deadline', className: 'ui-tabular-nums' },
                 { data: 'status_badge', name: 'status', className: 'text-center', searchable: false },
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }

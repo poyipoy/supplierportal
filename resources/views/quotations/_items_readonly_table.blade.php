@@ -60,7 +60,7 @@
     class="ui-quotation-readonly"
     data-quotation-readonly
 >
-    <table class="table table-bordered align-middle mb-0 tw-text-ui-xs" style="width: max-content; min-width: 100%;">
+    <table class="table table-bordered align-middle mb-0 tw:text-ui-xs" style="width: max-content; min-width: 100%;">
         <caption class="visually-hidden">{{ __('procurement.quotation.table_caption') }}</caption>
         <thead class="table-light text-center align-middle">
             <tr>
@@ -96,11 +96,11 @@
             @endphp
             <tbody>
                 <tr class="is-requested-row">
-                    <td rowspan="2" class="ui-sticky-col text-center ui-tabular-nums tw-text-on-surface-variant" style="--ui-sticky-col-left: 0;">{{ $index + 1 }}</td>
-                    <th scope="rowgroup" rowspan="2" class="ui-sticky-col text-start tw-font-normal" style="--ui-sticky-col-left: 2.5rem;">
-                        <div class="fw-bold tw-text-on-surface">{{ $prItem?->material_name ?? '-' }}</div>
+                    <td rowspan="2" class="ui-sticky-col text-center ui-tabular-nums tw:text-on-surface-variant" style="--ui-sticky-col-left: 0;">{{ $index + 1 }}</td>
+                    <th scope="rowgroup" rowspan="2" class="ui-sticky-col text-start tw:font-normal" style="--ui-sticky-col-left: 2.5rem;">
+                        <div class="fw-bold tw:text-on-surface">{{ $prItem?->material_name ?? '-' }}</div>
                         @if($prItem?->shape)
-                            <span class="ui-status-chip ui-status-chip--neutral tw-mt-0.5">{{ $prItem->shape }}</span>
+                            <span class="ui-status-chip ui-status-chip--neutral tw:mt-0.5">{{ $prItem->shape }}</span>
                         @endif
                     </th>
                     <td class="text-center"><span class="ui-status-chip ui-status-chip--neutral">{{ __('procurement.quotation.row_requested') }}</span></td>
@@ -112,16 +112,16 @@
                     <td class="text-end ui-tabular-nums">{{ $fmt($item->requested_weight_per_unit) }}</td>
                     <td class="text-end ui-tabular-nums">{{ $fmt($item->requested_total_weight) }}</td>
                     <td class="text-end ui-tabular-nums">{{ $fmt($item->price_per_kg, 4) }}</td>
-                    @if($showRef)<td class="text-end tw-text-outline">—</td>@endif
-                    <td class="text-end ui-tabular-nums tw-text-on-surface-variant">{{ $item->is_available ? $fmt($item->requested_amount) : '—' }}</td>
-                    @if($showIdr)<td class="text-end tw-text-outline">—</td>@endif
-                    <td class="text-start tw-text-on-surface-variant">{{ $prItem?->remark ?: '—' }}</td>
-                    <td class="text-center tw-text-outline">—</td>
+                    @if($showRef)<td class="text-end tw:text-outline">—</td>@endif
+                    <td class="text-end ui-tabular-nums tw:text-on-surface-variant">{{ $item->is_available ? $fmt($item->requested_amount) : '—' }}</td>
+                    @if($showIdr)<td class="text-end tw:text-outline">—</td>@endif
+                    <td class="text-start tw:text-on-surface-variant">{{ $prItem?->remark ?: '—' }}</td>
+                    <td class="text-center tw:text-outline">—</td>
                     @if($showMtc)<td rowspan="2" class="text-center">
                         @forelse($item->attachments as $attachment)
                             <x-ui.icon-button :href="route('attachments.show', $attachment)" icon="paperclip" :label="__('common.closure.attachment_open', ['name' => $attachment->file_name])" size="sm" target="_blank" />
                         @empty
-                            <span class="tw-text-outline">—</span>
+                            <span class="tw:text-outline">—</span>
                         @endforelse
                     </td>@endif
                 </tr>
@@ -147,14 +147,14 @@
                                         @if($reference->isMatched())
                                             <div class="fw-semibold ui-tabular-nums text-nowrap">{{ $fmt($reference->convertedReferencePricePerKg, 4) }}</div>
                                             @if($reference->diffAmountPerKg !== null)
-                                                <div class="tw-text-on-surface-variant ui-tabular-nums text-nowrap"><span class="visually-hidden">{{ __('materials.reference_prices.reference_delta') }}</span>{{ bccomp($reference->diffAmountPerKg, '0', 4) > 0 ? '+' : '' }}{{ $fmt($reference->diffAmountPerKg, 4) }}@if($reference->diffPercent !== null) ({{ bccomp($reference->diffPercent, '0', 4) > 0 ? '+' : '' }}{{ $fmt($reference->diffPercent, 2) }}%)@endif</div>
+                                                <div class="tw:text-on-surface-variant ui-tabular-nums text-nowrap"><span class="visually-hidden">{{ __('materials.reference_prices.reference_delta') }}</span>{{ bccomp($reference->diffAmountPerKg, '0', 4) > 0 ? '+' : '' }}{{ $fmt($reference->diffAmountPerKg, 4) }}@if($reference->diffPercent !== null) ({{ bccomp($reference->diffPercent, '0', 4) > 0 ? '+' : '' }}{{ $fmt($reference->diffPercent, 2) }}%)@endif</div>
                                             @endif
                                         @else
                                             <span class="ui-status-chip ui-status-chip--neutral ui-quotation-readonly__ref-reason">{{ __('materials.reference_prices.reasons.'.$reference->reasonCode) }}</span>
                                         @endif
                                     </div>
                                 @else
-                                    <span class="tw-text-outline">—</span>
+                                    <span class="tw:text-outline">—</span>
                                 @endif
                             </td>
                         @endif
@@ -173,10 +173,10 @@
                             <span class="ui-status-chip ui-status-chip--error">{{ __('procurement.quotation.not_available') }}</span>
                         </td>
                     @endif
-                    <td class="text-start tw-text-on-surface-variant">{{ $item->notes ?: '—' }}</td>
+                    <td class="text-start tw:text-on-surface-variant">{{ $item->notes ?: '—' }}</td>
                     <td class="text-center">
                         @if($item->is_available)
-                            <div class="d-flex flex-column align-items-center tw-gap-1">
+                            <div class="d-flex flex-column align-items-center tw:gap-1">
                                 <span class="ui-status-chip {{ $qtyTone }}">{{ $qtyLabel }}</span>
                                 <span class="ui-status-chip {{ $specTone($availability['specification']['code']) }}">{{ $availability['specification']['label'] }}</span>
                             </div>
@@ -196,7 +196,7 @@
                 <td colspan="{{ count($dimensionOrder) + 1 }}"></td>
                 <td class="text-end ui-tabular-nums text-nowrap" data-total="requested-kg">{{ $fmt($totals['req_kg']) }}</td>
                 <td colspan="{{ $showRef ? 2 : 1 }}"></td>
-                <td class="text-end ui-tabular-nums tw-text-on-surface-variant text-nowrap" data-total="requested-amount">{{ $fmt($totals['req_amount']) }}</td>
+                <td class="text-end ui-tabular-nums tw:text-on-surface-variant text-nowrap" data-total="requested-amount">{{ $fmt($totals['req_amount']) }}</td>
                 <td colspan="{{ $trailingCols + ($showIdr ? 1 : 0) }}"></td>
             </tr>
             <tr>
@@ -212,7 +212,7 @@
                         @if($totalIdr !== null)
                             Rp {{ $fmt($totalIdr) }}
                         @else
-                            <span aria-hidden="true">—</span> <span class="tw-text-ui-xs tw-font-normal">{{ __('procurement.quotation.rate_unavailable') }}</span>
+                            <span aria-hidden="true">—</span> <span class="tw:text-ui-xs tw:font-normal">{{ __('procurement.quotation.rate_unavailable') }}</span>
                         @endif
                     </td>
                 @endif

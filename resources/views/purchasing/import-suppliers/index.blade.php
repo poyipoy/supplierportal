@@ -4,13 +4,13 @@
 @section('page-title', __('supplier_contact.directory.title'))
 
 @section('content')
-<div id="importSupplierQueueContainer" class="tw-grid tw-gap-5 tw-pb-16" data-server-tabs-container>
+<div id="importSupplierQueueContainer" class="tw:grid tw:gap-5 tw:pb-16" data-server-tabs-container>
     <x-ui.page-header
         :title="__('supplier_contact.directory.title')"
         :description="__('supplier_contact.directory.description')"
     />
 
-    <nav aria-label="{{ __('supplier_contact.directory.filter_label') }}" class="tw-flex tw-items-center tw-gap-2 tw-overflow-x-auto tw-pb-1" data-server-tabs-nav>
+    <nav aria-label="{{ __('supplier_contact.directory.filter_label') }}" class="tw:flex tw:items-center tw:gap-2 tw:overflow-x-auto tw:pb-1" data-server-tabs-nav>
         @include('purchasing.import-suppliers._queue_nav')
     </nav>
 

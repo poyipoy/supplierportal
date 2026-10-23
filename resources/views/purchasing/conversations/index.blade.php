@@ -3,7 +3,7 @@
 @section('page-title', __('purchasing.copy.negotiations_with_suppliers'))
 
 @section('content')
-<div class="tw-grid tw-gap-6">
+<div class="tw:grid tw:gap-6">
     <x-ui.page-header
         :title="__('purchasing.copy.negotiations_with_suppliers')"
         :eyebrow="__('purchasing.copy.purchasing')"
@@ -40,40 +40,40 @@
                             @else
                                 <x-ui.status-chip tone="success">PO</x-ui.status-chip>
                             @endif
-                            <span class="tw-ms-2 tw-font-semibold">{{ $conv->context_label }}</span>
+                            <span class="tw:ms-2 tw:font-semibold">{{ $conv->context_label }}</span>
                         </td>
                         <td class="fw-medium">{{ $conv->supplierUser->supplier->company_name ?? $conv->supplierUser->name }}</td>
                         <td>
                             @if($conv->latestMessage)
                                 @if($conv->latestMessage->sender_id === auth()->id())
-                                    <x-ui.icon name="reply" class="tw-me-1 tw-text-on-surface-variant" aria-label="{{ __('purchasing.copy.your_reply') }}" />
+                                    <x-ui.icon name="reply" class="tw:me-1 tw:text-on-surface-variant" aria-label="{{ __('purchasing.copy.your_reply') }}" />
                                 @endif
                                 {{ Str::limit($conv->latestMessage->body, 50) }}
                             @else
-                                <span class="tw-text-on-surface-variant">{{ __('purchasing.copy.no_messages_yet') }}</span>
+                                <span class="tw:text-on-surface-variant">{{ __('purchasing.copy.no_messages_yet') }}</span>
                             @endif
                         </td>
                         <td>
                             @if($conv->latestMessage)
-                                <span class="tw-text-ui-xs tw-text-on-surface-variant">{{ $conv->latestMessage->created_at->diffForHumans() }}</span>
+                                <span class="tw:text-ui-xs tw:text-on-surface-variant">{{ $conv->latestMessage->created_at->diffForHumans() }}</span>
                             @else
                                 -
                             @endif
                         </td>
                         <td>
-                            <div class="tw-flex tw-flex-wrap tw-gap-1.5">
+                            <div class="tw:flex tw:flex-wrap tw:gap-1.5">
                                 <x-ui.status-chip :tone="$statusTone">{{ $conv->statusLabelFor(auth()->user()) }}</x-ui.status-chip>
                                 <x-ui.status-chip :tone="$slaTone">{{ $sla['label'] }}</x-ui.status-chip>
                             </div>
                         </td>
                         <td class="text-end">
                             @php $unreadCount = $conv->unreadCountFor(auth()->id()); @endphp
-                            <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.conversations.show', $conv)" variant="outline" size="sm" class="tw-relative">
+                            <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.conversations.show', $conv)" variant="outline" size="sm" class="tw:relative">
                                 <x-slot:leading><x-ui.icon name="message-square-text" /></x-slot:leading>
                                 {{ __('purchasing.audit_ui.open_chat') }}
                                 @if($unreadCount > 0)
                                     <x-slot:trailing>
-                                        <span class="tw-inline-flex tw-min-w-5 tw-items-center tw-justify-center tw-rounded-ui-full tw-bg-error tw-px-1.5 tw-py-0.5 tw-text-ui-xs tw-font-semibold tw-text-error-foreground">{{ $unreadCount }}</span>
+                                        <span class="tw:inline-flex tw:min-w-5 tw:items-center tw:justify-center tw:rounded-ui-full tw:bg-error tw:px-1.5 tw:py-0.5 tw:text-ui-xs tw:font-semibold tw:text-error-foreground">{{ $unreadCount }}</span>
                                     </x-slot:trailing>
                                 @endif
                             </x-ui.button>

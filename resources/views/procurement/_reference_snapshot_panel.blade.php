@@ -9,13 +9,13 @@
     $snapshots = $po->referencePriceSnapshots;
     $num = fn ($value) => $value === null ? '—' : \App\Support\NumberFormat::maxDecimals($value, 4);
 @endphp
-<x-ui.card :title="__($rp.'.snapshot.title')" id="sec-reference-price" class="tw-min-w-0 tw-scroll-mt-24" data-reference-snapshot-panel>
+<x-ui.card :title="__($rp.'.snapshot.title')" id="sec-reference-price" class="tw:min-w-0 tw:scroll-mt-24" data-reference-snapshot-panel>
     @if($snapshots->isEmpty())
-        <p class="tw-m-0 tw-text-ui-sm tw-text-on-surface-variant" data-reference-not-captured>{{ __($rp.'.snapshot.not_captured') }}</p>
+        <p class="tw:m-0 tw:text-ui-sm tw:text-on-surface-variant" data-reference-not-captured>{{ __($rp.'.snapshot.not_captured') }}</p>
     @else
-        <p class="tw-mb-2 tw-text-ui-xs tw-text-on-surface-variant">{{ __($rp.'.snapshot.evaluation_date') }} {{ $snapshots->first()->evaluation_date->format('Y-m-d') }}</p>
+        <p class="tw:mb-2 tw:text-ui-xs tw:text-on-surface-variant">{{ __($rp.'.snapshot.evaluation_date') }} {{ $snapshots->first()->evaluation_date->format('Y-m-d') }}</p>
         <div class="table-responsive" role="region" tabindex="0" aria-label="{{ __($rp.'.snapshot.title') }}">
-            <table class="table table-sm align-middle mb-0 tw-text-ui-xs">
+            <table class="table table-sm align-middle mb-0 tw:text-ui-xs">
                 <caption class="visually-hidden">{{ __($rp.'.snapshot.title') }}</caption>
                 <thead class="table-light">
                     <tr>
@@ -42,7 +42,7 @@
                                 @if($matched)
                                     <x-ui.status-chip tone="success" size="sm">{{ __($rp.'.snapshot.matched') }}</x-ui.status-chip>
                                 @else
-                                    <span class="tw-text-on-surface-variant">{{ __($rp.'.reasons.'.$snapshot->reason_code) }}</span>
+                                    <span class="tw:text-on-surface-variant">{{ __($rp.'.reasons.'.$snapshot->reason_code) }}</span>
                                 @endif
                             </td>
                         </tr>

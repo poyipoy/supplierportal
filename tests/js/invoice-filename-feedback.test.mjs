@@ -11,7 +11,7 @@ function boot() {
     const fields = new Map();
     function element(id) {
         if (!fields.has(id)) {
-            const classes = new Set(['tw-hidden']);
+            const classes = new Set(['tw:hidden']);
             const listeners = new Map();
             fields.set(id, { value: '', files: [], classList: {
                 add: value => classes.add(value), remove: value => classes.delete(value),
@@ -37,30 +37,30 @@ test('a manually edited Tax Invoice number is no longer labelled as coming from 
     const app = boot();
     app.change('file_tax_invoice', ['12345678765432875.pdf']);
     assert.equal(app.element('tax_invoice_number').value, '12.34.56.78765432875');
-    assert.equal(app.element('tax-autofill-badge').classList.contains('tw-hidden'), false);
+    assert.equal(app.element('tax-autofill-badge').classList.contains('tw:hidden'), false);
     app.type('tax_invoice_number', '12.34.56.78765432876');
-    assert.equal(app.element('tax-autofill-badge').classList.contains('tw-hidden'), true);
+    assert.equal(app.element('tax-autofill-badge').classList.contains('tw:hidden'), true);
     app.change('file_tax_invoice', ['12345678765432876.pdf']);
-    assert.equal(app.element('tax-autofill-badge').classList.contains('tw-hidden'), false);
+    assert.equal(app.element('tax-autofill-badge').classList.contains('tw:hidden'), false);
 });
 
 test('format-only edits still match the filename and clearing the file clears its provenance badge', () => {
     const app = boot();
     app.change('file_tax_invoice', ['0100002612345678.pdf']);
     app.type('tax_invoice_number', '0100002612345678');
-    assert.equal(app.element('tax-autofill-badge').classList.contains('tw-hidden'), false);
+    assert.equal(app.element('tax-autofill-badge').classList.contains('tw:hidden'), false);
     app.change('file_tax_invoice', []);
-    assert.equal(app.element('tax-autofill-badge').classList.contains('tw-hidden'), true);
+    assert.equal(app.element('tax-autofill-badge').classList.contains('tw:hidden'), true);
 });
 
 test('invoice number provenance also follows the current field instead of the old attachment', () => {
     const app = boot();
     app.change('file_invoice', ['INV-001.pdf']);
-    assert.equal(app.element('invoice-autofill-badge').classList.contains('tw-hidden'), false);
+    assert.equal(app.element('invoice-autofill-badge').classList.contains('tw:hidden'), false);
     app.type('invoice-number', 'INV-002');
-    assert.equal(app.element('invoice-autofill-badge').classList.contains('tw-hidden'), true);
+    assert.equal(app.element('invoice-autofill-badge').classList.contains('tw:hidden'), true);
     app.change('file_invoice', []);
-    assert.equal(app.element('invoice-autofill-badge').classList.contains('tw-hidden'), true);
+    assert.equal(app.element('invoice-autofill-badge').classList.contains('tw:hidden'), true);
 });
 
 test('editing an invoice identity removes the stale field error while retaining the attachment', () => {
@@ -89,6 +89,6 @@ test('pasting a different tax number clears its stale error and filename badge t
     }, { preventDefault() {}, clipboardData: { getData: () => '12345678765432876' } });
     assert.equal(input.value, '12.34.56.78765432876');
     assert.equal(removed, true);
-    assert.equal(app.element('tax-autofill-badge').classList.contains('tw-hidden'), true);
+    assert.equal(app.element('tax-autofill-badge').classList.contains('tw:hidden'), true);
     assert.equal(app.element('file_tax_invoice').files[0].name, '12345678765432875.pdf');
 });

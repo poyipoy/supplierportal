@@ -53,39 +53,39 @@
      LEFT PANEL: ACTIVE ONBOARDING COMPANION (Desktop Sticky)
      â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
 @section('brand-panel')
-<aside class="auth-brand-panel registration-guide-panel tw-relative tw-flex tw-flex-col tw-justify-between tw-overflow-y-auto tw-border-e tw-border-outline-variant tw-text-on-surface tw-p-8 lg:tw-p-10 xl:tw-p-12 tw-sticky tw-top-0 tw-h-screen tw-z-10" aria-label="{{ __('registration.guide') }}">
+<aside class="auth-brand-panel registration-guide-panel tw:relative tw:flex tw:flex-col tw:justify-between tw:overflow-y-auto tw:border-e tw:border-outline-variant tw:text-on-surface tw:p-8 tw:lg:p-10 tw:xl:p-12 tw:sticky tw:top-0 tw:h-screen tw:z-10" aria-label="{{ __('registration.guide') }}">
     {{-- Brand & Header Section --}}
     <div>
-        <div class="tw-flex tw-items-center tw-gap-3">
-            <img src="{{ asset('assets/images/logo-adasi.png') }}" alt="{{ __('common.review.logo') }}" class="tw-h-9 tw-w-auto tw-shrink-0" draggable="false">
+        <div class="tw:flex tw:items-center tw:gap-3">
+            <img src="{{ asset('assets/images/logo-adasi.png') }}" alt="{{ __('common.review.logo') }}" class="tw:h-9 tw:w-auto tw:shrink-0" draggable="false">
             <div>
-                <div class="tw-text-ui-xs tw-font-bold tw-tracking-wider tw-text-on-surface tw-uppercase">PT Astra Daido Steel Indonesia</div>
-                <div class="tw-text-[11px] tw-font-medium tw-text-on-surface-variant">{{ __('registration.portal') }}</div>
+                <div class="tw:text-ui-xs tw:font-bold tw:tracking-wider tw:text-on-surface tw:uppercase">PT Astra Daido Steel Indonesia</div>
+                <div class="tw:text-[11px] tw:font-medium tw:text-on-surface-variant">{{ __('registration.portal') }}</div>
             </div>
         </div>
 
-        <div class="tw-mt-8">
-            <span class="tw-inline-flex tw-items-center tw-gap-1.5 tw-text-[11px] tw-font-semibold tw-uppercase tw-tracking-wider tw-text-primary">
+        <div class="tw:mt-8">
+            <span class="tw:inline-flex tw:items-center tw:gap-1.5 tw:text-[11px] tw:font-semibold tw:uppercase tw:tracking-wider tw:text-primary">
                 <x-ui.icon name="shield-check" size="xs" />
                 <span>{{ __('registration.official') }}</span>
             </span>
-            <h1 class="tw-m-0 tw-text-ui-xl xl:tw-text-ui-2xl tw-font-bold tw-text-on-surface tw-mt-2 tw-leading-tight tw-text-balance">
+            <h1 class="tw:m-0 tw:text-ui-xl tw:xl:text-ui-2xl tw:font-bold tw:text-on-surface tw:mt-2 tw:leading-tight tw:text-balance">
                 {{ __('registration.join') }}
             </h1>
-            <p class="tw-m-0 tw-text-ui-xs tw-text-on-surface-variant tw-mt-2 tw-leading-relaxed tw-max-w-md tw-text-pretty">
+            <p class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant tw:mt-2 tw:leading-relaxed tw:max-w-md tw:text-pretty">
                 {{ __('registration.join_help') }}
             </p>
         </div>
 
         {{-- Vertical Stepper Tracker --}}
-        <nav class="tw-mt-8" aria-label="{{ __('registration.steps') }}">
-            <ol class="tw-m-0 tw-list-none tw-p-0">
+        <nav class="tw:mt-8" aria-label="{{ __('registration.steps') }}">
+            <ol class="tw:m-0 tw:list-none tw:p-0">
                 @foreach ($stepper as $number => $item)
-                    <li class="tw-flex tw-gap-3.5">
-                        <div class="tw-flex tw-flex-col tw-items-center tw-shrink-0">
+                    <li class="tw:flex tw:gap-3.5">
+                        <div class="tw:flex tw:flex-col tw:items-center tw:shrink-0">
                             <button
                                 type="button"
-                                class="ui-focus-ring tw-flex tw-h-8 tw-w-8 tw-items-center tw-justify-center tw-rounded-full tw-border tw-text-ui-xs tw-font-bold tw-transition-colors"
+                                class="ui-focus-ring tw:flex tw:h-8 tw:w-8 tw:items-center tw:justify-center tw:rounded-full tw:border tw:text-ui-xs tw:font-bold tw:transition-colors"
                                 :class="stepMarkerClass({{ $number }})"
                                 @click="goToStep({{ $number }})"
                                 :aria-current="step === {{ $number }} ? 'step' : null"
@@ -98,19 +98,19 @@
                                     <x-ui.icon name="check" size="xs" />
                                 </template>
                                 <template x-if="!hasStepError({{ $number }}) && step <= {{ $number }}">
-                                    <span class="tw-tabular-nums">{{ $number }}</span>
+                                    <span class="tw:tabular-nums">{{ $number }}</span>
                                 </template>
                             </button>
                             @unless ($loop->last)
-                                <span class="tw-my-1 tw-w-px tw-flex-1 tw-min-h-6" :class="step > {{ $number }} ? 'tw-bg-primary' : 'tw-bg-outline-variant'" aria-hidden="true"></span>
+                                <span class="tw:my-1 tw:w-px tw:flex-1 tw:min-h-6" :class="step > {{ $number }} ? 'tw:bg-primary' : 'tw:bg-outline-variant'" aria-hidden="true"></span>
                             @endunless
                         </div>
-                        <div class="tw-pt-1.5 tw-pb-4 tw-min-w-0">
-                            <div class="tw-text-ui-xs tw-font-semibold" :class="step === {{ $number }} ? 'tw-text-primary' : (step > {{ $number }} ? 'tw-text-on-surface' : 'tw-text-on-surface-variant')">
+                        <div class="tw:pt-1.5 tw:pb-4 tw:min-w-0">
+                            <div class="tw:text-ui-xs tw:font-semibold" :class="step === {{ $number }} ? 'tw:text-primary' : (step > {{ $number }} ? 'tw:text-on-surface' : 'tw:text-on-surface-variant')">
                                 {{ $item['title'] }}
                             </div>
-                            <div class="tw-text-[11px] tw-text-on-surface-variant tw-mt-0.5 tw-text-pretty">{{ $item['help'] }}</div>
-                            <div x-show="hasStepError({{ $number }})" x-cloak class="tw-mt-1 tw-inline-flex tw-items-center tw-gap-1 tw-text-[11px] tw-font-semibold tw-text-error">
+                            <div class="tw:text-[11px] tw:text-on-surface-variant tw:mt-0.5 tw:text-pretty">{{ $item['help'] }}</div>
+                            <div x-show="hasStepError({{ $number }})" x-cloak class="tw:mt-1 tw:inline-flex tw:items-center tw:gap-1 tw:text-[11px] tw:font-semibold tw:text-error">
                                 <x-ui.icon name="circle-alert" size="xs" />
                                 <span>{{ __('registration.stepper.has_errors') }}</span>
                             </div>
@@ -122,59 +122,59 @@
     </div>
 
     {{-- Contextual Guidance Card (Dynamically updates per step) --}}
-    <div class="tw-my-6">
-        <div class="tw-p-4 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface">
+    <div class="tw:my-6">
+        <div class="tw:p-4 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface">
             {{-- Step 1 Tip --}}
             <div x-show="step === 1" x-cloak>
-                <div class="tw-flex tw-items-center tw-gap-2 tw-text-primary tw-text-ui-xs tw-font-bold">
+                <div class="tw:flex tw:items-center tw:gap-2 tw:text-primary tw:text-ui-xs tw:font-bold">
                     <x-ui.icon name="info" size="xs" />
                     <span>{{ __('registration.guide_credentials') }}</span>
                 </div>
-                <p class="tw-text-[11px] tw-text-on-surface-variant tw-mt-1.5 tw-mb-0 tw-leading-relaxed tw-text-pretty">
+                <p class="tw:text-[11px] tw:text-on-surface-variant tw:mt-1.5 tw:mb-0 tw:leading-relaxed tw:text-pretty">
                     {{ __('registration.guide_email') }}
                 </p>
             </div>
 
             {{-- Step 2 Tip --}}
             <div x-show="step === 2" x-cloak>
-                <div class="tw-flex tw-items-center tw-gap-2 tw-text-primary tw-text-ui-xs tw-font-bold">
+                <div class="tw:flex tw:items-center tw:gap-2 tw:text-primary tw:text-ui-xs tw:font-bold">
                     <x-ui.icon name="clipboard-check" size="xs" />
                     <span>{{ __('registration.questionnaire.title') }}</span>
                 </div>
-                <p class="tw-text-[11px] tw-text-on-surface-variant tw-mt-1.5 tw-mb-0 tw-leading-relaxed tw-text-pretty">
+                <p class="tw:text-[11px] tw:text-on-surface-variant tw:mt-1.5 tw:mb-0 tw:leading-relaxed tw:text-pretty">
                     {{ __('registration.questionnaire.help') }}
                 </p>
             </div>
 
             {{-- Step 3 Tip --}}
             <div x-show="step === 3" x-cloak>
-                <div class="tw-flex tw-items-center tw-gap-2 tw-text-primary tw-text-ui-xs tw-font-bold">
+                <div class="tw:flex tw:items-center tw:gap-2 tw:text-primary tw:text-ui-xs tw:font-bold">
                     <x-ui.icon name="credit-card" size="xs" />
                     <span>{{ __('registration.guide_bank') }}</span>
                 </div>
-                <p class="tw-text-[11px] tw-text-on-surface-variant tw-mt-1.5 tw-mb-0 tw-leading-relaxed tw-text-pretty">
+                <p class="tw:text-[11px] tw:text-on-surface-variant tw:mt-1.5 tw:mb-0 tw:leading-relaxed tw:text-pretty">
                     {{ __('registration.guide_nib') }}
                 </p>
             </div>
 
             {{-- Step 4 Tip --}}
             <div x-show="step === 4" x-cloak>
-                <div class="tw-flex tw-items-center tw-gap-2 tw-text-primary tw-text-ui-xs tw-font-bold">
+                <div class="tw:flex tw:items-center tw:gap-2 tw:text-primary tw:text-ui-xs tw:font-bold">
                     <x-ui.icon name="file-text" size="xs" />
                     <span>{{ __('registration.guide_documents') }}</span>
                 </div>
-                <p class="tw-text-[11px] tw-text-on-surface-variant tw-mt-1.5 tw-mb-0 tw-leading-relaxed tw-text-pretty">
+                <p class="tw:text-[11px] tw:text-on-surface-variant tw:mt-1.5 tw:mb-0 tw:leading-relaxed tw:text-pretty">
                     {{ __('registration.guide_sknr') }}
                 </p>
             </div>
 
             {{-- Step 5 Tip --}}
             <div x-show="step === 5" x-cloak>
-                <div class="tw-flex tw-items-center tw-gap-2 tw-text-primary tw-text-ui-xs tw-font-bold">
+                <div class="tw:flex tw:items-center tw:gap-2 tw:text-primary tw:text-ui-xs tw:font-bold">
                     <x-ui.icon name="shield-check" size="xs" />
                     <span>{{ __('registration.guide_review') }}</span>
                 </div>
-                <p class="tw-text-[11px] tw-text-on-surface-variant tw-mt-1.5 tw-mb-0 tw-leading-relaxed tw-text-pretty">
+                <p class="tw:text-[11px] tw:text-on-surface-variant tw:mt-1.5 tw:mb-0 tw:leading-relaxed tw:text-pretty">
                     {{ __('registration.guide_after') }}
                 </p>
             </div>
@@ -182,23 +182,23 @@
     </div>
 
     {{-- Bottom Support Card --}}
-    <div class="tw-pt-4 tw-border-t tw-border-outline-variant tw-text-ui-xs tw-text-on-surface-variant">
-        <div class="tw-flex tw-items-center tw-justify-between tw-gap-3">
-            <div class="tw-min-w-0">
-                <div class="tw-text-[11px] tw-font-medium">{{ __('registration.support') }}</div>
-                <div class="tw-text-on-surface tw-font-semibold tw-mt-0.5 tw-break-all">{{ config('support.supplier_email') }}</div>
+    <div class="tw:pt-4 tw:border-t tw:border-outline-variant tw:text-ui-xs tw:text-on-surface-variant">
+        <div class="tw:flex tw:items-center tw:justify-between tw:gap-3">
+            <div class="tw:min-w-0">
+                <div class="tw:text-[11px] tw:font-medium">{{ __('registration.support') }}</div>
+                <div class="tw:text-on-surface tw:font-semibold tw:mt-0.5 tw:break-all">{{ config('support.supplier_email') }}</div>
                 @if(config('support.supplier_whatsapp') && config('support.supplier_whatsapp_url'))
-                    <a href="{{ config('support.supplier_whatsapp_url') }}" target="_blank" rel="noopener noreferrer" class="ui-focus-ring tw-mt-1 tw-inline-flex tw-items-center tw-gap-1 tw-rounded-ui-xs tw-text-on-surface-variant hover:tw-text-primary">
+                    <a href="{{ config('support.supplier_whatsapp_url') }}" target="_blank" rel="noopener noreferrer" class="ui-focus-ring tw:mt-1 tw:inline-flex tw:items-center tw:gap-1 tw:rounded-ui-xs tw:text-on-surface-variant tw:hover:text-primary">
                         <x-ui.icon name="whatsapp" size="xs" />
                         <span>{{ __('registration.support_whatsapp') }} {{ config('support.supplier_whatsapp') }}</span>
                     </a>
                 @endif
             </div>
-            <a href="{{ route('login') }}" class="ui-focus-ring tw-shrink-0 tw-rounded-ui-xs tw-text-primary tw-text-ui-xs tw-font-semibold hover:tw-underline">
+            <a href="{{ route('login') }}" class="ui-focus-ring tw:shrink-0 tw:rounded-ui-xs tw:text-primary tw:text-ui-xs tw:font-semibold tw:hover:underline">
                 {{ __('registration.portal_sign_in') }}
             </a>
         </div>
-        <div class="tw-mt-3 tw-text-[10px]">
+        <div class="tw:mt-3 tw:text-[10px]">
             &copy; {{ now()->year }} PT Astra Daido Steel Indonesia. {{ __('registration.rights') }}
         </div>
     </div>
@@ -358,13 +358,13 @@
 </style>
 
 {{-- Mobile Compact Stepper (Visible only on < 1024px) --}}
-<nav class="lg:tw-hidden tw-mb-5 tw-pb-4 tw-border-b tw-border-outline-variant" aria-label="{{ __('registration.steps') }}">
-    <ol class="tw-m-0 tw-flex tw-list-none tw-items-center tw-gap-1.5 tw-p-0">
+<nav class="tw:lg:hidden tw:mb-5 tw:pb-4 tw:border-b tw:border-outline-variant" aria-label="{{ __('registration.steps') }}">
+    <ol class="tw:m-0 tw:flex tw:list-none tw:items-center tw:gap-1.5 tw:p-0">
         @foreach ($stepper as $number => $item)
-            <li class="tw-flex tw-flex-1 tw-items-center tw-gap-1.5 last:tw-flex-none">
+            <li class="tw:flex tw:flex-1 tw:items-center tw:gap-1.5 tw:last:flex-none">
                 <button
                     type="button"
-                    class="ui-focus-ring tw-flex tw-h-8 tw-w-8 tw-shrink-0 tw-items-center tw-justify-center tw-rounded-full tw-border tw-text-ui-xs tw-font-bold tw-transition-colors"
+                    class="ui-focus-ring tw:flex tw:h-8 tw:w-8 tw:shrink-0 tw:items-center tw:justify-center tw:rounded-full tw:border tw:text-ui-xs tw:font-bold tw:transition-colors"
                     :class="stepMarkerClass({{ $number }})"
                     @click="goToStep({{ $number }})"
                     :aria-current="step === {{ $number }} ? 'step' : null"
@@ -377,64 +377,64 @@
                         <x-ui.icon name="check" size="xs" />
                     </template>
                     <template x-if="!hasStepError({{ $number }}) && step <= {{ $number }}">
-                        <span class="tw-tabular-nums">{{ $number }}</span>
+                        <span class="tw:tabular-nums">{{ $number }}</span>
                     </template>
                 </button>
                 @unless ($loop->last)
-                    <span class="tw-h-px tw-flex-1" :class="step > {{ $number }} ? 'tw-bg-primary' : 'tw-bg-outline-variant'" aria-hidden="true"></span>
+                    <span class="tw:h-px tw:flex-1" :class="step > {{ $number }} ? 'tw:bg-primary' : 'tw:bg-outline-variant'" aria-hidden="true"></span>
                 @endunless
             </li>
         @endforeach
     </ol>
-    <div class="tw-mt-2.5 tw-flex tw-items-baseline tw-justify-between tw-gap-3">
-        <span class="tw-text-ui-sm tw-font-semibold tw-text-on-surface tw-text-pretty" x-text="stepTitles[step]"></span>
-        <span class="tw-shrink-0 tw-text-ui-xs tw-font-medium tw-tabular-nums tw-text-on-surface-variant">
+    <div class="tw:mt-2.5 tw:flex tw:items-baseline tw:justify-between tw:gap-3">
+        <span class="tw:text-ui-sm tw:font-semibold tw:text-on-surface tw:text-pretty" x-text="stepTitles[step]"></span>
+        <span class="tw:shrink-0 tw:text-ui-xs tw:font-medium tw:tabular-nums tw:text-on-surface-variant">
             {{ __('registration.step') }} <span x-text="step"></span> {{ __('registration.of_total', ['total' => $totalSteps]) }}
         </span>
     </div>
 </nav>
 
 {{-- Main Form Header --}}
-<header class="tw-mb-6">
-    <div class="tw-flex tw-items-center tw-justify-between tw-gap-3">
-        <div class="tw-flex tw-items-center tw-gap-2.5">
+<header class="tw:mb-6">
+    <div class="tw:flex tw:items-center tw:justify-between tw:gap-3">
+        <div class="tw:flex tw:items-center tw:gap-2.5">
             <div class="form-step-badge">
                 <x-ui.icon name="layers" size="xs" />
                 <span>{{ __('registration.step') }} <span x-text="step"></span> / {{ $totalSteps }}</span>
             </div>
-            <span class="tw-text-ui-xs tw-text-on-surface-variant tw-hidden sm:tw-inline">
-                {{ __('registration.fields_marked') }} <span class="tw-text-error tw-font-bold">*</span> {{ __('registration.required_text') }}
+            <span class="tw:text-ui-xs tw:text-on-surface-variant tw:hidden tw:sm:inline">
+                {{ __('registration.fields_marked') }} <span class="tw:text-error tw:font-bold">*</span> {{ __('registration.required_text') }}
             </span>
         </div>
 
         {{-- Language Switcher Toggle --}}
-        <div class="lang-toggle-track tw-inline-flex tw-items-center tw-p-1 tw-rounded-ui-full tw-bg-surface-container-high tw-border tw-border-outline-strong tw-shadow-xs" role="group" aria-label="{{ __('registration.language_selector') }}">
+        <div class="lang-toggle-track tw:inline-flex tw:items-center tw:p-1 tw:rounded-ui-full tw:bg-surface-container-high tw:border tw:border-outline-strong tw-shadow-xs" role="group" aria-label="{{ __('registration.language_selector') }}">
             <button
                 type="button"
                 @click="switchLanguage('id')"
-                class="lang-pill-btn ui-focus-ring tw-flex tw-items-center tw-gap-1.5 tw-px-3 tw-py-1.5 tw-min-h-8 tw-rounded-ui-full tw-text-ui-xs tw-font-bold"
-                :class="currentLocale === 'id' ? 'is-active tw-bg-surface tw-text-primary tw-border-outline tw-shadow-xs' : 'tw-border-transparent tw-text-on-surface-variant hover:tw-text-on-surface hover:tw-bg-surface/60'"
+                class="lang-pill-btn ui-focus-ring tw:flex tw:items-center tw:gap-1.5 tw:px-3 tw:py-1.5 tw:min-h-8 tw:rounded-ui-full tw:text-ui-xs tw:font-bold"
+                :class="currentLocale === 'id' ? 'is-active tw:bg-surface tw:text-primary tw:border-outline tw-shadow-xs' : 'tw:border-transparent tw:text-on-surface-variant tw:hover:text-on-surface tw:hover:bg-surface/60'"
                 aria-label="Bahasa Indonesia"
                 :aria-pressed="currentLocale === 'id'"
             >
                 <span class="lang-flag-badge" aria-hidden="true">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" preserveAspectRatio="none" class="tw-w-full tw-h-full" focusable="false">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" preserveAspectRatio="none" class="tw:w-full tw:h-full" focusable="false">
                         <rect width="60" height="20" fill="#e70011"/>
                         <rect y="20" width="60" height="20" fill="#ffffff"/>
                     </svg>
                 </span>
-                <span class="tw-tracking-wide">ID</span>
+                <span class="tw:tracking-wide">ID</span>
             </button>
             <button
                 type="button"
                 @click="switchLanguage('en')"
-                class="lang-pill-btn ui-focus-ring tw-flex tw-items-center tw-gap-1.5 tw-px-3 tw-py-1.5 tw-min-h-8 tw-rounded-ui-full tw-text-ui-xs tw-font-bold"
-                :class="currentLocale === 'en' ? 'is-active tw-bg-surface tw-text-primary tw-border-outline tw-shadow-xs' : 'tw-border-transparent tw-text-on-surface-variant hover:tw-text-on-surface hover:tw-bg-surface/60'"
+                class="lang-pill-btn ui-focus-ring tw:flex tw:items-center tw:gap-1.5 tw:px-3 tw:py-1.5 tw:min-h-8 tw:rounded-ui-full tw:text-ui-xs tw:font-bold"
+                :class="currentLocale === 'en' ? 'is-active tw:bg-surface tw:text-primary tw:border-outline tw-shadow-xs' : 'tw:border-transparent tw:text-on-surface-variant tw:hover:text-on-surface tw:hover:bg-surface/60'"
                 aria-label="English"
                 :aria-pressed="currentLocale === 'en'"
             >
                 <span class="lang-flag-badge" aria-hidden="true">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" preserveAspectRatio="none" class="tw-w-full tw-h-full" focusable="false">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" preserveAspectRatio="none" class="tw:w-full tw:h-full" focusable="false">
                         <path fill="#012169" d="M0 0h60v40H0z"/>
                         <path stroke="#ffffff" stroke-width="8" d="M0 0l60 40M60 0L0 40"/>
                         <path stroke="#c8102e" stroke-width="2.67" d="M0 0l27 18M60 0L33 18M60 40L33 22M0 40l27-18"/>
@@ -442,15 +442,15 @@
                         <path stroke="#c8102e" stroke-width="8" d="M30 0v40M0 20h60"/>
                     </svg>
                 </span>
-                <span class="tw-tracking-wide">EN</span>
+                <span class="tw:tracking-wide">EN</span>
             </button>
         </div>
     </div>
 
-    <h2 class="tw-m-0 tw-mt-2 tw-text-ui-xl lg:tw-text-ui-2xl tw-font-bold tw-tracking-tight tw-text-on-surface" x-text="stepHeadings[step]">
+    <h2 class="tw:m-0 tw:mt-2 tw:text-ui-xl tw:lg:text-ui-2xl tw:font-bold tw:tracking-tight tw:text-on-surface" x-text="stepHeadings[step]">
         {{ __('registration.account_profile') }}
     </h2>
-    <p class="tw-m-0 tw-mt-1.5 tw-text-ui-sm tw-text-on-surface-variant" x-text="stepSubheadings[step]">
+    <p class="tw:m-0 tw:mt-1.5 tw:text-ui-sm tw:text-on-surface-variant" x-text="stepSubheadings[step]">
         {{ __('registration.start_help') }}
     </p>
 </header>
@@ -459,28 +459,28 @@
 <div
     x-show="hasDraft && step === 1"
     x-cloak
-    class="tw-mb-5 tw-p-3.5 tw-rounded-ui-sm tw-border tw-border-primary/30 tw-bg-primary/5 tw-flex tw-flex-col sm:tw-flex-row sm:tw-items-center sm:tw-justify-between tw-gap-3"
+    class="tw:mb-5 tw:p-3.5 tw:rounded-ui-sm tw:border tw:border-primary/30 tw:bg-primary/5 tw:flex tw:flex-col tw:sm:flex-row tw:sm:items-center tw:sm:justify-between tw:gap-3"
 >
-    <div class="tw-flex tw-items-start tw-gap-2.5">
-        <x-ui.icon name="history" size="sm" class="tw-text-primary tw-shrink-0 tw-mt-0.5" />
+    <div class="tw:flex tw:items-start tw:gap-2.5">
+        <x-ui.icon name="history" size="sm" class="tw:text-primary tw:shrink-0 tw:mt-0.5" />
         <div>
-            <div class="tw-text-ui-xs tw-font-bold tw-text-on-surface">{{ __('registration.draft') }}</div>
-            <div class="tw-text-[11px] tw-text-on-surface-variant tw-mt-0.5">
+            <div class="tw:text-ui-xs tw:font-bold tw:text-on-surface">{{ __('registration.draft') }}</div>
+            <div class="tw:text-[11px] tw:text-on-surface-variant tw:mt-0.5">
                 {{ __('registration.draft_help') }}
             </div>
         </div>
     </div>
-    <div class="tw-flex tw-items-center tw-gap-2 tw-shrink-0">
+    <div class="tw:flex tw:items-center tw:gap-2 tw:shrink-0">
         <button
             type="button"
-            class="ui-motion ui-focus-ring tw-px-3 tw-py-1.5 tw-rounded-ui-xs tw-bg-primary tw-text-white tw-text-ui-xs tw-font-semibold hover:tw-brightness-95 active:tw-scale-95"
+            class="ui-motion ui-focus-ring tw:px-3 tw:py-1.5 tw:rounded-ui-xs tw:bg-primary tw:text-white tw:text-ui-xs tw:font-semibold tw:hover:brightness-95 tw:active:scale-95"
             @click="restoreDraft()"
         >
             {{ __('registration.restore') }}
         </button>
         <button
             type="button"
-            class="ui-motion ui-focus-ring tw-px-2.5 tw-py-1.5 tw-rounded-ui-xs tw-border tw-border-outline-variant tw-bg-surface tw-text-on-surface-variant tw-text-ui-xs hover:tw-bg-surface-container"
+            class="ui-motion ui-focus-ring tw:px-2.5 tw:py-1.5 tw:rounded-ui-xs tw:border tw:border-outline-variant tw:bg-surface tw:text-on-surface-variant tw:text-ui-xs tw:hover:bg-surface-container"
             @click="discardDraft()"
         >
             {{ __('registration.ignore') }}
@@ -490,16 +490,16 @@
 
 {{-- Server-Side Error Alert --}}
 @if ($errors->any())
-    <div class="tw-rounded-ui-sm tw-border tw-border-error/40 tw-bg-error-container tw-p-3.5 tw-text-on-error-container tw-mb-5" role="alert" tabindex="-1" data-error-summary="supplierRegistrationForm">
-        <div class="tw-flex tw-items-center tw-gap-2 tw-font-semibold tw-text-ui-sm">
+    <div class="tw:rounded-ui-sm tw:border tw:border-error/40 tw:bg-error-container tw:p-3.5 tw:text-on-error-container tw:mb-5" role="alert" tabindex="-1" data-error-summary="supplierRegistrationForm">
+        <div class="tw:flex tw:items-center tw:gap-2 tw:font-semibold tw:text-ui-sm">
             <x-ui.icon name="alert-triangle" size="sm" />
             <span>{{ __('registration.errors') }}</span>
         </div>
-        <p class="tw-m-0 tw-mt-0.5 tw-text-ui-xs">{{ __('registration.errors_jump_help') }}</p>
-        <ul class="tw-m-0 tw-mt-2 tw-ps-5 tw-text-ui-xs tw-space-y-1">
+        <p class="tw:m-0 tw:mt-0.5 tw:text-ui-xs">{{ __('registration.errors_jump_help') }}</p>
+        <ul class="tw:m-0 tw:mt-2 tw:ps-5 tw:text-ui-xs tw:space-y-1">
             @foreach ($errors->messages() as $field => $messages)
                 <li>
-                    <button type="button" class="ui-focus-ring tw-border-0 tw-bg-transparent tw-p-0 tw-text-start tw-font-medium tw-text-on-error-container tw-underline tw-underline-offset-2" data-error-field="{{ $field }}">
+                    <button type="button" class="ui-focus-ring tw:border-0 tw:bg-transparent tw:p-0 tw:text-start tw:font-medium tw:text-on-error-container tw:underline tw:underline-offset-2" data-error-field="{{ $field }}">
                         {{ $messages[0] }}
                     </button>
                 </li>
@@ -512,13 +512,13 @@
 <div
     x-show="clientStepError"
     x-cloak
-    class="tw-mb-4 tw-p-3 tw-rounded-ui-sm tw-bg-error-container/80 tw-text-on-error-container tw-flex tw-items-center tw-justify-between tw-gap-2 tw-text-ui-xs"
+    class="tw:mb-4 tw:p-3 tw:rounded-ui-sm tw:bg-error-container/80 tw:text-on-error-container tw:flex tw:items-center tw:justify-between tw:gap-2 tw:text-ui-xs"
 >
-    <div class="tw-flex tw-items-center tw-gap-2">
-        <x-ui.icon name="alert-circle" size="sm" class="tw-text-error" />
+    <div class="tw:flex tw:items-center tw:gap-2">
+        <x-ui.icon name="alert-circle" size="sm" class="tw:text-error" />
         <span x-text="clientStepError"></span>
     </div>
-    <button type="button" @click="clientStepError = ''" class="tw-text-on-error-container hover:tw-opacity-70">
+    <button type="button" @click="clientStepError = ''" class="tw:text-on-error-container tw:hover:opacity-70">
         <x-ui.icon name="x" size="xs" />
     </button>
 </div>
@@ -545,25 +545,25 @@
     {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
          STEP 1: ACCOUNT CREDENTIALS & COMPANY PROFILE
          â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
-    <div x-show="step === 1" x-cloak data-wizard-step="1" class="tw-space-y-5 tw-transition-opacity tw-duration-200">
+    <div x-show="step === 1" x-cloak data-wizard-step="1" class="tw:space-y-5 tw:transition-opacity tw:duration-200">
         {{-- Section 1.1: Portal Account Credentials --}}
-        <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-5">
-            <div class="tw-flex tw-items-center tw-gap-2 tw-text-primary tw-font-bold tw-text-ui-sm tw-mb-1">
+        <div class="tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container-lowest tw:p-5">
+            <div class="tw:flex tw:items-center tw:gap-2 tw:text-primary tw:font-bold tw:text-ui-sm tw:mb-1">
                 <x-ui.icon name="key" size="sm" />
                 <span>{{ __('registration.credentials') }}</span>
             </div>
-            <p class="tw-m-0 tw-mb-4 tw-text-ui-xs tw-text-on-surface-variant">
+            <p class="tw:m-0 tw:mb-4 tw:text-ui-xs tw:text-on-surface-variant">
                 {{ __('registration.credentials_help') }}
             </p>
 
-            <div class="tw-grid tw-gap-4 md:tw-grid-cols-2 tw-items-start">
+            <div class="tw:grid tw:gap-4 tw:md:grid-cols-2 tw:items-start">
                 {{-- Official Company Email --}}
-                <div class="tw-grid tw-content-start tw-gap-1.5 md:tw-col-span-2">
-                    <label for="email" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
-                        {{ __('registration.email') }} <span class="tw-text-error">*</span>
+                <div class="tw:grid tw:content-start tw:gap-1.5 tw:md:col-span-2">
+                    <label for="email" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">
+                        {{ __('registration.email') }} <span class="tw:text-error">*</span>
                     </label>
-                    <div class="tw-relative">
-                        <div class="tw-absolute tw-inset-y-0 tw-start-0 tw-flex tw-items-center tw-pl-3 tw-pointer-events-none tw-text-on-surface-variant">
+                    <div class="tw:relative">
+                        <div class="tw:absolute tw:inset-y-0 tw:start-0 tw:flex tw:items-center tw:pl-3 tw:pointer-events-none tw:text-on-surface-variant">
                             <x-ui.icon name="mail" size="sm" />
                         </div>
                         <input
@@ -573,24 +573,24 @@
                             autocomplete="email"
                             x-model="formData.email"
                             @blur="validateField('email')"
-                            class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-pl-10 tw-pr-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary/20"
-                            :class="errors.email ? 'tw-border-error' : 'tw-border-outline-variant'"
+                            class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:pl-10 tw:pr-3 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary/20"
+                            :class="errors.email ? 'tw:border-error' : 'tw:border-outline-variant'"
                             placeholder="{{ __('registration.email_example') }}"
                             required
                         >
                     </div>
-                    <p class="tw-m-0 tw-text-[11px] tw-text-on-surface-variant">{{ __('registration.email_help') }}</p>
-                    <p x-show="errors.email" x-text="errors.email" class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error"></p>
-                    @error('email')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
+                    <p class="tw:m-0 tw:text-[11px] tw:text-on-surface-variant">{{ __('registration.email_help') }}</p>
+                    <p x-show="errors.email" x-text="errors.email" class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error"></p>
+                    @error('email')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
                 </div>
 
                 {{-- Password (criteria checklist sits on its own row below so both inputs stay aligned) --}}
-                <div class="tw-grid tw-content-start tw-gap-1.5">
-                    <label for="password" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
-                        {{ __('registration.password') }} <span class="tw-text-error">*</span>
+                <div class="tw:grid tw:content-start tw:gap-1.5">
+                    <label for="password" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">
+                        {{ __('registration.password') }} <span class="tw:text-error">*</span>
                     </label>
-                    <div class="tw-relative">
-                        <div class="tw-absolute tw-inset-y-0 tw-start-0 tw-flex tw-items-center tw-pl-3 tw-pointer-events-none tw-text-on-surface-variant">
+                    <div class="tw:relative">
+                        <div class="tw:absolute tw:inset-y-0 tw:start-0 tw:flex tw:items-center tw:pl-3 tw:pointer-events-none tw:text-on-surface-variant">
                             <x-ui.icon name="lock" size="sm" />
                         </div>
                         <input
@@ -600,14 +600,14 @@
                             autocomplete="new-password"
                             x-model="formData.password"
                             @input="validateField('password'); if (formData.password_confirmation) validateField('password_confirmation');"
-                            class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-pl-10 tw-pr-11 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary/20"
-                            :class="errors.password ? 'tw-border-error' : 'tw-border-outline-variant'"
+                            class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:pl-10 tw:pr-11 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary/20"
+                            :class="errors.password ? 'tw:border-error' : 'tw:border-outline-variant'"
                             placeholder="{{ __('registration.password_min') }}"
                             required
                         >
                         <button
                             type="button"
-                            class="ui-focus-ring tw-absolute tw-inset-y-0 tw-end-1 tw-my-auto tw-inline-flex tw-h-9 tw-w-9 tw-items-center tw-justify-center tw-rounded-ui-full tw-border-0 tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container"
+                            class="ui-focus-ring tw:absolute tw:inset-y-0 tw:end-1 tw:my-auto tw:inline-flex tw:h-9 tw:w-9 tw:items-center tw:justify-center tw:rounded-ui-full tw:border-0 tw:bg-transparent tw:text-on-surface-variant tw:hover:bg-surface-container"
                             @click="showPass = !showPass"
                             tabindex="-1"
                             :aria-label="showPass ? @js(__('auth.login.hide_password')) : @js(__('auth.login.show_password'))"
@@ -617,17 +617,17 @@
                         </button>
                     </div>
 
-                    <p x-show="errors.password" x-text="errors.password" class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error"></p>
-                    @error('password')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
+                    <p x-show="errors.password" x-text="errors.password" class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error"></p>
+                    @error('password')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
                 </div>
 
                 {{-- Password Confirmation --}}
-                <div class="tw-grid tw-content-start tw-gap-1.5">
-                    <label for="password_confirmation" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
-                        {{ __('registration.password_confirm') }} <span class="tw-text-error">*</span>
+                <div class="tw:grid tw:content-start tw:gap-1.5">
+                    <label for="password_confirmation" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">
+                        {{ __('registration.password_confirm') }} <span class="tw:text-error">*</span>
                     </label>
-                    <div class="tw-relative">
-                        <div class="tw-absolute tw-inset-y-0 tw-start-0 tw-flex tw-items-center tw-pl-3 tw-pointer-events-none tw-text-on-surface-variant">
+                    <div class="tw:relative">
+                        <div class="tw:absolute tw:inset-y-0 tw:start-0 tw:flex tw:items-center tw:pl-3 tw:pointer-events-none tw:text-on-surface-variant">
                             <x-ui.icon name="lock" size="sm" />
                         </div>
                         <input
@@ -637,14 +637,14 @@
                             autocomplete="new-password"
                             x-model="formData.password_confirmation"
                             @input="validateField('password_confirmation')"
-                            class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-pl-10 tw-pr-11 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary/20"
-                            :class="errors.password_confirmation ? 'tw-border-error' : 'tw-border-outline-variant'"
+                            class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:pl-10 tw:pr-11 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary/20"
+                            :class="errors.password_confirmation ? 'tw:border-error' : 'tw:border-outline-variant'"
                             placeholder="{{ __('registration.repeat_password') }}"
                             required
                         >
                         <button
                             type="button"
-                            class="ui-focus-ring tw-absolute tw-inset-y-0 tw-end-1 tw-my-auto tw-inline-flex tw-h-9 tw-w-9 tw-items-center tw-justify-center tw-rounded-ui-full tw-border-0 tw-bg-transparent tw-text-on-surface-variant hover:tw-bg-surface-container"
+                            class="ui-focus-ring tw:absolute tw:inset-y-0 tw:end-1 tw:my-auto tw:inline-flex tw:h-9 tw:w-9 tw:items-center tw:justify-center tw:rounded-ui-full tw:border-0 tw:bg-transparent tw:text-on-surface-variant tw:hover:bg-surface-container"
                             @click="showConfirmPass = !showConfirmPass"
                             tabindex="-1"
                             :aria-label="showConfirmPass ? @js(__('auth.login.hide_password')) : @js(__('auth.login.show_password'))"
@@ -653,18 +653,18 @@
                             <x-ui.icon name="eye-off" size="sm" x-show="showConfirmPass" />
                         </button>
                     </div>
-                    <p x-show="errors.password_confirmation" x-text="errors.password_confirmation" class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error"></p>
+                    <p x-show="errors.password_confirmation" x-text="errors.password_confirmation" class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error"></p>
                 </div>
 
                 {{-- Password criteria checklist (mirrors SupplierRegistrationRequest::registrationPasswordRule) --}}
-                <ul class="tw-m-0 tw-flex tw-list-none tw-flex-wrap tw-gap-x-4 tw-gap-y-1 tw-p-0 tw-text-[11px] md:tw-col-span-2" aria-label="{{ __('registration.password') }}">
+                <ul class="tw:m-0 tw:flex tw:list-none tw:flex-wrap tw:gap-x-4 tw:gap-y-1 tw:p-0 tw:text-[11px] tw:md:col-span-2" aria-label="{{ __('registration.password') }}">
                     @foreach ([
                         'passwordValidLength' => __('registration.password_min_short'),
                         'passwordHasMixedCase' => __('registration.password_mixed_case'),
                         'passwordHasNumber' => __('registration.password_numbers'),
                         'passwordHasSymbol' => __('registration.password_symbol'),
                     ] as $criterion => $criterionLabel)
-                        <li class="tw-flex tw-items-center tw-gap-1" :class="{{ $criterion }} ? 'tw-text-success tw-font-semibold' : 'tw-text-on-surface-variant'">
+                        <li class="tw:flex tw:items-center tw:gap-1" :class="{{ $criterion }} ? 'tw:text-success tw:font-semibold' : 'tw:text-on-surface-variant'">
                             <x-ui.icon name="check-circle" size="xs" x-show="{{ $criterion }}" />
                             <x-ui.icon name="circle" size="xs" x-show="!{{ $criterion }}" />
                             <span>{{ $criterionLabel }}</span>
@@ -675,25 +675,25 @@
         </div>
 
         {{-- Section 1.2: Company Profile & Identity --}}
-        <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-5">
-            <div class="tw-flex tw-items-center tw-gap-2 tw-text-primary tw-font-bold tw-text-ui-sm tw-mb-1">
+        <div class="tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container-lowest tw:p-5">
+            <div class="tw:flex tw:items-center tw:gap-2 tw:text-primary tw:font-bold tw:text-ui-sm tw:mb-1">
                 <x-ui.icon name="building-2" size="sm" />
                 <span>{{ __('registration.legal_profile') }}</span>
             </div>
-            <p class="tw-m-0 tw-mb-4 tw-text-ui-xs tw-text-on-surface-variant">
+            <p class="tw:m-0 tw:mb-4 tw:text-ui-xs tw:text-on-surface-variant">
                 {{ __('registration.legal_help') }}
             </p>
 
-            <div class="tw-grid tw-gap-4 md:tw-grid-cols-3 tw-items-start">
+            <div class="tw:grid tw:gap-4 tw:md:grid-cols-3 tw:items-start">
                 {{-- Entity Legal Form --}}
-                <div class="tw-grid tw-content-start tw-gap-1.5 md:tw-col-span-1">
-                    <label for="company_title_select" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
-                        {{ __('registration.legal_form') }} <span class="tw-text-error">*</span>
+                <div class="tw:grid tw:content-start tw:gap-1.5 tw:md:col-span-1">
+                    <label for="company_title_select" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">
+                        {{ __('registration.legal_form') }} <span class="tw:text-error">*</span>
                     </label>
                     <select
                         id="company_title_select"
                         x-model="formData.company_title"
-                        class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-px-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary/20"
+                        class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:px-3 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary/20"
                     >
                         <option value="PT">{{ __('registration.legal.pt') }}</option>
                         <option value="CV">{{ __('registration.legal.cv') }}</option>
@@ -711,27 +711,27 @@
 
                 {{-- Custom Entity Title (Shown when 'Other' selected) --}}
                 <div
-                    class="tw-grid tw-content-start tw-gap-1.5 md:tw-col-span-2"
+                    class="tw:grid tw:content-start tw:gap-1.5 tw:md:col-span-2"
                     x-show="formData.company_title === 'Other'"
                     x-cloak
                 >
-                    <label for="custom_company_title" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
-                        {{ __('registration.special_legal_form') }} <span class="tw-text-error">*</span>
+                    <label for="custom_company_title" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">
+                        {{ __('registration.special_legal_form') }} <span class="tw:text-error">*</span>
                     </label>
                     <input
                         id="custom_company_title"
                         type="text"
                         name="custom_company_title"
                         x-model="formData.custom_company_title"
-                        class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-px-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary/20"
+                        class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:px-3 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary/20"
                         placeholder="{{ __('registration.legal_example') }}"
                     >
                 </div>
 
                 {{-- Registered Company Name --}}
-                <div class="tw-grid tw-content-start tw-gap-1.5" :class="formData.company_title === 'Other' ? 'md:tw-col-span-3' : 'md:tw-col-span-2'">
-                    <label for="company_name" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
-                        {{ __('registration.company') }} <span class="tw-text-error">*</span>
+                <div class="tw:grid tw:content-start tw:gap-1.5" :class="formData.company_title === 'Other' ? 'tw:md:col-span-3' : 'tw:md:col-span-2'">
+                    <label for="company_name" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">
+                        {{ __('registration.company') }} <span class="tw:text-error">*</span>
                     </label>
                     <input
                         id="company_name"
@@ -740,19 +740,19 @@
                         autocomplete="organization"
                         x-model="formData.company_name"
                         @blur="validateField('company_name')"
-                        class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-px-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary/20"
-                        :class="errors.company_name ? 'tw-border-error' : 'tw-border-outline-variant'"
+                        class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:px-3 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary/20"
+                        :class="errors.company_name ? 'tw:border-error' : 'tw:border-outline-variant'"
                         placeholder="{{ __('registration.company_example') }}"
                         required
                     >
-                    <p x-show="errors.company_name" x-text="errors.company_name" class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error"></p>
-                    @error('company_name')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
+                    <p x-show="errors.company_name" x-text="errors.company_name" class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error"></p>
+                    @error('company_name')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
                 </div>
 
                 {{-- Official Company Address --}}
-                <div class="tw-grid tw-content-start tw-gap-1.5 md:tw-col-span-3">
-                    <label for="address" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
-                        {{ __('registration.address') }} <span class="tw-text-error">*</span>
+                <div class="tw:grid tw:content-start tw:gap-1.5 tw:md:col-span-3">
+                    <label for="address" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">
+                        {{ __('registration.address') }} <span class="tw:text-error">*</span>
                     </label>
                     <textarea
                         id="address"
@@ -761,22 +761,22 @@
                         rows="3"
                         x-model="formData.address"
                         @blur="validateField('address')"
-                        class="ui-motion tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-p-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary/20"
-                        :class="errors.address ? 'tw-border-error' : 'tw-border-outline-variant'"
+                        class="ui-motion tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:p-3 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary/20"
+                        :class="errors.address ? 'tw:border-error' : 'tw:border-outline-variant'"
                         placeholder="{{ __('registration.address_example') }}"
                         required
                     ></textarea>
-                    <p x-show="errors.address" x-text="errors.address" class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error"></p>
-                    @error('address')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
+                    <p x-show="errors.address" x-text="errors.address" class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error"></p>
+                    @error('address')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
                 </div>
 
                 {{-- Company Phone / Telephone --}}
-                <div class="tw-grid tw-content-start tw-gap-1.5 md:tw-col-span-2">
-                    <label for="phone" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
-                        {{ __('registration.company_phone') }} <span class="tw-text-error">*</span>
+                <div class="tw:grid tw:content-start tw:gap-1.5 tw:md:col-span-2">
+                    <label for="phone" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">
+                        {{ __('registration.company_phone') }} <span class="tw:text-error">*</span>
                     </label>
-                    <div class="tw-relative">
-                        <div class="tw-absolute tw-inset-y-0 tw-start-0 tw-flex tw-items-center tw-pl-3 tw-pointer-events-none tw-text-on-surface-variant">
+                    <div class="tw:relative">
+                        <div class="tw:absolute tw:inset-y-0 tw:start-0 tw:flex tw:items-center tw:pl-3 tw:pointer-events-none tw:text-on-surface-variant">
                             <x-ui.icon name="phone" size="sm" />
                         </div>
                         <input
@@ -786,19 +786,19 @@
                             autocomplete="tel"
                             x-model="formData.phone"
                             @blur="validateField('phone')"
-                            class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-pl-10 tw-pr-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary/20"
-                            :class="errors.phone ? 'tw-border-error' : 'tw-border-outline-variant'"
+                            class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:pl-10 tw:pr-3 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary/20"
+                            :class="errors.phone ? 'tw:border-error' : 'tw:border-outline-variant'"
                             placeholder="{{ __('registration.phone_example') }}"
                             required
                         >
                     </div>
-                    <p x-show="errors.phone" x-text="errors.phone" class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error"></p>
-                    @error('phone')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
+                    <p x-show="errors.phone" x-text="errors.phone" class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error"></p>
+                    @error('phone')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
                 </div>
 
                 {{-- Business Category / Sector --}}
-                <div class="tw-grid tw-content-start tw-gap-1.5 md:tw-col-span-1">
-                    <label for="category" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
+                <div class="tw:grid tw:content-start tw:gap-1.5 tw:md:col-span-1">
+                    <label for="category" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">
                         {{ __('registration.business_sector') }}
                     </label>
                     <input
@@ -806,15 +806,15 @@
                         type="text"
                         name="category"
                         x-model="formData.category"
-                        class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-px-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary/20"
+                        class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:px-3 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary/20"
                         placeholder="{{ __('registration.sector_example') }}"
                     >
                 </div>
 
                 {{-- PKP Status Card --}}
-                <div class="tw-grid tw-content-start tw-gap-1.5 md:tw-col-span-3">
+                <div class="tw:grid tw:content-start tw:gap-1.5 tw:md:col-span-3">
                     <label
-                        class="tw-flex tw-items-center tw-gap-3 tw-p-3.5 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-cursor-pointer hover:tw-bg-surface-container-high/30 tw-transition-colors"
+                        class="tw:flex tw:items-center tw:gap-3 tw:p-3.5 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:cursor-pointer tw:hover:bg-surface-container-high/30 tw:transition-colors"
                         for="is_pkp"
                     >
                         <input
@@ -823,13 +823,13 @@
                             id="is_pkp"
                             value="1"
                             x-model="formData.is_pkp"
-                            class="form-check-input tw-mt-0 tw-w-4 tw-h-4"
+                            class="form-check-input tw:mt-0 tw:w-4 tw:h-4"
                         >
                         <div>
-                            <span class="tw-text-ui-sm tw-font-semibold tw-text-on-surface">
+                            <span class="tw:text-ui-sm tw:font-semibold tw:text-on-surface">
                                 {{ __('registration.pkp') }}
                             </span>
-                            <p class="tw-m-0 tw-text-[11px] tw-text-on-surface-variant tw-mt-0.5">
+                            <p class="tw:m-0 tw:text-[11px] tw:text-on-surface-variant tw:mt-0.5">
                                 {{ __('registration.pkp_help') }}
                             </p>
                         </div>
@@ -843,35 +843,35 @@
          STEP 2: LEGAL & TAX IDENTIFICATION, PIC & OFFICIAL BANK
          â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
     {{-- STEP 2: QUALITY & COMPLIANCE QUESTIONNAIRE (answers never block submission) --}}
-    <div x-show="step === 2" x-cloak data-wizard-step="2" class="tw-space-y-5 tw-transition-opacity tw-duration-200">
-        <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-5">
-            <div class="tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-gap-2 tw-mb-1">
-                <div class="tw-flex tw-items-center tw-gap-2 tw-text-primary tw-font-bold tw-text-ui-sm">
+    <div x-show="step === 2" x-cloak data-wizard-step="2" class="tw:space-y-5 tw:transition-opacity tw:duration-200">
+        <div class="tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container-lowest tw:p-5">
+            <div class="tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-2 tw:mb-1">
+                <div class="tw:flex tw:items-center tw:gap-2 tw:text-primary tw:font-bold tw:text-ui-sm">
                     <x-ui.icon name="clipboard-check" size="sm" />
                     <span>{{ __('registration.questionnaire.title') }}</span>
                 </div>
-                <span class="tw-text-[11px] tw-font-semibold tw-tabular-nums tw-text-on-surface-variant" x-text="questionnaireProgressLabel"></span>
+                <span class="tw:text-[11px] tw:font-semibold tw:tabular-nums tw:text-on-surface-variant" x-text="questionnaireProgressLabel"></span>
             </div>
-            <p class="tw-m-0 tw-mb-4 tw-text-ui-xs tw-text-on-surface-variant tw-text-pretty">
+            <p class="tw:m-0 tw:mb-4 tw:text-ui-xs tw:text-on-surface-variant tw:text-pretty">
                 {{ __('registration.questionnaire.help') }}
             </p>
 
-            <div class="tw-grid tw-gap-3">
+            <div class="tw:grid tw:gap-3">
                 @foreach ($questionnaireKeys as $index => $questionKey)
                     <fieldset
-                        class="tw-m-0 tw-min-w-0 tw-rounded-ui-sm tw-border tw-bg-surface tw-px-4 tw-py-3"
-                        :class="errors['questionnaire.{{ $questionKey }}'] ? 'tw-border-error' : 'tw-border-outline-variant'"
+                        class="tw:m-0 tw:min-w-0 tw:rounded-ui-sm tw:border tw:bg-surface tw:px-4 tw:py-3"
+                        :class="errors['questionnaire.{{ $questionKey }}'] ? 'tw:border-error' : 'tw:border-outline-variant'"
                     >
-                        <legend class="tw-float-left tw-m-0 tw-w-full tw-p-0 tw-text-ui-sm tw-font-medium tw-text-on-surface tw-text-pretty">
-                            <span class="tw-tabular-nums tw-text-on-surface-variant">{{ $index + 1 }}.</span>
+                        <legend class="tw:float-left tw:m-0 tw:w-full tw:p-0 tw:text-ui-sm tw:font-medium tw:text-on-surface tw:text-pretty">
+                            <span class="tw:tabular-nums tw:text-on-surface-variant">{{ $index + 1 }}.</span>
                             {{ __('registration.questionnaire.questions.'.$questionKey) }}
-                            <span class="tw-text-error">*</span>
+                            <span class="tw:text-error">*</span>
                         </legend>
-                        <div class="tw-clear-both tw-mt-2 tw-flex tw-flex-wrap tw-gap-2">
+                        <div class="tw:clear-both tw:mt-2 tw:flex tw:flex-wrap tw:gap-2">
                             @foreach ([\App\Support\SupplierComplianceQuestionnaire::YES => __('registration.questionnaire.yes'), \App\Support\SupplierComplianceQuestionnaire::NO => __('registration.questionnaire.no')] as $answerValue => $answerLabel)
                                 <label
-                                    class="tw-inline-flex tw-min-h-10 tw-cursor-pointer tw-items-center tw-gap-2 tw-rounded-ui-sm tw-border tw-px-3.5 tw-text-ui-sm tw-transition-colors"
-                                    :class="formData.questionnaire['{{ $questionKey }}'] === '{{ $answerValue }}' ? 'tw-border-primary tw-bg-primary/5 tw-font-semibold tw-text-on-surface' : 'tw-border-outline-variant tw-text-on-surface hover:tw-bg-surface-container'"
+                                    class="tw:inline-flex tw:min-h-10 tw:cursor-pointer tw:items-center tw:gap-2 tw:rounded-ui-sm tw:border tw:px-3.5 tw:text-ui-sm tw:transition-colors"
+                                    :class="formData.questionnaire['{{ $questionKey }}'] === '{{ $answerValue }}' ? 'tw:border-primary tw:bg-primary/5 tw:font-semibold tw:text-on-surface' : 'tw:border-outline-variant tw:text-on-surface tw:hover:bg-surface-container'"
                                 >
                                     <input
                                         type="radio"
@@ -879,14 +879,14 @@
                                         value="{{ $answerValue }}"
                                         x-model="formData.questionnaire['{{ $questionKey }}']"
                                         @change="validateField('questionnaire.{{ $questionKey }}')"
-                                        class="form-check-input tw-m-0 tw-h-4 tw-w-4"
+                                        class="form-check-input tw:m-0 tw:h-4 tw:w-4"
                                     >
                                     <span>{{ $answerLabel }}</span>
                                 </label>
                             @endforeach
                         </div>
-                        <p x-show="errors['questionnaire.{{ $questionKey }}']" x-text="errors['questionnaire.{{ $questionKey }}']" class="tw-m-0 tw-mt-1.5 tw-text-ui-xs tw-font-medium tw-text-error"></p>
-                        @error('questionnaire.'.$questionKey)<p class="tw-m-0 tw-mt-1.5 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
+                        <p x-show="errors['questionnaire.{{ $questionKey }}']" x-text="errors['questionnaire.{{ $questionKey }}']" class="tw:m-0 tw:mt-1.5 tw:text-ui-xs tw:font-medium tw:text-error"></p>
+                        @error('questionnaire.'.$questionKey)<p class="tw:m-0 tw:mt-1.5 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
                     </fieldset>
                 @endforeach
             </div>
@@ -894,32 +894,32 @@
     </div>
 
     {{-- STEP 3: LEGAL & TAX IDENTIFICATION, PIC & OFFICIAL BANK --}}
-    <div x-show="step === 3" x-cloak data-wizard-step="3" class="tw-space-y-5 tw-transition-opacity tw-duration-200">
+    <div x-show="step === 3" x-cloak data-wizard-step="3" class="tw:space-y-5 tw:transition-opacity tw:duration-200">
         {{-- Section 3.1: Legal & Tax Identification --}}
-        <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-5">
-            <div class="tw-flex tw-items-center tw-gap-2 tw-text-primary tw-font-bold tw-text-ui-sm tw-mb-1">
+        <div class="tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container-lowest tw:p-5">
+            <div class="tw:flex tw:items-center tw:gap-2 tw:text-primary tw:font-bold tw:text-ui-sm tw:mb-1">
                 <x-ui.icon name="file-badge" size="sm" />
                 <span>{{ __('registration.legal_identification') }}</span>
             </div>
-            <p class="tw-m-0 tw-mb-4 tw-text-ui-xs tw-text-on-surface-variant">
+            <p class="tw:m-0 tw:mb-4 tw:text-ui-xs tw:text-on-surface-variant">
                 {{ __('registration.legal_identifiers_help') }}
             </p>
 
-            <div class="reg-tax-grid tw-grid tw-gap-4 md:tw-grid-cols-2 tw-items-start">
+            <div class="reg-tax-grid tw:grid tw:gap-4 tw:md:grid-cols-2 tw:items-start">
                 {{-- NIB Input with live digit counter --}}
-                <div class="reg-tax-col tw-grid tw-content-start tw-gap-1.5">
-                    <div class="tw-flex tw-items-start tw-justify-between tw-gap-2 reg-tax-header-sync" style="min-height: 48px;">
-                        <label for="nib" class="tw-text-ui-sm tw-font-medium tw-text-on-surface" style="text-wrap: balance;">
-                            {{ __('registration.nib') }} <span class="tw-text-error">*</span>
+                <div class="reg-tax-col tw:grid tw:content-start tw:gap-1.5">
+                    <div class="tw:flex tw:items-start tw:justify-between tw:gap-2 reg-tax-header-sync" style="min-height: 48px;">
+                        <label for="nib" class="tw:text-ui-sm tw:font-medium tw:text-on-surface" style="text-wrap: balance;">
+                            {{ __('registration.nib') }} <span class="tw:text-error">*</span>
                         </label>
                         <span
-                            class="tw-shrink-0 tw-mt-0.5 tw-text-[11px] tw-font-mono tw-font-semibold tw-tabular-nums"
-                            :class="formData.nib.replace(/\D/g, '').length === 13 ? 'tw-text-success' : 'tw-text-on-surface-variant'"
+                            class="tw:shrink-0 tw:mt-0.5 tw:text-[11px] tw:font-mono tw:font-semibold tw:tabular-nums"
+                            :class="formData.nib.replace(/\D/g, '').length === 13 ? 'tw:text-success' : 'tw:text-on-surface-variant'"
                             x-text="window.AdasiI18n.t('js.validation.digit_progress', { count: formData.nib.replace(/\D/g, '').length, max: 13 })"
                         ></span>
                     </div>
-                    <div class="tw-relative">
-                        <div class="tw-absolute tw-inset-y-0 tw-start-0 tw-flex tw-items-center tw-pl-3 tw-pointer-events-none tw-text-on-surface-variant">
+                    <div class="tw:relative">
+                        <div class="tw:absolute tw:inset-y-0 tw:start-0 tw:flex tw:items-center tw:pl-3 tw:pointer-events-none tw:text-on-surface-variant">
                             <x-ui.icon name="hash" size="sm" />
                         </div>
                         <input
@@ -929,33 +929,33 @@
                             x-model="formData.nib"
                             @blur="validateField('nib')"
                             @input="formData.nib = formData.nib.replace(/\D/g, '').slice(0, 13); validateField('nib');"
-                            class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-pl-10 tw-pr-3 tw-text-ui-sm tw-font-mono tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary/20"
-                            :class="errors.nib ? 'tw-border-error' : 'tw-border-outline-variant'"
+                            class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:pl-10 tw:pr-3 tw:text-ui-sm tw:font-mono tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary/20"
+                            :class="errors.nib ? 'tw:border-error' : 'tw:border-outline-variant'"
                             placeholder="{{ __('registration.nib_number') }}"
                             maxlength="13"
                             required
                         >
                     </div>
-                    <div class="tw-min-h-0">
-                        <p x-show="errors.nib" x-text="errors.nib" class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error"></p>
-                        @error('nib')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
+                    <div class="tw:min-h-0">
+                        <p x-show="errors.nib" x-text="errors.nib" class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error"></p>
+                        @error('nib')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
                     </div>
                 </div>
 
                 {{-- NPWP Input with live digit counter --}}
-                <div class="reg-tax-col tw-grid tw-content-start tw-gap-1.5">
-                    <div class="tw-flex tw-items-start tw-justify-between tw-gap-2 reg-tax-header-sync" style="min-height: 48px;">
-                        <label for="npwp" class="tw-text-ui-sm tw-font-medium tw-text-on-surface" style="text-wrap: balance;">
-                            {{ __('registration.tax_number') }} <span class="tw-text-error">*</span>
+                <div class="reg-tax-col tw:grid tw:content-start tw:gap-1.5">
+                    <div class="tw:flex tw:items-start tw:justify-between tw:gap-2 reg-tax-header-sync" style="min-height: 48px;">
+                        <label for="npwp" class="tw:text-ui-sm tw:font-medium tw:text-on-surface" style="text-wrap: balance;">
+                            {{ __('registration.tax_number') }} <span class="tw:text-error">*</span>
                         </label>
                         <span
-                            class="tw-shrink-0 tw-mt-0.5 tw-text-[11px] tw-font-mono tw-font-semibold tw-tabular-nums"
-                            :class="[15, 16].includes(formData.npwp.replace(/\D/g, '').length) ? 'tw-text-success' : 'tw-text-on-surface-variant'"
+                            class="tw:shrink-0 tw:mt-0.5 tw:text-[11px] tw:font-mono tw:font-semibold tw:tabular-nums"
+                            :class="[15, 16].includes(formData.npwp.replace(/\D/g, '').length) ? 'tw:text-success' : 'tw:text-on-surface-variant'"
                             x-text="window.AdasiI18n.t('js.validation.digit_progress', { count: formData.npwp.replace(/\D/g, '').length, max: 16 })"
                         ></span>
                     </div>
-                    <div class="tw-relative">
-                        <div class="tw-absolute tw-inset-y-0 tw-start-0 tw-flex tw-items-center tw-pl-3 tw-pointer-events-none tw-text-on-surface-variant">
+                    <div class="tw:relative">
+                        <div class="tw:absolute tw:inset-y-0 tw:start-0 tw:flex tw:items-center tw:pl-3 tw:pointer-events-none tw:text-on-surface-variant">
                             <x-ui.icon name="file-text" size="sm" />
                         </div>
                         <input
@@ -965,39 +965,39 @@
                             x-model="formData.npwp"
                             @blur="validateField('npwp')"
                             @input="formData.npwp = formData.npwp.replace(/\D/g, '').slice(0, 16); validateField('npwp');"
-                            class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-pl-10 tw-pr-3 tw-text-ui-sm tw-font-mono tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary/20"
-                            :class="errors.npwp ? 'tw-border-error' : 'tw-border-outline-variant'"
+                            class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:pl-10 tw:pr-3 tw:text-ui-sm tw:font-mono tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary/20"
+                            :class="errors.npwp ? 'tw:border-error' : 'tw:border-outline-variant'"
                             placeholder="{{ __('registration.npwp_number') }}"
                             maxlength="16"
                             required
                         >
                     </div>
-                    <div class="tw-min-h-0">
-                        <p x-show="errors.npwp" x-text="errors.npwp" class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error"></p>
-                        @error('npwp')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
+                    <div class="tw:min-h-0">
+                        <p x-show="errors.npwp" x-text="errors.npwp" class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error"></p>
+                        @error('npwp')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
                     </div>
                 </div>
             </div>
         </div>
 
         {{-- Section 2.2: Person In Charge (PIC) --}}
-        <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-5">
-            <div class="tw-flex tw-items-center tw-gap-2 tw-text-primary tw-font-bold tw-text-ui-sm tw-mb-1">
+        <div class="tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container-lowest tw:p-5">
+            <div class="tw:flex tw:items-center tw:gap-2 tw:text-primary tw:font-bold tw:text-ui-sm tw:mb-1">
                 <x-ui.icon name="user" size="sm" />
                 <span>{{ __('registration.contact_section') }}</span>
             </div>
-            <p class="tw-m-0 tw-mb-4 tw-text-ui-xs tw-text-on-surface-variant">
+            <p class="tw:m-0 tw:mb-4 tw:text-ui-xs tw:text-on-surface-variant">
                 {{ __('registration.contact_help') }}
             </p>
 
-            <div class="tw-grid tw-gap-4 md:tw-grid-cols-2 tw-items-start">
+            <div class="tw:grid tw:gap-4 tw:md:grid-cols-2 tw:items-start">
                 {{-- PIC Full Name (Span 2 / Full Width) --}}
-                <div class="tw-grid tw-content-start tw-gap-1.5 md:tw-col-span-2">
-                    <label for="pic_name" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
-                        {{ __('registration.pic') }} <span class="tw-text-error">*</span>
+                <div class="tw:grid tw:content-start tw:gap-1.5 tw:md:col-span-2">
+                    <label for="pic_name" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">
+                        {{ __('registration.pic') }} <span class="tw:text-error">*</span>
                     </label>
-                    <div class="tw-relative">
-                        <div class="tw-absolute tw-inset-y-0 tw-start-0 tw-flex tw-items-center tw-pl-3 tw-pointer-events-none tw-text-on-surface-variant">
+                    <div class="tw:relative">
+                        <div class="tw:absolute tw:inset-y-0 tw:start-0 tw:flex tw:items-center tw:pl-3 tw:pointer-events-none tw:text-on-surface-variant">
                             <x-ui.icon name="user" size="sm" />
                         </div>
                         <input
@@ -1007,23 +1007,23 @@
                             autocomplete="name"
                             x-model="formData.pic_name"
                             @blur="validateField('pic_name')"
-                            class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-pl-10 tw-pr-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary/20"
-                            :class="errors.pic_name ? 'tw-border-error' : 'tw-border-outline-variant'"
+                            class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:pl-10 tw:pr-3 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary/20"
+                            :class="errors.pic_name ? 'tw:border-error' : 'tw:border-outline-variant'"
                             placeholder="{{ __('registration.pic_name_example') }}"
                             required
                         >
                     </div>
-                    <p x-show="errors.pic_name" x-text="errors.pic_name" class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error"></p>
-                    @error('pic_name')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
+                    <p x-show="errors.pic_name" x-text="errors.pic_name" class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error"></p>
+                    @error('pic_name')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
                 </div>
 
                 {{-- PIC Email Address --}}
-                <div class="tw-grid tw-content-start tw-gap-1.5">
-                    <label for="pic_email" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
-                        {{ __('registration.pic_email') }} <span class="tw-text-error">*</span>
+                <div class="tw:grid tw:content-start tw:gap-1.5">
+                    <label for="pic_email" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">
+                        {{ __('registration.pic_email') }} <span class="tw:text-error">*</span>
                     </label>
-                    <div class="tw-relative">
-                        <div class="tw-absolute tw-inset-y-0 tw-start-0 tw-flex tw-items-center tw-pl-3 tw-pointer-events-none tw-text-on-surface-variant">
+                    <div class="tw:relative">
+                        <div class="tw:absolute tw:inset-y-0 tw:start-0 tw:flex tw:items-center tw:pl-3 tw:pointer-events-none tw:text-on-surface-variant">
                             <x-ui.icon name="mail" size="sm" />
                         </div>
                         <input
@@ -1033,23 +1033,23 @@
                             autocomplete="email"
                             x-model="formData.pic_email"
                             @blur="validateField('pic_email')"
-                            class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-pl-10 tw-pr-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary/20"
-                            :class="errors.pic_email ? 'tw-border-error' : 'tw-border-outline-variant'"
+                            class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:pl-10 tw:pr-3 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary/20"
+                            :class="errors.pic_email ? 'tw:border-error' : 'tw:border-outline-variant'"
                             placeholder="pic@perusahaan.co.id"
                             required
                         >
                     </div>
-                    <p x-show="errors.pic_email" x-text="errors.pic_email" class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error"></p>
-                    @error('pic_email')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
+                    <p x-show="errors.pic_email" x-text="errors.pic_email" class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error"></p>
+                    @error('pic_email')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
                 </div>
 
                 {{-- PIC Phone / WhatsApp --}}
-                <div class="tw-grid tw-content-start tw-gap-1.5">
-                    <label for="pic_phone" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
-                        {{ __('registration.pic_phone') }} <span class="tw-text-error">*</span>
+                <div class="tw:grid tw:content-start tw:gap-1.5">
+                    <label for="pic_phone" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">
+                        {{ __('registration.pic_phone') }} <span class="tw:text-error">*</span>
                     </label>
-                    <div class="tw-relative">
-                        <div class="tw-absolute tw-inset-y-0 tw-start-0 tw-flex tw-items-center tw-pl-3 tw-pointer-events-none tw-text-on-surface-variant">
+                    <div class="tw:relative">
+                        <div class="tw:absolute tw:inset-y-0 tw:start-0 tw:flex tw:items-center tw:pl-3 tw:pointer-events-none tw:text-on-surface-variant">
                             <x-ui.icon name="phone" size="sm" />
                         </div>
                         <input
@@ -1059,31 +1059,31 @@
                             autocomplete="tel"
                             x-model="formData.pic_phone"
                             @blur="validateField('pic_phone')"
-                            class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-pl-10 tw-pr-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary/20"
-                            :class="errors.pic_phone ? 'tw-border-error' : 'tw-border-outline-variant'"
+                            class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:pl-10 tw:pr-3 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary/20"
+                            :class="errors.pic_phone ? 'tw:border-error' : 'tw:border-outline-variant'"
                             placeholder="08xxxxxxxxxx"
                             required
                         >
                     </div>
-                    <p x-show="errors.pic_phone" x-text="errors.pic_phone" class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error"></p>
-                    @error('pic_phone')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
+                    <p x-show="errors.pic_phone" x-text="errors.pic_phone" class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error"></p>
+                    @error('pic_phone')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
                 </div>
             </div>
         </div>
 
         {{-- Section 2.3: Official Bank Account --}}
-        <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-5">
-            <div class="tw-flex tw-items-center tw-gap-2 tw-text-primary tw-font-bold tw-text-ui-sm tw-mb-1">
+        <div class="tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container-lowest tw:p-5">
+            <div class="tw:flex tw:items-center tw:gap-2 tw:text-primary tw:font-bold tw:text-ui-sm tw:mb-1">
                 <x-ui.icon name="credit-card" size="sm" />
                 <span>{{ __('registration.bank_section') }}</span>
             </div>
-            <p class="tw-m-0 tw-mb-4 tw-text-ui-xs tw-text-on-surface-variant">
+            <p class="tw:m-0 tw:mb-4 tw:text-ui-xs tw:text-on-surface-variant">
                 {{ __('registration.bank_help') }}
             </p>
 
-            <div class="tw-grid tw-gap-4 md:tw-grid-cols-2 tw-items-start">
+            <div class="tw:grid tw:gap-4 tw:md:grid-cols-2 tw:items-start">
                 {{-- Bank Select --}}
-                <div class="tw-grid tw-content-start tw-gap-1.5">
+                <div class="tw:grid tw:content-start tw:gap-1.5">
                     <input type="hidden" name="bank_name" :value="finalBankName">
                     <x-ui.searchable-select
                         name="bank_select"
@@ -1098,16 +1098,16 @@
                         required
                         x-on:change="onBankChange($event)"
                     />
-                    <p x-show="errors.bank_name" x-text="errors.bank_name" class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error"></p>
+                    <p x-show="errors.bank_name" x-text="errors.bank_name" class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error"></p>
                 </div>
 
                 {{-- Account Number --}}
-                <div class="tw-grid tw-content-start tw-gap-1.5">
-                    <label for="account_number" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
-                        {{ __('registration.bank_number') }} <span class="tw-text-error">*</span>
+                <div class="tw:grid tw:content-start tw:gap-1.5">
+                    <label for="account_number" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">
+                        {{ __('registration.bank_number') }} <span class="tw:text-error">*</span>
                     </label>
-                    <div class="tw-relative">
-                        <div class="tw-absolute tw-inset-y-0 tw-start-0 tw-flex tw-items-center tw-pl-3 tw-pointer-events-none tw-text-on-surface-variant">
+                    <div class="tw:relative">
+                        <div class="tw:absolute tw:inset-y-0 tw:start-0 tw:flex tw:items-center tw:pl-3 tw:pointer-events-none tw:text-on-surface-variant">
                             <x-ui.icon name="credit-card" size="sm" />
                         </div>
                         <input
@@ -1116,28 +1116,28 @@
                             name="account_number"
                             x-model="formData.account_number"
                             @blur="validateField('account_number')"
-                            class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-pl-10 tw-pr-3 tw-text-ui-sm tw-font-mono tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary/20"
-                            :class="errors.account_number ? 'tw-border-error' : 'tw-border-outline-variant'"
+                            class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:pl-10 tw:pr-3 tw:text-ui-sm tw:font-mono tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary/20"
+                            :class="errors.account_number ? 'tw:border-error' : 'tw:border-outline-variant'"
                             placeholder="{{ __('registration.account_number_help') }}"
                             required
                         >
                     </div>
-                    <p x-show="errors.account_number" x-text="errors.account_number" class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error"></p>
-                    @error('account_number')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
+                    <p x-show="errors.account_number" x-text="errors.account_number" class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error"></p>
+                    @error('account_number')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
                 </div>
 
                 {{-- Expandable Custom Bank Input (when 'OTHER' is selected) --}}
                 <div
                     x-show="formData.bank_select === 'OTHER'"
                     x-cloak
-                    x-transition:enter="ui-motion tw-transition-all tw-ease-out tw-duration-200"
-                    x-transition:enter-start="tw-opacity-0 tw--translate-y-2"
-                    x-transition:enter-end="tw-opacity-100 tw-translate-y-0"
-                    class="md:tw-col-span-2 tw-grid tw-gap-1.5 tw-p-3.5 tw-rounded-ui-sm tw-border tw-border-primary/25 tw-bg-primary/5"
+                    x-transition:enter="ui-motion tw:transition-all tw:ease-out tw:duration-200"
+                    x-transition:enter-start="tw:opacity-0 tw:-translate-y-2"
+                    x-transition:enter-end="tw:opacity-100 tw:translate-y-0"
+                    class="tw:md:col-span-2 tw:grid tw:gap-1.5 tw:p-3.5 tw:rounded-ui-sm tw:border tw:border-primary/25 tw:bg-primary/5"
                 >
-                    <label for="other_bank_name" class="tw-text-ui-xs tw-font-semibold tw-text-primary tw-flex tw-items-center tw-gap-1.5">
+                    <label for="other_bank_name" class="tw:text-ui-xs tw:font-semibold tw:text-primary tw:flex tw:items-center tw:gap-1.5">
                         <x-ui.icon name="landmark" size="xs" />
-                        <span>{{ __('registration.other_bank') }} <span class="tw-text-error">*</span></span>
+                        <span>{{ __('registration.other_bank') }} <span class="tw:text-error">*</span></span>
                     </label>
                     <input
                         id="other_bank_name"
@@ -1146,22 +1146,22 @@
                         type="text"
                         x-model="formData.other_bank_name"
                         @input="validateField('bank_name')"
-                        class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-px-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary/20"
+                        class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:px-3 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary/20"
                         placeholder="{{ __('registration.bank_example') }}"
                         :required="formData.bank_select === 'OTHER'"
                     >
-                    <p class="tw-m-0 tw-text-[11px] tw-text-on-surface-variant">
+                    <p class="tw:m-0 tw:text-[11px] tw:text-on-surface-variant">
                         {{ __('registration.other_bank_help') }}
                     </p>
                 </div>
 
                 {{-- Beneficiary Name (Span 2 / Full Width) --}}
-                <div class="tw-grid tw-content-start tw-gap-1.5 md:tw-col-span-2">
-                    <label for="account_holder_name" class="tw-text-ui-sm tw-font-medium tw-text-on-surface">
-                        {{ __('registration.account_holder') }} <span class="tw-text-error">*</span>
+                <div class="tw:grid tw:content-start tw:gap-1.5 tw:md:col-span-2">
+                    <label for="account_holder_name" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">
+                        {{ __('registration.account_holder') }} <span class="tw:text-error">*</span>
                     </label>
-                    <div class="tw-relative">
-                        <div class="tw-absolute tw-inset-y-0 tw-start-0 tw-flex tw-items-center tw-pl-3 tw-pointer-events-none tw-text-on-surface-variant">
+                    <div class="tw:relative">
+                        <div class="tw:absolute tw:inset-y-0 tw:start-0 tw:flex tw:items-center tw:pl-3 tw:pointer-events-none tw:text-on-surface-variant">
                             <x-ui.icon name="building-2" size="sm" />
                         </div>
                         <input
@@ -1170,14 +1170,14 @@
                             name="account_holder_name"
                             x-model="formData.account_holder_name"
                             @blur="validateField('account_holder_name')"
-                            class="ui-motion tw-h-11 tw-w-full tw-rounded-ui-sm tw-border tw-bg-surface tw-pl-10 tw-pr-3 tw-text-ui-sm tw-text-on-surface focus:tw-border-primary focus:tw-ring-2 focus:tw-ring-primary/20"
-                            :class="errors.account_holder_name ? 'tw-border-error' : 'tw-border-outline-variant'"
+                            class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:pl-10 tw:pr-3 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary/20"
+                            :class="errors.account_holder_name ? 'tw:border-error' : 'tw:border-outline-variant'"
                             placeholder="{{ __('registration.account_holder_help') }}"
                             required
                         >
                     </div>
-                    <p x-show="errors.account_holder_name" x-text="errors.account_holder_name" class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error"></p>
-                    @error('account_holder_name')<p class="tw-m-0 tw-text-ui-xs tw-font-medium tw-text-error">{{ $message }}</p>@enderror
+                    <p x-show="errors.account_holder_name" x-text="errors.account_holder_name" class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error"></p>
+                    @error('account_holder_name')<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error">{{ $message }}</p>@enderror
                 </div>
             </div>
         </div>
@@ -1186,32 +1186,32 @@
     {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
          STEP 3: VERIFICATION DOCUMENTS (DRAG & DROP ZONES)
          â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
-    <div x-show="step === 4" x-cloak data-wizard-step="4" class="tw-space-y-5 tw-transition-opacity tw-duration-200">
-        <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-5">
-            <div class="tw-flex tw-items-center tw-justify-between tw-mb-1">
-                <div class="tw-flex tw-items-center tw-gap-2 tw-text-primary tw-font-bold tw-text-ui-sm">
+    <div x-show="step === 4" x-cloak data-wizard-step="4" class="tw:space-y-5 tw:transition-opacity tw:duration-200">
+        <div class="tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container-lowest tw:p-5">
+            <div class="tw:flex tw:items-center tw:justify-between tw:mb-1">
+                <div class="tw:flex tw:items-center tw:gap-2 tw:text-primary tw:font-bold tw:text-ui-sm">
                     <x-ui.icon name="file-text" size="sm" />
                     <span>{{ __('registration.document_section') }}</span>
                 </div>
-                <span class="tw-inline-flex tw-items-center tw-gap-1 tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-semibold tw-bg-primary/10 tw-text-primary">
+                <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-semibold tw:bg-primary/10 tw:text-primary">
                     <x-ui.icon name="lock" size="xs" />
                     <span>{{ __('registration.private_storage') }}</span>
                 </span>
             </div>
-            <p class="tw-m-0 tw-mb-5 tw-text-ui-xs tw-text-on-surface-variant">
+            <p class="tw:m-0 tw:mb-5 tw:text-ui-xs tw:text-on-surface-variant">
                 {{ __('registration.document_help') }}
             </p>
 
             {{-- 3.1 Mandatory Documents --}}
-            <div class="tw-mb-5">
-                <div class="tw-flex tw-items-center tw-gap-2 tw-mb-3">
-                    <span class="tw-inline-flex tw-items-center tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-bold tw-bg-error/10 tw-text-error">
+            <div class="tw:mb-5">
+                <div class="tw:flex tw:items-center tw:gap-2 tw:mb-3">
+                    <span class="tw:inline-flex tw:items-center tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-bold tw:bg-error/10 tw:text-error">
                         {{ __('registration.required_documents') }}
                     </span>
-                    <span class="tw-text-[11px] tw-text-on-surface-variant" x-text="@js(__('registration.required_documents_help', ['count' => ':count'])).replace(':count', formData.is_pkp ? '4' : '3')">{{ __('registration.required_documents_help', ['count' => old('is_pkp', false) ? 4 : 3]) }}</span>
+                    <span class="tw:text-[11px] tw:text-on-surface-variant" x-text="@js(__('registration.required_documents_help', ['count' => ':count'])).replace(':count', formData.is_pkp ? '4' : '3')">{{ __('registration.required_documents_help', ['count' => old('is_pkp', false) ? 4 : 3]) }}</span>
                 </div>
 
-                <div class="tw-grid tw-gap-4 md:tw-grid-cols-2 tw-items-start">
+                <div class="tw:grid tw:gap-4 tw:md:grid-cols-2 tw:items-start">
                     {{-- NIB File Dropzone --}}
                     <x-ui.file-upload
                         name="nib_file"
@@ -1235,7 +1235,7 @@
                     />
 
                     {{-- SKNR File Dropzone (Full Width Featured) --}}
-                    <div class="md:tw-col-span-2">
+                    <div class="tw:md:col-span-2">
                         <x-ui.file-upload
                             name="sknr_file"
                             id="sknr_file"
@@ -1250,15 +1250,15 @@
             </div>
 
             {{-- 3.2 Optional Documents --}}
-            <div class="tw-pt-4 tw-border-t tw-border-outline-variant">
-                <div class="tw-flex tw-items-center tw-gap-2 tw-mb-3">
-                    <span class="tw-inline-flex tw-items-center tw-px-2 tw-py-0.5 tw-rounded tw-text-[11px] tw-font-bold tw-bg-surface-high tw-text-on-surface-variant">
+            <div class="tw:pt-4 tw:border-t tw:border-outline-variant">
+                <div class="tw:flex tw:items-center tw:gap-2 tw:mb-3">
+                    <span class="tw:inline-flex tw:items-center tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-bold tw:bg-surface-high tw:text-on-surface-variant">
                         {{ __('registration.additional_documents') }}
                     </span>
-                    <span class="tw-text-[11px] tw-text-on-surface-variant">{{ __('registration.optional_help') }}</span>
+                    <span class="tw:text-[11px] tw:text-on-surface-variant">{{ __('registration.optional_help') }}</span>
                 </div>
 
-                <div class="tw-grid tw-gap-4 md:tw-grid-cols-2 tw-items-start">
+                <div class="tw:grid tw:gap-4 tw:md:grid-cols-2 tw:items-start">
                     {{-- SPPKP File Dropzone --}}
                     <x-ui.file-upload
                         name="sppkp_file"
@@ -1283,7 +1283,7 @@
                     />
 
                     {{-- Company Profile File Dropzone (optional, larger limit for brochures) --}}
-                    <div class="md:tw-col-span-2">
+                    <div class="tw:md:col-span-2">
                         <x-ui.file-upload
                             name="company_profile_file"
                             id="company_profile_file"
@@ -1302,28 +1302,28 @@
     {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
          STEP 4: PRE-FLIGHT REVIEW & CONFIRMATION
          â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
-    <div x-show="step === 5" x-cloak data-wizard-step="5" class="tw-space-y-5 tw-transition-opacity tw-duration-200">
+    <div x-show="step === 5" x-cloak data-wizard-step="5" class="tw:space-y-5 tw:transition-opacity tw:duration-200">
         {{-- Section 4 Header --}}
-        <div class="tw-p-4 tw-rounded-ui-md tw-bg-primary/10 tw-border tw-border-primary/20 tw-flex tw-items-start tw-gap-3">
-            <x-ui.icon name="check-circle" size="md" class="tw-text-primary tw-shrink-0 tw-mt-0.5" />
+        <div class="tw:p-4 tw:rounded-ui-md tw:bg-primary/10 tw:border tw:border-primary/20 tw:flex tw:items-start tw:gap-3">
+            <x-ui.icon name="check-circle" size="md" class="tw:text-primary tw:shrink-0 tw:mt-0.5" />
             <div>
-                <div class="tw-text-ui-sm tw-font-bold tw-text-primary">{{ __('registration.review_heading') }}</div>
-                <div class="tw-text-ui-xs tw-text-on-surface-variant tw-mt-0.5">
+                <div class="tw:text-ui-sm tw:font-bold tw:text-primary">{{ __('registration.review_heading') }}</div>
+                <div class="tw:text-ui-xs tw:text-on-surface-variant tw:mt-0.5">
                     {{ __('registration.review_help') }}
                 </div>
             </div>
         </div>
 
         {{-- Summary Card 1: Akun & Profil Perusahaan --}}
-        <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-5">
-            <div class="tw-flex tw-items-center tw-justify-between tw-mb-3">
-                <div class="tw-flex tw-items-center tw-gap-2 tw-text-on-surface tw-font-bold tw-text-ui-sm">
-                    <x-ui.icon name="building-2" size="sm" class="tw-text-primary" />
+        <div class="tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container-lowest tw:p-5">
+            <div class="tw:flex tw:items-center tw:justify-between tw:mb-3">
+                <div class="tw:flex tw:items-center tw:gap-2 tw:text-on-surface tw:font-bold tw:text-ui-sm">
+                    <x-ui.icon name="building-2" size="sm" class="tw:text-primary" />
                     <span>{{ __('registration.company_account') }}</span>
                 </div>
                 <button
                     type="button"
-                    class="ui-motion ui-focus-ring tw-inline-flex tw-items-center tw-gap-1 tw-px-2.5 tw-py-1 tw-rounded-ui-xs tw-border-0 tw-bg-transparent tw-text-ui-xs tw-font-semibold tw-text-primary hover:tw-bg-primary/10"
+                    class="ui-motion ui-focus-ring tw:inline-flex tw:items-center tw:gap-1 tw:px-2.5 tw:py-1 tw:rounded-ui-xs tw:border-0 tw:bg-transparent tw:text-ui-xs tw:font-semibold tw:text-primary tw:hover:bg-primary/10"
                     @click="goToStep(1)"
                 >
                     <x-ui.icon name="pencil" size="xs" />
@@ -1331,40 +1331,40 @@
                 </button>
             </div>
 
-            <div class="tw-grid tw-gap-3 sm:tw-grid-cols-2 tw-text-ui-xs">
+            <div class="tw:grid tw:gap-3 tw:sm:grid-cols-2 tw:text-ui-xs">
                 <div>
-                    <span class="tw-text-on-surface-variant tw-block">{{ __('registration.summary.company') }}</span>
-                    <span class="tw-font-bold tw-text-on-surface" x-text="(formData.company_title === 'Other' ? formData.custom_company_title : formData.company_title) + ' ' + formData.company_name"></span>
+                    <span class="tw:text-on-surface-variant tw:block">{{ __('registration.summary.company') }}</span>
+                    <span class="tw:font-bold tw:text-on-surface" x-text="(formData.company_title === 'Other' ? formData.custom_company_title : formData.company_title) + ' ' + formData.company_name"></span>
                 </div>
                 <div>
-                    <span class="tw-text-on-surface-variant tw-block">{{ __('registration.summary.email') }}</span>
-                    <span class="tw-font-mono tw-font-semibold tw-text-on-surface" x-text="formData.email"></span>
+                    <span class="tw:text-on-surface-variant tw:block">{{ __('registration.summary.email') }}</span>
+                    <span class="tw:font-mono tw:font-semibold tw:text-on-surface" x-text="formData.email"></span>
                 </div>
-                <div class="sm:tw-col-span-2">
-                    <span class="tw-text-on-surface-variant tw-block">{{ __('registration.summary.address') }}</span>
-                    <span class="tw-text-on-surface" x-text="formData.address"></span>
-                </div>
-                <div>
-                    <span class="tw-text-on-surface-variant tw-block">{{ __('registration.summary.phone') }}</span>
-                    <span class="tw-font-mono tw-text-on-surface" x-text="formData.phone"></span>
+                <div class="tw:sm:col-span-2">
+                    <span class="tw:text-on-surface-variant tw:block">{{ __('registration.summary.address') }}</span>
+                    <span class="tw:text-on-surface" x-text="formData.address"></span>
                 </div>
                 <div>
-                    <span class="tw-text-on-surface-variant tw-block">{{ __('registration.summary.sector') }}</span>
-                    <span class="tw-text-on-surface" x-text="(formData.category || summaryLabels.categoryGeneral) + ' · ' + (formData.is_pkp ? summaryLabels.pkp : summaryLabels.nonPkp)"></span>
+                    <span class="tw:text-on-surface-variant tw:block">{{ __('registration.summary.phone') }}</span>
+                    <span class="tw:font-mono tw:text-on-surface" x-text="formData.phone"></span>
+                </div>
+                <div>
+                    <span class="tw:text-on-surface-variant tw:block">{{ __('registration.summary.sector') }}</span>
+                    <span class="tw:text-on-surface" x-text="(formData.category || summaryLabels.categoryGeneral) + ' · ' + (formData.is_pkp ? summaryLabels.pkp : summaryLabels.nonPkp)"></span>
                 </div>
             </div>
         </div>
 
         {{-- Summary Card: Kuesioner Kualitas & Kepatuhan --}}
-        <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-5">
-            <div class="tw-flex tw-items-center tw-justify-between tw-mb-3">
-                <div class="tw-flex tw-items-center tw-gap-2 tw-text-on-surface tw-font-bold tw-text-ui-sm">
-                    <x-ui.icon name="clipboard-check" size="sm" class="tw-text-primary" />
+        <div class="tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container-lowest tw:p-5">
+            <div class="tw:flex tw:items-center tw:justify-between tw:mb-3">
+                <div class="tw:flex tw:items-center tw:gap-2 tw:text-on-surface tw:font-bold tw:text-ui-sm">
+                    <x-ui.icon name="clipboard-check" size="sm" class="tw:text-primary" />
                     <span>{{ __('registration.questionnaire.summary') }}</span>
                 </div>
                 <button
                     type="button"
-                    class="ui-motion ui-focus-ring tw-inline-flex tw-items-center tw-gap-1 tw-px-2.5 tw-py-1 tw-rounded-ui-xs tw-border-0 tw-bg-transparent tw-text-ui-xs tw-font-semibold tw-text-primary hover:tw-bg-primary/10"
+                    class="ui-motion ui-focus-ring tw:inline-flex tw:items-center tw:gap-1 tw:px-2.5 tw:py-1 tw:rounded-ui-xs tw:border-0 tw:bg-transparent tw:text-ui-xs tw:font-semibold tw:text-primary tw:hover:bg-primary/10"
                     @click="goToStep(2)"
                 >
                     <x-ui.icon name="pencil" size="xs" />
@@ -1372,26 +1372,26 @@
                 </button>
             </div>
 
-            <dl class="tw-m-0 tw-grid tw-gap-1.5 tw-text-ui-xs">
+            <dl class="tw:m-0 tw:grid tw:gap-1.5 tw:text-ui-xs">
                 @foreach ($questionnaireKeys as $index => $questionKey)
-                    <div class="tw-flex tw-items-start tw-justify-between tw-gap-3 tw-rounded tw-bg-surface tw-p-2">
-                        <dt class="tw-text-on-surface tw-text-pretty">{{ $index + 1 }}. {{ __('registration.questionnaire.questions.'.$questionKey) }}</dt>
-                        <dd class="tw-m-0 tw-shrink-0 tw-font-semibold tw-text-on-surface" x-text="answerLabel('{{ $questionKey }}')"></dd>
+                    <div class="tw:flex tw:items-start tw:justify-between tw:gap-3 tw:rounded-sm tw:bg-surface tw:p-2">
+                        <dt class="tw:text-on-surface tw:text-pretty">{{ $index + 1 }}. {{ __('registration.questionnaire.questions.'.$questionKey) }}</dt>
+                        <dd class="tw:m-0 tw:shrink-0 tw:font-semibold tw:text-on-surface" x-text="answerLabel('{{ $questionKey }}')"></dd>
                     </div>
                 @endforeach
             </dl>
         </div>
 
         {{-- Summary Card 2: Legalitas, PIC & Rekening Bank --}}
-        <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-5">
-            <div class="tw-flex tw-items-center tw-justify-between tw-mb-3">
-                <div class="tw-flex tw-items-center tw-gap-2 tw-text-on-surface tw-font-bold tw-text-ui-sm">
-                    <x-ui.icon name="credit-card" size="sm" class="tw-text-primary" />
+        <div class="tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container-lowest tw:p-5">
+            <div class="tw:flex tw:items-center tw:justify-between tw:mb-3">
+                <div class="tw:flex tw:items-center tw:gap-2 tw:text-on-surface tw:font-bold tw:text-ui-sm">
+                    <x-ui.icon name="credit-card" size="sm" class="tw:text-primary" />
                     <span>{{ __('registration.legal_pic_bank') }}</span>
                 </div>
                 <button
                     type="button"
-                    class="ui-motion ui-focus-ring tw-inline-flex tw-items-center tw-gap-1 tw-px-2.5 tw-py-1 tw-rounded-ui-xs tw-border-0 tw-bg-transparent tw-text-ui-xs tw-font-semibold tw-text-primary hover:tw-bg-primary/10"
+                    class="ui-motion ui-focus-ring tw:inline-flex tw:items-center tw:gap-1 tw:px-2.5 tw:py-1 tw:rounded-ui-xs tw:border-0 tw:bg-transparent tw:text-ui-xs tw:font-semibold tw:text-primary tw:hover:bg-primary/10"
                     @click="goToStep(3)"
                 >
                     <x-ui.icon name="pencil" size="xs" />
@@ -1399,52 +1399,52 @@
                 </button>
             </div>
 
-            <div class="tw-grid tw-gap-3 sm:tw-grid-cols-3 tw-text-ui-xs">
+            <div class="tw:grid tw:gap-3 tw:sm:grid-cols-3 tw:text-ui-xs">
                 <div>
-                    <span class="tw-text-on-surface-variant tw-block">{{ __('registration.summary.nib') }}</span>
-                    <span class="tw-font-mono tw-font-bold tw-text-on-surface" x-text="formData.nib"></span>
+                    <span class="tw:text-on-surface-variant tw:block">{{ __('registration.summary.nib') }}</span>
+                    <span class="tw:font-mono tw:font-bold tw:text-on-surface" x-text="formData.nib"></span>
                 </div>
-                <div class="sm:tw-col-span-2">
-                    <span class="tw-text-on-surface-variant tw-block">{{ __('registration.summary.npwp') }}</span>
-                    <span class="tw-font-mono tw-font-bold tw-text-on-surface" x-text="formData.npwp"></span>
-                </div>
-                <div>
-                    <span class="tw-text-on-surface-variant tw-block">{{ __('registration.summary.pic') }}</span>
-                    <span class="tw-font-semibold tw-text-on-surface" x-text="formData.pic_name"></span>
+                <div class="tw:sm:col-span-2">
+                    <span class="tw:text-on-surface-variant tw:block">{{ __('registration.summary.npwp') }}</span>
+                    <span class="tw:font-mono tw:font-bold tw:text-on-surface" x-text="formData.npwp"></span>
                 </div>
                 <div>
-                    <span class="tw-text-on-surface-variant tw-block">{{ __('registration.summary.pic_email') }}</span>
-                    <span class="tw-font-mono tw-text-on-surface" x-text="formData.pic_email"></span>
+                    <span class="tw:text-on-surface-variant tw:block">{{ __('registration.summary.pic') }}</span>
+                    <span class="tw:font-semibold tw:text-on-surface" x-text="formData.pic_name"></span>
                 </div>
                 <div>
-                    <span class="tw-text-on-surface-variant tw-block">{{ __('registration.summary.pic_phone') }}</span>
-                    <span class="tw-font-mono tw-text-on-surface" x-text="formData.pic_phone"></span>
+                    <span class="tw:text-on-surface-variant tw:block">{{ __('registration.summary.pic_email') }}</span>
+                    <span class="tw:font-mono tw:text-on-surface" x-text="formData.pic_email"></span>
                 </div>
                 <div>
-                    <span class="tw-text-on-surface-variant tw-block">{{ __('registration.summary.bank') }}</span>
-                    <span class="tw-font-semibold tw-text-on-surface" x-text="finalBankName"></span>
+                    <span class="tw:text-on-surface-variant tw:block">{{ __('registration.summary.pic_phone') }}</span>
+                    <span class="tw:font-mono tw:text-on-surface" x-text="formData.pic_phone"></span>
                 </div>
                 <div>
-                    <span class="tw-text-on-surface-variant tw-block">{{ __('registration.summary.account') }}</span>
-                    <span class="tw-font-mono tw-font-bold tw-text-on-surface" x-text="formData.account_number"></span>
+                    <span class="tw:text-on-surface-variant tw:block">{{ __('registration.summary.bank') }}</span>
+                    <span class="tw:font-semibold tw:text-on-surface" x-text="finalBankName"></span>
                 </div>
                 <div>
-                    <span class="tw-text-on-surface-variant tw-block">{{ __('registration.summary.holder') }}</span>
-                    <span class="tw-font-semibold tw-text-on-surface" x-text="formData.account_holder_name"></span>
+                    <span class="tw:text-on-surface-variant tw:block">{{ __('registration.summary.account') }}</span>
+                    <span class="tw:font-mono tw:font-bold tw:text-on-surface" x-text="formData.account_number"></span>
+                </div>
+                <div>
+                    <span class="tw:text-on-surface-variant tw:block">{{ __('registration.summary.holder') }}</span>
+                    <span class="tw:font-semibold tw:text-on-surface" x-text="formData.account_holder_name"></span>
                 </div>
             </div>
         </div>
 
         {{-- Summary Card 3: Dokumen Verifikasi --}}
-        <div class="tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface-container-lowest tw-p-5">
-            <div class="tw-flex tw-items-center tw-justify-between tw-mb-3">
-                <div class="tw-flex tw-items-center tw-gap-2 tw-text-on-surface tw-font-bold tw-text-ui-sm">
-                    <x-ui.icon name="file-text" size="sm" class="tw-text-primary" />
+        <div class="tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container-lowest tw:p-5">
+            <div class="tw:flex tw:items-center tw:justify-between tw:mb-3">
+                <div class="tw:flex tw:items-center tw:gap-2 tw:text-on-surface tw:font-bold tw:text-ui-sm">
+                    <x-ui.icon name="file-text" size="sm" class="tw:text-primary" />
                     <span>{{ __('registration.attached_documents') }}</span>
                 </div>
                 <button
                     type="button"
-                    class="ui-motion ui-focus-ring tw-inline-flex tw-items-center tw-gap-1 tw-px-2.5 tw-py-1 tw-rounded-ui-xs tw-border-0 tw-bg-transparent tw-text-ui-xs tw-font-semibold tw-text-primary hover:tw-bg-primary/10"
+                    class="ui-motion ui-focus-ring tw:inline-flex tw:items-center tw:gap-1 tw:px-2.5 tw:py-1 tw:rounded-ui-xs tw:border-0 tw:bg-transparent tw:text-ui-xs tw:font-semibold tw:text-primary tw:hover:bg-primary/10"
                     @click="goToStep(4)"
                 >
                     <x-ui.icon name="pencil" size="xs" />
@@ -1452,45 +1452,45 @@
                 </button>
             </div>
 
-            <div class="tw-space-y-2 tw-text-ui-xs">
-                <div class="tw-flex tw-items-center tw-justify-between tw-p-2 tw-rounded tw-bg-surface">
-                    <span class="tw-font-medium tw-text-on-surface">{{ __('registration.summary.nib_document') }}</span>
-                    <span class="tw-font-mono tw-text-primary" x-text="docs.nib ? (docs.nib.name + ' (' + docs.nib.size + ')') : @js(__('registration.js.ready'))"></span>
+            <div class="tw:space-y-2 tw:text-ui-xs">
+                <div class="tw:flex tw:items-center tw:justify-between tw:p-2 tw:rounded-sm tw:bg-surface">
+                    <span class="tw:font-medium tw:text-on-surface">{{ __('registration.summary.nib_document') }}</span>
+                    <span class="tw:font-mono tw:text-primary" x-text="docs.nib ? (docs.nib.name + ' (' + docs.nib.size + ')') : @js(__('registration.js.ready'))"></span>
                 </div>
-                <div class="tw-flex tw-items-center tw-justify-between tw-p-2 tw-rounded tw-bg-surface">
-                    <span class="tw-font-medium tw-text-on-surface">{{ __('registration.summary.npwp_document') }}</span>
-                    <span class="tw-font-mono tw-text-primary" x-text="docs.npwp ? (docs.npwp.name + ' (' + docs.npwp.size + ')') : @js(__('registration.js.ready'))"></span>
+                <div class="tw:flex tw:items-center tw:justify-between tw:p-2 tw:rounded-sm tw:bg-surface">
+                    <span class="tw:font-medium tw:text-on-surface">{{ __('registration.summary.npwp_document') }}</span>
+                    <span class="tw:font-mono tw:text-primary" x-text="docs.npwp ? (docs.npwp.name + ' (' + docs.npwp.size + ')') : @js(__('registration.js.ready'))"></span>
                 </div>
-                <div class="tw-flex tw-items-center tw-justify-between tw-p-2 tw-rounded tw-bg-surface">
-                    <span class="tw-font-medium tw-text-on-surface">{{ __('registration.summary.sknr_document') }}</span>
-                    <span class="tw-font-mono tw-text-primary" x-text="docs.sknr ? (docs.sknr.name + ' (' + docs.sknr.size + ')') : @js(__('registration.js.ready'))"></span>
+                <div class="tw:flex tw:items-center tw:justify-between tw:p-2 tw:rounded-sm tw:bg-surface">
+                    <span class="tw:font-medium tw:text-on-surface">{{ __('registration.summary.sknr_document') }}</span>
+                    <span class="tw:font-mono tw:text-primary" x-text="docs.sknr ? (docs.sknr.name + ' (' + docs.sknr.size + ')') : @js(__('registration.js.ready'))"></span>
                 </div>
-                <div class="tw-flex tw-items-center tw-justify-between tw-p-2 tw-rounded tw-bg-surface">
-                    <span class="tw-font-medium tw-text-on-surface">{{ __('registration.summary.sppkp_document') }}</span>
-                    <span class="tw-text-on-surface-variant" x-text="docs.sppkp ? (docs.sppkp.name + ' (' + docs.sppkp.size + ')') : (formData.is_pkp ? @js(__('common.upload.required')) : @js(__('common.fields.optional')))"></span>
+                <div class="tw:flex tw:items-center tw:justify-between tw:p-2 tw:rounded-sm tw:bg-surface">
+                    <span class="tw:font-medium tw:text-on-surface">{{ __('registration.summary.sppkp_document') }}</span>
+                    <span class="tw:text-on-surface-variant" x-text="docs.sppkp ? (docs.sppkp.name + ' (' + docs.sppkp.size + ')') : (formData.is_pkp ? @js(__('common.upload.required')) : @js(__('common.fields.optional')))"></span>
                 </div>
-                <div class="tw-flex tw-items-center tw-justify-between tw-p-2 tw-rounded tw-bg-surface">
-                    <span class="tw-font-medium tw-text-on-surface">{{ __('registration.summary.skd_document') }}</span>
-                    <span class="tw-text-on-surface-variant" x-text="docs.skd ? (docs.skd.name + ' (' + docs.skd.size + ')') : @js(__('registration.js.not_attached'))"></span>
+                <div class="tw:flex tw:items-center tw:justify-between tw:p-2 tw:rounded-sm tw:bg-surface">
+                    <span class="tw:font-medium tw:text-on-surface">{{ __('registration.summary.skd_document') }}</span>
+                    <span class="tw:text-on-surface-variant" x-text="docs.skd ? (docs.skd.name + ' (' + docs.skd.size + ')') : @js(__('registration.js.not_attached'))"></span>
                 </div>
-                <div class="tw-flex tw-items-center tw-justify-between tw-p-2 tw-rounded tw-bg-surface">
-                    <span class="tw-font-medium tw-text-on-surface">{{ __('registration.summary.company_profile_document') }}</span>
-                    <span class="tw-text-on-surface-variant" x-text="docs.company_profile ? (docs.company_profile.name + ' (' + docs.company_profile.size + ')') : @js(__('registration.js.not_attached'))"></span>
+                <div class="tw:flex tw:items-center tw:justify-between tw:p-2 tw:rounded-sm tw:bg-surface">
+                    <span class="tw:font-medium tw:text-on-surface">{{ __('registration.summary.company_profile_document') }}</span>
+                    <span class="tw:text-on-surface-variant" x-text="docs.company_profile ? (docs.company_profile.name + ' (' + docs.company_profile.size + ')') : @js(__('registration.js.not_attached'))"></span>
                 </div>
             </div>
         </div>
 
         {{-- Legal Declaration Statement --}}
-        <div class="tw-p-4 tw-rounded-ui-md tw-border tw-border-outline-variant tw-bg-surface-container-low">
-            <label class="tw-flex tw-items-start tw-gap-3 tw-cursor-pointer" for="legal_declaration">
+        <div class="tw:p-4 tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container-low">
+            <label class="tw:flex tw:items-start tw:gap-3 tw:cursor-pointer" for="legal_declaration">
                 <input
                     type="checkbox"
                     id="legal_declaration"
                     x-model="legalDeclaration"
-                    class="form-check-input tw-mt-0.5 tw-w-4 tw-h-4 tw-shrink-0"
+                    class="form-check-input tw:mt-0.5 tw:w-4 tw:h-4 tw:shrink-0"
                     required
                 >
-                <div class="tw-text-ui-xs tw-text-on-surface tw-leading-relaxed">
+                <div class="tw:text-ui-xs tw:text-on-surface tw:leading-relaxed">
                     <strong>{{ __('registration.declaration_title') }}</strong>
                     {{ __('registration.declaration') }}
                 </div>
@@ -1499,9 +1499,9 @@
 
         {{-- Bot Protection Turnstile if configured --}}
         @if (filled(config('auth_security.turnstile.site_key')))
-            <div class="tw-flex tw-flex-col tw-items-center tw-pt-2">
+            <div class="tw:flex tw:flex-col tw:items-center tw:pt-2">
                 <div class="cf-turnstile" data-sitekey="{{ config('auth_security.turnstile.site_key') }}"></div>
-                @error('cf-turnstile-response')<p class="tw-m-0 tw-mt-1.5 tw-text-ui-xs tw-font-medium tw-text-error" role="alert">{{ $message }}</p>@enderror
+                @error('cf-turnstile-response')<p class="tw:m-0 tw:mt-1.5 tw:text-ui-xs tw:font-medium tw:text-error" role="alert">{{ $message }}</p>@enderror
             </div>
         @endif
     </div>
@@ -1509,14 +1509,14 @@
     {{-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
          BOTTOM WIZARD ACTION NAVIGATION BAR
          â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• --}}
-    <div class="tw-mt-8 tw-pt-5 tw-border-t tw-border-outline-variant tw-flex tw-items-center tw-justify-between tw-gap-4">
+    <div class="tw:mt-8 tw:pt-5 tw:border-t tw:border-outline-variant tw:flex tw:items-center tw:justify-between tw:gap-4">
         {{-- Previous Button --}}
         <div>
             <button
                 type="button"
                 x-show="step > 1"
                 @click="prevStep()"
-                class="ui-motion ui-focus-ring tw-inline-flex tw-h-11 tw-items-center tw-gap-2 tw-rounded-ui-sm tw-border tw-border-outline-variant tw-bg-surface tw-px-5 tw-text-ui-sm tw-font-semibold tw-text-on-surface hover:tw-bg-surface-container active:tw-scale-95"
+                class="ui-motion ui-focus-ring tw:inline-flex tw:h-11 tw:items-center tw:gap-2 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:px-5 tw:text-ui-sm tw:font-semibold tw:text-on-surface tw:hover:bg-surface-container tw:active:scale-95"
             >
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>{{ __('common.actions.back') }}</span>
@@ -1524,7 +1524,7 @@
         </div>
 
         {{-- Step Indicator Center --}}
-        <div class="tw-text-ui-xs tw-font-semibold tw-tabular-nums tw-text-on-surface-variant">
+        <div class="tw:text-ui-xs tw:font-semibold tw:tabular-nums tw:text-on-surface-variant">
             {{ __('registration.step') }} <span x-text="step"></span> {{ __('registration.of_total', ['total' => $totalSteps]) }}
         </div>
 
@@ -1535,7 +1535,7 @@
                 type="button"
                 x-show="step < maxStep"
                 @click="nextStep()"
-                class="ui-motion ui-focus-ring tw-inline-flex tw-h-11 tw-items-center tw-gap-2 tw-rounded-ui-sm tw-border-0 tw-bg-primary tw-px-6 tw-text-ui-sm tw-font-semibold tw-text-white hover:tw-brightness-95 active:tw-scale-95"
+                class="ui-motion ui-focus-ring tw:inline-flex tw:h-11 tw:items-center tw:gap-2 tw:rounded-ui-sm tw:border-0 tw:bg-primary tw:px-6 tw:text-ui-sm tw:font-semibold tw:text-white tw:hover:brightness-95 tw:active:scale-95"
             >
                 <span>{{ __('common.actions.continue') }}</span>
                 <x-ui.icon name="arrow-right" size="sm" />
@@ -1546,16 +1546,16 @@
                 type="submit"
                 x-show="step === maxStep"
                 :disabled="!legalDeclaration || isSubmitting"
-                class="ui-motion ui-focus-ring tw-inline-flex tw-h-11 tw-items-center tw-gap-2 tw-rounded-ui-sm tw-border-0 tw-bg-primary tw-px-6 tw-text-ui-sm tw-font-semibold tw-text-white hover:tw-brightness-95 active:tw-scale-95 disabled:tw-opacity-50 disabled:tw-pointer-events-none"
+                class="ui-motion ui-focus-ring tw:inline-flex tw:h-11 tw:items-center tw:gap-2 tw:rounded-ui-sm tw:border-0 tw:bg-primary tw:px-6 tw:text-ui-sm tw:font-semibold tw:text-white tw:hover:brightness-95 tw:active:scale-95 tw:disabled:opacity-50 tw:disabled:pointer-events-none"
             >
                 <template x-if="isSubmitting">
-                    <div class="tw-flex tw-items-center tw-gap-2">
+                    <div class="tw:flex tw:items-center tw:gap-2">
                         <div class="spinner-border spinner-border-sm" role="status"></div>
                         <span>{{ __('registration.submitting') }}</span>
                     </div>
                 </template>
                 <template x-if="!isSubmitting">
-                    <div class="tw-flex tw-items-center tw-gap-2">
+                    <div class="tw:flex tw:items-center tw:gap-2">
                         <x-ui.icon name="send" size="sm" />
                         <span>{{ __('registration.submit') }}</span>
                     </div>
@@ -1565,15 +1565,15 @@
     </div>
 </form>
 
-<div class="tw-mt-6 tw-pt-4 tw-border-t tw-border-outline-variant tw-text-center tw-text-ui-xs tw-text-on-surface-variant">
-    <p class="tw-m-0">
+<div class="tw:mt-6 tw:pt-4 tw:border-t tw:border-outline-variant tw:text-center tw:text-ui-xs tw:text-on-surface-variant">
+    <p class="tw:m-0">
         {{ __('registration.already_registered') }}
-        <a href="{{ route('supplier.registration.access-form') }}" class="tw-font-semibold tw-text-primary hover:tw-underline">
+        <a href="{{ route('supplier.registration.access-form') }}" class="tw:font-semibold tw:text-primary tw:hover:underline">
             {{ __('registration.check_registration') }}
         </a>
     </p>
-    <p class="tw-m-0 tw-mt-1.5">
-        <a href="{{ route('login') }}" class="tw-text-on-surface-variant hover:tw-text-primary hover:tw-underline">
+    <p class="tw:m-0 tw:mt-1.5">
+        <a href="{{ route('login') }}" class="tw:text-on-surface-variant tw:hover:text-primary tw:hover:underline">
             {{ __('registration.back_login') }}
         </a>
     </p>
@@ -1722,16 +1722,16 @@ document.addEventListener('alpine:init', () => {
 
         stepMarkerClass(stepNumber) {
             if (this.hasStepError(stepNumber)) {
-                return 'tw-border-error tw-bg-error-container tw-text-on-error-container';
+                return 'tw:border-error tw:bg-error-container tw:text-on-error-container';
             }
             if (this.step === stepNumber) {
-                return 'tw-border-primary tw-bg-primary tw-text-on-primary';
+                return 'tw:border-primary tw:bg-primary tw:text-on-primary';
             }
             if (this.step > stepNumber) {
-                return 'tw-border-primary tw-bg-primary/10 tw-text-primary';
+                return 'tw:border-primary tw:bg-primary/10 tw:text-primary';
             }
 
-            return 'tw-border-outline-variant tw-bg-surface tw-text-on-surface-variant';
+            return 'tw:border-outline-variant tw:bg-surface tw:text-on-surface-variant';
         },
 
         setStepError(stepNumber, hasError) {

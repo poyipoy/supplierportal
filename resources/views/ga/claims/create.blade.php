@@ -3,7 +3,7 @@
 @section('page-title', __('ga.labels.claim_form'))
 
 @section('content')
-<div class="tw-grid tw-gap-6 tw-pb-16">
+<div class="tw:grid tw:gap-6 tw:pb-16">
     <x-ui.page-header
         :title="__('ga.form.heading')"
         :description="__('ga.form.description')"
@@ -17,7 +17,7 @@
         </x-slot:actions>
     </x-ui.page-header>
 
-    <div class="tw-max-w-3xl tw-mx-auto tw-w-full">
+    <div class="tw:max-w-3xl tw:mx-auto tw:w-full">
         <x-ui.card :title="__('ga.labels.employee_form')">
             <form method="POST" action="{{ route('ga.claims.store') }}" enctype="multipart/form-data" data-async-submit>
                 @csrf
@@ -65,9 +65,9 @@
 
 
                     {{-- Tipe Klaim & Tanggal --}}
-                    <div class="tw-grid tw-grid-cols-1 sm:tw-grid-cols-2 ui-density-form-grid">
+                    <div class="tw:grid tw:grid-cols-1 tw:sm:grid-cols-2 ui-density-form-grid">
                         <div>
-                            <label for="claim_type" class="form-label tw-text-ui-xs tw-font-semibold">
+                            <label for="claim_type" class="form-label tw:text-ui-xs tw:font-semibold">
                                 {{ __('ga.labels.claim_type') }} <span class="text-danger">*</span>
                             </label>
                             <select name="claim_type" id="claim_type" class="form-select form-select-sm" required>
@@ -80,7 +80,7 @@
                             </select>
                         </div>
                         <div>
-                            <label for="claim_date" class="form-label tw-text-ui-xs tw-font-semibold">
+                            <label for="claim_date" class="form-label tw:text-ui-xs tw:font-semibold">
                                 {{ __('ga.form.event_date') }} <span class="text-danger">*</span>
                             </label>
                             <x-ui.date-picker
@@ -94,7 +94,7 @@
 
                     {{-- Nominal --}}
                     <div>
-                        <label for="amount" class="form-label tw-text-ui-xs tw-font-semibold">
+                        <label for="amount" class="form-label tw:text-ui-xs tw:font-semibold">
                             {{ __('ga.form.amount') }} <span class="text-danger">*</span>
                         </label>
                         <input type="number" step="0.01" name="amount" id="amount" class="form-control form-control-sm" placeholder="{{ __('ga.form.example_amount') }}" value="{{ old('amount') }}" required min="1">
@@ -102,19 +102,19 @@
 
                     {{-- Deskripsi --}}
                     <div>
-                        <label for="description" class="form-label tw-text-ui-xs tw-font-semibold">
+                        <label for="description" class="form-label tw:text-ui-xs tw:font-semibold">
                             {{ __('ga.form.remarks') }}
                         </label>
                         <textarea name="description" id="description" class="form-control form-control-sm" rows="3" placeholder="{{ __('ga.form.description_placeholder') }}">{{ old('description') }}</textarea>
                     </div>
 
                     {{-- Dokumen Pendukung --}}
-                    <div class="tw-border-t tw-border-outline-variant tw-pt-3">
-                        <label for="supporting" class="form-label tw-text-ui-xs tw-font-semibold">
+                    <div class="tw:border-t tw:border-outline-variant tw:pt-3">
+                        <label for="supporting" class="form-label tw:text-ui-xs tw:font-semibold">
                             {{ __('ga.form.upload_supporting') }}
                         </label>
                         <input type="file" name="supporting" id="supporting" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls,.doc,.docx" aria-describedby="supporting-help" @if($errors->has('supporting')) aria-invalid="true" @endif>
-                        <span id="supporting-help" class="tw-text-[11px] tw-text-on-surface-variant tw-block tw-mt-1">
+                        <span id="supporting-help" class="tw:text-[11px] tw:text-on-surface-variant tw:block tw:mt-1">
                             {{ __('ga.form.entertainment_supporting') }}
                             {{ __('ga.form.support_formats') }}
                         </span>
@@ -125,7 +125,7 @@
                     @enderror
 
                     {{-- Submit Button --}}
-                    <div class="tw-flex tw-justify-end tw-gap-2 tw-pt-4">
+                    <div class="tw:flex tw:justify-end tw:gap-2 tw:pt-4">
                         <x-ui.button :href="route('ga.claims.index')" variant="ghost" size="sm">
                             <span>{{ __('local_invoice.actions.cancel') }}</span>
                         </x-ui.button>

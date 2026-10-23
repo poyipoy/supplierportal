@@ -1,11 +1,11 @@
 <nav class="top-navbar d-flex align-items-center justify-content-between">
     {{-- Left: Mobile drawer toggle + Page title --}}
-    <div class="d-flex align-items-center tw-gap-2.5 tw-min-w-0">
+    <div class="d-flex align-items-center tw:gap-2.5 tw:min-w-0">
         <x-ui.icon-button
             icon="panel-left"
             :label="__('navigation.toggle_sidebar')"
             size="lg"
-            class="sidebar-toggle sidebar-toggle--mobile tw-text-on-surface-variant"
+            class="sidebar-toggle sidebar-toggle--mobile tw:text-on-surface-variant"
             x-on:click="$dispatch('ui-sidebar-toggle', { trigger: $el })"
             x-bind:aria-label="sidebarToggleLabel"
             x-bind:title="sidebarToggleLabel"
@@ -23,7 +23,7 @@
                 </span>
             </x-slot:visual>
         </x-ui.icon-button>
-        <div class="vr mx-1 my-2 tw-text-outline d-none d-sm-block d-lg-none" style="height: 18px;"></div>
+        <div class="vr mx-1 my-2 tw:text-outline d-none d-sm-block d-lg-none" style="height: 18px;"></div>
         <p class="topbar-page-title text-truncate">@yield('page-title', __('navigation.dashboard'))</p>
     </div>
 
@@ -64,7 +64,7 @@
             </x-ui.icon-button>
             <div class="dropdown-menu dropdown-menu-end notification-dropdown shadow-sm border">
                 <div
-                    class="tw-flex tw-min-h-48 tw-min-w-72 tw-items-center tw-justify-center tw-p-4 tw-text-ui-sm tw-text-on-surface-variant"
+                    class="tw:flex tw:min-h-48 tw:min-w-72 tw:items-center tw:justify-center tw:p-4 tw:text-ui-sm tw:text-on-surface-variant"
                     data-notification-summary-container
                     data-notification-summary-state="idle"
                     aria-live="polite"
@@ -75,35 +75,35 @@
         </div>
 
         {{-- Language Switcher Toggle --}}
-        <form action="{{ route('locale.switch') }}" method="POST" class="lang-toggle-track tw-inline-flex tw-items-center tw-p-0.5 tw-rounded-ui-full tw-bg-surface-container tw-border tw-border-outline-strong tw-m-0" role="group" aria-label="{{ __('customization.language.label') }}">
+        <form action="{{ route('locale.switch') }}" method="POST" class="lang-toggle-track tw:inline-flex tw:items-center tw:p-0.5 tw:rounded-ui-full tw:bg-surface-container tw:border tw:border-outline-strong tw:m-0" role="group" aria-label="{{ __('customization.language.label') }}">
             @csrf
             <input type="hidden" name="return_to" value="{{ request()->getRequestUri() }}">
             <button
                 type="submit"
                 name="locale"
                 value="id"
-                class="lang-pill-btn ui-focus-ring tw-flex tw-items-center tw-gap-1.5 tw-px-2 tw-py-1 tw-rounded-ui-full tw-text-ui-xs tw-font-bold {{ app()->getLocale() === 'id' ? 'is-active tw-bg-surface tw-text-primary tw-border-outline tw-shadow-xs' : 'tw-border-transparent tw-text-on-surface-variant hover:tw-text-on-surface hover:tw-bg-surface/50' }}"
+                class="lang-pill-btn ui-focus-ring tw:flex tw:items-center tw:gap-1.5 tw:px-2 tw:py-1 tw:rounded-ui-full tw:text-ui-xs tw:font-bold {{ app()->getLocale() === 'id' ? 'is-active tw:bg-surface tw:text-primary tw:border-outline tw-shadow-xs' : 'tw:border-transparent tw:text-on-surface-variant tw:hover:text-on-surface tw:hover:bg-surface/50' }}"
                 aria-label="Bahasa Indonesia"
                 {{ app()->getLocale() === 'id' ? 'disabled aria-pressed=true' : 'aria-pressed=false' }}
             >
                 <span class="lang-flag-badge" aria-hidden="true">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" preserveAspectRatio="none" class="tw-w-full tw-h-full" focusable="false">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" preserveAspectRatio="none" class="tw:w-full tw:h-full" focusable="false">
                         <rect width="60" height="20" fill="#e70011"/>
                         <rect y="20" width="60" height="20" fill="#ffffff"/>
                     </svg>
                 </span>
-                <span class="tw-tracking-wide">ID</span>
+                <span class="tw:tracking-wide">ID</span>
             </button>
             <button
                 type="submit"
                 name="locale"
                 value="en"
-                class="lang-pill-btn ui-focus-ring tw-flex tw-items-center tw-gap-1.5 tw-px-2 tw-py-1 tw-rounded-ui-full tw-text-ui-xs tw-font-bold {{ app()->getLocale() === 'en' ? 'is-active tw-bg-surface tw-text-primary tw-border-outline tw-shadow-xs' : 'tw-border-transparent tw-text-on-surface-variant hover:tw-text-on-surface hover:tw-bg-surface/50' }}"
+                class="lang-pill-btn ui-focus-ring tw:flex tw:items-center tw:gap-1.5 tw:px-2 tw:py-1 tw:rounded-ui-full tw:text-ui-xs tw:font-bold {{ app()->getLocale() === 'en' ? 'is-active tw:bg-surface tw:text-primary tw:border-outline tw-shadow-xs' : 'tw:border-transparent tw:text-on-surface-variant tw:hover:text-on-surface tw:hover:bg-surface/50' }}"
                 aria-label="English"
                 {{ app()->getLocale() === 'en' ? 'disabled aria-pressed=true' : 'aria-pressed=false' }}
             >
                 <span class="lang-flag-badge" aria-hidden="true">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" preserveAspectRatio="none" class="tw-w-full tw-h-full" focusable="false">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" preserveAspectRatio="none" class="tw:w-full tw:h-full" focusable="false">
                         <path fill="#012169" d="M0 0h60v40H0z"/>
                         <path stroke="#ffffff" stroke-width="8" d="M0 0l60 40M60 0L0 40"/>
                         <path stroke="#c8102e" stroke-width="2.67" d="M0 0l27 18M60 0L33 18M60 40L33 22M0 40l27-18"/>
@@ -111,7 +111,7 @@
                         <path stroke="#c8102e" stroke-width="8" d="M30 0v40M0 20h60"/>
                     </svg>
                 </span>
-                <span class="tw-tracking-wide">EN</span>
+                <span class="tw:tracking-wide">EN</span>
             </button>
         </form>
 
@@ -136,22 +136,22 @@
                     <hr class="dropdown-divider my-1">
                 </li>
                 <li>
-                    <a href="{{ route('profile.edit') }}" class="dropdown-item tw-py-1.5 small">
+                    <a href="{{ route('profile.edit') }}" class="dropdown-item tw:py-1.5 small">
                         <x-ui.icon name="user-cog" class="me-2" />{{ __('navigation.profile') }}
                     </a>
                 </li>
                 <li>
-                    <a href="{{ route('profile.security') }}" class="dropdown-item tw-py-1.5 small">
+                    <a href="{{ route('profile.security') }}" class="dropdown-item tw:py-1.5 small">
                         <x-ui.icon name="shield-check" class="me-2" />{{ __('navigation.security') }}
                     </a>
                 </li>
                 <li>
-                    <a href="{{ route('profile.notifications') }}" class="dropdown-item tw-py-1.5 small">
+                    <a href="{{ route('profile.notifications') }}" class="dropdown-item tw:py-1.5 small">
                         <x-ui.icon name="bell" class="me-2" />{{ __('common.notification.title') }}
                     </a>
                 </li>
                 <li>
-                    <a href="{{ route('profile.customization') }}" class="dropdown-item tw-py-1.5 small">
+                    <a href="{{ route('profile.customization') }}" class="dropdown-item tw:py-1.5 small">
                         <x-ui.icon name="sliders-horizontal" class="me-2" />{{ __('navigation.customization') }}
                     </a>
                 </li>
@@ -162,13 +162,13 @@
                     <form action="{{ route('logout') }}" method="POST" data-logout-form>
                         @csrf
                         @if(config('portal_session.logout_all_devices'))
-                            <label class="tw-flex tw-items-center tw-gap-2 tw-px-4 tw-py-2 tw-text-ui-xs tw-cursor-pointer" for="logout-all-devices">
-                                <input id="logout-all-devices" type="checkbox" name="logout_all" value="1" class="form-check-input tw-m-0">
+                            <label class="tw:flex tw:items-center tw:gap-2 tw:px-4 tw:py-2 tw:text-ui-xs tw:cursor-pointer" for="logout-all-devices">
+                                <input id="logout-all-devices" type="checkbox" name="logout_all" value="1" class="form-check-input tw:m-0">
                                 <span>{{ __('navigation.logout_all_devices') }}</span>
                             </label>
                         @endif
                         <button type="submit"
-                            class="dropdown-item ui-focus-ring text-danger tw-flex tw-min-h-9 tw-items-center tw-gap-2 tw-whitespace-nowrap tw-py-1.5 small"
+                            class="dropdown-item ui-focus-ring text-danger tw:flex tw:min-h-9 tw:items-center tw:gap-2 tw:whitespace-nowrap tw:py-1.5 small"
                             data-loading-text="{{ __('navigation.logging_out') }}">
                             <x-ui.icon name="log-out" size="sm" />
                             <span>{{ __('navigation.logout') }}</span>
@@ -251,10 +251,10 @@
 
             function setNotificationBadgeState(badge, unread, total) {
                 badge.textContent = unread > 0 ? unread : total;
-                ['tw-bg-error', 'tw-text-error-foreground'].forEach((className) => {
+                ['tw:bg-error', 'tw:text-error-foreground'].forEach((className) => {
                     badge.classList.toggle(className, unread > 0);
                 });
-                ['tw-border', 'tw-border-outline-variant', 'tw-bg-surface', 'tw-text-on-surface-variant'].forEach((className) => {
+                ['tw:border', 'tw:border-outline-variant', 'tw:bg-surface', 'tw:text-on-surface-variant'].forEach((className) => {
                     badge.classList.toggle(className, unread <= 0);
                 });
             }
@@ -303,7 +303,7 @@
                         return;
                     }
 
-                    item.classList.remove('tw-bg-primary-container');
+                    item.classList.remove('tw:bg-primary-container');
                     item.dataset.notificationUnread = '0';
                     item.querySelectorAll('[data-notification-new-badge]').forEach((badge) => badge.remove());
                 });

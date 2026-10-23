@@ -35,10 +35,10 @@ class PriceComparisonServerTabsTest extends TestCase
         $response->assertSee('id="purchasingComparisonContainer"', false);
         $response->assertSee('id="purchasingComparisonContent"', false);
         // #purchasingComparisonContent is a CSS Grid item of #purchasingComparisonContainer
-        // (tw-grid); without tw-min-w-0 the grid item's default min-width: auto lets the wide
+        // (tw:grid); without tw:min-w-0 the grid item's default min-width: auto lets the wide
         // comparison-matrix-table (width: max-content) blow out the whole page horizontally
         // instead of scrolling inside its own <x-ui.data-table> wrapper.
-        $response->assertSee('id="purchasingComparisonContent" class="tw-min-w-0 tw-max-w-full"', false);
+        $response->assertSee('id="purchasingComparisonContent" class="tw:min-w-0 tw:max-w-full"', false);
         $response->assertSee('data-server-tab', false);
         $response->assertSee('data-tab-name="inter-supplier"', false);
         $response->assertSee('data-tab-name="historical"', false);
@@ -65,7 +65,7 @@ class PriceComparisonServerTabsTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('id="purchasingComparisonContainer"', false);
-        $response->assertSee('id="purchasingComparisonContent" class="tw-min-w-0 tw-max-w-full"', false);
+        $response->assertSee('id="purchasingComparisonContent" class="tw:min-w-0 tw:max-w-full"', false);
         $response->assertSee('data-server-tab', false);
     }
 
@@ -110,7 +110,7 @@ class PriceComparisonServerTabsTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('id="purchasingComparisonContainer"', false);
-        $response->assertSee('id="purchasingComparisonContent" class="tw-min-w-0 tw-max-w-full"', false);
+        $response->assertSee('id="purchasingComparisonContent" class="tw:min-w-0 tw:max-w-full"', false);
         $response->assertSee('id="vsBestTable"', false);
         $response->assertSee('id="vsBestMonthRange"', false);
     }

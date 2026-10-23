@@ -1,0 +1,1823 @@
+{
+  "engine": "Chromium",
+  "fixture": "Real Laravel-rendered HTML with synthetic actors; static snapshot server and synthetic empty DataTables feeds",
+  "geometryTolerancePixels": 0.5,
+  "normalization": "Colors rendered to sRGB RGBA; invisible shadow layers and invisible outlines normalized; shadow colors normalized before comparison",
+  "stabilization": "Initial differences: transparent outline-none/outline-hidden representations and transient DataTables layout. Reran affected cases after waiting two animation frames following theme changes, and normalized invisible outlines. No source behavior was changed for these representation/timing differences.",
+  "initialCasesWithDifferences": 7,
+  "stabilizationReruns": 12,
+  "measured": "Element geometry, visibility, colors, typography including font fallback, borders, spacing, outlines and normalized shadows",
+  "cases": 138,
+  "darkSystemCases": 69,
+  "forcedColors": {
+    "page": "finance-dashboard.html",
+    "width": 1440,
+    "theme": "light",
+    "before": 420,
+    "after": 420,
+    "differenceCount": 0,
+    "diffs": []
+  },
+  "differences": [],
+  "darkSystemDifferences": [],
+  "pages": [
+    {
+      "page": "login.html",
+      "cases": 6,
+      "differences": 0,
+      "comparedElements": 294
+    },
+    {
+      "page": "supplier-register.html",
+      "cases": 6,
+      "differences": 0,
+      "comparedElements": 1168
+    },
+    {
+      "page": "purchasing-dashboard.html",
+      "cases": 6,
+      "differences": 0,
+      "comparedElements": 2734
+    },
+    {
+      "page": "purchasing-requisitions.html",
+      "cases": 6,
+      "differences": 0,
+      "comparedElements": 1684
+    },
+    {
+      "page": "purchasing-quotations.html",
+      "cases": 6,
+      "differences": 0,
+      "comparedElements": 1798
+    },
+    {
+      "page": "purchasing-comparison-inter-supplier.html",
+      "cases": 6,
+      "differences": 0,
+      "comparedElements": 1648
+    },
+    {
+      "page": "purchasing-purchase-orders.html",
+      "cases": 6,
+      "differences": 0,
+      "comparedElements": 1714
+    },
+    {
+      "page": "purchasing-shipments.html",
+      "cases": 6,
+      "differences": 0,
+      "comparedElements": 1858
+    },
+    {
+      "page": "qc-dashboard.html",
+      "cases": 6,
+      "differences": 0,
+      "comparedElements": 1078
+    },
+    {
+      "page": "qc-inspections.html",
+      "cases": 6,
+      "differences": 0,
+      "comparedElements": 910
+    },
+    {
+      "page": "supplier-dashboard.html",
+      "cases": 6,
+      "differences": 0,
+      "comparedElements": 1430
+    },
+    {
+      "page": "supplier-quotations.html",
+      "cases": 6,
+      "differences": 0,
+      "comparedElements": 958
+    },
+    {
+      "page": "local-supplier-dashboard.html",
+      "cases": 6,
+      "differences": 0,
+      "comparedElements": 1420
+    },
+    {
+      "page": "local-supplier-purchase-orders.html",
+      "cases": 6,
+      "differences": 0,
+      "comparedElements": 1036
+    },
+    {
+      "page": "local-supplier-invoices-create.html",
+      "cases": 6,
+      "differences": 0,
+      "comparedElements": 2200
+    },
+    {
+      "page": "finance-dashboard.html",
+      "cases": 6,
+      "differences": 0,
+      "comparedElements": 2476
+    },
+    {
+      "page": "finance-local-procurement.html",
+      "cases": 6,
+      "differences": 0,
+      "comparedElements": 1624
+    },
+    {
+      "page": "finance-invoices.html",
+      "cases": 6,
+      "differences": 0,
+      "comparedElements": 1204
+    },
+    {
+      "page": "finance-drp-supplier.html",
+      "cases": 6,
+      "differences": 0,
+      "comparedElements": 1498
+    },
+    {
+      "page": "ga-claims.html",
+      "cases": 6,
+      "differences": 0,
+      "comparedElements": 718
+    },
+    {
+      "page": "ga-claims-create.html",
+      "cases": 6,
+      "differences": 0,
+      "comparedElements": 898
+    },
+    {
+      "page": "admin-users.html",
+      "cases": 6,
+      "differences": 0,
+      "comparedElements": 1006
+    },
+    {
+      "page": "profile-customization.html",
+      "cases": 6,
+      "differences": 0,
+      "comparedElements": 3054
+    }
+  ],
+  "results": [
+    {
+      "page": "login.html",
+      "width": 1440,
+      "theme": "light",
+      "before": 55,
+      "after": 55,
+      "differenceCount": 0
+    },
+    {
+      "page": "login.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 55,
+      "after": 55,
+      "differenceCount": 0
+    },
+    {
+      "page": "login.html",
+      "width": 768,
+      "theme": "light",
+      "before": 46,
+      "after": 46,
+      "differenceCount": 0
+    },
+    {
+      "page": "login.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 46,
+      "after": 46,
+      "differenceCount": 0
+    },
+    {
+      "page": "login.html",
+      "width": 375,
+      "theme": "light",
+      "before": 46,
+      "after": 46,
+      "differenceCount": 0
+    },
+    {
+      "page": "login.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 46,
+      "after": 46,
+      "differenceCount": 0
+    },
+    {
+      "page": "supplier-register.html",
+      "width": 1440,
+      "theme": "light",
+      "before": 226,
+      "after": 226,
+      "differenceCount": 0
+    },
+    {
+      "page": "supplier-register.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 226,
+      "after": 226,
+      "differenceCount": 0
+    },
+    {
+      "page": "supplier-register.html",
+      "width": 768,
+      "theme": "light",
+      "before": 180,
+      "after": 180,
+      "differenceCount": 0
+    },
+    {
+      "page": "supplier-register.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 180,
+      "after": 180,
+      "differenceCount": 0
+    },
+    {
+      "page": "supplier-register.html",
+      "width": 375,
+      "theme": "light",
+      "before": 178,
+      "after": 178,
+      "differenceCount": 0
+    },
+    {
+      "page": "supplier-register.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 178,
+      "after": 178,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-dashboard.html",
+      "width": 1440,
+      "theme": "light",
+      "before": 464,
+      "after": 464,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-dashboard.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 464,
+      "after": 464,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-dashboard.html",
+      "width": 768,
+      "theme": "light",
+      "before": 457,
+      "after": 457,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-dashboard.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 457,
+      "after": 457,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-dashboard.html",
+      "width": 375,
+      "theme": "light",
+      "before": 446,
+      "after": 446,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-dashboard.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 446,
+      "after": 446,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-requisitions.html",
+      "width": 1440,
+      "theme": "light",
+      "before": 288,
+      "after": 288,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-requisitions.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 288,
+      "after": 288,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-requisitions.html",
+      "width": 768,
+      "theme": "light",
+      "before": 281,
+      "after": 281,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-requisitions.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 281,
+      "after": 281,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-requisitions.html",
+      "width": 375,
+      "theme": "light",
+      "before": 273,
+      "after": 273,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-requisitions.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 273,
+      "after": 273,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-quotations.html",
+      "width": 1440,
+      "theme": "light",
+      "before": 307,
+      "after": 307,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-quotations.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 307,
+      "after": 307,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-quotations.html",
+      "width": 768,
+      "theme": "light",
+      "before": 300,
+      "after": 300,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-quotations.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 300,
+      "after": 300,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-quotations.html",
+      "width": 375,
+      "theme": "light",
+      "before": 292,
+      "after": 292,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-quotations.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 292,
+      "after": 292,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-comparison-inter-supplier.html",
+      "width": 1440,
+      "theme": "light",
+      "before": 282,
+      "after": 282,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-comparison-inter-supplier.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 282,
+      "after": 282,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-comparison-inter-supplier.html",
+      "width": 768,
+      "theme": "light",
+      "before": 275,
+      "after": 275,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-comparison-inter-supplier.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 275,
+      "after": 275,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-comparison-inter-supplier.html",
+      "width": 375,
+      "theme": "light",
+      "before": 267,
+      "after": 267,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-comparison-inter-supplier.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 267,
+      "after": 267,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-purchase-orders.html",
+      "width": 1440,
+      "theme": "light",
+      "before": 293,
+      "after": 293,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-purchase-orders.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 293,
+      "after": 293,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-purchase-orders.html",
+      "width": 768,
+      "theme": "light",
+      "before": 286,
+      "after": 286,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-purchase-orders.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 286,
+      "after": 286,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-purchase-orders.html",
+      "width": 375,
+      "theme": "light",
+      "before": 278,
+      "after": 278,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-purchase-orders.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 278,
+      "after": 278,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-shipments.html",
+      "width": 1440,
+      "theme": "light",
+      "before": 317,
+      "after": 317,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-shipments.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 317,
+      "after": 317,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-shipments.html",
+      "width": 768,
+      "theme": "light",
+      "before": 310,
+      "after": 310,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-shipments.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 310,
+      "after": 310,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-shipments.html",
+      "width": 375,
+      "theme": "light",
+      "before": 302,
+      "after": 302,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-shipments.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 302,
+      "after": 302,
+      "differenceCount": 0
+    },
+    {
+      "page": "qc-dashboard.html",
+      "width": 1440,
+      "theme": "light",
+      "before": 187,
+      "after": 187,
+      "differenceCount": 0
+    },
+    {
+      "page": "qc-dashboard.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 187,
+      "after": 187,
+      "differenceCount": 0
+    },
+    {
+      "page": "qc-dashboard.html",
+      "width": 768,
+      "theme": "light",
+      "before": 180,
+      "after": 180,
+      "differenceCount": 0
+    },
+    {
+      "page": "qc-dashboard.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 180,
+      "after": 180,
+      "differenceCount": 0
+    },
+    {
+      "page": "qc-dashboard.html",
+      "width": 375,
+      "theme": "light",
+      "before": 172,
+      "after": 172,
+      "differenceCount": 0
+    },
+    {
+      "page": "qc-dashboard.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 172,
+      "after": 172,
+      "differenceCount": 0
+    },
+    {
+      "page": "qc-inspections.html",
+      "width": 1440,
+      "theme": "light",
+      "before": 159,
+      "after": 159,
+      "differenceCount": 0
+    },
+    {
+      "page": "qc-inspections.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 159,
+      "after": 159,
+      "differenceCount": 0
+    },
+    {
+      "page": "qc-inspections.html",
+      "width": 768,
+      "theme": "light",
+      "before": 152,
+      "after": 152,
+      "differenceCount": 0
+    },
+    {
+      "page": "qc-inspections.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 152,
+      "after": 152,
+      "differenceCount": 0
+    },
+    {
+      "page": "qc-inspections.html",
+      "width": 375,
+      "theme": "light",
+      "before": 144,
+      "after": 144,
+      "differenceCount": 0
+    },
+    {
+      "page": "qc-inspections.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 144,
+      "after": 144,
+      "differenceCount": 0
+    },
+    {
+      "page": "supplier-dashboard.html",
+      "width": 1440,
+      "theme": "light",
+      "before": 246,
+      "after": 246,
+      "differenceCount": 0
+    },
+    {
+      "page": "supplier-dashboard.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 246,
+      "after": 246,
+      "differenceCount": 0
+    },
+    {
+      "page": "supplier-dashboard.html",
+      "width": 768,
+      "theme": "light",
+      "before": 239,
+      "after": 239,
+      "differenceCount": 0
+    },
+    {
+      "page": "supplier-dashboard.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 239,
+      "after": 239,
+      "differenceCount": 0
+    },
+    {
+      "page": "supplier-dashboard.html",
+      "width": 375,
+      "theme": "light",
+      "before": 230,
+      "after": 230,
+      "differenceCount": 0
+    },
+    {
+      "page": "supplier-dashboard.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 230,
+      "after": 230,
+      "differenceCount": 0
+    },
+    {
+      "page": "supplier-quotations.html",
+      "width": 1440,
+      "theme": "light",
+      "before": 167,
+      "after": 167,
+      "differenceCount": 0
+    },
+    {
+      "page": "supplier-quotations.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 167,
+      "after": 167,
+      "differenceCount": 0
+    },
+    {
+      "page": "supplier-quotations.html",
+      "width": 768,
+      "theme": "light",
+      "before": 160,
+      "after": 160,
+      "differenceCount": 0
+    },
+    {
+      "page": "supplier-quotations.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 160,
+      "after": 160,
+      "differenceCount": 0
+    },
+    {
+      "page": "supplier-quotations.html",
+      "width": 375,
+      "theme": "light",
+      "before": 152,
+      "after": 152,
+      "differenceCount": 0
+    },
+    {
+      "page": "supplier-quotations.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 152,
+      "after": 152,
+      "differenceCount": 0
+    },
+    {
+      "page": "local-supplier-dashboard.html",
+      "width": 1440,
+      "theme": "light",
+      "before": 244,
+      "after": 244,
+      "differenceCount": 0
+    },
+    {
+      "page": "local-supplier-dashboard.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 244,
+      "after": 244,
+      "differenceCount": 0
+    },
+    {
+      "page": "local-supplier-dashboard.html",
+      "width": 768,
+      "theme": "light",
+      "before": 237,
+      "after": 237,
+      "differenceCount": 0
+    },
+    {
+      "page": "local-supplier-dashboard.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 237,
+      "after": 237,
+      "differenceCount": 0
+    },
+    {
+      "page": "local-supplier-dashboard.html",
+      "width": 375,
+      "theme": "light",
+      "before": 229,
+      "after": 229,
+      "differenceCount": 0
+    },
+    {
+      "page": "local-supplier-dashboard.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 229,
+      "after": 229,
+      "differenceCount": 0
+    },
+    {
+      "page": "local-supplier-purchase-orders.html",
+      "width": 1440,
+      "theme": "light",
+      "before": 180,
+      "after": 180,
+      "differenceCount": 0
+    },
+    {
+      "page": "local-supplier-purchase-orders.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 180,
+      "after": 180,
+      "differenceCount": 0
+    },
+    {
+      "page": "local-supplier-purchase-orders.html",
+      "width": 768,
+      "theme": "light",
+      "before": 173,
+      "after": 173,
+      "differenceCount": 0
+    },
+    {
+      "page": "local-supplier-purchase-orders.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 173,
+      "after": 173,
+      "differenceCount": 0
+    },
+    {
+      "page": "local-supplier-purchase-orders.html",
+      "width": 375,
+      "theme": "light",
+      "before": 165,
+      "after": 165,
+      "differenceCount": 0
+    },
+    {
+      "page": "local-supplier-purchase-orders.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 165,
+      "after": 165,
+      "differenceCount": 0
+    },
+    {
+      "page": "local-supplier-invoices-create.html",
+      "width": 1440,
+      "theme": "light",
+      "before": 374,
+      "after": 374,
+      "differenceCount": 0
+    },
+    {
+      "page": "local-supplier-invoices-create.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 374,
+      "after": 374,
+      "differenceCount": 0
+    },
+    {
+      "page": "local-supplier-invoices-create.html",
+      "width": 768,
+      "theme": "light",
+      "before": 367,
+      "after": 367,
+      "differenceCount": 0
+    },
+    {
+      "page": "local-supplier-invoices-create.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 367,
+      "after": 367,
+      "differenceCount": 0
+    },
+    {
+      "page": "local-supplier-invoices-create.html",
+      "width": 375,
+      "theme": "light",
+      "before": 359,
+      "after": 359,
+      "differenceCount": 0
+    },
+    {
+      "page": "local-supplier-invoices-create.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 359,
+      "after": 359,
+      "differenceCount": 0
+    },
+    {
+      "page": "finance-dashboard.html",
+      "width": 1440,
+      "theme": "light",
+      "before": 420,
+      "after": 420,
+      "differenceCount": 0
+    },
+    {
+      "page": "finance-dashboard.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 420,
+      "after": 420,
+      "differenceCount": 0
+    },
+    {
+      "page": "finance-dashboard.html",
+      "width": 768,
+      "theme": "light",
+      "before": 413,
+      "after": 413,
+      "differenceCount": 0
+    },
+    {
+      "page": "finance-dashboard.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 413,
+      "after": 413,
+      "differenceCount": 0
+    },
+    {
+      "page": "finance-dashboard.html",
+      "width": 375,
+      "theme": "light",
+      "before": 405,
+      "after": 405,
+      "differenceCount": 0
+    },
+    {
+      "page": "finance-dashboard.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 405,
+      "after": 405,
+      "differenceCount": 0
+    },
+    {
+      "page": "finance-local-procurement.html",
+      "width": 1440,
+      "theme": "light",
+      "before": 278,
+      "after": 278,
+      "differenceCount": 0
+    },
+    {
+      "page": "finance-local-procurement.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 278,
+      "after": 278,
+      "differenceCount": 0
+    },
+    {
+      "page": "finance-local-procurement.html",
+      "width": 768,
+      "theme": "light",
+      "before": 271,
+      "after": 271,
+      "differenceCount": 0
+    },
+    {
+      "page": "finance-local-procurement.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 271,
+      "after": 271,
+      "differenceCount": 0
+    },
+    {
+      "page": "finance-local-procurement.html",
+      "width": 375,
+      "theme": "light",
+      "before": 263,
+      "after": 263,
+      "differenceCount": 0
+    },
+    {
+      "page": "finance-local-procurement.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 263,
+      "after": 263,
+      "differenceCount": 0
+    },
+    {
+      "page": "finance-invoices.html",
+      "width": 1440,
+      "theme": "light",
+      "before": 208,
+      "after": 208,
+      "differenceCount": 0
+    },
+    {
+      "page": "finance-invoices.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 208,
+      "after": 208,
+      "differenceCount": 0
+    },
+    {
+      "page": "finance-invoices.html",
+      "width": 768,
+      "theme": "light",
+      "before": 201,
+      "after": 201,
+      "differenceCount": 0
+    },
+    {
+      "page": "finance-invoices.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 201,
+      "after": 201,
+      "differenceCount": 0
+    },
+    {
+      "page": "finance-invoices.html",
+      "width": 375,
+      "theme": "light",
+      "before": 193,
+      "after": 193,
+      "differenceCount": 0
+    },
+    {
+      "page": "finance-invoices.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 193,
+      "after": 193,
+      "differenceCount": 0
+    },
+    {
+      "page": "finance-drp-supplier.html",
+      "width": 1440,
+      "theme": "light",
+      "before": 257,
+      "after": 257,
+      "differenceCount": 0
+    },
+    {
+      "page": "finance-drp-supplier.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 257,
+      "after": 257,
+      "differenceCount": 0
+    },
+    {
+      "page": "finance-drp-supplier.html",
+      "width": 768,
+      "theme": "light",
+      "before": 250,
+      "after": 250,
+      "differenceCount": 0
+    },
+    {
+      "page": "finance-drp-supplier.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 250,
+      "after": 250,
+      "differenceCount": 0
+    },
+    {
+      "page": "finance-drp-supplier.html",
+      "width": 375,
+      "theme": "light",
+      "before": 242,
+      "after": 242,
+      "differenceCount": 0
+    },
+    {
+      "page": "finance-drp-supplier.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 242,
+      "after": 242,
+      "differenceCount": 0
+    },
+    {
+      "page": "ga-claims.html",
+      "width": 1440,
+      "theme": "light",
+      "before": 127,
+      "after": 127,
+      "differenceCount": 0
+    },
+    {
+      "page": "ga-claims.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 127,
+      "after": 127,
+      "differenceCount": 0
+    },
+    {
+      "page": "ga-claims.html",
+      "width": 768,
+      "theme": "light",
+      "before": 120,
+      "after": 120,
+      "differenceCount": 0
+    },
+    {
+      "page": "ga-claims.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 120,
+      "after": 120,
+      "differenceCount": 0
+    },
+    {
+      "page": "ga-claims.html",
+      "width": 375,
+      "theme": "light",
+      "before": 112,
+      "after": 112,
+      "differenceCount": 0
+    },
+    {
+      "page": "ga-claims.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 112,
+      "after": 112,
+      "differenceCount": 0
+    },
+    {
+      "page": "ga-claims-create.html",
+      "width": 1440,
+      "theme": "light",
+      "before": 157,
+      "after": 157,
+      "differenceCount": 0
+    },
+    {
+      "page": "ga-claims-create.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 157,
+      "after": 157,
+      "differenceCount": 0
+    },
+    {
+      "page": "ga-claims-create.html",
+      "width": 768,
+      "theme": "light",
+      "before": 150,
+      "after": 150,
+      "differenceCount": 0
+    },
+    {
+      "page": "ga-claims-create.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 150,
+      "after": 150,
+      "differenceCount": 0
+    },
+    {
+      "page": "ga-claims-create.html",
+      "width": 375,
+      "theme": "light",
+      "before": 142,
+      "after": 142,
+      "differenceCount": 0
+    },
+    {
+      "page": "ga-claims-create.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 142,
+      "after": 142,
+      "differenceCount": 0
+    },
+    {
+      "page": "admin-users.html",
+      "width": 1440,
+      "theme": "light",
+      "before": 175,
+      "after": 175,
+      "differenceCount": 0
+    },
+    {
+      "page": "admin-users.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 175,
+      "after": 175,
+      "differenceCount": 0
+    },
+    {
+      "page": "admin-users.html",
+      "width": 768,
+      "theme": "light",
+      "before": 168,
+      "after": 168,
+      "differenceCount": 0
+    },
+    {
+      "page": "admin-users.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 168,
+      "after": 168,
+      "differenceCount": 0
+    },
+    {
+      "page": "admin-users.html",
+      "width": 375,
+      "theme": "light",
+      "before": 160,
+      "after": 160,
+      "differenceCount": 0
+    },
+    {
+      "page": "admin-users.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 160,
+      "after": 160,
+      "differenceCount": 0
+    },
+    {
+      "page": "profile-customization.html",
+      "width": 1440,
+      "theme": "light",
+      "before": 544,
+      "after": 544,
+      "differenceCount": 0
+    },
+    {
+      "page": "profile-customization.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 544,
+      "after": 544,
+      "differenceCount": 0
+    },
+    {
+      "page": "profile-customization.html",
+      "width": 768,
+      "theme": "light",
+      "before": 497,
+      "after": 497,
+      "differenceCount": 0
+    },
+    {
+      "page": "profile-customization.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 497,
+      "after": 497,
+      "differenceCount": 0
+    },
+    {
+      "page": "profile-customization.html",
+      "width": 375,
+      "theme": "light",
+      "before": 486,
+      "after": 486,
+      "differenceCount": 0
+    },
+    {
+      "page": "profile-customization.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 486,
+      "after": 486,
+      "differenceCount": 0
+    }
+  ],
+  "darkSystemResults": [
+    {
+      "page": "login.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 55,
+      "after": 55,
+      "differenceCount": 0
+    },
+    {
+      "page": "login.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 46,
+      "after": 46,
+      "differenceCount": 0
+    },
+    {
+      "page": "login.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 46,
+      "after": 46,
+      "differenceCount": 0
+    },
+    {
+      "page": "supplier-register.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 226,
+      "after": 226,
+      "differenceCount": 0
+    },
+    {
+      "page": "supplier-register.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 180,
+      "after": 180,
+      "differenceCount": 0
+    },
+    {
+      "page": "supplier-register.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 178,
+      "after": 178,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-dashboard.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 464,
+      "after": 464,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-dashboard.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 457,
+      "after": 457,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-dashboard.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 446,
+      "after": 446,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-requisitions.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 288,
+      "after": 288,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-requisitions.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 281,
+      "after": 281,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-requisitions.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 273,
+      "after": 273,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-quotations.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 307,
+      "after": 307,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-quotations.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 300,
+      "after": 300,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-quotations.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 292,
+      "after": 292,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-comparison-inter-supplier.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 282,
+      "after": 282,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-comparison-inter-supplier.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 275,
+      "after": 275,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-comparison-inter-supplier.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 267,
+      "after": 267,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-purchase-orders.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 293,
+      "after": 293,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-purchase-orders.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 286,
+      "after": 286,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-purchase-orders.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 278,
+      "after": 278,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-shipments.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 317,
+      "after": 317,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-shipments.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 310,
+      "after": 310,
+      "differenceCount": 0
+    },
+    {
+      "page": "purchasing-shipments.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 302,
+      "after": 302,
+      "differenceCount": 0
+    },
+    {
+      "page": "qc-dashboard.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 187,
+      "after": 187,
+      "differenceCount": 0
+    },
+    {
+      "page": "qc-dashboard.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 180,
+      "after": 180,
+      "differenceCount": 0
+    },
+    {
+      "page": "qc-dashboard.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 172,
+      "after": 172,
+      "differenceCount": 0
+    },
+    {
+      "page": "qc-inspections.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 159,
+      "after": 159,
+      "differenceCount": 0
+    },
+    {
+      "page": "qc-inspections.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 152,
+      "after": 152,
+      "differenceCount": 0
+    },
+    {
+      "page": "qc-inspections.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 144,
+      "after": 144,
+      "differenceCount": 0
+    },
+    {
+      "page": "supplier-dashboard.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 246,
+      "after": 246,
+      "differenceCount": 0
+    },
+    {
+      "page": "supplier-dashboard.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 239,
+      "after": 239,
+      "differenceCount": 0
+    },
+    {
+      "page": "supplier-dashboard.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 230,
+      "after": 230,
+      "differenceCount": 0
+    },
+    {
+      "page": "supplier-quotations.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 167,
+      "after": 167,
+      "differenceCount": 0
+    },
+    {
+      "page": "supplier-quotations.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 160,
+      "after": 160,
+      "differenceCount": 0
+    },
+    {
+      "page": "supplier-quotations.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 152,
+      "after": 152,
+      "differenceCount": 0
+    },
+    {
+      "page": "local-supplier-dashboard.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 244,
+      "after": 244,
+      "differenceCount": 0
+    },
+    {
+      "page": "local-supplier-dashboard.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 237,
+      "after": 237,
+      "differenceCount": 0
+    },
+    {
+      "page": "local-supplier-dashboard.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 229,
+      "after": 229,
+      "differenceCount": 0
+    },
+    {
+      "page": "local-supplier-purchase-orders.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 180,
+      "after": 180,
+      "differenceCount": 0
+    },
+    {
+      "page": "local-supplier-purchase-orders.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 173,
+      "after": 173,
+      "differenceCount": 0
+    },
+    {
+      "page": "local-supplier-purchase-orders.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 165,
+      "after": 165,
+      "differenceCount": 0
+    },
+    {
+      "page": "local-supplier-invoices-create.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 374,
+      "after": 374,
+      "differenceCount": 0
+    },
+    {
+      "page": "local-supplier-invoices-create.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 367,
+      "after": 367,
+      "differenceCount": 0
+    },
+    {
+      "page": "local-supplier-invoices-create.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 359,
+      "after": 359,
+      "differenceCount": 0
+    },
+    {
+      "page": "finance-dashboard.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 420,
+      "after": 420,
+      "differenceCount": 0
+    },
+    {
+      "page": "finance-dashboard.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 413,
+      "after": 413,
+      "differenceCount": 0
+    },
+    {
+      "page": "finance-dashboard.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 405,
+      "after": 405,
+      "differenceCount": 0
+    },
+    {
+      "page": "finance-local-procurement.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 278,
+      "after": 278,
+      "differenceCount": 0
+    },
+    {
+      "page": "finance-local-procurement.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 271,
+      "after": 271,
+      "differenceCount": 0
+    },
+    {
+      "page": "finance-local-procurement.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 263,
+      "after": 263,
+      "differenceCount": 0
+    },
+    {
+      "page": "finance-invoices.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 208,
+      "after": 208,
+      "differenceCount": 0
+    },
+    {
+      "page": "finance-invoices.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 201,
+      "after": 201,
+      "differenceCount": 0
+    },
+    {
+      "page": "finance-invoices.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 193,
+      "after": 193,
+      "differenceCount": 0
+    },
+    {
+      "page": "finance-drp-supplier.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 257,
+      "after": 257,
+      "differenceCount": 0
+    },
+    {
+      "page": "finance-drp-supplier.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 250,
+      "after": 250,
+      "differenceCount": 0
+    },
+    {
+      "page": "finance-drp-supplier.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 242,
+      "after": 242,
+      "differenceCount": 0
+    },
+    {
+      "page": "ga-claims.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 127,
+      "after": 127,
+      "differenceCount": 0
+    },
+    {
+      "page": "ga-claims.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 120,
+      "after": 120,
+      "differenceCount": 0
+    },
+    {
+      "page": "ga-claims.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 112,
+      "after": 112,
+      "differenceCount": 0
+    },
+    {
+      "page": "ga-claims-create.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 157,
+      "after": 157,
+      "differenceCount": 0
+    },
+    {
+      "page": "ga-claims-create.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 150,
+      "after": 150,
+      "differenceCount": 0
+    },
+    {
+      "page": "ga-claims-create.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 142,
+      "after": 142,
+      "differenceCount": 0
+    },
+    {
+      "page": "admin-users.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 175,
+      "after": 175,
+      "differenceCount": 0
+    },
+    {
+      "page": "admin-users.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 168,
+      "after": 168,
+      "differenceCount": 0
+    },
+    {
+      "page": "admin-users.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 160,
+      "after": 160,
+      "differenceCount": 0
+    },
+    {
+      "page": "profile-customization.html",
+      "width": 1440,
+      "theme": "dark",
+      "before": 544,
+      "after": 544,
+      "differenceCount": 0
+    },
+    {
+      "page": "profile-customization.html",
+      "width": 768,
+      "theme": "dark",
+      "before": 497,
+      "after": 497,
+      "differenceCount": 0
+    },
+    {
+      "page": "profile-customization.html",
+      "width": 375,
+      "theme": "dark",
+      "before": 486,
+      "after": 486,
+      "differenceCount": 0
+    }
+  ]
+}

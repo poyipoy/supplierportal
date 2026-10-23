@@ -11,7 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Quick reference
 
 ### Stack & commands
-- PHP 8.2, Laravel 12, MySQL (Laragon). Blade + Bootstrap 5 compat layer + Tailwind 3 with the `tw-` prefix, Alpine, Vite 7. Server-rendered; no API layer.
+- PHP 8.2, Laravel 12, MySQL (Laragon). Blade + Bootstrap 5 compat layer + Tailwind 4 with the `tw:` prefix, Alpine, Vite 7. Server-rendered; no API layer.
 - Install: `composer install` and `npm.cmd install`. Do not use `composer setup` on an existing DB (it runs `migrate --force`).
 - Run: `composer dev` (serve + `queue:listen --queue=exports,default` + `queue:listen --queue=imports` + pail + vite).
 - Test: `composer test` (full suite, serial, several minutes), `php artisan test --filter=Name`, `node --test tests/js/<file>.test.mjs`. CI (`.github/workflows/tests.yml`) runs a regression subset, the core workflow suites, JS tests and the build on PRs and pushes to `master`, and the full suite on MySQL 8.0 and MariaDB 11.4 on `master`, nightly and on demand (AGENTS.md, Workflow Verifikasi).
@@ -47,7 +47,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Hashids: models using `App\Traits\HasHashids` route by hash. In views pass the model or `$model->hash`, never `->id`. `DecodeHashids` decodes only keys in `HASHED_PARAM_KEYS` and returns 404 for raw integers, so register new parameter names there.
 - `EnforceSupplierDomain` (web group) blocks cross-core shared endpoints. Local operators get 403 on `attachments.*`, `conversations.*`, and `shared.pdf.*`. Suppliers without `import` scope get 403 there and on `supplier.*` and `exports.*`.
 - `RoleMiddleware` checks an explicit role list; admin is not a superuser.
-- UI: M3-style tokens (`--md-*`, `--ui-*`) mapped to `tw-*` colors in `tailwind.config.js`; no raw hex. Icons only through `<x-ui.icon>` (Lucide; legacy `bi-*` names are aliased, so never write `bi bi-*` classes).
+- UI: M3-style tokens (`--md-*`, `--ui-*`) mapped to `tw:*` colors in `tailwind.config.js`; no raw hex. Icons only through `<x-ui.icon>` (Lucide; legacy `bi-*` names are aliased, so never write `bi bi-*` classes).
 - Language: locale is per user (`en`/`id`), and every new string needs a key in both `lang/en` and `lang/id` (`TranslationParityTest`). There is no LANGUAGE.md; the policy is "UI Language Policy" at the end of AGENTS.md.
 - Exports are async: `ExportDispatcher::dispatch()` creates an `ExportJob`, and `ProcessExportJob` runs it on queue `exports`, so a worker must run. Import templates download directly.
 - Dates go through `App\Support\BusinessTime` (UTC storage, Asia/Jakarta business tz). Money goes through `App\Support\Money` / BCMath.

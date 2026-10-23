@@ -275,7 +275,7 @@ async function fetchAndSwap(state, url, pushHistory) {
 
     // ── Cache Miss: show loading state and fetch ──
     tableTarget.setAttribute('aria-busy', 'true');
-    tableTarget.classList.add('tw-opacity-50');
+    tableTarget.classList.add('tw:opacity-50');
     tableTarget.style.pointerEvents = 'none';
     showLoadingOverlay(tableTarget);
 
@@ -335,7 +335,7 @@ async function fetchAndSwap(state, url, pushHistory) {
 
 function clearBusyState(target) {
     target.removeAttribute('aria-busy');
-    target.classList.remove('tw-opacity-50');
+    target.classList.remove('tw:opacity-50');
     target.style.pointerEvents = '';
     hideLoadingOverlay(target);
 }
@@ -430,15 +430,15 @@ function getContainerSelector(state) {
 function updateTabActiveStates(container, activeTab) {
     // 1. Update Segmented Pill Tabs (exclude metric cards)
     const pillTabs = container.querySelectorAll('[data-server-tab]:not([data-server-tab-card])');
-    const pillActiveClasses = ['tw-bg-primary', 'tw-text-primary-foreground', 'tw-shadow-xs'];
-    const pillInactiveClasses = ['tw-text-on-surface-variant'];
-    const pillHoverClasses = ['hover:tw-bg-surface', 'hover:tw-text-on-surface'];
-    const activeBadgeClasses = ['tw-bg-white/20', 'tw-text-white'];
-    const inactiveBadgeClasses = ['tw-bg-surface', 'tw-text-on-surface-variant'];
+    const pillActiveClasses = ['tw:bg-primary', 'tw:text-primary-foreground', 'tw-shadow-xs'];
+    const pillInactiveClasses = ['tw:text-on-surface-variant'];
+    const pillHoverClasses = ['tw:hover:bg-surface', 'tw:hover:text-on-surface'];
+    const activeBadgeClasses = ['tw:bg-white/20', 'tw:text-white'];
+    const inactiveBadgeClasses = ['tw:bg-surface', 'tw:text-on-surface-variant'];
 
     pillTabs.forEach((tab) => {
         const tabName = tab.dataset.tabName;
-        const badge = tab.querySelector('.tw-rounded-full');
+        const badge = tab.querySelector('[class~="tw:rounded-full"]');
         const isActive = tabName === activeTab;
 
         // Tabs inside a server-rendered nav are styled through aria-current (aria-[current=page]: variants),
@@ -473,8 +473,8 @@ function updateTabActiveStates(container, activeTab) {
 
     // 2. Update Metric Cards
     const cardTabs = container.querySelectorAll('[data-server-tab-card]');
-    const cardActiveClasses = ['tw-border-primary', 'tw-ring-2', 'tw-ring-primary'];
-    const cardInactiveClasses = ['tw-border-outline'];
+    const cardActiveClasses = ['tw:border-primary', 'tw:ring-2', 'tw:ring-primary'];
+    const cardInactiveClasses = ['tw:border-outline'];
 
     cardTabs.forEach((card) => {
         const tabName = card.dataset.tabName;
@@ -559,9 +559,9 @@ function updateOverpaymentBadge(container, count) {
 
     badge.textContent = count;
     if (count > 0) {
-        badge.classList.remove('tw-hidden');
+        badge.classList.remove('tw:hidden');
     } else {
-        badge.classList.add('tw-hidden');
+        badge.classList.add('tw:hidden');
     }
 }
 
@@ -569,11 +569,11 @@ function showLoadingOverlay(target) {
     let overlay = target.querySelector('.server-tabs-loading-overlay');
     if (!overlay) {
         overlay = document.createElement('div');
-        overlay.className = 'server-tabs-loading-overlay tw-absolute tw-inset-0 tw-flex tw-items-center tw-justify-center tw-z-10';
+        overlay.className = 'server-tabs-loading-overlay tw:absolute tw:inset-0 tw:flex tw:items-center tw:justify-center tw:z-10';
         overlay.innerHTML = `
-            <div class="tw-flex tw-items-center tw-gap-2 tw-px-4 tw-py-2 tw-rounded-lg tw-bg-surface tw-shadow-md tw-border tw-border-outline-variant">
-                <div class="tw-animate-spin tw-w-4 tw-h-4 tw-border-2 tw-border-primary tw-border-t-transparent tw-rounded-full"></div>
-                <span class="tw-text-ui-xs tw-text-on-surface-variant tw-font-medium" data-server-tabs-loading-text></span>
+            <div class="tw:flex tw:items-center tw:gap-2 tw:px-4 tw:py-2 tw:rounded-lg tw:bg-surface tw:shadow-md tw:border tw:border-outline-variant">
+                <div class="tw:animate-spin tw:w-4 tw:h-4 tw:border-2 tw:border-primary tw:border-t-transparent tw:rounded-full"></div>
+                <span class="tw:text-ui-xs tw:text-on-surface-variant tw:font-medium" data-server-tabs-loading-text></span>
             </div>
         `;
         overlay.querySelector('[data-server-tabs-loading-text]').textContent = t('js.tables.loading');

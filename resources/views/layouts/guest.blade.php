@@ -24,16 +24,16 @@
         @include('partials.loader-logo')
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="tw-font-sans tw-text-on-surface tw-antialiased">
+    <body class="tw:font-sans tw:text-on-surface tw:antialiased">
         <x-ui.auth-splash :error="isset($exception)" />
-        <div class="tw-flex tw-min-h-screen tw-flex-col tw-items-center tw-bg-background tw-pt-6 sm:tw-justify-center sm:tw-pt-0">
+        <div class="tw:flex tw:min-h-screen tw:flex-col tw:items-center tw:bg-background tw:pt-6 tw:sm:justify-center tw:sm:pt-0">
             <div>
                 <a href="/">
-                    <x-application-logo class="tw-h-20 tw-w-20 tw-fill-current tw-text-on-surface-variant" />
+                    <x-application-logo class="tw:h-20 tw:w-20 tw:fill-current tw:text-on-surface-variant" />
                 </a>
             </div>
 
-            <div class="tw-mt-6 tw-w-full tw-overflow-hidden tw-bg-surface tw-px-6 tw-py-4 tw-shadow-ui-1 sm:tw-max-w-md sm:tw-rounded-ui-md">
+            <div class="tw:mt-6 tw:w-full tw:overflow-hidden tw:bg-surface tw:px-6 tw:py-4 tw:shadow-ui-1 tw:sm:max-w-md tw:sm:rounded-ui-md">
                 @include('partials.alerts')
                 {{ $slot ?? '' }}
                 @yield('content')

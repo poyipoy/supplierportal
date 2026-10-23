@@ -1,15 +1,15 @@
 @extends(($fixturePublic ?? false) ? 'density-qa-layout' : 'layouts.app')
 @section('title', 'Density component measurement fixture')
 @section('content')
-<div class="tw-grid tw-gap-4" id="density-fixture">
+<div class="tw:grid tw:gap-4" id="density-fixture">
     <x-ui.page-header title="Density measurement fixture" description="Synthetic labels and shared production components only." />
-    <div class="tw-flex tw-flex-wrap tw-gap-2" aria-label="Temporary fixture density">
+    <div class="tw:flex tw:flex-wrap tw:gap-2" aria-label="Temporary fixture density">
         @foreach(config('user_preferences.densities') as $level)
             <x-ui.button type="button" size="sm" variant="outline" :id="'fixture-'.$level" data-fixture-density="{{ $level }}">{{ ucfirst($level) }}</x-ui.button>
         @endforeach
     </div>
     <x-ui.metric-card id="fixture-metric" label="Items" value="24" icon="package" />
-    <x-ui.card id="fixture-card" title="Information panel"><p class="tw-m-0">Representative non-sensitive information.</p></x-ui.card>
+    <x-ui.card id="fixture-card" title="Information panel"><p class="tw:m-0">Representative non-sensitive information.</p></x-ui.card>
     <x-ui.toolbar id="fixture-toolbar">
         <x-slot:search><label for="fixture-search">Search</label><input id="fixture-search" class="form-control form-control-sm" value="Example" readonly></x-slot:search>
         <x-slot:actions><x-ui.button size="sm" variant="outline">Filter</x-ui.button></x-slot:actions>
