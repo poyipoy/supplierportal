@@ -16,19 +16,12 @@
     background-color: var(--md-surface-container-low) !important;
     vertical-align: middle;
 }
-.col-sticky-material {
-    position: sticky;
-    left: 0;
-    z-index: 5;
-    background-color: var(--md-surface) !important;
-    box-shadow: 2px 0 6px -2px rgba(0, 0, 0, 0.12);
+/* PUR-04: stickiness comes from .ui-table-sticky/.ui-sticky-col (app.css), which layers the
+   header above the frozen column; only the width lives here. */
+.comparison-material-col {
     min-width: 200px;
     max-width: 240px;
     width: 220px;
-}
-thead th.col-sticky-material {
-    background-color: var(--md-surface-container-low) !important;
-    z-index: 12;
 }
 .col-ref-qty {
     min-width: 65px;
@@ -174,7 +167,7 @@ thead th.col-sticky-material {
                 <select class="form-select form-select-sm" id="comparisonMaterialFilter">
                     <option value="">{{ __('purchasing.copy.all_material') }}</option>
                     @foreach($materialOptions as $material)
-                        <option value="{{ $material->id }}">{{ $material->material_name }}</option>
+                        <option value="{{ $material->id }}" data-material-name="{{ $material->material_name }}" data-shape="{{ $material->shape ?? '' }}">{{ $material->material_name }}{{ $materialOptions->where('material_name', $material->material_name)->count() > 1 && $material->shape ? ' ('.$material->shape.')' : '' }}</option>
                     @endforeach
                 </select>
             </div>
@@ -217,7 +210,7 @@ thead th.col-sticky-material {
                 <table class="table table-bordered table-hover align-middle mb-0 tw:text-ui-xs comparison-matrix-table">
                     <thead class="table-light text-center">
                         <tr>
-                            <th scope="col" rowspan="2" class="align-middle col-sticky-material">{{ __('purchasing.copy.material') }}</th>
+                            <th scope="col" rowspan="2" class="align-middle ui-sticky-col comparison-material-col">{{ __('purchasing.copy.material') }}</th>
                             <th scope="col" rowspan="2" class="align-middle col-ref-qty text-center">{{ __('purchasing.copy.qty') }}</th>
                             <th scope="col" rowspan="2" class="align-middle col-ref-weight text-center">{{ __('purchasing.copy.weight_unit_kg') }}</th>
                             <th scope="col" rowspan="2" class="align-middle col-ref-total-weight text-center">{{ __('purchasing.copy.total_weight_kg') }}</th>
@@ -233,9 +226,7 @@ thead th.col-sticky-material {
                                         <span class="fw-semibold">{{ __('purchasing.copy.supplier_estimate_delivery_prefix') }}</span>
                                         <span class="tw:text-on-surface">{{ $sup['estimated_delivery_formatted'] ?? '-' }}</span>
                                     </div>
-                                    <div class="text-start tw:font-normal">
-                                        @include('quotations._supplier_pic', ['profile' => $sup['profile'] ?? null])
-                                    </div>
+                                    {{-- PUR-03: no supplier contact person on Price Comparison. --}}
                                 </th>
                             @endforeach
                         </tr>
@@ -259,7 +250,7 @@ thead th.col-sticky-material {
                                 $minIdr = $idrPrices->count() > 0 ? $idrPrices->min() : null;
                             @endphp
                             <tr data-comparison-row data-material-id="{{ $row['item']->id }}" class="{{ ($row['spread_pct'] ?? 0) > 15 ? 'bg-warning bg-opacity-10' : '' }}">
-                                <td class="fw-medium col-sticky-material">
+                                <td class="fw-medium ui-sticky-col comparison-material-col">
                                     <div class="tw:font-semibold tw:text-on-surface">{{ $row['item']->material_name }}</div>
                                     @if(($row['spread_pct'] ?? 0) > 15)
                                         <div class="small text-danger mt-1" data-bs-toggle="tooltip" title="{{ __('purchasing.copy.high_price_spread_15') }}">

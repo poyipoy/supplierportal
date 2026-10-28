@@ -3951,6 +3951,9 @@ div.dataTables_wrapper div.dataTables_processing {
     background-color: var(--md-surface-container-low);
 }
 .ui-table-sticky:focus-visible { outline: 2px solid var(--md-primary); outline-offset: -2px; }
+/* DataTables sets position: relative on sortable headers (for the sort icons); keep them sticky.
+   A sticky cell is still the containing block for those absolutely positioned icons. */
+.ui-table-sticky.ui-data-table__scroll > table.dataTable > thead > tr > th { position: sticky; }
 .ui-quotation-readonly tr.is-offer-row > :is(td, th) { background-color: var(--md-surface-container-lowest, var(--md-surface)); }
 .ui-quotation-readonly tbody + tbody { border-top: 2px solid var(--md-outline-variant); }
 .ui-quotation-readonly thead th { white-space: nowrap; }

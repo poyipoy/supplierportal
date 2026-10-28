@@ -39,6 +39,8 @@ class PriceComparisonController extends Controller
 {
     private const HISTORICAL_TABLE_PER_PAGE = 50;
 
+    private const HISTORICAL_KEY_OPTION_LIMIT = 100;
+
     public function __construct(
         private ?RegionalDisplayFormatter $regionalFormatter = null
     ) {
@@ -152,9 +154,8 @@ class PriceComparisonController extends Controller
 
                 $suppliers = $quotations->map(fn ($q) => [
                     'id' => $q->supplier_id,
-                    'name' => $q->supplier->name,
-                    // Decision 10: Supplier contact person in the comparison header.
-                    'profile' => $q->supplier->supplier,
+                    // PUR-03: company name, no contact person, on Price Comparison.
+                    'name' => self::supplierDisplayName($q->supplier),
                     'currency' => $q->currency,
                     'status' => $q->status,
                     'quotation_id' => $q->id,
@@ -282,7 +283,7 @@ class PriceComparisonController extends Controller
                     }
 
                     $chartDatasets[] = [
-                        'label' => $quotation->supplier->name,
+                        'label' => self::supplierDisplayName($quotation->supplier),
                         'data' => $data,
                     ];
                 }
@@ -343,10 +344,11 @@ class PriceComparisonController extends Controller
         $suppliers = $isDataPayloadRequest
             ? collect()
             : Cache::remember(
-                'purchasing:historical_suppliers:v1',
+                'purchasing:historical_suppliers:v2',
                 now()->addMinutes(10),
                 fn () => User::query()
                     ->select(['id', 'name', 'role'])
+                    ->with('supplier:id,user_id,company_name')
                     ->where(function ($query) {
                         $query->importEligible()
                             ->orWhereIn('id', DB::table('quotations')->distinct()->pluck('supplier_id'));
@@ -367,10 +369,11 @@ class PriceComparisonController extends Controller
         $dateFrom = $this->dateFromRange($range);
 
         $materials = $this->historicalMaterialsForSupplier($selectedSupplierKey);
-        $selectedMaterial = $selectedMaterialName ? $materials->firstWhere('name', $selectedMaterialName) : null;
+        $selectedMaterial = $this->selectHistoricalMaterial($materials, $selectedMaterialName, $request->input('shape'));
         if ($selectedMaterial === null) {
             $selectedMaterialName = null;
         }
+        $selectedShape = $selectedMaterial['shape'] ?? null;
         $keyField = MaterialReferencePrice::DIMENSION_FIELD_BY_SHAPE[$selectedMaterial['shape'] ?? ''] ?? null;
         [$keyMin, $keyMax] = $this->keyDimensionRange($request, $keyField);
 
@@ -387,6 +390,8 @@ class PriceComparisonController extends Controller
                 'material_name' => $selectedMaterial['name'],
                 'material_master_id' => $selectedMaterial['master_id'],
                 'shape' => $selectedMaterial['shape'],
+                // PUR-07: a material recorded without a shape is its own choice, not "all shapes".
+                'shape_is_null' => $selectedMaterial['shape'] === null,
                 'key_min' => $keyMin,
                 'key_max' => $keyMax,
                 'supplier_id' => $selectedSupplierKey,
@@ -406,7 +411,9 @@ class PriceComparisonController extends Controller
             'range' => $range,
             'rangeOptions' => $rangeOptions,
             'materialName' => $selectedMaterialName,
-            'supplierName' => $selectedSupplier->name ?? '',
+            'shape' => $selectedShape,
+            'keyOptions' => $selectedMaterial['key_options'] ?? [],
+            'supplierName' => self::supplierDisplayName($selectedSupplier?->loadMissing('supplier:id,user_id,company_name')) ?? '',
             'currency' => $currency,
             'evaluation' => $evaluation,
             'keyDimension' => $keyDimension,
@@ -416,7 +423,7 @@ class PriceComparisonController extends Controller
             return response()->json($payload);
         }
 
-        $materials = $materials->map(fn (array $material) => ['name' => $material['name'], 'shape' => $material['shape']])->values();
+        $materials = $materials->map(fn (array $material) => self::historicalMaterialOption($material))->values();
         $viewData = compact(
             'suppliers',
             'materials',
@@ -426,6 +433,7 @@ class PriceComparisonController extends Controller
             'tablePagination',
             'selectedSupplierId',
             'selectedMaterialName',
+            'selectedShape',
             'periodView',
             'range',
             'rangeOptions',
@@ -455,7 +463,7 @@ class PriceComparisonController extends Controller
 
         return response()->json([
             'materials' => $this->historicalMaterialsForSupplier($supplier?->getKey())
-                ->map(fn (array $material) => ['name' => $material['name'], 'shape' => $material['shape']])
+                ->map(fn (array $material) => self::historicalMaterialOption($material))
                 ->values(),
         ]);
     }
@@ -477,6 +485,14 @@ class PriceComparisonController extends Controller
         // Falls back to empty summary if cache is cold (first load or after invalidation).
         $summary = $this->getCachedDefaultVsBestSummary($competitiveThreshold, $currency, $context);
 
+        // PUR-05: material options for the Vs Best filter; an unknown requested value is ignored.
+        $vsBestMaterials = $this->vsBestMaterialOptions();
+        $requestedMaterial = $this->vsBestMaterialFilter($request);
+        $selectedVsBestMaterial = $requestedMaterial === null ? null : $vsBestMaterials->first(
+            fn (array $option) => $option['name'] === $requestedMaterial['name'] && $option['shape'] === $requestedMaterial['shape']
+        );
+        $vsBestMaterialIgnored = $requestedMaterial !== null && $selectedVsBestMaterial === null;
+
         $viewData = compact(
             'dateFromInput',
             'dateToInput',
@@ -484,6 +500,9 @@ class PriceComparisonController extends Controller
             'competitiveThreshold',
             'currency',
             'evaluation',
+            'vsBestMaterials',
+            'selectedVsBestMaterial',
+            'vsBestMaterialIgnored',
         );
 
         if ($request->ajax()) {
@@ -505,15 +524,18 @@ class PriceComparisonController extends Controller
         $context = EvaluationContext::current();
 
         $keyword = trim((string) $request->input('search.value', ''));
+        $material = $this->vsBestMaterialFilter($request);
         $returnUrl = route('purchasing.comparison.vs-best', $request->only([
             'date_from',
             'date_to',
             'currency',
+            'material_name',
+            'shape',
         ]));
 
         // Cache unfiltered default summary (no date range, no keyword) for 5 minutes.
         // This eliminates the ~183ms aggregate subquery on every default page load.
-        $isUnfilteredDefault = $dateFrom === null && $dateTo === null && $keyword === '';
+        $isUnfilteredDefault = $dateFrom === null && $dateTo === null && $keyword === '' && $material === null;
 
         if ($isUnfilteredDefault) {
             $summary = Cache::remember(
@@ -527,13 +549,13 @@ class PriceComparisonController extends Controller
             );
         } else {
             $summaryQuery = $this->applyVsBestKeywordFilter(
-                $this->buildVsBestQuery($dateFrom, $dateTo, $currency, $context),
+                $this->buildVsBestQuery($dateFrom, $dateTo, $currency, $context, $material),
                 $keyword
             );
             $summary = $this->buildVsBestSummary($summaryQuery, $competitiveThreshold);
         }
 
-        $dataTable = DataTables::query($this->buildVsBestQuery($dateFrom, $dateTo, $currency, $context))
+        $dataTable = DataTables::query($this->buildVsBestQuery($dateFrom, $dateTo, $currency, $context, $material))
             ->filter(function ($query) use ($keyword) {
                 $this->applyVsBestKeywordFilter($query, $keyword);
             })
@@ -561,13 +583,13 @@ class PriceComparisonController extends Controller
             })
             ->addColumn('current_price_display', function ($row) use ($currency) {
                 return '<div class="fw-bold text-primary">'.$this->formatAnalyticAmount($row->current_price_idr, $currency).'</div>'
-                    .'<div class="text-muted small">'.$this->formatNumber($row->current_price, 4).' '.e($row->current_currency).'/kg</div>'
+                    .'<div class="text-muted small">'.$this->formatPrice($row->current_price, 4).' '.e($row->current_currency).'/kg</div>'
                     .'<div class="text-muted small">'.e($row->current_supplier ?: '-').'</div>'
                     .'<div class="text-muted small">'.e($this->formatDate($row->current_submitted_at) ?? __('purchasing.copy.draft')).'</div>';
             })
             ->addColumn('best_price_display', function ($row) use ($returnUrl, $currency) {
                 $html = '<div class="fw-bold text-success">'.$this->formatAnalyticAmount($row->best_price_idr, $currency).'</div>'
-                    .'<div class="text-muted small">'.$this->formatNumber($row->best_price, 4).' '.e($row->best_currency).'/kg</div>'
+                    .'<div class="text-muted small">'.$this->formatPrice($row->best_price, 4).' '.e($row->best_currency).'/kg</div>'
                     .'<div class="text-muted small">'.e($row->best_supplier ?: '-').'</div>';
 
                 if ($row->best_pr_id) {
@@ -643,60 +665,53 @@ class PriceComparisonController extends Controller
             ->make(true);
     }
 
-    private function buildVsBestQuery(?Carbon $dateFrom = null, ?Carbon $dateTo = null, string $currency = 'IDR', ?EvaluationContext $context = null)
+    private function buildVsBestQuery(?Carbon $dateFrom = null, ?Carbon $dateTo = null, string $currency = 'IDR', ?EvaluationContext $context = null, ?array $material = null)
     {
         $currentStatuses = ['submitted', 'accepted'];
         // Mission 07 (decision 35, Q4): benchmark rates at the evaluation date in the
         // selected currency. A currency without a rate yields NULL and its rows never
         // rank as "best" (no COALESCE(rate, 1)). Columns keep their *_idr names.
         $context ??= EvaluationContext::current();
-        $historyPriceIdr = '(history_items.price_per_kg * '.$this->benchmarkFactorSql('history_quotes.currency', $currency, $context).')';
+        // Gate 2 §3-C: "best" is ranked over authoritative purchase history only (the
+        // PurchaseHistoryPriceService eligibility: no cancelled/deleted PO or quotation,
+        // award line or legacy PO without awards, frozen price), per material and shape.
+        $historyPrice = '('.PurchaseHistoryPriceService::PRICE.')';
+        $historyPriceIdr = '('.$historyPrice.' * '.$this->benchmarkFactorSql('q.currency', $currency, $context).')';
         $currentPriceIdr = '(current_items.price_per_kg * '.$this->benchmarkFactorSql('current_quotes.currency', $currency, $context).')';
-        $bestPriceIdr = '(best_items.price_per_kg * '.$this->benchmarkFactorSql('best_quotes.currency', $currency, $context).')';
+        $bestPriceIdr = '(best_choice.best_price * '.$this->benchmarkFactorSql('best_quotes.currency', $currency, $context).')';
         $diffIdrPerKg = "($currentPriceIdr - $bestPriceIdr)";
         $diffPercent = "CASE WHEN $bestPriceIdr > 0 AND $currentPriceIdr IS NOT NULL THEN (($diffIdrPerKg / $bestPriceIdr) * 100) ELSE NULL END";
         $currentTotalWeight = '(current_pr_items.weight_needed * CASE WHEN current_pr_items.quantity IS NULL OR current_pr_items.quantity < 1 THEN 1 ELSE current_pr_items.quantity END)';
         $potentialDifference = "CASE WHEN $currentPriceIdr IS NOT NULL AND $bestPriceIdr IS NOT NULL THEN GREATEST(0, $diffIdrPerKg) * $currentTotalWeight ELSE NULL END";
 
-        $rankedHistory = DB::table('quotation_items as history_items')
-            ->join('po_quotations as history_po_links', 'history_items.quotation_id', '=', 'history_po_links.quotation_id')
-            ->join('purchase_orders as history_pos', 'history_po_links.po_id', '=', 'history_pos.id')
-            ->join('quotations as history_quotes', 'history_items.quotation_id', '=', 'history_quotes.id')
-            ->leftJoin('exchange_rates as history_po_rate', 'history_pos.exchange_rate_id', '=', 'history_po_rate.id')
-            ->leftJoin('exchange_rates as history_quote_rate', 'history_quotes.exchange_rate_id', '=', 'history_quote_rate.id')
-            ->join('pr_items as history_pr_items', 'history_items.pr_item_id', '=', 'history_pr_items.id')
-            ->whereNull('history_pos.deleted_at')
-            ->whereNull('history_quotes.deleted_at')
-            ->where(function ($query) {
-                $query->whereNull('history_items.is_available')
-                    ->orWhere('history_items.is_available', true);
-            })
-            ->whereNotNull('history_items.price_per_kg')
-            ->where('history_items.price_per_kg', '>', 0)
+        $rankedHistory = app(PurchaseHistoryPriceService::class)->eligibleLines([])
             ->whereRaw($historyPriceIdr.' IS NOT NULL')
-            ->selectRaw('history_pr_items.material_name, history_items.id as best_item_id, ROW_NUMBER() OVER (PARTITION BY history_pr_items.material_name ORDER BY '.$historyPriceIdr.' ASC, history_items.id ASC) as rn');
+            ->selectRaw("pi.material_name, COALESCE(pi.shape, '') as shape_key, qi.id as best_item_id, po.id as best_po_id, {$historyPrice} as best_price")
+            ->selectRaw("ROW_NUMBER() OVER (PARTITION BY pi.material_name, COALESCE(pi.shape, '') ORDER BY {$historyPriceIdr} ASC, qi.id ASC, po.id ASC) as rn");
 
         $bestItemByMaterial = DB::query()
             ->fromSub($rankedHistory, 'ranked_best')
             ->where('rn', 1)
-            ->select(['material_name', 'best_item_id']);
+            ->select(['material_name', 'shape_key', 'best_item_id', 'best_po_id', 'best_price']);
 
         $query = DB::table('quotation_items as current_items')
             ->join('quotations as current_quotes', 'current_items.quotation_id', '=', 'current_quotes.id')
             ->join('pr_items as current_pr_items', 'current_items.pr_item_id', '=', 'current_pr_items.id')
             ->join('purchase_requisitions as current_pr', 'current_pr_items.pr_id', '=', 'current_pr.id')
             ->leftJoin('users as current_supplier', 'current_quotes.supplier_id', '=', 'current_supplier.id')
+            ->leftJoin('suppliers as current_supplier_profile', 'current_supplier_profile.user_id', '=', 'current_supplier.id')
             ->leftJoin('exchange_rates as current_rate', 'current_quotes.exchange_rate_id', '=', 'current_rate.id')
             ->leftJoinSub($bestItemByMaterial, 'best_choice', function ($join) {
-                $join->on('best_choice.material_name', '=', 'current_pr_items.material_name');
+                $join->on('best_choice.material_name', '=', 'current_pr_items.material_name')
+                    ->whereRaw("best_choice.shape_key = COALESCE(current_pr_items.shape, '')");
             })
             ->leftJoin('quotation_items as best_items', 'best_choice.best_item_id', '=', 'best_items.id')
             ->leftJoin('quotations as best_quotes', 'best_items.quotation_id', '=', 'best_quotes.id')
             ->leftJoin('users as best_supplier', 'best_quotes.supplier_id', '=', 'best_supplier.id')
-            ->leftJoin('po_quotations as best_po_links', 'best_items.quotation_id', '=', 'best_po_links.quotation_id')
-            ->leftJoin('purchase_orders as best_pos', 'best_po_links.po_id', '=', 'best_pos.id')
-            ->leftJoin('exchange_rates as best_po_rate', 'best_pos.exchange_rate_id', '=', 'best_po_rate.id')
-            ->leftJoin('exchange_rates as best_quote_rate', 'best_quotes.exchange_rate_id', '=', 'best_quote_rate.id')
+            ->leftJoin('suppliers as best_supplier_profile', 'best_supplier_profile.user_id', '=', 'best_supplier.id')
+            // The ranked line already identifies its PO; joining every PO of the quotation
+            // would duplicate rows when one quotation feeds several POs.
+            ->leftJoin('purchase_orders as best_pos', 'best_choice.best_po_id', '=', 'best_pos.id')
             ->leftJoin('pr_items as best_pr_items', 'best_items.pr_item_id', '=', 'best_pr_items.id')
             ->leftJoin('purchase_requisitions as best_pr', function ($join) {
                 $join->on('best_pr_items.pr_id', '=', 'best_pr.id')
@@ -721,16 +736,16 @@ class PriceComparisonController extends Controller
                 'current_pr_items.weight_needed',
                 'current_pr.id as current_pr_id',
                 'current_pr.pr_number as current_pr_number',
-                'current_supplier.name as current_supplier',
                 'best_items.id as best_item_id',
                 'best_items.quotation_id as best_quotation_id',
-                'best_items.price_per_kg as best_price',
+                'best_choice.best_price as best_price',
                 'best_quotes.currency as best_currency',
                 'best_pos.created_at as best_submitted_at',
-                'best_supplier.name as best_supplier',
                 'best_pr.id as best_pr_id',
                 'best_pr.pr_number as best_pr_number',
             ])
+            ->selectRaw(self::supplierNameSql('current_supplier', 'current_supplier_profile').' as current_supplier')
+            ->selectRaw(self::supplierNameSql('best_supplier', 'best_supplier_profile').' as best_supplier')
             ->selectRaw($currentPriceIdr.' as current_price_idr')
             ->selectRaw('('.$currentPriceIdr.' * '.$currentTotalWeight.') as current_total_idr')
             ->selectRaw($currentTotalWeight.' as total_weight')
@@ -742,9 +757,46 @@ class PriceComparisonController extends Controller
         if ($dateFrom && $dateTo) {
             $query->whereBetween('current_quotes.submitted_at', [$dateFrom, $dateTo]);
         }
+        // PUR-05: optional material filter by (material, shape); a null shape is its own identity.
+        if ($material !== null) {
+            $query->where('current_pr_items.material_name', $material['name']);
+            $material['shape'] === null
+                ? $query->whereNull('current_pr_items.shape')
+                : $query->where('current_pr_items.shape', $material['shape']);
+        }
 
         return $query->orderByRaw('potential_difference_idr DESC')
             ->orderBy('current_pr_items.material_name');
+    }
+
+    /**
+     * Distinct (material, shape) of the current offers that Vs Best lists, one query.
+     *
+     * @return Collection<int, array{name: string, shape: ?string, label: string}>
+     */
+    private function vsBestMaterialOptions(): Collection
+    {
+        $rows = DB::table('quotation_items as current_items')
+            ->join('quotations as current_quotes', 'current_items.quotation_id', '=', 'current_quotes.id')
+            ->join('pr_items as current_pr_items', 'current_items.pr_item_id', '=', 'current_pr_items.id')
+            ->join('purchase_requisitions as current_pr', 'current_pr_items.pr_id', '=', 'current_pr.id')
+            ->whereIn('current_quotes.status', ['submitted', 'accepted'])
+            ->whereNull('current_quotes.deleted_at')
+            ->whereNull('current_pr.deleted_at')
+            ->where(fn ($query) => $query->whereNull('current_items.is_available')->orWhere('current_items.is_available', true))
+            ->whereNotNull('current_pr_items.material_name')
+            ->where('current_pr_items.material_name', '<>', '')
+            ->distinct()
+            ->orderBy('current_pr_items.material_name')
+            ->orderBy('current_pr_items.shape')
+            ->get(['current_pr_items.material_name', 'current_pr_items.shape']);
+        $nameCounts = $rows->countBy('material_name');
+
+        return $rows->map(fn ($row) => [
+            'name' => $row->material_name,
+            'shape' => $row->shape,
+            'label' => $nameCounts[$row->material_name] > 1 && $row->shape !== null ? $row->material_name.' ('.$row->shape.')' : $row->material_name,
+        ])->values();
     }
 
     private function applyVsBestKeywordFilter($query, string $keyword)
@@ -758,8 +810,8 @@ class PriceComparisonController extends Controller
         return $query->where(function ($q) use ($like) {
             $q->where('current_pr_items.material_name', 'like', $like)
                 ->orWhere('current_pr.pr_number', 'like', $like)
-                ->orWhere('current_supplier.name', 'like', $like)
-                ->orWhere('best_supplier.name', 'like', $like)
+                ->orWhereRaw(self::supplierNameSql('current_supplier', 'current_supplier_profile').' like ?', [$like])
+                ->orWhereRaw(self::supplierNameSql('best_supplier', 'best_supplier_profile').' like ?', [$like])
                 ->orWhere('best_pr.pr_number', 'like', $like);
         });
     }
@@ -870,7 +922,24 @@ class PriceComparisonController extends Controller
     /** The summary depends on the evaluation date and currency (Q9), so both are part of the key. */
     private function vsBestSummaryCacheKey(string $currency, EvaluationContext $context): string
     {
-        return 'purchasing:vs_best_summary_unfiltered:v2:'.$context->dateString().':'.$currency;
+        return 'purchasing:vs_best_summary_unfiltered:v3:'.$context->dateString().':'.$currency;
+    }
+
+    /**
+     * PUR-05: optional (material, shape) filter. Material identity is the pair, so an empty or
+     * unknown shape selects the material recorded without a shape.
+     *
+     * @return array{name: string, shape: ?string}|null
+     */
+    private function vsBestMaterialFilter(Request $request): ?array
+    {
+        $name = trim((string) $request->input('material_name', ''));
+        if ($name === '') {
+            return null;
+        }
+        $shape = trim((string) $request->input('shape', ''));
+
+        return ['name' => $name, 'shape' => in_array($shape, PrItem::SHAPES, true) ? $shape : null];
     }
 
     private function priceCompetitivenessStatus(?float $diffPercent, float $competitiveThreshold): array
@@ -926,6 +995,20 @@ class PriceComparisonController extends Controller
         return $model;
     }
 
+    /** PUR-03: company name with the login name as fallback (supplier?->company_name ?: name). */
+    private static function supplierDisplayName(?User $user): ?string
+    {
+        $company = trim((string) $user?->supplier?->company_name);
+
+        return $company !== '' ? $company : $user?->name;
+    }
+
+    /** SQL twin of supplierDisplayName() for a users alias and its suppliers alias. */
+    private static function supplierNameSql(string $users, string $profiles): string
+    {
+        return "COALESCE(NULLIF(TRIM({$profiles}.company_name), ''), {$users}.name)";
+    }
+
     private function resolveSupplierQuery(mixed $value): ?User
     {
         if ($value === null || $value === '') {
@@ -953,22 +1036,78 @@ class PriceComparisonController extends Controller
      */
     private function historicalMaterialsForSupplier($supplierId): Collection
     {
-        return app(PurchaseHistoryPriceService::class)
+        // PUR-07 (§3-G): one grouped query returns every (material, shape) with eligible
+        // history and the distinct key-dimension values used by the history filter itself
+        // (offered value, else the requested one). Shapes come from the code constant only.
+        $cases = collect(MaterialReferencePrice::DIMENSION_FIELD_BY_SHAPE)
+            ->map(fn (string $field, string $shape) => "WHEN '{$shape}' THEN COALESCE(qi.available_{$field}, pi.{$field})")
+            ->implode(' ');
+        $keyValue = "CASE pi.shape {$cases} ELSE NULL END";
+
+        $materials = app(PurchaseHistoryPriceService::class)
             ->eligibleLines(array_filter(['supplier_id' => $supplierId]))
             ->whereNotNull('pi.material_name')
             ->where('pi.material_name', '<>', '')
             ->select('pi.material_name', 'pi.shape')
+            ->selectRaw("{$keyValue} as key_value")
             ->selectRaw('MAX(pi.material_master_id) as master_id')
             ->groupBy('pi.material_name', 'pi.shape')
+            ->groupByRaw($keyValue)
             ->orderBy('pi.material_name')
+            ->orderBy('pi.shape')
             ->get()
-            ->unique('material_name')
-            ->map(fn ($row) => [
-                'name' => $row->material_name,
-                'shape' => $row->shape,
-                'master_id' => $row->master_id === null ? null : (int) $row->master_id,
-            ])
+            ->groupBy(fn ($row) => $row->material_name."\u{0}".$row->shape)
+            ->map(function (Collection $rows) {
+                $first = $rows->first();
+                $options = $rows->pluck('key_value')
+                    ->reject(fn ($value) => $value === null)
+                    ->map(fn ($value) => Money::normalize((string) $value, 4))
+                    ->unique()
+                    ->sort(fn (string $a, string $b) => bccomp($a, $b, 4))
+                    ->take(self::HISTORICAL_KEY_OPTION_LIMIT)
+                    ->values()
+                    ->all();
+                $master = $rows->pluck('master_id')->filter()->max();
+
+                return [
+                    'name' => $first->material_name,
+                    'shape' => $first->shape,
+                    'master_id' => $master === null ? null : (int) $master,
+                    'key_options' => $options,
+                ];
+            })
             ->values();
+
+        // The same name with several shapes is labelled "Name (Shape)" so each choice is identifiable.
+        $nameCounts = $materials->countBy('name');
+
+        return $materials->map(fn (array $material) => $material + [
+            'label' => $nameCounts[$material['name']] > 1 && $material['shape'] !== null
+                ? $material['name'].' ('.$material['shape'].')'
+                : $material['name'],
+        ]);
+    }
+
+    /** The material picked by (name, shape); an unknown shape falls back to the first of that name. */
+    private function selectHistoricalMaterial(Collection $materials, ?string $name, ?string $shape): ?array
+    {
+        if ($name === null || $name === '') {
+            return null;
+        }
+        $candidates = $materials->where('name', $name);
+
+        return $candidates->first(fn (array $material) => (string) $material['shape'] === (string) $shape) ?? $candidates->first();
+    }
+
+    /** View/JSON shape of a material option (master ids stay server-side). */
+    private static function historicalMaterialOption(array $material): array
+    {
+        return [
+            'name' => $material['name'],
+            'shape' => $material['shape'],
+            'label' => $material['label'],
+            'key_options' => $material['key_options'],
+        ];
     }
 
     /**
@@ -1100,7 +1239,7 @@ class PriceComparisonController extends Controller
                     'converted' => Money::normalize($converted, 4),
                     'original' => Money::normalize((string) $line->price_per_kg, 4),
                     'original_currency' => $quotation->currency,
-                    'supplier' => $quotation->supplier?->name,
+                    'supplier' => self::supplierDisplayName($quotation->supplier),
                 ];
             }
         }
@@ -1145,7 +1284,13 @@ class PriceComparisonController extends Controller
         $value = (float) $value;
         $prefix = $signed ? ($value > 0 ? '+' : ($value < 0 ? '-' : '')) : '';
 
-        return $prefix.$currency.' '.$this->formatNumber($signed ? abs($value) : $value, 4);
+        return $prefix.$currency.' '.$this->formatPrice($signed ? abs($value) : $value, 4);
+    }
+
+    /** PUR-06: grouped price in the module's native (Indonesian) presentation, like formatRupiah(). */
+    private function formatPrice($value, int $decimals = 2): string
+    {
+        return $value === null ? '-' : $this->regionalFormatter->groupedDecimal(is_float($value) ? $value : (string) $value, $decimals, 'indonesian');
     }
 
     private function formatRupiah($value): string

@@ -35,18 +35,20 @@
             <select name="supplier_id" class="form-select form-select-sm" id="historicalSupplierSelect">
                 <option value="">{{ __('purchasing.comparison_analytics.all_suppliers') }}</option>
                 @foreach($suppliers as $supplier)
-                    <option value="{{ $supplier->getRouteKey() }}" {{ $selectedSupplierId === $supplier->getRouteKey() ? 'selected' : '' }}>{{ $supplier->name }}</option>
+                    <option value="{{ $supplier->getRouteKey() }}" {{ $selectedSupplierId === $supplier->getRouteKey() ? 'selected' : '' }}>{{ trim((string) $supplier->supplier?->company_name) ?: $supplier->name }}</option>
                 @endforeach
             </select>
         </div>
         <div class="tw:xl:col-span-3">
             <label class="form-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="historicalMaterialSelect">{{ __('purchasing.copy.material') }}</label>
+            {{-- PUR-07: one option per (material, shape); the hidden input carries the shape. --}}
             <select name="material_name" class="form-select form-select-sm" id="historicalMaterialSelect" required>
                 <option value="">{{ __('purchasing.copy.select_material') }}</option>
                 @foreach($materials as $material)
-                    <option value="{{ $material['name'] }}" data-shape="{{ $material['shape'] ?? '' }}" {{ $selectedMaterialName === $material['name'] ? 'selected' : '' }}>{{ $material['name'] }}</option>
+                    <option value="{{ $material['name'] }}" data-shape="{{ $material['shape'] ?? '' }}" data-key-options='@json($material['key_options'])' @selected($selectedMaterialName === $material['name'] && ($selectedShape ?? null) === $material['shape'])>{{ $material['label'] }}</option>
                 @endforeach
             </select>
+            <input type="hidden" name="shape" id="historicalShapeInput" value="{{ $selectedShape ?? '' }}">
         </div>
         <div class="tw:xl:col-span-2">
             <label class="form-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="historicalRangeSelect">{{ __('purchasing.copy.time_period') }}</label>
@@ -75,13 +77,43 @@
         </div>
 
         {{-- Mission 07 (decisions 17-18): one key dimension per shape, exact or inclusive range. --}}
+        @php
+            $pca = 'purchasing.comparison_analytics';
+            $keyLabels = ['Flat' => __($pca.'.key_thickness'), 'Round' => __($pca.'.key_diameter'), 'Hollow' => __($pca.'.key_d_outer')];
+            $selectedKeyOptions = collect($materials)->first(fn ($m) => $m['name'] === $selectedMaterialName && $m['shape'] === ($selectedShape ?? null))['key_options'] ?? [];
+            $exactKey = $keyDimension['min'] !== null && $keyDimension['min'] === $keyDimension['max'] ? $keyDimension['min'] : null;
+        @endphp
+        {{-- Hidden when the material has no shape: no key dimension can be derived. --}}
         <fieldset class="tw:m-0 tw:min-w-0 tw:border-0 tw:p-0 tw:md:col-span-2 tw:xl:col-span-12" id="historicalKeyDimension"
-                  data-label-thickness="{{ __('purchasing.comparison_analytics.key_thickness') }}"
-                  data-label-d-outer="{{ __('purchasing.comparison_analytics.key_d_outer') }}">
+                  data-label-flat="{{ $keyLabels['Flat'] }}"
+                  data-label-round="{{ $keyLabels['Round'] }}"
+                  data-label-hollow="{{ $keyLabels['Hollow'] }}"
+                  @if($keyDimension['field'] === null && $selectedMaterialName) hidden @endif>
             <legend class="form-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface" id="historicalKeyDimensionLabel">
-                {{ $keyDimension['field'] === 'd_outer' ? __('purchasing.comparison_analytics.key_d_outer') : __('purchasing.comparison_analytics.key_thickness') }}
+                {{ $keyLabels[$selectedShape ?? ''] ?? $keyLabels['Flat'] }}
             </legend>
             <div class="tw:flex tw:flex-wrap tw:items-end tw:gap-2">
+                {{-- PUR-07: recorded values write into key_min/key_max; this control is never submitted. --}}
+                <div>
+                    <label class="form-label tw:mb-1 tw:text-ui-xs tw:text-on-surface-variant" for="historicalKeyOption">{{ __($pca.'.key_options') }}</label>
+                    <select id="historicalKeyOption" class="form-select form-select-sm"
+                            data-label-all="{{ __($pca.'.key_option_all') }}"
+                            data-label-custom="{{ __($pca.'.key_option_custom') }}"
+                            data-label-none="{{ __($pca.'.key_option_none') }}"
+                            @disabled($selectedMaterialName && $selectedKeyOptions === [])>
+                        @if($selectedMaterialName && $selectedKeyOptions === [])
+                            <option value="">{{ __($pca.'.key_option_none') }}</option>
+                        @else
+                            <option value="">{{ __($pca.'.key_option_all') }}</option>
+                            @if($keyDimension['min'] !== null && ! in_array($exactKey, $selectedKeyOptions, true))
+                                <option value="__custom" selected>{{ __($pca.'.key_option_custom') }}</option>
+                            @endif
+                            @foreach($selectedKeyOptions as $value)
+                                <option value="{{ $value }}" @selected($exactKey === $value)>{{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($value, 4), 'decimal') }}</option>
+                            @endforeach
+                        @endif
+                    </select>
+                </div>
                 <div>
                     <label class="form-label tw:mb-1 tw:text-ui-xs tw:text-on-surface-variant" for="historicalKeyMin">{{ __('purchasing.comparison_analytics.key_from') }}</label>
                     <input type="number" step="0.0001" min="0" name="key_min" id="historicalKeyMin" class="form-control form-control-sm historical-filter-input" value="{{ $keyDimension['min'] }}">
@@ -132,12 +164,12 @@
         </div>
     </section>
 
-    <x-ui.data-table :title="__('purchasing.copy.supporting_data')" :description="__('purchasing.comparison_analytics.supporting_data_description')">
+    <x-ui.data-table sticky :title="__('purchasing.copy.supporting_data')" :description="__('purchasing.comparison_analytics.supporting_data_description')">
         <table class="table table-hover align-middle mb-0 tw:text-ui-sm">
             <thead class="table-light text-center" id="historicalTableHead">
                 @if($periodView === 'yearly')
                     <tr>
-                        <th scope="col">{{ __('purchasing.copy.year') }}</th>
+                        <th scope="col" class="ui-sticky-col">{{ __('purchasing.copy.year') }}</th>
                         <th scope="col">{{ __('purchasing.comparison_analytics.average_per_kg', ['currency' => $currency]) }}</th>
                         <th scope="col">{{ __('purchasing.copy.lowest_price') }}</th>
                         <th scope="col">{{ __('purchasing.copy.highest_price') }}</th>
@@ -145,7 +177,7 @@
                     </tr>
                 @else
                     <tr>
-                        <th scope="col">{{ __('purchasing.copy.pr_number') }}</th>
+                        <th scope="col" class="ui-sticky-col">{{ __('purchasing.copy.pr_number') }}</th>
                         <th scope="col">{{ __('purchasing.copy.supplier') }}</th>
                         <th scope="col">{{ __('purchasing.copy.price_kg') }}</th>
                         <th scope="col">{{ __('purchasing.comparison_analytics.converted_total', ['currency' => $currency]) }}</th>
@@ -158,7 +190,7 @@
                 @foreach($tableData as $row)
                     @if($periodView === 'yearly')
                         <tr>
-                            <td class="text-center fw-medium">{{ $row['period'] }}</td>
+                            <td class="text-center fw-medium ui-sticky-col">{{ $row['period'] }}</td>
                             <td class="text-end text-primary fw-bold ui-tabular-nums">{{ $currency }} {{ $formatPrice($row['price_idr'], 4) }}</td>
                             <td class="text-end ui-tabular-nums">{{ $currency }} {{ $formatPrice($row['min_idr'], 4) }}</td>
                             <td class="text-end ui-tabular-nums">{{ $currency }} {{ $formatPrice($row['max_idr'], 4) }}</td>
@@ -166,7 +198,7 @@
                         </tr>
                     @else
                         <tr>
-                            <td class="text-center fw-medium">
+                            <td class="text-center fw-medium ui-sticky-col">
                                 @if(!empty($row['pr_id']) && !empty($row['pr_url']))
                                     <a href="{{ $row['pr_url'] }}" class="text-primary text-decoration-none tw:hover:underline">
                                         {{ $row['pr_number'] }}

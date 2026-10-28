@@ -179,7 +179,8 @@ class PriceComparisonServerTabsTest extends TestCase
         $dataResponse->assertOk();
 
         // Mission 07: the cached summary is keyed by evaluation date and currency (Q9).
-        $cacheKey = 'purchasing:vs_best_summary_unfiltered:v2:'.BusinessTime::today()->toDateString().':IDR';
+        // Gate 2 §3-C bumped v2 → v3 so summaries cached under the old "best" eligibility are never served.
+        $cacheKey = 'purchasing:vs_best_summary_unfiltered:v3:'.BusinessTime::today()->toDateString().':IDR';
         $this->assertTrue(Cache::has($cacheKey));
         $cachedSummary = Cache::get($cacheKey);
         $this->assertIsArray($cachedSummary);
