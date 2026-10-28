@@ -496,6 +496,7 @@ const bootImports = () => {
     if (document.querySelector('[data-gr-table]')) import('./local-po-gr-table').then(module => module.bootLocalPoGrTable());
     if (hasMarker('[data-advanced-export], [data-format-export-form]')) import('./advanced-export');
     if (hasMarker('[data-dashboard-audience] [data-editor-config]')) import('./dashboard-editor');
+    if (hasMarker('[data-quotation-form-export]')) import('./quotation-form-export');
 };
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootImports);
 else bootImports();

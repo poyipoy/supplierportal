@@ -75,6 +75,7 @@ return [
         'document_reference' => 'Referensi Dokumen',
         'document_status_synchronized_with_your_shipments' => 'Status dokumen disinkronkan dengan pengiriman Anda.',
         'download_template' => 'Unduh Template',
+        'export_form' => 'Ekspor Formulir (data yang diisi)',
         'draft' => 'Draf',
         'draft_saved' => 'Draf Disimpan',
         'est_weight' => 'Perkiraan Berat',
@@ -510,6 +511,9 @@ return [
         'mtc_overwrite_file' => ':count item sudah memiliki berkas MTC. Timpa dengan ":file"?',
         'mtc_overwrite' => ':count item sudah memiliki berkas MTC. Timpa berkas yang ada?',
         'overwrite_confirm' => 'Ya, Timpa',
+        'export_form_invalid' => 'Perbaiki isian berikut sebelum mengekspor:',
+        'export_form_failed' => 'Formulir tidak dapat diekspor. Coba lagi.',
+        'export_form_done' => 'Formulir diekspor.',
     ],
     'a11y' => [
         'offer_quantity' => 'Jumlah penawaran untuk :material; maksimal :maximum',

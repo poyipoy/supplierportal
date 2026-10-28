@@ -66,5 +66,6 @@ return [
     'dbf81843-f953-49a9-97c7-910ec0a5297a' => 'supplier.price-history.index',
     '9d551424-4465-472a-bce7-0de65d4ed6c9' => 'supplier.purchase-orders.index',
     '74a824e8-5630-416f-9504-5493e599226c' => 'supplier.quotations.index',
+    '33f7d4f1-b383-4b0e-aad0-fd650ceed74f' => 'supplier.requests.index',
     'd64dd4e1-1ef6-4e6f-833a-849b81316a69' => 'supplier.shipments.index',
 ];

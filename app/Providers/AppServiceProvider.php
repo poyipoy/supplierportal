@@ -151,6 +151,7 @@ class AppServiceProvider extends ServiceProvider
             'purchasing.comparison.historical',
             'purchasing.comparison.vs-best',
             'purchasing.po.consolidate-awards',
+            'supplier.requests.show',
         ], function ($view): void {
             $view->with('regionalFormatter', app(RegionalDisplayFormatter::class));
         });

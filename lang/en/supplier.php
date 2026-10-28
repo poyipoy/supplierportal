@@ -75,6 +75,7 @@ return [
         'document_reference' => 'Document Reference',
         'document_status_synchronized_with_your_shipments' => 'Document status synchronized with your shipments.',
         'download_template' => 'Download Template',
+        'export_form' => 'Export Form (entered data)',
         'draft' => 'Draft',
         'draft_saved' => 'Draft Saved',
         'est_weight' => 'Est Weight',
@@ -510,6 +511,9 @@ return [
         'mtc_overwrite_file' => ':count items already have an MTC file attached. Do you want to overwrite them with ":file"?',
         'mtc_overwrite' => ':count items already have an MTC file attached. Do you want to overwrite them?',
         'overwrite_confirm' => 'Yes, Overwrite',
+        'export_form_invalid' => 'Fix these entries before exporting:',
+        'export_form_failed' => 'The form could not be exported. Try again.',
+        'export_form_done' => 'Form exported.',
     ],
     'a11y' => [
         'offer_quantity' => 'Offer quantity for :material; maximum :maximum',
