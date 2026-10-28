@@ -1,6 +1,6 @@
 import { installI18n } from './i18n-fixture.mjs';
 globalThis.window = installI18n(globalThis.window || {});
-import test from 'node:test';
+import test, { mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { copyAssistanceText, bootPasswordAssistance } from '../../resources/js/password-assistance.js';
 
@@ -57,6 +57,49 @@ test('all three copy actions announce success through the live status', async ()
         assert.deepEqual(copied, [value]);
         assert.equal(status.textContent, `${id} copied.`);
     }
+});
+
+test('successful copy briefly relabels the clicked button, then restores it', async () => {
+    mock.timers.enable({ apis: ['setTimeout'] });
+    try {
+        let listener;
+        const status = { textContent: '' };
+        const label = { textContent: 'Copy Email Address' };
+        const button = {
+            dataset: { passwordAssistanceCopy: 'email', copyLabel: 'Email address' },
+            addEventListener: (_, handler) => { listener = handler; },
+            querySelector: selector => (selector === 'span' ? label : null),
+        };
+        const container = { querySelectorAll: () => [button], querySelector: () => status };
+        const root = { querySelectorAll: () => [container], getElementById: () => ({ textContent: 'support@example.test' }) };
+        bootPasswordAssistance(root, environment({ clipboard: { writeText: async () => {} } }));
+
+        await listener();
+        assert.equal(label.textContent, 'Copied');
+        await listener();
+        mock.timers.tick(1999);
+        assert.equal(label.textContent, 'Copied', 'a second click restarts the timer instead of freezing the label');
+        mock.timers.tick(1);
+        assert.equal(label.textContent, 'Copy Email Address');
+        assert.equal(status.textContent, 'Email address copied.');
+    } finally {
+        mock.timers.reset();
+    }
+});
+
+test('failed copy leaves the button label untouched', async () => {
+    let listener;
+    const label = { textContent: 'Copy Subject' };
+    const button = {
+        dataset: { passwordAssistanceCopy: 'subject', copyLabel: 'Subject' },
+        addEventListener: (_, handler) => { listener = handler; },
+        querySelector: () => label,
+    };
+    const container = { querySelectorAll: () => [button], querySelector: () => ({ textContent: '' }) };
+    const root = { querySelectorAll: () => [container], getElementById: () => ({ textContent: 'x' }) };
+    bootPasswordAssistance(root, environment({ fallback: false }));
+    await listener();
+    assert.equal(label.textContent, 'Copy Subject');
 });
 
 test('failed copy announces manual selection guidance without throwing', async () => {

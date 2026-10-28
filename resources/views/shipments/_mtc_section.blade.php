@@ -54,7 +54,7 @@
                                     <span class="text-truncate" style="max-width: 16rem;" title="{{ $file->file_name }}">{{ $file->file_name }}</span>
                                 </a>
                             </td>
-                            <td class="text-end ui-tabular-nums">{{ $bytes === null ? '—' : $regionalFormatter->number((string) max(1, (int) round($bytes / 1024)), 'integer').' KB' }}</td>
+                            <td class="text-end ui-tabular-nums">{{ $bytes === null ? '—' : $regionalFormatter->number((string) max(1, (int) round($bytes / 1024)), 'plain').' KB' }}</td>
                             <td>{{ $file->uploader?->name ?? '—' }}</td>
                             <td class="ui-tabular-nums">@bizdt($file->created_at)</td>
                             <td>

@@ -1,6 +1,6 @@
 # GATE 1 — Portal Revision 2026-10-27
-**FINAL CANDIDATE — RECONCILED ARCHITECTURE PLAN (CORRECTED 2026-10-28)**
-Mode: planning and verification only. Status: GATE 1 FINAL CANDIDATE — CORRECTED, PENDING SINGLE GATE 2 APPROVAL.
+**FINAL CANDIDATE — RECONCILED ARCHITECTURE PLAN (USER PRICE-GROUPING CLARIFICATION, 2026-10-28)**
+Mode: planning and verification only. Status: GATE 1 FINAL CANDIDATE — GROUPING CLARIFIED, PENDING SINGLE GATE 2 APPROVAL.
 
 ## A. Correction pass, 2026-10-28: summary
 This pass amends this document in place. It is not a new Gate 1 version. It adds no missions and does not widen product scope. The verified findings (§1), state-machine rules (§2), protected invariants and four workstreams are unchanged except where listed here.
@@ -12,11 +12,11 @@ This pass amends this document in place. It is not a new Gate 1 version. It adds
    - The form's row model is documented (one row per PR item; no alternative-offer rows).
    - Item references are validated exactly as the existing save path does.
    - The Mode 2 scope and filter proof is defined (§3-F).
-4. **GEN-01.**
-   - The Price Comparison-only narrowing has been withdrawn.
-   - A bounded, read-only inventory of price displays across modules defines the implementation scope (§3-H).
-   - The regional preference remains authoritative.
-   - A conflict with the locked Phase 2B regional tests is recorded as decision D-1.
+4. **PUR-06 / GEN-01 — final user clarification (2026-10-28).**
+   - The actual defect is **missing thousands grouping** on certain price/monetary displays. For example, Indonesian `648193716,98` must display as `648.193.716,98`; international `648193716.98` as `648,193,716.98`.
+   - The earlier `Rp70,000.00` was an illustrative price, **not** approval to force an `Rp` prefix, remove its spacing, or mandate two decimals.
+   - The bounded cross-module inventory remains, but is now a **triage list**: change only surfaces proven to lack grouping or to have incorrect separators; preserve already-correct surfaces and Phase 2B precision/symbol contracts.
+   - **D-1 is resolved by the user's clarification:** grouping-only remediation. The proposed Phase 2B currency/precision supersession is withdrawn. This is not another question awaiting Gate 2 approval.
 5. **QC-01.** The blanket fail-closed 422 for unrecognised shapes has been withdrawn. A characterised, backward-compatible strategy replaces it (§3-B). Any data profiling uses a restored or sanitised dataset only.
 6. **Performance oracle.** The "whole PO show page has constant query count" criterion has been replaced. The new criteria isolate the queries the revision adds and require a measured baseline (§D).
 7. **Environment.** The Gate 2 entry conditions have been rewritten (§E). They include the HEAD recheck, no assumed DB access, DB creation only after approval, and the release prerequisites G-PDF, T-1 and staging rehearsal.
@@ -32,18 +32,19 @@ Source: the user's directly stated approved decisions (correction pass, 2026-10-
 | PUR-03 | A: remove supplier contact information **only** from Price Comparison | §4 | — |
 | PUR-04 | A: sticky header + sticky Material column | §4 | — |
 | PUR-05 | A: AJAX material filtering without page reload | §4 | — |
-| PUR-06 | A: currency and number formatting follow the portal regional preferences | §3-H | — |
+| PUR-06 | A, clarified: restore missing thousands grouping on existing price/monetary display values according to regional preferences; preserve existing prefix, spacing and fractional precision | §3-H | New currency-symbol/fixed-decimal redesign withdrawn |
 | PUR-07 | A: dynamic Flat→Thickness and Round→Diameter historical filters; dimension options come from available relevant data | §3-G | Option contract restored |
 | PUR-08 | A: PO and Shipment status synchronisation based on aggregated progress | §3-A, §3-E | — |
 | PUR-09 | A: PO completes only after all ordered material is received, accepted by QC, and required receiving processes are complete | §3-E, §F | Interpretation of "receiving processes" recorded (D-4) |
 | SUP-01 | A: separate read-only Purchasing Request Overview for Suppliers | §3-D | — |
 | QC-01 | A: actual dimensions required, initially empty, with an editable Copy from PO | §3-B | Fail-closed 422 withdrawn |
-| GEN-01 | Common price-formatting behaviour, integrated with PUR-06 | §3-H | Narrowing withdrawn |
+| GEN-01 | Apply the same grouping correction to relevant portal price/monetary display surfaces, **only where missing or incorrect** | §3-H | Broad visual reformatting withdrawn; bounded inventory retained for audit |
 | GEN-02 | A: Download Template on every existing Excel import menu; the Supplier template column order is a confirmed issue | §3-F | — |
 | GEN-03 | C: export both the currently entered unsaved form data and previously saved data | §3-F | Silent nulls withdrawn |
-| Confirmation 1 | Price format example: `Rp70,000.00` | §3-H | — |
+| Confirmation 1 (superseded interpretation) | Example `Rp70,000.00` illustrates a price with grouping; **not** a universal new prefix/decimal rule | §3-H | No global two-decimal or no-space `Rp` mandate |
 | Confirmation 2 | The Supplier Excel template column order must be corrected | §3-F | — |
 | Confirmation 3 | Export must contain the actual entered records, not an empty template | §3-F | — |
+| **Confirmation 4 (latest, 2026-10-28)** | **Actual issue: missing thousands grouping.** E.g. Indonesian `648193716,98` → `648.193.716,98`; international `648193716.98` → `648,193,716.98`. Preserve current decimals, symbol, placement and spacing. | §3-H, §F | Supersedes the forced `Rp70,000.00` interpretation |
 
 ## 0. Source of truth established
 
@@ -78,7 +79,7 @@ Columns: Gemini finding · V1 claim (as quoted) · actual current evidence · ve
 | RISK-09 | Sticky conflicts (MED) | Replace class | Inline `!important` styles + `col-sticky-material` (`_inter_supplier_content:1-48`). The direct-child CSS (`app.css:3921-3953`) does not match DataTables' wrapper. Historical omits `sticky`. JS `renderTable`/`historicalResultShellHtml` rebuild the table without the sticky classes. | Confirmed | For Vs Best: a DataTables `dom` with the table in its own `ui-table-sticky` div, **not** a broadened CSS selector (which would scroll the search box and paging away). | Browser verification required [I]. |
 | RISK-10 | PUR-02 `max(1)` (MED) | `max(1,qty)` everywhere | Footer uses `Math.max(0, trunc(qty))` (`_form_totals:40`). Requests require `required|integer|min:1`. The model accessor is `max(1,…)`. The MutationObserver `attributeFilter:['value']` misses `.val()`; it works by side effect except in `resetManualWeightOverride` (`_material_shape_script:486-489`). | Confirmed | §3-PUR-02. | — |
 | RISK-11 | ajax() vs ServerTabs (MED) | — | All 3 tabs use `$request->ajax()` (`:319,440,489`). `replaceState(null/{} )` drops `_serverTabs` (`_scripts:1024,1215`). | Confirmed | Keep `ajax()`: AGENTS.md names comparison as the known legacy exception, and `PriceComparisonServerTabsTest` locks it. Fix the history state only. | Changing the fragment contract is out of scope. |
-| RISK-12 | Currency vs test locks (MED) | `currency()` | `RegionalDisplayFormatter` has no `currency()`. `'system'` returns text unchanged (`:101-104`). `data-price` regex is locked (`RegionalComparisonDisplayTest:76-87`). `QuotationDefinition` columns **all default true** (no `default:` passed). `AdvancedExportBaselineTest:97-171` locks headings and row. | Confirmed + correction | New columns must pass `default:false` explicitly. `data-price` stays frozen. Fixed 2 dp for USD unit prices would lose precision (see §3-PUR-06). Gemini's invented symbols (`US$`, `CN¥`, `JP¥`) are rejected as new requirements. | — |
+| RISK-12 | Grouping vs regional/test locks (MED) | `currency()` proposed | `RegionalDisplayFormatter` has no `currency()`. `'system'` returns text unchanged (`:101-104`). `data-price` regex is locked (`RegionalComparisonDisplayTest:76-87`). `QuotationDefinition` columns **all default true** (no `default:` passed). `AdvancedExportBaselineTest:97-171` locks headings and row. | Confirmed; scope clarified | **No mandated new `currency()` abstraction, no universal symbol/precision change.** Restore grouping using existing formatter paths where needed. New export columns still require `default:false`; `data-price` remains frozen. Preserve per-field decimal scale, existing prefix and Phase 2B contracts. | — |
 | RISK-13 | Lazy module test (MED) | Two lazy modules | `app-lazy-modules.test.mjs` gates only 7 named modules (`:9-11`). | Confirmed | Import `pr-totals-core.js` statically in `app.js` and expose `window.AdasiPrTotals`. This is allowed because it is called synchronously by an inline script. | — |
 | RISK-14 | `allQuotationItems` incl. unavailable (LOW) | — | `isFullyFulfilledAndInspected:738-740`. **Worse than reported:** `fulfillment_quantity = available_qty ?? prItem.quantity_value` (`QuotationItem.php:233-243`), so an unavailable item on a no-award PO with shipments has ordered_qty = PR qty and can never be accepted. That PO can never complete. `commercialQuotationItems()` also includes unavailable items when there are no awards (`:109`), so Gemini's "canonical method" premise is wrong. | Confirmed (re-scoped) | Filter `is_available !== false` in the completion check. | Reachable only for legacy no-award POs [I]. |
 | RISK-15 | `PrItemsImport::HEADINGS` order (LOW) | — | `:20-32` order differs, but it is used only for heading presence and formula checks, not for display. | Confirmed, no impact | **No change** (deeper, not bigger). | — |
@@ -367,35 +368,73 @@ Each block lists: Location · Root cause · Design · Invariant · Characterizat
   6. Choose the null-shape material: the fieldset is hidden.
   7. Pick a supplier for whom SCM440 Round has no history: the bounds are cleared and the select shows the empty-data message.
 
-### H. Common price formatting (GEN-01, integrated with PUR-06)
-- **Authority:** GEN-01 is approved across the relevant portal surfaces (§B). The earlier narrowing to Price Comparison has been withdrawn.
-- **Formatter contract:**
-  - `RegionalDisplayFormatter::currency(string|int|null $amount, string $code = 'IDR', int $scale = 2): string` = prefix + the existing `money($amount, $scale, 'international')`.
-  - It is BCMath-only through `Money::normalize`; there is no float path.
-  - The user's `number_format` preference stays authoritative:
-    - `system`/`international` → `Rp70,000.00`;
-    - an explicit `indonesian` choice → `Rp70.000,00`.
-  - The prefix is `Rp` for IDR (no space, per the confirmed example). Other codes keep the existing ISO convention (`USD 3.4512`).
-  - Scale: 2 for amounts and totals. For unit prices, 2 to 4 (trailing zeros beyond 2 are trimmed, and stored precision is never cut).
-  - `null` → `-`.
-  - JS twin `AdasiPreferences.currency(value, code, scale)` uses the same registry and golden cases.
-  - Never applied to: DB values, formulas, document snapshots, Excel numeric cells, inputs, or the frozen `data-price` attribute.
-- **Read-only inventory [S]** (file level; the line-level list is generated by a deterministic grep in Stage 0 and may only shrink, never grow, without being reported):
+### H. Missing thousands grouping in price displays (GEN-01, integrated with PUR-06)
 
-  | Class | Surfaces |
-  |---|---|
-  | **Formatter-routed today** (preference-aware separators, but not the confirmed shape: `Rp ` with a space, call-site decimals) → **switch to `currency()`** | `admin/dashboard`; `ga/dashboard`; `ga/claims/{index,show}`; `finance/{dashboard,invoices/show,drp/ga,local-procurement/show,ga-claims/{index,show}}`; `local-invoices/{detail,table}`; `local-supplier/purchase-orders/show`; `purchasing/{dashboard,pr/show,po/show,quotations/show,local-vendors/invoice-show}`; `purchasing/comparison/{_inter_supplier_content,_vs_best_content}`; `quotations/_items_readonly_table`; `supplier/{po/show,quotations/show}`; DataTables `total_idr` in `Purchasing\PurchaseOrderController:103` and `Supplier\SupplierPurchaseOrderController:93` |
-  | **Raw / hard-coded separators** (`number_format(…, ',', '.')`, `toLocaleString('id-ID')`) → **switch to `currency()` or the JS twin** | views `finance/{overpayments/index,drp/{_paid_table_content,paid,supplier,ga,show},vouchers/show,local-procurement/{index,form}}`, `purchasing/{po/create,drp/{_paid_table_content,supplier,ga,show}}`, `local-supplier/purchase-orders/index`; controllers `LocalSupplier\InvoiceController:67-69` (JSON `formatted_*`), `Finance\FinanceDrpPaidController:167-170` (flash amounts), `PriceComparisonController::formatRupiah:1151`; JS `comparison/_scripts` (`formatAnalyticMoney`, `formatRupiah` ×2), `finance/invoices/show` `formatRupiah`, `finance/local-procurement/form` `formatRupiah`, `local-invoices/form` `rupiah()`, `components/ui/multi-select:117` |
-  | **Outside the requirement** (documents, fixed forms, non-price numbers) | PO PDF (`PurchaseOrderPdf`, fixed PNR261178 form, AGENTS exception); `finance/vouchers/print` (terbilang document); `ga/claims/receipt`; `local-supplier/invoices/receipt`; `receipts/partials/verified-card` (signed receipt document); Excel exports (numeric cells; only masks per GEN-03); exchange-rate values (`admin/exchange-rates`, not prices); quantities, weights, percentages, counts, chart axes; `layouts/{app,auth}` (false positive: SRI hash) |
+**Authority — latest user clarification, 2026-10-28.** The problem is that **some** price/monetary amounts are rendered as a continuous run of digits without a thousands separator. For example, `648193716,98` should be grouped. The older example `Rp70,000.00` **does not** require a new currency-formatting policy. Preserve all existing regional, currency-prefix, prefix spacing, per-field decimal scale and rounding semantics, unless a call site has a separately demonstrated formatting defect.
 
-- **Conflict found [S], recorded as D-1:** Phase 2B (`docs/plans/PHASE-2B-REGIONAL-PREFERENCES-GATE1.md:126,180`) deliberately locked "no decimal precision change; `system` returns the original text byte-for-byte; preserve each call site's precision". Locked tests assert, for example, `'Rp 1.250.001'` and **not** `'Rp 1,250,001.00'` (`RegionalGaClaimDisplayTest:54,66-67`), and `'Rp 1,250,001'` (`RegionalOperationalListsTest:60,79`). The same pattern appears in `RegionalInvoiceFinancialDisplayTest`, `RegionalDashboardRenderingTest`, `RegionalScopeProtectionTest`, `LocalSupplierOverpaymentTransparencyTest`, `PurchaseOrderReferenceRemarkTest`, `RegionalInvoice*CalendarTest` and `tests/js/regional-preferences.test.mjs`. The confirmed `Rp70,000.00` (no space, two decimals) cannot coexist with those locks on currency surfaces. Proposed resolution: GEN-01, which is newer and directly confirmed, supersedes the Phase 2B precision rule **for currency/price displays only**. Phase 2B rules stay for every non-currency number, and the separator-preference rule stays everywhere. The affected assertions become a listed set of sanctioned contract-test updates. This needs the user's explicit confirmation in the single Gate 2 approval, because it overrides an earlier approved contract.
-- **KT / NT:**
-  - Unit golden cases for IDR/USD/CNY/JPY × system/international/indonesian, plus null, negative and 20-digit strings.
-  - A JS twin parity test on the same fixture.
-  - A per-surface feature assertion for one representative per inventory row.
-  - Excel numeric cell type unchanged.
-  - `data-price` regex unchanged.
-  - A grep guard test: no `'Rp '.number_format` / `toLocaleString('id-ID'` remains in the inventoried files.
+**Correctness contract (presentation only):**
+
+| Effective number-format preference / context | Ungrouped example | Expected grouped numeric segment | Invariant |
+|---|---|---|---|
+| Indonesian (`indonesian`) | `648193716,98` | **`648.193.716,98`** | `.` groups thousands and `,` remains the decimal separator; two source decimals remain two. |
+| International (`international`) | `648193716.98` | **`648,193,716.98`** | `,` groups thousands and `.` remains the decimal separator; two source decimals remain two. |
+| Existing price with 4 fractional digits | `648193716,9876` (id) or `648193716.9876` (en) | `648.193.716,9876` / `648,193,716.9876` | Preserve **four** decimals where the existing surface supports them. |
+| Existing integer-only presentation | `648193716` | `648.193.716` or `648,193,716` per effective preference | Do **not** add `.00` or `,00`. |
+| With existing prefix (`Rp `, `Rp`, `IDR `, other currency code) | E.g. `Rp 648193716,98` | `Rp 648.193.716,98` | **Keep the original prefix and its spacing**; group only the numeric segment. |
+| Already grouped | `648.193.716,98` | unchanged | No double grouping, duplicate prefix or symbol shift. |
+
+`system` is **not** automatically synonymous with `international`. Follow the portal's existing system/default regional-format contract for each call site. If the default context cannot be resolved reliably from a canonical numeric value and effective preference, record that specific location as a technical blocker; do not infer locale merely from a visually formatted string or re-interpret the global setting.
+
+**Implementation contract (smallest safe correction):**
+
+1. Audit the value source and rendering pipeline: canonical numeric string/value → existing precision/rounding policy → locale-aware grouping → existing currency label/prefix → escaped output. **Group only display values**, never mutate persisted or calculated amounts.
+2. Reuse `RegionalDisplayFormatter::number()` / `money()` and the existing JS preference formatter where they can preserve call-site decimal and symbol behavior. Add a narrowly scoped helper only if an audited call site demonstrably cannot be fixed through existing functions. A new `currency()` method and universal JS twin are **not requirements**.
+3. Do not parse or reformat already localized **display strings** blindly (`648.193.716,98`, `648,193,716.98`): get the underlying canonical numeric value, then group. Avoid float conversion for large or high-precision monetary values.
+4. Preserve each call site's current fractional precision and rounding behavior, including unit-price precision up to the existing four decimals, numeric-only/integer displays, negative values, zero and null placeholders. No forced two decimals; no new trimming policy.
+5. Preserve currency code/symbol, existing space or no-space placement, and original number unit. For IDR displays using `Rp `, do not convert them to `Rp` purely because of the prior illustrative example. For other currencies, do not invent symbols.
+6. Honor explicit `indonesian` or `international` user preferences, with PHP and JS parity for the same canonical value and effective preference. Under `system`, preserve the existing fallback contract; where its output is a confirmed grouping defect, fix that specific rendering path without globally rewriting `system` semantics.
+7. Keep untouched: forms/input values (including parsing), stored DB values, payment calculations, PO/document snapshots, PDF/printed receipts, comparison `data-price` canonical attributes, exchange-rate values, Excel numeric cell types and masks, CSV/raw exported numeric values, and quantities/weights/identifiers.
+8. For dynamically rendered values (AJAX, DataTables, charts/tooltips, frontend re-renders), confirm grouping remains correct after refresh and filter changes. No double-grouping when the same cell is rendered repeatedly.
+9. Apply grouping only to user-visible price and monetary values in the approved bounded portal inventory. A filename match does not prove a gap; inspect the actual rendered field before adding it to the implementation diff.
+
+**Bounded source inventory [S] from the existing read-only audit, now a triage list rather than an implementation-to-do list:**
+
+| Category / instruction | Existing candidate surfaces (retain original inventory; verify current HEAD and individual fields at Gate 2 Stage 0) |
+|---|---|
+| **Formatter-routed today (inspect first)**: many already honor locale and grouping, even if `Rp ` spacing or call-site decimals differ. **Do not modify for spacing or decimals.** Change only an actual missing/wrong grouping path. | `admin/dashboard`; `ga/dashboard`; `ga/claims/{index,show}`; `finance/{dashboard,invoices/show,drp/ga,local-procurement/show,ga-claims/{index,show}}`; `local-invoices/{detail,table}`; `local-supplier/purchase-orders/show`; `purchasing/{dashboard,pr/show,po/show,quotations/show,local-vendors/invoice-show}`; `purchasing/comparison/{_inter_supplier_content,_vs_best_content}`; `quotations/_items_readonly_table`; `supplier/{po/show,quotations/show}`; DataTables `total_idr` in `Purchasing\PurchaseOrderController:103` and `Supplier\SupplierPurchaseOrderController:93` |
+| **Raw / hard-coded separators (inspect first)**: check whether the output is ungrouped, incorrectly grouped, or already correct for its effective regional preference. Reuse existing PHP/JS formatter with smallest per-call-site fix; no blanket conversion. | views `finance/{overpayments/index,drp/{_paid_table_content,paid,supplier,ga,show},vouchers/show,local-procurement/{index,form}}`, `purchasing/{po/create,drp/{_paid_table_content,supplier,ga,show}}`, `local-supplier/purchase-orders/index`; controllers `LocalSupplier\InvoiceController:67-69` (JSON `formatted_*`), `Finance\FinanceDrpPaidController:167-170` (flash amounts), `PriceComparisonController::formatRupiah:1151`; JS `comparison/_scripts` (`formatAnalyticMoney`, `formatRupiah` ×2), `finance/invoices/show` `formatRupiah`, `finance/local-procurement/form` `formatRupiah`, `local-invoices/form` `rupiah()`, `components/ui/multi-select:117` |
+| **Outside the requirement** (documents, fixed forms, non-price numbers) | PO PDF (`PurchaseOrderPdf`, fixed PNR261178 form, AGENTS exception); `finance/vouchers/print` (terbilang document); `ga/claims/receipt`; `local-supplier/invoices/receipt`; `receipts/partials/verified-card` (signed receipt document); Excel exports (numeric cells; only masks per GEN-03); exchange-rate values (`admin/exchange-rates`, not prices); quantities, weights, percentages, counts, chart axes; `layouts/{app,auth}` (false positive: SRI hash) |
+
+**Mandatory gap classification for every candidate display (Stage 0):**
+
+| State | Meaning | Required change |
+|---|---|---|
+| **A — Correct** | Already grouped according to effective preference, and correct decimals/prefix | **No code change**, lock with regression test only if relevant |
+| **B — Missing grouping** | E.g. numeric display `648193716,98` | Fix integer-part grouping using existing formatting path |
+| **C — Incorrect regional separator** | Grouped under the wrong locale, or mixed separators | Correct at the rendering boundary while preserving precision/prefix |
+| **D — Not applicable** | Count, dimensions, rates, identifiers, inputs, raw Excel/CSV, fixed documents | **Out of scope** |
+
+The repository-level inventory is a search space, **not proof that each candidate is broken**. For every B/C item, record: exact `file:line`, role/page/field, raw value and type, before output, expected output, effective regional preference, existing prefix/spacing, existing fractional precision, minimal fix, and a test. Do not rewrite the A/D rows. Keep a one-to-one list of demonstrated gaps and changed call sites.
+
+**D-1 — RESOLVED (by direct user clarification; not pending approval):**
+
+- Withdraw the previous proposal to supersede Phase 2B formatting precision, symbol and spacing conventions.
+- Phase 2B remains authoritative except for specific *ungrouped or incorrectly grouped* price displays. Do not invert a Phase 2B golden test merely to impose `Rp70,000.00` everywhere.
+- Existing tests may be adjusted **only** when they assert the precise ungrouped output that the user has now confirmed is defective, and the test change must be paired with a failing-before / passing-after regression test of that real gap. No bulk snapshot updates and no lowering of assertions.
+- This clarification resolves the earlier false D-1 choice between forcing new monetary precision and preserving Phase 2B. There is no pending format-policy question for the single Gate 2 approval.
+
+**Acceptance specification (PHP, JS and rendered surfaces):**
+
+- [ ] Indonesian numeric input `648193716.98` (canonical) rendered as `648.193.716,98` when the surface displays two decimals; international as `648,193,716.98`.
+- [ ] 0/2/4 source decimal examples preserve the same displayed fractional scale as before (no forced `.00`, no precision loss, no new trimming rule).
+- [ ] Already-grouped Indonesian/international displays do not change or gain double separators.
+- [ ] Existing `Rp `, `Rp`, `IDR `, and other currency labels keep their old placement and spacing on each surface.
+- [ ] Negative, zero, null, 20+ digit canonical decimal strings and large prices are handled without float-based precision loss.
+- [ ] PHP and JS render the same grouped number for the same canonical value, regional preference, and original display-precision policy.
+- [ ] AJAX, DataTables and chart rerenders do not restore ungrouped output or duplicate grouping.
+- [ ] No change to DB values, arithmetic, `data-price`, input parsing, PDF snapshots, Excel cells, CSV raw values or unrelated numeric displays.
+- [ ] All Phase 2B formatting tests remain valid except specific, justified expectation updates for demonstrated grouping defects.
+- [ ] Stage 0 B/C gap inventory maps precisely to the touched source files and focused regression tests; A/D sites have zero diff.
 
 ## 4. Remaining design items and per-ID readiness
 
@@ -406,8 +445,8 @@ Each block lists: Location · Root cause · Design · Invariant · Characterizat
 | PUR-03 | B | Company name in all 7 places + `applyVsBestKeywordFilter`, using the convention + eager `supplier:id,user_id,company_name` + SQL `COALESCE`. Remove `_supplier_pic` from the comparison header **only**. Estimated delivery stays. Historical suppliers cache key → `v2`. | Ready with conditions: sanctioned inversion of `QuotationPresentationTest::test_comparison_header_shows_pic_and_the_q8_label` (PUR-03 supersedes Decision 10 on this surface only). Query count is not increased. |
 | PUR-04 | B | Inter-supplier: `col-sticky-material` → `ui-sticky-col` plus a width class, and the conflicting inline `z-index`/`!important` background is removed. A `ResizeObserver` sets `--ui-table-sticky-head-row` from row 1's height. Historical: add `sticky`, and add `ui-table-sticky`/`ui-sticky-col` in both the Blade and the JS `renderTable`/`historicalResultShellHtml`. Vs Best: DataTables `dom` puts `t` in a `<div class="ui-data-table__scroll ui-table-sticky">`, with toolbar and paging outside; the first column gets `className 'text-start ui-sticky-col'`. | Ready with conditions: Chrome bounding-rect check (vertical, horizontal, after AJAX and after DataTables draw) on light and dark themes |
 | PUR-05 | B | Shared query keys: `material_name`, `shape`, `currency`. One `syncComparisonState()` helper updates the evaluation-header hidden inputs, the three tab hrefs and history via `replaceState({...state, _serverTabs:'#purchasingComparisonContainer'})`. Per-fetch `AbortController` + sequence id for materials, historical payload and Vs Best reload. Inter-supplier options gain `data-material-name`/`data-shape` and preselect from the query. A Vs Best material select is added. An invalid incoming filter is ignored with a polite `role=status` note. The `ajax()` contract is kept (RISK-11). | Ready with conditions: JS race test plus a back/forward check in the browser |
-| PUR-06 | B | §3-H formatter contract (`currency()` on top of the existing `money()`). The regional preference is authoritative. `data-price` is frozen. | Ready with conditions: golden-case parity PHP↔JS |
-| GEN-01 | B | §3-H bounded inventory (formatter-routed + raw surfaces), plus the GEN-03 Excel masks. Outside: documents, fixed forms, non-price numbers. | Ready with conditions: **D-1** confirmation (GEN-01 supersedes the Phase 2B precision rule for currency displays), followed by the listed sanctioned regional test updates |
+| PUR-06 | B | §3-H **targeted missing-grouping remediation** for Price Comparison and associated monetary displays; reuse existing formatter/JS preference path where possible. Preserve current prefix, fractional precision, regional choice, `data-price` and numeric contracts. | Ready with conditions: Stage 0 confirmed gaps + grouping golden cases + PHP↔JS parity |
+| GEN-01 | B | §3-H bounded cross-module inventory is **triage-only**: fix B/C missing or incorrect grouping in actual price/monetary displays; leave A correctly grouped, D out-of-scope, existing currency labels and decimal precision intact. GEN-03 numeric Excel types/masks remain governed by §3-F. | Ready with conditions: **D-1 resolved** by latest user clarification; targeted B/C evidence and tests only; no Phase 2B precision override |
 | PUR-07 | B | Material options keyed by (name, shape) with labels "Name (Shape)" when ambiguous. A hidden `shape` input. `historical()` accepts `shape` and resolves by (name, shape), falling back to name. Dynamic dimension options and safe reset per §3-G. Labels: Flat = Thickness, Round = Diameter (new key, field `d_outer`), Hollow unchanged. Vs Best fixes per §3-C. | Ready with conditions: §3-G server KT plus browser acceptance 1–7 |
 | PUR-08 | C | §3-A + §3-E + unclaimed-NG claim targeting (index subquery `whereNotExists` material_claims withTrashed, `dataActionNeeded`, `po/show`). | Ready with conditions: zero diff on `ShipmentService`; concurrency suites with MTC on and off |
 | PUR-09 | C | Only the `is_available !== false` filter. The legacy branches are characterised, not changed. "Rejected (NG) never counts as accepted" is already guaranteed (`:657-680`) and is locked by a test. "Required receiving processes" = shipment arrival confirmed + QC inspected + no open NG/claim. These are already the preconditions of `completed` (`reconcileOperationalStatus:783-818`). | Ready with conditions: characterisation before edit; D-4 states the interpretation |
@@ -416,7 +455,7 @@ Each block lists: Location · Root cause · Design · Invariant · Characterizat
 | GEN-02 | A | §3-F canonical headings + preview order. Template button audit: all 4 import screens already have one (PR, quotation, Local PO, Local GR). | Ready with conditions: sanctioned update of `MissionFiveImportTest:118-123` (order only) |
 | GEN-03 | D | §3-F: one row per PR item; Mode 1 validated with a controlled 422 and no silent nulls; Mode 2 owner/filter-scoped saved records. | Ready with conditions: the queued-format proof; the round-trip limitations as listed; the Mode 2 scope KT |
 
-Count (all 14 IDs): **Ready 1** (PUR-01) · **Ready with explicit technical conditions 13** (PUR-02, PUR-03, PUR-04, PUR-05, PUR-06, PUR-07, PUR-08, PUR-09, QC-01, SUP-01, GEN-01, GEN-02, GEN-03) · **Blocked by missing evidence 0** · **Blocked by genuine business decision 0**. D-1 is a confirmation folded into the single Gate 2 approval. If it is refused, GEN-01 and PUR-06 fall back to the Phase 2B shape: currency surfaces keep `Rp ` and their call-site decimals, and only the raw-separator surfaces are routed through the formatter.
+Count (all 14 IDs): **Ready 1** (PUR-01) · **Ready with explicit technical conditions 13** (PUR-02, PUR-03, PUR-04, PUR-05, PUR-06, PUR-07, PUR-08, PUR-09, QC-01, SUP-01, GEN-01, GEN-02, GEN-03) · **Blocked by missing evidence 0** · **Blocked by genuine business decision 0**. **D-1 is resolved** by the user’s direct clarification: repair missing thousands grouping only, without changing Phase 2B decimal precision, currency symbol/code or spacing. Gate 2 still requires one explicit approval for implementation.
 
 ## D. Revised performance acceptance criteria
 The earlier oracle "the whole PO show page runs the same number of queries for 1 and N items" is **withdrawn**. The full page architecture has not been proven to support that bound: per-section eager loads, documents, conversations and MaterialProgress all predate this revision. The replacement is:
@@ -429,11 +468,12 @@ The earlier oracle "the whole PO show page runs the same number of queries for 1
 
 ## E. Gate 2 entry conditions
 1. **Recheck HEAD.**
-   - In this session, current `master` = `ab5ad0c` (this plan merged in PR #12). Branch `claude/sharp-edison-h93xqe` = `1e4f1f7` (the phpspreadsheet 1.30.6 → 1.30.7 lock-only security patch; unmerged, no PR yet).
-   - `ShipmentService.php` sha256 = `a4361cbc…be77`, unchanged since `c74386f`.
-   - Gate 2 starts from a fresh `git fetch`, and re-verifies the sha256 and every §1 citation whose file changed.
-2. **The dependency patch lands first.** Until 1.30.7 is merged, the CI `dependencies` job is red on `master`, and GEN-03's spreadsheet round-trip tests would run against a vulnerable reader.
-3. **No assumed DB access.** Claude Code Web provides no project database. The isolated MySQL test DB (`adasi_rev1027_test`, satisfying the `_test` guard) is created or connected **only after** Gate 2 approval, and only after confirming it is not an application database. No DB command is run during Gate 1.
+   - GitHub verification on 2026-10-28 found `master` at `2597a509f1296f681feac0c3eb9bd805552e866a` (PR #13 merged), after the previous `ab5ad0c` checkpoint. This is a snapshot, not a guarantee of the HEAD at Gate 2 kickoff.
+   - The locally edited grouping-clarified plan copy **has not been uploaded to GitHub**; the current GitHub plan in `master` still reflects the earlier currency-precision interpretation. Synchronize this corrected document to the implementation branch **before** using repository documentation as the Gate 2 source of truth.
+   - Last reported `ShipmentService.php` sha256 = `a4361cbc…be77`; re-verify against freshly fetched HEAD before making edits.
+   - Gate 2 begins with `git fetch`, source/requirement reconciliation, protected-file diff checks and re-verification of every §1 citation whose file changed.
+2. **Dependency patch merged; test status must still be verified.** GitHub `master` commit `2597a509` includes PR #13 and `composer.lock` pins PhpSpreadsheet `1.30.7`. The patch is no longer an unmerged prerequisite. Revalidate dependency installation, security checks and CI on the fresh Gate 2 baseline; no green CI result was independently confirmed at the time of this document update.
+3. **No assumed DB access.** Claude Code Web provides no project database. The isolated MySQL test DB (`adasi_rev1027_test`, satisfying the `_test` guard) (owner additional note: if `adasi_rev1027_test` doesnt exist, use local database testing instead 'adasi_portal_testing') is created or connected **only after** Gate 2 approval, and only after confirming it is not an application database. No DB command is run during Gate 1.
    - Disclosure: during the earlier dependency task in this ephemeral container, a throwaway MySQL 8.0 instance and `adasi_portal_test` were created to run tests. That run was stopped on request, and no application data was involved.
    - Container prerequisites seen then: `php-bcmath` and a Vite build (`npm ci && npm run build`) are required before feature tests.
 4. **Protected code.** `ShipmentService.php` has a zero-diff guard. `config/regional_display.php`, `AGENTS.md`, migrations and fixtures stay unchanged except the sanctioned contract-test edits listed in §4 and §3-H.
@@ -443,10 +483,10 @@ The earlier oracle "the whole PO show page runs the same number of queries for 1
    - the staging migration and rollback rehearsal (`:940,1102`).
 
    None is satisfied by Gate 2 work.
-6. **Single approval.** The user approves Gate 2 once, including the D-1 confirmation and the sanctioned contract-test list.
+6. **Single approval.** The user approves Gate 2 once for all four workstreams and the justified contract-test list. **D-1 is already resolved** by the user's latest grouping clarification; no additional formatting-policy confirmation is required.
 
 ## F. Remaining genuine business decisions
-- **D-1 (confirmation):** GEN-01's confirmed `Rp70,000.00` (no space, two decimals) supersedes Phase 2B's per-call-site precision rule for currency/price displays only. The regional separator preference stays authoritative (an explicit `indonesian` → `Rp70.000,00`). Proposed: yes.
+- **D-1 (RESOLVED, not pending):** User clarified that some price displays lack thousands grouping, e.g. `648193716,98` should be `648.193.716,98`. Preserve Phase 2B's existing per-call-site decimal precision, currency symbol/code, and spacing. Respect explicit `indonesian`/`international` preferences and existing `system` fallback; do not impose a universal `Rp70,000.00` presentation. Only B/C demonstrably defective grouping surfaces may change (§3-H). No additional D-1 approval is required.
 - **D-2: withdrawn.** GEN-01's portal-wide scope is approved (§B). It is bounded by the §3-H inventory.
 - **D-3:** may a de-invited supplier who holds a quotation still revise it? Default: unchanged (`create()` denies; the overview shows View only). This does not block SUP-01.
 - **D-4 (interpretation, non-blocking):** PUR-09 "required receiving processes" = arrival confirmation + QC + claim resolution. Customs documentation (Invoice/BL/Packing List/Form E) is **not** added as a completion precondition: that would be a new requirement and could strand POs. It is stated here so that a different intent can be raised at approval.
@@ -469,7 +509,7 @@ The earlier oracle "the whole PO show page runs the same number of queries for 1
 | WS | Owns |
 |---|---|
 | A | `PrItemsImport`, PR views (`create/edit/_item_row/_form_totals/_import/_material_shape_script`), `resources/js/pr-totals-core.js`, `app.js` (one static import), `QuotationImportTemplateExport`, quotation preview markup |
-| B | `PriceComparisonController`, `PurchaseHistoryPriceService` (name select only), comparison views/`_scripts`, `app.css` (sticky width class only), `RegionalDisplayFormatter::currency`, `preferences` JS twin |
+| B | `PriceComparisonController`, `PurchaseHistoryPriceService` (name select only), comparison views/`_scripts`, `app.css` (sticky width class only), **existing** `RegionalDisplayFormatter::number/money` and regional JS preference renderers as needed; **only confirmed B/C price-display call sites** from the §3-H inventory, with protected precision/prefix behavior. No mandatory new `currency()` or JS currency framework. |
 | C | `PurchaseOrder` (accessor, tally extraction, projection, availability filter), `PrItem::canonicalShape`, `QuotationItem::orderedSpecification`, `MaterialProgressService`, `QcInspectionController`, QC views, PO show views, `MaterialClaimController`, `PurchaseOrderController` (index subqueries), `SupplierPurchaseOrderController`, `PurchaseOrderExportFilters`, `PurchaseOrdersExport`, dashboards |
 | D | `PurchaseRequisition` scope + action predicate, `Supplier\PurchasingRequestController` + views, `routes/web.php`, `page_registry`, `quick_access`, sidebar, `AppServiceProvider` composers, `Supplier\QuotationController@exportForm`, `QuotationFormExport`, `QuotationDefinition`, `QuotationsExport` (formats) |
 
@@ -480,7 +520,7 @@ The earlier oracle "the whole PO show page runs the same number of queries for 1
   - Determine whether the touched views require copy-ledger entries. If so, extend the ledger for the new keys only; never rewrite historical snapshots.
   - Record the §D query baselines.
   - Shape profiling only if a restored or sanitised dataset is provided (§3-B).
-- **Stage 1 (WS-B foundation):** PUR-06 formatter + JS twin. Gate: unit/JS tests and `RegionalComparisonDisplayTest` green.
+- **Stage 1 (WS-B presentation foundation):** first classify §3-H candidate displays A/B/C/D against the current HEAD and actual effective regional preferences; fix **confirmed** B/C grouping defects using existing PHP/JS formatter paths, not a universal currency redesign. Gate: before/after evidence per touched field, zero change to A/D sites and to symbol/precision, focused PHP/JS grouped-number golden tests, and Phase 2B/`RegionalComparisonDisplayTest` green except narrowly justified actual grouping assertions.
 - **Stage 2 (WS-A):**
   1. PUR-01, PUR-02.
   2. GEN-02 (gate for Stage 5 Mode 1).
@@ -517,7 +557,7 @@ The earlier oracle "the whole PO show page runs the same number of queries for 1
 2. Zero diff on protected files.
 3. The §D performance criteria hold: the revision's own queries are constant, nothing is added per item against the measured baseline, `EXPLAIN` is recorded, and fresh `ShipmentService` reads are preserved.
 4. The round-trip oracle passes for supported records.
-5. All locked suites are green, apart from the sanctioned contract-test edits, which are listed in the PR body: the D-1 regional currency assertions enumerated in §3-H (only if D-1 is confirmed), plus inverting `test_comparison_header_shows_pic_and_the_q8_label`, the template-order assertion in `MissionFiveImportTest:118-123`, and the QC-01 store payloads.
+5. All locked suites are green. Sanctioned changes are narrowly scoped: only **proven missing-grouping** expectations (if any; §3-H), inverting `test_comparison_header_shows_pic_and_the_q8_label` for PUR-03, updating the template-order assertion in `MissionFiveImportTest:118-123` for GEN-02, and QC-01 store payloads. **No blanket D-1 regional currency/decimal/symbol assertion changes.** Each altered expectation must have an evidence-backed reason and an accompanying regression test.
 6. CI green on MySQL 8.0; the `deep` job on MariaDB 11.4.
 
 **Rollback:** no migrations, so every stage rolls back by `git revert` plus `view:cache`. The cache keys bumped (`historical_suppliers:v2`, `vs_best_summary_unfiltered:v3`) isolate cached state in both directions.
@@ -530,7 +570,7 @@ The earlier oracle "the whole PO show page runs the same number of queries for 1
 | Fulfillment | Loop `itemFulfillmentStatus` | Implicit reuse of loaded relations | Pure tally extraction + explicit read-only projection; the transactional path is byte-identical in behaviour |
 | PUR-09 | Mostly fine | Rewrite 3 legacy branches | Only the `is_available` filter (a reachable bug); the others are characterised, unreachable |
 | PUR-07 options (correction) | — | Material + shape only | §3-G: eligible-history dimension options per (material, shape, supplier) filling the existing range inputs; no duplicate parameter |
-| GEN-01 scope (correction) | — | Comparison only (earlier final) | §3-H bounded portal inventory; D-1 Phase 2B supersession confirmation |
+| GEN-01 scope (correction) | — | Comparison only (earlier final) | §3-H bounded portal inventory retained as triage; only demonstrated grouping defects fixed, D-1 supersession withdrawn |
 | QC legacy shapes (correction) | — | Fail-closed 422 (earlier final) | Characterised table: null/unknown unchanged; canonical and case variants required |
 | GEN-03 Mode 1 (correction) | — | Invalid → null (earlier final) | Controlled 422, the save path's item rules, one row per PR item, honest limitation list |
 | Performance oracle (correction) | — | Whole-page constant (earlier final) | Measured baseline + attributed queries + no per-item growth + `EXPLAIN` |
@@ -539,7 +579,7 @@ The earlier oracle "the whole PO show page runs the same number of queries for 1
 | Supplier visibility | Optional fix | Mandatory broadening of `isVisibleToSupplier`, fix `index()` | Read scope + action parity; write rule unchanged (D-3); `index()` recorded out of scope |
 | Company name | 3 places | 7 places + lazy accessor | 7 places + keyword filter, eager convention, no lazy accessor; Decision 10 test inversion sanctioned |
 | Sticky | Class swap | Broaden CSS to DataTables wrapper | DataTables `dom` scroller; JS re-render keeps the classes |
-| Currency | `system` = international | New config, new symbols, fixed decimals | Preference-respecting IDR format; ISO prefix for others; unit-price precision kept; no new config file |
+| Currency / price grouping | `system` = international | New config, symbols, fixed decimals | **Latest user clarification:** missing thousands grouping only. Keep existing `system` contract, currency prefix/spacing and per-field decimal precision; reuse existing formatters and correct proven gaps |
 | GEN-02 | Reorder | Add `material_name` to import rows | Reorder + client-side Material lookup (anti-spoof test kept); sanctioned order-assertion update |
 | GEN-03 | FormData export | Field-name, range and notes fixes | Same, plus the explicit round-trip boundary for formula-leading notes, an explicit `default:false`, and a queued-format proof |
 | PR totals | `max(1)` | Blank = `—` / 0 | Same, plus BCMath server totals and a static `window.AdasiPrTotals` |
@@ -560,5 +600,6 @@ The earlier oracle "the whole PO show page runs the same number of queries for 1
   - the QC create view shape handling.
 
   No tests, builds or DB commands were run in this pass.
+- **Latest clarification incorporated in this edited planning copy:** the user specified an actual ungrouped price `648193716,98`. This revision edits **the supplied plan document**, not application source; no new repository inspection, tests, browser runs, Git operations or database commands are claimed. The prior candidate inventory/evidence remains source-reported and must be rechecked at Gate 2 Stage 0.
 
-GATE 1 FINAL CANDIDATE — CORRECTED, PENDING SINGLE GATE 2 APPROVAL
+GATE 1 FINAL CANDIDATE — GROUPING CLARIFIED, PENDING SINGLE GATE 2 APPROVAL

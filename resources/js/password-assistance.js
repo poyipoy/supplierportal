@@ -27,15 +27,30 @@ export async function copyAssistanceText(text, environment = globalThis) {
     }
 }
 
+const COPIED_LABEL_MS = 2000;
+
 export function bootPasswordAssistance(root = document, environment = globalThis) {
     root.querySelectorAll('[data-password-assistance]').forEach(container => {
         const status = container.querySelector('[data-copy-status]');
         container.querySelectorAll('[data-password-assistance-copy]').forEach(button => {
+            let restoreTimer;
+            let original;
             button.addEventListener('click', async () => {
                 const text = root.getElementById(button.dataset.passwordAssistanceCopy)?.textContent ?? '';
                 const copied = await copyAssistanceText(text, environment);
                 status.textContent = copied ? t('js.copy.success', { label: button.dataset.copyLabel })
                     : t('js.copy.failed');
+
+                // Echo success on the button itself so the result is visible where the pointer is.
+                const label = copied ? button.querySelector?.('span') : null;
+                if (!label) return;
+                clearTimeout(restoreTimer);
+                original ??= label.textContent;
+                label.textContent = t('js.copy.done');
+                restoreTimer = setTimeout(() => {
+                    label.textContent = original;
+                    original = undefined;
+                }, COPIED_LABEL_MS);
             });
         });
     });

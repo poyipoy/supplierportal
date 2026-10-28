@@ -1,14 +1,10 @@
 ---
-
-name: supplier-portal-design-expert
-
+name: antigravity-design-expert
 description: Core UI/UX engineering skill for designing and improving enterprise Supplier Portal interfaces with a focus on usability, clarity, workflow efficiency, responsive layouts, accessibility, and maintainable Laravel Blade components.
-
 risk: safe
-
 source: customized
-
-## date_added: "2026-09-03"
+date_added: "2026-09-03"
+---
 
 # Supplier Portal UI/UX Design Expert
 

@@ -31,7 +31,7 @@ PORTAL_PAGE_REGISTRY_ENABLED=false
 - Sebelum mengganti prefix yang pernah dipublikasikan, tambahkan nilainya ke `prefix.legacy_values` di `config/portal_urls.php`. Nilai default daftar ini adalah `['v2/ADASI_PRD']`; prefix terkonfigurasi saat ini juga dikenali untuk rollback.
 - Prefix berasal dari server, termasuk `window.AdasiPortal.pathPrefix`. Jangan merangkai prefix literal di JavaScript.
 
-Tetap di root: `/`, `/login` GET/POST, `/two-factor-challenge` GET/POST, `/logout`, `/forgot-password`, `/confirm-password` GET/POST, `/password`, `/oauth/*` termasuk `/oauth/token`, `/sso/callback`, `/verify-receipt/*`, `/supplier/register`, `/supplier/registration/*`, `/locale/*`, `/up`, dan `/broadcasting/auth`. Halaman serta aksi profile terautentikasi mengikuti prefix. Nama route tidak berubah.
+Tetap di root: `/`, `/login` GET/POST, `/two-factor-challenge` GET/POST, `/logout`, `/confirm-password` GET/POST, `/password`, `/oauth/*` termasuk `/oauth/token`, `/sso/callback`, `/verify-receipt/*`, `/locale/*`, `/up`, dan `/broadcasting/auth`. Halaman serta aksi profile terautentikasi mengikuti prefix, begitu pula `/forgot-password`, `/supplier/register` dan `/supplier/registration/*` (GET lama dialihkan 301; POST lama tidak dialihkan, jadi form yang terbuka saat deploy perlu dimuat ulang). Nama route tidak berubah.
 
 ## Aktivasi dan cache
 

@@ -41,3 +41,7 @@ Thumbs.db
 /*.jpeg
 owned-chrome-profiles/
 *chrome-profile*/
+
+# graphify
+/graphify-out/
+/.rnd

@@ -62,6 +62,10 @@ class PasswordAssistanceTest extends TestCase
         $this->assertCount(0, $xpath->query('//form|//input[@name="email"]|//*[@autofocus]'));
         $this->assertCount(3, $xpath->query('//button[@type="button"][@data-password-assistance-copy]'));
         $this->assertCount(1, $xpath->query('//*[@aria-live="polite"][@role="status"]'));
+        // Manual-copy details are collapsed behind one disclosure while the mailto CTA is the primary path.
+        $this->assertCount(1, $xpath->query('//details[not(@open)]'));
+        $this->assertCount(3, $xpath->query('//details//button[@data-password-assistance-copy]'));
+        $this->assertCount(1, $xpath->query('//details//*[@role="status"]'));
         $mailto = $xpath->query('//a[starts-with(@href,"mailto:")]');
         $this->assertCount(1, $mailto);
         $href = $mailto->item(0)->getAttribute('href');
@@ -81,7 +85,9 @@ class PasswordAssistanceTest extends TestCase
     {
         foreach (["support@example.test\r\nBcc:attacker@example.test", 'javascript:alert(1)', 'not-an-email', '<script>alert(1)</script>'] as $email) {
             config()->set('support.supplier_email', $email);
-            $this->get('/forgot-password')->assertOk()
+            $response = $this->get('/forgot-password')->assertOk();
+            $this->assertMatchesRegularExpression('/<details\b[^>]*\sopen\b/', $response->getContent());
+            $response
                 ->assertDontSee('href="mailto:', false)
                 ->assertDontSee('<script>alert(1)</script>', false)
                 ->assertSeeText('WhatsApp Support')

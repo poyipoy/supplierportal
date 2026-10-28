@@ -319,30 +319,32 @@ Route::match(['get', 'post'], '/locale/{locale?}', [LocaleController::class, 'sw
     ->name('locale.switch');
 
 // Supplier Public Registration & Status Tracking
-Route::get('/supplier/register', [SupplierRegistrationController::class, 'create'])->name('supplier.register');
-Route::post('/supplier/register', [SupplierRegistrationController::class, 'store'])
-    ->middleware('throttle:10,1')
-    ->name('supplier.register.store');
-
-Route::prefix('supplier/registration')->name('supplier.registration.')->group(function () {
-    Route::get('/access', [SupplierRegistrationController::class, 'showAccessForm'])->name('access-form');
-    Route::post('/access', [SupplierRegistrationController::class, 'authenticateAccess'])
+Route::prefix(PortalPath::prefix())->group(function () {
+    Route::get('/supplier/register', [SupplierRegistrationController::class, 'create'])->name('supplier.register');
+    Route::post('/supplier/register', [SupplierRegistrationController::class, 'store'])
         ->middleware('throttle:10,1')
-        ->name('access');
-    Route::post('/access/credentials', [SupplierRegistrationController::class, 'authenticateCredentials'])
-        ->middleware('throttle:10,1')
-        ->name('access.credentials');
-    Route::post('/logout', [SupplierRegistrationController::class, 'logoutAccess'])->name('logout');
-    Route::get('/success', [SupplierRegistrationController::class, 'success'])->name('success');
+        ->name('supplier.register.store');
 
-    // Registration session protected routes
-    Route::middleware('registration.session')->group(function () {
-        Route::get('/status', [SupplierRegistrationController::class, 'status'])->name('status');
-        Route::get('/edit', [SupplierRegistrationController::class, 'edit'])->name('edit');
-        Route::post('/resubmit', [SupplierRegistrationController::class, 'resubmit'])
+    Route::prefix('supplier/registration')->name('supplier.registration.')->group(function () {
+        Route::get('/access', [SupplierRegistrationController::class, 'showAccessForm'])->name('access-form');
+        Route::post('/access', [SupplierRegistrationController::class, 'authenticateAccess'])
             ->middleware('throttle:10,1')
-            ->name('resubmit');
-        Route::get('/documents/{document}', [SupplierRegistrationController::class, 'downloadDocument'])->name('document.download');
+            ->name('access');
+        Route::post('/access/credentials', [SupplierRegistrationController::class, 'authenticateCredentials'])
+            ->middleware('throttle:10,1')
+            ->name('access.credentials');
+        Route::post('/logout', [SupplierRegistrationController::class, 'logoutAccess'])->name('logout');
+        Route::get('/success', [SupplierRegistrationController::class, 'success'])->name('success');
+
+        // Registration session protected routes
+        Route::middleware('registration.session')->group(function () {
+            Route::get('/status', [SupplierRegistrationController::class, 'status'])->name('status');
+            Route::get('/edit', [SupplierRegistrationController::class, 'edit'])->name('edit');
+            Route::post('/resubmit', [SupplierRegistrationController::class, 'resubmit'])
+                ->middleware('throttle:10,1')
+                ->name('resubmit');
+            Route::get('/documents/{document}', [SupplierRegistrationController::class, 'downloadDocument'])->name('document.download');
+        });
     });
 });
 
@@ -763,8 +765,10 @@ Route::delete('oauth/authorize', [SsoAuthorizeController::class, 'deny'])
 
 // This is an informational assistance page only. Allow an authenticated account
 // to use its saved locale for the copied email template; no reset flow is added.
-Route::get('forgot-password', [PasswordAssistanceController::class, 'show'])
-    ->middleware('no-store')->name('password.request');
+Route::prefix(PortalPath::prefix())->group(function () {
+    Route::get('forgot-password', [PasswordAssistanceController::class, 'show'])
+        ->middleware('no-store')->name('password.request');
+});
 
 Route::middleware(['mfa.pending', 'no-store'])->group(function () {
     Route::get('two-factor-challenge', [TwoFactorChallengeController::class, 'show'])

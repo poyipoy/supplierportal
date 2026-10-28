@@ -6,7 +6,8 @@ use RuntimeException;
 
 final class PortalPath
 {
-    // Auth, public registration, signed receipts, health and protocol endpoints stay at root.
+    // Auth, signed receipts, health and protocol endpoints stay at root. 'forgot-password' and 'supplier'
+    // are kept reserved so a prefix can never shadow the legacy paths the 301 fallback still resolves.
     private const ROOT_SEGMENTS = [
         'login', 'logout', 'two-factor-challenge', 'forgot-password', 'confirm-password',
         'password', 'oauth', 'sso', 'verify-receipt', 'supplier', 'locale', 'up', 'broadcasting',

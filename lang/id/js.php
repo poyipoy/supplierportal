@@ -36,6 +36,7 @@ return [
     'actions.confirm' => 'Konfirmasi tindakan',
     'actions.confirmation' => 'Konfirmasi',
     'copy.success' => ':label disalin.',
+    'copy.done' => 'Tersalin',
     'copy.failed' => 'Tidak dapat menyalin. Pilih teks lalu salin secara manual.',
     'dashboard.position' => ':label berada di posisi :position dari :total. Simpan Perubahan untuk menyimpan urutan ini.',
     'dashboard.editor.entered' => 'Mengedit tata letak dashboard. Pindahkan atau sembunyikan panel, lalu simpan perubahan.',

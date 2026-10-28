@@ -40,6 +40,7 @@ return [
     'password_assistance.description' => 'For security reasons, password reset requests are handled manually by our internal team. Please contact the support team using your registered company email address.',
     'password_assistance.support' => 'Support Email',
     'password_assistance.whatsapp' => 'WhatsApp Support',
+    'password_assistance.opens_new_tab' => '(opens in a new tab)',
     'password_assistance.no_support' => 'Please contact your company representative for support contact details.',
     'password_assistance.email_cta_heading' => 'Get help by email',
     'password_assistance.email_cta_help' => "We'll open your email app with the subject and message already filled in.",

@@ -31,8 +31,8 @@ class PortalPathPrefixTest extends TestCase
             $before[$route->getName() ?? $route->uri()] = [$route->uri(), $route->methods(), $route->gatherMiddleware()];
         }
         $this->reloadPortalRoutes(['portal_urls.prefix.enabled' => true]);
-        $rootPaths = ['/', 'login', 'two-factor-challenge', 'logout', 'forgot-password', 'confirm-password', 'password', 'up', 'oauth/token'];
-        $rootPrefixes = ['oauth/', 'sso/', 'verify-receipt/', 'supplier/register', 'supplier/registration/', 'locale', 'broadcasting/'];
+        $rootPaths = ['/', 'login', 'two-factor-challenge', 'logout', 'confirm-password', 'password', 'up', 'oauth/token'];
+        $rootPrefixes = ['oauth/', 'sso/', 'verify-receipt/', 'locale', 'broadcasting/'];
         foreach (Route::getRoutes() as $route) {
             if ($route->isFallback) {
                 continue;
@@ -68,6 +68,33 @@ class PortalPathPrefixTest extends TestCase
                 $this->assertContains($response->status(), [404, 405]);
                 $response->assertHeaderMissing('Location');
             }
+        }
+    }
+
+    public function test_forgot_password_register_and_registration_tracking_follow_the_prefix_flag(): void
+    {
+        $pages = [
+            'password.request' => 'forgot-password',
+            'supplier.register' => 'supplier/register',
+            'supplier.registration.access-form' => 'supplier/registration/access',
+        ];
+
+        $this->reloadPortalRoutes(['portal_urls.prefix.enabled' => true]);
+        foreach ($pages as $name => $path) {
+            $this->assertSame('/v2/ADASI_PRD/'.$path, route($name, absolute: false), $name);
+            $this->get('/v2/ADASI_PRD/'.$path)->assertOk();
+            $this->get('/'.$path.'?ref=1')->assertStatus(301)
+                ->assertHeader('Location', '/v2/ADASI_PRD/'.$path.'?ref=1');
+        }
+        $this->assertSame('/v2/ADASI_PRD/supplier/registration/status', route('supplier.registration.status', absolute: false));
+        $this->assertSame('/v2/ADASI_PRD/supplier/register', route('supplier.register.store', absolute: false));
+        $this->post('/supplier/register')->assertHeaderMissing('Location');
+        $this->get('/v2/ADASI_PRD/supplier/registration/status')->assertRedirect(route('supplier.registration.access-form'));
+
+        $this->reloadPortalRoutes(['portal_urls.prefix.enabled' => false]);
+        foreach ($pages as $name => $path) {
+            $this->assertSame('/'.$path, route($name, absolute: false), $name);
+            $this->get('/'.$path)->assertOk();
         }
     }
 
@@ -197,7 +224,7 @@ class PortalPathPrefixTest extends TestCase
         $this->get($callback)->assertRedirect($intended)->assertSessionHas('sso.verified_at');
         $this->get($intended)->assertOk();
         $this->assertDatabaseMissing('oauth_access_tokens', ['revoked' => false]);
-        $this->get('/supplier/register')->assertOk();
+        $this->get(PortalPath::path('supplier/register'))->assertOk();
         $this->post('/locale/id')->assertRedirect();
 
         $request = Request::create('http://localhost/login');

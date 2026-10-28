@@ -36,6 +36,7 @@ return [
     'actions.confirm' => 'Confirm action',
     'actions.confirmation' => 'Confirmation',
     'copy.success' => ':label copied.',
+    'copy.done' => 'Copied',
     'copy.failed' => 'Could not copy. Please select the text and copy it manually.',
     'dashboard.position' => ':label is at position :position of :total. Save Changes to keep this order.',
     'dashboard.editor.entered' => 'Editing the dashboard layout. Move or hide panels, then save your changes.',

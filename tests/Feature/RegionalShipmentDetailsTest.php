@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Exports\ShipmentsExport;
 use App\Models\ExchangeRate;
+use App\Models\FileInspection;
 use App\Models\Period;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequisition;
@@ -104,6 +105,39 @@ class RegionalShipmentDetailsTest extends TestCase
             $this->assertHasText($instant, $text);
             $this->assertHasText('1,250 pcs', $text);
             $this->assertHasText('1,234.57 Kg', $text);
+        }
+    }
+
+    public function test_shipment_with_mtc_attachments_renders_correctly_under_all_regional_number_profiles(): void
+    {
+        $shipment = $this->shipment();
+        $inspection = FileInspection::create([
+            'profile' => 'mtc',
+            'status' => FileInspection::STATUS_VALIDATED,
+            'policy_version' => 1,
+            'file_path' => 'attachments/mtc/test.pdf',
+            'file_size' => 1280000,
+            'file_type' => 'application/pdf',
+            'sha256' => hash('sha256', 'test'),
+        ]);
+        $shipment->attachments()->create([
+            'file_name' => 'mill-test-cert.pdf',
+            'file_path' => 'attachments/mtc/test.pdf',
+            'file_type' => 'application/pdf',
+            'file_inspection_id' => $inspection->id,
+            'uploaded_by' => $this->supplier->id,
+        ]);
+
+        foreach (['purchasing' => $this->purchasing, 'supplier' => $this->supplier] as $portal => $user) {
+            $user->preference()?->delete();
+            $this->preference($user, ['number_format' => 'indonesian']);
+            $html = $this->detail($user, $portal, $shipment)->assertOk()->getContent();
+            $this->assertHasText('1.250 KB', $this->text($html));
+
+            $user->preference()?->delete();
+            $this->preference($user, ['number_format' => 'international']);
+            $html = $this->detail($user, $portal, $shipment)->assertOk()->getContent();
+            $this->assertHasText('1,250 KB', $this->text($html));
         }
     }
 
