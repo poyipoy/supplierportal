@@ -144,8 +144,12 @@
                 @foreach($allItems as $index => $item)
                     @php
                         $prItem = $item->prItem;
-                        $relevantDimensions = \App\Models\PrItem::relevantDimensionFields($prItem?->shape);
+                        // QC-01: QC-path canonical shape ('round' counts as Round) and the ordered spec.
+                        $canonicalShape = \App\Models\PrItem::canonicalShape($prItem?->shape);
+                        $relevantDimensions = \App\Models\PrItem::relevantDimensionFields($canonicalShape);
                         $visibleDimensions = array_merge($relevantDimensions, ['weight']);
+                        $orderedSpec = $item->orderedSpecification();
+                        $copyValues = collect($orderedSpec)->map(fn ($spec) => $spec['value'])->filter(fn ($value) => $value !== null)->all();
                         $itemStatus = old('items.' . $index . '.status', 'ok');
                     @endphp
                     <div class="item-card tw:overflow-hidden tw:rounded-ui-sm tw:border tw:border-outline tw:bg-surface">
@@ -163,7 +167,10 @@
                             <div class="row g-3">
                                 {{-- Left Column: Read-Only Requested Specifications --}}
                                 <div class="col-lg-5 border-lg-end pe-lg-3">
-                                    <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase mb-2">{{ __('qc.copy.requested_specifications') }}</div>
+                                    <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase mb-2">{{ __('qc.copy.ordered_specification') }}</div>
+                                    @if($prItem && $canonicalShape === null)
+                                        <p class="tw:m-0 tw:mb-2 tw:text-ui-xs tw:text-on-surface-variant" role="note">{{ __('qc.copy.shape_not_set_notice') }}</p>
+                                    @endif
                                     <div class="qc-spec-grid">
                                         <div class="qc-spec-box">
                                             <div class="tw:text-on-surface-variant tw:text-ui-xs">{{ __('qc.copy.shape') }}</div>
@@ -187,12 +194,16 @@
                                         @endif
                                         @foreach($visibleDimensions as $dimension)
                                             @php
-                                                $specField = $qcSpecFields[$dimension];
-                                                $specValue = $prItem?->{$specField};
+                                                $ordered = $orderedSpec[$dimension] ?? null;
+                                                // Weight keeps the PR unit weight; dimensions show the ordered (offer or requested) value.
+                                                $specValue = $ordered ? $ordered['value'] : $prItem?->{$qcSpecFields[$dimension]};
                                             @endphp
                                             <div class="qc-spec-box">
                                                 <div class="tw:text-on-surface-variant tw:text-ui-xs">{{ $qcDimensionLabels[$dimension] }}</div>
-                                                <div class="fw-bold tw:text-on-surface tw:text-ui-xs tw:mt-0.5 spec-val ui-tabular-nums" data-spec-type="{{ $dimension }}" data-val="{{ $specValue }}">{{ $specValue ?? '-' }}</div>
+                                                <div class="fw-bold tw:text-on-surface tw:text-ui-xs tw:mt-0.5 spec-val ui-tabular-nums" data-spec-type="{{ $dimension }}" data-val="{{ $specValue }}">{{ $ordered['display'] ?? ($specValue ?? '-') }}</div>
+                                                @if($ordered && $ordered['source'] !== 'requested' && $ordered['requested'] !== null && $ordered['requested'] !== $ordered['value'])
+                                                    <div class="tw:text-ui-xs tw:text-on-surface-variant ui-tabular-nums">{{ __('qc.copy.requested_value', ['value' => $ordered['requested']]) }}</div>
+                                                @endif
                                             </div>
                                         @endforeach
                                     </div>
@@ -201,7 +212,16 @@
                                 {{-- Right Column: Actual Measurement Inputs & Status --}}
                                 <div class="col-lg-7 ps-lg-3">
                                     <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <div class="text-primary tw:text-ui-xs fw-semibold tw:uppercase">{{ __('qc.copy.actual_inspection_measurements') }}</div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="text-primary tw:text-ui-xs fw-semibold tw:uppercase">{{ __('qc.copy.actual_inspection_measurements') }}</div>
+                                            {{-- QC-01: fills the ordered dimensions only; never changes OK/NG and never submits. --}}
+                                            @if($copyValues !== [])
+                                                <x-ui.button type="button" variant="outline" size="sm" class="qc-copy-spec" data-index="{{ $index }}" :data-spec="json_encode($copyValues)">
+                                                    <x-ui.icon name="copy" size="sm" /> {{ __('qc.copy.copy_from_po') }}
+                                                </x-ui.button>
+                                            @endif
+                                            <span class="visually-hidden" aria-live="polite" id="qc-copy-status-{{ $index }}"></span>
+                                        </div>
                                         <div class="d-flex align-items-center gap-2">
                                             <span class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold">{{ __('qc.copy.outcome') }}</span>
                                             <div class="form-check form-switch d-inline-flex align-items-center tw:gap-1.5 mb-0">
@@ -228,6 +248,7 @@
                                                         data-spec-type="{{ $dimension }}"
                                                         value="{{ old('items.' . $index . '.' . $qcActualFields[$dimension]) }}"
                                                         placeholder="0.00"
+                                                        @if($dimension !== 'weight') required min="0.0001" @endif
                                                     >
                                                 </div>
                                             @endforeach
@@ -385,6 +406,22 @@
                 $('#bannerOk').removeClass('d-none');
             }
         }
+
+        // QC-01: Copy from PO fills only the ordered dimensions of this item. It never touches the
+        // OK/NG switch and never submits; the inspector still measures and decides.
+        $(document).on('click', '.qc-copy-spec', function() {
+            const index = this.dataset.index;
+            let spec = {};
+            try { spec = JSON.parse(this.dataset.spec || '{}'); } catch (e) { spec = {}; }
+            Object.entries(spec).forEach(([dimension, value]) => {
+                const input = document.getElementById(`actual-${index}-${dimension}`);
+                if (!input || value === null || value === '') return;
+                input.value = value;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+            });
+            const status = document.getElementById(`qc-copy-status-${index}`);
+            if (status) status.textContent = @js(__('qc.copy.copy_from_po_done'));
+        });
 
         $('.actual-input').on('input', function() {
             const index = $(this).closest('.input-row').data('index');

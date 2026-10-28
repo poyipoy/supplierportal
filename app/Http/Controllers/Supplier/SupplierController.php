@@ -51,6 +51,7 @@ class SupplierController extends Controller
             'quotations.purchaseRequisition.period',
             'materialClaims' => fn ($q) => $q->where('supplier_id', $sid)->latest(),
         ])
+            ->withExists('shipmentItems as has_shipment_items')
             ->where('supplier_id', $sid)
             ->orderBy('created_at', 'desc')->take(5)->get();
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Export\Filters;
 
+use App\Models\PurchaseOrder;
 use App\Models\User;
 use App\Support\BusinessTime;
 use Illuminate\Database\Eloquent\Builder;
@@ -56,7 +57,8 @@ final class PurchaseOrderExportFilters
             }
         }
         if (($filters['status'] ?? null) === 'overdue') {
-            $query->where(fn ($q) => $q->where('status', 'overdue')->orWhere(fn ($q) => $q->where('status', 'active')->whereNotNull('estimated_arrival')->where('estimated_arrival', '<', BusinessTime::today()->toDateString())->whereNull('actual_arrival')));
+            // Gate 2 PUR-08: the single SQL twin of PurchaseOrder::is_overdue.
+            PurchaseOrder::whereOverdue($query);
         } elseif (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }

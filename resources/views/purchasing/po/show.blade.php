@@ -215,7 +215,8 @@
                 @endif
             </div>
             <div class="tw:text-outline tw:text-ui-xs">
-                {{ $po->actual_arrival ? __('purchasing.copy.received_at_plant') : __('purchasing.copy.waiting_arrival') }}
+                {{-- PUR-08: actual_arrival is the latest arrival; it means "received" only once completed. --}}
+                {{ ! $po->actual_arrival ? __('purchasing.copy.waiting_arrival') : ($po->status === 'completed' ? __('purchasing.copy.received_at_plant') : __('purchasing.copy.latest_partial_arrival')) }}
             </div>
         </div>
     </div>
@@ -434,6 +435,7 @@
                                     <th scope="col">{{ __('purchasing.copy.accepted') }}</th>
                                     <th scope="col">{{ __('purchasing.copy.in_transit') }}</th>
                                     <th scope="col">{{ __('purchasing.copy.waiting_qc') }}</th>
+                                    <th scope="col">{{ __('purchasing.copy.ng_under_claim') }}</th>
                                     <th scope="col">{{ __('purchasing.copy.supplier_controlled') }}</th>
                                     <th scope="col">{{ __('purchasing.copy.supplier_progress') }}</th>
                                     <th scope="col">{{ __('purchasing.copy.original_ready_date') }}</th>
@@ -457,6 +459,9 @@
                                         <td class="text-center ui-tabular-nums text-primary fw-semibold">{{ $p['in_transit_qty'] }} pcs</td>
                                         <td class="text-center ui-tabular-nums fw-semibold {{ $p['arrived_pending_qc_qty'] > 0 ? 'text-warning' : 'tw:text-on-surface-variant' }}">
                                             {{ $p['arrived_pending_qc_qty'] }} pcs
+                                        </td>
+                                        <td class="text-center ui-tabular-nums fw-semibold {{ $p['unresolved_ng_qty'] > 0 ? 'text-danger' : 'tw:text-on-surface-variant' }}">
+                                            {{ $p['unresolved_ng_qty'] }} pcs
                                         </td>
                                         <td class="text-center ui-tabular-nums fw-bold">
                                             <span class="badge {{ $p['supplier_controlled_qty'] > 0 ? 'bg-primary' : 'bg-secondary' }}">
@@ -502,7 +507,8 @@
             {{-- QC Inspection Results --}}
             @php
                 $latestInspection = $po->qcInspections->sortByDesc('inspected_at')->first();
-                $latestNgInspection = $po->qcInspections->where('status', 'ng')->sortByDesc('inspected_at')->first();
+                // PUR-08: only an NG inspection without any claim (trashed included) can open one.
+                $latestNgInspection = $po->qcInspections->where('status', 'ng')->filter(fn ($inspection) => $inspection->materialClaims->isEmpty())->sortByDesc('inspected_at')->first();
                 $activeClaim = $po->materialClaims->whereIn('status', ['pending', 'responded', 'escalated'])->sortByDesc('created_at')->first();
             @endphp
             @if($latestInspection)
@@ -795,9 +801,9 @@
                         @endif
                     @endforeach
 
-                    <li class="pr-timeline-item {{ $po->estimated_arrival && $po->estimated_arrival->isPast() ? 'is-current' : '' }}">
+                    <li class="pr-timeline-item {{ $po->is_overdue ? 'is-current' : '' }}">
                         <span class="pr-timeline-marker" aria-hidden="true"></span>
-                        <div class="tw:text-ui-sm fw-bold {{ $po->estimated_arrival && $po->estimated_arrival->isPast() ? 'text-warning' : 'tw:text-on-surface-variant' }}">{{ __('purchasing.copy.estimated_arrival') }}</div>
+                        <div class="tw:text-ui-sm fw-bold {{ $po->is_overdue ? 'text-warning' : 'tw:text-on-surface-variant' }}">{{ __('purchasing.copy.estimated_arrival') }}</div>
                         <time class="ui-tabular-nums tw:text-on-surface-variant tw:text-ui-xs">{{ $po->estimated_arrival ? $regionalFormatter->date($po->estimated_arrival) : '-' }}</time>
                     </li>
 

@@ -9,6 +9,7 @@ use App\Models\QcInspection;
 use App\Models\User;
 use App\Services\NotificationService;
 use App\Services\RegionalDisplayFormatter;
+use App\Support\BusinessTime;
 use App\Support\NotificationCategory;
 use App\Support\PurchasingNavigation;
 use App\Support\StatusHelper;
@@ -39,7 +40,9 @@ class MaterialClaimController extends Controller
     {
         $query = PurchaseOrder::with([
             'supplier',
+            // PUR-08: has_any_claim counts soft-deleted claims, matching claims.store.
             'qcInspections' => fn ($query) => $query
+                ->withExists(['materialClaims as has_any_claim' => fn ($claims) => $claims->withTrashed()])
                 ->orderByDesc('inspected_at')
                 ->orderByDesc('id'),
         ])
@@ -51,15 +54,16 @@ class MaterialClaimController extends Controller
         return DataTables::eloquent($query)
             ->addColumn('po_number_display', fn ($po) => $po->po_number)
             ->addColumn('supplier_name', fn ($po) => $po->supplier->name ?? '-')
-            ->addColumn('inspection_date', fn ($po) => $po->qcInspections->first()?->inspected_at ? \App\Support\BusinessTime::format($po->qcInspections->first()->inspected_at, 'd M Y', false) : '-')
+            ->addColumn('inspection_date', fn ($po) => $po->qcInspections->first()?->inspected_at ? BusinessTime::format($po->qcInspections->first()->inspected_at, 'd M Y', false) : '-')
             ->addColumn('status_badge', fn ($po) => StatusHelper::badge(
                 StatusHelper::poBadge($po->status),
                 StatusHelper::poLabel($po->status)
             ))
             ->addColumn('action', function ($po) {
-                $lastInspection = $po->qcInspections->first();
-                if ($lastInspection) {
-                    return '<a href="'.PurchasingNavigation::toRoute('purchasing.claims.create', $lastInspection).'" class="ui-data-action ui-data-action--danger ui-focus-ring">Create Claim</a>';
+                // The claim target is the latest NG inspection without any claim.
+                $target = $po->qcInspections->first(fn ($inspection) => $inspection->status === 'ng' && ! $inspection->has_any_claim);
+                if ($target) {
+                    return '<a href="'.PurchasingNavigation::toRoute('purchasing.claims.create', $target).'" class="ui-data-action ui-data-action--danger ui-focus-ring">Create Claim</a>';
                 }
 
                 return '-';
@@ -77,7 +81,7 @@ class MaterialClaimController extends Controller
             ->addColumn('claim_id', fn ($c) => $c->claim_number)
             ->addColumn('po_number', fn ($c) => $c->purchaseOrder->po_number ?? '-')
             ->addColumn('supplier_name', fn ($c) => $c->purchaseOrder->supplier->name ?? '-')
-            ->addColumn('created_date', fn ($c) => \App\Support\BusinessTime::format($c->created_at, 'd M Y', false))
+            ->addColumn('created_date', fn ($c) => BusinessTime::format($c->created_at, 'd M Y', false))
             ->addColumn('deadline_display', function ($c) use ($regionalFormatter) {
                 $meta = StatusHelper::claimDeadlineMeta($c->deadline, $c->status);
                 $date = $c->deadline ? $regionalFormatter->date($c->deadline, 'human') : '-';

@@ -816,6 +816,8 @@ return [
         'more' => 'Lainnya',
         'manual_selection' => 'Pilihan manual',
         'received_at_plant' => 'Diterima di pabrik',
+        'latest_partial_arrival' => 'Kedatangan parsial terakhir',
+        'ng_under_claim' => 'NG (klaim terbuka)',
         'select_material' => 'Pilih Material',
         'selected_offer' => 'Penawaran Terpilih',
         'estimated_ready' => 'Perkiraan Siap:',

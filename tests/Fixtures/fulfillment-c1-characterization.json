@@ -1,0 +1,182 @@
+{
+    "1_arrived": {
+        "status": "waiting_qc",
+        "is_overdue": false,
+        "A": {
+            "ordered_qty": 10,
+            "physical_shipped_qty": 6,
+            "physical_arrived_qty": 6,
+            "accepted_qty": 0,
+            "ng_qty": 0,
+            "replacement_eligible_qty": 0,
+            "reserved_qty": 6,
+            "allocated_qty": 6,
+            "remaining_qty": 4,
+            "is_fully_allocated": false,
+            "is_fully_accepted": false
+        },
+        "B": {
+            "ordered_qty": 5,
+            "physical_shipped_qty": 5,
+            "physical_arrived_qty": 5,
+            "accepted_qty": 0,
+            "ng_qty": 0,
+            "replacement_eligible_qty": 0,
+            "reserved_qty": 5,
+            "allocated_qty": 5,
+            "remaining_qty": 0,
+            "is_fully_allocated": true,
+            "is_fully_accepted": false
+        }
+    },
+    "2_qc_ng": {
+        "status": "claim_needed",
+        "is_overdue": false,
+        "A": {
+            "ordered_qty": 10,
+            "physical_shipped_qty": 6,
+            "physical_arrived_qty": 6,
+            "accepted_qty": 6,
+            "ng_qty": 0,
+            "replacement_eligible_qty": 0,
+            "reserved_qty": 0,
+            "allocated_qty": 6,
+            "remaining_qty": 4,
+            "is_fully_allocated": false,
+            "is_fully_accepted": false
+        },
+        "B": {
+            "ordered_qty": 5,
+            "physical_shipped_qty": 5,
+            "physical_arrived_qty": 5,
+            "accepted_qty": 0,
+            "ng_qty": 5,
+            "replacement_eligible_qty": 0,
+            "reserved_qty": 5,
+            "allocated_qty": 5,
+            "remaining_qty": 0,
+            "is_fully_allocated": true,
+            "is_fully_accepted": false
+        }
+    },
+    "2b_claim_open": {
+        "status": "claim_needed",
+        "is_overdue": false,
+        "A": {
+            "ordered_qty": 10,
+            "physical_shipped_qty": 6,
+            "physical_arrived_qty": 6,
+            "accepted_qty": 6,
+            "ng_qty": 0,
+            "replacement_eligible_qty": 0,
+            "reserved_qty": 0,
+            "allocated_qty": 6,
+            "remaining_qty": 4,
+            "is_fully_allocated": false,
+            "is_fully_accepted": false
+        },
+        "B": {
+            "ordered_qty": 5,
+            "physical_shipped_qty": 5,
+            "physical_arrived_qty": 5,
+            "accepted_qty": 0,
+            "ng_qty": 5,
+            "replacement_eligible_qty": 0,
+            "reserved_qty": 5,
+            "allocated_qty": 5,
+            "remaining_qty": 0,
+            "is_fully_allocated": true,
+            "is_fully_accepted": false
+        }
+    },
+    "3_claim_resolved": {
+        "status": "active",
+        "is_overdue": false,
+        "A": {
+            "ordered_qty": 10,
+            "physical_shipped_qty": 6,
+            "physical_arrived_qty": 6,
+            "accepted_qty": 6,
+            "ng_qty": 0,
+            "replacement_eligible_qty": 0,
+            "reserved_qty": 0,
+            "allocated_qty": 6,
+            "remaining_qty": 4,
+            "is_fully_allocated": false,
+            "is_fully_accepted": false
+        },
+        "B": {
+            "ordered_qty": 5,
+            "physical_shipped_qty": 5,
+            "physical_arrived_qty": 5,
+            "accepted_qty": 0,
+            "ng_qty": 5,
+            "replacement_eligible_qty": 5,
+            "reserved_qty": 0,
+            "allocated_qty": 0,
+            "remaining_qty": 5,
+            "is_fully_allocated": false,
+            "is_fully_accepted": false
+        }
+    },
+    "4a_s2_arrived": {
+        "status": "waiting_qc",
+        "is_overdue": false,
+        "A": {
+            "ordered_qty": 10,
+            "physical_shipped_qty": 10,
+            "physical_arrived_qty": 10,
+            "accepted_qty": 6,
+            "ng_qty": 0,
+            "replacement_eligible_qty": 0,
+            "reserved_qty": 4,
+            "allocated_qty": 10,
+            "remaining_qty": 0,
+            "is_fully_allocated": true,
+            "is_fully_accepted": false
+        },
+        "B": {
+            "ordered_qty": 5,
+            "physical_shipped_qty": 10,
+            "physical_arrived_qty": 10,
+            "accepted_qty": 0,
+            "ng_qty": 5,
+            "replacement_eligible_qty": 5,
+            "reserved_qty": 5,
+            "allocated_qty": 5,
+            "remaining_qty": 0,
+            "is_fully_allocated": true,
+            "is_fully_accepted": false
+        }
+    },
+    "4_completed": {
+        "status": "completed",
+        "is_overdue": false,
+        "A": {
+            "ordered_qty": 10,
+            "physical_shipped_qty": 10,
+            "physical_arrived_qty": 10,
+            "accepted_qty": 10,
+            "ng_qty": 0,
+            "replacement_eligible_qty": 0,
+            "reserved_qty": 0,
+            "allocated_qty": 10,
+            "remaining_qty": 0,
+            "is_fully_allocated": true,
+            "is_fully_accepted": true
+        },
+        "B": {
+            "ordered_qty": 5,
+            "physical_shipped_qty": 10,
+            "physical_arrived_qty": 10,
+            "accepted_qty": 5,
+            "ng_qty": 5,
+            "replacement_eligible_qty": 5,
+            "reserved_qty": 0,
+            "allocated_qty": 5,
+            "remaining_qty": 0,
+            "is_fully_allocated": true,
+            "is_fully_accepted": true
+        }
+    }
+}

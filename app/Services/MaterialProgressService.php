@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\PoItemProgressUpdate;
 use App\Models\PrItemAward;
 use App\Models\PurchaseOrder;
-use App\Models\Shipment;
 use App\Models\User;
 use App\Support\NotificationCategory;
 use App\Support\StatusHelper;
@@ -69,7 +68,7 @@ class MaterialProgressService
     /**
      * Resolve the full canonical projection for an awarded PO item.
      */
-    public function projectionForAward(PrItemAward $award): array
+    public function projectionForAward(PrItemAward $award, ?array $fulfillment = null): array
     {
         $award->loadMissing([
             'latestProgressUpdate.updatedByUser',
@@ -79,7 +78,8 @@ class MaterialProgressService
         ]);
 
         $po = $award->purchaseOrder;
-        $fulfillment = $po
+        // Gate 2 §3-E: a PO-wide fulfillmentProjection() line may be passed in (display only).
+        $fulfillment ??= $po
             ? $po->itemFulfillmentStatus($award->quotation_item_id)
             : ['ordered_qty' => 0, 'accepted_qty' => 0, 'remaining_qty' => 0];
 
@@ -94,21 +94,11 @@ class MaterialProgressService
         $acceptedQty = (int) ($fulfillment['accepted_qty'] ?? 0);
         $supplierControlledQty = (int) ($fulfillment['remaining_qty'] ?? 0);
 
-        // Calculate in-transit quantity from submitted shipments
-        $inTransitQty = 0;
-        if ($po) {
-            $inTransitQty = (int) DB::table('shipment_items')
-                ->join('shipments', 'shipments.id', '=', 'shipment_items.shipment_id')
-                ->where('shipment_items.purchase_order_id', $po->id)
-                ->where('shipment_items.quotation_item_id', $award->quotation_item_id)
-                ->where('shipments.status', Shipment::STATUS_SUBMITTED)
-                ->whereNull('shipments.deleted_at')
-                ->sum('shipment_items.shipped_qty');
-        }
-
-        // Arrived awaiting QC or in claim
-        $reservedQty = (int) ($fulfillment['reserved_qty'] ?? 0);
-        $arrivedPendingQcQty = max(0, $reservedQty - $inTransitQty);
+        // Gate 2 §3-E: the tally splits reserved into in transit, waiting QC and unresolved NG,
+        // so NG under an open claim is no longer shown as waiting for QC.
+        $inTransitQty = (int) ($fulfillment['in_transit_qty'] ?? 0);
+        $arrivedPendingQcQty = (int) ($fulfillment['waiting_qc_qty'] ?? 0);
+        $unresolvedNgQty = (int) ($fulfillment['unresolved_ng_qty'] ?? 0);
 
         $isPoClosed = $po && in_array($po->status, ['completed', 'cancelled'], true);
         $canUpdate = ! $isPoClosed && $supplierControlledQty > 0;
@@ -123,6 +113,7 @@ class MaterialProgressService
             'accepted_qty' => $acceptedQty,
             'in_transit_qty' => $inTransitQty,
             'arrived_pending_qc_qty' => $arrivedPendingQcQty,
+            'unresolved_ng_qty' => $unresolvedNgQty,
             'supplier_controlled_qty' => $supplierControlledQty,
             'manual_progress_status' => $status,
             'manual_progress_label' => StatusHelper::materialProgressLabel($status),
@@ -290,9 +281,11 @@ class MaterialProgressService
 
         $counts = [];
         $itemProjections = [];
+        // One load for every award line instead of a fresh query set per award.
+        $fulfillmentByItem = $po->fulfillmentProjection()['items'];
 
         foreach ($awards as $award) {
-            $projection = $this->projectionForAward($award);
+            $projection = $this->projectionForAward($award, $fulfillmentByItem[$award->quotation_item_id] ?? null);
             $itemProjections[] = $projection;
 
             if ($projection['supplier_controlled_qty'] > 0) {

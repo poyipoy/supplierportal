@@ -65,6 +65,11 @@ class PurchaseOrderController extends Controller
                     ->select('qc_inspections.id')
                     ->whereColumn('qc_inspections.po_id', 'purchase_orders.id')
                     ->where('qc_inspections.status', 'ng')
+                    // PUR-08: only an NG inspection without any claim (soft-deleted ones included)
+                    // can open a claim; claims.store rejects the others.
+                    ->whereNotExists(fn ($claims) => $claims->selectRaw('1')
+                        ->from('material_claims')
+                        ->whereColumn('material_claims.inspection_id', 'qc_inspections.id'))
                     ->latest('qc_inspections.inspected_at')
                     ->limit(1),
                 'latest_ng_inspection_id',
@@ -72,6 +77,8 @@ class PurchaseOrderController extends Controller
             ->orderBy('created_at', 'desc');
 
         PurchaseOrderExportFilters::apply($query, $filters);
+        // PUR-08: is_overdue reads this flag instead of querying per row.
+        $query->withExists('shipmentItems as has_shipment_items');
 
         if ($request->ajax()) {
             return DataTables::eloquent($query)
@@ -229,6 +236,7 @@ class PurchaseOrderController extends Controller
             'qcInspections.inspector',
             'qcInspections.items.prItem',
             'qcInspections.attachments',
+            'qcInspections.materialClaims' => fn ($claims) => $claims->withTrashed(),
             'materialClaims',
             'awards.latestProgressUpdate.updatedByUser',
             'awards.prItem',

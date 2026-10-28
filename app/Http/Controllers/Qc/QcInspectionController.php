@@ -178,7 +178,7 @@ class QcInspectionController extends Controller
             'items.*.actual_d_outer' => 'nullable|numeric',
             'items.*.actual_width' => 'nullable|numeric',
             'items.*.actual_length' => 'nullable|numeric',
-            'items.*.actual_weight' => 'nullable|numeric',
+            'items.*.actual_weight' => 'nullable|numeric|gt:0|max:999999.9999',
             'items.*.status' => 'required|in:ok,ng',
             'items.*.notes' => 'nullable|string',
             'attachments' => 'nullable|array',
@@ -187,6 +187,12 @@ class QcInspectionController extends Controller
         ];
 
         foreach ($request->input('items', []) as $index => $itemData) {
+            // QC-01: every dimension of a known shape is measured, for OK and NG alike. The shape is
+            // the stored PR item's; a missing or unknown shape keeps the weight-only inspection.
+            $shape = PrItem::canonicalShape($poPrItems->get($itemData['pr_item_id'] ?? null)?->shape);
+            foreach (PrItem::relevantDimensionFields($shape) as $dimension) {
+                $rules["items.{$index}.".self::ACTUAL_FIELD_BY_DIMENSION[$dimension]] = 'required|numeric|gt:0|max:999999.9999';
+            }
             if (($itemData['status'] ?? null) === 'ng') {
                 $rules["attachments.{$index}"] = 'required|array|min:1';
                 $rules["attachments.{$index}.*"] = 'required|file|mimes:jpg,jpeg,png|max:10240';
@@ -445,7 +451,7 @@ class QcInspectionController extends Controller
     private function sanitizeActualMeasurements(array $itemData, ?PrItem $prItem): array
     {
         $relevantDimensions = $prItem
-            ? PrItem::relevantDimensionFields($prItem->shape)
+            ? PrItem::relevantDimensionFields(PrItem::canonicalShape($prItem->shape))
             : [];
         $relevantDimensions[] = 'weight';
 

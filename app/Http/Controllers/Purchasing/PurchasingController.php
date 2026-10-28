@@ -134,6 +134,7 @@ class PurchasingController extends Controller
         // Quick tables remain uncached so the data is always current.
         $prTerbaru = PurchaseRequisition::with('period')->orderBy('created_at', 'desc')->take(5)->get();
         $poTerdekat = PurchaseOrder::with(['supplier', 'quotations.purchaseRequisition'])
+            ->withExists('shipmentItems as has_shipment_items')
             ->whereIn('status', ['active', 'overdue'])->whereNotNull('estimated_arrival')
             ->orderBy('estimated_arrival', 'asc')->take(5)->get();
 

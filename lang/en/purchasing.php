@@ -816,6 +816,8 @@ return [
         'more' => 'More',
         'manual_selection' => 'Manual selection',
         'received_at_plant' => 'Received at plant',
+        'latest_partial_arrival' => 'Latest partial arrival',
+        'ng_under_claim' => 'NG (claim open)',
         'select_material' => 'Select Material',
         'selected_offer' => 'Selected Offer',
         'estimated_ready' => 'Estimated Ready:',

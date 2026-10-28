@@ -128,6 +128,38 @@ re-verified.
 
 **Performance (§D):** comparison probe before → after (1 / 5 / 25 items): inter-supplier 19/23/43 → 19/23/43 (company names add 0 queries); historical page 7/5/5 → 8/5/5 (+1 only on the cold `v2` supplier-cache build); Vs Best page 1 → 2 (material options, constant); Vs Best data 4 → 4 for 1 and 25 rows; historical materials 2 → 2 (options folded into the same query). `EXPLAIN` (MySQL 8.0.30, empty test schema, plan shape only): the history subquery reaches `po_quotations`, `pr_item_awards` and the PKs by index. A production-size plan and MariaDB 11.4 are NOT RUN (CI deep job / staging).
 
+## 6. Stage 4: PO, Shipment and QC (PUR-08, PUR-09, QC-01) — COMPLETE
+
+`app/Services/ShipmentService.php` sha256 still `a4361cbc…be77` (zero diff).
+
+| ID | Change (done so far) |
+|---|---|
+| CT | `FulfillmentScenarioC1Test` + `tests/Fixtures/fulfillment-c1-characterization.json`: scenario C-1 tallies and statuses recorded **before** the refactor (HEAD `e78458f1`); they confirmed the overdue defect (step 3: active, ETA past, B still owed, `is_overdue = false`) |
+| §3-E | `PurchaseOrder::tallyFulfillment()` (private static, pure) extracted from `itemFulfillmentStatus()`, which keeps its exact fresh query (ShipmentService locks); adds `in_transit_qty`, `waiting_qc_qty`, `unresolved_ng_qty` (reserved = their sum); all existing keys byte-identical (CT passes). New read-only `fulfillmentProjection()` loads shipment lines once. `MaterialProgressService::poSummary()` passes projection lines to `projectionForAward()` (optional arg; single-award callers keep fresh reads), dropping its per-award `shipment_items` query; "arrived pending QC" is now waiting-QC only (unresolved NG was counted before) and a new NG column shows it on Purchasing PO show |
+| PUR-08 §3-A | `is_overdue` = `status=overdue` or (`active`, ETA < business today, and no `actual_arrival` **or** any shipment line). One SQL twin `PurchaseOrder::whereOverdue()` used by `PurchaseOrderExportFilters` (PO index, supplier PO index, advanced export) and `PurchaseOrdersExport`. `withExists('shipmentItems as has_shipment_items')` on the PO index, supplier PO index, both dashboards and both export queries (no per-row query). PO show: arrival step reads "Latest partial arrival" until completed; the timeline ETA highlight uses `is_overdue` |
+| PUR-08 claims | "Create Claim" targets the latest NG inspection **without any claim (trashed included)** on the PO list subquery, the claims action-needed list and the PO page |
+| PUR-09 | `isFullyFulfilledAndInspected()` ignores lines with `is_available === false`; legacy branches characterised, unchanged |
+| QC-01 (server) | `PrItem::canonicalShape()` (QC path only); store requires every relevant dimension of a canonical shape (`required|numeric|gt:0|max:999999.9999`) for OK and NG; `actual_weight` `nullable|numeric|gt:0|max:999999.9999`; null/unknown shape unchanged (weight only); sanitize uses the canonical shape. Test helper `tests/Support/QcMeasurements::complete()` fills untested dimensions from the PR spec in `ShipmentDocumentsAndQcIntegrationTest` (23 calls) and `PoItemMaterialProgressTest` (3 calls) |
+
+**Tests so far (PASSED):** `FulfillmentScenarioC1Test` (CT parity, projection = item status at 12 checks + conservation, NG under open claim never "waiting QC", PUR-09, claim targeting), `PurchaseOrderOverduePredicateTest` (11 §2.1 rows: accessor = index filter = legacy export; list path 1 query). Proven to fail on HEAD code: PUR-09 test, claim-targeting test. Stage 4 subset run before QC-01: 380 passed (incl. `ShipmentSubmissionConcurrencyTest`, `OrderedQuantityShipmentConcurrencyTest`). QC store callers after QC-01: 77 passed.
+
+| QC-01 (view) | QC create shows the **ordered specification** (`QuotationItem::orderedSpecification()` = offer value, else PR value) with requested/offered range hints, empty required inputs per canonical shape, and a "Copy from PO" button that fills only blank dimension inputs from the ordered spec (never the result/status, so it never approves QC; `aria-live` confirmation). Null/unknown shape shows a notice and keeps the weight-only form. QC show compares actuals against the same ordered spec |
+
+**Sanctioned test changes in Stage 4 (reason: Gate 1 RISK-04 / §4 PUR-08 decision "claim action = latest NG inspection without any claim, including trashed"; `MaterialClaimController::store` refuses any inspection with a claim via `withTrashed()` at `:118,153`, so the old expectations asserted a link that can only be refused):**
+- `PurchaseOrderReferenceRemarkTest::test_purchase_order_action_projection_preserves_claim_precedence_soft_deletes_and_hashids` — after the claim is soft-deleted, the action must **not** offer Create Claim for that inspection (was: must offer it). The other assertions (claim precedence, hashids, trashed inspection excluded) are unchanged.
+- `RegionalMaterialClaimDataTablesContractTest::test_action_needed_inspection_alias_actions_and_raw_response_are_unchanged` — the resolved claim's inspection is **not** offered as a Create Claim target (was: offered). `inspection_date` is still the latest inspection date (a regression found by this test in the first draft was fixed in code, not in the test) and the regional-preference invariance assertion is unchanged.
+- The QC store payload helper (§4 Final acceptance 5) is the only other sanctioned change.
+
+Note for the reviewer: these two assertions are not in the Final acceptance criteria's explicit sanctioned list, but they are the direct consequence of the RISK-04 decision. Reverting them requires reverting the PUR-08 claim targeting.
+
+**Tests (PASSED):** `FulfillmentScenarioC1Test` (CT parity, projection = item status at every C-1 step + conservation, NG under an open claim never "waiting QC", PUR-09, claim targeting, QC-01 KT/NT), `PurchaseOrderOverduePredicateTest` (11 §2.1 rows: accessor = index filter = legacy export; list path 1 query), claim presenter suites (29 passed). Concurrency suites `ShipmentSubmissionConcurrencyTest` + `OrderedQuantityShipmentConcurrencyTest`: PASSED with `procurement.shipment_mtc_enabled=true` (9 tests / 209 assertions) and `=false` (9 / 210).
+
+**Full PHP suite after Stage 4:** 3075 passed, 2 skipped, 12 failed. Failures:
+- `UserFacingCopyInventoryTest` final ledger — pre-existing (Stage 0 baseline).
+- `LocalInvoiceSubmissionV2Test` (11) — **pre-existing, time-of-day dependent, unrelated to Gate 2.** The test helper `nextWednesday()` uses `Carbon::now()` (UTC) while `DeliveryScheduleValidator` uses `BusinessTime::today()` (Asia/Jakarta). Run at 01:34 WIB on Thursday 29 Oct 2026 (= Wednesday 18:34 UTC), the helper returned 28 Oct, which is "in the past" in business time. Reproduced identically on `master` `cb55aac4` (11 failed / 7 passed). It fails only between 00:00 and 07:00 WIB on Thursdays. Not changed (outside the revision scope); recommended follow-up: `BusinessTime::today()` in the helper.
+
+**Browser:** QC Copy from PO browser check — BLOCKED (Chrome DevTools MCP disconnected). Covered by server tests; JS handler not exercised in a browser.
+
 ## 8. Verification log
 
 | Check | Result |
