@@ -28,7 +28,15 @@ each suite started (checked with `tasklist`).
 
 ## 2. Implementation per revision ID
 
-(Filled per stage below.)
+All 14 approved IDs are implemented on `gate2/portal-revision-20261027`, one revertible commit per stage. Details per stage follow.
+
+| ID | Stage | Commit | Status |
+|---|---|---|---|
+| PUR-06, GEN-01 (missing thousands grouping only) | 1 | `d3c178d5` | PASSED |
+| PUR-01, PUR-02, GEN-02 | 2 | `a0d16f86` | PASSED |
+| PUR-03, PUR-07 + Vs Best eligibility, PUR-05, PUR-04 | 3 | `e78458f1` | PASSED |
+| PUR-08, PUR-09, QC-01 | 4 | `97330165` | PASSED (QC Copy browser check BLOCKED) |
+| SUP-01, GEN-03 Modes 1 and 2 | 5 | `1dd1d350` | PASSED (browser check NOT RUN) |
 
 ## 3. Stage 1: Price grouping (PUR-06, GEN-01)
 
@@ -185,3 +193,40 @@ Note for the reviewer: these two assertions are not in the Final acceptance crit
 |---|---|
 | Stage 0 full PHP baseline | PASSED with 1 pre-existing failure (copy ledger) |
 | Stage 0 JS baseline | PASSED 549/549 |
+| Final full PHP suite (serial, `adasi_portal_test`, HEAD `1dd1d350`) | **3091 passed, 12 failed, 2 skipped** (1952 s). Failures are all pre-existing: the copy ledger (Stage 0) and 11 `LocalInvoiceSubmissionV2Test` cases that fail only between 00:00 and 07:00 WIB on Thursdays (reproduced identically on `master` `cb55aac4`, §6). No other failure. +30 tests over the baseline |
+| Concurrency suites (`ShipmentSubmissionConcurrencyTest`, `OrderedQuantityShipmentConcurrencyTest`) | PASSED with MTC on (9/209) and off (9/210) |
+| `node --test tests/js/*.test.mjs` | PASSED 562/562 |
+| `npm.cmd run build` | PASSED; `quotation-form-export` emitted as its own lazy chunk |
+| `php artisan view:cache` | PASSED (cache cleared afterwards) |
+| `php artisan route:list` | PASSED; `supplier.requests.index`, `supplier.requests.show`, `supplier.quotations.export-form` registered |
+| `vendor/bin/pint --test` (changed PHP files) | PASSED except `lang/id/supplier.php` (`array_indentation`), which also fails on `master`; not reformatted |
+| `git diff --check master` | PASSED |
+| Protected files | PASSED: `ShipmentService.php` sha256 `a4361cbc…be77`; zero diff on `ShipmentService.php`, `AGENTS.md`, `config/regional_display.php`, `database/migrations/` |
+| `local-invoices:reconcile --json` (read-only, app DB `adasi_portal` via env override) | PASSED, `issue_count: 0` |
+| `procurement:reconcile --json` (read-only, app DB `adasi_portal`) | PASSED, all integrity metrics 0, `inconsistent_feature_flags: false` |
+| Browser: PR totals and import preview (PUR-01/02), comparison (PUR-03/04/05/07) | PASSED (§4, §5) |
+| Browser: QC Copy from PO (QC-01) | BLOCKED: Chrome DevTools MCP disconnected |
+| Browser: supplier overview and Export Form (SUP-01, GEN-03) | NOT RUN (same MCP outage); covered by HTTP/feature and JS tests |
+| `graphify update .` | PASSED (graph output not tracked in this worktree) |
+
+## 9. Release readiness
+
+**GATE 2 IMPLEMENTATION COMPLETE — PENDING FINAL REVIEW AND RELEASE APPROVAL.**
+
+Protected invariants:
+- Over-shipment and lock order are covered by the concurrency suites (MTC on/off).
+- `ShipmentService` shows zero diff.
+- Supplier exposure: the SUP-01 negative tests pass, and the Mode 2 owner scope test passes.
+- PO completion: PUR-09 requires accepted ≥ ordered for available items.
+- Pricing precision: amounts are formatted only and stored values are unchanged.
+- Exports: Export Form has zero DB delta.
+- No migrations were added.
+
+Not done, by the Strict Release Boundary: no merge to `master`, push, deployment, tag, production DB change or production configuration change.
+
+Open items for the reviewer:
+1. Two Stage 4 assertion changes follow from the RISK-04 claim-targeting decision but are outside the Final acceptance criteria's explicit sanctioned list (§6). Approve them or revert PUR-08 claim targeting.
+2. The browser checks for the QC Copy button and SUP-01/GEN-03 still need a manual or reconnected-MCP pass.
+3. Pre-existing and out of scope: the time-of-day `LocalInvoiceSubmissionV2Test` helper (use `BusinessTime::today()`), the stale copy ledger, and the `lang/id/supplier.php` indentation.
+4. Release prerequisites from Gate 1 §E (G-PDF, T-1, staging rehearsal) are not part of this gate and remain open.
+5. Mode 2 date-filter characterisation: the legacy path uses a UTC month boundary (§7). This is reported only.
