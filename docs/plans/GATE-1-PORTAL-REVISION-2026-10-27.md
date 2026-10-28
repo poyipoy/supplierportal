@@ -1,6 +1,49 @@
 # GATE 1 — Portal Revision 2026-10-27
-**FINAL CANDIDATE — RECONCILED ARCHITECTURE PLAN**
-Mode: planning and verification only. Status: pending user approval for Gate 2.
+**FINAL CANDIDATE — RECONCILED ARCHITECTURE PLAN (CORRECTED 2026-10-28)**
+Mode: planning and verification only. Status: GATE 1 FINAL CANDIDATE — CORRECTED, PENDING SINGLE GATE 2 APPROVAL.
+
+## A. Correction pass, 2026-10-28: summary
+This pass amends this document in place. It is not a new Gate 1 version. It adds no missions and does not widen product scope. The verified findings (§1), state-machine rules (§2), protected invariants and four workstreams are unchanged except where listed here.
+
+1. **Authority.** The user's approved decisions (§B) now replace Gemini's restatement as the requirement authority. Gemini text remains evidence only.
+2. **PUR-07.** The dynamic dimension-option contract has been restored (§3-G). Options come from eligible history, scoped to material, shape and supplier, and filter the existing range inputs. No duplicate filter parameter is added.
+3. **GEN-03.**
+   - Invalid entered values now return a controlled 422. They are never silently exported as empty cells.
+   - The form's row model is documented (one row per PR item; no alternative-offer rows).
+   - Item references are validated exactly as the existing save path does.
+   - The Mode 2 scope and filter proof is defined (§3-F).
+4. **GEN-01.**
+   - The Price Comparison-only narrowing has been withdrawn.
+   - A bounded, read-only inventory of price displays across modules defines the implementation scope (§3-H).
+   - The regional preference remains authoritative.
+   - A conflict with the locked Phase 2B regional tests is recorded as decision D-1.
+5. **QC-01.** The blanket fail-closed 422 for unrecognised shapes has been withdrawn. A characterised, backward-compatible strategy replaces it (§3-B). Any data profiling uses a restored or sanitised dataset only.
+6. **Performance oracle.** The "whole PO show page has constant query count" criterion has been replaced. The new criteria isolate the queries the revision adds and require a measured baseline (§D).
+7. **Environment.** The Gate 2 entry conditions have been rewritten (§E). They include the HEAD recheck, no assumed DB access, DB creation only after approval, and the release prerequisites G-PDF, T-1 and staging rehearsal.
+8. **Decisions.** The business-decision list has been re-examined against §B (§F). Readiness for all 14 IDs has been re-stated (§4).
+
+## B. Approved Requirements Register (authority)
+Source: the user's directly stated approved decisions (correction pass, 2026-10-28). The complete V1 document and interview transcript are not in the cloud session. If either is provided at Gate 2 kickoff, it must be compared row by row against this register, and any difference stops the affected ID until resolved.
+
+| ID | Approved decision | Plan section | Earlier deviation now corrected |
+|---|---|---|---|
+| PUR-01 | A: all five PR dimensions appear separately in the import preview | §4 | — |
+| PUR-02 | A: per-item Total KG, plus Grand Total KG and Grand Total Qty | §4 | — |
+| PUR-03 | A: remove supplier contact information **only** from Price Comparison | §4 | — |
+| PUR-04 | A: sticky header + sticky Material column | §4 | — |
+| PUR-05 | A: AJAX material filtering without page reload | §4 | — |
+| PUR-06 | A: currency and number formatting follow the portal regional preferences | §3-H | — |
+| PUR-07 | A: dynamic Flat→Thickness and Round→Diameter historical filters; dimension options come from available relevant data | §3-G | Option contract restored |
+| PUR-08 | A: PO and Shipment status synchronisation based on aggregated progress | §3-A, §3-E | — |
+| PUR-09 | A: PO completes only after all ordered material is received, accepted by QC, and required receiving processes are complete | §3-E, §F | Interpretation of "receiving processes" recorded (D-4) |
+| SUP-01 | A: separate read-only Purchasing Request Overview for Suppliers | §3-D | — |
+| QC-01 | A: actual dimensions required, initially empty, with an editable Copy from PO | §3-B | Fail-closed 422 withdrawn |
+| GEN-01 | Common price-formatting behaviour, integrated with PUR-06 | §3-H | Narrowing withdrawn |
+| GEN-02 | A: Download Template on every existing Excel import menu; the Supplier template column order is a confirmed issue | §3-F | — |
+| GEN-03 | C: export both the currently entered unsaved form data and previously saved data | §3-F | Silent nulls withdrawn |
+| Confirmation 1 | Price format example: `Rp70,000.00` | §3-H | — |
+| Confirmation 2 | The Supplier Excel template column order must be corrected | §3-F | — |
+| Confirmation 3 | Export must contain the actual entered records, not an empty template | §3-F | — |
 
 ## 0. Source of truth established
 
@@ -9,7 +52,7 @@ Mode: planning and verification only. Status: pending user approval for Gate 2.
 | Branch / HEAD | `claude/sharp-edison-h93xqe` at `c74386f` (= `master`, merge of PR #11, 2026-10-23). Working tree clean. Only one worktree. |
 | Gemini archive vs HEAD | The archive Gemini cites ends at migration `2026_10_19_172830`, matching HEAD. Its line numbers matched the current source in almost every spot-check. No drift was detected. |
 | Gate 1 V1 (14-ID plan) | **Unavailable in the repository.** `docs/plans/GATE-1-MATERIAL-PROCUREMENT-REVISION-PLAN.md` is the older 35-decision plan (baseline `78e8bf4`). The 14-ID requirement text and V1 claims are known only as quoted by Gemini. Wherever this document says "V1 claim", it means the claim as reported by Gemini. |
-| Approved requirement text | Not in the repository. The working contract is the requirement statements as restated in Gemini §5. Any wording dispute must be settled against the user's original prompt at Gate 2 kickoff. |
+| Approved requirement text | Not in the repository. **Superseded by §B** (user-stated approved decisions). Gemini §5 is evidence only, never authority. |
 | Local dirty tree (V1 §I.1) | Not present in the cloud. The Gate 2 preflight must compare any local tree against `c74386f`. |
 | Shipment Concurrency Hotfix | Committed (`b4f56cd`). Present at HEAD: `SUBMIT_ATTEMPTS = 3` (`ShipmentService.php:34`), sorted lock order. `ShipmentService.php` sha256 = `a4361cbc…be77`. Zero-diff guard. |
 | Feature flags | `ProcurementFeatures`: `po_generation_enabled` (true), `ordered_quantity_write_enabled` (false), `allow_offer_surplus`, `shipment_mtc_enabled` (true). |
@@ -97,7 +140,7 @@ Each block lists: Location · Root cause · Design · Invariant · Characterizat
 - **CT:** the current outputs for all §2.1 rows, captured before the edit.
 - **KT:** for N seeded POs covering every row, `PurchaseOrder::get()->filter->is_overdue->pluck('id')` equals the `PurchaseOrderExportFilters::apply(status=overdue)` ids, which equal the `PurchaseOrdersExport` query ids.
 - **NT:** waiting_qc/claim_needed with ETA past → not overdue. Legacy-only resolved NG → not overdue.
-- **Oracle:** query count on the PO index DataTables JSON for 1 vs 25 rows is identical (`DB::getQueryLog`).
+- **Oracle:** the overdue predicate adds no per-row query. On the PO index DataTables JSON, the queries attributable to `is_overdue` (the `withExists` subselect inside the main query, plus any narrow-branch fallback) number zero for 1 and 25 rows. The page's own baseline query count is measured, not assumed (§D).
 - **Risk:** low. No writes and no status transitions.
 - **Rollback:** revert the commit. No data is involved.
 
@@ -119,7 +162,19 @@ Each block lists: Location · Root cause · Design · Invariant · Characterizat
   4. View: inputs start empty (`old()` only), relevant fields are `required`, plus a per-item "Copy from PO" button (`<x-ui.button>` + `<x-ui.icon name="copy">`).
   5. Copy writes only relevant numeric dimensions, triggers `input`, never changes the OK/NG switch, never submits, and announces via `aria-live`.
   6. The tolerance check and `show` comparisons use the ordered spec.
-  7. A non-canonical shape that `canonicalShape` cannot resolve fails closed: 422 "shape not recognised".
+  7. **Legacy shape compatibility (corrected; the blanket 422 is withdrawn).** Facts [S]: `pr_items.shape` is a nullable string with no CHECK. The PR form and the import accept `null` or an exact canonical value (`Rule::in(PrItem::SHAPES)`). Lowercase or unknown values can enter only through direct writes (tests, legacy data). For an unresolvable shape, today's QC view renders weight only, and `sanitizeActualMeasurements` nulls every dimension.
+
+     | Characterised case | Required actual dims | Copy from PO | Notes |
+     |---|---|---|---|
+     | Canonical `Flat`/`Round`/`Hollow` | all relevant dims, `required\|numeric\|gt:0\|max:999999.9999`, ok **and** ng | relevant numeric spec values | never bypassable |
+     | Case or whitespace variant (`'round'`, `' Flat '`) | as canonical (QC-path `canonicalShape`) | as canonical | storage, acceptance hashes and global lookups unchanged |
+     | `null` shape | none can be derived. **Unchanged:** weight only, no 422 | hidden | non-blocking inline notice "shape not set on the PR; dimensions cannot be verified" (new `lang/{en,id}` key) |
+     | Unknown non-empty value (e.g. `Square`) | same as `null`. **Unchanged**, no 422 | hidden | same notice. Mapping any such values is decision D-5 |
+     | PO with an accepted alternative offer | relevant dims of the canonical shape | the **offered** values (§ proof above) | requested values shown secondarily |
+     | Exact ordered length | required | `available_length` | — |
+     | Range ordered length | required (inspector enters the measured value) | not copied; the range is displayed | the existing scalar 5% tolerance hint is skipped for the length field (no new range-check feature) |
+
+     Required dimensions apply to every valid known shape. No existing legacy workflow (null or unknown shape) changes behaviour. Server-side, the shape is always taken from the DB `PrItem`, never from the request.
 - **Invariant:** QC status is only ever chosen by the inspector. Copy never sets OK. The PO spec shown equals the PO page spec.
 - **CT:** the current create/show output for a Flat exact match and an accepted different offer (12 vs 10 mm).
 - **KT:** `data-val` equals `orderedSpecification()` for Flat/Round/Hollow, exact length, length range (`data-val=""`) and offer-silent fields.
@@ -127,10 +182,11 @@ Each block lists: Location · Root cause · Design · Invariant · Characterizat
   - Missing, zero, negative or >999999.9999 relevant dims → 422 for both ok and ng.
   - Irrelevant dims are ignored and nulled.
   - A lowercase `'round'` fixture still requires `d_outer` and `length`.
+  - Null and unknown shapes are accepted with weight only (characterisation: response identical to today apart from the notice).
   - Copy markup has no `name="items[*][status]"` side effect (JS test).
 - **Oracle:** independent arithmetic on a fixture where PR ≠ offer, checked against `spec_acceptance_snapshot.offered`.
 - **Risk:** medium. The 31 existing `qc.inspections.store` calls in 4 files must send dimensions. This is a direct consequence of the approved requirement: Gate 2 adds a `tests/Support` payload helper. Existing fixture rows are **not** modified (no lowercase shapes are rewritten).
-- **Preflight (read-only):** `SELECT BINARY shape, COUNT(*) FROM pr_items GROUP BY BINARY shape` on a restored copy of production data, to size the fail-closed path.
+- **Data profiling (Gate 2, read-only):** `SELECT BINARY shape, COUNT(*) FROM pr_items GROUP BY BINARY shape`, plus the same grouped over PO-linked items with QC inspections, run **only** on a restored or sanitised dataset that the user provides. Direct production access is not authorised. The result decides whether D-5 needs an answer; it does not change the default behaviour above.
 - **Rollback:** revert. Inspections recorded with dimensions remain valid data.
 
 ### C. Historical Best Price (PUR-07 / PUR-05)
@@ -193,7 +249,7 @@ Each block lists: Location · Root cause · Design · Invariant · Characterizat
 - **CT:** `itemFulfillmentStatus` outputs for scenario C-1 (below) recorded before the extraction.
 - **KT:** `fulfillmentProjection()[i]` == `itemFulfillmentStatus(i)` for every item at every step of C-1. Key-by-key equality on the shared keys.
 - **NT:** NG under an active claim never appears as waiting QC. A completed PO requires accepted ≥ ordered for every available item.
-- **Oracle:** query count on `purchasing.purchase-orders.show` for 1 item/1 shipment equals 5 items/3 shipments (constant).
+- **Oracle:** see §D. The fulfillment projection's own queries are constant in the number of items and shipments, and the revision adds no per-item query on the PO show pages, measured against a recorded baseline.
 - **Concurrency:** `ShipmentSubmissionConcurrencyTest` and `OrderedQuantityShipmentConcurrencyTest` with MTC on and off.
 - **Scenario C-1:** Item A 10 Flat, Item B 5 Round, ETA yesterday.
   1. S1 ships A6 and B5 and arrives → `waiting_qc`, not overdue.
@@ -210,37 +266,136 @@ Each block lists: Location · Root cause · Design · Invariant · Characterizat
   - It is a constant on `QuotationImportTemplateExport`. The sample row follows it.
   - The import stays heading-based, so old files still import.
   - Preview table order is PR Item ID | Material | Offer Qty | dims | Offer KG/Unit | Price/kg | Notes | Availability. Material comes from a client-side lookup keyed by `pr_item_id` against the form rows. The import payload is unchanged (`MissionFiveImportTest:427` holds).
-- **Mode 1 Export Form:**
-  - `POST supplier.quotations.export-form` (`{pr_id}`), `throttle:15,1`, `no-store`. Authorisation goes through `importableRequisition()`.
-  - Iterate the DB `pr->items` in canonical order. Material and requested dimension always come from the DB.
-  - Unavailable → offer numerics null, `'Not Available'`.
-  - Available:
-    - qty is an integer or null;
-    - relevant scalar dims are 4 dp numerics and irrelevant ones are null;
-    - length reads `available_length_input` (fallback `available_length`) through `DimensionRange::parse`: exact → numeric, range → text `display()`, invalid → null;
-    - weight is the client value if > 0, else the server auto-calculated value via the same `resolveOfferedWeight` logic;
-    - price is 4 dp;
-    - notes: empty → null (sanitizer `fallback=''`), otherwise sanitised text;
-    - `'Available'`.
-  - `FromArray + WithHeadings + WithColumnFormatting` (`#,##0` qty, `#,##0.0000` dims/weight/price). There are no DB writes and no `ExportJob`: it is a direct download, like the import template.
-  - JS: `FormData` minus file inputs, fetch to blob download. The DOM and localStorage draft are untouched.
-- **Round-trip definition:** "supported records" are all rows whose notes do not begin with `= + - @` after trim. For those, re-import yields field-equal rows (numerics compared at 4 dp, ranges equal as min/max, empty notes → null, availability preserved). For notes beginning with a trigger character, the mandated sanitiser adds a leading `'`. This is a documented, bounded alteration: security policy (`app/Exports/CLAUDE.md`) takes precedence, and the import is **not** changed to strip it.
-- **Mode 2:**
+- **Form row model (investigated [S], corrected):**
+  - There is exactly **one data row per PR item**. Each PR item renders two visual `<tr>`s (a requested row and an offer row) that share one input set `items[i][…]`, with hidden `items[i][pr_item_id]` and `items[i][is_available]` (`create.blade.php:945-1105`).
+  - There are no alternative offers and no repeatable rows per PR item.
+  - The save path enforces `items` `size:` = PR item count, `pr_item_id` `distinct` and `exists` within this PR (`Supplier\QuotationController:353-358`). The import also rejects duplicate `pr_item_id` values.
+  - Irrelevant dimensions have **no input** (rendered as `—`, `create.blade.php:1021-1039`). Inputs on unavailable rows are disabled, so `FormData` omits them.
+  - The export therefore keeps one row per PR item, in PR item order, keyed by `pr_item_id`, which the existing import schema already supports.
+- **Mode 1 Export Form (corrected: no silent loss):**
+  - `POST supplier.quotations.export-form` (`{pr_id}`), `throttle:15,1`, `no-store`. Authorisation goes through `importableRequisition()` (role, active supplier, PR status submitted/bidding, `visibleToSupplier` scope, editable own quotation). This is the same gate as `import-preview`.
+  - **Validation before any output, in a dedicated FormRequest.** It reuses the save path's item rules **without** the commercial-term requirements:
+    - `items` is required, an array, with `size:` = PR item count;
+    - `pr_item_id` is `required|integer|distinct` and `exists` in this PR;
+    - numeric fields use the save path's types plus `gt:0`;
+    - a non-empty length must satisfy `DimensionRange::parse`;
+    - a non-empty value in a dimension that is irrelevant for the item's DB shape is **rejected** ("not applicable for this shape"), because the UI has no input for it;
+    - notes must be strings.
+
+    A failure returns a **422** (`{message, errors}` keyed `items.{i}.{field}`). No file is produced, and the existing form state is left untouched: the JS shows the error summary with `AdasiToast` and leaves the DOM, values and localStorage draft as they were. A missing, duplicate, foreign or reordered `pr_item_id` is a 422; it is never re-bound to another PR item.
+  - **Mapping (validated input only):**
+    - material name and requested dimension come from the DB `PrItem`, never from the request;
+    - unavailable → the offer cells are blank and the row reads `'Not Available'` (inputs are disabled, so nothing is entered; this is not data loss);
+    - available:
+      - qty is an integer, or blank only if it was blank;
+      - relevant dims are numeric at 4 dp;
+      - exact length is numeric; a range is text in `DimensionRange::display()` form;
+      - weight is the entered value, or blank if blank. **It is not auto-filled** on export: the save path's auto-calculation remains a save-time behaviour, so the export reflects exactly what was entered;
+      - price is numeric at 4 dp;
+      - notes: blank stays blank; otherwise sanitised text;
+      - availability reads `'Available'`.
+  - `FromArray + WithHeadings + WithColumnFormatting` (`#,##0` qty, `#,##0.0000` dims/weight/price). There are no DB writes and no `ExportJob`; it is a direct download, like the template. The file carries the actual entered rows, not an empty template (Confirmation 3).
+  - JS: `FormData` minus file inputs, posted with `fetch`. A 200 becomes a blob download; a 422 renders inline errors. The form is never submitted or reset.
+- **Round-trip limitations (honest):**
+  1. A note beginning with `= + - @` (after trim) gains a leading `'` from the mandated sanitiser. The import is not changed to strip it.
+  2. Numerics are compared at 4 dp, which is the storage scale.
+  3. A blank weight stays blank. The quotation import itself recalculates weight per its own existing rules on preview.
+  4. Offer fields typed on an unavailable row are not exported: the disabled inputs are never sent, which matches the save behaviour.
+  5. MTC files are never exported.
+  6. Commercial header fields (currency, delivery date, payment terms, validity, general notes) are outside the import schema and are not exported.
+
+  For every other value of a valid form, export → `import-preview` returns field-equal rows.
+- **Mode 2 Export Saved Data (verified scope [S]):**
+  - This is the existing `supplier.quotations` export: `Supplier\ExportController@quotations` → `QuotationsExport([$filters, auth()->id(), includeDrafts=true])`. The owner is forced through `forcedSupplierId` / `QuotationExportFilters::apply($q, $filters, $owner)`. It emits one row per saved `QuotationItem`.
+  - Supplier filters are `pr_number`, `period_id`, `status` (including `draft`/`unresponded`) and `search` (`QuotationExportFilters.php:25,77`).
+  - **Observed [S], to verify, not to widen:** the legacy no-options path filters `date_from`/`date_to` on raw UTC Carbon (`QuotationsExport.php:86-94`), while the catalog path uses `BusinessTime` (`QuotationExportFilters` `apply`). The supplier filter UI does not offer date fields, but `validated()` still accepts `date_from`/`date_to` from a crafted request. Gate 2 characterises both paths with a test and reports the result. It is out of the revision's scope unless that test shows the supplier UI path is affected.
   - `QuotationDefinition` gains requested shape and dimensions and offered thickness/width/d_outer/d_inner, all with **explicit** `default:false`. `offered_length` already exists and stays text, because it can hold a range.
   - Number masks go through `WithColumnFormatting` on `QuotationsExport`, catalog path, XLSX only. Column letters are computed from the selected columns after `applyOptions`. `map()` values are unchanged.
   - The legacy (no-options) path is untouched. `AdvancedExportBaselineTest` stays byte-identical.
+  - **Mode 2 KT:** for suppliers S1 and S2 with draft, submitted and accepted quotations across two periods, the S1 export with each filter combination equals the hand-computed set of S1's `QuotationItem` ids (draft included). S2's rows never appear. A tampered `supplier_id` in the request is excluded by the `exclude` rule. The row count equals the item count, not a template.
 - **Invariant:** the client is never the source of material or spec. Text always passes the sanitiser. The baseline export is unchanged.
 - **CT:** the current template headings and baseline export output.
 - **KT:** `headings() === CANONICAL_HEADINGS`. The relative order of form, preview and template is equal. A template download → fill → `import-preview` returns 200.
 - **NT:**
-  - Forged `material_name` is ignored.
-  - Foreign `pr_item_id` is ignored.
+  - Forged `material_name` is ignored (DB value written).
+  - A foreign, duplicate or missing `pr_item_id` → 422, and no file is produced.
+  - An invalid length (one that `DimensionRange::parse` rejects, such as `abc` or `0`), a non-numeric price, or a value in an irrelevant dimension → 422 naming `items.{i}.{field}`. The JS test asserts the form DOM is unchanged afterwards.
   - Uninvited PR → 403/404.
   - Zero `quotations` / `quotation_items` / `export_jobs` delta.
   - Formula payloads (`=1+1`, `+x`, `-x`, `@x`, `"  =x"`) are neutralised.
 - **Oracle:** read the generated XLSX with `IOFactory`. Numeric cells are `TYPE_NUMERIC`, the range cell is a string, and feeding the binary to `import-preview` returns the expected row values.
 - **Gate 2 condition [I]:** prove that `WithColumnFormatting` applies under the queued chunked chain (`Excel::queue` + `CloseSheet`). If not, Mode 2 formatting is dropped and reported; it is never forced through `map()` strings.
 - **Rollback:** revert. Old templates keep importing.
+
+### G. Historical dynamic dimension options (PUR-07 A, restored contract)
+- **Current controls [S]:**
+  - The historical form already has one key-dimension fieldset with `key_min`/`key_max` number inputs (`_historical_content.blade.php:76-95`).
+  - Its label switches between thickness and `d_outer` keys. Round and Hollow both show "Outer diameter".
+  - The server resolves the key field from `MaterialReferencePrice::DIMENSION_FIELD_BY_SHAPE` (Flat→`thickness`, Round→`d_outer`, Hollow→`d_outer`) and normalises the bounds (exact when min = max, range otherwise; `keyDimensionRange:981-1000`).
+  - Materials come from `historicalMaterials` (`routes/web.php:561`, controller `:451`) via `historicalMaterialsForSupplier` (`:954-972`, currently `->unique('material_name')`).
+  - No dimension options are offered today.
+- **Decision:** reuse the existing range controls as the single filter parameter pair. Add **one** options control that writes into them, and no third query parameter. No duplicate range inputs are added.
+- **Contract:**
+  1. **Label by shape:** Flat → "Thickness (mm)"; Round → "Diameter (mm)" (a new `lang/{en,id}` key), mapped to the authoritative field `d_outer`; Hollow keeps today's "Outer diameter (mm)" (unchanged, not in scope); an unknown or null shape hides the fieldset and sends no key filter.
+  2. **Option source:** a single grouped query on `PurchaseHistoryPriceService::eligibleLines(['supplier_id'?])` returning `material_name, shape, key_value` for each eligible line. `key_value` = `COALESCE(qi.available_{field}, pi.{field})` with the field chosen per shape in SQL (`CASE`), which is exactly the expression the history filter already uses (Service `:218-234`). It is `DISTINCT`, non-null, ordered ascending, capped at 100 values per material and shape, and normalised to 4 dp. It inherits the cancelled-PO, award-scope and soft-delete exclusions. It is not narrowed by the period range, so the options stay stable while the range changes.
+  3. **Scope:** options are keyed by (material, shape) and the selected supplier. They are delivered inside the existing `historicalMaterials` JSON and the initial page payload, one query in total. There is no separate endpoint.
+  4. **Control:** a `<select id="historicalKeyOption">` with **no `name`**, listing "All" plus the values. Choosing a value sets `key_min = key_max = value` and reloads; "All" clears both. Typing a custom range into `key_min`/`key_max` remains possible, and the select then shows "Custom range". The URL and request carry only `key_min`/`key_max`, as today.
+  5. **No matching dimensions:** if the material and shape have zero non-null key values, the select is disabled with "No dimension data for this material", the range inputs stay usable, and the history is unfiltered. If a requested `key_min`/`key_max` matches no rows, the table and chart show the existing empty state with a `role=status` message. They never show stale data.
+  6. **Safe reset:** on a material or shape change, clear `key_min`/`key_max` and the select. On a supplier change, keep the bounds only if the same (material, shape) is still offered **and** (for an exact value) the value is still in its options; otherwise clear them. The server ignores bounds when the key field is null.
+  7. **Automatic update:** every change goes through `loadHistorycalPayloadFromFilters` (it rebuilds the chart, table and summary). It is guarded by the PUR-05 `AbortController` plus a sequence id, and the URL is updated with `replaceState` preserving `_serverTabs`.
+  8. **Material identity:** the (material, shape) options and the hidden `shape` input are as in §4 PUR-07.
+- **Fixtures (Gate 2):**
+  - Supplier S1:
+    - SCM440 Flat, awarded PO lines at thickness 10 and 12;
+    - SCM440 Round, `d_outer` 50, plus one offer line with PR 50 / `available_d_outer` 52, so the option is 52;
+    - a cancelled PO line, SCM440 Flat at thickness 99 (excluded);
+    - an unawarded line on an awarded PO, Flat at thickness 77 (excluded);
+    - S45C Hollow at `d_outer` 60;
+    - a material with a null shape.
+  - Supplier S2: SCM440 Flat at thickness 14.
+- **Server KT:**
+  - S1 options: Flat [10, 12]; Round [50, 52]; Hollow [60]; null shape → none.
+  - All suppliers: Flat [10, 12, 14].
+  - 99 and 77 never appear.
+  - The options query count is 1.
+- **Browser acceptance (observable, Chrome):**
+  1. Select S1 → SCM440 (Flat): the legend shows "Thickness (mm)", the options are 10 and 12, and the table and chart show both.
+  2. Choose 12: one request is made, the URL gains `key_min=12.0000&key_max=12.0000`, and the table rows and chart points are only thickness 12.
+  3. Switch to SCM440 (Round): the legend shows "Diameter (mm)", the options are 50 and 52, the key inputs are empty, the URL loses `key_min`/`key_max`, and the table and chart update without a reload.
+  4. Switch quickly Flat→Round→Flat: the final DOM and URL equal the last selection (no stale response).
+  5. Pressing Back restores the previous state through `_serverTabs` popstate.
+  6. Choose the null-shape material: the fieldset is hidden.
+  7. Pick a supplier for whom SCM440 Round has no history: the bounds are cleared and the select shows the empty-data message.
+
+### H. Common price formatting (GEN-01, integrated with PUR-06)
+- **Authority:** GEN-01 is approved across the relevant portal surfaces (§B). The earlier narrowing to Price Comparison has been withdrawn.
+- **Formatter contract:**
+  - `RegionalDisplayFormatter::currency(string|int|null $amount, string $code = 'IDR', int $scale = 2): string` = prefix + the existing `money($amount, $scale, 'international')`.
+  - It is BCMath-only through `Money::normalize`; there is no float path.
+  - The user's `number_format` preference stays authoritative:
+    - `system`/`international` → `Rp70,000.00`;
+    - an explicit `indonesian` choice → `Rp70.000,00`.
+  - The prefix is `Rp` for IDR (no space, per the confirmed example). Other codes keep the existing ISO convention (`USD 3.4512`).
+  - Scale: 2 for amounts and totals. For unit prices, 2 to 4 (trailing zeros beyond 2 are trimmed, and stored precision is never cut).
+  - `null` → `-`.
+  - JS twin `AdasiPreferences.currency(value, code, scale)` uses the same registry and golden cases.
+  - Never applied to: DB values, formulas, document snapshots, Excel numeric cells, inputs, or the frozen `data-price` attribute.
+- **Read-only inventory [S]** (file level; the line-level list is generated by a deterministic grep in Stage 0 and may only shrink, never grow, without being reported):
+
+  | Class | Surfaces |
+  |---|---|
+  | **Formatter-routed today** (preference-aware separators, but not the confirmed shape: `Rp ` with a space, call-site decimals) → **switch to `currency()`** | `admin/dashboard`; `ga/dashboard`; `ga/claims/{index,show}`; `finance/{dashboard,invoices/show,drp/ga,local-procurement/show,ga-claims/{index,show}}`; `local-invoices/{detail,table}`; `local-supplier/purchase-orders/show`; `purchasing/{dashboard,pr/show,po/show,quotations/show,local-vendors/invoice-show}`; `purchasing/comparison/{_inter_supplier_content,_vs_best_content}`; `quotations/_items_readonly_table`; `supplier/{po/show,quotations/show}`; DataTables `total_idr` in `Purchasing\PurchaseOrderController:103` and `Supplier\SupplierPurchaseOrderController:93` |
+  | **Raw / hard-coded separators** (`number_format(…, ',', '.')`, `toLocaleString('id-ID')`) → **switch to `currency()` or the JS twin** | views `finance/{overpayments/index,drp/{_paid_table_content,paid,supplier,ga,show},vouchers/show,local-procurement/{index,form}}`, `purchasing/{po/create,drp/{_paid_table_content,supplier,ga,show}}`, `local-supplier/purchase-orders/index`; controllers `LocalSupplier\InvoiceController:67-69` (JSON `formatted_*`), `Finance\FinanceDrpPaidController:167-170` (flash amounts), `PriceComparisonController::formatRupiah:1151`; JS `comparison/_scripts` (`formatAnalyticMoney`, `formatRupiah` ×2), `finance/invoices/show` `formatRupiah`, `finance/local-procurement/form` `formatRupiah`, `local-invoices/form` `rupiah()`, `components/ui/multi-select:117` |
+  | **Outside the requirement** (documents, fixed forms, non-price numbers) | PO PDF (`PurchaseOrderPdf`, fixed PNR261178 form, AGENTS exception); `finance/vouchers/print` (terbilang document); `ga/claims/receipt`; `local-supplier/invoices/receipt`; `receipts/partials/verified-card` (signed receipt document); Excel exports (numeric cells; only masks per GEN-03); exchange-rate values (`admin/exchange-rates`, not prices); quantities, weights, percentages, counts, chart axes; `layouts/{app,auth}` (false positive: SRI hash) |
+
+- **Conflict found [S], recorded as D-1:** Phase 2B (`docs/plans/PHASE-2B-REGIONAL-PREFERENCES-GATE1.md:126,180`) deliberately locked "no decimal precision change; `system` returns the original text byte-for-byte; preserve each call site's precision". Locked tests assert, for example, `'Rp 1.250.001'` and **not** `'Rp 1,250,001.00'` (`RegionalGaClaimDisplayTest:54,66-67`), and `'Rp 1,250,001'` (`RegionalOperationalListsTest:60,79`). The same pattern appears in `RegionalInvoiceFinancialDisplayTest`, `RegionalDashboardRenderingTest`, `RegionalScopeProtectionTest`, `LocalSupplierOverpaymentTransparencyTest`, `PurchaseOrderReferenceRemarkTest`, `RegionalInvoice*CalendarTest` and `tests/js/regional-preferences.test.mjs`. The confirmed `Rp70,000.00` (no space, two decimals) cannot coexist with those locks on currency surfaces. Proposed resolution: GEN-01, which is newer and directly confirmed, supersedes the Phase 2B precision rule **for currency/price displays only**. Phase 2B rules stay for every non-currency number, and the separator-preference rule stays everywhere. The affected assertions become a listed set of sanctioned contract-test updates. This needs the user's explicit confirmation in the single Gate 2 approval, because it overrides an earlier approved contract.
+- **KT / NT:**
+  - Unit golden cases for IDR/USD/CNY/JPY × system/international/indonesian, plus null, negative and 20-digit strings.
+  - A JS twin parity test on the same fixture.
+  - A per-surface feature assertion for one representative per inventory row.
+  - Excel numeric cell type unchanged.
+  - `data-price` regex unchanged.
+  - A grep guard test: no `'Rp '.number_format` / `toLocaleString('id-ID'` remains in the inventoried files.
 
 ## 4. Remaining design items and per-ID readiness
 
@@ -251,26 +406,55 @@ Each block lists: Location · Root cause · Design · Invariant · Characterizat
 | PUR-03 | B | Company name in all 7 places + `applyVsBestKeywordFilter`, using the convention + eager `supplier:id,user_id,company_name` + SQL `COALESCE`. Remove `_supplier_pic` from the comparison header **only**. Estimated delivery stays. Historical suppliers cache key → `v2`. | Ready with conditions: sanctioned inversion of `QuotationPresentationTest::test_comparison_header_shows_pic_and_the_q8_label` (PUR-03 supersedes Decision 10 on this surface only). Query count is not increased. |
 | PUR-04 | B | Inter-supplier: `col-sticky-material` → `ui-sticky-col` plus a width class, and the conflicting inline `z-index`/`!important` background is removed. A `ResizeObserver` sets `--ui-table-sticky-head-row` from row 1's height. Historical: add `sticky`, and add `ui-table-sticky`/`ui-sticky-col` in both the Blade and the JS `renderTable`/`historicalResultShellHtml`. Vs Best: DataTables `dom` puts `t` in a `<div class="ui-data-table__scroll ui-table-sticky">`, with toolbar and paging outside; the first column gets `className 'text-start ui-sticky-col'`. | Ready with conditions: Chrome bounding-rect check (vertical, horizontal, after AJAX and after DataTables draw) on light and dark themes |
 | PUR-05 | B | Shared query keys: `material_name`, `shape`, `currency`. One `syncComparisonState()` helper updates the evaluation-header hidden inputs, the three tab hrefs and history via `replaceState({...state, _serverTabs:'#purchasingComparisonContainer'})`. Per-fetch `AbortController` + sequence id for materials, historical payload and Vs Best reload. Inter-supplier options gain `data-material-name`/`data-shape` and preselect from the query. A Vs Best material select is added. An invalid incoming filter is ignored with a polite `role=status` note. The `ajax()` contract is kept (RISK-11). | Ready with conditions: JS race test plus a back/forward check in the browser |
-| PUR-06 | B | `RegionalDisplayFormatter::currency(amount, code, scale)`, built with BCMath `Money::normalize`, international grouping, then `number()`. Output: `Rp70,000.00` under `system`/`international`, `Rp70.000,00` under an explicit `indonesian` choice. Non-IDR keeps the existing ISO-code prefix (`USD 3.4512`); no new symbols. Scale is 2 for amounts and 2–4 for unit prices (precision is never dropped). JS twin on `AdasiPreferences`. `data-price` is frozen. Applies to comparison surfaces, charts and summaries. | Ready with conditions. **[B] D-1** (below) has a safe default. |
-| GEN-01 | B | The same formatter, applied to the comparison module and to the Excel masks for quotation exports (GEN-03). Other modules are **not** retrofitted. | Blocked by genuine business decision **D-2** (portal-wide scope) for anything beyond those surfaces. The listed surfaces are ready. |
-| PUR-07 | B | Material options keyed by (name, shape) with labels "Name (Shape)" when ambiguous. A hidden `shape` input. `historical()` accepts `shape` and resolves by (name, shape), falling back to name. Changing material, shape or supplier resets `key_min`/`key_max`. Labels: Flat = Thickness, Round = Diameter (new key), Hollow = Outer Diameter. Key field per `MaterialReferencePrice::DIMENSION_FIELD_BY_SHAPE`. Vs Best fixes per §3-C. | Ready with conditions: new translation key pair |
+| PUR-06 | B | §3-H formatter contract (`currency()` on top of the existing `money()`). The regional preference is authoritative. `data-price` is frozen. | Ready with conditions: golden-case parity PHP↔JS |
+| GEN-01 | B | §3-H bounded inventory (formatter-routed + raw surfaces), plus the GEN-03 Excel masks. Outside: documents, fixed forms, non-price numbers. | Ready with conditions: **D-1** confirmation (GEN-01 supersedes the Phase 2B precision rule for currency displays), followed by the listed sanctioned regional test updates |
+| PUR-07 | B | Material options keyed by (name, shape) with labels "Name (Shape)" when ambiguous. A hidden `shape` input. `historical()` accepts `shape` and resolves by (name, shape), falling back to name. Dynamic dimension options and safe reset per §3-G. Labels: Flat = Thickness, Round = Diameter (new key, field `d_outer`), Hollow unchanged. Vs Best fixes per §3-C. | Ready with conditions: §3-G server KT plus browser acceptance 1–7 |
 | PUR-08 | C | §3-A + §3-E + unclaimed-NG claim targeting (index subquery `whereNotExists` material_claims withTrashed, `dataActionNeeded`, `po/show`). | Ready with conditions: zero diff on `ShipmentService`; concurrency suites with MTC on and off |
-| PUR-09 | C | Only the `is_available !== false` filter. The legacy branches are characterised, not changed. "Rejected (NG) never counts as accepted" is already guaranteed (`:657-680`) and is locked by a test. | Ready with conditions: characterisation before edit |
-| QC-01 | C | §3-B. | Ready with conditions: payload helper for 31 calls; read-only production shape probe |
+| PUR-09 | C | Only the `is_available !== false` filter. The legacy branches are characterised, not changed. "Rejected (NG) never counts as accepted" is already guaranteed (`:657-680`) and is locked by a test. "Required receiving processes" = shipment arrival confirmed + QC inspected + no open NG/claim. These are already the preconditions of `completed` (`reconcileOperationalStatus:783-818`). | Ready with conditions: characterisation before edit; D-4 states the interpretation |
+| QC-01 | C | §3-B, including the legacy-shape table (no blanket 422). | Ready with conditions: payload helper for the 31 calls; null/unknown shape characterisation tests; profiling only on a restored or sanitised dataset (D-5 only if unknown values exist) |
 | SUP-01 | D | §3-D. | Ready with conditions. The out-of-scope items (`index()` grouping, de-invited revision rule D-3) are recorded, not changed. |
 | GEN-02 | A | §3-F canonical headings + preview order. Template button audit: all 4 import screens already have one (PR, quotation, Local PO, Local GR). | Ready with conditions: sanctioned update of `MissionFiveImportTest:118-123` (order only) |
-| GEN-03 | D | §3-F Mode 1 + Mode 2. | Ready with conditions: the queued-format proof; the documented apostrophe exception |
+| GEN-03 | D | §3-F: one row per PR item; Mode 1 validated with a controlled 422 and no silent nulls; Mode 2 owner/filter-scoped saved records. | Ready with conditions: the queued-format proof; the round-trip limitations as listed; the Mode 2 scope KT |
 
-Count: Ready 1 · Ready with conditions 12 · Blocked by business decision 1 (GEN-01, beyond the defined surfaces only) · Blocked by missing evidence 0.
+Count (all 14 IDs): **Ready 1** (PUR-01) · **Ready with explicit technical conditions 13** (PUR-02, PUR-03, PUR-04, PUR-05, PUR-06, PUR-07, PUR-08, PUR-09, QC-01, SUP-01, GEN-01, GEN-02, GEN-03) · **Blocked by missing evidence 0** · **Blocked by genuine business decision 0**. D-1 is a confirmation folded into the single Gate 2 approval. If it is refused, GEN-01 and PUR-06 fall back to the Phase 2B shape: currency surfaces keep `Rp ` and their call-site decimals, and only the raw-separator surfaces are routed through the formatter.
 
-### Genuine business decisions (safest behaviour proposed, not approved)
-- **D-1:** must `Rp70,000.00` override a user's explicit `indonesian` number preference? Default: no, the preference is respected (consistent with AGENTS.md per-user regional format).
-- **D-2:** GEN-01 scope beyond Price Comparison and quotation exports. Default: limited to those surfaces.
-- **D-3:** may a de-invited supplier who holds a quotation still revise it? Default: unchanged (`create()` denies; the overview shows View only).
+## D. Revised performance acceptance criteria
+The earlier oracle "the whole PO show page runs the same number of queries for 1 and N items" is **withdrawn**. The full page architecture has not been proven to support that bound: per-section eager loads, documents, conversations and MaterialProgress all predate this revision. The replacement is:
+
+1. **Baseline first (Stage 0).** On the clean worktree, record `DB::getQueryLog()` counts and query texts for `purchasing.purchase-orders.show`, `supplier.purchase-orders.show`, the PO index and supplier PO index JSON, and the three comparison tabs. Use representative shapes: (1 item, 1 shipment), (5 items, 3 shipments), (25 items, 5 shipments). These numbers are the measured baseline, not an assumption.
+2. **Attribute the revision's queries.** Tag the new read paths (`fulfillmentProjection`, the `has_shipment_items` `withExists`, the PUR-07 options query, company-name eager loads) by wrapping them in a test listener. Their query counts must be **constant in the number of items and shipments**. Expected: projection ≤ 3, options = 1, the rest 0 extra (folded into existing queries).
+3. **No added per-item N+1.** For each measured page, `count(after, N) − count(baseline, N)` must not grow with N. It may be ≤ 0, since the projection removes `projectionForAward`'s per-award query.
+4. **Fresh transactional reads are preserved.** The `ShipmentService` zero diff stays. A test asserts `ShipmentService::submitShipment` still issues its `itemFulfillmentStatus` queries inside the lock (query log between the `lockForUpdate` and commit). The projection is never called from `ShipmentService`, `QcInspectionController::store`, or any guard (grep test).
+5. **Plans, not guesses.** Gate 2 records `EXPLAIN` (MySQL 8.0; MariaDB 11.4 in the CI deep job) for the Vs Best rewrite, the overdue `EXISTS`, and the options query. `PriceComparisonPerformanceRegressionTest` stays green. Gate 1 states no measured numbers.
+
+## E. Gate 2 entry conditions
+1. **Recheck HEAD.**
+   - In this session, current `master` = `ab5ad0c` (this plan merged in PR #12). Branch `claude/sharp-edison-h93xqe` = `1e4f1f7` (the phpspreadsheet 1.30.6 → 1.30.7 lock-only security patch; unmerged, no PR yet).
+   - `ShipmentService.php` sha256 = `a4361cbc…be77`, unchanged since `c74386f`.
+   - Gate 2 starts from a fresh `git fetch`, and re-verifies the sha256 and every §1 citation whose file changed.
+2. **The dependency patch lands first.** Until 1.30.7 is merged, the CI `dependencies` job is red on `master`, and GEN-03's spreadsheet round-trip tests would run against a vulnerable reader.
+3. **No assumed DB access.** Claude Code Web provides no project database. The isolated MySQL test DB (`adasi_rev1027_test`, satisfying the `_test` guard) is created or connected **only after** Gate 2 approval, and only after confirming it is not an application database. No DB command is run during Gate 1.
+   - Disclosure: during the earlier dependency task in this ephemeral container, a throwaway MySQL 8.0 instance and `adasi_portal_test` were created to run tests. That run was stopped on request, and no application data was involved.
+   - Container prerequisites seen then: `php-bcmath` and a Vite build (`npm ci && npm run build`) are required before feature tests.
+4. **Protected code.** `ShipmentService.php` has a zero-diff guard. `config/regional_display.php`, `AGENTS.md`, migrations and fixtures stay unchanged except the sanctioned contract-test edits listed in §4 and §3-H.
+5. **Release prerequisites (separate, not entry conditions):**
+   - G-PDF (PO form-owner approval, `GATE-1-MATERIAL-PROCUREMENT-REVISION-PLAN.md:587,718`);
+   - T-1 (staging/production DB version confirmation, `:411,617`);
+   - the staging migration and rollback rehearsal (`:940,1102`).
+
+   None is satisfied by Gate 2 work.
+6. **Single approval.** The user approves Gate 2 once, including the D-1 confirmation and the sanctioned contract-test list.
+
+## F. Remaining genuine business decisions
+- **D-1 (confirmation):** GEN-01's confirmed `Rp70,000.00` (no space, two decimals) supersedes Phase 2B's per-call-site precision rule for currency/price displays only. The regional separator preference stays authoritative (an explicit `indonesian` → `Rp70.000,00`). Proposed: yes.
+- **D-2: withdrawn.** GEN-01's portal-wide scope is approved (§B). It is bounded by the §3-H inventory.
+- **D-3:** may a de-invited supplier who holds a quotation still revise it? Default: unchanged (`create()` denies; the overview shows View only). This does not block SUP-01.
+- **D-4 (interpretation, non-blocking):** PUR-09 "required receiving processes" = arrival confirmation + QC + claim resolution. Customs documentation (Invoice/BL/Packing List/Form E) is **not** added as a completion precondition: that would be a new requirement and could strand POs. It is stated here so that a different intent can be raised at approval.
+- **D-5 (conditional):** only if Gate 2 profiling on a restored or sanitised dataset finds non-empty, unknown `pr_items.shape` values. Should they be mapped to a canonical shape? Default: no mapping; QC behaviour is unchanged for them (§3-B.7).
 
 ## 5. Integrated Gate 2 execution plan
 **Environment:**
-- A dedicated `git worktree` off `c74386f` on the branch the user designates.
+- A dedicated `git worktree` off the HEAD rechecked per §E (not `c74386f`), on the branch the user designates.
 - A dedicated MySQL test DB `adasi_rev1027_test`; the name satisfies the `AppServiceProvider` `_test` guard.
 - Never run two suites at once. Never use `migrate`, `db:wipe` or seeding on the app DB.
 
@@ -294,7 +478,8 @@ Count: Ready 1 · Ready with conditions 12 · Blocked by business decision 1 (GE
   - Record results on the clean worktree for: `TestingEnvironmentDatabaseSafetyTest`, `ShipmentSubmissionConcurrencyTest`, `OrderedQuantityShipmentConcurrencyTest`, `PurchaseOrderOperationalStatusTest`, `ShipmentDocumentsAndQcIntegrationTest`, `PoItemMaterialProgressTest`, `QcInspectionAttachmentCompensationTest`, `NotificationDeliveryTest`, `PriceComparison*Test`, `PurchaseHistoryPriceTest`, `RegionalComparisonDisplayTest`, `AdvancedExportBaselineTest`, `MissionFiveImportTest`, `QuotationPresentationTest`, `SupplierDataIsolationTest`, `HashidUrlSecurityTest`, `PageRegistryTest`, `TranslationParityTest`, `UserFacingCopyInventoryTest`, and all of `tests/js/*.test.mjs`.
   - Record the ShipmentService sha256.
   - Determine whether the touched views require copy-ledger entries. If so, extend the ledger for the new keys only; never rewrite historical snapshots.
-  - Run the read-only shape probe.
+  - Record the §D query baselines.
+  - Shape profiling only if a restored or sanitised dataset is provided (§3-B).
 - **Stage 1 (WS-B foundation):** PUR-06 formatter + JS twin. Gate: unit/JS tests and `RegionalComparisonDisplayTest` green.
 - **Stage 2 (WS-A):**
   1. PUR-01, PUR-02.
@@ -330,9 +515,9 @@ Count: Ready 1 · Ready with conditions 12 · Blocked by business decision 1 (GE
 **Final acceptance criteria:**
 1. Every §1 Critical/High row is closed by its KT, NT and oracle.
 2. Zero diff on protected files.
-3. Query-count oracles are constant (PO index, PO show, comparison).
+3. The §D performance criteria hold: the revision's own queries are constant, nothing is added per item against the measured baseline, `EXPLAIN` is recorded, and fresh `ShipmentService` reads are preserved.
 4. The round-trip oracle passes for supported records.
-5. All locked suites are green, apart from the three sanctioned contract-test edits, which are listed in the PR body: inverting `test_comparison_header_shows_pic_and_the_q8_label`, the template-order assertion in `MissionFiveImportTest:118-123`, and the QC-01 store payloads.
+5. All locked suites are green, apart from the sanctioned contract-test edits, which are listed in the PR body: the D-1 regional currency assertions enumerated in §3-H (only if D-1 is confirmed), plus inverting `test_comparison_header_shows_pic_and_the_q8_label`, the template-order assertion in `MissionFiveImportTest:118-123`, and the QC-01 store payloads.
 6. CI green on MySQL 8.0; the `deep` job on MariaDB 11.4.
 
 **Rollback:** no migrations, so every stage rolls back by `git revert` plus `view:cache`. The cache keys bumped (`historical_suppliers:v2`, `vs_best_summary_unfiltered:v3`) isolate cached state in both directions.
@@ -344,7 +529,12 @@ Count: Ready 1 · Ready with conditions 12 · Blocked by business decision 1 (GE
 | Overdue | Query-based qty rule | Drop `!actual_arrival` everywhere | Guarded predicate preserving legacy-only semantics; SQL/PHP parity; `withExists` |
 | Fulfillment | Loop `itemFulfillmentStatus` | Implicit reuse of loaded relations | Pure tally extraction + explicit read-only projection; the transactional path is byte-identical in behaviour |
 | PUR-09 | Mostly fine | Rewrite 3 legacy branches | Only the `is_available` filter (a reachable bug); the others are characterised, unreachable |
-| QC spec | PR dims | `COALESCE(offer, PR)` + global case normalisation | `COALESCE(offer, PR)` with a frozen-quotation proof; QC-only canonical shape (protects acceptance hashes); fail closed on unknown shape |
+| PUR-07 options (correction) | — | Material + shape only | §3-G: eligible-history dimension options per (material, shape, supplier) filling the existing range inputs; no duplicate parameter |
+| GEN-01 scope (correction) | — | Comparison only (earlier final) | §3-H bounded portal inventory; D-1 Phase 2B supersession confirmation |
+| QC legacy shapes (correction) | — | Fail-closed 422 (earlier final) | Characterised table: null/unknown unchanged; canonical and case variants required |
+| GEN-03 Mode 1 (correction) | — | Invalid → null (earlier final) | Controlled 422, the save path's item rules, one row per PR item, honest limitation list |
+| Performance oracle (correction) | — | Whole-page constant (earlier final) | Measured baseline + attributed queries + no per-item growth + `EXPLAIN` |
+| QC spec | PR dims | `COALESCE(offer, PR)` + global case normalisation | `COALESCE(offer, PR)` with a frozen-quotation proof; QC-only canonical shape (protects acceptance hashes); null/unknown shapes characterised and unchanged (correction pass) |
 | Vs Best | + shape | Port eligibility + shape + name | Same, plus frozen price, a perf test gate and a cache key bump |
 | Supplier visibility | Optional fix | Mandatory broadening of `isVisibleToSupplier`, fix `index()` | Read scope + action parity; write rule unchanged (D-3); `index()` recorded out of scope |
 | Company name | 3 places | 7 places + lazy accessor | 7 places + keyword filter, eager convention, no lazy accessor; Decision 10 test inversion sanctioned |
@@ -358,5 +548,17 @@ Count: Ready 1 · Ready with conditions 12 · Blocked by business decision 1 (GE
 - **Inspected** (read-only): every file and line cited in §1 and §3.
 - **Not executed:** tests, builds, database queries, browser checks.
 - **Inferred [I]:** the reachability of the legacy no-award PO with unavailable items; the behaviour of `WithColumnFormatting` under the queued chain; sticky rendering.
+- **Correction pass, inspected read-only:**
+  - `PriceComparisonController` historical/`keyDimensionRange`/`historicalMaterialsForSupplier`;
+  - `_historical_content` key fieldset;
+  - the quotation form row model and the save-path rules (`Supplier\QuotationController:340-392`, `create.blade.php:940-1040`);
+  - `Supplier\ExportController@quotations`, `QuotationsExport::query`, `QuotationExportFilters`;
+  - `RegionalDisplayFormatter::money/number`;
+  - the price-display grep inventory;
+  - the Phase 2B plan and the regional lock tests;
+  - PR shape validation rules;
+  - the QC create view shape handling.
 
-GATE 1 FINAL ARCHITECTURE RECONCILIATION COMPLETE — PENDING USER APPROVAL FOR GATE 2.
+  No tests, builds or DB commands were run in this pass.
+
+GATE 1 FINAL CANDIDATE — CORRECTED, PENDING SINGLE GATE 2 APPROVAL
