@@ -13,6 +13,8 @@ import './async-form-submit';
 import './adasi-loader';
 import './asset-protection';
 import './server-tabs';
+// Static: the PR form's inline totals script calls window.AdasiPrTotals synchronously.
+import './pr-totals-core';
 import { adasiFileUploadComponent } from './file-upload';
 import { searchableSelect } from './searchable-select';
 

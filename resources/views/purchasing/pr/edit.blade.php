@@ -133,6 +133,7 @@
                                     <th scope="col">{{ \App\Models\PrItem::dimensionLabel($dimensionField) }} (mm)</th>
                                 @endforeach
                                 <th scope="col">{{ __('purchasing.copy.weight_unit_kg_e8ab70') }}</th>
+                                <th scope="col">{{ __('procurement.totals.total_kg') }}</th>
                                 <th scope="col">{{ __('purchasing.copy.remark') }}</th>
                                 <th scope="col" class="pr-sticky-action">{{ __('purchasing.copy.action') }}</th>
                             </tr>

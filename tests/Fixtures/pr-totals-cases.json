@@ -1,0 +1,12 @@
+[
+    {"unit": "12.5", "quantity": 3, "total": "37.5000"},
+    {"unit": "0.0001", "quantity": 7, "total": "0.0007"},
+    {"unit": "1234.56785", "quantity": 2, "total": "2469.1357"},
+    {"unit": "1234.56784", "quantity": 2, "total": "2469.1357"},
+    {"unit": "1.00005", "quantity": 3, "total": "3.0002"},
+    {"unit": "0.00005", "quantity": 1, "total": "0.0001"},
+    {"unit": "0.000049", "quantity": 1, "total": "0.0000"},
+    {"unit": "99999999.9999", "quantity": 999, "total": "99899999999.9001"},
+    {"unit": "0", "quantity": 5, "total": "0.0000"},
+    {"unit": "7.30", "quantity": 1, "total": "7.3000"}
+]

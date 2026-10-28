@@ -1359,15 +1359,17 @@
                             <table class="table table-sm table-striped align-middle mb-0 tw:text-ui-xs">
                                 <thead class="table-light sticky-top">
                                     <tr>
+                                        {{-- GEN-02: same order as the form and the template. --}}
                                         <th scope="col">{{ __('supplier.copy.pr_item_id') }}</th>
-                                        <th scope="col">{{ __('supplier.copy.availability') }}</th>
-                                        <th scope="col">{{ __('supplier.copy.price_kg') }}</th>
+                                        <th scope="col">{{ __('supplier.copy.material') }}</th>
                                         <th scope="col">{{ __('supplier.copy.offer_qty') }}</th>
                                         @foreach($quotationDimensionOrder as $dimensionField)
                                             <th scope="col">{{ \App\Models\PrItem::dimensionLabel($dimensionField) }}</th>
                                         @endforeach
                                         <th scope="col">{{ __('supplier.copy.offer_kg_unit') }}</th>
+                                        <th scope="col">{{ __('supplier.copy.price_kg') }}</th>
                                         <th scope="col">{{ __('supplier.copy.notes') }}</th>
+                                        <th scope="col">{{ __('supplier.copy.availability') }}</th>
                                     </tr>
                                 </thead>
                                 <tbody id="quotationImportPreviewBody"></tbody>
@@ -1461,12 +1463,15 @@
         $('#quotationImportErrorsPanel').toggleClass('d-none', errors.length === 0);
 
         const $preview = $('#quotationImportPreviewBody').empty();
+        // Material comes from this form's own PR rows, never from the uploaded file.
+        const materialFor = (prItemId) => $(`input[name$="[pr_item_id]"]`)
+            .filter((_, input) => String(input.value) === String(prItemId))
+            .closest('.quotation-sticky-material').find('.fw-bold').first().text().trim() || '-';
         rows.forEach((row) => {
             const $tableRow = $('<tr>');
             [
                 row.pr_item_id,
-                row.is_available === false ? @js(__('supplier.copy.not_available')) : @js(__('supplier.copy.available')),
-                row.price_per_kg,
+                materialFor(row.pr_item_id),
                 row.available_qty ?? '-',
                 row.available_thickness ?? '-',
                 row.available_width ?? '-',
@@ -1474,7 +1479,9 @@
                 row.available_d_inner ?? '-',
                 importedLengthValue(row) || '-',
                 row.offered_weight_per_unit ?? '-',
-                row.notes ?? '-'
+                row.price_per_kg ?? '-',
+                row.notes ?? '-',
+                row.is_available === false ? @js(__('supplier.copy.not_available')) : @js(__('supplier.copy.available'))
             ].forEach((value) => $('<td>').text(value).appendTo($tableRow));
             $tableRow.appendTo($preview);
         });

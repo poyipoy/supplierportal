@@ -84,6 +84,32 @@ regional-preference extension, not a grouping fix.
 
 (Stage 1 verification results are recorded in section 8.)
 
+## 4. Stage 2: PR and Excel (PUR-01, PUR-02, GEN-02)
+
+| ID | Change |
+|---|---|
+| PUR-01 | PR import preview (`purchasing/pr/_import`) shows Row, Material, HS Code, Shape, Qty, Thickness, Width, Outer D., Inner D., Length, KG/Unit, Total KG, Remark. Values rendered with `.text()`; a dimension the shape does not use is `null` from the server and shows `-`. `PrItemsImport::HEADINGS` unchanged |
+| PUR-02 | Server: `PrItemsImport::preview()` adds per-row `total_weight = Money::multiply(weight_needed, quantity, 4)` and `summary.total_quantity` / `summary.total_weight_kg` (BCMath). Client: new `resources/js/pr-totals-core.js` (scaled BigInt, same 12 dp working scale and half-up as `Money::multiply`), imported statically in `app.js` and exposed as `window.AdasiPrTotals`; per-row Total KG cell in `_item_row`; footer colspans re-aligned; blank or below-1 quantity shows `—` and contributes 0 (never `max(1)`); `.val()` writers, add/remove and import-apply dispatch `adasi:pr-items-changed`. The `PrItem::total_weight` accessor is unchanged |
+| GEN-02 | `QuotationImportTemplateExport::CANONICAL_HEADINGS` = form order (`pr_item_id, material_name, requested_dimension, available_qty, available_thickness, available_width, available_d_outer, available_d_inner, available_length, offered_weight_per_unit, price_per_kg, notes, availability`); the sample row follows it. The import stays heading-based, so old-order files still import. Supplier import preview order: PR Item ID, Material (looked up from this form's PR rows by `pr_item_id`, never from the file), Offer Qty, dimensions, Offer KG/Unit, Price/kg, Notes, Availability. Template-download audit: all four Excel imports (PR, quotation, Local PO, Local GR) already offer Download Template; no change |
+
+**Tests:** `MissionFiveImportTest::test_pr_preview_reports_row_total_weight_and_grand_totals` (independent bcmul oracle,
+no DB writes), `test_pr_form_and_import_preview_show_dimensions_and_total_kg_columns` (rendered headers; footer colspan
+sum equals header count on both tables), `test_quotation_template_round_trips_through_import_preview_in_canonical_order`
+(download → fill in its own column order incl. a length range → `import-preview` 200 with field-equal values, no DB
+writes), `test_quotation_form_preview_and_template_share_the_canonical_order`; `MoneyTest` and
+`tests/js/pr-totals-core.test.mjs` share `tests/Fixtures/pr-totals-cases.json` (PHP/JS parity, half-up edges,
+20-digit exactness).
+**Sanctioned expectation change (2):** `MissionFiveImportTest:118-123` asserted the old 13-key template order; it now
+asserts the canonical order (same key set), plus that the sample row's `availability` is `Available`. Kept:
+`MissionFiveImportTest:427` (import rows carry no `material_name`).
+
+**Browser (Chrome DevTools, isolated server on `adasi_rev1027_browser_test`):** PR create form: `3 × 12.5` → row
+`37.5`, totals `3` / `37.5`; programmatic `.val('1234.56785')` + notify → `3,703.7036`; blank quantity → `—`, totals
+`0`; `addRow()` keeps totals correct; import preview rendered with a server-shaped payload shows the five dimension
+columns, `-` for unused ones, KG/Unit, Total KG and the grand total footer; HTML in a remark is rendered as text. No
+console errors. A first run found `window.AdasiPrTotals` undefined because the asset build was stale; rebuilt and
+re-verified.
+
 ## 8. Verification log
 
 | Check | Result |

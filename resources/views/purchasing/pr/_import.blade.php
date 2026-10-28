@@ -50,11 +50,27 @@
                                         <th scope="col">{{ __('purchasing.copy.hs_code_result') }}</th>
                                         <th scope="col" class="text-center">{{ __('purchasing.copy.shape') }}</th>
                                         <th scope="col" class="text-center">{{ __('purchasing.copy.qty') }}</th>
+                                        @foreach(\App\Models\PrItem::FIXED_DIMENSION_ORDER as $dimensionField)
+                                            <th scope="col" class="text-end">{{ \App\Models\PrItem::dimensionLabel($dimensionField) }}</th>
+                                        @endforeach
                                         <th scope="col" class="text-end">KG/Unit</th>
+                                        <th scope="col" class="text-end">{{ __('procurement.totals.total_kg') }}</th>
                                         <th scope="col">{{ __('purchasing.copy.remark') }}</th>
                                     </tr>
                                 </thead>
                                 <tbody id="prImportPreviewBody"></tbody>
+                                <tfoot class="table-light fw-bold">
+                                    <tr>
+                                        <th scope="row" colspan="4" class="text-end">{{ __('procurement.totals.total') }}</th>
+                                        <td class="text-center ui-tabular-nums">
+                                            <span class="tw:sr-only">{{ __('procurement.totals.total_qty') }}:</span>
+                                            <output id="prImportTotalQty">0</output>
+                                        </td>
+                                        <td colspan="{{ count(\App\Models\PrItem::FIXED_DIMENSION_ORDER) + 1 }}" class="text-end tw:text-on-surface-variant">{{ __('procurement.totals.total_kg') }}</td>
+                                        <td class="text-end ui-tabular-nums"><output id="prImportTotalKg">0</output></td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
                             </table>
                         </div>
                     </div>
@@ -206,6 +222,10 @@
         $('#prImportErrorsPanel').toggleClass('d-none', errors.length === 0);
 
         const $preview = $('#prImportPreviewBody').empty();
+        const kgFormat = new Intl.NumberFormat(document.documentElement.lang || undefined, { maximumFractionDigits: 4 });
+        const kg = (value) => value === null || value === undefined || value === '' ? '-' : kgFormat.format(Number(value));
+        // PUR-01: every PR dimension in its own column; a dimension the shape does not use is null → '-'.
+        const dimensionOrder = @json(\App\Models\PrItem::FIXED_DIMENSION_ORDER);
         rows.forEach((row, index) => {
             const $tableRow = $('<tr>');
             [
@@ -214,11 +234,15 @@
                 `${row.hs_code ?? '-'} (${row.hs_code_resolution_status ?? 'unresolved'})`,
                 row.shape ?? '-',
                 row.quantity ?? '-',
-                row.weight_needed ?? '-',
+                ...dimensionOrder.map((field) => row[field] ?? '-'),
+                kg(row.weight_needed),
+                kg(row.total_weight),
                 row.remark ?? '-'
-            ].forEach((value) => $('<td>').text(value).appendTo($tableRow));
+            ].forEach((value, column) => $('<td>').text(value).toggleClass('text-end ui-tabular-nums', column >= 5 && column <= 11).appendTo($tableRow));
             $tableRow.appendTo($preview);
         });
+        $('#prImportTotalQty').text(summary.total_quantity ?? 0);
+        $('#prImportTotalKg').text(kg(summary.total_weight_kg ?? 0));
         $('#prImportPreviewPanel').toggleClass('d-none', rows.length === 0);
 
         prImportRows = payload.success === true ? rows : [];
