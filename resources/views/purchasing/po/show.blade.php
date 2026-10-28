@@ -371,10 +371,10 @@
                                     </td>
                                     <td class="text-end fw-bold text-primary ui-tabular-nums">{{ $item->is_available ? $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($orderedLine?->kg ?? $item->offered_total_weight ?? $item->prItem->total_weight), 'decimal') : '—' }}</td>
                                     <td class="text-end ui-tabular-nums tw:text-on-surface-variant">
-                                        {{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($item->price_per_kg, 4), 'decimal') }}
+                                        {{ $regionalFormatter->groupedDecimal($item->price_per_kg, 4) }}
                                     </td>
-                                    <td class="text-end fw-semibold ui-tabular-nums">{{ $item->is_available ? $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($amount), 'decimal') : '—' }}</td>
-                                    <td class="text-end fw-bold tw:text-on-surface ui-tabular-nums">{{ ! $item->is_available ? '—' : ($idr === null ? '— ('.__('purchasing.copy.exchange_rate_unavailable').')' : 'Rp '.$regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($idr), 'decimal')) }}</td>
+                                    <td class="text-end fw-semibold ui-tabular-nums">{{ $item->is_available ? $regionalFormatter->groupedDecimal($amount) : '—' }}</td>
+                                    <td class="text-end fw-bold tw:text-on-surface ui-tabular-nums">{{ ! $item->is_available ? '—' : ($idr === null ? '— ('.__('purchasing.copy.exchange_rate_unavailable').')' : 'Rp '.$regionalFormatter->groupedDecimal($idr)) }}</td>
                                     <td class="text-nowrap">
                                         @if($quotation->purchaseRequisition)
                                             <a href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.show', $quotation->purchaseRequisition) }}" class="text-primary text-decoration-none fw-medium" title="{{ __('purchasing.copy.open_pr_detail') }}">
@@ -400,8 +400,8 @@
                     <tfoot class="table-light fw-bold border-top">
                         <tr>
                             <td colspan="7" class="text-end tw:text-on-surface">{{ __('purchasing.copy.grand_total') }}</td>
-                            <td class="text-end tw:text-on-surface ui-tabular-nums">{{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($grandTotalAmount), 'decimal') }} {{ $po->currency }}</td>
-                            <td class="text-end text-primary ui-tabular-nums fs-6">{{ $grandIdrUnavailable ? '— ('.__('purchasing.copy.exchange_rate_unavailable').')' : 'Rp '.$regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($grandTotalIdr), 'decimal') }}</td>
+                            <td class="text-end tw:text-on-surface ui-tabular-nums">{{ $regionalFormatter->groupedDecimal($grandTotalAmount) }} {{ $po->currency }}</td>
+                            <td class="text-end text-primary ui-tabular-nums fs-6">{{ $grandIdrUnavailable ? '— ('.__('purchasing.copy.exchange_rate_unavailable').')' : 'Rp '.$regionalFormatter->groupedDecimal($grandTotalIdr) }}</td>
                             <td colspan="2"></td>
                         </tr>
                     </tfoot>

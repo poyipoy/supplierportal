@@ -95,7 +95,7 @@
                             <td>{{ $regionalFormatter->date($batch->created_at, 'human') }}</td>
                             <td>{{ trans_choice('common.final_copy.employee_count', $batch->groups_count) }}</td>
                             <td class="text-end tw:font-mono tw:font-semibold tw:text-primary">
-                                Rp {{ number_format($batch->total_subtotal, 0, ',', '.') }}
+                                Rp {{ $regionalFormatter->money($batch->total_subtotal, 0) }}
                             </td>
                             <td>
                                 <x-ui.status-chip :tone="\App\Support\StatusHelper::paymentBatchTone($batch->status)">

@@ -286,10 +286,10 @@
                                     </td>
                                     <td class="text-end fw-bold text-primary ui-tabular-nums">{{ $item->is_available ? $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($orderedLine?->kg ?? $item->offered_total_weight ?? $item->prItem->total_weight), 'decimal') : '—' }}</td>
                                     <td class="text-end ui-tabular-nums">
-                                        {{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($item->price_per_kg, 4), 'decimal') }}
+                                        {{ $regionalFormatter->groupedDecimal($item->price_per_kg, 4) }}
                                     </td>
-                                    <td class="text-end fw-semibold ui-tabular-nums">{{ $item->is_available ? $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($amount), 'decimal') : '—' }}</td>
-                                    <td class="text-end fw-bold tw:text-on-surface ui-tabular-nums">{{ ! $item->is_available ? '—' : ($idr === null ? '— ('.__('purchasing.copy.exchange_rate_unavailable').')' : 'Rp '.$regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($idr), 'decimal')) }}</td>
+                                    <td class="text-end fw-semibold ui-tabular-nums">{{ $item->is_available ? $regionalFormatter->groupedDecimal($amount) : '—' }}</td>
+                                    <td class="text-end fw-bold tw:text-on-surface ui-tabular-nums">{{ ! $item->is_available ? '—' : ($idr === null ? '— ('.__('purchasing.copy.exchange_rate_unavailable').')' : 'Rp '.$regionalFormatter->groupedDecimal($idr)) }}</td>
                                 </tr>
                             @endforeach
                         @endforeach
@@ -297,8 +297,8 @@
                     <tfoot class="table-light fw-bold border-top">
                         <tr>
                             <td colspan="8" class="text-end tw:text-on-surface">{{ __('common.fields.total') }}</td>
-                            <td class="text-end tw:text-on-surface ui-tabular-nums">{{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($totalAmount), 'decimal') }} {{ $po->currency }}</td>
-                            <td class="text-end text-primary ui-tabular-nums fs-6">{{ $totalIdrUnavailable ? '— ('.__('purchasing.copy.exchange_rate_unavailable').')' : 'Rp '.$regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($totalIdr), 'decimal') }}</td>
+                            <td class="text-end tw:text-on-surface ui-tabular-nums">{{ $regionalFormatter->groupedDecimal($totalAmount) }} {{ $po->currency }}</td>
+                            <td class="text-end text-primary ui-tabular-nums fs-6">{{ $totalIdrUnavailable ? '— ('.__('purchasing.copy.exchange_rate_unavailable').')' : 'Rp '.$regionalFormatter->groupedDecimal($totalIdr) }}</td>
                         </tr>
                     </tfoot>
                 </table>

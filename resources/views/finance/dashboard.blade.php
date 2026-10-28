@@ -254,10 +254,10 @@
                                             </span>
                                         </td>
                                         <td class="text-end tw:font-mono tw:font-semibold tw:text-on-surface">
-                                            Rp {{ $regionalFormatter->number(substr($w['period_amount_formatted'] ?? ('Rp ' . number_format($w['period_amount'], 0, ',', '.')), 3), 'indonesian') }}
+                                            Rp {{ $regionalFormatter->number(substr($w['period_amount_formatted'] ?? ('Rp ' . $regionalFormatter->money($w['period_amount'], 0)), 3), 'indonesian') }}
                                         </td>
                                         <td class="text-end tw:font-mono tw:font-bold tw:text-primary">
-                                            Rp {{ $regionalFormatter->number(substr($w['cumulative_amount_formatted'] ?? ('Rp ' . number_format($w['cumulative_amount'], 0, ',', '.')), 3), 'indonesian') }}
+                                            Rp {{ $regionalFormatter->number(substr($w['cumulative_amount_formatted'] ?? ('Rp ' . $regionalFormatter->money($w['cumulative_amount'], 0)), 3), 'indonesian') }}
                                         </td>
                                     </tr>
                                 @endforeach

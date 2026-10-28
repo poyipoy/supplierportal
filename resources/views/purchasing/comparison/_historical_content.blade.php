@@ -1,5 +1,6 @@
 @php
     $formatNumber = fn ($value, $decimals = 2) => $value !== null ? (isset($regionalFormatter) ? $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($value, $decimals), 'decimal') : \App\Support\NumberFormat::maxDecimals($value, $decimals)) : '-';
+    $formatPrice = fn ($value, $decimals = 2) => $value !== null ? (isset($regionalFormatter) ? $regionalFormatter->groupedDecimal($value, $decimals, 'indonesian') : \App\Support\NumberFormat::maxDecimals($value, $decimals)) : '-';
 
     $formatPct = function ($value) use ($formatNumber) {
         if ($value === null) return '-';
@@ -125,7 +126,7 @@
         {{-- Mission 07: weighted average over ordered KG (12.3) --}}
         <div class="tw:border-t tw:border-outline-variant tw:p-4 tw:sm:col-span-2" id="historicalWeightedSummary">
             <div class="tw:text-ui-xs tw:font-semibold tw:uppercase tw:tracking-wider tw:text-on-surface-variant">{{ __('purchasing.comparison_analytics.historical_average') }}</div>
-            <div class="ui-tabular-nums tw:mt-1 tw:text-ui-xl tw:font-semibold tw:text-on-surface" id="historicalWeightedAverage">{{ ($summary['weighted_average'] ?? null) !== null ? $currency.' '.$formatNumber($summary['weighted_average'], 4) : '—' }}</div>
+            <div class="ui-tabular-nums tw:mt-1 tw:text-ui-xl tw:font-semibold tw:text-on-surface" id="historicalWeightedAverage">{{ ($summary['weighted_average'] ?? null) !== null ? $currency.' '.$formatPrice($summary['weighted_average'], 4) : '—' }}</div>
             <div class="tw:text-ui-xs tw:text-on-surface-variant" id="historicalWeightedBasis">{{ __('purchasing.comparison_analytics.history_basis', ['pos' => $summary['po_count'] ?? 0, 'kg' => $formatNumber($summary['total_kg'] ?? 0)]) }} · {{ __('purchasing.comparison_analytics.historical_best') }}: {{ ($summary['best'] ?? null) !== null ? $currency.' '.$formatNumber($summary['best'], 4) : '—' }}</div>
             <div class="tw:text-ui-xs tw:text-warning {{ ($summary['excluded']['lines'] ?? 0) > 0 ? '' : 'd-none' }}" id="historicalExcludedNote">{{ ($summary['excluded']['lines'] ?? 0) > 0 ? __('purchasing.comparison_analytics.excluded_note', ['lines' => $summary['excluded']['lines'], 'kg' => $formatNumber($summary['excluded']['kg']), 'currencies' => implode(', ', $summary['excluded']['currencies'])]) : '' }}</div>
         </div>
@@ -158,9 +159,9 @@
                     @if($periodView === 'yearly')
                         <tr>
                             <td class="text-center fw-medium">{{ $row['period'] }}</td>
-                            <td class="text-end text-primary fw-bold ui-tabular-nums">{{ $currency }} {{ $formatNumber($row['price_idr'], 4) }}</td>
-                            <td class="text-end ui-tabular-nums">{{ $currency }} {{ $formatNumber($row['min_idr'], 4) }}</td>
-                            <td class="text-end ui-tabular-nums">{{ $currency }} {{ $formatNumber($row['max_idr'], 4) }}</td>
+                            <td class="text-end text-primary fw-bold ui-tabular-nums">{{ $currency }} {{ $formatPrice($row['price_idr'], 4) }}</td>
+                            <td class="text-end ui-tabular-nums">{{ $currency }} {{ $formatPrice($row['min_idr'], 4) }}</td>
+                            <td class="text-end ui-tabular-nums">{{ $currency }} {{ $formatPrice($row['max_idr'], 4) }}</td>
                             <td class="text-center">{!! $changeBadge($row['change_pct'] ?? null) !!}</td>
                         </tr>
                     @else
@@ -177,10 +178,10 @@
                             </td>
                             <td class="text-center">{{ $row['supplier'] ?? '-' }}</td>
                             <td class="text-end ui-tabular-nums">
-                                {{ $formatNumber($row['price_per_kg'], 4) }}
+                                {{ $formatPrice($row['price_per_kg'], 4) }}
                                 <span class="ui-status-chip ui-status-chip--neutral tw:ms-1">{{ $row['currency'] }}</span>
                             </td>
-                            <td class="text-end text-primary fw-bold ui-tabular-nums">{{ $row['total_idr'] !== null ? $currency.' '.$formatNumber($row['total_idr']) : __('purchasing.comparison_analytics.rate_unavailable') }}</td>
+                            <td class="text-end text-primary fw-bold ui-tabular-nums">{{ $row['total_idr'] !== null ? $currency.' '.$formatPrice($row['total_idr']) : __('purchasing.comparison_analytics.rate_unavailable') }}</td>
                             <td class="text-center">
                                 @if(!empty($row['purchase_order_at_display']))
                                     {{ $row['purchase_order_at_display'] }}

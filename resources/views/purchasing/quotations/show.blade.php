@@ -388,10 +388,10 @@
                                                 {{ \App\Support\NumberFormat::maxDecimals($previewItem->offered_total_weight ?? $previewItem->prItem?->total_weight ?? 0) }}
                                             </td>
                                             <td class="text-end ui-tabular-nums">
-                                                {{ $previewItem->price_per_kg !== null ? \App\Support\NumberFormat::maxDecimals($previewItem->price_per_kg, 4) : '-' }}
+                                                {{ $previewItem->price_per_kg !== null ? \App\Support\NumberFormat::grouped($previewItem->price_per_kg, 4) : '-' }}
                                             </td>
                                             <td class="text-end ui-tabular-nums">
-                                                {{ $preview['eligible'] ? \App\Support\NumberFormat::maxDecimals($preview['amount']) : '-' }}
+                                                {{ $preview['eligible'] ? \App\Support\NumberFormat::grouped($preview['amount']) : '-' }}
                                             </td>
                                             <td>
                                                 @if($preview['eligible'])
@@ -406,13 +406,13 @@
                                 <tfoot class="table-light fw-bold">
                                     <tr>
                                         <td colspan="{{ $orderedQuantityWriteEnabled ? 5 : 4 }}" class="text-end">{{ __('purchasing.copy.po_total') }} ({{ $quotation->currency }})</td>
-                                        <td class="text-end ui-tabular-nums">{{ \App\Support\NumberFormat::maxDecimals($directPoTotalAmount) }}</td>
+                                        <td class="text-end ui-tabular-nums">{{ \App\Support\NumberFormat::grouped($directPoTotalAmount) }}</td>
                                         <td></td>
                                     </tr>
                                     <tr>
                                         <td colspan="{{ $orderedQuantityWriteEnabled ? 5 : 4 }}" class="text-end">{{ __('purchasing.copy.estimated_total_idr') }}</td>
                                         <td class="text-end text-primary ui-tabular-nums">
-                                            {{ $directPoTotalIdr !== null ? 'Rp '.\App\Support\NumberFormat::maxDecimals($directPoTotalIdr) : '-' }}
+                                            {{ $directPoTotalIdr !== null ? 'Rp '.\App\Support\NumberFormat::grouped($directPoTotalIdr) : '-' }}
                                         </td>
                                         <td></td>
                                     </tr>

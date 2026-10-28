@@ -150,6 +150,7 @@ class AppServiceProvider extends ServiceProvider
             'purchasing.comparison.inter-supplier',
             'purchasing.comparison.historical',
             'purchasing.comparison.vs-best',
+            'purchasing.po.consolidate-awards',
         ], function ($view): void {
             $view->with('regionalFormatter', app(RegionalDisplayFormatter::class));
         });
@@ -183,15 +184,15 @@ class AppServiceProvider extends ServiceProvider
         View::composer([
             'admin.announcements.edit', 'admin.announcements.index', 'admin.exchange-rates.index',
             'admin.requisitions.show', 'admin.users.edit',
-            'finance.drp._paid_table_content', 'finance.drp.ga', 'finance.drp.show', 'finance.drp.supplier',
-            'finance.local-procurement.index', 'finance.local-procurement.show', 'finance.overpayments.index',
+            'finance.drp._paid_table_content', 'finance.drp.ga', 'finance.drp.paid', 'finance.drp.show', 'finance.drp.supplier',
+            'finance.local-procurement.form', 'finance.local-procurement.index', 'finance.local-procurement.show', 'finance.overpayments.index',
             'finance.vouchers.print', 'finance.vouchers.show', 'finance.vendors.index', 'finance.vendors.show',
             'ga.claims.receipt', 'ga.drp.draft',
             'local-supplier.purchase-orders.index',
             'local-supplier.purchase-orders.show', 'local-supplier.vendor-profile.show',
             'purchasing.comparison._historical_content',
             'purchasing.comparison._inter_supplier_content', 'purchasing.comparison._vs_best_content',
-            'purchasing.drp._paid_table_content', 'purchasing.drp.ga', 'purchasing.drp.show', 'purchasing.drp.supplier',
+            'purchasing.drp._paid_table_content', 'purchasing.drp.ga', 'purchasing.drp.paid', 'purchasing.drp.show', 'purchasing.drp.supplier',
             'purchasing.local-vendors.index', 'purchasing.local-vendors.show', 'purchasing.pr.show',
             'qc.inspections.create', 'qc.inspections.show',
             'supplier.announcements.index', 'supplier.announcements.show', 'supplier.claims.show',

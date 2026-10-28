@@ -41,7 +41,7 @@
 
         <x-ui.metric-card
             :label="__('local_procurement.labels.po_total')"
-            :value="'Rp ' . number_format($metrics['total_po_amount'] ?? 0, 0, ',', '.')"
+            :value="'Rp ' . $regionalFormatter->money($metrics['total_po_amount'] ?? 0, 0)"
             icon="banknote"
             tone="primary"
             :meta="__('local_procurement.register.commitment')"
@@ -192,7 +192,7 @@
                                 </span>
                             </td>
                             <td class="text-end tw:font-mono tw:font-bold tw:text-on-surface">
-                                Rp {{ number_format($po->total_amount, 2, ',', '.') }}
+                                Rp {{ $regionalFormatter->money($po->total_amount, 2) }}
                             </td>
                             <td class="text-end">
                                 <div class="tw:font-mono tw:font-semibold tw:text-on-surface">

@@ -30,32 +30,32 @@
         <x-ui.card>
             <span class="tw:text-ui-xs tw:text-on-surface-variant tw:block">{{ __('finance.drp.total_gross') }}</span>
             <span class="tw:font-mono tw:font-bold tw:text-ui-base tw:text-on-surface tw:block tw:mt-1">
-                Rp {{ number_format($batch->total_subtotal, 0, ',', '.') }}
+                Rp {{ $regionalFormatter->money($batch->total_subtotal, 0) }}
             </span>
         </x-ui.card>
         <x-ui.card>
             <span class="tw:text-ui-xs tw:text-on-surface-variant tw:block">{{ __('finance.drp.total_bank_fee') }}</span>
             <span class="tw:font-mono tw:font-bold tw:text-ui-base tw:text-error tw:block tw:mt-1">
-                Rp {{ number_format($batch->total_bank_fee, 0, ',', '.') }}
+                Rp {{ $regionalFormatter->money($batch->total_bank_fee, 0) }}
             </span>
         </x-ui.card>
         <x-ui.card>
             <span class="tw:text-ui-xs tw:text-on-surface-variant tw:block">{{ __('finance.drp.total_net') }}</span>
             <span class="tw:font-mono tw:font-bold tw:text-ui-base tw:text-on-surface tw:block tw:mt-1">
-                Rp {{ number_format($batch->total_net_amount, 0, ',', '.') }}
+                Rp {{ $regionalFormatter->money($batch->total_net_amount, 0) }}
             </span>
         </x-ui.card>
         @if($batch->status === \App\Models\PaymentBatch::STATUS_PARTIALLY_PAID)
             <x-ui.card class="tw:border-success/30 tw:bg-success/5">
                 <span class="tw:text-ui-xs tw:text-success tw:font-semibold tw:block">{{ __('local_invoice.labels.paid') }}</span>
                 <span class="tw:font-mono tw:font-bold tw:text-ui-base tw:text-success tw:block tw:mt-1">
-                    Rp {{ number_format($batch->actual_paid_amount, 0, ',', '.') }}
+                    Rp {{ $regionalFormatter->money($batch->actual_paid_amount, 0) }}
                 </span>
             </x-ui.card>
             <x-ui.card class="tw:border-warning/30 tw:bg-warning/5">
                 <span class="tw:text-ui-xs tw:text-warning-container-foreground tw:font-semibold tw:block">{{ __('local_invoice.labels.remaining') }}</span>
                 <span class="tw:font-mono tw:font-bold tw:text-ui-base tw:text-warning-container-foreground tw:block tw:mt-1">
-                    Rp {{ number_format($batch->remaining_amount, 0, ',', '.') }}
+                    Rp {{ $regionalFormatter->money($batch->remaining_amount, 0) }}
                 </span>
             </x-ui.card>
         @endif
@@ -89,9 +89,9 @@
                         <div>
                             <span class="tw:text-[11px] tw:text-on-surface-variant tw:block">{{ __('finance.drp_surface.net_transfer') }}</span>
                             <span class="tw:font-mono tw:font-bold tw:text-ui-base tw:text-primary">
-                                Rp {{ number_format($group->net_payment_amount, 0, ',', '.') }}
+                                Rp {{ $regionalFormatter->money($group->net_payment_amount, 0) }}
                             </span>
-                            <span class="tw:text-[10px] tw:text-on-surface-variant tw:block">{{ __('common.final_copy.bank_fee', ['amount' => number_format($group->bank_fee, 0, ',', '.')]) }}</span>
+                            <span class="tw:text-[10px] tw:text-on-surface-variant tw:block">{{ __('common.final_copy.bank_fee', ['amount' => $regionalFormatter->money($group->bank_fee, 0)]) }}</span>
                         </div>
                     </div>
                 </div>
@@ -140,10 +140,10 @@
                                             {{ $item->item_reference }}
                                         @endif
                                     </td>
-                                    <td class="text-end tw:font-mono">Rp {{ number_format($item->subtotal_amount, 0, ',', '.') }}</td>
-                                    <td class="text-end tw:font-mono">Rp {{ number_format($item->tax_amount, 0, ',', '.') }}</td>
+                                    <td class="text-end tw:font-mono">Rp {{ $regionalFormatter->money($item->subtotal_amount, 0) }}</td>
+                                    <td class="text-end tw:font-mono">Rp {{ $regionalFormatter->money($item->tax_amount, 0) }}</td>
                                     <td class="text-end tw:font-mono tw:font-bold tw:text-on-surface">
-                                        Rp {{ number_format($item->total_amount, 0, ',', '.') }}
+                                        Rp {{ $regionalFormatter->money($item->total_amount, 0) }}
                                     </td>
                                     <td>
                                         @if($item->status === 'ACTIVE')
@@ -151,20 +151,20 @@
                                                 @if($item->localInvoicePayment->status === \App\Models\LocalInvoicePayment::STATUS_FINALIZED)
                                                     <div class="tw:flex tw:flex-col tw:gap-1">
                                                         <span class="tw:inline-flex tw:px-1.5 tw:py-0.5 tw:rounded-sm tw:text-[10px] tw:font-semibold tw:bg-success/10 tw:text-success tw:w-fit">
-                                                            {{ __('finance.drp_ui.settled_amount', ['amount' => number_format($item->localInvoicePayment->actual_paid_total, 0, ',', '.')]) }}
+                                                            {{ __('finance.drp_ui.settled_amount', ['amount' => $regionalFormatter->money($item->localInvoicePayment->actual_paid_total, 0)]) }}
                                                         </span>
                                                         @if($item->localInvoicePayment->overpayment)
                                                             @if($item->localInvoicePayment->overpayment->status === \App\Models\SupplierOverpaymentRefund::STATUS_OPEN)
                                                                 <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-1.5 tw:py-0.5 tw:rounded-sm tw:text-[10px] tw:font-semibold tw:bg-amber-100 tw:text-amber-800 tw:dark:bg-amber-950 tw:dark:text-amber-300 tw:w-fit"
                                                                       title="{{ __('finance.drp_surface.not_refunded') }}">
                                                                     <x-ui.icon name="alert-circle" size="xs" />
-                                                                    <span>{{ __('finance.drp_ui.overpayment_status', ['amount' => number_format($item->localInvoicePayment->overpayment->overpayment_amount, 0, ',', '.'), 'status' => \App\Support\StatusHelper::localFinanceLabel($item->localInvoicePayment->overpayment->status)]) }}</span>
+                                                                    <span>{{ __('finance.drp_ui.overpayment_status', ['amount' => $regionalFormatter->money($item->localInvoicePayment->overpayment->overpayment_amount, 0), 'status' => \App\Support\StatusHelper::localFinanceLabel($item->localInvoicePayment->overpayment->status)]) }}</span>
                                                                 </span>
                                                             @elseif($item->localInvoicePayment->overpayment->status === \App\Models\SupplierOverpaymentRefund::STATUS_SETTLED)
                                                                 <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-1.5 tw:py-0.5 tw:rounded-sm tw:text-[10px] tw:font-semibold tw:bg-emerald-100 tw:text-emerald-800 tw:dark:bg-emerald-950 tw:dark:text-emerald-300 tw:w-fit"
                                                                       title="{{ __('finance.drp_surface.refund_completed') }}">
                                                                     <x-ui.icon name="check-circle" size="xs" />
-                                                                    <span>{{ __('finance.paid_ui.overpayment_settled', ['amount' => number_format($item->localInvoicePayment->overpayment->overpayment_amount, 0, ',', '.')]) }}</span>
+                                                                    <span>{{ __('finance.paid_ui.overpayment_settled', ['amount' => $regionalFormatter->money($item->localInvoicePayment->overpayment->overpayment_amount, 0)]) }}</span>
                                                                 </span>
                                                             @endif
                                                         @endif
@@ -173,10 +173,10 @@
                                                     <div class="tw:flex tw:flex-col tw:gap-0.5">
                                                         <span class="tw:inline-flex tw:px-1.5 tw:py-0.5 tw:rounded-sm tw:text-[10px] tw:font-semibold tw:bg-warning/10 tw:text-warning-container-foreground tw:w-fit">{{ __('finance.drp_surface.underpaid') }}</span>
                                                         <span class="tw:text-[10px] tw:font-mono tw:text-on-surface-variant">
-                                                            {{ __('finance.paid_ui.paid_amount', ['amount' => number_format($item->localInvoicePayment->actual_paid_total, 0, ',', '.')]) }}
+                                                            {{ __('finance.paid_ui.paid_amount', ['amount' => $regionalFormatter->money($item->localInvoicePayment->actual_paid_total, 0)]) }}
                                                         </span>
                                                         <span class="tw:text-[10px] tw:font-mono tw:text-warning-container-foreground tw:font-semibold">
-                                                            {{ __('finance.paid_ui.remaining', ['amount' => number_format(max(0, (float)$item->localInvoicePayment->expected_amount - (float)$item->localInvoicePayment->actual_paid_total), 0, ',', '.')]) }}
+                                                            {{ __('finance.paid_ui.remaining', ['amount' => $regionalFormatter->money(max(0, (float)$item->localInvoicePayment->expected_amount - (float)$item->localInvoicePayment->actual_paid_total), 0)]) }}
                                                         </span>
                                                     </div>
                                                 @else

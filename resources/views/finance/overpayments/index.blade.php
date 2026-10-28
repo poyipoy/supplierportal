@@ -78,8 +78,8 @@
                                     <span class="tw:text-on-surface-variant">—</span>
                                 @endforelse
                             </td>
-                            <td class="text-end tw:font-mono">Rp {{ number_format($refund->payment?->expected_amount ?? 0, 2, ',', '.') }} / Rp {{ number_format($refund->payment?->actual_paid_total ?? 0, 2, ',', '.') }}</td>
-                            <td class="text-end tw:font-mono tw:font-semibold">Rp {{ number_format($refund->overpayment_amount, 2, ',', '.') }}</td>
+                            <td class="text-end tw:font-mono">Rp {{ $regionalFormatter->money($refund->payment?->expected_amount ?? 0, 2) }} / Rp {{ $regionalFormatter->money($refund->payment?->actual_paid_total ?? 0, 2) }}</td>
+                            <td class="text-end tw:font-mono tw:font-semibold">Rp {{ $regionalFormatter->money($refund->overpayment_amount, 2) }}</td>
                             <td>
                                 <x-ui.status-chip :tone="\App\Support\StatusHelper::localFinanceTone($refund->status)">{{ \App\Support\StatusHelper::localFinanceLabel($refund->status) }}</x-ui.status-chip>
                                 <span class="tw:mt-1 tw:block tw:text-ui-xs tw:text-on-surface-variant">{{ $refund->status === 'SETTLED' ? $regionalFormatter->date($refund->refund_date, 'human') : $regionalFormatter->date($refund->created_at, 'human') }}</span>
@@ -193,7 +193,7 @@
                                         <div>
                                             <span class="tw:text-on-surface-variant tw:block">{{ __('finance.refund_ui.full_amount') }}</span>
                                             <strong class="tw:text-ui-base tw:font-bold tw:font-mono tw:text-primary">
-                                                Rp {{ number_format($refund->overpayment_amount, 2, ',', '.') }}
+                                                Rp {{ $regionalFormatter->money($refund->overpayment_amount, 2) }}
                                             </strong>
                                         </div>
                                     </div>

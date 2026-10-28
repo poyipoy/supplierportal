@@ -47,7 +47,7 @@
                             <td><a href="{{ route('purchasing.quotations.show', $award->quotation) }}">{{ __('purchasing.copy.view_quotation') }}</a></td>
                             <td>{{ $award->quotation->currency }}</td>
                             <td class="text-end">{{ \App\Support\NumberFormat::maxDecimals($award->quotationItem->offered_total_weight) }}</td>
-                            <td class="text-end">{{ \App\Support\NumberFormat::maxDecimals($award->quotationItem->resolved_amount) }}</td>
+                            <td class="text-end">{{ $regionalFormatter->groupedDecimal($award->quotationItem->resolved_amount) }}</td>
                             <td>{{ \App\Support\Procurement\LogisticsTerms::portLabel($award->purchaseRequisition->port_of_discharge) }}</td>
                             <td>{{ \App\Support\Procurement\LogisticsTerms::incotermLabel($award->purchaseRequisition->incoterm) }}</td>
                             @if($orderQtyEnabled)

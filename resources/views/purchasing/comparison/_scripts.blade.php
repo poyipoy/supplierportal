@@ -9,8 +9,9 @@
         const code = currency || 'IDR';
         const decimals = maxDecimals ?? (code === 'IDR' ? 0 : 4);
         const number = Number(value).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: decimals });
-        const text = (code === 'IDR' ? 'Rp ' : code + ' ') + number;
-        return window.AdasiPreferences?.displayNumber ? window.AdasiPreferences.displayNumber(text, 'indonesian') : text;
+        // Transcode the numeric segment only; the prefix keeps its place and spacing.
+        const display = window.AdasiPreferences?.displayNumber ? window.AdasiPreferences.displayNumber(number, 'indonesian') : number;
+        return (code === 'IDR' ? 'Rp ' : code + ' ') + display;
     };
 
     if (!window._analysisCurrencyListener) {

@@ -199,7 +199,7 @@
                             @enderror
                             @if($isLocked && $activeInvoicedTotal > 0)
                                 <div class="form-text tw:text-[11px] tw:text-warning tw:mt-1">
-                                    {{ __('finance.closure.plafon_minimum', ['amount' => number_format($activeInvoicedTotal, 2, ',', '.')]) }}
+                                    {{ __('finance.closure.plafon_minimum', ['amount' => $regionalFormatter->money($activeInvoicedTotal, 2)]) }}
                                 </div>
                             @endif
                         </div>
@@ -242,7 +242,7 @@
                                 </span>
                             </div>
                             <div id="sidebar-total-amount" class="tw:font-mono tw:font-bold tw:text-primary tw:text-lg tw:sm:text-xl tw:tracking-tight tw:wrap-break-word">
-                                Rp {{ number_format((float) ($initialAmount ?: 0), 0, ',', '.') }}
+                                Rp {{ $regionalFormatter->money((float) ($initialAmount ?: 0), 0) }}
                             </div>
                         </div>
 

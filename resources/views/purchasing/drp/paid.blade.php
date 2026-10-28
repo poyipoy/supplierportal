@@ -38,7 +38,7 @@
 
         <x-ui.metric-card
             :label="__('finance.drp.unpaid_pending')"
-            :value="'Rp ' . number_format($metrics['unpaid_amount'], 0, ',', '.')"
+            :value="'Rp ' . $regionalFormatter->money($metrics['unpaid_amount'], 0)"
             icon="clock"
             tone="warning"
             :meta="trans_choice('finance.drp_ui.unpaid_batches', $metrics['unpaid_count'], ['count' => number_format($metrics['unpaid_count'])])"
@@ -53,7 +53,7 @@
 
         <x-ui.metric-card
             :label="__('finance.drp.paid_complete')"
-            :value="'Rp ' . number_format($metrics['paid_amount'], 0, ',', '.')"
+            :value="'Rp ' . $regionalFormatter->money($metrics['paid_amount'], 0)"
             icon="badge-check"
             tone="success"
             :meta="trans_choice('finance.drp_ui.paid_batches', $metrics['paid_count'], ['count' => number_format($metrics['paid_count'])])"

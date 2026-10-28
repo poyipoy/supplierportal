@@ -84,10 +84,10 @@
                                         </span>
                                     </td>
                                     <td class="tw:text-ui-xs">@bizdt($inv->ready_to_pay_at)</td>
-                                    <td class="text-end tw:font-mono">Rp {{ number_format($inv->invoice_amount, 0, ',', '.') }}</td>
-                                    <td class="text-end tw:font-mono">Rp {{ number_format($inv->tax_amount, 0, ',', '.') }}</td>
+                                    <td class="text-end tw:font-mono">Rp {{ $regionalFormatter->money($inv->invoice_amount, 0) }}</td>
+                                    <td class="text-end tw:font-mono">Rp {{ $regionalFormatter->money($inv->tax_amount, 0) }}</td>
                                     <td class="text-end tw:font-mono tw:font-bold tw:text-primary">
-                                        Rp {{ number_format($totalNominal, 0, ',', '.') }}
+                                        Rp {{ $regionalFormatter->money($totalNominal, 0) }}
                                     </td>
                                 </tr>
                             @empty
@@ -167,10 +167,10 @@
                             <td>{{ $regionalFormatter->date($batch->created_at, 'human') }}</td>
                             <td>{{ trans_choice('finance.copy_review.accounts_count', $batch->groups_count, ['count' => $batch->groups_count]) }}</td>
                             <td class="text-end tw:font-mono tw:font-semibold">
-                                Rp {{ number_format($batch->total_subtotal, 0, ',', '.') }}
+                                Rp {{ $regionalFormatter->money($batch->total_subtotal, 0) }}
                             </td>
                             <td class="text-end tw:font-mono tw:text-on-surface-variant">
-                                Rp {{ number_format($batch->total_bank_fee, 0, ',', '.') }}
+                                Rp {{ $regionalFormatter->money($batch->total_bank_fee, 0) }}
                             </td>
                             <td>
                                 <x-ui.status-chip :tone="\App\Support\StatusHelper::paymentBatchTone($batch->status)">
