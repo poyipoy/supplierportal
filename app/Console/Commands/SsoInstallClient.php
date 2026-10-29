@@ -36,20 +36,43 @@ class SsoInstallClient extends Command
                     if ($configured !== '') {
                         $client = $clients->findActive($configured);
 
-                        return $client && $this->matches($client, $redirect) ? $client : null;
+                        if ($client && $this->matches($client, $redirect)) {
+                            if (! app()->isProduction()) {
+                                $this->syncLocalRedirectUris($client, $redirect);
+                            }
+
+                            return $client;
+                        }
+
+                        return null;
                     }
 
                     $candidates = Passport::client()->newQuery()->where('name', 'ADASI Portal')
                         ->where('revoked', false)->whereNull('secret')->whereNull('owner_id')
-                        ->whereJsonContains('redirect_uris', $redirect)->limit(2)->get();
+                        ->limit(2)->get();
                     if ($candidates->count() > 1) {
                         return null;
                     }
                     if ($candidates->isNotEmpty()) {
-                        return $this->matches($candidates->first(), $redirect) ? $candidates->first() : null;
+                        $candidate = $candidates->first();
+                        if ($this->matches($candidate, $redirect)) {
+                            if (! app()->isProduction()) {
+                                $this->syncLocalRedirectUris($candidate, $redirect);
+                            }
+
+                            return $candidate;
+                        }
+
+                        return null;
                     }
 
-                    return $clients->createAuthorizationCodeGrantClient('ADASI Portal', [$redirect], confidential: false);
+                    $redirectUris = array_values(array_unique(array_filter([
+                        $redirect,
+                        ! app()->isProduction() ? 'http://localhost:8000/sso/callback' : null,
+                        ! app()->isProduction() ? 'http://127.0.0.1:8000/sso/callback' : null,
+                    ])));
+
+                    return $clients->createAuthorizationCodeGrantClient('ADASI Portal', $redirectUris, confidential: false);
                 });
             });
         } catch (Throwable) {
@@ -73,8 +96,30 @@ class SsoInstallClient extends Command
 
     private function matches(Client $client, string $redirect): bool
     {
+        $redirectMatches = app()->isProduction()
+            ? $client->redirect_uris === [$redirect]
+            : in_array($redirect, $client->redirect_uris, true);
+
         return ! $client->revoked && ! $client->confidential() && $client->firstParty()
-            && $client->redirect_uris === [$redirect]
+            && $redirectMatches
             && $client->grant_types === ['authorization_code', 'refresh_token'];
+    }
+
+    private function syncLocalRedirectUris(Client $client, string $redirect): void
+    {
+        $raw = $client->getRawOriginal('redirect_uris');
+        $stored = is_string($raw) ? (json_decode($raw, true) ?: []) : (is_array($raw) ? $raw : []);
+        $merged = array_values(array_unique(array_filter([
+            ...$stored,
+            $redirect,
+            'http://localhost:8000/sso/callback',
+            'http://127.0.0.1:8000/sso/callback',
+        ])));
+
+        if ($merged !== $stored) {
+            DB::table('oauth_clients')->where('id', $client->getKey())->update([
+                'redirect_uris' => json_encode($merged),
+            ]);
+        }
     }
 }

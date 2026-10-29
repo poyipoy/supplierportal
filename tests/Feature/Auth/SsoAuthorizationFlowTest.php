@@ -111,6 +111,36 @@ class SsoAuthorizationFlowTest extends TestCase
         Http::assertNothingSent();
     }
 
+    public function test_login_page_and_sso_authorization_is_accessible_via_localhost_8000(): void
+    {
+        Http::preventStrayRequests();
+        $user = User::factory()->create(['role' => 'admin']);
+
+        // 1. Visit /login on localhost:8000
+        $response = $this->get('http://localhost:8000/login')->assertRedirect();
+        $authorizeUrl = Request::create($response->headers->get('Location'))->fullUrl();
+        $this->assertStringStartsWith('http://localhost:8000/oauth/authorize', $authorizeUrl);
+
+        $query = $this->query($authorizeUrl);
+        $this->assertSame('http://localhost:8000/sso/callback', $query['redirect_uri']);
+
+        // 2. Guest visits the authorize URL on localhost:8000 -> renders login page with 200 OK
+        $this->get($authorizeUrl)->assertOk()->assertViewIs('auth.login');
+
+        // 3. User authenticates on localhost:8000
+        $this->post('http://localhost:8000/login', ['email' => $user->email, 'password' => 'password'])
+            ->assertRedirect($authorizeUrl);
+
+        // 4. Authenticated user visits authorize URL -> issues auth code and redirects to callback on localhost:8000
+        $authResponse = $this->get($authorizeUrl)->assertRedirect();
+        $callbackUrl = $authResponse->headers->get('Location');
+        $this->assertStringStartsWith('http://localhost:8000/sso/callback', $callbackUrl);
+
+        // 5. Callback completes SSO exchange and redirects to dashboard
+        $this->get($callbackUrl)->assertRedirect('/dashboard')
+            ->assertSessionHas('sso.verified_at');
+    }
+
     public function test_a_deep_link_and_its_query_are_preserved_through_login(): void
     {
         $intended = '/profile/customization?tab=layout';
