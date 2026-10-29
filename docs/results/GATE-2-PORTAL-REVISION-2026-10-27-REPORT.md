@@ -151,7 +151,7 @@ re-verified.
 
 **Tests so far (PASSED):** `FulfillmentScenarioC1Test` (CT parity, projection = item status at 12 checks + conservation, NG under open claim never "waiting QC", PUR-09, claim targeting), `PurchaseOrderOverduePredicateTest` (11 §2.1 rows: accessor = index filter = legacy export; list path 1 query). Proven to fail on HEAD code: PUR-09 test, claim-targeting test. Stage 4 subset run before QC-01: 380 passed (incl. `ShipmentSubmissionConcurrencyTest`, `OrderedQuantityShipmentConcurrencyTest`). QC store callers after QC-01: 77 passed.
 
-| QC-01 (view) | QC create shows the **ordered specification** (`QuotationItem::orderedSpecification()` = offer value, else PR value) with requested/offered range hints, empty required inputs per canonical shape, and a "Copy from PO" button that fills only blank dimension inputs from the ordered spec (never the result/status, so it never approves QC; `aria-live` confirmation). Null/unknown shape shows a notice and keeps the weight-only form. QC show compares actuals against the same ordered spec |
+| QC-01 (view) | QC create shows the **ordered specification** (`QuotationItem::orderedSpecification()` = offer value, else PR value) with requested/offered range hints, empty required inputs per canonical shape, and a "Copy from PO" button that writes the ordered exact dimensions into that item's inputs, overwriting what was typed (a length range and the weight are never copied; the values stay editable; it never touches the OK/NG switch or submits, so it never approves QC; `aria-live` confirmation). *Corrected 2026-10-29: an earlier version of this row said "fills only blank inputs", which the code never did.*. Null/unknown shape shows a notice and keeps the weight-only form. QC show compares actuals against the same ordered spec |
 
 **Sanctioned test changes in Stage 4 (reason: Gate 1 RISK-04 / §4 PUR-08 decision "claim action = latest NG inspection without any claim, including trashed"; `MaterialClaimController::store` refuses any inspection with a claim via `withTrashed()` at `:118,153`, so the old expectations asserted a link that can only be refused):**
 - `PurchaseOrderReferenceRemarkTest::test_purchase_order_action_projection_preserves_claim_precedence_soft_deletes_and_hashids` — after the claim is soft-deleted, the action must **not** offer Create Claim for that inspection (was: must offer it). The other assertions (claim precedence, hashids, trashed inspection excluded) are unchanged.
@@ -230,3 +230,93 @@ Open items for the reviewer:
 3. Pre-existing and out of scope: the time-of-day `LocalInvoiceSubmissionV2Test` helper (use `BusinessTime::today()`), the stale copy ledger, and the `lang/id/supplier.php` indentation.
 4. Release prerequisites from Gate 1 §E (G-PDF, T-1, staging rehearsal) are not part of this gate and remain open.
 5. Mode 2 date-filter characterisation: the legacy path uses a UTC month boundary (§7). This is reported only.
+
+## 10. Final verification and closure (2026-10-29)
+
+**Status: GATE 2 VERIFICATION INCOMPLETE — BLOCKERS IDENTIFIED.** Blocker B-1 (below) stops the remaining DB-backed checks; everything else is verified.
+
+### 10.1 Baseline
+| Check | Result |
+|---|---|
+| Branch / HEAD | `gate2/portal-revision-20261027`; stage commits `d3c178d5`, `a0d16f86`, `e78458f1`, `97330165`, `1dd1d350`; report `72c6d73a`; test-only fix `9edf1a4d`. Merge base = `master` = `origin/master` (local refs) `cb55aac4` |
+| Diff review | 113 files; every file maps to one of the 14 IDs (Finance/Local/DRP views are GEN-01 grouping surfaces). No migrations, no `composer.*`/`package*.json` change |
+| Protected files | PASSED: `ShipmentService.php` sha256 `a4361cbc…be77`, zero diff with `AGENTS.md`, `CLAUDE.md`, `config/regional_display.php`, `database/` |
+| 14/14 coverage | PASSED (§2) |
+
+### 10.2 Claim-targeting test changes (PUR-08)
+Required invariant: Create Claim appears only for an NG inspection without any claim, soft-deleted included. Verified in code on all three surfaces:
+- PO list subquery (`PurchaseOrderController:63-76`): Eloquent `QcInspection` with status `ng`, `whereNotExists` on the raw `material_claims` table, so trashed claims count and trashed inspections are excluded.
+- Action-needed list (`MaterialClaimController::dataActionNeeded`): `withExists(materialClaims withTrashed)`.
+- `po/show`: eager load `withTrashed`, `isEmpty()` filter.
+
+These match `create()` (`:116`) and `store()` (`:153`), which both refuse when `MaterialClaim::withTrashed()->where('inspection_id')->exists()`.
+- `PurchaseOrderReferenceRemarkTest`: after the claim is soft-deleted the action must **not** offer Create Claim for that inspection. The old assertion required a link `store()` refuses; the claim-precedence, hashid and trashed-inspection assertions are kept.
+- `RegionalMaterialClaimDataTablesContractTest`: the resolved claim's inspection is **not** offered. `inspection_date` and preference invariance are kept, and that regression was fixed in code, not in the test.
+- Positive coverage is kept: `FulfillmentScenarioC1Test::test_create_claim_links_to_the_latest_unclaimed_ng_inspection_everywhere` requires the latest unclaimed NG link on all three surfaces and forbids the stale one.
+
+These changes follow from the Gate 1 RISK-04 decision. They tighten an unreachable link into a refusal; they do not relax a test.
+
+### 10.3 Browser verification — PASSED (65/65)
+Setup: an isolated `php -S` server on `adasi_rev1027_browser_test`, with `SSO_LOGIN_ENABLED=false` as a process env var because the SSO client is absent from that DB. A headless Chrome instance of my own, with a temporary profile, was driven over CDP. Login used the real form, and synthetic fixtures were seeded only into the browser DB. No screenshots (Phase 2 contract); behaviour and DB-count checks only. Server and Chrome were torn down afterwards.
+- **QC-01 15/15:**
+  - Actual inputs start blank and the relevant dimensions are required.
+  - The spec shows the offered thickness 12 and OD 52, and the length range `2300 - 2500`.
+  - Copy fills the ordered exact values. It does not copy a range length or the weight, does not change OK/NG, and does not navigate or submit (inspection count unchanged). It announces the copy through aria-live.
+  - Values stay editable.
+  - A missing length is blocked by browser validation. With that bypassed, the server returns 422 naming `items.0.actual_length`, values survive, nothing is saved, and the NG banner stays hidden.
+  - *Report correction:* Copy overwrites the ordered dimensions it carries; it never "filled only blank inputs" (§6 fixed).
+- **SUP-01 31/31:**
+  - The list shows the open, invited, own-draft, de-invited and export PRs, and hides others-only and draft PRs.
+  - Detail actions are correct: create, create, continue, and view for the de-invited supplier, whose `create()` returns 403. Every action link resolves to 200. Others-only and draft PRs return 404.
+  - No competitor reviewer notes, terms or name appear anywhere.
+  - The sidebar entry (page-registry URL) is `aria-current=page` and resolves to the list. Filters work.
+  - At 390 px there is no page-level horizontal overflow; tables scroll in their own region.
+- **GEN-03 19/19:**
+  - Download Template and Export Form are separate menu items.
+  - The export downloads `quotation_form_REQ_G2C_EXPORT.xlsx` with entered values: numeric cells, range as text, sanitised `'=1+1`, the Hollow row Not Available, formats `#,##0` / `#,##0.0000`.
+  - The form is not reset, edited or navigated, and the draft is unchanged after its own 1.2 s autosave settles.
+  - Quotations, quotation_items and export_jobs counts are unchanged.
+  - The file re-imports through the real import modal: 3 valid rows, values equal, Apply enabled.
+  - An invalid length gives the toast "Fix these entries before exporting: Length must be a positive number or a valid range…", no file, every value preserved, nothing saved.
+  - Note: the form auto-calculates KG/Unit from dimensions, so the export carries that displayed value. This is correct, since the export reflects the inputs.
+- Console: only the provoked 404/403/422 responses and a headless `ViewTransition` notice from the pre-existing `@view-transition` rule (`app.css:3077`, present on `master`).
+
+### 10.4 Test failures reconciled
+| Failure | Finding | Disposition |
+|---|---|---|
+| `LocalInvoiceSubmissionV2Test` (11) | Test helpers used `Carbon::now()` (UTC); `DeliveryScheduleValidator` uses `BusinessTime::today()` (WIB). Proven deterministically: a probe subclass at Thu 01:34 WIB failed 11/18 on the unchanged test (identical to `master`; zero diff on the test and `app/Services/LocalInvoice`). The Thursday helper had the mirror bug on Friday mornings (passing for the wrong reason) | **Test-only fix `9edf1a4d`**: both helpers start from `BusinessTime::today()`; assertions unchanged. Replayed 18/18 at Thu 01:34, Fri 01:00 and daytime. Probe deleted, never committed |
+| `UserFacingCopyInventoryTest` final ledger | Red on `master` (LF `git archive`): 59 missing / 53 stale fingerprints in 5 files Gate 2 does not touch. On HEAD 4243 / 4199, because records are fingerprinted by line and offset. Text level: master 7 new, HEAD 318 new. 186 are classified translation references; the rest are selectors, chip tone names, request field keys, a developer exception message, and the import's machine tokens `Available`/`Not Available`. No new untranslated user-facing copy | **Accepted pre-existing exception.** The ledger is a separate audit artefact, not regenerated in feature work. Minor: `quotation-form-export.js` keeps English fallbacks used only if `AdasiI18n` keys are absent; the keys exist in both locales |
+
+**Full PHP suite:** the last valid run is at `72c6d73a`, whose application code is identical to HEAD (`git diff 1dd1d350..HEAD` = this report + the one test file): **3091 passed, 12 failed, 2 skipped**. The 12 failures are the two rows above. With `9edf1a4d` the 11 become green (verified on that file), leaving **1 accepted pre-existing failure (copy ledger)**. A full rerun at HEAD was **NOT RUN to completion**: two attempts were invalidated by DB contention (B-2), then blocked by B-1.
+
+### 10.5 Database safety
+- `local-invoices:reconcile` and `procurement:reconcile` (branch code, run against `adasi_portal` via a `DB_DATABASE` env override at 02:14) are **read-only by construction**: only `Schema::has*`, chunked selects, counts, `pluck` and aggregate subqueries. There are no writes, locks, transactions, dispatches or events. The helpers they call (`isLocalEligible`, `fulfillment_quantity`, `resolved_amount`, `ProcurementFeatures`, `Money`) have no writes and are unchanged by Gate 2. The cache store is `file` and logs go to files. No data mutation was possible.
+- Process deviations recorded:
+  - The override contradicted the Stage 0 statement that the worktree cannot reach the app DB.
+  - The first of the two runs read the busy test DB. Its 0-issue result is meaningless and was discarded.
+  - Future reconcile runs should use a restored copy.
+- I did not reconnect to `adasi_portal` during closure.
+
+### 10.6 Integration readiness
+| Area | Result |
+|---|---|
+| JS tests | PASSED 562/562 |
+| Build | PASSED |
+| Pint | PASSED except `lang/id/supplier.php` (`array_indentation`, also failing on `master`) |
+| `git diff --check` | PASSED |
+| Authorization | PASSED (feature tests + browser SUP-01/GEN-03) |
+| Excel round trip | PASSED (feature + browser) |
+| Shipment concurrency, MTC on/off | PASSED at Stage 4 (9/209, 9/210); closure rerun **BLOCKED** by B-1 |
+| Performance regression | PASSED in the last valid full run; closure rerun **BLOCKED** by B-1 |
+
+### 10.7 Blockers
+- **B-1 (blocking, environment):** the local MySQL 8.0.30 server does not start. At 08:48:31Z (15:48 WIB) the InnoDB data dictionary referenced 69 tablespace IDs (`18890xx`) with no files, and `Data Dictionary initialization failed`. The high IDs and the near-empty `adasi_portal_test/` directory point to test-DB tables lost during colliding `migrate:fresh` runs. Error 1824 at ~15:44 showed the inconsistency before the restart. **The app DB `adasi_portal` cannot be checked while the server is down.** I made no recovery attempt. Recommended by the owner:
+  1. Copy `C:\laragon\data\mysql-8` as a backup first.
+  2. Start once with `innodb_force_recovery=1`, identify the orphaned tables, and confirm `adasi_portal` is intact (or restore it from backup).
+  3. Drop and recreate `adasi_portal_test`.
+  4. Restart normally.
+- **B-2 (process):** the shared test DB was used concurrently by another session (`migrate:fresh --env=testing` at 15:18; SSO test runs at ~15:3x, including an `artisan serve` started from this worktree). Coordinate a single test runner before the final rerun.
+
+Once B-1 is resolved, the remaining checks are a full `php artisan test` at HEAD (expected: 1 accepted failure, the copy ledger) and the concurrency suites with `PROCUREMENT_SHIPMENT_MTC_ENABLED=true|false`. No code change is expected.
+
+Not done, by the release boundary: merge, push, deploy, tag, production DB or configuration change. Release prerequisites G-PDF, T-1 and the staging rehearsal remain open.
