@@ -233,7 +233,7 @@ Open items for the reviewer:
 
 ## 10. Final verification and closure (2026-10-29)
 
-**Status: GATE 2 VERIFICATION INCOMPLETE — BLOCKERS IDENTIFIED.** Blocker B-1 (below) stops the remaining DB-backed checks; everything else is verified.
+**Status: GATE 2 VERIFIED — READY FOR MERGE REVIEW** (updated 16:25 WIB; B-1 resolved and B-2 mitigated, see §10.8). The first closure pass ended INCOMPLETE because of B-1; that record is kept below.
 
 ### 10.1 Baseline
 | Check | Result |
@@ -320,3 +320,39 @@ Setup: an isolated `php -S` server on `adasi_rev1027_browser_test`, with `SSO_LO
 Once B-1 is resolved, the remaining checks are a full `php artisan test` at HEAD (expected: 1 accepted failure, the copy ledger) and the concurrency suites with `PROCUREMENT_SHIPMENT_MTC_ENABLED=true|false`. No code change is expected.
 
 Not done, by the release boundary: merge, push, deploy, tag, production DB or configuration change. Release prerequisites G-PDF, T-1 and the staging rehearsal remain open.
+
+### 10.8 Blocker resolution and final checks (2026-10-29, 16:25 WIB)
+
+**B-1 resolved.**
+- MySQL started normally at 15:57 WIB, with no recovery flags and a clean InnoDB init. The 15:48 "missing tablespace" and 15:52 "`ibdata1` must be writable" failures were start attempts made while another `mysqld` instance still held the data directory.
+- Integrity was verified read-only:
+  - `CHECK TABLE` on all 99 `adasi_portal` tables: 99 OK.
+  - Every table in `adasi_portal`, `adasi_portal_test` and `adasi_rev1027_browser_test` opens.
+  - No unmatched InnoDB dictionary entries: the only unmatched ones are FTS auxiliary tables and the `tcpd bos` database, whose name is stored `@0020`-encoded.
+  - No errors in the log since the start.
+  - **No recovery action, file deletion or `DROP` was needed or performed.**
+- MySQL then died again at about 16:0x WIB with **no log entry and a stale `.pid`**, which is a hard kill, not a crash. Its parent (PID 4736, a shell of another session; Laragon itself was not running) no longer existed. **[Inferred]** `mysqld --standalone` had been started as a child of another session's tool shell and was killed with that shell's process tree.
+- It was restarted **detached** (`Start-Process`, same `my.ini`, single instance verified first); the launcher exited and the server runs unparented. The restart log is clean and both DBs are readable.
+
+**B-2 mitigated.** All final DB runs went through `dbguard.php`, which holds `GET_LOCK('adasi_portal_test.exclusive')`, waits for quiet, and maps every connection to a PID. Each run reported **RUN VALID (no overlap detected)**.
+
+| Final check (HEAD `1b98ff48`, under dbguard) | Result |
+|---|---|
+| `ShipmentSubmissionConcurrencyTest` + `OrderedQuantityShipmentConcurrencyTest`, `PROCUREMENT_SHIPMENT_MTC_ENABLED=true` | **PASSED** 9/9 (208 assertions), VALID |
+| Same, `=false` | **PASSED** 9/9 (208 assertions), VALID |
+| Flag reaches PHPUnit (temporary probe, deleted) | env `true` → `true`, `false` → `false` (`phpunit.xml` sets it without `force`) |
+| `LocalInvoiceSubmissionV2Test`, `PurchaseOrderReferenceRemarkTest`, `RegionalMaterialClaimDataTablesContractTest`, `FulfillmentScenarioC1Test`, `PurchaseOrderOverduePredicateTest`, `SupplierPurchasingRequestOverviewTest`, `QuotationFormExportTest`, `SupplierQuotationSavedExportTest`, `PriceComparisonPerformanceRegressionTest`, `MissionFiveImportTest`, `SupplierDataIsolationTest`, `HashidUrlSecurityTest` | **PASSED** 104/104 (1656 assertions), VALID |
+
+**Full PHP suite.**
+- The last valid full run, on the same application code (`git diff 1dd1d350..HEAD` = report + one test file), was 3091 passed, 12 failed, 2 skipped. The 11 time-dependent failures are fixed by `9edf1a4d` and that file passes 18/18, which leaves **1 accepted pre-existing failure (copy ledger, also red on `master`)**.
+- A fresh full rerun at HEAD was **intentionally not run** at the owner's request (to avoid a 30-minute wait). The application code is unchanged since the valid run, and every suite affected by the closure was rerun above.
+
+**Uncommitted foreign edits in this worktree.** `app/Console/Commands/SsoInstallClient.php` (15:13) and `app/Models/Passport/Client.php` (16:05) were modified by another session. They are **not** part of any Gate 2 commit, are not used by the suites above, and were left untouched. Resolve them (separate branch or stash by their owner) before merging.
+
+**Final status: GATE 2 VERIFIED — READY FOR MERGE REVIEW**, with these explicit conditions for the reviewer:
+1. Approve or reject the two PUR-08 claim-targeting assertion changes (§10.2) and the test-only fix `9edf1a4d` (§10.4).
+2. Accept the copy-ledger failure as a pre-existing exception. A separate ledger audit is recommended.
+3. Clear the foreign SSO edits from the worktree before merging.
+4. Release, not merge: G-PDF, T-1, the staging rehearsal and the migration-ledger check remain open.
+
+No merge, push, deploy, tag, or production DB or configuration change was made.
