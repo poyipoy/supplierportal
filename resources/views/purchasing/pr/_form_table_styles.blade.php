@@ -38,6 +38,7 @@
         scrollbar-color: var(--md-on-surface-variant) var(--md-outline-variant);
         scrollbar-width: auto;
         padding-bottom: 12px;
+        scroll-padding-bottom: 3rem;
         min-height: 300px; /* Prevent dropdown clipping when table has few rows */
     }
 
@@ -170,6 +171,15 @@
     #itemsTable.pr-items-table tbody .pr-sticky-action {
         box-shadow: none !important;
         z-index: 4;
+    }
+
+    #itemsTable.pr-items-table tfoot#prFormTotals th,
+    #itemsTable.pr-items-table tfoot#prFormTotals td {
+        position: sticky;
+        bottom: 0;
+        z-index: 9;
+        background-color: var(--md-surface-container-low) !important;
+        border-top: 2px solid var(--md-outline-variant) !important;
     }
 
     #itemsTable.pr-items-table tbody tr {

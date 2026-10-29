@@ -13,8 +13,6 @@ import './async-form-submit';
 import './adasi-loader';
 import './asset-protection';
 import './server-tabs';
-// Static: the PR form's inline totals script calls window.AdasiPrTotals synchronously.
-import './pr-totals-core';
 import { adasiFileUploadComponent } from './file-upload';
 import { searchableSelect } from './searchable-select';
 
@@ -497,6 +495,7 @@ const bootImports = () => {
     if (hasMarker('[data-advanced-export], [data-format-export-form]')) import('./advanced-export');
     if (hasMarker('[data-dashboard-audience] [data-editor-config]')) import('./dashboard-editor');
     if (hasMarker('[data-quotation-form-export]')) import('./quotation-form-export');
+    if (hasMarker('#prFormTotals')) import('./pr-totals-sync');
 };
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootImports);
 else bootImports();

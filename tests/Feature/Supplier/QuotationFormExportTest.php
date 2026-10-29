@@ -96,6 +96,7 @@ class QuotationFormExportTest extends TestCase
         $response = $this->export(['items' => $this->validItems(), 'currency' => 'USD'])->assertOk();
 
         $this->assertStringContainsString('no-store', (string) $response->headers->get('Cache-Control'));
+        $this->assertStringContainsString('template_import_quotation_REQ_10_2026_900.xlsx', (string) $response->headers->get('Content-Disposition'));
         $this->assertSame($counts, $this->counts());
 
         $sheet = $this->sheet($response);
@@ -211,6 +212,21 @@ class QuotationFormExportTest extends TestCase
             $this->assertSame(DataType::TYPE_STRING, $cell->getDataType(), "payload {$index}");
             $this->assertStringStartsWith("'", (string) $cell->getValue(), "payload {$index}");
         }
+    }
+
+    public function test_quotation_import_controls_expose_single_download_template_action_without_export_form_item(): void
+    {
+        $response = $this->actingAs($this->supplier)
+            ->get(route('supplier.quotations.create', $this->pr))
+            ->assertOk();
+
+        $response->assertSee('Download Template');
+        $response->assertSee('data-quotation-form-export', false);
+        $response->assertSee('data-allow-dirty="true"', false);
+        $response->assertSee('data-no-loader', false);
+        $response->assertSee(route('supplier.quotations.export-form', $this->pr), false);
+        $response->assertSee('data-fallback-url="'.route('supplier.quotations.import-template', $this->pr).'"', false);
+        $response->assertDontSee('Export Form (entered data)');
     }
 
     private function export(array $payload): TestResponse

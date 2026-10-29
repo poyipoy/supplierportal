@@ -21,6 +21,9 @@ return [
         'total_qty' => 'Total Qty',
         'total_kg' => 'Total KG',
         'preview_hint' => 'Hanya pratinjau; server menghitung ulang total saat disimpan.',
+        'server_calculated_hint' => 'Total dihitung oleh server tanpa menyimpan dan diverifikasi kembali saat Anda menyimpan.',
+        'calculating' => 'Menghitung total…',
+        'sync_error' => 'Tidak dapat memuat ulang total dari server. Total akan dihitung ulang saat disimpan.',
     ],
     'ports' => [
         'TANJUNG_PRIOK' => 'Tanjung Priok',

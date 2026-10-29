@@ -35,7 +35,7 @@ test('error messages are flattened, de-duplicated and bounded', () => {
 });
 
 test('the download name comes from Content-Disposition, else the fallback', () => {
-    assert.equal(fileNameFrom('attachment; filename=quotation_form_REQ_10_2026_900.xlsx', 'x.xlsx'), 'quotation_form_REQ_10_2026_900.xlsx');
+    assert.equal(fileNameFrom('attachment; filename=template_import_quotation_REQ_10_2026_900.xlsx', 'x.xlsx'), 'template_import_quotation_REQ_10_2026_900.xlsx');
     assert.equal(fileNameFrom('attachment; filename="a b.xlsx"', 'x.xlsx'), 'a b.xlsx');
     assert.equal(fileNameFrom("attachment; filename*=UTF-8''q%20f.xlsx", 'x.xlsx'), 'q f.xlsx');
     assert.equal(fileNameFrom(null, 'x.xlsx'), 'x.xlsx');
@@ -43,24 +43,53 @@ test('the download name comes from Content-Disposition, else the fallback', () =
 
 const fakeForm = () => ({ values: { 'items[0][price_per_kg]': 'abc' }, submitted: false, reset() { this.values = {}; }, submit() { this.submitted = true; } });
 
-test('a 422 reports the errors and leaves the form untouched', async () => {
+test('a 422 downloads the blank template fallback, reports a warning, and leaves the form untouched', async () => {
     const form = fakeForm();
     const before = JSON.stringify(form.values);
     const notices = [];
+    const fallbacks = [];
     const result = await runExport({
         form,
         url: '/supplier/quotations/x/export-form',
+        fallbackUrl: '/supplier/quotations/x/import-template',
         formDataFactory: () => formData([['items[0][price_per_kg]', 'abc']]),
         fetchImpl: async () => new Response(JSON.stringify({ message: 'Invalid', errors: { 'items.0.price_per_kg': ['The price must be a number.'] } }), { status: 422, headers: { 'Content-Type': 'application/json' } }),
         notify: (type, message) => notices.push([type, message]),
-        download: () => assert.fail('no file on 422'),
+        download: () => assert.fail('no populated file on 422'),
+        fallbackDownload: (url) => fallbacks.push(url),
     });
     assert.equal(result.ok, false);
+    assert.equal(result.fallback, true);
+    assert.deepEqual(fallbacks, ['/supplier/quotations/x/import-template']);
     assert.deepEqual(result.errors, ['The price must be a number.']);
-    assert.equal(notices[0][0], 'error');
+    assert.equal(notices[0][0], 'warning');
+    assert.match(notices[0][1], /blank template was downloaded without your entered data/i);
     assert.match(notices[0][1], /The price must be a number\./);
     assert.equal(JSON.stringify(form.values), before);
     assert.equal(form.submitted, false);
+});
+
+test('a network or 500 failure downloads the blank template fallback and reports a warning', async () => {
+    const form = fakeForm();
+    const notices = [];
+    const fallbacks = [];
+    const result = await runExport({
+        form,
+        url: '/supplier/quotations/x/export-form',
+        fallbackUrl: '/supplier/quotations/x/import-template',
+        formDataFactory: () => formData([['items[0][price_per_kg]', '10']]),
+        fetchImpl: async () => {
+            throw new Error('network down');
+        },
+        notify: (type, message) => notices.push([type, message]),
+        download: () => assert.fail('no populated file on network error'),
+        fallbackDownload: (url) => fallbacks.push(url),
+    });
+    assert.equal(result.ok, false);
+    assert.equal(result.fallback, true);
+    assert.deepEqual(fallbacks, ['/supplier/quotations/x/import-template']);
+    assert.equal(notices[0][0], 'warning');
+    assert.match(notices[0][1], /blank template was downloaded instead/i);
 });
 
 test('a 200 downloads the blob without submitting or resetting the form', async () => {
@@ -77,6 +106,7 @@ test('a 200 downloads the blob without submitting or resetting the form', async 
         download: (blob, name) => downloads.push(name),
     });
     assert.equal(result.ok, true);
+    assert.equal(result.fallback, false);
     assert.deepEqual(downloads, ['f.xlsx']);
     assert.equal(request.init.method, 'POST');
     assert.equal(request.init.headers.Accept, 'application/json');
@@ -86,10 +116,12 @@ test('a 200 downloads the blob without submitting or resetting the form', async 
     assert.equal(JSON.stringify(form.values), JSON.stringify(fakeForm().values));
 });
 
-test('the quotation form wires the button through a lazy DOM marker', () => {
+test('the quotation form wires the single Download Template item through a lazy DOM marker', () => {
     const view = read('resources/views/supplier/quotations/_import_controls.blade.php');
     assert.match(view, /data-quotation-form-export/);
     assert.match(view, /route\('supplier\.quotations\.export-form', \$pr\)/);
+    assert.match(view, /data-fallback-url="\{\{\s*route\('supplier\.quotations\.import-template', \$pr\)\s*\}\}"/);
+    assert.doesNotMatch(view, /export_form/);
     const app = read('resources/js/app.js');
     assert.match(app, /hasMarker\('\[data-quotation-form-export\]'\)\) import\('\.\/quotation-form-export'\)/);
     assert.doesNotMatch(app, /^import .*quotation-form-export/m);

@@ -32,7 +32,7 @@ class LimitOperationalRequests
         if ($request->isMethod('GET') && $request->routeIs('shared.pdf.*', '*.receipt', '*.print', 'receipts.verify-*')) {
             return 'pdf';
         }
-        if ($request->routeIs('*.search', '*.materials', '*.data', '*.data-*', '*.material-calculations.preview', 'exports.definitions.show')) {
+        if ($request->routeIs('*.search', '*.materials', '*.data', '*.data-*', '*.material-calculations.*', 'exports.definitions.show')) {
             return 'search';
         }
         // Polling and downloads never share the dispatch/upload budgets.

@@ -3,13 +3,19 @@
         <x-ui.icon name="upload" class="me-1" /> {{ __('supplier.copy.import_data') }}
     </x-ui.button>
     <ul class="dropdown-menu dropdown-menu-end">
-        <li><a class="dropdown-item" href="{{ route('supplier.quotations.import-template', $pr) }}">
-                <x-ui.icon name="file-down" class="me-1" /> {{ __('supplier.copy.download_template') }}
-            </a></li>
         <li>
-            <button type="button" class="dropdown-item" data-quotation-form-export data-form="#quotationForm" data-url="{{ route('supplier.quotations.export-form', $pr) }}">
-                <x-ui.icon name="file-spreadsheet" class="me-1" /> {{ __('supplier.copy.export_form') }}
-            </button>
+            <a
+                class="dropdown-item"
+                href="{{ route('supplier.quotations.import-template', $pr) }}"
+                data-quotation-form-export
+                data-allow-dirty="true"
+                data-no-loader
+                data-form="#quotationForm"
+                data-url="{{ route('supplier.quotations.export-form', $pr) }}"
+                data-fallback-url="{{ route('supplier.quotations.import-template', $pr) }}"
+            >
+                <x-ui.icon name="file-down" class="me-1" /> {{ __('supplier.copy.download_template') }}
+            </a>
         </li>
         <li><hr class="dropdown-divider"></li>
         <li>

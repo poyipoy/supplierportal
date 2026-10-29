@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Facades\DB;
 
 class PoDocument extends Model
 {
@@ -45,7 +46,9 @@ class PoDocument extends Model
         $purchaseOrderIds = $shipment->items
             ->pluck('purchase_order_id')
             ->filter()
+            ->map(fn ($id) => (int) $id)
             ->unique()
+            ->sort()
             ->values()
             ->all();
 
@@ -57,17 +60,34 @@ class PoDocument extends Model
         $targetStatus = $shipmentDocument->status;
         $targetRank = self::STATUS_RANKS[$targetStatus] ?? 0;
 
-        foreach ($purchaseOrderIds as $poId) {
-            $poDoc = self::firstOrCreate(
-                ['po_id' => $poId, 'doc_type' => $docType],
-                ['status' => 'pending']
-            );
+        DB::transaction(function () use ($purchaseOrderIds, $docType, $targetStatus, $targetRank): void {
+            foreach ($purchaseOrderIds as $poId) {
+                $poDoc = self::query()
+                    ->where('po_id', $poId)
+                    ->where('doc_type', $docType)
+                    ->orderBy('id')
+                    ->lockForUpdate()
+                    ->first();
 
-            $currentRank = self::STATUS_RANKS[$poDoc->status] ?? 0;
-            if ($targetRank > $currentRank) {
-                $poDoc->update(['status' => $targetStatus]);
+                if (! $poDoc) {
+                    $poDoc = self::create([
+                        'po_id' => $poId,
+                        'doc_type' => $docType,
+                        'status' => 'pending',
+                    ]);
+
+                    $poDoc = self::query()
+                        ->whereKey($poDoc->id)
+                        ->lockForUpdate()
+                        ->first() ?? $poDoc;
+                }
+
+                $currentRank = self::STATUS_RANKS[$poDoc->status] ?? 0;
+                if ($targetRank > $currentRank) {
+                    $poDoc->update(['status' => $targetStatus]);
+                }
             }
-        }
+        });
     }
 
     // ─── Relationships ───

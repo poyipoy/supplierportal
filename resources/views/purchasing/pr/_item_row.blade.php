@@ -115,8 +115,13 @@
         <input type="hidden" name="items[{{ $index }}][weight_manual_override]" class="weight-manual-override" value="{{ ($itemData['weight_calculation_status'] ?? '') === 'manual' ? '1' : '0' }}">
         @error("items.{$index}.weight_needed") <div class="text-danger small">{{ $message }}</div> @enderror
     </td>
-    {{-- PUR-02: KG/Unit × Qty, filled by the form totals script (preview only). --}}
-    <td class="text-end fw-semibold ui-tabular-nums text-nowrap" data-pr-row-total-kg>—</td>
+    {{-- PUR-02: KG/Unit × Qty, calculated by the server without saving. --}}
+    @php
+        $initialRowTotalKgDisplay = ($unitKg > 0 && $quantity >= 1)
+            ? app(\App\Services\RegionalDisplayFormatter::class)->money(\App\Support\Money::multiply($unitKg, $quantity, 4), 4, 'international')
+            : '—';
+    @endphp
+    <td class="text-end fw-semibold ui-tabular-nums text-nowrap" data-pr-row-total-kg>{{ $initialRowTotalKgDisplay }}</td>
     <td class="pr-remark-cell">
         @php $currentRemark = $itemData['remark'] ?? ''; @endphp
         <textarea

@@ -104,6 +104,7 @@
                             <col style="width: 100px; min-width: 100px;">
                             <col style="width: 100px; min-width: 100px;">
                             <col style="width: 160px; min-width: 160px;">
+                            <col style="width: 130px; min-width: 130px;">
                             <col style="width: 180px; min-width: 180px;">
                             <col style="width: 64px; min-width: 64px;">
                         </colgroup>
@@ -133,6 +134,9 @@
                         @include('purchasing.pr._form_totals')
                     </table>
                 </div>
+                <p id="prFormTotalsStatus" class="small tw:text-on-surface-variant tw:mt-1.5 tw:mb-0" role="note" data-default-text="{{ __('procurement.totals.server_calculated_hint') }}">
+                    {{ __('procurement.totals.server_calculated_hint') }}
+                </p>
 
                 @error('items') <div class="text-danger small tw:mt-1.5">{{ $message }}</div> @enderror
                 <div id="noItemAlert" class="text-danger small tw:mt-1.5 d-none" role="alert" aria-live="assertive">{{ __('purchasing.copy.at_least_1_material_row_is_required_before_saving_or_submitting') }}</div>
