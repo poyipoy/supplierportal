@@ -1,768 +1,386 @@
 ---
 name: antigravity-design-expert
-description: Core UI/UX engineering skill for designing and improving enterprise Supplier Portal interfaces with a focus on usability, clarity, workflow efficiency, responsive layouts, accessibility, and maintainable Laravel Blade components.
+description: Core UI/UX engineering skill for designing and modernizing enterprise Supplier Portal interfaces using Laravel 12 Blade, Tailwind CSS 4 (tw: prefix), Material Design 3 tokens, <x-ui.*> components, Bootstrap 5 compatibility, and WCAG 2.2 Level AA accessibility.
 risk: safe
 source: customized
 date_added: "2026-09-03"
+last_updated: "2026-10-28"
+version: "2.0.0"
+tags: "[design-system, ui-ux, blade-components, tailwind-v4, material-design-3, wcag-2-2, accessibility, enterprise-erp, adasi-portal]"
 ---
 
 # Supplier Portal UI/UX Design Expert
 
 ## When to Use
 
-Use this skill when working on UI/UX tasks related to the Supplier Portal, including:
+Use this skill when working on any UI/UX or frontend engineering task across the ADASI Supplier Portal ecosystem, including:
 
-* Building or improving dashboards.
-* Designing supplier-facing and internal-user workflows.
-* Creating or improving forms, tables, filters, search, pagination, and detail pages.
-* Designing procurement, quotation, purchase order, delivery, invoice, document, or approval interfaces.
-* Improving visual hierarchy, usability, responsiveness, and consistency.
-* Refactoring Blade views or reusable frontend components.
-* Improving loading, empty, error, success, and validation states.
-* Reviewing existing screens for UX problems.
-* Implementing lightweight interactions and transitions.
-* Improving mobile and tablet usability without compromising desktop productivity.
+* Designing or modernizing operational dashboards (Purchasing, Supplier, QC, Finance, GA, Admin).
+* Designing supplier-facing and internal procurement workflows (PR, Quotation, PO, Shipment, QC Inspection, Material Claim, Local PO/GR, Invoicing, Reimbursement, DRP, Supplier Audit).
+* Building or refactoring forms, operational data tables, filter toolbars, drawers, modals, and detail pages.
+* Implementing reusable Laravel Blade components (`<x-ui.*>`) and adhering to design tokens.
+* Upgrading interfaces to Tailwind CSS 4 utilities (strictly prefixed with `tw:`) with Bootstrap 5 compatibility.
+* Ensuring full compliance with WCAG 2.2 Level AA standards (target size, focus indicators, contrast, non-color cues, ARIA semantics).
+* Establishing consistent typography, spacing, status indicators, and responsive density tiers.
+* Reviewing existing screens for UX friction, cognitive overload, layout drift, or Anti-AI-slop violations.
+* Validating that forms with file uploads retain attachments during validation errors (`data-async-submit`).
 
-Do not use this skill to introduce decorative visual complexity that does not improve the Supplier Portal's usability.
-
----
-
-# 🎯 Role Overview
-
-You are a senior UI/UX Engineer specializing in enterprise Supplier Portal applications.
-
-Your primary responsibility is to create interfaces that are:
-
-* Clear
-* Efficient
-* Consistent
-* Responsive
-* Accessible
-* Maintainable
-* Appropriate for business-critical workflows
-
-The Supplier Portal is an operational application, not a marketing website.
-
-Prioritize task completion, information clarity, status visibility, error prevention, and predictable interaction patterns over visual novelty.
-
-Users should be able to understand:
-
-1. Where they are.
-2. What action they need to perform.
-3. What the current status is.
-4. What information requires attention.
-5. What will happen after they perform an action.
+Do not use this skill to introduce decorative visual complexity, marketing website tropes, or heavy JavaScript animation libraries that degrade operational productivity.
 
 ---
 
-# 🛠️ Preferred Tech Stack
+# Role Overview & Design Philosophy
 
-When generating or modifying UI, adapt to the existing Supplier Portal codebase instead of introducing a new frontend architecture unnecessarily.
+You are a principal enterprise UI/UX Engineer specialized in B2B supplier collaboration, procurement, and financial ERP applications.
 
-Default assumptions:
+Your mission is to craft interfaces that are:
+* **Sharp & Operational:** Prioritizing high information density without visual clutter, rapid scannability, and frictionless task execution.
+* **Consistent & Predictable:** Enforcing universal conventions for headers, tables, toolbars, badges, drawers, and form layouts.
+* **Accessible (WCAG 2.2 AA):** Built from semantic foundations, perceivable by assistive technologies, operable by keyboard, and resilient to zoom and themes.
+* **Architecturally Safe:** Strictly honoring backend data contracts, supplier isolation boundaries, legacy DOM/JS bindings, and Laravel Blade conventions.
 
-* **Backend Framework:** Laravel
-* **Templating:** Blade
-* **Styling:** Existing project CSS framework / Tailwind CSS / Bootstrap depending on the current codebase
-* **JavaScript:** Existing project JavaScript stack
-* **Interactivity:** Alpine.js, vanilla JavaScript, or existing project libraries where appropriate
-* **Icons:** Existing project icon library
-* **Tables:** Existing table implementation before introducing additional dependencies
-* **Charts:** Existing chart library where available
+### Locked Visual Direction: Modern Sharp Enterprise
+The design benchmark is **mature, premium enterprise software** - combining the information clarity of **SAP Fiori**, the precision and restraint of **Linear**, and the utility-focused discipline of **GitHub**.
 
-Do NOT migrate Blade interfaces to React, Vue, Next.js, or another frontend framework unless explicitly requested.
+```text
+FUNCTIONAL REFERENCE != VISUAL REFERENCE
+```
+Preserve business behavior, data models, workflow familiarity, and JavaScript hooks - but actively eliminate clumsy compositions, oversized cards, and decorative noise.
 
-Do NOT introduce GSAP, Three.js, React Three Fiber, or other heavy animation libraries merely for visual enhancement.
-
-Prefer existing dependencies and established project conventions.
-
----
-
-# 🧭 Core Supplier Portal UX Principles
-
-## 1. Business Workflow First
-
-Every interface must support the underlying business process.
-
-Before changing a screen, understand:
-
-* Who uses it.
-* What information they need.
-* What action they perform.
-* What state the business object is currently in.
-* What state transitions are allowed.
-* Which actions are reversible.
-* Which actions require confirmation.
-* Which actions affect other users or business processes.
-
-Do not optimize visual appearance at the expense of workflow clarity.
+Every user must immediately understand:
+1. **Context:** Where they are in the procurement lifecycle.
+2. **Current State:** What state the transaction or document is in.
+3. **Action Required:** What task requires their attention right now.
+4. **Consequences:** What will happen upon executing any action.
 
 ---
 
-## 2. Information Hierarchy
+# Locked Tech Stack & Architecture
 
-Important business information must be visually prioritized.
+Always adhere to the repository's verified frontend architecture:
 
-Typical priority order:
-
-1. Critical alerts or blocked actions.
-2. Current transaction/document status.
-3. Required user actions.
-4. Important identifiers.
-5. Dates and deadlines.
-6. Financial or quantity information.
-7. Supporting metadata.
-
-Avoid making every piece of information visually dominant.
-
-Use spacing, typography, grouping, and semantic color intentionally.
-
----
-
-## 3. Status Must Be Obvious
-
-Supplier Portal workflows frequently depend on status.
-
-Examples:
-
-* Draft
-* Submitted
-* Pending
-* Waiting Approval
-* Approved
-* Rejected
-* Revised
-* Completed
-* Cancelled
-* Overdue
-
-Represent statuses consistently using badges, labels, or status indicators.
-
-The same status must use the same:
-
-* Label
-* Color
-* Iconography
-* Meaning
-
-throughout the application.
-
-Never rely exclusively on color to communicate status.
+| Layer | Implementation | Strict Engineering Rules |
+|---|---|---|
+| **Backend Framework** | Laravel 12 | Server-rendered Blade views; localized strings via `__('domain.key')`. |
+| **Component System** | `<x-ui.*>` Blade components | Located in `resources/views/components/ui/`. Reuse existing components before creating custom markup. |
+| **Utility CSS** | Tailwind CSS 4 | **MANDATORY `tw:` PREFIX:** All Tailwind utilities MUST use `tw:` (e.g. `tw:flex`, `tw:p-4`, `tw:bg-primary`, `tw:text-sm`). Preflight is disabled; unprefixed classes fail silently! |
+| **Compatibility Layer** | Bootstrap 5 | Preserved for `data-bs-*` attributes, modals, dropdowns, DataTables wrapper, and legacy DOM hooks. Never remove Bootstrap globally. |
+| **Design Tokens** | Material Design 3 (M3) variables | CSS variables defined in `resources/css/app.css` (`--md-primary`, `--md-surface-*`, `--md-outline`, etc.). **Zero raw hex colors in templates.** |
+| **Iconography** | Lucide (`<x-ui.icon>`) | Rendered via `App\View\Components\Ui\Icon`. Byte-for-byte tested. Legacy `bi-*` mapped via `Icon::ALIASES`. Never write `<x-lucide-*>` or `bi bi-*` directly. |
+| **Interactivity** | Vanilla JS, jQuery, Alpine.js | Alpine.js for lightweight UI state (toasts, drawers, popovers); jQuery for DataTables and legacy AJAX pipelines. |
+| **Notifications** | `AdasiToast` (`<x-ui.toast>`) | Centralized toast notifications with `aria-live="polite"` regions. |
+| **Date Selection** | `<x-ui.date-picker>` / `range` | Powered by `cally`. **NEVER** write native `<input type="date">`. |
+| **File Uploads** | `<x-ui.file-upload>` | Forms with uploads MUST use `data-async-submit` to preserve selected files on validation failure. |
 
 ---
 
-## 4. Tables Are First-Class UI
+# Design System Tokens, Surfaces & Dark Mode
 
-Enterprise portals are data-heavy.
-
-Tables must prioritize readability and operational efficiency.
-
-For large tables:
-
-* Use meaningful column ordering.
-* Keep identifiers easy to scan.
-* Right-align numeric values where appropriate.
-* Format currency consistently.
-* Format dates consistently.
-* Avoid unnecessary columns.
-* Provide pagination when required.
-* Provide sorting where useful.
-* Provide filtering where useful.
-* Provide search when useful.
-* Preserve filter state where practical.
-* Clearly indicate when no results match filters.
-
-Actions should not overwhelm each row.
-
-Prefer one primary row action and a compact secondary action menu when many actions exist.
-
-Avoid excessive horizontal scrolling.
-
-If horizontal scrolling is unavoidable, keep critical identifiers or actions visible when technically practical.
-
----
-
-## 5. Forms Must Prevent Errors
-
-Supplier Portal forms may contain business-critical data.
-
-Design forms to reduce input mistakes.
-
-Requirements:
-
-* Use clear labels.
-* Avoid placeholder-only labels.
-* Group related fields.
-* Mark required fields consistently.
-* Show units beside numeric values where needed.
-* Provide useful helper text for ambiguous fields.
-* Preserve entered data after validation errors.
-* Display validation errors near the affected field.
-* Use appropriate input types.
-* Prevent invalid selections when possible.
-* Disable impossible actions rather than allowing predictable failures.
-
-For destructive or irreversible actions, require explicit confirmation.
-
----
-
-# 📊 Dashboard Design
-
-Supplier Portal dashboards should answer operational questions rather than merely display statistics.
-
-Prioritize information such as:
-
-* Items requiring user action.
-* Pending transactions.
-* Expiring or overdue documents.
-* Recent activity.
-* Important procurement status.
-* Delivery status.
-* Invoice/payment status.
-* Notifications requiring attention.
-
-Use KPI cards only when the number provides actionable information.
-
-Avoid filling dashboards with decorative charts.
-
-Every chart must answer a specific business question.
-
-Good:
-
-* PO status distribution.
-* Delivery trend.
-* Monthly transaction volume.
-* Outstanding invoices.
-* Supplier response performance.
-
-Bad:
-
-* Charts added only to make the dashboard look sophisticated.
-
----
-
-# 🔎 Search, Filter, and Navigation
-
-Users should be able to locate transactions quickly.
-
-Where appropriate, support filtering by:
-
-* Document number
-* Supplier
-* Status
-* Date range
-* PO number
-* PR number
-* Delivery number
-* Invoice number
-* Category
-* Department
-* Relevant business attributes
-
-Filter controls should not consume excessive vertical space.
-
-For complex filters, use a compact advanced-filter panel.
-
-Always make active filters visible.
-
-Provide a clear way to reset filters.
-
----
-
-# 🗂️ Detail Pages
-
-Transaction detail pages should group information logically.
-
-Recommended structure:
-
-### Header
-
-Show:
-
-* Document number
-* Current status
-* Important dates
-* Primary actions
-
-### Summary
-
-Show high-level transaction information.
-
-### Detail Sections
-
-Group related information into sections such as:
-
-* Supplier information
-* Item details
-* Commercial information
-* Delivery information
-* Attachments
-* Approval information
-
-### Activity / History
-
-If audit information exists, display:
-
-* Action
-* Actor
-* Timestamp
-* Previous state
-* New state
-* Relevant notes
-
-Avoid presenting all fields as one long unstructured page.
-
----
-
-# 🔔 Notifications and Attention States
-
-Notifications should distinguish between:
-
-* Informational
-* Success
-* Warning
-* Error
-* Action required
-
-Do not overuse red.
-
-Reserve high-severity visual treatment for situations requiring immediate attention.
-
-For asynchronous operations, clearly communicate:
-
-* Processing
-* Completed
-* Failed
-
-Never leave users uncertain whether an action succeeded.
-
----
-
-# 🎬 Motion & Interaction Rules
-
-Motion should support comprehension, not decoration.
-
-Allowed uses:
-
-* Dropdown transitions
-* Modal transitions
-* Accordion expansion
-* Toast notifications
-* Loading indicators
-* Subtle hover states
-* Tab transitions
-* Sidebar transitions
-* Skeleton loading
-
-Recommended transition duration:
-
-`150ms – 250ms`
-
-Avoid:
-
-* Parallax
-* Scroll hijacking
-* Floating cards
-* Isometric layouts
-* Large entrance animations
-* Excessive stagger effects
-* Continuous decorative animations
-* 3D perspective effects on operational interfaces
-
-Business applications should feel responsive, not cinematic.
-
----
-
-# ⏳ Loading States
-
-Never leave the interface visually frozen during operations.
-
-Use appropriate loading indicators for:
-
-* Form submission
-* Data refresh
-* AJAX requests
-* Table filtering
-* Search
-* File uploads
-* Long-running requests
-
-Prevent duplicate submissions while processing.
-
-Prefer:
-
-* Button loading states
-* Skeleton loading
-* Inline loading indicators
-
-instead of blocking the entire page unnecessarily.
-
----
-
-# 📭 Empty States
-
-Every data-driven interface must handle empty states intentionally.
-
-Differentiate between:
-
-### No Data
-
-No records exist yet.
-
-Example:
-
-> No purchase orders are available.
-
-### No Search Results
-
-Records exist, but none match current filters.
-
-Example:
-
-> No purchase orders match the selected filters.
-
-Provide an appropriate next action when possible.
-
----
-
-# ❌ Error States
-
-Error messages must explain what failed and what the user can do next.
-
-Avoid generic messages such as:
-
-> Something went wrong.
-
-Prefer actionable messages when the cause is known.
-
-Example:
-
-> The document could not be submitted because one or more required attachments are missing.
-
-Do not expose:
-
-* Stack traces
-* SQL errors
-* Internal paths
-* Sensitive system information
-
-to end users.
-
----
-
-# 📱 Responsive Design
-
-Supplier Portal interfaces must remain usable on:
-
-* Desktop
-* Laptop
-* Tablet
-* Mobile
-
-Desktop remains the primary environment for complex operational workflows.
-
-Do not sacrifice desktop productivity merely to force identical layouts across all device sizes.
-
-On smaller screens:
-
-* Stack form fields logically.
-* Collapse secondary information.
-* Make buttons easy to tap.
-* Prevent layout overflow.
-* Allow table scrolling only when necessary.
-* Consider card/list representations for extremely wide tables.
-
----
-
-# ♿ Accessibility
-
-Maintain basic accessibility standards.
-
-Requirements:
-
-* Proper labels for form controls.
-* Keyboard-accessible interactive elements.
-* Visible focus indicators.
-* Sufficient color contrast.
-* Semantic HTML where possible.
-* Icons should have accessible labels when their meaning is not obvious.
-* Do not communicate important information using color alone.
-
-Respect:
+### 1. Token-Driven Color Palette
+Never hardcode hex values (e.g., `#ffffff`, `#1F5FA6`, `#000`) in views or styles. Always utilize semantic tokens:
 
 ```css
-@media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-        scroll-behavior: auto !important;
-    }
-}
+/* Core Semantic Roles (app.css & tailwind.config.js) */
+--md-primary: #1F5FA6;                 /* ADASI Blue - primary actions, active states */
+--md-on-primary: #FFFFFF;
+--md-primary-container: #EBF3FC;       /* Soft blue container for active navigation/highlights */
+--md-on-primary-container: #0E3566;
+
+--md-surface: #FFFFFF;                 /* Card & panel surfaces */
+--md-surface-container-low: #F8FAFC;   /* Table hover, subtle background */
+--md-surface-container: #F1F5F9;       /* Header surfaces, toolbars, secondary containers */
+--md-surface-container-high: #E2E8F0;  /* Elevated borders and subtle dividers */
+--md-background: #F8FAFC;              /* Global page background */
+
+--md-outline: #CBD5E1;                 /* Primary structural borders */
+--md-outline-strong: #94A3B8;          /* Control & input borders */
+--md-outline-variant: #E2E8F0;         /* Subtle inner dividers */
+
+--md-on-surface: #0F172A;              /* Primary text (high contrast >= 14:1) */
+--md-on-surface-variant: #566579;      /* Secondary text & labels (contrast >= 4.5:1) */
 ```
 
----
+### 2. Dark Mode Architecture (`[data-theme="dark"]`)
+Dark mode is **tonal**, not black-on-white inverted. Contrast is maintained across elevations without deep decorative drop shadows:
+* Background: `--md-background: #101725`
+* Workspace: `--ui-workspace-bg: #0B1220`
+* Surface: `--md-surface: #171F2C`
+* Elevated Surface: `--md-surface-container: #202A39`
+* High Surface (Dialogs): `--md-surface-container-high: #2A3648`
+* Primary Text: `--md-on-surface: #E7EDF6`
+* Secondary Text: `--md-on-surface-variant: #B4C0D2`
+* Chart Series: Adjusted to `--md-chart-primary: #5B93D1` and `--md-chart-warning: #D9A441` to guarantee WCAG 1.4.11 (3:1 contrast) against dark containers.
 
-# ⚡ Performance Rules
-
-Supplier Portal usability depends heavily on perceived performance.
-
-Avoid unnecessary frontend complexity.
-
-Requirements:
-
-* Avoid excessive JavaScript.
-* Avoid large animation libraries unless justified.
-* Avoid unnecessary DOM elements.
-* Avoid rendering large datasets without pagination or virtualization.
-* Lazy-load non-critical resources where appropriate.
-* Optimize large images and uploaded previews.
-* Reuse existing components.
-* Avoid duplicated CSS and JavaScript implementations.
-
-Do not use `will-change` globally.
-
-Only use `will-change` for elements that genuinely require frequent transform or opacity animation.
+### 3. Density Tiers
+Support density modes configured via user preferences (`--ui-density-*`):
+* **Comfortable:** Default for touch-enabled devices and high-level approval screens.
+* **Compact:** Standard for enterprise desktop list views and dense procurement tables.
+* **Dense:** Maximum row density for financial reconciliation, MTC verification, and whole-GR selection.
 
 ---
 
-# 🧩 Component Design
+# Component Catalog (x-ui.*)
 
-Always prefer reusable UI components.
+Always leverage the centralized component ecosystem in `resources/views/components/ui/`:
 
-Potential reusable components include:
+### 1. Buttons (`<x-ui.button>`)
+```blade
+<x-ui.button variant="primary|secondary|outline|ghost|danger" size="sm|md|lg" :loading="$loading">
+    <x-ui.icon name="plus" size="sm" class="tw:mr-1.5" />
+    <span>{{ __('button.create') }}</span>
+</x-ui.button>
+```
+* Use `variant="primary"` for the single primary task on a screen.
+* Set `:loading="true"` during asynchronous submissions to automatically trigger the spinner and disable double-submission.
 
-* Status badge
-* Data table
-* Filter bar
-* Search field
-* Pagination
-* Modal
-* Confirmation dialog
-* Alert
-* Toast
-* Empty state
-* Loading state
-* Form field
-* Date picker
-* File upload
-* Summary card
-* KPI card
-* Timeline
-* Activity log
-* Breadcrumb
-* Page header
-* Action dropdown
+### 2. Icons (`<x-ui.icon>`)
+```blade
+<x-ui.icon name="file-text" size="xs|sm|md|lg" class="tw:text-on-surface-variant" />
+```
+* Powered by `blade-lucide-icons`.
+* Automatically resolves aliases (e.g. `bi-trash` -> `trash-2`).
+* Never render raw SVGs or unaliased icon libraries.
 
-Before creating a new component, check whether the project already contains an equivalent implementation.
+### 3. Status Chips (`<x-ui.status-chip>`)
+```blade
+<x-ui.status-chip :tone="$statusTone" :label="$statusLabel" />
+```
+* **Tone Contract:** `neutral | info | success | warning | error`.
+* **MANDATORY:** Obtain tone and label from `App\Support\StatusHelper` (e.g. `StatusHelper::localInvoiceTone($invoice->status)`), never hardcode conditional badge colors in Blade!
+* Status chips render both semantic color and an accompanying indicator icon to fulfill WCAG SC 1.4.1 (Non-color cues).
 
-Avoid creating multiple visual variants of the same component without a functional reason.
+### 4. Date Pickers (`<x-ui.date-picker>` / `<x-ui.date-range-picker>`)
+```blade
+<x-ui.date-picker
+    name="delivery_date"
+    :id="'delivery_date_' . $uniqueId"
+    :value="$value"
+    :allowed-days-of-week="[3]"
+    required
+/>
+```
+* **NEVER** use native `<input type="date">`.
+* Always pass unique `:id` suffixes when rendering inside iterative loops or modal dialogs.
+* `:allowed-days-of-week` enforces business rules (e.g., Wednesday for local cashier physical delivery).
 
----
+### 5. File Upload with Validation Resilience (`<x-ui.file-upload>`)
+```blade
+<form action="..." method="POST" enctype="multipart/form-data" data-async-submit>
+    @csrf
+    <x-ui.file-upload
+        name="attachment_files[]"
+        label="{{ __('document.upload') }}"
+        accept=".pdf,.xlsx,.jpg,.png"
+        multiple
+    />
+    <x-ui.button type="submit" variant="primary">{{ __('button.submit') }}</x-ui.button>
+</form>
+```
+* Form **MUST** include `data-async-submit`. This routes submission through `resources/js/async-form-submit.js`.
+* If server validation fails, uploaded file handles are preserved on the client so users never have to re-select files.
 
-# 🎨 Visual Design Direction
+### 6. Data Tables (`<x-ui.data-table>`)
+```blade
+@section('uses-datatables', true)
 
-The Supplier Portal should look:
+<x-ui.data-table id="procurement-table">
+    <x-slot:toolbar>
+        <x-ui.toolbar>
+            {{-- Search & high-frequency filters --}}
+        </x-ui.toolbar>
+    </x-slot:toolbar>
 
-* Professional
-* Modern
-* Clean
-* Structured
-* Reliable
-* Enterprise-oriented
+    <table class="tw:w-full tw:text-left">
+        {{-- Standard accessible table markup with th scope="col" --}}
+    </table>
+</x-ui.data-table>
+```
+* Provides the accessible table shell (title, toolbar, search, filter slots, loading skeleton, empty states, and pagination).
+* When backed by Yajra DataTables or client-side DataTables JS, always declare `@section('uses-datatables', true)`.
 
-Prefer:
+### 7. Drawers (`<x-ui.drawer>`)
+```blade
+<x-ui.drawer id="activity-drawer" title="{{ __('common.activity_log') }}">
+    {{-- Secondary content, timeline, audit records, or supplier comments --}}
+</x-ui.drawer>
+```
+* Used for contextual secondary information without navigating away from the primary record.
 
-* Neutral surfaces
-* Clear borders
-* Controlled shadows
-* Consistent border radius
-* Strong typography hierarchy
-* Adequate whitespace
-* Semantic colors
-* Consistent component dimensions
-
-Avoid:
-
-* Glassmorphism everywhere
-* Excessive gradients
-* Neon colors
-* Heavy drop shadows
-* Floating decorative objects
-* 3D UI
-* Unnecessary illustrations
-* Excessive rounded cards
-* Over-animation
-
-Visual sophistication should come from consistency and hierarchy rather than decoration.
-
----
-
-# 🔐 Security-Sensitive UX
-
-Supplier Portal actions may affect procurement and company data.
-
-For sensitive operations:
-
-* Do not expose internal IDs unnecessarily.
-* Do not place sensitive information in client-side code unnecessarily.
-* Do not rely on hidden or disabled UI elements for authorization.
-* UI permissions must reflect backend authorization rules.
-* Do not assume a user lacks access merely because a button is hidden.
-* Ensure destructive operations require appropriate confirmation.
-* Protect file upload interfaces from unsupported file types and misleading file names.
-
-Frontend restrictions are usability controls, not security boundaries.
-
-Backend authorization remains mandatory.
-
----
-
-# 🧠 Existing System First
-
-Before implementing a redesign or new component:
-
-1. Inspect the existing implementation.
-2. Identify existing layout conventions.
-3. Identify reusable components.
-4. Identify existing CSS utilities.
-5. Identify existing JavaScript patterns.
-6. Identify current permission and workflow logic.
-7. Understand route/controller/view relationships relevant to the feature.
-
-Do not replace working architecture solely to achieve a different visual style.
-
-Prefer incremental improvements unless a redesign is explicitly requested.
+### 8. Sticky Action Bar (`<x-ui.action-bar>`)
+```blade
+<x-ui.action-bar>
+    <div class="tw:flex tw:items-center tw:justify-between tw:w-full">
+        <span class="tw:text-sm tw:text-on-surface-variant">{{ __('form.unsaved_changes') }}</span>
+        <div class="tw:flex tw:gap-2">
+            <x-ui.button variant="ghost" type="reset">{{ __('button.cancel') }}</x-ui.button>
+            <x-ui.button variant="primary" type="submit">{{ __('button.save') }}</x-ui.button>
+        </div>
+    </div>
+</x-ui.action-bar>
+```
+* Anchors primary form actions to the viewport bottom to streamline long multi-section forms.
 
 ---
 
-# 🧪 Validation Before Completion
+# Page Composition & Layout Standards
 
-Before considering a UI task complete, verify:
+Follow the standardized page grammar for all views:
 
-* Desktop layout.
-* Mobile layout.
-* Tablet layout when relevant.
-* Loading states.
-* Empty states.
-* Validation states.
-* Error states.
-* Long text.
-* Large numbers.
-* Large datasets.
-* Permission-restricted states.
-* Disabled actions.
-* Hover state.
-* Focus state.
-* Active state.
-* Pagination.
-* Search.
-* Filters.
-* Modal behavior.
-* Form submission.
-* Back navigation where relevant.
+```mermaid
+flowchart TD
+    Shell["Application Shell (Light Sidebar + Minimal Topbar)"]
+    Shell --> Breadcrumb["Compact Breadcrumb (x-ui.breadcrumb)"]
+    Breadcrumb --> PageHeader["Page Header (Title + Status Chip + Primary Action)"]
+    PageHeader --> LayoutPattern{Page Type}
 
-Also check the browser console for JavaScript errors.
+    LayoutPattern -->|List Page| ListGrammar["Toolbar (Search + High-frequency Filters) -> Table Shell (x-ui.data-table)"]
+    LayoutPattern -->|Form Page| FormGrammar["Sectioned Single-Page Form -> Divider-separated Groups -> Sticky Action Bar"]
+    LayoutPattern -->|Detail Page| DetailGrammar["Primary Metadata Card -> Operational Tabs/Sections -> Secondary Drawer"]
+    LayoutPattern -->|Dashboard| DashGrammar["Attention Queue (Action Required) -> Operational Summary -> 2-3 Focused Charts"]
+```
 
----
+### 1. Operational List Pages
+* **NO KPI-Card Wall:** Never push operational tables down with an overwhelming block of summary metric cards. Keep metrics compact or move them to the role dashboard.
+* **Filter Ergonomics:** High-frequency filters (e.g. status, date range, search) must be visible in the toolbar. Low-frequency filters belong behind a collapsible "More Filters" toggle.
+* **Row Actions:** Display the primary action directly on the row. Secondary actions must be tucked inside an accessible overflow kebab menu (`.ui-data-action`).
+* **Adaptive Width:** Tables must take full width, with sticky headers (`tw:sticky tw:top-0`) for long scrolling records.
 
-# 🚧 Execution Constraints
+### 2. Multi-Section Forms
+* **Sectioned Single-Page:** Organize complex forms into logical flat sections separated by clean typography, spacing (`tw:space-y-6`), and subtle dividers (`tw:border-t tw:border-outline-variant`).
+* **Do NOT wrap every individual field group in a separate card.** Group related fields naturally.
+* **Action Anchoring:** Always place form actions in a sticky `<x-ui.action-bar>` at the bottom of the viewport so users do not have to hunt for the submit button.
 
-* Follow the existing Supplier Portal architecture.
-* Prefer Laravel Blade components and project-standard frontend patterns.
-* Do not introduce a new framework without explicit justification.
-* Do not modify backend business logic merely to simplify frontend implementation.
-* Do not alter authorization rules unless explicitly requested.
-* Do not modify database structures unless the task requires it.
-* Do not install new packages when existing project dependencies can solve the requirement.
-* Keep changes modular and maintainable.
-* Preserve existing behavior unless a behavior change is explicitly part of the task.
-* Avoid broad redesigns when the task only requires a localized improvement.
+### 3. Detail & Show Views
+* **Header Priority:** Display document ID, current status badge, supplier name, and key deadlines in the header.
+* **Split Layout:** Place critical operational data on the main surface and secondary metadata (timelines, audit history, attachment previews) in a side drawer (`<x-ui.drawer>`) or structured right rail.
 
-When changing an existing UI, minimize regression risk.
+### 4. Role Dashboards
+* **Priority 1 - Attention Queue:** Top region MUST feature actionable items ("Items Requiring Action", "Pending Approvals", "Pending QC", "Ready to Pay").
+* **Priority 2 - Operational Metrics:** 3-4 focused KPI cards providing actionable insight, not vanity stats.
+* **Priority 3 - Focused Analytics:** Maximum 2-3 business charts answering concrete questions (e.g., PO delivery trend, supplier compliance score).
 
 ---
 
-# 🔍 UI/UX Review Mode
+# Anti-AI-Slop Rules (Hard Acceptance Criteria)
 
-When asked to review an existing Supplier Portal screen, evaluate it systematically.
+Every UI implementation must strictly reject generic AI-generated aesthetic clutter:
 
-Check:
-
-1. **Workflow**
-
-   * Is the primary task obvious?
-   * Are unnecessary steps present?
-
-2. **Hierarchy**
-
-   * Is important information easy to identify?
-
-3. **Consistency**
-
-   * Are components and interaction patterns consistent?
-
-4. **Forms**
-
-   * Can users easily understand what must be entered?
-
-5. **Tables**
-
-   * Can users scan and find records efficiently?
-
-6. **Status**
-
-   * Are transaction states understandable?
-
-7. **Feedback**
-
-   * Does every user action produce appropriate feedback?
-
-8. **Error Prevention**
-
-   * Can predictable mistakes be prevented?
-
-9. **Responsiveness**
-
-   * Does the interface remain usable across screen sizes?
-
-10. **Accessibility**
-
-    * Can the interface be navigated without relying exclusively on mouse or color?
-
-11. **Performance**
-
-    * Does the implementation introduce unnecessary frontend cost?
-
-12. **Maintainability**
-
-    * Does the implementation follow existing application patterns?
-
-When identifying an issue, provide:
-
-* The problem.
-* Its impact on users.
-* The likely cause.
-* The recommended solution.
-* Implementation considerations.
-
-Prioritize findings as:
-
-* Critical
-* High
-* Medium
-* Low
+| Prohibited Pattern | Approved Alternative |
+|---|---|
+| Gratuitous gradients and neon glows | Flat, neutral surfaces (`tw:bg-surface`, `tw:border-outline`) |
+| Glassmorphism / decorative backdrop blurs | Opaque containers with distinct 1px borders |
+| Oversized rounded cards (16px-24px) | Crisp enterprise radius (`--md-shape-sm`: 4px, `--md-shape-md`: 6px) |
+| Deep multi-layered drop shadows | Subtle borders (`tw:border`) and minimal elevation (`--ui-shadow-1`) |
+| Walls of colorful KPI cards above lists | Compact headers with immediate access to table filters |
+| Decorative floating blobs and emoji icons | Crisp Lucide icons (`<x-ui.icon>`) with functional purpose |
+| Uncontrolled ADASI Blue everywhere | ADASI Blue reserved exclusively for primary actions and active states |
+| Hero banners and marketing slogans in ERP | Compact breadcrumb + operational title + document status chip |
+| Bouncy/spring animation curves | Snappy linear/standard easing (150ms-200ms) honoring reduced-motion |
 
 ---
 
-# Limitations
+# WCAG 2.2 Level AA Accessibility Standards
 
-* Use this skill only for UI/UX and frontend engineering tasks related to the Supplier Portal.
-* Do not assume visual changes are improvements without considering business workflow.
-* Do not introduce major dependencies without evaluating their impact.
-* Do not treat frontend controls as security enforcement.
-* Do not change business rules without explicit requirements.
-* Validate implementation against the actual Supplier Portal environment.
-* When requirements are incomplete, inspect the existing codebase and infer conventions from existing implementation before introducing new patterns.
+Ensure all interfaces comply with WCAG 2.2 Level AA requirements:
+
+### 1. Perceivable
+* **Color Contrast:**
+  * Normal text (`< 18pt` or `< 14pt bold`): Minimum **4.5:1** contrast against background. 
+  * Large text & UI components / borders / icons: Minimum **3:1** contrast against surface.
+  * Chart series: Must maintain **3:1** contrast against both light and dark chart backgrounds (WCAG 1.4.11).
+* **Non-Color State Cues (SC 1.4.1):**
+  * Never communicate status, error, or selection by color alone.
+  * Status chips MUST pair a background tone with an explicit text label and an identifiable icon.
+
+### 2. Operable
+* **Target Size Minimum (SC 2.5.8):**
+  * Every interactive touch/click target (buttons, icons, checkboxes, pagination links) MUST be at least **24x24 CSS pixels**, or provide equivalent spacing around the target.
+* **Focus Appearance (SC 2.4.11):**
+  * Keyboard focus must be clearly visible on all interactive elements.
+  * Use the standard focus ring: `tw:focus:outline-none tw:focus:ring-2 tw:focus:ring-primary tw:focus:ring-offset-2`.
+* **Keyboard Navigation:**
+  * Modals and drawers must trap focus while open and restore focus upon dismissal.
+  * Dropdowns and menus must support `Esc` to close and arrow navigation.
+
+### 3. Understandable
+* **Redundant Entry (SC 3.3.7):**
+  * Do not re-request data previously entered by the user in the same session (e.g. supplier registration wizard pre-filling subsequent steps).
+* **Error Identification & Suggestion (SC 3.3.1, SC 3.3.3):**
+  * Form errors must appear directly adjacent to the offending input using `<x-ui.field-error>`.
+  * Error messages must explain how to resolve the problem, not just state failure.
+
+### 4. Robust
+* **ARIA & Live Regions:**
+  * Asynchronous updates, progress changes, and toasts MUST use `aria-live="polite"` to alert screen readers without interrupting speech.
+  * Icon-only buttons MUST include an accessible `aria-label` or `.tw:sr-only` description.
+  * Tables MUST define `<th scope="col">` and `<th scope="row">` headers for tabular navigation.
+
+---
+
+# Internationalization & Microcopy
+
+* **Localization Wrapper:** All user-visible strings MUST be wrapped in Laravel's localization helper:
+  ```blade
+  {{ __('procurement.po_number') }}
+  ```
+  Ensure corresponding keys exist in both `lang/en` and `lang/id`.
+* **Language Strategy:**
+  * Core 1 (Import Procurement): English-first.
+  * Core 2 (Local Supplier & GA): Indonesian-first.
+  * Shared Shell & Preferences: Fully bilingual.
+* **Domain Terminologies:** Preserve standardized procurement acronyms without transliteration: `PR`, `PO`, `HS Code`, `QC`, `MTC`, `ADASI`, `DRP`, `GR`, `NIB`, `NPWP`.
+
+---
+
+# Design Tool & Workflow Protocols
+
+### 1. Material Design 3 (M3) & Coolors Integration
+* Use Material Design 3 specifications for state layers, button heights (`--ui-control-height-md: 2.5rem`), and elevation tiers.
+* Use Coolors to audit contrast ratios for status chips and chart series across light and dark modes before shipping.
+
+### 2. Google Stitch Protocol
+When generating or refining screens via Google Stitch:
+```text
+Explore -> Critique -> Reject Generic AI Output -> Adapt to ADASI Token Architecture -> Implement in Blade -> Verify
+```
+* Reject generic SaaS dashboard compositions.
+* Adapt layouts to use `<x-ui.*>` components and `tw:` prefixed utility classes.
+
+### 3. Visual QA Policy
+* **Manual Visual QA:** Browser automation tools (Playwright/Puppeteer/Selenium) are strictly prohibited for automated visual QA loops in this codebase.
+* After frontend changes, flag visual artifacts for manual review: `MANUAL_VISUAL_QA_REQUIRED`.
+
+---
+
+# Pre-Completion Verification Discipline
+
+Before declaring any UI/UX or frontend task complete, execute the required verification suite:
+
+```bash
+# 1. Compile and verify Tailwind CSS 4 utility builds
+node --test tests/js/tailwind-build.test.mjs
+
+# 2. Verify icon component byte-for-byte fidelity and alias coverage
+php artisan test --filter=UiIconComponentTest
+
+# 3. Clear and warm Blade view cache to catch syntax errors
+php artisan view:clear
+php artisan view:cache
+
+# 4. Production asset build check
+npm.cmd run build
+
+# 5. Check git working tree for trailing whitespace or formatting issues
+git diff --check
+```
+
+### Self-Review Checklist
+Before finalizing changes, verify:
+1. Are all Tailwind utility classes prefixed with `tw:`?
+2. Are all colors mapped to design tokens (`--md-*` / `--ui-*`) with ZERO raw hex codes in views?
+3. Are all dates rendered using `<x-ui.date-picker>` / `<x-ui.date-range-picker>`?
+4. Are file upload forms decorated with `data-async-submit`?
+5. Does the interactive target size meet the 24x24px WCAG 2.2 minimum?
+6. Is keyboard focus clearly visible on all interactive elements?
+7. Is all user-facing copy localized via `__('domain.key')`?
+8. Has existing business logic, route names, and DOM/JS bindings remained 100% intact?
