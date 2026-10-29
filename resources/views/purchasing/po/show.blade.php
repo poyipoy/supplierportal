@@ -623,12 +623,15 @@
 
                     @php
                         $customsSummary = $customsSummary ?? $po->customsDocumentationSummary();
+                        $customsProgress = $customsProgress ?? $po->customsDocumentationProgress();
+                        $usesShipmentWorkflow = (bool) ($customsProgress['uses_shipment_workflow'] ?? false);
                     @endphp
 
                     @foreach($po->documents as $doc)
                         @php
                             $config = $docConfig[$doc->doc_type] ?? ['label' => $doc->doc_type, 'icon' => 'file', 'statuses' => []];
                             $summaryItem = $customsSummary[$doc->doc_type] ?? null;
+                            $progressItem = $customsProgress['documents'][$doc->doc_type] ?? null;
                             $effectiveStatus = $summaryItem['status'] ?? $doc->status;
                             $statusLabel = $config['statuses'][$effectiveStatus] ?? \App\Support\StatusHelper::shipmentDocLabel($effectiveStatus);
                             $chipClasses = match($effectiveStatus) {
@@ -644,8 +647,13 @@
                             };
                             $shipmentDocs = collect($summaryItem['shipment_documents'] ?? []);
                             $uploadedDocs = $shipmentDocs->filter(fn($sd) => !empty($sd['attachment']));
+                            $activeShipmentCount = (int) ($progressItem['active_shipment_count'] ?? 0);
+                            $receivedShipmentCount = (int) ($progressItem['received_count'] ?? 0);
+                            $verifiedShipmentCount = (int) ($progressItem['verified_count'] ?? 0);
+                            $evidenceGapCount = (int) ($progressItem['evidence_gap_count'] ?? 0);
+                            $isWaitingForShipment = $usesShipmentWorkflow && $activeShipmentCount === 0;
                         @endphp
-                        <div class="po-doc-card tw:h-full tw:rounded-xl tw:border tw:border-outline-variant/80 tw:bg-surface tw:p-3.5 tw-shadow-2xs tw:flex tw:flex-col tw:justify-between tw:transition-all tw:hover:border-primary/40 hover:tw-shadow-xs" id="doc-card-{{ $doc->id }}">
+                        <div class="po-doc-card tw:h-full tw:rounded-xl tw:border tw:border-outline-variant/80 tw:bg-surface tw:p-3.5 tw-shadow-2xs tw:flex tw:flex-col tw:justify-between tw:transition-colors tw:hover:border-primary/40 hover:tw-shadow-xs" id="doc-card-{{ $doc->id }}">
                             {{-- Zone 1: Document Header (Centered & Uniform) --}}
                             <div class="tw:flex tw:flex-col tw:items-center tw:text-center">
                                 <div class="tw:w-10 tw:h-10 tw:rounded-full tw:flex tw:items-center tw:justify-center tw:mb-2 {{ $iconClasses }}">
@@ -655,6 +663,31 @@
                                 <span class="ui-status-chip {{ $chipClasses }} tw:mb-1 doc-status-badge" id="doc-badge-{{ $doc->id }}" data-status="{{ $effectiveStatus }}">
                                     {{ $statusLabel }}
                                 </span>
+                                @if($usesShipmentWorkflow)
+                                    @if($activeShipmentCount > 0)
+                                        <div class="tw:flex tw:flex-wrap tw:items-center tw:justify-center tw:gap-1 tw:mt-1 ui-tabular-nums" data-doc-shipment-counters="{{ $doc->doc_type }}">
+                                            <span class="ui-status-chip {{ $receivedShipmentCount === $activeShipmentCount ? 'ui-status-chip--info' : 'ui-status-chip--neutral' }}">
+                                                {{ __('documents.sync.received_counter', ['received' => $receivedShipmentCount, 'total' => $activeShipmentCount]) }}
+                                            </span>
+                                            <span class="ui-status-chip {{ $verifiedShipmentCount === $activeShipmentCount ? 'ui-status-chip--success' : 'ui-status-chip--neutral' }}">
+                                                {{ __('documents.sync.verified_counter', ['verified' => $verifiedShipmentCount, 'total' => $activeShipmentCount]) }}
+                                            </span>
+                                        </div>
+                                        @if($evidenceGapCount > 0)
+                                            <p class="tw:m-0 tw:mt-1 tw:text-ui-xs text-warning" data-doc-evidence-gap="{{ $doc->doc_type }}">
+                                                {{ __('documents.sync.evidence_gap_warning', ['count' => $evidenceGapCount]) }}
+                                            </p>
+                                        @endif
+                                    @else
+                                        <span class="tw:text-on-surface-variant tw:text-ui-xs tw:mt-1" data-doc-waiting-shipment="{{ $doc->doc_type }}">
+                                            {{ __('documents.sync.waiting_for_shipment') }}
+                                        </span>
+                                    @endif
+                                @else
+                                    <span class="tw:text-on-surface-variant tw:text-ui-xs tw:mt-0.5">
+                                        {{ __('documents.sync.legacy_manual_status') }}
+                                    </span>
+                                @endif
                                 <div class="tw:text-on-surface-variant tw:text-ui-xs tw:h-5 tw:flex tw:items-center tw:justify-center" id="doc-date-{{ $doc->id }}">
                                     @if($effectiveStatus !== 'pending')
                                         <span>{{ $regionalFormatter->timestamp($doc->updated_at, 'datetime_comma') }}</span>
@@ -698,14 +731,31 @@
 
                             {{-- Zone 3: Footer Action --}}
                             <div class="tw:pt-1 tw:mt-auto">
-                                <x-ui.button type="button" variant="outline" size="sm" class="btn-update-doc tw:w-full"
-                                        data-doc-id="{{ $doc->id }}"
-                                        data-doc-type="{{ $doc->doc_type }}"
-                                        data-doc-label="{{ $config['label'] }}"
-                                        data-doc-status="{{ $effectiveStatus }}"
-                                        :data-doc-statuses="json_encode($config['statuses'])">
-                                    <x-ui.icon name="square-pen" size="sm" class="me-1" /> {{ __('purchasing.copy.update_status') }}
-                                </x-ui.button>
+                                @if($usesShipmentWorkflow)
+                                    @if($isWaitingForShipment)
+                                        <x-ui.button type="button" variant="outline" size="sm" class="tw:w-full" disabled aria-disabled="true" data-doc-type="{{ $doc->doc_type }}">
+                                            <x-ui.icon name="clock" size="sm" class="me-1" /> {{ __('documents.sync.waiting_for_shipment') }}
+                                        </x-ui.button>
+                                    @else
+                                        <x-ui.button type="button" variant="outline" size="sm" class="btn-open-shipment-doc-dialog tw:w-full"
+                                                data-doc-id="{{ $doc->id }}"
+                                                data-doc-type="{{ $doc->doc_type }}"
+                                                data-doc-label="{{ $config['label'] }}"
+                                                data-update-url="{{ route('purchasing.purchase-orders.documents.shipments.update', ['id' => $po, 'doc_type' => $doc->doc_type]) }}"
+                                                :data-doc-statuses="json_encode($config['statuses'])">
+                                            <x-ui.icon name="square-pen" size="sm" class="me-1" /> {{ __('purchasing.copy.update_status') }}
+                                        </x-ui.button>
+                                    @endif
+                                @else
+                                    <x-ui.button type="button" variant="outline" size="sm" class="btn-update-doc tw:w-full"
+                                            data-doc-id="{{ $doc->id }}"
+                                            data-doc-type="{{ $doc->doc_type }}"
+                                            data-doc-label="{{ $config['label'] }}"
+                                            data-doc-status="{{ $effectiveStatus }}"
+                                            :data-doc-statuses="json_encode($config['statuses'])">
+                                        <x-ui.icon name="square-pen" size="sm" class="me-1" /> {{ __('purchasing.copy.update_status') }}
+                                    </x-ui.button>
+                                @endif
                             </div>
                         </div>
                     @endforeach
@@ -867,6 +917,64 @@
         </div>
     </div>
 </div>
+
+{{-- Gate 2 (Decision B): Shipment-Scoped Customs Document Status Dialog --}}
+<x-ui.dialog
+    name="update-shipment-docs"
+    maxWidth="2xl"
+    :title="__('documents.sync.dialog_title')"
+    :description="__('documents.sync.dialog_subtitle', ['document' => ''])"
+>
+    <div id="shipmentDocDialogRoot" class="tw:space-y-4">
+        <div id="shipmentDocDialogFeedback" class="d-none" role="status" aria-live="polite"></div>
+
+        <div class="tw:flex tw:items-center tw:justify-between tw:gap-2 tw:rounded-lg tw:border tw:border-outline-variant/80 tw:bg-surface-container-low tw:px-3 tw:py-2">
+            <span class="tw:text-ui-xs tw:font-semibold tw:text-on-surface ui-tabular-nums" id="shipmentDocSelectionSummary">
+                {{ __('documents.sync.selection_summary', ['count' => 0]) }}
+            </span>
+            <span class="tw:text-ui-xs tw:text-on-surface-variant ui-tabular-nums" id="shipmentDocCountersSummary"></span>
+        </div>
+
+        <div id="shipmentDocRowsContainer" class="tw:space-y-2.5" role="group" aria-labelledby="update-shipment-docs-title"></div>
+
+        <div class="tw:grid tw:gap-3 tw:pt-2 tw:border-t tw:border-outline-variant/80">
+            <div>
+                <label class="form-label small fw-semibold tw:text-on-surface" for="shipmentDocTargetStatus">
+                    {{ __('purchasing.copy.select_new_status') }}
+                </label>
+                <select class="form-select form-select-sm" id="shipmentDocTargetStatus">
+                    <option value="" selected disabled>{{ __('documents.sync.select_target_placeholder') }}</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="form-label small fw-semibold tw:text-on-surface" for="shipmentDocReason">
+                    {{ __('documents.sync.reason_label') }}
+                </label>
+                <textarea
+                    class="form-control form-control-sm"
+                    id="shipmentDocReason"
+                    rows="2"
+                    maxlength="1000"
+                    placeholder="{{ __('documents.sync.reason_placeholder') }}"
+                ></textarea>
+                <p id="shipmentDocReasonHint" class="tw:m-0 tw:mt-1 tw:text-ui-xs tw:text-on-surface-variant d-none">
+                    {{ __('documents.sync.reason_required_hint') }}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <x-slot:actions>
+        <x-ui.button type="button" variant="ghost" size="sm" id="btnCancelShipmentDocDialog" onclick="window.dispatchEvent(new CustomEvent('close-ui-dialog', { detail: 'update-shipment-docs' }))">
+            {{ __('purchasing.copy.cancel') }}
+        </x-ui.button>
+        <x-ui.button type="button" size="sm" id="btnSubmitShipmentDocStatus" disabled>
+            <span class="spinner-border spinner-border-sm d-none me-1" id="shipmentDocSpinner" role="status" aria-hidden="true"></span>
+            <span>{{ __('documents.sync.submit_button') }}</span>
+        </x-ui.button>
+    </x-slot:actions>
+</x-ui.dialog>
 @endsection
 
 @push('scripts')
@@ -1118,6 +1226,393 @@
             complete: function() {
                 $('#docSpinner').addClass('d-none');
                 $('#btnSaveDocStatus').prop('disabled', false);
+            }
+        });
+    });
+
+    // Gate 2 (Decision B): Shipment-scoped document selection dialog
+    const customsProgressData = @js($customsProgress ?? ['documents' => []]);
+    const statusRanks = @js(\App\Models\PoDocument::STATUS_RANKS);
+    const shipmentDocStatusLabels = {
+        pending: @json(__('purchasing.copy.not_available')),
+        received: @json(\App\Support\StatusHelper::shipmentDocLabel('received')),
+        verified: @json(\App\Support\StatusHelper::shipmentDocLabel('verified')),
+        issued: @json(\App\Support\StatusHelper::shipmentDocLabel('issued')),
+        processing: @json(\App\Support\StatusHelper::shipmentDocLabel('processing')),
+        done: @json(\App\Support\StatusHelper::shipmentDocLabel('done'))
+    };
+    const shipmentStatusLabels = {
+        draft: @json(\App\Support\StatusHelper::shipmentLabel('draft')),
+        submitted: @json(\App\Support\StatusHelper::shipmentLabel('submitted')),
+        arrived: @json(\App\Support\StatusHelper::shipmentLabel('arrived')),
+        cancelled: @json(\App\Support\StatusHelper::shipmentLabel('cancelled'))
+    };
+    const shipmentDocCopy = @js([
+        'dialog_title' => __('documents.sync.dialog_title_for_doc'),
+        'dialog_subtitle' => __('documents.sync.dialog_subtitle'),
+        'select_target' => __('documents.sync.select_target_placeholder'),
+        'selection_summary' => __('documents.sync.selection_summary'),
+        'no_file' => __('documents.sync.no_file_uploaded'),
+        'view_file' => __('documents.sync.view_file'),
+        'legacy_file' => __('documents.sync.legacy_file_badge'),
+        'multi_po' => __('documents.sync.multi_po_warning'),
+        'ineligible' => __('documents.sync.ineligible_shipment_status'),
+        'checkbox_label' => __('documents.sync.checkbox_label'),
+        'result_updated' => __('documents.sync.result_updated'),
+        'result_skipped' => __('documents.sync.result_skipped'),
+        'result_stale' => __('documents.sync.result_stale'),
+        'result_rejected' => __('documents.sync.result_rejected'),
+        'result_not_applied' => __('documents.sync.result_not_applied'),
+        'update_failed' => __('documents.sync.update_failed'),
+    ]);
+
+    const shipmentDocDialogState = {
+        docType: null,
+        docLabel: '',
+        updateUrl: '',
+        statuses: {},
+        rows: [],
+        selectedShipments: new Set(),
+        rowOutcomes: {}
+    };
+
+    function shipmentDocStatusChipClass(status) {
+        if (status === 'verified' || status === 'done') return 'ui-status-chip--success';
+        if (status === 'received' || status === 'issued' || status === 'processing') return 'ui-status-chip--info';
+        return 'ui-status-chip--neutral';
+    }
+
+    function shipmentRowStatusChipClass(status) {
+        if (status === 'arrived') return 'ui-status-chip--success';
+        if (status === 'submitted') return 'ui-status-chip--info';
+        if (status === 'cancelled') return 'ui-status-chip--error';
+        return 'ui-status-chip--neutral';
+    }
+
+    function isReasonRequiredForSelection() {
+        const target = $('#shipmentDocTargetStatus').val();
+        if (!target) return false;
+        const targetRank = statusRanks[target] ?? 0;
+        for (const row of shipmentDocDialogState.rows) {
+            if (!row.eligible || !shipmentDocDialogState.selectedShipments.has(row.shipment)) continue;
+            const currentRank = statusRanks[row.status] ?? 0;
+            if (targetRank <= currentRank && row.status !== target) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function syncShipmentDocDialogControls() {
+        const selectedCount = shipmentDocDialogState.selectedShipments.size;
+        const target = $('#shipmentDocTargetStatus').val();
+        const reason = ($('#shipmentDocReason').val() || '').trim();
+        const needsReason = isReasonRequiredForSelection();
+
+        $('#shipmentDocSelectionSummary').text(
+            shipmentDocCopy.selection_summary.replace(':count', String(selectedCount))
+        );
+
+        const $reasonHint = $('#shipmentDocReasonHint');
+        if (needsReason) {
+            $reasonHint.removeClass('d-none').addClass('text-warning fw-semibold');
+            $('#shipmentDocReason').attr('required', 'required');
+        } else {
+            $reasonHint.addClass('d-none').removeClass('text-warning fw-semibold');
+            $('#shipmentDocReason').removeAttr('required');
+        }
+
+        const canSubmit = selectedCount > 0 && Boolean(target) && (!needsReason || reason.length > 0);
+        $('#btnSubmitShipmentDocStatus').prop('disabled', !canSubmit);
+    }
+
+    function renderShipmentDocDialogRows() {
+        const container = document.getElementById('shipmentDocRowsContainer');
+        if (!container) return;
+        container.replaceChildren();
+
+        shipmentDocDialogState.rows.forEach((row, index) => {
+            const checkboxId = `shipment-doc-row-${index}`;
+            const isChecked = row.eligible && shipmentDocDialogState.selectedShipments.has(row.shipment);
+            const outcome = shipmentDocDialogState.rowOutcomes[row.shipment] || null;
+
+            const card = document.createElement('div');
+            card.className = 'tw:rounded-lg tw:border tw:border-outline-variant/80 tw:bg-surface tw:p-3 tw:space-y-2';
+            card.setAttribute('data-shipment-doc-row', row.shipment);
+
+            const topBar = document.createElement('div');
+            topBar.className = 'tw:flex tw:items-start tw:justify-between tw:gap-3';
+
+            const leftGroup = document.createElement('div');
+            leftGroup.className = 'tw:flex tw:items-start tw:gap-2.5 tw:min-w-0';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = checkboxId;
+            checkbox.className = 'form-check-input mt-1 shipment-doc-row-checkbox';
+            checkbox.style.minWidth = '1.25rem';
+            checkbox.style.minHeight = '1.25rem';
+            checkbox.value = row.shipment;
+            checkbox.disabled = !row.eligible;
+            checkbox.checked = isChecked;
+            const docStatusLabel = shipmentDocDialogState.statuses[row.status] || shipmentDocStatusLabels[row.status] || row.status;
+            const shpStatusLabel = shipmentStatusLabels[row.shipment_status] || row.shipment_status;
+            checkbox.setAttribute(
+                'aria-label',
+                shipmentDocCopy.checkbox_label
+                    .replace(':shipment_status', shpStatusLabel)
+                    .replace(':doc_status', docStatusLabel)
+                    .replace(':shipment', row.shipment_number)
+            );
+            checkbox.addEventListener('change', function() {
+                if (this.checked) {
+                    shipmentDocDialogState.selectedShipments.add(row.shipment);
+                } else {
+                    shipmentDocDialogState.selectedShipments.delete(row.shipment);
+                }
+                syncShipmentDocDialogControls();
+            });
+
+            const labelWrap = document.createElement('div');
+            labelWrap.className = 'tw:min-w-0';
+
+            const titleRow = document.createElement('div');
+            titleRow.className = 'tw:flex tw:flex-wrap tw:items-center tw:gap-2';
+
+            const labelEl = document.createElement('label');
+            labelEl.htmlFor = checkboxId;
+            labelEl.className = 'tw:text-ui-sm tw:font-semibold tw:text-on-surface tw:cursor-pointer mb-0';
+            labelEl.textContent = row.shipment_number;
+
+            const shipmentLink = document.createElement('a');
+            shipmentLink.href = row.shipment_url;
+            shipmentLink.className = 'tw:text-ui-xs text-primary text-decoration-none tw:hover:underline';
+            shipmentLink.textContent = `(${shpStatusLabel})`;
+
+            const shpBadge = document.createElement('span');
+            shpBadge.className = `ui-status-chip ${shipmentRowStatusChipClass(row.shipment_status)}`;
+            shpBadge.textContent = shpStatusLabel;
+
+            titleRow.append(labelEl, shpBadge, shipmentLink);
+            labelWrap.appendChild(titleRow);
+
+            const fileRow = document.createElement('div');
+            fileRow.className = 'tw:flex tw:flex-wrap tw:items-center tw:gap-2 tw:mt-1 tw:text-ui-xs';
+            if (row.has_file && row.attachment_url) {
+                const fileNameSpan = document.createElement('span');
+                fileNameSpan.className = 'tw:text-on-surface-variant tw:truncate';
+                fileNameSpan.textContent = row.attachment_name || '';
+
+                const viewLink = document.createElement('a');
+                viewLink.href = row.attachment_url;
+                viewLink.target = '_blank';
+                viewLink.rel = 'noopener';
+                viewLink.className = 'fw-semibold text-primary text-decoration-none tw:hover:underline';
+                viewLink.textContent = shipmentDocCopy.view_file;
+
+                fileRow.append(fileNameSpan, viewLink);
+
+                if (row.is_legacy_evidence) {
+                    const legacyChip = document.createElement('span');
+                    legacyChip.className = 'ui-status-chip ui-status-chip--warning';
+                    legacyChip.textContent = shipmentDocCopy.legacy_file;
+                    fileRow.appendChild(legacyChip);
+                }
+            } else {
+                const noFileSpan = document.createElement('span');
+                noFileSpan.className = 'tw:text-on-surface-variant';
+                noFileSpan.textContent = shipmentDocCopy.no_file;
+                fileRow.appendChild(noFileSpan);
+            }
+            labelWrap.appendChild(fileRow);
+
+            if (!row.eligible) {
+                const ineligibleNote = document.createElement('p');
+                ineligibleNote.className = 'tw:m-0 tw:mt-1 tw:text-ui-xs tw:text-on-surface-variant';
+                ineligibleNote.textContent = shipmentDocCopy.ineligible;
+                labelWrap.appendChild(ineligibleNote);
+            }
+
+            if (row.is_multi_po && Array.isArray(row.shared_po_numbers) && row.shared_po_numbers.length > 0) {
+                const multiPoNote = document.createElement('p');
+                multiPoNote.className = 'tw:m-0 tw:mt-1 tw:text-ui-xs text-warning fw-medium';
+                multiPoNote.textContent = shipmentDocCopy.multi_po.replace(':pos', row.shared_po_numbers.join(', '));
+                labelWrap.appendChild(multiPoNote);
+            }
+
+            leftGroup.append(checkbox, labelWrap);
+
+            const rightGroup = document.createElement('div');
+            rightGroup.className = 'tw:flex tw:flex-col tw:items-end tw:gap-1 flex-shrink-0';
+
+            const docChip = document.createElement('span');
+            docChip.className = `ui-status-chip ${shipmentDocStatusChipClass(row.status)}`;
+            docChip.textContent = docStatusLabel;
+            rightGroup.appendChild(docChip);
+
+            if (outcome) {
+                const outcomeChip = document.createElement('span');
+                const outcomeTone = outcome.result === 'updated'
+                    ? 'ui-status-chip--success'
+                    : (outcome.result === 'skipped' ? 'ui-status-chip--neutral' : 'ui-status-chip--error');
+                const outcomeKey = `result_${outcome.result}`;
+                outcomeChip.className = `ui-status-chip ${outcomeTone}`;
+                outcomeChip.textContent = shipmentDocCopy[outcomeKey] || outcome.result;
+                rightGroup.appendChild(outcomeChip);
+            }
+
+            topBar.append(leftGroup, rightGroup);
+            card.appendChild(topBar);
+
+            if (outcome && outcome.message) {
+                const outcomeMsg = document.createElement('p');
+                outcomeMsg.className = 'tw:m-0 tw:pt-1 tw:border-t tw:border-outline-variant/60 tw:text-ui-xs text-danger';
+                outcomeMsg.textContent = outcome.message;
+                card.appendChild(outcomeMsg);
+            }
+
+            container.appendChild(card);
+        });
+    }
+
+    $('.btn-open-shipment-doc-dialog').on('click', function() {
+        const docType = $(this).data('doc-type');
+        const docLabel = $(this).data('doc-label');
+        const updateUrl = $(this).data('update-url');
+        const statuses = $(this).data('doc-statuses') || {};
+        const docProgress = (customsProgressData.documents && customsProgressData.documents[docType]) || { rows: [] };
+
+        shipmentDocDialogState.docType = docType;
+        shipmentDocDialogState.docLabel = docLabel;
+        shipmentDocDialogState.updateUrl = updateUrl;
+        shipmentDocDialogState.statuses = statuses;
+        shipmentDocDialogState.rows = Array.isArray(docProgress.rows) ? docProgress.rows.map(r => ({ ...r })) : [];
+        shipmentDocDialogState.selectedShipments = new Set();
+        shipmentDocDialogState.rowOutcomes = {};
+
+        $('#update-shipment-docs-title').text(
+            shipmentDocCopy.dialog_title.replace(':document', docLabel)
+        );
+        $('#update-shipment-docs-description').text(
+            shipmentDocCopy.dialog_subtitle.replace(':document', docLabel)
+        );
+
+        const $feedback = $('#shipmentDocDialogFeedback');
+        $feedback.addClass('d-none').empty();
+
+        const $select = $('#shipmentDocTargetStatus');
+        $select.empty();
+        const placeholderOption = document.createElement('option');
+        placeholderOption.value = '';
+        placeholderOption.disabled = true;
+        placeholderOption.selected = true;
+        placeholderOption.textContent = shipmentDocCopy.select_target;
+        $select.append(placeholderOption);
+
+        for (const [key, label] of Object.entries(statuses)) {
+            const opt = document.createElement('option');
+            opt.value = key;
+            opt.textContent = label;
+            $select.append(opt);
+        }
+
+        $('#shipmentDocReason').val('');
+        renderShipmentDocDialogRows();
+        syncShipmentDocDialogControls();
+
+        window.dispatchEvent(new CustomEvent('open-ui-dialog', { detail: 'update-shipment-docs' }));
+    });
+
+    $('#shipmentDocTargetStatus, #shipmentDocReason').on('input change', function() {
+        syncShipmentDocDialogControls();
+    });
+
+    $('#btnSubmitShipmentDocStatus').on('click', function() {
+        const targetStatus = $('#shipmentDocTargetStatus').val();
+        const reason = ($('#shipmentDocReason').val() || '').trim();
+        const selectedRowsPayload = [];
+
+        shipmentDocDialogState.rows.forEach(row => {
+            if (row.eligible && shipmentDocDialogState.selectedShipments.has(row.shipment)) {
+                selectedRowsPayload.push({
+                    shipment: row.shipment,
+                    expected_status: row.status,
+                    expected_attachment: row.attachment_hash || null
+                });
+            }
+        });
+
+        if (!targetStatus || selectedRowsPayload.length === 0) {
+            return;
+        }
+
+        $('#shipmentDocSpinner').removeClass('d-none');
+        $('#btnSubmitShipmentDocStatus').prop('disabled', true);
+
+        $.ajax({
+            url: shipmentDocDialogState.updateUrl,
+            method: 'PUT',
+            contentType: 'application/json',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            },
+            data: JSON.stringify({
+                target_status: targetStatus,
+                reason: reason !== '' ? reason : null,
+                rows: selectedRowsPayload
+            }),
+            success: function(res) {
+                if (res && res.success) {
+                    AdasiToast.show({
+                        type: 'success',
+                        title: @json(__('common.feedback.success')),
+                        message: res.message,
+                        autoClose: 1500
+                    });
+                    window.location.reload();
+                }
+            },
+            error: function(xhr) {
+                const payload = xhr.responseJSON || {};
+                const message = payload.message || shipmentDocCopy.update_failed;
+
+                shipmentDocDialogState.rowOutcomes = {};
+                if (Array.isArray(payload.rows)) {
+                    payload.rows.forEach(r => {
+                        if (r && r.shipment) {
+                            shipmentDocDialogState.rowOutcomes[r.shipment] = r;
+                        }
+                    });
+                }
+
+                if (Array.isArray(payload.rows_state)) {
+                    shipmentDocDialogState.rows = payload.rows_state.map(r => ({ ...r }));
+                    if (customsProgressData.documents && shipmentDocDialogState.docType && customsProgressData.documents[shipmentDocDialogState.docType]) {
+                        customsProgressData.documents[shipmentDocDialogState.docType].rows = payload.rows_state.map(r => ({ ...r }));
+                    }
+                    const eligibleSet = new Set(
+                        shipmentDocDialogState.rows.filter(r => r.eligible).map(r => r.shipment)
+                    );
+                    for (const selected of Array.from(shipmentDocDialogState.selectedShipments)) {
+                        if (!eligibleSet.has(selected)) {
+                            shipmentDocDialogState.selectedShipments.delete(selected);
+                        }
+                    }
+                }
+
+                const $feedback = $('#shipmentDocDialogFeedback');
+                $feedback
+                    .removeClass('d-none')
+                    .attr('class', 'tw:rounded-lg tw:border tw:border-error/40 tw:bg-error-container/20 tw:p-3 tw:text-ui-xs text-danger')
+                    .text(message);
+
+                renderShipmentDocDialogRows();
+                syncShipmentDocDialogControls();
+            },
+            complete: function() {
+                $('#shipmentDocSpinner').addClass('d-none');
+                syncShipmentDocDialogControls();
             }
         });
     });

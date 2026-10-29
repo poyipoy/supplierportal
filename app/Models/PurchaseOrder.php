@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Support\BusinessTime;
 use App\Support\Money;
+use App\Support\Procurement\CustomsDocumentationProgressCalculator;
 use App\Support\Procurement\OrderedLine;
 use App\Traits\HasHashids;
 use Illuminate\Database\Eloquent\Builder;
@@ -519,6 +520,16 @@ class PurchaseOrder extends Model
         }
 
         return $updated;
+    }
+
+    /**
+     * Read-only customs documentation progress projection across active linked shipments.
+     *
+     * @return array<string, mixed>
+     */
+    public function customsDocumentationProgress(): array
+    {
+        return app(CustomsDocumentationProgressCalculator::class)->calculate($this);
     }
 
     /**

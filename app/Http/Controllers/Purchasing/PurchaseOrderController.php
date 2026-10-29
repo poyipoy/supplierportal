@@ -242,7 +242,8 @@ class PurchaseOrderController extends Controller
             'awards.prItem',
             'awards.quotation',
             'awards.quotationItem',
-            'shipmentItems.shipment.documents.latestAttachment',
+            'shipmentItems.shipment.documents.latestAttachment.fileInspection',
+            'shipmentItems.shipment.items.purchaseOrder:id,po_number',
             'shipmentItems.shipment.mtcAttachments',
             'referencePriceSnapshots.award.prItem',
         ])->findOrFail($id);
@@ -261,6 +262,7 @@ class PurchaseOrderController extends Controller
         // now that customsDocumentationSummary() is a pure read.
         $po->reconcileCustomsDocumentationStatus();
         $customsSummary = $po->customsDocumentationSummary();
+        $customsProgress = $po->customsDocumentationProgress();
 
         // Compute document completion based on synchronized effective status
         $completedStatuses = ['received', 'verified', 'done'];
@@ -271,7 +273,7 @@ class PurchaseOrderController extends Controller
         $allDocsComplete = ($completedDocs >= 4);
         $docProgress = StatusHelper::documentProgressMeta($completedDocs, $totalDocs);
 
-        return view('purchasing.po.show', compact('po', 'quotationRates', 'completedDocs', 'totalDocs', 'allDocsComplete', 'docProgress', 'itemProjections', 'poProgressSummary', 'customsSummary'));
+        return view('purchasing.po.show', compact('po', 'quotationRates', 'completedDocs', 'totalDocs', 'allDocsComplete', 'docProgress', 'itemProjections', 'poProgressSummary', 'customsSummary', 'customsProgress'));
     }
 
     /**

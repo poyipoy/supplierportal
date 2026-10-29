@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Purchasing;
 
+use App\Exceptions\BusinessRuleException;
 use App\Http\Controllers\Controller;
 use App\Models\PoDocument;
 use App\Services\NotificationService;
+use App\Support\BusinessTime;
 use App\Support\NotificationCategory;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -23,6 +25,10 @@ class PoDocumentController extends Controller
         ]);
 
         $doc = PoDocument::with('purchaseOrder.creator')->findOrFail($id);
+        if (! $doc->purchaseOrder || ! $doc->purchaseOrder->isLegacyArrivalEligible()) {
+            throw new BusinessRuleException(__('documents.sync.legacy_endpoint_blocked'));
+        }
+
         $completedStatuses = ['received', 'verified', 'done'];
         $wasAllDone = $doc->purchaseOrder
             ->documents()
@@ -85,7 +91,7 @@ class PoDocumentController extends Controller
                 'id' => $doc->id,
                 'doc_type' => $doc->doc_type,
                 'status' => $doc->status,
-                'updated_at' => \App\Support\BusinessTime::format($doc->updated_at, 'd M Y, H:i'),
+                'updated_at' => BusinessTime::format($doc->updated_at, 'd M Y, H:i'),
             ],
         ]);
     }

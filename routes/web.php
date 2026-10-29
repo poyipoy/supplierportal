@@ -67,6 +67,7 @@ use App\Http\Controllers\Purchasing\PdfController;
 use App\Http\Controllers\Purchasing\PeriodController;
 use App\Http\Controllers\Purchasing\PoDocumentController;
 use App\Http\Controllers\Purchasing\PoItemProgressController;
+use App\Http\Controllers\Purchasing\PoShipmentDocumentStatusController;
 use App\Http\Controllers\Purchasing\PriceComparisonController;
 use App\Http\Controllers\Purchasing\PrItemController;
 use App\Http\Controllers\Purchasing\PurchaseOrderController;
@@ -96,6 +97,7 @@ use App\Http\Controllers\SupplierRegistrationReviewController;
 use App\Http\Controllers\UserNotificationPreferenceController;
 use App\Http\Controllers\UserPreferenceController;
 use App\Models\PurchaseRequisition;
+use App\Models\ShipmentDocument;
 use App\Support\PortalContext;
 use App\Support\PortalPath;
 use Illuminate\Support\Facades\Route;
@@ -521,6 +523,9 @@ Route::prefix(PortalPath::prefix())->group(function () {
         Route::post('/material-calculations/preview', [MaterialCalculationController::class, 'preview'])
             ->middleware('throttle:120,1')
             ->name('material-calculations.preview');
+        Route::post('/material-calculations/totals', [MaterialCalculationController::class, 'totals'])
+            ->middleware('throttle:120,1')
+            ->name('material-calculations.totals');
 
         Route::get('/requisitions/import-template', [App\Http\Controllers\Purchasing\PurchaseRequisitionController::class, 'importTemplate'])->name('requisitions.import-template');
         Route::post('/requisitions/import-preview', [App\Http\Controllers\Purchasing\PurchaseRequisitionController::class, 'importPreview'])
@@ -537,6 +542,10 @@ Route::prefix(PortalPath::prefix())->group(function () {
         Route::get('/purchase-orders/{id}', [PurchaseOrderController::class, 'show'])->name('purchase-orders.show');
         Route::get('/purchase-orders/{po_id}/items/{award_id}/progress/history', [PoItemProgressController::class, 'history'])->name('purchase-orders.item-progress.history');
         Route::post('/purchase-orders/{id}/confirm-arrival', [PurchaseOrderController::class, 'confirmArrival'])->name('purchase-orders.confirm-arrival');
+        Route::put('/purchase-orders/{id}/documents/{doc_type}/shipments', PoShipmentDocumentStatusController::class)
+            ->middleware('throttle:30,1')
+            ->whereIn('doc_type', ShipmentDocument::DOC_TYPES)
+            ->name('purchase-orders.documents.shipments.update');
         Route::resource('shipments', ShipmentController::class)->only(['index', 'show']);
         Route::post('/shipments/{id}/confirm-arrival', [ShipmentController::class, 'confirmArrival'])->name('shipments.confirm-arrival');
         Route::put('/shipments/{id}/documents/{document_id}/status', [ShipmentController::class, 'updateDocumentStatus'])->name('shipments.documents.status');

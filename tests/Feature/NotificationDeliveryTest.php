@@ -349,20 +349,38 @@ class NotificationDeliveryTest extends TestCase
             ->assertRedirect();
         $this->assertSame('po.material_arrived', $qc->notifications()->sole()->data['event']);
 
-        $document = PoDocument::where('po_id', $po->id)->firstOrFail();
+        $document = PoDocument::where('po_id', $po->id)->where('doc_type', 'invoice')->firstOrFail();
+        $shipmentDocument = $shipment->documents()->where('doc_type', 'invoice')->firstOrFail();
         $purchasingNotificationCount = $purchasing->notifications()->count();
-        $this->actingAs($purchasing)->putJson(route('purchasing.po-documents.update', $document), ['status' => 'pending'])
-            ->assertOk();
+        $this->actingAs($purchasing)->putJson(
+            route('purchasing.purchase-orders.documents.shipments.update', ['id' => $po, 'doc_type' => 'invoice']),
+            [
+                'target_status' => 'pending',
+                'rows' => [[
+                    'shipment' => $shipment->hash,
+                    'expected_status' => 'pending',
+                ]],
+            ],
+        )->assertOk()->assertJsonPath('rows.0.result', 'skipped');
         $this->assertSame($purchasingNotificationCount, $purchasing->notifications()->count());
 
-        $this->actingAs($purchasing)->putJson(route('purchasing.po-documents.update', $document), ['status' => 'received'])
-            ->assertOk();
+        $this->actingAs($purchasing)->putJson(
+            route('purchasing.purchase-orders.documents.shipments.update', ['id' => $po, 'doc_type' => 'invoice']),
+            [
+                'target_status' => 'received',
+                'rows' => [[
+                    'shipment' => $shipment->hash,
+                    'expected_status' => 'pending',
+                ]],
+            ],
+        )->assertOk()->assertJsonPath('rows.0.result', 'updated');
         $documentNotification = $purchasing->notifications()->get()->first(
             fn ($notification) => ($notification->data['event'] ?? null) === 'document.status_updated'
         );
         $this->assertNotNull($documentNotification);
         $this->assertSame('document.status_updated', $documentNotification->data['event']);
         $this->assertSame($document->id, $documentNotification->data['document_id']);
+        $this->assertSame([$shipmentDocument->id], $documentNotification->data['shipment_document_ids']);
         $this->assertSame(NotificationCategory::DOCUMENT, $documentNotification->data['category']);
     }
 
