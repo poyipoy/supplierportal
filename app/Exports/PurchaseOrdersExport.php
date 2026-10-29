@@ -9,7 +9,6 @@ use App\Exports\Concerns\InteractsWithExportProgress;
 use App\Exports\Concerns\StylesOperationalWorkbook;
 use App\Http\Requests\Export\Filters\PurchaseOrderExportFilters;
 use App\Models\PurchaseOrder;
-use App\Support\BusinessTime;
 use App\Support\SpreadsheetCellSanitizer;
 use App\Support\StatusHelper;
 use Carbon\Carbon;
@@ -62,12 +61,12 @@ class PurchaseOrdersExport implements AcceptsExportOptions, FromQuery, HasLocale
     public function query(): Builder
     {
         if ($this->hasExportOptions()) {
-            $query = PurchaseOrder::query()->with($this->catalogEagerLoads());
+            $query = PurchaseOrder::query()->with($this->catalogEagerLoads())->withExists('shipmentItems as has_shipment_items');
             PurchaseOrderExportFilters::apply($query, ['supplier_id' => $this->supplierId, 'start_date' => $this->startDate, 'end_date' => $this->endDate, 'po_number' => $this->poNumber, 'status' => $this->status, 'search' => $this->search]);
 
             return $query->orderByDesc('id');
         }
-        $q = PurchaseOrder::query()->with([
+        $q = PurchaseOrder::query()->withExists('shipmentItems as has_shipment_items')->with([
             'supplier',
             'quotations.purchaseRequisition.period',
             'quotations.items.prItem',
@@ -92,15 +91,8 @@ class PurchaseOrdersExport implements AcceptsExportOptions, FromQuery, HasLocale
         }
 
         if ($this->status === 'overdue') {
-            $q->where(function (Builder $query) {
-                $query->where('status', 'overdue')
-                    ->orWhere(function (Builder $activeQuery) {
-                        $activeQuery->where('status', 'active')
-                            ->whereNotNull('estimated_arrival')
-                            ->where('estimated_arrival', '<', BusinessTime::today()->toDateString())
-                            ->whereNull('actual_arrival');
-                    });
-            });
+            // Gate 2 PUR-08: the single SQL twin of PurchaseOrder::is_overdue.
+            PurchaseOrder::whereOverdue($q);
         } elseif ($this->status) {
             $q->where('status', $this->status);
         }

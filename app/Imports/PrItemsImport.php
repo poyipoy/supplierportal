@@ -6,6 +6,7 @@ use App\Models\HsCodeRule;
 use App\Models\PrItem;
 use App\Services\Materials\MaterialResolver;
 use App\Services\Materials\PrItemProcessor;
+use App\Support\Money;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -166,6 +167,24 @@ class PrItemsImport extends AbstractPreviewImport implements SkipsEmptyRows, ToC
             $processed['manual_hs_code'] = null;
             $this->rows[] = $processed;
         }
+    }
+
+    /** PUR-02: per-row Total KG and Grand Total Qty/KG, exact at the 4 dp weight scale. */
+    public function preview(): array
+    {
+        $preview = parent::preview();
+        $totalQuantity = 0;
+        $totalWeight = Money::zero(4);
+        foreach ($preview['rows'] as $index => $row) {
+            $rowWeight = Money::multiply($row['weight_needed'] ?? 0, $row['quantity'] ?? 0, 4);
+            $preview['rows'][$index]['total_weight'] = $rowWeight;
+            $totalQuantity += (int) ($row['quantity'] ?? 0);
+            $totalWeight = Money::add($totalWeight, $rowWeight, 4);
+        }
+        $preview['summary']['total_quantity'] = $totalQuantity;
+        $preview['summary']['total_weight_kg'] = $totalWeight;
+
+        return $preview;
     }
 
     private function warnAboutLegacyValues(int $row, array $input, array $calculated): void

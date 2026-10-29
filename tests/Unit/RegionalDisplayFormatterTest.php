@@ -38,6 +38,55 @@ class RegionalDisplayFormatterTest extends TestCase
         $this->assertSame('0,00', $system->money(null));
     }
 
+    public function test_grouped_decimal_adds_missing_thousands_grouping_and_keeps_display_precision(): void
+    {
+        $system = new RegionalDisplayFormatter(['number_format' => 'system']);
+        $indonesian = new RegionalDisplayFormatter(['number_format' => 'indonesian']);
+        $international = new RegionalDisplayFormatter(['number_format' => 'international']);
+
+        // The reported gap: number(maxDecimals(...), 'decimal') leaves system output ungrouped.
+        $this->assertSame('648193716.98', $system->number(NumberFormat::maxDecimals('648193716.98'), 'decimal'));
+
+        $this->assertSame('648,193,716.98', $system->groupedDecimal('648193716.98'));
+        $this->assertSame('648.193.716,98', $indonesian->groupedDecimal('648193716.98'));
+        $this->assertSame('648,193,716.98', $international->groupedDecimal('648193716.98'));
+
+        // Same trimmed precision as NumberFormat::maxDecimals: no forced or dropped decimals.
+        foreach ([
+            ['70000.00', 2, '70,000', '70.000'],
+            ['648193716.9876', 4, '648,193,716.9876', '648.193.716,9876'],
+            ['648193716', 2, '648,193,716', '648.193.716'],
+            ['1234.5600', 4, '1,234.56', '1.234,56'],
+            ['999.995', 2, '1,000', '1.000'],
+            ['-1234567.5', 2, '-1,234,567.5', '-1.234.567,5'],
+            ['-0.001', 2, '0', '0'],
+            ['0', 2, '0', '0'],
+            [12500, 2, '12,500', '12.500'],
+            [1234.5, 2, '1,234.5', '1.234,5'],
+        ] as [$value, $decimals, $expectedSystem, $expectedIndonesian]) {
+            $this->assertSame(NumberFormat::maxDecimals($value, $decimals), str_replace(',', '', $system->groupedDecimal($value, $decimals)), 'precision of '.var_export($value, true));
+            $this->assertSame($expectedSystem, $system->groupedDecimal($value, $decimals));
+            $this->assertSame($expectedIndonesian, $indonesian->groupedDecimal($value, $decimals));
+        }
+
+        // Exact for values beyond float precision.
+        $this->assertSame('9,007,199,254,740,993.99', $system->groupedDecimal('9007199254740993.99'));
+        $this->assertSame('12.345.678.901.234.567.890,1234', $indonesian->groupedDecimal('12345678901234567890.1234', 4));
+
+        foreach ([null, '', 'abc', INF] as $invalid) {
+            $this->assertSame('-', $system->groupedDecimal($invalid));
+        }
+
+        // Surfaces whose native presentation is Indonesian (Price Comparison) keep it under 'system'.
+        $this->assertSame('648.193.716,98', $system->groupedDecimal('648193716.98', 2, 'indonesian'));
+        $this->assertSame('648,193,716.9876', $international->groupedDecimal('648193716.9876', 4, 'indonesian'));
+        $this->assertSame('648.193.716,9876', $indonesian->groupedDecimal('648193716.9876', 4, 'indonesian'));
+        $this->assertSame('70.000', $system->groupedDecimal('70000.00', 2, 'indonesian'));
+
+        $this->expectException(\InvalidArgumentException::class);
+        $system->groupedDecimal('1', 2, 'plain');
+    }
+
     public function test_system_preserves_original_numeric_text_byte_for_byte(): void
     {
         $formatter = new RegionalDisplayFormatter([]);

@@ -7,10 +7,16 @@ const materialPreviewRequests = new WeakMap();
 const materialSearchTimers = new WeakMap();
 const materialSearchRequests = new WeakMap();
 
+// Programmatic .val() writes fire no input event; the totals footer listens for this (PUR-02).
+function notifyPrItemsChanged() {
+    document.dispatchEvent(new CustomEvent('adasi:pr-items-changed'));
+}
+
 function renumberPrRows() {
     $('#itemsBody tr.item-row').each(function(index) {
         $(this).find('[data-pr-row-number]').text(index + 1);
     });
+    notifyPrItemsChanged();
 }
 
 function positionMaterialSearchResults($row) {
@@ -96,6 +102,7 @@ function resetMaterialPreview($row) {
     $row.find('.hs-status-badge').removeClass('ui-status-chip--success ui-status-chip--warning ui-status-chip--error').addClass('ui-status-chip--neutral').text(@json(__('purchasing.copy.needs_more_data')));
     $row.find('.weight-unit-display').val('0.0000');
     $row.find('.weight-manual-override').val('0');
+    notifyPrItemsChanged();
 }
 
 function selectMaterialInRow($row, material) {
@@ -214,6 +221,7 @@ function renderMaterialPreview($row, payload) {
     const unitKg = Number(weight.unit_kg || 0);
     $row.find('.weight-unit-display').val(unitKg.toFixed(4));
     $row.find('.weight-manual-override').val(weight.status === 'manual' ? '1' : '0');
+    notifyPrItemsChanged();
 }
 
 function requestMaterialPreview($row) {
@@ -255,6 +263,7 @@ function requestMaterialPreview($row) {
             } else if (!hasErrors) {
                 $row.find('.hs-code-display').val('');
                 $row.find('.weight-unit-display').val('0.0000');
+                notifyPrItemsChanged();
             }
             $row.find('.hs-status-badge')
                 .removeClass('ui-status-chip--success ui-status-chip--warning ui-status-chip--neutral')
@@ -486,6 +495,7 @@ $(document).on('change', '.material-shape-select', function() {
 function resetManualWeightOverride($row) {
     $row.find('.weight-manual-override').val('0');
     $row.find('.weight-unit-display').val('');
+    notifyPrItemsChanged();
 }
 
 $(document).on('input change', '.hs-code-display', function() {

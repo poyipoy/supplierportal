@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Support\Materials\DimensionRange;
+use App\Support\NumberFormat;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -276,6 +277,33 @@ class QuotationItem extends Model
     public function getIsEstimatedWeightAttribute(): bool
     {
         return $this->offered_weight_source === self::OFFER_WEIGHT_SOURCE_ESTIMATED;
+    }
+
+    /**
+     * QC-01 (Gate 2 §3-B): the ordered specification per relevant dimension of the QC canonical
+     * shape. The offered value wins when present (the quotation is frozen once a PO references
+     * it); a silent offer means the requested value. An offered length range has no scalar.
+     *
+     * @return array<string, array{value: ?string, display: string, source: string, requested: ?string}>
+     */
+    public function orderedSpecification(): array
+    {
+        $prItem = $this->prItem;
+        $normalize = fn ($value) => $value === null || $value === '' ? null : NumberFormat::maxDecimals($value, 4);
+        $spec = [];
+        foreach (PrItem::relevantDimensionFields(PrItem::canonicalShape($prItem?->shape)) as $field) {
+            $requested = $normalize($prItem?->{$field});
+            if ($field === 'length' && $this->available_length === null && ($this->available_length_min !== null || $this->available_length_max !== null)) {
+                $spec[$field] = ['value' => null, 'display' => $this->available_length_display, 'source' => 'range', 'requested' => $requested];
+
+                continue;
+            }
+            $offered = $normalize($this->{'available_'.$field});
+            $value = $offered ?? $requested;
+            $spec[$field] = ['value' => $value, 'display' => $value ?? '-', 'source' => $offered !== null ? 'offer' : 'requested', 'requested' => $requested];
+        }
+
+        return $spec;
     }
 
     public function getAvailableLengthDisplayAttribute(): string

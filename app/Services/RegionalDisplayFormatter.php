@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Support\BusinessTime;
 use App\Support\Money;
+use App\Support\NumberFormat;
 use DateTimeImmutable;
 use DateTimeInterface;
 use DateTimeZone;
@@ -93,6 +94,24 @@ class RegionalDisplayFormatter
         $text = $integer.(isset($parts[1]) ? $source['decimal'].$parts[1] : '');
 
         return $this->number($text, $profile);
+    }
+
+    /**
+     * Price/amount display with NumberFormat::maxDecimals precision (trailing zeros trimmed) plus
+     * thousands grouping. 'system' keeps the surface's native profile; explicit presets transcode.
+     */
+    public function groupedDecimal(mixed $value, int $maxDecimals = 2, string $profile = 'international'): string
+    {
+        $source = $this->registry['number_profiles'][$profile] ?? null;
+        if (! in_array($profile, ['international', 'indonesian'], true) || $source === null) {
+            throw new InvalidArgumentException('Unknown numeric presentation profile.');
+        }
+        $grouped = NumberFormat::grouped($value, $maxDecimals);
+        if ($grouped === '-') {
+            return '-';
+        }
+
+        return $this->number(strtr($grouped, [',' => $source['group'], '.' => $source['decimal']]), $profile);
     }
 
     /** Transcode separators only; no float conversion, rounding or fractional digit changes. */

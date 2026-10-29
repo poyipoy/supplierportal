@@ -179,17 +179,26 @@ class QuotationPresentationTest extends TestCase
         app()->setLocale('en');
     }
 
-    public function test_comparison_header_shows_pic_and_the_q8_label(): void
+    /**
+     * Gate 2 PUR-03 supersedes Decision 10 on Price Comparison only: the header shows the
+     * company name and no contact person. The quotation detail keeps the PIC (Decision 10).
+     */
+    public function test_comparison_header_shows_company_name_without_pic_and_the_q8_label(): void
     {
         Supplier::create(['user_id' => $this->supplier->id, 'company_name' => 'PT Baja PIC', 'pic_name' => 'Rina Hartono']);
         $pr = $this->logisticsRequisition();
-        $this->createQuotation($pr);
+        $quotation = $this->createQuotation($pr);
 
         $this->actingAs($this->purchasing)
             ->get(route('purchasing.comparison.inter-supplier', ['pr_id' => $pr]))
             ->assertOk()
-            ->assertSee('Rina Hartono')
+            ->assertSee('PT Baja PIC')
+            ->assertDontSee('Rina Hartono')
             ->assertSee('Supplier Estimate Delivery:');
+
+        $this->get(route('purchasing.quotations.show', $quotation))
+            ->assertOk()
+            ->assertSee('Rina Hartono');
     }
 
     private function logisticsRequisition(array $items = [[]]): PurchaseRequisition

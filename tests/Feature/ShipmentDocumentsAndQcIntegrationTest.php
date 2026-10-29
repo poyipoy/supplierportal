@@ -29,6 +29,7 @@ use Illuminate\Validation\ValidationException;
 use Mockery;
 use Tests\Support\AttachesShipmentMtc;
 use Tests\Support\NativeFileFixtures;
+use Tests\Support\QcMeasurements;
 use Tests\TestCase;
 
 class ShipmentDocumentsAndQcIntegrationTest extends TestCase
@@ -292,7 +293,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
         $response = $this->actingAs($this->qcUser)
             ->post(route('qc.inspections.store', $po), [
                 'shipment_id' => $shipment1->hash,
-                'items' => [
+                'items' => QcMeasurements::complete([
                     [
                         'pr_item_id' => $prItem->id,
                         'actual_thickness' => null,
@@ -302,7 +303,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
                         'status' => 'ok',
                         'notes' => 'First partial shipment 8kg verified OK',
                     ],
-                ],
+                ]),
             ]);
 
         $response->assertRedirect();
@@ -348,7 +349,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
 
         $this->actingAs($this->qcUser)->post(route('qc.inspections.store', $po), [
             'shipment_id' => $shipment1->hash,
-            'items' => [
+            'items' => QcMeasurements::complete([
                 [
                     'pr_item_id' => $prItem->id,
                     'actual_d_outer' => 120.0,
@@ -356,7 +357,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
                     'actual_weight' => 8.0,
                     'status' => 'ok',
                 ],
-            ],
+            ]),
         ]);
 
         $po->refresh();
@@ -382,7 +383,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
         // QC performs inspection on Shipment 2
         $response = $this->actingAs($this->qcUser)->post(route('qc.inspections.store', $po), [
             'shipment_id' => $shipment2->hash,
-            'items' => [
+            'items' => QcMeasurements::complete([
                 [
                     'pr_item_id' => $prItem->id,
                     'actual_d_outer' => 120.0,
@@ -390,7 +391,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
                     'actual_weight' => 12.0,
                     'status' => 'ok',
                 ],
-            ],
+            ]),
         ]);
 
         $response->assertRedirect();
@@ -433,7 +434,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
 
         $response = $this->actingAs($this->qcUser)->post(route('qc.inspections.store', $po), [
             'shipment_id' => $shipment->hash,
-            'items' => [
+            'items' => QcMeasurements::complete([
                 [
                     'pr_item_id' => $prItem->id,
                     'actual_d_outer' => 110.0, // Major dimension undersize defect
@@ -442,7 +443,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
                     'status' => 'ng',
                     'notes' => 'Outer diameter undersize by 10mm. Severe defect.',
                 ],
-            ],
+            ]),
             'attachments' => [
                 0 => [$evidencePhoto],
             ],
@@ -636,7 +637,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
         // Crafted direct POST: Inspecting PO A, but supplying Shipment B (which contains no items for PO A)
         $response = $this->actingAs($this->qcUser)->post(route('qc.inspections.store', $poA), [
             'shipment_id' => $shipmentB->hash,
-            'items' => [
+            'items' => QcMeasurements::complete([
                 [
                     'pr_item_id' => $prItemA->id,
                     'actual_thickness' => 10.0,
@@ -645,7 +646,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
                     'actual_weight' => 20.0,
                     'status' => 'ok',
                 ],
-            ],
+            ]),
         ]);
 
         $response->assertSessionHas('error');
@@ -696,7 +697,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
         // Inspect PO A
         $responseA = $this->actingAs($this->qcUser)->post(route('qc.inspections.store', $poA), [
             'shipment_id' => $shipment->hash,
-            'items' => [
+            'items' => QcMeasurements::complete([
                 [
                     'pr_item_id' => $prItemA->id,
                     'actual_thickness' => 10.0,
@@ -705,7 +706,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
                     'actual_weight' => 10.0,
                     'status' => 'ok',
                 ],
-            ],
+            ]),
         ]);
         $responseA->assertRedirect();
         $poA->refresh();
@@ -714,7 +715,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
         // Inspect PO B
         $responseB = $this->actingAs($this->qcUser)->post(route('qc.inspections.store', $poB), [
             'shipment_id' => $shipment->hash,
-            'items' => [
+            'items' => QcMeasurements::complete([
                 [
                     'pr_item_id' => $prItemB->id,
                     'actual_thickness' => 10.0,
@@ -723,7 +724,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
                     'actual_weight' => 15.0,
                     'status' => 'ok',
                 ],
-            ],
+            ]),
         ]);
         $responseB->assertRedirect();
         $poB->refresh();
@@ -739,7 +740,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
         $shipment = $this->createShipment($po, $qItem, 20.0, true);
 
         $response = $this->actingAs($this->qcUser)->post(route('qc.inspections.store', $po), [
-            'items' => [$this->qcItemPayload($prItem, 20.0)],
+            'items' => QcMeasurements::complete([$this->qcItemPayload($prItem, 20.0)]),
         ]);
 
         $response->assertRedirect()->assertSessionHas('error');
@@ -776,7 +777,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
 
             $response = $this->actingAs($this->qcUser)->post(route('qc.inspections.store', $po), [
                 'shipment_id' => $shipment->hash,
-                'items' => [$this->qcItemPayload($prItem, 20.0)],
+                'items' => QcMeasurements::complete([$this->qcItemPayload($prItem, 20.0)]),
             ]);
 
             $response->assertRedirect()->assertSessionHas('error');
@@ -843,7 +844,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
 
         $response = $this->actingAs($this->qcUser)->post(route('qc.inspections.store', $po), [
             'shipment_id' => $shipment->hash,
-            'items' => [$this->qcItemPayload($prItem, 20.0)],
+            'items' => QcMeasurements::complete([$this->qcItemPayload($prItem, 20.0)]),
         ]);
 
         $response->assertRedirect();
@@ -898,18 +899,18 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
 
         $omitted = $this->actingAs($this->qcUser)->post(route('qc.inspections.store', $po), [
             'shipment_id' => $shipment->hash,
-            'items' => [$this->qcItemPayload($prItems[0], 10.0)],
+            'items' => QcMeasurements::complete([$this->qcItemPayload($prItems[0], 10.0)]),
         ]);
         $omitted->assertRedirect()->assertSessionHas('error');
         $this->assertDatabaseMissing('qc_inspections', ['po_id' => $po->id]);
 
         $duplicate = $this->actingAs($this->qcUser)->post(route('qc.inspections.store', $po), [
             'shipment_id' => $shipment->hash,
-            'items' => [
+            'items' => QcMeasurements::complete([
                 $this->qcItemPayload($prItems[0], 10.0),
                 $this->qcItemPayload($prItems[0], 10.0),
                 $this->qcItemPayload($prItems[1], 12.0),
-            ],
+            ]),
         ]);
         $duplicate->assertRedirect()->assertSessionHas('error');
         $this->assertDatabaseMissing('qc_inspections', ['po_id' => $po->id]);
@@ -922,7 +923,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
 
         $response = $this->actingAs($this->qcUser)->post(route('qc.inspections.store', $po), [
             'shipment_id' => $shipment->hash,
-            'items' => [$this->qcItemPayload($prItems[1], 12.0)],
+            'items' => QcMeasurements::complete([$this->qcItemPayload($prItems[1], 12.0)]),
         ]);
 
         $response->assertRedirect()->assertSessionHas('error');
@@ -959,7 +960,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
         $evidencePhoto = UploadedFile::fake()->image('ng_defect.jpg', 640, 480);
         $this->actingAs($this->qcUser)->post(route('qc.inspections.store', $po), [
             'shipment_id' => $shipment1->hash,
-            'items' => [
+            'items' => QcMeasurements::complete([
                 [
                     'pr_item_id' => $prItem->id,
                     'actual_thickness' => 5.0,
@@ -969,7 +970,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
                     'status' => 'ng',
                     'notes' => 'Severe surface crack',
                 ],
-            ],
+            ]),
             'attachments' => [
                 0 => [$evidencePhoto],
             ],
@@ -1025,7 +1026,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
         $shipmentService->confirmArrival($shipment2, $this->purchasingUser);
         $this->actingAs($this->qcUser)->post(route('qc.inspections.store', $po), [
             'shipment_id' => $shipment2->hash,
-            'items' => [$this->qcItemPayload($prItem, 15.0)],
+            'items' => QcMeasurements::complete([$this->qcItemPayload($prItem, 15.0)]),
         ])->assertRedirect();
 
         $po->refresh();
@@ -1035,7 +1036,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
         $replacement = $this->createShipment($po, $qItem, 5.0, true);
         $this->actingAs($this->qcUser)->post(route('qc.inspections.store', $po), [
             'shipment_id' => $replacement->hash,
-            'items' => [$this->qcItemPayload($prItem, 5.0)],
+            'items' => QcMeasurements::complete([$this->qcItemPayload($prItem, 5.0)]),
         ])->assertRedirect();
 
         $this->assertSame('completed', $po->fresh()->status);
@@ -1066,7 +1067,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
         foreach ([$first, $second] as $shipment) {
             $this->actingAs($this->qcUser)->post(route('qc.inspections.store', $po), [
                 'shipment_id' => $shipment->hash,
-                'items' => [$this->qcItemPayload($prItem, 5.0, 'ng')],
+                'items' => QcMeasurements::complete([$this->qcItemPayload($prItem, 5.0, 'ng')]),
                 'attachments' => [0 => [UploadedFile::fake()->image('claim-ng.jpg')]],
             ])->assertRedirect();
         }
@@ -1114,10 +1115,10 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
 
         $this->actingAs($this->qcUser)->post(route('qc.inspections.store', $po), [
             'shipment_id' => $shipment->hash,
-            'items' => [
+            'items' => QcMeasurements::complete([
                 $this->qcItemPayload($prItems[0], 10.0, 'ok'),
                 $this->qcItemPayload($prItems[1], 12.0, 'ng'),
-            ],
+            ]),
             'attachments' => [
                 1 => [UploadedFile::fake()->image('mixed-ng.jpg')],
             ],
@@ -1150,7 +1151,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
         $replacement = $this->createShipment($po, $qItems[1], 12.0, true);
         $this->actingAs($this->qcUser)->post(route('qc.inspections.store', $po), [
             'shipment_id' => $replacement->hash,
-            'items' => [$this->qcItemPayload($prItems[1], 12.0)],
+            'items' => QcMeasurements::complete([$this->qcItemPayload($prItems[1], 12.0)]),
         ])->assertRedirect();
 
         $this->assertSame('completed', $po->fresh()->status);
@@ -1195,7 +1196,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
 
         $this->actingAs($this->qcUser)->post(route('qc.inspections.store', $po), [
             'shipment_id' => $first->hash,
-            'items' => [$this->qcItemPayload($prItem, 5.0, 'ng')],
+            'items' => QcMeasurements::complete([$this->qcItemPayload($prItem, 5.0, 'ng')]),
             'attachments' => [0 => [UploadedFile::fake()->image('claim-ng.jpg')]],
         ])->assertRedirect();
         $inspection = QcInspection::where('shipment_id', $first->id)->firstOrFail();
@@ -1219,7 +1220,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
 
         $this->actingAs($this->qcUser)->post(route('qc.inspections.store', $po), [
             'shipment_id' => $second->hash,
-            'items' => [$this->qcItemPayload($prItem, 5.0)],
+            'items' => QcMeasurements::complete([$this->qcItemPayload($prItem, 5.0)]),
         ])->assertRedirect();
 
         $this->assertDatabaseHas('qc_inspections', [
@@ -1275,7 +1276,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
         ]);
 
         $this->actingAs($this->qcUser)->post(route('qc.inspections.store', $po), [
-            'items' => [$this->qcItemPayload($prItem, 20.0)],
+            'items' => QcMeasurements::complete([$this->qcItemPayload($prItem, 20.0)]),
         ])->assertRedirect();
 
         $inspection = QcInspection::where('po_id', $po->id)->firstOrFail();
@@ -1295,7 +1296,7 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
 
         $this->actingAs($this->qcUser)->post(route('qc.inspections.store', $po), [
             'shipment_id' => $ngShipment->hash,
-            'items' => [$this->qcItemPayload($prItem, 5.0, 'ng')],
+            'items' => QcMeasurements::complete([$this->qcItemPayload($prItem, 5.0, 'ng')]),
             'attachments' => [0 => [UploadedFile::fake()->image('waiting-ng.jpg')]],
         ])->assertRedirect();
         $inspection = QcInspection::where('shipment_id', $ngShipment->id)->firstOrFail();

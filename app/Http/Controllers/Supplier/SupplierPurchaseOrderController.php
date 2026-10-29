@@ -63,6 +63,8 @@ class SupplierPurchaseOrderController extends Controller
             ->orderBy('created_at', 'desc');
 
         PurchaseOrderExportFilters::apply($query, $filters);
+        // PUR-08: is_overdue reads this flag instead of querying per row.
+        $query->withExists('shipmentItems as has_shipment_items');
 
         if ($request->ajax()) {
             return DataTables::eloquent($query)

@@ -270,7 +270,9 @@ class PurchaseOrderReferenceRemarkTest extends TestCase
 
         $claim->delete();
         $inspectionRow = $this->dataTableRow($this->purchasing, 'purchasing.purchase-orders.index', $this->purchasingColumns());
-        $this->assertStringContainsString(route('purchasing.claims.create', $inspection), $inspectionRow['action']);
+        // Gate 2 PUR-08 (Gate 1 RISK-04): claims.store refuses an inspection whose claim was
+        // soft-deleted, so the action no longer offers Create Claim for it.
+        $this->assertStringNotContainsString(route('purchasing.claims.create', $inspection), $inspectionRow['action']);
         $this->assertStringNotContainsString(route('purchasing.claims.create', $deletedInspection), $inspectionRow['action']);
     }
 

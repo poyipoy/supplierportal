@@ -55,3 +55,28 @@ test('comparison scripts formatters transcode numbers with user regional number 
 test('scripts view uses window.AdasiPreferences.displayNumber in formatters', () => {
     assert.match(scriptsView, /window\.AdasiPreferences\?\.displayNumber/);
 });
+
+// PUR-06: the prefixed analytic amount must transcode its numeric segment for explicit
+// preferences while keeping the prefix and its spacing. Expected values equal the PHP
+// RegionalDisplayFormatter::groupedDecimal(..., 'indonesian') output for the same value.
+function loadFormatAnalyticMoney(preferences) {
+    const start = scriptsView.indexOf('window.formatAnalyticMoney = function');
+    const end = scriptsView.indexOf('};', start) + 2;
+    const windowRef = { AdasiPreferences: preferences };
+    vm.runInNewContext(scriptsView.slice(start, end), { window: windowRef, Number });
+    return windowRef.formatAnalyticMoney;
+}
+
+test('formatAnalyticMoney groups amounts and follows the explicit number preference', () => {
+    const system = loadFormatAnalyticMoney(bootAdasiPreferences({ number_format: 'system' }));
+    const indonesian = loadFormatAnalyticMoney(bootAdasiPreferences({ number_format: 'indonesian' }));
+    const international = loadFormatAnalyticMoney(bootAdasiPreferences({ number_format: 'international' }));
+
+    assert.equal(system(648193716.98, 'IDR', 2), 'Rp 648.193.716,98');
+    assert.equal(indonesian(648193716.98, 'IDR', 2), 'Rp 648.193.716,98');
+    assert.equal(international(648193716.98, 'IDR', 2), 'Rp 648,193,716.98');
+    assert.equal(international(1234.5678, 'USD'), 'USD 1,234.5678');
+    assert.equal(system(70000, 'IDR'), 'Rp 70.000');
+    assert.equal(international(70000, 'IDR'), 'Rp 70,000');
+    assert.equal(international(null, 'IDR'), '-');
+});

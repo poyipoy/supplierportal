@@ -2,7 +2,7 @@
     // Mission 07: amounts are in the selected analysis currency (IDR keeps the Rupiah format).
     $formatRupiah = fn ($value) => $value === null ? '-' : ($currency === 'IDR'
         ? 'Rp ' . (isset($regionalFormatter) ? $regionalFormatter->number(number_format($value, 0, ',', '.'), 'indonesian') : number_format($value, 0, ',', '.'))
-        : $currency . ' ' . \App\Support\NumberFormat::maxDecimals($value, 4));
+        : $currency . ' ' . (isset($regionalFormatter) ? $regionalFormatter->groupedDecimal($value, 4, 'indonesian') : \App\Support\NumberFormat::maxDecimals($value, 4)));
     $formatNumber = fn ($value, $decimals = 1) => $value !== null ? (isset($regionalFormatter) ? $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($value, $decimals), 'decimal') : \App\Support\NumberFormat::maxDecimals($value, $decimals)) : '-';
 @endphp
 
@@ -28,6 +28,16 @@
                     compact
                 />
             </div>
+            {{-- PUR-05: material filter applied through AJAX; the date form still submits normally. --}}
+            <div style="min-width: 220px;">
+                <label class="form-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="vsBestMaterialSelect">{{ __('purchasing.comparison_analytics.material_filter') }}</label>
+                <select id="vsBestMaterialSelect" class="form-select form-select-sm">
+                    <option value="" data-shape="">{{ __('purchasing.copy.all_material') }}</option>
+                    @foreach($vsBestMaterials as $option)
+                        <option value="{{ $option['name'] }}" data-shape="{{ $option['shape'] ?? '' }}" @selected($selectedVsBestMaterial && $selectedVsBestMaterial['name'] === $option['name'] && $selectedVsBestMaterial['shape'] === $option['shape'])>{{ $option['label'] }}</option>
+                    @endforeach
+                </select>
+            </div>
             <x-ui.button type="submit" variant="primary" size="sm" data-calendar-native-submit>
                 <x-ui.icon name="filter" />
                 <span>{{ __('purchasing.copy.apply') }}</span>
@@ -39,6 +49,9 @@
         </form>
     </x-slot:filters>
 </x-ui.toolbar>
+@if($vsBestMaterialIgnored)
+    <p class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant" role="status">{{ __('purchasing.comparison_analytics.filter_ignored') }}</p>
+@endif
 
 {{-- Summary Metrics Strip --}}
 <div class="tw:grid tw:gap-px tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-outline-variant tw:sm:grid-cols-2 tw:xl:grid-cols-4" aria-label="{{ __('purchasing.copy.historical_benchmark_summary') }}">
@@ -72,7 +85,9 @@
     "filterParams": {
         "date_from": @json($dateFromInput),
         "date_to": @json($dateToInput),
-        "currency": @json($currency)
+        "currency": @json($currency),
+        "material_name": @json($selectedVsBestMaterial['name'] ?? null),
+        "shape": @json($selectedVsBestMaterial['shape'] ?? null)
     },
     "tableDataUrl": @json(route('purchasing.comparison.vs-best.data'))
 }

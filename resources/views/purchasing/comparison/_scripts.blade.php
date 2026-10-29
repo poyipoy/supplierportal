@@ -9,8 +9,56 @@
         const code = currency || 'IDR';
         const decimals = maxDecimals ?? (code === 'IDR' ? 0 : 4);
         const number = Number(value).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: decimals });
-        const text = (code === 'IDR' ? 'Rp ' : code + ' ') + number;
-        return window.AdasiPreferences?.displayNumber ? window.AdasiPreferences.displayNumber(text, 'indonesian') : text;
+        // Transcode the numeric segment only; the prefix keeps its place and spacing.
+        const display = window.AdasiPreferences?.displayNumber ? window.AdasiPreferences.displayNumber(number, 'indonesian') : number;
+        return (code === 'IDR' ? 'Rp ' : code + ' ') + display;
+    };
+
+    // PUR-05: one place keeps the URL, the history entry (with the server-tabs marker so
+    // Back/Forward still swaps tabs), the tab links and the currency form in step.
+    const comparisonSharedKeys = ['material_name', 'shape', 'currency'];
+    window.syncComparisonState = function(url) {
+        const target = new URL(url, window.location.origin);
+        window.history.replaceState(
+            { ...(window.history.state || {}), _serverTabs: '#purchasingComparisonContainer', url: target.toString() },
+            '',
+            target.toString(),
+        );
+        document.querySelectorAll('#purchasingComparisonContainer nav [data-server-tab][data-tab-name]').forEach((tab) => {
+            const href = new URL(tab.getAttribute('href'), window.location.origin);
+            comparisonSharedKeys.forEach((key) => {
+                const value = target.searchParams.get(key);
+                value === null || value === '' ? href.searchParams.delete(key) : href.searchParams.set(key, value);
+            });
+            tab.setAttribute('href', href.pathname + href.search);
+        });
+        document.querySelectorAll('#purchasingComparisonContainer [data-evaluation-header] form').forEach((form) => {
+            form.querySelectorAll('input[type="hidden"]').forEach((input) => input.remove());
+            target.searchParams.forEach((value, key) => {
+                if (['currency', 'history_page', 'view', '_'].includes(key) || value === '') return;
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = value;
+                form.prepend(input);
+            });
+        });
+    };
+
+    // Latest-request-wins guard: aborts the previous fetch and ignores late responses.
+    window.createComparisonRequestGuard = function() {
+        let controller = null;
+        let sequence = 0;
+        return {
+            start() {
+                controller?.abort();
+                controller = new AbortController();
+                return { signal: controller.signal, id: ++sequence };
+            },
+            isCurrent(id) {
+                return id === sequence;
+            },
+        };
     };
 
     if (!window._analysisCurrencyListener) {
@@ -69,6 +117,20 @@
         const eligiblePrOptions = config.eligiblePrOptions || [];
         const comparisonChartData = config.chartData;
         const comparisonMaterialIds = config.chartMaterialIds || [];
+
+        // PUR-04: the two-row header stacks under the first row's real height (it wraps with
+        // long supplier names), so the second row never slides under the first.
+        const stickyScroll = document.querySelector('.comparison-matrix-table')?.closest('.ui-table-sticky');
+        const firstHeadRow = stickyScroll?.querySelector('thead tr');
+        window._comparisonHeadObserver?.disconnect();
+        if (stickyScroll && firstHeadRow) {
+            const setHeadOffset = () => stickyScroll.style.setProperty('--ui-table-sticky-head-row', `${firstHeadRow.getBoundingClientRect().height}px`);
+            setHeadOffset();
+            if ('ResizeObserver' in window) {
+                window._comparisonHeadObserver = new ResizeObserver(setHeadOffset);
+                window._comparisonHeadObserver.observe(firstHeadRow);
+            }
+        }
 
         const comparisonFilterForm = document.getElementById('interSupplierFilterForm');
         const comparisonPrId = document.getElementById('comparisonPrId');
@@ -268,6 +330,19 @@
 
             const materialFilter = document.getElementById('comparisonMaterialFilter');
             if (materialFilter) {
+                // PUR-05: the shared material state travels in the URL across tabs.
+                materialFilter.addEventListener('change', function() {
+                    const option = this.selectedOptions[0];
+                    const url = new URL(window.location.href);
+                    if (this.value && option?.dataset.materialName) {
+                        url.searchParams.set('material_name', option.dataset.materialName);
+                        url.searchParams.set('shape', option.dataset.shape || '');
+                    } else {
+                        url.searchParams.delete('material_name');
+                        url.searchParams.delete('shape');
+                    }
+                    window.syncComparisonState(url.toString());
+                });
                 materialFilter.addEventListener('change', function() {
                     const materialId = this.value;
                     document.querySelectorAll('[data-comparison-row]').forEach((row) => {
@@ -292,6 +367,19 @@
                     }));
                     window._activeComparisonChart.update();
                 });
+
+                // Preselect from the shared URL state (another tab may have chosen the material).
+                const params = new URLSearchParams(window.location.search);
+                const wanted = params.get('material_name');
+                if (wanted) {
+                    const options = [...materialFilter.options];
+                    const match = options.find((o) => o.dataset.materialName === wanted && (o.dataset.shape || '') === (params.get('shape') || ''))
+                        || options.find((o) => o.dataset.materialName === wanted);
+                    if (match) {
+                        materialFilter.value = match.value;
+                        materialFilter.dispatchEvent(new Event('change'));
+                    }
+                }
             }
         }
 
@@ -517,8 +605,8 @@
             )).join('');
         }
 
-        function renderMaterialOptions(materials, selectedValue = '') {
-            // Mission 07: the supplier is optional (decision 15).
+        function renderMaterialOptions(materials, selected = null) {
+            // Mission 07: the supplier is optional (decision 15). PUR-07: one option per (material, shape).
             const placeholder = materials.length > 0
                 ? window.AdasiI18n.t('purchasing.js.history_select_material')
                 : window.AdasiI18n.t('purchasing.js.history_no_material');
@@ -526,14 +614,75 @@
             materialSelect.innerHTML = [
                 `<option value="">${escapeOptionText(placeholder)}</option>`,
                 ...materials.map((material) => {
-                    const name = typeof material === 'string' ? material : (material.name || '');
-                    const shape = typeof material === 'string' ? '' : (material.shape || '');
-                    const selected = name === selectedValue ? ' selected' : '';
-                    return `<option value="${escapeOptionText(name)}" data-shape="${escapeOptionText(shape)}"${selected}>${escapeOptionText(name)}</option>`;
+                    const name = material.name || '';
+                    const shape = material.shape || '';
+                    const isSelected = selected && name === selected.name && shape === (selected.shape || '') ? ' selected' : '';
+                    const options = escapeOptionText(JSON.stringify(material.key_options || []));
+                    return `<option value="${escapeOptionText(name)}" data-shape="${escapeOptionText(shape)}" data-key-options="${options}"${isSelected}>${escapeOptionText(material.label || name)}</option>`;
                 }),
             ].join('');
             materialSelect.disabled = materials.length === 0;
         }
+
+        // PUR-07 (§3-G): shape-driven key dimension with recorded values written into key_min/key_max.
+        const shapeInput = document.getElementById('historicalShapeInput');
+        const keyDimension = document.getElementById('historicalKeyDimension');
+        const keyDimensionLabel = document.getElementById('historicalKeyDimensionLabel');
+        const keyOption = document.getElementById('historicalKeyOption');
+        const keyMin = document.getElementById('historicalKeyMin');
+        const keyMax = document.getElementById('historicalKeyMax');
+        const keyLabels = keyDimension ? { Flat: keyDimension.dataset.labelFlat, Round: keyDimension.dataset.labelRound, Hollow: keyDimension.dataset.labelHollow } : {};
+
+        function selectedMaterial() {
+            const option = materialSelect.selectedOptions[0];
+            if (!option || !option.value) return null;
+            let keyOptions = [];
+            try { keyOptions = JSON.parse(option.dataset.keyOptions || '[]'); } catch (e) { keyOptions = []; }
+            return { name: option.value, shape: option.dataset.shape || '', keyOptions };
+        }
+
+        function displayKey(value) {
+            const text = String(Number(value));
+            return window.AdasiPreferences?.displayNumber ? window.AdasiPreferences.displayNumber(text, 'decimal') : text;
+        }
+
+        function syncKeyOption() {
+            if (!keyOption || !keyMin || !keyMax) return;
+            const material = selectedMaterial();
+            const options = material?.keyOptions || [];
+            const min = keyMin.value.trim();
+            const max = keyMax.value.trim();
+            if (material && options.length === 0) {
+                keyOption.innerHTML = `<option value="">${escapeOptionText(keyOption.dataset.labelNone)}</option>`;
+                keyOption.disabled = true;
+                return;
+            }
+            const exact = min !== '' && min === max ? options.find((value) => Number(value) === Number(min)) : null;
+            const custom = (min !== '' || max !== '') && !exact;
+            keyOption.innerHTML = [
+                `<option value="">${escapeOptionText(keyOption.dataset.labelAll)}</option>`,
+                custom ? `<option value="__custom" selected>${escapeOptionText(keyOption.dataset.labelCustom)}</option>` : '',
+                ...options.map((value) => `<option value="${escapeOptionText(value)}"${value === exact ? ' selected' : ''}>${escapeOptionText(displayKey(value))}</option>`),
+            ].join('');
+            keyOption.disabled = false;
+        }
+
+        function applyShape() {
+            const material = selectedMaterial();
+            const shape = material?.shape || '';
+            if (shapeInput) shapeInput.value = shape;
+            if (keyDimension) keyDimension.hidden = Boolean(material) && !keyLabels[shape];
+            if (keyDimensionLabel && keyLabels[shape]) keyDimensionLabel.textContent = keyLabels[shape];
+            syncKeyOption();
+        }
+
+        function clearKeyBounds() {
+            if (keyMin) keyMin.value = '';
+            if (keyMax) keyMax.value = '';
+        }
+
+        const materialsGuard = window.createComparisonRequestGuard();
+        const payloadGuard = window.createComparisonRequestGuard();
 
         function clearHistorycalResults(message) {
             if (!resultsContainer) return;
@@ -549,9 +698,11 @@
 
         async function loadMaterialsForSupplier() {
             const supplierId = supplierSelect.value;
-            const previousMaterial = materialSelect.value;
+            const previous = selectedMaterial();
+            const previousBounds = { min: keyMin?.value.trim() || '', max: keyMax?.value.trim() || '' };
+            const request = materialsGuard.start();
 
-            renderMaterialOptions([], '');
+            renderMaterialOptions([], null);
 
             materialSelect.innerHTML = '<option value="">' + @json(__('purchasing.copy.comparison_loading_materials')) + '</option>';
             materialSelect.disabled = true;
@@ -569,6 +720,7 @@
                         'Accept': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest',
                     },
+                    signal: request.signal,
                 });
 
                 if (!response.ok) {
@@ -576,20 +728,36 @@
                 }
 
                 const data = await response.json();
+                if (!materialsGuard.isCurrent(request.id)) return;
                 const materials = data.materials || [];
-                const selectedMaterial = materials.some((material) => (material.name || material) === previousMaterial) ? previousMaterial : '';
-                renderMaterialOptions(materials, selectedMaterial);
+                // Keep the (material, shape) when this supplier still offers it; keep the bounds
+                // only if an exact value is still among its recorded values (or it is a custom range).
+                const kept = previous && materials.find((material) => material.name === previous.name && (material.shape || '') === previous.shape);
+                renderMaterialOptions(materials, kept ? previous : null);
+                const exact = previousBounds.min !== '' && previousBounds.min === previousBounds.max;
+                if (!kept || (exact && !(kept.key_options || []).some((value) => Number(value) === Number(previousBounds.min)))) {
+                    clearKeyBounds();
+                }
+                applyShape();
 
-                if (selectedMaterial && typeof window.loadHistorycalPayloadFromFilters === 'function') {
+                if (kept && typeof window.loadHistorycalPayloadFromFilters === 'function') {
                     window.loadHistorycalPayloadFromFilters();
-                } else if (selectedMaterial) {
+                } else if (kept) {
                     filterForm.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+                } else {
+                    // Nothing to load: the URL still has to describe what is on screen.
+                    const url = new URL(filterForm.action, window.location.origin);
+                    for (const [key, value] of new FormData(filterForm).entries()) {
+                        if (String(value).trim() !== '') url.searchParams.set(key, String(value).trim());
+                    }
+                    window.syncComparisonState(url.toString());
                 }
             } catch (error) {
-                renderMaterialOptions([], '');
+                if (error?.name === 'AbortError' || !materialsGuard.isCurrent(request.id)) return;
+                renderMaterialOptions([], null);
                 clearHistorycalResults(@json(__('purchasing.copy.comparison_failed_material_list')));
             } finally {
-                resultsContainer?.setAttribute('aria-busy', 'false');
+                if (materialsGuard.isCurrent(request.id)) resultsContainer?.setAttribute('aria-busy', 'false');
             }
         }
 
@@ -817,7 +985,7 @@
             if (payload.periodView === 'yearly') {
                 head.innerHTML = `
                     <tr>
-                        <th scope="col">${window.AdasiI18n.t('purchasing.js.year')}</th>
+                        <th scope="col" class="ui-sticky-col">${window.AdasiI18n.t('purchasing.js.year')}</th>
                         <th scope="col">${window.AdasiI18n.t('purchasing.js.weighted_average_price_kg')} (${escapeOptionText(historicalCurrency)})</th>
                         <th scope="col">${window.AdasiI18n.t('purchasing.js.lowest_price')}</th>
                         <th scope="col">${window.AdasiI18n.t('purchasing.js.highest_price')}</th>
@@ -826,7 +994,7 @@
                 `;
                 body.innerHTML = rows.map((row) => `
                     <tr>
-                        <td class="text-center fw-medium">${escapeOptionText(row.period)}</td>
+                        <td class="text-center fw-medium ui-sticky-col">${escapeOptionText(row.period)}</td>
                         <td class="text-end text-primary fw-bold">${formatRupiah(row.price_idr)}</td>
                         <td class="text-end">${formatRupiah(row.min_idr)}</td>
                         <td class="text-end">${formatRupiah(row.max_idr)}</td>
@@ -838,7 +1006,7 @@
 
             head.innerHTML = `
                 <tr>
-                    <th scope="col">${window.AdasiI18n.t('purchasing.js.pr_number')}</th>
+                    <th scope="col" class="ui-sticky-col">${window.AdasiI18n.t('purchasing.js.pr_number')}</th>
                     <th scope="col">${window.AdasiI18n.t('purchasing.js.supplier')}</th>
                     <th scope="col">${window.AdasiI18n.t('purchasing.js.price_kg')}</th>
                     <th scope="col">${window.AdasiI18n.t('purchasing.js.converted_total')} (${escapeOptionText(historicalCurrency)})</th>
@@ -848,7 +1016,7 @@
             `;
             body.innerHTML = rows.map((row) => `
                 <tr>
-                    <td class="text-center fw-medium">
+                    <td class="text-center fw-medium ui-sticky-col">
                         ${row.pr_url
                             ? `<a href="${escapeOptionText(row.pr_url)}" class="text-primary text-decoration-none tw:hover:underline">${escapeOptionText(row.pr_number || '-')} →</a>`
                             : escapeOptionText(row.pr_number || '-')}
@@ -916,7 +1084,7 @@
                         <h2 class="tw:m-0 tw:text-sm tw:font-bold tw:text-on-surface">Supporting Data</h2>
                         <p class="tw:m-0 tw:mt-0.5 tw:text-ui-xs tw:text-on-surface-variant">Quotation values and period changes for the selected supplier and exact material specification.</p>
                     </header>
-                    <div class="ui-data-table__scroll tw:overflow-x-auto tw:w-full">
+                    <div class="ui-data-table__scroll ui-table-sticky tw:w-full tw:min-w-0 tw:max-w-full" role="region" tabindex="0" aria-label="${escapeOptionText(@js(__('purchasing.copy.supporting_data')))}">
                         <table class="table table-hover align-middle mb-0 tw:text-ui-sm">
                             <thead class="table-light text-center" id="historicalTableHead"></thead>
                             <tbody id="historicalTableBody"></tbody>
@@ -992,6 +1160,7 @@
             if (Number(historyPage) > 1) {
                 url.searchParams.set('history_page', String(historyPage));
             }
+            const request = payloadGuard.start();
             resultsContainer?.setAttribute('aria-busy', 'true');
 
             const submitBtn = filterForm?.querySelector('button[type="submit"]');
@@ -1005,6 +1174,7 @@
                         'Accept': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest',
                     },
+                    signal: request.signal,
                 });
 
                 if (!response.ok) {
@@ -1012,6 +1182,8 @@
                 }
 
                 const payload = await response.json();
+                // A slower, older response must never overwrite the latest selection.
+                if (!payloadGuard.isCurrent(request.id)) return;
                 renderPayload(payload);
 
                 url.searchParams.delete('view');
@@ -1021,8 +1193,9 @@
                 } else {
                     url.searchParams.delete('history_page');
                 }
-                window.history.replaceState(null, '', url.toString());
+                window.syncComparisonState(url.toString());
             } catch (error) {
+                if (error?.name === 'AbortError' || !payloadGuard.isCurrent(request.id)) return;
                 if (resultsContainer) {
                     resultsContainer.innerHTML = `
                         <div class="tw:flex tw:items-start tw:gap-3 tw:rounded-ui-sm tw:border-s-4 tw:border-warning tw:bg-warning-container tw:p-4 tw:text-warning-container-foreground" role="status">
@@ -1031,10 +1204,12 @@
                     `;
                 }
             } finally {
-                if (submitBtn && window.AdasiButton && typeof window.AdasiButton.stopLoading === 'function') {
-                    window.AdasiButton.stopLoading(submitBtn);
+                if (payloadGuard.isCurrent(request.id)) {
+                    if (submitBtn && window.AdasiButton && typeof window.AdasiButton.stopLoading === 'function') {
+                        window.AdasiButton.stopLoading(submitBtn);
+                    }
+                    resultsContainer?.setAttribute('aria-busy', 'false');
                 }
-                resultsContainer?.setAttribute('aria-busy', 'false');
             }
         };
 
@@ -1052,12 +1227,26 @@
         supplierSelect.addEventListener('change', loadMaterialsForSupplier);
 
         materialSelect.addEventListener('change', () => {
+            // A different (material, shape) starts from an unfiltered key dimension.
+            clearKeyBounds();
+            applyShape();
             if (materialSelect.value) {
                 window.loadHistorycalPayloadFromFilters();
             } else {
                 clearHistorycalResults(@json(__('purchasing.copy.comparison_select_material_from_supplier')));
             }
         });
+
+        keyOption?.addEventListener('change', () => {
+            if (keyOption.value === '__custom') return;
+            if (keyMin) keyMin.value = keyOption.value;
+            if (keyMax) keyMax.value = keyOption.value;
+            syncKeyOption();
+            if (materialSelect.value) window.loadHistorycalPayloadFromFilters();
+        });
+
+        // Typing a range keeps working; the recorded-values control then shows "Custom range".
+        [keyMin, keyMax].forEach((input) => input?.addEventListener('input', syncKeyOption));
 
         rangeSelect.addEventListener('change', () => {
             if (materialSelect.value) {
@@ -1071,16 +1260,6 @@
             if (materialSelect.value) {
                 e.preventDefault();
                 window.loadHistorycalPayloadFromFilters();
-            }
-        });
-
-        // Mission 07: the key dimension label follows the material's shape.
-        const keyDimension = document.getElementById('historicalKeyDimension');
-        const keyDimensionLabel = document.getElementById('historicalKeyDimensionLabel');
-        materialSelect.addEventListener('change', () => {
-            const shape = materialSelect.selectedOptions[0]?.dataset.shape || '';
-            if (keyDimension && keyDimensionLabel) {
-                keyDimensionLabel.textContent = shape === 'Flat' ? keyDimension.dataset.labelThickness : keyDimension.dataset.labelDOuter;
             }
         });
 
@@ -1112,6 +1291,7 @@
 
         materialSelect.addEventListener('change', updateDimensionVisibility);
         updateDimensionVisibility();
+        applyShape();
 
         const activeView = document.querySelector('input[name="period_view"]:checked')?.value || 'monthly';
         renderRangeOptions(activeView, rangeSelect.value);
@@ -1171,6 +1351,17 @@
             window._activeVsBestTable = $('#vsBestTable').DataTable({
                 processing: true,
                 serverSide: true,
+                // PUR-04: only the table scrolls (sticky header and Material column); the length
+                // menu, search, info and paging stay outside the scroll region.
+                dom: "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>"
+                    + "<'row dt-row'<'col-sm-12'<'ui-data-table__scroll ui-table-sticky'tr>>>"
+                    + "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+                initComplete: function() {
+                    const region = this.api().table().container().querySelector('.ui-table-sticky');
+                    region?.setAttribute('role', 'region');
+                    region?.setAttribute('tabindex', '0');
+                    region?.setAttribute('aria-label', @js(__('purchasing.copy.price_benchmark_details')));
+                },
                 ajax: {
                     url: tableDataUrl,
                     data: function(d) {
@@ -1190,7 +1381,7 @@
                     }
                 },
                 columns: [
-                    { data: 'material_display', name: 'current_pr_items.material_name', className: 'text-start' },
+                    { data: 'material_display', name: 'current_pr_items.material_name', className: 'text-start ui-sticky-col' },
                     { data: 'current_price_display', name: 'current_price_idr', className: 'text-end', searchable: false },
                     { data: 'best_price_display', name: 'best_price_idr', className: 'text-end', searchable: false },
                     { data: 'diff_display', name: 'diff_idr_per_kg', className: 'text-center', searchable: false },
@@ -1203,21 +1394,41 @@
             });
         }
 
+        // DataTables discards responses older than its latest draw, so a slow earlier
+        // request can never overwrite a newer filter.
+        function vsBestUrl() {
+            const form = document.getElementById('vsBestFilterForm');
+            const url = new URL(form?.action || window.location.href, window.location.origin);
+            ['date_from', 'date_to', 'currency', 'material_name'].forEach((key) => {
+                if (filterParams[key]) url.searchParams.set(key, filterParams[key]);
+            });
+            if (filterParams.material_name) url.searchParams.set('shape', filterParams.shape || '');
+            return url.toString();
+        }
+
         const dateRangeEl = document.getElementById('vsBestMonthRange');
         if (dateRangeEl) {
             dateRangeEl.addEventListener('adasi:date-range-commit', (event) => {
                 filterParams.date_from = event.detail.start;
                 filterParams.date_to = event.detail.end;
-                const form = document.getElementById('vsBestFilterForm');
-                const url = new URL(form?.action || window.location.href, window.location.origin);
-                if (event.detail.start) url.searchParams.set('date_from', event.detail.start);
-                if (event.detail.end) url.searchParams.set('date_to', event.detail.end);
-                window.history.replaceState({}, '', url);
+                window.syncComparisonState(vsBestUrl());
                 if (window._activeVsBestTable) {
                     window._activeVsBestTable.ajax.reload();
                 }
             });
         }
+
+        // PUR-05: material filter without a page reload.
+        const vsBestMaterial = document.getElementById('vsBestMaterialSelect');
+        vsBestMaterial?.addEventListener('change', () => {
+            const option = vsBestMaterial.selectedOptions[0];
+            filterParams.material_name = vsBestMaterial.value || null;
+            filterParams.shape = vsBestMaterial.value ? (option?.dataset.shape || '') : null;
+            window.syncComparisonState(vsBestUrl());
+            if (window._activeVsBestTable) {
+                window._activeVsBestTable.ajax.reload();
+            }
+        });
     };
 
     // ─── 4. GLOBAL CONTAINER COORDINATION ────────────────────────────────────

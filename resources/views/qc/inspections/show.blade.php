@@ -124,12 +124,16 @@
         @foreach($inspection->items as $index => $item)
             @php
                 $prItem = $item->prItem;
+                // QC-01: compare with the ordered spec (offer or requested); legacy rows without a
+                // shipment line keep the PR value.
+                $ordered = $item->shipmentItem?->quotationItem?->orderedSpecification() ?? [];
+                $spec = fn (string $field) => array_key_exists($field, $ordered) ? $ordered[$field]['value'] : $prItem->{$field};
 
-                $thick = compareValues($item->actual_thickness, $prItem->thickness);
-                $dInner = compareValues($item->actual_d_inner, $prItem->d_inner);
-                $dOuter = compareValues($item->actual_d_outer, $prItem->d_outer);
-                $width = compareValues($item->actual_width, $prItem->width);
-                $length = compareValues($item->actual_length, $prItem->length);
+                $thick = compareValues($item->actual_thickness, $spec('thickness'));
+                $dInner = compareValues($item->actual_d_inner, $spec('d_inner'));
+                $dOuter = compareValues($item->actual_d_outer, $spec('d_outer'));
+                $width = compareValues($item->actual_width, $spec('width'));
+                $length = compareValues($item->actual_length, $spec('length'));
                 $weight = compareValues($item->actual_weight, $prItem->weight_needed);
             @endphp
 

@@ -47,7 +47,7 @@
 
         <x-ui.metric-card
             :label="__('finance.drp.unpaid_pending')"
-            :value="'Rp ' . number_format($metrics['unpaid_amount'], 0, ',', '.')"
+            :value="'Rp ' . $regionalFormatter->money($metrics['unpaid_amount'], 0)"
             icon="clock"
             tone="warning"
             :meta="trans_choice('finance.drp_ui.unpaid_batches', $metrics['unpaid_count'], ['count' => number_format($metrics['unpaid_count'])])"
@@ -62,7 +62,7 @@
 
         <x-ui.metric-card
             :label="__('finance.drp.paid_complete')"
-            :value="'Rp ' . number_format($metrics['paid_amount'], 0, ',', '.')"
+            :value="'Rp ' . $regionalFormatter->money($metrics['paid_amount'], 0)"
             icon="badge-check"
             tone="success"
             :meta="trans_choice('finance.drp_ui.paid_batches', $metrics['paid_count'], ['count' => number_format($metrics['paid_count'])])"
@@ -249,20 +249,20 @@
                                     <div class="tw:flex tw:justify-between tw:border-t tw:border-outline-variant tw:pt-1">
                                         <span class="tw:text-on-surface-variant">{{ __('finance.drp.total_net') }}:</span>
                                         <span class="tw:font-bold tw:font-mono tw:text-on-surface">
-                                            Rp {{ number_format($batch->total_net_amount, 0, ',', '.') }}
+                                            Rp {{ $regionalFormatter->money($batch->total_net_amount, 0) }}
                                         </span>
                                     </div>
                                     @if($batch->status === \App\Models\PaymentBatch::STATUS_PARTIALLY_PAID)
                                         <div class="tw:flex tw:justify-between">
                                             <span class="tw:text-on-surface-variant">{{ __('local_invoice.labels.paid') }}:</span>
                                             <span class="tw:font-bold tw:font-mono tw:text-success">
-                                                Rp {{ number_format($batch->actual_paid_amount, 0, ',', '.') }}
+                                                Rp {{ $regionalFormatter->money($batch->actual_paid_amount, 0) }}
                                             </span>
                                         </div>
                                         <div class="tw:flex tw:justify-between tw:border-t tw:border-outline-variant tw:pt-1">
                                             <span class="tw:text-warning-container-foreground tw:font-semibold">{{ __('local_invoice.labels.remaining') }}:</span>
                                             <span class="tw:font-bold tw:font-mono tw:text-warning-container-foreground">
-                                                Rp {{ number_format($batch->remaining_amount, 0, ',', '.') }}
+                                                Rp {{ $regionalFormatter->money($batch->remaining_amount, 0) }}
                                             </span>
                                         </div>
                                     @endif
@@ -373,7 +373,7 @@
                                                                             </div>
                                                                             <div class="tw:text-end">
                                                                                 <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-full tw:text-[11px] tw:font-semibold tw:bg-success/10 tw:text-success">
-                                                                                    <x-ui.icon name="check-circle" size="sm" /> {{ __('finance.drp_ui.settled_amount', ['amount' => number_format($alreadyPaid, 0, ',', '.')]) }}
+                                                                                    <x-ui.icon name="check-circle" size="sm" /> {{ __('finance.drp_ui.settled_amount', ['amount' => $regionalFormatter->money($alreadyPaid, 0)]) }}
                                                                                 </span>
                                                                             </div>
                                                                         </div>
@@ -408,22 +408,22 @@
                                                                             <div class="tw:text-end">
                                                                                 @if($isCorrectionRequired)
                                                                                     <div class="tw:text-[11px] tw:text-on-surface-variant">
-                                                                                        {{ __('common.labels_review.voucher_label') }} <span class="tw:font-mono tw:font-semibold tw:text-on-surface">Rp {{ number_format($expectedAmount, 0, ',', '.') }}</span>
+                                                                                        {{ __('common.labels_review.voucher_label') }} <span class="tw:font-mono tw:font-semibold tw:text-on-surface">Rp {{ $regionalFormatter->money($expectedAmount, 0) }}</span>
                                                                                     </div>
                                                                                     <div class="tw:text-[11px] tw:font-mono">
-                                                                                        <span class="tw:text-success tw:font-medium">{{ __('finance.paid_ui.paid_amount', ['amount' => number_format($alreadyPaid, 0, ',', '.')]) }}</span>
+                                                                                        <span class="tw:text-success tw:font-medium">{{ __('finance.paid_ui.paid_amount', ['amount' => $regionalFormatter->money($alreadyPaid, 0)]) }}</span>
                                                                                         <span class="tw:text-on-surface-variant">·</span>
-                                                                                        <span class="tw:text-warning-container-foreground tw:font-bold">{{ __('finance.paid_ui.remaining', ['amount' => number_format($itemRemaining, 0, ',', '.')]) }}</span>
+                                                                                        <span class="tw:text-warning-container-foreground tw:font-bold">{{ __('finance.paid_ui.remaining', ['amount' => $regionalFormatter->money($itemRemaining, 0)]) }}</span>
                                                                                     </div>
                                                                                 @else
                                                                                     <span class="tw:text-[11px] tw:text-on-surface-variant">{{ __('common.labels_review.voucher_label') }}</span>
                                                                                     @if($voucher)
                                                                                         <span class="tw:font-mono tw:text-ui-xs tw:font-bold tw:text-primary">
-                                                                                            Rp {{ number_format($expectedAmount, 0, ',', '.') }}
+                                                                                            Rp {{ $regionalFormatter->money($expectedAmount, 0) }}
                                                                                         </span>
                                                                                     @else
                                                                                         <span class="tw:font-mono tw:text-ui-xs tw:font-bold tw:text-warning" title="{{ __('finance.voucher.no_voucher') }}">
-                                                                                            {{ __('finance.drp_ui.estimated_amount', ['amount' => number_format($expectedAmount, 0, ',', '.')]) }}
+                                                                                            {{ __('finance.drp_ui.estimated_amount', ['amount' => $regionalFormatter->money($expectedAmount, 0)]) }}
                                                                                         </span>
                                                                                     @endif
                                                                                 @endif

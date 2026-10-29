@@ -115,13 +115,19 @@ class MissionFiveImportTest extends TestCase
 
         $quotationTemplate = new QuotationImportTemplateExport($this->pr->id);
         // Q5: same technical keys; dimensions Thickness, Width, OD, ID, Length.
+        // Gate 2 GEN-02 (Confirmation 2): order now follows the quotation form (Qty, dimensions,
+        // KG/Unit, Price/kg, Notes, Availability); the set of keys is unchanged.
         $this->assertSame([
-            'pr_item_id', 'material_name', 'requested_dimension', 'price_per_kg',
-            'available_qty', 'available_thickness', 'available_width',
-            'available_d_outer', 'available_d_inner', 'available_length', 'notes',
-            'availability', 'offered_weight_per_unit',
+            'pr_item_id', 'material_name', 'requested_dimension', 'available_qty',
+            'available_thickness', 'available_width', 'available_d_outer',
+            'available_d_inner', 'available_length', 'offered_weight_per_unit',
+            'price_per_kg', 'notes', 'availability',
         ], $quotationTemplate->headings());
+        $this->assertSame(QuotationImportTemplateExport::CANONICAL_HEADINGS, $quotationTemplate->headings());
         $this->assertCount(13, $quotationTemplate->collection()->first());
+        $sample = array_combine($quotationTemplate->headings(), $quotationTemplate->collection()->first());
+        $this->assertSame('Available', $sample['availability']);
+        $this->assertNull($sample['price_per_kg']);
         $this->assertSame(
             $this->pr->items->pluck('id')->all(),
             $quotationTemplate->collection()->pluck(0)->all()
@@ -218,6 +224,40 @@ class MissionFiveImportTest extends TestCase
         $this->assertNull($hollow['width']);
         $this->assertEquals(400.0, $hollow['length']);
 
+        $this->assertSame($before, $this->databaseSnapshot());
+    }
+
+    /** PUR-01/PUR-02: per-row Total KG plus Grand Total Qty/KG, computed server-side with BCMath. */
+    public function test_pr_preview_reports_row_total_weight_and_grand_totals(): void
+    {
+        $before = $this->databaseSnapshot();
+        $upload = $this->spreadsheetUpload(
+            ['material_name', 'shape', 'quantity', 'thickness', 'width', 'd_outer', 'd_inner', 'length'],
+            [
+                ['SCM440', 'Flat', 3, 1.2, 120, null, null, 240],
+                ['SCM440', 'Hollow', 7, null, null, 20, 10, 400],
+            ]
+        );
+
+        $response = $this->actingAs($this->purchasing)
+            ->post(route('purchasing.requisitions.import-preview'), ['import_file' => $upload])
+            ->assertOk()
+            ->assertJsonPath('success', true);
+
+        $rows = $response->json('rows');
+        $expectedKg = '0';
+        $expectedQty = 0;
+        foreach ($rows as $row) {
+            // Independent oracle: unit KG × quantity at the 4 dp storage scale.
+            $rowKg = bcmul(sprintf('%.4F', $row['weight_needed']), (string) $row['quantity'], 4);
+            $this->assertSame($rowKg, $row['total_weight']);
+            $expectedKg = bcadd($expectedKg, $rowKg, 4);
+            $expectedQty += $row['quantity'];
+        }
+        $this->assertSame(10, $response->json('summary.total_quantity'));
+        $this->assertSame($expectedQty, $response->json('summary.total_quantity'));
+        $this->assertSame($expectedKg, $response->json('summary.total_weight_kg'));
+        $this->assertSame(1, bccomp($expectedKg, '0', 4), 'Fixture must produce a calculated weight.');
         $this->assertSame($before, $this->databaseSnapshot());
     }
 
@@ -857,6 +897,124 @@ class MissionFiveImportTest extends TestCase
 
         clearstatcache();
         $this->assertSame($before, $this->excelTemporaryFiles());
+    }
+
+    /** GEN-02: a downloaded template, filled in its own column order, previews back field for field. */
+    public function test_quotation_template_round_trips_through_import_preview_in_canonical_order(): void
+    {
+        $path = tempnam(sys_get_temp_dir(), 'gen02-template-').'.xlsx';
+        $this->temporaryFiles[] = $path;
+        file_put_contents($path, Excel::raw(new QuotationImportTemplateExport($this->pr->id), ExcelFormat::XLSX));
+
+        $spreadsheet = IOFactory::load($path);
+        $sheet = $spreadsheet->getActiveSheet();
+        $columns = [];
+        foreach ($sheet->getRowIterator(1, 1)->current()->getCellIterator() as $cell) {
+            $columns[(string) $cell->getValue()] = $cell->getColumn();
+        }
+        $this->assertSame(QuotationImportTemplateExport::CANONICAL_HEADINGS, array_keys($columns));
+
+        $values = [
+            2 => ['available_qty' => 2, 'available_thickness' => 1.5, 'available_width' => 100, 'available_length' => 200, 'offered_weight_per_unit' => 10, 'price_per_kg' => 8.75, 'notes' => 'Flat offer'],
+            3 => ['available_qty' => 3, 'available_d_outer' => 25, 'available_length' => '590-610', 'offered_weight_per_unit' => 12.5, 'price_per_kg' => 9.5],
+        ];
+        foreach ($values as $row => $fields) {
+            foreach ($fields as $field => $value) {
+                $sheet->setCellValue($columns[$field].$row, $value);
+            }
+        }
+        IOFactory::createWriter($spreadsheet, 'Xlsx')->save($path);
+
+        $before = $this->databaseSnapshot();
+        $response = $this->actingAs($this->supplierA)
+            ->post(route('supplier.quotations.import-preview', $this->pr), [
+                'import_file' => new UploadedFile($path, 'filled.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true),
+            ])
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('summary.valid', 2);
+
+        [$flat, $round] = $response->json('rows');
+        $this->assertSame($this->pr->items[0]->id, $flat['pr_item_id']);
+        $this->assertEquals(8.75, $flat['price_per_kg']);
+        $this->assertSame(2, $flat['available_qty']);
+        $this->assertEquals(1.5, $flat['available_thickness']);
+        $this->assertEquals(100, $flat['available_width']);
+        $this->assertEquals(200, $flat['available_length']);
+        $this->assertEquals(10, $flat['offered_weight_per_unit']);
+        $this->assertSame('Flat offer', $flat['notes']);
+        $this->assertSame($this->pr->items[1]->id, $round['pr_item_id']);
+        $this->assertEquals(25, $round['available_d_outer']);
+        $this->assertEquals(590, $round['available_length_min']);
+        $this->assertEquals(610, $round['available_length_max']);
+        $this->assertEquals(9.5, $round['price_per_kg']);
+        $this->assertSame($before, $this->databaseSnapshot());
+    }
+
+    /** GEN-02: the form's editable fields, the import preview and the template share one order. */
+    public function test_quotation_form_preview_and_template_share_the_canonical_order(): void
+    {
+        $html = $this->actingAs($this->supplierA)->get(route('supplier.quotations.create', $this->pr))->assertOk()->getContent();
+        $dom = new \DOMDocument;
+        libxml_use_internal_errors(true);
+        $dom->loadHTML('<?xml encoding="utf-8"?>'.$html);
+        libxml_clear_errors();
+        $xpath = new \DOMXPath($dom);
+
+        // Form: first item's editable inputs in DOM order, mapped to template keys.
+        $formOrder = [];
+        foreach ($xpath->query('//*[starts-with(@name, "items[0][")]') as $input) {
+            $field = preg_replace(['/^items\[0\]\[|\]$/', '/_input$/'], '', $input->getAttribute('name'));
+            if (in_array($field, QuotationImportTemplateExport::CANONICAL_HEADINGS, true) && ! in_array($field, $formOrder, true)) {
+                $formOrder[] = $field;
+            }
+        }
+        // Flat item: pr_item_id (hidden), qty, thickness, width, length, KG/Unit, price, notes.
+        $this->assertCount(8, $formOrder, implode(',', $formOrder));
+        $templateEditable = array_values(array_intersect(QuotationImportTemplateExport::CANONICAL_HEADINGS, $formOrder));
+        $this->assertSame($templateEditable, $formOrder, 'Form inputs follow the template order.');
+
+        $previewHeads = array_map(fn ($th) => trim($th->textContent), iterator_to_array(
+            $xpath->query('//tbody[@id="quotationImportPreviewBody"]/ancestor::table[1]//thead//th')
+        ));
+        $expected = [
+            __('supplier.copy.pr_item_id'), __('supplier.copy.material'), __('supplier.copy.offer_qty'),
+            ...array_map(fn ($field) => PrItem::dimensionLabel($field), PrItem::FIXED_DIMENSION_ORDER),
+            __('supplier.copy.offer_kg_unit'), __('supplier.copy.price_kg'), __('supplier.copy.notes'), __('supplier.copy.availability'),
+        ];
+        $this->assertSame($expected, $previewHeads);
+    }
+
+    /** PUR-01/PUR-02: five dimension columns plus Total KG; header and footer columns stay aligned. */
+    public function test_pr_form_and_import_preview_show_dimensions_and_total_kg_columns(): void
+    {
+        $html = $this->actingAs($this->purchasing)->get(route('purchasing.requisitions.create'))->assertOk()->getContent();
+        $dom = new \DOMDocument;
+        libxml_use_internal_errors(true);
+        $dom->loadHTML('<?xml encoding="utf-8"?>'.$html);
+        libxml_clear_errors();
+        $xpath = new \DOMXPath($dom);
+        $dimensions = array_map(fn (string $field) => PrItem::dimensionLabel($field), PrItem::FIXED_DIMENSION_ORDER);
+
+        $preview = $xpath->query('//tbody[@id="prImportPreviewBody"]/ancestor::table[1]')->item(0);
+        $form = $xpath->query('//tfoot[@id="prFormTotals"]/ancestor::table[1]')->item(0);
+        $this->assertNotNull($preview);
+        $this->assertNotNull($form);
+
+        $previewHeads = array_map(fn ($th) => trim($th->textContent), iterator_to_array($xpath->query('.//thead//th', $preview)));
+        $this->assertSame([...$dimensions, 'KG/Unit', __('procurement.totals.total_kg')], array_slice($previewHeads, 5, 7));
+
+        foreach ([$preview, $form] as $table) {
+            $heads = $xpath->query('.//thead//th', $table)->length;
+            $footer = 0;
+            foreach ($xpath->query('.//tfoot/tr[1]/*', $table) as $cell) {
+                $footer += max(1, (int) $cell->getAttribute('colspan'));
+            }
+            $this->assertSame($heads, $footer, 'Footer cells must span exactly the header columns.');
+        }
+        $formHeads = array_map(fn ($th) => trim($th->textContent), iterator_to_array($xpath->query('.//thead//th', $form)));
+        $this->assertContains(__('procurement.totals.total_kg'), $formHeads);
+        $this->assertStringContainsString('data-pr-row-total-kg', $html, 'Row template carries the per-row Total KG cell.');
     }
 
     public function test_import_routes_and_views_obey_role_guards_and_expose_safe_modes(): void

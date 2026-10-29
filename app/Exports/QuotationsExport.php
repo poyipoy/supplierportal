@@ -18,6 +18,7 @@ use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromQuery;
+use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithCustomChunkSize;
 use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
@@ -25,12 +26,36 @@ use Maatwebsite\Excel\Concerns\WithCustomQuerySize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithStyles;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 
-class QuotationsExport implements AcceptsExportOptions, FromQuery, HasLocalePreference, TracksExportProgress, WithColumnWidths, WithCustomChunkSize, WithCustomCsvSettings, WithCustomQuerySize, WithHeadings, WithMapping, WithStyles
+class QuotationsExport implements AcceptsExportOptions, FromQuery, HasLocalePreference, TracksExportProgress, WithColumnFormatting, WithColumnWidths, WithCustomChunkSize, WithCustomCsvSettings, WithCustomQuerySize, WithHeadings, WithMapping, WithStyles
 {
     use InteractsWithExportProgress;
     use StylesOperationalWorkbook;
     use UsesColumnCatalog;
+
+    /** GEN-03 Mode 2: display masks for the catalog XLSX path; cell values are unchanged. */
+    private const NUMBER_MASKS = [
+        'requested_quantity' => '#,##0',
+        'offered_quantity' => '#,##0',
+        'price_per_kg' => '#,##0.0000',
+        'amount' => '#,##0.00##',
+        'exchange_rate' => '#,##0.00##',
+        'total_idr' => '#,##0.00##',
+        'offer_weight_unit' => '#,##0.0000',
+        'offer_total_weight' => '#,##0.0000',
+        'requested_amount' => '#,##0.00##',
+        'offer_amount' => '#,##0.00##',
+        'requested_thickness' => '#,##0.0000',
+        'requested_width' => '#,##0.0000',
+        'requested_d_outer' => '#,##0.0000',
+        'requested_d_inner' => '#,##0.0000',
+        'requested_length' => '#,##0.0000',
+        'offered_thickness' => '#,##0.0000',
+        'offered_width' => '#,##0.0000',
+        'offered_d_outer' => '#,##0.0000',
+        'offered_d_inner' => '#,##0.0000',
+    ];
 
     public function __construct(
         private readonly array $filters = [],
@@ -205,6 +230,22 @@ class QuotationsExport implements AcceptsExportOptions, FromQuery, HasLocalePref
             __('exports.headings.requested_amount'),
             __('exports.headings.offer_amount'),
         ];
+    }
+
+    public function columnFormats(): array
+    {
+        // The legacy (no-options) path and CSV keep their exact output.
+        if (! $this->hasExportOptions() || ! $this->catalogStylesEnabled()) {
+            return [];
+        }
+        $formats = [];
+        foreach ($this->selectedColumns() as $index => $column) {
+            if (isset(self::NUMBER_MASKS[$column->key])) {
+                $formats[Coordinate::stringFromColumnIndex($index + 1)] = self::NUMBER_MASKS[$column->key];
+            }
+        }
+
+        return $formats;
     }
 
     public function columnWidths(): array

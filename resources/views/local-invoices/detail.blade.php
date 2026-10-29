@@ -234,9 +234,9 @@
                                                     'invoice' => $invoice->invoice_number ?? '-',
                                                     'submission' => $invoice->submission_number ?? '-',
                                                     'po' => $invoice->po_number ?? '-',
-                                                    'expected' => number_format($expectedNet, 0, ',', '.'),
-                                                    'actual' => number_format($alreadyPaid, 0, ',', '.'),
-                                                    'overpayment' => number_format($overAmount, 0, ',', '.'),
+                                                    'expected' => $regionalFormatter->money($expectedNet, 0),
+                                                    'actual' => $regionalFormatter->money($alreadyPaid, 0),
+                                                    'overpayment' => $regionalFormatter->money($overAmount, 0),
                                                     'bank' => $adasiBank, 'account' => $adasiAccNo, 'holder' => $adasiAccHolder,
                                                 ]);
                                                 $fullDraftText = __('local_invoice.refund_contact.draft', ['subject' => $mailSubject, 'body' => $mailBody]);
@@ -312,7 +312,7 @@
                                                 }
                                                 $waText = __('local_invoice.refund_contact.whatsapp_body', [
                                                     'company' => $companyName, 'invoice' => $invoice->invoice_number ?? '-',
-                                                    'po' => $invoice->po_number ?? '-', 'amount' => number_format($overAmount, 0, ',', '.'),
+                                                    'po' => $invoice->po_number ?? '-', 'amount' => $regionalFormatter->money($overAmount, 0),
                                                     'bank' => $adasiBank, 'account' => $adasiAccNo, 'holder' => $adasiAccHolder,
                                                 ]);
                                                 $waUrl = 'https://wa.me/' . $cleanWa . '?text=' . rawurlencode($waText);

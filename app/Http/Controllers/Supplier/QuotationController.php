@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Supplier;
 
+use App\Exports\QuotationFormExport;
 use App\Exports\QuotationImportTemplateExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Export\Filters\QuotationExportFilters;
+use App\Http\Requests\ExportQuotationFormRequest;
 use App\Imports\QuotationItemsImport;
 use App\Models\Attachment;
 use App\Models\Conversation;
@@ -36,6 +38,8 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Facades\Excel;
+use PhpOffice\PhpSpreadsheet\Cell\Cell;
+use PhpOffice\PhpSpreadsheet\Cell\DefaultValueBinder;
 use Throwable;
 use Yajra\DataTables\Facades\DataTables;
 
@@ -127,13 +131,7 @@ class QuotationController extends Controller
             $query->where('supplier_id', $supplierId);
         }])
             ->where('period_id', $period_id)
-            ->visibleToSupplier($supplierId)
-            ->where(function ($query) use ($supplierId) {
-                $query->whereIn('status', ['submitted', 'bidding'])
-                    ->orWhereHas('quotations', function ($q) use ($supplierId) {
-                        $q->where('supplier_id', $supplierId);
-                    });
-            });
+            ->accessibleBySupplier($supplierId);
 
         if ($request->filled('pr_number')) {
             $query->where('pr_number', 'like', '%'.$request->pr_number.'%');
@@ -267,6 +265,29 @@ class QuotationController extends Controller
             new QuotationImportTemplateExport($pr->id),
             'template_import_quotation_'.$safeNumber.'.xlsx'
         );
+    }
+
+    /**
+     * GEN-03 Mode 1: download the entered, unsaved form as an import-compatible
+     * XLSX. Authorised like import-preview; validated before any output; no
+     * database write and no ExportJob.
+     */
+    public function exportForm(Request $request, $pr_id)
+    {
+        $pr = $this->importableRequisition($pr_id);
+        $validated = ExportQuotationFormRequest::validateFor($request, $pr);
+        $safeNumber = trim((string) preg_replace('/[^A-Za-z0-9_-]+/', '_', $pr->pr_number ?? ''), '_');
+        $safeNumber = $safeNumber !== '' ? $safeNumber : 'PR_'.$pr->id;
+
+        $response = Excel::download(
+            new QuotationFormExport($pr, $validated['items']),
+            'quotation_form_'.$safeNumber.'.xlsx'
+        );
+        $response->headers->set('Cache-Control', 'no-store, private');
+        // The file is written; do not leave the export's value binder registered globally.
+        Cell::setValueBinder(new DefaultValueBinder);
+
+        return $response;
     }
 
     public function importPreview(Request $request, $pr_id)

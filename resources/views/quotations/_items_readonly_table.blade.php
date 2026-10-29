@@ -18,6 +18,8 @@
     $fmt = fn ($value, int $decimals = 2) => $value === null
         ? '—'
         : $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($value, $decimals), 'decimal');
+    // Prices and amounts carry thousands grouping (PUR-06); weights and dimensions keep $fmt.
+    $fmtPrice = fn ($value, int $decimals = 2) => $value === null ? '—' : $regionalFormatter->groupedDecimal($value, $decimals);
 
     // Server-authoritative totals (Decision 06), BCMath like the stored amounts.
     $totals = ['req_qty' => 0, 'off_qty' => 0, 'req_kg' => '0', 'off_kg' => '0', 'req_amount' => '0', 'off_amount' => '0'];
@@ -111,9 +113,9 @@
                     <td class="text-end ui-tabular-nums">{{ in_array('length', $relevant, true) ? $fmt($prItem?->length, 4) : '—' }}</td>
                     <td class="text-end ui-tabular-nums">{{ $fmt($item->requested_weight_per_unit) }}</td>
                     <td class="text-end ui-tabular-nums">{{ $fmt($item->requested_total_weight) }}</td>
-                    <td class="text-end ui-tabular-nums">{{ $fmt($item->price_per_kg, 4) }}</td>
+                    <td class="text-end ui-tabular-nums">{{ $fmtPrice($item->price_per_kg, 4) }}</td>
                     @if($showRef)<td class="text-end tw:text-outline">—</td>@endif
-                    <td class="text-end ui-tabular-nums tw:text-on-surface-variant">{{ $item->is_available ? $fmt($item->requested_amount) : '—' }}</td>
+                    <td class="text-end ui-tabular-nums tw:text-on-surface-variant">{{ $item->is_available ? $fmtPrice($item->requested_amount) : '—' }}</td>
                     @if($showIdr)<td class="text-end tw:text-outline">—</td>@endif
                     <td class="text-start tw:text-on-surface-variant">{{ $prItem?->remark ?: '—' }}</td>
                     <td class="text-center tw:text-outline">—</td>
@@ -138,16 +140,16 @@
                             @if($item->is_estimated_weight)<span class="ui-status-chip ui-status-chip--warning ms-1">{{ __('procurement.quotation.est_weight') }}</span>@endif
                         </td>
                         <td class="text-end fw-semibold ui-tabular-nums">{{ $fmt($item->offered_total_weight) }}</td>
-                        <td class="text-end fw-bold ui-tabular-nums text-nowrap">{{ $fmt($item->price_per_kg, 4) }}</td>
+                        <td class="text-end fw-bold ui-tabular-nums text-nowrap">{{ $fmtPrice($item->price_per_kg, 4) }}</td>
                         {{-- Mission 06B: Purchasing-only live reference (never passed on Supplier pages). --}}
                         @if($showRef)
                             <td class="text-end">
                                 @if($reference = $referencePrices[$item->id] ?? null)
                                     <div data-reference-price>
                                         @if($reference->isMatched())
-                                            <div class="fw-semibold ui-tabular-nums text-nowrap">{{ $fmt($reference->convertedReferencePricePerKg, 4) }}</div>
+                                            <div class="fw-semibold ui-tabular-nums text-nowrap">{{ $fmtPrice($reference->convertedReferencePricePerKg, 4) }}</div>
                                             @if($reference->diffAmountPerKg !== null)
-                                                <div class="tw:text-on-surface-variant ui-tabular-nums text-nowrap"><span class="visually-hidden">{{ __('materials.reference_prices.reference_delta') }}</span>{{ bccomp($reference->diffAmountPerKg, '0', 4) > 0 ? '+' : '' }}{{ $fmt($reference->diffAmountPerKg, 4) }}@if($reference->diffPercent !== null) ({{ bccomp($reference->diffPercent, '0', 4) > 0 ? '+' : '' }}{{ $fmt($reference->diffPercent, 2) }}%)@endif</div>
+                                                <div class="tw:text-on-surface-variant ui-tabular-nums text-nowrap"><span class="visually-hidden">{{ __('materials.reference_prices.reference_delta') }}</span>{{ bccomp($reference->diffAmountPerKg, '0', 4) > 0 ? '+' : '' }}{{ $fmtPrice($reference->diffAmountPerKg, 4) }}@if($reference->diffPercent !== null) ({{ bccomp($reference->diffPercent, '0', 4) > 0 ? '+' : '' }}{{ $fmt($reference->diffPercent, 2) }}%)@endif</div>
                                             @endif
                                         @else
                                             <span class="ui-status-chip ui-status-chip--neutral ui-quotation-readonly__ref-reason">{{ __('materials.reference_prices.reasons.'.$reference->reasonCode) }}</span>
@@ -158,11 +160,11 @@
                                 @endif
                             </td>
                         @endif
-                        <td class="text-end fw-bold text-primary ui-tabular-nums text-nowrap" data-offer-amount="{{ \App\Support\NumberFormat::maxDecimals($amount) }}">{{ $fmt($amount) }}</td>
+                        <td class="text-end fw-bold text-primary ui-tabular-nums text-nowrap" data-offer-amount="{{ \App\Support\NumberFormat::maxDecimals($amount) }}">{{ $fmtPrice($amount) }}</td>
                         @if($showIdr)
                             <td class="text-end fw-semibold ui-tabular-nums text-nowrap">
                                 @if($amountIdr !== null)
-                                    Rp {{ $fmt($amountIdr) }}
+                                    Rp {{ $fmtPrice($amountIdr) }}
                                 @else
                                     <span title="{{ __('procurement.quotation.rate_unavailable') }}">—</span><span class="visually-hidden">{{ __('procurement.quotation.rate_unavailable') }}</span>
                                 @endif
@@ -196,7 +198,7 @@
                 <td colspan="{{ count($dimensionOrder) + 1 }}"></td>
                 <td class="text-end ui-tabular-nums text-nowrap" data-total="requested-kg">{{ $fmt($totals['req_kg']) }}</td>
                 <td colspan="{{ $showRef ? 2 : 1 }}"></td>
-                <td class="text-end ui-tabular-nums tw:text-on-surface-variant text-nowrap" data-total="requested-amount">{{ $fmt($totals['req_amount']) }}</td>
+                <td class="text-end ui-tabular-nums tw:text-on-surface-variant text-nowrap" data-total="requested-amount">{{ $fmtPrice($totals['req_amount']) }}</td>
                 <td colspan="{{ $trailingCols + ($showIdr ? 1 : 0) }}"></td>
             </tr>
             <tr>
@@ -206,11 +208,11 @@
                 <td colspan="{{ count($dimensionOrder) + 1 }}"></td>
                 <td class="text-end ui-tabular-nums text-nowrap" data-total="offered-kg">{{ $fmt($totals['off_kg']) }}</td>
                 <td colspan="{{ $showRef ? 2 : 1 }}"></td>
-                <td class="text-end text-primary ui-tabular-nums text-nowrap" data-total="offered-amount">{{ $fmt($totals['off_amount']) }} {{ $quotation->currency }}</td>
+                <td class="text-end text-primary ui-tabular-nums text-nowrap" data-total="offered-amount">{{ $fmtPrice($totals['off_amount']) }} {{ $quotation->currency }}</td>
                 @if($showIdr)
                     <td class="text-end text-primary ui-tabular-nums text-nowrap" data-total="offered-idr">
                         @if($totalIdr !== null)
-                            Rp {{ $fmt($totalIdr) }}
+                            Rp {{ $fmtPrice($totalIdr) }}
                         @else
                             <span aria-hidden="true">—</span> <span class="tw:text-ui-xs tw:font-normal">{{ __('procurement.quotation.rate_unavailable') }}</span>
                         @endif

@@ -175,6 +175,7 @@
 
                 <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 8;">{{ __('navigation.business') }}</span></div>
                 <x-ui.sidebar-item :href="\App\Support\PageRegistry::url('supplier.quotations.index')" icon="calendar-days" :active="request()->routeIs('supplier.quotations.*')" :label="__('navigation.quotation_period')">{{ __('navigation.quotation_period') }}</x-ui.sidebar-item>
+                <x-ui.sidebar-item :href="\App\Support\PageRegistry::url('supplier.requests.index')" icon="clipboard-list" :active="request()->routeIs('supplier.requests.*')" :label="__('navigation.purchasing_requests')">{{ __('navigation.purchasing_requests') }}</x-ui.sidebar-item>
                 <x-ui.sidebar-item :href="\App\Support\PageRegistry::url('supplier.purchase-orders.index')" icon="receipt" :active="request()->routeIs('supplier.purchase-orders.*')" :label="__('navigation.purchase_order')">{{ __('navigation.purchase_order') }}</x-ui.sidebar-item>
                 <x-ui.sidebar-item :href="\App\Support\PageRegistry::url('supplier.shipments.index')" icon="truck" :active="request()->routeIs('supplier.shipments.*')" :label="__('navigation.shipments_deliveries')">{{ __('navigation.shipments_deliveries_short') }}</x-ui.sidebar-item>
                 <x-ui.sidebar-item :href="\App\Support\PageRegistry::url('supplier.conversations.index')" icon="message-circle-more" :active="request()->routeIs('supplier.conversations.*')" :label="__('navigation.chat_title')">

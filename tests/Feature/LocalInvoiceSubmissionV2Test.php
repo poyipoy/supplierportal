@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\LocalInvoice\InvoiceSubmissionService;
 use App\Services\LocalInvoice\LocalPoReferenceService;
 use App\Services\LocalInvoice\LocalProcurementMasterService;
+use App\Support\BusinessTime;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
@@ -87,7 +88,8 @@ class LocalInvoiceSubmissionV2Test extends TestCase
 
     private function nextWednesday(): string
     {
-        $date = Carbon::now();
+        // Business calendar, like DeliveryScheduleValidator (UTC "now" is a day behind 00:00-07:00 WIB).
+        $date = BusinessTime::today()->toMutable();
         while ($date->dayOfWeek !== Carbon::WEDNESDAY) {
             $date->addDay();
         }
@@ -247,7 +249,7 @@ class LocalInvoiceSubmissionV2Test extends TestCase
         $supplier = $this->createLocalSupplier();
 
         // Pick a Tuesday or Thursday
-        $thursday = Carbon::now();
+        $thursday = BusinessTime::today()->toMutable();
         while ($thursday->dayOfWeek !== Carbon::THURSDAY) {
             $thursday->addDay();
         }

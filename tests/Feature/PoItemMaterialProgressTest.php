@@ -21,6 +21,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\Support\AttachesShipmentMtc;
+use Tests\Support\QcMeasurements;
 use Tests\TestCase;
 
 class PoItemMaterialProgressTest extends TestCase
@@ -527,7 +528,7 @@ class PoItemMaterialProgressTest extends TestCase
 
         $this->actingAs($this->qcUser)->post(route('qc.inspections.store', $po), [
             'shipment_id' => $shipment->hash,
-            'items' => [
+            'items' => QcMeasurements::complete([
                 [
                     'pr_item_id' => $prItem->id,
                     'actual_d_outer' => 120.0,
@@ -535,7 +536,7 @@ class PoItemMaterialProgressTest extends TestCase
                     'actual_weight' => 8.0,
                     'status' => 'ok',
                 ],
-            ],
+            ]),
         ]);
 
         $projection = $this->progressService->projectionForAward($award);
@@ -634,7 +635,7 @@ class PoItemMaterialProgressTest extends TestCase
 
         $this->actingAs($this->qcUser)->post(route('qc.inspections.store', $po), [
             'shipment_id' => $shipment->hash,
-            'items' => [
+            'items' => QcMeasurements::complete([
                 [
                     'pr_item_id' => $prItem->id,
                     'actual_d_outer' => 120.0,
@@ -642,7 +643,7 @@ class PoItemMaterialProgressTest extends TestCase
                     'actual_weight' => 8.0,
                     'status' => 'ng',
                 ],
-            ],
+            ]),
         ]);
 
         $projection = $this->progressService->projectionForAward($award);
@@ -942,7 +943,7 @@ class PoItemMaterialProgressTest extends TestCase
 
         $this->actingAs($this->qcUser)->post(route('qc.inspections.store', $po), [
             'shipment_id' => $shipment->hash,
-            'items' => [
+            'items' => QcMeasurements::complete([
                 [
                     'pr_item_id' => $prItem->id,
                     'actual_d_outer' => 120.0,
@@ -950,7 +951,7 @@ class PoItemMaterialProgressTest extends TestCase
                     'actual_weight' => 8.0,
                     'status' => 'ok',
                 ],
-            ],
+            ]),
         ]);
 
         $po->refresh();

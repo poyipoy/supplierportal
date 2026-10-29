@@ -172,7 +172,9 @@ class RegionalMaterialClaimDataTablesContractTest extends TestCase
         $this->assertSame(1, $before['recordsFiltered']);
         $this->assertSame($claim->po_id, $before['data'][0]['id']);
         $this->assertNotSame('-', $before['data'][0]['inspection_date']);
-        $this->assertStringContainsString(route('purchasing.claims.create', $claim->inspection, absolute: false), $before['data'][0]['action']);
+        // Gate 2 PUR-08 (Gate 1 RISK-04): claims.store refuses an inspection that already has a
+        // claim, so the resolved claim's inspection is not offered as a Create Claim target.
+        $this->assertStringNotContainsString(route('purchasing.claims.create', $claim->inspection, absolute: false), $before['data'][0]['action']);
         $this->preference($this->purchasing, 'iso');
         $after = $request()->json();
         $this->assertSame($before, $after);

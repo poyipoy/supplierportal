@@ -140,6 +140,22 @@ class PrItem extends Model
 
     // ─── Relationships ───
 
+    /**
+     * QC-01 (Gate 2): case/whitespace variants ('round', ' Flat ') map to the canonical shape for
+     * the QC path only; relevantDimensionFields() stays exact so acceptance hashes are unchanged.
+     */
+    public static function canonicalShape(?string $shape): ?string
+    {
+        $needle = strtolower(trim((string) $shape));
+        foreach (self::SHAPES as $canonical) {
+            if (strtolower($canonical) === $needle) {
+                return $canonical;
+            }
+        }
+
+        return null;
+    }
+
     public static function relevantDimensionFields(?string $shape): array
     {
         return self::RELEVANT_DIMENSIONS[$shape] ?? [];

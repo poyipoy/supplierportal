@@ -64,6 +64,22 @@ final class QuotationDefinition implements ExportDefinition
             new ExportColumn('offer_total_weight', 'offer_total_weight', fn ($i) => $i->offered_total_weight, 16, ColumnType::Number, with: ['prItem']),
             new ExportColumn('requested_amount', 'requested_amount', fn ($i) => $i->requested_amount, 18, ColumnType::Money, with: ['prItem']),
             new ExportColumn('offer_amount', 'offer_amount', fn ($i) => $i->offer_amount, 18, ColumnType::Money, with: ['prItem']),
+            // GEN-03 Mode 2: requested shape/dimensions and offered dimensions, opt-in only.
+            new ExportColumn('requested_shape', 'requested_shape', fn ($i) => $i->prItem?->shape, 12, default: false, with: ['prItem']),
+            new ExportColumn('requested_thickness', 'requested_thickness', fn ($i) => self::decimal($i->prItem?->thickness), 14, ColumnType::Number, default: false, with: ['prItem']),
+            new ExportColumn('requested_width', 'requested_width', fn ($i) => self::decimal($i->prItem?->width), 14, ColumnType::Number, default: false, with: ['prItem']),
+            new ExportColumn('requested_d_outer', 'requested_d_outer', fn ($i) => self::decimal($i->prItem?->d_outer), 14, ColumnType::Number, default: false, with: ['prItem']),
+            new ExportColumn('requested_d_inner', 'requested_d_inner', fn ($i) => self::decimal($i->prItem?->d_inner), 14, ColumnType::Number, default: false, with: ['prItem']),
+            new ExportColumn('requested_length', 'requested_length', fn ($i) => self::decimal($i->prItem?->length), 14, ColumnType::Number, default: false, with: ['prItem']),
+            new ExportColumn('offered_thickness', 'offered_thickness', fn ($i) => self::decimal($i->available_thickness), 14, ColumnType::Number, default: false),
+            new ExportColumn('offered_width', 'offered_width', fn ($i) => self::decimal($i->available_width), 14, ColumnType::Number, default: false),
+            new ExportColumn('offered_d_outer', 'offered_d_outer', fn ($i) => self::decimal($i->available_d_outer), 14, ColumnType::Number, default: false),
+            new ExportColumn('offered_d_inner', 'offered_d_inner', fn ($i) => self::decimal($i->available_d_inner), 14, ColumnType::Number, default: false),
         ];
+    }
+
+    private static function decimal(mixed $value): ?float
+    {
+        return $value === null || $value === '' ? null : (float) $value;
     }
 }

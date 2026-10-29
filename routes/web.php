@@ -83,6 +83,7 @@ use App\Http\Controllers\Qc\QcInspectionController;
 use App\Http\Controllers\ReceiptVerificationController;
 use App\Http\Controllers\Supplier\ClaimController;
 use App\Http\Controllers\Supplier\ExportController as SupplierExportController;
+use App\Http\Controllers\Supplier\PurchasingRequestController;
 use App\Http\Controllers\Supplier\QuotationController;
 use App\Http\Controllers\Supplier\SupplierCompanyProfileController;
 use App\Http\Controllers\Supplier\SupplierController;
@@ -676,9 +677,14 @@ Route::prefix(PortalPath::prefix())->group(function () {
         Route::post('/quotations/{pr_id}/import-preview', [QuotationController::class, 'importPreview'])
             ->middleware('throttle:15,1')
             ->name('quotations.import-preview');
+        Route::post('/quotations/{pr_id}/export-form', [QuotationController::class, 'exportForm'])
+            ->middleware('throttle:15,1')
+            ->name('quotations.export-form');
         Route::get('/quotations/{pr_id}/create', [QuotationController::class, 'create'])->name('quotations.create');
         Route::post('/quotations/{pr_id}', [QuotationController::class, 'store'])->name('quotations.store');
         Route::resource('quotations', QuotationController::class)->only(['index', 'show']);
+        Route::get('/requests', [PurchasingRequestController::class, 'index'])->name('requests.index');
+        Route::get('/requests/{pr_id}', [PurchasingRequestController::class, 'show'])->name('requests.show');
         Route::get('/purchase-orders', [SupplierPurchaseOrderController::class, 'index'])->name('purchase-orders.index');
         Route::get('/purchase-orders/{id}', [SupplierPurchaseOrderController::class, 'show'])->name('purchase-orders.show');
         Route::post('/purchase-orders/{po_id}/items/{award_id}/progress', [App\Http\Controllers\Supplier\PoItemProgressController::class, 'update'])->name('purchase-orders.item-progress.update');

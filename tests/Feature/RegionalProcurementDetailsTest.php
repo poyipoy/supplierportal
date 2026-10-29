@@ -64,7 +64,9 @@ class RegionalProcurementDetailsTest extends TestCase
         $system = $this->actingAs($user)->get($url)->assertOk();
         $this->assertSame(1, $counter->count, 'System detail preference lookup must not scale with rows.');
         $legacy = $this->text($system->getContent());
-        $this->assertTextContains('1234.5678', $legacy);
+        // Gate 2 PUR-06: the system unit price was the ungrouped '1234.5678' the user reported as a
+        // defect; it now carries grouping with the same four decimals (see the grouping test below).
+        $this->assertTextContains('1,234.5678', $legacy);
         $this->assertTextContains($resource === 'quotations' && $role === 'supplier' ? '30 September 2026' : '30 Sep 2026', $legacy);
         if ($resource === 'quotations') {
             $this->assertTextContains('28 Sep 2026, 23:35', $legacy);
@@ -99,6 +101,34 @@ class RegionalProcurementDetailsTest extends TestCase
         $this->assertSame($rawMachine, $this->machineValues($regional->getContent()));
         $this->assertSame($modelBefore, $record->fresh()->getAttributes());
         $this->assertSame($itemBefore, $quote->items()->firstOrFail()->getAttributes());
+    }
+
+    /** PUR-06: price and amount cells were ungrouped for the default 'system' preference. */
+    #[DataProvider('detailSurfaces')]
+    public function test_detail_price_and_amount_cells_carry_thousands_grouping(string $role, string $resource): void
+    {
+        $quote = $this->quotation(1);
+        $record = $resource === 'purchase-orders' ? $this->po($quote) : $quote;
+        $user = $role === 'supplier' ? $this->supplier : $this->purchasing;
+        $url = route($role.'.'.$resource.'.show', $record);
+
+        $system = $this->text($this->actingAs($user)->get($url)->assertOk()->getContent());
+        $this->assertTextContains('1,250,000.5', $system, 'Offer amount is grouped with its trimmed precision.');
+        $this->assertTextContains('1,234.5678', $system, 'Unit price keeps four decimals and gains grouping.');
+        $this->assertTextContains('Rp 1,562,500.63', $system, 'IDR amount keeps its Rp prefix and spacing.');
+        $this->assertFalse(str_contains($system, '1250000.5'), 'No ungrouped amount remains.');
+
+        $this->preferences($user, 'dmy', 'indonesian');
+        $this->app->forgetScopedInstances();
+        $indonesian = $this->text($this->get($url)->assertOk()->getContent());
+        $this->assertTextContains('1.250.000,5', $indonesian);
+        $this->assertTextContains('Rp 1.562.500,63', $indonesian);
+
+        $user->preference()->update(['number_format' => 'international']);
+        $this->app->forgetScopedInstances();
+        $international = $this->text($this->get($url)->assertOk()->getContent());
+        $this->assertTextContains('1,250,000.5', $international);
+        $this->assertTextContains('Rp 1,562,500.63', $international);
     }
 
     public function test_single_and_multirow_supplier_po_requests_resolve_preferences_once_and_preserve_progress_input(): void

@@ -53,7 +53,7 @@ class PurchaseHistoryPriceService
     public function __construct(private readonly ExchangeRateResolver $rates) {}
 
     /**
-     * @param  array{material_master_id?: ?int, material_name?: ?string, shape?: ?string, key_min?: string|float|null, key_max?: string|float|null, supplier_id?: ?int, date_from?: ?\DateTimeInterface}  $filter
+     * @param  array{material_master_id?: ?int, material_name?: ?string, shape?: ?string, shape_is_null?: bool, key_min?: string|float|null, key_max?: string|float|null, supplier_id?: ?int, date_from?: ?\DateTimeInterface}  $filter
      * @param  'none'|'month'|'year'  $period
      * @return array{currency: string, evaluation_date: string, periods: list<array<string, mixed>>, total: array<string, mixed>, rates: array<string, array{rate: ?string, valid_from: ?string}>}
      */
@@ -107,11 +107,14 @@ class PurchaseHistoryPriceService
 
         $rows = $base
             ->leftJoin('users as supplier', 'supplier.id', '=', 'po.supplier_id')
+            ->leftJoin('suppliers as supplier_profile', 'supplier_profile.user_id', '=', 'supplier.id')
             ->leftJoin('purchase_requisitions as pr', 'pr.id', '=', 'pi.pr_id')
             ->select([
                 'qi.id as quotation_item_id', 'po.id as po_id', 'po.po_number', 'po.created_at as po_created_at',
-                'q.currency', 'supplier.name as supplier_name', 'pr.id as pr_id', 'pr.pr_number', 'pi.material_name',
+                'q.currency', 'pr.id as pr_id', 'pr.pr_number', 'pi.material_name',
             ])
+            // PUR-03: company name, login name as fallback.
+            ->selectRaw("COALESCE(NULLIF(TRIM(supplier_profile.company_name), ''), supplier.name) as supplier_name")
             ->selectRaw(self::PRICE.' as price_per_kg')
             ->selectRaw(self::KG.' as kg')
             ->orderBy('po.created_at')->orderBy('po.id')->orderBy('qi.id')
@@ -231,6 +234,12 @@ class PurchaseHistoryPriceService
                     $query->whereRaw("{$spec} <= ?", [(string) $max]);
                 }
             }
+        }
+
+        // Opt-in (Price Comparison history): a material recorded without a shape is its own
+        // choice. Without this flag an empty shape keeps meaning "any shape".
+        if (empty($filter['shape']) && ! empty($filter['shape_is_null'])) {
+            $query->whereNull('pi.shape');
         }
 
         if (! empty($filter['supplier_id'])) {

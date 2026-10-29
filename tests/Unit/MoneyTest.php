@@ -8,6 +8,15 @@ use PHPUnit\Framework\TestCase;
 
 class MoneyTest extends TestCase
 {
+    /** PUR-02: the PR import Total KG and resources/js/pr-totals-core.js share these cases. */
+    public function test_pr_row_total_weight_matches_the_shared_javascript_fixture(): void
+    {
+        $cases = json_decode(file_get_contents(dirname(__DIR__).'/Fixtures/pr-totals-cases.json'), true, flags: JSON_THROW_ON_ERROR);
+        foreach ($cases as $case) {
+            $this->assertSame($case['total'], Money::multiply($case['unit'], $case['quantity'], 4), $case['unit'].' x '.$case['quantity']);
+        }
+    }
+
     public function test_normalize_returns_two_scale_decimal_strings(): void
     {
         $this->assertSame('0.01', Money::normalize('0.01'));

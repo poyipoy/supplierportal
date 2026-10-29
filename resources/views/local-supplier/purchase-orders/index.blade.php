@@ -125,7 +125,7 @@
                                 </span>
                             </td>
                             <td class="text-end tw:font-mono tw:font-bold tw:text-on-surface">
-                                Rp {{ number_format($po->total_amount, 2, ',', '.') }}
+                                Rp {{ $regionalFormatter->money($po->total_amount, 2) }}
                             </td>
                             <td class="text-end">
                                 <div class="tw:font-mono tw:font-semibold tw:text-on-surface">

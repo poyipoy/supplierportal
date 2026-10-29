@@ -216,6 +216,12 @@ return [
                     'route' => 'supplier.quotations.index',
                     'active' => 'supplier.quotations.*',
                 ],
+                'supplier_import.requests' => [
+                    'label' => 'navigation.quick.purchasing_requests',
+                    'icon' => 'clipboard-list',
+                    'route' => 'supplier.requests.index',
+                    'active' => 'supplier.requests.*',
+                ],
                 'supplier_import.orders' => [
                     'label' => 'navigation.quick.orders',
                     'icon' => 'receipt',

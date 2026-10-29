@@ -44,20 +44,20 @@
                             <span class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('common.labels_review.accounts') }}</span>
                         </td>
                         <td class="text-end tw:font-mono ui-tabular-nums tw:whitespace-nowrap">
-                            Rp {{ number_format($batch->total_subtotal, 0, ',', '.') }}
+                            Rp {{ $regionalFormatter->money($batch->total_subtotal, 0) }}
                         </td>
                         <td class="text-end tw:font-mono ui-tabular-nums tw:whitespace-nowrap">
                             <div class="tw:font-bold tw:text-on-surface">
-                                Rp {{ number_format($batch->total_net_amount, 0, ',', '.') }}
+                                Rp {{ $regionalFormatter->money($batch->total_net_amount, 0) }}
                             </div>
                             @if($batch->hasOverpayment())
                                 <div class="tw:text-[11px] tw:text-amber-700 tw:dark:text-amber-400 tw:font-semibold tw:mt-0.5" title="{{ __('finance.drp_surface.exceeds_net') }}">
-                                    {{ __('finance.paid_ui.transferred', ['amount' => number_format($batch->actual_transferred_amount, 0, ',', '.')]) }}
+                                    {{ __('finance.paid_ui.transferred', ['amount' => $regionalFormatter->money($batch->actual_transferred_amount, 0)]) }}
                                 </div>
                             @endif
                             @if($batch->status === \App\Models\PaymentBatch::STATUS_PARTIALLY_PAID)
                                 <div class="tw:text-[11px] tw:text-warning-container-foreground tw:font-semibold tw:mt-0.5" title="{{ __('finance.drp_surface.remaining_unpaid') }}">
-                                    {{ __('finance.paid_ui.remaining', ['amount' => number_format($batch->remaining_amount, 0, ',', '.')]) }}
+                                    {{ __('finance.paid_ui.remaining', ['amount' => $regionalFormatter->money($batch->remaining_amount, 0)]) }}
                                 </div>
                             @endif
                         </td>
@@ -85,13 +85,13 @@
                                         <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-semibold tw:bg-amber-100 tw:text-amber-800 tw:dark:bg-amber-950 tw:dark:text-amber-300 tw:mt-1 ui-tabular-nums tw:whitespace-nowrap"
                                               title="{{ __('finance.drp_surface.refund_outstanding') }}">
                                             <x-ui.icon name="alert-circle" size="xs" />
-                                            <span>{{ __('finance.paid_ui.overpayment', ['amount' => number_format($batch->total_overpayment_amount, 0, ',', '.')]) }}</span>
+                                            <span>{{ __('finance.paid_ui.overpayment', ['amount' => $regionalFormatter->money($batch->total_overpayment_amount, 0)]) }}</span>
                                         </span>
                                     @else
                                         <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-semibold tw:bg-emerald-100 tw:text-emerald-800 tw:dark:bg-emerald-950 tw:dark:text-emerald-300 tw:mt-1 ui-tabular-nums tw:whitespace-nowrap"
                                               title="{{ __('finance.drp_surface.refund_completed') }}">
                                             <x-ui.icon name="check-circle" size="xs" />
-                                            <span>{{ __('finance.paid_ui.overpayment_settled', ['amount' => number_format($batch->total_overpayment_amount, 0, ',', '.')]) }}</span>
+                                            <span>{{ __('finance.paid_ui.overpayment_settled', ['amount' => $regionalFormatter->money($batch->total_overpayment_amount, 0)]) }}</span>
                                         </span>
                                     @endif
                                 @endif
@@ -99,9 +99,9 @@
                                 <div class="tw:flex tw:flex-col tw:gap-0.5">
                                     <span class="tw:text-ui-xs tw:text-primary tw:font-semibold">{{ __('finance.paid_ui.partial') }}</span>
                                     <div class="tw:text-[11px] tw:font-mono tw:text-on-surface-variant ui-tabular-nums tw:whitespace-nowrap">
-                                        <span class="tw:text-success tw:font-medium">{{ __('finance.paid_ui.paid_amount', ['amount' => number_format($batch->actual_paid_amount, 0, ',', '.')]) }}</span>
+                                        <span class="tw:text-success tw:font-medium">{{ __('finance.paid_ui.paid_amount', ['amount' => $regionalFormatter->money($batch->actual_paid_amount, 0)]) }}</span>
                                         <span class="tw:text-on-surface-variant">·</span>
-                                        <span class="tw:text-warning-container-foreground tw:font-bold">{{ __('finance.paid_ui.remaining', ['amount' => number_format($batch->remaining_amount, 0, ',', '.')]) }}</span>
+                                        <span class="tw:text-warning-container-foreground tw:font-bold">{{ __('finance.paid_ui.remaining', ['amount' => $regionalFormatter->money($batch->remaining_amount, 0)]) }}</span>
                                     </div>
                                 </div>
                             @elseif($batch->status === \App\Models\PaymentBatch::STATUS_FINALIZED)

@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -49,15 +50,49 @@ class PurchaseOrder extends Model
         ];
     }
 
+    /**
+     * Gate 2 PUR-08 (§2.1): actual_arrival records the latest arrival, not full receipt. A
+     * shipment-based PO that is active again after a partial arrival is still overdue; a legacy
+     * PO (no shipment lines) keeps the old meaning. waiting_qc/claim_needed are never masked.
+     */
     public function getIsOverdueAttribute(): bool
     {
-        return $this->status === 'overdue'
-            || (
-                $this->status === 'active'
-                && $this->estimated_arrival
-                && $this->estimated_arrival->isBefore(BusinessTime::today())
-                && ! $this->actual_arrival
-            );
+        if ($this->status === 'overdue') {
+            return true;
+        }
+        if ($this->status !== 'active' || ! $this->estimated_arrival || ! $this->estimated_arrival->isBefore(BusinessTime::today())) {
+            return false;
+        }
+
+        return ! $this->actual_arrival || $this->hasShipmentItemsForOverdue();
+    }
+
+    /** withExists('shipmentItems as has_shipment_items'), a loaded relation, or one query in the narrow branch. */
+    private function hasShipmentItemsForOverdue(): bool
+    {
+        if (array_key_exists('has_shipment_items', $this->attributes)) {
+            return (bool) $this->attributes['has_shipment_items'];
+        }
+
+        return $this->relationLoaded('shipmentItems')
+            ? $this->shipmentItems->isNotEmpty()
+            : $this->shipmentItems()->exists();
+    }
+
+    /** SQL twin of is_overdue; every list, filter and export uses this one predicate. */
+    public static function whereOverdue(Builder|QueryBuilder $query): Builder|QueryBuilder
+    {
+        return $query->where(fn ($overdue) => $overdue
+            ->where('purchase_orders.status', 'overdue')
+            ->orWhere(fn ($active) => $active
+                ->where('purchase_orders.status', 'active')
+                ->whereNotNull('purchase_orders.estimated_arrival')
+                ->where('purchase_orders.estimated_arrival', '<', BusinessTime::today()->toDateString())
+                ->where(fn ($arrival) => $arrival
+                    ->whereNull('purchase_orders.actual_arrival')
+                    ->orWhereExists(fn ($lines) => $lines->selectRaw('1')
+                        ->from('shipment_items as overdue_si')
+                        ->whereColumn('overdue_si.purchase_order_id', 'purchase_orders.id')))));
     }
 
     // ─── Relationships ───
@@ -624,32 +659,50 @@ class PurchaseOrder extends Model
             $query->where('shipment_id', '!=', $excludeShipmentId);
         }
 
+        // Fresh query on purpose: ShipmentService calls this inside its row locks (Gate 2 §3-E).
+        return self::tallyFulfillment($query->get(), $orderedQty, (int) $this->id);
+    }
+
+    /**
+     * Pure tally shared by itemFulfillmentStatus() and fulfillmentProjection(). Adds the split of
+     * reserved into in transit, waiting QC and unresolved NG; every existing key is unchanged.
+     *
+     * @param  iterable<ShipmentItem>  $shipmentItems  submitted or arrived lines of one quotation item
+     * @return array<string, int|float|bool>
+     */
+    private static function tallyFulfillment(iterable $shipmentItems, int $orderedQty, int $poId): array
+    {
         $physicalShippedQty = 0;
         $physicalArrivedQty = 0;
         $acceptedQty = 0;
         $ngQty = 0;
         $replacementEligibleQty = 0;
         $reservedQty = 0;
+        $inTransitQty = 0;
+        $waitingQcQty = 0;
+        $unresolvedNgQty = 0;
 
-        foreach ($query->get() as $shipmentItem) {
+        foreach ($shipmentItems as $shipmentItem) {
             $qty = (int) $shipmentItem->shipped_qty;
             $physicalShippedQty += $qty;
 
             if ($shipmentItem->shipment?->status !== Shipment::STATUS_ARRIVED) {
                 $reservedQty += $qty;
+                $inTransitQty += $qty;
 
                 continue;
             }
 
             $physicalArrivedQty += $qty;
-            $qcItems = $shipmentItem->qcItems->filter(function (QcItem $qcItem) use ($shipmentItem) {
+            $qcItems = $shipmentItem->qcItems->filter(function (QcItem $qcItem) use ($shipmentItem, $poId) {
                 return $qcItem->inspection
-                    && (int) $qcItem->inspection->po_id === (int) $this->id
+                    && (int) $qcItem->inspection->po_id === $poId
                     && (int) $qcItem->inspection->shipment_id === (int) $shipmentItem->shipment_id;
             });
 
             if ($qcItems->isEmpty()) {
                 $reservedQty += $qty;
+                $waitingQcQty += $qty;
 
                 continue;
             }
@@ -671,6 +724,7 @@ class PurchaseOrder extends Model
                     $replacementEligibleQty += $qty;
                 } else {
                     $reservedQty += $qty;
+                    $unresolvedNgQty += $qty;
                 }
 
                 continue;
@@ -680,6 +734,7 @@ class PurchaseOrder extends Model
                 $acceptedQty += $qty;
             } else {
                 $reservedQty += $qty;
+                $waitingQcQty += $qty;
             }
         }
 
@@ -719,7 +774,37 @@ class PurchaseOrder extends Model
 
             'is_fully_allocated' => $remainingQty === 0,
             'is_fully_accepted' => $acceptedQty >= $orderedQty,
+
+            // Gate 2 §3-E: reserved = in transit + waiting QC + unresolved NG.
+            'in_transit_qty' => $inTransitQty,
+            'waiting_qc_qty' => $waitingQcQty,
+            'unresolved_ng_qty' => $unresolvedNgQty,
         ];
+    }
+
+    /**
+     * Read-only fulfillment for every ordered line, loaded once (no per-item query). For display
+     * only: never call it from ShipmentService, QC store or any guard; they need fresh reads.
+     *
+     * @return array{items: array<int, array<string, int|float|bool>>}
+     */
+    public function fulfillmentProjection(): array
+    {
+        $byItem = $this->shipmentItems()
+            ->whereHas('shipment', fn ($shipmentQuery) => $shipmentQuery
+                ->whereIn('status', [Shipment::STATUS_SUBMITTED, Shipment::STATUS_ARRIVED]))
+            ->with(['shipment', 'qcItems.inspection.materialClaims'])
+            ->orderBy('id')
+            ->get()
+            ->groupBy('quotation_item_id');
+
+        $items = [];
+        foreach ($this->orderedLines() as $line) {
+            $id = (int) $line->quotationItem->id;
+            $items[$id] = self::tallyFulfillment($byItem->get($id, collect()), (int) ($line->qty ?? $line->quotationItem->fulfillment_quantity), (int) $this->id);
+        }
+
+        return ['items' => $items];
     }
 
     /**
@@ -735,9 +820,11 @@ class PurchaseOrder extends Model
             return ! $hasNg && ($hasOk || (bool) $this->actual_arrival);
         }
 
-        $quotationItems = $this->awards()->exists()
+        // PUR-09: an unavailable line was never ordered, so it can never block completion.
+        $quotationItems = ($this->awards()->exists()
             ? $this->awards()->with('quotationItem.prItem')->get()->pluck('quotationItem')->filter()
-            : $this->allQuotationItems();
+            : $this->allQuotationItems())
+            ->filter(fn (QuotationItem $item) => $item->is_available !== false);
 
         if ($quotationItems->isEmpty()) {
             return true;
