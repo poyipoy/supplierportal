@@ -191,7 +191,7 @@ return [
         'requested' => 'Permintaan',
         'requisition_list' => 'Daftar Permintaan Pembelian',
         'requisition_reference' => 'Referensi Permintaan Pembelian',
-    'reset_filters' => 'Atur ulang filter',
+        'reset_filters' => 'Atur ulang filter',
         'respond_to_claim' => 'Tanggapi Klaim',
         'respond_to_ng_claim' => 'Tanggapi klaim NG',
         'revise_quotation' => 'Revisi Penawaran',
