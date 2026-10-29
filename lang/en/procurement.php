@@ -21,6 +21,9 @@ return [
         'total_qty' => 'Total Qty',
         'total_kg' => 'Total KG',
         'preview_hint' => 'Preview only; the server recalculates totals when you save.',
+        'server_calculated_hint' => 'Totals are calculated by the server without saving and verified again when you save.',
+        'calculating' => 'Calculating totals…',
+        'sync_error' => 'Could not refresh totals from the server. Totals will be recalculated when you save.',
     ],
     'ports' => [
         'TANJUNG_PRIOK' => 'Tanjung Priok',

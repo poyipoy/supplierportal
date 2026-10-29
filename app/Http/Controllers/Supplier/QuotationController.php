@@ -281,7 +281,7 @@ class QuotationController extends Controller
 
         $response = Excel::download(
             new QuotationFormExport($pr, $validated['items']),
-            'quotation_form_'.$safeNumber.'.xlsx'
+            'template_import_quotation_'.$safeNumber.'.xlsx'
         );
         $response->headers->set('Cache-Control', 'no-store, private');
         // The file is written; do not leave the export's value binder registered globally.

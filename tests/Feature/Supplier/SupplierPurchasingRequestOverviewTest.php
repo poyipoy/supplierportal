@@ -129,6 +129,16 @@ class SupplierPurchasingRequestOverviewTest extends TestCase
         }
     }
 
+    public function test_detail_header_places_back_before_the_primary_action(): void
+    {
+        $pr = $this->pr('submitted', invite: [$this->supplier]);
+
+        $this->actingAs($this->supplier)
+            ->get(route('supplier.requests.show', $pr))
+            ->assertOk()
+            ->assertSeeInOrder([e(__('supplier_requests.detail.back')), 'data-supplier-request-action'], false);
+    }
+
     public function test_detail_never_exposes_competitor_or_internal_data(): void
     {
         $pr = $this->pr('submitted', invite: [$this->supplier, $this->competitor]);

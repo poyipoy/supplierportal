@@ -399,7 +399,7 @@
             if (!href || href === '#' || href.startsWith('javascript:') || href.startsWith('#')) return;
 
             // Allow elements explicitly marked to bypass dirty check or modal triggers
-            if (link.closest('[data-allow-dirty="true"], [data-bs-toggle], [data-bs-dismiss]')) return;
+            if (link.closest('[data-allow-dirty="true"], [data-quotation-form-export], [data-bs-toggle], [data-bs-dismiss]')) return;
 
             // Prevent direct browser navigation and show custom AdasiAlert
             event.preventDefault();

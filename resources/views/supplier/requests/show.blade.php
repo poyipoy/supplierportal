@@ -29,15 +29,15 @@
         :eyebrow="__('supplier_requests.eyebrow')"
     >
         <x-slot:actions>
+            <x-ui.button :href="route('supplier.requests.index')" variant="ghost" size="sm">
+                <x-ui.icon name="arrow-left" size="sm" />
+                <span>{{ __('supplier_requests.detail.back') }}</span>
+            </x-ui.button>
             @if($action['url'])
                 <x-ui.button :href="$action['url']" size="sm" data-supplier-request-action="{{ $action['type'] }}">
                     <span>{{ __('supplier_requests.actions.'.$action['type']) }}</span>
                 </x-ui.button>
             @endif
-            <x-ui.button :href="route('supplier.requests.index')" variant="ghost" size="sm">
-                <x-ui.icon name="arrow-left" size="sm" />
-                <span>{{ __('supplier_requests.detail.back') }}</span>
-            </x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>
 

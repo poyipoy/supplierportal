@@ -4,13 +4,18 @@ namespace App\Http\Controllers\Purchasing;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\MaterialCalculationRequest;
+use App\Http\Requests\MaterialTotalsRequest;
 use App\Models\MaterialMaster;
 use App\Services\Materials\PrItemProcessor;
+use App\Services\Materials\PrTotalsCalculator;
 use Illuminate\Http\JsonResponse;
 
 class MaterialCalculationController extends Controller
 {
-    public function __construct(private readonly PrItemProcessor $processor) {}
+    public function __construct(
+        private readonly PrItemProcessor $processor,
+        private readonly PrTotalsCalculator $totalsCalculator,
+    ) {}
 
     public function preview(MaterialCalculationRequest $request): JsonResponse
     {
@@ -53,5 +58,18 @@ class MaterialCalculationController extends Controller
             'weight' => $weight,
             'errors' => $result->errors,
         ], $result->isValid() ? 200 : 422);
+    }
+
+    public function totals(MaterialTotalsRequest $request): JsonResponse
+    {
+        $calculated = $this->totalsCalculator->calculate(
+            $request->validated('items', []),
+            auth()->id(),
+        );
+
+        return response()->json([
+            'success' => true,
+            ...$calculated,
+        ]);
     }
 }

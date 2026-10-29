@@ -1,62 +1,43 @@
-{{-- Live footer totals (decision 06, PUR-02). Preview only: the server recalculates on save. --}}
-<tfoot id="prFormTotals" class="table-light">
+{{-- Server-calculated footer totals (PUR-02). Calculated by the server without saving and verified again on save. --}}
+@php
+    $formatter = app(\App\Services\RegionalDisplayFormatter::class);
+    $sourceItems = old('items') ?? (isset($pr) ? $pr->items?->toArray() : null) ?? [];
+    $initialQty = 0;
+    $initialKg = \App\Support\Money::normalize(0, 4);
+    foreach ($sourceItems as $rawItem) {
+        $itemArr = is_array($rawItem) ? $rawItem : (method_exists($rawItem, 'toArray') ? $rawItem->toArray() : []);
+        $rawQty = is_int($itemArr['quantity'] ?? null) ? (string) $itemArr['quantity'] : trim((string) ($itemArr['quantity'] ?? ''));
+        $qty = preg_match('/^[1-9]\d*$/', $rawQty) === 1 ? (int) $rawQty : null;
+        if ($qty !== null) {
+            $initialQty += $qty;
+        }
+        $uKg = is_numeric($itemArr['weight_needed'] ?? null) ? (float) $itemArr['weight_needed'] : 0.0;
+        if ($uKg > 0 && $qty !== null) {
+            $initialKg = \App\Support\Money::add($initialKg, \App\Support\Money::multiply($uKg, $qty, 4), 4);
+        }
+    }
+    $initialQtyDisplay = $formatter->number(number_format($initialQty, 0, '.', ','), 'international');
+    $initialKgDisplay = $formatter->money($initialKg, 4, 'international');
+@endphp
+<tfoot
+    id="prFormTotals"
+    class="table-light"
+    data-totals-url="{{ route('purchasing.material-calculations.totals') }}"
+    data-calculating-text="{{ __('procurement.totals.calculating') }}"
+    data-error-text="{{ __('procurement.totals.sync_error') }}"
+>
     <tr>
-        <th scope="row" colspan="4" class="text-end">
+        <th scope="row" colspan="4" class="text-end fw-semibold text-nowrap">
             {{ __('procurement.totals.total') }}
-            <span class="tw:ml-1 tw:font-normal tw:text-on-surface-variant">({{ __('procurement.totals.preview_hint') }})</span>
         </th>
-        <td class="text-center fw-bold ui-tabular-nums">
+        <td class="text-center fw-bold ui-tabular-nums text-nowrap">
             <span class="tw:sr-only">{{ __('procurement.totals.total_qty') }}:</span>
-            <output id="prFormTotalQty" aria-live="polite">0</output>
+            <output id="prFormTotalQty" aria-live="polite">{{ $initialQtyDisplay }}</output>
         </td>
-        <td colspan="{{ count(\App\Models\PrItem::FIXED_DIMENSION_ORDER) + 1 }}" class="text-end tw:text-on-surface-variant">{{ __('procurement.totals.total_kg') }}</td>
-        <td class="text-end fw-bold ui-tabular-nums">
-            <output id="prFormTotalKg" aria-live="polite">0</output>
+        <td colspan="{{ count(\App\Models\PrItem::FIXED_DIMENSION_ORDER) + 1 }}" class="text-end fw-semibold tw:text-on-surface-variant text-nowrap">{{ __('procurement.totals.total_kg') }}</td>
+        <td class="text-end fw-bold ui-tabular-nums text-nowrap">
+            <output id="prFormTotalKg" aria-live="polite">{{ $initialKgDisplay }}</output>
         </td>
         <td colspan="2"></td>
     </tr>
 </tfoot>
-
-@push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    const body = document.getElementById('itemsBody');
-    const qtyOut = document.getElementById('prFormTotalQty');
-    const kgOut = document.getElementById('prFormTotalKg');
-    const totals = window.AdasiPrTotals;
-    if (!body || !qtyOut || !kgOut || !totals) return;
-
-    const locale = document.documentElement.lang || undefined;
-    const qtyFormat = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 });
-    const kgFormat = new Intl.NumberFormat(locale, { maximumFractionDigits: 4 });
-    // Exact 4 dp text from AdasiPrTotals; Intl only adds locale separators for display.
-    const kgText = (scaled) => kgFormat.format(Number(totals.toDecimalString(scaled)));
-
-    const recalc = () => {
-        const rows = [];
-        body.querySelectorAll('tr').forEach((row) => {
-            const quantity = row.querySelector('.material-quantity')?.value;
-            const unitKg = row.querySelector('.weight-unit-display')?.value;
-            rows.push({ quantity, unitKg });
-            const cell = row.querySelector('[data-pr-row-total-kg]');
-            if (cell) {
-                const rowKg = totals.rowTotal(quantity, unitKg);
-                const text = rowKg === null ? '—' : kgText(rowKg);
-                // The cell sits inside the observed body: rewriting equal text would loop the observer.
-                if (cell.textContent !== text) cell.textContent = text;
-            }
-        });
-        const grand = totals.grandTotals(rows);
-        qtyOut.textContent = qtyFormat.format(grand.quantity);
-        kgOut.textContent = kgText(grand.weight);
-    };
-
-    body.addEventListener('input', recalc);
-    body.addEventListener('change', recalc);
-    // Programmatic .val() writes fire no input event, so writers dispatch this explicitly.
-    document.addEventListener('adasi:pr-items-changed', recalc);
-    new MutationObserver(recalc).observe(body, { childList: true, subtree: true, attributes: true, attributeFilter: ['value'] });
-    recalc();
-});
-</script>
-@endpush

@@ -42,8 +42,25 @@ export function fileNameFrom(disposition, fallback) {
     return plain ? plain[1].trim() : fallback;
 }
 
-export async function runExport({ form, url, csrfToken = '', formDataFactory, fetchImpl, notify, download, messages = {} }) {
+export async function runExport({
+    form,
+    url,
+    fallbackUrl = '',
+    csrfToken = '',
+    formDataFactory,
+    fetchImpl,
+    notify,
+    download,
+    fallbackDownload,
+    messages = {},
+}) {
     const body = exportEntries(formDataFactory(form));
+    const triggerFallback = () => {
+        if (!fallbackUrl || typeof fallbackDownload !== 'function') return false;
+        fallbackDownload(fallbackUrl);
+
+        return true;
+    };
     let response;
     try {
         response = await fetchImpl(url, {
@@ -53,16 +70,17 @@ export async function runExport({ form, url, csrfToken = '', formDataFactory, fe
             headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': csrfToken },
         });
     } catch {
-        notify('error', messages.failed || 'Export failed.');
+        const fallback = triggerFallback();
+        notify('warning', messages.failed || 'Could not include your current form entries. A blank template was downloaded instead.');
 
-        return { ok: false, errors: [] };
+        return { ok: false, fallback, errors: [] };
     }
 
     if (response.ok) {
-        download(await response.blob(), fileNameFrom(response.headers.get('Content-Disposition'), messages.fallbackName || 'quotation_form.xlsx'));
+        download(await response.blob(), fileNameFrom(response.headers.get('Content-Disposition'), messages.fallbackName || 'template_import_quotation.xlsx'));
         if (messages.done) notify('success', messages.done);
 
-        return { ok: true, errors: [] };
+        return { ok: true, fallback: false, errors: [] };
     }
 
     let payload = {};
@@ -71,11 +89,16 @@ export async function runExport({ form, url, csrfToken = '', formDataFactory, fe
     } catch {
         payload = {};
     }
+    const fallback = triggerFallback();
     const errors = response.status === 422 ? errorMessages(payload.errors) : [];
-    const summary = errors.length ? `${messages.invalid || payload.message || ''} ${errors.join(' ')}`.trim() : (payload.message || messages.failed || 'Export failed.');
-    notify('error', summary);
+    const invalidWarning = messages.invalid || 'Some quotation entries are invalid. A blank template was downloaded without your entered data.';
+    const failedWarning = messages.failed || 'Could not include your current form entries. A blank template was downloaded instead.';
+    const summary = response.status === 422
+        ? (errors.length ? `${invalidWarning} ${errors.join(' ')}`.trim() : invalidWarning)
+        : (payload.message ? `${failedWarning} ${payload.message}`.trim() : failedWarning);
+    notify('warning', summary);
 
-    return { ok: false, errors };
+    return { ok: false, fallback, errors };
 }
 
 function saveBlob(blob, name) {
@@ -86,6 +109,16 @@ function saveBlob(blob, name) {
     link.click();
     link.remove();
     setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+}
+
+function saveFallbackUrl(url) {
+    if (!url || typeof document === 'undefined' || !document.body) return;
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = '';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
 }
 
 function toast(type, message) {
@@ -114,15 +147,18 @@ export function bootQuotationFormExport(root = document) {
                 await runExport({
                     form,
                     url: button.dataset.url,
+                    fallbackUrl: button.dataset.fallbackUrl || button.getAttribute('href') || '',
                     csrfToken: form.querySelector('input[name="_token"]')?.value || document.querySelector('meta[name="csrf-token"]')?.content || '',
                     formDataFactory: (target) => new FormData(target),
                     fetchImpl: (url, init) => fetch(url, init),
                     notify: toast,
                     download: saveBlob,
+                    fallbackDownload: saveFallbackUrl,
                     messages: {
-                        invalid: translate('supplier.js.export_form_invalid', 'Fix these entries before exporting:'),
-                        failed: translate('supplier.js.export_form_failed', 'The form could not be exported. Try again.'),
-                        done: translate('supplier.js.export_form_done', 'Form exported.'),
+                        fallbackName: 'template_import_quotation.xlsx',
+                        invalid: translate('supplier.js.export_form_invalid', 'Some quotation entries are invalid. A blank template was downloaded without your entered data.'),
+                        failed: translate('supplier.js.export_form_failed', 'Could not include your current form entries. A blank template was downloaded instead.'),
+                        done: translate('supplier.js.export_form_done', 'Quotation template downloaded with your current entries.'),
                     },
                 });
             } finally {
