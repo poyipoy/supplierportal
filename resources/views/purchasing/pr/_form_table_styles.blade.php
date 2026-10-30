@@ -37,8 +37,8 @@
         position: relative;
         scrollbar-color: var(--md-on-surface-variant) var(--md-outline-variant);
         scrollbar-width: auto;
-        padding-bottom: 12px;
-        scroll-padding-bottom: 3rem;
+        padding-bottom: 0 !important;
+        scroll-padding-bottom: 3.5rem;
         min-height: 300px; /* Prevent dropdown clipping when table has few rows */
     }
 
@@ -180,6 +180,7 @@
         z-index: 9;
         background-color: var(--md-surface-container-low) !important;
         border-top: 2px solid var(--md-outline-variant) !important;
+        box-shadow: 0 -2px 6px -1px rgba(0, 0, 0, 0.08);
     }
 
     #itemsTable.pr-items-table tbody tr {
