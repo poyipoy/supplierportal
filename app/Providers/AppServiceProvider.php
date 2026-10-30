@@ -20,6 +20,7 @@ use App\Support\FinanceConfigurationGuard;
 use App\Support\PortalPath;
 use App\Support\Pricing\EvaluationContext;
 use App\Support\Procurement\ProcurementFeatures;
+use App\Support\View\CompiledViewFilesystem;
 use DateInterval;
 use Illuminate\Broadcasting\BroadcastEvent;
 use Illuminate\Console\Events\CommandStarting;
@@ -35,6 +36,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\View\Compilers\BladeCompiler;
+use Illuminate\View\DynamicComponent;
 use Laravel\Passport\Passport;
 
 class AppServiceProvider extends ServiceProvider
@@ -67,6 +70,23 @@ class AppServiceProvider extends ServiceProvider
         // between queue jobs like every other scoped instance.
         $this->app->scoped(EvaluationContext::class, fn (): EvaluationContext => EvaluationContext::forBusinessToday());
         $this->app->scoped(ExchangeRateResolver::class);
+
+        // Same construction as Illuminate\View\ViewServiceProvider::registerBladeCompiler(),
+        // except that compiled views are published through a Filesystem that survives
+        // the Windows "rename ... Access is denied (code: 5)" race between concurrent
+        // processes. Keep the arguments in step with the vendor binding on upgrades.
+        $this->app->singleton('blade.compiler', function ($app) {
+            return tap(new BladeCompiler(
+                new CompiledViewFilesystem,
+                $app['config']['view.compiled'],
+                $app['config']->get('view.relative_hash', false) ? $app->basePath() : '',
+                $app['config']->get('view.cache', true),
+                $app['config']->get('view.compiled_extension', 'php'),
+                $app['config']->get('view.check_cache_timestamps', true),
+            ), function ($blade) {
+                $blade->component('dynamic-component', DynamicComponent::class);
+            });
+        });
     }
 
     /**
