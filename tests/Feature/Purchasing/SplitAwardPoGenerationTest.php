@@ -149,5 +149,18 @@ class SplitAwardPoGenerationTest extends TestCase
         $response->assertSee('Partial award');
         $response->assertSee('Awarded ('.$poA->po_number.')');
         $response->assertSee('Not Awarded');
+
+        // Per-item award lives in the item table (one cell per item), not in the status banner.
+        $html = $response->getContent();
+        $detail = substr($html, strpos($html, 'data-quotation-section="detail"'));
+        $this->assertSame(2, substr_count($detail, 'data-item-award'));
+        $this->assertStringContainsString('Awarded ('.$poA->po_number.')', $detail);
+        $status = strstr(substr($html, strpos($html, 'data-quotation-section="status"')), 'data-quotation-section="detail"', true);
+        $this->assertStringNotContainsString('Not Awarded', $status);
+
+        // The award column is Supplier-only; the shared Purchasing detail is unchanged.
+        $this->actingAs($this->purchasing)->get(route('purchasing.quotations.show', $qA))
+            ->assertOk()
+            ->assertDontSee('data-item-award', false);
     }
 }

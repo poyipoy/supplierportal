@@ -4,6 +4,7 @@
     Supplier quotation page and the Purchasing quotation detail.
 
     @param \App\Models\Quotation $quotation  items.prItem + items.attachments + exchange_rate loaded
+    @param bool $showAward  optional per-item award column; requires items.award.purchaseOrder loaded
 --}}
 @php
     $dimensionOrder = \App\Models\PrItem::FIXED_DIMENSION_ORDER;
@@ -14,7 +15,8 @@
     // Purchasing-only reference column; Est. IDR is redundant for IDR quotations.
     $showRef = isset($referencePrices);
     $showIdr = ! $isIdr;
-    $trailingCols = 2 + ($showMtc ? 1 : 0);
+    $showAward = (bool) ($showAward ?? false);
+    $trailingCols = 2 + ($showMtc ? 1 : 0) + ($showAward ? 1 : 0);
     $fmt = fn ($value, int $decimals = 2) => $value === null
         ? '—'
         : $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($value, $decimals), 'decimal');
@@ -82,6 +84,7 @@
                 <th scope="col" class="text-start">{{ __('procurement.quotation.notes') }}</th>
                 <th scope="col">{{ __('procurement.quotation.status') }}</th>
                 @if($showMtc)<th scope="col">MTC</th>@endif
+                @if($showAward)<th scope="col">{{ __('supplier.copy.award_column') }}</th>@endif
             </tr>
         </thead>
         @foreach($quotation->items as $index => $item)
@@ -125,6 +128,17 @@
                         @empty
                             <span class="tw:text-outline">—</span>
                         @endforelse
+                    </td>@endif
+                    @if($showAward)<td rowspan="2" class="text-center" data-item-award>
+                        @if($item->award && $item->award->purchase_order_id)
+                            <span class="ui-status-chip ui-status-chip--success text-nowrap">
+                                <x-ui.icon name="check-circle" size="sm" class="me-1" /> {{ __('supplier.copy.awarded') }} ({{ $item->award->purchaseOrder?->po_number ?? 'PO' }})
+                            </span>
+                        @else
+                            <span class="ui-status-chip ui-status-chip--neutral text-nowrap">
+                                <x-ui.icon name="minus-circle" size="sm" class="me-1" /> {{ __('supplier.copy.not_awarded') }}
+                            </span>
+                        @endif
                     </td>@endif
                 </tr>
                 <tr class="is-offer-row">
