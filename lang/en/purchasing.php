@@ -889,9 +889,9 @@ return [
         'change' => 'Change',
         'progress_history' => 'Progress History: :material',
         'import_added' => [
-            'zero' => 'No material rows were added to the form.',
-            'one' => ':count material row was added to the form. Review it before saving.',
-            'other' => ':count material rows were added to the form. Review them before saving.',
+            'zero' => 'No material rows were added.',
+            'one' => ':count material row was added. Review it before saving.',
+            'other' => ':count material rows were added. Review them before saving.',
         ],
         'other_suppliers' => [
             'zero' => '+ no other suppliers',
@@ -912,7 +912,7 @@ return [
             'one' => ':count purchase order',
             'other' => ':count purchase orders',
         ],
-        'no_progress' => 'No progress updates recorded yet. Default state is Awaiting Confirmation.',
+        'no_progress' => 'No updates yet. Default state is Awaiting Confirmation.',
         'history_failed' => 'Failed to load progress history.',
         'pagination_summary' => 'Showing :from-:to of :total records',
         'pagination_page' => 'Page :current of :last',

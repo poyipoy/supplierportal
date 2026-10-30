@@ -8,7 +8,7 @@ untuk menunggu sebelum menutup tab. Ini bukan Single Logout antar aplikasi.
 
 | Environment | Key `portal_session` | Default | Perilaku |
 |---|---|---|---|
-| `PORTAL_CROSS_TAB_LOGOUT_ENABLED` | `cross_tab_logout` | `true` | Pesan logout lintas tab dan redirect pada polling 401 |
+| `PORTAL_CROSS_TAB_LOGOUT_ENABLED` | `cross_tab_logout` | `true` | Pesan logout lintas tab dan dialog sambungkan-kembali saat sesi berakhir (401/419) |
 | `PORTAL_STORAGE_CLEANUP_ENABLED` | `scoped_storage_cleanup` | `true` | Hapus key lokal yang diizinkan saat logout/login |
 | `PORTAL_LOGOUT_ALL_DEVICES_ENABLED` | `logout_all_devices` | `false` | Tampilkan dan proses checkbox keluar dari semua perangkat |
 
@@ -34,11 +34,42 @@ ditangani dengan `try/catch`.
 
 Penerima memutus Echo bila tersedia dan menavigasi ke URL login satu kali.
 Halaman login guest mengirim pesan lagi setelah sesi browser berakhir.
-Notifikasi dan chat memakai handler respons bersama: **hanya HTTP 401** yang
-mengirim `adasi:session-ended`. 403, 419, 5xx dan kegagalan jaringan mempertahankan
-perilaku lama. Polling tetap 30 detik dan dilewati saat tab tersembunyi; deteksi
-revokasi perangkat lain karena itu terjadi pada polling aktif berikutnya.
-Jika kedua transport browser diblokir, polling menjadi fallback.
+Pesan `signed-out` berarti logout yang disengaja, jadi penerima tetap langsung
+menavigasi. Pengecualiannya: pesan itu diabaikan selama dialog sesi berakhir
+(bagian berikut) sedang terbuka atau sudah ditolak user.
+Notifikasi dan chat memakai handler respons bersama: **hanya HTTP 401** dari polling
+yang dianggap sesi berakhir. 403, 419, 5xx dan kegagalan jaringan pada polling
+mempertahankan perilaku lama. Polling tetap 30 detik dan dilewati saat tab
+tersembunyi; deteksi revokasi perangkat lain karena itu terjadi pada polling aktif
+berikutnya. Jika kedua transport browser diblokir, polling menjadi fallback.
+
+## Sesi berakhir: dialog sambungkan kembali
+
+Sesi yang habis atau dicabut tidak lagi memindahkan halaman secara diam-diam dan
+tidak lagi memunculkan error mentah. Respons **401 atau 419** dari polling, `fetch`
+same-origin, atau jQuery ajax (termasuk DataTables) membuka satu dialog "Sesi
+berakhir" dengan pilihan **Sambungkan kembali** dan **Nanti saja**
+(`resources/js/session-sync.js`, teks di kunci `js.session.*`). 419 hanya dihitung
+untuk aksi yang dimulai user; polling hanya 401.
+
+- **Satu dialog**: kegagalan paralel dari satu halaman berbagi dialog yang sama.
+- **Sambungkan kembali** membuka ulang URL halaman saat ini tanpa fragmen. Tanpa
+  sesi, server mengarahkan ke login lalu kembali ke halaman ini setelah masuk;
+  dengan sesi yang masih hidup (419) halaman hanya dimuat ulang. Storage ber-scope
+  dibersihkan dan prompt native untuk perubahan belum tersimpan dilewati, karena
+  dialog sudah memperingatkan bila halaman punya perubahan yang belum disimpan.
+- **Nanti saja** menjaga halaman dan isinya apa adanya (user dapat menyalin data
+  lebih dulu). Polling badge berhenti. Dialog muncul lagi hanya bila user memicu aksi
+  yang gagal, dengan jeda 3 detik agar gelombang request yang sama tidak
+  membukanya kembali. Dialog yang digantikan alert lain bukan penolakan.
+- DataTables tidak menampilkan alert "Ajax error" sendiri untuk sesi berakhir;
+  error tabel lain tetap memakai alert bawaan, dan halaman yang menetapkan
+  `errMode` sendiri tidak diubah.
+- Halaman guest tidak menampilkan dialog. Mengikuti flag `cross_tab_logout`: bila
+  mati, tidak ada dialog dan tidak ada pengamat `fetch`/jQuery.
+
+Batas verifikasi: perilaku ini diuji dengan mock (`tests/js/session-sync.test.mjs`),
+belum di browser nyata dengan sesi yang benar-benar habis.
 
 Saat navigasi akibat sesi berakhir, dialog native untuk perubahan belum
 tersimpan tidak menghambat redirect. Handler halaman tetap berjalan agar draft

@@ -889,9 +889,9 @@ return [
         'change' => 'Perubahan',
         'progress_history' => 'Riwayat Progres: :material',
         'import_added' => [
-            'zero' => 'Tidak ada baris material ditambahkan ke formulir.',
-            'one' => ':count baris material ditambahkan ke formulir. Tinjau sebelum menyimpan.',
-            'other' => ':count baris material ditambahkan ke formulir. Tinjau sebelum menyimpan.',
+            'zero' => 'Tidak ada baris material ditambahkan.',
+            'one' => ':count baris material ditambahkan. Tinjau sebelum menyimpan.',
+            'other' => ':count baris material ditambahkan. Tinjau sebelum menyimpan.',
         ],
         'other_suppliers' => [
             'zero' => '+ tidak ada supplier lain',
@@ -912,7 +912,7 @@ return [
             'one' => ':count PO',
             'other' => ':count PO',
         ],
-        'no_progress' => 'Belum ada pembaruan progres. Status bawaan adalah Menunggu Konfirmasi.',
+        'no_progress' => 'Belum ada progres. Status bawaan adalah Menunggu Konfirmasi.',
         'history_failed' => 'Gagal memuat riwayat progres.',
         'pagination_summary' => 'Menampilkan :from-:to dari :total data',
         'pagination_page' => 'Halaman :current dari :last',

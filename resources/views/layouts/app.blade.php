@@ -417,7 +417,7 @@
             let badgeFetchActive = false;
 
             function updateBadges() {
-                if (badgeFetchActive || (document.visibilityState && document.visibilityState === 'hidden')) {
+                if (badgeFetchActive || (document.visibilityState && document.visibilityState === 'hidden') || window.AdasiSessionSync?.isSessionExpired?.()) {
                     return;
                 }
 
