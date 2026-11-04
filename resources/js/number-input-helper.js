@@ -39,6 +39,9 @@
     }
 
     function detectUnit(input) {
+        if (input.dataset?.unit) {
+            return ` ${input.dataset.unit}`;
+        }
         const name = (input.name || '').toLowerCase();
         const id = (input.id || '').toLowerCase();
         const cls = (input.className || '').toLowerCase();
@@ -46,6 +49,9 @@
         if (name.includes('price') || id.includes('price') || cls.includes('price')) {
             const currSelect = document.querySelector('#quotationCurrency, [name="currency"]');
             return currSelect?.value ? ` ${currSelect.value}` : '';
+        }
+        if (name.includes('rate') || id.includes('rate')) {
+            return ' IDR';
         }
         if (name.includes('weight') || id.includes('weight') || cls.includes('weight')) {
             return ' kg';
@@ -72,6 +78,7 @@
 
     function positionBadge(input, badge) {
         const rect = input.getBoundingClientRect();
+        const badgeWidth = badge.offsetWidth || 160;
         const badgeHeight = badge.offsetHeight || 26;
         const spaceAbove = rect.top;
 
@@ -80,9 +87,18 @@
             ? rect.top + window.scrollY - badgeHeight - 6 
             : rect.bottom + window.scrollY + 6;
 
-        let left = rect.left + window.scrollX;
+        const style = window.getComputedStyle ? window.getComputedStyle(input) : null;
+        const isRightAligned = (style && style.textAlign === 'right') ||
+            input.classList.contains('text-end') ||
+            input.classList.contains('tw:text-right') ||
+            (input.getAttribute('class') || '').includes('text-right');
+
+        let left = isRightAligned
+            ? rect.right + window.scrollX - badgeWidth
+            : rect.left + window.scrollX;
+
         // Keep within viewport horizontally
-        const maxLeft = window.innerWidth - (badge.offsetWidth || 160) - 12;
+        const maxLeft = window.innerWidth - badgeWidth - 12;
         if (left > maxLeft) left = maxLeft;
         if (left < 10) left = 10;
 
@@ -95,7 +111,11 @@
         const cleanNum = raw.replace(/[^\d.-]/g, '');
         const num = parseFloat(cleanNum);
 
-        if (!raw || isNaN(num) || Math.abs(num) < 1000) {
+        const threshold = input.dataset?.minThreshold
+            ? parseFloat(input.dataset.minThreshold)
+            : ((input.dataset?.formatNumber === 'true' || input.dataset?.annualRateInput !== undefined) ? 1 : 1000);
+
+        if (!raw || isNaN(num) || num <= 0 || (threshold > 0 && Math.abs(num) < threshold)) {
             hideBadge();
             return;
         }
@@ -125,7 +145,7 @@
     function isEligibleInput(el) {
         if (!el || el.tagName !== 'INPUT') return false;
         if (el.type === 'number') return true;
-        if (el.dataset.formatNumber === 'true') return true;
+        if (el.dataset?.formatNumber === 'true' || el.dataset?.annualRateInput !== undefined) return true;
         const cls = el.className || '';
         return cls.includes('dimension-input') || 
                cls.includes('price-input') || 
