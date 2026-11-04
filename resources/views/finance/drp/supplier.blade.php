@@ -100,7 +100,7 @@
                         </tbody>
                     </table>
                 </div>
-                {{ $eligibleInvoices->links() }}
+                {{ $eligibleInvoices->links('pagination::tailwind', ['label' => __('pagination.labels.candidates')]) }}
 
                 @if($eligibleInvoices->isNotEmpty())
                     <div class="tw:flex tw:flex-col tw:sm:flex-row tw:sm:items-center tw:sm:justify-between tw:gap-3 tw:border-t tw:border-outline-variant tw:pt-3">
@@ -197,7 +197,7 @@
 
         @if($batches->hasPages())
             <x-slot:pagination>
-                {{ $batches->links() }}
+                {{ $batches->links('pagination::tailwind', ['label' => __('pagination.labels.batches')]) }}
             </x-slot:pagination>
         @endif
     </x-ui.data-table>

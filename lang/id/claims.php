@@ -15,6 +15,7 @@ return [
         'claim_id' => 'ID Klaim',
         'claim_initiation_required' => 'Perlu pengajuan klaim',
         'claim_particulars' => 'Rincian Klaim',
+        'claim_queues' => 'Antrean klaim',
         'claim_resolution_action' => 'Tindakan Penyelesaian Klaim',
         'claim_resolved' => 'Klaim selesai',
         'claim_status' => 'Status Klaim',

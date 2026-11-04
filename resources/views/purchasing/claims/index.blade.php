@@ -4,31 +4,6 @@
 @section('title', __('claims.copy.material_claims_adasi_portal'))
 @section('page-title', __('claims.copy.material_claims'))
 
-@push('styles')
-<style>
-    .claim-nav-tabs .nav-link {
-        color: var(--md-on-surface-variant);
-        font-weight: 600;
-        font-size: var(--ui-font-size-sm);
-        padding: 0.65rem 1.25rem;
-        border: 0;
-        border-bottom: 2px solid transparent;
-        background: transparent;
-        transition: color 0.15s ease, border-color 0.15s ease;
-    }
-
-    .claim-nav-tabs .nav-link:hover {
-        color: var(--md-primary);
-    }
-
-    .claim-nav-tabs .nav-link.active {
-        color: var(--md-primary);
-        border-bottom-color: var(--md-primary);
-        background: transparent;
-    }
-</style>
-@endpush
-
 @section('content')
 <div class="tw:grid tw:gap-4">
     {{-- 1. Compact Page Header --}}
@@ -38,75 +13,63 @@
         :description="__('claims.copy.submit_claims_for_ng_quality_inspections_and_monitor_supplier_resolution_progress')"
     />
 
-    {{-- 2. Tabbed Data Card --}}
-    <x-ui.card padding="none" class="tw:overflow-hidden">
-        <div class="tw:border-b tw:border-outline-variant tw:px-4 tw:pt-1 tw:bg-surface-low">
-            <ul class="nav claim-nav-tabs" id="claimTabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active d-inline-flex align-items-center gap-2" id="action-tab" data-bs-toggle="tab" data-bs-target="#action" type="button" role="tab" aria-controls="action" aria-selected="true">
-                        <span>{{ __('claims.copy.action_required') }}</span>
-                        @if($actionCount > 0)
-                            <span class="ui-status-chip ui-status-chip--error ui-tabular-nums">{{ $actionCount }}</span>
-                        @else
-                            <span class="ui-status-chip ui-status-chip--neutral ui-tabular-nums">0</span>
-                        @endif
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab" aria-controls="history" aria-selected="false">
-                        <span>{{ __('claims.copy.claim_history') }}</span>
-                    </button>
-                </li>
-            </ul>
-        </div>
+    {{-- 2. Queue Tabs --}}
+    <x-ui.tab-list
+        :label="__('claims.copy.claim_queues')"
+        active="action"
+        :tabs="[
+            ['id' => 'action', 'label' => __('claims.copy.action_required'), 'icon' => 'triangle-alert', 'count' => $actionCount, 'tone' => 'error'],
+            ['id' => 'history', 'label' => __('claims.copy.claim_history'), 'icon' => 'history', 'count' => $historyCount],
+        ]"
+    />
 
-        <div class="tw:p-3.5 shell:p-4">
-            <div class="tab-content" id="claimTabsContent">
-                {{-- Tab 1: Action Required --}}
-                <div class="tab-pane fade show active" id="action" role="tabpanel" aria-labelledby="action-tab" tabindex="0">
-                    <x-ui.alert tone="warning" :title="__('claims.copy.claim_initiation_required')" class="tw:mb-3">{{ __('claims.copy.the_purchase_orders_below_failed_qc_inspection_with_an_ng_result_submit_a_formal_claim_to_initiate_r') }}</x-ui.alert>
+    {{-- 3. Queue Panes --}}
+    <div class="tab-content" id="claimTabsContent">
+        {{-- Tab 1: Action Required --}}
+        <div class="tab-pane fade show active" id="action" role="tabpanel" aria-labelledby="action-tab" tabindex="0">
+            <div class="tw:grid tw:gap-3">
+                <x-ui.alert tone="warning" :title="__('claims.copy.claim_initiation_required')">{{ __('claims.copy.the_purchase_orders_below_failed_qc_inspection_with_an_ng_result_submit_a_formal_claim_to_initiate_r') }}</x-ui.alert>
 
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0 tw:text-ui-sm w-100" id="actionTable">
-                            <thead class="table-light">
-                                <tr>
-                                    <th scope="col">{{ __('claims.copy.po_number') }}</th>
-                                    <th scope="col">{{ __('claims.copy.supplier') }}</th>
-                                    <th scope="col">{{ __('claims.copy.inspection_date') }}</th>
-                                    <th scope="col" class="text-center">{{ __('claims.copy.po_status') }}</th>
-                                    <th scope="col" class="text-end" style="width: 130px;">{{ __('claims.copy.action') }}</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
-                    </div>
-                </div>
-
-                {{-- Tab 2: Claim History --}}
-                <div class="tab-pane fade" id="history" role="tabpanel" aria-labelledby="history-tab" tabindex="0">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0 tw:text-ui-sm w-100" id="historyTable">
-                            <thead class="table-light">
-                                <tr>
-                                    <th scope="col">{{ __('claims.copy.claim_id') }}</th>
-                                    <th scope="col">{{ __('claims.copy.po_number') }}</th>
-                                    <th scope="col">{{ __('claims.copy.supplier') }}</th>
-                                    <th scope="col">{{ __('claims.copy.date_submitted') }}</th>
-                                    <th scope="col">
-                                        {{ __('claims.copy.response_deadline') }}
-                                        <x-ui.icon name="info" class="ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="{{ __('claims.copy.deadline_for_supplier_to_formally_respond_to_material_claims') }}" />
-                                    </th>
-                                    <th scope="col" class="text-center">{{ __('claims.copy.claim_status') }}</th>
-                                    <th scope="col" class="text-end" style="width: 80px;">{{ __('claims.copy.action') }}</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
-                    </div>
-                </div>
+                <x-ui.data-table>
+                    <table class="table table-hover align-middle mb-0 tw:text-ui-sm w-100" id="actionTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col">{{ __('claims.copy.po_number') }}</th>
+                                <th scope="col">{{ __('claims.copy.supplier') }}</th>
+                                <th scope="col">{{ __('claims.copy.inspection_date') }}</th>
+                                <th scope="col" class="text-center">{{ __('claims.copy.po_status') }}</th>
+                                <th scope="col" class="text-end" style="width: 130px;">{{ __('claims.copy.action') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </x-ui.data-table>
             </div>
         </div>
-    </x-ui.card>
+
+        {{-- Tab 2: Claim History --}}
+        <div class="tab-pane fade" id="history" role="tabpanel" aria-labelledby="history-tab" tabindex="0">
+            <x-ui.data-table>
+                <table class="table table-hover align-middle mb-0 tw:text-ui-sm w-100" id="historyTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col">{{ __('claims.copy.claim_id') }}</th>
+                            <th scope="col">{{ __('claims.copy.po_number') }}</th>
+                            <th scope="col">{{ __('claims.copy.supplier') }}</th>
+                            <th scope="col">{{ __('claims.copy.date_submitted') }}</th>
+                            <th scope="col">
+                                {{ __('claims.copy.response_deadline') }}
+                                <x-ui.icon name="info" class="ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="{{ __('claims.copy.deadline_for_supplier_to_formally_respond_to_material_claims') }}" />
+                            </th>
+                            <th scope="col" class="text-center">{{ __('claims.copy.claim_status') }}</th>
+                            <th scope="col" class="text-end" style="width: 80px;">{{ __('claims.copy.action') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </x-ui.data-table>
+        </div>
+    </div>
 </div>
 @endsection
 

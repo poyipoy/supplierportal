@@ -2035,6 +2035,197 @@ canvas[data-adasi-chart-focusable]:focus-visible {
         font-size: var(--ui-font-size-sm);
         padding: var(--ui-table-cell-block, .625rem) var(--ui-table-cell-inline, .875rem);
     }
+/* Pagination: one skin for the Laravel view (resources/views/vendor/pagination) and for
+   DataTables' Bootstrap pager. Both render ul.pagination > li.page-item > .page-link. */
+.pagination {
+        --bs-pagination-padding-x: .625rem;
+        --bs-pagination-padding-y: 0;
+        --bs-pagination-font-size: var(--ui-font-size-xs);
+        --bs-pagination-color: var(--md-on-surface);
+        --bs-pagination-bg: var(--md-surface);
+        --bs-pagination-border-color: var(--md-outline);
+        --bs-pagination-border-radius: var(--ui-radius-control);
+        --bs-pagination-hover-color: var(--md-primary);
+        --bs-pagination-hover-bg: var(--md-surface-container);
+        --bs-pagination-hover-border-color: var(--md-outline);
+        --bs-pagination-focus-color: var(--md-primary);
+        --bs-pagination-focus-bg: var(--md-surface-container);
+        --bs-pagination-focus-box-shadow: none;
+        --bs-pagination-active-color: var(--md-on-primary);
+        --bs-pagination-active-bg: var(--md-primary);
+        --bs-pagination-active-border-color: var(--md-primary);
+        --bs-pagination-disabled-color: var(--md-on-surface-variant);
+        --bs-pagination-disabled-bg: var(--md-surface-container-low);
+        --bs-pagination-disabled-border-color: var(--md-outline-variant);
+        align-items: center;
+        flex-wrap: wrap;
+        gap: .25rem;
+        margin: 0;
+    }
+.pagination .page-item .page-link {
+        align-items: center;
+        border-radius: var(--ui-radius-control);
+        display: inline-flex;
+        font-variant-numeric: tabular-nums;
+        font-weight: 600;
+        gap: .375rem;
+        height: var(--ui-control-height-sm);
+        justify-content: center;
+        line-height: 1;
+        margin-left: 0;
+        min-width: var(--ui-control-height-sm);
+        transition-duration: var(--ui-motion-fast);
+        transition-property: color, background-color, border-color, box-shadow;
+        transition-timing-function: var(--ui-easing-standard);
+    }
+.pagination .page-item .page-link:focus-visible {
+        box-shadow:
+            0 0 0 var(--ui-focus-ring-offset) var(--md-surface),
+            0 0 0 calc(var(--ui-focus-ring-offset) + var(--ui-focus-ring-width)) var(--md-primary);
+    }
+.pagination .page-item.active .page-link {
+        font-weight: 700;
+    }
+.pagination .page-item:is([aria-hidden="true"], [id$="_ellipsis"]) .page-link {
+        background: transparent;
+        border-color: transparent;
+        min-width: 1.5rem;
+    }
+.ui-pagination {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: .5rem 1rem;
+        justify-content: space-between;
+        width: 100%;
+    }
+.ui-pagination__summary {
+        color: var(--md-on-surface-variant);
+        font-size: var(--ui-font-size-xs);
+        font-variant-numeric: tabular-nums;
+        margin: 0;
+    }
+/* DataTables: same selectors as dataTables.bootstrap5.css (loaded earlier), so source order wins. */
+div.dataTables_wrapper div.dataTables_paginate ul.pagination {
+        justify-content: flex-end;
+        margin: 0;
+    }
+/* Bootstrap's -12px row margins (offset by +12px column padding) made every row wider than the scroll container. */
+.dataTables_wrapper > .row {
+        --bs-gutter-x: 0;
+    }
+/* Default Bootstrap dom: the last .row holds info + pager and becomes the table footer. */
+.dataTables_wrapper > .row:has(.dataTables_info, .dataTables_paginate) {
+        align-items: center;
+        background: var(--md-surface-container-low);
+        border-top: 1px solid var(--md-outline-variant);
+        flex-wrap: wrap;
+        gap: .5rem 1rem;
+        justify-content: space-between;
+        margin: 0;
+        padding: var(--ui-density-panel-block, .875rem) var(--ui-density-panel-inline, 1rem);
+    }
+.dataTables_wrapper > .row:has(.dataTables_info, .dataTables_paginate) > * {
+        flex: 0 1 auto;
+        padding-inline: 0;
+        width: auto;
+    }
+.dataTables_wrapper > .row:has(.dataTables_info, .dataTables_paginate) :is(.dataTables_info, .dataTables_paginate) {
+        padding: 0;
+    }
+.dataTables_wrapper .dataTables_info {
+        font-size: var(--ui-font-size-xs);
+        font-variant-numeric: tabular-nums;
+    }
+/* dataTables.bootstrap5.css gives table.dataTable a 6px !important margin; it would float the footer bar off the table. */
+.ui-data-table .dataTables_wrapper table.dataTable {
+        margin-bottom: 0 !important;
+    }
+/* DataTables renders Previous/Next as plain text; draw the same chevrons the Laravel view uses. */
+.dataTables_paginate .page-item:is(.previous, .next) .page-link::before,
+    .dataTables_paginate .page-item:is(.previous, .next) .page-link::after {
+        border: solid currentColor;
+        border-width: 0 1.5px 1.5px 0;
+        content: none;
+        display: inline-block;
+        height: .4375rem;
+        width: .4375rem;
+    }
+.dataTables_paginate .page-item.previous .page-link::before {
+        content: '';
+        transform: translateX(.0625rem) rotate(135deg);
+    }
+.dataTables_paginate .page-item.next .page-link::after {
+        content: '';
+        transform: translateX(-.0625rem) rotate(-45deg);
+    }
+/* dom: 'rtip' has no rows: info and pager are siblings of the table, so the wrapper becomes a grid. */
+.dataTables_wrapper:not(:has(> .row)) {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+.dataTables_wrapper:not(:has(> .row)) > table {
+        grid-column: 1 / -1;
+    }
+.dataTables_wrapper:not(:has(> .row)) > :is(.dataTables_info, .dataTables_paginate) {
+        align-items: center;
+        background: var(--md-surface-container-low);
+        border-top: 1px solid var(--md-outline-variant);
+        display: flex;
+        margin: 0;
+        padding: var(--ui-density-panel-block, .875rem) var(--ui-density-panel-inline, 1rem);
+    }
+.dataTables_wrapper:not(:has(> .row)) > .dataTables_paginate {
+        justify-content: flex-end;
+    }
+/* One page: the summary stays, the pager goes (class toggled on draw by layouts/app.blade.php). */
+.dataTables_wrapper.ui-dt-single-page .dataTables_paginate {
+        display: none;
+    }
+.dataTables_wrapper.ui-dt-single-page:not(:has(> .row)) > .dataTables_info {
+        grid-column: 1 / -1;
+    }
+@media (max-width: 575.98px) {
+    .ui-pagination {
+        flex-direction: column;
+        justify-content: center;
+        text-align: center;
+    }
+    .pagination,
+    div.dataTables_wrapper div.dataTables_paginate ul.pagination {
+        justify-content: center;
+    }
+    /* Phones: Previous, the current page with its direct neighbours, Next. Keeps the pager on one row. */
+    .pagination:has(> .active) > .page-item:not(.previous, .next, .active, :has(+ .active), .active + .page-item) {
+        display: none;
+    }
+    .dataTables_wrapper > .row:has(.dataTables_info, .dataTables_paginate) {
+        justify-content: center;
+        text-align: center;
+    }
+    .dataTables_wrapper:not(:has(> .row)) {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .dataTables_wrapper:not(:has(> .row)) > :is(.dataTables_info, .dataTables_paginate) {
+        justify-content: center;
+    }
+}
+@media (any-pointer: coarse) {
+    .pagination .page-item .page-link {
+        height: var(--ui-control-height-md);
+        min-width: var(--ui-control-height-md);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .pagination .page-item .page-link {
+        transition: none;
+    }
+}
+@media (forced-colors: active) {
+    .pagination .page-item.active .page-link {
+        border-width: 2px;
+    }
+}
 .qc-spec-grid,
     .qc-dimension-grid {
         display: grid;

@@ -346,6 +346,24 @@
             new MutationObserver((records) => {
                 records.forEach((record) => record.addedNodes.forEach(labelDataTableSearch));
             }).observe(document.documentElement, { childList: true, subtree: true });
+
+            // A single page of results keeps the summary but drops the pager (see .ui-dt-single-page in app.css).
+            // The pager also becomes a labelled navigation landmark, like the Laravel pagination view.
+            const paginationLabel = @js(__('pagination.navigation'));
+            window.jQuery(document).on('draw.dt', (event, settings) => {
+                const wrapper = settings?.nTableWrapper;
+                if (!wrapper) return;
+
+                const pages = new window.jQuery.fn.dataTable.Api(settings).page.info().pages;
+                wrapper.classList.toggle('ui-dt-single-page', pages <= 1);
+
+                const pager = wrapper.querySelector('.dataTables_paginate');
+                if (pager && !pager.hasAttribute('role')) {
+                    const title = wrapper.closest('.ui-data-table')?.querySelector('.ui-data-table__header h2')?.textContent.trim();
+                    pager.setAttribute('role', 'navigation');
+                    pager.setAttribute('aria-label', title ? `${paginationLabel}: ${title}` : paginationLabel);
+                }
+            });
         }
     </script>
     <!-- SweetAlert2 JS -->

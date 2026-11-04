@@ -1,3 +1,6 @@
+@php
+    $masterRoutePrefix = $masterRoutePrefix ?? 'admin';
+@endphp
 <div data-exchange-rates-restored="{{ $activeTab === 'annual' && $annualHasErrors ? 'true' : 'false' }}">
 @if($activeTab === 'annual')
         @include('admin.exchange-rates._annual_matrix', ['annualManagement' => true])
@@ -14,13 +17,13 @@
 
     <x-ui.toolbar aria-label="{{ __('admin.copy.exchange_rate_filters') }}">
         <x-slot:filters>
-            <form method="GET" action="{{ route('admin.exchange-rates.index') }}" class="tw:flex tw:flex-wrap tw:items-end tw:gap-2" data-server-tabs-form>
+            <form method="GET" action="{{ route($masterRoutePrefix.'.exchange-rates.index') }}" class="tw:flex tw:flex-wrap tw:items-end tw:gap-2" data-server-tabs-form>
                 <input type="hidden" name="tab" value="effective">
                 <label class="tw:grid tw:gap-1 tw:text-ui-xs tw:font-medium" for="currencyFilter">{{ __('admin.copy.currency') }}
                     <select name="currency" id="currencyFilter" class="form-select form-select-sm tw:min-w-40"><option value="">{{ __('admin.copy.all_currencies') }}</option>@foreach(\App\Models\ExchangeRate::CURRENCIES as $currency)<option value="{{ $currency }}" @selected(request('currency') === $currency)>{{ \App\Models\ExchangeRate::currencyLabel($currency) }}</option>@endforeach</select>
                 </label>
                 <x-ui.button type="submit" variant="primary" size="sm">{{ __('admin.copy.apply_filter') }}</x-ui.button>
-                @if(request('currency'))<x-ui.button :href="route('admin.exchange-rates.index', ['tab' => 'effective'])" data-exchange-rates-link variant="ghost" size="sm">{{ __('admin.copy.clear') }}</x-ui.button>@endif
+                @if(request('currency'))<x-ui.button :href="route($masterRoutePrefix.'.exchange-rates.index', ['tab' => 'effective'])" data-exchange-rates-link variant="ghost" size="sm">{{ __('admin.copy.clear') }}</x-ui.button>@endif
             </form>
         </x-slot:filters>
     </x-ui.toolbar>

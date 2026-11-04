@@ -15,6 +15,7 @@ return [
         'claim_id' => 'Claim ID',
         'claim_initiation_required' => 'Claim initiation required',
         'claim_particulars' => 'Claim Particulars',
+        'claim_queues' => 'Claim queues',
         'claim_resolution_action' => 'Claim Resolution Action',
         'claim_resolved' => 'Claim resolved',
         'claim_status' => 'Claim Status',

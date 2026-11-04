@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\ResolvesMasterDataRoutes;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreAnnualExchangeRatesRequest;
 use App\Models\AnnualExchangeRate;
@@ -12,17 +13,22 @@ use Illuminate\Database\QueryException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ViewErrorBag;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class ExchangeRateController extends Controller
 {
+    use ResolvesMasterDataRoutes;
+
     /**
      * Display a listing of the exchange rates.
      */
     public function index(Request $request)
     {
+        Gate::authorize('viewAny', ExchangeRate::class);
+
         $request->validate([
             'currency' => ['nullable', Rule::in(ExchangeRate::CURRENCIES)],
         ]);
@@ -114,6 +120,8 @@ class ExchangeRateController extends Controller
 
     private function indexResponse(Request $request, array $data)
     {
+        $data['masterRoutePrefix'] = $this->masterRoutePrefix();
+
         if (ServerTabsResponse::wants($request)) {
             $data['regionalFormatter'] = app(RegionalDisplayFormatter::class);
 
@@ -129,11 +137,13 @@ class ExchangeRateController extends Controller
 
     public function storeAnnual(StoreAnnualExchangeRatesRequest $request)
     {
+        Gate::authorize('create', ExchangeRate::class);
+
         $data = $request->validated();
         $conflict = fn () => ValidationException::withMessages((int) $data['expected_revision'] === 0
             ? ['year' => __('annual_rates.year_exists', ['year' => $data['year']])]
             : ['expected_revision' => __('annual_rates.conflict')])
-            ->errorBag('annualRates')->redirectTo(route('admin.exchange-rates.index', ['tab' => 'annual']));
+            ->errorBag('annualRates')->redirectTo(route($this->masterRoutePrefix().'.exchange-rates.index', ['tab' => 'annual']));
         try {
             DB::transaction(function () use ($data, $request, $conflict): void {
                 $latest = AnnualExchangeRate::where('year', $data['year'])->orderByDesc('revision')->lockForUpdate()->first();
@@ -157,10 +167,10 @@ class ExchangeRateController extends Controller
             }
 
             throw ValidationException::withMessages(['expected_revision' => __('annual_rates.busy')])
-                ->errorBag('annualRates')->redirectTo(route('admin.exchange-rates.index', ['tab' => 'annual']));
+                ->errorBag('annualRates')->redirectTo(route($this->masterRoutePrefix().'.exchange-rates.index', ['tab' => 'annual']));
         }
 
-        $redirect = route('admin.exchange-rates.index', ['tab' => 'annual', 'annual_page' => $this->annualPageForYear((int) $data['year'])]);
+        $redirect = route($this->masterRoutePrefix().'.exchange-rates.index', ['tab' => 'annual', 'annual_page' => $this->annualPageForYear((int) $data['year'])]);
         $message = __('annual_rates.saved', ['year' => $data['year']]);
         if ($request->expectsJson()) {
             return response()->json(compact('redirect', 'message'));
@@ -179,6 +189,8 @@ class ExchangeRateController extends Controller
      */
     public function store(Request $request)
     {
+        Gate::authorize('create', ExchangeRate::class);
+
         $request->validate([
             'currency' => ['required', Rule::in(ExchangeRate::CURRENCIES)],
             'rate_to_idr' => 'required|numeric|min:1',
@@ -194,7 +206,7 @@ class ExchangeRateController extends Controller
 
         $message = __('admin.feedback.rate_added', ['currency' => $request->currency]);
         if ($request->expectsJson()) {
-            return response()->json(['redirect' => route('admin.exchange-rates.index', ['tab' => 'effective']), 'message' => $message]);
+            return response()->json(['redirect' => route($this->masterRoutePrefix().'.exchange-rates.index', ['tab' => 'effective']), 'message' => $message]);
         }
 
         return back()->with('success', $message);

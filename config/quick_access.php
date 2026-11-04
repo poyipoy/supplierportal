@@ -163,6 +163,12 @@ return [
                 'route' => 'exports.index',
                 'active' => 'exports.*',
             ],
+            'purchasing.exchange-rates' => [
+                'label' => 'navigation.quick.exchange_rates',
+                'icon' => 'badge-dollar-sign',
+                'route' => 'purchasing.master-data.exchange-rates.index',
+                'active' => 'purchasing.master-data.exchange-rates.*',
+            ],
         ],
         'supplier' => [
             'local' => [

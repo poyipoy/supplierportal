@@ -510,6 +510,8 @@ Route::prefix(PortalPath::prefix())->group(function () {
         Route::post('/reference-prices/{referencePrice}/supersede', [MaterialReferencePriceController::class, 'supersede'])->name('reference-prices.supersede');
         Route::post('/reference-prices/{referencePrice}/void', [MaterialReferencePriceController::class, 'void'])->name('reference-prices.void');
         Route::patch('/reference-prices/{referencePrice}/notes', [MaterialReferencePriceController::class, 'notes'])->name('reference-prices.notes');
+        Route::post('exchange-rates/annual', [ExchangeRateController::class, 'storeAnnual'])->name('exchange-rates.annual.store');
+        Route::resource('exchange-rates', ExchangeRateController::class)->only(['index', 'store']);
     });
 
     Route::middleware(['auth', 'role:purchasing', 'purchasing.navigation'])->prefix('purchasing')->name('purchasing.')->group(function () {

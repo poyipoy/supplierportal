@@ -165,7 +165,9 @@ Pakai ulang sebelum membuat markup baru. Mengubah props atau markup di sini meng
 | `metric-card` | Ringkasan angka berwarna tone. Jangan membangun dinding KPI di atas tabel operasional |
 | `alert` | `tone` info/success/warning/error, border + container + ikon; `dismissible` |
 | `dialog` / `drawer` | `name` wajib; `maxWidth` sm–2xl; drawer `side` right default. Fokus dikelola, harus muat di viewport |
-| `tabs`, `breadcrumb`, `pagination`, `empty-state`, `skeleton`, `widget-skeleton` | Navigasi dan state standar |
+| `tabs`, `breadcrumb`, `empty-state`, `skeleton`, `widget-skeleton` | Navigasi dan state standar |
+| `tab-list` | Trigger tab Bootstrap (`data-bs-toggle="tab"`) berbentuk segmented pill, **di luar kartu dan di atas** `x-ui.data-table`; pola yang sama dengan Price Comparison dan DRP Paid. Props: `label`, `tabs` (`id`, `label`, `icon`, `count`, `tone` error/warning yang hanya tampil bila count > 0), `active`; `id` menamai pane (`#id`) dan trigger (`#id-tab`). Tampilan terpilih hanya lewat `aria-selected`, tetapi class `active` polos wajib ada pada trigger terpilih agar plugin Bootstrap tahu pane mana yang harus disembunyikan. Chip aktif putih solid berteks primary (kontras AA). Di layar sempit tab membungkus penuh lebar; tinggi 2.125rem (2.5rem pada pointer kasar). Dipakai Purchasing Material Claims dan QC Inspections; penjaga `ClaimAndInspectionListLayoutTest` |
+| pagination | Bukan komponen `x-ui.*` (`x-ui.pagination` hanya pembungkus `<nav>` dan tidak dipakai). Satu view `resources/views/vendor/pagination/tailwind.blade.php` melayani semua `->links()`; `pagination::bootstrap-5` hanya meneruskan ke sana. Markup `ul.pagination > li.page-item > .page-link` identik dengan keluaran DataTables, sehingga satu skin di `app.css` menata keduanya (tombol terpisah, halaman aktif terisi primary, ringkasan kiri dan pager kanan). Jendela nomor: halaman pertama, terakhir, aktif ±1; `onEachSide()` diabaikan. Ringkasan total selalu tampil bila ada data; tombol hanya bila lebih dari 1 halaman (DataTables: class `ui-dt-single-page` dari handler `draw.dt` di `layouts/app.blade.php`). Halaman dengan dua pager wajib memberi `['label' => ...]` agar landmark unik. Di bawah 576px hanya Previous, halaman aktif beserta tetangganya, dan Next. Tinggi 2.125rem (2.5rem pada pointer kasar). Penjaga: `PaginationViewTest` |
 | `input`, `textarea`, `select`, `multi-select`, `searchable-select`, `switch`, `field-error` | Kontrol form; border `--ui-input-border`, fokus `--ui-input-focus` |
 | `date-picker` / `date-range-picker` | **Wajib** untuk semua tanggal. Dilarang menulis `<input type="date">` langsung di halaman. Di loop/modal, beri `id` bersuffix unik. `allowedDaysOfWeek` untuk jadwal fisik (Rabu), dengan backend tetap memvalidasi |
 | `file-upload` | Menampilkan error dari event `adasi:form-errors`. Form dengan upload wajib `data-async-submit` |
@@ -192,6 +194,7 @@ Komponen kalender sengaja merender native `type="date"` sebagai dasar progressiv
 - Aksi utama baris terlihat; aksi sekunder di overflow/kebab menu.
 - Toolbar dan header tabel boleh sticky untuk daftar panjang.
 - Volume tinggi memakai DataTables server-side; sisanya pagination server-rendered. Semua daftar wajib punya pencarian dan filter.
+- **Tabel DataTables selalu di dalam `x-ui.data-table`** (di setiap pane bila halaman bertab, dengan `x-ui.tab-list` di atasnya). Padding, ukuran font, footer, dan pager kontrol DataTables (`Show`, `Search`, `Showing`) hanya berlaku di dalam `.ui-data-table`; membungkus tabel dengan `.table-responsive` atau kartu sendiri membuat kontrolnya menempel di tepi kotak dan menumpuk bingkai.
 
 ### 6.3 Form
 

@@ -3,9 +3,9 @@
 return [
     'search' => 'Cari:',
     'lengthMenu' => 'Tampilkan _MENU_ baris',
-    'info' => 'Menampilkan _START_ hingga _END_ dari _TOTAL_ baris',
-    'infoEmpty' => 'Menampilkan 0 hingga 0 dari 0 baris',
-    'infoFiltered' => '(disaring dari total _MAX_ baris)',
+    'info' => 'Menampilkan _START_ sampai _END_ dari _TOTAL_ hasil',
+    'infoEmpty' => 'Menampilkan 0 sampai 0 dari 0 hasil',
+    'infoFiltered' => '(disaring dari total _MAX_ hasil)',
     'emptyTable' => 'Tidak ada data dalam tabel',
     'zeroRecords' => 'Tidak ada data yang sesuai',
     'loadingRecords' => 'Memuat...',

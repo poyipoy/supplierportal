@@ -1,4 +1,5 @@
 @php
+    $masterRoutePrefix = $masterRoutePrefix ?? 'admin';
     $annualManagement = $annualManagement ?? false;
     $annualEditYear = $annualEditYear ?? null;
     $annualEditing = $annualManagement && $annualEditYear !== null;
@@ -12,11 +13,11 @@
 <x-ui.data-table :title="__('annual_rates.title')" :description="$annualManagement ? __('annual_rates.units') : __('annual_rates.description')">
     <x-slot:toolbar>
         @if($annualManagement)
-            <x-ui.button :href="route('admin.exchange-rates.index', [...$annualListQuery, 'annual_new' => 1])" data-exchange-rates-link :disabled="$annualEditing" :class="$annualEditing ? 'tw:opacity-50 tw:cursor-not-allowed' : ''" size="sm">
+            <x-ui.button :href="route($masterRoutePrefix.'.exchange-rates.index', [...$annualListQuery, 'annual_new' => 1])" data-exchange-rates-link :disabled="$annualEditing" :class="$annualEditing ? 'tw:opacity-50 tw:cursor-not-allowed' : ''" size="sm">
                 <x-ui.icon name="plus" /> {{ __('annual_rates.add_year') }}
             </x-ui.button>
         @else
-            <x-ui.button :href="route('admin.exchange-rates.index', ['tab' => 'annual'])" variant="primary" size="sm">
+            <x-ui.button :href="route($masterRoutePrefix.'.exchange-rates.index', ['tab' => 'annual'])" variant="primary" size="sm">
                 <x-ui.icon name="sliders" size="sm" />
                 <span>{{ __('annual_rates.manage') }}</span>
             </x-ui.button>
@@ -25,7 +26,7 @@
 
     @if($annualManagement)
         <x-slot:filters>
-            <form method="GET" action="{{ route('admin.exchange-rates.index') }}" class="tw:flex tw:flex-wrap tw:items-end tw:gap-2" data-track-unsaved="false" data-server-tabs-form>
+            <form method="GET" action="{{ route($masterRoutePrefix.'.exchange-rates.index') }}" class="tw:flex tw:flex-wrap tw:items-end tw:gap-2" data-track-unsaved="false" data-server-tabs-form>
                 <input type="hidden" name="tab" value="annual">
                 <label for="annual-year-filter" class="tw:grid tw:gap-1 tw:text-ui-xs tw:font-medium">
                     {{ __('annual_rates.filter_year') }}
@@ -33,7 +34,7 @@
                 </label>
                 <x-ui.button type="submit" variant="outline" size="sm" :disabled="$annualEditing">{{ __('admin.copy.apply_filter') }}</x-ui.button>
                 @if(request()->filled('annual_year'))
-                    <x-ui.button :href="route('admin.exchange-rates.index', ['tab' => 'annual'])" data-exchange-rates-link variant="ghost" size="sm" :disabled="$annualEditing">{{ __('admin.copy.clear') }}</x-ui.button>
+                    <x-ui.button :href="route($masterRoutePrefix.'.exchange-rates.index', ['tab' => 'annual'])" data-exchange-rates-link variant="ghost" size="sm" :disabled="$annualEditing">{{ __('admin.copy.clear') }}</x-ui.button>
                 @endif
             </form>
             @if($errors->getBag('annualFilters')->any())
@@ -43,7 +44,7 @@
     @endif
 
     @if($annualManagement && $annualNew && ! $annualEditing)
-        <form method="GET" action="{{ route('admin.exchange-rates.index') }}" class="tw:flex tw:flex-wrap tw:items-end tw:gap-3 tw:border-b tw:border-outline-variant tw:p-4" data-track-unsaved="false" data-server-tabs-form>
+        <form method="GET" action="{{ route($masterRoutePrefix.'.exchange-rates.index') }}" class="tw:flex tw:flex-wrap tw:items-end tw:gap-3 tw:border-b tw:border-outline-variant tw:p-4" data-track-unsaved="false" data-server-tabs-form>
             @foreach($annualListQuery as $key => $value)<input type="hidden" name="{{ $key }}" value="{{ $value }}">@endforeach
             <input type="hidden" name="annual_new" value="1">
             <label for="annual-new-year" class="tw:grid tw:gap-1 tw:text-ui-sm tw:font-medium">
@@ -51,7 +52,7 @@
                 <input id="annual-new-year" name="annual_new_year" type="text" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" value="{{ is_scalar(request('annual_new_year')) ? request('annual_new_year') : '' }}" class="form-control ui-tabular-nums tw:w-32" required autofocus>
             </label>
             <x-ui.button type="submit" variant="outline">{{ __('annual_rates.continue') }}</x-ui.button>
-            <x-ui.button :href="route('admin.exchange-rates.index', $annualListQuery)" data-exchange-rates-link variant="ghost">{{ __('admin.copy.cancel') }}</x-ui.button>
+            <x-ui.button :href="route($masterRoutePrefix.'.exchange-rates.index', $annualListQuery)" data-exchange-rates-link variant="ghost">{{ __('admin.copy.cancel') }}</x-ui.button>
         </form>
     @endif
 
@@ -68,7 +69,7 @@
                 @endif
                 @if($annualRecoveryYear !== null)
                     @php($annualRecoveryQuery = $annualRates->get($annualRecoveryYear, collect())->isEmpty() ? ['tab' => 'annual', 'annual_new' => 1, 'annual_new_year' => $annualRecoveryYear] : ['tab' => 'annual', 'annual_edit_year' => $annualRecoveryYear])
-                    <a class="ui-focus-ring tw:mt-2 tw:inline-block tw:font-semibold" data-exchange-rates-link href="{{ route('admin.exchange-rates.index', $annualRecoveryQuery) }}#annual-rate-USD-{{ $annualRecoveryYear }}">{{ __('annual_rates.reload_latest', ['year' => $annualRecoveryYear]) }}</a>
+                    <a class="ui-focus-ring tw:mt-2 tw:inline-block tw:font-semibold" data-exchange-rates-link href="{{ route($masterRoutePrefix.'.exchange-rates.index', $annualRecoveryQuery) }}#annual-rate-USD-{{ $annualRecoveryYear }}">{{ __('annual_rates.reload_latest', ['year' => $annualRecoveryYear]) }}</a>
                 @endif
             </x-ui.alert>
         </div>
@@ -77,7 +78,7 @@
     @if($annualEditing)
         <p id="annual-rate-hint" class="tw:m-0 tw:border-b tw:border-outline-variant tw:px-4 tw:py-3 tw:text-ui-xs tw:text-on-surface-variant">{{ __('annual_rates.number_hint') }} {{ __('annual_rates.finish_edit') }}</p>
         @php($annualReviewQuery = $annualNew ? ['tab' => 'annual', 'annual_new' => 1, 'annual_new_year' => $annualEditYear] : ['tab' => 'annual', 'annual_edit_year' => $annualEditYear])
-        <form id="annual-rate-form" method="POST" action="{{ route('admin.exchange-rates.annual.store') }}" data-track-unsaved="true" data-exchange-rates-save data-async-files-hint="false" data-exchange-rates-review-url="{{ route('admin.exchange-rates.index', $annualReviewQuery) }}" data-exchange-rates-review-label="{{ __('annual_rates.reload_latest', ['year' => $annualEditYear]) }}">
+        <form id="annual-rate-form" method="POST" action="{{ route($masterRoutePrefix.'.exchange-rates.annual.store') }}" data-track-unsaved="true" data-exchange-rates-save data-async-files-hint="false" data-exchange-rates-review-url="{{ route($masterRoutePrefix.'.exchange-rates.index', $annualReviewQuery) }}" data-exchange-rates-review-label="{{ __('annual_rates.reload_latest', ['year' => $annualEditYear]) }}">
             @csrf
             <input type="hidden" name="year" value="{{ $annualEditYear }}">
             <input type="hidden" name="expected_revision" value="{{ $annualRevision }}">
@@ -101,7 +102,7 @@
                                     @endif
                                 @else
                                     @php($dashboardYearQuery = $annualRates->get($matrixYear, collect())->isEmpty() ? ['tab' => 'annual', 'annual_new' => 1, 'annual_new_year' => $matrixYear] : ['tab' => 'annual', 'annual_edit_year' => $matrixYear])
-                                    <a class="ui-focus-ring" href="{{ route('admin.exchange-rates.index', $dashboardYearQuery) }}#annual-rate-USD-{{ $matrixYear }}" aria-label="{{ __('annual_rates.edit_year', ['year' => $matrixYear]) }}">{{ $matrixYear }}</a>
+                                    <a class="ui-focus-ring" href="{{ route($masterRoutePrefix.'.exchange-rates.index', $dashboardYearQuery) }}#annual-rate-USD-{{ $matrixYear }}" aria-label="{{ __('annual_rates.edit_year', ['year' => $matrixYear]) }}">{{ $matrixYear }}</a>
                                 @endif
                             </th>
                         @endforeach
@@ -141,10 +142,10 @@
                                     @if($annualEditing && $annualEditYear === (int) $matrixYear)
                                         <div class="tw:flex tw:flex-wrap tw:justify-end tw:gap-2">
                                             <x-ui.button type="submit" size="sm"><x-ui.icon name="save" /> {{ __('annual_rates.save_short') }}</x-ui.button>
-                                            <x-ui.button :href="route('admin.exchange-rates.index', $annualListQuery)" data-exchange-rates-link variant="ghost" size="sm">{{ __('admin.copy.cancel') }}</x-ui.button>
+                                            <x-ui.button :href="route($masterRoutePrefix.'.exchange-rates.index', $annualListQuery)" data-exchange-rates-link variant="ghost" size="sm">{{ __('admin.copy.cancel') }}</x-ui.button>
                                         </div>
                                     @else
-                                        <x-ui.button :href="route('admin.exchange-rates.index', [...$annualListQuery, 'annual_edit_year' => $matrixYear]).'#annual-rate-USD-'.$matrixYear" data-exchange-rates-link :disabled="$annualEditing" :class="$annualEditing ? 'tw:opacity-50 tw:cursor-not-allowed' : ''" variant="outline" size="sm" :aria-label="__('annual_rates.edit_year', ['year' => $matrixYear])">{{ __('annual_rates.edit') }}</x-ui.button>
+                                        <x-ui.button :href="route($masterRoutePrefix.'.exchange-rates.index', [...$annualListQuery, 'annual_edit_year' => $matrixYear]).'#annual-rate-USD-'.$matrixYear" data-exchange-rates-link :disabled="$annualEditing" :class="$annualEditing ? 'tw:opacity-50 tw:cursor-not-allowed' : ''" variant="outline" size="sm" :aria-label="__('annual_rates.edit_year', ['year' => $matrixYear])">{{ __('annual_rates.edit') }}</x-ui.button>
                                     @endif
                                 </td>
                             @endforeach

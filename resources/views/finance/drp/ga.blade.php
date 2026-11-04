@@ -60,7 +60,7 @@
                     </tbody>
                 </table>
             </div>
-            {{ $eligibleClaims->links() }}
+            {{ $eligibleClaims->links('pagination::tailwind', ['label' => __('pagination.labels.candidates')]) }}
             @if($eligibleClaims->isNotEmpty())
                 <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-3 tw:mt-3">
                     <input type="text" name="notes" class="form-control form-control-sm" maxlength="1000" aria-label="{{ __('common.final_review.batch_notes') }}" placeholder="{{ __('common.final_review.batch_notes') }}">
@@ -122,7 +122,7 @@
 
         @if($batches->hasPages())
             <x-slot:pagination>
-                {{ $batches->links() }}
+                {{ $batches->links('pagination::tailwind', ['label' => __('pagination.labels.batches')]) }}
             </x-slot:pagination>
         @endif
     </x-ui.data-table>

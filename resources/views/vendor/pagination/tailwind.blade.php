@@ -1,62 +1,83 @@
-@if ($paginator->hasPages())
-    <nav role="navigation" aria-label="{{ __('pagination.navigation') }}" class="tw:flex tw:flex-col tw:sm:flex-row tw:items-center tw:justify-between tw:gap-3.5 tw:w-full">
-        {{-- Results Summary --}}
-        <div class="tw:text-ui-xs tw:text-on-surface-variant tw:text-center tw:sm:text-left">
+{{--
+    The one pagination view: every ->links() call and pagination::bootstrap-5 land here.
+    Markup mirrors Bootstrap (ul.pagination > li.page-item > .page-link) so the single skin in
+    resources/css/app.css also styles DataTables' own pager. The page window (first, last,
+    current ±1) is computed here and ignores $elements, so onEachSide() has no effect.
+    Pass ['label' => ...] when a page renders more than one pager so each landmark is unique.
+--}}
+@if ($paginator->total() > 0)
+    @php
+        $current = $paginator->currentPage();
+        $last = $paginator->lastPage();
+        $window = collect([1, $last, $current - 1, $current, $current + 1])
+            ->filter(fn ($page) => $page >= 1 && $page <= $last)
+            ->unique()
+            ->sort()
+            ->values();
+
+        $items = [];
+        $previous = 0;
+        foreach ($window as $page) {
+            if ($previous && $page - $previous === 2) {
+                $items[] = $previous + 1;
+            } elseif ($previous && $page - $previous > 2) {
+                $items[] = null;
+            }
+            $items[] = $page;
+            $previous = $page;
+        }
+    @endphp
+    <nav aria-label="{{ $label ?? __('pagination.navigation') }}" class="ui-pagination">
+        <p class="ui-pagination__summary">
             {{ __('pagination.summary', ['first' => $paginator->firstItem() ?? 0, 'last' => $paginator->lastItem() ?? 0, 'total' => $paginator->total()]) }}
-        </div>
+        </p>
 
-        {{-- Page Buttons Container --}}
-        <div class="pagination tw:flex tw:items-center tw:gap-1.5 tw:flex-wrap tw:justify-center tw:m-0 tw:p-0">
-            {{-- Previous Page Link --}}
-            @if ($paginator->onFirstPage())
-                <span class="page-item disabled tw:inline-flex tw:items-center tw:gap-1.5 tw:h-8 tw:px-3 tw:rounded-ui-sm tw:border tw:border-outline/40 tw:bg-surface-container-low tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant tw:opacity-50 tw:cursor-not-allowed" aria-disabled="true" aria-label="{{ __('pagination.previous') }}">
-                    <x-ui.icon name="chevron-left" size="sm" class="tw:w-3.5 tw:h-3.5" />
-                    <span class="tw:hidden tw:sm:inline">{{ __('pagination.previous') }}</span>
-                </span>
-            @else
-                <a href="{{ $paginator->previousPageUrl() }}" rel="prev" class="page-link ui-motion ui-focus-ring tw:inline-flex tw:items-center tw:gap-1.5 tw:h-8 tw:px-3 tw:rounded-ui-sm tw:border tw:border-outline tw:bg-surface tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:hover:text-primary tw:hover:bg-surface-container tw:active:bg-surface-high tw:no-underline" aria-label="{{ __('pagination.previous') }}">
-                    <x-ui.icon name="chevron-left" size="sm" class="tw:w-3.5 tw:h-3.5" />
-                    <span class="tw:hidden tw:sm:inline">{{ __('pagination.previous') }}</span>
-                </a>
-            @endif
-
-            {{-- Numbered Page Links --}}
-            @foreach ($elements as $element)
-                {{-- "Three Dots" Separator --}}
-                @if (is_string($element))
-                    <span class="tw:inline-flex tw:items-center tw:justify-center tw:w-8 tw:h-8 tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant" aria-disabled="true">
-                        {{ $element }}
-                    </span>
+        @if ($paginator->hasPages())
+            <ul class="pagination">
+                @if ($paginator->onFirstPage())
+                    <li class="page-item previous disabled" aria-disabled="true">
+                        <span class="page-link">
+                            <x-ui.icon name="chevron-left" size="sm" class="tw:w-3.5 tw:h-3.5" />
+                            <span class="tw:sr-only tw:sm:not-sr-only">{{ __('pagination.previous') }}</span>
+                        </span>
+                    </li>
+                @else
+                    <li class="page-item previous">
+                        <a class="page-link" href="{{ $paginator->previousPageUrl() }}" rel="prev">
+                            <x-ui.icon name="chevron-left" size="sm" class="tw:w-3.5 tw:h-3.5" />
+                            <span class="tw:sr-only tw:sm:not-sr-only">{{ __('pagination.previous') }}</span>
+                        </a>
+                    </li>
                 @endif
 
-                {{-- Array Of Links --}}
-                @if (is_array($element))
-                    @foreach ($element as $page => $url)
-                        @if ($page == $paginator->currentPage())
-                            <span class="page-item active tw:inline-flex tw:items-center tw:justify-center tw:min-w-[32px] tw:h-8 tw:px-2.5 tw:rounded-ui-sm tw:border tw:border-primary tw:bg-primary tw:text-ui-xs tw:font-bold tw:text-on-primary tw:shadow-xs" aria-current="page">
-                                {{ $page }}
-                            </span>
-                        @else
-                            <a href="{{ $url }}" class="page-link ui-motion ui-focus-ring tw:inline-flex tw:items-center tw:justify-center tw:min-w-[32px] tw:h-8 tw:px-2.5 tw:rounded-ui-sm tw:border tw:border-outline tw:bg-surface tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:hover:text-primary tw:hover:bg-surface-container tw:active:bg-surface-high tw:no-underline" aria-label="{{ __('pagination.page', ['page' => $page]) }}">
-                                {{ $page }}
-                            </a>
-                        @endif
-                    @endforeach
-                @endif
-            @endforeach
+                @foreach ($items as $page)
+                    @if ($page === null)
+                        <li class="page-item disabled" aria-hidden="true"><span class="page-link">…</span></li>
+                    @elseif ($page === $current)
+                        <li class="page-item active" aria-current="page"><span class="page-link">{{ $page }}</span></li>
+                    @else
+                        <li class="page-item">
+                            <a class="page-link" href="{{ $paginator->url($page) }}" aria-label="{{ __('pagination.page', ['page' => $page]) }}">{{ $page }}</a>
+                        </li>
+                    @endif
+                @endforeach
 
-            {{-- Next Page Link --}}
-            @if ($paginator->hasMorePages())
-                <a href="{{ $paginator->nextPageUrl() }}" rel="next" class="page-link ui-motion ui-focus-ring tw:inline-flex tw:items-center tw:gap-1.5 tw:h-8 tw:px-3 tw:rounded-ui-sm tw:border tw:border-outline tw:bg-surface tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:hover:text-primary tw:hover:bg-surface-container tw:active:bg-surface-high tw:no-underline" aria-label="{{ __('pagination.next') }}">
-                    <span class="tw:hidden tw:sm:inline">{{ __('pagination.next') }}</span>
-                    <x-ui.icon name="chevron-right" size="sm" class="tw:w-3.5 tw:h-3.5" />
-                </a>
-            @else
-                <span class="page-item disabled tw:inline-flex tw:items-center tw:gap-1.5 tw:h-8 tw:px-3 tw:rounded-ui-sm tw:border tw:border-outline/40 tw:bg-surface-container-low tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant tw:opacity-50 tw:cursor-not-allowed" aria-disabled="true" aria-label="{{ __('pagination.next') }}">
-                    <span class="tw:hidden tw:sm:inline">{{ __('pagination.next') }}</span>
-                    <x-ui.icon name="chevron-right" size="sm" class="tw:w-3.5 tw:h-3.5" />
-                </span>
-            @endif
-        </div>
+                @if ($paginator->hasMorePages())
+                    <li class="page-item next">
+                        <a class="page-link" href="{{ $paginator->nextPageUrl() }}" rel="next">
+                            <span class="tw:sr-only tw:sm:not-sr-only">{{ __('pagination.next') }}</span>
+                            <x-ui.icon name="chevron-right" size="sm" class="tw:w-3.5 tw:h-3.5" />
+                        </a>
+                    </li>
+                @else
+                    <li class="page-item next disabled" aria-disabled="true">
+                        <span class="page-link">
+                            <span class="tw:sr-only tw:sm:not-sr-only">{{ __('pagination.next') }}</span>
+                            <x-ui.icon name="chevron-right" size="sm" class="tw:w-3.5 tw:h-3.5" />
+                        </span>
+                    </li>
+                @endif
+            </ul>
+        @endif
     </nav>
 @endif

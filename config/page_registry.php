@@ -48,6 +48,7 @@ return [
     '8d5efb4d-eff7-44e3-9c39-78bbff19d4ce' => 'purchasing.local-vendors.index',
     '4bbf42f7-a49f-4cbd-9b18-bc371e61e046' => 'purchasing.master-data.material-hs-code.index',
     '01d9a9b0-97c2-454d-84d0-c2dea639b31e' => 'purchasing.master-data.reference-prices.index',
+    '247c0c49-0c1c-4e6b-b994-30aa0a57783d' => 'purchasing.master-data.exchange-rates.index',
     'e07f9a63-224b-4d07-9d42-0c9e10ecbcd0' => 'purchasing.periods.index',
     '7c05c87f-d8ae-4f7d-8003-06b36d2ae324' => 'purchasing.purchase-orders.index',
     'a872af8e-3a22-4daf-9d39-04956c278873' => 'purchasing.quotations.index',

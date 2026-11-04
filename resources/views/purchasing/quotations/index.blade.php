@@ -2,53 +2,6 @@
 @section('title', __('purchasing.copy.quotation_list_adasi_portal'))
 @section('page-title', __('purchasing.copy.supplier_quotations'))
 
-@push('styles')
-    <style>
-        .quotation-pagination .pagination {
-            align-items: center;
-            justify-content: flex-end;
-            gap: .25rem;
-            margin-bottom: 0;
-        }
-
-        .quotation-pagination .page-link {
-            min-width: 2rem;
-            padding: .25rem .5rem;
-            border-radius: var(--md-shape-xs);
-            color: var(--md-primary);
-            font-size: var(--ui-font-size-xs);
-            font-weight: 600;
-            line-height: 1.2;
-            text-align: center;
-            box-shadow: none;
-        }
-
-        .quotation-pagination .page-item:first-child .page-link,
-        .quotation-pagination .page-item:last-child .page-link {
-            min-width: auto;
-            padding-inline: .5rem;
-        }
-
-        .quotation-pagination .page-item.active .page-link {
-            border-color: var(--md-primary);
-            background-color: var(--md-primary);
-            color: var(--md-on-primary);
-        }
-
-        .quotation-pagination .page-item.disabled .page-link {
-            color: var(--md-on-surface-variant);
-            background-color: var(--md-surface-container-low);
-        }
-
-        @media (max-width: 575.98px) {
-            .quotation-pagination .pagination {
-                justify-content: center;
-                flex-wrap: wrap;
-            }
-        }
-    </style>
-@endpush
-
 @section('content')
     <div class="tw:grid tw:gap-4">
         {{-- 1. Compact Page Header --}}
@@ -218,7 +171,7 @@
             </div>
 
             <x-slot:pagination>
-                <div class="quotation-pagination tw:w-full" id="quotationPaginationContainer">
+                <div class="tw:w-full" id="quotationPaginationContainer">
                     {{ $quotations->onEachSide(1)->links('pagination::bootstrap-5') }}
                 </div>
             </x-slot:pagination>

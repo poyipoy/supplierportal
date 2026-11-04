@@ -1,4 +1,4 @@
-﻿# AGENTS.md — ADASI Portal Supplier
+# AGENTS.md — ADASI Portal Supplier
 
 > Baca file ini sepenuhnya sebelum menulis satu baris kode pun.
 
@@ -77,7 +77,7 @@ Aplikasi ini server-rendered Blade tanpa API layer. Satu-satunya endpoint JSON a
 | Role | Deskripsi |
 |---|---|
 | `admin` | Kelola user, kurs, master, audit, serta modul yang secara eksplisit menerima role admin |
-| `purchasing` | PR, penawaran, PO Impor, shipment, klaim; Local PO/GR, DRP Purchasing, review registrasi/vendor sesuai route; kelola Master Material & HS Code (termasuk hapus terjaga bila tidak direferensikan) dan Master Harga Referensi |
+| `purchasing` | PR, penawaran, PO Impor, shipment, klaim; Local PO/GR, DRP Purchasing, review registrasi/vendor sesuai route; kelola Master Material & HS Code (termasuk hapus terjaga bila tidak direferensikan), Master Harga Referensi, serta Kurs (Exchange Rates) |
 | `supplier` | Portal Impor dan/atau Local Supplier menurut scope — **hanya data milik sendiri** |
 | `qc` | Input hasil inspeksi material, tentukan OK / NG |
 | `finance` | Penerimaan fisik invoice, verifikasi, DRP, voucher, settlement/refund, vendor master, Local PO/GR |
@@ -116,7 +116,7 @@ Tidak semua data supplier-facing memiliki kolom owner tersebut. `PurchaseRequisi
 
 Jalankan `SupplierDataIsolationTest` untuk Impor dan `LocalInvoiceScopeIsolationTest` untuk Local Supplier setelah mengubah boundary terkait; registrasi memiliki suite `tests/Feature/SupplierRegistration/`.
 
-Policy aktif berada di `app/Policies/` dan memakai **auto-discovery**: tidak ada array `$policies` atau `Gate::policy()`, sehingga policy harus bernama `App\Policies\<Model>Policy` agar terikat. Saat ini ada 19: `Attachment`, `Conversation`, `ExportPreset`, `GaClaim`, `GaClaimDocument`, `HsCodeRule`, `LocalInvoice`, `LocalInvoiceDocument`, `LocalInvoiceReceipt`, `LocalProcurementImport`, `LocalPoDocumentBatch`, `LocalPurchaseOrder`, `MaterialMaster`, `MaterialReferencePrice`, `Quotation`, `Shipment`, `Supplier`, `SupplierAudit`, `SupplierMasterDocument`. Pertahankan `Gate::authorize()` / `$this->authorize()` pada jalur yang sudah menggunakannya. Untuk aksi Core 2 baru, tambahkan method policy, bukan `abort_unless` inline. Sebagian besar controller Core 1 masih memakai pengecekan role/ownership inline; ikuti gaya controller yang sedang dikerjakan. Model binding/hashid bukan pengganti otorisasi.
+Policy aktif berada di `app/Policies/` dan memakai **auto-discovery**: tidak ada array `$policies` atau `Gate::policy()`, sehingga policy harus bernama `App\Policies\<Model>Policy` agar terikat. Saat ini ada 20: `Attachment`, `Conversation`, `ExchangeRate`, `ExportPreset`, `GaClaim`, `GaClaimDocument`, `HsCodeRule`, `LocalInvoice`, `LocalInvoiceDocument`, `LocalInvoiceReceipt`, `LocalProcurementImport`, `LocalPoDocumentBatch`, `LocalPurchaseOrder`, `MaterialMaster`, `MaterialReferencePrice`, `Quotation`, `Shipment`, `Supplier`, `SupplierAudit`, `SupplierMasterDocument`. Pertahankan `Gate::authorize()` / `$this->authorize()` pada jalur yang sudah menggunakannya. Untuk aksi Core 2 baru, tambahkan method policy, bukan `abort_unless` inline. Sebagian besar controller Core 1 masih memakai pengecekan role/ownership inline; ikuti gaya controller yang sedang dikerjakan. Model binding/hashid bukan pengganti otorisasi.
 
 ---
 
@@ -515,6 +515,7 @@ Sisi supplier punya modul serupa yang terbatas pada datanya sendiri: `SupplierPr
 ### Master Harga Referensi dan Master Data Material
 
 - Master Material / HS Code dikelola Admin dan Purchasing (`MaterialMasterPolicy`, `HsCodeRulePolicy`; route Purchasing `purchasing.master-data.*`, tanpa akses area Admin lain). Hapus permanen hanya bila tidak direferensikan, dua fase lewat `MasterDataDeletionService`: hapus + audit `deleted` dalam satu transaksi; penolakan (termasuk backstop FK RESTRICT) diaudit `delete_refused` setelah transaksi. Audit di `master_data_audit_logs` bersifat append-only.
+- Kurs (`ExchangeRatePolicy`): Kurs Efektif dan Matriks Kurs Tahunan dikelola Admin (`admin.exchange-rates.*`) dan Purchasing (`purchasing.master-data.exchange-rates.*`) melalui `ExchangeRateController` di bawah trait `ResolvesMasterDataRoutes`. Purchasing menaruh menu Kurs pada grup Master Data di sidebar navigasi. Role non-admin/purchasing ditolak (`403`).
 - `material_reference_prices` (Master Harga): versi append-only lewat `MaterialReferencePriceService` (create, supersede = versi lama ditutup X−1, void dengan alasan, catatan); tidak ada edit harga atau hapus. Overlap dimensi/tanggal (akhir terbuka = 9999-12-31) per material+bentuk+mata uang dicegah di bawah lock baris `material_masters`.
 - `ReferencePriceResolver` hanya membaca, memakai dimensi kunci **penawaran** (Flat: tebal; Round/Hollow: diameter luar) tanpa fallback ke PR, dan tidak pernah memblokir. `PurchaseOrderGenerationService` menulis tepat satu `award_reference_price_snapshots` per award (matched/not_available) di transaksi pembuatan PO; snapshot immutable dan PO sebelum aktivasi tidak di-backfill ("not captured"). `procurement:reconcile` melaporkan `po_missing_reference_snapshot_after_activation`.
 
@@ -775,7 +776,8 @@ Kontrak desain lengkap (nilai token, density, accent, katalog `x-ui.*`, pola hal
 | Komponen | Pakai ulang `resources/views/components/ui/` (`x-ui.button`, `x-ui.data-table`, `x-ui.page-header`, `x-ui.status-chip`, dll.) sebelum membuat markup baru |
 | Ikon | Lucide melalui `<x-ui.icon>`, yang memetakan nama `bi-*` lama ke Lucide dan jatuh ke `circle-help` bila nama tidak dikenal; jangan gunakan `bi-*` atau `<x-lucide-*>` langsung. Markup yang dibangun di JS (`innerHTML`, template string) juga memakai Lucide: render dengan `App\View\Components\Ui\Icon::html(new ComponentAttributeBag([...]))` dari blade `@php`, lalu teruskan ke script lewat `@json(...)`. Jangan menulis emoji, termasuk sebagai HTML entity (mis. `&#128200;`), di Blade maupun di string JS |
 | Date Picker / Kalender | **WAJIB** gunakan custom component `<x-ui.date-picker>` untuk single date dan `<x-ui.date-range-picker>` untuk rentang tanggal. **DILARANG KERAS** menggunakan native browser `<input type="date">` di form/modal/filter mana pun (karena tampilan inkonsisten lintas browser/OS dan merusak visual design system). Jika diletakkan di dalam perulangan atau modal, pastikan atribut `id` diberi suffix unik (mis. `id="estimated_ready_date_{{ $item->id }}"`) agar DOM ID dan controller kalender tidak bentrok |
-| Tabel | DataTables server-side — wajib untuk tabel dengan banyak baris |
+| Tabel | DataTables server-side — wajib untuk tabel dengan banyak baris. Tempatkan di dalam `x-ui.data-table` (bukan `.table-responsive`/kartu sendiri); halaman bertab memakai `x-ui.tab-list` di atas satu `x-ui.data-table` per pane, lihat [DESIGN.md](DESIGN.md) (§6.2 dan baris `tab-list`) |
+| Pagination | Satu skin untuk view Laravel (`resources/views/vendor/pagination/tailwind.blade.php`, melayani semua `->links()`) dan DataTables (CSS di `app.css`, handler `draw.dt` di `layouts/app.blade.php`). Jangan menulis CSS/markup pager lokal; kontrak lengkap di [DESIGN.md](DESIGN.md) (baris pagination), dijaga `PaginationViewTest` |
 | Chart | Bungkus setiap canvas dengan `<x-ui.chart>` (figure, ringkasan, petunjuk keyboard, slot tabel) dan bangun dataset lewat `window.AdasiChart` setelah modul app siap: warna `AdasiChart.color('series-N'\|'ok'\|'ng')` dari token `--md-chart-series-*`, seri garis dibedakan bentuk titik + dash, satu sumbu Y. Dijaga `tests/js/chart-theme-a11y.test.mjs` dan `ChartAccessibilityTest`; kontrak lengkap di DESIGN.md §7 |
 | Badge status | Ambil label/kelas dari `App\Support\StatusHelper`; perluas array/`match()` di sana, jangan tulis yang baru di view/controller. Core Impor mengembalikan class badge Bootstrap (`prBadge()`); Core Lokal mengembalikan *tone* design system untuk `x-ui.status-chip` (`localInvoiceTone()`, `localFinanceTone()`) dan label terjemahan dari `lang/*/status.php` (`localInvoiceLabel()`). Pakai pasangan yang dipakai modul Anda |
 | Notifikasi | AdasiToast untuk feedback transient; AdasiAlert/SweetAlert hanya untuk konfirmasi, prompt, atau keputusan blocking |

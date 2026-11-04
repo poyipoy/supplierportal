@@ -2,9 +2,13 @@
 @section('title', __('admin.copy.exchange_rates_adasi_portal'))
 @section('page-title', __('admin.copy.exchange_rates'))
 
+@php
+    $masterRoutePrefix = $masterRoutePrefix ?? 'admin';
+@endphp
+
 @section('content')
 <div class="tw:grid tw:gap-6">
-    <x-ui.page-header :title="__('admin.copy.exchange_rates')" :description="__('annual_rates.workspace_description')" :eyebrow="__('admin.copy.admin_finance')">
+    <x-ui.page-header :title="__('admin.copy.exchange_rates')" :description="__('annual_rates.workspace_description')" :eyebrow="$masterRoutePrefix === 'purchasing.master-data' ? __('navigation.master_data') : __('admin.copy.admin_finance')">
         <x-slot:actions><span data-exchange-rates-effective-action @if($activeTab !== 'effective') hidden @endif><x-ui.button type="button" size="sm" data-bs-toggle="modal" data-bs-target="#rateModal"><x-ui.icon name="plus" /> {{ __('admin.copy.add_effective_rate') }}</x-ui.button></span></x-slot:actions>
     </x-ui.page-header>
 
@@ -21,7 +25,7 @@
 
 <div class="modal fade" id="rateModal" tabindex="-1" aria-labelledby="rateModalTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <form action="{{ route('admin.exchange-rates.store') }}" method="POST" class="modal-content" data-exchange-rates-save data-async-files-hint="false">
+        <form action="{{ route($masterRoutePrefix.'.exchange-rates.store') }}" method="POST" class="modal-content" data-exchange-rates-save data-async-files-hint="false">
             @csrf
             <div class="modal-header"><div><h2 class="modal-title fs-6 fw-bold" id="rateModalTitle">{{ __('admin.copy.add_effective_rate') }}</h2><p class="mb-0 mt-1 small text-muted">{{ __('admin.copy.a_new_record_is_appended_existing_values_remain_unchanged') }}</p></div><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('admin.copy.close') }}"></button></div>
             <div class="modal-body tw:grid tw:gap-4"><x-ui.select name="currency" :label="__('admin.copy.currency')" :options="\App\Models\ExchangeRate::currencyOptions()" :value="old('currency')" required /><x-ui.input name="rate_to_idr" type="number" :label="__('admin.copy.rate_to_idr')" step="0.01" min="1" :placeholder="__('admin.copy.example_15500')" required /><x-ui.date-picker name="valid_from" :label="__('admin.copy.effective_date')" :value="old('valid_from', date('Y-m-d'))" required /></div>

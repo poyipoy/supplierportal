@@ -11,7 +11,7 @@ class StoreAnnualExchangeRatesRequest extends FormRequest
 
     public function authorize(): bool
     {
-        return $this->user()?->role === 'admin';
+        return (bool) ($this->user()?->is_active && in_array($this->user()?->role, ['admin', 'purchasing'], true));
     }
 
     protected function prepareForValidation(): void
@@ -47,6 +47,8 @@ class StoreAnnualExchangeRatesRequest extends FormRequest
 
     protected function getRedirectUrl(): string
     {
-        return route('admin.exchange-rates.index', ['tab' => 'annual']);
+        $prefix = str_starts_with((string) $this->route()?->getName(), 'purchasing.master-data.') ? 'purchasing.master-data' : 'admin';
+
+        return route($prefix.'.exchange-rates.index', ['tab' => 'annual']);
     }
 }

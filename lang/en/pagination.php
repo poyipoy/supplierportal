@@ -19,4 +19,9 @@ return [
     'navigation' => 'Pagination Navigation',
     'page' => 'Go to page :page',
     'summary' => 'Showing :first to :last of :total results',
+
+    'labels' => [
+        'candidates' => 'Candidates pagination',
+        'batches' => 'Batches pagination',
+    ],
 ];
