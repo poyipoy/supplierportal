@@ -14,17 +14,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - PHP 8.2, Laravel 12, MySQL (Laragon). Blade + Bootstrap 5 compat layer + Tailwind 4 with the `tw:` prefix, Alpine, Vite 7. Server-rendered; no API layer.
 - Install: `composer install` and `npm.cmd install`. Do not use `composer setup` on an existing DB (it runs `migrate --force`).
 - Run: `composer dev` (serve + `queue:listen --queue=exports,default` + `queue:listen --queue=imports` + pail + vite).
-- Test: `composer test` (full suite, serial, several minutes), `php artisan test --filter=Name`, `node --test tests/js/<file>.test.mjs`. CI (`.github/workflows/tests.yml`) runs a regression subset, the core workflow suites, JS tests and the build on PRs and pushes to `master`, and the full suite on MySQL 8.0 and MariaDB 11.4 on `master`, nightly and on demand (AGENTS.md, Workflow Verifikasi).
+- Test: `composer test` (Unit+Feature, serial, several minutes), `composer test:parallel` (Parallel suite in 4 processes, then Serial, as CI `deep` does), `php artisan test --filter=Name`, `node --test tests/js/<file>.test.mjs`. CI (`.github/workflows/tests.yml`) runs a regression subset, the core workflow suites, JS tests and the build on PRs and pushes to `master`, and the full suite on MySQL 8.0 and MariaDB 11.4 on `master`, nightly and on demand (AGENTS.md, Workflow Verifikasi).
 - Lint: `vendor/bin/pint --test <files>` (Laravel preset). There is no PHPStan/Larastan.
 - Build: `npm.cmd run build` after Blade class, CSS, or JS changes. Page-specific JS modules are dynamic imports gated by DOM markers in `resources/js/app.js`, not static imports (AGENTS.md, Panduan UI).
 - Seed: `DatabaseSeeder` (calls `LocalInvoiceSampleSeeder`). Accounts and the full check flow are in the `/verify` skill.
 
 ### Architecture map
 - `routes/web.php`: all HTTP routes, grouped by `role:` and `supplier.scope:`; names are `role.resource.action`.
-- `app/Http/Controllers/<Role>/`: Purchasing, Supplier, Qc, Admin, Finance, LocalSupplier, Ga, Accounting; shared document controllers at the root.
+- `app/Http/Controllers/<Role>/`: Purchasing, Supplier, Qc, Admin, Finance, LocalSupplier, Ga, Accounting, plus `Auth/`; shared document controllers at the root.
 - `app/Http/Middleware/`: RBAC, scope, hashids, domain guards ([CLAUDE.md](app/Http/Middleware/CLAUDE.md)).
-- `app/Services/`: state transitions and transactions (Materials, LocalInvoice, Payment, Ga, VendorMaster, SupplierAudit, Auth).
-- `app/Support/`: `BusinessTime`, `Money`, `PortalContext`, `StatusHelper`, `ExportDispatcher`, `JsTranslations`.
+- `app/Services/`: state transitions and transactions (Materials, Pricing, LocalInvoice, Payment, Ga, VendorMaster, SupplierAudit, FileSecurity, Auth, Dashboard), plus root services such as `PrItemAwardService`, `PurchaseOrderGenerationService`, `ShipmentService`, `PoShipmentDocumentStatusService`.
+- `app/Support/`: `BusinessTime`, `Money`, `PortalContext`, `StatusHelper`, `ExportDispatcher`, `JsTranslations`, `HashidCodec`, `PortalPath`; `Procurement/` holds `OrderedLine`, `LogisticsTerms`, `ProcurementFeatures`.
 - `app/Policies/`: auto-discovered `<Model>Policy`; there is no `$policies` array.
 - `app/Exports/`, `app/Jobs/`: async export pipeline ([CLAUDE.md](app/Exports/CLAUDE.md)).
 - `resources/views/components/ui/`: `x-ui.*` design system ([CLAUDE.md](resources/views/components/ui/CLAUDE.md)).
@@ -34,7 +34,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Domain flow (Import core, English-first)
 1. Period and PR: `Purchasing\PeriodController`, `PurchaseRequisitionController` → `PurchaseRequisition`, `PrItem`.
 2. Quotation: `Supplier\QuotationController` (server recomputes amounts) → `Quotation`, `QuotationItem`; reviewed in `Purchasing\QuotationListController` and `PriceComparisonController`.
-3. Award and PO: `PriceComparisonController`, `AwardConsolidationController`, `PurchaseOrderController` → `PrItemAward`, `PurchaseOrder` (pivot `po_quotations`) through `PrItemAwardService` and `PurchaseOrderGenerationService`.
+3. Award and PO: `PriceComparisonController`, `AwardConsolidationController`, `PurchaseOrderController` → `PrItemAward`, `PurchaseOrder` (pivot `po_quotations`) through `PrItemAwardService` and `PurchaseOrderGenerationService`. Read PO qty/KG/amount from `PurchaseOrder::orderedLines()`; PR logistics terms (port of discharge, incoterm) are copied to the PO (AGENTS.md, Item Award dan Shipment Impor).
 4. Shipment: `Purchasing\ShipmentController`, `Supplier\SupplierShipmentController` → `Shipment` through `ShipmentService`.
 5. QC: `Qc\QcInspectionController` → `QcInspection` (OK/NG).
 6. Claims: `Purchasing\MaterialClaimController`, `Supplier\ClaimController` → `MaterialClaim`.
@@ -47,12 +47,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Hashids: models using `App\Traits\HasHashids` route by hash. In views pass the model or `$model->hash`, never `->id`. `DecodeHashids` decodes only keys in `HASHED_PARAM_KEYS` and returns 404 for raw integers, so register new parameter names there.
 - `EnforceSupplierDomain` (web group) blocks cross-core shared endpoints. Local operators get 403 on `attachments.*`, `conversations.*`, and `shared.pdf.*`. Suppliers without `import` scope get 403 there and on `supplier.*` and `exports.*`.
 - `RoleMiddleware` checks an explicit role list; admin is not a superuser.
-- UI: M3-style tokens (`--md-*`, `--ui-*`) mapped to `tw:*` colors in `tailwind.config.js`; no raw hex. Icons only through `<x-ui.icon>` (Lucide; legacy `bi-*` names are aliased, so never write `bi bi-*` classes).
+- UI: read [DESIGN.md](DESIGN.md) before UI work (tokens, density, accent, `x-ui.*` contracts, page patterns, known drift). M3-style tokens (`--md-*`, `--ui-*`) mapped to `tw:*` colors in `tailwind.config.js`; no raw hex. Icons only through `<x-ui.icon>` (Lucide; legacy `bi-*` names are aliased, so never write `bi bi-*` classes). Charts go in `<x-ui.chart>` and take colors from `window.AdasiChart` (AGENTS.md, Panduan UI; DESIGN.md §7).
 - Language: locale is per user (`en`/`id`), and every new string needs a key in both `lang/en` and `lang/id` (`TranslationParityTest`). There is no LANGUAGE.md; the policy is "UI Language Policy" at the end of AGENTS.md.
 - Exports are async: `ExportDispatcher::dispatch()` creates an `ExportJob`, and `ProcessExportJob` runs it on queue `exports`, so a worker must run. Import templates download directly.
 - Dates go through `App\Support\BusinessTime` (UTC storage, Asia/Jakarta business tz). Money goes through `App\Support\Money` / BCMath.
+- Purchasing Historical alone uses annual rates by each transaction year; see AGENTS.md, Konversi Kurs. Other comparison pages and document snapshots retain their existing rate contracts.
 
 ### Where docs live
+- [DESIGN.md](DESIGN.md) (root): the UI design contract. It sits under AGENTS.md; `resources/css/app.css` holds the token values.
 - `docs/plans/` (plans, prompts), `docs/guides/` (ops guides such as `ADVANCED-EXPORT-DEVELOPMENT.md`, `LOCAL-PROCUREMENT-IMPORTS.md`, `NATIVE-FILE-SECURITY.md`), `docs/audits/`, `docs/results/`.
 - UI Phase 2 contract: `ADASI-UI-REDESIGN-PHASE2-MISSIONS/ADASI-UI-REDESIGN-PHASE2-MISSIONS/`; UI results go in `UI-REDESIGN-RESULT/`.
 - Root `*PLAN*.md` and `MISSION-*.md` files are historical inputs, not the current contract. Don't move them.

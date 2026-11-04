@@ -78,6 +78,18 @@
         --md-primary: #1F5FA6;
         --md-chart-primary: #1F5FA6;
         --md-chart-primary-container: #EBF3FC;
+        --md-chart-warning: #8A5708;
+        /* Categorical series in fixed order (identity, never status). Validated: ≥ 3:1 on the surface,
+           adjacent slots apart under protan/deutan/tritan. Accent presets never touch these. */
+        --md-chart-series-1: #1F5FA6;
+        --md-chart-series-2: #D95926;
+        --md-chart-series-3: #14967A;
+        --md-chart-series-4: #B88600;
+        --md-chart-series-5: #C2477A;
+        --md-chart-series-6: #6250D6;
+        /* Pass/fail state marks; always paired with a label and a non-color cue. */
+        --md-chart-ok: #198754;
+        --md-chart-ng: #B12B21;
         --ui-primary-text: var(--md-primary);
         --ui-primary-text-rgb: var(--md-primary-rgb);
         --md-primary-rgb: 31, 95, 166;
@@ -360,6 +372,14 @@
         /* Chart series need 3:1 against the dark surface (WCAG 1.4.11); the light-mode brand blue and amber do not. */
         --md-chart-primary: #5B93D1;
         --md-chart-warning: #D9A441;
+        --md-chart-series-1: #5B93D1;
+        --md-chart-series-2: #D95926;
+        --md-chart-series-3: #199E70;
+        --md-chart-series-4: #C98500;
+        --md-chart-series-5: #D55181;
+        --md-chart-series-6: #9085E9;
+        --md-chart-ok: #2BA86B;
+        --md-chart-ng: #FFB4AB;
         --ui-input-border: var(--md-outline-strong);
         --ui-input-focus: #8FB9EA;
         --ui-calendar-range-bg: var(--md-primary-container);
@@ -1730,6 +1750,12 @@ html[data-sidebar-collapsed="true"] .sidebar .sidebar-toggle-icons .sidebar-togg
             0 0 0 var(--ui-focus-ring-offset) var(--md-surface),
             0 0 0 calc(var(--ui-focus-ring-offset) + var(--ui-focus-ring-width)) var(--md-primary);
         outline: none;
+    }
+/* Chart canvases are keyboard readable (chart-theme.js); outline survives forced colors. */
+canvas[data-adasi-chart-focusable]:focus-visible {
+        border-radius: var(--ui-radius-xs, 4px);
+        outline: var(--ui-focus-ring-width, 2px) solid var(--md-primary);
+        outline-offset: var(--ui-focus-ring-offset, 2px);
     }
 .adasi-toast-region {
         align-items: stretch;
@@ -3917,13 +3943,16 @@ div.dataTables_wrapper div.dataTables_processing {
 }
 /* Decision 09: bounded scroll so thead and the Material column stay visible
    while long/wide procurement tables scroll. Opaque token backgrounds keep
-   sticky cells legible over scrolled content (light and dark). */
+   sticky cells legible over scrolled content (light and dark). Vertical
+   overscroll chains to the page once the table hits its top/bottom; horizontal
+   stays contained so a trackpad swipe does not trigger browser back/forward. */
 .ui-table-sticky {
     max-height: calc(100vh - var(--topbar-height) - var(--ui-table-sticky-offset, 12rem));
     max-height: calc(100dvh - var(--topbar-height) - var(--ui-table-sticky-offset, 12rem));
     min-height: 12rem;
     overflow: auto;
-    overscroll-behavior: contain;
+    overscroll-behavior-x: contain;
+    overscroll-behavior-y: auto;
 }
 .ui-table-sticky > table { border-collapse: separate; border-spacing: 0; }
 .ui-table-sticky > table > thead > tr > th {

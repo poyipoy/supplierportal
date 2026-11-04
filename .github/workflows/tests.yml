@@ -106,11 +106,14 @@ jobs:
         run: >-
           php artisan test
           tests/Feature/Procurement/QuotationReviewInvariantTest.php
+          tests/Feature/Pricing/AnnualExchangeRateTest.php
+          tests/Feature/Pricing/AnnualExchangeRateConcurrencyTest.php
           tests/Feature/QuotationAvailabilityTest.php
           tests/Feature/QuotationDirectPoGenerationTest.php
           tests/Feature/ItemLevelAwardTest.php
           tests/Feature/ItemLevelPoGenerationTest.php
           tests/Feature/PriceComparisonItemAwardTest.php
+          tests/Feature/Procurement/ComparisonDimensionsTest.php
           tests/Feature/Purchasing/SplitAwardPoGenerationTest.php
           tests/Feature/PurchaseOrderCreationConcurrencyAndInvariantTest.php
           tests/Feature/ShipmentAndPartialDeliveryTest.php

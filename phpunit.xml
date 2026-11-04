@@ -20,6 +20,7 @@
             <directory>tests/Feature</directory>
             <exclude>tests/Feature/AdvancedExportBaselineTest.php</exclude>
             <exclude>tests/Feature/AdvancedExportConcurrencyTest.php</exclude>
+            <exclude>tests/Feature/Pricing/AnnualExchangeRateConcurrencyTest.php</exclude>
             <exclude>tests/Feature/AdvancedExportPerformanceTest.php</exclude>
             <exclude>tests/Feature/AdvancedExportQueuedCsvBaselineTest.php</exclude>
             <exclude>tests/Feature/GaClaimTypeMigrationTest.php</exclude>
@@ -54,6 +55,7 @@
         <testsuite name="Serial">
             <file>tests/Feature/AdvancedExportBaselineTest.php</file>
             <file>tests/Feature/AdvancedExportConcurrencyTest.php</file>
+            <file>tests/Feature/Pricing/AnnualExchangeRateConcurrencyTest.php</file>
             <file>tests/Feature/AdvancedExportPerformanceTest.php</file>
             <file>tests/Feature/AdvancedExportQueuedCsvBaselineTest.php</file>
             <file>tests/Feature/GaClaimTypeMigrationTest.php</file>
@@ -109,6 +111,9 @@
         <!-- Mission 05: suites outside tests/Feature/Procurement/ShipmentMtcTest
              keep the pre-R3 shipment flow; that test enables the switch. -->
         <env name="PROCUREMENT_SHIPMENT_MTC_ENABLED" value="false"/>
+        <!-- Ready to Ship gate: shipment suites build awards without supplier
+             progress rows, so only ShipmentReadyToShipGuardTest turns it on. -->
+        <env name="PROCUREMENT_REQUIRE_READY_TO_SHIP" value="false"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
         <env name="DB_CONNECTION" value="mysql"/>

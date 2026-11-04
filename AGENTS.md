@@ -1,10 +1,12 @@
-# AGENTS.md — ADASI Portal Supplier
+﻿# AGENTS.md — ADASI Portal Supplier
 
 > Baca file ini sepenuhnya sebelum menulis satu baris kode pun.
 
 > Diselaraskan dengan working tree repositori pada **28 September 2026**, termasuk migrasi sampai `2026_09_25_000002`. Keberadaan migrasi bukan bukti sudah diterapkan pada database lokal, staging, atau produksi.
 >
 > Diperbarui **8 Oktober 2026** untuk perubahan sesudahnya (migrasi sampai `2026_10_07_000003`): preferensi user dan lokalisasi, Advanced Export, UoM pada GR, kanonikalisasi tipe klaim GA, pencabutan `refund_reference`, penghapusan draft DRP oleh role GA, serta (migrasi `2026_10_08_000002`–`000003`) kuesioner & Company Profile registrasi supplier dan aturan berkas tidak hilang saat validasi gagal. **9 Oktober 2026:** fitur Supplier Audit (migrasi `2026_10_09_000001`–`000002`), lihat bagian "Supplier Audit". Bagian yang tidak menyebut perubahan itu terakhir dicocokkan penuh pada 28 September.
+>
+> **2 November 2026:** dicocokkan dengan `master` (migrasi sampai `2026_10_19_172830`, tabel `oauth_*` Passport): Gate 2 procurement (logistics terms PR/PO, ordered line dan spec acceptance pada award, event award, sinkronisasi dokumen PO dengan Shipment; migrasi `2026_10_14_000002`–`000005`), jumlah policy dan model hashid, serta tautan ke [DESIGN.md](DESIGN.md). Perubahan working tree yang belum di-commit tidak dicatat sebagai fakta.
 
 > **File ini adalah satu-satunya sumber fakta proyek untuk semua agent.** [CLAUDE.md](CLAUDE.md) meng-import file ini (`@AGENTS.md`) dan hanya menambahkan *quick reference* berbahasa Inggris berupa ringkasan/penunjuk, tanpa fakta baru; file ini menang bila keduanya berbeda. Perubahan aturan, skema, atau konvensi ditulis **di sini**, satu kali.
 
@@ -13,7 +15,7 @@
 Sebelum merencanakan, menganalisis, mengubah, atau mereview kode pada setiap task baru:
 
 1. Baca `AGENTS.md` dan [claudes-cognitive-framework-for-laravel-development.md](claudes-cognitive-framework-for-laravel-development.md) sepenuhnya. [CLAUDE.md](CLAUDE.md) meng-import file ini dan hanya memuat ringkasan penunjuk (dimuat otomatis oleh Claude Code). Jika file tidak ada, nyatakan dan lanjutkan dengan panduan yang tersedia.
-2. Cari `AGENTS.md` yang lebih spesifik pada direktori yang disentuh. Untuk Local Supplier, GA, vendor master, atau payment engine, baca [context.md](context.md) sebagai kontrak domain tambahan.
+2. Cari `AGENTS.md` yang lebih spesifik pada direktori yang disentuh. Untuk Local Supplier, GA, vendor master, atau payment engine, baca [context.md](context.md) sebagai kontrak domain tambahan. Untuk pekerjaan UI (Blade, CSS, JS tampilan), baca [DESIGN.md](DESIGN.md): token, komponen `x-ui.*`, pola halaman, dan drift desain yang diketahui.
 3. Cocokkan dokumentasi dengan routes, middleware, requests, policies, models, migrations, services, konfigurasi, dan tests yang terlibat. Framework kognitif adalah metodologi, bukan sumber fakta skema atau versi proyek.
 4. Periksa `git status` dan diff awal. Pertahankan perubahan pengguna yang sudah ada; jangan melakukan commit, push, reset, clean, atau mutasi database tanpa instruksi yang sesuai.
 
@@ -32,7 +34,7 @@ Aturan kerja tambahan:
 
 ---
 
-## 🏭 Tentang Proyek
+## Tentang Proyek
 
 **Nama Sistem:** ADASI Portal Supplier  
 **Perusahaan Mitra:** PT. Astra Daido Steel Indonesia (ADASI)  
@@ -48,7 +50,7 @@ Keduanya berbagi `users`, notifikasi, export, dan design system. Jangan menyamak
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Layer | Teknologi |
 |---|---|
@@ -68,9 +70,9 @@ Aplikasi ini server-rendered Blade tanpa API layer. Satu-satunya endpoint JSON a
 
 ---
 
-## 👥 Role Pengguna
+## Role Pengguna
 
-> ⚠️ Route operasional **WAJIB** diproteksi auth, role, dan scope/policy yang sesuai. Route publik yang disengaja (login, registrasi, verifikasi receipt) mengikuti proteksi khususnya.
+> Route operasional **WAJIB** diproteksi auth, role, dan scope/policy yang sesuai. Route publik yang disengaja (login, registrasi, verifikasi receipt) mengikuti proteksi khususnya.
 
 | Role | Deskripsi |
 |---|---|
@@ -98,7 +100,7 @@ Aplikasi ini server-rendered Blade tanpa API layer. Satu-satunya endpoint JSON a
 - Login normal mensyaratkan `is_active` dan `account_status = ACTIVE`; scope tidak boleh dipakai untuk melewati aktivasi/review.
 - CAPTCHA registrasi bersifat opsional, termasuk produksi: kedua key Turnstile kosong menonaktifkan verifikasi. Jika salah satu key terisi, konfigurasi harus lengkap dan verifikasi wajib Passed; token invalid/expired maupun error provider tetap memblokir pengiriman. Rate limit, validasi data/dokumen, akun PENDING dan approval supplier tetap berlaku ketika CAPTCHA nonaktif.
 
-### ⚠️ Isolasi Data Supplier
+### Isolasi Data Supplier
 
 Supplier **tidak boleh** melihat atau mengubah data supplier lain. Untuk model yang memiliki kolom owner `supplier_id`—termasuk `Quotation`, `PurchaseOrder`, `Shipment`, `MaterialClaim`, `LocalInvoice`, dan `LocalPurchaseOrder`—query supplier-facing wajib difilter:
 
@@ -118,7 +120,7 @@ Policy aktif berada di `app/Policies/` dan memakai **auto-discovery**: tidak ada
 
 ---
 
-## 🗄️ Skema Database
+## Skema Database
 
 > Skema di bawah adalah peta domain, bukan DDL lengkap. **Sumber kebenaran tetap `database/migrations/`** dan `$fillable` / `casts()` / relasi masing-masing model. Jumlah migrasi terus berubah; jangan memakai angka snapshot dokumentasi untuk menentukan status database.
 
@@ -136,8 +138,10 @@ supplier_registration_audits   attempt, akses status, audit registrasi
 periods                id, name, month (nullable = periode tahunan), year,
                           status[open|closed], created_by
 purchase_requisitions  id, period_id, created_by, pr_number, notes,
-                          status[draft|submitted|rejected|bidding|completed], created_at
+                          status[draft|submitted|rejected|bidding|completed], created_at,
+                          port_of_discharge, incoterm (logistics terms, nullable)
 purchase_requisition_suppliers  id, pr_id, supplier_id → users.id, invited_at
+pr_supplier_invitation_events  histori append-only penambahan/penghapusan supplier undangan pada PR submitted/bidding (migrasi `2026_11_03_000002`)
 pr_items               id, pr_id, material_master_id, hs_code, material_name, quantity,
                           shape, thickness, d_inner, d_outer, width, length,
                           weight_needed, remark, + metadata resolusi HS code & berat
@@ -151,10 +155,14 @@ quotation_items        id, quotation_id, pr_item_id, price_per_kg, amount,
 exchange_rates         id, currency, rate_to_idr, valid_from, created_by
 purchase_orders        id, supplier_id → users.id, currency, exchange_rate_id, po_number,
                           status[draft|active|waiting_qc|claim_needed|overdue|completed|cancelled],
-                          created_by, created_at, estimated_arrival, actual_arrival, notes
+                          created_by, created_at, estimated_arrival, actual_arrival, notes,
+                          port_of_discharge, incoterm (snapshot dari PR)
 po_quotations          id, po_id, quotation_id     ← pivot PO ⇄ Quotation
 po_documents           id, po_id, doc_type[invoice|bl|packing_list|form_e], status, updated_at
-pr_item_awards         award per PR item, quotation item, supplier, PO assignment
+pr_item_awards         award per PR item, quotation item, supplier, PO assignment,
+                          ordered_qty/_weight_per_unit/_total_weight_kg/_price_per_kg/_amount,
+                          spec_accepted_by/_at/_acceptance_snapshot/_acceptance_hash
+pr_item_award_events   histori append-only seleksi, ordered qty, spec acceptance, freeze
 po_item_progress_updates    histori progress per award
 shipments / shipment_items / shipment_documents   pengiriman, shipped_qty,
                           actual_weight_kg, dokumen; relasi QC/claim ke shipment
@@ -231,6 +239,9 @@ Beberapa struktur awal proyek sudah berubah. Ini yang berlaku sekarang:
 | preferensi user hanya tema/sidebar | `user_preferences` (`2026_09_28`–`2026_10_04`) kini juga memuat dashboard, regional, notifikasi, dan `locale`; `notification_mutes` untuk mute percakapan |
 | export hanya XLSX tanpa opsi | `export_jobs.format` / `export_options` dan tabel `export_presets` (`2026_10_07_000001`–`000002`) |
 | registrasi supplier tanpa kuesioner / company profile | `suppliers.compliance_questionnaire` JSON nullable (`2026_10_08_000002`) berisi `{version, answers, answered_at}`; enum `supplier_master_documents.document_type` + `COMPANY_PROFILE` (`2026_10_08_000003`, `down()` melempar exception bila data `COMPANY_PROFILE` sudah ada) |
+| PR/PO tanpa syarat pengiriman | `port_of_discharge` (`TANJUNG_PRIOK`, `TANJUNG_PERAK`) dan `incoterm` (`CFR`, `CIF`, `FOB`) pada `purchase_requisitions` dan `purchase_orders` (`2026_10_14_000002`–`000003`), dijaga CHECK constraint biner |
+| qty/KG/amount PO selalu diturunkan dari offer | Kolom `ordered_*` dan `spec_accept*` pada `pr_item_awards` (`2026_10_14_000004`, CHECK nilai positif/non-negatif) dan tabel `pr_item_award_events` (`000005`) |
+| login hanya form portal | Tabel `oauth_*` Passport (`2026_10_19_*`) untuk login OAuth + PKCE opt-in (lihat bagian Auth dan Konfigurasi) |
 
 Migrasi `2026_09_25_*` menambah indeks Ready to Pay/status dan price comparison. Periksa indeks yang sudah ada sebelum menambahkan yang baru.
 
@@ -272,7 +283,7 @@ Jalur polymorphic aktif meliputi MTC pada `Shipment` (attachment `Shipment` = MT
 
 ---
 
-## 📁 Struktur File
+## Struktur File
 
 ```
 app/
@@ -283,17 +294,20 @@ app/
 │   ├── Middleware/     RoleMiddleware.php, DecodeHashids.php, ...
 │   └── Requests/       material/HS code/PR, LocalInvoice/, SupplierRegistration/, Auth/
 ├── Services/           Materials/, Auth/, LocalInvoice/, Payment/, Ga/, VendorMaster/, Employee/,
-│                       ShipmentService, PrItemAwardService, SupplierRegistrationService,
+│                       Pricing/, SupplierAudit/, FileSecurity/, Dashboard/, Export/,
+│                       ShipmentService, PrItemAwardService, PoShipmentDocumentStatusService,
+│                       PurchaseOrderGenerationService, SupplierRegistrationService,
 │                       UserPreferenceService, RegionalDisplayFormatter, NotificationService
 ├── Data/Materials/     objek hasil immutable (ProcessedPrItemResult, dsb.)
 ├── Support/            BusinessTime, Money, PortalContext, ExportDispatcher, Export/ExportDefinitions,
 │                       SpreadsheetCellSanitizer, JsTranslations, StatusHelper, NotificationCategory,
-│                       NotificationDomain, ...
+│                       NotificationDomain, HashidCodec, PortalPath, PageRegistry, ServerTabsResponse,
+│                       Procurement/ (OrderedLine, LogisticsTerms, ProcurementFeatures), ...
 ├── Exports/ Imports/   Laravel Excel; Exports/Advanced/ = ExportDefinition + katalog kolom
 ├── Jobs/               ProcessExportJob, GenerateWorkbookJob, FinalizeExportJob
 ├── Listeners/          ApplyNotificationPreferences (didaftarkan manual di AppServiceProvider)
 ├── Traits/             HasHashids.php
-└── Policies/           16 policy, auto-discovery (lihat bagian Isolasi Data Supplier)
+└── Policies/           19 policy, auto-discovery (lihat bagian Isolasi Data Supplier)
 
 resources/views/
 ├── layouts/            app.blade.php, auth.blade.php, guest.blade.php
@@ -334,7 +348,7 @@ ADASI-UI-REDESIGN-PHASE2-MISSIONS/
 
 ### Struktur Dokumentasi
 
-- Dokumen baru tidak ditaruh di root. Entrypoint `README.md`, `AGENTS.md`, `CLAUDE.md`, framework kognitif, dan `context.md` tetap di root; jangan memindahkan dokumen historis/root sebagai efek samping task lain.
+- Dokumen baru tidak ditaruh di root. Entrypoint `README.md`, `AGENTS.md`, `CLAUDE.md`, `DESIGN.md`, framework kognitif, dan `context.md` tetap di root; jangan memindahkan dokumen historis/root sebagai efek samping task lain.
 - Simpan audit umum di `docs/audits/`.
 - Simpan panduan operasional atau deployment di `docs/guides/`.
 - Simpan planning, prompt, atau dokumen persiapan di `docs/plans/`.
@@ -347,7 +361,7 @@ ADASI-UI-REDESIGN-PHASE2-MISSIONS/
 
 ---
 
-## 🔐 Definisi Route
+## Definisi Route
 
 Letakkan seluruh route HTTP baru pada section domain yang sesuai di `routes/web.php`. Pertahankan batas group role/scope, pengecualian akses shared, dan urutan route statis sebelum parameter dinamis. `routes/console.php` tetap untuk command/scheduler dan `routes/channels.php` untuk otorisasi channel broadcasting; jangan memasukkan keduanya ke group HTTP. Contoh grup Impor:
 
@@ -378,12 +392,12 @@ URL gaya Infor bersifat opt-in melalui `config/portal_urls.php`: `PORTAL_PATH_PR
 
 Shared document routes juga memakai role dan policy. Verifikasi receipt publik menggunakan signature QR dan throttle; jangan mengubahnya menjadi endpoint data invoice/GA tanpa proteksi. Registrasi publik merupakan pengecualian eksplisit terhadap grup `supplier.*` operasional.
 
-### 🔗 Hashids pada URL
+### Hashids pada URL
 
 Model dengan trait `HasHashids` mengembalikan hash pada `getRouteKey()`. Daftar aktif mencakup:
 
-- Impor/shared: `User`, `PurchaseRequisition`, `Quotation`, `PurchaseOrder`, `PrItemAward`, `Shipment`, `QcInspection`, `MaterialClaim`, `Conversation`, `ExportJob`, `ExportPreset`, **`Attachment`**. Total 29 model dengan trait ini per 15 Oktober 2026 (working tree), termasuk `MaterialReferencePrice` (parameter route `{referencePrice}`, implicit binding); verifikasi ulang dengan `grep -rl "App.Traits.HasHashids" app/Models/`.
-- Lokal: `LocalInvoice`, `LocalInvoiceDocument`, `LocalInvoicePayment`, `LocalInvoiceVoucher`, `LocalPurchaseOrder`, `LocalGoodsReceipt`, `LocalProcurementImport`, `PaymentBatch`, `PaymentGroup`, `SupplierOverpaymentRefund`, `SupplierMasterDocument`, `GaClaim`, `GaClaimDocument`, `SupplierRegistrationAttempt`, `SupplierAudit` (parameter route `{supplierAudit}`, implicit binding).
+- Impor/shared: `User`, `PurchaseRequisition`, `Quotation`, `PurchaseOrder`, `PrItemAward`, `Shipment`, `QcInspection`, `MaterialClaim`, `Conversation`, `ExportJob`, `ExportPreset`, **`Attachment`**. Total 29 model dengan trait ini per 2 November 2026, termasuk `MaterialReferencePrice` (parameter route `{referencePrice}`, implicit binding); verifikasi ulang dengan `grep -rl "App.Traits.HasHashids" app/Models/`.
+- Lokal: `LocalInvoice`, `LocalInvoiceDocument`, `LocalInvoicePayment`, `LocalInvoiceVoucher`, `LocalPurchaseOrder`, `LocalGoodsReceipt`, `LocalProcurementImport`, `LocalPoDocumentBatch`, `PaymentBatch`, `PaymentGroup`, `SupplierOverpaymentRefund`, `SupplierMasterDocument`, `GaClaim`, `GaClaimDocument`, `SupplierRegistrationAttempt`, `SupplierAudit` (parameter route `{supplierAudit}`, implicit binding).
 
 Periksa trait model sebelum menambah URL; daftar ini tidak berarti semua model/domain item memakai hashid.
 
@@ -397,7 +411,7 @@ Periksa trait model sebelum menambah URL; daftar ini tidak berarti semua model/d
 
 ---
 
-## 💱 Konversi Kurs
+## Konversi Kurs
 
 **Mata uang yang didukung:** `USD`, `JPY`, `IDR`, `CNY` (lihat `ExchangeRate::CURRENCIES`).
 
@@ -438,6 +452,12 @@ $idr = $amount * (float) $quotation->exchangeRate->rate_to_idr;
 
 `latestRate()` tetap hanya untuk membuat snapshot baru. Jangan mencampur kedua lapisan.
 
+**Historical Purchasing memakai kurs tahunan** (`annual_exchange_rates`), khusus halaman Historical (termasuk mode PR, drawer, ringkasan dan grafik). Tahun kurs berasal dari tanggal PO untuk histori pembelian dan tanggal submit quotation untuk penawaran berjalan (fallback `created_at` untuk data legacy), melalui kalender `BusinessTime`. Mata uang analisis pilihan berlaku juga saat kedua sumber memiliki mata uang asing yang sama. Konversi = harga × kurs asal tahun transaksi ÷ kurs tujuan tahun transaksi; IDR selalu 1. Kurs tahunan kosong menghasilkan null dan dikeluarkan dari agregasi, tanpa fallback ke snapshot/kurs efektif/tahun lain. Agregasi berbobot mengelompokkan tahun dan mata uang sebelum konversi. Antar Supplier, vs Harga Terbaik, serta snapshot dokumen tetap memakai kontrak sebelumnya.
+
+Admin mengelola matriks kurs tahunan melalui `admin.exchange-rates.annual.store`; dashboard hanya ringkasan baca. Exchange Rates memisahkan tab kurs efektif (default) dan tahunan. Matriks tahunan menampilkan lima tahun tersimpan per halaman, tahun menyamping secara kronologis; `annual_year` adalah filter, sedangkan `annual_edit_year` memilih satu kolom input tanpa menghilangkan tahun pembanding. Tambah tahun (`annual_new=1`, `annual_new_year`) hanya membuat kolom draft di tampilan sampai disimpan. Selama edit, filter/pagination/aksi tahun lain nonaktif; satu form POST membungkus tabel agar input dan pengingat perubahan existing tetap terhubung. Error tahunan mempertahankan nilai serta token revisi lama melalui error bag `annualRates`; error kurs efektif terpisah. Sukses membuka halaman matriks yang memuat tahun tersimpan. Satu revisi lengkap USD/JPY/CNY disimpan atomik; IDR tidak memerlukan row. Koreksi append-only, unique `(year, revision, currency)`, memakai expected revision untuk menolak form stale. Setelah tiga retry transaksi habis, hanya deadlock MySQL/MariaDB `40001`/`1213` yang dikembalikan sebagai penolakan tahunan untuk muat ulang/tinjau; error DB lain tetap diteruskan. `AnnualExchangeRateResolver` scoped per request membaca revisi terbaru; tidak ada cache hasil Historical yang melintasi request. Migrasi additive `2026_11_03_000001` tidak mengisi kurs otomatis dan rollback menolak histori yang sudah terisi. Keberadaan file migrasi bukan bukti penerapan pada database aplikasi.
+
+Interaksi kedua tab Exchange Rates (tab, filter, pagination, Tambah/Ubah/Batal, serta Simpan) memakai fragmen Blade melalui `AdasiServerTabs` dan adapter lazy `exchange-rates.js`, tanpa reload dokumen. GET fragmen hanya dikenali lewat `X-Adasi-Server-Tabs: 1`; respons memuat `html`, `nav`, `tab`, `url` dan `Cache-Control: private, no-store`. Tidak ada cache/prefetch fragmen pada halaman ini agar token revisi selalu segar. POST JSON mengembalikan `redirect` dan `message` tanpa flash; POST biasa tetap redirect/flash. Validasi JSON 422 mempertahankan input/token lama dan konflik menawarkan tindakan tinjau terbaru yang eksplisit. Pengingat perubahan, proteksi Back/Forward, penguncian input saat GET mengganti form, serta pencegahan submit ganda tetap berlaku. Modal kurs efektif permanen di luar fragmen; kalender disinkronkan setelah reset. Shared SDK/unsaved guard memakai opt-in managed history; perilaku menu lain tetap mengikuti default existing.
+
 ### 3. Kurs terbaru hanya dipilih ketika snapshot baru dibuat
 
 ```php
@@ -452,7 +472,7 @@ Fallback kurs terbaru pada pembuatan PO hanya dipakai ketika snapshot quotation 
 
 ---
 
-## 📦 Format Nomor Dokumen
+## Format Nomor Dokumen
 
 Format PR : `REQ/MM/YYYY/XXX` | Contoh: `REQ/05/2025/001`
 Format PO : `PO/MM/YYYY/XXX`  | Contoh: `PO/05/2025/001`
@@ -468,7 +488,7 @@ $poNumber = PurchaseOrder::generatePoNumber();        // PO/05/2025/001
 $shipmentNumber = Shipment::generateShipmentNumber();
 ```
 
-> ⚠️ Pola lama `count() + 1` **tidak boleh dipakai lagi** — pola itu menghasilkan nomor duplikat saat ada submit bersamaan, dan tidak sinkron dengan `document_sequences`.
+> Pola lama `count() + 1` **tidak boleh dipakai lagi** — pola itu menghasilkan nomor duplikat saat ada submit bersamaan, dan tidak sinkron dengan `document_sequences`.
 >
 > Nomor PR baru di-generate saat PR **di-submit**; PR berstatus `draft` boleh punya `pr_number` bernilai `null`.
 
@@ -476,7 +496,7 @@ PO tidak memiliki lagi kolom `quotation_id`. Jangan membuat query, validasi, ata
 
 ---
 
-## 📊 Modul Perbandingan Harga
+## Modul Perbandingan Harga
 
 Sudah ada 3 view terpisah di `resources/views/purchasing/comparison/` (`inter-supplier`, `historical`, `vs-best`), ditangani `PriceComparisonController`:
 
@@ -486,7 +506,7 @@ Sudah ada 3 view terpisah di `resources/views/purchasing/comparison/` (`inter-su
 | Historis | Grafik garis harga satu material dari satu supplier lintas periode |
 | vs Harga Terbaik | Harga saat ini vs `MIN(price_per_kg)` histori material yang sama |
 
-> Analitik perbandingan (Mission 07) memakai Exchange Rate Benchmark pada tanggal evaluasi, dalam mata uang analisis pilihan (`?currency=` IDR/USD/JPY/CNY, default IDR); lihat §Konversi Kurs → 2. Sel matriks inter-supplier dan nilai dokumen tetap memakai kurs snapshot. Riwayat pembelian dihitung `PurchaseHistoryPriceService` (rata-rata tertimbang Σ(harga×KG pesanan)/ΣKG lintas mata uang, BCMath); mata uang tanpa kurs dikeluarkan dan dilaporkan, tidak pernah `COALESCE(rate, 1)`.
+> Analitik perbandingan (Mission 07) memakai Exchange Rate Benchmark pada tanggal evaluasi, dalam mata uang analisis pilihan (`?currency=` IDR/USD/JPY/CNY, default IDR); lihat §Konversi Kurs → 2. Sel matriks inter-supplier dan nilai dokumen tetap memakai kurs snapshot. Riwayat pembelian dihitung `PurchaseHistoryPriceService` (rata-rata tertimbang Σ(harga×KG pesanan)/ΣKG lintas mata uang, BCMath); mata uang tanpa kurs dikeluarkan dan dilaporkan, tidak pernah `COALESCE(rate, 1)`. Pada tab Historical, filter **Shape** (`#historicalShapeFilter`, di kanan Material) hanya mempersempit daftar Material di sisi klien dan tidak ber-`name` (tidak ikut submit); bentuk yang dianalisis selalu berasal dari opsi Material terpilih lewat hidden `shape`, dan fallback ke bentuk pertama untuk nama material yang tidak cocok tetap berlaku.
 
 Sisi supplier punya modul serupa yang terbatas pada datanya sendiri: `SupplierPriceHistoryController` + `SupplierPriceHistoryBuilder`.
 
@@ -505,7 +525,15 @@ Sisi supplier punya modul serupa yang terbatas pada datanya sendiri: `SupplierPr
 - PO komersial memakai item yang di-award jika award tersedia, dengan fallback legacy yang sudah ada. Gunakan `PurchaseOrder::commercialQuotationItems()`, `commercialQuotations()`, dan `withResolvedTotalIdr()`; jangan menjumlahkan seluruh isi quotation untuk PO yang hanya menerima sebagian item.
 - `ShipmentService` menangani draft, submit, cancel, arrival, dokumen, dan alokasi di dalam transaksi/row locks. Fulfillment memakai `shipped_qty` integer pcs; `actual_weight_kg` adalah berat aktual, bukan pengganti quantity.
 - Gunakan helper fulfillment dan `reconcileOperationalStatus()` pada `PurchaseOrder` untuk status/penerimaan. Jalur legacy arrival dijaga `isLegacyArrivalEligible()`/`hasLegacyOnlyArrivalState()`; jangan melewati guard untuk mengubah PO legacy menjadi shipment-based receiving.
-- Dokumen shipment terhubung ke `ShipmentDocument::attachments()`; `customsDocumentationSummary()` dan `reconcileCustomsDocumentationStatus()` menjaga status Invoice/BL/Packing List/Form E pada PO.
+- Dokumen shipment terhubung ke `ShipmentDocument::attachments()`; `customsDocumentationSummary()` (baca) dan `reconcileCustomsDocumentationStatus()` (tulis) memakai status turunan di bawah untuk Invoice/BL/Packing List/Form E pada PO.
+- **Sinkronisasi dokumen PO dengan Shipment (Gate 2, Decision B; satu sumber 3 November 2026):** `shipment_documents.status` adalah sumber kebenaran per shipment. Status level PO **diturunkan** = status paling belum maju (rank `PoDocument::STATUS_RANKS`) di antara shipment aktif (`submitted`/`arrived`), `pending` bila belum ada; PO legacy tetap status manual. Satu rumus: `CustomsDocumentationProgressCalculator::derivedStatuses()` / `derived_status`; halaman PO Purchasing, PO Supplier, header X/4 dan dashboard membaca hasil yang sama, dan GET tidak menulis. `po_documents.status` non-legacy hanyalah cache dua arah (naik **dan** turun) yang ditulis `PoDocument::recomputeForPurchaseOrders()` **setelah commit** (`recomputeAfterCommit()`, di bawah lock `po_documents`) oleh setiap penulisan dokumen shipment, submit shipment, dan cancel shipment; jangan menghitungnya di dalam transaksi tulis (snapshot basi/deadlock). Semua perubahan status oleh Purchasing, baik dialog halaman PO (`updateSelected()`) maupun form halaman Shipment (`updateShipmentDocument()`), lewat inti service yang sama: target per `doc_type` (`ALLOWED_TARGETS`), shipment aktif, bukti file valid untuk verified/done, alasan wajib saat turun/setara, cek stale (409), audit di `notes`, notifikasi pembuat PO, dan notifikasi Supplier (`shipment.document_status_updated`). Keempat jenis dokumen (Invoice, Packing List, BL, Form-E) memakai alur yang sama `pending → received → verified`; status lama BL/Form-E (`issued`/`processing`/`done`) tetap terbaca (rank) tetapi bukan target lagi, dan form menampilkannya sebagai opsi nonaktif. Upload Supplier pada dokumen `pending` memberi `received` (`INITIAL_UPLOAD_STATUS`); re-upload tidak mengubah status; verified/done menolak upload. Endpoint `po_documents` legacy hanya untuk PO legacy; PO berbasis award tanpa Shipment aktif menampilkan state menunggu shipment, bukan status manual. Drift cache dilaporkan `procurement:reconcile` (`po_document_status_drift_count`) dan diperbaiki `procurement:resync-document-status` (dry-run default, `--execute`; tidak mengubah `shipment_documents`). Uji: `Procurement/PoShipmentDocument*Test` (termasuk `PoShipmentDocumentStatusConsistencyTest`).
+- **Ordered line (Gate 2):** `PurchaseOrder::orderedLines()` adalah satu-satunya resolver qty/KG/amount per baris PO, dengan urutan nilai award yang dibekukan → `ordered_qty` terpilih → award legacy (offer) → PO legacy tanpa award. Hasilnya `App\Support\Procurement\OrderedLine` (decimal string skala 4); PDF PO, detail export, dan halaman PO membaca dari sana. Jangan menurunkan ulang angka dari offer.
+- **Spec acceptance dan event award:** `PrItemAwardService::applySelection()` menulis `spec_acceptance_snapshot` + hash saat seleksi award Purchasing menerima spesifikasi offer, dan mencatat setiap seleksi, ordered qty, acceptance/revoke, dan freeze ke `pr_item_award_events`. Model event menolak update/delete.
+- **Kelola supplier undangan setelah PR submitted:** `PurchaseRequisitionSupplierController` (role purchasing mana pun) menambah/menghapus undangan hanya saat status `submitted`/`bidding` dan PR sudah punya daftar undangan (PR tanpa undangan terbuka untuk semua supplier, jadi menambah satu akan menutupnya: ditolak). Hapus ditolak bila supplier sudah punya quotation (termasuk soft-deleted) atau merupakan undangan terakhir. PR dikunci `lockForUpdate` dan status/guard dicek ulang; setiap perubahan masuk `pr_supplier_invitation_events`, penambahan memicu notifikasi `pr.supplier_invited` ke supplier.
+- **Logistics terms:** submit PR mewajibkan `port_of_discharge` dan `incoterm`; draft boleh kosong atau sebagian. Daftar kode ada di `config('procurement.logistics')` / `LogisticsTerms` dan dicerminkan CHECK constraint. PO menyalin logistics dari PR; konsolidasi PR dengan logistics berbeda (termasuk kosong lawan terisi) ditolak tanpa menulis apa pun. Uji: `PrLogisticsSubmissionTest`, `PoLogisticsGuardTest`.
+- **Gate Ready to Ship dan status Arrived (3 November 2026):** supplier hanya dapat menyimpan draft atau submit shipment untuk item ber-award yang progress supplier terakhirnya `ready_to_ship` (tanpa baris progress = belum siap). `ShipmentService` menegakkannya di `syncDraftItemsWithinTransaction` dan `submitShipment`, setelah lock PO, lewat `PrItemAward::isReadyToShip()` (satu-satunya predikat; jangan menulis ulang query-nya); penolakan memakai `BusinessRuleArgumentException`. Picker `Supplier\SupplierShipmentController::create/edit` hanya menawarkan item siap dan menjelaskan jumlah yang disembunyikan; draft lama yang itemnya tak lagi siap tetap bisa dibuka (ditandai), tetapi simpan/submit ditolak. PO legacy tanpa award tidak digate. Flag `require_ready_to_ship_for_shipment` (`PROCUREMENT_REQUIRE_READY_TO_SHIP`, default aktif) adalah saklar rollback; `phpunit.xml` mematikannya untuk suite umum dan `Procurement/ShipmentReadyToShipGuardTest` menyalakannya. Aturan ini menggantikan keputusan 8 September 2026 bahwa Ready to Ship tidak menggate shipment. **Arrived** hanyalah status tampilan turunan (`MaterialProgressService::projectionForAward` → `progress_status/label/tone/badge`): muncul bila tidak ada sisa qty di supplier, tidak ada yang in transit, dan ada qty yang sudah tiba/diterima QC; kedatangan parsial dengan sisa qty tetap menampilkan stage manual. Ia tidak disimpan, tidak masuk `PoItemProgressUpdate::STATUSES`/`STAGE_RANKS`, sehingga supplier tidak dapat menyetelnya; key `manual_progress_*` tetap stage tersimpan. Uji: `PoItemMaterialProgressTest` (P-12a..e), `Procurement/ShipmentReadyToShipGuardTest`.
+- **Overdue dan proyeksi:** `actual_arrival` adalah kedatangan terakhir, bukan penerimaan penuh; PO berbasis shipment yang aktif lagi setelah kedatangan parsial tetap overdue. Accessor `is_overdue` dan kembarannya `PurchaseOrder::whereOverdue()` adalah satu-satunya predikat untuk daftar, filter, dan export. `fulfillmentProjection()` hanya untuk tampilan; `ShipmentService`, QC, dan guard wajib membaca ulang data segar.
+- **Feature flag procurement** (`config/procurement.php`, dibaca lewat `ProcurementFeatures`): `po_generation_enabled` (kill switch pembuatan PO, default aktif), `ordered_quantity_write_enabled` (default nonaktif), `allow_offer_surplus` (hanya berlaku bila jalur tulis ordered qty aktif; kombinasi tidak konsisten fail-closed), `shipment_mtc_enabled`, `require_ready_to_ship_for_shipment` (gate Ready to Ship, default aktif). `procurement:reconcile` melaporkan nilai flag dan metrik logistics.
 - Perubahan award/alokasi/arrival/QC harus mempertahankan ownership supplier, FK/unique constraints, lock ordering, dan histori claim/replacement. Uji `ItemLevelAwardTest`, `PriceComparisonItemAwardTest`, `Purchasing/SplitAwardPoGenerationTest`, dan suite Shipment sesuai jalur yang disentuh.
 
 ## Contact Person Supplier Impor
@@ -595,7 +623,7 @@ Rencana & keputusan: [docs/plans/IMPLEMENTATION-PLAN-SUPPLIER-AUDIT-20261008.md]
 
 ---
 
-## 🔍 Fitur Pencarian & Filter
+## Fitur Pencarian & Filter
 
 Semua halaman daftar (tabel) **wajib** memiliki fitur pencarian dan filter.
 
@@ -627,7 +655,7 @@ Untuk daftar non-DataTables, filter di query dan **jangan lupa `->paginate()`**.
 
 ---
 
-## 📎 Fitur Upload / Attachment
+## Fitur Upload / Attachment
 
 File upload mengikuti model penyimpanan domain yang sudah aktif. Impor, PDF Local PO, dan proof refund memakai `attachments` polymorphic; invoice lokal, GA, dan vendor master memakai tabel dokumen khusus. Jangan menambah kolom file ad hoc atau menyeragamkan kedua pola tersebut.
 
@@ -692,7 +720,7 @@ Akses polymorphic file lewat `AttachmentController`/`AttachmentPolicy`. Dokumen 
 
 ---
 
-## ⏰ Business Time Invariant (#11)
+## Business Time Invariant (#11)
 
 > **Wajib dibaca sebelum menyentuh logika tanggal, nomor dokumen, jadwal, atau kalender apa pun.**
 
@@ -721,13 +749,13 @@ Penggunaan instant-UTC yang sah (nama file export, path storage, cache key) haru
 
 ---
 
-## 🌐 Lokalisasi dan Preferensi Tampilan per User
+## Lokalisasi dan Preferensi Tampilan per User
 
 UI sepenuhnya dwibahasa dan bahasanya adalah **preferensi per user**, bukan konstanta per core. (Kebijakan istilah per core ada di "UI Language Policy" pada akhir file.)
 
 - **Locale:** `user_preferences.locale` (`en` default atau `id`; `config/user_preferences.php`), di-resolve `UserPreferenceService` dan diterapkan pada setiap request web oleh `ApplyUserLocale` (tamu memakai `session('locale')`). Job queue yang merender teks harus membawa locale pemohon dan menyetelnya di worker, seperti `ProcessExportJob` dan `GenerateWorkbookJob`.
 - **Pengecualian dokumen tetap:** PDF PO Impor (`pdf.po-pdf`, `App\Support\PurchaseOrderPdf`) mengikuti formulir PNR261178: label English, tanggal `16 Sep 2026`, angka `633,000.00`, Qty pcs dari `fulfillment_quantity` (offer supplier dengan fallback quantity PR legacy), dan Unit Price tampilan per pcs (`resolved_amount / pcs`, BCMath, maksimum empat desimal; `-` bila pcs nol). Berat kg tetap di Description. Pembulatan Unit Price tidak menghitung ulang total, dan harga/kg quotation tidak berubah. Form tidak mengikuti locale/preferensi regional user. Timestamp PO tetap melalui `BusinessTime`, amount tetap `resolved_amount` dari commercial/award-scoped lines, PPN ditampilkan `-` tanpa kalkulasi pajak baru, dan total serta kotak tanda tangan kosong hanya pada halaman terakhir. Ketentuan ini tidak mengubah PDF QC atau dokumen PO Lokal.
-- **Teks UI baru** ditulis sebagai key `__('domain.key')` yang ada di **kedua** `lang/en/<domain>.php` dan `lang/id/<domain>.php`. Teks JS memakai `window.AdasiI18n.t('js.key')` / `.choice()` (`public/assets/js/adasi-i18n.js`), diisi dari `lang/*/js.php` oleh `App\Support\JsTranslations`. Label status berasal dari `lang/*/status.php` lewat `StatusHelper::label()`.
+- **Teks UI baru** ditulis sebagai key `__('domain.key')` yang ada di **kedua** `lang/en/<domain>.php` dan `lang/id/<domain>.php`. Teks JS memakai `window.AdasiI18n.t('js.key')` / `.choice()` (`public/assets/js/adasi-i18n.js`), diisi dari `lang/*/js.php` oleh `App\Support\JsTranslations`; kamus JS global wajib di bawah 16 KiB (`LocalizationPerformanceTest`), jadi teks satu halaman dimuat per halaman seperti `localImportPayload()`. Label status berasal dari `lang/*/status.php` lewat `StatusHelper::label()`.
 - **Penjaga di CI:** `TranslationParityTest` gagal bila file en/id berbeda domain, key, atau nama `:placeholder`, atau bila key statis `__()` / `AdasiI18n` di `app/`, `resources/views`, `resources/js`, `public/assets/js`, atau `config/` tidak ada di salah satu locale. `UserFacingCopyInventoryTest` dan `tests/Support/user-facing-copy-audit.php` melacak teks yang ditulis langsung; jangan menulis ulang snapshot audit historis di `UI-REDESIGN-RESULT/` sebagai efek samping task lain. `TranslationContentTest` mengunci glosarium status kanonik.
 - Jangan menerjemahkan data yang diinput user atau data bisnis (nama supplier/material, catatan, nama file, nomor dokumen) maupun nilai mesin (konstanta `STATUS_*` tetap `UPPER_SNAKE`).
 - **Bahasa kode:** kode, komentar, key terjemahan, serta nama route/variabel memakai bahasa Inggris. Sebagian dokumen domain, docblock tes, dan komentar migrasi berbahasa Indonesia; ikuti file di sekitarnya, jangan menyeragamkan.
@@ -735,7 +763,9 @@ UI sepenuhnya dwibahasa dan bahasanya adalah **preferensi per user**, bukan kons
 
 ---
 
-## 🎨 Panduan UI
+## Panduan UI
+
+Kontrak desain lengkap (nilai token, density, accent, katalog `x-ui.*`, pola halaman, chart, aksesibilitas, dan drift yang diketahui) ada di [DESIGN.md](DESIGN.md). Tabel dan aturan di bawah tetap wajib; bila DESIGN.md berbeda dari file ini atau dari `resources/css/app.css`, file ini dan kode yang menang, lalu perbaiki DESIGN.md.
 
 | Aspek | Ketentuan |
 |---|---|
@@ -743,9 +773,10 @@ UI sepenuhnya dwibahasa dan bahasanya adalah **preferensi per user**, bukan kons
 | Font | Inter melalui versi eksak `@fontsource/inter` di CDN; layout guest memakai Figtree dengan pola yang sama |
 | Utility CSS | Tailwind CSS 4 **berprefix `tw:`** dengan Preflight tidak diimpor — class Tailwind tanpa prefix tidak akan berefek |
 | Komponen | Pakai ulang `resources/views/components/ui/` (`x-ui.button`, `x-ui.data-table`, `x-ui.page-header`, `x-ui.status-chip`, dll.) sebelum membuat markup baru |
-| Ikon | Lucide melalui `<x-ui.icon>`, yang memetakan nama `bi-*` lama ke Lucide dan jatuh ke `circle-help` bila nama tidak dikenal; jangan gunakan `bi-*` atau `<x-lucide-*>` langsung |
+| Ikon | Lucide melalui `<x-ui.icon>`, yang memetakan nama `bi-*` lama ke Lucide dan jatuh ke `circle-help` bila nama tidak dikenal; jangan gunakan `bi-*` atau `<x-lucide-*>` langsung. Markup yang dibangun di JS (`innerHTML`, template string) juga memakai Lucide: render dengan `App\View\Components\Ui\Icon::html(new ComponentAttributeBag([...]))` dari blade `@php`, lalu teruskan ke script lewat `@json(...)`. Jangan menulis emoji, termasuk sebagai HTML entity (mis. `&#128200;`), di Blade maupun di string JS |
 | Date Picker / Kalender | **WAJIB** gunakan custom component `<x-ui.date-picker>` untuk single date dan `<x-ui.date-range-picker>` untuk rentang tanggal. **DILARANG KERAS** menggunakan native browser `<input type="date">` di form/modal/filter mana pun (karena tampilan inkonsisten lintas browser/OS dan merusak visual design system). Jika diletakkan di dalam perulangan atau modal, pastikan atribut `id` diberi suffix unik (mis. `id="estimated_ready_date_{{ $item->id }}"`) agar DOM ID dan controller kalender tidak bentrok |
 | Tabel | DataTables server-side — wajib untuk tabel dengan banyak baris |
+| Chart | Bungkus setiap canvas dengan `<x-ui.chart>` (figure, ringkasan, petunjuk keyboard, slot tabel) dan bangun dataset lewat `window.AdasiChart` setelah modul app siap: warna `AdasiChart.color('series-N'\|'ok'\|'ng')` dari token `--md-chart-series-*`, seri garis dibedakan bentuk titik + dash, satu sumbu Y. Dijaga `tests/js/chart-theme-a11y.test.mjs` dan `ChartAccessibilityTest`; kontrak lengkap di DESIGN.md §7 |
 | Badge status | Ambil label/kelas dari `App\Support\StatusHelper`; perluas array/`match()` di sana, jangan tulis yang baru di view/controller. Core Impor mengembalikan class badge Bootstrap (`prBadge()`); Core Lokal mengembalikan *tone* design system untuk `x-ui.status-chip` (`localInvoiceTone()`, `localFinanceTone()`) dan label terjemahan dari `lang/*/status.php` (`localInvoiceLabel()`). Pakai pasangan yang dipakai modul Anda |
 | Notifikasi | AdasiToast untuk feedback transient; AdasiAlert/SweetAlert hanya untuk konfirmasi, prompt, atau keputusan blocking |
 | Loading state | Spinner pada tombol submit saat proses berjalan |
@@ -774,7 +805,7 @@ Target UI adalah enterprise ERP yang ringkas dan padat, akrab bagi operator ERP.
 - **Utamakan:** hierarki tipografi, border sebelum bayangan, radius kecil, densitas desktop-first yang ringkas, filter berfrekuensi tinggi yang terlihat dan filter sekunder di balik "More filters", aksi utama baris yang terlihat dengan aksi sekunder di overflow menu, form bersection dengan sticky action bar, warna semantik hanya untuk state nyata, state fokus/hover/disabled yang aksesibel, dan layout yang tetap layak di tablet dan mobile.
 - Jangan menukar fungsi bisnis yang berjalan dengan perbaikan visual. Redesain mempertahankan perilaku, kontrak data, dan keakraban alur kerja.
 
-### 🔔 Notifikasi, Pusher, dan Polling
+### Notifikasi, Pusher, dan Polling
 
 - Provider realtime yang digunakan proyek adalah **Pusher Channels**, bukan Reverb. Backend `NotificationService` mengirim `SystemNotification` melalui channel `database` dan `broadcast`.
 - Frontend di `resources/views/layouts/app.blade.php` menginisialisasi Laravel Echo hanya jika `broadcasting.default === 'pusher'`, key Pusher terisi, dan cluster Pusher terisi. Client dibuat dengan `broadcaster: 'pusher'`.
@@ -852,7 +883,7 @@ Lapisan di atas jalur export di atas untuk **export daftar**. Baca [docs/guides/
 
 ---
 
-## 🚫 Larangan
+## Larangan
 
 | # | Jangan |
 |---|---|
@@ -869,7 +900,7 @@ Lapisan di atas jalur export di atas untuk **export daftar**. Baca [docs/guides/
 
 ---
 
-## ✅ Checklist Sebelum Buat Fitur Baru
+## Checklist Sebelum Buat Fitur Baru
 
 - [ ] Route sudah diproteksi middleware role yang sesuai
 - [ ] Query supplier memakai `supplier_id` ownership atau scope/policy visibility yang sesuai model
@@ -893,7 +924,8 @@ Jalankan pemeriksaan terkecil yang relevan, lalu perluas sesuai risiko. Jangan m
 php artisan test --filter=TestingEnvironmentDatabaseSafetyTest
 php artisan test --filter=<TestName>
 php artisan test tests/Feature/LocalInvoice --compact
-composer test
+composer test           # testsuite Unit+Feature, serial
+composer test:parallel  # seperti CI deep: testsuite Parallel (4 proses) lalu Serial
 
 # Verifikasi perubahan kode/view/assets yang relevan.
 php -l path/to/changed-file.php
@@ -938,6 +970,7 @@ php artisan optimize:clear
 | URL gaya Infor / transisi | `PortalPathTest`, `HashidCodecTest`, `PortalPathPrefixTest`, `LongHashidTransitionTest`, `PageRegistryTest`, `NotificationLegacyUrlTest`, `tests/js/async-export-prefix.test.mjs`; route/config cache diuji saat flag on/off |
 | Materials / offer / awards | `tests/Unit/Materials/`, `MaterialCalculationTest`, `PurchaseRequisitionMaterialAutomationTest`, `ItemLevelAwardTest`, `PriceComparisonItemAwardTest`, `Purchasing/SplitAwardPoGenerationTest` |
 | Shipment / QC / dokumen | `ShipmentAndPartialDeliveryTest`, `ShipmentDocumentsAndQcIntegrationTest`, `PoCustomsDocumentationShipmentSyncTest`, `ShipmentUiAndExportTest` |
+| Gate 2 procurement (ordered line, logistics, overdue, sinkronisasi dokumen PO) | `tests/Feature/Procurement/` (`OrderedLineContractTest`, `OrderedQuantity*Test`, `PoLogisticsGuardTest`, `PrLogisticsSubmissionTest`, `PurchaseOrderOverduePredicateTest`, `PoShipmentDocument*Test`, `ProcurementMigrationRollbackTest`) |
 | Local PO/GR / invoice | `tests/Feature/LocalInvoice/`, `LocalInvoiceSubmissionV2Test`, `FinanceVerificationV2Test`, `CashierReceiptAndExpiryTest` |
 | Pembayaran / forecast | `UnifiedPaymentEngineTest`, `FinanceDrpPaidTest`, `PaymentForecastAndReportingTest`, `tests/Feature/Finance/` |
 | Vendor / GA | `VendorMasterV2Test`, `VendorMasterViewsTest`, `SupplierVendorProfileTest`, `GaClaimWorkflowTest` |
