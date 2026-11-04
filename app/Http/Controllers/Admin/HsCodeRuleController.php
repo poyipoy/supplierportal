@@ -38,15 +38,15 @@ class HsCodeRuleController extends Controller
             ->removeColumn('rule_key')
             ->addColumn('material_category_label', fn (HsCodeRule $rule) => MaterialMaster::hsCategoryLabel($rule->material_category))
             ->addColumn('shape_label', fn (HsCodeRule $rule) => PrItem::shapeLabel($rule->shape))
-            ->addColumn('conditions_display', fn (HsCodeRule $rule) => e($this->conditionSummary($rule->conditions)))
+            ->addColumn('conditions_display', fn (HsCodeRule $rule) => $this->conditionSummary($rule->conditions))
             ->addColumn('status_badge', fn (HsCodeRule $rule) => match ($rule->status) {
                 HsCodeRule::STATUS_ACTIVE => '<span class="ui-status-chip ui-status-chip--success">'.e(__('admin.copy.active')).'</span>',
                 HsCodeRule::STATUS_CONFLICT => '<span class="ui-status-chip ui-status-chip--error">'.e(__('admin.copy.conflict')).'</span>',
                 default => '<span class="ui-status-chip ui-status-chip--neutral">'.e(__('admin.copy.inactive')).'</span>',
             })
-            ->addColumn('source_display', fn (HsCodeRule $rule) => e(collect($rule->source_refs)
+            ->addColumn('source_display', fn (HsCodeRule $rule) => collect($rule->source_refs)
                 ->map(fn (array $ref) => basename($ref['file'] ?? __('admin.copy.admin')).' #'.implode(',', $ref['entries'] ?? []))
-                ->join('; ') ?: __('admin.copy.admin')))
+                ->join('; ') ?: __('admin.copy.admin'))
             ->addColumn('updated_date', fn (HsCodeRule $rule) => $rule->updated_at ? BusinessTime::format($rule->updated_at, 'd M Y', false) : '-')
             ->addColumn('action', function (HsCodeRule $rule) {
                 $payload = e(json_encode([

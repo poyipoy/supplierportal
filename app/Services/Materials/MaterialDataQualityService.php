@@ -32,7 +32,7 @@ final class MaterialDataQualityService
             for ($rightIndex = $leftIndex + 1; $rightIndex < $activeRules->count(); $rightIndex++) {
                 $left = $activeRules[$leftIndex];
                 $right = $activeRules[$rightIndex];
-                if ($left->material_category !== $right->material_category || $left->shape !== $right->shape) {
+                if (MaterialMaster::hsCategoryFamily($left->material_category) !== MaterialMaster::hsCategoryFamily($right->material_category) || $left->shape !== $right->shape) {
                     continue;
                 }
 
@@ -54,7 +54,9 @@ final class MaterialDataQualityService
         }
 
         $mappedCategories = $materials->pluck('hs_category')->filter()->unique();
+        $mappedFamilies = $mappedCategories->map(fn (string $category) => MaterialMaster::hsCategoryFamily($category))->unique();
         $ruleCategories = $activeRules->pluck('material_category')->unique();
+        $ruleFamilies = $ruleCategories->map(fn (string $category) => MaterialMaster::hsCategoryFamily($category))->unique();
         $duplicateCoverage = collect($overlaps)
             ->where('same_code', true)
             ->values();
@@ -79,8 +81,9 @@ final class MaterialDataQualityService
             'needs_attention' => [
                 'materials_without_hs_mapping' => $materials->whereNull('hs_category')->pluck('material_code')->values(),
                 'categories_without_active_hs_rules' => $mappedCategories
-                    ->diff($ruleCategories)
+                    ->filter(fn (string $category) => ! $ruleFamilies->contains(MaterialMaster::hsCategoryFamily($category)))
                     ->map(fn (string $category) => $this->categoryLabel($category))
+                    ->unique()
                     ->values(),
                 'rules_needing_review' => $rulesNeedingReview,
             ],
@@ -98,8 +101,9 @@ final class MaterialDataQualityService
                         'note' => $this->referenceNote($rule->notes),
                     ])->values(),
                 'rule_categories_not_used_by_materials' => $ruleCategories
-                    ->diff($mappedCategories)
+                    ->filter(fn (string $category) => ! $mappedFamilies->contains(MaterialMaster::hsCategoryFamily($category)))
                     ->map(fn (string $category) => $this->categoryLabel($category))
+                    ->unique()
                     ->values(),
                 'reference_only_materials' => self::UNREACHABLE_REFERENCE_MATERIALS,
             ],

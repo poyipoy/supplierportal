@@ -9,6 +9,38 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class MaterialMaster extends Model
 {
+    public const HS_CATEGORY_HIGH_SPEED_ROUND_BAR = 'high_speed_steel_round_bar';
+
+    public const HS_CATEGORY_ALLOY_ROUND_BAR_ROLLED = 'alloy_steel_round_bar_rolled';
+
+    public const HS_CATEGORY_ALLOY_FLAT_ROLLED_ROLLED = 'alloy_steel_flat_rolled_rolled';
+
+    public const HS_CATEGORY_ALLOY_FLAT_BAR_FORGED = 'alloy_steel_flat_bar_forged';
+
+    public const HS_CATEGORY_ALLOY_ROUND_BAR_FORGED = 'alloy_steel_round_bar_forged';
+
+    public const HS_CATEGORY_ALLOY_FLAT_BAR_ROLLED = 'alloy_steel_flat_bar_rolled';
+
+    public const HS_CATEGORY_ALLOY_FLAT_ROLLED_STRIP_ROLLED = 'alloy_steel_flat_rolled_strip_rolled';
+
+    public const HS_CATEGORY_HIGH_SPEED_FLAT_ROLLED_ROLLED = 'high_speed_steel_flat_rolled_rolled';
+
+    public const HS_CATEGORY_CARBON_ROUND_BAR = 'carbon_steel_round_bar';
+
+    public const HS_CATEGORY_CARBON_FLAT_BAR = 'carbon_steel_flat_bar';
+
+    public const HS_CATEGORY_CARBON_ROUND_BAR_FORGED = 'carbon_steel_round_bar_forged';
+
+    public const HS_CATEGORY_CARBON_FLAT_BAR_FORGED = 'carbon_steel_flat_bar_forged';
+
+    public const HS_CATEGORY_HONED_TUBE_TUBE = 'honed_tube_steel_tube';
+
+    public const HS_CATEGORY_STRIP_STRIP = 'strip_steel_strip';
+
+    public const HS_CATEGORY_ALLOY_HOLLOW_COLD_DRAWN = 'alloy_steel_hollow_cold_drawn';
+
+    public const HS_CATEGORY_ALLOY_HOLLOW_HOT_DRAWN = 'alloy_steel_hollow_hot_drawn';
+
     public const HS_CATEGORY_ALLOY = 'alloy_steel';
 
     public const HS_CATEGORY_HIGH_SPEED = 'high_speed_steel';
@@ -22,19 +54,80 @@ class MaterialMaster extends Model
     public const HS_CATEGORY_OTHER = 'other';
 
     public const HS_CATEGORIES = [
+        self::HS_CATEGORY_HIGH_SPEED_ROUND_BAR,
+        self::HS_CATEGORY_ALLOY_ROUND_BAR_ROLLED,
+        self::HS_CATEGORY_ALLOY_FLAT_ROLLED_ROLLED,
+        self::HS_CATEGORY_ALLOY_FLAT_BAR_FORGED,
+        self::HS_CATEGORY_ALLOY_ROUND_BAR_FORGED,
+        self::HS_CATEGORY_ALLOY_FLAT_BAR_ROLLED,
+        self::HS_CATEGORY_ALLOY_FLAT_ROLLED_STRIP_ROLLED,
+        self::HS_CATEGORY_HIGH_SPEED_FLAT_ROLLED_ROLLED,
+        self::HS_CATEGORY_CARBON_ROUND_BAR,
+        self::HS_CATEGORY_CARBON_FLAT_BAR,
+        self::HS_CATEGORY_CARBON_ROUND_BAR_FORGED,
+        self::HS_CATEGORY_CARBON_FLAT_BAR_FORGED,
+        self::HS_CATEGORY_HONED_TUBE_TUBE,
+        self::HS_CATEGORY_STRIP_STRIP,
+        self::HS_CATEGORY_ALLOY_HOLLOW_COLD_DRAWN,
+        self::HS_CATEGORY_ALLOY_HOLLOW_HOT_DRAWN,
+        self::HS_CATEGORY_OTHER,
+    ];
+
+    public const LEGACY_HS_CATEGORIES = [
         self::HS_CATEGORY_ALLOY,
         self::HS_CATEGORY_HIGH_SPEED,
         self::HS_CATEGORY_CARBON,
         self::HS_CATEGORY_HONED_TUBE,
         self::HS_CATEGORY_STRIP,
-        self::HS_CATEGORY_OTHER,
+    ];
+
+    public const VALID_HS_CATEGORIES = [
+        ...self::HS_CATEGORIES,
+        ...self::LEGACY_HS_CATEGORIES,
     ];
 
     public static function hsCategoryLabel(string $category): string
     {
-        return in_array($category, self::HS_CATEGORIES, true)
+        return in_array($category, self::VALID_HS_CATEGORIES, true)
             ? __('materials.categories.'.$category)
             : __('common.unknown');
+    }
+
+    public static function hsCategoryFamily(?string $category): ?string
+    {
+        if ($category === null || $category === '') {
+            return null;
+        }
+
+        return match ($category) {
+            self::HS_CATEGORY_ALLOY,
+            self::HS_CATEGORY_ALLOY_ROUND_BAR_ROLLED,
+            self::HS_CATEGORY_ALLOY_FLAT_ROLLED_ROLLED,
+            self::HS_CATEGORY_ALLOY_FLAT_BAR_FORGED,
+            self::HS_CATEGORY_ALLOY_ROUND_BAR_FORGED,
+            self::HS_CATEGORY_ALLOY_FLAT_BAR_ROLLED,
+            self::HS_CATEGORY_ALLOY_FLAT_ROLLED_STRIP_ROLLED,
+            self::HS_CATEGORY_ALLOY_HOLLOW_COLD_DRAWN,
+            self::HS_CATEGORY_ALLOY_HOLLOW_HOT_DRAWN => self::HS_CATEGORY_ALLOY,
+
+            self::HS_CATEGORY_HIGH_SPEED,
+            self::HS_CATEGORY_HIGH_SPEED_ROUND_BAR,
+            self::HS_CATEGORY_HIGH_SPEED_FLAT_ROLLED_ROLLED => self::HS_CATEGORY_HIGH_SPEED,
+
+            self::HS_CATEGORY_CARBON,
+            self::HS_CATEGORY_CARBON_ROUND_BAR,
+            self::HS_CATEGORY_CARBON_FLAT_BAR,
+            self::HS_CATEGORY_CARBON_ROUND_BAR_FORGED,
+            self::HS_CATEGORY_CARBON_FLAT_BAR_FORGED => self::HS_CATEGORY_CARBON,
+
+            self::HS_CATEGORY_HONED_TUBE,
+            self::HS_CATEGORY_HONED_TUBE_TUBE => self::HS_CATEGORY_HONED_TUBE,
+
+            self::HS_CATEGORY_STRIP,
+            self::HS_CATEGORY_STRIP_STRIP => self::HS_CATEGORY_STRIP,
+
+            default => $category,
+        };
     }
 
     public static function densityProfileLabel(string $profile): string

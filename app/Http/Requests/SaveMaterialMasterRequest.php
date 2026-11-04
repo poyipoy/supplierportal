@@ -37,7 +37,7 @@ class SaveMaterialMasterRequest extends FormRequest
                 Rule::unique('material_masters', 'normalized_code')->ignore($this->route('materialMaster')),
             ],
             'raw_category' => ['nullable', 'string', 'max:100'],
-            'hs_category' => ['nullable', Rule::in(MaterialMaster::HS_CATEGORIES)],
+            'hs_category' => ['nullable', Rule::in(MaterialMaster::VALID_HS_CATEGORIES)],
             'density_profile' => ['required', Rule::in(MaterialMaster::DENSITY_PROFILES)],
             'manufacturer_scope' => ['required', Rule::in(MaterialMaster::MANUFACTURER_SCOPES)],
             'is_active' => ['required', 'boolean'],

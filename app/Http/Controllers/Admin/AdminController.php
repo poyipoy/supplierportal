@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AnnualExchangeRate;
 use App\Models\ExchangeRate;
 use App\Models\MaterialClaim;
 use App\Models\PurchaseOrder;
@@ -31,10 +32,13 @@ class AdminController extends Controller
             ->mapWithKeys(fn ($currency) => [$currency => ExchangeRate::latestRate($currency)]);
         $riwayatKurs = ExchangeRate::orderBy('valid_from', 'desc')->take(30)->get();
         $riwayatKursTotal = ExchangeRate::count();
+        $annualCurrentYear = BusinessTime::today()->year;
+        $annualMatrixYears = range($annualCurrentYear - 2, $annualCurrentYear);
+        $annualRates = AnnualExchangeRate::query()->latestRevisions()->whereIn('year', $annualMatrixYears)->get()->groupBy('year');
 
         return view('admin.dashboard', compact(
             'usersByRole', 'totalUsersActive', 'transaksiBulanIni', 'supplierCount',
-            'klaimAktif', 'recentActivities', 'latestRates', 'riwayatKurs', 'riwayatKursTotal'
+            'klaimAktif', 'recentActivities', 'latestRates', 'riwayatKurs', 'riwayatKursTotal', 'annualMatrixYears', 'annualRates'
         ));
     }
 

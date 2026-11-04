@@ -39,9 +39,10 @@ final class HsCodeResolver
             );
         }
 
+        $materialFamily = MaterialMaster::hsCategoryFamily($material->hs_category);
         $candidates = ($rules ?? HsCodeRule::query()->active()->get())
             ->where('status', HsCodeRule::STATUS_ACTIVE)
-            ->where('material_category', $material->hs_category)
+            ->filter(fn (HsCodeRule $rule) => MaterialMaster::hsCategoryFamily($rule->material_category) === $materialFamily)
             ->where('shape', $shape)
             ->sortBy(fn (HsCodeRule $rule) => sprintf('%05d:%s', $rule->priority, $rule->rule_key))
             ->values();
@@ -89,6 +90,7 @@ final class HsCodeResolver
             'rule_id' => $rule->id,
             'rule_key' => $rule->rule_key,
             'hs_code' => $rule->hs_code,
+            'material_category' => $rule->material_category,
             'priority' => $rule->priority,
         ])->all();
 
@@ -113,6 +115,7 @@ final class HsCodeResolver
             $candidatePayload,
             __('materials.copy.hs_code_matched_automatically'),
             $dimensions,
+            $winner->material_category,
         );
     }
 }

@@ -50,7 +50,7 @@ class SaveHsCodeRuleRequest extends FormRequest
     {
         return [
             'hs_code' => ['required', 'regex:/^\d{4}\.\d{2}\.\d{2}$/'],
-            'material_category' => ['required', Rule::in(MaterialMaster::HS_CATEGORIES)],
+            'material_category' => ['required', Rule::in(MaterialMaster::VALID_HS_CATEGORIES)],
             'shape' => ['required', Rule::in(PrItem::SHAPES)],
             'conditions' => ['required', 'array', 'min:1'],
             'conditions_json' => ['nullable', 'string'],

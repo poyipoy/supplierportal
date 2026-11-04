@@ -60,7 +60,7 @@ class AdminMaterialHsCodeTest extends TestCase
             ->assertJsonPath('summary.materials_needing_hs_mapping', 20)
             ->assertJsonPath('summary.active_hs_rules', 19)
             ->assertJsonPath('summary.rules_needing_review', 0)
-            ->assertJsonFragment(['rule_categories_not_used_by_materials' => ['Strip Steel']])
+            ->assertJsonFragment(['rule_categories_not_used_by_materials' => ['Strip Steel Strip']])
             ->assertJsonFragment(['reference_only_materials' => ['S35C', 'Q345D', 'Q235', 'A3', 'WEARPLATE']]);
 
         $report = $qualityResponse->json();
@@ -76,7 +76,7 @@ class AdminMaterialHsCodeTest extends TestCase
             'material_code' => '0000-PH7-LOCALIZATION',
             'normalized_code' => '0000-PH7-LOCALIZATION',
             'raw_category' => 'QA fixture',
-            'hs_category' => 'alloy_steel',
+            'hs_category' => 'alloy_steel_round_bar_rolled',
             'density_profile' => 'steel',
             'manufacturer_scope' => 'non_daido',
             'is_active' => true,
@@ -87,7 +87,7 @@ class AdminMaterialHsCodeTest extends TestCase
         $rule = HsCodeRule::create([
             'rule_key' => 'phase7-localization-rule',
             'hs_code' => '9998.88.88',
-            'material_category' => 'honed_tube_steel',
+            'material_category' => 'honed_tube_steel_tube',
             'shape' => 'Hollow',
             'conditions' => ['d_outer' => [
                 'min' => 1,
@@ -102,8 +102,8 @@ class AdminMaterialHsCodeTest extends TestCase
         ]);
 
         foreach ([
-            'en' => ['Alloy Steel', 'Honed Tube Steel', 'Steel', 'Non-Daido', 'Hollow', 'Strip Steel', 'localized-sheet, row 14', 'Outer D. ≥ 1 and ≤ 9'],
-            'id' => ['Baja Paduan', 'Baja untuk Pipa Honed', 'Baja', 'Non-Daido', 'Berongga', 'Strip Baja', 'localized-sheet, baris 14', 'Diameter Luar ≥ 1 dan ≤ 9'],
+            'en' => ['Alloy Steel Round Bar Rolled', 'Honed Tube Steel Tube', 'Steel', 'Non-Daido', 'Hollow', 'Strip Steel Strip', 'localized-sheet, row 14', 'Outer D. ≥ 1 and ≤ 9'],
+            'id' => ['Alloy Steel Round Bar Rolled', 'Honed Tube Steel Tube', 'Baja', 'Non-Daido', 'Berongga', 'Strip Steel Strip', 'localized-sheet, baris 14', 'Diameter Luar ≥ 1 dan ≤ 9'],
         ] as $locale => $labels) {
             $this->admin->preference()->updateOrCreate([], [...config('user_preferences.defaults'), 'locale' => $locale]);
             app()->forgetScopedInstances();
@@ -120,7 +120,7 @@ class AdminMaterialHsCodeTest extends TestCase
 
             $materialRow = collect($this->getJson(route('admin.material-masters.data', ['length' => 1000]))
                 ->assertOk()->json('data'))->firstWhere('material_code', $material->material_code);
-            $this->assertSame('alloy_steel', $materialRow['hs_category']);
+            $this->assertSame('alloy_steel_round_bar_rolled', $materialRow['hs_category']);
             $this->assertSame('steel', $materialRow['density_profile']);
             $this->assertSame('non_daido', $materialRow['manufacturer_scope']);
             $this->assertSame($labels[0], $materialRow['hs_category_label']);
@@ -130,7 +130,7 @@ class AdminMaterialHsCodeTest extends TestCase
 
             $ruleRow = collect($this->getJson(route('admin.hs-code-rules.data', ['length' => 1000]))
                 ->assertOk()->json('data'))->firstWhere('hs_code', $rule->hs_code);
-            $this->assertSame('honed_tube_steel', $ruleRow['material_category']);
+            $this->assertSame('honed_tube_steel_tube', $ruleRow['material_category']);
             $this->assertSame('Hollow', $ruleRow['shape']);
             $this->assertSame($labels[1], $ruleRow['material_category_label']);
             $this->assertSame($labels[4], $ruleRow['shape_label']);
@@ -142,7 +142,7 @@ class AdminMaterialHsCodeTest extends TestCase
         }
 
         app()->setLocale('en');
-        $this->assertSame('alloy_steel', $material->fresh()->hs_category);
+        $this->assertSame('alloy_steel_round_bar_rolled', $material->fresh()->hs_category);
         $this->assertSame('Hollow', $rule->fresh()->shape);
     }
 
@@ -356,6 +356,51 @@ class AdminMaterialHsCodeTest extends TestCase
         $this->actingAs($this->admin)
             ->getJson(route('purchasing.material-masters.search', ['q' => 'SCM']))
             ->assertForbidden();
+    }
+
+    public function test_rule_conditions_display_and_modal_headers_do_not_double_escape_symbols(): void
+    {
+        $rule = HsCodeRule::create([
+            'rule_key' => 'exclusive-bounds-rule',
+            'hs_code' => '9999.51.00',
+            'material_category' => 'carbon_steel',
+            'shape' => 'Flat',
+            'conditions' => [
+                'width' => [
+                    'min' => 400,
+                    'min_inclusive' => false,
+                    'max' => 600,
+                    'max_inclusive' => false,
+                ],
+                'thickness' => [
+                    'min' => 10,
+                    'min_inclusive' => true,
+                    'max' => 135,
+                    'max_inclusive' => true,
+                ],
+            ],
+            'priority' => 100,
+            'status' => HsCodeRule::STATUS_ACTIVE,
+            'source_refs' => [],
+            'notes' => null,
+        ]);
+
+        $response = $this->actingAs($this->admin)->getJson(route('admin.hs-code-rules.data', ['length' => 1000]))
+            ->assertOk();
+
+        $ruleRow = collect($response->json('data'))->firstWhere('hs_code', $rule->hs_code);
+        $this->assertNotNull($ruleRow);
+
+        $this->assertStringNotContainsString('&amp;gt;', $ruleRow['conditions_display']);
+        $this->assertStringNotContainsString('&amp;lt;', $ruleRow['conditions_display']);
+        $this->assertStringContainsString('Width &gt; 400 and &lt; 600', $ruleRow['conditions_display']);
+        $this->assertStringContainsString('Thickness ≥ 10 and ≤ 135', $ruleRow['conditions_display']);
+
+        $page = $this->actingAs($this->admin)->get(route('admin.material-hs-code.index'))->assertOk();
+        $page->assertDontSee('&ge;', false);
+        $page->assertDontSee('&le;', false);
+        $page->assertSeeText('Max Inclusive (≤)');
+        $page->assertSeeText('Min Inclusive (≥)');
     }
 
     private function materialPayload(array $overrides = []): array

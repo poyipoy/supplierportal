@@ -4,6 +4,7 @@ namespace App\Services\Materials;
 
 use App\Data\Materials\HsCodeConditionSet;
 use App\Models\HsCodeRule;
+use App\Models\MaterialMaster;
 use Illuminate\Support\Collection;
 
 final class HsCodeRuleConflictDetector
@@ -11,13 +12,14 @@ final class HsCodeRuleConflictDetector
     public function overlapsFor(HsCodeRule $candidate): Collection
     {
         $candidateConditions = HsCodeConditionSet::fromArray($candidate->conditions);
+        $candidateFamily = MaterialMaster::hsCategoryFamily($candidate->material_category);
 
         return HsCodeRule::query()
             ->active()
-            ->where('material_category', $candidate->material_category)
             ->where('shape', $candidate->shape)
             ->when($candidate->exists, fn ($query) => $query->whereKeyNot($candidate->getKey()))
             ->get()
+            ->filter(fn (HsCodeRule $rule) => MaterialMaster::hsCategoryFamily($rule->material_category) === $candidateFamily)
             ->filter(fn (HsCodeRule $rule) => $candidateConditions->overlaps(
                 HsCodeConditionSet::fromArray($rule->conditions)
             ))

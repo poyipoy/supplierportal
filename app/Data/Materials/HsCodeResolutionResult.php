@@ -11,6 +11,7 @@ final readonly class HsCodeResolutionResult
         public array $candidates,
         public string $message,
         public array $matchedInputs = [],
+        public ?string $ruleCategory = null,
     ) {}
 
     public function isMatched(): bool
@@ -29,6 +30,7 @@ final readonly class HsCodeResolutionResult
             'status' => $this->status,
             'code' => $this->hsCode,
             'rule_id' => $this->ruleId,
+            'rule_category' => $this->ruleCategory,
             'candidates' => $this->candidates,
             'message' => $this->message,
             'matched_inputs' => $this->matchedInputs,
