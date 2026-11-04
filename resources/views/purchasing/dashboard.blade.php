@@ -143,9 +143,27 @@
             :description="__('purchasing.copy.monthly_creation_volume_over_the_past_6_month_window')"
             class="tw:min-w-0"
         >
-            <div class="tw:h-[16rem]">
-                <canvas id="prChart" role="img" aria-label="{{ __('purchasing.copy.purchase_requisition_volume_by_month') }}">{{ __('purchasing.copy.monthly_requisition_volume_trend_chart') }}</canvas>
-            </div>
+            <x-ui.chart id="prChart" :label="__('purchasing.copy.purchase_requisition_volume_by_month')" :fallback="__('purchasing.copy.monthly_requisition_volume_trend_chart')" plot-class="tw:h-[16rem]">
+                <x-slot:table>
+                    <table class="table table-sm align-middle tw:m-0 tw:text-ui-xs">
+                        <caption class="tw:sr-only">{{ __('purchasing.copy.purchase_requisitions_trend') }}</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">{{ __('charts.columns.period') }}</th>
+                                <th scope="col" class="text-end">{{ __('charts.columns.count') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($prPerBulan as $month)
+                                <tr>
+                                    <th scope="row" class="tw:font-normal">{{ $month['label'] }}</th>
+                                    <td class="text-end ui-tabular-nums">{{ $regionalFormatter->number((string) $month['count'], 'plain') }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </x-slot:table>
+            </x-ui.chart>
         </x-ui.card>
 
         {{-- PO Status Distribution & Exchange Rate --}}
@@ -155,15 +173,43 @@
                 :description="__('purchasing.copy.current_purchase_order_states')"
                 class="tw:min-w-0"
             >
-                <div class="tw:flex tw:min-h-[11rem] tw:items-center tw:justify-center">
-                    @if(count($poStatusDist) > 0)
-                        <div class="tw:h-[10.5rem] tw:w-[10.5rem]">
-                            <canvas id="poDonut" role="img" aria-label="{{ __('purchasing.copy.purchase_order_status_distribution') }}">{{ __('purchasing.copy.po_status_distribution_chart') }}</canvas>
-                        </div>
-                    @else
-                        <x-ui.empty-state icon="pie-chart" :title="__('purchasing.copy.no_po_status_data')" :description="__('purchasing.copy.status_distribution_will_appear_once_purchase_orders_are_created')" />
-                    @endif
-                </div>
+                @if(count($poStatusDist) > 0)
+                    @php
+                        // Ranked bars in one color: the status name carries the meaning, so two
+                        // statuses never collapse into one hue (overdue vs claim needed).
+                        $poStatusRows = collect($poStatusDist)->sortDesc()->map(fn ($count, $status) => [
+                            'status' => $status,
+                            'label' => \App\Support\StatusHelper::poLabel($status),
+                            'count' => (int) $count,
+                        ])->values();
+                        $poStatusTotal = max(1, $poStatusRows->sum('count'));
+                    @endphp
+                    <x-ui.chart id="poStatusChart" :label="__('purchasing.copy.purchase_order_status_distribution')" :fallback="__('purchasing.copy.po_status_distribution_chart')" plot-class="tw:h-[12rem]">
+                        <x-slot:table>
+                            <table class="table table-sm align-middle tw:m-0 tw:text-ui-xs">
+                                <caption class="tw:sr-only">{{ __('purchasing.copy.po_workload_distribution') }}</caption>
+                                <thead>
+                                    <tr>
+                                        <th scope="col">{{ __('charts.columns.status') }}</th>
+                                        <th scope="col" class="text-end">{{ __('charts.columns.count') }}</th>
+                                        <th scope="col" class="text-end">{{ __('charts.columns.share') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($poStatusRows as $row)
+                                        <tr>
+                                            <th scope="row" class="tw:font-normal">{{ $row['label'] }}</th>
+                                            <td class="text-end ui-tabular-nums">{{ $regionalFormatter->number((string) $row['count'], 'plain') }}</td>
+                                            <td class="text-end ui-tabular-nums">{{ (int) round($row['count'] / $poStatusTotal * 100) }}%</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </x-slot:table>
+                    </x-ui.chart>
+                @else
+                    <x-ui.empty-state icon="pie-chart" :title="__('purchasing.copy.no_po_status_data')" :description="__('purchasing.copy.status_distribution_will_appear_once_purchase_orders_are_created')" />
+                @endif
             </x-ui.card>
 
             {{-- Exchange Rate Quick Reference --}}
@@ -187,7 +233,7 @@
                 </div>
                 @php $lastRateUpdated = $latestRates->filter()->sortByDesc('valid_from')->first()?->valid_from; @endphp
                 @if($lastRateUpdated)
-                    <div class="tw:text-outline text-center mt-2 tw:text-ui-xs">{{ __('purchasing.page.rate_updated', ['date' => $regionalFormatter->date($lastRateUpdated, 'human')]) }}</div>
+                    <div class="tw:text-on-surface-variant text-center mt-2 tw:text-ui-xs">{{ __('purchasing.page.rate_updated', ['date' => $regionalFormatter->date($lastRateUpdated, 'human')]) }}</div>
                 @endif
             </x-ui.card>
         </div>
@@ -307,121 +353,80 @@
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous"></script>
 <script>
-    const displayDashboardNumber = (text) => window.AdasiPreferences?.displayNumber
-        ? window.AdasiPreferences.displayNumber(text, 'indonesian') : text;
-    const colors = window.AdasiChart ? window.AdasiChart.getColors() : {
-        primary: '#1F5FA6',
-        surface: '#FFFFFF',
-        onSurface: '#1A202C',
-        onSurfaceVariant: '#64748B',
-        gridLine: 'rgba(226, 232, 240, 0.75)',
-        warning: '#D35400',
-        success: '#1E8449',
-        error: '#C0392B',
-        secondary: '#476072',
-    };
+    // Wait for the deferred app module: before it, AdasiChart (tokens, tooltip, scales, a11y) is missing.
+    document.addEventListener('DOMContentLoaded', function() {
+        const chart = window.AdasiChart;
+        if (!chart) return;
 
-    const prCanvas = document.getElementById('prChart');
-    if (prCanvas) {
-        new Chart(prCanvas, {
-            type: 'bar',
-            data: {
-                labels: {!! json_encode(array_column($prPerBulan, 'label')) !!},
-                datasets: [{
-                    label: window.AdasiI18n.t('purchasing.js.requisitions'),
-                    data: {!! json_encode(array_column($prPerBulan, 'count')) !!},
-                    backgroundColor: (context) => window.AdasiChart?.createBarGradient(context, colors.primary, 0.95, 0.3) || colors.primary,
-                    borderColor: colors.primary,
-                    borderWidth: 1,
-                    borderRadius: 6,
-                    borderSkipped: false,
-                    maxBarThickness: 32,
-                    barPercentage: 0.55,
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                animation: { duration: 400 },
-                plugins: {
-                    legend: { display: false },
-                    tooltip: window.AdasiChart?.getTooltip({
-                        callbacks: {
-                            label: (ctx) => ' ' + window.AdasiI18n.choice('purchasing.js.requisition_count', Number(ctx.parsed.y), { count: displayDashboardNumber(Number(ctx.parsed.y).toLocaleString('id-ID')) }),
-                        }
-                    }) || {},
+        const prCanvas = document.getElementById('prChart');
+        if (prCanvas) {
+            const scales = chart.getScales({ yMaxTicks: 5, yBeginAtZero: true });
+            scales.y.ticks.precision = 0;
+            new Chart(prCanvas, {
+                type: 'bar',
+                data: {
+                    labels: @json(array_column($prPerBulan, 'label')),
+                    datasets: [{
+                        label: window.AdasiI18n.t('purchasing.js.requisitions'),
+                        data: @json(array_column($prPerBulan, 'count')),
+                        backgroundColor: chart.color('series-1'),
+                        borderRadius: 4,
+                        borderSkipped: 'start',
+                        maxBarThickness: 32,
+                        barPercentage: 0.55,
+                    }],
                 },
-                scales: window.AdasiChart?.getScales({
-                    yMaxTicks: 5,
-                    yBeginAtZero: true,
-                    yFormat: (val) => displayDashboardNumber(Number(val).toLocaleString('id-ID')),
-                }) || {},
-            }
-        });
-    }
-
-    @if(count($poStatusDist) > 0)
-    @php
-        $chartLabels = [];
-        $chartData = [];
-        $chartStatuses = [];
-        foreach($poStatusDist as $status => $count) {
-            $chartLabels[] = \App\Support\StatusHelper::poLabel($status);
-            $chartData[] = $count;
-            $chartStatuses[] = $status;
-        }
-    @endphp
-    const poStatusColors = {
-        active: colors.primary,
-        waiting_qc: colors.warning,
-        completed: colors.success,
-        overdue: colors.error,
-        claim_needed: colors.error,
-        cancelled: colors.secondary,
-    };
-    const poCanvas = document.getElementById('poDonut');
-    if (poCanvas) {
-        new Chart(poCanvas, {
-            type: 'doughnut',
-            data: {
-                labels: {!! json_encode($chartLabels) !!},
-                datasets: [{
-                    data: {!! json_encode($chartData) !!},
-                    backgroundColor: @json($chartStatuses).map((status) => poStatusColors[status] || colors.secondary),
-                    borderWidth: 3,
-                    borderColor: colors.surface,
-                    borderRadius: 4,
-                    spacing: 2,
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                animation: { duration: 400 },
-                cutout: '75%',
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: {
-                            boxWidth: 8,
-                            boxHeight: 8,
-                            usePointStyle: true,
-                            font: { family: 'Inter', size: 11, weight: '500' },
-                            color: colors.onSurfaceVariant,
-                            padding: 12,
-                        }
+                options: {
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: chart.getTooltip({
+                            callbacks: {
+                                label: (ctx) => ' ' + window.AdasiI18n.choice('purchasing.js.requisition_count', Number(ctx.parsed.y), { count: chart.formatNumber(ctx.parsed.y) }),
+                            },
+                        }),
                     },
-                    tooltip: window.AdasiChart?.getTooltip({
-                        callbacks: {
-                            label: (ctx) => ' ' + ctx.label + ': ' + window.AdasiI18n.choice('purchasing.js.purchase_order_count', Number(ctx.parsed), {
-                                count: displayDashboardNumber(Number(ctx.parsed).toLocaleString('id-ID')),
-                            }),
-                        }
-                    }) || {},
-                }
-            }
-        });
-    }
-    @endif
+                    scales,
+                },
+            });
+        }
+
+        const poCanvas = document.getElementById('poStatusChart');
+        if (poCanvas) {
+            const rows = @json($poStatusRows ?? []);
+            const scales = chart.getScales({ yBeginAtZero: true });
+            new Chart(poCanvas, {
+                type: 'bar',
+                data: {
+                    labels: rows.map((row) => row.label),
+                    datasets: [{
+                        label: @json(__('purchasing.copy.po_workload_distribution')),
+                        data: rows.map((row) => row.count),
+                        backgroundColor: chart.color('series-1'),
+                        borderRadius: 4,
+                        borderSkipped: 'start',
+                        maxBarThickness: 18,
+                    }],
+                },
+                options: {
+                    indexAxis: 'y',
+                    layout: { padding: { right: 32 } },
+                    plugins: {
+                        legend: { display: false },
+                        adasiA11y: { summary: 'distribution' },
+                        tooltip: chart.getTooltip({
+                            callbacks: {
+                                label: (ctx) => ' ' + window.AdasiI18n.choice('purchasing.js.purchase_order_count', Number(ctx.parsed.x), { count: chart.formatNumber(ctx.parsed.x) }),
+                            },
+                        }),
+                    },
+                    scales: {
+                        x: { ...scales.y, ticks: { ...scales.y.ticks, precision: 0 } },
+                        y: { ...scales.x },
+                    },
+                },
+                plugins: [chart.valueLabels()],
+            });
+        }
+    });
 </script>
 @endpush

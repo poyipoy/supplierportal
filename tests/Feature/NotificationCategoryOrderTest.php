@@ -73,11 +73,11 @@ class NotificationCategoryOrderTest extends TestCase
         $this->assertSame($expectedOrder, config('notification_categories.order'));
     }
 
-    public function test_notification_preferences_registry_has_exactly_forty_seven_entries_and_no_new_keys(): void
+    public function test_notification_preferences_registry_has_exactly_forty_eight_entries_and_no_new_keys(): void
     {
         $registry = config('notification_preferences');
 
-        $this->assertCount(47, $registry, 'Registry must contain exactly 47 top-level entries.');
+        $this->assertCount(48, $registry, 'Registry must contain exactly 48 top-level entries.');
 
         $allowedKeys = [
             'class',

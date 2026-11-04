@@ -83,7 +83,6 @@
                 name="locale"
                 value="id"
                 class="lang-pill-btn ui-focus-ring tw:flex tw:items-center tw:gap-1.5 tw:px-2 tw:py-1 tw:rounded-ui-full tw:text-ui-xs tw:font-bold {{ app()->getLocale() === 'id' ? 'is-active tw:bg-surface tw:text-primary tw:border-outline tw-shadow-xs' : 'tw:border-transparent tw:text-on-surface-variant tw:hover:text-on-surface tw:hover:bg-surface/50' }}"
-                aria-label="Bahasa Indonesia"
                 {{ app()->getLocale() === 'id' ? 'disabled aria-pressed=true' : 'aria-pressed=false' }}
             >
                 <span class="lang-flag-badge" aria-hidden="true">
@@ -92,14 +91,13 @@
                         <rect y="20" width="60" height="20" fill="#ffffff"/>
                     </svg>
                 </span>
-                <span class="tw:tracking-wide">ID</span>
+                <span class="tw:tracking-wide">ID</span><span class="tw:sr-only"> — Bahasa Indonesia</span>
             </button>
             <button
                 type="submit"
                 name="locale"
                 value="en"
                 class="lang-pill-btn ui-focus-ring tw:flex tw:items-center tw:gap-1.5 tw:px-2 tw:py-1 tw:rounded-ui-full tw:text-ui-xs tw:font-bold {{ app()->getLocale() === 'en' ? 'is-active tw:bg-surface tw:text-primary tw:border-outline tw-shadow-xs' : 'tw:border-transparent tw:text-on-surface-variant tw:hover:text-on-surface tw:hover:bg-surface/50' }}"
-                aria-label="English"
                 {{ app()->getLocale() === 'en' ? 'disabled aria-pressed=true' : 'aria-pressed=false' }}
             >
                 <span class="lang-flag-badge" aria-hidden="true">
@@ -111,7 +109,7 @@
                         <path stroke="#c8102e" stroke-width="8" d="M30 0v40M0 20h60"/>
                     </svg>
                 </span>
-                <span class="tw:tracking-wide">EN</span>
+                <span class="tw:tracking-wide">EN</span><span class="tw:sr-only"> — English</span>
             </button>
         </form>
 

@@ -14,6 +14,7 @@
         'lg' => 'tw:sm:max-w-lg',
         'xl' => 'tw:sm:max-w-xl',
         '2xl' => 'tw:sm:max-w-2xl',
+        '4xl' => 'tw:sm:max-w-4xl',
     ];
     $titleId = $name . '-title';
     $descriptionId = $name . '-description';

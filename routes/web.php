@@ -473,6 +473,7 @@ Route::prefix(PortalPath::prefix())->group(function () {
         Route::delete('/users/{user}/two-factor', [UserTwoFactorController::class, 'destroy'])
             ->middleware(['password.confirm', 'throttle:auth.security-action'])->name('users.two-factor.destroy');
         Route::resource('users', UserController::class)->middlewareFor(['create', 'edit', 'store', 'update'], 'password.confirm');
+        Route::post('exchange-rates/annual', [ExchangeRateController::class, 'storeAnnual'])->name('exchange-rates.annual.store');
         Route::resource('exchange-rates', ExchangeRateController::class)->only(['index', 'store']);
 
         // Pengumuman
@@ -532,6 +533,12 @@ Route::prefix(PortalPath::prefix())->group(function () {
             ->middleware('throttle:15,1')
             ->name('requisitions.import-preview');
         Route::put('/requisitions/{id}/submit', [App\Http\Controllers\Purchasing\PurchaseRequisitionController::class, 'submitDraft'])->name('requisitions.submit');
+        Route::post('/requisitions/{requisition}/suppliers', [App\Http\Controllers\Purchasing\PurchaseRequisitionSupplierController::class, 'store'])
+            ->middleware('throttle:30,1')
+            ->name('requisitions.suppliers.store');
+        Route::delete('/requisitions/{requisition}/suppliers/{supplier}', [App\Http\Controllers\Purchasing\PurchaseRequisitionSupplierController::class, 'destroy'])
+            ->middleware('throttle:30,1')
+            ->name('requisitions.suppliers.destroy');
         Route::resource('requisitions', App\Http\Controllers\Purchasing\PurchaseRequisitionController::class);
         Route::resource('pr-items', PrItemController::class)->only(['store', 'update', 'destroy']);
         Route::get('/purchase-orders/create/{quotation_id}', [PurchaseOrderController::class, 'create'])->name('purchase-orders.create');

@@ -58,6 +58,7 @@ return [
         'material_preparation' => 'Persiapan Material',
         'on_production' => 'Dalam Produksi',
         'ready_to_ship' => 'Siap Dikirim',
+        'arrived' => 'Telah Tiba',
     ],
     'shipment_document' => [
         'pending' => 'Menunggu',
@@ -175,5 +176,16 @@ return [
         'approved' => 'Disetujui',
         'rejected' => 'Ditolak',
         'cancelled' => 'Digantikan',
+    ],
+    'quotation_history' => [
+        'ambiguous' => 'Penawaran saat ini ambigu',
+        'not_offered' => 'Tidak ditawarkan',
+        'spec_incomplete' => 'Spesifikasi belum lengkap',
+        'insufficient_history' => 'Riwayat tidak cukup',
+        'different_spec' => 'Spesifikasi berbeda',
+        'basis_differs' => 'Dasar berbeda',
+        'fx_unavailable' => 'Kurs tidak tersedia',
+        'comparable_unverified' => 'Indikatif',
+        'comparable' => 'Sebanding',
     ],
 ];

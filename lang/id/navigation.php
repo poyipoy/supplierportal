@@ -70,7 +70,7 @@ return [
     'account_role' => 'Akun :role',
     'role_navigation' => 'Navigasi :role',
     'current_portal' => 'Ganti Konteks Portal — Saat Ini: :portal',
-    'portal_dashboard' => 'Dasbor Portal Supplier ADASI',
+    'portal_dashboard' => 'ADASI Supplier Portal — Dasbor',
     'notification_open' => 'Buka notifikasi untuk memuat aktivitas terbaru.',
     'roles.admin' => 'Admin',
     'roles.purchasing' => 'Pengadaan',

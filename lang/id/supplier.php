@@ -74,7 +74,7 @@ return [
         'direct_messaging_channels_linked_to_your_supplier_purchase_requisitions_and_purchase_orders' => 'Percakapan langsung yang terhubung dengan permintaan pembelian dan PO supplier Anda.',
         'document_reference' => 'Referensi Dokumen',
         'document_status_synchronized_with_your_shipments' => 'Status dokumen disinkronkan dengan pengiriman Anda.',
-        'download_template' => 'Unduh Template',
+        'download_template' => 'Export',
         'draft' => 'Draf',
         'draft_saved' => 'Draf Disimpan',
         'est_weight' => 'Perkiraan Berat',

@@ -41,6 +41,7 @@
         </x-slot:summary>
 
         <x-slot:rates>
+            @include('admin.exchange-rates._annual_matrix')
             <x-ui.data-table :title="__('admin.copy.administrative_attention')" :description="__('admin.copy.current_exchange_rate_readiness_from_the_configured_currency_set')">
                 <x-slot:toolbar>
                     <x-ui.button type="button" size="sm" data-bs-toggle="modal" data-bs-target="#kursModal"><x-ui.icon name="plus" /> {{ __('admin.copy.add_effective_rate') }}</x-ui.button>

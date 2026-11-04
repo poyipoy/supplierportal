@@ -6,7 +6,7 @@ const read = (path) => readFileSync(new URL(`../../${path}`, import.meta.url), '
 const app = read('resources/js/app.js');
 
 test('page-specific modules are not part of the entry bundle', () => {
-    for (const module of ['calendar', 'advanced-export', 'dashboard-editor', 'customization-form', 'notification-preferences', 'supplier-audit-form', 'regional-sample']) {
+    for (const module of ['calendar', 'advanced-export', 'dashboard-editor', 'customization-form', 'notification-preferences', 'supplier-audit-form', 'regional-sample', 'exchange-rates']) {
         assert.doesNotMatch(app, new RegExp(`^import[^\\n]*'\\./${module}(\\.js)?'`, 'm'), `${module} must stay a dynamic import`);
         assert.match(app, new RegExp(`import\\('\\./${module}'\\)`), `${module} must still be loaded where its markup is present`);
     }
@@ -28,6 +28,7 @@ test('each marker selector matches the markup that needs the module', () => {
         ['[x-data^="supplierAuditForm"]', 'resources/views/local-supplier/supplier-audits/edit.blade.php', 'x-data="supplierAuditForm('],
         ['[data-advanced-export], [data-format-export-form]', 'resources/views/components/export/advanced-modal.blade.php', 'data-advanced-export'],
         ['[data-dashboard-audience] [data-editor-config]', 'resources/views/components/ui/dashboard-layout.blade.php', 'data-editor-config'],
+        ['[data-exchange-rates-workspace]', 'resources/views/admin/exchange-rates/index.blade.php', 'data-exchange-rates-workspace'],
         ["'[data-adasi-date-picker], [data-adasi-date-range]'", 'resources/views/components/ui/date-picker.blade.php', 'data-adasi-date-picker'],
     ];
     for (const [selector, view, markup] of markers) {

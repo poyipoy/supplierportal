@@ -58,6 +58,7 @@ return [
         'material_preparation' => 'Material Preparation',
         'on_production' => 'On Production',
         'ready_to_ship' => 'Ready to Ship',
+        'arrived' => 'Arrived',
     ],
     'shipment_document' => [
         'pending' => 'Pending',
@@ -175,5 +176,16 @@ return [
         'approved' => 'Approved',
         'rejected' => 'Rejected',
         'cancelled' => 'Superseded',
+    ],
+    'quotation_history' => [
+        'ambiguous' => 'Ambiguous current quotation',
+        'not_offered' => 'Not offered',
+        'spec_incomplete' => 'Specification incomplete',
+        'insufficient_history' => 'Insufficient history',
+        'different_spec' => 'Different specification',
+        'basis_differs' => 'Basis differs',
+        'fx_unavailable' => 'FX unavailable',
+        'comparable_unverified' => 'Indicative',
+        'comparable' => 'Comparable',
     ],
 ];

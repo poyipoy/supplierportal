@@ -295,7 +295,7 @@ test('entering edit mode shows strips and placeholders, makes content inert and 
     assert.equal(wrapper('admin.notifications').querySelector('[data-editor-ghost-status]').textContent, 'Hidden');
     assert.equal($('[data-editor-status]').textContent, 'No unsaved changes');
     assert.equal($('[data-editor-save]').disabled, true, 'nothing to save yet');
-    assert.match($('[data-editor-announce]').textContent, /Editing the dashboard layout/);
+    assert.match($('[data-editor-announce]').textContent, /Move or hide panels/);
     assert.equal(FakeElement.focused, wrapper('admin.summary').querySelector('[data-editor-move]'));
     assert.equal(calls.markDirty, 0);
 });
@@ -419,7 +419,7 @@ test('a rejected or failed save stays in edit mode, reports the error and re-ena
 
         assert.equal(editor.isEditing(), true);
         assert.equal(calls.reload, 0);
-        assert.deepEqual(calls.toasts, ['The dashboard layout could not be saved. Please try again.']);
+        assert.deepEqual(calls.toasts, ['The dashboard layout could not be saved. Please retry.']);
         assert.equal($('[data-editor-save]').disabled, false);
         assert.equal($('[data-editor-cancel]').disabled, false);
         assert.equal($('[data-editor-saving]').hidden, true);

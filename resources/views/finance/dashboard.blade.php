@@ -179,27 +179,26 @@
                     </div>
                 </div>
 
-                {{-- Chart Visualization --}}
+                {{-- Chart Visualization: the period table below lists every plotted value. --}}
                 <div class="tw:mb-6">
                     <div class="tw:flex tw:flex-col tw:sm:flex-row tw:sm:items-center tw:sm:justify-between tw:gap-2 tw:mb-2">
                         <h3 class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant tw:uppercase tw:tracking-wide tw:m-0">
                             {{ __('finance.labels.cashflow') }}
                         </h3>
-                        <div class="tw:flex tw:items-center tw:gap-4 tw:text-ui-xs tw:text-on-surface-variant">
+                        <div class="tw:flex tw:items-center tw:gap-4 tw:text-ui-xs tw:text-on-surface-variant" aria-hidden="true">
                             <span class="tw:inline-flex tw:items-center tw:gap-1.5">
-                                <span class="tw:w-3 tw:h-3 tw:rounded-xs tw:bg-primary"></span>
+                                <span class="tw:w-3 tw:h-3 tw:rounded-xs tw:bg-[var(--md-chart-series-1)]"></span>
                                 <span>{{ __('finance.review.period_bar') }}</span>
                             </span>
                             <span class="tw:inline-flex tw:items-center tw:gap-1.5">
-                                <span class="tw:w-3 tw:h-0.5 tw:bg-teal-600"></span>
-                                <span class="tw:w-1.5 tw:h-1.5 tw:rounded-full tw:bg-teal-600"></span>
+                                <span class="tw:w-3 tw:h-0.5 tw:bg-[var(--md-chart-series-3)]"></span>
+                                <span class="tw:w-1.5 tw:h-1.5 tw:rounded-full tw:bg-[var(--md-chart-series-3)]"></span>
                                 <span>{{ __('finance.labels.cumulative_line') }}</span>
                             </span>
                         </div>
                     </div>
-                    <div class="tw:h-[300px] tw:w-full">
-                        <canvas id="paymentForecastChart" aria-label="{{ __('finance.labels.ready_graph') }}" role="img"></canvas>
-                    </div>
+                    <x-ui.chart id="paymentForecastChart" :label="__('finance.labels.ready_graph')" plot-class="tw:h-[300px]" x-bind:class="isLoading ? 'tw:opacity-60' : ''" />
+                    <p class="tw:m-0 tw:mt-2 tw:text-ui-xs tw:text-error" role="status" x-text="loadError ? @js(__('charts.load_failed')) : ''"></p>
                 </div>
 
                 {{-- Fallback / Detail Data Table --}}
@@ -366,6 +365,9 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous"></script>
 <script>
 window.paymentForecastModule = function() {
+    // Outside Alpine state: a reactive Proxy around a Chart.js instance recurses forever on update().
+    let forecastChart = null;
+
     return {
         mode: 'weekly',
         selectedMonth: '{{ $selectedMonth }}',
@@ -373,7 +375,7 @@ window.paymentForecastModule = function() {
         monthlyData: @json($monthlyForecast),
         summary: @json($readyToPaySummary),
         isLoading: false,
-        chartInstance: null,
+        loadError: false,
 
         get currentData() {
             return this.mode === 'weekly' ? this.weeklyData : this.monthlyData;
@@ -421,6 +423,7 @@ window.paymentForecastModule = function() {
         async changeMonth(month) {
             this.selectedMonth = month;
             this.isLoading = true;
+            this.loadError = false;
             try {
                 const response = await fetch(`{{ route('finance.forecast') }}?month=${month}`);
                 if (!response.ok) throw new Error();
@@ -430,6 +433,8 @@ window.paymentForecastModule = function() {
                     this.updateChart();
                 }
             } catch (err) {
+                // The previous render stays on screen; the status line says it is not the new month.
+                this.loadError = true;
                 console.error('Failed to load forecast for month', month, err);
             } finally {
                 this.isLoading = false;
@@ -444,23 +449,24 @@ window.paymentForecastModule = function() {
 
         initChart() {
             const canvas = document.getElementById('paymentForecastChart');
-            if (!canvas) return;
-
-            const colors = window.AdasiChart ? window.AdasiChart.getColors() : {
-                primary: '#1F5FA6',
-                surface: '#FFFFFF',
-                onSurface: '#1A202C',
-                onSurfaceVariant: '#64748B',
-                gridLine: 'rgba(226, 232, 240, 0.75)',
-            };
+            const theme = window.AdasiChart;
+            if (!canvas || !theme) return;
 
             const labels = this.currentData.map(d => d.short_label || d.label || d.week || d.month);
             const periodAmounts = this.currentData.map(d => d.period_amount);
             const cumulativeAmounts = this.currentData.map(d => d.cumulative_amount);
-
             const self = this;
+            const scales = theme.getScales({
+                yMaxTicks: 5,
+                yBeginAtZero: true,
+                yFormat: function(value) {
+                    if (value >= 1e9) return 'Rp ' + self.formatNumber((value / 1e9).toFixed(1), 'decimal') + 'M';
+                    if (value >= 1e6) return 'Rp ' + self.formatNumber((value / 1e6).toFixed(0), 'decimal') + 'jt';
+                    return 'Rp ' + self.formatNumber(Number(value).toLocaleString('id-ID'), 'indonesian');
+                },
+            });
 
-            this.chartInstance = new Chart(canvas, {
+            forecastChart = new Chart(canvas, {
                 data: {
                     labels: labels,
                     datasets: [
@@ -468,27 +474,24 @@ window.paymentForecastModule = function() {
                             type: 'line',
                             label: @js(__('finance.labels.accumulation')),
                             data: cumulativeAmounts,
-                            borderColor: '#0D9488',
-                            backgroundColor: (context) => window.AdasiChart?.createAreaGradient(context, '#0D9488', 0.15, 0.01) || 'rgba(13, 148, 136, 0.05)',
-                            fill: true,
+                            borderColor: theme.color('series-3'),
+                            backgroundColor: theme.color('series-3'),
+                            pointBorderColor: theme.color('surface'),
+                            pointStyle: 'circle',
                             tension: 0.25,
-                            borderWidth: 2.5,
+                            borderWidth: 2,
                             pointRadius: 4,
                             pointHoverRadius: 6,
-                            pointBackgroundColor: '#0D9488',
-                            pointBorderColor: '#FFFFFF',
-                            pointBorderWidth: 1.5,
+                            pointBorderWidth: 2,
                             order: 1,
                         },
                         {
                             type: 'bar',
                             label: @js(__('finance.review.period_amount')),
                             data: periodAmounts,
-                            backgroundColor: (context) => window.AdasiChart?.createBarGradient(context, colors.primary, 0.9, 0.35) || colors.primary,
-                            borderColor: colors.primary,
-                            borderWidth: 1,
+                            backgroundColor: theme.color('series-1'),
                             borderRadius: 4,
-                            borderSkipped: false,
+                            borderSkipped: 'start',
                             maxBarThickness: 32,
                             barPercentage: 0.55,
                             order: 2,
@@ -496,93 +499,56 @@ window.paymentForecastModule = function() {
                     ]
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: { duration: 350 },
                     interaction: {
                         mode: 'index',
                         intersect: false,
                     },
                     plugins: {
                         legend: { display: false },
-                        tooltip: {
-                            enabled: true,
-                            backgroundColor: 'rgba(15, 23, 42, 0.94)',
-                            titleColor: '#F8FAFC',
-                            bodyColor: '#F8FAFC',
-                            titleFont: { family: 'Inter', size: 12, weight: '600' },
-                            bodyFont: { family: 'Inter', size: 11, weight: '400' },
-                            padding: { top: 8, bottom: 8, left: 12, right: 12 },
-                            cornerRadius: 8,
-                            borderColor: 'rgba(255, 255, 255, 0.08)',
-                            borderWidth: 1,
+                        adasiA11y: {
+                            format: (value) => self.formatRupiah(value),
+                            formatLabel: (label, index) => {
+                                const item = self.currentData[index];
+                                return item ? (item.label || item.week || item.month) : label;
+                            },
+                        },
+                        tooltip: theme.getTooltip({
                             callbacks: {
                                 title: function(items) {
                                     if (!items || !items.length) return '';
-                                    const idx = items[0].dataIndex;
-                                    const item = self.currentData[idx];
+                                    const item = self.currentData[items[0].dataIndex];
                                     return item ? (item.label || item.week || item.month) : items[0].label;
                                 },
                                 label: function(context) {
-                                    const idx = context.dataIndex;
-                                    const item = self.currentData[idx];
+                                    const item = self.currentData[context.dataIndex];
                                     if (!item) return '';
-                                    if (context.datasetIndex === 1) { // Bar
+                                    if (context.dataset.type === 'bar') {
                                         return [
                                             window.AdasiI18n.choice('js.finance.invoices_tooltip', item.count),
                                             @js(__('finance.review.amount_tooltip')).replace(':amount', self.formatRupiah(item.period_amount))
                                         ];
-                                    } else { // Line
-                                        return @js(__('finance.review.cumulative_tooltip')).replace(':amount', self.formatRupiah(item.cumulative_amount));
                                     }
+                                    return @js(__('finance.review.cumulative_tooltip')).replace(':amount', self.formatRupiah(item.cumulative_amount));
                                 }
                             }
-                        }
+                        }),
                     },
-                    scales: {
-                        x: {
-                            grid: { display: false },
-                            border: { display: false },
-                            ticks: {
-                                font: { family: 'Inter', size: 11, weight: '500' },
-                                color: colors.onSurfaceVariant,
-                                padding: 6,
-                            }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            grid: {
-                                color: colors.gridLine,
-                                drawBorder: false,
-                            },
-                            border: { display: false },
-                            ticks: {
-                                font: { family: 'Inter', size: 11 },
-                                color: colors.onSurfaceVariant,
-                                padding: 8,
-                                callback: function(value) {
-                                    if (value >= 1e9) return 'Rp ' + self.formatNumber((value / 1e9).toFixed(1), 'decimal') + 'M';
-                                    if (value >= 1e6) return 'Rp ' + self.formatNumber((value / 1e6).toFixed(0), 'decimal') + 'jt';
-                                    return 'Rp ' + self.formatNumber(Number(value).toLocaleString('id-ID'), 'indonesian');
-                                }
-                            }
-                        }
-                    }
+                    scales,
                 }
             });
         },
 
         updateChart() {
-            if (!this.chartInstance) return;
+            if (!forecastChart) return;
 
             const labels = this.currentData.map(d => d.short_label || d.label || d.week || d.month);
             const periodAmounts = this.currentData.map(d => d.period_amount);
             const cumulativeAmounts = this.currentData.map(d => d.cumulative_amount);
 
-            this.chartInstance.data.labels = labels;
-            this.chartInstance.data.datasets[0].data = cumulativeAmounts;
-            this.chartInstance.data.datasets[1].data = periodAmounts;
-            this.chartInstance.update();
+            forecastChart.data.labels = labels;
+            forecastChart.data.datasets[0].data = cumulativeAmounts;
+            forecastChart.data.datasets[1].data = periodAmounts;
+            forecastChart.update();
         }
     };
 };

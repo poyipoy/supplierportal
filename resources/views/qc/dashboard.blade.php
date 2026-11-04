@@ -102,39 +102,70 @@
         </x-slot:metrics>
 
         <x-slot:charts>
-{{-- Restrained Quality Charts Grid --}}
+{{-- Quality charts: the pass rate is a stat (two values never need a donut); the trend is a described chart with a table. --}}
+    @php
+        $okPercent = $totalInspections > 0 ? (int) round(($totalOk / $totalInspections) * 100) : 0;
+        $ngPercent = $totalInspections > 0 ? (int) round(($totalNg / $totalInspections) * 100) : 0;
+    @endphp
     <div class="tw:grid tw:grid-cols-1 tw:gap-4 tw:lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
-        {{-- Quality Ratio Doughnut Chart --}}
         <x-ui.card :title="__('qc.copy.quality_pass_fail_ratio')" :description="__('qc.copy.aggregate_ok_vs_ng_outcome_ratio')" class="tw:h-full">
-            <div class="tw:flex tw:flex-col tw:items-center tw:justify-center tw:py-2">
-                @if($totalInspections > 0)
-                    <div class="tw:h-[220px] tw:w-[220px] position-relative">
-                        <canvas id="qualityChart" role="img" aria-label="{{ __('qc.copy.qc_ok_and_ng_distribution') }}">{{ __('qc.copy.qc_ok_and_ng_distribution_chart') }}</canvas>
+            @if($totalInspections > 0)
+                <div class="tw:grid tw:gap-3 tw:py-2">
+                    <div>
+                        <div class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('charts.qc.ok_rate') }}</div>
+                        <div class="tw:text-3xl tw:font-bold tw:text-on-surface">{{ $okPercent }}%</div>
+                        <p class="tw:m-0 tw:mt-1 tw:text-ui-sm tw:text-on-surface-variant">{{ __('charts.qc.ok_rate_detail', ['ok' => $regionalFormatter->number((string) $totalOk, 'plain'), 'total' => $regionalFormatter->number((string) $totalInspections, 'plain')]) }}</p>
                     </div>
-                    <div class="d-flex flex-wrap justify-content-center gap-4 mt-3 tw:text-ui-xs">
-                        <div class="d-flex align-items-center tw:gap-1.5">
-                            <span class="d-inline-block rounded-circle bg-success" style="width: 10px; height: 10px;"></span>
-                            <span class="tw:text-on-surface fw-semibold">OK: {{ $totalOk }} ({{ $totalInspections > 0 ? round(($totalOk / $totalInspections) * 100) : 0 }}%)</span>
-                        </div>
-                        <div class="d-flex align-items-center tw:gap-1.5">
-                            <span class="d-inline-block rounded-circle bg-danger" style="width: 10px; height: 10px;"></span>
-                            <span class="tw:text-on-surface fw-semibold">NG: {{ $totalNg }} ({{ $totalInspections > 0 ? round(($totalNg / $totalInspections) * 100) : 0 }}%)</span>
-                        </div>
+                    <div class="tw:flex tw:h-3 tw:w-full tw:gap-0.5 tw:overflow-hidden tw:rounded-ui-xs tw:bg-surface-container" aria-hidden="true">
+                        @if($totalOk > 0)<span class="tw:block tw:h-full tw:bg-[var(--md-chart-ok)]" style="width: {{ $okPercent }}%"></span>@endif
+                        @if($totalNg > 0)<span class="tw:block tw:h-full tw:bg-[var(--md-chart-ng)]" style="width: {{ $ngPercent }}%"></span>@endif
                     </div>
-                @else
-                    <div class="tw:text-outline text-center py-5 tw:text-ui-xs">
-                        <x-ui.icon name="chart-pie" size="lg" class="mb-2 tw:text-outline" />
-                        <p class="mb-0">{{ __('qc.copy.no_inspection_records_available') }}</p>
-                    </div>
-                @endif
-            </div>
+                    <ul class="tw:m-0 tw:grid tw:list-none tw:gap-1.5 tw:p-0 tw:text-ui-sm">
+                        <li class="tw:flex tw:items-center tw:gap-2">
+                            <x-ui.icon name="circle-check" size="sm" class="tw:text-[var(--md-chart-ok)]" />
+                            <span class="tw:font-semibold tw:text-on-surface">{{ __('qc.copy.material_ok') }}</span>
+                            <span class="tw:ms-auto tw:text-on-surface ui-tabular-nums">{{ $regionalFormatter->number((string) $totalOk, 'plain') }} ({{ $okPercent }}%)</span>
+                        </li>
+                        <li class="tw:flex tw:items-center tw:gap-2">
+                            <x-ui.icon name="circle-x" size="sm" class="tw:text-[var(--md-chart-ng)]" />
+                            <span class="tw:font-semibold tw:text-on-surface">{{ __('qc.copy.material_ng') }}</span>
+                            <span class="tw:ms-auto tw:text-on-surface ui-tabular-nums">{{ $regionalFormatter->number((string) $totalNg, 'plain') }} ({{ $ngPercent }}%)</span>
+                        </li>
+                    </ul>
+                </div>
+            @else
+                <x-ui.empty-state icon="chart-pie" :title="__('qc.copy.no_inspection_records_available')" />
+            @endif
         </x-ui.card>
 
-        {{-- OK vs NG 6-Month Trend Chart --}}
         <x-ui.card :title="__('qc.copy.inspection_outcomes_trend_6_month')" :description="__('qc.copy.monthly_distribution_of_inspected_material_quality')" class="tw:h-full">
-            <div class="tw:h-[260px] w-100">
-                <canvas id="trendChart" role="img" aria-label="{{ __('qc.copy.qc_ok_and_ng_trend_by_period') }}">{{ __('qc.copy.qc_ok_and_ng_trend_chart_by_period') }}</canvas>
-            </div>
+            @if($totalInspections > 0)
+                <x-ui.chart id="trendChart" :label="__('qc.copy.qc_ok_and_ng_trend_by_period')" :fallback="__('qc.copy.qc_ok_and_ng_trend_chart_by_period')" plot-class="tw:h-[260px]">
+                    <x-slot:table>
+                        <table class="table table-sm align-middle tw:m-0 tw:text-ui-xs">
+                            <caption class="tw:sr-only">{{ __('qc.copy.inspection_outcomes_trend_6_month') }}</caption>
+                            <thead>
+                                <tr>
+                                    <th scope="col">{{ __('charts.columns.period') }}</th>
+                                    <th scope="col" class="text-end">{{ __('qc.copy.material_ok') }}</th>
+                                    <th scope="col" class="text-end">{{ __('qc.copy.material_ng') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($trendData as $month)
+                                    <tr>
+                                        <th scope="row" class="tw:font-normal">{{ $month['label'] }}</th>
+                                        <td class="text-end ui-tabular-nums">{{ $regionalFormatter->number((string) $month['ok'], 'plain') }}</td>
+                                        <td class="text-end ui-tabular-nums">{{ $regionalFormatter->number((string) $month['ng'], 'plain') }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </x-slot:table>
+                </x-ui.chart>
+            @else
+                <x-ui.empty-state icon="chart-line" :title="__('qc.copy.no_inspection_records_available')" />
+            @endif
         </x-ui.card>
     </div>
         </x-slot:charts>
@@ -145,125 +176,61 @@
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous"></script>
 <script>
+    // Runs after the deferred app module, so AdasiChart (tokens, scales, a11y plugin) is ready.
     document.addEventListener('DOMContentLoaded', function() {
-        const displayDashboardNumber = (text) => window.AdasiPreferences?.displayNumber
-            ? window.AdasiPreferences.displayNumber(text, 'indonesian') : text;
-        const themeColors = window.AdasiChart ? window.AdasiChart.getColors() : {
-            success: '#1E8449',
-            error: '#C0392B',
-            surface: '#FFFFFF',
-            onSurfaceVariant: '#64748B',
-            gridLine: 'rgba(226, 232, 240, 0.75)',
-        };
-
-        const okColor = themeColors.success;
-        const ngColor = themeColors.error;
-
-        @if($totalInspections > 0)
-            const qualityCanvas = document.getElementById('qualityChart');
-            if (qualityCanvas) {
-                new Chart(qualityCanvas, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['OK', 'NG'],
-                        datasets: [{
-                            data: [{{ $totalOk }}, {{ $totalNg }}],
-                            backgroundColor: [okColor, ngColor],
-                            borderWidth: 2,
-                            borderColor: themeColors.surface,
-                            borderRadius: 4,
-                            spacing: 2,
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        animation: { duration: 400 },
-                        cutout: '75%',
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: window.AdasiChart?.getTooltip({
-                                callbacks: {
-                                    label: (ctx) => ' ' + window.AdasiI18n.choice('js.qc.inspection_count', Number(ctx.parsed), {
-                                        label: ctx.label,
-                                        count: displayDashboardNumber(Number(ctx.parsed).toLocaleString('id-ID')),
-                                    }),
-                                }
-                            }) || {},
-                        },
-                    }
-                });
-            }
-        @endif
-
         const trendCanvas = document.getElementById('trendChart');
-        if (trendCanvas) {
-            new Chart(trendCanvas, {
-                type: 'line',
-                data: {
-                    labels: {!! json_encode(array_column($trendData, 'label')) !!},
-                    datasets: [
-                        {
-                            label: @json(__('qc.copy.material_ok')),
-                            data: {!! json_encode(array_column($trendData, 'ok')) !!},
-                            borderColor: okColor,
-                            backgroundColor: (context) => window.AdasiChart?.createAreaGradient(context, okColor, 0.16, 0.01) || 'transparent',
-                            fill: true,
-                            tension: 0.3,
-                            borderWidth: 2.5,
-                            pointRadius: 3,
-                            pointHoverRadius: 6,
-                            pointBackgroundColor: okColor,
-                            pointBorderColor: themeColors.surface,
-                            pointBorderWidth: 2,
-                        },
-                        {
-                            label: @json(__('qc.copy.material_ng')),
-                            data: {!! json_encode(array_column($trendData, 'ng')) !!},
-                            borderColor: ngColor,
-                            backgroundColor: (context) => window.AdasiChart?.createAreaGradient(context, ngColor, 0.12, 0.01) || 'transparent',
-                            fill: true,
-                            tension: 0.3,
-                            borderWidth: 2.5,
-                            pointRadius: 3,
-                            pointHoverRadius: 6,
-                            pointBackgroundColor: ngColor,
-                            pointBorderColor: themeColors.surface,
-                            pointBorderWidth: 2,
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: { duration: 400 },
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                            align: 'end',
-                            labels: {
-                                boxWidth: 8,
-                                boxHeight: 8,
-                                usePointStyle: true,
-                                font: { family: 'Inter', size: 11, weight: '500' },
-                                color: themeColors.onSurfaceVariant,
-                                padding: 12,
-                            }
-                        },
-                        tooltip: window.AdasiChart?.getTooltip({
-                            callbacks: {
-                                label: (ctx) => ' ' + ctx.dataset.label + ': ' + displayDashboardNumber(Number(ctx.parsed.y).toLocaleString('id-ID')),
-                            }
-                        }) || {},
+        if (!trendCanvas || !window.AdasiChart) return;
+        const chart = window.AdasiChart;
+        const scales = chart.getScales({ yMaxTicks: 5, yBeginAtZero: true });
+        scales.y.ticks.precision = 0;
+
+        new Chart(trendCanvas, {
+            type: 'line',
+            data: {
+                labels: @json(array_column($trendData, 'label')),
+                datasets: [
+                    {
+                        label: @json(__('qc.copy.material_ok')),
+                        data: @json(array_column($trendData, 'ok')),
+                        borderColor: chart.color('ok'),
+                        backgroundColor: chart.color('ok'),
+                        pointBorderColor: chart.color('surface'),
+                        pointStyle: 'circle',
+                        borderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        pointBorderWidth: 2,
+                        tension: 0,
                     },
-                    scales: window.AdasiChart?.getScales({
-                        yMaxTicks: 5,
-                        yBeginAtZero: true,
-                        yFormat: (val) => displayDashboardNumber(Number(val).toLocaleString('id-ID')),
-                    }) || {},
-                }
-            });
-        }
+                    {
+                        label: @json(__('qc.copy.material_ng')),
+                        data: @json(array_column($trendData, 'ng')),
+                        borderColor: chart.color('ng'),
+                        backgroundColor: chart.color('ng'),
+                        pointBorderColor: chart.color('surface'),
+                        pointStyle: 'triangle',
+                        borderDash: [6, 4],
+                        borderWidth: 2,
+                        pointRadius: 5,
+                        pointHoverRadius: 7,
+                        pointBorderWidth: 2,
+                        tension: 0,
+                    },
+                ],
+            },
+            options: {
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: chart.getLegend(),
+                    tooltip: chart.getTooltip({
+                        callbacks: {
+                            label: (ctx) => ' ' + ctx.dataset.label + ': ' + chart.formatNumber(ctx.parsed.y),
+                        },
+                    }),
+                },
+                scales,
+            },
+        });
     });
 </script>
 @endpush

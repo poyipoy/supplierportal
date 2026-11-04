@@ -3,6 +3,11 @@
 @php
     $visibleLabel = html_entity_decode(trim(strip_tags((string) $slot)), ENT_QUOTES | ENT_HTML5, 'UTF-8');
     $displayLabel = $label ?: $visibleLabel;
+    // WCAG 2.5.3 Label in Name: the accessible name must contain the visible text; a longer
+    // label that does not (e.g. "dan" vs "&") stays in the tooltip only.
+    $accessibleName = $visibleLabel === '' || str_contains(mb_strtolower($displayLabel), mb_strtolower($visibleLabel))
+        ? $displayLabel
+        : $visibleLabel;
     $typingSteps = max(6, min(24, mb_strlen($visibleLabel)));
 @endphp
 
@@ -12,7 +17,7 @@
         role="link"
         aria-disabled="true"
         tabindex="0"
-        aria-label="{{ $disabledHint ? $displayLabel.'. '.$disabledHint : $displayLabel }}"
+        aria-label="{{ $disabledHint ? $accessibleName.'. '.$disabledHint : $accessibleName }}"
         title="{{ $disabledHint ?: $displayLabel }}"
         data-sidebar-item
         data-sidebar-disabled
@@ -29,7 +34,7 @@
 @else
 <a
     href="{{ $href }}"
-    aria-label="{{ $displayLabel }}"
+    aria-label="{{ $accessibleName }}"
     data-sidebar-item
     data-sidebar-tooltip
     data-bs-title="{{ $displayLabel }}"

@@ -93,6 +93,10 @@ return [
             'label' => 'Permintaan pembelian diajukan',
             'description' => 'Permintaan pembelian diajukan untuk diperiksa.',
         ],
+        'pr_supplier_invited' => [
+            'label' => 'Ditambahkan ke requisition',
+            'description' => 'Purchasing menambahkan Anda ke requisition yang sudah terbuka untuk penawaran.',
+        ],
         'quotation_submitted' => [
             'label' => 'Penawaran diajukan',
             'description' => 'Supplier mengajukan penawaran.',
@@ -140,6 +144,10 @@ return [
         'shipment_submitted' => [
             'label' => 'Pengiriman diajukan',
             'description' => 'Supplier mengajukan pengiriman.',
+        ],
+        'shipment_document_status_updated' => [
+            'label' => 'Dokumen pengiriman ditinjau',
+            'description' => 'Purchasing mengubah status dokumen pada salah satu pengiriman Anda.',
         ],
         'po_material_arrived' => [
             'label' => 'Material siap untuk QC',

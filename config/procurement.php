@@ -35,4 +35,15 @@ return [
     // Mission 05 atomic MTC switch (Q6B): MTC per shipment, required before
     // submit, and new quotation MTC uploads retired. false = pre-R3 behaviour.
     'shipment_mtc_enabled' => (bool) env('PROCUREMENT_SHIPMENT_MTC_ENABLED', true),
+
+    // Ready to Ship gate (3 Nov 2026): shipment drafts and submits only accept
+    // awarded items whose latest supplier progress is ready_to_ship. false =
+    // previous behaviour (progress never blocks a shipment). Rollback switch.
+    'require_ready_to_ship_for_shipment' => (bool) env('PROCUREMENT_REQUIRE_READY_TO_SHIP', true),
+
+    // Historical quotation comparison (Gate 1 D-3, info flag only): a snapshot
+    // rate older than this many days before its quotation date is marked stale.
+    'historical_comparison' => [
+        'stale_rate_days' => (int) env('PROCUREMENT_HISTORY_STALE_RATE_DAYS', 31),
+    ],
 ];

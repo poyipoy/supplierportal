@@ -194,6 +194,23 @@ class StatusHelper
         return self::label('quotation', $status);
     }
 
+    /** Historical quotation comparison status (QuotationHistoryService::STATUS_*). */
+    public static function quotationHistoryLabel(string $status): string
+    {
+        return self::label('quotation_history', $status);
+    }
+
+    /** Tone for x-ui.status-chip; the chip pairs the tone with an icon and the label. */
+    public static function quotationHistoryTone(string $status): string
+    {
+        return match ($status) {
+            'comparable' => 'success',
+            'comparable_unverified' => 'info',
+            'ambiguous', 'spec_incomplete', 'basis_differs', 'fx_unavailable' => 'warning',
+            default => 'neutral',
+        };
+    }
+
     public static function quotationValidityMeta(mixed $validityPeriod, ?string $status = null): array
     {
         if ($status === Quotation::STATUS_ALL_UNAVAILABLE) {
@@ -502,6 +519,7 @@ class StatusHelper
         'material_preparation' => 'bg-warning text-dark',
         'on_production' => 'bg-primary',
         'ready_to_ship' => 'bg-success',
+        'arrived' => 'bg-success',
     ];
 
     public static function materialProgressBadge(string $status): string
@@ -517,7 +535,7 @@ class StatusHelper
     public static function materialProgressTone(string $status): string
     {
         return match ($status) {
-            'ready_to_ship' => 'success',
+            'ready_to_ship', 'arrived' => 'success',
             'on_production' => 'info',
             'material_preparation' => 'warning',
             'order_confirmed' => 'info',

@@ -38,7 +38,17 @@
     function pushDirtyHistoryState() {
         if (!hasPushedHistoryState && window.history && window.history.pushState) {
             try {
-                window.history.pushState({ adasiUnsaved: true }, document.title, window.location.href);
+                const workspace = document.querySelector('[data-server-tabs-unsaved="managed"]');
+                const previous = window.history.state || {};
+                const next = workspace
+                    ? { ...previous, adasiUnsaved: true, _serverTabsIndex: previous._serverTabsIndex + 1 }
+                    : { adasiUnsaved: true };
+                window.history.pushState(next, document.title, window.location.href);
+                if (workspace) {
+                    window.dispatchEvent(new CustomEvent('adasi:server-tabs:history-guard', {
+                        detail: { selector: next._serverTabs, index: next._serverTabsIndex },
+                    }));
+                }
                 hasPushedHistoryState = true;
             } catch (e) {
                 // Ignore history state errors if sandbox restricts
@@ -234,6 +244,12 @@
                 hasPushedHistoryState = false;
             }
         },
+        resumeTracking() {
+            // A fragment navigation has settled in the same document; subsequent edits need a new decision.
+            leaveConfirmed = false;
+            clearTimeout(leaveConfirmedTimer);
+            isSubmitting = false;
+        },
         resetSnapshot(form) {
             if (form) {
                 snapshotForm(form);
@@ -397,6 +413,7 @@
 
             const href = link.getAttribute('href');
             if (!href || href === '#' || href.startsWith('javascript:') || href.startsWith('#')) return;
+            if (link.closest('[data-server-tabs-unsaved="managed"]')) return;
 
             // Allow elements explicitly marked to bypass dirty check or modal triggers
             if (link.closest('[data-allow-dirty="true"], [data-quotation-form-export], [data-bs-toggle], [data-bs-dismiss]')) return;
@@ -412,6 +429,7 @@
 
         // Intercept Browser Back / Forward buttons via popstate
         window.addEventListener('popstate', () => {
+            if (document.querySelector('[data-server-tabs-unsaved="managed"]')) return;
             if (AdasiUnsaved.isDirty()) {
                 // Re-push history entry so we stay on the page until user decides
                 try {

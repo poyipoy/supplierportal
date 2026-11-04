@@ -93,6 +93,10 @@ return [
             'label' => 'Purchase requisition submitted',
             'description' => 'A purchase requisition is submitted for review.',
         ],
+        'pr_supplier_invited' => [
+            'label' => 'Added to a requisition',
+            'description' => 'Purchasing adds you to a requisition that is already open for quotations.',
+        ],
         'quotation_submitted' => [
             'label' => 'Quotation submitted',
             'description' => 'A supplier submits a quotation.',
@@ -140,6 +144,10 @@ return [
         'shipment_submitted' => [
             'label' => 'Shipment submitted',
             'description' => 'A supplier submits a shipment.',
+        ],
+        'shipment_document_status_updated' => [
+            'label' => 'Shipment document reviewed',
+            'description' => 'Purchasing changes the status of a document on one of your shipments.',
         ],
         'po_material_arrived' => [
             'label' => 'Material ready for QC',

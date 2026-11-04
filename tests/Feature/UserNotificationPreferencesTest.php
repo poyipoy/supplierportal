@@ -25,12 +25,12 @@ class UserNotificationPreferencesTest extends TestCase
     public function test_phase_five_registry_and_flat_event_form(): void
     {
         $registry = config('notification_preferences');
-        $this->assertCount(47, $registry);
+        $this->assertCount(49, $registry);
         $expectedKeys = [
-            'pr_submitted', 'quotation_submitted', 'quotation_revised', 'quotation_accepted', 'quotation_rejected',
+            'pr_submitted', 'pr_supplier_invited', 'quotation_submitted', 'quotation_revised', 'quotation_accepted', 'quotation_rejected',
             'quotation_revision_requested', 'quotation_negotiation_message', 'conversation_message_created',
             'po_issued', 'po_item_progress_updated', 'document_status_updated', 'document_all_completed',
-            'shipment_submitted', 'po_material_arrived', 'qc_inspection_ok', 'qc_inspection_ng',
+            'shipment_submitted', 'shipment_document_status_updated', 'po_material_arrived', 'qc_inspection_ok', 'qc_inspection_ng',
             'claim_created', 'claim_responded', 'claim_resolved', 'export_completed', 'export_failed',
             'new_device_login', 'repeated_lockouts_detected', 'supplier_registration_submitted',
             'supplier_registration_resubmitted', 'supplier_registration_revision_requested',
@@ -44,7 +44,7 @@ class UserNotificationPreferencesTest extends TestCase
             'supplier_audit_submitted',
         ];
         $this->assertEqualsCanonicalizing($expectedKeys, array_keys($registry));
-        $this->assertCount(47, array_unique(array_column($registry, 'source_event')));
+        $this->assertCount(49, array_unique(array_column($registry, 'source_event')));
         foreach ($registry as $entry) {
             $this->assertSame(SystemNotification::class, $entry['class']);
             $this->assertTrue($entry['default']);

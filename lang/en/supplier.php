@@ -74,7 +74,7 @@ return [
         'direct_messaging_channels_linked_to_your_supplier_purchase_requisitions_and_purchase_orders' => 'Direct messaging channels linked to your supplier purchase requisitions and purchase orders.',
         'document_reference' => 'Document Reference',
         'document_status_synchronized_with_your_shipments' => 'Document status synchronized with your shipments.',
-        'download_template' => 'Download Template',
+        'download_template' => 'Export',
         'draft' => 'Draft',
         'draft_saved' => 'Draft Saved',
         'est_weight' => 'Est Weight',

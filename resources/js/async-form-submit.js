@@ -95,9 +95,16 @@ function errorSummary(form) {
     return summary;
 }
 
-function clearRenderedErrors(form) {
+export function clearValidationErrors(form) {
     form.querySelectorAll('[data-async-error]').forEach((node) => node.remove());
     form.querySelectorAll('[data-async-invalid]').forEach((field) => {
+        const errorId = field.getAttribute('data-async-error-id');
+        if (errorId) {
+            const descriptions = (field.getAttribute('aria-describedby') || '').split(/\s+/).filter((id) => id && id !== errorId);
+            if (descriptions.length) field.setAttribute('aria-describedby', descriptions.join(' '));
+            else field.removeAttribute('aria-describedby');
+            field.removeAttribute('data-async-error-id');
+        }
         field.removeAttribute('aria-invalid');
         field.removeAttribute('data-async-invalid');
     });
@@ -127,6 +134,12 @@ function renderInlineError(field, message) {
         || (field.parentElement?.classList.contains('tw:relative') ? field.parentElement : field);
 
     const note = document.createElement('p');
+    if (field.id) {
+        note.id = `${field.id}-async-error`;
+        const descriptions = (field.getAttribute('aria-describedby') || '').split(/\s+/).filter(Boolean);
+        field.setAttribute('aria-describedby', [...new Set([...descriptions, note.id])].join(' '));
+        field.setAttribute('data-async-error-id', note.id);
+    }
     note.className = 'tw:m-0 tw:mt-1 tw:text-ui-xs tw:font-medium tw:text-error';
     note.setAttribute('data-async-error', '');
     note.textContent = message;
@@ -161,7 +174,7 @@ function renderSummary(form, items) {
         list.append(li);
     });
 
-    summary.replaceChildren(title, kept, list);
+    summary.replaceChildren(title, ...(form.dataset.asyncFilesHint === 'false' ? [] : [kept]), list);
     summary.hidden = false;
 
     return summary;
@@ -240,7 +253,7 @@ export function handleValidationErrors(form, errors, message = '') {
 export async function submitAsync(form, submitter = null) {
     form.dataset.asyncSubmitting = 'true';
     form.setAttribute('aria-busy', 'true');
-    clearRenderedErrors(form);
+    clearValidationErrors(form);
     form.dispatchEvent(new CustomEvent('adasi:form-submitting'));
     const loaderToken = window.AdasiLoader?.show();
     if (loaderToken !== undefined) loaderTokens.set(form, loaderToken);

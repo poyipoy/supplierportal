@@ -26,6 +26,7 @@ const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 const fragmentCache = new Map(); // url → { html, tab, metrics, data, timestamp }
 
 function cacheGet(url, ttlMs = CACHE_TTL_MS) {
+    if (ttlMs <= 0) return null;
     const entry = fragmentCache.get(url);
     if (!entry) return null;
     if (Date.now() - entry.timestamp > ttlMs) {
@@ -91,6 +92,7 @@ function init(containerSelector, options = {}) {
         const existing = instances.get(containerSelector);
         if (options && Object.keys(options).length > 0) {
             existing.options = Object.assign(existing.options || {}, options);
+            configureManagedHistory(existing, containerSelector);
         }
         return existing;
     }
@@ -100,6 +102,11 @@ function init(containerSelector, options = {}) {
         abortController: null,
         options,
         previousTab: null, // For optimistic rollback
+        navigationSequence: 0,
+        historyIndex: null,
+        viewIndex: null,
+        restoringHistory: false,
+        pendingHistoryError: null,
     };
 
     instances.set(containerSelector, state);
@@ -168,6 +175,7 @@ function init(containerSelector, options = {}) {
     // --- Speculative hover/touch prefetch ---
     let prefetchTimer = null;
     container.addEventListener('pointerenter', (e) => {
+        if (state.options.prefetch === false || cacheTtlFor(state) <= 0) return;
         const tabLink = e.target.closest('[data-server-tab]');
         if (!tabLink) return;
 
@@ -191,10 +199,45 @@ function init(containerSelector, options = {}) {
         }
     }, true);
 
+    window.addEventListener('adasi:server-tabs:history-guard', (event) => {
+        if (event.detail?.selector === containerSelector && Number.isInteger(event.detail.index)) {
+            state.historyIndex = event.detail.index;
+        }
+    });
+
     // --- Browser back/forward (popstate) ---
-    window.addEventListener('popstate', (e) => {
+    window.addEventListener('popstate', async (e) => {
         if (e.state && e.state._serverTabs === containerSelector) {
-            fetchAndSwap(state, window.location.href, false);
+            if (state.restoringHistory) {
+                state.restoringHistory = false;
+                const error = state.pendingHistoryError;
+                state.pendingHistoryError = null;
+                if (error) state.options.onError?.(error);
+                return;
+            }
+            const previousIndex = state.historyIndex;
+            const targetIndex = e.state._serverTabsIndex;
+            const targetView = e.state._serverTabsView ?? targetIndex;
+            // The existing unsaved guard adds a same-URL entry. Preserve that exit guard,
+            // but skip it after the workspace has asked whether to keep the form.
+            if (state.options.managedHistory && Number.isInteger(targetIndex) && targetView === state.viewIndex) {
+                const direction = Math.sign(targetIndex - previousIndex) || (e.state.adasiUnsaved ? 1 : -1);
+                // Forward can reach a terminal guard with no following entry; it changes no view.
+                if (direction > 0) {
+                    state.historyIndex = targetIndex;
+                    return;
+                }
+                const allowed = typeof state.options.beforeNavigate === 'function'
+                    ? await state.options.beforeNavigate(window.location.href, { pushHistory: false }) : true;
+                if (allowed === false) state.restoringHistory = true;
+                window.history.go(allowed === false ? -direction : direction);
+                return;
+            }
+            const loaded = await fetchAndSwap(state, window.location.href, false, targetIndex);
+            if (!loaded && state.options.managedHistory && Number.isInteger(targetIndex) && previousIndex !== targetIndex) {
+                state.restoringHistory = true;
+                window.history.go(previousIndex - targetIndex);
+            }
         }
     });
 
@@ -206,6 +249,22 @@ function init(containerSelector, options = {}) {
             window.location.href,
         );
     }
+    configureManagedHistory(state, containerSelector);
+    return state;
+}
+
+function configureManagedHistory(state, selector) {
+    if (!state.options.managedHistory || state.historyIndex !== null) return;
+    state.historyIndex = Number.isInteger(window.history.state?._serverTabsIndex) ? window.history.state._serverTabsIndex : 0;
+    state.viewIndex = window.history.state?._serverTabsView ?? state.historyIndex;
+    window.history.replaceState({
+        ...window.history.state, _serverTabs: selector, _serverTabsIndex: state.historyIndex, _serverTabsView: state.viewIndex, url: window.location.href,
+    }, '', window.location.href);
+}
+
+function navigate(selector, url, { pushHistory = true } = {}) {
+    const state = instances.get(selector) || init(selector);
+    return state ? fetchAndSwap(state, url, pushHistory) : Promise.resolve(false);
 }
 
 /**
@@ -241,13 +300,25 @@ async function speculativePrefetch(url, ttlMs = CACHE_TTL_MS) {
  * @param {string} url
  * @param {boolean} pushHistory — true for user-initiated nav, false for popstate
  */
-async function fetchAndSwap(state, url, pushHistory) {
+async function fetchAndSwap(state, url, pushHistory, historyIndex = null) {
     const { container, options } = state;
+    const sequence = ++state.navigationSequence;
+    if (typeof options.beforeNavigate === 'function') {
+        const answer = options.beforeNavigate(url, { pushHistory });
+        const allowed = answer && typeof answer.then === 'function' ? await answer : answer;
+        if (sequence !== state.navigationSequence) return false;
+        if (allowed === false) {
+            if (state.previousTab) updateTabActiveStates(container, state.previousTab);
+            state.previousTab = null;
+            return false;
+        }
+    }
     const tableTarget = container.querySelector('[data-server-tabs-content]');
     if (!tableTarget) {
         console.warn('[AdasiServerTabs] Missing [data-server-tabs-content] inside container.');
-        return;
+        return false;
     }
+    options.onLoading?.();
 
     // Cancel any in-flight request (handles rapid tab clicking)
     if (state.abortController) {
@@ -268,9 +339,9 @@ async function fetchAndSwap(state, url, pushHistory) {
     if (cached) {
         // The request this click replaced no longer cleans up after itself, so clear its busy state here.
         clearBusyState(tableTarget);
-        applyData(state, container, tableTarget, cached.data, url, pushHistory, options);
+        applyData(state, container, tableTarget, cached.data, url, pushHistory, options, historyIndex);
         state.abortController = null;
-        return;
+        return true;
     }
 
     // ── Cache Miss: show loading state and fetch ──
@@ -300,15 +371,16 @@ async function fetchAndSwap(state, url, pushHistory) {
         const data = await response.json();
 
         // Store in cache for future revisits
-        cacheSet(url, data);
+        if (cacheTtlFor(state) > 0) cacheSet(url, data);
 
         // A newer click may have taken over while the body was being read; never paint stale content over it.
-        if (state.abortController !== controller) return;
+        if (state.abortController !== controller) return false;
 
-        applyData(state, container, tableTarget, data, url, pushHistory, options);
+        applyData(state, container, tableTarget, data, url, pushHistory, options, historyIndex);
+        return true;
     } catch (err) {
         clearTimeout(timeoutId);
-        if (err.name === 'AbortError' && !isTimeout) return; // Intentional cancellation
+        if (err.name === 'AbortError' && !isTimeout) return false; // Intentional cancellation
         console.error('[AdasiServerTabs] Fetch failed:', err);
 
         // Rollback optimistic tab state on error
@@ -323,6 +395,13 @@ async function fetchAndSwap(state, url, pushHistory) {
                 : t('js.server_tabs.failed');
             window.AdasiToast.error(message);
         }
+        if (options.managedHistory && Number.isInteger(historyIndex)) {
+            // Resuming dirty tracking can add history entries. Restore the source entry first.
+            state.pendingHistoryError = err;
+        } else {
+            options.onError?.(err);
+        }
+        return false;
     } finally {
         clearTimeout(timeoutId);
         if (state.abortController === controller) {
@@ -344,7 +423,7 @@ function clearBusyState(target) {
  * Apply fetched or cached data to the DOM.
  * Extracted so both cache-hit and network paths use the same logic.
  */
-function applyData(state, container, tableTarget, data, url, pushHistory, options) {
+function applyData(state, container, tableTarget, data, url, pushHistory, options, historyIndex = null) {
     // 0. Dispatch before-swap event for cleanup (Chart.js, DataTables, etc.)
     container.dispatchEvent(new CustomEvent('adasi:server-tabs:before-swap', {
         bubbles: true,
@@ -388,11 +467,18 @@ function applyData(state, container, tableTarget, data, url, pushHistory, option
     // 6. Sync URL
     if (pushHistory) {
         const resolvedUrl = data.url || url;
+        if (options.managedHistory) {
+            state.historyIndex += 1;
+            state.viewIndex = state.historyIndex;
+        }
         window.history.pushState(
-            { _serverTabs: getContainerSelector(state), url: resolvedUrl },
+            { _serverTabs: getContainerSelector(state), url: resolvedUrl, ...(options.managedHistory ? { _serverTabsIndex: state.historyIndex, _serverTabsView: state.viewIndex } : {}) },
             '',
             resolvedUrl,
         );
+    } else if (options.managedHistory && Number.isInteger(historyIndex)) {
+        state.historyIndex = historyIndex;
+        state.viewIndex = window.history.state?._serverTabsView ?? historyIndex;
     }
 
     // 7. Re-init Bootstrap tooltips inside swapped content
@@ -620,6 +706,7 @@ if (typeof document !== 'undefined') {
 
 window.AdasiServerTabs = Object.freeze({
     init,
+    navigate,
     boot: bootServerTabs,
     invalidateCache: cacheInvalidateAll,
     invalidateCacheForTab: cacheInvalidateForTab,

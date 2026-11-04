@@ -190,6 +190,20 @@ BLADE;
         $this->assertNoCompilerLeakage($html);
     }
 
+    public function test_sidebar_item_accessible_name_contains_its_visible_label(): void
+    {
+        // WCAG 2.5.3 Label in Name: voice-control users say what they see.
+        $html = Blade::render('<x-ui.sidebar-item href="/s" icon="truck" label="Pengiriman dan Logistik">{{ "Pengiriman & Logistik" }}</x-ui.sidebar-item>');
+        $this->assertStringContainsString('aria-label="Pengiriman &amp; Logistik"', $html);
+        $this->assertStringContainsString('data-bs-title="Pengiriman dan Logistik"', $html, 'the tooltip keeps the longer label');
+
+        $kept = Blade::render('<x-ui.sidebar-item href="/r" icon="clipboard-list" label="Purchase Requisition list">Purchase Requisition</x-ui.sidebar-item>');
+        $this->assertStringContainsString('aria-label="Purchase Requisition list"', $kept, 'a label that already contains the visible text is kept');
+
+        $disabled = Blade::render('<x-ui.sidebar-item href="/i" icon="file-plus" label="Submit a new bill" :disabled="true" disabled-hint="Audit overdue">Invoice</x-ui.sidebar-item>');
+        $this->assertStringContainsString('aria-label="Invoice. Audit overdue"', $disabled);
+    }
+
     public function test_auth_views_render_without_compiler_leakage(): void
     {
         $views = [

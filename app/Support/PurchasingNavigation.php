@@ -55,6 +55,99 @@ class PurchasingNavigation
             : route('purchasing.dashboard');
     }
 
+    public const COMPARISON_ROUTES = [
+        'purchasing.comparison.inter-supplier',
+        'purchasing.comparison.historical',
+        'purchasing.comparison.vs-best',
+    ];
+
+    /** Shared Price Comparison context: present sets, absent removes (PUR-05). */
+    private const COMPARISON_SHARED_KEYS = ['material_name', 'shape', 'currency'];
+
+    /** Historical-local focus that never travels to another tab (Gate 1 C6.1). */
+    private const COMPARISON_LOCAL_KEYS = ['pr_item', 'chart'];
+
+    /** Removed by Clear PR from remembered comparison URLs (Gate 1 C6). */
+    private const COMPARISON_PR_KEYS = ['pr_id', 'pr_item', 'chart', 'material_name', 'shape', 'history_page', 'clear_pr'];
+
+    /**
+     * Price Comparison tab link (Gate 1 C6.2): the remembered list URL with the current
+     * request's context applied. The active PR is whatever the current URL says, so a
+     * remembered pr_id never re-activates a PR on Historical or Vs Best; Inter-Supplier keeps
+     * its own remembered PR when the current page has none (existing behavior).
+     *
+     * @param  array<string, mixed>  $current  current request query
+     */
+    public static function comparisonTabUrl(string $routeName, array $current): string
+    {
+        [$base, $query] = self::splitUrl(self::listUrl($routeName));
+
+        foreach (self::COMPARISON_SHARED_KEYS as $key) {
+            if (is_scalar($current[$key] ?? null) && (string) $current[$key] !== '') {
+                $query[$key] = (string) $current[$key];
+            } else {
+                unset($query[$key]);
+            }
+        }
+        foreach (self::COMPARISON_LOCAL_KEYS as $key) {
+            unset($query[$key]);
+        }
+
+        if (is_scalar($current['pr_id'] ?? null) && (string) $current['pr_id'] !== '') {
+            $query['pr_id'] = (string) $current['pr_id'];
+        } elseif ($routeName !== 'purchasing.comparison.inter-supplier') {
+            unset($query['pr_id']);
+        }
+
+        return $query === [] ? $base : $base.'?'.http_build_query($query);
+    }
+
+    /**
+     * Clear PR (Gate 1 C6): strip the PR context from the remembered comparison URLs only;
+     * every other remembered Purchasing list URL and the currency stay untouched.
+     */
+    public static function forgetComparisonPrContext(): void
+    {
+        foreach (self::COMPARISON_ROUTES as $routeName) {
+            $stored = session("purchasing.index_urls.{$routeName}");
+            if (is_string($stored) && $stored !== '') {
+                session()->put("purchasing.index_urls.{$routeName}", self::withoutQueryKeys($stored, self::COMPARISON_PR_KEYS));
+            }
+        }
+
+        $last = session('purchasing.last_list_url');
+        if (is_string($last) && str_contains((string) parse_url($last, PHP_URL_PATH), '/comparison/')) {
+            session()->put('purchasing.last_list_url', self::withoutQueryKeys($last, self::COMPARISON_PR_KEYS));
+        }
+    }
+
+    /**
+     * @return array{0: string, 1: array<string, mixed>}
+     */
+    private static function splitUrl(string $url): array
+    {
+        $position = strpos($url, '?');
+        if ($position === false) {
+            return [$url, []];
+        }
+        parse_str(substr($url, $position + 1), $query);
+
+        return [substr($url, 0, $position), $query];
+    }
+
+    /**
+     * @param  list<string>  $keys
+     */
+    private static function withoutQueryKeys(string $url, array $keys): string
+    {
+        [$base, $query] = self::splitUrl($url);
+        foreach ($keys as $key) {
+            unset($query[$key]);
+        }
+
+        return $query === [] ? $base : $base.'?'.http_build_query($query);
+    }
+
     public static function backUrl(?string $fallbackRouteName = null, array $parameters = []): string
     {
         $returnUrl = request()->query(self::RETURN_URL_KEY)

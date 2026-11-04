@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { errorKeyToFieldNames, flattenErrors, isSameOriginUrl, submitAsync } from '../../resources/js/async-form-submit.js';
+import { errorKeyToFieldNames, flattenErrors, handleValidationErrors, isSameOriginUrl, submitAsync } from '../../resources/js/async-form-submit.js';
 
 test('Laravel error keys map to the input names used by the forms', () => {
     assert.deepEqual(errorKeyToFieldNames('email'), ['email', 'email[]']);
@@ -118,4 +118,34 @@ test('validation errors flatten to the first message per field, in server order'
     );
     assert.deepEqual(flattenErrors(null), []);
     assert.deepEqual(flattenErrors('oops'), []);
+});
+
+test('non-upload validation keeps a useful summary and associates the field with its inline error', () => {
+    const previous = { window: globalThis.window, document: globalThis.document, CustomEvent: globalThis.CustomEvent };
+    const attributes = new Map([['aria-describedby', 'rate-hint']]);
+    let inline;
+    const summary = { setAttribute() {}, replaceChildren(...nodes) { this.children = nodes; }, scrollIntoView() {}, focus() {} };
+    const field = {
+        id: 'annual-rate-USD-2024', name: 'rates[USD]', type: 'text', value: '0',
+        closest: () => null, parentElement: { classList: { contains: () => false } },
+        setAttribute: (name, value) => attributes.set(name, value), getAttribute: (name) => attributes.get(name) ?? null,
+        insertAdjacentElement: (position, note) => { inline = note; },
+    };
+    const form = {
+        dataset: { asyncFilesHint: 'false' }, dispatchEvent() {},
+        querySelector: (selector) => selector === '[data-async-error-summary]' ? summary : selector.includes('rates[USD]') ? field : null,
+    };
+    try {
+        globalThis.window = { requestAnimationFrame: (callback) => callback(), AdasiI18n: { t: (key) => key } };
+        globalThis.document = { createElement: () => ({ setAttribute() {}, append() {} }) };
+        globalThis.CustomEvent = class { constructor(type) { this.type = type; } };
+        handleValidationErrors(form, { 'rates.USD': ['USD must be greater than zero.'] });
+        assert.equal(summary.children.some((node) => node.textContent === 'js.async_form.files_kept'), false);
+        assert.equal(inline.textContent, 'USD must be greater than zero.');
+        assert.ok(attributes.get('aria-describedby').split(' ').includes(inline.id));
+        assert.ok(attributes.get('aria-describedby').includes('rate-hint'));
+        assert.equal(field.value, '0');
+    } finally {
+        Object.assign(globalThis, previous);
+    }
 });

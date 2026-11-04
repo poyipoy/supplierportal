@@ -414,7 +414,6 @@
                 @click="switchLanguage('id')"
                 class="lang-pill-btn ui-focus-ring tw:flex tw:items-center tw:gap-1.5 tw:px-3 tw:py-1.5 tw:min-h-8 tw:rounded-ui-full tw:text-ui-xs tw:font-bold"
                 :class="currentLocale === 'id' ? 'is-active tw:bg-surface tw:text-primary tw:border-outline tw-shadow-xs' : 'tw:border-transparent tw:text-on-surface-variant tw:hover:text-on-surface tw:hover:bg-surface/60'"
-                aria-label="Bahasa Indonesia"
                 :aria-pressed="currentLocale === 'id'"
             >
                 <span class="lang-flag-badge" aria-hidden="true">
@@ -423,14 +422,13 @@
                         <rect y="20" width="60" height="20" fill="#ffffff"/>
                     </svg>
                 </span>
-                <span class="tw:tracking-wide">ID</span>
+                <span class="tw:tracking-wide">ID</span><span class="tw:sr-only"> — Bahasa Indonesia</span>
             </button>
             <button
                 type="button"
                 @click="switchLanguage('en')"
                 class="lang-pill-btn ui-focus-ring tw:flex tw:items-center tw:gap-1.5 tw:px-3 tw:py-1.5 tw:min-h-8 tw:rounded-ui-full tw:text-ui-xs tw:font-bold"
                 :class="currentLocale === 'en' ? 'is-active tw:bg-surface tw:text-primary tw:border-outline tw-shadow-xs' : 'tw:border-transparent tw:text-on-surface-variant tw:hover:text-on-surface tw:hover:bg-surface/60'"
-                aria-label="English"
                 :aria-pressed="currentLocale === 'en'"
             >
                 <span class="lang-flag-badge" aria-hidden="true">
@@ -442,7 +440,7 @@
                         <path stroke="#c8102e" stroke-width="8" d="M30 0v40M0 20h60"/>
                     </svg>
                 </span>
-                <span class="tw:tracking-wide">EN</span>
+                <span class="tw:tracking-wide">EN</span><span class="tw:sr-only"> — English</span>
             </button>
         </div>
     </div>

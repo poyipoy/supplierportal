@@ -70,6 +70,7 @@ class AppServiceProvider extends ServiceProvider
         // between queue jobs like every other scoped instance.
         $this->app->scoped(EvaluationContext::class, fn (): EvaluationContext => EvaluationContext::forBusinessToday());
         $this->app->scoped(ExchangeRateResolver::class);
+        $this->app->scoped(\App\Services\Pricing\AnnualExchangeRateResolver::class);
 
         // Same construction as Illuminate\View\ViewServiceProvider::registerBladeCompiler(),
         // except that compiled views are published through a Filesystem that survives
@@ -215,6 +216,7 @@ class AppServiceProvider extends ServiceProvider
             'purchasing.comparison._inter_supplier_content', 'purchasing.comparison._vs_best_content',
             'purchasing.drp._paid_table_content', 'purchasing.drp.ga', 'purchasing.drp.paid', 'purchasing.drp.show', 'purchasing.drp.supplier',
             'purchasing.local-vendors.index', 'purchasing.local-vendors.show', 'purchasing.pr.show',
+            'purchasing.reference-prices.index',
             'qc.inspections.create', 'qc.inspections.show',
             'supplier.announcements.index', 'supplier.announcements.show', 'supplier.claims.show',
         ], function ($view): void {

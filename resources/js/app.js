@@ -490,6 +490,7 @@ Alpine.data('adasiShell', () => ({
 Alpine.start();
 window.AdasiCalendar.initialize(document);
 const bootImports = () => {
+    if (hasMarker('[data-exchange-rates-workspace]')) import('./exchange-rates').then(module => module.bootExchangeRates());
     if (document.querySelector('[data-local-import]')) import('./local-procurement-import');
     if (document.querySelector('[data-gr-table]')) import('./local-po-gr-table').then(module => module.bootLocalPoGrTable());
     if (hasMarker('[data-advanced-export], [data-format-export-form]')) import('./advanced-export');
