@@ -384,7 +384,7 @@
                 >
                     {{ __('common.actions.all') }}
                 </button>
-                <span class="tw:text-outline-variant">·</span>
+                <span class="tw:text-on-surface-variant">·</span>
                 <button
                     type="button"
                     @click="clearAll()"
@@ -434,7 +434,7 @@
                                 </span>
                             </template>
                             <template x-if="opt.sublabel">
-                                <span class="tw:text-[11px] tw:text-on-surface-variant/80 tw:truncate" x-text="opt.sublabel"></span>
+                                <span class="tw:text-[11px] tw:text-on-surface-variant tw:truncate" x-text="opt.sublabel"></span>
                             </template>
                         </div>
                     </div>

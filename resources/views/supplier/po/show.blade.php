@@ -153,7 +153,7 @@
                                         <td class="text-center tw:text-on-surface-variant" style="font-size: 0.75rem;">
                                             @if($p['last_progress_update_at'])
                                                 <div>{{ $regionalFormatter->timestamp($p['last_progress_update_at'], 'datetime') }}</div>
-                                                <div class="tw:text-outline">{{ $p['last_updated_by'] ?? __('supplier.copy.supplier') }}</div>
+                                                <div class="tw:text-on-surface-variant">{{ $p['last_updated_by'] ?? __('supplier.copy.supplier') }}</div>
                                             @else
                                                 <span class="text-muted">{{ __('supplier.copy.no_updates') }}</span>
                                             @endif
@@ -269,7 +269,7 @@
                                                 {{ \Illuminate\Support\Str::limit($poRemark, 40) }}
                                             </span>
                                         @else
-                                            <span class="tw:text-outline">-</span>
+                                            <span class="tw:text-on-surface-variant">-</span>
                                         @endif
                                     </td>
                                     <td class="text-center fw-bold ui-tabular-nums">

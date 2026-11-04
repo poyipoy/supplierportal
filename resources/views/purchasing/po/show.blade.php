@@ -188,25 +188,25 @@
         <div class="po-tracking-step {{ $prDate ? 'is-active' : '' }}">
             <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('purchasing.copy.1_pr_created') }}</div>
             <div class="fw-bold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">{{ $prDate ? $regionalFormatter->timestamp($prDate, 'date') : '-' }}</div>
-            <div class="tw:text-outline tw:text-ui-xs">{{ $primaryPr?->pr_number ?? __('terms.purchase_requisition') }}</div>
+            <div class="tw:text-on-surface-variant tw:text-ui-xs">{{ $primaryPr?->pr_number ?? __('terms.purchase_requisition') }}</div>
         </div>
         <div class="po-tracking-step is-active">
             <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('purchasing.copy.2_po_created') }}</div>
             <div class="fw-bold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">{{ $regionalFormatter->timestamp($po->created_at, 'date') }}</div>
-            <div class="tw:text-outline tw:text-ui-xs">{{ $regionalFormatter->time($po->created_at) }}</div>
+            <div class="tw:text-on-surface-variant tw:text-ui-xs">{{ $regionalFormatter->time($po->created_at) }}</div>
         </div>
         <div class="po-tracking-step {{ $po->estimated_arrival ? 'is-active' : '' }}">
             <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('purchasing.copy.3_po_target_arrival_date') }}</div>
             <div class="fw-bold {{ $po->is_overdue ? 'text-danger' : 'tw:text-on-surface' }} tw:text-ui-sm tw:mt-0.5">
                 {{ $po->estimated_arrival ? $regionalFormatter->date($po->estimated_arrival) : '-' }}
             </div>
-            <div class="tw:text-outline tw:text-ui-xs">
+            <div class="tw:text-on-surface-variant tw:text-ui-xs">
                 {{ $po->is_overdue ? __('purchasing.copy.overdue') : __('purchasing.copy.purchasing_target_at_adasi') }}
             </div>
         </div>
         <div class="po-tracking-step {{ $po->actual_arrival ? 'is-active' : '' }}">
             <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('purchasing.copy.4_actual_arrival') }}</div>
-            <div class="fw-bold {{ $po->actual_arrival ? 'text-success' : 'tw:text-outline' }} tw:text-ui-sm tw:mt-0.5">
+            <div class="fw-bold {{ $po->actual_arrival ? 'text-success' : 'tw:text-on-surface-variant' }} tw:text-ui-sm tw:mt-0.5">
                 @if($po->actual_arrival)
                     <x-ui.icon name="circle-check" size="sm" class="me-1 text-success" />
                     {{ $regionalFormatter->date($po->actual_arrival) }}
@@ -214,7 +214,7 @@
                     {{ __('purchasing.audit_ui.pending_delivery') }}
                 @endif
             </div>
-            <div class="tw:text-outline tw:text-ui-xs">
+            <div class="tw:text-on-surface-variant tw:text-ui-xs">
                 {{-- PUR-08: actual_arrival is the latest arrival; it means "received" only once completed. --}}
                 {{ ! $po->actual_arrival ? __('purchasing.copy.waiting_arrival') : ($po->status === 'completed' ? __('purchasing.copy.received_at_plant') : __('purchasing.copy.latest_partial_arrival')) }}
             </div>
@@ -360,7 +360,7 @@
                                             <div class="tw:text-on-surface-variant tw:text-ui-xs">{{ __('common.final_copy.requested') }} {{ $item->prItem->dimension_label }}</div>
                                             <div class="fw-semibold tw:text-ui-xs tw:mt-0.5">{{ __('common.final_copy.offer') }} {{ $item->available_dimension_label }}</div>
                                         @else
-                                            <span class="tw:text-outline">-</span>
+                                            <span class="tw:text-on-surface-variant">-</span>
                                         @endif
                                     </td>
                                     <td class="text-center ui-tabular-nums">{{ $item->is_available ? ($orderedLine?->qty ?? $item->available_qty ?? $item->prItem->quantity_value) : '—' }}
@@ -382,7 +382,7 @@
                                                 {{ $quotation->purchaseRequisition->pr_number ?? '-' }}
                                             </a>
                                         @else
-                                            <span class="tw:text-outline">-</span>
+                                            <span class="tw:text-on-surface-variant">-</span>
                                         @endif
                                     </td>
                                     <td>
@@ -482,7 +482,7 @@
                                         <td class="text-center tw:text-on-surface-variant" style="font-size: 0.75rem;">
                                             @if($p['last_progress_update_at'])
                                                 <div>{{ $regionalFormatter->timestamp($p['last_progress_update_at'], 'datetime') }}</div>
-                                                <div class="tw:text-outline">{{ $p['last_updated_by'] ?? __('purchasing.copy.supplier') }}</div>
+                                                <div class="tw:text-on-surface-variant">{{ $p['last_updated_by'] ?? __('purchasing.copy.supplier') }}</div>
                                             @else
                                                 <span class="text-muted">{{ __('purchasing.copy.no_updates') }}</span>
                                             @endif
@@ -644,7 +644,7 @@
                                 default => 'ui-status-chip--neutral'
                             };
                             $iconClasses = match($effectiveStatus) {
-                                'pending' => 'tw:bg-surface-container-high tw:text-on-surface-variant/80',
+                                'pending' => 'tw:bg-surface-container-high tw:text-on-surface-variant',
                                 'verified', 'done' => 'tw:bg-success-container/40 text-success',
                                 default => 'tw:bg-primary/10 text-primary'
                             };
@@ -695,7 +695,7 @@
                                     @if($effectiveStatus !== 'pending' && $doc->updated_at)
                                         <span>{{ $regionalFormatter->timestamp($doc->updated_at, 'datetime_comma') }}</span>
                                     @else
-                                        <span class="tw:text-outline/50">&mdash;</span>
+                                        <span class="tw:text-on-surface-variant">&mdash;</span>
                                     @endif
                                 </div>
                             </div>
@@ -727,7 +727,7 @@
                                 @else
                                     <div class="tw:rounded-lg tw:bg-surface-container-low/50 tw:border tw:border-dashed tw:border-outline-variant/60 tw:p-2 tw:text-center tw:flex tw:flex-col tw:items-center tw:justify-center" style="min-height: 72px;">
                                         <x-ui.icon name="file" size="sm" class="tw:text-outline/40 tw:mb-1" />
-                                        <span class="tw:text-outline/70 tw:text-ui-xs tw:font-medium">{{ __('purchasing.copy.no_file_uploaded') }}</span>
+                                        <span class="tw:text-on-surface-variant tw:text-ui-xs tw:font-medium">{{ __('purchasing.copy.no_file_uploaded') }}</span>
                                     </div>
                                 @endif
                             </div>
@@ -869,7 +869,7 @@
 
                     <li class="pr-timeline-item {{ $po->actual_arrival ? 'is-complete' : '' }}">
                         <span class="pr-timeline-marker" aria-hidden="true"></span>
-                        <div class="tw:text-ui-sm fw-bold {{ $po->actual_arrival ? 'text-success' : 'tw:text-outline' }}">{{ __('purchasing.copy.material_arrival') }}</div>
+                        <div class="tw:text-ui-sm fw-bold {{ $po->actual_arrival ? 'text-success' : 'tw:text-on-surface-variant' }}">{{ __('purchasing.copy.material_arrival') }}</div>
                         @if($po->actual_arrival)
                             <time class="ui-tabular-nums tw:text-on-surface-variant tw:text-ui-xs">{{ $regionalFormatter->date($po->actual_arrival) }}</time>
                         @endif

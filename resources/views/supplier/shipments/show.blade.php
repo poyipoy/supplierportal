@@ -198,7 +198,7 @@
                             <span class="ui-status-chip ui-status-chip--neutral">{{ $po->po_number }}</span>
                         </a>
                     @empty
-                        <span class="tw:text-outline">-</span>
+                        <span class="tw:text-on-surface-variant">-</span>
                     @endforelse
                 </div>
             </div>
@@ -327,7 +327,7 @@
                                     </span>
                                 </a>
                             @else
-                                <span class="tw:text-outline fst-italic">{{ __('shipments.copy.no_file_uploaded') }}</span>
+                                <span class="tw:text-on-surface-variant fst-italic">{{ __('shipments.copy.no_file_uploaded') }}</span>
                             @endif
                         </div>
                     </div>
@@ -348,7 +348,7 @@
                                     <x-ui.icon name="upload" size="sm" />
                                 </button>
                             </div>
-                            <div class="tw:text-outline" style="font-size: 10px; margin-top: 3px;">
+                            <div class="tw:text-on-surface-variant" style="font-size: 10px; margin-top: 3px;">
                                 {{ __('shipments.copy.max_10mb_pdf_image_excel_word') }}
                             </div>
                         </form>

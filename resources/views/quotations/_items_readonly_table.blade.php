@@ -117,16 +117,16 @@
                     <td class="text-end ui-tabular-nums">{{ $fmt($item->requested_weight_per_unit) }}</td>
                     <td class="text-end ui-tabular-nums">{{ $fmt($item->requested_total_weight) }}</td>
                     <td class="text-end ui-tabular-nums">{{ $fmtPrice($item->price_per_kg, 4) }}</td>
-                    @if($showRef)<td class="text-end tw:text-outline">—</td>@endif
+                    @if($showRef)<td class="text-end tw:text-on-surface-variant">—</td>@endif
                     <td class="text-end ui-tabular-nums tw:text-on-surface-variant">{{ $item->is_available ? $fmtPrice($item->requested_amount) : '—' }}</td>
-                    @if($showIdr)<td class="text-end tw:text-outline">—</td>@endif
+                    @if($showIdr)<td class="text-end tw:text-on-surface-variant">—</td>@endif
                     <td class="text-start tw:text-on-surface-variant">{{ $prItem?->remark ?: '—' }}</td>
-                    <td class="text-center tw:text-outline">—</td>
+                    <td class="text-center tw:text-on-surface-variant">—</td>
                     @if($showMtc)<td rowspan="2" class="text-center">
                         @forelse($item->attachments as $attachment)
                             <x-ui.icon-button :href="route('attachments.show', $attachment)" icon="paperclip" :label="__('common.closure.attachment_open', ['name' => $attachment->file_name])" size="sm" target="_blank" />
                         @empty
-                            <span class="tw:text-outline">—</span>
+                            <span class="tw:text-on-surface-variant">—</span>
                         @endforelse
                     </td>@endif
                     @if($showAward)<td rowspan="2" class="text-center" data-item-award>
@@ -170,7 +170,7 @@
                                         @endif
                                     </div>
                                 @else
-                                    <span class="tw:text-outline">—</span>
+                                    <span class="tw:text-on-surface-variant">—</span>
                                 @endif
                             </td>
                         @endif

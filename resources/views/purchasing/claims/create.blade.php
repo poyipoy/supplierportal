@@ -127,7 +127,7 @@
                                     </div>
                                 @endforeach
                             </div>
-                            <div class="tw:text-outline tw:text-ui-xs tw:mt-1.5">{{ __('claims.copy.click_photo_to_view_with_interactive_zoom_photos_are_automatically_attached_to_supplier_claim_notice') }}</div>
+                            <div class="tw:text-on-surface-variant tw:text-ui-xs tw:mt-1.5">{{ __('claims.copy.click_photo_to_view_with_interactive_zoom_photos_are_automatically_attached_to_supplier_claim_notice') }}</div>
                         </div>
                     @endif
                 </x-ui.card>

@@ -12,7 +12,7 @@
 
     $changeBadge = function ($value) {
         if ($value === null) {
-            return '<span class="tw:text-outline">-</span>';
+            return '<span class="tw:text-on-surface-variant">-</span>';
         }
 
         if ($value > 0) {

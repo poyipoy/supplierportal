@@ -72,11 +72,11 @@ Setiap peran punya pasangan `on-*`, `*-container`, `on-*-container`, dan varian 
 | `--md-surface-container-low` | `#F8FAFC` | Header tabel, baris hover, kotak spesifikasi |
 | `--md-surface-container` | `#F1F5F9` | Toolbar, header section, header data-table |
 | `--md-surface-container-high(est)` | `#E2E8F0` | Pressed state, dialog di dark |
-| `--md-outline` | `#CBD5E1` | Border container |
-| `--md-outline-strong` | `#94A3B8` | Border kontrol input |
+| `--md-outline` | `#CBD5E1` | Border container (hairline; bukan warna teks, bukan border field) |
+| `--md-outline-strong` | `#76859A` | Border kontrol: input, select, checkbox, `btn-outline-secondary` (≥ 3:1 pada surface, workspace, dan surface-container-high) |
 | `--md-outline-variant` | `#E2E8F0` | Divider |
 | `--md-on-surface` | `#0F172A` | Teks utama |
-| `--md-on-surface-variant` | `#566579` | Teks sekunder / meta |
+| `--md-on-surface-variant` | `#566579` | Teks sekunder / meta (5,9:1 pada putih); abu-abu teks yang paling terang |
 
 ### 3.3 Dark mode
 
@@ -272,6 +272,8 @@ Kontrak aksesibilitas chart: [CHART-A11Y-BASELINE-20261102.md](docs/audits/CHART
 
 - Fokus keyboard selalu terlihat (§3.8). Urutan fokus logis, termasuk di dialog dan drawer (focus trap dan kembali ke pemicu).
 - Kontras: teks ≥ 4.5:1, komponen non-teks dan seri chart ≥ 3:1, diukur pada light **dan** dark surface yang relevan.
+- Teks abu-abu: `on-surface-variant` adalah batas terang. Jangan mewarnai teks dengan `text-outline*` dan jangan memudarkan warna teks dengan modifier opacity (`/40`, `/70`, dst.). Itu juga berlaku untuk status "belum tercapai", empty state, tanda "-", dan nilai lama yang dicoret, karena semuanya informasi, bukan kontrol nonaktif. Bedakan tingkat penting lewat ukuran, bobot (400/600/700), dan posisi. `text-outline` hanya untuk ikon dekoratif yang didampingi teks. Dijaga `tests/js/text-contrast.test.mjs`.
+- Batas field (`.form-control`, `.form-select`, `.form-check-input`, `.input-group-text`, `x-ui.input|select|textarea`) memakai `--ui-input-border` (= `outline-strong`), bukan hairline `--bs-border-color`.
 - Isyarat non-warna untuk status, error, dan seleksi.
 - `aria-label` untuk kontrol icon-only. Toast di live region. Region scroll tabel sticky punya nama aksesibel.
 - Heading berurutan; header tabel terbaca.

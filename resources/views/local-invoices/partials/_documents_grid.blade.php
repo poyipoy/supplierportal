@@ -137,7 +137,7 @@
                     <div class="tw:flex-1 tw:flex tw:flex-col tw:items-center tw:justify-center tw:p-4 tw:rounded-ui-sm tw:border tw:border-dashed tw:border-outline-variant tw:bg-surface-low/50 tw:text-center tw:min-h-[100px]">
                         <x-ui.icon name="file-x" size="sm" class="tw:text-on-surface-variant/40 tw:mb-1" />
                         <span class="tw:text-ui-xs tw:font-medium tw:text-on-surface-variant">{{ __('local_invoice.empty.no_documents') }}</span>
-                        <span class="tw:text-[10px] tw:text-on-surface-variant/70 tw:mt-0.5">{{ __('local_invoice.documents.category_empty') }}</span>
+                        <span class="tw:text-[10px] tw:text-on-surface-variant tw:mt-0.5">{{ __('local_invoice.documents.category_empty') }}</span>
                     </div>
                 @endif
             </div>

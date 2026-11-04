@@ -73,7 +73,7 @@ class SupplierShipmentController extends Controller
                 ->addColumn('po_references', function ($shp) {
                     $pos = $shp->purchaseOrders();
                     if ($pos->isEmpty()) {
-                        return '<span class="tw:text-outline">-</span>';
+                        return '<span class="tw:text-on-surface-variant">-</span>';
                     }
 
                     return $pos->map(fn ($po) => '<span class="ui-status-chip ui-status-chip--neutral me-1">'.e($po->po_number).'</span>')->implode('');

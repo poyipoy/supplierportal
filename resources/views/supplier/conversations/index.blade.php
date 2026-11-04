@@ -63,7 +63,7 @@
                                     <span class="text-truncate tw:max-w-64">{{ Str::limit($conv->latestMessage->body, 55) }}</span>
                                 </div>
                             @else
-                                <span class="tw:text-outline italic">{{ __('supplier.copy.no_messages_sent_yet') }}</span>
+                                <span class="tw:text-on-surface-variant italic">{{ __('supplier.copy.no_messages_sent_yet') }}</span>
                             @endif
                         </td>
                         <td class="tw:text-on-surface-variant ui-tabular-nums">

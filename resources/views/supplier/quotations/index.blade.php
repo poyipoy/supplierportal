@@ -59,7 +59,7 @@
                                     {{ trans_choice('purchasing.copy.pr_count', $period->unresponded_prs, ['count' => $period->unresponded_prs]) }}
                                 </span>
                             @else
-                                <span class="tw:text-outline">-</span>
+                                <span class="tw:text-on-surface-variant">-</span>
                             @endif
                         </td>
                         <td class="text-center">
@@ -68,7 +68,7 @@
                                     {{ trans_choice('purchasing.copy.pr_count', $period->responded_prs, ['count' => $period->responded_prs]) }}
                                 </span>
                             @else
-                                <span class="tw:text-outline">-</span>
+                                <span class="tw:text-on-surface-variant">-</span>
                             @endif
                         </td>
                         <td class="text-center">
@@ -77,7 +77,7 @@
                                     {{ trans_choice('purchasing.copy.pr_count', $period->rejected_prs, ['count' => $period->rejected_prs]) }}
                                 </span>
                             @else
-                                <span class="tw:text-outline">-</span>
+                                <span class="tw:text-on-surface-variant">-</span>
                             @endif
                         </td>
                         <td class="text-end pe-3">

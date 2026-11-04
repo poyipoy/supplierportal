@@ -145,7 +145,8 @@
         --md-background: #F8FAFC;
         --md-background-rgb: 248, 250, 252;
         --md-outline: #CBD5E1;
-        --md-outline-strong: #94A3B8;
+        /* Control boundaries: >= 3:1 on surface, workspace and surface-container-high (WCAG 1.4.11). */
+        --md-outline-strong: #76859A;
         --md-outline-variant: #E2E8F0;
         --md-chart-grid: rgba(203, 213, 225, 0.75);
         --md-on-surface: #0F172A;
@@ -683,6 +684,20 @@
         --bs-table-color: var(--md-on-surface);
         --bs-table-bg: var(--md-surface-container-low);
         --bs-table-border-color: var(--md-outline-variant);
+    }
+/* Bootstrap draws field borders with --bs-border-color, the hairline used for cards and tables.
+   A field's border is what shows it exists, so controls use the input token instead. */
+.form-control,
+.form-select,
+.form-check-input,
+.input-group-text {
+        border-color: var(--ui-input-border);
+    }
+.btn-outline-secondary {
+        --bs-btn-color: var(--md-on-surface-variant);
+        --bs-btn-border-color: var(--md-outline-strong);
+        --bs-btn-disabled-color: var(--md-on-surface-variant);
+        --bs-btn-disabled-border-color: var(--md-outline-strong);
     }
 :root[data-theme="dark"] .btn-outline-secondary {
         --bs-btn-color: var(--md-on-surface-variant);

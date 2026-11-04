@@ -164,7 +164,7 @@
                         @if($pr->notes)
                             <div class="tw:text-on-surface tw:text-ui-sm tw:whitespace-pre-line">{{ $pr->notes }}</div>
                         @else
-                            <span class="tw:text-outline tw:text-ui-sm fst-italic">{{ __('purchasing.copy.no_additional_instructions_provided') }}</span>
+                            <span class="tw:text-on-surface-variant tw:text-ui-sm fst-italic">{{ __('purchasing.copy.no_additional_instructions_provided') }}</span>
                         @endif
                     </div>
                 </div>
@@ -291,7 +291,7 @@
                                             <x-ui.icon name="circle-check" class="ms-1 text-success" aria-label="{{ __('purchasing.copy.lowest_estimated_total') }}" />
                                         @endif
                                     @else
-                                        <span class="tw:text-outline">-</span>
+                                        <span class="tw:text-on-surface-variant">-</span>
                                     @endif
                                 </td>
                                 <td class="text-center ui-tabular-nums tw:text-on-surface-variant">{{ $quotation->estimated_delivery ? date('d M Y', strtotime($quotation->estimated_delivery)) : '-' }}</td>
@@ -387,14 +387,14 @@
                     </li>
                     <li class="pr-timeline-item {{ $hasReachedSubmitted ? 'is-complete' : '' }}">
                         <span class="pr-timeline-marker" aria-hidden="true"></span>
-                        <div class="tw:text-ui-sm fw-bold {{ $hasReachedSubmitted ? 'text-primary' : 'tw:text-outline' }}">{{ __('purchasing.copy.submitted') }}</div>
+                        <div class="tw:text-ui-sm fw-bold {{ $hasReachedSubmitted ? 'text-primary' : 'tw:text-on-surface-variant' }}">{{ __('purchasing.copy.submitted') }}</div>
                         @if($hasReachedSubmitted)
                             <time class="ui-tabular-nums tw:text-on-surface-variant tw:text-ui-xs" datetime="{{ $pr->updated_at->toIso8601String() }}">{{ $regionalFormatter->timestamp($pr->updated_at, 'datetime_comma') }}</time>
                         @endif
                     </li>
                     <li class="pr-timeline-item {{ $hasReachedBidding ? 'is-current' : '' }}">
                         <span class="pr-timeline-marker" aria-hidden="true"></span>
-                        <div class="tw:text-ui-sm fw-bold {{ $hasReachedBidding ? 'text-warning' : 'tw:text-outline' }}">{{ __('purchasing.copy.supplier_bidding') }}</div>
+                        <div class="tw:text-ui-sm fw-bold {{ $hasReachedBidding ? 'text-warning' : 'tw:text-on-surface-variant' }}">{{ __('purchasing.copy.supplier_bidding') }}</div>
                     </li>
                 </ol>
                 @if($invitationEvents->isNotEmpty())
