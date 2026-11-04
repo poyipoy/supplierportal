@@ -186,7 +186,7 @@
                             <span class="ui-status-chip ui-status-chip--neutral">{{ $po->po_number }}</span>
                         </a>
                     @empty
-                        <span class="tw:text-outline">-</span>
+                        <span class="tw:text-on-surface-variant">-</span>
                     @endforelse
                 </div>
             </div>
@@ -264,7 +264,7 @@
                                     </span>
                                 </a>
                             @else
-                                <span class="tw:text-outline fst-italic">{{ __('shipments.copy.no_file_uploaded_yet') }}</span>
+                                <span class="tw:text-on-surface-variant fst-italic">{{ __('shipments.copy.no_file_uploaded_yet') }}</span>
                             @endif
                         </div>
                     </div>
@@ -344,7 +344,7 @@
                                 @if($pr)
                                     <span class="ui-status-chip ui-status-chip--neutral">{{ $pr->pr_number }}</span>
                                 @else
-                                    <span class="tw:text-outline">-</span>
+                                    <span class="tw:text-on-surface-variant">-</span>
                                 @endif
                             </td>
                             <td class="fw-semibold tw:text-on-surface">

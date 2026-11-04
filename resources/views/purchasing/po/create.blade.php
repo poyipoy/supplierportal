@@ -47,7 +47,7 @@
                 <div class="fw-bold tw:text-on-surface fs-6 mt-1">
                     <span class="ui-status-chip ui-status-chip--neutral me-1">{{ $quotation->currency }}</span>
                     @if($rate)
-                        <span class="tw:text-on-surface tw:text-ui-xs tw:font-mono">1 {{ $quotation->currency }} = Rp {{ number_format($rate->rate_to_idr, 0, ',', '.') }}</span>
+                        <span class="tw:text-on-surface tw:text-ui-xs ui-tabular-nums">1 {{ $quotation->currency }} = Rp {{ number_format($rate->rate_to_idr, 0, ',', '.') }}</span>
                     @else
                         <span class="text-danger tw:text-ui-xs">{{ __('purchasing.copy.exchange_rate_not_found') }}</span>
                     @endif

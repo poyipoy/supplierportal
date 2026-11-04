@@ -90,7 +90,7 @@
                                     {{ $emp->bank_name }}
                                 </span>
                             </td>
-                            <td><span class="tw:font-mono tw:text-ui-sm">{{ $emp->account_number }}</span></td>
+                            <td><span class="ui-tabular-nums tw:text-ui-sm">{{ $emp->account_number }}</span></td>
                             <td>{{ $emp->account_holder_name }}</td>
                             <td>
                                 <x-ui.status-chip :tone="$emp->is_active ? 'success' : 'neutral'">

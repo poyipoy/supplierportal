@@ -39,7 +39,7 @@
                     </div>
                     <div>
                         <span class="tw:text-on-surface-variant tw:block">NPWP:</span>
-                        <span class="tw:font-mono">{{ $sup?->npwp ?? '—' }}</span>
+                        <span class="ui-tabular-nums">{{ $sup?->npwp ?? '—' }}</span>
                     </div>
                     <div>
                         <span class="tw:text-on-surface-variant tw:block">{{ __('local_invoice.labels.company_phone') }}:</span>
@@ -85,7 +85,7 @@
                             @forelse($sup?->bankAccounts ?? [] as $b)
                                 <tr>
                                     <td><strong class="tw:text-on-surface">{{ $b->bank_name }}</strong></td>
-                                    <td><span class="tw:font-mono">{{ $b->account_number }}</span></td>
+                                    <td><span class="ui-tabular-nums">{{ $b->account_number }}</span></td>
                                     <td>{{ $b->account_holder_name }}</td>
                                     <td>
                                         <x-ui.status-chip :tone="\App\Support\StatusHelper::localFinanceTone($b->status)">

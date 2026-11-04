@@ -25,7 +25,7 @@
     }
 
     const hasValue = (value) => value !== null && value !== undefined && (typeof value !== 'object' || (value.y !== null && value.y !== undefined));
-    const axisTitleFont = { family: 'Inter', size: 11, weight: '600' };
+    const axisTitleFont = { size: 11, weight: '600' };
 
     // A series with nothing plotted keeps no legend entry; the excluded list explains why.
     // Swatches are always filled in the series color (an Indicative first point must not make the

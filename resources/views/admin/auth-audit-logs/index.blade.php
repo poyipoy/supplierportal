@@ -92,7 +92,7 @@ $(function () {
             {data: 'event_display', name: 'event', className: 'text-nowrap fw-medium'},
             {data: 'user_display', name: 'user.name', orderable: false},
             {data: 'email_attempted', name: 'email_attempted'},
-            {data: 'ip_address', name: 'ip_address', orderable: false, className: 'font-monospace text-nowrap'},
+            {data: 'ip_address', name: 'ip_address', orderable: false, className: 'ui-tabular-nums text-nowrap'},
             {data: 'user_agent', name: 'user_agent', orderable: false, className: 'small text-muted'},
             {data: 'metadata', name: 'metadata', orderable: false, searchable: false, className: 'small font-monospace'}
         ]

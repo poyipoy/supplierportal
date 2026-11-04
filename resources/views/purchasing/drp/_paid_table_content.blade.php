@@ -21,7 +21,7 @@
                 @forelse($batches as $batch)
                     <tr>
                         <td>
-                            <strong class="tw:font-mono tw:text-on-surface tw:whitespace-nowrap">{{ $batch->batch_number }}</strong>
+                            <strong class="ui-tabular-nums tw:text-on-surface tw:whitespace-nowrap">{{ $batch->batch_number }}</strong>
                             @if($batch->notes)
                                 <div class="tw:text-[11px] tw:text-on-surface-variant tw:truncate tw:max-w-xs" title="{{ $batch->notes }}">
                                     {{ $batch->notes }}
@@ -43,10 +43,10 @@
                             <span class="tw:font-semibold ui-tabular-nums">{{ $batch->groups_count }}</span>
                             <span class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('common.labels_review.accounts') }}</span>
                         </td>
-                        <td class="text-end tw:font-mono ui-tabular-nums tw:whitespace-nowrap">
+                        <td class="text-end ui-tabular-nums tw:whitespace-nowrap">
                             Rp {{ $regionalFormatter->money($batch->total_subtotal, 0) }}
                         </td>
-                        <td class="text-end tw:font-mono ui-tabular-nums tw:whitespace-nowrap">
+                        <td class="text-end ui-tabular-nums tw:whitespace-nowrap">
                             <div class="tw:font-bold tw:text-on-surface">
                                 Rp {{ $regionalFormatter->money($batch->total_net_amount, 0) }}
                             </div>
@@ -76,7 +76,7 @@
                                     <span>{{ __('finance.paid_ui.paid_date', ['date' => $regionalFormatter->date($batch->paid_at, 'human') ?? '-']) }}</span>
                                 </div>
                                 @if($sampleGroup?->transfer_reference)
-                                    <div class="tw:text-[11px] tw:font-mono tw:text-on-surface-variant tw:truncate tw:max-w-[200px]" title="{{ $sampleGroup->transfer_reference }}">
+                                    <div class="tw:text-[11px] ui-tabular-nums tw:text-on-surface-variant tw:truncate tw:max-w-[200px]" title="{{ $sampleGroup->transfer_reference }}">
                                         {{ __('finance.drp_ui.transfer_reference_short', ['reference' => $sampleGroup->transfer_reference]) }}
                                     </div>
                                 @endif
@@ -98,7 +98,7 @@
                             @elseif($batch->status === \App\Models\PaymentBatch::STATUS_PARTIALLY_PAID)
                                 <div class="tw:flex tw:flex-col tw:gap-0.5">
                                     <span class="tw:text-ui-xs tw:text-primary tw:font-semibold">{{ __('finance.paid_ui.partial') }}</span>
-                                    <div class="tw:text-[11px] tw:font-mono tw:text-on-surface-variant ui-tabular-nums tw:whitespace-nowrap">
+                                    <div class="tw:text-[11px] ui-tabular-nums tw:text-on-surface-variant tw:whitespace-nowrap">
                                         <span class="tw:text-success tw:font-medium">{{ __('finance.paid_ui.paid_amount', ['amount' => $regionalFormatter->money($batch->actual_paid_amount, 0)]) }}</span>
                                         <span class="tw:text-on-surface-variant">·</span>
                                         <span class="tw:text-warning-container-foreground tw:font-bold">{{ __('finance.paid_ui.remaining', ['amount' => $regionalFormatter->money($batch->remaining_amount, 0)]) }}</span>

@@ -11,7 +11,6 @@
         <title>@yield('title', config('app.name'))</title>
 
         <link rel="icon" href="{{ asset('assets/images/logo-adasi.png') }}" type="image/png">
-        <link href="https://cdn.jsdelivr.net/npm/@fontsource/inter@5.2.8/latin.css" integrity="sha384-GjfJOJUB+Pa/uD6sSvglxeY3WGudhaBNhoZpfIKiYMJOFCaZPWWZbDMOJW4oMKg2" crossorigin="anonymous" rel="stylesheet">
 
         @include('partials.loader-logo')
         @vite(['resources/css/app.css', 'resources/js/app.js'])

@@ -43,7 +43,7 @@
                     <div class="tw:p-2.5 tw:bg-surface-low border rounded">
                         <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('claims.copy.submitted_by') }}</div>
                         <div class="fw-semibold tw:text-on-surface tw:text-ui-sm tw:mt-0.5">{{ $claim->submitter->name }}</div>
-                        <div class="tw:text-outline tw:text-ui-xs">{{ $regionalFormatter->timestamp($claim->created_at, 'datetime_comma') }}</div>
+                        <div class="tw:text-on-surface-variant tw:text-ui-xs">{{ $regionalFormatter->timestamp($claim->created_at, 'datetime_comma') }}</div>
                     </div>
                     <div class="tw:p-2.5 tw:bg-surface-low border rounded">
                         <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ __('claims.copy.response_deadline') }}</div>

@@ -215,9 +215,6 @@
     <!-- Favicon -->
     <link rel="icon" href="{{ asset('assets/images/logo-adasi.png') }}" type="image/png">
 
-    <!-- Google Fonts: Inter -->
-    <link href="https://cdn.jsdelivr.net/npm/@fontsource/inter@5.2.8/latin.css" integrity="sha384-GjfJOJUB+Pa/uD6sSvglxeY3WGudhaBNhoZpfIKiYMJOFCaZPWWZbDMOJW4oMKg2" crossorigin="anonymous" rel="stylesheet">
-
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous" rel="stylesheet">
 

@@ -172,7 +172,7 @@
                                     boxWidth: 10,
                                     boxHeight: 10,
                                     padding: 14,
-                                    font: { family: 'Inter', size: 12, weight: '500' },
+                                    font: { size: 12, weight: '500' },
                                     color: colors.onSurfaceVariant,
                                 },
                             },

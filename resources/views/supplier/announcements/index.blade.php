@@ -42,7 +42,7 @@
                     </x-ui.button>
                 </div>
             @empty
-                <div class="p-5 text-center tw:text-outline tw:text-ui-sm">
+                <div class="p-5 text-center tw:text-on-surface-variant tw:text-ui-sm">
                     {{ __('supplier.copy.no_announcements_published_yet') }}
                 </div>
             @endforelse

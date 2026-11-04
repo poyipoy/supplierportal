@@ -67,7 +67,7 @@
                                 type="text"
                                 name="po_number"
                                 id="po_number"
-                                class="form-control form-control-sm tw:font-mono @error('po_number') is-invalid @enderror"
+                                class="form-control form-control-sm ui-tabular-nums @error('po_number') is-invalid @enderror"
                                 value="{{ old('po_number', $purchaseOrder->po_number) }}"
                                 placeholder="{{ __('common.reference_example', ['reference' => 'PO/2026/09/001']) }}"
                                 @if($isLocked) readonly @endif
@@ -91,7 +91,7 @@
                                         <span>{{ __('local_invoice.labels.locked') }}</span>
                                     </span>
                                 </div>
-                                <input id="pr_number" name="pr_number" value="{{ $purchaseOrder->pr_number }}" readonly maxlength="100" class="form-control form-control-sm tw:font-mono tw:bg-surface-container">
+                                <input id="pr_number" name="pr_number" value="{{ $purchaseOrder->pr_number }}" readonly maxlength="100" class="form-control form-control-sm ui-tabular-nums tw:bg-surface-container">
                                 <div class="form-text tw:text-[11px] tw:text-on-surface-variant">{{ __('local_procurement.pr.manual_locked') }}</div>
                             @else
                                 <x-ui.searchable-select
@@ -188,7 +188,7 @@
                                     id="total_amount"
                                     min="{{ $isLocked && $activeInvoicedTotal > 0 ? $activeInvoicedTotal : '0.01' }}"
                                     step="0.01"
-                                    class="form-control form-control-sm tw:font-mono @error('total_amount') is-invalid @enderror"
+                                    class="form-control form-control-sm ui-tabular-nums @error('total_amount') is-invalid @enderror"
                                     value="{{ $initialAmount }}"
                                     placeholder="0.00"
                                     required
@@ -241,7 +241,7 @@
                                     IDR
                                 </span>
                             </div>
-                            <div id="sidebar-total-amount" class="tw:font-mono tw:font-bold tw:text-primary tw:text-lg tw:sm:text-xl tw:tracking-tight tw:wrap-break-word">
+                            <div id="sidebar-total-amount" class="ui-tabular-nums tw:font-bold tw:text-primary tw:text-lg tw:sm:text-xl tw:tracking-tight tw:wrap-break-word">
                                 Rp {{ $regionalFormatter->money((float) ($initialAmount ?: 0), 0) }}
                             </div>
                         </div>

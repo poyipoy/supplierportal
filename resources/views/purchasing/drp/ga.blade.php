@@ -49,11 +49,11 @@
                     @forelse($batches as $batch)
                         <tr>
                             <td>
-                                <strong class="tw:font-mono tw:text-on-surface">{{ $batch->batch_number }}</strong>
+                                <strong class="ui-tabular-nums tw:text-on-surface">{{ $batch->batch_number }}</strong>
                             </td>
                             <td>{{ $regionalFormatter->date($batch->created_at, 'human') }}</td>
                             <td>{{ trans_choice('common.final_copy.employee_count', $batch->groups_count) }}</td>
-                            <td class="text-end tw:font-mono tw:font-semibold tw:text-primary">
+                            <td class="text-end ui-tabular-nums tw:font-semibold tw:text-primary">
                                 Rp {{ $regionalFormatter->money($batch->total_subtotal, 0) }}
                             </td>
                             <td>

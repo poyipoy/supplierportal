@@ -84,9 +84,9 @@
                             </td>
                             <td class="tw:py-2.5 tw:text-on-surface-variant">
                                 @if($oldVal !== null)
-                                    <span class="{{ $isChanged ? 'tw:line-through tw:text-on-surface-variant/60' : '' }}">{{ $oldVal }}</span>
+                                    <span class="{{ $isChanged ? 'tw:line-through tw:text-on-surface-variant' : '' }}">{{ $oldVal }}</span>
                                 @else
-                                    <span class="tw:text-on-surface-variant/40 tw:italic">{{ __('local_procurement.change_details.missing') }}</span>
+                                    <span class="tw:text-on-surface-variant tw:italic">{{ __('local_procurement.change_details.missing') }}</span>
                                 @endif
                             </td>
                             <td class="tw:py-2.5">
@@ -94,7 +94,7 @@
                                     @if($newVal !== null)
                                         <strong class="{{ $isChanged ? 'tw:text-primary' : 'tw:text-on-surface' }}">{{ $newVal }}</strong>
                                     @else
-                                        <span class="tw:text-on-surface-variant/40 tw:italic">{{ __('local_procurement.change_details.cleared') }}</span>
+                                        <span class="tw:text-on-surface-variant tw:italic">{{ __('local_procurement.change_details.cleared') }}</span>
                                     @endif
 
                                     @if($isChanged)

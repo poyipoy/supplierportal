@@ -992,7 +992,7 @@
                                         </td>
                                         <td class="text-start tw:text-on-surface-variant">{{ $item->remark ?: '—' }}</td>
                                         @unless($shipmentMtcEnabled)
-                                        <td class="text-center tw:text-outline">—</td>
+                                        <td class="text-center tw:text-on-surface-variant">—</td>
                                         @endunless
                                         <td class="text-center"><span class="ui-status-chip ui-status-chip--neutral">{{ __('supplier.copy.requested') }}</span></td>
                                     </tr>
@@ -1033,7 +1033,7 @@
                                                     >
                                                     @error("items.{$index}.available_{$dimension}")<div class="invalid-feedback">{{ $message }}</div>@enderror
                                                 @else
-                                                    <div class="text-center tw:text-outline" aria-label="{{ __('supplier.copy.not_applicable') }}">—</div>
+                                                    <div class="text-center tw:text-on-surface-variant" aria-label="{{ __('supplier.copy.not_applicable') }}">—</div>
                                                 @endif
                                             </td>
                                         @endforeach
@@ -1056,7 +1056,7 @@
                                                     @error("items.{$index}.available_length_input"){{ $message }}@enderror
                                                 </div>
                                             @else
-                                                <div class="text-center tw:text-outline" aria-label="{{ __('supplier.copy.not_applicable') }}">—</div>
+                                                <div class="text-center tw:text-on-surface-variant" aria-label="{{ __('supplier.copy.not_applicable') }}">—</div>
                                             @endif
                                         </td>
                                         <td>

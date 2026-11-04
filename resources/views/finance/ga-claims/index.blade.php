@@ -96,7 +96,7 @@
                 <tbody>
                     @forelse($claims as $claim)
                         <tr>
-                            <td><strong class="tw:font-mono tw:text-primary">{{ $claim->claim_number }}</strong></td>
+                            <td><strong class="ui-tabular-nums tw:text-primary">{{ $claim->claim_number }}</strong></td>
                             <td>{{ $regionalFormatter->date($claim->claim_date, 'dmy') }}</td>
                             <td>
                                 <strong class="tw:text-on-surface tw:block">{{ $claim->employee?->name }}</strong>
@@ -107,10 +107,10 @@
                                     {{ \App\Models\GaClaim::claimTypeLabel($claim->claim_type) }}
                                 </span>
                             </td>
-                            <td><strong class="tw:font-mono tw:text-ui-sm">Rp {{ $regionalFormatter->number(number_format($claim->amount, 0, ',', '.'), 'indonesian') }}</strong></td>
+                            <td><strong class="ui-tabular-nums tw:text-ui-sm">Rp {{ $regionalFormatter->number(number_format($claim->amount, 0, ',', '.'), 'indonesian') }}</strong></td>
                             <td>
                                 <span class="tw:font-semibold">{{ $claim->employee?->bank_name }}</span> ·
-                                <span class="tw:font-mono">{{ $claim->employee?->account_number }}</span>
+                                <span class="ui-tabular-nums">{{ $claim->employee?->account_number }}</span>
                                 <span class="tw:block tw:text-[11px] tw:text-on-surface-variant">{{ __('finance.drp_surface.account_holder') }} {{ $claim->employee?->account_holder_name }}</span>
                             </td>
                             <td>

@@ -159,13 +159,13 @@
                                 </a>
                             </h6>
                             <div class="tw:text-on-surface-variant tw:text-ui-xs tw:mb-1.5">{{ Str::limit($ann->content, 90) }}</div>
-                            <div class="tw:text-outline tw:text-ui-xs d-flex align-items-center gap-1">
+                            <div class="tw:text-on-surface-variant tw:text-ui-xs d-flex align-items-center gap-1">
                                 <x-ui.icon name="clock" size="sm" />
                                 <span>{{ $ann->published_at->diffForHumans() }}</span>
                             </div>
                         </div>
                     @empty
-                        <div class="p-4 text-center tw:text-outline tw:text-ui-xs">
+                        <div class="p-4 text-center tw:text-on-surface-variant tw:text-ui-xs">
                             {{ __('supplier.copy.no_announcements_published_yet') }}
                         </div>
                     @endforelse

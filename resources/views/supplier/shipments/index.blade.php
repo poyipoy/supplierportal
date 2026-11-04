@@ -124,7 +124,7 @@
                         </td>
                         <td>
                             @if($pos->isEmpty())
-                                <span class="tw:text-outline">-</span>
+                                <span class="tw:text-on-surface-variant">-</span>
                             @else
                                 @foreach($pos as $po)
                                     <span class="ui-status-chip ui-status-chip--neutral me-1">{{ $po->po_number }}</span>

@@ -14,7 +14,7 @@
     background: var(--splash-bg);
     opacity: 1;
     visibility: visible;
-    font-family: "Segoe UI", Arial, sans-serif;
+    font-family: var(--ui-font-sans, "Segoe UI", Arial, sans-serif);
     transition: opacity var(--splash-fade) ease, visibility var(--splash-fade) ease;
 }
 .auth-splash, .auth-splash *, .auth-splash *::before, .auth-splash *::after { box-sizing: border-box; }

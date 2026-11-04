@@ -62,10 +62,10 @@
                             </span>
                         </td>
                         <td class="text-end">
-                            <span class="tw:font-semibold tw:font-mono tw:text-on-surface">
+                            <span class="tw:font-semibold ui-tabular-nums tw:text-on-surface">
                                 Rp {{ $regionalFormatter->number(number_format($row->invoice_amount, 0, ',', '.'), 'indonesian') }}
                             </span>
-                            <span class="tw:block tw:text-ui-xs tw:font-mono tw:text-on-surface-variant">
+                            <span class="tw:block tw:text-ui-xs ui-tabular-nums tw:text-on-surface-variant">
                                 PPN: Rp {{ $regionalFormatter->number(number_format($row->tax_amount, 0, ',', '.'), 'indonesian') }}
                             </span>
                         </td>
@@ -163,10 +163,10 @@
                             </span>
                         </td>
                         <td class="text-end">
-                            <span class="tw:font-semibold tw:font-mono tw:text-on-surface">
+                            <span class="tw:font-semibold ui-tabular-nums tw:text-on-surface">
                                 Rp {{ $regionalFormatter->number(number_format($row->invoice_amount, 0, ',', '.'), 'indonesian') }}
                             </span>
-                            <span class="tw:block tw:text-ui-xs tw:font-mono tw:text-on-surface-variant">
+                            <span class="tw:block tw:text-ui-xs ui-tabular-nums tw:text-on-surface-variant">
                                 PPN: Rp {{ $regionalFormatter->number(number_format($row->tax_amount, 0, ',', '.'), 'indonesian') }}
                             </span>
                         </td>

@@ -35,7 +35,7 @@ $(function () {
         },
         columns: [
             { data: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-center text-muted' },
-            { data: 'material_code', name: 'material_code', className: 'font-monospace fw-semibold text-primary text-nowrap' },
+            { data: 'material_code', name: 'material_code', className: 'ui-tabular-nums fw-semibold text-primary text-nowrap' },
             { data: 'raw_category', name: 'raw_category', defaultContent: '-' },
             { data: 'hs_category_label', name: 'hs_category', defaultContent: '-' },
             { data: 'density_profile_label', name: 'density_profile' },
@@ -63,7 +63,7 @@ $(function () {
         },
         columns: [
             { data: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-center text-muted' },
-            { data: 'hs_code', name: 'hs_code', className: 'font-monospace fw-semibold text-primary text-nowrap' },
+            { data: 'hs_code', name: 'hs_code', className: 'ui-tabular-nums fw-semibold text-primary text-nowrap' },
             { data: 'material_category_label', name: 'material_category' },
             { data: 'shape_label', name: 'shape' },
             { data: 'conditions_display', orderable: false, searchable: false },
@@ -357,7 +357,7 @@ $(function () {
         }
 
         const $list = $('<ul class="list-unstyled mb-0 d-grid gap-1">');
-        values.forEach((value) => $('<li class="font-monospace small">').text(value).appendTo($list));
+        values.forEach((value) => $('<li class="ui-tabular-nums small">').text(value).appendTo($list));
         $list.appendTo($container);
     }
 
@@ -386,7 +386,7 @@ $(function () {
 
         const $list = $('<ul class="list-unstyled mb-0">');
         items.forEach((item) => $('<li class="mb-2">')
-            .append($('<span class="font-monospace me-1">').text(item.hs_code), document.createTextNode(item.note ? `— ${item.note}` : '— ' + @js(__('common.final_review.inactive_reference'))))
+            .append($('<span class="ui-tabular-nums me-1">').text(item.hs_code), document.createTextNode(item.note ? `— ${item.note}` : '— ' + @js(__('common.final_review.inactive_reference'))))
             .appendTo($list));
         $list.appendTo($container);
     }

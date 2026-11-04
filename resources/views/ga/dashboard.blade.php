@@ -89,7 +89,7 @@
                     @forelse($recentClaims as $c)
                         <tr>
                             <td>
-                                <strong class="tw:font-mono tw:text-on-surface">{{ $c->claim_number }}</strong>
+                                <strong class="ui-tabular-nums tw:text-on-surface">{{ $c->claim_number }}</strong>
                             </td>
                             <td>
                                 <strong class="tw:text-on-surface">{{ $c->employee?->name }}</strong>
@@ -101,7 +101,7 @@
                                 </span>
                             </td>
                             <td>{{ $c->claim_date ? $regionalFormatter->date($c->claim_date, 'human') : '' }}</td>
-                            <td class="text-end tw:font-mono tw:font-bold tw:text-on-surface">
+                            <td class="text-end ui-tabular-nums tw:font-bold tw:text-on-surface">
                                 Rp {{ $regionalFormatter->number(number_format($c->amount, 0, ',', '.'), 'indonesian') }}
                             </td>
                             <td>

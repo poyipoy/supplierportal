@@ -169,7 +169,7 @@
                                 id="notification-search"
                                 type="search"
                                 autocomplete="off"
-                                class="ui-input tw:w-full tw:ps-9 tw:pe-3 tw:py-1.5 tw:text-ui-sm tw:rounded-ui-sm tw:border tw:border-outline tw:bg-surface tw:text-on-surface"
+                                class="ui-input tw:w-full tw:ps-9 tw:pe-3 tw:py-1.5 tw:text-ui-sm tw:rounded-ui-sm tw:border tw:border-outline-strong tw:bg-surface tw:text-on-surface"
                                 placeholder="{{ __('notifications.preferences.search') }}"
                                 x-model="query"
                                 @input="applyFilters()"

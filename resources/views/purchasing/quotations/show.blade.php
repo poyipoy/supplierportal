@@ -177,7 +177,7 @@
                     <div class="p-3 tw:bg-surface-low border rounded text-center">
                         <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ $quotation->currency }} → IDR</div>
                         <div class="fw-bold text-primary fs-5 mt-1">Rp {{ $regionalFormatter->groupedDecimal($quotationRate->rate_to_idr) }}</div>
-                        <div class="tw:text-outline tw:text-ui-xs tw:mt-0.5">{{ __('common.final_review.snapshot_date', ['date' => $regionalFormatter->date($quotationRate->valid_from)]) }}</div>
+                        <div class="tw:text-on-surface-variant tw:text-ui-xs tw:mt-0.5">{{ __('common.final_review.snapshot_date', ['date' => $regionalFormatter->date($quotationRate->valid_from)]) }}</div>
                     </div>
                 @else
                     <x-ui.alert tone="warning" :title="__('purchasing.copy.exchange_rate_unavailable')">{{ __('common.final_review.missing_snapshot', ['currency' => $quotation->currency]) }}</x-ui.alert>
@@ -380,7 +380,7 @@
                                                             'idSuffix' => 'Direct'.$previewItem->id,
                                                         ])
                                                     @else
-                                                        <span class="tw:text-outline">—</span>
+                                                        <span class="tw:text-on-surface-variant">—</span>
                                                     @endif
                                                 </td>
                                             @endif

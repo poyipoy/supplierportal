@@ -66,7 +66,7 @@
                     @forelse($pr->items as $index => $item)
                         <tr>
                             <td class="ui-tabular-nums text-center text-muted">{{ $index + 1 }}</td>
-                            <td class="font-monospace text-center fw-semibold">{{ $item->hs_code ?: '-' }}</td>
+                            <td class="ui-tabular-nums text-center fw-semibold">{{ $item->hs_code ?: '-' }}</td>
                             <td class="fw-semibold">{{ $item->material_name }}</td>
                             <td class="text-center">
                                 @if($item->shape)

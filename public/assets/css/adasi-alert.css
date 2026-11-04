@@ -44,7 +44,7 @@
     border-radius: var(--adasi-alert-shape-lg);
     box-shadow: var(--adasi-alert-elevation-3);
     color: var(--adasi-alert-text);
-    font-family: 'Inter', sans-serif;
+    font-family: var(--ui-font-sans, sans-serif);
     max-width: calc(100vw - 2rem);
     padding: 1.75rem;
     width: 27.5rem;
@@ -194,7 +194,7 @@
     border-radius: var(--adasi-alert-shape-sm);
     box-shadow: none;
     color: var(--adasi-alert-text);
-    font-family: 'Inter', sans-serif;
+    font-family: var(--ui-font-sans, sans-serif);
     font-size: 0.925rem;
     margin: 1rem 0 0;
     width: 100%;

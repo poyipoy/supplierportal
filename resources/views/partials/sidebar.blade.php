@@ -77,7 +77,7 @@
             <div class="dropdown-menu dropdown-menu-start tw:shadow-xl tw:border tw:border-outline-variant tw:rounded-xl tw:p-1.5 tw:min-w-[270px] tw:bg-surface tw-animate-in tw-fade-in-0 tw-zoom-in-95" aria-labelledby="portalContextSwitcherDropdown">
                 <div class="tw:px-2.5 tw:pt-1.5 tw:pb-2 tw:flex tw:items-center tw:justify-between">
                     <span class="tw:text-[10px] tw:font-bold tw:text-on-surface-variant tw:uppercase tw:tracking-wider">{{ __('navigation.choose_portal') }}</span>
-                    <span class="tw:text-[10px] tw:text-on-surface-variant/70 tw:font-mono">{{ __('navigation.dual_scope') }}</span>
+                    <span class="tw:text-[10px] tw:text-on-surface-variant">{{ __('navigation.dual_scope') }}</span>
                 </div>
                 <div class="tw:space-y-1">
                     {{-- Local Supplier Option --}}

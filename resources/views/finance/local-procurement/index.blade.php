@@ -162,7 +162,7 @@
                         <tr>
                             <td>
                                 <div class="d-flex align-items-center tw:gap-1.5">
-                                    <a href="{{ route($routePrefix.'.show', $po) }}" class="tw:font-mono tw:font-semibold tw:text-primary hover:tw-text-primary-hover tw:no-underline tw:hover:underline">
+                                    <a href="{{ route($routePrefix.'.show', $po) }}" class="ui-tabular-nums tw:font-semibold tw:text-primary hover:tw-text-primary-hover tw:no-underline tw:hover:underline">
                                         {{ $po->po_number }}
                                     </a>
                                     @if($po->latestPoDocument())
@@ -174,7 +174,7 @@
                                 </div>
                             </td>
                             <td>
-                                <div class="tw:font-mono tw:text-on-surface" style="max-width: 16rem; overflow-wrap: anywhere;">
+                                <div class="ui-tabular-nums tw:text-on-surface" style="max-width: 16rem; overflow-wrap: anywhere;">
                                     {{ filled($po->pr_number) ? $po->pr_number : __('local_procurement.pr.empty') }}
                                 </div>
                             </td>
@@ -191,11 +191,11 @@
                                     {{ $regionalFormatter->date($po->po_date, 'human') ?? '—' }}
                                 </span>
                             </td>
-                            <td class="text-end tw:font-mono tw:font-bold tw:text-on-surface">
+                            <td class="text-end ui-tabular-nums tw:font-bold tw:text-on-surface">
                                 Rp {{ $regionalFormatter->money($po->total_amount, 2) }}
                             </td>
                             <td class="text-end">
-                                <div class="tw:font-mono tw:font-semibold tw:text-on-surface">
+                                <div class="ui-tabular-nums tw:font-semibold tw:text-on-surface">
                                     {{ $po->active_gr_count }} GR
                                 </div>
                                 <div class="tw:text-[11px] tw:text-on-surface-variant">

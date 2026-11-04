@@ -911,7 +911,7 @@
                             {{ __('registration.nib') }} <span class="tw:text-error">*</span>
                         </label>
                         <span
-                            class="tw:shrink-0 tw:mt-0.5 tw:text-[11px] tw:font-mono tw:font-semibold tw:tabular-nums"
+                            class="tw:shrink-0 tw:mt-0.5 tw:text-[11px] tw:font-semibold tw:tabular-nums"
                             :class="formData.nib.replace(/\D/g, '').length === 13 ? 'tw:text-success' : 'tw:text-on-surface-variant'"
                             x-text="window.AdasiI18n.t('js.validation.digit_progress', { count: formData.nib.replace(/\D/g, '').length, max: 13 })"
                         ></span>
@@ -927,7 +927,7 @@
                             x-model="formData.nib"
                             @blur="validateField('nib')"
                             @input="formData.nib = formData.nib.replace(/\D/g, '').slice(0, 13); validateField('nib');"
-                            class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:pl-10 tw:pr-3 tw:text-ui-sm tw:font-mono tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary/20"
+                            class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:pl-10 tw:pr-3 tw:text-ui-sm ui-tabular-nums tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary/20"
                             :class="errors.nib ? 'tw:border-error' : 'tw:border-outline-variant'"
                             placeholder="{{ __('registration.nib_number') }}"
                             maxlength="13"
@@ -947,7 +947,7 @@
                             {{ __('registration.tax_number') }} <span class="tw:text-error">*</span>
                         </label>
                         <span
-                            class="tw:shrink-0 tw:mt-0.5 tw:text-[11px] tw:font-mono tw:font-semibold tw:tabular-nums"
+                            class="tw:shrink-0 tw:mt-0.5 tw:text-[11px] tw:font-semibold tw:tabular-nums"
                             :class="[15, 16].includes(formData.npwp.replace(/\D/g, '').length) ? 'tw:text-success' : 'tw:text-on-surface-variant'"
                             x-text="window.AdasiI18n.t('js.validation.digit_progress', { count: formData.npwp.replace(/\D/g, '').length, max: 16 })"
                         ></span>
@@ -963,7 +963,7 @@
                             x-model="formData.npwp"
                             @blur="validateField('npwp')"
                             @input="formData.npwp = formData.npwp.replace(/\D/g, '').slice(0, 16); validateField('npwp');"
-                            class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:pl-10 tw:pr-3 tw:text-ui-sm tw:font-mono tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary/20"
+                            class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:pl-10 tw:pr-3 tw:text-ui-sm ui-tabular-nums tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary/20"
                             :class="errors.npwp ? 'tw:border-error' : 'tw:border-outline-variant'"
                             placeholder="{{ __('registration.npwp_number') }}"
                             maxlength="16"
@@ -1114,7 +1114,7 @@
                             name="account_number"
                             x-model="formData.account_number"
                             @blur="validateField('account_number')"
-                            class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:pl-10 tw:pr-3 tw:text-ui-sm tw:font-mono tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary/20"
+                            class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:pl-10 tw:pr-3 tw:text-ui-sm ui-tabular-nums tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary/20"
                             :class="errors.account_number ? 'tw:border-error' : 'tw:border-outline-variant'"
                             placeholder="{{ __('registration.account_number_help') }}"
                             required
@@ -1336,7 +1336,7 @@
                 </div>
                 <div>
                     <span class="tw:text-on-surface-variant tw:block">{{ __('registration.summary.email') }}</span>
-                    <span class="tw:font-mono tw:font-semibold tw:text-on-surface" x-text="formData.email"></span>
+                    <span class="tw:font-semibold tw:text-on-surface" x-text="formData.email"></span>
                 </div>
                 <div class="tw:sm:col-span-2">
                     <span class="tw:text-on-surface-variant tw:block">{{ __('registration.summary.address') }}</span>
@@ -1344,7 +1344,7 @@
                 </div>
                 <div>
                     <span class="tw:text-on-surface-variant tw:block">{{ __('registration.summary.phone') }}</span>
-                    <span class="tw:font-mono tw:text-on-surface" x-text="formData.phone"></span>
+                    <span class="ui-tabular-nums tw:text-on-surface" x-text="formData.phone"></span>
                 </div>
                 <div>
                     <span class="tw:text-on-surface-variant tw:block">{{ __('registration.summary.sector') }}</span>
@@ -1400,11 +1400,11 @@
             <div class="tw:grid tw:gap-3 tw:sm:grid-cols-3 tw:text-ui-xs">
                 <div>
                     <span class="tw:text-on-surface-variant tw:block">{{ __('registration.summary.nib') }}</span>
-                    <span class="tw:font-mono tw:font-bold tw:text-on-surface" x-text="formData.nib"></span>
+                    <span class="ui-tabular-nums tw:font-bold tw:text-on-surface" x-text="formData.nib"></span>
                 </div>
                 <div class="tw:sm:col-span-2">
                     <span class="tw:text-on-surface-variant tw:block">{{ __('registration.summary.npwp') }}</span>
-                    <span class="tw:font-mono tw:font-bold tw:text-on-surface" x-text="formData.npwp"></span>
+                    <span class="ui-tabular-nums tw:font-bold tw:text-on-surface" x-text="formData.npwp"></span>
                 </div>
                 <div>
                     <span class="tw:text-on-surface-variant tw:block">{{ __('registration.summary.pic') }}</span>
@@ -1412,11 +1412,11 @@
                 </div>
                 <div>
                     <span class="tw:text-on-surface-variant tw:block">{{ __('registration.summary.pic_email') }}</span>
-                    <span class="tw:font-mono tw:text-on-surface" x-text="formData.pic_email"></span>
+                    <span class="tw:text-on-surface" x-text="formData.pic_email"></span>
                 </div>
                 <div>
                     <span class="tw:text-on-surface-variant tw:block">{{ __('registration.summary.pic_phone') }}</span>
-                    <span class="tw:font-mono tw:text-on-surface" x-text="formData.pic_phone"></span>
+                    <span class="ui-tabular-nums tw:text-on-surface" x-text="formData.pic_phone"></span>
                 </div>
                 <div>
                     <span class="tw:text-on-surface-variant tw:block">{{ __('registration.summary.bank') }}</span>
@@ -1424,7 +1424,7 @@
                 </div>
                 <div>
                     <span class="tw:text-on-surface-variant tw:block">{{ __('registration.summary.account') }}</span>
-                    <span class="tw:font-mono tw:font-bold tw:text-on-surface" x-text="formData.account_number"></span>
+                    <span class="ui-tabular-nums tw:font-bold tw:text-on-surface" x-text="formData.account_number"></span>
                 </div>
                 <div>
                     <span class="tw:text-on-surface-variant tw:block">{{ __('registration.summary.holder') }}</span>
@@ -1453,15 +1453,15 @@
             <div class="tw:space-y-2 tw:text-ui-xs">
                 <div class="tw:flex tw:items-center tw:justify-between tw:p-2 tw:rounded-sm tw:bg-surface">
                     <span class="tw:font-medium tw:text-on-surface">{{ __('registration.summary.nib_document') }}</span>
-                    <span class="tw:font-mono tw:text-primary" x-text="docs.nib ? (docs.nib.name + ' (' + docs.nib.size + ')') : @js(__('registration.js.ready'))"></span>
+                    <span class="ui-tabular-nums tw:text-primary" x-text="docs.nib ? (docs.nib.name + ' (' + docs.nib.size + ')') : @js(__('registration.js.ready'))"></span>
                 </div>
                 <div class="tw:flex tw:items-center tw:justify-between tw:p-2 tw:rounded-sm tw:bg-surface">
                     <span class="tw:font-medium tw:text-on-surface">{{ __('registration.summary.npwp_document') }}</span>
-                    <span class="tw:font-mono tw:text-primary" x-text="docs.npwp ? (docs.npwp.name + ' (' + docs.npwp.size + ')') : @js(__('registration.js.ready'))"></span>
+                    <span class="ui-tabular-nums tw:text-primary" x-text="docs.npwp ? (docs.npwp.name + ' (' + docs.npwp.size + ')') : @js(__('registration.js.ready'))"></span>
                 </div>
                 <div class="tw:flex tw:items-center tw:justify-between tw:p-2 tw:rounded-sm tw:bg-surface">
                     <span class="tw:font-medium tw:text-on-surface">{{ __('registration.summary.sknr_document') }}</span>
-                    <span class="tw:font-mono tw:text-primary" x-text="docs.sknr ? (docs.sknr.name + ' (' + docs.sknr.size + ')') : @js(__('registration.js.ready'))"></span>
+                    <span class="ui-tabular-nums tw:text-primary" x-text="docs.sknr ? (docs.sknr.name + ' (' + docs.sknr.size + ')') : @js(__('registration.js.ready'))"></span>
                 </div>
                 <div class="tw:flex tw:items-center tw:justify-between tw:p-2 tw:rounded-sm tw:bg-surface">
                     <span class="tw:font-medium tw:text-on-surface">{{ __('registration.summary.sppkp_document') }}</span>
