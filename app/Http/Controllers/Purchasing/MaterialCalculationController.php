@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\MaterialCalculationRequest;
 use App\Http\Requests\MaterialTotalsRequest;
 use App\Models\MaterialMaster;
+use App\Models\PrItem;
 use App\Services\Materials\PrItemProcessor;
 use App\Services\Materials\PrTotalsCalculator;
 use Illuminate\Http\JsonResponse;
@@ -47,6 +48,7 @@ class MaterialCalculationController extends Controller
                 'id' => $material->id,
                 'code' => $material->material_code,
                 'category' => $material->hs_category,
+                'category_label' => $material->hs_category ? MaterialMaster::hsCategoryLabel($material->hs_category) : null,
                 'density_profile' => $material->density_profile,
             ],
             'hs_code' => [
@@ -54,6 +56,7 @@ class MaterialCalculationController extends Controller
                 'selected_code' => $result->data['hs_code'],
                 'source' => $result->data['hs_code_source'],
                 'manual_allowed' => $result->hsCode->allowsManualSelection(),
+                'grade_label' => PrItem::resolveGradeLabel($result->hsCode->ruleCategory, $material->hs_category),
             ],
             'weight' => $weight,
             'errors' => $result->errors,

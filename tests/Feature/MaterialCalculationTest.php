@@ -35,8 +35,35 @@ class MaterialCalculationTest extends TestCase
             ->assertOk()
             ->assertJsonPath('hs_code.status', 'matched')
             ->assertJsonPath('hs_code.code', '7228.30.10')
+            ->assertJsonPath('hs_code.grade_label', 'Alloy Steel Round Bar Rolled')
             ->assertJsonPath('weight.unit_kg', 61.67)
             ->assertJsonPath('weight.total_kg', 123.34);
+
+        $skd11 = MaterialMaster::where('material_code', 'SKD11')->firstOrFail();
+        $this->actingAs($this->purchasing)
+            ->postJson(route('purchasing.material-calculations.preview'), [
+                'material_master_id' => $skd11->id,
+                'shape' => 'Round',
+                'quantity' => 1,
+                'd_outer' => 202,
+                'length' => 4000,
+            ])
+            ->assertOk()
+            ->assertJsonPath('hs_code.code', '7228.40.10')
+            ->assertJsonPath('hs_code.grade_label', 'Alloy Steel Round Bar Forged');
+
+        $this->actingAs($this->purchasing)
+            ->postJson(route('purchasing.material-calculations.preview'), [
+                'material_master_id' => $skd11->id,
+                'shape' => 'Flat',
+                'quantity' => 1,
+                'thickness' => 105,
+                'width' => 610,
+                'length' => 4000,
+            ])
+            ->assertOk()
+            ->assertJsonPath('hs_code.code', '7225.40.90')
+            ->assertJsonPath('hs_code.grade_label', 'Alloy Steel Flat Rolled Rolled');
 
         $st52 = MaterialMaster::where('material_code', 'ST52')->firstOrFail();
         $this->actingAs($this->purchasing)

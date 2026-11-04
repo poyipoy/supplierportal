@@ -89,6 +89,21 @@ class PrItemAward extends Model
         return $this->hasOne(PoItemProgressUpdate::class, 'pr_item_award_id')->latestOfMany();
     }
 
+    /**
+     * Whether the supplier's latest progress stage is Ready to Ship. No progress
+     * row means awaiting confirmation, so the answer is false. Uses the loaded
+     * latestProgressUpdate when present (list pages); otherwise reads the newest
+     * row fresh, which is what ShipmentService relies on under the PO lock.
+     */
+    public function isReadyToShip(): bool
+    {
+        $status = $this->relationLoaded('latestProgressUpdate')
+            ? $this->latestProgressUpdate?->status
+            : $this->progressUpdates()->orderByDesc('id')->value('status');
+
+        return $status === PoItemProgressUpdate::STATUS_READY_TO_SHIP;
+    }
+
     public function specAcceptedByUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'spec_accepted_by');

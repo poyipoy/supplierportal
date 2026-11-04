@@ -71,6 +71,9 @@ class PurchaseRequisitionMaterialAutomationTest extends TestCase
             ->assertSee('Inner D. (mm)')
             ->assertSee('Length (mm)')
             ->assertSeeInOrder([
+                'HS Code',
+                'Grade',
+                __('purchasing.copy.shape'),
                 'Thickness (mm)',
                 'Width (mm)',
                 'Outer D. (mm)',
@@ -79,6 +82,7 @@ class PurchaseRequisitionMaterialAutomationTest extends TestCase
             ])
             ->assertSee(__('purchasing.copy.weight_unit_kg_e8ab70'))
             ->assertSee('HS Code')
+            ->assertSee('material-grade-display', false)
             ->assertSee('data-pr-row-number', false)
             ->assertSee('renumberPrRows', false)
             ->assertSee('pr-sticky-number', false)
@@ -130,12 +134,16 @@ class PurchaseRequisitionMaterialAutomationTest extends TestCase
             ->assertSee('Inner D. (mm)')
             ->assertSee('Length (mm)')
             ->assertSeeInOrder([
+                'HS Code',
+                'Grade',
+                __('purchasing.copy.shape'),
                 'Thickness (mm)',
                 'Width (mm)',
                 'Outer D. (mm)',
                 'Inner D. (mm)',
                 'Length (mm)',
             ])
+            ->assertSee('Alloy Steel Round Bar Rolled')
             ->assertSee('name="items[0][d_outer]"', false)
             ->assertSee('name="items[0][d_inner]"', false)
             ->assertSee('name="items[0][length]"', false)

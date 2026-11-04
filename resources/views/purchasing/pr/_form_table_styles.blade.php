@@ -426,6 +426,15 @@
         min-width: 0;
     }
 
+    #itemsTable.pr-items-table .material-grade-display {
+        background-color: var(--md-surface-container-low);
+        color: var(--md-on-surface-variant);
+        cursor: default;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
     #itemsTable.pr-items-table .pr-delete-button {
         align-items: center;
         display: inline-flex;

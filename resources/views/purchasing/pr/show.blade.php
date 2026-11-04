@@ -135,6 +135,15 @@
         <div class="tw:grid tw:min-w-0 tw:gap-4">
             {{-- Audience & Notes Card --}}
         <x-ui.card :title="__('purchasing.copy.audience_and_instructions')">
+                @if($canManageSuppliers)
+                    <x-slot:actions>
+                        <x-ui.button type="button" variant="outline" size="sm" id="btn-manage-suppliers"
+                                x-data x-on:click="$dispatch('open-ui-dialog', 'manage-pr-suppliers')">
+                            <x-ui.icon name="user-plus" size="sm" />
+                            <span>{{ __('purchasing.copy.manage_invited_suppliers') }}</span>
+                        </x-ui.button>
+                    </x-slot:actions>
+                @endif
                 <div class="row g-3">
                     <div class="col-md-6">
                         <span class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase d-block mb-1">{{ __('purchasing.copy.invited_suppliers') }}</span>
@@ -175,6 +184,7 @@
                             <th scope="col">HS Code</th>
                             <th scope="col">{{ __('purchasing.copy.hs_status') }}</th>
                             <th scope="col" class="text-start ui-sticky-col">{{ __('purchasing.copy.material') }}</th>
+                            <th scope="col" class="text-start">{{ __('purchasing.copy.grade') }}</th>
                             <th scope="col">{{ __('purchasing.copy.shape') }}</th>
                             <th scope="col" class="text-start">{{ __('purchasing.copy.dimensions_mm') }}</th>
                             <th scope="col">{{ __('purchasing.copy.qty') }}</th>
@@ -210,6 +220,7 @@
                                     <span class="ui-status-chip {{ $hsStatusTone }}">{{ $hsStatusLabel }}</span>
                                 </td>
                                 <td class="text-start fw-bold tw:text-on-surface ui-sticky-col">{{ $item->material_name }}</td>
+                                <td class="text-start tw:text-on-surface-variant">{{ $item->grade_label ?? '-' }}</td>
                                 <td class="text-center">{{ $item->shape ?: '-' }}</td>
                                 <td class="text-start tw:text-on-surface-variant">{{ $item->dimension_label }}</td>
                                 <td class="text-center fw-bold ui-tabular-nums">{{ number_format($item->quantity_value, 0) }}</td>
@@ -221,7 +232,7 @@
                     </tbody>
                     <tfoot id="prItemTotals" class="table-light">
                         <tr>
-                            <th scope="row" colspan="6" class="text-end">{{ __('procurement.totals.total') }}</th>
+                            <th scope="row" colspan="7" class="text-end">{{ __('procurement.totals.total') }}</th>
                             <td class="text-center fw-bold ui-tabular-nums">
                                 <span class="tw:sr-only">{{ __('procurement.totals.total_qty') }}:</span>
                                 {{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($totalQty)) }}
@@ -275,7 +286,7 @@
                                 <td class="text-end ui-tabular-nums fw-semibold">{{ \App\Support\NumberFormat::maxDecimals($quotation->total_amount) }}</td>
                                 <td class="text-end fw-bold ui-tabular-nums">
                                     @if($quotation->total_idr !== null)
-                                        Rp {{ \App\Support\NumberFormat::maxDecimals($quotation->total_idr) }}
+                                        Rp {{ $regionalFormatter->groupedDecimal($quotation->total_idr) }}
                                         @if($isLowest)
                                             <x-ui.icon name="circle-check" class="ms-1 text-success" aria-label="{{ __('purchasing.copy.lowest_estimated_total') }}" />
                                         @endif
@@ -386,10 +397,104 @@
                         <div class="tw:text-ui-sm fw-bold {{ $hasReachedBidding ? 'text-warning' : 'tw:text-outline' }}">{{ __('purchasing.copy.supplier_bidding') }}</div>
                     </li>
                 </ol>
+                @if($invitationEvents->isNotEmpty())
+                    <section class="tw:mt-4 tw:border-t tw:border-outline-variant tw:pt-3" aria-labelledby="pr-invitation-history-title">
+                        <h3 id="pr-invitation-history-title" class="tw:m-0 tw:mb-2 tw:text-ui-xs tw:font-semibold tw:uppercase tw:text-on-surface-variant">{{ __('purchasing.copy.invitation_history') }}</h3>
+                        <ul class="tw:m-0 tw:grid tw:list-none tw:gap-2 tw:p-0">
+                            @foreach($invitationEvents as $event)
+                                <li class="tw:text-ui-xs tw:text-on-surface">
+                                    <span class="fw-semibold">{{ __($event->event === \App\Models\PrSupplierInvitationEvent::ADDED ? 'purchasing.copy.invitation_event_added' : 'purchasing.copy.invitation_event_removed', ['supplier' => $event->supplier?->supplier?->company_name ?? $event->supplier?->name ?? '-', 'actor' => $event->actor?->name ?? '-']) }}</span>
+                                    <time class="ui-tabular-nums tw:block tw:text-on-surface-variant" datetime="{{ $event->created_at->toIso8601String() }}">{{ $regionalFormatter->timestamp($event->created_at, 'datetime_comma') }}</time>
+                                </li>
+                            @endforeach
+                        </ul>
+                    </section>
+                @endif
             </x-ui.card>
         </aside>
     </div>
 </div>
+
+@if($canManageSuppliers)
+    <x-ui.dialog name="manage-pr-suppliers" maxWidth="2xl"
+                 :show="$errors->has('supplier_ids') || $errors->has('supplier')"
+                 :title="__('purchasing.copy.manage_invited_suppliers')"
+                 :description="__('purchasing.copy.manage_invited_suppliers_description')">
+        @if($errors->has('supplier_ids') || $errors->has('supplier'))
+            <x-ui.alert tone="error" :title="__('purchasing.copy.invitation_change_failed')" class="tw:mb-4">
+                {{ $errors->first('supplier_ids') ?: $errors->first('supplier') }}
+            </x-ui.alert>
+        @endif
+
+        <section aria-labelledby="pr-invited-list-title" class="tw:mb-5">
+            <h3 id="pr-invited-list-title" class="tw:m-0 tw:mb-2 tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('purchasing.copy.invited_suppliers') }}</h3>
+            <ul class="tw:m-0 tw:grid tw:list-none tw:gap-2 tw:p-0">
+                @foreach($pr->invitedSuppliers as $invited)
+                    @php
+                        $invitedName = $invited->supplier->company_name ?? $invited->name;
+                        $hasQuotation = in_array((int) $invited->id, $suppliersWithQuotation, true);
+                        $isLastInvited = $pr->invitedSuppliers->count() <= 1;
+                        $removeBlockedReason = $hasQuotation
+                            ? __('purchasing.copy.invitation_cannot_remove_with_quotation')
+                            : ($isLastInvited ? __('purchasing.copy.invitation_cannot_remove_last') : null);
+                    @endphp
+                    <li class="tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-2 tw:rounded-lg tw:border tw:border-outline-variant tw:p-2.5">
+                        <div class="tw:min-w-0">
+                            <span class="tw:block tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ $invitedName }}</span>
+                            @if($removeBlockedReason)
+                                <span id="invited-lock-{{ $invited->id }}" class="tw:block tw:text-ui-xs tw:text-on-surface-variant">{{ $removeBlockedReason }}</span>
+                            @endif
+                        </div>
+                        @if($removeBlockedReason)
+                            <x-ui.button type="button" variant="outline" size="sm" disabled aria-describedby="invited-lock-{{ $invited->id }}">
+                                <x-ui.icon name="user-minus" size="sm" />
+                                <span>{{ __('purchasing.copy.invitation_remove_supplier') }}</span>
+                                <span class="tw:sr-only">{{ $invitedName }}</span>
+                            </x-ui.button>
+                        @else
+                            <form action="{{ route('purchasing.requisitions.suppliers.destroy', [$pr, $invited]) }}" method="POST" class="js-remove-invited-form" data-supplier-name="{{ $invitedName }}">
+                                @csrf
+                                @method('DELETE')
+                                <input type="hidden" name="return_url" value="{{ \App\Support\PurchasingNavigation::currentUrlForReturn() }}">
+                                <x-ui.button type="button" variant="outline" size="sm" class="js-remove-invited">
+                                    <x-ui.icon name="user-minus" size="sm" />
+                                    <span>{{ __('purchasing.copy.invitation_remove_supplier') }}</span>
+                                    <span class="tw:sr-only">{{ $invitedName }}</span>
+                                </x-ui.button>
+                            </form>
+                        @endif
+                    </li>
+                @endforeach
+            </ul>
+        </section>
+
+        <form id="add-pr-suppliers-form" action="{{ route('purchasing.requisitions.suppliers.store', $pr) }}" method="POST">
+            @csrf
+            <input type="hidden" name="return_url" value="{{ \App\Support\PurchasingNavigation::currentUrlForReturn() }}">
+            <fieldset class="tw:m-0 tw:min-w-0 tw:border-0 tw:p-0">
+                <legend class="tw:mb-2 tw:p-0 tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('purchasing.copy.invitation_add_suppliers') }}</legend>
+                @forelse($invitableSuppliers as $candidate)
+                    <div class="form-check tw:mb-1.5">
+                        <input class="form-check-input" type="checkbox" name="supplier_ids[]" value="{{ $candidate->id }}" id="invite-supplier-{{ $candidate->id }}" @checked(collect(old('supplier_ids', []))->contains($candidate->id))>
+                        <label class="form-check-label" for="invite-supplier-{{ $candidate->id }}">{{ $candidate->supplier->company_name ?? $candidate->name }}</label>
+                    </div>
+                @empty
+                    <p class="tw:m-0 tw:text-ui-sm tw:text-on-surface-variant">{{ __('purchasing.copy.invitation_no_suppliers_to_add') }}</p>
+                @endforelse
+            </fieldset>
+        </form>
+
+        <x-slot:actions>
+            <x-ui.button type="button" variant="outline" x-data x-on:click="$dispatch('close-ui-dialog', 'manage-pr-suppliers')">{{ __('purchasing.copy.cancel') }}</x-ui.button>
+            @if($invitableSuppliers->isNotEmpty())
+                <x-ui.button type="submit" form="add-pr-suppliers-form">
+                    <x-ui.icon name="user-plus" size="sm" />
+                    <span>{{ __('purchasing.copy.invitation_add_selected') }}</span>
+                </x-ui.button>
+            @endif
+        </x-slot:actions>
+    </x-ui.dialog>
+@endif
 @endsection
 
 @push('scripts')
@@ -406,6 +511,19 @@
             if (result.isConfirmed) {
                 window.AdasiButton?.startLoading($btn[0]);
                 form.submit();
+            }
+        });
+    });
+    $('.js-remove-invited').on('click', function() {
+        const form = $(this).closest('form');
+        AdasiAlert.confirm({
+            title: @json(__('purchasing.copy.invitation_remove_confirm_title')),
+            text: @json(__('purchasing.copy.invitation_remove_confirm_text')).replace(':supplier', form.data('supplier-name')),
+            confirmText: @json(__('purchasing.copy.invitation_remove_supplier')),
+            cancelText: @json(__('purchasing.copy.cancel'))
+        }).then((result) => {
+            if (result.isConfirmed) {
+                form.trigger('submit');
             }
         });
     });

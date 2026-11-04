@@ -331,7 +331,8 @@ class PurchaseRequisitionController extends Controller
     {
         $pr = PurchaseRequisition::with([
             'period',
-            'items',
+            'items.hsCodeRule:id,material_category',
+            'items.materialMaster:id,material_code,hs_category',
             'invitedSuppliers.supplier',
             'quotations.supplier',
             'quotations.items.prItem',
@@ -358,6 +359,31 @@ class PurchaseRequisitionController extends Controller
         // Footer totals are server-authoritative (decision 06).
         $totalQty = (int) $pr->items->sum(fn ($item) => $item->quantity_value);
 
+        // Supplier invitation management: only for a requisition that is open
+        // for quotations and already restricted to an invitation list.
+        $canManageSuppliers = in_array($pr->status, PurchaseRequisitionSupplierController::MUTABLE_STATUSES, true)
+            && $pr->invitedSuppliers->isNotEmpty();
+        $invitableSuppliers = collect();
+        $suppliersWithQuotation = [];
+        if ($canManageSuppliers) {
+            $invitableSuppliers = User::importEligible()
+                ->whereNotIn('id', $pr->invitedSuppliers->pluck('id'))
+                ->with('supplier')
+                ->orderBy('name')
+                ->get();
+            $suppliersWithQuotation = Quotation::withTrashed()
+                ->where('pr_id', $pr->id)
+                ->pluck('supplier_id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+        }
+        $invitationEvents = $pr->supplierInvitationEvents()
+            ->with(['supplier.supplier', 'actor'])
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->limit(20)
+            ->get();
+
         return view('purchasing.pr.show', compact(
             'pr',
             'quotations',
@@ -365,6 +391,10 @@ class PurchaseRequisitionController extends Controller
             'submittedQuotationCount',
             'totalKg',
             'totalQty',
+            'canManageSuppliers',
+            'invitableSuppliers',
+            'suppliersWithQuotation',
+            'invitationEvents',
         ));
     }
 
@@ -373,7 +403,12 @@ class PurchaseRequisitionController extends Controller
      */
     public function edit(string $id)
     {
-        $pr = PurchaseRequisition::with(['period', 'items', 'invitedSuppliers.supplier'])->findOrFail($id);
+        $pr = PurchaseRequisition::with([
+            'period',
+            'items.hsCodeRule:id,material_category',
+            'items.materialMaster:id,material_code,hs_category',
+            'invitedSuppliers.supplier',
+        ])->findOrFail($id);
 
         if ($pr->created_by !== auth()->id() || ! in_array($pr->status, ['draft', 'rejected'])) {
             return redirect(PurchasingNavigation::backUrl('purchasing.requisitions.index'))
@@ -395,6 +430,7 @@ class PurchaseRequisitionController extends Controller
                 }
                 if ($matched) {
                     $item->material_master_id = $matched->id;
+                    $item->setRelation('materialMaster', $matched);
                 }
             }
         }

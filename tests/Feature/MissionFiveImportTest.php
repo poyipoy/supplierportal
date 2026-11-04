@@ -106,22 +106,20 @@ class MissionFiveImportTest extends TestCase
     public function test_pr_and_quotation_templates_have_the_required_contract_and_authorization(): void
     {
         $prTemplate = new PrImportTemplateExport;
-        // Q5: technical keys unchanged; dimensions Thickness, Width, OD, ID, Length.
+        // Q5: technical keys unchanged; dimensions Thickness, Width, OD, ID, Length, then Quantity.
         $this->assertSame([
-            'material_name', 'shape', 'quantity', 'thickness', 'width',
-            'd_outer', 'd_inner', 'length', 'remark',
+            'material_name', 'shape', 'thickness', 'width',
+            'd_outer', 'd_inner', 'length', 'quantity', 'remark',
         ], $prTemplate->headings());
         $this->assertCount(1, $prTemplate->array());
 
         $quotationTemplate = new QuotationImportTemplateExport($this->pr->id);
-        // Q5: same technical keys; dimensions Thickness, Width, OD, ID, Length.
-        // Gate 2 GEN-02 (Confirmation 2): order now follows the quotation form (Qty, dimensions,
-        // KG/Unit, Price/kg, Notes, Availability); the set of keys is unchanged.
+        // Q5: same technical keys; dimensions Thickness, Width, OD, ID, Length, then Available Qty.
         $this->assertSame([
-            'pr_item_id', 'material_name', 'requested_dimension', 'available_qty',
+            'pr_item_id', 'material_name', 'requested_dimension',
             'available_thickness', 'available_width', 'available_d_outer',
-            'available_d_inner', 'available_length', 'offered_weight_per_unit',
-            'price_per_kg', 'notes', 'availability',
+            'available_d_inner', 'available_length', 'available_qty',
+            'offered_weight_per_unit', 'price_per_kg', 'notes', 'availability',
         ], $quotationTemplate->headings());
         $this->assertSame(QuotationImportTemplateExport::CANONICAL_HEADINGS, $quotationTemplate->headings());
         $this->assertCount(13, $quotationTemplate->collection()->first());
@@ -386,7 +384,7 @@ class MissionFiveImportTest extends TestCase
         $this->actingAs($this->purchasing)
             ->get(route('purchasing.requisitions.edit', $draftPr))
             ->assertOk()
-            ->assertSee('Download Template')
+            ->assertSee('Export')
             ->assertSee('Import Excel')
             ->assertSee('Replace Current Rows')
             ->assertSee('Append to Current Rows')
@@ -431,7 +429,7 @@ class MissionFiveImportTest extends TestCase
         $this->actingAs($this->purchasing)
             ->get(route('purchasing.requisitions.edit', $rejectedPr))
             ->assertOk()
-            ->assertDontSee('Download Template')
+            ->assertDontSee('Export')
             ->assertDontSee('Import Excel')
             ->assertDontSee('prImportPreviewUrl', false);
 
@@ -822,7 +820,7 @@ class MissionFiveImportTest extends TestCase
         $this->actingAs($this->supplierA)
             ->get(route('supplier.quotations.create', $this->pr))
             ->assertOk()
-            ->assertSee('Download Template')
+            ->assertSee('Export')
             ->assertSee('Import Excel')
             ->assertSee('Import Mode')
             ->assertSee('Fill Empty Fields Only')
@@ -972,14 +970,18 @@ class MissionFiveImportTest extends TestCase
         // Flat item: pr_item_id (hidden), qty, thickness, width, length, KG/Unit, price, notes.
         $this->assertCount(8, $formOrder, implode(',', $formOrder));
         $templateEditable = array_values(array_intersect(QuotationImportTemplateExport::CANONICAL_HEADINGS, $formOrder));
-        $this->assertSame($templateEditable, $formOrder, 'Form inputs follow the template order.');
+        $this->assertSame([
+            'pr_item_id', 'available_thickness', 'available_width', 'available_length',
+            'available_qty', 'offered_weight_per_unit', 'price_per_kg', 'notes',
+        ], $templateEditable, 'Template canonical editable order places qty after length.');
 
         $previewHeads = array_map(fn ($th) => trim($th->textContent), iterator_to_array(
             $xpath->query('//tbody[@id="quotationImportPreviewBody"]/ancestor::table[1]//thead//th')
         ));
         $expected = [
-            __('supplier.copy.pr_item_id'), __('supplier.copy.material'), __('supplier.copy.offer_qty'),
+            __('supplier.copy.pr_item_id'), __('supplier.copy.material'),
             ...array_map(fn ($field) => PrItem::dimensionLabel($field), PrItem::FIXED_DIMENSION_ORDER),
+            __('supplier.copy.offer_qty'),
             __('supplier.copy.offer_kg_unit'), __('supplier.copy.price_kg'), __('supplier.copy.notes'), __('supplier.copy.availability'),
         ];
         $this->assertSame($expected, $previewHeads);
@@ -1002,7 +1004,7 @@ class MissionFiveImportTest extends TestCase
         $this->assertNotNull($form);
 
         $previewHeads = array_map(fn ($th) => trim($th->textContent), iterator_to_array($xpath->query('.//thead//th', $preview)));
-        $this->assertSame([...$dimensions, 'KG/Unit', __('procurement.totals.total_kg')], array_slice($previewHeads, 5, 7));
+        $this->assertSame([...$dimensions, __('purchasing.copy.qty'), 'KG/Unit', __('procurement.totals.total_kg')], array_slice($previewHeads, 4, 8));
 
         foreach ([$preview, $form] as $table) {
             $heads = $xpath->query('.//thead//th', $table)->length;
@@ -1029,7 +1031,7 @@ class MissionFiveImportTest extends TestCase
         $this->actingAs($this->purchasing)
             ->get(route('purchasing.requisitions.create'))
             ->assertOk()
-            ->assertSee('Download Template')
+            ->assertSee('Export')
             ->assertSee('Import Excel')
             ->assertSee('Replace Current Rows')
             ->assertSee('Append to Current Rows')
@@ -1039,7 +1041,7 @@ class MissionFiveImportTest extends TestCase
             ->get(route('supplier.quotations.create', $this->pr))
             ->assertOk()
             ->assertSee('Import Data')
-            ->assertSee('Download Template')
+            ->assertSee('Export')
             ->assertSee('Import Excel')
             ->assertSee('dropdown-toggle', false)
             ->assertSee(route('supplier.quotations.import-template', $this->pr), false)

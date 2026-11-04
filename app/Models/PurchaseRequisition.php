@@ -95,6 +95,11 @@ class PurchaseRequisition extends Model
             ->withTimestamps();
     }
 
+    public function supplierInvitationEvents(): HasMany
+    {
+        return $this->hasMany(PrSupplierInvitationEvent::class, 'pr_id');
+    }
+
     public function scopeVisibleToSupplier($query, int $supplierId)
     {
         return $query->where(function ($q) use ($supplierId) {

@@ -19,13 +19,13 @@ class QuotationImportTemplateExport implements FromCollection, ShouldAutoSize, W
         'pr_item_id',
         'material_name',
         'requested_dimension',
-        'available_qty',
-        // Q5: Thickness, Width, Outer Diameter, Inner Diameter, Length.
+        // Q5: Thickness, Width, Outer Diameter, Inner Diameter, Length, followed by Qty.
         'available_thickness',
         'available_width',
         'available_d_outer',
         'available_d_inner',
         'available_length',
+        'available_qty',
         'offered_weight_per_unit',
         'price_per_kg',
         'notes',

@@ -27,7 +27,7 @@
     data-error-text="{{ __('procurement.totals.sync_error') }}"
 >
     <tr>
-        <th scope="row" colspan="4" class="text-end fw-semibold text-nowrap">
+        <th scope="row" colspan="5" class="text-end fw-semibold text-nowrap">
             {{ __('procurement.totals.total') }}
         </th>
         <td class="text-center fw-bold ui-tabular-nums text-nowrap">

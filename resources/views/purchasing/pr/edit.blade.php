@@ -111,6 +111,7 @@
                             <col style="width: 48px; min-width: 48px;">
                             <col style="width: 250px; min-width: 250px;">
                             <col style="width: 165px; min-width: 165px;">
+                            <col style="width: 210px; min-width: 210px;">
                             <col style="width: 110px; min-width: 110px;">
                             <col style="width: 78px; min-width: 78px;">
                             <col style="width: 100px; min-width: 100px;">
@@ -128,6 +129,7 @@
                                 <th scope="col" class="pr-sticky-number">{{ __('purchasing.copy.no') }}</th>
                                 <th scope="col" class="pr-sticky-material">{{ __('purchasing.copy.material') }} <span class="text-danger">*</span></th>
                                 <th scope="col">HS Code</th>
+                                <th scope="col">{{ __('purchasing.copy.grade') }}</th>
                                 <th scope="col">{{ __('purchasing.copy.shape') }}</th>
                                 <th scope="col">{{ __('purchasing.copy.qty') }} <span class="text-danger">*</span></th>
                                 @foreach(\App\Models\PrItem::FIXED_DIMENSION_ORDER as $dimensionField)

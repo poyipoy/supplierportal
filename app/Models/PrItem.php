@@ -216,6 +216,23 @@ class PrItem extends Model
         ]);
     }
 
+    public static function resolveGradeLabel(?string $ruleCategory, ?string $materialCategory): ?string
+    {
+        $category = ($ruleCategory !== null && $ruleCategory !== '')
+            ? $ruleCategory
+            : (($materialCategory !== null && $materialCategory !== '') ? $materialCategory : null);
+
+        return $category !== null ? MaterialMaster::hsCategoryLabel($category) : null;
+    }
+
+    public function getGradeLabelAttribute(): ?string
+    {
+        return self::resolveGradeLabel(
+            $this->hsCodeRule?->material_category,
+            $this->materialMaster?->hs_category,
+        );
+    }
+
     public static function formatDimensionLabel(?string $shape, array $dimensions): string
     {
         return match ($shape) {

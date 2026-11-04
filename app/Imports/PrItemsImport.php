@@ -165,6 +165,7 @@ class PrItemsImport extends AbstractPreviewImport implements SkipsEmptyRows, ToC
             $this->warnAboutLegacyValues($rowNumber, $data, $result->data);
             $processed = $result->data;
             $processed['manual_hs_code'] = null;
+            $processed['grade_label'] = PrItem::resolveGradeLabel($result->hsCode->ruleCategory, $material->hs_category);
             $this->rows[] = $processed;
         }
     }

@@ -100,6 +100,7 @@ function resetMaterialPreview($row) {
     $row.find('.hs-code-display').val('');
     $row.find('.hs-code-manual-override').val('0');
     $row.find('.hs-status-badge').removeClass('ui-status-chip--success ui-status-chip--warning ui-status-chip--error').addClass('ui-status-chip--neutral').text(@json(__('purchasing.copy.needs_more_data')));
+    $row.find('.material-grade-display').val('').attr('title', '');
     $row.find('.weight-unit-display').val('0.0000');
     $row.find('.weight-manual-override').val('0');
     notifyPrItemsChanged();
@@ -112,6 +113,8 @@ function selectMaterialInRow($row, material) {
     setMaterialSearchOpen($row, false);
     $row.find('.hs-code-manual-override').val('0');
     $row.find('.weight-manual-override').val('0');
+    const initialGrade = material.category_label || material.category || '';
+    $row.find('.material-grade-display').val(initialGrade).attr('title', initialGrade);
     $row.find('.pr-remark-material-name').text(material.material_code || material.text || @json(__('purchasing.copy.material')));
     scheduleMaterialPreview($row, 0);
 }
@@ -122,7 +125,7 @@ function renderMaterialSearchResults($row, results) {
         $('<div class="list-group-item small text-muted">{{ __('purchasing.copy.no_active_master_material_found') }}</div>').appendTo($panel);
     } else {
         results.forEach((material) => {
-            const category = material.category || 'unmapped';
+            const category = material.category_label || material.category || 'unmapped';
             $('<button type="button" class="list-group-item list-group-item-action py-2">')
                 .append($('<div class="fw-semibold">').text(material.material_code))
                 .append($('<div class="small text-muted">').text(`${category} | ${material.density_profile}`))
@@ -217,6 +220,8 @@ function renderMaterialPreview($row, payload) {
         .text(isManual ? @json(__('purchasing.copy.manual_selection')) : (labelMap[hs.status] || hs.status || @json(__('purchasing.copy.needs_more_data'))));
 
     $row.find('.hs-code-manual-override').val(isManual ? '1' : '0');
+    const gradeLabel = hs.grade_label || (payload.material && payload.material.category_label) || '';
+    $row.find('.material-grade-display').val(gradeLabel).attr('title', gradeLabel);
 
     const unitKg = Number(weight.unit_kg || 0);
     $row.find('.weight-unit-display').val(unitKg.toFixed(4));

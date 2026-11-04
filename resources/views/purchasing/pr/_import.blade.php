@@ -49,10 +49,10 @@
                                         <th scope="col">{{ __('purchasing.copy.material') }}</th>
                                         <th scope="col">{{ __('purchasing.copy.hs_code_result') }}</th>
                                         <th scope="col" class="text-center">{{ __('purchasing.copy.shape') }}</th>
-                                        <th scope="col" class="text-center">{{ __('purchasing.copy.qty') }}</th>
                                         @foreach(\App\Models\PrItem::FIXED_DIMENSION_ORDER as $dimensionField)
                                             <th scope="col" class="text-end">{{ \App\Models\PrItem::dimensionLabel($dimensionField) }}</th>
                                         @endforeach
+                                        <th scope="col" class="text-center">{{ __('purchasing.copy.qty') }}</th>
                                         <th scope="col" class="text-end">KG/Unit</th>
                                         <th scope="col" class="text-end">{{ __('procurement.totals.total_kg') }}</th>
                                         <th scope="col">{{ __('purchasing.copy.remark') }}</th>
@@ -61,12 +61,12 @@
                                 <tbody id="prImportPreviewBody"></tbody>
                                 <tfoot class="table-light fw-bold">
                                     <tr>
-                                        <th scope="row" colspan="4" class="text-end">{{ __('procurement.totals.total') }}</th>
+                                        <th scope="row" colspan="9" class="text-end">{{ __('procurement.totals.total') }}</th>
                                         <td class="text-center ui-tabular-nums">
                                             <span class="tw:sr-only">{{ __('procurement.totals.total_qty') }}:</span>
                                             <output id="prImportTotalQty">0</output>
                                         </td>
-                                        <td colspan="{{ count(\App\Models\PrItem::FIXED_DIMENSION_ORDER) + 1 }}" class="text-end tw:text-on-surface-variant">{{ __('procurement.totals.total_kg') }}</td>
+                                        <td class="text-end tw:text-on-surface-variant">{{ __('procurement.totals.total_kg') }}</td>
                                         <td class="text-end ui-tabular-nums"><output id="prImportTotalKg">0</output></td>
                                         <td></td>
                                     </tr>
@@ -163,6 +163,8 @@
             .removeClass('ui-status-chip--success ui-status-chip--warning ui-status-chip--error ui-status-chip--neutral')
             .addClass(isManual ? 'ui-status-chip--warning' : (hsStatus === 'matched' ? 'ui-status-chip--success' : 'ui-status-chip--neutral'))
             .text(isManual ? @json(__('purchasing.copy.manual_selection')) : (labelMap[hsStatus] || hsStatus || @json(__('purchasing.copy.needs_more_data'))));
+        const gradeLabel = data.grade_label ?? '';
+        $row.find('.material-grade-display').val(gradeLabel).attr('title', gradeLabel);
 
         const weight = Number(data.weight_needed || 0);
         $row.find('.weight-unit-display').val(weight.toFixed(4));
@@ -233,12 +235,24 @@
                 row.material_name ?? '-',
                 `${row.hs_code ?? '-'} (${row.hs_code_resolution_status ?? 'unresolved'})`,
                 row.shape ?? '-',
-                row.quantity ?? '-',
                 ...dimensionOrder.map((field) => row[field] ?? '-'),
+                row.quantity ?? '-',
                 kg(row.weight_needed),
                 kg(row.total_weight),
                 row.remark ?? '-'
-            ].forEach((value, column) => $('<td>').text(value).toggleClass('text-end ui-tabular-nums', column >= 5 && column <= 11).appendTo($tableRow));
+            ].forEach((value, column) => {
+                const $td = $('<td>').text(value);
+                if (column === 0 || column === 3 || column === 9) {
+                    $td.addClass('text-center');
+                }
+                if (column === 9) {
+                    $td.addClass('ui-tabular-nums');
+                }
+                if ((column >= 4 && column <= 8) || column === 10 || column === 11) {
+                    $td.addClass('text-end ui-tabular-nums');
+                }
+                $td.appendTo($tableRow);
+            });
             $tableRow.appendTo($preview);
         });
         $('#prImportTotalQty').text(summary.total_quantity ?? 0);

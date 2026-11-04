@@ -37,6 +37,7 @@ class MaterialMasterSearchController extends Controller
                 'text' => $material->material_code,
                 'material_code' => $material->material_code,
                 'category' => $material->hs_category,
+                'category_label' => $material->hs_category ? MaterialMaster::hsCategoryLabel($material->hs_category) : null,
                 'raw_category' => $material->raw_category,
                 'density_profile' => $material->density_profile,
                 'aliases' => $material->aliases->pluck('alias')->all(),

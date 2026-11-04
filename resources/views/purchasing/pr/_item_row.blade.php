@@ -16,6 +16,16 @@
     $fixedDimensionOrder = \App\Models\PrItem::FIXED_DIMENSION_ORDER;
     $relevantDimensions = \App\Models\PrItem::relevantDimensionFields($shapeValue);
     $rowMasterId = $itemData['material_master_id'] ?? '';
+    $gradeLabel = $item instanceof \App\Models\PrItem
+        ? $item->grade_label
+        : ($itemData['grade_label'] ?? (
+            ! empty($rowMasterId) && is_numeric($rowMasterId)
+                ? \App\Models\PrItem::resolveGradeLabel(
+                    ! empty($itemData['hs_code_rule_id']) ? \App\Models\HsCodeRule::find($itemData['hs_code_rule_id'])?->material_category : null,
+                    \App\Models\MaterialMaster::find($rowMasterId)?->hs_category,
+                )
+                : null
+        ));
 @endphp
 <tr class="item-row">
     <td class="pr-sticky-number text-center tw:text-on-surface-variant ui-tabular-nums" data-pr-row-number>
@@ -56,6 +66,18 @@
         @error("items.{$index}.hs_code")
             <div class="text-danger small">{{ $message }}</div>
         @enderror
+    </td>
+    <td>
+        <input
+            type="text"
+            class="form-control form-control-sm material-grade-display"
+            value="{{ $gradeLabel ?? '' }}"
+            placeholder="—"
+            readonly
+            aria-readonly="true"
+            aria-label="{{ __('purchasing.copy.material_grade') }}"
+            title="{{ $gradeLabel ?? '' }}"
+        >
     </td>
     <td>
         <select name="items[{{ $index }}][shape]" class="form-select form-select-sm material-shape-select" aria-label="{{ __('purchasing.copy.material_shape') }}">
