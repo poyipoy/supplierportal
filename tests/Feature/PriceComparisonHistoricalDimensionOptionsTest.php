@@ -106,6 +106,51 @@ class PriceComparisonHistoricalDimensionOptionsTest extends TestCase
         $this->assertSame('Hollow', $fallback->json('shape'));
     }
 
+    public function test_shape_filter_follows_material_is_never_submitted_and_lists_only_shapes_on_file(): void
+    {
+        $this->actingAs($this->purchasing);
+        $html = $this->get(route('purchasing.comparison.historical', [
+            'supplier_id' => $this->s1->getRouteKey(),
+            'material_name' => 'SCM440',
+            'shape' => 'Round',
+        ]))->assertOk()->getContent();
+
+        // Right of Material, before Time Period.
+        $material = strpos($html, 'id="historicalMaterialSelect"');
+        $shape = strpos($html, 'id="historicalShapeFilter"');
+        $range = strpos($html, 'id="historicalRangeSelect"');
+        $this->assertNotFalse($shape);
+        $this->assertTrue($material < $shape && $shape < $range, 'Shape sits between Material and Time Period.');
+
+        // It narrows the Material list only: it has no name, so the hidden `shape` stays the single source.
+        preg_match('/<select id="historicalShapeFilter"[^>]*>/', $html, $open);
+        $this->assertStringNotContainsString(' name=', $open[0]);
+        // The currency switch form in the evaluation header keeps its own copy of the query, so count in the filter form only.
+        preg_match('/<form[^>]*id="historicalFilterForm".*?<\/form>/s', $html, $form);
+        $this->assertSame(1, substr_count($form[0], 'name="shape"'));
+        $this->assertStringContainsString('aria-controls="historicalMaterialSelect"', $open[0]);
+
+        preg_match('/<select id="historicalShapeFilter".*?<\/select>/s', $html, $select);
+        preg_match_all('/<option value="([^"]*)"/', $select[0], $values);
+        $this->assertSame(['', 'Flat', 'Round', 'Hollow'], $values[1], 'All shapes first, then the shapes on file in canonical order.');
+        $this->assertMatchesRegularExpression('/<option value="Round"\s+selected/', $select[0], 'The analysed material\'s shape is preselected.');
+        $this->assertStringContainsString('All shapes', $select[0]);
+    }
+
+    public function test_shape_filter_always_lists_every_shape_even_without_history_for_it(): void
+    {
+        $this->actingAs($this->purchasing);
+        $html = $this->get(route('purchasing.comparison.historical', ['supplier_id' => $this->s2->getRouteKey()]))
+            ->assertOk()
+            ->getContent();
+
+        // Supplier two only has Flat history. Round and Hollow stay offered, so choosing one shows an
+        // explicit "no historical material" result instead of the shape disappearing from the filter.
+        preg_match('/<select id="historicalShapeFilter".*?<\/select>/s', $html, $select);
+        preg_match_all('/<option value="([^"]*)"/', $select[0], $values);
+        $this->assertSame(['', 'Flat', 'Round', 'Hollow'], $values[1]);
+    }
+
     /** @param list<array{0: string, 1: ?string, 2: array, 3?: array}> $lines */
     private function po(User $supplier, string $status, array $lines, bool $awardFirst = false): void
     {

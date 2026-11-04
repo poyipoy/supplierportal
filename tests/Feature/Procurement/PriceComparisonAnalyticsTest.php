@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Procurement;
 
+use App\Models\AnnualExchangeRate;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
@@ -60,7 +61,7 @@ class PriceComparisonAnalyticsTest extends TestCase
             ->get(route('purchasing.comparison.inter-supplier', ['pr_id' => $pr->getRouteKey()]))
             ->assertOk()
             ->assertSee('data-price-indicators', false)
-            ->assertSee('IDR 32000')   // best current offer: USD 2 x 16,000
+            ->assertSee('IDR 32,000')   // best current offer: USD 2 x 16,000, grouped per user preference
             ->assertSee('USD 2 · ', false) // the original value stays visible
             ->assertSee('data-rate-unavailable="JPY"', false)
             ->assertSee(__('purchasing.comparison_analytics.unavailable_note', ['currencies' => 'JPY']));
@@ -76,6 +77,9 @@ class PriceComparisonAnalyticsTest extends TestCase
 
     public function test_ac20_historical_payload_without_supplier_filters_on_the_key_dimension_only(): void
     {
+        foreach (['USD' => 16000, 'JPY' => 100, 'CNY' => 2250] as $currency => $rate) {
+            AnnualExchangeRate::create(['year' => BusinessTime::today()->year, 'revision' => 1, 'currency' => $currency, 'rate_to_idr' => $rate, 'created_by' => $this->purchasing->id]);
+        }
         $this->po(100, 10, ['d_outer' => 50, 'd_inner' => 20]);
         $this->po(300, 10, ['d_outer' => 50, 'd_inner' => 30]);
         $this->po(900, 10, ['d_outer' => 70, 'd_inner' => 20]);

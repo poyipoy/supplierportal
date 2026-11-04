@@ -1,3 +1,7 @@
+{{-- Gate 1 C7: with an active PR the tab renders the quotation comparison; otherwise legacy history. --}}
+@if(!empty($prMode))
+@include('purchasing.comparison._historical_pr_mode')
+@else
 @php
     $formatNumber = fn ($value, $decimals = 2) => $value !== null ? (isset($regionalFormatter) ? $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($value, $decimals), 'decimal') : \App\Support\NumberFormat::maxDecimals($value, $decimals)) : '-';
     $formatPrice = fn ($value, $decimals = 2) => $value !== null ? (isset($regionalFormatter) ? $regionalFormatter->groupedDecimal($value, $decimals, 'indonesian') : \App\Support\NumberFormat::maxDecimals($value, $decimals)) : '-';
@@ -39,6 +43,14 @@
                 @endforeach
             </select>
         </div>
+        @php
+            // The Shape filter narrows the Material list (in the page script) and is never submitted:
+            // the shape that is analysed always comes from the chosen material option (hidden #historicalShapeInput).
+            // Every shape is always offered, even when the supplier has no history for it: the empty result
+            // then says so, instead of the shape silently disappearing from the filter.
+            $shapeFilterValues = collect(\App\Models\PrItem::SHAPES);
+            $shapeFilterValue = $shapeFilterValues->contains($selectedShape ?? null) ? $selectedShape : '';
+        @endphp
         <div class="tw:xl:col-span-3">
             <label class="form-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="historicalMaterialSelect">{{ __('purchasing.copy.material') }}</label>
             {{-- PUR-07: one option per (material, shape); the hidden input carries the shape. --}}
@@ -49,6 +61,19 @@
                 @endforeach
             </select>
             <input type="hidden" name="shape" id="historicalShapeInput" value="{{ $selectedShape ?? '' }}">
+        </div>
+        <div class="tw:md:col-span-1 tw:xl:col-span-2">
+            <label class="form-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="historicalShapeFilter">{{ __('purchasing.copy.shape') }}</label>
+            <select id="historicalShapeFilter" class="form-select form-select-sm" aria-controls="historicalMaterialSelect"
+                    data-label-all="{{ __('purchasing.comparison_analytics.all_shapes') }}"
+                    data-label-flat="{{ __('materials.shape.flat') }}"
+                    data-label-round="{{ __('materials.shape.round') }}"
+                    data-label-hollow="{{ __('materials.shape.hollow') }}">
+                <option value="">{{ __('purchasing.comparison_analytics.all_shapes') }}</option>
+                @foreach($shapeFilterValues as $shape)
+                    <option value="{{ $shape }}" @selected($shapeFilterValue === $shape)>{{ \App\Models\PrItem::shapeLabel(\App\Models\PrItem::canonicalShape($shape) ?? $shape) }}</option>
+                @endforeach
+            </select>
         </div>
         <div class="tw:xl:col-span-2">
             <label class="form-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="historicalRangeSelect">{{ __('purchasing.copy.time_period') }}</label>
@@ -69,13 +94,6 @@
             </div>
         </fieldset>
 
-        <div class="tw:flex tw:xl:col-span-2">
-            <x-ui.button type="submit" size="sm" class="tw:w-full tw:justify-center">
-                <x-slot:leading><x-ui.icon name="search" /></x-slot:leading>
-                {{ __('purchasing.copy.apply_filters') }}
-            </x-ui.button>
-        </div>
-
         {{-- Mission 07 (decisions 17-18): one key dimension per shape, exact or inclusive range. --}}
         @php
             $pca = 'purchasing.comparison_analytics';
@@ -84,7 +102,7 @@
             $exactKey = $keyDimension['min'] !== null && $keyDimension['min'] === $keyDimension['max'] ? $keyDimension['min'] : null;
         @endphp
         {{-- Hidden when the material has no shape: no key dimension can be derived. --}}
-        <fieldset class="tw:m-0 tw:min-w-0 tw:border-0 tw:p-0 tw:md:col-span-2 tw:xl:col-span-12" id="historicalKeyDimension"
+        <fieldset class="tw:m-0 tw:min-w-0 tw:border-0 tw:p-0 tw:md:col-span-2 tw:xl:col-span-10" id="historicalKeyDimension"
                   data-label-flat="{{ $keyLabels['Flat'] }}"
                   data-label-round="{{ $keyLabels['Round'] }}"
                   data-label-hollow="{{ $keyLabels['Hollow'] }}"
@@ -125,6 +143,14 @@
                 <p class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ __('purchasing.comparison_analytics.key_hint') }}</p>
             </div>
         </fieldset>
+
+        {{-- Second row, after the filters it applies: the first row's 12 columns are full. --}}
+        <div class="tw:flex tw:md:col-span-2 tw:xl:col-span-2 tw:xl:col-start-11">
+            <x-ui.button type="submit" size="sm" class="tw:w-full tw:justify-center">
+                <x-slot:leading><x-ui.icon name="search" /></x-slot:leading>
+                {{ __('purchasing.copy.apply_filters') }}
+            </x-ui.button>
+        </div>
     </form>
 </x-ui.toolbar>
 
@@ -137,8 +163,8 @@
                 <span>{{ __('common.final_review.price_trend', ['material' => $selectedMaterialName, 'supplier' => ($payload['supplierName'] ?? null) ?: __('purchasing.comparison_analytics.all_suppliers')]) }}</span>
             </h2>
         </header>
-        <div class="tw:h-72 tw:p-4">
-            <canvas id="historicalChart" role="img" aria-label="{{ __('purchasing.copy.historical_material_price_trend') }}">{{ __('purchasing.copy.historical_material_price_trend_chart') }}</canvas>
+        <div class="tw:p-4">
+            <x-ui.chart id="historicalChart" :label="__('purchasing.copy.historical_material_price_trend')" :fallback="__('purchasing.copy.historical_material_price_trend_chart')" plot-class="tw:h-64" />
         </div>
     </section>
 
@@ -212,6 +238,7 @@
                             <td class="text-end ui-tabular-nums">
                                 {{ $formatPrice($row['price_per_kg'], 4) }}
                                 <span class="ui-status-chip ui-status-chip--neutral tw:ms-1">{{ $row['currency'] }}</span>
+                                <div class="tw:text-ui-xs tw:text-on-surface-variant">{{ $row['annual_price_display'] }}</div>
                             </td>
                             <td class="text-end text-primary fw-bold ui-tabular-nums">{{ $row['total_idr'] !== null ? $currency.' '.$formatPrice($row['total_idr']) : __('purchasing.comparison_analytics.rate_unavailable') }}</td>
                             <td class="text-center">
@@ -288,3 +315,4 @@
     "historicalDataUrl": @json(route('purchasing.comparison.historical'))
 }
 </script>
+@endif

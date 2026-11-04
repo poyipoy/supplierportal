@@ -71,6 +71,22 @@ class PriceComparisonCompanyNameTest extends TestCase
         $this->assertSame('PT Alpha Baja', $response->viewData('comparison')['matrix'][0]['indicators']['best_current']['supplier']);
     }
 
+    public function test_inter_supplier_chart_tells_same_name_items_apart_and_offers_a_relative_scale(): void
+    {
+        $response = $this->actingAs($this->purchasing)
+            ->get(route('purchasing.comparison.inter-supplier', ['pr_id' => $this->currentPr]))
+            ->assertOk();
+
+        $chart = $response->viewData('chartData');
+        $this->assertSame(['SCM440'], $chart['labels'], 'labels stay plain material names');
+        $this->assertCount(count($chart['labels']), $chart['label_details']);
+        $this->assertStringStartsWith('Flat ', $chart['label_details'][0]);
+
+        $response->assertSee('data-comparison-chart-scale="price"', false)
+            ->assertSee('data-comparison-chart-scale="relative"', false)
+            ->assertSee('"chartI18n"', false);
+    }
+
     public function test_historical_supplier_select_and_table_use_the_company_name(): void
     {
         $this->actingAs($this->purchasing);

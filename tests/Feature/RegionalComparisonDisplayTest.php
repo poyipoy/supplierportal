@@ -87,6 +87,34 @@ class RegionalComparisonDisplayTest extends TestCase
         $this->assertMatchesRegularExpression('/data-price="Rp [0-9]+(\.[0-9]+)?"/', $contentIntl);
     }
 
+    public function test_commercial_overview_total_and_award_price_are_grouped_by_user_preference(): void
+    {
+        $pr = $this->createRequisition(1);
+        $this->createSubmittedQuotation($pr, $this->supplierA, 2.5);
+        $this->createSubmittedQuotation($pr, $this->supplierB, 3.0);
+
+        // 2.5 USD x 20 kg x 16,000 = Rp 800,000 total; 2.5 USD x 16,000 = Rp 40,000 per kg
+        $this->preference($this->purchasing, 'indonesian');
+        $contentIndo = $this->actingAs($this->purchasing)
+            ->get(route('purchasing.comparison.inter-supplier', ['pr_id' => $pr]))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString('Rp 800.000', $contentIndo);
+        $this->assertStringContainsString('data-price-display="Rp 40.000"', $contentIndo);
+        $this->assertStringContainsString('data-price="Rp 40000"', $contentIndo);
+
+        $this->preference($this->purchasing, 'international');
+        $contentIntl = $this->actingAs($this->purchasing)
+            ->get(route('purchasing.comparison.inter-supplier', ['pr_id' => $pr]))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString('Rp 800,000', $contentIntl);
+        $this->assertStringContainsString('data-price-display="Rp 40,000"', $contentIntl);
+        $this->assertStringContainsString('data-price="Rp 40000"', $contentIntl);
+    }
+
     public function test_vs_best_datatables_transcodes_visible_cells_and_keeps_ranking_calculations_raw(): void
     {
         $pr = $this->createRequisition(1);

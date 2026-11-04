@@ -57,21 +57,23 @@ class PurchaseHistoryPriceService
      * @param  'none'|'month'|'year'  $period
      * @return array{currency: string, evaluation_date: string, periods: list<array<string, mixed>>, total: array<string, mixed>, rates: array<string, array{rate: ?string, valid_from: ?string}>}
      */
-    public function summarize(array $filter, string $currency, EvaluationContext $context, string $period = 'none'): array
+    public function summarize(array $filter, string $currency, EvaluationContext $context, string $period = 'none', bool $annualRates = false): array
     {
         $currency = $this->currency($currency);
         $periodExpression = $this->periodExpression($period);
+        $rateYearExpression = $annualRates ? $this->periodExpression('year') : 'NULL';
 
         $rows = $this->eligibleLines($filter)
             ->selectRaw("{$periodExpression} as period_key")
             ->selectRaw('q.currency as currency')
+            ->selectRaw($rateYearExpression.' as rate_year')
             ->selectRaw('SUM(('.self::PRICE.') * ('.self::KG.')) as s')
             ->selectRaw('SUM('.self::KG.') as k')
             ->selectRaw('COUNT(*) as n')
             ->selectRaw('COUNT(DISTINCT po.id) as pos')
             ->selectRaw('MIN('.self::PRICE.') as mn')
             ->selectRaw('MAX('.self::PRICE.') as mx')
-            ->groupByRaw("{$periodExpression}, q.currency")
+            ->groupByRaw("{$periodExpression}, q.currency, {$rateYearExpression}")
             ->orderByRaw($periodExpression)
             ->get();
 
@@ -85,7 +87,7 @@ class PurchaseHistoryPriceService
             'evaluation_date' => $context->dateString(),
             'periods' => $periods,
             'total' => $this->combine($this->totals($rows->all()), $currency, $context),
-            'rates' => $this->ratesUsed($rows->pluck('currency')->unique()->push($currency)->all(), $context),
+            'rates' => $annualRates ? app(AnnualExchangeRateResolver::class)->metadata() : $this->ratesUsed($rows->pluck('currency')->unique()->push($currency)->all(), $context),
         ];
     }
 
@@ -95,7 +97,7 @@ class PurchaseHistoryPriceService
      *
      * @return array{rows: list<array<string, mixed>>, total: int}
      */
-    public function lines(array $filter, string $currency, EvaluationContext $context, int $page = 1, int $perPage = 50): array
+    public function lines(array $filter, string $currency, EvaluationContext $context, int $page = 1, int $perPage = 50, bool $annualRates = false): array
     {
         $currency = $this->currency($currency);
         $base = $this->eligibleLines($filter);
@@ -123,8 +125,8 @@ class PurchaseHistoryPriceService
             ->get();
 
         $previous = null;
-        $mapped = $rows->map(function ($row) use ($currency, $context, &$previous): array {
-            $line = $this->mapLine($row, $currency, $context);
+        $mapped = $rows->map(function ($row) use ($currency, $context, $annualRates, &$previous): array {
+            $line = $this->mapLine($row, $currency, $context, $annualRates);
             $current = $line['converted_price_per_kg'];
             $line['change_pct'] = $previous !== null && $current !== null && bccomp($previous, '0', self::SCALE) > 0
                 ? (float) Money::normalize(bcmul(bcdiv(bcsub($current, $previous, self::WORK), $previous, self::WORK), '100', self::WORK), 2)
@@ -145,11 +147,12 @@ class PurchaseHistoryPriceService
     /**
      * @return array<string, mixed>
      */
-    private function mapLine(object $row, string $currency, EvaluationContext $context): array
+    private function mapLine(object $row, string $currency, EvaluationContext $context, bool $annualRates = false): array
     {
         $price = Money::normalize((string) $row->price_per_kg, self::SCALE);
         $kg = Money::normalize((string) $row->kg, self::SCALE);
-        $converted = $this->convert($price, $row->currency, $currency, $context);
+        $year = $annualRates ? app(AnnualExchangeRateResolver::class)->year($row->po_created_at) : null;
+        $converted = $this->convert($price, $row->currency, $currency, $context, $year);
 
         return [
             'quotation_item_id' => (int) $row->quotation_item_id,
@@ -164,6 +167,7 @@ class PurchaseHistoryPriceService
             'kg' => $kg,
             'converted_price_per_kg' => $converted === null ? null : Money::normalize($converted, self::SCALE),
             'converted_total' => $converted === null ? null : Money::normalize(bcmul($converted, $kg, self::WORK), self::SCALE),
+            ...($annualRates ? ['rate_year' => $year] : []),
         ];
     }
 
@@ -171,8 +175,11 @@ class PurchaseHistoryPriceService
      * amount (in $from) expressed in $to at the evaluation date, unrounded at
      * working scale; null when either benchmark rate is unavailable.
      */
-    public function convert(string $amount, string $from, string $to, EvaluationContext $context): ?string
+    public function convert(string $amount, string $from, string $to, EvaluationContext $context, ?int $annualYear = null): ?string
     {
+        if ($annualYear !== null) {
+            return app(AnnualExchangeRateResolver::class)->convert($amount, $from, $to, $annualYear, self::WORK);
+        }
         // Same currency is the identity: no benchmark rate is needed.
         if (strtoupper($from) === strtoupper($to)) {
             return Money::normalize($amount, self::WORK);
@@ -267,7 +274,8 @@ class PurchaseHistoryPriceService
         $excluded = ['lines' => 0, 'kg' => '0.0000', 'currencies' => []];
 
         foreach ($rows as $row) {
-            $convertedSum = $this->convert((string) $row->s, $row->currency, $target, $context);
+            $year = ($row->rate_year ?? 0) ? (int) $row->rate_year : null;
+            $convertedSum = $this->convert((string) $row->s, $row->currency, $target, $context, $year);
             if ($convertedSum === null) {
                 $excluded['lines'] += (int) $row->n;
                 $excluded['kg'] = Money::normalize(bcadd($excluded['kg'], (string) $row->k, self::WORK), self::SCALE);
@@ -279,8 +287,8 @@ class PurchaseHistoryPriceService
             $kg = bcadd($kg, (string) $row->k, self::WORK);
             $lines += (int) $row->n;
             $pos += (int) $row->pos;
-            $low = $this->convert((string) $row->mn, $row->currency, $target, $context);
-            $high = $this->convert((string) $row->mx, $row->currency, $target, $context);
+            $low = $this->convert((string) $row->mn, $row->currency, $target, $context, $year);
+            $high = $this->convert((string) $row->mx, $row->currency, $target, $context, $year);
             $best = $best === null || bccomp($low, $best, self::WORK) < 0 ? $low : $best;
             $highest = $highest === null || bccomp($high, $highest, self::WORK) > 0 ? $high : $highest;
         }
@@ -308,14 +316,15 @@ class PurchaseHistoryPriceService
     {
         $byCurrency = [];
         foreach ($rows as $row) {
-            $current = $byCurrency[$row->currency] ?? (object) ['currency' => $row->currency, 's' => '0', 'k' => '0', 'n' => 0, 'pos' => 0, 'mn' => null, 'mx' => null];
+            $groupKey = $row->currency.'|'.($row->rate_year ?? 0);
+            $current = $byCurrency[$groupKey] ?? (object) ['currency' => $row->currency, 'rate_year' => $row->rate_year ?? 0, 's' => '0', 'k' => '0', 'n' => 0, 'pos' => 0, 'mn' => null, 'mx' => null];
             $current->s = bcadd($current->s, (string) $row->s, self::WORK);
             $current->k = bcadd($current->k, (string) $row->k, self::WORK);
             $current->n += (int) $row->n;
             $current->pos += (int) $row->pos;
             $current->mn = $current->mn === null || bccomp((string) $row->mn, $current->mn, self::WORK) < 0 ? (string) $row->mn : $current->mn;
             $current->mx = $current->mx === null || bccomp((string) $row->mx, $current->mx, self::WORK) > 0 ? (string) $row->mx : $current->mx;
-            $byCurrency[$row->currency] = $current;
+            $byCurrency[$groupKey] = $current;
         }
 
         return array_values($byCurrency);

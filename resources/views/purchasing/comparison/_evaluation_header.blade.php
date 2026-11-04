@@ -16,6 +16,15 @@
         <div class="tw:text-ui-sm tw:font-semibold tw:text-on-surface" data-evaluation-date="{{ $evaluation['date'] }}">
             {{ __($pc.'.evaluation_date', ['date' => $evaluation['date_display'], 'timezone' => $evaluation['timezone']]) }}
         </div>
+        @if(($evaluation['rate_basis'] ?? null) === 'annual')
+            <div class="tw:text-ui-xs tw:font-semibold">{{ __('annual_rates.basis') }}</div>
+            <p class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ __('annual_rates.required') }}</p>
+            <ul data-annual-rate-list class="tw:m-0 tw:flex tw:flex-wrap tw:gap-x-3 tw:gap-y-1 tw:p-0 tw:text-ui-xs tw:text-on-surface-variant" aria-label="{{ __('annual_rates.title') }}" aria-live="polite">
+                @foreach($evaluation['annual_labels'] as $annualLabel)
+                    <li class="tw:list-none" @if(! $annualLabel['available']) data-rate-unavailable="{{ $annualLabel['currency'] }}" @endif>{{ $annualLabel['label'] }}</li>
+                @endforeach
+            </ul>
+        @else
         <ul class="tw:m-0 tw:flex tw:flex-wrap tw:gap-x-3 tw:gap-y-1 tw:p-0 tw:text-ui-xs tw:text-on-surface-variant" aria-label="{{ __($pc.'.rate_dates') }}">
             @foreach($evaluation['rates'] as $code => $rate)
                 @continue($code === 'IDR')
@@ -28,6 +37,7 @@
                 </li>
             @endforeach
         </ul>
+        @endif
     </div>
     <form method="GET" action="{{ route($route) }}" class="tw:flex tw:items-end tw:gap-2" data-server-tabs-form>
         @foreach($preserved as $key => $value)

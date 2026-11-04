@@ -107,20 +107,22 @@ class QuotationFormExportTest extends TestCase
         $this->assertSame('SS400 Plate', $sheet->getCell('B2')->getValue());
 
         // Flat: numeric qty, dims and price; range as text; blank weight stays blank.
-        $this->assertCell($sheet, 'D2', DataType::TYPE_NUMERIC, 4);
-        $this->assertCell($sheet, 'E2', DataType::TYPE_NUMERIC, 12.5);
-        $this->assertCell($sheet, 'F2', DataType::TYPE_NUMERIC, 1500);
+        $this->assertCell($sheet, 'D2', DataType::TYPE_NUMERIC, 12.5);
+        $this->assertCell($sheet, 'E2', DataType::TYPE_NUMERIC, 1500);
+        $this->assertNull($sheet->getCell('F2')->getValue());
         $this->assertNull($sheet->getCell('G2')->getValue());
-        $this->assertCell($sheet, 'I2', DataType::TYPE_STRING, '2300 - 2500');
+        $this->assertCell($sheet, 'H2', DataType::TYPE_STRING, '2300 - 2500');
+        $this->assertCell($sheet, 'I2', DataType::TYPE_NUMERIC, 4);
         $this->assertNull($sheet->getCell('J2')->getValue());
         $this->assertCell($sheet, 'K2', DataType::TYPE_NUMERIC, 1234567.1234);
         $this->assertCell($sheet, 'L2', DataType::TYPE_STRING, "'=1+1");
         $this->assertSame('Available', $sheet->getCell('M2')->getValue());
         $this->assertSame('#,##0.0000', $sheet->getStyle('K2')->getNumberFormat()->getFormatCode());
-        $this->assertSame('#,##0', $sheet->getStyle('D2')->getNumberFormat()->getFormatCode());
+        $this->assertSame('#,##0', $sheet->getStyle('I2')->getNumberFormat()->getFormatCode());
 
         // Round: exact length is numeric; blank notes stay blank.
-        $this->assertCell($sheet, 'I3', DataType::TYPE_NUMERIC, 3000);
+        $this->assertCell($sheet, 'H3', DataType::TYPE_NUMERIC, 3000);
+        $this->assertCell($sheet, 'I3', DataType::TYPE_NUMERIC, 8);
         $this->assertCell($sheet, 'J3', DataType::TYPE_NUMERIC, 46.2);
         $this->assertNull($sheet->getCell('L3')->getValue());
 
@@ -220,7 +222,7 @@ class QuotationFormExportTest extends TestCase
             ->get(route('supplier.quotations.create', $this->pr))
             ->assertOk();
 
-        $response->assertSee('Download Template');
+        $response->assertSee('Export');
         $response->assertSee('data-quotation-form-export', false);
         $response->assertSee('data-allow-dirty="true"', false);
         $response->assertSee('data-no-loader', false);

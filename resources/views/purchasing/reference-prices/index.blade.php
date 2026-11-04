@@ -5,6 +5,7 @@
 @php
     $rp = 'materials.reference_prices';
     $num = fn ($value, int $decimals = 4) => \App\Support\NumberFormat::maxDecimals($value, $decimals);
+    $money = fn ($value) => $regionalFormatter->groupedDecimal($value, 4);
 @endphp
 
 @section('content')
@@ -72,7 +73,7 @@
                             {{ __($rp.'.dimension_'.$price->dimension_field) }}
                             {{ $num($price->dimension_min) }} – {{ $num($price->dimension_max) }} mm
                         </td>
-                        <td class="text-end ui-tabular-nums">{{ $price->currency }} {{ $num($price->price_per_kg) }}</td>
+                        <td class="text-end ui-tabular-nums">{{ $price->currency }} {{ $money($price->price_per_kg) }}</td>
                         <td class="ui-tabular-nums">{{ $price->valid_from->format('Y-m-d') }}</td>
                         <td class="ui-tabular-nums">{{ $price->valid_until?->format('Y-m-d') ?? __($rp.'.open_ended') }}</td>
                         <td class="text-center ui-tabular-nums">{{ $price->version_no }}</td>

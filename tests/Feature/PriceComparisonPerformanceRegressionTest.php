@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AnnualExchangeRate;
 use App\Models\ExchangeRate;
 use App\Models\Period;
 use App\Models\PrItem;
@@ -197,6 +198,9 @@ class PriceComparisonPerformanceRegressionTest extends TestCase
 
     public function test_monthly_history_paginates_details_without_truncating_chart_or_summary(): void
     {
+        foreach (['USD' => 16000, 'JPY' => 100, 'CNY' => 2250] as $currency => $rate) {
+            AnnualExchangeRate::create(['year' => 2024, 'revision' => 1, 'currency' => $currency, 'rate_to_idr' => $rate, 'created_by' => $this->purchasing->id]);
+        }
         $materialName = 'Paginated Historical Alloy';
         $requisitions = collect();
 
@@ -261,7 +265,7 @@ class PriceComparisonPerformanceRegressionTest extends TestCase
             ->assertJsonPath('pagination.from', 1)
             ->assertJsonPath('pagination.to', 50);
 
-        // Converted at the evaluation-date benchmark (16,000), not the PO snapshot (15,000).
+        // Historical uses the annual 2024 rate (16,000), independent of the PO snapshot (15,000).
         $this->assertEqualsWithDelta(176000, (float) $firstPage->json('tableData.0.price_idr'), 0.0001);
         $this->assertEqualsWithDelta(1760000, (float) $firstPage->json('tableData.0.total_idr'), 0.0001);
         $this->assertSame(11.0, (float) $firstPage->json('tableData.0.price_per_kg'));

@@ -42,7 +42,7 @@
                 <x-ui.icon name="filter" />
                 <span>{{ __('purchasing.copy.apply') }}</span>
             </x-ui.button>
-            <x-ui.button :href="route('purchasing.comparison.vs-best')" variant="ghost" size="sm" data-server-tab data-tab-name="vs-best">
+            <x-ui.button :href="route('purchasing.comparison.vs-best', array_filter(['pr_id' => request()->query('pr_id'), 'currency' => request()->query('currency')], 'is_string'))" variant="ghost" size="sm" data-server-tab data-tab-name="vs-best">
                 <x-ui.icon name="rotate-ccw" />
                 <span>{{ __('purchasing.copy.reset') }}</span>
             </x-ui.button>

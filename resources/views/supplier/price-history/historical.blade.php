@@ -162,12 +162,19 @@
                         </p>
                     </div>
                 </x-slot:header>
-                <div id="historicalChartContainer" class="tw:relative tw:h-64 tw:w-full tw:md:h-[320px]">
-                    <canvas id="historicalChart" role="img" aria-label="{{ __('supplier.page.price_history', ['currency' => $selectedCurrency]) }}" aria-describedby="historicalChartDescription">{{ __('supplier.copy.original_material_price_history_chart') }}</canvas>
-                    <div id="historicalChartFallback" class="d-none tw:flex tw:h-full tw:items-center tw:justify-center tw:p-4 tw:text-center tw:text-ui-sm tw:text-on-surface-variant" role="status">
-                        {{ __('supplier.copy.price_chart_is_temporarily_unavailable_the_historical_breakdown_remains_available_below') }}
-                    </div>
-                </div>
+                <x-ui.chart
+                    id="historicalChart"
+                    :label="__('supplier.page.price_history', ['currency' => $selectedCurrency])"
+                    :fallback="__('supplier.copy.original_material_price_history_chart')"
+                    describedby="historicalChartDescription"
+                    plot-class="tw:h-64 tw:md:h-[320px]"
+                >
+                    <x-slot:overlay>
+                        <div id="historicalChartFallback" class="d-none tw:flex tw:h-full tw:items-center tw:justify-center tw:p-4 tw:text-center tw:text-ui-sm tw:text-on-surface-variant" role="status">
+                            {{ __('supplier.copy.price_chart_is_temporarily_unavailable_the_historical_breakdown_remains_available_below') }}
+                        </div>
+                    </x-slot:overlay>
+                </x-ui.chart>
             </x-ui.card>
 
             {{-- 2 Metrics Summary --}}
@@ -413,71 +420,43 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     if (chartCanvas && historicalChartData) {
-        const colors = window.AdasiChart ? window.AdasiChart.getColors() : {
-            primary: '#1F5FA6',
-            success: '#1E8449',
-            error: '#C0392B',
-            surface: '#FFFFFF',
-            onSurfaceVariant: '#64748B',
-            gridLine: 'rgba(226, 232, 240, 0.75)',
-        };
+        const theme = window.AdasiChart;
         const chartCurrency = historicalChartData.currency || '';
-        const formatChartPrice = (value) => Number(value).toLocaleString('id-ID', {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 2,
-        });
-        const datasets = [{
-            label: historicalChartData.type === 'yearly' ? window.AdasiI18n.t('supplier.js.average_price', { currency: chartCurrency }) : window.AdasiI18n.t('supplier.js.price_kg', { currency: chartCurrency }),
-            data: historicalChartData.prices || [],
-            borderColor: colors.primary,
-            backgroundColor: (ctx) => window.AdasiChart?.createAreaGradient(ctx, colors.primary, 0.16, 0.01) || 'transparent',
-            borderWidth: 2.5,
-            fill: true,
-            tension: 0.3,
-            pointRadius: 3.5,
+        const formatChartPrice = (value) => {
+            const text = Number(value).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+            return window.AdasiPreferences?.displayNumber ? window.AdasiPreferences.displayNumber(text, 'indonesian') : text;
+        };
+        // Average, lowest and highest differ by line dash and point shape, not by color alone.
+        const line = (label, data, slot, pointStyle, borderDash) => ({
+            label,
+            data,
+            borderColor: theme ? theme.color(slot) : undefined,
+            backgroundColor: theme ? theme.color(slot) : undefined,
+            pointBorderColor: theme ? theme.color('surface') : undefined,
+            pointStyle,
+            borderDash,
+            borderWidth: 2,
+            fill: false,
+            tension: 0,
+            pointRadius: 4,
             pointHoverRadius: 6,
-            pointBackgroundColor: colors.primary,
-            pointBorderColor: colors.surface,
             pointBorderWidth: 2,
-        }];
+        });
+        const datasets = [line(
+            historicalChartData.type === 'yearly' ? window.AdasiI18n.t('supplier.js.average_price', { currency: chartCurrency }) : window.AdasiI18n.t('supplier.js.price_kg', { currency: chartCurrency }),
+            historicalChartData.prices || [],
+            'series-1', 'circle', [],
+        )];
 
         if (historicalChartData.type === 'yearly' && Array.isArray(historicalChartData.minPrices)) {
-            datasets.push({
-                label: 'Lowest Price',
-                data: historicalChartData.minPrices,
-                borderColor: colors.success,
-                backgroundColor: 'transparent',
-                borderWidth: 1.5,
-                borderDash: [4, 3],
-                fill: false,
-                tension: 0.3,
-                pointRadius: 2.5,
-                pointHoverRadius: 5,
-                pointBackgroundColor: colors.success,
-                pointBorderColor: colors.surface,
-                pointBorderWidth: 1.5,
-            });
+            datasets.push(line(@json(__('charts.series.lowest_price')), historicalChartData.minPrices, 'series-3', 'triangle', [6, 4]));
         }
 
         if (historicalChartData.type === 'yearly' && Array.isArray(historicalChartData.maxPrices)) {
-            datasets.push({
-                label: 'Highest Price',
-                data: historicalChartData.maxPrices,
-                borderColor: colors.error,
-                backgroundColor: 'transparent',
-                borderWidth: 1.5,
-                borderDash: [4, 3],
-                fill: false,
-                tension: 0.3,
-                pointRadius: 2.5,
-                pointHoverRadius: 5,
-                pointBackgroundColor: colors.error,
-                pointBorderColor: colors.surface,
-                pointBorderWidth: 1.5,
-            });
+            datasets.push(line(@json(__('charts.series.highest_price')), historicalChartData.maxPrices, 'series-2', 'rectRot', [2, 3]));
         }
 
-        if (typeof window.Chart !== 'function') {
+        if (typeof window.Chart !== 'function' || !theme) {
             showHistoricalChartFallback();
             return;
         }
@@ -490,36 +469,24 @@ document.addEventListener('DOMContentLoaded', () => {
                     datasets,
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: { duration: 400 },
+                    interaction: { mode: 'index', intersect: false },
                     plugins: {
-                        legend: {
-                            position: 'top',
-                            align: 'end',
-                            labels: {
-                                boxWidth: 8,
-                                boxHeight: 8,
-                                usePointStyle: true,
-                                font: { family: 'Inter', size: 11, weight: '500' },
-                                color: colors.onSurfaceVariant,
-                                padding: 12,
-                            }
-                        },
-                        tooltip: window.AdasiChart?.getTooltip({
+                        legend: theme.getLegend(),
+                        adasiA11y: { format: (value) => formatChartPrice(value) + ' ' + chartCurrency + '/Kg' },
+                        tooltip: theme.getTooltip({
                             callbacks: {
                                 label: function(context) {
                                     return ' ' + context.dataset.label + ': ' + formatChartPrice(context.raw) + ' ' + chartCurrency + '/Kg';
                                 }
                             }
-                        }) || {},
+                        }),
                     },
-                    scales: window.AdasiChart?.getScales({
+                    scales: theme.getScales({
                         yMaxTicks: 5,
                         yBeginAtZero: true,
                         yTitle: `${chartCurrency} / Kg`,
                         yFormat: (val) => formatChartPrice(val),
-                    }) || {},
+                    }),
                 }
             });
         } catch (error) {

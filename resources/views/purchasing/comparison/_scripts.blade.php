@@ -1,7 +1,22 @@
+@php
+    // Lucide markup for strings built in JS. Same renderer as <x-ui.icon>.
+    $comparisonIcon = static fn (string $name, string $size, string $class = ''): string => \App\View\Components\Ui\Icon::html(
+        new \Illuminate\View\ComponentAttributeBag(['name' => $name, 'size' => $size, 'class' => $class]),
+    );
+@endphp
+{{-- Chart copy for charts that are first rendered by fetch (historical results); <x-ui.chart> shares the once-key. --}}
+@once('adasi-chart-i18n')
+<script type="application/json" data-adasi-chart-i18n>@json(__('charts.js'))</script>
+@endonce
 <script>
 (function() {
     window._activeComparisonChart = null;
     window._activeVsBestTable = null;
+    const comparisonIcons = {
+        package: @json($comparisonIcon('package', 'xs')),
+        chart: @json($comparisonIcon('chart-no-axes-combined', 'md')),
+        chartEmpty: @json($comparisonIcon('chart-no-axes-combined', 'lg', 'tw:size-8')),
+    };
 
     // Mission 07: analytics amounts in the selected analysis currency (IDR keeps Rp).
     window.formatAnalyticMoney = function(value, currency, maxDecimals) {
@@ -14,9 +29,201 @@
         return (code === 'IDR' ? 'Rp ' : code + ' ') + display;
     };
 
+    // <inter-supplier-chart> Pure config builders (tests/js/inter-supplier-chart.test.mjs).
+    // A missing offer stays null (never 0, I-8); the lowest price per material carries a
+    // non-color cue (star marker + "Lowest" text) and an optional % scale makes materials
+    // with very different prices comparable.
+    (function() {
+        const isPrice = (value) => value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value));
+
+        function axisLabels(chartData) {
+            const names = chartData.labels || [];
+            const details = chartData.label_details || [];
+            const counts = {};
+            names.forEach((name) => { counts[name] = (counts[name] || 0) + 1; });
+
+            return names.map((name, index) => (counts[name] > 1 && details[index] ? [name, details[index]] : name));
+        }
+
+        // Dataset index of the lowest price per material, or null when fewer than two offers compete.
+        function lowestIndexes(priceRows, length) {
+            return Array.from({ length }, (_, index) => {
+                let best = null;
+                let offers = 0;
+                priceRows.forEach((prices, datasetIndex) => {
+                    const value = prices ? prices[index] : null;
+                    if (!isPrice(value)) return;
+                    offers++;
+                    if (best === null || Number(value) < Number(priceRows[best][index])) best = datasetIndex;
+                });
+
+                return offers > 1 ? best : null;
+            });
+        }
+
+        function percentAboveLowest(priceRows, length) {
+            const lowest = Array.from({ length }, (_, index) => {
+                const values = priceRows.map((prices) => prices[index]).filter(isPrice).map(Number);
+                return values.length ? Math.min(...values) : null;
+            });
+
+            return priceRows.map((prices) => prices.map((value, index) => (
+                isPrice(value) && lowest[index] > 0 ? ((Number(value) - lowest[index]) / lowest[index]) * 100 : null
+            )));
+        }
+
+        function subset(chartData, index) {
+            return {
+                ...chartData,
+                labels: [chartData.labels[index]],
+                label_details: chartData.label_details ? [chartData.label_details[index]] : [],
+                datasets: chartData.datasets.map((dataset) => ({ ...dataset, data: [dataset.data[index] ?? null] })),
+            };
+        }
+
+        function summary(chartData, i18n, format) {
+            const prices = chartData.datasets.map((dataset) => dataset.data);
+            const items = lowestIndexes(prices, chartData.labels.length)
+                .map((best, index) => (best === null ? null
+                    : chartData.labels[index] + ' ' + chartData.datasets[best].label + ' ' + format(prices[best][index])))
+                .filter(Boolean);
+
+            return items.length ? i18n.summary.replace(':items', items.join('; ')) : '';
+        }
+
+        function build(chartData, options) {
+            const { colors, palette, i18n, format, formatPercent, mode = 'price', theme = null } = options;
+            const relative = mode === 'relative';
+            const length = chartData.labels.length;
+            const prices = chartData.datasets.map((dataset) => dataset.data.map((value) => (isPrice(value) ? Number(value) : null)));
+            const percents = percentAboveLowest(prices, length);
+            const lowest = lowestIndexes(prices, length);
+            const yFormat = relative ? (value) => formatPercent(value) : (value) => format(value);
+
+            const datasets = chartData.datasets.map((dataset, index) => {
+                const color = palette[index % palette.length];
+                // A 7th+ supplier reuses a hue, so its bars are hatched to stay distinct (never a generated hue).
+                const cycle = Math.floor(index / palette.length);
+                const fill = cycle > 0 && theme && theme.hatch ? theme.hatch(color, cycle) : color;
+                return {
+                    label: dataset.label,
+                    data: relative ? percents[index] : prices[index],
+                    prices: prices[index],
+                    percents: percents[index],
+                    backgroundColor: fill,
+                    borderColor: color,
+                    borderWidth: 0,
+                    borderRadius: 3,
+                    borderSkipped: 'start',
+                    minBarLength: 2,
+                    maxBarThickness: 40,
+                    categoryPercentage: 0.72,
+                    barPercentage: 0.86,
+                };
+            });
+
+            const scales = theme && theme.scales
+                ? theme.scales({ yMaxTicks: 5, yBeginAtZero: true, yFormat })
+                : { x: { grid: { display: false } }, y: { beginAtZero: true, ticks: { callback: yFormat } } };
+            const tooltip = {
+                mode: 'index',
+                intersect: false,
+                itemSort: (a, b) => (a.dataset.prices[a.dataIndex] ?? Infinity) - (b.dataset.prices[b.dataIndex] ?? Infinity),
+                callbacks: {
+                    label: (context) => {
+                        const price = context.dataset.prices[context.dataIndex];
+                        const percent = context.dataset.percents[context.dataIndex];
+                        const parts = [context.dataset.label + ': ' + format(price)];
+                        if (lowest[context.dataIndex] === context.datasetIndex) {
+                            parts.push(i18n.lowest);
+                        } else if (percent !== null && lowest[context.dataIndex] !== null) {
+                            parts.push(i18n.aboveLowest.replace(':percent', formatPercent(percent)));
+                        }
+                        return ' ' + parts.join(' · ');
+                    },
+                    afterBody: (items) => {
+                        if (!items.length) return [];
+                        const index = items[0].dataIndex;
+                        return datasets
+                            .filter((dataset) => dataset.prices[index] === null)
+                            .map((dataset) => dataset.label + ': ' + i18n.noOffer);
+                    },
+                },
+            };
+
+            return {
+                lowest,
+                config: {
+                    type: 'bar',
+                    data: { labels: axisLabels(chartData), datasets },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: { duration: 250 },
+                        layout: { padding: { top: 16 } },
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                align: 'start',
+                                labels: {
+                                    usePointStyle: true,
+                                    pointStyle: 'rectRounded',
+                                    boxWidth: 10,
+                                    boxHeight: 10,
+                                    padding: 14,
+                                    font: { family: 'Inter', size: 12, weight: '500' },
+                                    color: colors.onSurfaceVariant,
+                                },
+                            },
+                            tooltip: theme && theme.tooltip ? theme.tooltip(tooltip) : tooltip,
+                        },
+                        scales,
+                    },
+                },
+            };
+        }
+
+        // Star above the lowest visible bar of each material (drawn path, not a glyph).
+        function lowestMarkerPlugin(color) {
+            const star = (ctx, x, y, radius) => {
+                ctx.beginPath();
+                for (let point = 0; point < 10; point++) {
+                    const r = point % 2 === 0 ? radius : radius * 0.45;
+                    const angle = (Math.PI / 5) * point - Math.PI / 2;
+                    ctx.lineTo(x + r * Math.cos(angle), y + r * Math.sin(angle));
+                }
+                ctx.closePath();
+                ctx.fill();
+            };
+
+            return {
+                id: 'adasiLowestMarker',
+                afterDatasetsDraw(chart) {
+                    const visible = chart.data.datasets.map((dataset, index) => (chart.isDatasetVisible(index) ? dataset.prices : []));
+                    const lowest = lowestIndexes(visible, chart.data.labels.length);
+                    const ctx = chart.ctx;
+                    ctx.save();
+                    ctx.fillStyle = color;
+                    lowest.forEach((datasetIndex, index) => {
+                        if (datasetIndex === null) return;
+                        const bar = chart.getDatasetMeta(datasetIndex).data[index];
+                        if (bar) star(ctx, bar.x, bar.y - 9, 5);
+                    });
+                    ctx.restore();
+                },
+            };
+        }
+
+        window.AdasiInterSupplierChart = { axisLabels, lowestIndexes, percentAboveLowest, subset, summary, build, lowestMarkerPlugin };
+    })();
+    // </inter-supplier-chart>
+
     // PUR-05: one place keeps the URL, the history entry (with the server-tabs marker so
     // Back/Forward still swaps tabs), the tab links and the currency form in step.
     const comparisonSharedKeys = ['material_name', 'shape', 'currency'];
+    // Gate 1 C6: Historical-local focus never travels; the active PR follows the current URL only.
+    const comparisonLocalKeys = ['pr_item', 'chart'];
     window.syncComparisonState = function(url) {
         const target = new URL(url, window.location.origin);
         window.history.replaceState(
@@ -30,7 +237,20 @@
                 const value = target.searchParams.get(key);
                 value === null || value === '' ? href.searchParams.delete(key) : href.searchParams.set(key, value);
             });
+            comparisonLocalKeys.forEach((key) => href.searchParams.delete(key));
+            const prId = target.searchParams.get('pr_id');
+            if (prId) {
+                href.searchParams.set('pr_id', prId);
+            } else if (tab.dataset?.tabName !== 'inter-supplier') {
+                href.searchParams.delete('pr_id');
+            }
             tab.setAttribute('href', href.pathname + href.search);
+        });
+        // Gate 1 C6 (N7): detail links return to the state the user is looking at now.
+        document.querySelectorAll('#purchasingComparisonContainer [data-return-url]').forEach((link) => {
+            const href = new URL(link.getAttribute('href'), window.location.origin);
+            href.searchParams.set('return_url', target.pathname + target.search);
+            link.setAttribute('href', href.pathname + href.search);
         });
         document.querySelectorAll('#purchasingComparisonContainer [data-evaluation-header] form').forEach((form) => {
             form.querySelectorAll('input[type="hidden"]').forEach((input) => input.remove());
@@ -197,7 +417,7 @@
                 const preview = document.createElement('div');
                 preview.className = 'text-secondary mt-1';
                 preview.style.fontSize = '.7rem';
-                preview.innerHTML = `<span class="me-1">&#128230;</span>${option.previewMaterials || ''}`;
+                preview.innerHTML = `<span class="me-1">${comparisonIcons.package}</span>${option.previewMaterials || ''}`;
 
                 button.appendChild(title);
                 button.appendChild(meta);
@@ -265,68 +485,97 @@
             }
         });
 
-        // Comparison Bar Chart
+        // Comparison Bar Chart (builders: <inter-supplier-chart> above)
         const chartCanvas = document.getElementById('comparisonChart');
-        if (comparisonChartData && chartCanvas && typeof Chart !== 'undefined') {
-            const colors = window.AdasiChart ? window.AdasiChart.getColors() : {
-                primary: '#1F5FA6',
-                secondary: '#476072',
-                success: '#1E8449',
-                warning: '#D35400',
-                onSurfaceVariant: '#64748B',
-                gridLine: 'rgba(226, 232, 240, 0.75)',
+        if (comparisonChartData && chartCanvas && typeof Chart !== 'undefined' && window.AdasiInterSupplierChart) {
+            const chartLib = window.AdasiInterSupplierChart;
+            const chartI18n = config.chartI18n || {};
+            const formatPrice = (value) => window.formatAnalyticMoney(value, comparisonChartData.currency);
+            const formatPercent = (value) => {
+                const number = Number(value).toLocaleString('id-ID', { maximumFractionDigits: 1 });
+                const display = window.AdasiPreferences?.displayNumber ? window.AdasiPreferences.displayNumber(number, 'indonesian') : number;
+                return (Number(value) > 0 ? '+' : '') + display + '%';
             };
-            const comparisonPalette = [
-                colors.primary,
-                '#2563EB',
-                colors.secondary,
-                '#0D9488',
-                '#D97706',
-                '#7C3AED',
-            ];
-            const clonedChartData = JSON.parse(JSON.stringify(comparisonChartData));
-            clonedChartData.datasets.forEach((dataset, index) => {
-                const baseColor = comparisonPalette[index % comparisonPalette.length];
-                dataset.backgroundColor = (context) => window.AdasiChart?.createBarGradient(context, baseColor, 0.92, 0.35) || baseColor;
-                dataset.borderColor = baseColor;
-                dataset.borderWidth = 1;
-                dataset.borderRadius = 6;
-                dataset.borderSkipped = false;
-                dataset.maxBarThickness = 36;
+            const tokenColors = () => {
+                const css = getComputedStyle(document.documentElement);
+                const token = (name) => css.getPropertyValue(name).trim();
+                return {
+                    primary: token('--md-chart-primary'),
+                    warning: token('--md-chart-warning') || token('--md-warning'),
+                    secondary: token('--md-secondary'),
+                    success: token('--md-success'),
+                    info: token('--md-info'),
+                    error: token('--md-error'),
+                    onSurfaceVariant: token('--md-on-surface-variant'),
+                    series: [1, 2, 3, 4, 5, 6].map((slot) => token('--md-chart-series-' + slot)),
+                };
+            };
+            const scaleButtons = document.querySelectorAll('[data-comparison-chart-scale]');
+            const chartState = {
+                materialIndex: -1,
+                mode: new URLSearchParams(window.location.search).get('chart_scale') === 'relative' ? 'relative' : 'price',
+            };
+
+            const renderComparisonChart = () => {
+                if (!document.body.contains(chartCanvas)) return;
+                const colors = window.AdasiChart ? window.AdasiChart.getColors() : tokenColors();
+                const palette = window.AdasiChart?.getSeriesPalette
+                    ? window.AdasiChart.getSeriesPalette(colors)
+                    : colors.series;
+                const data = chartState.materialIndex === -1
+                    ? comparisonChartData
+                    : chartLib.subset(comparisonChartData, chartState.materialIndex);
+                const built = chartLib.build(data, {
+                    colors,
+                    palette,
+                    i18n: chartI18n,
+                    format: formatPrice,
+                    formatPercent,
+                    mode: chartState.mode,
+                    theme: window.AdasiChart ? { scales: window.AdasiChart.getScales, tooltip: window.AdasiChart.getTooltip, hatch: window.AdasiChart.hatch } : null,
+                });
+                built.config.plugins = [chartLib.lowestMarkerPlugin(colors.success)];
+                // Keyboard readout reads prices (also in % mode) and names the lowest offer, like the tooltip.
+                built.config.options.plugins.adasiA11y = {
+                    valueText: (datasetIndex, index, instance) => {
+                        const price = instance.data.datasets[datasetIndex].prices[index];
+                        if (price === null || price === undefined) return chartI18n.noOffer;
+                        return formatPrice(price) + (built.lowest[index] === datasetIndex ? ' · ' + chartI18n.lowest : '');
+                    },
+                };
+
+                window._activeComparisonChart?.destroy();
+                window._activeComparisonChart = new Chart(chartCanvas, built.config);
+                chartCanvas.setAttribute('aria-label', [chartI18n.title, chartLib.summary(data, chartI18n, formatPrice)].filter(Boolean).join('. '));
+                scaleButtons.forEach((button) => {
+                    button.setAttribute('aria-pressed', button.dataset.comparisonChartScale === chartState.mode ? 'true' : 'false');
+                });
+            };
+
+            // Bar colors are resolved at build time, so a theme/accent switch rebuilds the chart.
+            window._interSupplierChartRender = renderComparisonChart;
+            if (!window._interSupplierChartThemeListener) {
+                window._interSupplierChartThemeListener = true;
+                ['adasi:theme-change', 'adasi:accent-change'].forEach((name) => {
+                    window.addEventListener(name, () => window._interSupplierChartRender?.());
+                });
+            }
+
+            scaleButtons.forEach((button) => {
+                button.addEventListener('click', () => {
+                    chartState.mode = button.dataset.comparisonChartScale === 'relative' ? 'relative' : 'price';
+                    renderComparisonChart();
+                    const url = new URL(window.location.href);
+                    if (chartState.mode === 'relative') {
+                        url.searchParams.set('chart_scale', 'relative');
+                    } else {
+                        url.searchParams.delete('chart_scale');
+                    }
+                    window.syncComparisonState(url.toString());
+                });
             });
 
-            window._activeComparisonChart = new Chart(chartCanvas, {
-                type: 'bar',
-                data: clonedChartData,
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: { duration: 400 },
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                boxWidth: 8,
-                                boxHeight: 8,
-                                usePointStyle: true,
-                                font: { family: 'Inter', size: 11, weight: '500' },
-                                color: colors.onSurfaceVariant,
-                                padding: 12,
-                            },
-                        },
-                        tooltip: window.AdasiChart?.getTooltip({
-                            callbacks: {
-                                label: (ctx) => ' ' + ctx.dataset.label + ': ' + window.formatAnalyticMoney(ctx.parsed.y, comparisonChartData?.currency),
-                            }
-                        }) || {},
-                    },
-                    scales: window.AdasiChart?.getScales({
-                        yMaxTicks: 5,
-                        yBeginAtZero: true,
-                        yFormat: (v) => window.formatAnalyticMoney(v, comparisonChartData?.currency),
-                    }) || {},
-                }
-            });
+            renderComparisonChart();
 
             const materialFilter = document.getElementById('comparisonMaterialFilter');
             if (materialFilter) {
@@ -349,23 +598,9 @@
                         row.classList.toggle('d-none', materialId !== '' && row.dataset.materialId !== materialId);
                     });
 
-                    if (!window._activeComparisonChart) return;
-
-                    if (materialId === '') {
-                        window._activeComparisonChart.data = JSON.parse(JSON.stringify(clonedChartData));
-                        window._activeComparisonChart.update();
-                        return;
-                    }
-
-                    const materialIndex = comparisonMaterialIds.indexOf(materialId);
-                    if (materialIndex === -1) return;
-
-                    window._activeComparisonChart.data.labels = [clonedChartData.labels[materialIndex]];
-                    window._activeComparisonChart.data.datasets = clonedChartData.datasets.map((dataset) => ({
-                        ...dataset,
-                        data: [dataset.data[materialIndex] ?? 0],
-                    }));
-                    window._activeComparisonChart.update();
+                    // A supplier without an offer for the material stays a gap (subset keeps null).
+                    chartState.materialIndex = materialId === '' ? -1 : comparisonMaterialIds.indexOf(materialId);
+                    renderComparisonChart();
                 });
 
                 // Preselect from the shared URL state (another tab may have chosen the material).
@@ -411,7 +646,7 @@
                 const itemName = radio.dataset.prItemName;
                 const supplierName = radio.dataset.supplierName;
                 const supplierId = radio.dataset.supplierId;
-                const price = radio.dataset.price;
+                const price = radio.dataset.priceDisplay;
 
                 const item = document.createElement('li');
                 item.append(
@@ -605,23 +840,43 @@
             )).join('');
         }
 
+        // The Shape filter only narrows this list and is never submitted (it has no name): the
+        // analysed shape always comes from the chosen material option, via #historicalShapeInput.
+        const shapeFilter = document.getElementById('historicalShapeFilter');
+        let materialCatalog = [];
+        // True while the Shape filter is parked on a mismatch and the "no data" placeholder is showing
+        // instead of the locked material's real results.
+        let shapeMismatchShown = false;
+
+        function catalogFromDom() {
+            return Array.from(materialSelect.options).filter((option) => option.value).map((option) => {
+                let keyOptions = [];
+                try { keyOptions = JSON.parse(option.dataset.keyOptions || '[]'); } catch (e) { keyOptions = []; }
+                return { name: option.value, shape: option.dataset.shape || '', key_options: keyOptions, label: option.textContent.trim() };
+            });
+        }
+
         function renderMaterialOptions(materials, selected = null) {
+            materialCatalog = materials;
+            const shape = shapeFilter ? shapeFilter.value : '';
+            const visible = shape ? materials.filter((material) => (material.shape || '') === shape) : materials;
+
             // Mission 07: the supplier is optional (decision 15). PUR-07: one option per (material, shape).
-            const placeholder = materials.length > 0
+            const placeholder = visible.length > 0
                 ? window.AdasiI18n.t('purchasing.js.history_select_material')
                 : window.AdasiI18n.t('purchasing.js.history_no_material');
 
             materialSelect.innerHTML = [
                 `<option value="">${escapeOptionText(placeholder)}</option>`,
-                ...materials.map((material) => {
+                ...visible.map((material) => {
                     const name = material.name || '';
-                    const shape = material.shape || '';
-                    const isSelected = selected && name === selected.name && shape === (selected.shape || '') ? ' selected' : '';
+                    const materialShape = material.shape || '';
+                    const isSelected = selected && name === selected.name && materialShape === (selected.shape || '') ? ' selected' : '';
                     const options = escapeOptionText(JSON.stringify(material.key_options || []));
-                    return `<option value="${escapeOptionText(name)}" data-shape="${escapeOptionText(shape)}" data-key-options="${options}"${isSelected}>${escapeOptionText(material.label || name)}</option>`;
+                    return `<option value="${escapeOptionText(name)}" data-shape="${escapeOptionText(materialShape)}" data-key-options="${options}"${isSelected}>${escapeOptionText(material.label || name)}</option>`;
                 }),
             ].join('');
-            materialSelect.disabled = materials.length === 0;
+            materialSelect.disabled = visible.length === 0;
         }
 
         // PUR-07 (§3-G): shape-driven key dimension with recorded values written into key_min/key_max.
@@ -649,10 +904,19 @@
         function syncKeyOption() {
             if (!keyOption || !keyMin || !keyMax) return;
             const material = selectedMaterial();
-            const options = material?.keyOptions || [];
+            // While parked on a Shape filter mismatch (locked material, no record under that shape), there
+            // is nothing recorded for the shape the panel is now describing: treat it as having no options.
+            const options = (material && !shapeMismatchShown) ? (material.keyOptions || []) : [];
             const min = keyMin.value.trim();
             const max = keyMax.value.trim();
-            if (material && options.length === 0) {
+            // Recorded values and the range exist per material only: nothing to enter until one is chosen.
+            keyMin.disabled = keyMax.disabled = !material || shapeMismatchShown;
+            if (!material) {
+                keyOption.innerHTML = `<option value="">${escapeOptionText(keyOption.dataset.labelAll)}</option>`;
+                keyOption.disabled = true;
+                return;
+            }
+            if (shapeMismatchShown || options.length === 0) {
                 keyOption.innerHTML = `<option value="">${escapeOptionText(keyOption.dataset.labelNone)}</option>`;
                 keyOption.disabled = true;
                 return;
@@ -669,16 +933,30 @@
 
         function applyShape() {
             const material = selectedMaterial();
-            const shape = material?.shape || '';
-            if (shapeInput) shapeInput.value = shape;
-            if (keyDimension) keyDimension.hidden = Boolean(material) && !keyLabels[shape];
-            if (keyDimensionLabel && keyLabels[shape]) keyDimensionLabel.textContent = keyLabels[shape];
+            // The applied shape (hidden input, what is actually queried) always comes from the material
+            // itself, so it never points at data that does not exist. The dimension panel LABEL is cosmetic
+            // and, while parked on a Shape filter mismatch, describes that shape instead (Round/Hollow show
+            // their diameter label even with nothing recorded yet); otherwise it follows the material.
+            const appliedShape = material?.shape || '';
+            const displayShape = shapeMismatchShown ? (shapeFilter?.value || appliedShape) : (appliedShape || shapeFilter?.value || '');
+            if (shapeInput) shapeInput.value = appliedShape;
+            if (keyDimension) keyDimension.hidden = Boolean(material) && !keyLabels[displayShape];
+            if (keyDimensionLabel) keyDimensionLabel.textContent = keyLabels[displayShape] || keyLabels.Flat;
             syncKeyOption();
         }
 
         function clearKeyBounds() {
             if (keyMin) keyMin.value = '';
             if (keyMax) keyMax.value = '';
+        }
+
+        // The URL has to describe what is on screen even when there is nothing to load.
+        function syncUrlFromForm() {
+            const url = new URL(filterForm.action, window.location.origin);
+            for (const [key, value] of new FormData(filterForm).entries()) {
+                if (String(value).trim() !== '') url.searchParams.set(key, String(value).trim());
+            }
+            window.syncComparisonState(url.toString());
         }
 
         const materialsGuard = window.createComparisonRequestGuard();
@@ -689,7 +967,7 @@
             resultsContainer.innerHTML = `
                 <div class="tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface">
                     <div class="tw:flex tw:flex-col tw:items-center tw:justify-center tw:px-4 tw:py-8 tw:text-center">
-                        <span class="tw:text-on-surface-variant" style="font-size: 2rem;">&#128200;</span>
+                        <span class="tw:text-on-surface-variant">${comparisonIcons.chartEmpty}</span>
                         <p class="tw:m-0 tw:mt-3 tw:text-ui-sm tw:text-on-surface-variant">${escapeOptionText(message)}</p>
                     </div>
                 </div>
@@ -701,6 +979,7 @@
             const previous = selectedMaterial();
             const previousBounds = { min: keyMin?.value.trim() || '', max: keyMax?.value.trim() || '' };
             const request = materialsGuard.start();
+            shapeMismatchShown = false;
 
             renderMaterialOptions([], null);
 
@@ -734,6 +1013,8 @@
                 // only if an exact value is still among its recorded values (or it is a custom range).
                 const kept = previous && materials.find((material) => material.name === previous.name && (material.shape || '') === previous.shape);
                 renderMaterialOptions(materials, kept ? previous : null);
+                // Nothing in the chosen shape for this supplier: say so instead of "select a material".
+                if (materialSelect.disabled) clearHistorycalResults(window.AdasiI18n.t('purchasing.js.history_no_material'));
                 const exact = previousBounds.min !== '' && previousBounds.min === previousBounds.max;
                 if (!kept || (exact && !(kept.key_options || []).some((value) => Number(value) === Number(previousBounds.min)))) {
                     clearKeyBounds();
@@ -746,11 +1027,7 @@
                     filterForm.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
                 } else {
                     // Nothing to load: the URL still has to describe what is on screen.
-                    const url = new URL(filterForm.action, window.location.origin);
-                    for (const [key, value] of new FormData(filterForm).entries()) {
-                        if (String(value).trim() !== '') url.searchParams.set(key, String(value).trim());
-                    }
-                    window.syncComparisonState(url.toString());
+                    syncUrlFromForm();
                 }
             } catch (error) {
                 if (error?.name === 'AbortError' || !materialsGuard.isCurrent(request.id)) return;
@@ -761,171 +1038,59 @@
             }
         }
 
+        // Monthly and yearly views (the only period views the controller serves) chart the weighted
+        // average per period on one axis; highest and lowest stay in the tooltip and the table.
         function historicalChartConfig(payload) {
             const chartData = payload.chartData || {};
-            const colors = window.AdasiChart ? window.AdasiChart.getColors() : {
-                primary: '#1F5FA6',
-                error: '#C0392B',
-                surface: '#FFFFFF',
-                onSurfaceVariant: '#64748B',
-                gridLine: 'rgba(226, 232, 240, 0.75)',
+            const theme = window.AdasiChart;
+            const labels = {
+                average: @json(__('charts.series.average')),
+                highest: @json(__('charts.series.highest')),
+                lowest: @json(__('charts.series.lowest')),
             };
-            const primaryColor = colors.primary;
-            const errorColor = colors.error;
-
-            // Mission 07: both views chart the weighted average per period (12.3).
-            if (payload.periodView === 'yearly' || payload.periodView === 'monthly') {
-                return {
-                    type: 'line',
-                    data: {
-                        labels: chartData.labels || [],
-                        datasets: [{
-                            label: window.AdasiI18n.t('purchasing.js.weighted_average_price_kg') + ' (' + historicalCurrency + ')',
-                            data: chartData.pricesIdr || [],
-                            borderColor: primaryColor,
-                            backgroundColor: (ctx) => window.AdasiChart?.createAreaGradient(ctx, primaryColor, 0.18, 0.01) || 'transparent',
-                            borderWidth: 2.5,
-                            fill: true,
-                            tension: 0.3,
-                            pointRadius: 3.5,
-                            pointHoverRadius: 6,
-                            pointBackgroundColor: primaryColor,
-                            pointBorderColor: colors.surface,
-                            pointBorderWidth: 2,
-                        }],
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        animation: { duration: 400 },
-                        interaction: { mode: 'index', intersect: false },
-                        plugins: {
-                            legend: {
-                                position: 'bottom',
-                                labels: {
-                                    boxWidth: 8,
-                                    boxHeight: 8,
-                                    usePointStyle: true,
-                                    font: { family: 'Inter', size: 11, weight: '500' },
-                                    color: colors.onSurfaceVariant,
-                                    padding: 12,
-                                }
-                            },
-                            tooltip: window.AdasiChart?.getTooltip({
-                                callbacks: {
-                                    label: (context) => ' Average: ' + formatRupiah(context.parsed.y),
-                                    afterLabel: (context) => {
-                                        const index = context.dataIndex;
-                                        return [
-                                            ' Highest: ' + formatRupiah(chartData.maxIdr?.[index]),
-                                            ' Lowest: ' + formatRupiah(chartData.minIdr?.[index]),
-                                        ];
-                                    },
-                                },
-                            }) || {},
-                        },
-                        scales: window.AdasiChart?.getScales({
-                            yMaxTicks: 5,
-                            yBeginAtZero: true,
-                            yFormat: (value) => formatRupiah(value),
-                        }) || {},
-                    },
-                };
-            }
 
             return {
                 type: 'line',
                 data: {
                     labels: chartData.labels || [],
-                    datasets: [
-                        {
-                            label: window.AdasiI18n.t('purchasing.js.price_kg_original'),
-                            data: chartData.prices || [],
-                            borderColor: primaryColor,
-                            backgroundColor: (ctx) => window.AdasiChart?.createAreaGradient(ctx, primaryColor, 0.16, 0.01) || 'transparent',
-                            borderWidth: 2.5,
-                            fill: true,
-                            tension: 0.3,
-                            pointRadius: 3.5,
-                            pointHoverRadius: 6,
-                            pointBackgroundColor: primaryColor,
-                            pointBorderColor: colors.surface,
-                            pointBorderWidth: 2,
-                            yAxisID: 'y',
-                        },
-                        {
-                            label: window.AdasiI18n.t('purchasing.js.price_kg_idr'),
-                            data: chartData.pricesIdr || [],
-                            borderColor: errorColor,
-                            backgroundColor: 'transparent',
-                            borderWidth: 2.5,
-                            fill: false,
-                            tension: 0.3,
-                            pointRadius: 3.5,
-                            pointHoverRadius: 6,
-                            pointBackgroundColor: errorColor,
-                            pointBorderColor: colors.surface,
-                            pointBorderWidth: 2,
-                            yAxisID: 'y1',
-                        },
-                    ],
+                    datasets: [{
+                        label: window.AdasiI18n.t('purchasing.js.weighted_average_price_kg') + ' (' + historicalCurrency + ')',
+                        data: chartData.pricesIdr || [],
+                        borderColor: theme.color('series-1'),
+                        backgroundColor: theme.color('series-1'),
+                        pointBorderColor: theme.color('surface'),
+                        pointStyle: 'circle',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        pointBorderWidth: 2,
+                    }],
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: { duration: 400 },
                     interaction: { mode: 'index', intersect: false },
                     plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                boxWidth: 8,
-                                boxHeight: 8,
-                                usePointStyle: true,
-                                font: { family: 'Inter', size: 11, weight: '500' },
-                                color: colors.onSurfaceVariant,
-                                padding: 12,
-                            }
-                        },
-                        tooltip: window.AdasiChart?.getTooltip({
+                        legend: theme.getLegend({ position: 'bottom', align: 'center' }),
+                        adasiA11y: { format: (value) => formatRupiah(value) },
+                        tooltip: theme.getTooltip({
                             callbacks: {
-                                label: (ctx) => {
-                                    const unit = ctx.datasetIndex === 0 ? '' : 'Rp ';
-                                    return ' ' + ctx.dataset.label + ': ' + unit + Number(ctx.parsed.y).toLocaleString('id-ID');
-                                }
-                            }
-                        }) || {},
-                    },
-                    scales: {
-                        x: {
-                            grid: { display: false },
-                            border: { display: false },
-                            ticks: { font: { family: 'Inter', size: 11, weight: '500' }, color: colors.onSurfaceVariant },
-                        },
-                        y: {
-                            type: 'linear',
-                            position: 'left',
-                            beginAtZero: true,
-                            title: { display: true, text: 'Original Currency', font: { family: 'Inter', size: 11, weight: '600' }, color: colors.onSurfaceVariant },
-                            grid: { color: colors.gridLine, drawBorder: false, borderDash: [3, 3] },
-                            border: { display: false },
-                            ticks: { maxTicksLimit: 5, font: { family: 'Inter', size: 11, weight: '500' }, color: colors.onSurfaceVariant },
-                        },
-                        y1: {
-                            type: 'linear',
-                            position: 'right',
-                            beginAtZero: true,
-                            title: { display: true, text: 'IDR', font: { family: 'Inter', size: 11, weight: '600' }, color: colors.onSurfaceVariant },
-                            grid: { drawOnChartArea: false, drawBorder: false },
-                            border: { display: false },
-                            ticks: {
-                                maxTicksLimit: 5,
-                                font: { family: 'Inter', size: 11, weight: '500' },
-                                color: colors.onSurfaceVariant,
-                                callback: (value) => 'Rp ' + Number(value).toLocaleString('id-ID'),
+                                label: (context) => ' ' + labels.average + ': ' + formatRupiah(context.parsed.y),
+                                afterLabel: (context) => {
+                                    const index = context.dataIndex;
+                                    return [
+                                        ' ' + labels.highest + ': ' + formatRupiah(chartData.maxIdr?.[index]),
+                                        ' ' + labels.lowest + ': ' + formatRupiah(chartData.minIdr?.[index]),
+                                    ];
+                                },
                             },
-                        },
+                        }),
                     },
+                    scales: theme.getScales({
+                        yMaxTicks: 5,
+                        yBeginAtZero: true,
+                        yFormat: (value) => formatRupiah(value),
+                    }),
                 },
             };
         }
@@ -937,7 +1102,7 @@
             }
 
             const canvas = document.getElementById('historicalChart');
-            if (!canvas) return;
+            if (!canvas || !window.AdasiChart) return;
 
             window._activeComparisonChart = new Chart(canvas, historicalChartConfig(payload));
         }
@@ -1022,7 +1187,7 @@
                             : escapeOptionText(row.pr_number || '-')}
                     </td>
                     <td class="text-center">${escapeOptionText(row.supplier || '-')}</td>
-                    <td class="text-end ui-tabular-nums">${formatMaxDecimals(row.price_per_kg, 4)} <span class="ui-status-chip ui-status-chip--neutral tw:ms-1">${escapeOptionText(row.currency)}</span></td>
+                    <td class="text-end ui-tabular-nums">${formatMaxDecimals(row.price_per_kg, 4)} <span class="ui-status-chip ui-status-chip--neutral tw:ms-1">${escapeOptionText(row.currency)}</span><div class="tw:text-ui-xs tw:text-on-surface-variant">${escapeOptionText(row.annual_price_display || '')}</div></td>
                     <td class="text-end text-primary fw-bold ui-tabular-nums">${formatRupiah(row.total_idr)}</td>
                     <td class="text-center">${row.purchase_order_at_display ? escapeOptionText(row.purchase_order_at_display) : '<span class="ui-status-chip ui-status-chip--neutral">' + escapeOptionText(@json(__('purchasing.copy.draft'))) + '</span>'}</td>
                     <td class="text-center">${changeHtml(row.change_pct)}</td>
@@ -1063,8 +1228,17 @@
                     <header class="tw:border-b tw:border-outline-variant tw:bg-surface-container tw:px-4 tw:py-3">
                         <h2 class="tw:m-0 tw:flex tw:items-center tw:gap-2 tw:text-ui-sm tw:font-semibold tw:text-on-surface" id="historicalChartTitle"></h2>
                     </header>
-                    <div class="tw:h-72 tw:p-4">
-                        <canvas id="historicalChart" role="img" aria-label="${escapeOptionText(@js(__('common.accessibility.history_trend')))}">${escapeOptionText(@js(__('common.accessibility.history_chart')))}</canvas>
+                    <div class="tw:p-4">
+                        <figure class="ui-chart tw:m-0 tw:min-w-0" data-adasi-chart>
+                            <div class="tw:relative tw:w-full tw:h-64">
+                                <canvas id="historicalChart" role="img" tabindex="0" aria-label="${escapeOptionText(@js(__('common.accessibility.history_trend')))}" aria-describedby="historicalChart-summary historicalChart-hint" data-adasi-chart-focusable>${escapeOptionText(@js(__('common.accessibility.history_chart')))}</canvas>
+                                <span class="tw:sr-only" aria-live="polite" data-adasi-chart-live></span>
+                            </div>
+                            <figcaption class="tw:mt-2 tw:grid tw:gap-0.5 tw:text-ui-xs tw:text-on-surface-variant">
+                                <span id="historicalChart-summary" class="tw:text-on-surface" data-adasi-chart-summary="auto"></span>
+                                <span id="historicalChart-hint">${escapeOptionText(@js(__('charts.keyboard_hint')))}</span>
+                            </figcaption>
+                        </figure>
                     </div>
                 </section>
 
@@ -1104,6 +1278,16 @@
 
         function renderPayload(payload) {
             historicalCurrency = payload.currency || historicalCurrency;
+            const annualRateList = document.querySelector('[data-annual-rate-list]');
+            if (annualRateList && payload.evaluation?.annual_labels) {
+                annualRateList.replaceChildren(...payload.evaluation.annual_labels.map((rate) => {
+                    const item = document.createElement('li');
+                    item.className = 'tw:list-none';
+                    item.textContent = rate.label;
+                    if (!rate.available) item.dataset.rateUnavailable = rate.currency;
+                    return item;
+                }));
+            }
             if (!payload.chartData) {
                 if (window._activeComparisonChart) {
                     window._activeComparisonChart.destroy();
@@ -1114,7 +1298,7 @@
                     resultsContainer.innerHTML = `
                         <div class="tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface">
                             <div class="tw:flex tw:flex-col tw:items-center tw:justify-center tw:px-4 tw:py-8 tw:text-center">
-                                <span class="tw:text-on-surface-variant" style="font-size: 2rem;">&#128200;</span>
+                                <span class="tw:text-on-surface-variant">${comparisonIcons.chartEmpty}</span>
                                 <p class="tw:m-0 tw:mt-3 tw:text-ui-sm tw:text-on-surface-variant">
                                     ${escapeOptionText(payload.materialName
                                         ? @json(__('purchasing.copy.comparison_no_quotation_data'))
@@ -1140,7 +1324,7 @@
                 const title = @json(__('purchasing.copy.comparison_price_trend_title', ['material' => ':material', 'supplier' => ':supplier']))
                     .replace(':material', escapeOptionText(payload.materialName))
                     .replace(':supplier', escapeOptionText(payload.supplierName || @json(__('purchasing.comparison_analytics.all_suppliers'))));
-                titleEl.innerHTML = `<span class="tw:text-primary me-1">&#128200;</span><span>${title}</span>`;
+                titleEl.innerHTML = `<span class="tw:text-primary me-1">${comparisonIcons.chart}</span><span>${title}</span>`;
             }
         }
 
@@ -1226,8 +1410,56 @@
 
         supplierSelect.addEventListener('change', loadMaterialsForSupplier);
 
+        // The material name, once chosen, always stays locked: the Shape filter never resets it, and it is
+        // never narrowed away. The Shape filter itself always follows the click. With a material locked:
+        //   - its own shape, or "All shapes": no-op, the material and its results are untouched;
+        //   - a shape this same material name also has on file: switch to that (name, shape) record;
+        //   - a shape this material has no record under: say so, nothing else changes (no refetch, URL kept).
+        // With no material chosen, the filter only narrows the list and the dimension panel.
+        shapeFilter?.addEventListener('change', () => {
+            const current = selectedMaterial();
+            const shape = shapeFilter.value;
+
+            if (!current) {
+                renderMaterialOptions(materialCatalog, null);
+                clearHistorycalResults(window.AdasiI18n.t(materialSelect.disabled ? 'purchasing.js.history_no_material' : 'purchasing.js.history_select_material'));
+                clearKeyBounds();
+                applyShape();
+                return;
+            }
+
+            if (shape === '' || shape === current.shape) {
+                // Back to a shape that matches: restore the dimension panel, and the real results if a
+                // mismatch message was showing.
+                const wasMismatched = shapeMismatchShown;
+                shapeMismatchShown = false;
+                applyShape();
+                if (wasMismatched) window.loadHistorycalPayloadFromFilters();
+                return;
+            }
+
+            const match = materialCatalog.find((material) => material.name === current.name && (material.shape || '') === shape);
+            if (match) {
+                const option = Array.from(materialSelect.options).find((o) => o.value === match.name && (o.dataset.shape || '') === match.shape);
+                if (option) option.selected = true;
+                shapeMismatchShown = false;
+                clearKeyBounds();
+                applyShape();
+                window.loadHistorycalPayloadFromFilters();
+                return;
+            }
+
+            // No record for this material under the clicked shape: the panel still describes that shape
+            // (Round/Hollow show their diameter label) with nothing to pick, and the results say so.
+            shapeMismatchShown = true;
+            clearKeyBounds();
+            applyShape();
+            clearHistorycalResults(window.AdasiI18n.t('purchasing.js.history_no_material'));
+        });
+
         materialSelect.addEventListener('change', () => {
             // A different (material, shape) starts from an unfiltered key dimension.
+            shapeMismatchShown = false;
             clearKeyBounds();
             applyShape();
             if (materialSelect.value) {
@@ -1288,6 +1520,10 @@
                 }
             });
         }
+
+        // The server renders the complete material list; apply the initial Shape filter to it.
+        materialCatalog = catalogFromDom();
+        if (shapeFilter?.value) renderMaterialOptions(materialCatalog, selectedMaterial());
 
         materialSelect.addEventListener('change', updateDimensionVisibility);
         updateDimensionVisibility();
@@ -1402,6 +1638,9 @@
             ['date_from', 'date_to', 'currency', 'material_name'].forEach((key) => {
                 if (filterParams[key]) url.searchParams.set(key, filterParams[key]);
             });
+            // Gate 1 C6: Vs Best carries the active PR so Historical keeps it.
+            const activePr = new URL(window.location.href).searchParams.get('pr_id');
+            if (activePr) url.searchParams.set('pr_id', activePr);
             if (filterParams.material_name) url.searchParams.set('shape', filterParams.shape || '');
             return url.toString();
         }
@@ -1440,8 +1679,13 @@
             }
         }
 
+        // Gate 1 C6: tab links carry the context of the URL shown now (initial load and every swap).
+        window.syncComparisonState(window.location.href);
+
         if (document.getElementById('interSupplierConfig')) {
             window.initInterSupplierComparison();
+        } else if (document.getElementById('historicalPrConfig')) {
+            window.initHistoricalPrComparison();
         } else if (document.getElementById('historicalConfig')) {
             window.initHistoricalComparison();
         } else if (document.getElementById('vsBestConfig')) {
@@ -1490,3 +1734,4 @@
     }
 })();
 </script>
+@include('purchasing.comparison._historical_pr_scripts')

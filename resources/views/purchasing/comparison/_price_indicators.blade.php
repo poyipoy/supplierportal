@@ -8,7 +8,7 @@
 --}}
 @php
     $pc = 'purchasing.comparison_analytics';
-    $money = fn ($value, $code = null) => $value === null ? '—' : ($code ?? $currency).' '.\App\Support\NumberFormat::maxDecimals($value, ($code ?? $currency) === 'IDR' ? 2 : 4);
+    $money = fn ($value, $code = null) => $value === null ? '—' : ($code ?? $currency).' '.$regionalFormatter->groupedDecimal($value, ($code ?? $currency) === 'IDR' ? 2 : 4);
 @endphp
 <x-ui.data-table :title="__($pc.'.indicators_title', ['currency' => $currency])" :description="__($pc.'.indicators_description')" sticky :scroll-label="__($pc.'.indicators_title', ['currency' => $currency])">
     <table class="table table-sm align-middle mb-0 tw:text-ui-xs" data-price-indicators>

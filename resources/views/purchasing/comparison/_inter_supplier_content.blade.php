@@ -142,7 +142,7 @@
                         <tr>
                             <td class="fw-semibold tw:text-on-surface">{{ $data['name'] }}</td>
                             <td class="text-end fw-bold ui-tabular-nums {{ $recommendedSupId === $qid ? 'text-success' : 'text-primary' }}">
-                                Rp {{ \App\Support\NumberFormat::maxDecimals($data['total']) }}
+                                Rp {{ isset($regionalFormatter) ? $regionalFormatter->groupedDecimal($data['total'], 2, 'indonesian') : \App\Support\NumberFormat::grouped($data['total']) }}
                             </td>
                             <td class="text-center ui-tabular-nums">{{ $supplierWins[$qid] }}</td>
                             <td>
@@ -162,19 +162,29 @@
     {{-- Grafik Batang --}}
     <x-ui.card :title="__('purchasing.comparison_analytics.chart_title', ['currency' => $currency])">
         <x-slot:actions>
-            <div class="tw:min-w-60">
-                <label class="form-label small fw-bold mb-1" for="comparisonMaterialFilter">{{ __('purchasing.copy.material') }}</label>
-                <select class="form-select form-select-sm" id="comparisonMaterialFilter">
-                    <option value="">{{ __('purchasing.copy.all_material') }}</option>
-                    @foreach($materialOptions as $material)
-                        <option value="{{ $material->id }}" data-material-name="{{ $material->material_name }}" data-shape="{{ $material->shape ?? '' }}">{{ $material->material_name }}{{ $materialOptions->where('material_name', $material->material_name)->count() > 1 && $material->shape ? ' ('.$material->shape.')' : '' }}</option>
+            <div class="tw:flex tw:flex-wrap tw:items-end tw:gap-3">
+                <div class="tw:inline-flex tw:gap-1 tw:rounded-ui-sm tw:border tw:border-outline tw:p-1" role="group" aria-label="{{ __('purchasing.comparison_analytics.chart_scale') }}">
+                    @foreach(['price' => __('purchasing.comparison_analytics.chart_scale_price', ['currency' => $currency]), 'relative' => __('purchasing.comparison_analytics.chart_scale_relative')] as $scale => $scaleLabel)
+                        <button type="button"
+                                class="ui-focus-ring tw:min-h-8 tw:rounded-ui-sm tw:border-0 tw:bg-transparent tw:px-3 tw:text-ui-sm tw:font-semibold tw:text-on-surface-variant tw:hover:bg-surface-container tw:aria-pressed:bg-primary tw:aria-pressed:text-primary-foreground"
+                                aria-pressed="{{ (request('chart_scale') === 'relative') === ($scale === 'relative') ? 'true' : 'false' }}"
+                                data-comparison-chart-scale="{{ $scale }}">{{ $scaleLabel }}</button>
                     @endforeach
-                </select>
+                </div>
+                <div class="tw:min-w-60">
+                    <label class="form-label small fw-bold mb-1" for="comparisonMaterialFilter">{{ __('purchasing.copy.material') }}</label>
+                    <select class="form-select form-select-sm" id="comparisonMaterialFilter">
+                        <option value="">{{ __('purchasing.copy.all_material') }}</option>
+                        @foreach($materialOptions as $material)
+                            <option value="{{ $material->id }}" data-material-name="{{ $material->material_name }}" data-shape="{{ $material->shape ?? '' }}">{{ $material->material_name }}{{ $materialOptions->where('material_name', $material->material_name)->count() > 1 && $material->shape ? ' ('.$material->shape.')' : '' }}</option>
+                        @endforeach
+                    </select>
+                </div>
             </div>
         </x-slot:actions>
-        <div class="tw:min-h-[280px]">
-            <canvas id="comparisonChart" height="280" role="img" aria-label="{{ __('purchasing.copy.supplier_quotation_price_comparison') }}">{{ __('purchasing.copy.supplier_quotation_price_comparison_chart') }}</canvas>
-        </div>
+        {{-- The aria-label carries the lowest-offer summary (set by the chart script); the matrix below lists every price. --}}
+        <x-ui.chart id="comparisonChart" :label="__('purchasing.copy.supplier_quotation_price_comparison')" :fallback="__('purchasing.copy.supplier_quotation_price_comparison_chart')" :auto-summary="false" plot-class="tw:h-80" />
+
     </x-ui.card>
 
     {{-- Item-Level Selection Coverage Banner --}}
@@ -212,8 +222,8 @@
                         <tr>
                             <th scope="col" rowspan="2" class="align-middle ui-sticky-col comparison-material-col">{{ __('purchasing.copy.material') }}</th>
                             <th scope="col" rowspan="2" class="align-middle col-ref-qty text-center">{{ __('purchasing.copy.qty') }}</th>
-                            <th scope="col" rowspan="2" class="align-middle col-ref-weight text-center">{{ __('purchasing.copy.weight_unit_kg') }}</th>
-                            <th scope="col" rowspan="2" class="align-middle col-ref-total-weight text-center">{{ __('purchasing.copy.total_weight_kg') }}</th>
+                            <th scope="col" rowspan="2" class="align-middle col-ref-weight text-center">{{ __('purchasing.comparison_analytics.kg_per_unit') }}</th>
+                            <th scope="col" rowspan="2" class="align-middle col-ref-total-weight text-center">{{ __('purchasing.comparison_analytics.total_kg') }}</th>
                             @foreach($comparison['suppliers'] as $sup)
                                 <th scope="colgroup" colspan="3" class="text-center col-supplier-group">
                                     <div class="fw-bold tw:text-on-surface">{{ $sup['name'] }}</div>
@@ -252,6 +262,7 @@
                             <tr data-comparison-row data-material-id="{{ $row['item']->id }}" class="{{ ($row['spread_pct'] ?? 0) > 15 ? 'bg-warning bg-opacity-10' : '' }}">
                                 <td class="fw-medium ui-sticky-col comparison-material-col">
                                     <div class="tw:font-semibold tw:text-on-surface">{{ $row['item']->material_name }}</div>
+                                    <div class="tw:text-on-surface-variant tw:text-ui-xs tw:mt-0.5" data-requested-dimensions>{{ $row['dimension_display'] }}</div>
                                     @if(($row['spread_pct'] ?? 0) > 15)
                                         <div class="small text-danger mt-1" data-bs-toggle="tooltip" title="{{ __('purchasing.copy.high_price_spread_15') }}">
                                             <x-ui.icon name="triangle-alert" class="me-1" />{{ __('purchasing.copy.price_spread') }} {{ isset($regionalFormatter) ? $regionalFormatter->number(number_format($row['spread_pct'], 1, ',', '.'), 'indonesian') : number_format($row['spread_pct'], 1) }}%
@@ -273,10 +284,7 @@
                                     @elseif($p && $p['price_per_kg'])
                                         <td class="text-end">
                                             {{ $formatPrice($p['price_per_kg'], 4) }}
-                                            <div class="tw:text-on-surface-variant tw:text-ui-xs tw:mt-0.5">
-                                                {{ __('common.fields.qty') }} {{ $p['available_qty'] ?? '-' }} · {{ $formatNumber($p['offered_total_weight']) }} kg
-                                                @if($p['is_estimated_weight']) · {{ __('purchasing.copy.est_weight') }} @endif
-                                            </div>
+                                            <div class="tw:text-on-surface-variant tw:text-ui-xs tw:mt-0.5" data-offered-dimensions>{{ $p['dimension_display'] }}</div>
                                         </td>
                                         <td class="text-end fw-bold {{ ($p['price_idr'] && $minIdr && $p['price_idr'] <= $minIdr) ? 'text-success bg-success bg-opacity-10' : '' }}">
                                             Rp {{ $formatPrice($p['price_idr']) }}
@@ -304,6 +312,7 @@
                                                                data-supplier-name="{{ $sup['name'] }}"
                                                                data-supplier-estimated-ready="{{ $sup['estimated_delivery'] ?? '' }}"
                                                                data-price="Rp {{ \App\Support\NumberFormat::maxDecimals($p['price_idr'] ?? 0) }}"
+                                                               data-price-display="Rp {{ $formatPrice($p['price_idr'] ?? 0) }}"
                                                         >
                                                         <span class="tw:text-ui-xs fw-bold {{ !empty($p['is_awarded']) ? 'text-success' : 'text-primary' }}">
                                                             {{ !empty($p['is_awarded']) ? __('purchasing.copy.selected_offer') : __('purchasing.copy.select_offer') }}
@@ -463,10 +472,20 @@
     </x-ui.card>
 @endif
 
+@php
+    $chartI18n = [
+        'title' => __('purchasing.comparison_analytics.chart_title', ['currency' => $currency ?? 'IDR']),
+        'lowest' => __('purchasing.comparison_analytics.chart_lowest'),
+        'noOffer' => __('purchasing.comparison_analytics.chart_no_offer'),
+        'aboveLowest' => __('purchasing.comparison_analytics.chart_above_lowest', ['percent' => ':percent']),
+        'summary' => __('purchasing.comparison_analytics.chart_summary', ['items' => ':items']),
+    ];
+@endphp
 <script id="interSupplierConfig" type="application/json">
 {
     "eligiblePrOptions": @json($eligiblePrOptions),
     "chartData": @json($chartData),
-    "chartMaterialIds": @json($chartMaterialIds)
+    "chartMaterialIds": @json($chartMaterialIds),
+    "chartI18n": @json($chartI18n)
 }
 </script>
