@@ -1359,13 +1359,13 @@
                             <table class="table table-sm table-striped align-middle mb-0 tw:text-ui-xs">
                                 <thead class="table-light sticky-top">
                                     <tr>
-                                        {{-- GEN-02: same order as the form and the template. --}}
+                                        {{-- Match canonical template order: ID, Material, Dimensions, Offer Qty, KG/Unit, Price, Notes, Availability --}}
                                         <th scope="col">{{ __('supplier.copy.pr_item_id') }}</th>
                                         <th scope="col">{{ __('supplier.copy.material') }}</th>
-                                        <th scope="col">{{ __('supplier.copy.offer_qty') }}</th>
                                         @foreach($quotationDimensionOrder as $dimensionField)
                                             <th scope="col">{{ \App\Models\PrItem::dimensionLabel($dimensionField) }}</th>
                                         @endforeach
+                                        <th scope="col">{{ __('supplier.copy.offer_qty') }}</th>
                                         <th scope="col">{{ __('supplier.copy.offer_kg_unit') }}</th>
                                         <th scope="col">{{ __('supplier.copy.price_kg') }}</th>
                                         <th scope="col">{{ __('supplier.copy.notes') }}</th>
@@ -1472,12 +1472,12 @@
             [
                 row.pr_item_id,
                 materialFor(row.pr_item_id),
-                row.available_qty ?? '-',
                 row.available_thickness ?? '-',
                 row.available_width ?? '-',
                 row.available_d_outer ?? '-',
                 row.available_d_inner ?? '-',
                 importedLengthValue(row) || '-',
+                row.available_qty ?? '-',
                 row.offered_weight_per_unit ?? '-',
                 row.price_per_kg ?? '-',
                 row.notes ?? '-',

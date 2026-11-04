@@ -2,6 +2,7 @@
 
 @php
     $isEditing = isset($shipment) && $shipment;
+    $notReadyCount = $notReadyCount ?? 0;
 @endphp
 @section('title', ($isEditing ? __('shipments.copy.edit_shipment') : __('shipments.copy.create_new_shipment')) . ' - ADASI Portal')
 @section('page-title', $isEditing ? __('shipments.copy.edit_shipment') : __('shipments.copy.create_shipment'))
@@ -64,7 +65,9 @@
             <x-ui.empty-state
                 icon="package-check"
                 :title="__('shipments.copy.no_pending_deliveries')"
-                :description="__('shipments.copy.all_your_active_purchase_orders_have_been_fully_delivered_or_no_active_pos_are_currently_awaiting_de')"
+                :description="$notReadyCount > 0
+                    ? __('shipments.audit_ui.not_ready_empty')
+                    : __('shipments.copy.all_your_active_purchase_orders_have_been_fully_delivered_or_no_active_pos_are_currently_awaiting_de')"
             />
         </x-ui.card>
     @else
@@ -74,6 +77,12 @@
             <input type="hidden" name="action" id="shipmentFormAction" value="draft">
             @if(\App\Support\Procurement\ProcurementFeatures::shipmentMtcEnabled())
                 <x-ui.alert tone="info" class="tw:mb-3">{{ __('shipments.mtc.create_hint') }}</x-ui.alert>
+            @endif
+            @if($notReadyCount > 0)
+                <x-ui.alert tone="warning" class="tw:mb-3">
+                    {{ trans_choice('shipments.audit_ui.not_ready_hidden', $notReadyCount, ['count' => $notReadyCount]) }}
+                    <a href="{{ route('supplier.purchase-orders.index') }}" class="tw:font-semibold">{{ __('shipments.audit_ui.not_ready_link') }}</a>
+                </x-ui.alert>
             @endif
 
             {{-- 1. General Logistics Information --}}
@@ -196,7 +205,7 @@
                                     @foreach($itemsInPo as $itemData)
                                         @php
                                             $currentIndex = $globalIndex++;
-                                            $currentShippedQty = $itemData['current_shipped_qty'] ?? null;
+                                            $currentShippedQty = $itemData['current_qty'] ?? null;
                                             $currentActualWeightKg = $itemData['current_actual_weight_kg'] ?? null;
                                             $isPreselected = $currentShippedQty !== null || ($isPoPreselected && $currentShippedQty === null);
                                             $prItem = $itemData['pr_item'];
@@ -214,13 +223,16 @@
                                             <td>
                                                 <div class="fw-semibold tw:text-on-surface">
                                                     {{ $prItem->material_name }}
+                                                    @if($itemData['not_ready'] ?? false)
+                                                        <span class="ui-status-chip ui-status-chip--warning tw:text-ui-xs">{{ __('shipments.audit_ui.not_ready_chip') }}</span>
+                                                    @endif
                                                 </div>
                                                 <div class="tw:text-on-surface-variant tw:text-ui-xs">
                                                     {{ __('purchasing.copy.shape') }}: {{ $prItem->shape ?? '-' }}
                                                     @if($prItem?->thickness) | T: {{ $prItem->thickness }}mm @endif
                                                     @if($prItem?->width) | W: {{ $prItem->width }}mm @endif
-                                                    @if($prItem?->length) | L: {{ $prItem->length }}mm @endif
                                                     @if($prItem?->d_outer) | OD: {{ $prItem->d_outer }}mm @endif
+                                                    @if($prItem?->length) | L: {{ $prItem->length }}mm @endif
                                                 </div>
                                             </td>
                                             <td class="text-end ui-tabular-nums tw:text-on-surface-variant">

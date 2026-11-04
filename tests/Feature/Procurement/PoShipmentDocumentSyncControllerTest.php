@@ -91,10 +91,10 @@ class PoShipmentDocumentSyncControllerTest extends TestCase
         [$po, $shipment] = $this->createPoWithShipment('SHP/10/2026/103');
         $url = route('purchasing.purchase-orders.documents.shipments.update', ['id' => $po, 'doc_type' => 'bl']);
 
-        // 'verified' is not valid for 'bl' (bl allows pending, issued, done)
+        // 'issued' is no longer a target for 'bl' (bl allows pending, received, verified)
         $this->actingAs($this->purchasing)
             ->putJson($url, [
-                'target_status' => 'verified',
+                'target_status' => 'issued',
                 'rows' => [['shipment' => $shipment->hash, 'expected_status' => 'pending']],
             ])
             ->assertStatus(422)
@@ -103,7 +103,7 @@ class PoShipmentDocumentSyncControllerTest extends TestCase
         // Duplicate shipment rows
         $this->actingAs($this->purchasing)
             ->putJson($url, [
-                'target_status' => 'issued',
+                'target_status' => 'received',
                 'rows' => [
                     ['shipment' => $shipment->hash, 'expected_status' => 'pending'],
                     ['shipment' => $shipment->hash, 'expected_status' => 'pending'],

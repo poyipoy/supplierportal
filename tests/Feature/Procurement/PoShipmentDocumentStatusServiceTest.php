@@ -179,7 +179,7 @@ class PoShipmentDocumentStatusServiceTest extends TestCase
         }
     }
 
-    public function test_update_selected_updates_only_chosen_shipments_and_syncs_po_document_forward_only(): void
+    public function test_update_selected_updates_only_chosen_shipments_and_po_document_follows_least_advanced_shipment(): void
     {
         [$po, $s1, $qItem] = $this->createPoWithShipment('SHP/10/2026/020');
         $s2 = $this->createAdditionalShipment($po, $qItem, 'SHP/10/2026/021', Shipment::STATUS_SUBMITTED);
@@ -208,7 +208,10 @@ class PoShipmentDocumentStatusServiceTest extends TestCase
         $this->assertSame(1, $result['counts']['updated']);
         $this->assertSame('verified', $s1Invoice->fresh()->status);
         $this->assertSame('pending', $s2Invoice->fresh()->status);
-        $this->assertSame('verified', $po->documents()->where('doc_type', 'invoice')->value('status'));
+        // s2 is still pending, so the PO-level invoice status is the least advanced one.
+        $this->assertSame('pending', $po->documents()->where('doc_type', 'invoice')->value('status'));
+        $this->assertSame('pending', $result['projection']['documents']['invoice']['derived_status']);
+        $this->assertSame('pending', collect($result['affected_pos'])->firstWhere('po_id', $po->id)['po_document_status']);
 
         // Projection reflects 1/2 verified (partial)
         $this->assertSame(1, $result['projection']['documents']['invoice']['verified_count']);
@@ -262,7 +265,7 @@ class PoShipmentDocumentStatusServiceTest extends TestCase
         $this->assertSame('pending', $po->documents()->where('doc_type', 'invoice')->value('status'));
     }
 
-    public function test_downgrade_requires_reason_and_appends_audit_trail_without_demoting_po_document(): void
+    public function test_downgrade_requires_reason_appends_audit_trail_and_demotes_po_document(): void
     {
         [$po, $s1] = $this->createPoWithShipment('SHP/10/2026/040');
         $s1Invoice = $s1->documents()->where('doc_type', 'invoice')->firstOrFail();
@@ -299,8 +302,8 @@ class PoShipmentDocumentStatusServiceTest extends TestCase
         $this->assertStringContainsString('Wrong invoice number on page 2', (string) $s1Invoice->fresh()->notes);
         $this->assertStringContainsString('verified -> received', (string) $s1Invoice->fresh()->notes);
 
-        // PO document remains forward-only ('verified')
-        $this->assertSame('verified', $po->documents()->where('doc_type', 'invoice')->value('status'));
+        // The PO-level status follows the shipment down.
+        $this->assertSame('received', $po->documents()->where('doc_type', 'invoice')->value('status'));
     }
 
     public function test_lock_order_is_shipments_then_shipment_documents_then_po_documents_ascending(): void
@@ -435,7 +438,8 @@ class PoShipmentDocumentStatusServiceTest extends TestCase
 
         $this->assertTrue($result['success']);
         $this->assertCount(2, $result['affected_pos']);
-        $this->assertSame('verified', $po1->documents()->where('doc_type', 'invoice')->value('status'));
+        // PO1 still has an unverified active shipment; PO2's only shipment is verified.
+        $this->assertSame('pending', $po1->documents()->where('doc_type', 'invoice')->value('status'));
         $this->assertSame('verified', $po2->documents()->where('doc_type', 'invoice')->value('status'));
 
         // Unselected shipment on PO1 remains 'pending' even though PO1 po_documents.status is now 'verified'

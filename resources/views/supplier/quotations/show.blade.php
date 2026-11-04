@@ -82,7 +82,7 @@
                 <dt class="{{ $dtClass }}">{{ __('supplier.copy.exchange_rate_snapshot') }}</dt>
                 <dd class="{{ $ddClass }} ui-tabular-nums">
                     @if($quotation->exchange_rate)
-                        1 {{ $quotation->currency }} = Rp {{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($quotation->exchange_rate->rate_to_idr), 'decimal') }}
+                        1 {{ $quotation->currency }} = Rp {{ $regionalFormatter->groupedDecimal($quotation->exchange_rate->rate_to_idr) }}
                     @else
                         -
                     @endif

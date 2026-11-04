@@ -15,6 +15,7 @@ use App\Services\FileSecurity\FileAccessGuard;
 use App\Support\BusinessTime;
 use App\Support\HashidCodec;
 use App\Support\NotificationCategory;
+use App\Support\NotificationDomain;
 use App\Support\Procurement\CustomsDocumentationProgressCalculator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -41,6 +42,52 @@ class PoShipmentDocumentStatusService
      */
     public function updateSelected(
         PurchaseOrder $po,
+        string $docType,
+        array $rows,
+        string $target,
+        ?string $reason,
+        User $actor,
+    ): array {
+        return $this->applyRows($po, $docType, $rows, $target, $reason, $actor);
+    }
+
+    /**
+     * Update one document of a single Shipment (shipment detail page) under the
+     * same rules, locks, audit trail and notifications as updateSelected().
+     * Every purchase order linked to the shipment is refreshed.
+     *
+     * @param  array{expected_status?: ?string, expected_attachment?: ?string}  $expectations
+     * @return array<string, mixed>
+     *
+     * @throws PoShipmentDocumentBatchRefused
+     */
+    public function updateShipmentDocument(
+        Shipment $shipment,
+        string $docType,
+        array $expectations,
+        string $target,
+        ?string $reason,
+        User $actor,
+    ): array {
+        $row = ['shipment' => (string) $shipment->hash];
+        if (array_key_exists('expected_status', $expectations)) {
+            $row['expected_status'] = $expectations['expected_status'];
+        }
+        if (array_key_exists('expected_attachment', $expectations)) {
+            $row['expected_attachment'] = $expectations['expected_attachment'];
+        }
+
+        return $this->applyRows(null, $docType, [$row], $target, $reason, $actor);
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $rows
+     * @return array<string, mixed>
+     *
+     * @throws PoShipmentDocumentBatchRefused
+     */
+    private function applyRows(
+        ?PurchaseOrder $po,
         string $docType,
         array $rows,
         string $target,
@@ -114,7 +161,7 @@ class PoShipmentDocumentStatusService
                         ->groupBy('shipment_id');
 
                 $linkedPoIdsByShipment = [];
-                $allAffectedPoIds = [(int) $po->id];
+                $allAffectedPoIds = $po ? [(int) $po->id] : [];
 
                 foreach ($sortedShipmentIds as $shipmentId) {
                     /** @var Shipment|null $shipment */
@@ -133,7 +180,8 @@ class PoShipmentDocumentStatusService
                         ->values()
                         ->all();
 
-                    if (in_array((int) $po->id, $poIds, true)) {
+                    // Without an anchor PO (shipment page) every linked PO is affected.
+                    if ($po === null || in_array((int) $po->id, $poIds, true)) {
                         $linkedPoIdsByShipment[$shipmentId] = $poIds;
                         foreach ($poIds as $affectedPoId) {
                             $allAffectedPoIds[] = $affectedPoId;
@@ -466,6 +514,7 @@ class PoShipmentDocumentStatusService
 
                 // Apply updates in ascending shipment_id order for deterministic writes.
                 $updatedShipmentDocIdsByPo = [];
+                $updatedShipmentsBySupplier = [];
                 $plansByShipmentId = collect($rowPlans)->keyBy('shipment_id');
 
                 foreach ($sortedShipmentIds as $shipmentId) {
@@ -511,17 +560,16 @@ class PoShipmentDocumentStatusService
                         'notes' => $newNotes,
                     ]);
 
-                    $sDoc->setRelation('shipment', $shipment->setRelation('items', $shipmentItemsByShipment->get($shipmentId, collect())));
-                    PoDocument::syncFromShipmentDocument($sDoc);
-
                     foreach ($linkedPoIdsByShipment[$shipmentId] ?? [] as $affectedPoId) {
                         $updatedShipmentDocIdsByPo[(int) $affectedPoId][] = (int) $sDoc->id;
                     }
 
+                    $updatedShipmentsBySupplier[(int) $shipment->supplier_id][] = $shipment;
+
                     Log::info('po.shipment_document.status_updated', [
                         'actor_id' => $actor->id,
-                        'po_id' => $po->id,
-                        'po_number' => $po->po_number,
+                        'po_id' => $po?->id,
+                        'po_number' => $po?->po_number,
                         'shipment_id' => $shipment->id,
                         'shipment_number' => $shipment->shipment_number,
                         'shipment_document_id' => $sDoc->id,
@@ -531,6 +579,10 @@ class PoShipmentDocumentStatusService
                         'reason' => $trimmedReason !== '' ? $trimmedReason : null,
                     ]);
                 }
+
+                // PO-level status is derived across all active shipments of each PO,
+                // so it is recomputed after commit (see PoDocument::recomputeAfterCommit()).
+                PoDocument::recomputeAfterCommit(array_keys($updatedShipmentDocIdsByPo), [$docType]);
 
                 $responseRows = array_map(function (array $plan): array {
                     unset($plan['shipment_id']);
@@ -542,10 +594,15 @@ class PoShipmentDocumentStatusService
                     'rows' => $responseRows,
                     'all_affected_po_ids' => $allAffectedPoIds,
                     'updated_shipment_doc_ids_by_po' => $updatedShipmentDocIdsByPo,
+                    'updated_shipments_by_supplier' => $updatedShipmentsBySupplier,
                     'was_all_received_by_po' => $wasAllReceivedByPo,
                 ];
             }, 3);
         } catch (PoShipmentDocumentBatchRefused $refused) {
+            if ($po === null) {
+                throw $refused;
+            }
+
             $freshPo = PurchaseOrder::query()
                 ->with([
                     'documents',
@@ -659,9 +716,15 @@ class PoShipmentDocumentStatusService
             }
         }
 
-        /** @var PurchaseOrder $primaryPo */
-        $primaryPo = $affectedPosAfter->get((int) $po->id) ?? $po->fresh();
-        $finalProjection = $this->progressCalculator->calculate($primaryPo);
+        $this->notifySuppliers($txResult['updated_shipments_by_supplier'], $docType, $target, $batchUuid, $po);
+
+        if ($po === null) {
+            $finalProjection = null;
+        } else {
+            /** @var PurchaseOrder $primaryPo */
+            $primaryPo = $affectedPosAfter->get((int) $po->id) ?? $po->fresh();
+            $finalProjection = $this->progressCalculator->calculate($primaryPo);
+        }
 
         $updatedCount = collect($txResult['rows'])->where('result', 'updated')->count();
         $skippedCount = collect($txResult['rows'])->where('result', 'skipped')->count();
@@ -682,6 +745,49 @@ class PoShipmentDocumentStatusService
             'rows_state' => $finalProjection['documents'][$docType]['rows'] ?? [],
             'projection' => $finalProjection,
         ];
+    }
+
+    /**
+     * One notification per supplier for the shipment documents changed in a batch.
+     *
+     * @param  array<int, array<int, Shipment>>  $shipmentsBySupplier
+     */
+    private function notifySuppliers(array $shipmentsBySupplier, string $docType, string $target, string $batchUuid, ?PurchaseOrder $po): void
+    {
+        foreach ($shipmentsBySupplier as $supplierId => $shipments) {
+            $supplier = User::find($supplierId);
+            if (! $supplier) {
+                continue;
+            }
+
+            $url = count($shipments) === 1 || $po === null
+                ? route('supplier.shipments.show', $shipments[0], absolute: false)
+                : route('supplier.purchase-orders.show', $po, absolute: false);
+
+            $this->notifications->send(
+                $supplier,
+                'shipment.document_status_updated',
+                "shipment.document_status_updated:{$docType}:{$target}:{$batchUuid}:supplier:{$supplierId}",
+                'documents.copy.document_status_updated',
+                'documents.notify.supplier_shipment_updated_body',
+                $url,
+                'file-check text-primary',
+                [
+                    'category' => NotificationCategory::DOCUMENT,
+                    'domain' => NotificationDomain::IMPORT,
+                    'shipment_ids' => array_map(fn (Shipment $shipment) => (int) $shipment->id, $shipments),
+                    'doc_type' => $docType,
+                    'status' => $target,
+                ],
+                [
+                    'shipment' => implode(', ', array_map(fn (Shipment $shipment) => (string) $shipment->shipment_number, $shipments)),
+                ],
+                [
+                    'document' => 'documents.notify.type_'.$docType,
+                    'status' => 'documents.notify.status_'.$target,
+                ],
+            );
+        }
     }
 
     /**

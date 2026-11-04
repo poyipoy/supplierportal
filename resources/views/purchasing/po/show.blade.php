@@ -334,7 +334,7 @@
                                         <span class="tw:text-on-surface-variant fw-normal ms-2">
                                             ({{ $quotation->purchaseRequisition->period->display_label ?? $quotation->purchaseRequisition->period->name ?? '-' }})
                                             @if($rate)
-                                                &bull; {{ __('purchasing.copy.locked_exchange_rate') }}: 1 {{ $quotation->currency }} = Rp {{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($rate->rate_to_idr), 'decimal') }}
+                                                &bull; {{ __('purchasing.copy.locked_exchange_rate') }}: 1 {{ $quotation->currency }} = Rp {{ $regionalFormatter->groupedDecimal($rate->rate_to_idr) }}
                                             @endif
                                         </span>
                                     </td>
@@ -469,8 +469,8 @@
                                             </span>
                                         </td>
                                         <td class="text-center">
-                                            <span class="ui-status-chip ui-status-chip--{{ $p['manual_progress_tone'] }}">
-                                                {{ $p['manual_progress_label'] }}
+                                            <span class="ui-status-chip ui-status-chip--{{ $p['progress_tone'] }}">
+                                                {{ $p['progress_label'] }}
                                             </span>
                                         </td>
                                         <td class="text-center ui-tabular-nums tw:text-on-surface-variant" title="{{ __('purchasing.copy.supplier_estimate_delivery') }}">
@@ -615,9 +615,9 @@
                     @php
                         $docConfig = [
                             'invoice' => ['label' => __('purchasing.copy.invoice_document'), 'icon' => 'receipt', 'statuses' => ['pending' => __('purchasing.copy.not_available'), 'received' => __('purchasing.copy.accepted'), 'verified' => __('purchasing.copy.verified')]],
-                            'bl' => ['label' => __('purchasing.copy.bill_of_lading'), 'icon' => 'truck', 'statuses' => ['pending' => __('purchasing.copy.not_available'), 'issued' => __('purchasing.copy.issued'), 'done' => __('purchasing.copy.accepted')]],
+                            'bl' => ['label' => __('purchasing.copy.bill_of_lading'), 'icon' => 'truck', 'statuses' => ['pending' => __('purchasing.copy.not_available'), 'received' => __('purchasing.copy.accepted'), 'verified' => __('purchasing.copy.verified')]],
                             'packing_list' => ['label' => __('purchasing.copy.packing_list'), 'icon' => 'list-checks', 'statuses' => ['pending' => __('purchasing.copy.not_available'), 'received' => __('purchasing.copy.accepted'), 'verified' => __('purchasing.copy.verified')]],
-                            'form_e' => ['label' => 'Form-E', 'icon' => 'file-badge', 'statuses' => ['pending' => __('purchasing.copy.not_available'), 'processing' => __('purchasing.copy.processing'), 'done' => __('purchasing.copy.completed')]],
+                            'form_e' => ['label' => 'Form-E', 'icon' => 'file-badge', 'statuses' => ['pending' => __('purchasing.copy.not_available'), 'received' => __('purchasing.copy.accepted'), 'verified' => __('purchasing.copy.verified')]],
                         ];
                     @endphp
 
@@ -627,10 +627,13 @@
                         $usesShipmentWorkflow = (bool) ($customsProgress['uses_shipment_workflow'] ?? false);
                     @endphp
 
-                    @foreach($po->documents as $doc)
+                    {{-- Always the four import documents: a PO may lack a po_documents row (historical data),
+                         while its shipments already carry the document. --}}
+                    @foreach($customsSummary as $summaryDocType => $summaryItem)
                         @php
+                            $doc = $summaryItem['po_doc'] ?? new \App\Models\PoDocument(['doc_type' => $summaryDocType, 'status' => \App\Models\PoDocument::STATUSES[0]]);
+                            $docKey = $doc->exists ? $doc->id : 'type-'.$summaryDocType;
                             $config = $docConfig[$doc->doc_type] ?? ['label' => $doc->doc_type, 'icon' => 'file', 'statuses' => []];
-                            $summaryItem = $customsSummary[$doc->doc_type] ?? null;
                             $progressItem = $customsProgress['documents'][$doc->doc_type] ?? null;
                             $effectiveStatus = $summaryItem['status'] ?? $doc->status;
                             $statusLabel = $config['statuses'][$effectiveStatus] ?? \App\Support\StatusHelper::shipmentDocLabel($effectiveStatus);
@@ -653,14 +656,14 @@
                             $evidenceGapCount = (int) ($progressItem['evidence_gap_count'] ?? 0);
                             $isWaitingForShipment = $usesShipmentWorkflow && $activeShipmentCount === 0;
                         @endphp
-                        <div class="po-doc-card tw:h-full tw:rounded-xl tw:border tw:border-outline-variant/80 tw:bg-surface tw:p-3.5 tw-shadow-2xs tw:flex tw:flex-col tw:justify-between tw:transition-colors tw:hover:border-primary/40 hover:tw-shadow-xs" id="doc-card-{{ $doc->id }}">
+                        <div class="po-doc-card tw:h-full tw:rounded-xl tw:border tw:border-outline-variant/80 tw:bg-surface tw:p-3.5 tw-shadow-2xs tw:flex tw:flex-col tw:justify-between tw:transition-colors tw:hover:border-primary/40 hover:tw-shadow-xs tw:min-w-0 tw:overflow-hidden" id="doc-card-{{ $docKey }}">
                             {{-- Zone 1: Document Header (Centered & Uniform) --}}
                             <div class="tw:flex tw:flex-col tw:items-center tw:text-center">
                                 <div class="tw:w-10 tw:h-10 tw:rounded-full tw:flex tw:items-center tw:justify-center tw:mb-2 {{ $iconClasses }}">
                                     <x-ui.icon :name="$config['icon']" size="md" />
                                 </div>
                                 <h6 class="fw-bold tw:text-on-surface tw:text-ui-sm mb-1.5">{{ $config['label'] }}</h6>
-                                <span class="ui-status-chip {{ $chipClasses }} tw:mb-1 doc-status-badge" id="doc-badge-{{ $doc->id }}" data-status="{{ $effectiveStatus }}">
+                                <span class="ui-status-chip {{ $chipClasses }} tw:mb-1 doc-status-badge" id="doc-badge-{{ $docKey }}" data-status="{{ $effectiveStatus }}">
                                     {{ $statusLabel }}
                                 </span>
                                 @if($usesShipmentWorkflow)
@@ -688,8 +691,8 @@
                                         {{ __('documents.sync.legacy_manual_status') }}
                                     </span>
                                 @endif
-                                <div class="tw:text-on-surface-variant tw:text-ui-xs tw:h-5 tw:flex tw:items-center tw:justify-center" id="doc-date-{{ $doc->id }}">
-                                    @if($effectiveStatus !== 'pending')
+                                <div class="tw:text-on-surface-variant tw:text-ui-xs tw:h-5 tw:flex tw:items-center tw:justify-center" id="doc-date-{{ $docKey }}">
+                                    @if($effectiveStatus !== 'pending' && $doc->updated_at)
                                         <span>{{ $regionalFormatter->timestamp($doc->updated_at, 'datetime_comma') }}</span>
                                     @else
                                         <span class="tw:text-outline/50">&mdash;</span>
@@ -730,30 +733,37 @@
                             </div>
 
                             {{-- Zone 3: Footer Action --}}
-                            <div class="tw:pt-1 tw:mt-auto">
+                            <div class="tw:pt-1 tw:mt-auto tw:w-full tw:min-w-0">
                                 @if($usesShipmentWorkflow)
                                     @if($isWaitingForShipment)
-                                        <x-ui.button type="button" variant="outline" size="sm" class="tw:w-full" disabled aria-disabled="true" data-doc-type="{{ $doc->doc_type }}">
-                                            <x-ui.icon name="clock" size="sm" class="me-1" /> {{ __('documents.sync.waiting_for_shipment') }}
+                                        <x-ui.button type="button" variant="outline" size="sm" class="tw:w-full" disabled aria-disabled="true" data-doc-type="{{ $doc->doc_type }}" title="{{ __('documents.sync.waiting_for_shipment') }}">
+                                            <x-ui.icon name="square-pen" size="sm" class="me-1 flex-shrink-0" />
+                                            <span class="tw:truncate">{{ __('purchasing.copy.update_status') }}</span>
                                         </x-ui.button>
                                     @else
                                         <x-ui.button type="button" variant="outline" size="sm" class="btn-open-shipment-doc-dialog tw:w-full"
-                                                data-doc-id="{{ $doc->id }}"
+                                                data-doc-id="{{ $docKey }}"
                                                 data-doc-type="{{ $doc->doc_type }}"
                                                 data-doc-label="{{ $config['label'] }}"
                                                 data-update-url="{{ route('purchasing.purchase-orders.documents.shipments.update', ['id' => $po, 'doc_type' => $doc->doc_type]) }}"
-                                                :data-doc-statuses="json_encode($config['statuses'])">
-                                            <x-ui.icon name="square-pen" size="sm" class="me-1" /> {{ __('purchasing.copy.update_status') }}
+                                                :data-doc-statuses="json_encode($config['statuses'])"
+                                                title="{{ __('purchasing.copy.update_status') }}">
+                                            <x-ui.icon name="square-pen" size="sm" class="me-1 flex-shrink-0" />
+                                            <span class="tw:truncate">{{ __('purchasing.copy.update_status') }}</span>
                                         </x-ui.button>
                                     @endif
-                                @else
+                                @elseif($doc->exists)
+                                    {{-- Legacy endpoint updates an existing po_documents row by id. --}}
                                     <x-ui.button type="button" variant="outline" size="sm" class="btn-update-doc tw:w-full"
-                                            data-doc-id="{{ $doc->id }}"
+                                            data-doc-id="{{ $docKey }}"
                                             data-doc-type="{{ $doc->doc_type }}"
                                             data-doc-label="{{ $config['label'] }}"
                                             data-doc-status="{{ $effectiveStatus }}"
-                                            :data-doc-statuses="json_encode($config['statuses'])">
-                                        <x-ui.icon name="square-pen" size="sm" class="me-1" /> {{ __('purchasing.copy.update_status') }}
+                                            data-doc-status-label="{{ $statusLabel }}"
+                                            :data-doc-statuses="json_encode($config['statuses'])"
+                                            title="{{ __('purchasing.copy.update_status') }}">
+                                        <x-ui.icon name="square-pen" size="sm" class="me-1 flex-shrink-0" />
+                                        <span class="tw:truncate">{{ __('purchasing.copy.update_status') }}</span>
                                     </x-ui.button>
                                 @endif
                             </div>
@@ -1135,6 +1145,10 @@
 
         const select = $('#modalDocStatus');
         select.empty();
+        if (!Object.prototype.hasOwnProperty.call(statuses, currentStatus)) {
+            // Historical status outside the current list: show it, never preselect another one.
+            select.append($('<option>', { value: '', disabled: true, selected: true, text: $(this).data('doc-status-label') }));
+        }
         for (const [key, label] of Object.entries(statuses)) {
             select.append(`<option value="${key}" ${key === currentStatus ? 'selected' : ''}>${label}</option>`);
         }

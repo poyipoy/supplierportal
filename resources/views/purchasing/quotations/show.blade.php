@@ -176,7 +176,7 @@
                 @if($quotationRate)
                     <div class="p-3 tw:bg-surface-low border rounded text-center">
                         <div class="tw:text-on-surface-variant tw:text-ui-xs fw-semibold tw:uppercase">{{ $quotation->currency }} → IDR</div>
-                        <div class="fw-bold text-primary fs-5 mt-1">Rp {{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($quotationRate->rate_to_idr), 'decimal') }}</div>
+                        <div class="fw-bold text-primary fs-5 mt-1">Rp {{ $regionalFormatter->groupedDecimal($quotationRate->rate_to_idr) }}</div>
                         <div class="tw:text-outline tw:text-ui-xs tw:mt-0.5">{{ __('common.final_review.snapshot_date', ['date' => $regionalFormatter->date($quotationRate->valid_from)]) }}</div>
                     </div>
                 @else
@@ -337,7 +337,7 @@
                             <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-low tw:p-2.5">
                                 <div class="tw:text-ui-xs tw:font-semibold tw:uppercase tw:text-on-surface-variant">{{ __('purchasing.copy.idr_snapshot') }}</div>
                                 <div class="tw:mt-0.5 tw:text-ui-sm tw:font-semibold tw:text-on-surface">
-                                    {{ $quotationRate ? 'Rp '.\App\Support\NumberFormat::maxDecimals($quotationRate->rate_to_idr) : __('purchasing.copy.exchange_rate_unavailable') }}
+                                    {{ $quotationRate ? 'Rp '.$regionalFormatter->groupedDecimal($quotationRate->rate_to_idr) : __('purchasing.copy.exchange_rate_unavailable') }}
                                 </div>
                             </div>
                         </div>
@@ -388,10 +388,10 @@
                                                 {{ \App\Support\NumberFormat::maxDecimals($previewItem->offered_total_weight ?? $previewItem->prItem?->total_weight ?? 0) }}
                                             </td>
                                             <td class="text-end ui-tabular-nums">
-                                                {{ $previewItem->price_per_kg !== null ? \App\Support\NumberFormat::grouped($previewItem->price_per_kg, 4) : '-' }}
+                                                {{ $previewItem->price_per_kg !== null ? $regionalFormatter->groupedDecimal($previewItem->price_per_kg, 4) : '-' }}
                                             </td>
                                             <td class="text-end ui-tabular-nums">
-                                                {{ $preview['eligible'] ? \App\Support\NumberFormat::grouped($preview['amount']) : '-' }}
+                                                {{ $preview['eligible'] ? $regionalFormatter->groupedDecimal($preview['amount']) : '-' }}
                                             </td>
                                             <td>
                                                 @if($preview['eligible'])
@@ -406,13 +406,13 @@
                                 <tfoot class="table-light fw-bold">
                                     <tr>
                                         <td colspan="{{ $orderedQuantityWriteEnabled ? 5 : 4 }}" class="text-end">{{ __('purchasing.copy.po_total') }} ({{ $quotation->currency }})</td>
-                                        <td class="text-end ui-tabular-nums">{{ \App\Support\NumberFormat::grouped($directPoTotalAmount) }}</td>
+                                        <td class="text-end ui-tabular-nums">{{ $regionalFormatter->groupedDecimal($directPoTotalAmount) }}</td>
                                         <td></td>
                                     </tr>
                                     <tr>
                                         <td colspan="{{ $orderedQuantityWriteEnabled ? 5 : 4 }}" class="text-end">{{ __('purchasing.copy.estimated_total_idr') }}</td>
                                         <td class="text-end text-primary ui-tabular-nums">
-                                            {{ $directPoTotalIdr !== null ? 'Rp '.\App\Support\NumberFormat::grouped($directPoTotalIdr) : '-' }}
+                                            {{ $directPoTotalIdr !== null ? 'Rp '.$regionalFormatter->groupedDecimal($directPoTotalIdr) : '-' }}
                                         </td>
                                         <td></td>
                                     </tr>

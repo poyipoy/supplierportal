@@ -258,9 +258,8 @@ class PurchaseOrderController extends Controller
         $poProgressSummary = $progressService->poSummary($po);
         $itemProjections = collect($poProgressSummary['items'] ?? []);
 
-        // Customs summary & synchronized documents. Reconciliation is explicit
-        // now that customsDocumentationSummary() is a pure read.
-        $po->reconcileCustomsDocumentationStatus();
+        // Customs summary derives the PO-level status from active shipment
+        // documents on read; po_documents is refreshed by every write path.
         $customsSummary = $po->customsDocumentationSummary();
         $customsProgress = $po->customsDocumentationProgress();
 

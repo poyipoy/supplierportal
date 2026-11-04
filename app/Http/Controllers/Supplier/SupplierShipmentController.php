@@ -11,6 +11,7 @@ use App\Models\ShipmentDocument;
 use App\Services\RegionalDisplayFormatter;
 use App\Services\ShipmentService;
 use App\Support\NumberFormat;
+use App\Support\Procurement\ProcurementFeatures;
 use App\Support\StatusHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -154,23 +155,36 @@ class SupplierShipmentController extends Controller
             ->whereIn('status', ['active', 'overdue', 'waiting_qc'])
             ->with([
                 'awards.quotationItem.prItem',
+                'awards.latestProgressUpdate',
                 'quotations.items.prItem',
             ])
             ->latest()
             ->get();
 
         $poItems = collect();
+        // Items still owed by the supplier but not Ready to Ship are not offered; the
+        // count lets the view say why they are missing. ShipmentService enforces the same rule.
+        $notReadyCount = 0;
+        $readyGate = ProcurementFeatures::requireReadyToShipForShipment();
 
         foreach ($purchaseOrders as $po) {
             // Determine items from awards (or fallback to quotation items for legacy POs)
             $items = $po->awards->isNotEmpty()
                 ? $po->awards->map(fn ($a) => $a->quotationItem)->filter()
                 : $po->allQuotationItems()->filter(fn ($i) => $i->isAvailable());
+            $awardsByItem = $po->awards->keyBy('quotation_item_id');
 
             foreach ($items as $item) {
                 $status = $this->shipmentService->getItemDeliveryStatus($po->id, $item->id);
 
                 if (($status['remaining_qty'] ?? $status['remaining']) > 0) {
+                    $award = $awardsByItem->get($item->id);
+                    if ($readyGate && $award && ! $award->isReadyToShip()) {
+                        $notReadyCount++;
+
+                        continue;
+                    }
+
                     $poItems->push([
                         'po' => $po,
                         'quotation_item' => $item,
@@ -190,7 +204,7 @@ class SupplierShipmentController extends Controller
 
         $shipment = null;
 
-        return view('supplier.shipments.create', compact('purchaseOrders', 'poItems', 'preselectedPoId', 'shipment'));
+        return view('supplier.shipments.create', compact('purchaseOrders', 'poItems', 'preselectedPoId', 'shipment', 'notReadyCount'));
     }
 
     /**
@@ -215,22 +229,37 @@ class SupplierShipmentController extends Controller
                 $query->whereIn('status', ['active', 'overdue', 'waiting_qc'])
                     ->orWhereIn('id', $currentPoIds);
             })
-            ->with(['awards.quotationItem.prItem', 'quotations.items.prItem'])
+            ->with(['awards.quotationItem.prItem', 'awards.latestProgressUpdate', 'quotations.items.prItem'])
             ->latest()
             ->get();
         $poItems = collect();
+        $notReadyCount = 0;
+        $readyGate = ProcurementFeatures::requireReadyToShipForShipment();
 
         foreach ($purchaseOrders as $po) {
             $items = $po->awards->isNotEmpty()
                 ? $po->awards->map(fn ($award) => $award->quotationItem)->filter()
                 : $po->allQuotationItems()->filter(fn ($item) => $item->isAvailable());
+            $awardsByItem = $po->awards->keyBy('quotation_item_id');
 
             foreach ($items as $item) {
                 $status = $this->shipmentService->getItemDeliveryStatus($po->id, $item->id);
                 $current = $currentQuantities->get($po->id.':'.$item->id);
 
                 if (($status['remaining_qty'] ?? $status['remaining']) > 0 || $current) {
+                    $award = $awardsByItem->get($item->id);
+                    $notReady = $readyGate && $award && ! $award->isReadyToShip();
+
+                    // A line already in this draft stays visible (flagged) so the draft remains
+                    // editable; saving or submitting it is refused until it is Ready to Ship again.
+                    if ($notReady && ! $current) {
+                        $notReadyCount++;
+
+                        continue;
+                    }
+
                     $poItems->push([
+                        'not_ready' => $notReady,
                         'po' => $po,
                         'quotation_item' => $item,
                         'pr_item' => $item->prItem,
@@ -250,7 +279,7 @@ class SupplierShipmentController extends Controller
 
         $preselectedPoId = null;
 
-        return view('supplier.shipments.create', compact('purchaseOrders', 'poItems', 'preselectedPoId', 'shipment'));
+        return view('supplier.shipments.create', compact('purchaseOrders', 'poItems', 'preselectedPoId', 'shipment', 'notReadyCount'));
     }
 
     /**

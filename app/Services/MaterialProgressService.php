@@ -103,6 +103,14 @@ class MaterialProgressService
         $isPoClosed = $po && in_array($po->status, ['completed', 'cancelled'], true);
         $canUpdate = ! $isPoClosed && $supplierControlledQty > 0;
 
+        // Arrived is derived, never stored: nothing is left with the supplier or in
+        // transit, and something has reached Purchasing. A partial arrival keeps the
+        // manual stage so the remainder can still be shipped.
+        $hasArrived = $supplierControlledQty === 0
+            && $inTransitQty === 0
+            && ($acceptedQty + $arrivedPendingQcQty + $unresolvedNgQty) > 0;
+        $displayStatus = $hasArrived ? PoItemProgressUpdate::DISPLAY_STATUS_ARRIVED : $status;
+
         return [
             'award_id' => $award->id,
             'award_hashid' => $award->hash,
@@ -119,6 +127,10 @@ class MaterialProgressService
             'manual_progress_label' => StatusHelper::materialProgressLabel($status),
             'manual_progress_badge' => StatusHelper::materialProgressBadge($status),
             'manual_progress_tone' => StatusHelper::materialProgressTone($status),
+            'progress_status' => $displayStatus,
+            'progress_label' => StatusHelper::materialProgressLabel($displayStatus),
+            'progress_badge' => StatusHelper::materialProgressBadge($displayStatus),
+            'progress_tone' => StatusHelper::materialProgressTone($displayStatus),
             'current_estimated_ready_date' => $latestUpdate?->estimated_ready_date,
             'original_supplier_ready_date' => $award->quotation?->estimated_delivery,
             'last_progress_update_at' => $latestUpdate?->created_at,
@@ -298,7 +310,7 @@ class MaterialProgressService
             } elseif ($projection['arrived_pending_qc_qty'] > 0) {
                 $counts[__('purchasing.copy.waiting_qc')] = ($counts[__('purchasing.copy.waiting_qc')] ?? 0) + 1;
             } else {
-                $stageLabel = $projection['manual_progress_label'];
+                $stageLabel = $projection['progress_label'];
                 $counts[$stageLabel] = ($counts[$stageLabel] ?? 0) + 1;
             }
         }

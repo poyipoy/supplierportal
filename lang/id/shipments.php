@@ -41,6 +41,7 @@ return [
         'item_missing' => 'Item penawaran #:item tidak ditemukan.',
         'quantity_remaining' => 'Jumlah dikirim (:qty pcs) melebihi sisa jumlah pesanan (:remaining pcs) untuk item \':material\'.',
         'arrival_status' => 'Kedatangan hanya dapat dikonfirmasi untuk pengiriman yang sudah diajukan (status saat ini: :status).',
+        'material_not_ready_to_ship' => 'Item \':material\' belum dapat dikirim: Supplier Progress harus berstatus "Siap Dikirim" terlebih dahulu.',
     ],
     'validation.legacy_only_arrival' => 'Purchase Order ini telah diterima melalui alur penerimaan legacy dan tidak dapat diubah menjadi penerimaan berbasis pengiriman.',
     'confirmations' => [
@@ -288,5 +289,9 @@ return [
         'awaiting_delivery' => 'Menunggu pengiriman',
         'awaiting_arrival' => 'Menunggu kedatangan',
         'pending_items' => '{1} :count item menunggu pengiriman|[0,*] :count item menunggu pengiriman',
+        'not_ready_hidden' => '{1} :count item disembunyikan karena Supplier Progress-nya belum "Siap Dikirim".|[2,*] :count item disembunyikan karena Supplier Progress-nya belum "Siap Dikirim".',
+        'not_ready_chip' => 'Belum Siap Dikirim',
+        'not_ready_link' => 'Lihat Purchase Order',
+        'not_ready_empty' => 'Belum ada item yang dapat dikirim. Ubah Supplier Progress item menjadi "Siap Dikirim" di halaman Purchase Order, lalu kembali ke sini.',
     ],
 ];

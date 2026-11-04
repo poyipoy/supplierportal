@@ -140,8 +140,8 @@
                                             </x-ui.status-chip>
                                         </td>
                                         <td class="text-center">
-                                            <span class="ui-status-chip ui-status-chip--{{ $p['manual_progress_tone'] }}">
-                                                {{ $p['manual_progress_label'] }}
+                                            <span class="ui-status-chip ui-status-chip--{{ $p['progress_tone'] }}">
+                                                {{ $p['progress_label'] }}
                                             </span>
                                         </td>
                                         <td class="text-center ui-tabular-nums tw:text-on-surface-variant" title="{{ __('supplier.copy.original_quotation_ready_dispatch_commitment') }}">
@@ -227,7 +227,7 @@
                                         {{ $quotation->purchaseRequisition->pr_number ?? 'PR -' }}
                                         <span class="tw:text-on-surface-variant fw-normal ms-2">
                                             @if($rate)
-                                                &bull; {{ __('supplier.copy.exchange_rate_value') }}: 1 {{ $quotation->currency }} = Rp {{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($rate->rate_to_idr), 'decimal') }}
+                                                &bull; {{ __('supplier.copy.exchange_rate_value') }}: 1 {{ $quotation->currency }} = Rp {{ $regionalFormatter->groupedDecimal($rate->rate_to_idr) }}
                                             @endif
                                         </span>
                                     </td>

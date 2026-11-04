@@ -846,6 +846,12 @@ It can be deferred if implementation scope needs to remain minimal.
 
 ## 16. `Ready to Ship` Is Not a Hard Shipment Gate
 
+> **Superseded on 2026-11-03.** Business decision: a Supplier may only draft or submit a Shipment for an
+> awarded item whose latest manual progress is `Ready to Ship`, and an item whose shipped quantity has all
+> arrived at Purchasing is displayed as `Arrived` (derived, never stored). The current contract is the
+> "Gate Ready to Ship dan status Arrived" bullet in `AGENTS.md` (Item Award dan Shipment Impor). The text
+> below is kept as the historical record of the original decision.
+
 Do not require:
 
 ```text

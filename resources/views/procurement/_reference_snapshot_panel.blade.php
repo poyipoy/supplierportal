@@ -8,6 +8,7 @@
     $rp = 'materials.reference_prices';
     $snapshots = $po->referencePriceSnapshots;
     $num = fn ($value) => $value === null ? '—' : \App\Support\NumberFormat::maxDecimals($value, 4);
+    $money = fn ($value) => $value === null ? '—' : $regionalFormatter->groupedDecimal($value, 4);
 @endphp
 <x-ui.card :title="__($rp.'.snapshot.title')" id="sec-reference-price" class="tw:min-w-0 tw:scroll-mt-24" data-reference-snapshot-panel>
     @if($snapshots->isEmpty())
@@ -33,10 +34,10 @@
                         @php($matched = $snapshot->status === \App\Models\AwardReferencePriceSnapshot::STATUS_MATCHED)
                         <tr>
                             <td>{{ $snapshot->award?->prItem?->material_name ?? '-' }}</td>
-                            <td class="text-end ui-tabular-nums">{{ $snapshot->po_currency }} {{ $num($snapshot->offer_price_per_kg) }}</td>
-                            <td class="text-end ui-tabular-nums">{{ $matched ? $snapshot->reference_currency.' '.$num($snapshot->reference_price_per_kg) : '—' }}</td>
-                            <td class="text-end ui-tabular-nums">{{ $matched ? $snapshot->po_currency.' '.$num($snapshot->converted_reference_price_per_kg) : '—' }}</td>
-                            <td class="text-end ui-tabular-nums">{{ $num($snapshot->diff_amount_per_kg) }}</td>
+                            <td class="text-end ui-tabular-nums">{{ $snapshot->po_currency }} {{ $money($snapshot->offer_price_per_kg) }}</td>
+                            <td class="text-end ui-tabular-nums">{{ $matched ? $snapshot->reference_currency.' '.$money($snapshot->reference_price_per_kg) : '—' }}</td>
+                            <td class="text-end ui-tabular-nums">{{ $matched ? $snapshot->po_currency.' '.$money($snapshot->converted_reference_price_per_kg) : '—' }}</td>
+                            <td class="text-end ui-tabular-nums">{{ $money($snapshot->diff_amount_per_kg) }}</td>
                             <td class="text-end ui-tabular-nums">{{ $snapshot->diff_percent === null ? '—' : $num($snapshot->diff_percent).'%' }}</td>
                             <td>
                                 @if($matched)

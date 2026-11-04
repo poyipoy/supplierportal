@@ -184,6 +184,29 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
         $draft = $shipmentService->createDraft($this->supplierUserA);
         $invoiceDoc = $draft->documents->where('doc_type', 'invoice')->first();
 
+        // A draft shipment is not reviewable yet.
+        $this->actingAs($this->purchasingUser)
+            ->put(route('purchasing.shipments.documents.status', [
+                'id' => $draft,
+                'document_id' => $invoiceDoc->id,
+            ]), [
+                'status' => 'received',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('error');
+        $this->assertSame('pending', $invoiceDoc->fresh()->status);
+
+        $draft->update(['status' => Shipment::STATUS_SUBMITTED]);
+        $this->actingAs($this->supplierUserA)
+            ->post(route('supplier.shipments.documents.upload', [
+                'id' => $draft,
+                'document_id' => $invoiceDoc->id,
+            ]), [
+                'file' => NativeFileFixtures::upload('commercial_invoice.pdf', 500),
+            ])
+            ->assertSessionHasNoErrors();
+        $attachment = $invoiceDoc->fresh()->latestAttachment;
+
         // Purchasing can verify
         $response = $this->actingAs($this->purchasingUser)
             ->put(route('purchasing.shipments.documents.status', [
@@ -191,12 +214,24 @@ class ShipmentDocumentsAndQcIntegrationTest extends TestCase
                 'document_id' => $invoiceDoc->id,
             ]), [
                 'status' => 'verified',
-                'notes' => 'Invoice verified against commercial contract',
+                'expected_status' => 'received',
+                'expected_attachment' => $attachment->hash,
             ]);
 
         $response->assertRedirect();
+        $response->assertSessionHasNoErrors();
         $invoiceDoc->refresh();
         $this->assertSame('verified', $invoiceDoc->status);
+
+        // Targets outside the doc type's workflow are rejected.
+        $this->actingAs($this->purchasingUser)
+            ->put(route('purchasing.shipments.documents.status', [
+                'id' => $draft,
+                'document_id' => $invoiceDoc->id,
+            ]), [
+                'status' => 'done',
+            ])
+            ->assertSessionHasErrors('status');
 
         // Supplier cannot hit purchasing document status route
         $supplierResponse = $this->actingAs($this->supplierUserA)

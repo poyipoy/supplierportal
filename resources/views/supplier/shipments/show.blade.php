@@ -332,7 +332,7 @@
                         </div>
                     </div>
 
-                    @if($shipment->status !== 'cancelled')
+                    @if($shipment->status !== 'cancelled' && ! in_array($doc->status, \App\Support\Procurement\CustomsDocumentationProgressCalculator::VERIFIED_STATUSES, true))
                         <form method="POST" action="{{ route('supplier.shipments.documents.upload', [$shipment, $doc]) }}" enctype="multipart/form-data" data-async-submit class="pt-2 border-top tw:border-outline-variant">
                             @csrf
                             <input

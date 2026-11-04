@@ -78,6 +78,7 @@ return [
         'updated_body' => 'Document :document on PO :po has been updated to ":status".',
         'shipment_updated_body' => 'Document :document on PO :po has been updated to ":status" (:count shipment document(s)).',
         'completed_body' => 'All import documents for PO :po are complete. Confirm material arrival if it has arrived.',
+        'supplier_shipment_updated_body' => 'Purchasing updated :document on shipment :shipment to ":status".',
         'type_invoice' => 'Invoice',
         'type_bl' => 'Bill of Lading',
         'type_packing_list' => 'Packing List',

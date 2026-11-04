@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers\Purchasing;
 
+use App\Exceptions\PoShipmentDocumentBatchRefused;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Export\Filters\ShipmentExportFilters;
-use App\Models\PoDocument;
 use App\Models\Shipment;
 use App\Models\ShipmentDocument;
 use App\Models\User;
+use App\Services\PoShipmentDocumentStatusService;
 use App\Services\RegionalDisplayFormatter;
 use App\Services\ShipmentService;
 use App\Support\BusinessTime;
@@ -16,6 +17,7 @@ use App\Support\StatusHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
 use Yajra\DataTables\Facades\DataTables;
 
 class ShipmentController extends Controller
@@ -166,29 +168,50 @@ class ShipmentController extends Controller
     }
 
     /**
-     * Update status of a shipment document.
+     * Update status of a shipment document. Same rules, locks, audit trail and
+     * notifications as the PO page dialog (PoShipmentDocumentStatusService).
      */
-    public function updateDocumentStatus(Request $request, $id, $document_id)
+    public function updateDocumentStatus(Request $request, $id, $document_id, PoShipmentDocumentStatusService $documentStatus)
     {
-        $request->validate([
-            'status' => 'required|string|in:'.implode(',', ShipmentDocument::STATUSES),
-            'notes' => 'nullable|string|max:1000',
+        $shipment = Shipment::findOrFail($id);
+        Gate::authorize('reviewDocument', $shipment);
+        $document = ShipmentDocument::where('shipment_id', $shipment->id)->findOrFail($document_id);
+
+        $validated = $request->validate([
+            'status' => ['required', 'string', Rule::in(PoShipmentDocumentStatusService::ALLOWED_TARGETS[$document->doc_type] ?? [])],
+            'reason' => ['nullable', 'string', 'max:1000'],
+            'expected_status' => ['nullable', 'string', Rule::in(ShipmentDocument::STATUSES)],
+            'expected_attachment' => ['nullable', 'string', 'max:64'],
         ]);
 
-        $document = DB::transaction(function () use ($request, $id, $document_id) {
-            $shipment = Shipment::whereKey($id)->lockForUpdate()->firstOrFail();
-            Gate::authorize('reviewDocument', $shipment);
-            $document = ShipmentDocument::where('shipment_id', $shipment->id)->lockForUpdate()->findOrFail($document_id);
-            $document->update([
-                'status' => $request->input('status'),
-                'notes' => $request->input('notes', $document->notes),
-            ]);
+        $expectations = ['expected_status' => $validated['expected_status'] ?? null];
+        if ($request->has('expected_attachment')) {
+            $expectations['expected_attachment'] = $validated['expected_attachment'] ?? null;
+        }
 
-            PoDocument::syncFromShipmentDocument($document);
+        try {
+            $result = $documentStatus->updateShipmentDocument(
+                $shipment,
+                $document->doc_type,
+                $expectations,
+                $validated['status'],
+                $validated['reason'] ?? null,
+                $request->user(),
+            );
+        } catch (PoShipmentDocumentBatchRefused $refused) {
+            if ($request->expectsJson()) {
+                return response()->json($refused->toPayload(), $refused->httpStatus);
+            }
 
-            return $document;
-        });
+            $rowMessage = collect($refused->rows)->pluck('message')->filter()->first();
 
-        return back()->with('success', __('shipments.feedback.document_status', ['status' => StatusHelper::shipmentDocLabel($document->status)]));
+            return back()->withInput()->with('error', trim($refused->getMessage().' '.$rowMessage));
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json($result);
+        }
+
+        return back()->with('success', __('shipments.feedback.document_status', ['status' => StatusHelper::shipmentDocLabel($validated['status'])]));
     }
 }

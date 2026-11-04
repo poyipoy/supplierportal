@@ -44,6 +44,8 @@
   - Created `resources/js/pr-totals-sync.js` (debounced `180ms` + immediate `change` sync with `AbortController` and `requestSeq` ordering) and removed client-side duplicate formula math (`resources/js/pr-totals-core.js` and `tests/js/pr-totals-core.test.mjs`).
 
 ### Gate 2 (B1–B3) — Two-Way PO ↔ Shipment Document Synchronization (Decision B)
+
+> **Correction (2026-11-03):** an audit of the code found that two claims in this report were not true when it was written. `PoDocument::syncFromShipmentDocument()` only ever raised `po_documents.status` (forward-only maximum, draft shipments included) and did not derive the worst status across active shipments (§2.4). No notification was sent to the Supplier (§B1). The shipment-page status form also bypassed these rules. All three are implemented as of 2026-11-03; see AGENTS.md, "Sinkronisasi dokumen PO dengan Shipment", and `tests/Feature/Procurement/PoShipmentDocumentStatusConsistencyTest.php`.
 - **Domain & Service Layer (B1):**
   - `app/Exceptions/PoShipmentDocumentBatchRefused.php`: Structured domain exception carrying per-row refusal reasons (`shipment_id`, `shipment_number`, `reason_code`, `message`).
   - `app/Support/Procurement/CustomsDocumentationProgressCalculator.php` & `PurchaseOrder::customsDocumentationProgress()`: Computes per-`doc_type` progress strictly across the approved active-shipment universe `ACTIVE_SHIPMENT_STATUSES = [Shipment::STATUS_SUBMITTED, Shipment::STATUS_ARRIVED]` (`total_shipments`, `received_count`, `verified_count`, `derived_status`, `has_active_shipments`, and shipment row metadata with attachment classification).

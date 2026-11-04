@@ -37,6 +37,16 @@ final class ProcurementFeatures
     }
 
     /**
+     * Ready to Ship gate: a supplier may only draft or submit shipment lines
+     * whose awarded item is at the Ready to Ship progress stage. Off restores
+     * the previous behaviour (progress never blocks shipments).
+     */
+    public static function requireReadyToShipForShipment(): bool
+    {
+        return (bool) config('procurement.require_ready_to_ship_for_shipment', true);
+    }
+
+    /**
      * Surplus requested without the write path that can order it.
      */
     public static function hasInconsistentFlags(): bool

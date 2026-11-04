@@ -79,11 +79,19 @@ class PoCustomsDocumentationShipmentSyncTest extends TestCase
         $shipmentInvoice = $shipment->documents()->where('doc_type', 'invoice')->firstOrFail();
         $poInvoice = $po->documents()->where('doc_type', 'invoice')->firstOrFail();
 
-        // Purchasing marks shipment invoice as 'verified'
+        $this->actingAs($this->supplier)
+            ->post(route('supplier.shipments.documents.upload', ['id' => $shipment, 'document_id' => $shipmentInvoice->id]), [
+                'file' => NativeFileFixtures::upload('invoice-shp01.pdf', 300),
+            ])
+            ->assertSessionHasNoErrors();
+        $attachment = $shipmentInvoice->fresh()->latestAttachment;
+
+        // Purchasing marks shipment invoice as 'verified' from the shipment page
         $response = $this->actingAs($this->purchasing)
             ->put(route('purchasing.shipments.documents.status', ['id' => $shipment, 'document_id' => $shipmentInvoice->id]), [
                 'status' => ShipmentDocument::STATUS_VERIFIED,
-                'notes' => 'Invoice verified against customs declaration.',
+                'expected_status' => ShipmentDocument::STATUS_RECEIVED,
+                'expected_attachment' => $attachment->hash,
             ]);
 
         $response->assertSessionHasNoErrors();
@@ -97,7 +105,7 @@ class PoCustomsDocumentationShipmentSyncTest extends TestCase
         $this->assertEquals('verified', $poInvoice->status);
     }
 
-    public function test_po_document_status_does_not_downgrade_when_lower_status_is_provided(): void
+    public function test_po_document_status_follows_a_shipment_downgrade_that_has_a_reason(): void
     {
         [$po, $shipment] = $this->createPoAndShipment($this->supplier);
 
@@ -105,16 +113,33 @@ class PoCustomsDocumentationShipmentSyncTest extends TestCase
         $poDoc->update(['status' => 'verified']);
 
         $shipmentDoc = $shipment->documents()->where('doc_type', 'packing_list')->firstOrFail();
+        $shipmentDoc->update(['status' => ShipmentDocument::STATUS_VERIFIED]);
 
-        // Purchasing sets shipment doc status to 'received' (lower rank than 'verified')
+        // Without a reason the downgrade is refused and nothing changes.
+        $this->actingAs($this->purchasing)
+            ->from(route('purchasing.shipments.show', $shipment))
+            ->put(route('purchasing.shipments.documents.status', ['id' => $shipment, 'document_id' => $shipmentDoc->id]), [
+                'status' => ShipmentDocument::STATUS_RECEIVED,
+                'expected_status' => ShipmentDocument::STATUS_VERIFIED,
+            ])
+            ->assertRedirect(route('purchasing.shipments.show', $shipment))
+            ->assertSessionHas('error');
+
+        $this->assertEquals(ShipmentDocument::STATUS_VERIFIED, $shipmentDoc->fresh()->status);
+        $this->assertEquals('verified', $poDoc->fresh()->status);
+
         $this->actingAs($this->purchasing)
             ->put(route('purchasing.shipments.documents.status', ['id' => $shipment, 'document_id' => $shipmentDoc->id]), [
                 'status' => ShipmentDocument::STATUS_RECEIVED,
-            ]);
+                'expected_status' => ShipmentDocument::STATUS_VERIFIED,
+                'reason' => 'Packing list weights do not match the B/L.',
+            ])
+            ->assertSessionHasNoErrors()
+            ->assertSessionHas('success');
 
-        $poDoc->refresh();
-        // Must remain 'verified' and not downgrade to 'received'
-        $this->assertEquals('verified', $poDoc->status);
+        $this->assertEquals(ShipmentDocument::STATUS_RECEIVED, $shipmentDoc->fresh()->status);
+        $this->assertStringContainsString('Packing list weights do not match the B/L.', (string) $shipmentDoc->fresh()->notes);
+        $this->assertEquals('received', $poDoc->fresh()->status);
     }
 
     public function test_supplier_po_detail_view_renders_shipment_link_and_file_view_link(): void
@@ -294,7 +319,7 @@ class PoCustomsDocumentationShipmentSyncTest extends TestCase
         $this->assertEquals('received', $poDoc->fresh()->status);
     }
 
-    public function test_reconciliation_never_demotes_a_more_advanced_po_document_status(): void
+    public function test_reconciliation_moves_a_stale_po_document_status_down_to_the_derived_status(): void
     {
         [$po, $shipment] = $this->createPoAndShipment($this->supplier);
 
@@ -304,11 +329,12 @@ class PoCustomsDocumentationShipmentSyncTest extends TestCase
         $shipmentDoc = $shipment->documents()->where('doc_type', 'packing_list')->firstOrFail();
         $shipmentDoc->update(['status' => ShipmentDocument::STATUS_RECEIVED]);
 
+        $this->assertSame(1, $po->fresh()->reconcileCustomsDocumentationStatus());
+        $this->assertEquals('received', $poDoc->fresh()->status);
         $this->assertSame(0, $po->fresh()->reconcileCustomsDocumentationStatus());
-        $this->assertEquals('verified', $poDoc->fresh()->status);
     }
 
-    public function test_po_detail_request_still_persists_the_healed_document_status(): void
+    public function test_purchasing_po_detail_request_is_pure_read_and_shows_the_derived_status(): void
     {
         [$po, $shipment] = $this->createPoAndShipment($this->supplier);
 
@@ -316,11 +342,20 @@ class PoCustomsDocumentationShipmentSyncTest extends TestCase
         $shipmentDoc = $shipment->documents()->where('doc_type', 'packing_list')->firstOrFail();
         $shipmentDoc->update(['status' => ShipmentDocument::STATUS_RECEIVED]);
 
+        $writes = [];
+        DB::listen(function ($query) use (&$writes) {
+            if (preg_match('/^\s*(insert|update|delete)\s/i', $query->sql)) {
+                $writes[] = $query->sql;
+            }
+        });
+
         $this->actingAs($this->purchasing)
             ->get(route('purchasing.purchase-orders.show', $po))
-            ->assertOk();
+            ->assertOk()
+            ->assertSee('id="doc-badge-'.$poDoc->id.'" data-status="received"', false);
 
-        $this->assertEquals('received', $poDoc->fresh()->status);
+        $this->assertSame([], $writes, 'GET purchasing.purchase-orders.show must not write to the database.');
+        $this->assertEquals('pending', $poDoc->fresh()->status);
     }
 
     public function test_supplier_po_detail_request_is_pure_read_and_does_not_mutate_database(): void

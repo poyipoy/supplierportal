@@ -269,23 +269,41 @@
                         </div>
                     </div>
 
-                    {{-- Status Update Form --}}
-                    <form method="POST" action="{{ route('purchasing.shipments.documents.status', ['id' => $shipment, 'document_id' => $doc->id]) }}" class="pt-2 border-top tw:border-outline-variant">
-                        @csrf
-                        @method('PUT')
-                        <div class="input-group input-group-sm">
-                            <select name="status" class="form-select form-select-sm" aria-label="{{ __('documents.a11y.change_status', ['document' => $docLabel]) }}">
-                                @foreach(\App\Models\ShipmentDocument::STATUSES as $st)
-                                    <option value="{{ $st }}" @selected($doc->status === $st)>
-                                        {{ \App\Support\StatusHelper::shipmentDocLabel($st) }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            <button type="submit" class="btn btn-outline-secondary btn-sm" title="{{ __('shipments.copy.save_status') }}">
-                                {{ __('shipments.copy.update') }}
-                            </button>
-                        </div>
-                    </form>
+                    {{-- Status Update Form: same rules as the PO page dialog --}}
+                    @if(in_array($shipment->status, \App\Support\Procurement\CustomsDocumentationProgressCalculator::ACTIVE_SHIPMENT_STATUSES, true))
+                        <form method="POST" action="{{ route('purchasing.shipments.documents.status', ['id' => $shipment, 'document_id' => $doc->id]) }}" class="pt-2 border-top tw:border-outline-variant" data-shipment-doc-status-form>
+                            @csrf
+                            @method('PUT')
+                            <input type="hidden" name="expected_status" value="{{ $doc->status }}">
+                            <input type="hidden" name="expected_attachment" value="{{ $attachment?->hash }}">
+                            <div class="input-group input-group-sm">
+                                <select name="status" class="form-select form-select-sm" aria-label="{{ __('documents.a11y.change_status', ['document' => $docLabel]) }}">
+                                    @php
+                                        $docTargets = \App\Support\Procurement\CustomsDocumentationProgressCalculator::ALLOWED_TARGETS[$doc->doc_type] ?? [];
+                                    @endphp
+                                    @unless(in_array($doc->status, $docTargets, true))
+                                        {{-- Historical status outside the current workflow: shown, never resubmitted. --}}
+                                        <option value="" disabled selected>{{ \App\Support\StatusHelper::shipmentDocLabel($doc->status) }}</option>
+                                    @endunless
+                                    @foreach($docTargets as $st)
+                                        <option value="{{ $st }}" @selected($doc->status === $st)>
+                                            {{ \App\Support\StatusHelper::shipmentDocLabel($st) }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <button type="submit" class="btn btn-outline-secondary btn-sm" title="{{ __('shipments.copy.save_status') }}">
+                                    {{ __('shipments.copy.update') }}
+                                </button>
+                            </div>
+                            <label for="doc-reason-{{ $doc->id }}" class="form-label tw:text-ui-xs tw:text-on-surface-variant mt-2 mb-1">{{ __('documents.sync.reason_label') }}</label>
+                            <textarea id="doc-reason-{{ $doc->id }}" name="reason" rows="2" maxlength="1000" class="form-control form-control-sm tw:text-ui-xs" placeholder="{{ __('documents.sync.reason_placeholder') }}" aria-describedby="doc-reason-hint-{{ $doc->id }}"></textarea>
+                            <p id="doc-reason-hint-{{ $doc->id }}" class="tw:m-0 tw:mt-1 tw:text-ui-xs tw:text-on-surface-variant">{{ __('documents.sync.reason_required_hint') }}</p>
+                        </form>
+                    @else
+                        <p class="pt-2 border-top tw:border-outline-variant tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">
+                            {{ __('documents.sync.reasons.invalid_shipment_status') }}
+                        </p>
+                    @endif
                 </div>
             @endforeach
         </div>
@@ -336,8 +354,8 @@
                                 {{ __('purchasing.copy.shape') }}: {{ $prItem->shape ?? '-' }}
                                 @if($prItem?->thickness) | T: {{ $prItem->thickness }}mm @endif
                                 @if($prItem?->width) | W: {{ $prItem->width }}mm @endif
-                                @if($prItem?->length) | L: {{ $prItem->length }}mm @endif
                                 @if($prItem?->d_outer) | OD: {{ $prItem->d_outer }}mm @endif
+                                @if($prItem?->length) | L: {{ $prItem->length }}mm @endif
                             </td>
                             <td class="text-end fw-bold text-primary ui-tabular-nums">
                                 {{ $regionalFormatter->number(number_format($item->shipped_qty), 'international') }} pcs

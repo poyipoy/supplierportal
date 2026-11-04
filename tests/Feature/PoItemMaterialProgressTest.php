@@ -19,6 +19,7 @@ use App\Services\ShipmentService;
 use App\Support\StatusHelper;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\Support\AttachesShipmentMtc;
 use Tests\Support\QcMeasurements;
@@ -162,6 +163,17 @@ class PoItemMaterialProgressTest extends TestCase
         $pos = $this->poService->generateFromAwards($awards, $this->purchasing, $options);
 
         return $pos->first();
+    }
+
+    /**
+     * Shipments are only accepted for items at Ready to Ship (ShipmentReadyToShipGuardTest),
+     * so shipment-flow tests here put the award at that stage first, as a supplier would.
+     */
+    private function markReadyToShip(PurchaseOrder $po, PrItemAward $award): void
+    {
+        $this->progressService->updateProgress($po, $award, $this->supplierA, [
+            'status' => PoItemProgressUpdate::STAGE_READY_TO_SHIP,
+        ]);
     }
 
     /**
@@ -391,6 +403,7 @@ class PoItemMaterialProgressTest extends TestCase
         $po = $this->createPoWithItems($this->supplierA, [[20.0, 20]]);
         $award = $po->awards->first();
         $qItem = $award->quotationItem;
+        $this->markReadyToShip($po, $award);
 
         $draft = $this->shipmentService->createDraft($this->supplierA, [
             'items' => [
@@ -419,6 +432,7 @@ class PoItemMaterialProgressTest extends TestCase
         $po = $this->createPoWithItems($this->supplierA, [[20.0, 20]]);
         $award = $po->awards->first();
         $qItem = $award->quotationItem;
+        $this->markReadyToShip($po, $award);
 
         $draft = $this->shipmentService->createDraft($this->supplierA);
         $shipment = $this->submitWithMtc($draft, [
@@ -482,6 +496,7 @@ class PoItemMaterialProgressTest extends TestCase
         $po = $this->createPoWithItems($this->supplierA, [[20.0, 20]]);
         $award = $po->awards->first();
         $qItem = $award->quotationItem;
+        $this->markReadyToShip($po, $award);
 
         $draft = $this->shipmentService->createDraft($this->supplierA);
         $shipment = $this->submitWithMtc($draft, [
@@ -501,6 +516,135 @@ class PoItemMaterialProgressTest extends TestCase
         $this->assertSame(12, $projection['supplier_controlled_qty']);
         $this->assertSame(0, $projection['in_transit_qty']);
         $this->assertSame(8, $projection['arrived_pending_qc_qty']);
+    }
+
+    /**
+     * Ship $qty pcs of the award's PO line, optionally confirming arrival, and return the shipment.
+     */
+    private function shipQty(PurchaseOrder $po, PrItemAward $award, int $qty, bool $arrive): Shipment
+    {
+        $draft = $this->shipmentService->createDraft($this->supplierA);
+        $shipment = $this->submitWithMtc($draft, [
+            'items' => [[
+                'purchase_order_id' => $po->id,
+                'quotation_item_id' => $award->quotation_item_id,
+                'shipped_qty' => $qty,
+                'actual_weight_kg' => (float) $qty,
+            ]],
+        ]);
+
+        return $arrive ? $this->shipmentService->confirmArrival($shipment, $this->purchasing) : $shipment;
+    }
+
+    /**
+     * P-12a: Once everything shipped has arrived at Purchasing, the displayed stage is Arrived.
+     * It is derived from fulfillment: the stored manual stage and the history are untouched.
+     */
+    public function test_p12a_fully_arrived_item_is_displayed_as_arrived_without_storing_it(): void
+    {
+        $po = $this->createPoWithItems($this->supplierA, [[20.0, 20]]);
+        $award = $po->awards->first();
+        $this->markReadyToShip($po, $award);
+
+        $shipment = $this->shipQty($po, $award, 20, arrive: false);
+
+        // In transit: nothing has reached Purchasing yet, so it is still the manual stage.
+        $inTransit = $this->progressService->projectionForAward($award->fresh());
+        $this->assertSame(20, $inTransit['in_transit_qty']);
+        $this->assertSame(PoItemProgressUpdate::STATUS_READY_TO_SHIP, $inTransit['progress_status']);
+
+        $this->shipmentService->confirmArrival($shipment, $this->purchasing);
+
+        $arrived = $this->progressService->projectionForAward($award->fresh());
+        $this->assertSame(0, $arrived['supplier_controlled_qty']);
+        $this->assertSame(0, $arrived['in_transit_qty']);
+        $this->assertSame(20, $arrived['arrived_pending_qc_qty']);
+        $this->assertSame(PoItemProgressUpdate::DISPLAY_STATUS_ARRIVED, $arrived['progress_status']);
+        $this->assertSame(StatusHelper::materialProgressLabel('arrived'), $arrived['progress_label']);
+        $this->assertSame('success', $arrived['progress_tone']);
+
+        // Derived only: the manual stage is still Ready to Ship and no row was written.
+        $this->assertSame(PoItemProgressUpdate::STATUS_READY_TO_SHIP, $arrived['manual_progress_status']);
+        $this->assertSame(1, $award->progressUpdates()->count());
+    }
+
+    /**
+     * P-12b: A partial arrival leaves quantity with the supplier, so the manual stage stays
+     * (Ready to Ship) and the remainder can still be shipped.
+     */
+    public function test_p12b_partial_arrival_keeps_the_manual_stage(): void
+    {
+        $po = $this->createPoWithItems($this->supplierA, [[20.0, 20]]);
+        $award = $po->awards->first();
+        $this->markReadyToShip($po, $award);
+
+        $this->shipQty($po, $award, 8, arrive: true);
+
+        $projection = $this->progressService->projectionForAward($award->fresh());
+        $this->assertSame(12, $projection['supplier_controlled_qty']);
+        $this->assertSame(8, $projection['arrived_pending_qc_qty']);
+        $this->assertSame(PoItemProgressUpdate::STATUS_READY_TO_SHIP, $projection['progress_status']);
+    }
+
+    /**
+     * P-12c: With no shipment, the displayed stage is the manual one (never Arrived).
+     */
+    public function test_p12c_item_without_shipments_is_never_displayed_as_arrived(): void
+    {
+        $po = $this->createPoWithItems($this->supplierA, [[20.0, 20]]);
+        $award = $po->awards->first();
+
+        $this->assertSame(
+            PoItemProgressUpdate::STATUS_AWAITING_CONFIRMATION,
+            $this->progressService->projectionForAward($award)['progress_status'],
+        );
+    }
+
+    /**
+     * P-12d: Both PO pages render the Arrived chip for an item whose shipment has arrived.
+     */
+    public function test_p12d_purchasing_and_supplier_po_pages_render_the_arrived_chip(): void
+    {
+        $po = $this->createPoWithItems($this->supplierA, [[20.0, 20]]);
+        $award = $po->awards->first();
+        $this->markReadyToShip($po, $award);
+        $this->shipQty($po, $award, 20, arrive: true);
+
+        $chip = '/ui-status-chip--success">\s*'.preg_quote(StatusHelper::materialProgressLabel('arrived'), '/').'\s*</';
+
+        $purchasingHtml = $this->actingAs($this->purchasing)
+            ->get(route('purchasing.purchase-orders.show', $po))
+            ->assertOk()
+            ->getContent();
+        $supplierHtml = $this->actingAs($this->supplierA)
+            ->get(route('supplier.purchase-orders.show', $po))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertMatchesRegularExpression($chip, $purchasingHtml);
+        $this->assertMatchesRegularExpression($chip, $supplierHtml);
+    }
+
+    /**
+     * P-12e: Arrived is not a stage a supplier can set: the service and the endpoint both reject it.
+     */
+    public function test_p12e_supplier_cannot_set_arrived_as_a_progress_stage(): void
+    {
+        $po = $this->createPoWithItems($this->supplierA, [[20.0, 20]]);
+        $award = $po->awards->first();
+
+        try {
+            $this->progressService->updateProgress($po, $award, $this->supplierA, ['status' => 'arrived']);
+            $this->fail('The service accepted the derived stage "arrived".');
+        } catch (ValidationException $e) {
+            $this->assertArrayHasKey('status', $e->errors());
+        }
+
+        $this->actingAs($this->supplierA)
+            ->post("/supplier/purchase-orders/{$po->hash}/items/{$award->hash}/progress", ['status' => 'arrived'])
+            ->assertSessionHasErrors('status');
+
+        $this->assertSame(0, $award->progressUpdates()->count());
     }
 
     /**

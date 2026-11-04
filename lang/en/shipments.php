@@ -41,6 +41,7 @@ return [
         'item_missing' => 'Quotation item #:item not found.',
         'quantity_remaining' => 'Shipped quantity (:qty pcs) exceeds remaining ordered quantity (:remaining pcs) for item \':material\'.',
         'arrival_status' => 'Arrival can only be confirmed for submitted shipments (current status: :status).',
+        'material_not_ready_to_ship' => 'Item \':material\' cannot be shipped yet: its Supplier Progress must be "Ready to Ship" first.',
     ],
     'validation.legacy_only_arrival' => 'This Purchase Order was already received through the legacy receiving flow and cannot be converted to shipment-based receiving.',
     'confirmations' => [
@@ -288,5 +289,9 @@ return [
         'awaiting_delivery' => 'Awaiting delivery',
         'awaiting_arrival' => 'Awaiting arrival',
         'pending_items' => '{1} :count item pending delivery|[0,*] :count items pending delivery',
+        'not_ready_hidden' => '{1} :count item is hidden because its Supplier Progress is not "Ready to Ship" yet.|[2,*] :count items are hidden because their Supplier Progress is not "Ready to Ship" yet.',
+        'not_ready_chip' => 'Not Ready to Ship',
+        'not_ready_link' => 'View purchase orders',
+        'not_ready_empty' => 'No item can be shipped yet. Set an item\'s Supplier Progress to "Ready to Ship" on its Purchase Order page, then come back here.',
     ],
 ];

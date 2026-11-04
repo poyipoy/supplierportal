@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\BusinessRuleArgumentException;
 use App\Exceptions\MtcRequiredException;
 use App\Models\Attachment;
 use App\Models\FileInspection;
@@ -16,6 +17,7 @@ use App\Models\User;
 use App\Services\FileSecurity\FileInspectionService;
 use App\Support\BusinessTime;
 use App\Support\NotificationCategory;
+use App\Support\Procurement\CustomsDocumentationProgressCalculator;
 use App\Support\Procurement\ProcurementFeatures;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -50,6 +52,27 @@ class ShipmentService
     public function getItemDeliveryStatus(int $poId, int $quotationItemId): array
     {
         return PurchaseOrder::findOrFail($poId)->itemFulfillmentStatus($quotationItemId);
+    }
+
+    /**
+     * A supplier may only ship awarded items at the Ready to Ship stage.
+     * Callers pass an award read inside the shipment transaction, after the PO
+     * lock, so isReadyToShip() queries the newest progress row fresh. Legacy POs
+     * without awards have no progress and never reach this check.
+     *
+     * @throws BusinessRuleArgumentException
+     */
+    private function assertAwardReadyToShip(PrItemAward $award): void
+    {
+        if (! ProcurementFeatures::requireReadyToShipForShipment() || $award->isReadyToShip()) {
+            return;
+        }
+
+        $award->loadMissing('prItem');
+
+        throw new BusinessRuleArgumentException(__('shipments.guard_copy.material_not_ready_to_ship', [
+            'material' => $award->prItem?->material_name ?? '#'.$award->id,
+        ]));
     }
 
     /**
@@ -199,6 +222,8 @@ class ShipmentService
                 if ((int) $award->supplier_id !== (int) $shipment->supplier_id) {
                     throw new InvalidArgumentException(__('shipments.guard_copy.item_supplier', ['supplier' => $shipment->supplier_id]));
                 }
+
+                $this->assertAwardReadyToShip($award);
             } else {
                 $isLegacyItem = DB::table('po_quotations')
                     ->join('quotation_items', 'quotation_items.quotation_id', '=', 'po_quotations.quotation_id')
@@ -416,6 +441,11 @@ class ShipmentService
                     if ((int) $award->supplier_id !== (int) $lockedShipment->supplier_id) {
                         throw new InvalidArgumentException(__('shipments.guard_copy.item_supplier', ['supplier' => $lockedShipment->supplier_id]));
                     }
+
+                    // The authoritative check: the PO row is locked here, and
+                    // updateProgress locks the PO first too, so a concurrent
+                    // progress change cannot slip between this read and commit.
+                    $this->assertAwardReadyToShip($award);
                 } else {
                     $isLegacyItem = DB::table('po_quotations')
                         ->join('quotation_items', 'quotation_items.quotation_id', '=', 'po_quotations.quotation_id')
@@ -478,6 +508,9 @@ class ShipmentService
                 'notes' => $data['notes'] ?? $lockedShipment->notes,
             ]);
 
+            // The shipment now counts toward each PO's derived document status.
+            PoDocument::recomputeAfterCommit($lockedPos->pluck('id')->all());
+
             // Notify purchasing team
             $purchasingUsers = User::where('role', 'purchasing')->where('is_active', true)->get();
             $poNumbers = $lockedPos->pluck('po_number')->implode(', ');
@@ -526,6 +559,9 @@ class ShipmentService
             $lockedShipment->update([
                 'status' => Shipment::STATUS_CANCELLED,
             ]);
+
+            // A cancelled shipment no longer counts toward the derived PO document status.
+            PoDocument::recomputeAfterCommit($lockedShipment->items()->pluck('purchase_order_id')->all());
 
             return $lockedShipment->fresh(['items']);
         });
@@ -647,9 +683,13 @@ class ShipmentService
                     'uploaded_by' => $user->id,
                 ]);
 
+                // First file enters the doc type's workflow; a replacement file
+                // keeps the reviewed status (verify checks the latest attachment).
                 $lockedDocument->update([
                     'document_number' => $documentNumber ?? $lockedDocument->document_number,
-                    'status' => ShipmentDocument::STATUS_RECEIVED,
+                    'status' => $lockedDocument->status === ShipmentDocument::STATUS_PENDING
+                        ? (CustomsDocumentationProgressCalculator::INITIAL_UPLOAD_STATUS[$lockedDocument->doc_type] ?? ShipmentDocument::STATUS_RECEIVED)
+                        : $lockedDocument->status,
                 ]);
 
                 PoDocument::syncFromShipmentDocument($lockedDocument);

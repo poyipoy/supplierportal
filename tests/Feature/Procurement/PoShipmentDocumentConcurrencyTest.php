@@ -14,6 +14,7 @@ use App\Models\QuotationItem;
 use App\Models\Shipment;
 use App\Models\ShipmentDocument;
 use App\Models\User;
+use App\Support\Procurement\CustomsDocumentationProgressCalculator;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -177,6 +178,31 @@ class PoShipmentDocumentConcurrencyTest extends TestCase
 
             $this->assertSame(['refused:stale_state:stale_status', 'updated:1:skipped:0'], $outcomes);
             $this->assertSame(ShipmentDocument::STATUS_VERIFIED, $doc->fresh()->status);
+        }
+    }
+
+    public function test_concurrent_updates_on_different_shipments_of_one_po_leave_the_derived_po_status(): void
+    {
+        for ($round = 1; $round <= self::ROUNDS; $round++) {
+            [$po, $s1, $qItem] = $this->createPoWithShipment("SHP/10/2026/C5A-{$round}");
+            $s2 = $this->createAdditionalShipment($po, $qItem, "SHP/10/2026/C5B-{$round}");
+
+            $job = fn (Shipment $shipment) => ['po-batch', [
+                'po_id' => $po->id,
+                'actor_id' => $this->purchasing->id,
+                'doc_type' => 'invoice',
+                'target' => 'received',
+                'rows' => [['shipment' => $shipment->hash, 'expected_status' => 'pending']],
+            ]];
+
+            $outcomes = $this->race([$job($s1), $job($s2)]);
+
+            $this->assertSame(['updated:1:skipped:0', 'updated:1:skipped:0'], $outcomes);
+            // Each writer recomputes after commit under the po_documents lock, so the
+            // last one sees both shipments received; a stale in-transaction read
+            // would leave the PO at 'pending'.
+            $this->assertSame('received', PoDocument::where('po_id', $po->id)->where('doc_type', 'invoice')->value('status'));
+            $this->assertSame([], app(CustomsDocumentationProgressCalculator::class)->documentStatusDrift($po->fresh()));
         }
     }
 

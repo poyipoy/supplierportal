@@ -26,10 +26,12 @@ class CustomsDocumentationProgressCalculator
             ShipmentDocument::STATUS_RECEIVED,
             ShipmentDocument::STATUS_VERIFIED,
         ],
+        // BL and Form-E share the invoice workflow. Historical issued/processing/done
+        // rows stay readable (ranks in PoDocument::STATUS_RANKS) but are no longer targets.
         ShipmentDocument::DOC_TYPE_BL => [
             ShipmentDocument::STATUS_PENDING,
-            ShipmentDocument::STATUS_ISSUED,
-            ShipmentDocument::STATUS_DONE,
+            ShipmentDocument::STATUS_RECEIVED,
+            ShipmentDocument::STATUS_VERIFIED,
         ],
         ShipmentDocument::DOC_TYPE_PACKING_LIST => [
             ShipmentDocument::STATUS_PENDING,
@@ -38,9 +40,20 @@ class CustomsDocumentationProgressCalculator
         ],
         ShipmentDocument::DOC_TYPE_FORM_E => [
             ShipmentDocument::STATUS_PENDING,
-            ShipmentDocument::STATUS_PROCESSING,
-            ShipmentDocument::STATUS_DONE,
+            ShipmentDocument::STATUS_RECEIVED,
+            ShipmentDocument::STATUS_VERIFIED,
         ],
+    ];
+
+    /**
+     * Status a pending shipment document moves to when the supplier uploads its
+     * first file.
+     */
+    public const INITIAL_UPLOAD_STATUS = [
+        ShipmentDocument::DOC_TYPE_INVOICE => ShipmentDocument::STATUS_RECEIVED,
+        ShipmentDocument::DOC_TYPE_BL => ShipmentDocument::STATUS_RECEIVED,
+        ShipmentDocument::DOC_TYPE_PACKING_LIST => ShipmentDocument::STATUS_RECEIVED,
+        ShipmentDocument::DOC_TYPE_FORM_E => ShipmentDocument::STATUS_RECEIVED,
     ];
 
     public const ACTIVE_SHIPMENT_STATUSES = [
@@ -127,6 +140,7 @@ class CustomsDocumentationProgressCalculator
             $pendingCount = 0;
             $filesPresentCount = 0;
             $evidenceGapCount = 0;
+            $activeStatuses = [];
             $rows = [];
 
             foreach ($allShipments as $shipment) {
@@ -156,6 +170,7 @@ class CustomsDocumentationProgressCalculator
                 $hasEvidenceGap = $isActiveShipment && $isReceived && ! $hasValidEvidence;
 
                 if ($isActiveShipment) {
+                    $activeStatuses[] = $rawStatus;
                     if ($isReceived) {
                         $receivedCount++;
                     }
@@ -246,6 +261,9 @@ class CustomsDocumentationProgressCalculator
                 'allowed_targets' => self::ALLOWED_TARGETS[$docType] ?? [],
                 'po_document_id' => $poDoc?->id ? (int) $poDoc->id : null,
                 'po_document_status' => $poDoc?->status ?? PoDocument::STATUSES[0],
+                'derived_status' => $isLegacy
+                    ? ($poDoc?->status ?? PoDocument::STATUSES[0])
+                    : self::worstStatus($activeStatuses),
                 'active_shipment_count' => $activeShipmentCount,
                 'draft_shipment_count' => $draftShipmentCount,
                 'cancelled_shipment_count' => $cancelledShipmentCount,
@@ -291,6 +309,82 @@ class CustomsDocumentationProgressCalculator
             'evidence_gap_count' => $totalEvidenceGapCount,
             'documents' => $documents,
         ];
+    }
+
+    /**
+     * PO-level status per doc type: the least advanced status among the PO's
+     * active shipments ('pending' while none is active), or the manual
+     * po_documents status for legacy POs. Same rule as calculate()['derived_status']
+     * without loading attachments.
+     *
+     * @return array<string, string>
+     */
+    public function derivedStatuses(PurchaseOrder $po): array
+    {
+        $po->loadMissing(['documents', 'shipmentItems.shipment.documents']);
+
+        $isLegacy = $this->resolveIsLegacy($po);
+        $poDocsByType = $po->documents->keyBy('doc_type');
+
+        $activeShipments = $po->shipmentItems
+            ->map(fn ($item) => $item->shipment)
+            ->filter(fn ($shipment) => $shipment instanceof Shipment
+                && ! $shipment->trashed()
+                && in_array($shipment->status, self::ACTIVE_SHIPMENT_STATUSES, true))
+            ->unique('id')
+            ->sortBy('id')
+            ->values();
+
+        $statuses = [];
+        foreach (self::DOC_TYPES as $docType) {
+            $statuses[$docType] = $isLegacy
+                ? ($poDocsByType->get($docType)?->status ?? PoDocument::STATUSES[0])
+                : self::worstStatus($activeShipments
+                    ->map(fn (Shipment $shipment) => $shipment->documents->firstWhere('doc_type', $docType)?->status
+                        ?? ShipmentDocument::STATUS_PENDING)
+                    ->all());
+        }
+
+        return $statuses;
+    }
+
+    /**
+     * Doc types whose stored po_documents status differs from derivedStatuses(),
+     * including a missing row ('from' => 'missing').
+     *
+     * @return array<string, array{from: string, to: string}>
+     */
+    public function documentStatusDrift(PurchaseOrder $po): array
+    {
+        $drift = [];
+
+        foreach ($this->derivedStatuses($po) as $docType => $derived) {
+            $stored = $po->documents->where('doc_type', $docType)->pluck('status');
+            $from = $stored->isEmpty()
+                ? 'missing'
+                : ($stored->first(fn (string $status) => $status !== $derived) ?? $derived);
+
+            if ($from !== $derived) {
+                $drift[$docType] = ['from' => $from, 'to' => $derived];
+            }
+        }
+
+        return $drift;
+    }
+
+    /**
+     * @param  array<int, string>  $statuses
+     */
+    public static function worstStatus(array $statuses): string
+    {
+        $worst = null;
+        foreach ($statuses as $status) {
+            if ($worst === null || (PoDocument::STATUS_RANKS[$status] ?? 0) < (PoDocument::STATUS_RANKS[$worst] ?? 0)) {
+                $worst = $status;
+            }
+        }
+
+        return $worst ?? ShipmentDocument::STATUS_PENDING;
     }
 
     /**

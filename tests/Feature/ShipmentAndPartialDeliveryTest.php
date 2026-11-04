@@ -639,6 +639,31 @@ class ShipmentAndPartialDeliveryTest extends TestCase
         $this->assertSame(6, $shipment->items()->firstOrFail()->shipped_qty);
     }
 
+    public function test_edit_page_prefills_the_draft_line_quantity_weight_and_selection(): void
+    {
+        $po = $this->createPoForSupplier($this->supplierA, 10.0);
+        $qItem = $po->awards->first()->quotationItem;
+        $shipment = $this->shipmentService->createDraft($this->supplierA, [
+            'items' => [[
+                'purchase_order_id' => $po->id,
+                'quotation_item_id' => $qItem->id,
+                'shipped_qty' => 4,
+                'actual_weight_kg' => 3.5,
+            ]],
+        ]);
+
+        $html = $this->actingAs($this->supplierA)
+            ->get(route('supplier.shipments.edit', $shipment))
+            ->assertOk()
+            ->getContent();
+
+        // The row is ticked, and both the quantity and the weight of the saved line are filled in,
+        // so saving the form unchanged keeps the draft instead of asking for the quantity again.
+        $this->assertMatchesRegularExpression('/id="toggle_0"\s+checked/', $html);
+        $this->assertMatchesRegularExpression('/name="items\[0\]\[shipped_qty\]"\s+value="4"/', $html);
+        $this->assertMatchesRegularExpression('/name="items\[0\]\[actual_weight_kg\]"\s+value="3\.5/', $html);
+    }
+
     public function test_non_draft_shipment_cannot_be_updated_and_destroy_route_is_not_registered(): void
     {
         $po = $this->createPoForSupplier($this->supplierA, 10.0);

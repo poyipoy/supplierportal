@@ -426,14 +426,16 @@ class PurchaseOrder extends Model
 
         $shipments = $this->shipments();
 
+        // One rule for every screen: the least advanced active shipment document
+        // (manual status for legacy POs). See CustomsDocumentationProgressCalculator.
+        $derivedStatuses = app(CustomsDocumentationProgressCalculator::class)->derivedStatuses($this);
+
         $summary = [];
 
         foreach (['invoice', 'bl', 'packing_list', 'form_e'] as $docType) {
             $poDoc = $poDocsByType->get($docType);
 
             $shipmentDocs = [];
-            $highestRank = -1;
-            $highestShipmentStatus = null;
 
             foreach ($shipments as $shipment) {
                 $sDoc = $shipment->documents->firstWhere('doc_type', $docType);
@@ -442,43 +444,23 @@ class PurchaseOrder extends Model
                         ? $sDoc->latestAttachment
                         : ($sDoc->attachments()->latest('id')->first() ?? $sDoc->latestAttachment);
 
-                    $docStatus = $sDoc->status;
-                    if ($attachment && $docStatus === ShipmentDocument::STATUS_PENDING) {
-                        $docStatus = ShipmentDocument::STATUS_RECEIVED;
-                    }
-
-                    $rank = PoDocument::STATUS_RANKS[$docStatus] ?? 0;
-                    if ($rank > $highestRank) {
-                        $highestRank = $rank;
-                        $highestShipmentStatus = $docStatus;
-                    }
-
                     $shipmentDocs[] = [
                         'shipment' => $shipment,
                         'shipment_id' => $shipment->id,
                         'shipment_hash' => $shipment->hash,
                         'shipment_number' => $shipment->shipment_number,
-                        'status' => $docStatus,
+                        'status' => $sDoc->status,
                         'document_number' => $sDoc->document_number,
                         'attachment' => $attachment,
                     ];
                 }
             }
 
-            $currentPoRank = PoDocument::STATUS_RANKS[$poDoc?->status ?? 'pending'] ?? 0;
-            $effectiveStatus = $poDoc?->status ?? 'pending';
-
-            if ($highestRank > $currentPoRank && $highestShipmentStatus !== null) {
-                // Reporting only. Persisting the healed status is the job of
-                // reconcileCustomsDocumentationStatus(); a read must not write.
-                $effectiveStatus = $highestShipmentStatus;
-            }
-
             $summary[$docType] = [
                 'doc_type' => $docType,
                 'label' => $docLabels[$docType] ?? ucfirst(str_replace('_', ' ', $docType)),
                 'po_doc' => $poDoc,
-                'status' => $effectiveStatus,
+                'status' => $derivedStatuses[$docType] ?? ($poDoc?->status ?? PoDocument::STATUSES[0]),
                 'shipment_documents' => $shipmentDocs,
             ];
         }
@@ -487,39 +469,12 @@ class PurchaseOrder extends Model
     }
 
     /**
-     * Persist any PO document status that its linked shipment documents have
-     * already advanced past.
-     *
-     * This is the write half of customsDocumentationSummary(), split out so the
-     * summary itself is a pure read. Call it explicitly from a state-changing
-     * path; it is idempotent and returns the number of rows updated.
+     * Persist the derived PO document status (up or down) for this purchase
+     * order. Idempotent; returns the number of rows written.
      */
     public function reconcileCustomsDocumentationStatus(): int
     {
-        $summary = $this->customsDocumentationSummary();
-        $poDocsByType = $this->documents->keyBy('doc_type');
-        $updated = 0;
-
-        foreach ($summary as $docType => $entry) {
-            $poDoc = $poDocsByType->get($docType);
-            if (! $poDoc || $poDoc->status === $entry['status']) {
-                continue;
-            }
-
-            $currentRank = PoDocument::STATUS_RANKS[$poDoc->status] ?? 0;
-            $effectiveRank = PoDocument::STATUS_RANKS[$entry['status']] ?? 0;
-
-            // Only ever move forward. Reconciliation must not demote a status
-            // that purchasing advanced on the PO itself.
-            if ($effectiveRank <= $currentRank) {
-                continue;
-            }
-
-            $poDoc->update(['status' => $entry['status']]);
-            $updated++;
-        }
-
-        return $updated;
+        return PoDocument::recomputeForPurchaseOrders([$this->id]);
     }
 
     /**

@@ -6,6 +6,7 @@ use App\Models\PrItemAward;
 use App\Models\Quotation;
 use App\Support\BusinessTime;
 use App\Support\Money;
+use App\Support\Procurement\CustomsDocumentationProgressCalculator;
 use App\Support\Procurement\ProcurementFeatures;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -29,6 +30,7 @@ class ReconcileProcurement extends Command
             ...$this->orderedQuantityMetrics(),
             ...$this->awardEligibilityMetrics(),
             ...$this->referenceSnapshotMetrics(),
+            'po_document_status_drift_count' => $this->documentStatusDriftCount(),
             'inconsistent_feature_flags' => ProcurementFeatures::hasInconsistentFlags(),
         ];
 
@@ -46,6 +48,26 @@ class ReconcileProcurement extends Command
         )->values()->all());
 
         return self::SUCCESS;
+    }
+
+    /**
+     * (PO, doc type) pairs whose stored po_documents status differs from the
+     * derived status; repaired by procurement:resync-document-status.
+     */
+    private function documentStatusDriftCount(): int
+    {
+        $calculator = app(CustomsDocumentationProgressCalculator::class);
+        $drift = 0;
+
+        ResyncPoDocumentStatus::shipmentTrackedPurchaseOrders()
+            ->with(['documents', 'shipmentItems.shipment.documents'])
+            ->chunkById(200, function ($purchaseOrders) use ($calculator, &$drift): void {
+                foreach ($purchaseOrders as $po) {
+                    $drift += count($calculator->documentStatusDrift($po));
+                }
+            });
+
+        return $drift;
     }
 
     /**

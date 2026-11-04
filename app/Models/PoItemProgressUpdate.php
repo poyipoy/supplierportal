@@ -18,6 +18,13 @@ class PoItemProgressUpdate extends Model
 
     public const STATUS_READY_TO_SHIP = 'ready_to_ship';
 
+    /**
+     * Display-only stage derived from fulfillment (everything shipped has arrived
+     * at Purchasing). Never stored and deliberately absent from STATUSES and
+     * STAGE_RANKS, so a supplier cannot set it and it never counts as a "backward" move.
+     */
+    public const DISPLAY_STATUS_ARRIVED = 'arrived';
+
     public const STAGE_AWAITING_CONFIRMATION = self::STATUS_AWAITING_CONFIRMATION;
 
     public const STAGE_ORDER_CONFIRMED = self::STATUS_ORDER_CONFIRMED;

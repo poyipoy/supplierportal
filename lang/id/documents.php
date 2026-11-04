@@ -78,6 +78,7 @@ return [
         'updated_body' => 'Dokumen :document pada PO :po diperbarui menjadi ":status".',
         'shipment_updated_body' => 'Dokumen :document pada PO :po diperbarui menjadi ":status" (:count dokumen pengiriman).',
         'completed_body' => 'Seluruh dokumen impor untuk PO :po lengkap. Konfirmasi kedatangan material jika sudah tiba.',
+        'supplier_shipment_updated_body' => 'Purchasing memperbarui :document pada pengiriman :shipment menjadi ":status".',
         'type_invoice' => 'Invoice',
         'type_bl' => 'Bill of Lading',
         'type_packing_list' => 'Daftar Kemasan',
