@@ -13,9 +13,6 @@
         <!-- Favicon -->
         <link rel="icon" href="{{ asset('assets/images/logo-adasi.png') }}" type="image/png">
 
-        <!-- Fonts -->
-        <link href="https://cdn.jsdelivr.net/npm/@fontsource/figtree@5.2.8/latin.css" integrity="sha384-Oe7jEc47knzAwONBEoGYXy+/zqUcXhdrULzJzUWx3sn+jP6RHgC5cRlcGbnvI3p1" crossorigin="anonymous" rel="stylesheet" />
-
         <!-- ADASI Alert -->
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css" integrity="sha384-e9JoBUb50niLuTodlxX3NLZZfrt9fQkX5bihGXOGWD/7QFJoXEH37S2df8UA2ehO" crossorigin="anonymous">
         <link rel="stylesheet" href="{{ asset('assets/css/adasi-alert.css') }}">

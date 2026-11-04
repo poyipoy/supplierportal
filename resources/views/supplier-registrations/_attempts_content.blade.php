@@ -52,7 +52,7 @@
                     @endphp
                     <tr>
                         <td>
-                            <span class="tw:font-mono tw:font-semibold tw:text-ui-xs tw:text-primary">{{ $ref }}</span>
+                            <span class="ui-tabular-nums tw:font-semibold tw:text-ui-xs tw:text-primary">{{ $ref }}</span>
                             <div class="tw:text-[11px] tw:text-on-surface-variant">{{ __('common.final_copy.attempt_number', ['number' => $attempt->attempt_number]) }}</div>
                         </td>
                         <td>
@@ -62,8 +62,8 @@
                             <div class="tw:text-ui-xs tw:text-on-surface-variant">{{ $attempt->user->email }}</div>
                         </td>
                         <td>
-                            <div class="tw:font-mono tw:text-ui-xs">NIB: {{ $supplier?->nib ?? '-' }}</div>
-                            <div class="tw:font-mono tw:text-[11px] tw:text-on-surface-variant">NPWP: {{ $supplier?->npwp ?? '-' }}</div>
+                            <div class="ui-tabular-nums tw:text-ui-xs">NIB: {{ $supplier?->nib ?? '-' }}</div>
+                            <div class="ui-tabular-nums tw:text-[11px] tw:text-on-surface-variant">NPWP: {{ $supplier?->npwp ?? '-' }}</div>
                         </td>
                         <td>
                             <div class="tw:text-ui-xs tw:font-medium">{{ $supplier?->pic_name ?? '-' }}</div>

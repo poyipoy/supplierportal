@@ -300,7 +300,7 @@
                     ></span>
                     <span class="tw:font-medium tw:text-on-surface tw:truncate" x-text="summaryDisplay.text"></span>
                     <template x-if="summaryDisplay.totalFormatted">
-                        <span class="tw:font-mono tw:font-semibold tw:text-primary" x-text="'· ' + summaryDisplay.totalFormatted"></span>
+                        <span class="ui-tabular-nums tw:font-semibold tw:text-primary" x-text="'· ' + summaryDisplay.totalFormatted"></span>
                     </template>
                 </div>
             </template>
@@ -426,7 +426,7 @@
                         </div>
 
                         <div class="tw:flex tw:flex-col tw:gap-0.5 tw:min-w-0">
-                            <span class="tw:font-mono tw:text-ui-sm tw:font-semibold tw:text-on-surface tw:truncate" x-text="opt.label"></span>
+                            <span class="ui-tabular-nums tw:text-ui-sm tw:font-semibold tw:text-on-surface tw:truncate" x-text="opt.label"></span>
                             <template x-if="opt.description">
                                 <span class="tw:text-ui-xs tw:text-on-surface-variant tw:truncate" :title="opt.description">
                                     <span class="tw:font-semibold tw:text-on-surface">{{ __('common.fields.description') }}</span>
@@ -441,13 +441,13 @@
 
                     <template x-if="opt.quantityLabel !== undefined && opt.quantityLabel !== null">
                         <div class="tw:flex tw:gap-4 tw:shrink-0">
-                            <div class="tw:text-end"><span class="tw:block tw:text-ui-xs">{{ __('common.fields.qty') }}</span><span class="tw:font-mono" x-text="opt.quantityLabel"></span></div>
+                            <div class="tw:text-end"><span class="tw:block tw:text-ui-xs">{{ __('common.fields.qty') }}</span><span class="ui-tabular-nums" x-text="opt.quantityLabel"></span></div>
                             <div><span class="tw:block tw:text-ui-xs">{{ __('local_procurement.labels.uom') }}</span><span x-text="opt.uom || '—'"></span></div>
                         </div>
                     </template>
                     <template x-if="opt.amount !== undefined && Number(opt.amount) > 0">
                         <div class="tw:shrink-0 tw:text-end">
-                            <span class="tw:font-mono tw:font-semibold tw:text-ui-sm tw:text-primary" x-text="formatRupiah(opt.amount)"></span>
+                            <span class="ui-tabular-nums tw:font-semibold tw:text-ui-sm tw:text-primary" x-text="formatRupiah(opt.amount)"></span>
                         </div>
                     </template>
                 </div>
@@ -470,7 +470,7 @@
                 <template x-if="totalAmount > 0">
                     <div>
                         <span class="tw:text-on-surface-variant">{{ __('common.fields.total') }} </span>
-                        <strong class="tw:font-mono tw:text-primary" x-text="formatRupiah(totalAmount)"></strong>
+                        <strong class="ui-tabular-nums tw:text-primary" x-text="formatRupiah(totalAmount)"></strong>
                     </div>
                 </template>
                 <template x-if="!totalAmount || totalAmount === 0">

@@ -117,7 +117,8 @@ export default {
                 'on-surface-variant': 'var(--md-on-surface-variant)',
             },
             fontFamily: {
-                sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif', '"Apple Color Emoji"', '"Segoe UI Emoji"', '"Segoe UI Symbol"', '"Noto Color Emoji"'],
+                // Defined once as --ui-font-sans in resources/css/app.css.
+                sans: ['var(--ui-font-sans)'],
             },
             fontSize: {
                 'ui-xs': ['var(--ui-font-size-xs)', { lineHeight: 'var(--ui-line-height-normal)' }],

@@ -186,7 +186,7 @@
                                         <div class="tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:truncate" x-text="file.name" :title="file.name"></div>
                                         <div class="tw:text-[10px] tw:text-on-surface-variant tw:flex tw:items-center tw:gap-1.5 tw:mt-0.5">
                                             <template x-if="file.size">
-                                                <span class="tw:font-mono" x-text="file.size"></span>
+                                                <span class="ui-tabular-nums" x-text="file.size"></span>
                                             </template>
                                             <template x-if="file.size">
                                                 <span>·</span>
@@ -225,7 +225,7 @@
                                     <div class="tw:min-w-0 tw:flex-1">
                                         <div class="tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:truncate" x-text="file.name" :title="file.name"></div>
                                         <div class="tw:text-[10px] tw:text-on-surface-variant tw:flex tw:items-center tw:gap-1.5 tw:mt-0.5">
-                                            <span class="tw:font-mono" x-text="formatBytes(file.size)"></span>
+                                            <span class="ui-tabular-nums" x-text="formatBytes(file.size)"></span>
                                             <span>·</span>
                                             <span class="tw:text-primary tw:font-medium tw:inline-flex tw:items-center tw:gap-0.5">
                                                 <x-ui.icon name="upload-cloud" size="sm" />

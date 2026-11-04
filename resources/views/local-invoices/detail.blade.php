@@ -123,7 +123,7 @@
                     <p class="tw:m-0 tw:mt-1 tw:text-ui-xs tw:text-on-surface-variant">
                         {{ __('local_invoice.detail.underpaid_help') }}
                     </p>
-                    <div class="tw:mt-3 tw:grid tw:grid-cols-1 tw:sm:grid-cols-3 tw:gap-2 tw:p-2.5 tw:rounded-sm tw:bg-surface tw:border tw:border-outline-variant tw:text-ui-xs tw:font-mono">
+                    <div class="tw:mt-3 tw:grid tw:grid-cols-1 tw:sm:grid-cols-3 tw:gap-2 tw:p-2.5 tw:rounded-sm tw:bg-surface tw:border tw:border-outline-variant tw:text-ui-xs ui-tabular-nums">
                         <div>
                             <span class="tw:text-on-surface-variant tw:block tw:text-[10px] tw:uppercase tw:font-sans tw:font-semibold">{{ __('local_invoice.detail.net_amount') }}</span>
                             <span class="tw:font-bold tw:text-on-surface">Rp {{ $regionalFormatter->number(number_format($expectedNet, 0, ',', '.'), 'indonesian') }}</span>
@@ -182,15 +182,15 @@
                     <div class="tw:grid tw:grid-cols-1 tw:sm:grid-cols-3 tw:gap-3 tw:mt-3 tw:p-3 tw:bg-surface tw:rounded-ui-sm tw:border tw:border-outline-variant/50">
                         <div>
                             <span class="tw:text-[11px] tw:text-on-surface-variant tw:block">{{ __('local_invoice.detail.invoice_amount') }}</span>
-                            <span class="tw:font-mono tw:font-semibold tw:text-ui-sm tw:text-on-surface">Rp {{ $regionalFormatter->number(number_format($expectedNet, 0, ',', '.'), 'indonesian') }}</span>
+                            <span class="ui-tabular-nums tw:font-semibold tw:text-ui-sm tw:text-on-surface">Rp {{ $regionalFormatter->number(number_format($expectedNet, 0, ',', '.'), 'indonesian') }}</span>
                         </div>
                         <div>
                             <span class="tw:text-[11px] tw:text-on-surface-variant tw:block">{{ __('finance.drp.total_transferred') }}</span>
-                            <span class="tw:font-mono tw:font-semibold tw:text-ui-sm tw:text-on-surface">Rp {{ $regionalFormatter->number(number_format($alreadyPaid, 0, ',', '.'), 'indonesian') }}</span>
+                            <span class="ui-tabular-nums tw:font-semibold tw:text-ui-sm tw:text-on-surface">Rp {{ $regionalFormatter->number(number_format($alreadyPaid, 0, ',', '.'), 'indonesian') }}</span>
                         </div>
                         <div>
                             <span class="tw:text-[11px] tw:text-amber-700 tw:dark:text-amber-400 tw:block tw:font-medium">{{ __('local_invoice.detail.overpayment_amount') }}</span>
-                            <span class="tw:font-mono tw:font-bold tw:text-ui-sm tw:text-amber-700 tw:dark:text-amber-400">Rp {{ $regionalFormatter->number(number_format($overAmount, 0, ',', '.'), 'indonesian') }}</span>
+                            <span class="ui-tabular-nums tw:font-bold tw:text-ui-sm tw:text-amber-700 tw:dark:text-amber-400">Rp {{ $regionalFormatter->number(number_format($overAmount, 0, ',', '.'), 'indonesian') }}</span>
                         </div>
                     </div>
 
@@ -216,7 +216,7 @@
                             </div>
                             <div>
                                 <span class="tw:text-on-surface-variant tw:block">{{ __('ga.detail.bank_number') }}</span>
-                                <span class="tw:font-mono tw:font-bold tw:text-on-surface">{{ $adasiAccNo }}</span>
+                                <span class="ui-tabular-nums tw:font-bold tw:text-on-surface">{{ $adasiAccNo }}</span>
                             </div>
                             <div>
                                 <span class="tw:text-on-surface-variant tw:block">{{ __('local_invoice.labels.account_name') }}</span>
@@ -363,7 +363,7 @@
                     <div class="tw:grid tw:grid-cols-1 tw:sm:grid-cols-2 tw:lg:grid-cols-4 tw:gap-3 tw:mt-3 tw:p-3.5 tw:bg-surface tw:rounded-ui-sm tw:border tw:border-outline-variant/50 tw:text-ui-xs">
                         <div>
                             <span class="tw:text-on-surface-variant tw:block">{{ __('local_invoice.detail.returned_amount') }}</span>
-                            <span class="tw:font-mono tw:font-bold tw:text-ui-sm tw:text-emerald-700 tw:dark:text-emerald-400">
+                            <span class="ui-tabular-nums tw:font-bold tw:text-ui-sm tw:text-emerald-700 tw:dark:text-emerald-400">
                                 Rp {{ $regionalFormatter->number(number_format((float) ($overpaymentRefund->refund_amount ?? $overpaymentRefund->overpayment_amount), 0, ',', '.'), 'indonesian') }}
                             </span>
                         </div>
@@ -429,7 +429,7 @@
                     @if($invoice->tax_invoice_number)
                         <div>
                             <span class="tw:text-ui-xs tw:text-on-surface-variant tw:block">{{ __('local_invoice.detail.tax_number') }}</span>
-                            <span class="tw:font-semibold tw:font-mono tw:text-ui-sm tw:text-primary">{{ $invoice->tax_invoice_number }}</span>
+                            <span class="tw:font-semibold ui-tabular-nums tw:text-ui-sm tw:text-primary">{{ $invoice->tax_invoice_number }}</span>
                         </div>
                     @endif
                 </div>
@@ -438,25 +438,25 @@
                     <div class="tw:grid tw:gap-3 tw:sm:grid-cols-3 tw:p-3 tw:rounded-ui-sm tw:bg-surface-container-low">
                         <div>
                             <span class="tw:text-[11px] tw:text-on-surface-variant tw:uppercase tw:font-semibold tw:tracking-wider">{{ __('local_invoice.detail.dpp') }}</span>
-                            <span class="tw:block tw:font-mono tw:font-semibold tw:text-ui-sm tw:text-on-surface">
+                            <span class="tw:block ui-tabular-nums tw:font-semibold tw:text-ui-sm tw:text-on-surface">
                                 Rp {{ $regionalFormatter->number(number_format((float) $invoice->invoice_amount, 0, ',', '.'), 'indonesian') }}
                             </span>
-                            <span class="tw:text-[11px] tw:text-on-surface-variant tw:font-mono tw:block" title="{{ __('local_invoice.detail.original_amount') }}">
+                            <span class="tw:text-[11px] tw:text-on-surface-variant ui-tabular-nums tw:block" title="{{ __('local_invoice.detail.original_amount') }}">
                                 IDR {{ $invoice->invoice_amount }}
                             </span>
                         </div>
                         <div>
                             <span class="tw:text-[11px] tw:text-on-surface-variant tw:uppercase tw:font-semibold tw:tracking-wider">PPN</span>
-                            <span class="tw:block tw:font-mono tw:font-semibold tw:text-ui-sm tw:text-on-surface">
+                            <span class="tw:block ui-tabular-nums tw:font-semibold tw:text-ui-sm tw:text-on-surface">
                                 Rp {{ $regionalFormatter->number(number_format((float) $invoice->tax_amount, 0, ',', '.'), 'indonesian') }}
                             </span>
-                            <span class="tw:text-[11px] tw:text-on-surface-variant tw:font-mono tw:block" title="{{ __('local_invoice.detail.original_amount') }}">
+                            <span class="tw:text-[11px] tw:text-on-surface-variant ui-tabular-nums tw:block" title="{{ __('local_invoice.detail.original_amount') }}">
                                 IDR {{ $invoice->tax_amount }}
                             </span>
                         </div>
                         <div>
                             <span class="tw:text-[11px] tw:text-primary tw:uppercase tw:font-semibold tw:tracking-wider">{{ __('finance.labels.payment_total') }}</span>
-                            <span class="tw:block tw:font-mono tw:font-bold tw:text-ui-base tw:text-primary">
+                            <span class="tw:block ui-tabular-nums tw:font-bold tw:text-ui-base tw:text-primary">
                                 Rp {{ $regionalFormatter->number(number_format((float) $totalAmount, 0, ',', '.'), 'indonesian') }}
                             </span>
                         </div>
@@ -467,13 +467,13 @@
             @if($invoice->localPurchaseOrder)
                 <x-ui.card :title="__('local_invoice.detail.po_gr')" :description="__('local_invoice.form.po_reference_help')">
                     <div class="tw:grid tw:grid-cols-2 tw:sm:grid-cols-3 tw:gap-4 tw:text-ui-xs tw:mb-4">
-                        <div><span class="tw:text-on-surface-variant tw:block">{{ __('local_invoice.receipt.po_number') }}</span><strong class="tw:font-mono tw:text-on-surface">{{ $invoice->localPurchaseOrder->po_number }}</strong></div>
+                        <div><span class="tw:text-on-surface-variant tw:block">{{ __('local_invoice.receipt.po_number') }}</span><strong class="ui-tabular-nums tw:text-on-surface">{{ $invoice->localPurchaseOrder->po_number }}</strong></div>
                         <div><span class="tw:text-on-surface-variant tw:block">{{ __('local_procurement.labels.po_date') }}</span><strong class="tw:text-on-surface">{{ $invoice->localPurchaseOrder->po_date ? $regionalFormatter->date($invoice->localPurchaseOrder->po_date, 'human') : '—' }}</strong></div>
-                        <div><span class="tw:text-on-surface-variant tw:block">{{ __('local_procurement.labels.po_total') }}</span><strong class="tw:font-mono tw:text-on-surface">Rp {{ $regionalFormatter->number(number_format($invoice->localPurchaseOrder->total_amount, 2, ',', '.'), 'indonesian') }}</strong></div>
+                        <div><span class="tw:text-on-surface-variant tw:block">{{ __('local_procurement.labels.po_total') }}</span><strong class="ui-tabular-nums tw:text-on-surface">Rp {{ $regionalFormatter->number(number_format($invoice->localPurchaseOrder->total_amount, 2, ',', '.'), 'indonesian') }}</strong></div>
                     </div>
                     <div class="table-responsive"><table class="table table-sm align-middle tw:m-0 tw:text-ui-xs"><thead><tr><th>{{ __('local_invoice.detail.gr_number') }}</th><th>{{ __('local_procurement.labels.gr_date') }}</th><th class="text-end">{{ __('common.fields.qty') }}</th><th scope="col">{{ __('local_procurement.labels.uom') }}</th><th>{{ __('local_invoice.labels.status') }}</th></tr></thead><tbody>
                         @forelse($invoice->goodsReceiptHistories->sortBy('id') as $history)
-                            <tr><td class="tw:font-mono">{{ $history->gr_number_snapshot }}</td><td>{{ $history->goodsReceipt?->gr_date ? $regionalFormatter->date($history->goodsReceipt->gr_date, 'human') : '—' }}</td><td class="text-end tw:font-mono">{{ $history->gr_qty_snapshot !== null ? rtrim(rtrim(number_format((float) $history->gr_qty_snapshot, 4, ',', '.'), '0'), ',') : ($history->goodsReceipt?->qty !== null ? rtrim(rtrim(number_format((float) $history->goodsReceipt->qty, 4, ',', '.'), '0'), ',') : '—') }}</td><td>{{ $history->gr_uom_snapshot ?? '—' }}</td><td><x-ui.status-chip :tone="$history->state === 'RELEASED' ? 'neutral' : ($history->state === 'CONSUMED' ? 'success' : 'warning')">{{ \App\Support\StatusHelper::localFinanceLabel($history->state) }}</x-ui.status-chip></td></tr>
+                            <tr><td class="ui-tabular-nums">{{ $history->gr_number_snapshot }}</td><td>{{ $history->goodsReceipt?->gr_date ? $regionalFormatter->date($history->goodsReceipt->gr_date, 'human') : '—' }}</td><td class="text-end ui-tabular-nums">{{ $history->gr_qty_snapshot !== null ? rtrim(rtrim(number_format((float) $history->gr_qty_snapshot, 4, ',', '.'), '0'), ',') : ($history->goodsReceipt?->qty !== null ? rtrim(rtrim(number_format((float) $history->goodsReceipt->qty, 4, ',', '.'), '0'), ',') : '—') }}</td><td>{{ $history->gr_uom_snapshot ?? '—' }}</td><td><x-ui.status-chip :tone="$history->state === 'RELEASED' ? 'neutral' : ($history->state === 'CONSUMED' ? 'success' : 'warning')">{{ \App\Support\StatusHelper::localFinanceLabel($history->state) }}</x-ui.status-chip></td></tr>
                         @empty
                             <tr><td colspan="5" class="tw:text-center tw:text-on-surface-variant">{{ __('local_procurement.empty.gr_history') }}</td></tr>
                         @endforelse
@@ -515,8 +515,8 @@
                                                 </span>
                                             @endif
                                         </td>
-                                        <td class="tw:font-mono tw:font-semibold">{{ $transfer->transfer_reference }}</td>
-                                        <td class="text-end tw:font-mono tw:font-bold tw:text-success">
+                                        <td class="ui-tabular-nums tw:font-semibold">{{ $transfer->transfer_reference }}</td>
+                                        <td class="text-end ui-tabular-nums tw:font-bold tw:text-success">
                                             Rp {{ $regionalFormatter->number(number_format((float) $transfer->amount, 0, ',', '.'), 'indonesian') }}
                                         </td>
                                         <td class="tw:text-on-surface-variant">
@@ -528,7 +528,7 @@
                             <tfoot>
                                 <tr class="tw:border-t tw:border-outline-variant tw:bg-surface-container-low">
                                     <th colspan="4" class="tw:font-bold">{{ __('local_invoice.labels.total_received') }}:</th>
-                                    <th class="text-end tw:font-mono tw:font-bold tw:text-ui-sm tw:text-success">
+                                    <th class="text-end ui-tabular-nums tw:font-bold tw:text-ui-sm tw:text-success">
                                         Rp {{ $regionalFormatter->number(number_format((float) $payment->actual_paid_total, 0, ',', '.'), 'indonesian') }}
                                     </th>
                                     <th>

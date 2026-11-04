@@ -528,7 +528,7 @@
                             required
                         >
                         <div id="invoice-autofill-filename" class="tw:text-[11px] tw:text-on-surface-variant tw:mt-1 tw:hidden">
-                            {{ __('local_invoice.form.detected_number') }} <strong class="tw:font-mono tw:text-primary"></strong>
+                            {{ __('local_invoice.form.detected_number') }} <strong class="ui-tabular-nums tw:text-primary"></strong>
                         </div>
                     </div>
 
@@ -556,7 +556,7 @@
                         />
                         <div id="selected-po-pr" class="tw:mt-2 tw:min-w-0 tw:text-ui-xs tw:text-on-surface" @if(empty($selectedPo)) hidden @endif aria-live="polite">
                             <span class="tw:font-semibold">{{ __('local_procurement.pr.label') }}:</span>
-                            <span id="selected-po-pr-number" class="tw:font-mono" style="overflow-wrap: anywhere;">{{ $localPoGrMap[(string) $selectedPo]['pr_number'] ?? __('local_procurement.pr.empty') }}</span>
+                            <span id="selected-po-pr-number" class="ui-tabular-nums" style="overflow-wrap: anywhere;">{{ $localPoGrMap[(string) $selectedPo]['pr_number'] ?? __('local_procurement.pr.empty') }}</span>
                         </div>
                     </div>
 
@@ -588,7 +588,7 @@
                                     type="number"
                                     step="0.01"
                                     min="0.01"
-                                    class="form-control form-control-sm tw:font-mono"
+                                    class="form-control form-control-sm ui-tabular-nums"
                                     value="{{ old('invoice_amount', $invoice->invoice_amount ?? '') }}"
                                     placeholder="0.00"
                                     required
@@ -625,7 +625,7 @@
                                 type="number"
                                 step="0.01"
                                 min="0"
-                                class="form-control form-control-sm tw:font-mono"
+                                class="form-control form-control-sm ui-tabular-nums"
                                 value="{{ $isPkp ? old('tax_amount', $invoice->tax_amount ?? '') : \App\Support\Money::zero() }}"
                                 @readonly(!$isPkp)
                                 placeholder="0.00"
@@ -720,7 +720,7 @@
                             </div>
                             <template x-if="rawDigits.length > 0">
                                 <span
-                                    class="tw:text-ui-xs tw:font-mono tw:transition-colors"
+                                    class="tw:text-ui-xs ui-tabular-nums tw:transition-colors"
                                     :class="rawDigits.length === 17 || rawDigits.length === 16 ? 'tw:text-success tw:font-semibold' : 'tw:text-on-surface-variant'"
                                 >
                                     <template x-if="rawDigits.length === 17">
@@ -746,7 +746,7 @@
                             name="tax_invoice_number"
                             id="tax_invoice_number"
                             x-ref="taxInput"
-                            class="form-control form-control-sm tw:font-mono"
+                            class="form-control form-control-sm ui-tabular-nums"
                             x-model="value"
                             @input="onInput($event)"
                             @paste="onPaste($event)"
@@ -808,19 +808,19 @@
                     <div class="tw:space-y-2.5 tw:text-ui-xs">
                         <div class="tw:flex tw:items-center tw:justify-between tw:text-on-surface-variant">
                             <span>{{ __('local_procurement.labels.remaining_ceiling') }}:</span>
-                            <span id="summary-po-ceiling" class="tw:font-mono tw:font-semibold tw:text-on-surface">Rp 0</span>
+                            <span id="summary-po-ceiling" class="ui-tabular-nums tw:font-semibold tw:text-on-surface">Rp 0</span>
                         </div>
                         <div class="tw:flex tw:items-center tw:justify-between tw:text-on-surface-variant">
                             <span>{{ __('local_invoice.form.dpp_summary') }}</span>
-                            <span id="summary-dpp" class="tw:font-mono tw:font-semibold tw:text-on-surface">Rp 0</span>
+                            <span id="summary-dpp" class="ui-tabular-nums tw:font-semibold tw:text-on-surface">Rp 0</span>
                         </div>
                         <div class="tw:flex tw:items-center tw:justify-between tw:text-on-surface-variant">
                             <span>{{ __('finance.labels.ppn_short') }}:</span>
-                            <span id="summary-tax" class="tw:font-mono tw:font-semibold tw:text-on-surface">Rp 0</span>
+                            <span id="summary-tax" class="ui-tabular-nums tw:font-semibold tw:text-on-surface">Rp 0</span>
                         </div>
                         <div class="tw:flex tw:items-center tw:justify-between tw:border-t tw:border-outline-variant tw:pt-2.5 tw:text-ui-sm">
                             <span class="tw:font-bold tw:text-on-surface">{{ __('local_invoice.form.total_summary') }}</span>
-                            <span id="summary-grand-total" class="tw:font-mono tw:font-bold tw:text-primary tw:text-ui-base">Rp 0</span>
+                            <span id="summary-grand-total" class="ui-tabular-nums tw:font-bold tw:text-primary tw:text-ui-base">Rp 0</span>
                         </div>
                     </div>
 
@@ -832,7 +832,7 @@
                         </div>
                         <div class="tw:flex tw:items-center tw:justify-between tw:text-ui-xs">
                             <span class="tw:text-on-surface-variant">{{ __('local_procurement.labels.qty_by_uom') }}:</span>
-                            <span id="summary-gr-qty" class="tw:font-mono tw:font-semibold tw:text-on-surface">—</span>
+                            <span id="summary-gr-qty" class="ui-tabular-nums tw:font-semibold tw:text-on-surface">—</span>
                         </div>
                         <div class="tw:flex tw:items-center tw:justify-between tw:text-ui-xs tw:border-t tw:border-outline-variant tw:pt-2">
                             <span class="tw:text-on-surface-variant">{{ __('local_procurement.labels.ceiling_status') }}:</span>
@@ -845,7 +845,7 @@
                         <div id="summary-diff-container" class="tw:hidden tw:text-[11px] tw:text-error tw:pt-1.5 tw:border-t tw:border-outline-variant">
                             <div class="tw:flex tw:items-center tw:justify-between">
                                 <span>{{ __('local_invoice.interaction.ceiling_exceeded') }}:</span>
-                                <strong id="summary-diff-amount" class="tw:font-mono">Rp 0</strong>
+                                <strong id="summary-diff-amount" class="ui-tabular-nums">Rp 0</strong>
                             </div>
                         </div>
                     </div>

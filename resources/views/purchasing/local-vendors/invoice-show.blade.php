@@ -65,25 +65,25 @@
                     @if($invoice->tax_invoice_number)
                         <div>
                             <span class="tw:text-on-surface-variant tw:block">{{ __('local_invoice.detail.tax_number') }}:</span>
-                            <strong class="tw:text-ui-sm tw:font-mono tw:text-primary">{{ $invoice->tax_invoice_number }}</strong>
+                            <strong class="tw:text-ui-sm ui-tabular-nums tw:text-primary">{{ $invoice->tax_invoice_number }}</strong>
                         </div>
                     @endif
                     <div class="tw:col-span-full tw:border-t tw:border-outline-variant tw:pt-3 tw:grid tw:grid-cols-3 tw:gap-4">
                         <div>
                             <span class="tw:text-on-surface-variant tw:block">{{ __('local_invoice.detail.dpp') }}:</span>
-                            <span class="tw:font-mono tw:font-bold tw:text-ui-sm tw:text-on-surface">
+                            <span class="ui-tabular-nums tw:font-bold tw:text-ui-sm tw:text-on-surface">
                                 Rp {{ $regionalFormatter->number(number_format($invoice->invoice_amount, 0, ',', '.'), 'indonesian') }}
                             </span>
                         </div>
                         <div>
                             <span class="tw:text-on-surface-variant tw:block">PPN ({{ $invoice->ppn_scheme ?? '11%' }}):</span>
-                            <span class="tw:font-mono tw:font-bold tw:text-ui-sm tw:text-primary">
+                            <span class="ui-tabular-nums tw:font-bold tw:text-ui-sm tw:text-primary">
                                 Rp {{ $regionalFormatter->number(number_format($invoice->tax_amount, 0, ',', '.'), 'indonesian') }}
                             </span>
                         </div>
                         <div>
                             <span class="tw:text-on-surface-variant tw:block">{{ __('local_invoice.form.total_summary') }}</span>
-                            <span class="tw:font-mono tw:font-bold tw:text-ui-base tw:text-success">
+                            <span class="ui-tabular-nums tw:font-bold tw:text-ui-base tw:text-success">
                                 Rp {{ $regionalFormatter->number(number_format($invoice->invoice_amount + $invoice->tax_amount, 0, ',', '.'), 'indonesian') }}
                             </span>
                         </div>
@@ -144,22 +144,22 @@
                         </div>
                         <div class="tw:flex tw:justify-between tw:p-2 tw:rounded-sm tw:bg-surface-container">
                             <span>{{ __('finance.invoice_ui.ppn_verified') }}</span>
-                            <strong class="tw:font-mono">Rp {{ $regionalFormatter->number(number_format($verification->verified_ppn ?? $invoice->tax_amount, 0, ',', '.'), 'indonesian') }}</strong>
+                            <strong class="ui-tabular-nums">Rp {{ $regionalFormatter->number(number_format($verification->verified_ppn ?? $invoice->tax_amount, 0, ',', '.'), 'indonesian') }}</strong>
                         </div>
                         <div class="tw:flex tw:justify-between tw:p-2 tw:rounded-sm tw:bg-surface-container">
                             <span>{{ __('finance.invoice_ui.pph23_verified') }}</span>
-                            <strong class="tw:font-mono">{{ $verification->pph_23_applicable ? __('finance.invoice_ui.tax_rate_amount', ['amount' => $regionalFormatter->number(number_format($verification->pph_23_amount, 0, ',', '.'), 'indonesian'), 'rate' => $verification->pph_23_rate]) : __('local_invoice.labels.none') }}</strong>
+                            <strong class="ui-tabular-nums">{{ $verification->pph_23_applicable ? __('finance.invoice_ui.tax_rate_amount', ['amount' => $regionalFormatter->number(number_format($verification->pph_23_amount, 0, ',', '.'), 'indonesian'), 'rate' => $verification->pph_23_rate]) : __('local_invoice.labels.none') }}</strong>
                         </div>
                         @if($verification->pph_4_2_applicable)
                             <div class="tw:flex tw:justify-between tw:p-2 tw:rounded-sm tw:bg-surface-container">
                                 <span>PPh 4(2):</span>
-                                <strong class="tw:font-mono">Rp {{ $regionalFormatter->number(number_format($verification->pph_4_2_amount, 0, ',', '.'), 'indonesian') }}</strong>
+                                <strong class="ui-tabular-nums">Rp {{ $regionalFormatter->number(number_format($verification->pph_4_2_amount, 0, ',', '.'), 'indonesian') }}</strong>
                             </div>
                         @endif
                         @if($verification->pph_21_applicable)
                             <div class="tw:flex tw:justify-between tw:p-2 tw:rounded-sm tw:bg-surface-container">
                                 <span>PPh 21:</span>
-                                <strong class="tw:font-mono">Rp {{ $regionalFormatter->number(number_format($verification->pph_21_amount, 0, ',', '.'), 'indonesian') }}</strong>
+                                <strong class="ui-tabular-nums">Rp {{ $regionalFormatter->number(number_format($verification->pph_21_amount, 0, ',', '.'), 'indonesian') }}</strong>
                             </div>
                         @endif
                         @if($verification->tax_notes)

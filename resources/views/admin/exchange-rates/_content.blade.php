@@ -39,7 +39,7 @@
                 <thead class="table-light"><tr><th scope="col">{{ __('admin.copy.currency') }}</th><th scope="col" class="text-end">{{ __('admin.copy.rate_to_idr') }}</th><th scope="col">{{ __('admin.copy.effective_date') }}</th><th scope="col">{{ __('admin.copy.recorded_by') }}</th><th scope="col">{{ __('admin.copy.recorded_at') }}</th></tr></thead>
                 <tbody>
                     @forelse($rates as $rate)
-                        <tr><td class="tw:font-mono tw:font-semibold tw:text-primary">{{ $rate->currency }}</td><td class="ui-tabular-nums text-end tw:font-semibold">Rp {{ number_format($rate->rate_to_idr, 2, ',', '.') }}</td><td class="text-nowrap">{{ $regionalFormatter->date(\Carbon\Carbon::parse($rate->valid_from), 'human') }}</td><td>{{ $rate->creator->name ?? '-' }}</td><td class="text-nowrap tw:text-ui-xs tw:text-on-surface-variant">{{ $regionalFormatter->timestamp($rate->created_at, 'datetime_comma') }}</td></tr>
+                        <tr><td class="ui-tabular-nums tw:font-semibold tw:text-primary">{{ $rate->currency }}</td><td class="ui-tabular-nums text-end tw:font-semibold">Rp {{ number_format($rate->rate_to_idr, 2, ',', '.') }}</td><td class="text-nowrap">{{ $regionalFormatter->date(\Carbon\Carbon::parse($rate->valid_from), 'human') }}</td><td>{{ $rate->creator->name ?? '-' }}</td><td class="text-nowrap tw:text-ui-xs tw:text-on-surface-variant">{{ $regionalFormatter->timestamp($rate->created_at, 'datetime_comma') }}</td></tr>
                     @empty
                         <tr><td colspan="5"><x-ui.empty-state icon="badge-dollar-sign" :title="__('admin.copy.no_exchange_rates_found')" :description="__('admin.copy.add_an_effective_rate_or_clear_the_current_filter')" /></td></tr>
                     @endforelse

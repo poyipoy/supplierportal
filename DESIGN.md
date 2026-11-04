@@ -108,7 +108,8 @@ Token lain: `page-block`, `stack-sm|md|lg`, `card-padding`, `metric-padding`, `p
 
 ### 3.6 Tipografi
 
-- **Font:** Inter (`@fontsource/inter` versi eksak via CDN dengan SRI) untuk layout app, auth, dan dokumen publik. Layout `guest` memakai Figtree dengan pola yang sama.
+- **Font:** Source Sans Pro (`@fontsource/source-sans-pro` versi eksak, dibundel Vite dari `resources/css/app.css`, tanpa CDN) untuk semua layout web: app, auth, guest, dan dokumen publik. Bobot 400, 600, 700, dan 400 italic; `font-medium` (500) dirender sebagai 400 karena family ini tidak punya bobot 500. Satu token `--ui-font-sans` di `:root` dipakai Bootstrap (`--bs-body-font-family`), `tw:font-sans`, ADASI Alert, dan Chart.js (`AdasiChart`, digambar ulang setelah font termuat). PDF tetap memakai font tertanamnya sendiri (Noto Sans / DejaVu Sans); wordmark splash tetap Arial Black sebagai grafik identitas.
+- **Angka dan identifier:** proporsional (Source Sans Pro), dengan `ui-tabular-nums` untuk kolom nominal, nomor dokumen, dan nilai yang perlu rata. Jangan memakai `tw:font-mono` untuk data bisnis. Monospace hanya untuk kode acak yang disalin/diketik pengguna (recovery code dan input kode 2FA, nomor referensi dan access key registrasi) serta metadata JSON audit log; daftar ini dikunci `tests/js/typography.test.mjs`.
 - **Skala** (`tw:text-ui-*`): `xs .75rem` · `sm .875rem` · `base 1rem` · `lg 1.125rem` · `xl 1.25rem` · `2xl 1.5rem`. Line-height `tight 1.25` (lg ke atas), `normal 1.5`.
 - **Grammar hierarki:**
   - Judul halaman (`x-ui.page-header`): `lg` → `xl` di breakpoint shell, bold, tracking-tight.

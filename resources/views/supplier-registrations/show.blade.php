@@ -115,11 +115,11 @@
                     </div>
                     <div>
                         <dt class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('registration.nib') }}</dt>
-                        <dd class="tw:font-mono tw:font-semibold tw:text-on-surface tw:m-0">{{ $supplier?->nib ?? '-' }}</dd>
+                        <dd class="ui-tabular-nums tw:font-semibold tw:text-on-surface tw:m-0">{{ $supplier?->nib ?? '-' }}</dd>
                     </div>
                     <div>
                         <dt class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('local_procurement.registration.tax_identity') }}</dt>
-                        <dd class="tw:font-mono tw:font-semibold tw:text-on-surface tw:m-0">{{ $supplier?->npwp ?? '-' }}</dd>
+                        <dd class="ui-tabular-nums tw:font-semibold tw:text-on-surface tw:m-0">{{ $supplier?->npwp ?? '-' }}</dd>
                     </div>
                     <div>
                         <dt class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('local_procurement.registration.business_category') }}</dt>
@@ -187,7 +187,7 @@
                         </div>
                         <div>
                             <span class="tw:text-ui-xs tw:text-on-surface-variant tw:block">{{ __('registration.account_number') }}</span>
-                            <span class="tw:font-mono tw:font-semibold tw:text-on-surface">{{ $bankAccount?->account_number ?? '-' }}</span>
+                            <span class="ui-tabular-nums tw:font-semibold tw:text-on-surface">{{ $bankAccount?->account_number ?? '-' }}</span>
                         </div>
                         <div>
                             <span class="tw:text-ui-xs tw:text-on-surface-variant tw:block">{{ __('local_invoice.labels.account_name') }}</span>
@@ -480,7 +480,7 @@
                         <dt class="tw:text-on-surface-variant">{{ __('local_procurement.vendor_ui.bank_name') }}</dt>
                         <dd class="tw:col-span-2 tw:m-0 tw:font-semibold tw:text-on-surface">{{ $snapshotBank['bank_name'] ?? '-' }}</dd>
                         <dt class="tw:text-on-surface-variant">{{ __('local_procurement.vendor_ui.bank_number') }}</dt>
-                        <dd class="tw:col-span-2 tw:m-0 tw:font-mono tw:font-semibold tw:text-on-surface">{{ $snapshotBank['account_number'] ?? '-' }}</dd>
+                        <dd class="tw:col-span-2 tw:m-0 ui-tabular-nums tw:font-semibold tw:text-on-surface">{{ $snapshotBank['account_number'] ?? '-' }}</dd>
                         <dt class="tw:text-on-surface-variant">{{ __('local_invoice.labels.account_name') }}</dt>
                         <dd class="tw:col-span-2 tw:m-0 tw:font-semibold tw:text-on-surface">{{ $snapshotBank['account_holder_name'] ?? '-' }}</dd>
                     </dl>

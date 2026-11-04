@@ -68,22 +68,22 @@
         <div class="tw:flex tw:flex-col tw:sm:flex-row tw:gap-6 tw:items-start">
             <dl class="row tw:text-ui-xs tw:flex-1 tw:m-0">
                 <dt class="col-sm-4 text-muted">{{ __('local_invoice.receipt.number') }}</dt>
-                <dd class="col-sm-8"><strong class="tw:font-mono tw:text-primary">{{ $invoice->receipt->receipt_number }}</strong></dd>
+                <dd class="col-sm-8"><strong class="ui-tabular-nums tw:text-primary">{{ $invoice->receipt->receipt_number }}</strong></dd>
 
                 <dt class="col-sm-4 text-muted">{{ __('local_invoice.receipt.submission_number') }}</dt>
-                <dd class="col-sm-8"><strong class="tw:font-mono">{{ $invoice->submission_number }}</strong></dd>
+                <dd class="col-sm-8"><strong class="ui-tabular-nums">{{ $invoice->submission_number }}</strong></dd>
 
                 <dt class="col-sm-4 text-muted">{{ __('local_invoice.receipt.invoice_number') }}</dt>
-                <dd class="col-sm-8"><strong class="tw:font-mono">{{ $invoice->invoice_number }}</strong></dd>
+                <dd class="col-sm-8"><strong class="ui-tabular-nums">{{ $invoice->invoice_number }}</strong></dd>
 
                 <dt class="col-sm-4 text-muted">{{ __('local_invoice.receipt.po_number') }}</dt>
-                <dd class="col-sm-8"><span class="tw:font-mono">{{ $invoice->po_number }}</span></dd>
+                <dd class="col-sm-8"><span class="ui-tabular-nums">{{ $invoice->po_number }}</span></dd>
 
                 <dt class="col-sm-4 text-muted">{{ __('local_invoice.receipt.supplier_name') }}</dt>
                 <dd class="col-sm-8"><strong>{{ $invoice->supplier->supplier?->company_name ?: $invoice->supplier->name }}</strong></dd>
 
                 <dt class="col-sm-4 text-muted">{{ __('local_invoice.receipt.invoice_ppn') }}</dt>
-                <dd class="col-sm-8"><strong class="tw:font-mono">Rp {{ number_format($invoice->invoice_amount, 0, ',', '.') }}</strong> (PPN: Rp {{ number_format($invoice->tax_amount, 0, ',', '.') }})</dd>
+                <dd class="col-sm-8"><strong class="ui-tabular-nums">Rp {{ number_format($invoice->invoice_amount, 0, ',', '.') }}</strong> (PPN: Rp {{ number_format($invoice->tax_amount, 0, ',', '.') }})</dd>
 
                 <dt class="col-sm-4 text-muted">{{ __('local_invoice.labels.submitted_time') }}</dt>
                 <dd class="col-sm-8">@bizdt($invoice->submitted_at)</dd>
@@ -95,7 +95,7 @@
             @if(isset($qrCode))
                 <div class="tw:text-center tw:shrink-0 tw:p-3 tw:bg-surface-container tw:rounded-lg tw:border tw:border-outline-variant">
                     <img src="{{ $qrCode }}" alt="{{ __('local_invoice.receipt.qr_alt') }}" class="tw:w-28 tw:h-28 tw:mx-auto">
-                    <span class="tw:block tw:text-[10px] tw:text-on-surface-variant tw:mt-1.5 tw:font-mono">{{ __('local_invoice.receipt.scan_valid') }}</span>
+                    <span class="tw:block tw:text-[10px] tw:text-on-surface-variant tw:mt-1.5">{{ __('local_invoice.receipt.scan_valid') }}</span>
                 </div>
             @endif
         </div>

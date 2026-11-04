@@ -52,7 +52,7 @@
                         @foreach(\App\Models\ExchangeRate::CURRENCIES as $currency)
                             @php($rate = $latestRates[$currency] ?? null)
                             <tr>
-                                <td class="tw:font-mono tw:font-semibold tw:text-primary">{{ $currency }}</td>
+                                <td class="ui-tabular-nums tw:font-semibold tw:text-primary">{{ $currency }}</td>
                                 <td class="ui-tabular-nums text-end tw:font-medium">{{ $rate ? 'Rp ' . $regionalFormatter->number(number_format($rate->rate_to_idr, 2, ',', '.'), 'indonesian') : '-' }}</td>
                                 <td>{{ $rate?->valid_from ? $regionalFormatter->date($rate->valid_from, 'human') : '-' }}</td>
                                 <td><x-ui.status-chip :tone="$rate ? 'success' : 'warning'">{{ $rate ? __('admin.dashboard.available') : __('admin.copy.rate_required') }}</x-ui.status-chip></td>

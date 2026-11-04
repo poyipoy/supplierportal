@@ -771,7 +771,7 @@ Kontrak desain lengkap (nilai token, density, accent, katalog `x-ui.*`, pola hal
 | Aspek | Ketentuan |
 |---|---|
 | Warna | Ambil dari design token CSS custom property (`--md-*`, `--ui-*`) di `resources/css/app.css`. Seed: biru `#1F5FA6`, aksen merah `#C0392B`. Jangan tulis hex langsung di Blade |
-| Font | Inter melalui versi eksak `@fontsource/inter` di CDN; layout guest memakai Figtree dengan pola yang sama |
+| Font | Source Sans Pro melalui versi eksak `@fontsource/source-sans-pro`, dibundel Vite dari `resources/css/app.css` (tanpa CDN) untuk semua layout web. Satu token `--ui-font-sans` dipakai Bootstrap, `tw:font-sans`, ADASI Alert, dan Chart.js. Data bisnis (nominal, nomor dokumen) memakai `ui-tabular-nums`, bukan `tw:font-mono`; monospace hanya untuk kode acak 2FA/registrasi dan metadata JSON audit log (`tests/js/typography.test.mjs`). PDF tetap memakai font tertanamnya |
 | Utility CSS | Tailwind CSS 4 **berprefix `tw:`** dengan Preflight tidak diimpor — class Tailwind tanpa prefix tidak akan berefek |
 | Komponen | Pakai ulang `resources/views/components/ui/` (`x-ui.button`, `x-ui.data-table`, `x-ui.page-header`, `x-ui.status-chip`, dll.) sebelum membuat markup baru |
 | Ikon | Lucide melalui `<x-ui.icon>`, yang memetakan nama `bi-*` lama ke Lucide dan jatuh ke `circle-help` bila nama tidak dikenal; jangan gunakan `bi-*` atau `<x-lucide-*>` langsung. Markup yang dibangun di JS (`innerHTML`, template string) juga memakai Lucide: render dengan `App\View\Components\Ui\Icon::html(new ComponentAttributeBag([...]))` dari blade `@php`, lalu teruskan ke script lewat `@json(...)`. Jangan menulis emoji, termasuk sebagai HTML entity (mis. `&#128200;`), di Blade maupun di string JS |

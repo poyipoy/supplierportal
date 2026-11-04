@@ -11,7 +11,7 @@
     <div>
         <p class="tw:m-0 tw:text-ui-xs tw:font-semibold tw:uppercase tw:tracking-wider tw:text-primary">{{ __('registration.status') }}</p>
         <h2 class="tw:m-0 tw:mt-0.5 tw:text-ui-xl tw:font-bold tw:text-on-surface">{{ $supplier?->company_name ?? $user->name }}</h2>
-        <p class="tw:m-0 tw:text-ui-xs tw:font-mono tw:text-on-surface-variant">{{ __('common.review.reference') }} {{ $access->registration_reference }}</p>
+        <p class="tw:m-0 tw:text-ui-xs ui-tabular-nums tw:text-on-surface-variant">{{ __('common.review.reference') }} {{ $access->registration_reference }}</p>
     </div>
 
     <form method="POST" action="{{ route('supplier.registration.logout') }}">
@@ -144,11 +144,11 @@
         </div>
         <div>
             <dt class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('registration.nib') }}</dt>
-            <dd class="tw:font-medium tw:font-mono tw:text-on-surface tw:m-0">{{ $supplier?->nib ?? '-' }}</dd>
+            <dd class="tw:font-medium ui-tabular-nums tw:text-on-surface tw:m-0">{{ $supplier?->nib ?? '-' }}</dd>
         </div>
         <div>
             <dt class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('registration.npwp') }}</dt>
-            <dd class="tw:font-medium tw:font-mono tw:text-on-surface tw:m-0">{{ $supplier?->npwp ?? '-' }}</dd>
+            <dd class="tw:font-medium ui-tabular-nums tw:text-on-surface tw:m-0">{{ $supplier?->npwp ?? '-' }}</dd>
         </div>
         <div>
             <dt class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('registration.pic_contact') }}</dt>

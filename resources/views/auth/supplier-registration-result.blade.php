@@ -7,7 +7,7 @@
     <div>
         <p class="tw:m-0 tw:text-ui-xs tw:font-semibold tw:uppercase tw:tracking-wider tw:text-primary">{{ __('registration.status') }}</p>
         <h2 class="tw:m-0 tw:mt-1 tw:text-ui-xl tw:font-bold tw:text-on-surface">{{ $approved ? __('registration.approved') : __('registration.rejected') }}</h2>
-        <p class="tw:m-0 tw:mt-2 tw:font-mono tw:text-ui-sm tw:text-on-surface-variant">{{ __('common.review.reference') }} {{ $reference }}</p>
+        <p class="tw:m-0 tw:mt-2 ui-tabular-nums tw:text-ui-sm tw:text-on-surface-variant">{{ __('common.review.reference') }} {{ $reference }}</p>
         <p class="tw:m-0 tw:mt-1 tw:text-ui-xs tw:text-on-surface-variant">{{ __('registration.decided_on', ['date' => \App\Support\BusinessTime::format($decidedAt)]) }}</p>
     </div>
 

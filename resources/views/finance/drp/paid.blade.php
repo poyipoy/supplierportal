@@ -248,20 +248,20 @@
                                     </div>
                                     <div class="tw:flex tw:justify-between tw:border-t tw:border-outline-variant tw:pt-1">
                                         <span class="tw:text-on-surface-variant">{{ __('finance.drp.total_net') }}:</span>
-                                        <span class="tw:font-bold tw:font-mono tw:text-on-surface">
+                                        <span class="tw:font-bold ui-tabular-nums tw:text-on-surface">
                                             Rp {{ $regionalFormatter->money($batch->total_net_amount, 0) }}
                                         </span>
                                     </div>
                                     @if($batch->status === \App\Models\PaymentBatch::STATUS_PARTIALLY_PAID)
                                         <div class="tw:flex tw:justify-between">
                                             <span class="tw:text-on-surface-variant">{{ __('local_invoice.labels.paid') }}:</span>
-                                            <span class="tw:font-bold tw:font-mono tw:text-success">
+                                            <span class="tw:font-bold ui-tabular-nums tw:text-success">
                                                 Rp {{ $regionalFormatter->money($batch->actual_paid_amount, 0) }}
                                             </span>
                                         </div>
                                         <div class="tw:flex tw:justify-between tw:border-t tw:border-outline-variant tw:pt-1">
                                             <span class="tw:text-warning-container-foreground tw:font-semibold">{{ __('local_invoice.labels.remaining') }}:</span>
-                                            <span class="tw:font-bold tw:font-mono tw:text-warning-container-foreground">
+                                            <span class="tw:font-bold ui-tabular-nums tw:text-warning-container-foreground">
                                                 Rp {{ $regionalFormatter->money($batch->remaining_amount, 0) }}
                                             </span>
                                         </div>
@@ -408,9 +408,9 @@
                                                                             <div class="tw:text-end">
                                                                                 @if($isCorrectionRequired)
                                                                                     <div class="tw:text-[11px] tw:text-on-surface-variant">
-                                                                                        {{ __('common.labels_review.voucher_label') }} <span class="tw:font-mono tw:font-semibold tw:text-on-surface">Rp {{ $regionalFormatter->money($expectedAmount, 0) }}</span>
+                                                                                        {{ __('common.labels_review.voucher_label') }} <span class="ui-tabular-nums tw:font-semibold tw:text-on-surface">Rp {{ $regionalFormatter->money($expectedAmount, 0) }}</span>
                                                                                     </div>
-                                                                                    <div class="tw:text-[11px] tw:font-mono">
+                                                                                    <div class="tw:text-[11px] ui-tabular-nums">
                                                                                         <span class="tw:text-success tw:font-medium">{{ __('finance.paid_ui.paid_amount', ['amount' => $regionalFormatter->money($alreadyPaid, 0)]) }}</span>
                                                                                         <span class="tw:text-on-surface-variant">·</span>
                                                                                         <span class="tw:text-warning-container-foreground tw:font-bold">{{ __('finance.paid_ui.remaining', ['amount' => $regionalFormatter->money($itemRemaining, 0)]) }}</span>
@@ -418,11 +418,11 @@
                                                                                 @else
                                                                                     <span class="tw:text-[11px] tw:text-on-surface-variant">{{ __('common.labels_review.voucher_label') }}</span>
                                                                                     @if($voucher)
-                                                                                        <span class="tw:font-mono tw:text-ui-xs tw:font-bold tw:text-primary">
+                                                                                        <span class="ui-tabular-nums tw:text-ui-xs tw:font-bold tw:text-primary">
                                                                                             Rp {{ $regionalFormatter->money($expectedAmount, 0) }}
                                                                                         </span>
                                                                                     @else
-                                                                                        <span class="tw:font-mono tw:text-ui-xs tw:font-bold tw:text-warning" title="{{ __('finance.voucher.no_voucher') }}">
+                                                                                        <span class="ui-tabular-nums tw:text-ui-xs tw:font-bold tw:text-warning" title="{{ __('finance.voucher.no_voucher') }}">
                                                                                             {{ __('finance.drp_ui.estimated_amount', ['amount' => $regionalFormatter->money($expectedAmount, 0)]) }}
                                                                                         </span>
                                                                                     @endif
@@ -441,7 +441,7 @@
                                                                                     min="0.01"
                                                                                     name="custom_amounts[{{ $item->id }}]"
                                                                                     x-model="actual"
-                                                                                    class="form-control form-control-sm tw:font-mono"
+                                                                                    class="form-control form-control-sm ui-tabular-nums"
                                                                                     :disabled="!hasAdjustment"
                                                                                     :required="hasAdjustment"
                                                                                 >

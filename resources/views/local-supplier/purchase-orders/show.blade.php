@@ -81,7 +81,7 @@
                     <x-ui.icon name="file-text" size="md" />
                 </div>
                 <div>
-                    <div class="tw:text-ui-base tw:font-bold tw:font-mono tw:text-on-surface">{{ $purchaseOrder->po_number }}</div>
+                    <div class="tw:text-ui-base tw:font-bold ui-tabular-nums tw:text-on-surface">{{ $purchaseOrder->po_number }}</div>
                     <div class="tw:text-ui-xs tw:text-on-surface-variant">
                         {{ __('common.final_review.po_document_date', ['date' => $regionalFormatter->date($purchaseOrder->po_date, 'human') ?? '-']) }}
                     </div>
@@ -97,7 +97,7 @@
         <div class="tw:grid tw:grid-cols-1 tw:sm:grid-cols-2 tw:gap-3 tw:border-t tw:border-outline-variant tw:pt-3 tw:text-ui-xs">
             <div class="tw:sm:col-span-2 tw:min-w-0">
                 <span class="tw:text-on-surface-variant">{{ __('local_procurement.pr.label') }}:</span>
-                <span class="tw:block tw:font-mono tw:text-on-surface tw:mt-0.5" style="overflow-wrap: anywhere;">{{ filled($purchaseOrder->pr_number) ? $purchaseOrder->pr_number : __('local_procurement.pr.empty') }}</span>
+                <span class="tw:block ui-tabular-nums tw:text-on-surface tw:mt-0.5" style="overflow-wrap: anywhere;">{{ filled($purchaseOrder->pr_number) ? $purchaseOrder->pr_number : __('local_procurement.pr.empty') }}</span>
             </div>
             <div>
                 <span class="tw:text-on-surface-variant">{{ __('local_procurement.labels.po_description_notes') }}:</span>
@@ -143,7 +143,7 @@
                     <tbody>
                         @foreach($purchaseOrder->invoices as $inv)
                             <tr>
-                                <td class="tw:font-mono tw:font-bold tw:text-on-surface">
+                                <td class="ui-tabular-nums tw:font-bold tw:text-on-surface">
                                     {{ $inv->invoice_number }}
                                 </td>
                                 <td>
@@ -151,7 +151,7 @@
                                         {{ $regionalFormatter->date($inv->invoice_date, 'human') ?? '—' }}
                                     </span>
                                 </td>
-                                <td class="text-end tw:font-mono tw:font-bold tw:text-on-surface">
+                                <td class="text-end ui-tabular-nums tw:font-bold tw:text-on-surface">
                                     Rp {{ $regionalFormatter->money($inv->invoice_amount) }}
                                 </td>
                                 <td class="text-center">

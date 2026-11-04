@@ -9,8 +9,10 @@
 const FALLBACK_SERIES = ['#1F5FA6', '#D95926', '#14967A', '#B88600', '#C2477A', '#6250D6'];
 const POINT_STYLES = ['circle', 'rect', 'triangle', 'rectRot', 'crossRot', 'star'];
 const LINE_DASHES = [[], [6, 4], [2, 3], [10, 3, 2, 3], [4, 4], [1, 3]];
-const TICK_FONT = { family: 'Inter', size: 12, weight: '500' };
-const TITLE_FONT = { family: 'Inter', size: 12, weight: '600' };
+// Font objects carry no family, so Chart.js falls back to defaults.font.family (the portal token).
+const TICK_FONT = { size: 12, weight: '500' };
+const TITLE_FONT = { size: 12, weight: '600' };
+const FALLBACK_FONT_FAMILY = '"Source Sans Pro", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
 const TOOLTIP_BORDER = 'rgba(255, 255, 255, 0.08)';
 
 const STRINGS = {
@@ -33,6 +35,15 @@ function media(query) {
 
 export const prefersReducedMotion = () => media('(prefers-reduced-motion: reduce)');
 export const isForcedColors = () => media('(forced-colors: active)');
+
+export function chartFontFamily() {
+    try {
+        const value = getComputedStyle(document.documentElement).getPropertyValue('--ui-font-sans').trim();
+        return value || FALLBACK_FONT_FAMILY;
+    } catch (error) {
+        return FALLBACK_FONT_FAMILY;
+    }
+}
 
 // System colors can only be read from a rendered element.
 function systemColors() {
@@ -287,8 +298,8 @@ export function getChartTooltip(customOptions = {}) {
         backgroundColor: colors.tooltipBg,
         titleColor: colors.tooltipText,
         bodyColor: colors.tooltipText,
-        titleFont: { family: 'Inter', size: 12, weight: '600' },
-        bodyFont: { family: 'Inter', size: 12, weight: '400' },
+        titleFont: { size: 12, weight: '600' },
+        bodyFont: { size: 12, weight: '400' },
         padding: { top: 8, bottom: 8, left: 12, right: 12 },
         cornerRadius: 8,
         boxPadding: 4,
@@ -394,7 +405,7 @@ export function barValueLabels(format = (value) => formatChartNumber(value)) {
             const { ctx } = chart;
             ctx.save();
             ctx.fillStyle = colors.onSurface;
-            ctx.font = '600 12px Inter, sans-serif';
+            ctx.font = `600 12px ${chartFontFamily()}`;
             ctx.textBaseline = horizontal ? 'middle' : 'bottom';
             ctx.textAlign = horizontal ? 'left' : 'center';
             chart.data.datasets.forEach((dataset, datasetIndex) => {
@@ -654,7 +665,7 @@ export function applyGlobalChartDefaults(ChartInstance = window.Chart) {
     if (!ChartInstance?.defaults) return;
 
     const colors = currentChartColors();
-    ChartInstance.defaults.font.family = 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ChartInstance.defaults.font.family = chartFontFamily();
     ChartInstance.defaults.font.size = 12;
     ChartInstance.defaults.color = colors.onSurfaceVariant;
     ChartInstance.defaults.responsive = true;
@@ -753,4 +764,13 @@ if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => refreshChartTheme(), { once: true });
 } else {
     refreshChartTheme();
+}
+
+// Canvas text is painted once with whatever face is ready; repaint when the web font arrives.
+const fontSet = globalThis.document?.fonts;
+if (fontSet && typeof fontSet.load === 'function') {
+    const family = chartFontFamily();
+    Promise.all(['400', '600'].map((weight) => fontSet.load(`${weight} 12px ${family}`)))
+        .then(() => refreshChartTheme())
+        .catch(() => {});
 }

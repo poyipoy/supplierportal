@@ -112,7 +112,7 @@
                                             {{ $doc->original_filename }}
                                         </span>
                                         @if($doc->formatted_file_size)
-                                            <span class="tw:text-[10px] tw:text-on-surface-variant tw:font-mono tw:block tw:mt-0.5">
+                                            <span class="tw:text-[10px] tw:text-on-surface-variant ui-tabular-nums tw:block tw:mt-0.5">
                                                 {{ $doc->formatted_file_size }}
                                             </span>
                                         @endif

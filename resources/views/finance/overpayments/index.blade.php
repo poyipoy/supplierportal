@@ -73,13 +73,13 @@
                             <td>{{ $refund->supplier->supplier?->company_name ?: $refund->supplier->name }}</td>
                             <td>
                                 @forelse($refund->payment?->transfers ?? [] as $transfer)
-                                    <span class="tw:block tw:font-mono tw:text-ui-xs">{{ $transfer->transfer_reference }}</span>
+                                    <span class="tw:block ui-tabular-nums tw:text-ui-xs">{{ $transfer->transfer_reference }}</span>
                                 @empty
                                     <span class="tw:text-on-surface-variant">—</span>
                                 @endforelse
                             </td>
-                            <td class="text-end tw:font-mono">Rp {{ $regionalFormatter->money($refund->payment?->expected_amount ?? 0, 2) }} / Rp {{ $regionalFormatter->money($refund->payment?->actual_paid_total ?? 0, 2) }}</td>
-                            <td class="text-end tw:font-mono tw:font-semibold">Rp {{ $regionalFormatter->money($refund->overpayment_amount, 2) }}</td>
+                            <td class="text-end ui-tabular-nums">Rp {{ $regionalFormatter->money($refund->payment?->expected_amount ?? 0, 2) }} / Rp {{ $regionalFormatter->money($refund->payment?->actual_paid_total ?? 0, 2) }}</td>
+                            <td class="text-end ui-tabular-nums tw:font-semibold">Rp {{ $regionalFormatter->money($refund->overpayment_amount, 2) }}</td>
                             <td>
                                 <x-ui.status-chip :tone="\App\Support\StatusHelper::localFinanceTone($refund->status)">{{ \App\Support\StatusHelper::localFinanceLabel($refund->status) }}</x-ui.status-chip>
                                 <span class="tw:mt-1 tw:block tw:text-ui-xs tw:text-on-surface-variant">{{ $refund->status === 'SETTLED' ? $regionalFormatter->date($refund->refund_date, 'human') : $regionalFormatter->date($refund->created_at, 'human') }}</span>
@@ -176,13 +176,13 @@
                                         </div>
                                         <div>
                                             <span class="tw:text-on-surface-variant tw:block">{{ __('local_invoice.receipt.invoice_number') }}:</span>
-                                            <strong class="tw:text-ui-sm tw:text-on-surface tw:font-mono">
+                                            <strong class="tw:text-ui-sm tw:text-on-surface ui-tabular-nums">
                                                 {{ $refund->invoice->invoice_number }}
                                             </strong>
                                         </div>
                                         <div>
                                             <span class="tw:text-on-surface-variant tw:block">{{ __('local_invoice.labels.original_reference') }}:</span>
-                                            <div class="tw:font-mono tw:text-ui-xs tw:text-on-surface">
+                                            <div class="ui-tabular-nums tw:text-ui-xs tw:text-on-surface">
                                                 @forelse($refund->payment?->transfers ?? [] as $transfer)
                                                     <span class="tw:inline-block">{{ $transfer->transfer_reference }}</span>{{ !$loop->last ? ', ' : '' }}
                                                 @empty
@@ -192,7 +192,7 @@
                                         </div>
                                         <div>
                                             <span class="tw:text-on-surface-variant tw:block">{{ __('finance.refund_ui.full_amount') }}</span>
-                                            <strong class="tw:text-ui-base tw:font-bold tw:font-mono tw:text-primary">
+                                            <strong class="tw:text-ui-base tw:font-bold ui-tabular-nums tw:text-primary">
                                                 Rp {{ $regionalFormatter->money($refund->overpayment_amount, 2) }}
                                             </strong>
                                         </div>

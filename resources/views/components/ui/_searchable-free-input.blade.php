@@ -24,7 +24,7 @@
                     @mousedown.prevent @click="choose(number)" @mouseenter="highlighted = index"
                     :class="{ 'is-highlighted': highlighted === index, 'is-selected': value === number }"
                     class="ui-searchable-free-input__option tw:flex tw:items-center tw:gap-2 tw:min-h-10 tw:p-2 tw:cursor-pointer tw:rounded-ui-sm">
-                    <span class="tw:min-w-0 tw:flex-1 tw:font-mono" style="overflow-wrap: anywhere;" x-text="number"></span>
+                    <span class="tw:min-w-0 tw:flex-1 ui-tabular-nums" style="overflow-wrap: anywhere;" x-text="number"></span>
                     <span x-show="value === number" aria-hidden="true" class="tw:shrink-0"><x-ui.icon name="check" size="sm" /></span>
                 </li>
             </template>

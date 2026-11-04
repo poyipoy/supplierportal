@@ -119,13 +119,13 @@
             <template x-if="selectedOption">
                 @if($showSub)
                     <div class="tw:flex tw:flex-col tw:gap-0.5">
-                        <span class="tw:font-medium tw:text-on-surface tw:truncate" :class="{ 'tw:font-mono': allowCustom }" x-text="selectedOption.label"></span>
+                        <span class="tw:font-medium tw:text-on-surface tw:truncate" :class="{ 'ui-tabular-nums': allowCustom }" x-text="selectedOption.label"></span>
                         <template x-if="selectedOption.sublabel">
                             <span class="tw:text-ui-xs tw:text-on-surface-variant tw:truncate" x-text="selectedOption.sublabel"></span>
                         </template>
                     </div>
                 @else
-                    <span class="tw:font-medium tw:text-on-surface tw:truncate tw:block" :class="{ 'tw:font-mono': allowCustom }" x-text="selectedOption.label"></span>
+                    <span class="tw:font-medium tw:text-on-surface tw:truncate tw:block" :class="{ 'ui-tabular-nums': allowCustom }" x-text="selectedOption.label"></span>
                 @endif
             </template>
             <template x-if="!selectedOption">
@@ -224,7 +224,7 @@
                 >
                     <div class="tw:flex tw:flex-col tw:gap-0.5 tw:min-w-0 tw:flex-1 tw:pe-2">
                         <div class="tw:flex tw:items-center tw:gap-2">
-                            <span class="tw:text-ui-sm tw:font-semibold tw:text-on-surface tw:truncate" :class="{ 'tw:font-mono': allowCustom }" x-text="opt.label"></span>
+                            <span class="tw:text-ui-sm tw:font-semibold tw:text-on-surface tw:truncate" :class="{ 'ui-tabular-nums': allowCustom }" x-text="opt.label"></span>
                             <template x-if="opt.badge">
                                 <span
                                     class="tw:inline-flex tw:items-center tw:px-1.5 tw-py-0.2 tw:rounded-full tw:text-[10px] tw:font-bold tw:uppercase tw:tracking-wider"
@@ -261,7 +261,7 @@
                     <x-ui.icon name="plus-circle" size="sm" class="tw:text-primary tw:shrink-0" />
                     <div class="tw:min-w-0 tw:flex-1 tw:text-ui-xs">
                         <span class="tw:text-on-surface-variant">{{ __('common.select.use_custom') }}: </span>
-                        <span class="tw:font-mono tw:font-bold tw:text-primary" x-text="search.trim()"></span>
+                        <span class="ui-tabular-nums tw:font-bold tw:text-primary" x-text="search.trim()"></span>
                     </div>
                 </div>
             </template>

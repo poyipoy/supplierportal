@@ -74,32 +74,32 @@
         </x-ui.card>
         <x-ui.card class="tw:min-w-0 tw:wrap-break-word">
             <span class="tw:text-ui-xs tw:text-on-surface-variant tw:block">{{ __('finance.drp.total_gross') }}</span>
-            <span class="tw:font-mono tw:font-bold tw:text-ui-base tw:text-on-surface tw:block tw:mt-1">
+            <span class="ui-tabular-nums tw:font-bold tw:text-ui-base tw:text-on-surface tw:block tw:mt-1">
                 Rp {{ $regionalFormatter->money($batch->total_subtotal, 0) }}
             </span>
         </x-ui.card>
         <x-ui.card class="tw:min-w-0 tw:wrap-break-word">
             <span class="tw:text-ui-xs tw:text-on-surface-variant tw:block">{{ __('finance.drp.total_bank_fee') }}</span>
-            <span class="tw:font-mono tw:font-bold tw:text-ui-base tw:text-error tw:block tw:mt-1">
+            <span class="ui-tabular-nums tw:font-bold tw:text-ui-base tw:text-error tw:block tw:mt-1">
                 Rp {{ $regionalFormatter->money($batch->total_bank_fee, 0) }}
             </span>
         </x-ui.card>
         <x-ui.card class="tw:min-w-0 tw:wrap-break-word">
             <span class="tw:text-ui-xs tw:text-on-surface-variant tw:block">{{ __('finance.drp.total_net') }}</span>
-            <span class="tw:font-mono tw:font-bold tw:text-ui-base tw:text-on-surface tw:block tw:mt-1">
+            <span class="ui-tabular-nums tw:font-bold tw:text-ui-base tw:text-on-surface tw:block tw:mt-1">
                 Rp {{ $regionalFormatter->money($batch->total_net_amount, 0) }}
             </span>
         </x-ui.card>
         @if($batch->status === \App\Models\PaymentBatch::STATUS_PARTIALLY_PAID)
             <x-ui.card class="tw:min-w-0 tw:wrap-break-word tw:border-success/30 tw:bg-success/5">
                 <span class="tw:text-ui-xs tw:text-success tw:font-semibold tw:block">{{ __('local_invoice.labels.paid') }}</span>
-                <span class="tw:font-mono tw:font-bold tw:text-ui-base tw:text-success tw:block tw:mt-1">
+                <span class="ui-tabular-nums tw:font-bold tw:text-ui-base tw:text-success tw:block tw:mt-1">
                     Rp {{ $regionalFormatter->money($batch->actual_paid_amount, 0) }}
                 </span>
             </x-ui.card>
             <x-ui.card class="tw:min-w-0 tw:wrap-break-word tw:border-warning/30 tw:bg-warning/5">
                 <span class="tw:text-ui-xs tw:text-warning-container-foreground tw:font-semibold tw:block">{{ __('local_invoice.labels.remaining') }}</span>
-                <span class="tw:font-mono tw:font-bold tw:text-ui-base tw:text-warning-container-foreground tw:block tw:mt-1">
+                <span class="ui-tabular-nums tw:font-bold tw:text-ui-base tw:text-warning-container-foreground tw:block tw:mt-1">
                     Rp {{ $regionalFormatter->money($batch->remaining_amount, 0) }}
                 </span>
             </x-ui.card>
@@ -164,7 +164,7 @@
                     <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-4 text-end">
                         <div>
                             <span class="tw:text-[11px] tw:text-on-surface-variant tw:block">{{ __('finance.drp_surface.net_transfer') }}</span>
-                            <span class="tw:font-mono tw:font-bold tw:text-ui-base tw:text-primary">
+                            <span class="ui-tabular-nums tw:font-bold tw:text-ui-base tw:text-primary">
                                 Rp {{ $regionalFormatter->money($group->net_payment_amount, 0) }}
                             </span>
                             <span class="tw:text-[10px] tw:text-on-surface-variant tw:block">{{ __('finance.drp_ui.fee_amount', ['amount' => $regionalFormatter->money($group->bank_fee, 0)]) }}</span>
@@ -238,7 +238,7 @@
                             @foreach($group->items as $item)
                                 <tr>
                                     <td class="tw:max-w-[20rem] tw:break-all">
-                                        <strong class="tw:font-mono">{{ $item->item_reference }}</strong>
+                                        <strong class="ui-tabular-nums">{{ $item->item_reference }}</strong>
                                     </td>
                                     <td>
                                         @if($batch->batch_type === 'SUPPLIER' && $item->payable)
@@ -249,9 +249,9 @@
                                             {{ $item->item_reference }}
                                         @endif
                                     </td>
-                                    <td class="text-end tw:font-mono">Rp {{ $regionalFormatter->money($item->subtotal_amount, 0) }}</td>
-                                    <td class="text-end tw:font-mono">Rp {{ $regionalFormatter->money($item->tax_amount, 0) }}</td>
-                                    <td class="text-end tw:font-mono tw:font-bold tw:text-on-surface">
+                                    <td class="text-end ui-tabular-nums">Rp {{ $regionalFormatter->money($item->subtotal_amount, 0) }}</td>
+                                    <td class="text-end ui-tabular-nums">Rp {{ $regionalFormatter->money($item->tax_amount, 0) }}</td>
+                                    <td class="text-end ui-tabular-nums tw:font-bold tw:text-on-surface">
                                         Rp {{ $regionalFormatter->money($item->total_amount, 0) }}
                                     </td>
                                     <td>
@@ -285,10 +285,10 @@
                                                         <span class="tw:inline-flex tw:px-1.5 tw:py-0.5 tw:rounded-sm tw:text-[10px] tw:font-semibold tw:bg-warning/10 tw:text-warning-container-foreground tw:w-fit">
                                                             {{ __('finance.drp_ui.underpaid') }}
                                                         </span>
-                                                        <span class="tw:text-[10px] tw:font-mono tw:text-on-surface-variant">
+                                                        <span class="tw:text-[10px] ui-tabular-nums tw:text-on-surface-variant">
                                                             {{ __('finance.paid_ui.paid_amount', ['amount' => $regionalFormatter->money($item->localInvoicePayment->actual_paid_total, 0)]) }}
                                                         </span>
-                                                        <span class="tw:text-[10px] tw:font-mono tw:text-warning-container-foreground tw:font-semibold">
+                                                        <span class="tw:text-[10px] ui-tabular-nums tw:text-warning-container-foreground tw:font-semibold">
                                                             {{ __('finance.paid_ui.remaining', ['amount' => $regionalFormatter->money(max(0, (float)$item->localInvoicePayment->expected_amount - (float)$item->localInvoicePayment->actual_paid_total), 0)]) }}
                                                         </span>
                                                     </div>

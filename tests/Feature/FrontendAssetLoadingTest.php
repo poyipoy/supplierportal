@@ -112,7 +112,8 @@ class FrontendAssetLoadingTest extends TestCase
                 $assets[$url] = true;
             }
         }
-        $this->assertCount(13, $assets);
+        $this->assertCount(11, $assets);
+        $this->assertSame([], preg_grep('~/@fontsource/~', array_keys($assets)), 'web fonts are bundled by Vite, not loaded from a CDN');
         $this->assertArrayHasKey('https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js', $assets);
     }
 

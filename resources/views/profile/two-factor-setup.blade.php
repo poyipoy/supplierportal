@@ -20,7 +20,7 @@
 
 <form method="POST" action="{{ route('profile.two-factor.confirm') }}" class="tw:grid tw:gap-4">
     @csrf
-    <x-ui.input name="code" id="code" type="text" :label="__('security.authentication_code')" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" maxlength="6" class="tw:[&_input]:text-center tw:[&_input]:font-mono tw:[&_input]:tracking-[0.25em]" required autofocus />
+    <x-ui.input name="code" id="code" type="text" :label="__('security.authentication_code')" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" maxlength="6" class="tw:[&_input]:text-center tw:[&_input]:tabular-nums tw:[&_input]:tracking-[0.25em]" required autofocus />
 
     <button type="submit" class="ui-focus-ring ui-motion tw:flex tw:h-11 tw:w-full tw:items-center tw:justify-center tw:gap-2 tw:rounded-ui-sm tw:border-0 tw:bg-primary tw:text-ui-sm tw:font-semibold tw:text-primary-foreground tw:hover:brightness-95 tw:active:brightness-90">
         {{ __('security.enable') }}

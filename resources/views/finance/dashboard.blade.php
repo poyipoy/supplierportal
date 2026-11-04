@@ -138,7 +138,7 @@
                             <span class="tw:text-ui-xs tw:font-semibold tw:text-primary tw:tracking-wide tw:uppercase">{{ __('finance.labels.accumulated_period') }}</span>
                             <x-ui.icon name="trending-up" class="tw:text-primary" size="sm" />
                         </div>
-                        <div class="tw:text-xl tw:lg:text-2xl tw:font-bold tw:font-mono tw:text-on-surface tw:tracking-tight" x-text="formatRupiah(totalAccumulation)">
+                        <div class="tw:text-xl tw:lg:text-2xl tw:font-bold ui-tabular-nums tw:text-on-surface tw:tracking-tight" x-text="formatRupiah(totalAccumulation)">
                             Rp {{ $regionalFormatter->number(number_format(end($weeklyForecast)['cumulative_amount'] ?? 0, 0, ',', '.'), 'indonesian') }}
                         </div>
                         <span class="tw:block tw:mt-1 tw:text-ui-xs tw:text-on-surface-variant">
@@ -153,7 +153,7 @@
                             <x-ui.icon name="badge-check" class="tw:text-success" size="sm" />
                         </div>
                         <div class="tw:flex tw:items-baseline tw:gap-2">
-                            <span class="tw:text-xl tw:lg:text-2xl tw:font-bold tw:font-mono tw:text-on-surface tw:tracking-tight">
+                            <span class="tw:text-xl tw:lg:text-2xl tw:font-bold ui-tabular-nums tw:text-on-surface tw:tracking-tight">
                                 Rp {{ $regionalFormatter->number(substr($readyToPaySummary['total_amount_formatted'] ?? 'Rp 0', 3), 'indonesian') }}
                             </span>
                         </div>
@@ -169,7 +169,7 @@
                             <x-ui.icon name="inbox" class="tw:text-info" size="sm" />
                         </div>
                         <div class="tw:flex tw:items-baseline tw:gap-2">
-                            <span class="tw:text-xl tw:lg:text-2xl tw:font-bold tw:font-mono tw:text-on-surface tw:tracking-tight" x-text="formatRupiah(currentPeriodAmount)">
+                            <span class="tw:text-xl tw:lg:text-2xl tw:font-bold ui-tabular-nums tw:text-on-surface tw:tracking-tight" x-text="formatRupiah(currentPeriodAmount)">
                                 Rp {{ $regionalFormatter->number(number_format(end($weeklyForecast)['period_amount'] ?? 0, 0, ',', '.'), 'indonesian') }}
                             </span>
                         </div>
@@ -235,9 +235,9 @@
                                                   x-text="window.AdasiI18n.choice('js.finance.invoice_count', row.count)">
                                             </span>
                                         </td>
-                                        <td class="text-end tw:font-mono tw:font-semibold tw:text-on-surface" x-text="formatRupiah(row.period_amount)">
+                                        <td class="text-end ui-tabular-nums tw:font-semibold tw:text-on-surface" x-text="formatRupiah(row.period_amount)">
                                         </td>
-                                        <td class="text-end tw:font-mono tw:font-bold tw:text-primary" x-text="formatRupiah(row.cumulative_amount)">
+                                        <td class="text-end ui-tabular-nums tw:font-bold tw:text-primary" x-text="formatRupiah(row.cumulative_amount)">
                                         </td>
                                     </tr>
                                 </template>
@@ -252,10 +252,10 @@
                                                 {{ trans_choice('finance.review.invoice_count', $w['count']) }}
                                             </span>
                                         </td>
-                                        <td class="text-end tw:font-mono tw:font-semibold tw:text-on-surface">
+                                        <td class="text-end ui-tabular-nums tw:font-semibold tw:text-on-surface">
                                             Rp {{ $regionalFormatter->number(substr($w['period_amount_formatted'] ?? ('Rp ' . $regionalFormatter->money($w['period_amount'], 0)), 3), 'indonesian') }}
                                         </td>
-                                        <td class="text-end tw:font-mono tw:font-bold tw:text-primary">
+                                        <td class="text-end ui-tabular-nums tw:font-bold tw:text-primary">
                                             Rp {{ $regionalFormatter->number(substr($w['cumulative_amount_formatted'] ?? ('Rp ' . $regionalFormatter->money($w['cumulative_amount'], 0)), 3), 'indonesian') }}
                                         </td>
                                     </tr>
@@ -299,7 +299,7 @@
                     @forelse($recentBatches as $batch)
                         <tr>
                             <td>
-                                <span class="tw:font-bold tw:font-mono tw:text-on-surface">{{ $batch->batch_number }}</span>
+                                <span class="tw:font-bold ui-tabular-nums tw:text-on-surface">{{ $batch->batch_number }}</span>
                                 <span class="tw:block tw:text-ui-xs tw:text-on-surface-variant">{{ $regionalFormatter->timestamp($batch->created_at, 'datetime') }}</span>
                             </td>
                             <td>
@@ -312,10 +312,10 @@
                                     {{ \App\Support\StatusHelper::localFinanceLabel($batch->status) }}
                                 </x-ui.status-chip>
                             </td>
-                            <td class="text-end tw:font-mono tw:font-semibold tw:text-on-surface">
+                            <td class="text-end ui-tabular-nums tw:font-semibold tw:text-on-surface">
                                 Rp {{ $regionalFormatter->number(number_format($batch->total_subtotal, 0, ',', '.'), 'indonesian') }}
                             </td>
-                            <td class="text-end tw:font-mono tw:text-on-surface-variant">
+                            <td class="text-end ui-tabular-nums tw:text-on-surface-variant">
                                 Rp {{ $regionalFormatter->number(number_format($batch->total_bank_fee, 0, ',', '.'), 'indonesian') }}
                             </td>
                             <td>

@@ -69,7 +69,7 @@
                         <x-ui.icon name="file-text" size="md" />
                     </div>
                     <div>
-                        <div class="tw:text-ui-base tw:font-bold tw:font-mono tw:text-on-surface">{{ $purchaseOrder->po_number }}</div>
+                        <div class="tw:text-ui-base tw:font-bold ui-tabular-nums tw:text-on-surface">{{ $purchaseOrder->po_number }}</div>
                         <div class="tw:text-ui-xs tw:text-on-surface-variant">
                             {{ __('local_procurement.surface.created_source', ['date' => $regionalFormatter->date($purchaseOrder->po_date, 'human') ?? '-', 'source' => __('local_procurement.sources.'.strtolower($purchaseOrder->source ?: 'MANUAL'))]) }}
                         </div>
@@ -85,7 +85,7 @@
             <div class="tw:grid tw:grid-cols-1 tw:sm:grid-cols-2 tw:gap-3 tw:border-t tw:border-outline-variant tw:pt-3 tw:text-ui-xs">
                 <div class="tw:sm:col-span-2 tw:min-w-0">
                     <span class="tw:text-on-surface-variant">{{ __('local_procurement.pr.label') }}:</span>
-                    <span class="tw:block tw:font-mono tw:text-on-surface tw:mt-0.5" style="overflow-wrap: anywhere;">{{ filled($purchaseOrder->pr_number) ? $purchaseOrder->pr_number : __('local_procurement.pr.empty') }}</span>
+                    <span class="tw:block ui-tabular-nums tw:text-on-surface tw:mt-0.5" style="overflow-wrap: anywhere;">{{ filled($purchaseOrder->pr_number) ? $purchaseOrder->pr_number : __('local_procurement.pr.empty') }}</span>
                 </div>
                 <div>
                     <span class="tw:text-on-surface-variant">{{ __('local_invoice.labels.supplier') }}:</span>
@@ -114,19 +114,19 @@
             <div class="tw:space-y-2 tw:text-ui-xs">
                 <div class="tw:flex tw:items-center tw:justify-between">
                     <span class="tw:text-on-surface-variant">{{ __('local_procurement.surface.po_ceiling_label') }}</span>
-                    <strong class="tw:font-mono tw:text-on-surface">Rp {{ $regionalFormatter->money($purchaseOrder->total_amount) }}</strong>
+                    <strong class="ui-tabular-nums tw:text-on-surface">Rp {{ $regionalFormatter->money($purchaseOrder->total_amount) }}</strong>
                 </div>
                 <div class="tw:flex tw:items-center tw:justify-between">
                     <span class="tw:text-on-surface-variant">{{ __('local_procurement.surface.active_invoiced') }}</span>
-                    <strong class="tw:font-mono tw:text-success">Rp {{ $regionalFormatter->money($invoicedTotal, 2) }}</strong>
+                    <strong class="ui-tabular-nums tw:text-success">Rp {{ $regionalFormatter->money($invoicedTotal, 2) }}</strong>
                 </div>
                 <div class="tw:flex tw:items-center tw:justify-between">
                     <span class="tw:text-on-surface-variant">{{ __('local_procurement.labels.gr_list') }}:</span>
-                    <strong class="tw:font-mono tw:text-on-surface">{{ $activeGrCount }} GR</strong>
+                    <strong class="ui-tabular-nums tw:text-on-surface">{{ $activeGrCount }} GR</strong>
                 </div>
                 <div class="tw:flex tw:items-center tw:justify-between tw:border-t tw:border-outline-variant tw:pt-1.5">
                     <span class="tw:text-on-surface-variant">{{ __('local_procurement.labels.remaining_ceiling') }}:</span>
-                    <strong class="tw:font-mono {{ \App\Support\Money::compare($remainingPoAmount, \App\Support\Money::ZERO) > 0 ? 'tw:text-primary' : 'tw:text-on-surface-variant' }}">
+                    <strong class="ui-tabular-nums {{ \App\Support\Money::compare($remainingPoAmount, \App\Support\Money::ZERO) > 0 ? 'tw:text-primary' : 'tw:text-on-surface-variant' }}">
                         Rp {{ $regionalFormatter->money($remainingPoAmount, 2) }}
                     </strong>
                 </div>
@@ -167,7 +167,7 @@
                         <div class="tw:rounded-lg tw:bg-surface-container tw:p-3 tw:text-ui-xs tw:space-y-1">
                             <div class="tw:flex tw:justify-between">
                                 <span class="tw:text-on-surface-variant">{{ __('terms.purchase_order') }}:</span>
-                                <strong class="tw:font-mono">{{ $purchaseOrder->po_number }}</strong>
+                                <strong class="ui-tabular-nums">{{ $purchaseOrder->po_number }}</strong>
                             </div>
                         </div>
 
@@ -193,7 +193,7 @@
                                 type="number"
                                 step="0.001"
                                 min="0.001"
-                                class="form-control form-control-sm tw:font-mono"
+                                class="form-control form-control-sm ui-tabular-nums"
                                 placeholder="1.125"
                                 required
                             >

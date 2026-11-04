@@ -45,7 +45,7 @@
                 <div class="tw:grid tw:grid-cols-2 tw:sm:grid-cols-3 tw:gap-4 tw:text-ui-xs">
                     <div>
                         <span class="tw:text-on-surface-variant tw:block">{{ __('ga.detail.number') }}:</span>
-                        <strong class="tw:font-mono tw:text-ui-sm tw:text-on-surface">{{ $claim->claim_number }}</strong>
+                        <strong class="ui-tabular-nums tw:text-ui-sm tw:text-on-surface">{{ $claim->claim_number }}</strong>
                     </div>
                     <div>
                         <span class="tw:text-on-surface-variant tw:block">{{ __('ga.labels.submission_date') }}:</span>
@@ -73,7 +73,7 @@
                     </div>
                     <div class="tw:col-span-full tw:border-t tw:border-outline-variant tw:pt-3">
                         <span class="tw:text-on-surface-variant tw:block">{{ __('ga.labels.claim_amount') }}:</span>
-                        <span class="tw:font-mono tw:font-bold tw:text-ui-lg tw:text-primary">
+                        <span class="ui-tabular-nums tw:font-bold tw:text-ui-lg tw:text-primary">
                             Rp {{ $regionalFormatter->number(number_format($claim->amount, 0, ',', '.'), 'indonesian') }}
                         </span>
                     </div>
@@ -128,7 +128,7 @@
                     </div>
                     <div class="tw:flex tw:justify-between">
                         <span class="tw:text-on-surface-variant">{{ __('ga.detail.bank_number') }}:</span>
-                        <strong class="tw:font-mono tw:text-on-surface">{{ $claim->employee?->account_number }}</strong>
+                        <strong class="ui-tabular-nums tw:text-on-surface">{{ $claim->employee?->account_number }}</strong>
                     </div>
                     <div class="tw:flex tw:justify-between">
                         <span class="tw:text-on-surface-variant">{{ __('local_invoice.labels.account_name') }}:</span>
