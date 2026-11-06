@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Services\UserPreferenceService;
+use App\Support\JsTranslations;
 use App\Support\PortalContext;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -31,6 +32,12 @@ class LocaleController extends Controller
             return response()->json([
                 'status' => 'success',
                 'locale' => $validLocale,
+                'i18n' => JsTranslations::payload(),
+                'datatables' => __('datatables'),
+                'session_copy' => [
+                    'restored' => __('security.session_reconnect.restored'),
+                    'failed' => __('security.session_reconnect.failed'),
+                ],
             ]);
         }
 

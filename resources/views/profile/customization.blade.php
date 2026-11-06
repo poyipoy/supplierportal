@@ -47,6 +47,7 @@
             'sidebar_state' => $preferences['sidebar_state'], 'page_size' => (string) $preferences['page_size'],
             'locale' => $preferences['locale'], 'timezone' => $preferences['timezone'], 'date_format' => $preferences['date_format'],
             'time_format' => $preferences['time_format'], 'number_format' => $preferences['number_format'],
+            'country_code' => (string) ($preferences['country_code'] ?? ''), 'import_timezone' => (string) ($preferences['import_timezone'] ?? ''),
             'dashboardOrder' => $dashboardSavedOrder, 'dashboardHidden' => $dashboardSavedHidden,
             'quickAccess' => $selectedQuickAccess,
         ],
@@ -55,6 +56,7 @@
             'sidebar_state' => $defaults['sidebar_state'], 'page_size' => (string) $defaults['page_size'],
             'timezone' => $defaults['timezone'], 'date_format' => $defaults['date_format'],
             'time_format' => $defaults['time_format'], 'number_format' => $defaults['number_format'],
+            'country_code' => '', 'import_timezone' => '',
             'dashboardOrder' => $dashboardDefaultOrder,
         ],
         'otherContextCount' => $otherContextQuickAccessCount,
@@ -63,6 +65,7 @@
         'sampleIso' => $regionalSample['iso'],
         'sampleNumber' => $regionalSample['number'],
         'registry' => $regionalFormatRegistry,
+        'importTimezone' => $importTimezone ? ['countryDefaults' => $importTimezone['countryDefaults']] : null,
         'locale' => $preferences['locale'],
         'copy' => [
             'densityValue' => __('customization.density_value'),
@@ -71,6 +74,7 @@
             'sectionReset' => __('customization.reset_section_announcement'),
             'discarded' => __('customization.discard_announcement'),
             'followsCurrentDisplay' => __('customization.live_sample_system'),
+            'importAutoWithZone' => __('customization.import_timezone.auto_with_zone', ['zone' => ':zone']),
             'quickAccessCount' => __('customization.quick_access_count', ['count' => ':count', 'limit' => ':limit']),
             'quickAccessLimitReached' => __('customization.quick_access_limit_reached'),
         ],
@@ -277,6 +281,45 @@
                             </div>
                         @endforeach
                     </div>
+
+                    @if($importTimezone)
+                        <fieldset class="tw:m-0 tw:min-w-0 tw:border-0 tw:border-t tw:border-outline-variant tw:p-0 tw:pt-4" aria-describedby="import-timezone-help" data-import-timezone>
+                            {{-- Floated legend sits in normal flow so the heading and its help text keep the section rhythm. --}}
+                            <legend class="tw:float-left tw:w-full tw:p-0 tw:text-ui-sm tw:font-semibold">{{ __('customization.import_timezone.title') }}</legend>
+                            <p id="import-timezone-help" class="tw:clear-both tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ __('customization.import_timezone.help') }}</p>
+                            <div class="tw:mt-4 tw:grid tw:grid-cols-1 tw:gap-5 tw:shell:grid-cols-2">
+                                <x-ui.searchable-select
+                                    class="tw:content-start"
+                                    label-class="tw:text-ui-sm tw:font-semibold tw:text-on-surface"
+                                    :show-sublabel-on-trigger="false"
+                                    name="country_code"
+                                    id="regional-country_code"
+                                    :label="__('customization.import_timezone.country')"
+                                    :helper="__('customization.import_timezone.country_help')"
+                                    :value="$preferences['country_code'] ?? ''"
+                                    :options="collect($importTimezone['countries'])->map(fn ($name, $code) => ['value' => $code, 'label' => $name, 'sublabel' => $code.' · '.$importTimezone['countryDefaults'][$code], 'searchKeywords' => $name.' '.$code])->all()"
+                                    :placeholder="__('customization.import_timezone.country_none')"
+                                    :search-placeholder="__('customization.import_timezone.search')"
+                                />
+                                <div class="tw:grid tw:content-start tw:gap-1.5">
+                                    <x-ui.searchable-select
+                                        class="tw:content-start"
+                                        label-class="tw:text-ui-sm tw:font-semibold tw:text-on-surface"
+                                        :show-sublabel-on-trigger="false"
+                                        name="import_timezone"
+                                        id="regional-import_timezone"
+                                        :label="__('customization.import_timezone.zone')"
+                                        :helper="__('customization.import_timezone.zone_help')"
+                                        :value="$preferences['import_timezone'] ?? ''"
+                                        :options="['system' => ['value' => 'system', 'label' => __('customization.import_timezone.system')], ...collect($importTimezone['zones'])->map(fn ($offset, $zone) => ['value' => $zone, 'label' => $zone, 'sublabel' => $offset])->all()]"
+                                        :placeholder="__('customization.import_timezone.auto')"
+                                        :search-placeholder="__('customization.import_timezone.search')"
+                                    />
+                                    <p class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant" x-show="importAutoNote" x-text="importAutoNote" aria-live="polite"></p>
+                                </div>
+                            </div>
+                        </fieldset>
+                    @endif
 
                     <div>
                         <p class="tw:m-0 tw:mb-1 tw:text-ui-xs tw:font-semibold tw:uppercase tw:tracking-wider tw:text-on-surface-variant">{{ __('customization.live_sample_label') }}</p>

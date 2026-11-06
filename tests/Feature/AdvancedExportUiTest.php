@@ -52,4 +52,60 @@ class AdvancedExportUiTest extends TestCase
         $this->assertSame($role, $job->export_options['audience']);
         $this->assertSame('csv', $job->format);
     }
+
+    public function test_shipment_modal_unifies_search_with_accessible_hint_and_preserves_legacy_preset_compatibility(): void
+    {
+        Queue::fake();
+        $actor = User::factory()->create(['role' => 'purchasing']);
+
+        foreach (['en', 'id'] as $locale) {
+            $actor->preference()->updateOrCreate(['user_id' => $actor->id], [...config('user_preferences.defaults'), 'locale' => $locale]);
+
+            $expectedPlaceholder = __('exports.advanced.filters.placeholders.shipment_search', [], $locale);
+            $expectedHint = __('exports.advanced.filters.hints.shipment_search', [], $locale);
+
+            $this->actingAs($actor)->get(route('purchasing.shipments.index'))
+                ->assertOk()
+                ->assertSee('data-filter-name="search"', false)
+                ->assertDontSee('data-filter-name="shipment_number"', false)
+                ->assertSee('placeholder="'.e($expectedPlaceholder).'"', false)
+                ->assertSee('aria-describedby="advanced-export-purchasing-shipments-search-hint"', false)
+                ->assertSee('id="advanced-export-purchasing-shipments-search-hint"', false)
+                ->assertSeeText($expectedHint);
+
+            $definition = $this->actingAs($actor)->getJson(route('exports.definitions.show', 'purchasing.shipments'))
+                ->assertOk()
+                ->json('filters');
+
+            $filterNames = array_column($definition, 'name');
+            $this->assertContains('search', $filterNames);
+            $this->assertNotContains('shipment_number', $filterNames);
+
+            $searchFilter = collect($definition)->firstWhere('name', 'search');
+            $this->assertSame($expectedPlaceholder, $searchFilter['placeholder'] ?? null);
+            $this->assertSame($expectedHint, $searchFilter['hint'] ?? null);
+        }
+
+        // Legacy preset compatibility: storing and presenting a preset with shipment_number
+        $this->actingAs($actor)->postJson(route('export-presets.store'), [
+            'export_key' => 'purchasing.shipments',
+            'name' => 'Legacy Shipment Filter',
+            'columns' => ['shipment_number'],
+            'format' => 'xlsx',
+            'filters' => ['shipment_number' => 'SHP/2026/001'],
+        ])->assertCreated();
+
+        $presented = $this->actingAs($actor)->getJson(route('export-presets.index', ['export_key' => 'purchasing.shipments']))
+            ->assertOk()
+            ->json('data.0.filters');
+
+        $this->assertSame('SHP/2026/001', $presented['search'] ?? null);
+        $this->assertArrayNotHasKey('shipment_number', $presented);
+
+        // Direct export with legacy shipment_number filter still succeeds
+        $this->actingAs($actor)->postJson(route('purchasing.export.shipments'), [
+            'shipment_number' => 'SHP/2026/001',
+            'options' => ['columns' => ['shipment_number'], 'format' => 'csv'],
+        ])->assertAccepted();
+    }
 }

@@ -406,7 +406,7 @@
 
                 {{-- Tips Ekstraksi Otomatis --}}
                 <div class="tw:mt-4 tw:p-3.5 tw:rounded-ui-sm tw:bg-primary/5 tw:border tw:border-primary/20 tw:flex tw:items-start tw:gap-2.5">
-                    <x-ui.icon name="sparkles" size="sm" class="tw:text-primary tw:mt-0.5 tw:shrink-0" />
+                    <x-ui.icon name="lightbulb" size="sm" class="tw:text-primary tw:mt-0.5 tw:shrink-0" />
                     <div class="tw:text-[11px] tw:text-on-surface-variant tw:leading-relaxed">
                         <strong class="tw:text-on-surface tw:font-semibold">{{ __('local_invoice.form.extraction_title') }}</strong> {{ __('local_invoice.form.extraction_help', ['filename' => 'INV-2026-001.pdf']) }}
                     </div>
@@ -514,7 +514,7 @@
                                 {{ __('local_invoice.receipt.invoice_number') }} <span class="tw:text-error">*</span>
                             </label>
                             <span id="invoice-autofill-badge" class="tw:hidden tw:items-center tw:gap-1 tw:text-[11px] tw:text-primary tw:font-semibold tw:bg-primary/10 tw:px-2 tw:py-0.5 tw:rounded-sm">
-                                <x-ui.icon name="sparkles" size="sm" class="tw:w-3 tw:h-3" />
+                                <x-ui.icon name="lightbulb" size="sm" class="tw:w-3 tw:h-3" />
                                 <span>{{ __('local_invoice.form.from_filename') }}</span>
                             </span>
                         </div>
@@ -714,7 +714,7 @@
                                     {{ __('local_invoice.form.tax_number') }} @if($isPkp) <span class="tw:text-error">*</span> @else <span class="tw:text-on-surface-variant tw:font-normal">{{ __('local_invoice.form.non_pkp_optional') }}</span> @endif
                                 </label>
                                 <span id="tax-autofill-badge" class="tw:hidden tw:items-center tw:gap-1 tw:text-[11px] tw:text-primary tw:font-semibold tw:bg-primary/10 tw:px-2 tw:py-0.5 tw:rounded-sm">
-                                    <x-ui.icon name="sparkles" size="sm" class="tw:w-3 tw:h-3" />
+                                    <x-ui.icon name="lightbulb" size="sm" class="tw:w-3 tw:h-3" />
                                     <span>{{ __('local_invoice.form.from_filename') }}</span>
                                 </span>
                             </div>

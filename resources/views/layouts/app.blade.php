@@ -7,7 +7,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <script>
         window.AdasiLoginUrl = @js(route('login'));
-        window.AdasiSession = @js(auth()->check() && (config('portal_session.cross_tab_logout') || config('portal_session.scoped_storage_cleanup')) ? ['crossTab' => (bool) config('portal_session.cross_tab_logout'), 'cleanup' => (bool) config('portal_session.scoped_storage_cleanup'), 'userId' => (int) auth()->id()] : null);
+        window.AdasiSession = @js(auth()->check() && (config('portal_session.cross_tab_logout') || config('portal_session.scoped_storage_cleanup')) ? ['crossTab' => (bool) config('portal_session.cross_tab_logout'), 'cleanup' => (bool) config('portal_session.scoped_storage_cleanup'), 'userId' => (int) auth()->id(), 'statusUrl' => route('session.status'), 'copy' => ['restored' => __('security.session_reconnect.restored'), 'failed' => __('security.session_reconnect.failed')]] : null);
     </script>
     <script>
         window.AdasiPortal = Object.assign(window.AdasiPortal || {}, { pathPrefix: @js(\App\Support\PortalPath::prefix()) });
@@ -78,6 +78,16 @@
                 const regional = Object.freeze({ ...(preferences.regional || {}) });
                 const regionalRegistry = preferences.regionalRegistry || {};
                 const displayLocale = root.lang === 'id' ? 'id-ID' : 'en-GB';
+                const displayZone = (() => {
+                    const zone = regional.timezone;
+                    if (typeof zone !== 'string' || zone === '' || zone === 'system') return 'system';
+                    try {
+                        new Intl.DateTimeFormat('en-GB', { timeZone: zone });
+                        return zone;
+                    } catch (error) {
+                        return 'system';
+                    }
+                })();
                 const displayMonthName = (month) => {
                     if (root.lang !== 'id' && typeof regionalRegistry.months?.[month - 1] === 'string') {
                         return regionalRegistry.months[month - 1];
@@ -136,7 +146,8 @@
                         || (match[8] && (Number(match[9]) > 23 || Number(match[10]) > 59))
                         || !Number.isFinite(Date.parse(value))) return '-';
 
-                    const timezone = regional.timezone === 'Asia/Jakarta' ? 'Asia/Jakarta' : 'system';
+                    // Server-resolved zone: the global choice, or the Supplier Import work-location zone (any IANA id).
+                    const timezone = displayZone;
                     const dateFormat = regionalRegistry.date_formats?.includes(regional.date_format) ? regional.date_format : 'system';
                     const timeFormat = ['system', '24h', '12h'].includes(regional.time_format) ? regional.time_format : 'system';
                     const explicitTimestampPreference = timezone !== 'system' || dateFormat !== 'system' || timeFormat !== 'system';
@@ -150,18 +161,29 @@
                     }
 
                     let parts = source;
-                    if (timezone === 'Asia/Jakarta') {
+                    let suffix = '';
+                    if (timezone !== 'system') {
                         try {
+                            const instant = new Date(value);
                             const formatted = new Intl.DateTimeFormat('en-GB', {
-                                timeZone: 'Asia/Jakarta', calendar: 'gregory', numberingSystem: 'latn',
+                                timeZone: timezone, calendar: 'gregory', numberingSystem: 'latn',
                                 year: 'numeric', month: '2-digit', day: '2-digit',
-                                hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
-                            }).formatToParts(new Date(value));
+                                hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
+                            }).formatToParts(instant);
                             const values = Object.fromEntries(formatted.map(part => [part.type, part.value]));
                             parts = {
                                 year: Number(values.year), month: Number(values.month), day: Number(values.day),
                                 hour: Number(values.hour) % 24, minute: Number(values.minute),
                             };
+                            // Mirrors regional-sample.js zoneSuffix(): WIB for Jakarta, otherwise the offset at this instant.
+                            if (timezone === 'Asia/Jakarta') {
+                                suffix = 'WIB';
+                            } else {
+                                const wall = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, Number(values.second));
+                                const offset = Math.round((wall - Math.floor(instant.getTime() / 1000) * 1000) / 60000);
+                                const absolute = Math.abs(offset);
+                                suffix = 'UTC' + (offset < 0 ? '-' : '+') + String(Math.floor(absolute / 60)).padStart(2, '0') + ':' + String(absolute % 60).padStart(2, '0');
+                            }
                         } catch (error) {
                             return '-';
                         }
@@ -186,7 +208,7 @@
                         timeText = String(parts.hour).padStart(2, '0') + ':' + String(parts.minute).padStart(2, '0');
                     }
 
-                    return dateText + ' ' + timeText + (timezone === 'Asia/Jakarta' ? ' WIB' : '');
+                    return dateText + ' ' + timeText + (suffix ? ' ' + suffix : '');
                 };
 
                 window.AdasiPreferences = Object.freeze({

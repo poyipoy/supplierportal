@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Services\Dashboard\DashboardWidgetService;
 use App\Services\QuickAccessService;
 use App\Support\PortalContext;
+use DateTimeZone;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -25,6 +26,9 @@ class UpdateUserPreferenceRequest extends FormRequest
         return [
             'locale' => ['sometimes', 'required', 'string', Rule::in(['en', 'id'])],
             'timezone' => ['sometimes', 'required', 'string', Rule::in(array_keys(config('regional_display.timezones')))],
+            // Supplier Import only (checked in withValidator); null import_timezone = follow the country.
+            'country_code' => ['sometimes', 'nullable', 'string', Rule::in(array_keys(config('country_timezones')))],
+            'import_timezone' => ['sometimes', 'nullable', 'string', Rule::in(['system', ...DateTimeZone::listIdentifiers()])],
             'date_format' => ['sometimes', 'required', 'string', Rule::in(array_keys(config('regional_display.date_formats')))],
             'time_format' => ['sometimes', 'required', 'string', Rule::in(array_keys(config('regional_display.time_formats')))],
             'number_format' => ['sometimes', 'required', 'string', Rule::in(array_keys(config('regional_display.number_formats')))],
@@ -54,6 +58,14 @@ class UpdateUserPreferenceRequest extends FormRequest
 
             if ($user->isSupplier() && $this->input('supplier_context') !== $actualContext) {
                 $validator->errors()->add('supplier_context', __('customization.supplier_context_changed'));
+            }
+
+            if ($actualContext !== PortalContext::SCOPE_IMPORT) {
+                foreach (['country_code', 'import_timezone'] as $field) {
+                    if ($this->exists($field)) {
+                        $validator->errors()->add($field, __('customization.import_timezone.unavailable'));
+                    }
+                }
             }
 
             $submittedKeys = (array) $this->input('quick_access', []);

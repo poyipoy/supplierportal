@@ -225,6 +225,11 @@ class LocalInvoice extends Model
             : __('common.unknown');
     }
 
+    public function effectivePaymentTermDays(): ?int
+    {
+        return $this->payment_term_days_snapshot ?? $this->supplier?->supplier?->payment_term_days;
+    }
+
     public function remainingDays(): ?int
     {
         return $this->due_date ? (int) BusinessTime::today()->diffInDays($this->due_date, false) : null;

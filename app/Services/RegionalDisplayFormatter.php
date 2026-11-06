@@ -27,6 +27,12 @@ class RegionalDisplayFormatter
             $this->preferences[$field] = is_string($value) && isset($this->registry[$registry][$value])
                 ? $value : config('user_preferences.defaults.'.$field);
         }
+        // Only the server-resolved display zone (UserPreferenceService::displayTimezone) may name an
+        // IANA zone outside the registry; a raw 'timezone' value stays registry-bound.
+        $display = $preferences['display_timezone'] ?? null;
+        if (is_string($display) && (isset($this->registry['timezones'][$display]) || in_array($display, DateTimeZone::listIdentifiers(), true))) {
+            $this->preferences['timezone'] = $display;
+        }
     }
 
     public function date(string|DateTimeInterface|null $value, string $profile = 'human'): ?string
@@ -63,12 +69,14 @@ class RegionalDisplayFormatter
             $text .= $patterns['separator'].$this->localizedFormat($instant, $this->timePattern($patterns['time']));
         }
 
-        return $text.$this->zoneLabel();
+        return $text.$this->zoneLabel($instant);
     }
 
     public function time(DateTimeInterface $value): string
     {
-        return $this->localizedFormat($this->instant($value), $this->timePattern('H:i')).$this->zoneLabel();
+        $instant = $this->instant($value);
+
+        return $this->localizedFormat($instant, $this->timePattern('H:i')).$this->zoneLabel($instant);
     }
 
     /** Localize month names while retaining the established month/year chart pattern. */
@@ -172,9 +180,14 @@ class RegionalDisplayFormatter
             ->translatedFormat($pattern);
     }
 
-    private function zoneLabel(): string
+    private function zoneLabel(DateTimeImmutable $instant): string
     {
-        $label = $this->registry['timezones'][$this->preferences['timezone']]['zone_label'] ?? '';
+        $timezone = $this->preferences['timezone'];
+        if ($timezone === 'system') {
+            return '';
+        }
+        // Registry zones keep their established label (WIB); other zones show the offset in effect at this instant.
+        $label = $this->registry['timezones'][$timezone]['zone_label'] ?? 'UTC'.$instant->format('P');
 
         return $label === '' ? '' : ' '.$label;
     }

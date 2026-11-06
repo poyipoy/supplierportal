@@ -8,6 +8,9 @@ use App\Models\User;
 use App\Services\Dashboard\DashboardWidgetService;
 use App\Services\QuickAccessService;
 use App\Services\UserPreferenceService;
+use App\Support\PortalContext;
+use DateTimeImmutable;
+use DateTimeZone;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -38,6 +41,7 @@ class UserPreferenceController extends Controller
             'selectedQuickAccess' => array_column($quickAccess->selectedFor($user, $effective['quick_access'], $context), 'key'),
             'otherContextQuickAccessCount' => count($quickAccess->availableInOtherSupplierContext($user, $effective['quick_access'], $context)),
             'supplierContext' => $context,
+            'importTimezone' => $context === PortalContext::SCOPE_IMPORT ? $this->importTimezoneChoices() : null,
             'quickAccessLimit' => (int) config('user_preferences.quick_access_limit'),
             'regionalFormatRegistry' => [
                 'date_formats' => array_keys(config('regional_display.date_formats')),
@@ -51,12 +55,35 @@ class UserPreferenceController extends Controller
         ]);
     }
 
+    /** Country and IANA zone options for the Supplier Import timezone preference. */
+    private function importTimezoneChoices(): array
+    {
+        $countryDefaults = config('country_timezones');
+        $locale = app()->getLocale();
+        $countries = [];
+        foreach (array_keys($countryDefaults) as $code) {
+            // Without ext-intl the ISO code itself is the label.
+            $name = class_exists(\Locale::class) ? \Locale::getDisplayRegion('-'.$code, $locale) : '';
+            $countries[$code] = is_string($name) && $name !== '' && $name !== $code ? $name : $code;
+        }
+        asort($countries, SORT_NATURAL | SORT_FLAG_CASE);
+
+        $now = new DateTimeImmutable('now'); // biz-time:ignore offset sample for zone option sublabels
+        $zones = [];
+        foreach (DateTimeZone::listIdentifiers() as $zone) {
+            $zones[$zone] = 'UTC'.$now->setTimezone(new DateTimeZone($zone))->format('P');
+        }
+
+        return ['countries' => $countries, 'zones' => $zones, 'countryDefaults' => $countryDefaults];
+    }
+
     public function update(
         UpdateUserPreferenceRequest $request,
         UserPreferenceService $preferences,
     ): RedirectResponse {
         $saved = $preferences->save($request->user(), $request->safe()->only([
             'theme', 'density', 'sidebar_state', 'page_size', 'quick_access', 'accent', 'dashboard', 'timezone', 'date_format', 'time_format', 'number_format', 'locale',
+            'country_code', 'import_timezone',
         ]));
 
         return redirect()->route('profile.customization')->with('success', __('customization.saved', [], $saved['locale']));

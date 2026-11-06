@@ -23,7 +23,7 @@ export function sameSet(a, b) {
     return sortedA.every((value, index) => value === sortedB[index]);
 }
 
-const SIMPLE_FIELDS = ['theme', 'accent', 'density', 'sidebar_state', 'page_size', 'locale', 'timezone', 'date_format', 'time_format', 'number_format'];
+const SIMPLE_FIELDS = ['theme', 'accent', 'density', 'sidebar_state', 'page_size', 'locale', 'timezone', 'date_format', 'time_format', 'number_format', 'country_code', 'import_timezone'];
 
 export function customizationForm(config) {
     return {
@@ -37,6 +37,8 @@ export function customizationForm(config) {
         sampleIso: config.sampleIso,
         sampleNumber: config.sampleNumber,
         registry: config.registry,
+        importTimezone: config.importTimezone || null,
+        importAutoNote: '',
         docLocale: config.locale,
         copy: config.copy,
         dirtyCount: 0,
@@ -85,6 +87,15 @@ export function customizationForm(config) {
             this.listen(window, 'adasi:preferences-restored', () => {
                 ['theme', 'accent', 'density'].forEach((name) => this.setVal(name, this.saved[name]));
                 this.recoverSubmission();
+            });
+            this.listen(window, 'adasi:locale-changed', (event) => {
+                const nextLocale = event.detail?.locale;
+                if (nextLocale === 'id' || nextLocale === 'en') {
+                    this.docLocale = nextLocale;
+                    if (this.saved) this.saved.locale = nextLocale;
+                    this.setVal('locale', nextLocale);
+                    this.recompute();
+                }
             });
             this.listen(window, 'beforeunload', (event) => {
                 const needsConfirmation = window.AdasiUnsaved?.isDirty() ?? this.dirtyCount > 0;
@@ -144,6 +155,10 @@ export function customizationForm(config) {
             }
             const field = this.root().querySelector(`[name="${name}"]`);
             if (field) field.value = String(value);
+            // Searchable selects mirror the native field; keep their visible trigger in step.
+            if (field?.matches?.('[x-ref="nativeSelect"]')) {
+                window.dispatchEvent(new CustomEvent('set-select-value', { detail: { name, value: String(value) } }));
+            }
         },
         dashboardOrder() {
             return Array.from(this.root().querySelectorAll('[data-dashboard-order-input]')).map((el) => el.value);
@@ -237,11 +252,22 @@ export function customizationForm(config) {
 
         updateRegionalSample() {
             if (!window.AdasiRegionalSample) return;
+            let timezone = this.val('timezone');
+            if (this.importTimezone && window.AdasiRegionalSample.resolveImportTimezone) {
+                const countryCode = this.val('country_code');
+                const importTimezone = this.val('import_timezone');
+                timezone = window.AdasiRegionalSample.resolveImportTimezone({
+                    importContext: true, timezone, countryCode, importTimezone,
+                    countryDefaults: this.importTimezone.countryDefaults,
+                });
+                const autoZone = this.importTimezone.countryDefaults?.[countryCode];
+                this.importAutoNote = !importTimezone && autoZone ? this.copy.importAutoWithZone.replace(':zone', autoZone) : '';
+            }
             this.regionalSample = window.AdasiRegionalSample.computeRegionalSample({
                 sampleIso: this.sampleIso,
                 sampleNumber: this.sampleNumber,
                 regional: {
-                    timezone: this.val('timezone'),
+                    timezone,
                     date_format: this.val('date_format'),
                     time_format: this.val('time_format'),
                     number_format: this.val('number_format'),
@@ -290,6 +316,10 @@ export function customizationForm(config) {
                 this.setVal('date_format', this.defaults.date_format);
                 this.setVal('time_format', this.defaults.time_format);
                 this.setVal('number_format', this.defaults.number_format);
+                if (this.importTimezone) {
+                    this.setVal('country_code', this.defaults.country_code);
+                    this.setVal('import_timezone', this.defaults.import_timezone);
+                }
             } else if (section === 'dashboard') {
                 this.applyDashboardOrder(this.defaults.dashboardOrder);
                 this.root().querySelectorAll('input[name="dashboard[hidden][]"]').forEach((el) => { el.checked = false; });

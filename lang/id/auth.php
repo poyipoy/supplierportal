@@ -39,12 +39,17 @@ return [
     'password_assistance.heading' => 'Bantuan Kata Sandi',
     'password_assistance.description' => 'Demi keamanan, permintaan pengaturan ulang kata sandi ditangani secara manual oleh tim internal kami. Hubungi tim dukungan menggunakan alamat email perusahaan yang terdaftar.',
     'password_assistance.support' => 'Email Dukungan',
-    'password_assistance.whatsapp' => 'Dukungan WhatsApp',
+    'password_assistance.whatsapp_cta' => 'Hubungi lewat WhatsApp',
+    'password_assistance.whatsapp_message' => 'Halo Tim Dukungan,
+
+Saya memohon bantuan untuk mengatur ulang kata sandi Supplier Portal.
+
+Nama Perusahaan: [Nama Perusahaan]
+Email Terdaftar: [Email Terdaftar]',
     'password_assistance.opens_new_tab' => '(terbuka di tab baru)',
     'password_assistance.no_support' => 'Hubungi perwakilan perusahaan Anda untuk memperoleh kontak dukungan.',
-    'password_assistance.email_cta_heading' => 'Minta bantuan lewat email',
-    'password_assistance.email_cta_help' => 'Aplikasi email Anda akan terbuka dengan subjek dan isi pesan yang sudah terisi otomatis.',
     'password_assistance.manual_divider' => 'Atau salin detailnya secara manual',
+    'password_assistance.manual_dialog_title' => 'Salin detail secara manual',
     'password_assistance.subject_label' => 'Subjek',
     'password_assistance.template_label' => 'Templat Email',
     'password_assistance.copy_email' => 'Salin Alamat Email',

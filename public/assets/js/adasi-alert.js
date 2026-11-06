@@ -53,6 +53,31 @@
         isDismissed: false,
     })).then((result) => ({ ...result, isDismissed: !result.isConfirmed }));
 
+    // Optional async step behind the confirm button: the dialog shows its loader and stays
+    // open until it settles. Throwing keeps the dialog open with the error's (user-safe)
+    // message, announced as an alert because it has no input to describe.
+    const pendingConfirm = (options) => {
+        if (typeof options.preConfirm !== 'function') return {};
+
+        return {
+            showLoaderOnConfirm: true,
+            allowEscapeKey: () => !SweetAlert.isLoading(),
+            preConfirm: async () => {
+                const popup = SweetAlert.getPopup();
+                popup?.setAttribute('aria-busy', 'true');
+                try {
+                    return await options.preConfirm();
+                } catch (error) {
+                    SweetAlert.getValidationMessage()?.setAttribute('role', 'alert');
+                    SweetAlert.showValidationMessage(asText(error?.message, t('js.toast.failed')));
+                    return false;
+                } finally {
+                    popup?.removeAttribute('aria-busy');
+                }
+            },
+        };
+    };
+
     const confirm = (rawOptions, danger) => {
         const options = asOptions(rawOptions);
         if (!SweetAlert) return nativeConfirm(options, danger);
@@ -66,6 +91,7 @@
             focusConfirm: !danger,
             focusCancel: danger,
             allowOutsideClick: false,
+            ...pendingConfirm(options),
         });
     };
 

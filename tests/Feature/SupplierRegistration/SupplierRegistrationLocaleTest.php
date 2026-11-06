@@ -121,4 +121,31 @@ class SupplierRegistrationLocaleTest extends TestCase
         $response->assertRedirect()->assertSessionHas('locale', 'en');
         $this->assertSame('en', $preference->fresh()->locale);
     }
+
+    public function test_json_locale_switch_returns_server_processed_i18n_and_datatables_payload(): void
+    {
+        $user = User::factory()->create([
+            'role' => 'purchasing',
+            'account_status' => User::ACCOUNT_STATUS_ACTIVE,
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($user)->postJson(route('locale.switch'), [
+            'locale' => 'id',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('status', 'success')
+            ->assertJsonPath('locale', 'id')
+            ->assertJsonPath('i18n.locale', 'id')
+            ->assertJsonStructure([
+                'status',
+                'locale',
+                'i18n' => ['locale', 'messages'],
+                'datatables',
+                'session_copy' => ['restored', 'failed'],
+            ]);
+        $response->assertSessionHas('locale', 'id');
+        $this->assertSame('id', $user->fresh()->preference?->locale);
+    }
 }

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { bootSessionSync, SESSION_CHANNEL, SESSION_EVENT_KEY, sessionEndedByResponse, sessionExpiredByResponse, PENDING_EXPORT_STORAGE_KEY, storageKeysToClear, clearUserScopedStorage } from '../../resources/js/session-sync.js';
+import { applyCsrfToken, bootSessionSync, SESSION_CHANNEL, SESSION_EVENT_KEY, sessionEndedByResponse, sessionExpiredByResponse, PENDING_EXPORT_STORAGE_KEY, storageKeysToClear, clearUserScopedStorage } from '../../resources/js/session-sync.js';
 
 const ORIGIN = 'https://portal.example.test';
 const PAGE_URL = `${ORIGIN}/supplier/purchase-orders/abc`;
@@ -11,13 +11,18 @@ const DECLINED = { isConfirmed: false, isDismissed: true, dismiss: 'cancel' };
 const REPLACED = { isConfirmed: false, isDismissed: true };
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 
-function fixture({ session = { crossTab: true, cleanup: false, userId: 41 }, login = null, broadcast = true, blocked = false, initialStorage = [], channelFailure = null, answers = [DECLINED], dirty = false, fetchImpl = null, jquery = null } = {}) {
+function fixture({ session = { crossTab: true, cleanup: false, userId: 41 }, login = null, broadcast = true, blocked = false, initialStorage = [], channelFailure = null, answers = [DECLINED], dirty = false, fetchImpl = null, jquery = null, dom = null, alertRunsPreConfirm = true } = {}) {
     const win = new EventTarget();
-    const doc = Object.assign(new EventTarget(), { querySelector: () => login });
+    const doc = Object.assign(new EventTarget(), {
+        querySelector: (selector) => (dom ? dom.querySelector(selector) : login),
+        querySelectorAll: (selector) => (dom ? dom.querySelectorAll(selector) : []),
+    });
     const redirects = [];
     const sent = [];
     const prompts = [];
     const submitting = [];
+    const toasts = [];
+    const validation = [];
     const values = new Map(initialStorage.map((key) => [key, 'saved']));
     let disconnects = 0;
     let channel;
@@ -25,7 +30,17 @@ function fixture({ session = { crossTab: true, cleanup: false, userId: 41 }, log
         Event, AdasiSession: session, AdasiLoginUrl: `${ORIGIN}/login`,
         location: { href: `${PAGE_URL}#details`, origin: ORIGIN, assign: (url) => redirects.push(url) },
         AdasiI18n: { t: (key) => key },
-        AdasiAlert: { confirm: (options) => { prompts.push(options); return Promise.resolve(answers[Math.min(prompts.length, answers.length) - 1]); } },
+        AdasiAlert: {
+            // Like SweetAlert: the confirm button runs preConfirm; a throw keeps the dialog open
+            // with the message, after which this user gives up.
+            confirm: async (options) => {
+                prompts.push(options);
+                const answer = answers[Math.min(prompts.length, answers.length) - 1];
+                if (!alertRunsPreConfirm || !answer?.isConfirmed || typeof options.preConfirm !== 'function') return answer;
+                try { return { ...answer, value: await options.preConfirm() }; } catch (error) { validation.push(error.message); return DECLINED; }
+            },
+            toast: (options) => toasts.push(options),
+        },
         AdasiUnsaved: { isDirty: () => dirty, setSubmitting: (value) => submitting.push(value) },
         ...(fetchImpl ? { fetch: fetchImpl } : {}),
         ...(jquery ? { jQuery: jquery } : {}),
@@ -44,7 +59,7 @@ function fixture({ session = { crossTab: true, cleanup: false, userId: 41 }, log
     Object.defineProperty(win, 'localStorage', { get() { if (blocked) throw Error('blocked'); return storage; } });
     const api = bootSessionSync(win, doc);
     return {
-        win, doc, api, redirects, sent, values, storage, prompts, submitting,
+        win, doc, api, redirects, sent, values, storage, prompts, submitting, toasts, validation,
         disconnects: () => disconnects,
         receive(data) { channel.dispatchEvent(Object.assign(new Event('message'), { data })); },
         storageEvent(newValue, key = SESSION_EVENT_KEY, storageArea = storage) {
@@ -356,9 +371,13 @@ test('observers are not installed when cross-tab handling is off or for guests',
 
 function jqueryStub() {
     const handlers = {};
+    const prefilters = [];
     const dataTableExt = { errMode: 'alert' };
-    const stub = Object.assign(() => ({ on: (name, handler) => { handlers[name] = handler; } }), { fn: { dataTable: { ext: dataTableExt } } });
-    return { stub, handlers, dataTableExt };
+    const stub = Object.assign(() => ({ on: (name, handler) => { handlers[name] = handler; } }), {
+        fn: { dataTable: { ext: dataTableExt } },
+        ajaxPrefilter: (filter) => prefilters.push(filter),
+    });
+    return { stub, handlers, prefilters, dataTableExt };
 }
 
 test('jQuery ajax completions (DataTables, legacy pages) that report an ended session open the dialog', () => {
@@ -393,4 +412,144 @@ test('DataTables raises no alert of its own for an ended session but still repor
 test('badge polling stops while the reconnect dialog is open or declined', async () => {
     const layout = await readFile(new URL('../../resources/views/layouts/app.blade.php', import.meta.url), 'utf8');
     assert.match(layout, /function updateBadges\(\) \{[^}]*AdasiSessionSync\?\.isSessionExpired\?\.\(\)/s);
+});
+
+const STATUS_URL = `${ORIGIN}/session/status`;
+const RESUMABLE = { crossTab: true, cleanup: true, userId: 41, statusUrl: STATUS_URL, copy: { restored: 'restored copy', failed: 'failed copy' } };
+const flush = async () => { for (let i = 0; i < 6; i++) await settle(); };
+
+function tokenDom(token = 'old-token') {
+    const meta = { attrs: { content: token }, getAttribute(name) { return this.attrs[name]; }, setAttribute(name, value) { this.attrs[name] = value; } };
+    const inputs = [{ value: token }, { value: token }];
+    return {
+        meta,
+        inputs,
+        querySelector: (selector) => (selector === 'meta[name="csrf-token"]' ? meta : null),
+        querySelectorAll: (selector) => (selector === 'input[name="_token"]' ? inputs : []),
+    };
+}
+
+function statusServer(...replies) {
+    const calls = [];
+    let checks = 0;
+    const impl = (input, init) => {
+        calls.push({ url: String(input), init });
+        if (!String(input).startsWith(STATUS_URL)) return Promise.resolve({ status: 200, ok: true, url: new URL(String(input), ORIGIN).toString() });
+        checks++;
+        const reply = replies[Math.min(checks, replies.length) - 1];
+        if (reply instanceof Error) return Promise.reject(reply);
+        return Promise.resolve({ status: reply.status, ok: reply.status >= 200 && reply.status < 300, url: STATUS_URL, redirected: false, json: async () => reply.body });
+    };
+    return { impl, calls };
+}
+
+test('reconnect restores a live session in place without navigating or asking for a password', async () => {
+    const dom = tokenDom();
+    const server = statusServer({ status: 200, body: { authenticated: true, user_id: 41, csrf_token: 'new-token' } });
+    const f = fixture({ session: RESUMABLE, answers: [CONFIRMED], dom, fetchImpl: server.impl, initialStorage: [PENDING_EXPORT_STORAGE_KEY] });
+    f.api.handleActionResponse({ status: 419 });
+    assert.equal(f.api.isSessionExpired(), true, 'polling pauses while the check runs');
+    await flush();
+
+    assert.deepEqual(f.redirects, [], 'the page and its unsaved input stay');
+    assert.equal(typeof f.prompts[0].preConfirm, 'function', 'the check runs behind the confirm button');
+    const [check] = server.calls;
+    const url = new URL(check.url);
+    assert.equal(url.origin + url.pathname, STATUS_URL);
+    assert.equal(url.searchParams.get('return'), PAGE_URL, 'the page without its fragment');
+    assert.equal(check.init.credentials, 'same-origin');
+    assert.equal(check.init.cache, 'no-store');
+    assert.equal(check.init.headers.Accept, 'application/json');
+    assert.equal(dom.meta.getAttribute('content'), 'new-token');
+    assert.deepEqual(dom.inputs.map((input) => input.value), ['new-token', 'new-token']);
+    assert.equal(f.api.isSessionExpired(), false, 'badge polling resumes');
+    assert.deepEqual(f.toasts, [{ type: 'success', text: 'restored copy' }]);
+    assert.equal(f.values.size, 1, 'nothing user-scoped is cleared when the session survives');
+    assert.deepEqual(f.submitting, []);
+    assert.equal(f.disconnects(), 0);
+});
+
+test('requests still carrying the old token from inline scripts are sent with the restored one', async () => {
+    const server = statusServer({ status: 200, body: { authenticated: true, user_id: 41, csrf_token: 'new-token' } });
+    const { stub, prefilters } = jqueryStub();
+    const f = fixture({ session: RESUMABLE, answers: [CONFIRMED], dom: tokenDom(), fetchImpl: server.impl, jquery: stub });
+    f.win.Echo.connector = { options: { auth: { headers: { 'X-CSRF-TOKEN': 'old-token' } } } };
+    f.api.handleActionResponse({ status: 419 });
+    await flush();
+
+    const headers = { 'x-csrf-token': 'old-token', Accept: 'application/json' };
+    const body = new URLSearchParams({ _token: 'old-token', note: 'kept' });
+    await f.win.fetch('/conversations/abc/messages', { method: 'POST', headers, body });
+    assert.equal(headers['x-csrf-token'], 'new-token');
+    assert.equal(body.get('_token'), 'new-token');
+    assert.equal(body.get('note'), 'kept');
+    const foreign = { 'X-CSRF-TOKEN': 'old-token' };
+    await f.win.fetch('https://elsewhere.example.test/hook', { method: 'POST', headers: foreign });
+    assert.equal(foreign['X-CSRF-TOKEN'], 'old-token', 'a token is never rewritten for another origin');
+    const unrelated = { 'X-CSRF-TOKEN': 'some-other-value' };
+    await f.win.fetch('/x', { method: 'POST', headers: unrelated });
+    assert.equal(unrelated['X-CSRF-TOKEN'], 'some-other-value', 'only tokens this page held are swapped');
+    assert.equal(f.win.Echo.connector.options.auth.headers['X-CSRF-TOKEN'], 'new-token');
+
+    const options = { crossDomain: false, headers: { 'X-CSRF-TOKEN': 'old-token' }, data: 'a=1&_token=old-token&b=2' };
+    prefilters[0](options);
+    assert.deepEqual(options, { crossDomain: false, headers: { 'X-CSRF-TOKEN': 'new-token' }, data: 'a=1&_token=new-token&b=2' });
+    const cross = { crossDomain: true, headers: { 'X-CSRF-TOKEN': 'old-token' }, data: '_token=old-token' };
+    prefilters[0](cross);
+    assert.deepEqual(cross, { crossDomain: true, headers: { 'X-CSRF-TOKEN': 'old-token' }, data: '_token=old-token' });
+});
+
+test('a session that cannot be restored goes to the page (and from there to sign-in) or the code challenge', async () => {
+    const cases = [
+        [{ status: 401, body: { authenticated: false } }, PAGE_URL],
+        [{ status: 401, body: { authenticated: false, two_factor_url: `${ORIGIN}/two-factor-challenge` } }, `${ORIGIN}/two-factor-challenge`],
+        [{ status: 401, body: { authenticated: false, two_factor_url: 'https://evil.example.test/two-factor-challenge' } }, PAGE_URL],
+        [{ status: 403, body: { message: 'change password', redirect: `${ORIGIN}/profile/security` } }, PAGE_URL],
+        [{ status: 200, body: { authenticated: true, user_id: 99, csrf_token: 'other-account' } }, PAGE_URL],
+    ];
+    for (const [reply, destination] of cases) {
+        const dom = tokenDom();
+        const f = fixture({ session: RESUMABLE, answers: [CONFIRMED], dom, fetchImpl: statusServer(reply).impl });
+        f.api.handleActionResponse({ status: 401 });
+        await flush();
+        assert.deepEqual(f.redirects, [destination], JSON.stringify(reply));
+        assert.equal(dom.meta.getAttribute('content'), 'old-token', 'no token from another account or a failed check is applied');
+        assert.deepEqual(f.toasts, []);
+    }
+});
+
+test('an unknown answer keeps the page and the dialog message so the user can retry', async () => {
+    for (const reply of [new TypeError('offline'), { status: 503, body: null }, { status: 429, body: { message: 'Too Many Attempts.' } }]) {
+        const f = fixture({ session: RESUMABLE, answers: [CONFIRMED], dom: tokenDom(), fetchImpl: statusServer(reply).impl });
+        f.api.handleActionResponse({ status: 419 });
+        await flush();
+        assert.deepEqual(f.redirects, []);
+        assert.deepEqual(f.validation, ['failed copy'], 'shown inside the dialog');
+    }
+});
+
+test('an alert that does not run the check (native fallback) still restores, or reports a failure as a toast', async () => {
+    const ok = statusServer({ status: 200, body: { authenticated: true, user_id: 41, csrf_token: 'new-token' } });
+    const restored = fixture({ session: RESUMABLE, answers: [CONFIRMED], dom: tokenDom(), alertRunsPreConfirm: false, fetchImpl: ok.impl });
+    restored.api.handleActionResponse({ status: 419 });
+    await flush();
+    assert.deepEqual(restored.redirects, []);
+    assert.deepEqual(restored.toasts, [{ type: 'success', text: 'restored copy' }]);
+
+    const offline = fixture({ session: RESUMABLE, answers: [CONFIRMED], dom: tokenDom(), alertRunsPreConfirm: false, fetchImpl: statusServer(new TypeError('offline')).impl });
+    offline.api.handleActionResponse({ status: 419 });
+    await flush();
+    assert.deepEqual(offline.redirects, []);
+    assert.deepEqual(offline.toasts, [{ type: 'error', text: 'failed copy' }]);
+    assert.equal(offline.api.isSessionExpired(), false, 'not a refusal: the next failed action asks again');
+});
+
+test('applyCsrfToken remembers every replaced value and tolerates a page without token holders', () => {
+    const retired = new Set();
+    const dom = tokenDom('a');
+    dom.inputs.push({ value: 'b' }, { value: '' });
+    applyCsrfToken(dom, 'c', retired);
+    assert.deepEqual([...retired].sort(), ['a', 'b']);
+    assert.deepEqual(dom.inputs.map((input) => input.value), ['c', 'c', 'c', 'c']);
+    assert.doesNotThrow(() => applyCsrfToken({ querySelector: () => null }, 'c', new Set()));
 });

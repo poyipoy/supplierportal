@@ -82,4 +82,8 @@ return [
         'sso_invalid_authorization_request' => 'Permintaan otorisasi masuk tidak valid',
         'global_login_anomaly_detected' => 'Anomali masuk terdeteksi',
     ],
+    'session_reconnect' => [
+        'restored' => 'Sesi tersambung kembali. Anda dapat melanjutkan pekerjaan.',
+        'failed' => 'Portal tidak dapat dihubungi. Periksa koneksi lalu coba lagi.',
+    ],
 ];

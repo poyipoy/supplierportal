@@ -46,7 +46,15 @@ return [
         'preset_duplicate' => 'A preset with this name already exists for this export.',
         'invalid_filters' => 'Select filters allowed for this export.',
         'stale_preset' => 'This preset was adjusted to the currently available columns or format.',
-        'filters' => ['start_date' => 'Start Date', 'end_date' => 'End Date', 'po_number' => 'PO Number', 'search' => 'Search', 'status' => 'Status', 'supplier_id' => 'Supplier', 'period_id' => 'Period', 'pr_number' => 'PR Number', 'currency' => 'Currency', 'date_from' => 'From Month', 'date_to' => 'To Month', 'shipment_number' => 'Shipment Number', 'q' => 'Search', 'supplier' => 'Supplier', 'payment_status' => 'Payment Status', 'overpayment_status' => 'Refund Status', 'from' => 'Submitted From', 'to' => 'Submitted To', 'due_from' => 'Due From', 'due_to' => 'Due To', 'overdue' => 'Overdue Only', 'history' => 'Include Paid', 'period' => 'Period', 'month' => 'Invoice Month', 'year' => 'Invoice Year', 'report' => 'Report'],
+        'filters' => [
+            'start_date' => 'Start Date', 'end_date' => 'End Date', 'po_number' => 'PO Number', 'search' => 'Search', 'status' => 'Status', 'supplier_id' => 'Supplier', 'period_id' => 'Period', 'pr_number' => 'PR Number', 'currency' => 'Currency', 'date_from' => 'From Month', 'date_to' => 'To Month', 'shipment_number' => 'Shipment Number', 'q' => 'Search', 'supplier' => 'Supplier', 'payment_status' => 'Payment Status', 'overpayment_status' => 'Refund Status', 'from' => 'Submitted From', 'to' => 'Submitted To', 'due_from' => 'Due From', 'due_to' => 'Due To', 'overdue' => 'Overdue Only', 'history' => 'Include Paid', 'period' => 'Period', 'month' => 'Invoice Month', 'year' => 'Invoice Year', 'report' => 'Report',
+            'placeholders' => [
+                'shipment_search' => 'e.g. SHP/2026/001, PO-2026, SS400...',
+            ],
+            'hints' => [
+                'shipment_search' => 'Searches shipment number, PO, material name, supplier, and notes.',
+            ],
+        ],
         'invalid_columns' => 'Select valid columns allowed for this export, including required columns.',
         'row_limit' => 'This export exceeds the maximum of :limit rows. Narrow the filters.',
         'concurrent_limit' => 'You already have :limit active exports. Wait for one to finish.',
