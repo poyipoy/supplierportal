@@ -28,8 +28,11 @@ class UserPreferenceMigrationTest extends TestCase
         $regional = require database_path('migrations/2026_09_29_000001_extend_user_preferences_for_regional_preferences.php');
         $notifications = require database_path('migrations/2026_09_30_000001_add_notification_preferences_to_user_preferences_table.php');
         $locale = require database_path('migrations/2026_10_04_000001_add_locale_to_user_preferences_table.php');
+        $importTimezone = require database_path('migrations/2026_11_06_000001_add_import_timezone_to_user_preferences_table.php');
 
         try {
+            $importTimezone->down();
+            $this->assertFalse(Schema::hasColumn('user_preferences', 'country_code'));
             $locale->down();
             $notifications->down();
             $regional->down();
@@ -63,6 +66,10 @@ class UserPreferenceMigrationTest extends TestCase
             $locale->up();
             $this->assertNull($user->fresh()->preference->notification_preferences);
             $this->assertSame('en', $user->fresh()->preference->locale);
+            $importTimezone->up();
+            $this->assertNull($user->fresh()->preference->country_code, 'existing rows keep no country until the user picks one');
+            $this->assertNull($user->fresh()->preference->import_timezone);
+            $this->assertDatabaseHas('user_preferences', ['user_id' => $user->id, 'theme' => 'dark', 'timezone' => 'system', 'revision' => 7]);
         } finally {
             if (! Schema::hasTable('user_preferences')) {
                 $migration->up();
@@ -78,6 +85,9 @@ class UserPreferenceMigrationTest extends TestCase
             }
             if (! Schema::hasColumn('user_preferences', 'locale')) {
                 $locale->up();
+            }
+            if (! Schema::hasColumn('user_preferences', 'country_code')) {
+                $importTimezone->up();
             }
         }
     }

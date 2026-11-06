@@ -82,4 +82,8 @@ return [
         'sso_invalid_authorization_request' => 'Invalid sign-in authorization request',
         'global_login_anomaly_detected' => 'Sign-in anomaly detected',
     ],
+    'session_reconnect' => [
+        'restored' => 'Session restored. You can continue where you left off.',
+        'failed' => 'Could not reach the portal. Check your connection and try again.',
+    ],
 ];

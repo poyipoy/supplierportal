@@ -15,6 +15,7 @@
     'allowCustom' => false,
     'suggestionsUrl' => null,
     'maxlength' => 100,
+    'labelClass' => 'tw:text-ui-sm tw:font-medium tw:text-on-surface',
 ])
 
 @php
@@ -69,7 +70,8 @@
     x-on:set-select-value.window="if ($event.detail?.name === '{{ $name }}' || $event.detail?.id === '{{ $resolvedId }}') { selectedValue = String($event.detail.value ?? ''); syncNativeSelect(selectedValue); }"
 >
     @if($label)
-        <label for="{{ $resolvedId }}" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">
+        {{-- The native select is visually hidden; clicking the label moves focus to the combobox trigger. --}}
+        <label id="{{ $resolvedId }}-label" for="{{ $resolvedId }}" class="{{ $labelClass }}" @click.prevent="$refs.triggerButton?.focus()">
             {{ $label }}
             @if($required)<span class="tw:text-error" aria-hidden="true">*</span><span class="tw:sr-only"> {{ __('common.required') }}</span>@endif
         </label>
@@ -99,7 +101,11 @@
     {{-- Trigger Button --}}
     <button
         type="button"
+        id="{{ $resolvedId }}-trigger"
         x-ref="triggerButton"
+        @if($label) aria-labelledby="{{ $resolvedId }}-label {{ $resolvedId }}-trigger" @endif
+        @if($describedBy) aria-describedby="{{ $describedBy }}" @endif
+        @if($message) aria-invalid="true" @endif
         @click="toggle()"
         @keydown.arrow-down.prevent="toggle()"
         @keydown.enter.prevent="toggle()"
@@ -141,7 +147,7 @@
                     @keydown.space.stop.prevent="clear()"
                     role="button"
                     tabindex="0"
-                    class="tw:p-1 tw:rounded-full tw:text-on-surface-variant tw:hover:text-error tw:hover:bg-surface-container tw:cursor-pointer ui-motion"
+                    class="tw:-my-1 tw:inline-flex tw:size-6 tw:items-center tw:justify-center tw:rounded-full tw:text-on-surface-variant tw:hover:text-error tw:hover:bg-surface-container tw:cursor-pointer ui-motion ui-focus-ring"
                     title="{{ __('common.select.clear') }}"
                     aria-label="{{ __('common.select.clear') }}"
                 >

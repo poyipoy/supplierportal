@@ -57,7 +57,21 @@
                                                 @if($field['type'] === 'boolean')
                                                     <select id="{{ $fieldId }}" name="{{ $field['name'] }}" data-filter-name="{{ $field['name'] }}" class="form-select form-select-sm"><option value="">{{ __('exports.advanced.all') }}</option><option value="1">{{ __('exports.advanced.enabled') }}</option><option value="0">{{ __('exports.advanced.disabled') }}</option></select>
                                                 @else
-                                                    <input type="{{ $field['type'] === 'number' ? 'number' : 'text' }}" id="{{ $fieldId }}" name="{{ $field['name'] }}" data-filter-name="{{ $field['name'] }}" class="form-control form-control-sm" maxlength="255">
+                                                    @php($placeholder = isset($field['placeholder']) ? __($field['placeholder']) : null)
+                                                    @php($hint = isset($field['hint']) ? __($field['hint']) : null)
+                                                    <input
+                                                        type="{{ $field['type'] === 'number' ? 'number' : 'text' }}"
+                                                        id="{{ $fieldId }}"
+                                                        name="{{ $field['name'] }}"
+                                                        data-filter-name="{{ $field['name'] }}"
+                                                        class="form-control form-control-sm"
+                                                        maxlength="255"
+                                                        @if($placeholder) placeholder="{{ $placeholder }}" @endif
+                                                        @if($hint) aria-describedby="{{ $fieldId }}-hint" @endif
+                                                    >
+                                                    @if($hint)
+                                                        <span id="{{ $fieldId }}-hint" class="tw:mt-1 tw:block tw:text-ui-xs tw:text-on-surface-variant">{{ $hint }}</span>
+                                                    @endif
                                                 @endif
                                             @endif
                                         @endif

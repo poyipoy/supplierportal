@@ -46,7 +46,15 @@ return [
         'preset_duplicate' => 'Preset dengan nama ini sudah ada untuk ekspor ini.',
         'invalid_filters' => 'Pilih filter yang diizinkan untuk ekspor ini.',
         'stale_preset' => 'Preset disesuaikan dengan kolom atau format yang tersedia saat ini.',
-        'filters' => ['start_date' => 'Tanggal Awal', 'end_date' => 'Tanggal Akhir', 'po_number' => 'Nomor PO', 'search' => 'Pencarian', 'status' => 'Status', 'supplier_id' => 'Supplier', 'period_id' => 'Periode', 'pr_number' => 'Nomor PR', 'currency' => 'Mata Uang', 'date_from' => 'Dari Bulan', 'date_to' => 'Sampai Bulan', 'shipment_number' => 'Nomor Pengiriman', 'q' => 'Pencarian', 'supplier' => 'Supplier', 'payment_status' => 'Status Pembayaran', 'overpayment_status' => 'Status Pengembalian', 'from' => 'Diajukan Mulai', 'to' => 'Diajukan Sampai', 'due_from' => 'Jatuh Tempo Mulai', 'due_to' => 'Jatuh Tempo Sampai', 'overdue' => 'Hanya Lewat Jatuh Tempo', 'history' => 'Sertakan Lunas', 'period' => 'Periode', 'month' => 'Bulan Invoice', 'year' => 'Tahun Invoice', 'report' => 'Laporan'],
+        'filters' => [
+            'start_date' => 'Tanggal Awal', 'end_date' => 'Tanggal Akhir', 'po_number' => 'Nomor PO', 'search' => 'Pencarian', 'status' => 'Status', 'supplier_id' => 'Supplier', 'period_id' => 'Periode', 'pr_number' => 'Nomor PR', 'currency' => 'Mata Uang', 'date_from' => 'Dari Bulan', 'date_to' => 'Sampai Bulan', 'shipment_number' => 'Nomor Pengiriman', 'q' => 'Pencarian', 'supplier' => 'Supplier', 'payment_status' => 'Status Pembayaran', 'overpayment_status' => 'Status Pengembalian', 'from' => 'Diajukan Mulai', 'to' => 'Diajukan Sampai', 'due_from' => 'Jatuh Tempo Mulai', 'due_to' => 'Jatuh Tempo Sampai', 'overdue' => 'Hanya Lewat Jatuh Tempo', 'history' => 'Sertakan Lunas', 'period' => 'Periode', 'month' => 'Bulan Invoice', 'year' => 'Tahun Invoice', 'report' => 'Laporan',
+            'placeholders' => [
+                'shipment_search' => 'cth: SHP/2026/001, No. PO, SS400...',
+            ],
+            'hints' => [
+                'shipment_search' => 'Mencari no. pengiriman, no. PO, nama material, supplier, dan catatan.',
+            ],
+        ],
         'invalid_columns' => 'Pilih kolom yang diizinkan untuk ekspor ini, termasuk kolom wajib.',
         'row_limit' => 'Ekspor melebihi batas :limit baris. Persempit filter.',
         'concurrent_limit' => 'Anda memiliki :limit ekspor aktif. Tunggu salah satunya selesai.',

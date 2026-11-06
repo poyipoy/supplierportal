@@ -8,6 +8,7 @@ import './session-sync';
 import './number-input-helper';
 import './chart-theme';
 import './preferences';
+import './locale-switcher';
 import './submit-guard';
 import './async-form-submit';
 import './adasi-loader';

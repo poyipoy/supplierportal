@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
-import { computeDateTimeSample, computeNumberSample, computeRegionalSample } from '../../resources/js/regional-sample.js';
+import { computeDateTimeSample, computeNumberSample, computeRegionalSample, resolveImportTimezone } from '../../resources/js/regional-sample.js';
 
 // Parity harness: boots the exact early-head bootstrap script from layouts/app.blade.php
 // (the same script preferences.test.mjs already exercises) so this file's pure
@@ -114,4 +114,43 @@ test('computeRegionalSample computes the date/time part once any of the three fi
     });
     assert.ok(!sample.startsWith('Follows your current display'));
     assert.ok(sample.startsWith('2026-10-08'));
+});
+
+// Supplier Import timezone: the same fixture drives UserPreferenceService::resolveDisplayTimezone() in PHP.
+const importCases = JSON.parse(await readFile(new URL('../Fixtures/import-timezone-resolution-cases.json', import.meta.url), 'utf8'));
+
+for (const sample of importCases.resolution) {
+    test('resolveImportTimezone: ' + sample.name, () => {
+        assert.equal(resolveImportTimezone({
+            importContext: sample.import_context,
+            timezone: sample.timezone,
+            countryCode: sample.country_code,
+            importTimezone: sample.import_timezone,
+            countryDefaults: importCases.country_defaults,
+        }), sample.expected);
+    });
+}
+
+for (const sample of importCases.timestamps) {
+    test('preview and layout timestamp agree for ' + sample.timezone + ' at ' + sample.iso, () => {
+        const regional = { timezone: sample.timezone, date_format: 'human', time_format: '24h', number_format: 'system' };
+        const windowRef = boot({
+            theme: 'system', density: 'comfortable', sidebarState: 'expanded', pageSize: 25,
+            sidebarRevision: '0:0', accountId: '1', regional, regionalRegistry: REGISTRY,
+        });
+
+        assert.equal(computeDateTimeSample(sample.iso, regional, REGISTRY.date_formats, 'en', REGISTRY.months), sample.expected);
+        assert.equal(windowRef.AdasiPreferences.displayTimestamp(sample.iso, () => '-'), sample.expected);
+    });
+}
+
+test('an unknown zone from the payload falls back to the system display', () => {
+    const regional = { timezone: 'Not/A_Zone', date_format: 'system', time_format: 'system', number_format: 'system' };
+    const windowRef = boot({
+        theme: 'system', density: 'comfortable', sidebarState: 'expanded', pageSize: 25,
+        sidebarRevision: '0:0', accountId: '1', regional, regionalRegistry: REGISTRY,
+    });
+
+    assert.equal(computeDateTimeSample(SAMPLE_ISO, regional, REGISTRY.date_formats, 'en', REGISTRY.months), null);
+    assert.equal(windowRef.AdasiPreferences.displayTimestamp(SAMPLE_ISO, () => 'legacy'), 'legacy');
 });

@@ -14,6 +14,12 @@ class ExportDefinitionController extends Controller
         $fields = $definition->filterSchema();
         foreach ($fields as &$field) {
             $field['label'] = __('exports.advanced.filters.'.$field['name']);
+            if (isset($field['placeholder'])) {
+                $field['placeholder'] = __($field['placeholder']);
+            }
+            if (isset($field['hint'])) {
+                $field['hint'] = __($field['hint']);
+            }
         }
         unset($field);
 

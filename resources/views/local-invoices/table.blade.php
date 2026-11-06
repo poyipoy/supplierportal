@@ -7,6 +7,7 @@
                     <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('local_invoice.labels.supplier') }}</th>
                     <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('ga.labels.submission_date') }}</th>
                     <th scope="col" class="text-end tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('local_invoice.table.amount_ppn') }}</th>
+                    <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('local_invoice.labels.term_days') }}</th>
                     <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('local_invoice.labels.due_date') }}</th>
                     <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant" style="min-width: 240px;">{{ __('local_invoice.table.status_actions') }}</th>
                 </tr>
@@ -20,13 +21,11 @@
                     <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('ga.labels.submission_date') }}</th>
                     <th scope="col" class="text-end tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('local_invoice.table.amount_ppn') }}</th>
                     <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('local_invoice.labels.status') }}</th>
+                    <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('local_invoice.labels.term_days') }}</th>
                     @if(!auth()->user()?->isSupplier())
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('local_invoice.labels.due_date') }}</th>
                     @endif
                     @if($payments ?? false)
-                        @if(!auth()->user()?->isSupplier() && ($portal ?? '') !== 'local-supplier')
-                            <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('local_invoice.labels.term_days') }}</th>
-                        @endif
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('local_invoice.labels.payment_date') }}</th>
                     @endif
                     <th scope="col" class="text-end tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant" style="min-width: 130px;">{{ __('local_invoice.labels.actions') }}</th>
@@ -70,6 +69,16 @@
                             </span>
                         </td>
                         <td>
+                            @php $term = $row->effectivePaymentTermDays(); @endphp
+                            @if($term)
+                                <span class="tw:text-ui-xs tw:font-medium tw:text-on-surface">
+                                    {{ trans_choice('common.final_review.net_days', $term, ['count' => $term]) }}
+                                </span>
+                            @else
+                                <span class="tw:text-ui-xs tw:text-on-surface-variant">&mdash;</span>
+                            @endif
+                        </td>
+                        <td>
                             @if($row->due_date)
                                 <span class="tw:text-ui-xs tw:font-medium tw:text-on-surface">
                                     {{ $regionalFormatter->date($row->due_date, 'human') }}
@@ -89,11 +98,6 @@
                                             {{ trans_choice('local_invoice.table.remaining_days', $rem) }}
                                         </span>
                                     @endif
-                                @endif
-                                @if($row->payment_term_days_snapshot)
-                                    <span class="tw:block tw:text-[11px] tw:text-on-surface-variant tw:mt-0.5">
-                                        {{ trans_choice('local_invoice.table.term_days', $row->payment_term_days_snapshot) }}
-                                    </span>
                                 @endif
                             @else
                                 <span class="tw:text-ui-xs tw:text-on-surface-variant">&mdash;</span>
@@ -188,6 +192,16 @@
                                 @endif
                             @endif
                         </td>
+                        <td>
+                            @php $term = $row->effectivePaymentTermDays(); @endphp
+                            @if($term)
+                                <span class="tw:text-ui-xs tw:font-medium tw:text-on-surface">
+                                    {{ trans_choice('common.final_review.net_days', $term, ['count' => $term]) }}
+                                </span>
+                            @else
+                                <span class="tw:text-ui-xs tw:text-on-surface-variant">&mdash;</span>
+                            @endif
+                        </td>
                         @if(!auth()->user()?->isSupplier())
                         <td>
                             @if($row->due_date)
@@ -216,13 +230,6 @@
                         </td>
                         @endif
                         @if($payments ?? false)
-                            @if(!auth()->user()?->isSupplier() && ($portal ?? '') !== 'local-supplier')
-                                <td>
-                                    <span class="tw:text-ui-xs tw:font-medium tw:text-on-surface">
-                                        {{ trans_choice('common.final_review.net_days', $row->payment_term_days_snapshot, ['count' => $row->payment_term_days_snapshot]) }}
-                                    </span>
-                                </td>
-                            @endif
                             <td>
                                 <span class="tw:text-ui-xs tw:font-medium tw:text-on-surface">
                                     {{ $row->scheduled_payment_date ? $regionalFormatter->date($row->scheduled_payment_date, 'human') : '—' }}
@@ -244,7 +251,7 @@
                 @endif
             @empty
                 <tr>
-                    <td colspan="{{ ($portal ?? '') === 'finance' ? 6 : ((in_array(($portal ?? ''), ['accounting', 'finance', 'purchasing']) ? 1 : 0) + ((($payments ?? false) && !auth()->user()?->isSupplier() && ($portal ?? '') !== 'local-supplier') ? 1 : 0) + (($payments ?? false) ? 1 : 0) + (!auth()->user()?->isSupplier() ? 1 : 0) + 6) }}">
+                    <td colspan="{{ ($portal ?? '') === 'finance' ? 7 : ((in_array(($portal ?? ''), ['accounting', 'finance', 'purchasing']) || !auth()->user()?->isSupplier() ? 1 : 0) + (!auth()->user()?->isSupplier() ? 1 : 0) + (($payments ?? false) ? 1 : 0) + 7) }}">
                         <x-ui.empty-state
                             icon="inbox"
                             :title="__('local_invoice.empty.invoice')"

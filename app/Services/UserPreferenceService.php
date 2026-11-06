@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\User;
 use App\Models\UserPreference;
 use App\Services\Dashboard\DashboardWidgetService;
+use App\Support\PortalContext;
+use DateTimeZone;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -19,6 +21,48 @@ class UserPreferenceService
     {
         return is_string($density) && in_array($density, config('user_preferences.densities'), true)
             ? $density : config('user_preferences.defaults.density');
+    }
+
+    /** Allow-listed ISO 3166-1 alpha-2 work-location country, or null. */
+    public static function normalizeCountry(mixed $country): ?string
+    {
+        return is_string($country) && isset(config('country_timezones')[$country]) ? $country : null;
+    }
+
+    /** Supplier Import display zone: null = follow the country, 'system', or a canonical IANA identifier. */
+    public static function normalizeImportTimezone(mixed $timezone): ?string
+    {
+        if (! is_string($timezone)) {
+            return null;
+        }
+
+        return $timezone === 'system' || in_array($timezone, DateTimeZone::listIdentifiers(), true) ? $timezone : null;
+    }
+
+    /**
+     * Timestamp display zone for the current request. Only the Supplier Import context uses the
+     * country/import preference; every other audience keeps the global regional timezone.
+     */
+    public static function resolveDisplayTimezone(bool $importContext, array $preferences): string
+    {
+        $global = (string) ($preferences['timezone'] ?? config('user_preferences.defaults.timezone'));
+        if (! $importContext) {
+            return $global;
+        }
+
+        $explicit = self::normalizeImportTimezone($preferences['import_timezone'] ?? null);
+        if ($explicit !== null) {
+            return $explicit;
+        }
+
+        $country = self::normalizeCountry($preferences['country_code'] ?? null);
+
+        return $country !== null ? config('country_timezones')[$country] : $global;
+    }
+
+    public function displayTimezone(User $user, array $preferences): string
+    {
+        return self::resolveDisplayTimezone($this->quickAccess->contextFor($user) === PortalContext::SCOPE_IMPORT, $preferences);
     }
 
     public function __construct(
@@ -52,6 +96,8 @@ class UserPreferenceService
                 'sidebar_revision' => max(1, (int) $stored->sidebar_revision),
                 'notification_preferences' => is_array($stored->notification_preferences) ? $stored->notification_preferences : [],
                 'locale' => self::normalizeLocale($stored->locale),
+                'country_code' => self::normalizeCountry($stored->country_code),
+                'import_timezone' => self::normalizeImportTimezone($stored->import_timezone),
             ]
             : [...$defaults, 'revision' => 0, 'notification_preferences' => []];
 
@@ -108,6 +154,9 @@ class UserPreferenceService
                 'locale' => self::normalizeLocale($values['locale'] ?? $stored?->locale),
                 'dashboard_preferences' => $layouts,
                 ...$this->regionalValues($stored, $values),
+                // Absent keys keep the stored value, so saves from non-Import contexts never clear it.
+                'country_code' => self::normalizeCountry(array_key_exists('country_code', $values) ? $values['country_code'] : $stored?->country_code),
+                'import_timezone' => self::normalizeImportTimezone(array_key_exists('import_timezone', $values) ? $values['import_timezone'] : $stored?->import_timezone),
             ]);
             $preference->revision = ($stored?->revision ?? 0) + 1;
             $preference->sidebar_revision = max(1, (int) ($stored?->sidebar_revision ?? 1))
@@ -270,7 +319,10 @@ class UserPreferenceService
             'pageSize' => $preferences['page_size'],
             'sidebarRevision' => $this->sidebarCacheVersion($user, $preferences),
             'accountId' => (string) $user->getKey(),
-            'regional' => array_intersect_key($preferences, array_flip(['timezone', 'date_format', 'time_format', 'number_format'])),
+            'regional' => [
+                ...array_intersect_key($preferences, array_flip(['timezone', 'date_format', 'time_format', 'number_format'])),
+                'timezone' => $this->displayTimezone($user, $preferences),
+            ],
             'regionalRegistry' => [
                 'number_profiles' => config('regional_display.number_profiles'),
                 'date_formats' => array_keys(config('regional_display.date_formats')),

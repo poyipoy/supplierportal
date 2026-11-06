@@ -29,18 +29,23 @@ class EnforceAuthSessionSecurity
         }
 
         if (Auth::guard('web')->viaRemember() && $user->hasTwoFactorAuthentication()) {
-            if ($request->expectsJson()) {
-                return $this->terminateSession($request, $user, 'remember_mfa_required');
-            }
-
+            // A background request (badge poll) usually notices the expired session first. It
+            // stages the same code-only challenge a page load would, so the session-ended dialog
+            // can resume it instead of asking for the password again. A JSON URL is never a
+            // landing page, so its intended URL stays the default until the dialog supplies one.
+            $expectsJson = $request->expectsJson();
             $this->twoFactor->beginLoginChallenge(
                 $request,
                 $user,
                 true,
-                $request->fullUrl(),
+                $expectsJson ? null : $request->fullUrl(),
                 true,
             );
             event(new AuthSecurityEvent('remember_mfa_required', $user));
+
+            if ($expectsJson) {
+                return response()->json(['message' => __('auth.feedback.unauthenticated')], 401);
+            }
 
             return redirect()->route('two-factor.challenge');
         }

@@ -11,6 +11,7 @@ use App\Services\FileSecurity\FileInspectionService;
 use App\Services\LocalInvoice\Contracts\LocalPoProviderInterface;
 use App\Services\LocalInvoice\Providers\DatabaseLocalPoProvider;
 use App\Services\NotificationPreferenceService;
+use App\Services\Pricing\AnnualExchangeRateResolver;
 use App\Services\Pricing\ExchangeRateResolver;
 use App\Services\QuickAccessService;
 use App\Services\RegionalDisplayFormatter;
@@ -56,7 +57,15 @@ class AppServiceProvider extends ServiceProvider
         $this->app->scoped(RegionalDisplayFormatter::class, function (): RegionalDisplayFormatter {
             $user = auth()->user();
 
-            return new RegionalDisplayFormatter($user instanceof User ? app(UserPreferenceService::class)->for($user) : []);
+            if (! $user instanceof User) {
+                return new RegionalDisplayFormatter([]);
+            }
+
+            $service = app(UserPreferenceService::class);
+            $preferences = $service->for($user);
+
+            // Supplier Import may show timestamps in its work-location zone; other audiences keep the global one.
+            return new RegionalDisplayFormatter([...$preferences, 'display_timezone' => $service->displayTimezone($user, $preferences)]);
         });
 
         $this->app->bind(
@@ -70,7 +79,7 @@ class AppServiceProvider extends ServiceProvider
         // between queue jobs like every other scoped instance.
         $this->app->scoped(EvaluationContext::class, fn (): EvaluationContext => EvaluationContext::forBusinessToday());
         $this->app->scoped(ExchangeRateResolver::class);
-        $this->app->scoped(\App\Services\Pricing\AnnualExchangeRateResolver::class);
+        $this->app->scoped(AnnualExchangeRateResolver::class);
 
         // Same construction as Illuminate\View\ViewServiceProvider::registerBladeCompiler(),
         // except that compiled views are published through a Filesystem that survives

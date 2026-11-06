@@ -27,109 +27,110 @@
         <p class="topbar-page-title text-truncate">@yield('page-title', __('navigation.dashboard'))</p>
     </div>
 
-    {{-- Right: User info + Notifications + Chat --}}
-    <div class="d-flex align-items-center gap-2">
-        {{-- Chat Icon (Only for Purchasing and Supplier in Material Procurement context) --}}
-        @if(auth()->user()->isPurchasing() || \App\Support\PortalContext::isImport(auth()->user()))
-            <x-ui.icon-button
-                :href="route(auth()->user()->role . '.conversations.index')"
-                icon="message-circle-more"
-                :label="__('navigation.chat')"
-                size="sm"
-                data-chat-drawer
-            >
-                <x-slot:badge>
-                    <span class="chat-badge topbar-counter {{ $initChatCount > 0 ? '' : 'd-none' }}">{{ $initChatCount }}</span>
-                </x-slot:badge>
-            </x-ui.icon-button>
-        @endif
-
-        {{-- Notification Icon --}}
-        <div
-            class="dropdown"
-            data-notification-dropdown
-            data-notification-summary-url="{{ route('notifications.summary') }}"
-        >
-            <x-ui.icon-button
-                icon="bell"
-                :label="$initNotifCount === 1 ? __('js.notification.unread_one', ['count' => $initNotifCount]) : ($initNotifCount > 1 ? __('js.notification.unread_many', ['count' => $initNotifCount]) : __('js.notification.button_label'))"
-                size="sm"
-                data-bs-toggle="dropdown"
-                data-bs-auto-close="outside"
-                aria-expanded="false"
-            >
-                <x-slot:badge>
-                    <span class="notif-badge topbar-counter {{ $initNotifCount > 0 ? '' : 'd-none' }}" aria-hidden="true">{{ $initNotifCount }}</span>
-                </x-slot:badge>
-            </x-ui.icon-button>
-            <div class="dropdown-menu dropdown-menu-end notification-dropdown shadow-sm border">
-                <div
-                    class="tw:flex tw:min-h-48 tw:min-w-72 tw:items-center tw:justify-center tw:p-4 tw:text-ui-sm tw:text-on-surface-variant"
-                    data-notification-summary-container
-                    data-notification-summary-state="idle"
-                    aria-live="polite"
-                >
-                    {{ __('navigation.notification_open') }}
-                </div>
-            </div>
-        </div>
-
-        {{-- Language Switcher Toggle --}}
-        <form action="{{ route('locale.switch') }}" method="POST" class="lang-toggle-track tw:inline-flex tw:items-center tw:p-0.5 tw:rounded-ui-full tw:bg-surface-container tw:border tw:border-outline-strong tw:m-0" role="group" aria-label="{{ __('customization.language.label') }}">
+    {{-- Right: Global Utility + Activity Alerts + User Identity --}}
+    <div class="d-flex align-items-center tw:gap-2.5">
+        {{-- 1. Global System Utility: Language Switcher --}}
+        <form action="{{ route('locale.switch') }}" method="POST" data-locale-switcher data-managed-submit data-track-unsaved="false" class="lang-toggle-track tw:inline-flex tw:items-center tw:gap-0.5 tw:p-0.5 tw:rounded-ui-sm tw:bg-surface-container tw:border tw:border-outline tw:m-0" role="group" aria-label="{{ __('customization.language.label') }}">
             @csrf
             <input type="hidden" name="return_to" value="{{ request()->getRequestUri() }}">
             <button
                 type="submit"
                 name="locale"
                 value="id"
-                class="lang-pill-btn ui-focus-ring tw:flex tw:items-center tw:gap-1.5 tw:px-2 tw:py-1 tw:rounded-ui-full tw:text-ui-xs tw:font-bold {{ app()->getLocale() === 'id' ? 'is-active tw:bg-surface tw:text-primary tw:border-outline tw-shadow-xs' : 'tw:border-transparent tw:text-on-surface-variant tw:hover:text-on-surface tw:hover:bg-surface/50' }}"
+                data-locale-option="id"
+                class="lang-pill-btn ui-focus-ring tw:flex tw:items-center tw:justify-center tw:px-2.5 tw:py-0.5 tw:min-h-7 tw:rounded-ui-xs tw:text-ui-xs {{ app()->getLocale() === 'id' ? 'is-active tw:bg-surface tw:text-primary tw:font-bold tw:border tw:border-outline' : 'tw:border-transparent tw:text-on-surface-variant tw:font-semibold tw:hover:text-on-surface' }}"
                 {{ app()->getLocale() === 'id' ? 'disabled aria-pressed=true' : 'aria-pressed=false' }}
             >
-                <span class="lang-flag-badge" aria-hidden="true">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" preserveAspectRatio="none" class="tw:w-full tw:h-full" focusable="false">
-                        <rect width="60" height="20" fill="#e70011"/>
-                        <rect y="20" width="60" height="20" fill="#ffffff"/>
-                    </svg>
-                </span>
-                <span class="tw:tracking-wide">ID</span><span class="tw:sr-only"> — Bahasa Indonesia</span>
+                <span class="tw:tracking-wider">ID</span>
+                <span class="tw:sr-only"> (Bahasa Indonesia)</span>
             </button>
             <button
                 type="submit"
                 name="locale"
                 value="en"
-                class="lang-pill-btn ui-focus-ring tw:flex tw:items-center tw:gap-1.5 tw:px-2 tw:py-1 tw:rounded-ui-full tw:text-ui-xs tw:font-bold {{ app()->getLocale() === 'en' ? 'is-active tw:bg-surface tw:text-primary tw:border-outline tw-shadow-xs' : 'tw:border-transparent tw:text-on-surface-variant tw:hover:text-on-surface tw:hover:bg-surface/50' }}"
+                data-locale-option="en"
+                class="lang-pill-btn ui-focus-ring tw:flex tw:items-center tw:justify-center tw:px-2.5 tw:py-0.5 tw:min-h-7 tw:rounded-ui-xs tw:text-ui-xs {{ app()->getLocale() === 'en' ? 'is-active tw:bg-surface tw:text-primary tw:font-bold tw:border tw:border-outline' : 'tw:border-transparent tw:text-on-surface-variant tw:font-semibold tw:hover:text-on-surface' }}"
                 {{ app()->getLocale() === 'en' ? 'disabled aria-pressed=true' : 'aria-pressed=false' }}
             >
-                <span class="lang-flag-badge" aria-hidden="true">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" preserveAspectRatio="none" class="tw:w-full tw:h-full" focusable="false">
-                        <path fill="#012169" d="M0 0h60v40H0z"/>
-                        <path stroke="#ffffff" stroke-width="8" d="M0 0l60 40M60 0L0 40"/>
-                        <path stroke="#c8102e" stroke-width="2.67" d="M0 0l27 18M60 0L33 18M60 40L33 22M0 40l27-18"/>
-                        <path stroke="#ffffff" stroke-width="13.33" d="M30 0v40M0 20h60"/>
-                        <path stroke="#c8102e" stroke-width="8" d="M30 0v40M0 20h60"/>
-                    </svg>
-                </span>
-                <span class="tw:tracking-wide">EN</span><span class="tw:sr-only"> — English</span>
+                <span class="tw:tracking-wider">EN</span>
+                <span class="tw:sr-only"> (English)</span>
             </button>
         </form>
 
-        {{-- Role Badge --}}
-        <span class="role-badge role-badge-{{ auth()->user()->role }}">
-            {{ __('navigation.roles.'.auth()->user()->role) }}
-        </span>
+        <div class="tw:h-4 tw:w-px tw:bg-outline-variant tw:shrink-0" aria-hidden="true"></div>
 
-        {{-- User Dropdown --}}
-        <div class="dropdown">
-            <button class="topbar-user-trigger dropdown-toggle" type="button"
-                data-bs-toggle="dropdown" @if(config('portal_session.logout_all_devices')) data-bs-auto-close="outside" @endif aria-expanded="false" aria-label="{{ __('navigation.open_user') }}">
-                <x-ui.user-chip :name="auth()->user()->name" :meta="auth()->user()->email" class="topbar-user-chip" />
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end shadow-sm border">
-                <li>
-                    <span class="dropdown-item-text small text-muted">
-                        {{ auth()->user()->email }}
-                    </span>
-                </li>
+        {{-- 2. Operational Activity & Alerts: Chat + Notifications --}}
+        <div class="tw:inline-flex tw:items-center tw:gap-1">
+            {{-- Chat Icon (Only for Purchasing and Supplier in Material Procurement context) --}}
+            @if(auth()->user()->isPurchasing() || \App\Support\PortalContext::isImport(auth()->user()))
+                <x-ui.icon-button
+                    :href="route(auth()->user()->role . '.conversations.index')"
+                    icon="message-circle-more"
+                    :label="__('navigation.chat')"
+                    size="sm"
+                    data-chat-drawer
+                >
+                    <x-slot:badge>
+                        <span class="chat-badge topbar-counter {{ $initChatCount > 0 ? '' : 'd-none' }}">{{ $initChatCount }}</span>
+                    </x-slot:badge>
+                </x-ui.icon-button>
+            @endif
+
+            {{-- Notification Icon --}}
+            <div
+                class="dropdown"
+                data-notification-dropdown
+                data-notification-summary-url="{{ route('notifications.summary') }}"
+            >
+                <x-ui.icon-button
+                    icon="bell"
+                    :label="$initNotifCount === 1 ? __('js.notification.unread_one', ['count' => $initNotifCount]) : ($initNotifCount > 1 ? __('js.notification.unread_many', ['count' => $initNotifCount]) : __('js.notification.button_label'))"
+                    size="sm"
+                    data-bs-toggle="dropdown"
+                    data-bs-auto-close="outside"
+                    aria-expanded="false"
+                >
+                    <x-slot:badge>
+                        <span class="notif-badge topbar-counter {{ $initNotifCount > 0 ? '' : 'd-none' }}" aria-hidden="true">{{ $initNotifCount }}</span>
+                    </x-slot:badge>
+                </x-ui.icon-button>
+                <div class="dropdown-menu dropdown-menu-end notification-dropdown shadow-sm border">
+                    <div
+                        class="tw:flex tw:min-h-48 tw:min-w-72 tw:items-center tw:justify-center tw:p-4 tw:text-ui-sm tw:text-on-surface-variant"
+                        data-notification-summary-container
+                        data-notification-summary-state="idle"
+                        aria-live="polite"
+                    >
+                        {{ __('navigation.notification_open') }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tw:h-4 tw:w-px tw:bg-outline-variant tw:shrink-0" aria-hidden="true"></div>
+
+        {{-- 3. User Identity & Role Cluster --}}
+        <div class="tw:inline-flex tw:items-center tw:gap-2">
+            {{-- Role Badge --}}
+            <span class="role-badge role-badge-{{ auth()->user()->role }}">
+                {{ __('navigation.roles.'.auth()->user()->role) }}
+            </span>
+
+            {{-- User Dropdown --}}
+            <div class="dropdown">
+                <button class="topbar-user-trigger dropdown-toggle" type="button"
+                    data-bs-toggle="dropdown" @if(config('portal_session.logout_all_devices')) data-bs-auto-close="outside" @endif aria-expanded="false" aria-label="{{ __('navigation.open_user') }}">
+                    <x-ui.user-chip :name="auth()->user()->name" :meta="auth()->user()->email" class="topbar-user-chip" />
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow-sm border">
+                    <li>
+                        <div class="dropdown-item-text small text-muted tw:flex tw:items-center tw:justify-between tw:gap-2">
+                            <span class="tw:truncate">{{ auth()->user()->email }}</span>
+                            <span class="role-badge role-badge-{{ auth()->user()->role }} tw:text-[10px] d-lg-none">
+                                {{ __('navigation.roles.'.auth()->user()->role) }}
+                            </span>
+                        </div>
+                    </li>
                 <li>
                     <hr class="dropdown-divider my-1">
                 </li>
@@ -174,6 +175,7 @@
                     </form>
                 </li>
             </ul>
+        </div>
         </div>
     </div>
 </nav>

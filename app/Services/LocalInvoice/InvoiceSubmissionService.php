@@ -357,7 +357,7 @@ class InvoiceSubmissionService
                     'cashier_received_at' => null,
                     'review_started_at' => null,
                     'due_date' => null,
-                    'payment_term_days_snapshot' => null,
+                    'payment_term_days_snapshot' => (int) ($supplier->payment_term_days ?? 30),
                     'scheduled_payment_date' => null,
                     'missed_delivery_count' => 0,
                     'scheduled_physical_delivery_date' => $recovering ? ($data['scheduled_physical_delivery_date'] ?? null) : ($data['scheduled_physical_delivery_date'] ?? $invoice->scheduled_physical_delivery_date),

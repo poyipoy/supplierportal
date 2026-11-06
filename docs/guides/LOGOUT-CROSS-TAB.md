@@ -53,11 +53,29 @@ berakhir" dengan pilihan **Sambungkan kembali** dan **Nanti saja**
 untuk aksi yang dimulai user; polling hanya 401.
 
 - **Satu dialog**: kegagalan paralel dari satu halaman berbagi dialog yang sama.
-- **Sambungkan kembali** membuka ulang URL halaman saat ini tanpa fragmen. Tanpa
-  sesi, server mengarahkan ke login lalu kembali ke halaman ini setelah masuk;
-  dengan sesi yang masih hidup (419) halaman hanya dimuat ulang. Storage ber-scope
-  dibersihkan dan prompt native untuk perubahan belum tersimpan dilewati, karena
-  dialog sudah memperingatkan bila halaman punya perubahan yang belum disimpan.
+- **Sambungkan kembali** (6 November 2026) lebih dulu bertanya ke
+  `GET session/status` (`session.status`, `SessionStatusController`, di luar `auth`,
+  `no-store`, `throttle:30,1`) tanpa kredensial apa pun; tombol menampilkan loader.
+  - Sesi masih hidup (sudah masuk lagi di tab lain, atau hanya token CSRF yang basi)
+    atau cookie remember-me masih valid: server mengembalikan token CSRF sesi itu,
+    halaman **tidak dimuat ulang**, isian yang belum disimpan tetap ada. Token baru
+    dipasang ke `meta[name=csrf-token]`, semua `input[name=_token]` dan header auth
+    Echo; token lama yang tertanam di script inline diganti saat request same-origin
+    (`fetch` dan prefilter jQuery), tidak pernah untuk origin lain. Polling lanjut dan
+    toast "Sesi tersambung kembali" tampil.
+  - Akun 2FA dengan remember-me: request JSON pertama setelah sesi habis (biasanya
+    polling badge) kini memulai challenge kode yang sama seperti halaman HTML (cookie
+    remember tetap dirotasi), lalu dialog membawa user ke `two-factor-challenge` dan
+    kembali ke halaman ini setelah kode benar, tanpa password. Ini mengubah kontrak
+    A11 lama (JSON hanya mengakhiri sesi); lihat `TargetedAuthenticationCorrectnessTest`.
+  - Sesi yang benar-benar berakhir (dicabut, absolute timeout, akun nonaktif, tanpa
+    remember-me) tetap tidak bisa dipulihkan tanpa kredensial: halaman dibuka ulang,
+    server mengarahkan ke login lalu kembali ke halaman ini. Akun lain yang kini masuk
+    di browser yang sama juga memuat ulang halaman, bukan melanjutkan data akun lama.
+  - Server tidak terjangkau, 429 atau 5xx: pesan tampil di dalam dialog (`role=alert`),
+    halaman tetap, user dapat mencoba lagi atau memilih "Nanti saja".
+  Storage ber-scope hanya dibersihkan dan prompt native perubahan belum tersimpan hanya
+  dilewati ketika halaman benar-benar berpindah.
 - **Nanti saja** menjaga halaman dan isinya apa adanya (user dapat menyalin data
   lebih dulu). Polling badge berhenti. Dialog muncul lagi hanya bila user memicu aksi
   yang gagal, dengan jeda 3 detik agar gelombang request yang sama tidak

@@ -19,6 +19,59 @@ export function monthName(month, locale, registryMonths) {
 }
 
 /**
+ * Supplier Import display zone; mirrors UserPreferenceService::resolveDisplayTimezone().
+ * Cases are shared with PHP through tests/Fixtures/import-timezone-resolution-cases.json.
+ * @param {{importContext: boolean, timezone?: string, countryCode?: string|null, importTimezone?: string|null,
+ *   countryDefaults?: Record<string, string>, knownZone?: (zone: string) => boolean}} input
+ */
+export function resolveImportTimezone({ importContext, timezone, countryCode, importTimezone, countryDefaults, knownZone = isKnownTimeZone }) {
+    const global = typeof timezone === 'string' && timezone !== '' ? timezone : 'system';
+    if (!importContext) return global;
+    if (importTimezone === 'system' || (typeof importTimezone === 'string' && importTimezone !== '' && knownZone(importTimezone))) {
+        return importTimezone;
+    }
+    const mapped = typeof countryCode === 'string' ? countryDefaults?.[countryCode] : undefined;
+
+    return typeof mapped === 'string' ? mapped : global;
+}
+
+export function isKnownTimeZone(zone) {
+    if (typeof zone !== 'string' || zone === '' || zone === 'system') return false;
+    try {
+        new Intl.DateTimeFormat('en-GB', { timeZone: zone });
+        return true;
+    } catch (error) {
+        return false;
+    }
+}
+
+/** Wall-clock parts of an instant in `zone`, plus its suffix (WIB for Jakarta, otherwise UTC+-HH:MM). */
+export function zonedParts(isoValue, zone) {
+    const instant = new Date(isoValue);
+    const formatted = new Intl.DateTimeFormat('en-GB', {
+        timeZone: zone, calendar: 'gregory', numberingSystem: 'latn',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
+    }).formatToParts(instant);
+    const values = Object.fromEntries(formatted.map((part) => [part.type, part.value]));
+    const parts = {
+        year: Number(values.year), month: Number(values.month), day: Number(values.day),
+        hour: Number(values.hour) % 24, minute: Number(values.minute),
+    };
+
+    return { parts, suffix: zoneSuffix(zone, parts, Number(values.second), instant) };
+}
+
+export function zoneSuffix(zone, parts, second, instant) {
+    if (zone === 'Asia/Jakarta') return 'WIB';
+    const wall = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, second);
+    const offset = Math.round((wall - Math.floor(instant.getTime() / 1000) * 1000) / 60000);
+    const absolute = Math.abs(offset);
+
+    return 'UTC' + (offset < 0 ? '-' : '+') + String(Math.floor(absolute / 60)).padStart(2, '0') + ':' + String(absolute % 60).padStart(2, '0');
+}
+
+/**
  * @param {string} isoValue UTC instant, e.g. "2026-10-08T07:30:00Z"
  * @param {{timezone?: string, date_format?: string, time_format?: string}} regional
  * @param {string[]} registryDateFormats allow-listed date_format keys
@@ -33,7 +86,7 @@ export function computeDateTimeSample(isoValue, regional, registryDateFormats, l
         : null;
     if (!match) return null;
 
-    const timezone = regional.timezone === 'Asia/Jakarta' ? 'Asia/Jakarta' : 'system';
+    const timezone = isKnownTimeZone(regional.timezone) ? regional.timezone : 'system';
     const dateFormat = Array.isArray(registryDateFormats) && registryDateFormats.includes(regional.date_format)
         ? regional.date_format : 'system';
     const timeFormat = ['system', '24h', '12h'].includes(regional.time_format) ? regional.time_format : 'system';
@@ -45,17 +98,9 @@ export function computeDateTimeSample(isoValue, regional, registryDateFormats, l
         hour: Number(match[4]), minute: Number(match[5]),
     };
 
-    if (timezone === 'Asia/Jakarta') {
-        const formatted = new Intl.DateTimeFormat('en-GB', {
-            timeZone: 'Asia/Jakarta', calendar: 'gregory', numberingSystem: 'latn',
-            year: 'numeric', month: '2-digit', day: '2-digit',
-            hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
-        }).formatToParts(new Date(isoValue));
-        const values = Object.fromEntries(formatted.map((part) => [part.type, part.value]));
-        parts = {
-            year: Number(values.year), month: Number(values.month), day: Number(values.day),
-            hour: Number(values.hour) % 24, minute: Number(values.minute),
-        };
+    let suffix = '';
+    if (timezone !== 'system') {
+        ({ parts, suffix } = zonedParts(isoValue, timezone));
     }
 
     const year = String(parts.year).padStart(4, '0');
@@ -75,7 +120,7 @@ export function computeDateTimeSample(isoValue, regional, registryDateFormats, l
         timeText = `${String(parts.hour).padStart(2, '0')}:${String(parts.minute).padStart(2, '0')}`;
     }
 
-    return `${dateText} ${timeText}${timezone === 'Asia/Jakarta' ? ' WIB' : ''}`;
+    return `${dateText} ${timeText}${suffix ? ' ' + suffix : ''}`;
 }
 
 /**
@@ -126,5 +171,5 @@ export function computeRegionalSample({ sampleIso, sampleNumber, regional, regis
 }
 
 if (typeof window !== 'undefined') {
-    window.AdasiRegionalSample = Object.freeze({ computeRegionalSample, computeDateTimeSample, computeNumberSample });
+    window.AdasiRegionalSample = Object.freeze({ computeRegionalSample, computeDateTimeSample, computeNumberSample, resolveImportTimezone });
 }

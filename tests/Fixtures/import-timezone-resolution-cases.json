@@ -1,0 +1,28 @@
+{
+    "country_defaults": {
+        "CN": "Asia/Shanghai",
+        "US": "America/New_York",
+        "ID": "Asia/Jakarta"
+    },
+    "resolution": [
+        {"name": "china defaults to Shanghai", "import_context": true, "timezone": "system", "country_code": "CN", "import_timezone": null, "expected": "Asia/Shanghai"},
+        {"name": "manual override wins over the country", "import_context": true, "timezone": "system", "country_code": "CN", "import_timezone": "Asia/Urumqi", "expected": "Asia/Urumqi"},
+        {"name": "explicit system wins over the country", "import_context": true, "timezone": "Asia/Jakarta", "country_code": "CN", "import_timezone": "system", "expected": "system"},
+        {"name": "empty country keeps the global zone", "import_context": true, "timezone": "Asia/Jakarta", "country_code": null, "import_timezone": null, "expected": "Asia/Jakarta"},
+        {"name": "empty country keeps global system", "import_context": true, "timezone": "system", "country_code": null, "import_timezone": null, "expected": "system"},
+        {"name": "unmapped country keeps the global zone", "import_context": true, "timezone": "Asia/Jakarta", "country_code": "XX", "import_timezone": null, "expected": "Asia/Jakarta"},
+        {"name": "invalid stored zone falls back to the country", "import_context": true, "timezone": "system", "country_code": "CN", "import_timezone": "Not/A_Zone", "expected": "Asia/Shanghai"},
+        {"name": "multi-zone country uses its capital zone", "import_context": true, "timezone": "system", "country_code": "US", "import_timezone": null, "expected": "America/New_York"},
+        {"name": "outside Import the global zone is kept", "import_context": false, "timezone": "Asia/Jakarta", "country_code": "CN", "import_timezone": "Asia/Urumqi", "expected": "Asia/Jakarta"},
+        {"name": "outside Import global system is kept", "import_context": false, "timezone": "system", "country_code": "CN", "import_timezone": null, "expected": "system"}
+    ],
+    "timestamps": [
+        {"iso": "2026-09-28T23:35:00Z", "timezone": "Asia/Shanghai", "expected": "29 Sep 2026 07:35 UTC+08:00"},
+        {"iso": "2026-09-28T23:35:00Z", "timezone": "Asia/Urumqi", "expected": "29 Sep 2026 05:35 UTC+06:00"},
+        {"iso": "2026-09-28T23:35:00Z", "timezone": "Asia/Jakarta", "expected": "29 Sep 2026 06:35 WIB"},
+        {"iso": "2026-09-28T23:35:00Z", "timezone": "Asia/Kolkata", "expected": "29 Sep 2026 05:05 UTC+05:30"},
+        {"iso": "2026-09-28T23:35:00Z", "timezone": "America/New_York", "expected": "28 Sep 2026 19:35 UTC-04:00"},
+        {"iso": "2026-01-15T23:35:00Z", "timezone": "America/New_York", "expected": "15 Jan 2026 18:35 UTC-05:00"},
+        {"iso": "2026-09-28T23:35:00Z", "timezone": "UTC", "expected": "28 Sep 2026 23:35 UTC+00:00"}
+    ]
+}

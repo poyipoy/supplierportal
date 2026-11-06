@@ -389,12 +389,19 @@ class TargetedAuthenticationCorrectnessTest extends TestCase
         return [['/profile/security'], ['/two-factor-challenge']];
     }
 
-    public function test_a11_recalled_mfa_json_terminates_and_non_mfa_recall_is_preserved(): void
+    // Changed 6 Nov 2026 (session-ended dialog): a credentialed JSON request no longer just
+    // terminates; like the HTML path (A10) it rotates the cookie and stages a code-only challenge,
+    // so "Reconnect" needs no password. The JSON URL never becomes the post-MFA destination.
+    public function test_a11_recalled_mfa_json_is_refused_but_stages_the_code_challenge_and_non_mfa_recall_is_preserved(): void
     {
         $user = $this->mfaUser();
+        $rememberToken = $user->remember_token;
         $this->withCredentials()->withCookie(...$this->recaller($user))->getJson('/two-factor-challenge')->assertUnauthorized()
-            ->assertSessionMissing(TwoFactorService::PENDING_LOGIN_KEY);
+            ->assertSessionHas(TwoFactorService::PENDING_LOGIN_KEY, fn (array $pending): bool => $pending['user_id'] === $user->id
+                && $pending['remember'] === true
+                && $pending['intended'] === route('dashboard', absolute: false));
         $this->assertGuest();
+        $this->assertNotSame($rememberToken, $user->fresh()->remember_token);
         $plain = User::factory()->create(['role' => 'admin']);
         Auth::forgetGuards();
         $this->withCookie(...$this->recaller($plain))->get('/dashboard')->assertRedirect(route('admin.dashboard'));

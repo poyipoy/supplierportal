@@ -86,6 +86,9 @@ class ExportPresetService
         if (in_array('start_date', $allowed, true)) {
             $allowed[] = 'date_range';
         }
+        if ($definition->exportClass() === ShipmentsExport::class) {
+            $allowed[] = 'shipment_number';
+        }
         if (array_diff(array_keys($filters), $allowed) !== []) {
             throw ValidationException::withMessages(['filters' => __('exports.advanced.invalid_filters')]);
         }
@@ -149,10 +152,17 @@ class ExportPresetService
             }
         }
         $format = in_array($preset->format, ['xlsx', 'csv'], true) ? $preset->format : 'xlsx';
+        $filters = $preset->filters ?? [];
+        if ($definition->exportClass() === ShipmentsExport::class && ! empty($filters['shipment_number'])) {
+            if (empty($filters['search'])) {
+                $filters['search'] = $filters['shipment_number'];
+            }
+            unset($filters['shipment_number']);
+        }
 
         return [
             'id' => $preset->getRouteKey(), 'export_key' => $preset->export_key, 'name' => $preset->name,
-            'columns' => $keys, 'filters' => $preset->filters ?? [], 'format' => $format, 'is_default' => $preset->is_default,
+            'columns' => $keys, 'filters' => $filters, 'format' => $format, 'is_default' => $preset->is_default,
             'warnings' => $keys !== $preset->columns || $format !== $preset->format ? [__('exports.advanced.stale_preset')] : [],
         ];
     }

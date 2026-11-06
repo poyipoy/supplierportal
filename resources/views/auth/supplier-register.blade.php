@@ -296,55 +296,55 @@
     .lang-toggle-track {
         display: inline-flex;
         align-items: center;
-        padding: 0.25rem;
-        border-radius: var(--md-shape-full);
-        background: var(--md-surface-container-high);
-        border: 1px solid var(--md-outline-strong);
-        box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+        gap: 0.125rem;
+        padding: 0.125rem;
+        border-radius: var(--ui-radius-control, var(--md-shape-sm));
+        background: var(--md-surface-container);
+        border: 1px solid var(--md-outline);
+        box-shadow: none;
     }
     .lang-pill-btn {
         display: inline-flex;
         align-items: center;
-        gap: 0.375rem;
-        padding: 0.375rem 0.75rem;
-        min-height: 2rem;
-        border-radius: var(--md-shape-full);
+        justify-content: center;
+        padding: 0.2rem 0.55rem;
+        min-height: 1.625rem;
+        min-width: 2rem;
+        border-radius: var(--md-shape-xs);
         font-size: var(--ui-font-size-xs);
-        font-weight: 700;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        line-height: 1;
         border: 1px solid transparent;
         color: var(--md-on-surface-variant);
         background: transparent;
         cursor: pointer;
         outline: none;
-        transition-property: background-color, color, border-color, box-shadow, transform;
-        transition-duration: 160ms;
-        transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+        user-select: none;
+        transition: background-color var(--ui-motion-fast) var(--ui-easing-standard),
+                    color var(--ui-motion-fast) var(--ui-easing-standard),
+                    border-color var(--ui-motion-fast) var(--ui-easing-standard);
     }
     .lang-pill-btn.is-active {
         background: var(--md-surface);
         color: var(--md-primary);
+        font-weight: 700;
         border-color: var(--md-outline);
-        box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.1), 0 1px 2px -1px rgba(15, 23, 42, 0.08);
+        box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
         cursor: default;
     }
     .lang-pill-btn:not(.is-active):hover {
         color: var(--md-on-surface);
-        background: rgba(255, 255, 255, 0.65);
-        border-color: rgba(203, 213, 225, 0.4);
+        background: rgba(var(--md-on-surface-rgb), 0.05);
+        border-color: transparent;
     }
     .lang-pill-btn:active {
-        transform: scale(0.96);
+        background: rgba(var(--md-on-surface-rgb), 0.08);
     }
-    .lang-flag-badge {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 20px;
-        height: 14px;
-        border-radius: 2.5px;
-        overflow: hidden;
-        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
-        flex-shrink: 0;
+    .lang-pill-btn:focus-visible {
+        outline: 2px solid var(--md-primary);
+        outline-offset: 1px;
+        z-index: 1;
     }
     @media (prefers-reduced-motion: reduce) {
         .lang-pill-btn {
@@ -408,39 +408,30 @@
         </div>
 
         {{-- Language Switcher Toggle --}}
-        <div class="lang-toggle-track tw:inline-flex tw:items-center tw:p-1 tw:rounded-ui-full tw:bg-surface-container-high tw:border tw:border-outline-strong tw-shadow-xs" role="group" aria-label="{{ __('registration.language_selector') }}">
+        <div class="lang-toggle-track tw:inline-flex tw:items-center tw:gap-0.5 tw:p-0.5 tw:rounded-ui-sm tw:bg-surface-container tw:border tw:border-outline" role="group" aria-label="{{ __('registration.language_selector') }}">
             <button
                 type="button"
-                @click="switchLanguage('id')"
-                class="lang-pill-btn ui-focus-ring tw:flex tw:items-center tw:gap-1.5 tw:px-3 tw:py-1.5 tw:min-h-8 tw:rounded-ui-full tw:text-ui-xs tw:font-bold"
-                :class="currentLocale === 'id' ? 'is-active tw:bg-surface tw:text-primary tw:border-outline tw-shadow-xs' : 'tw:border-transparent tw:text-on-surface-variant tw:hover:text-on-surface tw:hover:bg-surface/60'"
+                data-locale-option="id"
+                @click="switchLanguage('id', $el)"
+                class="lang-pill-btn ui-focus-ring tw:flex tw:items-center tw:justify-center tw:px-2.5 tw:py-0.5 tw:min-h-7 tw:rounded-ui-xs tw:text-ui-xs"
+                :class="currentLocale === 'id' ? 'is-active tw:bg-surface tw:text-primary tw:font-bold tw:border tw:border-outline' : 'tw:border-transparent tw:text-on-surface-variant tw:font-semibold tw:hover:text-on-surface'"
                 :aria-pressed="currentLocale === 'id'"
+                :disabled="currentLocale === 'id'"
             >
-                <span class="lang-flag-badge" aria-hidden="true">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" preserveAspectRatio="none" class="tw:w-full tw:h-full" focusable="false">
-                        <rect width="60" height="20" fill="#e70011"/>
-                        <rect y="20" width="60" height="20" fill="#ffffff"/>
-                    </svg>
-                </span>
-                <span class="tw:tracking-wide">ID</span><span class="tw:sr-only"> — Bahasa Indonesia</span>
+                <span class="tw:tracking-wider">ID</span>
+                <span class="tw:sr-only"> (Bahasa Indonesia)</span>
             </button>
             <button
                 type="button"
-                @click="switchLanguage('en')"
-                class="lang-pill-btn ui-focus-ring tw:flex tw:items-center tw:gap-1.5 tw:px-3 tw:py-1.5 tw:min-h-8 tw:rounded-ui-full tw:text-ui-xs tw:font-bold"
-                :class="currentLocale === 'en' ? 'is-active tw:bg-surface tw:text-primary tw:border-outline tw-shadow-xs' : 'tw:border-transparent tw:text-on-surface-variant tw:hover:text-on-surface tw:hover:bg-surface/60'"
+                data-locale-option="en"
+                @click="switchLanguage('en', $el)"
+                class="lang-pill-btn ui-focus-ring tw:flex tw:items-center tw:justify-center tw:px-2.5 tw:py-0.5 tw:min-h-7 tw:rounded-ui-xs tw:text-ui-xs"
+                :class="currentLocale === 'en' ? 'is-active tw:bg-surface tw:text-primary tw:font-bold tw:border tw:border-outline' : 'tw:border-transparent tw:text-on-surface-variant tw:font-semibold tw:hover:text-on-surface'"
                 :aria-pressed="currentLocale === 'en'"
+                :disabled="currentLocale === 'en'"
             >
-                <span class="lang-flag-badge" aria-hidden="true">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" preserveAspectRatio="none" class="tw:w-full tw:h-full" focusable="false">
-                        <path fill="#012169" d="M0 0h60v40H0z"/>
-                        <path stroke="#ffffff" stroke-width="8" d="M0 0l60 40M60 0L0 40"/>
-                        <path stroke="#c8102e" stroke-width="2.67" d="M0 0l27 18M60 0L33 18M60 40L33 22M0 40l27-18"/>
-                        <path stroke="#ffffff" stroke-width="13.33" d="M30 0v40M0 20h60"/>
-                        <path stroke="#c8102e" stroke-width="8" d="M30 0v40M0 20h60"/>
-                    </svg>
-                </span>
-                <span class="tw:tracking-wide">EN</span><span class="tw:sr-only"> — English</span>
+                <span class="tw:tracking-wider">EN</span>
+                <span class="tw:sr-only"> (English)</span>
             </button>
         </div>
     </div>
@@ -1576,6 +1567,39 @@
         </a>
     </p>
 </div>
+<script id="adasi-registration-wizard-i18n" type="application/json">{!! json_encode([
+    'locale' => app()->getLocale(),
+    'stepTitles' => [
+        1 => __('registration.js.step1'),
+        2 => __('registration.stepper.questionnaire'),
+        3 => __('registration.js.step2'),
+        4 => __('registration.js.step3'),
+        5 => __('registration.js.step4'),
+    ],
+    'stepHeadings' => [
+        1 => __('registration.account_profile'),
+        2 => __('registration.questionnaire.title'),
+        3 => __('registration.legal_pic_bank'),
+        4 => __('registration.js.heading3'),
+        5 => __('registration.js.heading4'),
+    ],
+    'stepSubheadings' => [
+        1 => __('registration.js.help1'),
+        2 => __('registration.questionnaire.help'),
+        3 => __('registration.js.help2'),
+        4 => __('registration.js.help3'),
+        5 => __('registration.js.help4'),
+    ],
+    'summaryLabels' => [
+        'categoryGeneral' => __('registration.js.category_general'),
+        'pkp' => __('registration.js.pkp_status'),
+        'nonPkp' => __('registration.js.non_pkp_status'),
+        'yes' => __('registration.questionnaire.yes'),
+        'no' => __('registration.questionnaire.no'),
+        'notAnswered' => __('registration.questionnaire.not_answered'),
+        'questionnaireProgress' => __('registration.questionnaire.progress'),
+    ],
+], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) !!}</script>
 @endsection
 
 @section('scripts')
@@ -1808,8 +1832,20 @@ document.addEventListener('alpine:init', () => {
             });
         },
 
-        switchLanguage(targetLocale) {
+        async switchLanguage(targetLocale, triggerEl = null) {
             if (targetLocale === this.currentLocale) return;
+            if (window.AdasiLocaleSwitcher?.switchLocale) {
+                const prevLocale = this.currentLocale;
+                this.currentLocale = targetLocale;
+                const ok = await window.AdasiLocaleSwitcher.switchLocale(targetLocale, {
+                    actionUrl: @js(route('locale.switch')),
+                    triggerElement: triggerEl,
+                });
+                if (!ok) {
+                    this.currentLocale = prevLocale;
+                }
+                return;
+            }
             try {
                 this.persistDraft();
                 sessionStorage.setItem('adasi_supplier_reg_autorestore', '1');
@@ -1892,6 +1928,23 @@ document.addEventListener('alpine:init', () => {
             window.addEventListener('beforeunload', () => {
                 if (this.isInitialized) {
                     this.persistDraft();
+                }
+            });
+
+            window.addEventListener('adasi:locale-changed', (event) => {
+                const nextLocale = event.detail?.locale;
+                if (nextLocale === 'id' || nextLocale === 'en') {
+                    this.currentLocale = nextLocale;
+                }
+                const scriptNode = event.detail?.document?.getElementById?.('adasi-registration-wizard-i18n');
+                if (scriptNode?.textContent) {
+                    try {
+                        const nextI18n = JSON.parse(scriptNode.textContent);
+                        if (nextI18n.stepTitles) this.stepTitles = nextI18n.stepTitles;
+                        if (nextI18n.stepHeadings) this.stepHeadings = nextI18n.stepHeadings;
+                        if (nextI18n.stepSubheadings) this.stepSubheadings = nextI18n.stepSubheadings;
+                        if (nextI18n.summaryLabels) this.summaryLabels = nextI18n.summaryLabels;
+                    } catch (e) {}
                 }
             });
         },

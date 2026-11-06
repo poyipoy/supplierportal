@@ -594,13 +594,15 @@
 
         {{-- Right Column: Sticky Workflow Actions, Status Stepper & Information (Offset accounts for 56px navbar) --}}
         <div class="tw:lg:col-span-4 ui-density-stack-list tw:sticky" style="top: calc(var(--topbar-height, 56px) + 1.25rem);">
-            {{-- Payment & Due Date Card (Internal only, hidden from Supplier) --}}
-            @if(!auth()->user()?->isSupplier() && ($portal ?? '') !== 'local-supplier')
+            {{-- Payment & Due Date Card --}}
             <x-ui.card :title="__('local_invoice.labels.payment_schedule')">
                 <div class="ui-density-list">
                     <div class="tw:flex tw:justify-between tw:text-ui-xs">
                         <span class="tw:text-on-surface-variant">{{ __('local_invoice.detail.payment_term') }}</span>
-                        <span class="tw:font-semibold tw:text-on-surface">{{ trans_choice('local_invoice.table.term_days', $invoice->payment_term_days_snapshot ?? 0) }}</span>
+                        <span class="tw:font-semibold tw:text-on-surface">
+                            @php $term = $invoice->effectivePaymentTermDays(); @endphp
+                            {{ $term ? trans_choice('common.final_review.net_days', $term, ['count' => $term]) : '—' }}
+                        </span>
                     </div>
 
                     <div class="tw:flex tw:justify-between tw:items-center tw:text-ui-xs">
@@ -637,7 +639,6 @@
                     @endif
                 </div>
             </x-ui.card>
-            @endif
 
             {{-- Operator Workflow Actions Box (Only for Accounting/Finance) --}}
             @if(auth()->user()->isLocalOperator())

@@ -20,6 +20,7 @@ use App\Http\Controllers\Auth\PasswordAssistanceController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\ProfileTwoFactorController;
 use App\Http\Controllers\Auth\RevokeSessionController;
+use App\Http\Controllers\Auth\SessionStatusController;
 use App\Http\Controllers\Auth\SsoAuthorizeController;
 use App\Http\Controllers\Auth\SsoCallbackController;
 use App\Http\Controllers\Auth\SsoEntryController;
@@ -71,6 +72,7 @@ use App\Http\Controllers\Purchasing\PoShipmentDocumentStatusController;
 use App\Http\Controllers\Purchasing\PriceComparisonController;
 use App\Http\Controllers\Purchasing\PrItemController;
 use App\Http\Controllers\Purchasing\PurchaseOrderController;
+use App\Http\Controllers\Purchasing\PurchaseRequisitionSupplierController;
 use App\Http\Controllers\Purchasing\PurchasingController;
 use App\Http\Controllers\Purchasing\PurchasingDrpController;
 use App\Http\Controllers\Purchasing\PurchasingLocalVendorController;
@@ -535,10 +537,10 @@ Route::prefix(PortalPath::prefix())->group(function () {
             ->middleware('throttle:15,1')
             ->name('requisitions.import-preview');
         Route::put('/requisitions/{id}/submit', [App\Http\Controllers\Purchasing\PurchaseRequisitionController::class, 'submitDraft'])->name('requisitions.submit');
-        Route::post('/requisitions/{requisition}/suppliers', [App\Http\Controllers\Purchasing\PurchaseRequisitionSupplierController::class, 'store'])
+        Route::post('/requisitions/{requisition}/suppliers', [PurchaseRequisitionSupplierController::class, 'store'])
             ->middleware('throttle:30,1')
             ->name('requisitions.suppliers.store');
-        Route::delete('/requisitions/{requisition}/suppliers/{supplier}', [App\Http\Controllers\Purchasing\PurchaseRequisitionSupplierController::class, 'destroy'])
+        Route::delete('/requisitions/{requisition}/suppliers/{supplier}', [PurchaseRequisitionSupplierController::class, 'destroy'])
             ->middleware('throttle:30,1')
             ->name('requisitions.suppliers.destroy');
         Route::resource('requisitions', App\Http\Controllers\Purchasing\PurchaseRequisitionController::class);
@@ -792,6 +794,11 @@ Route::delete('oauth/authorize', [SsoAuthorizeController::class, 'deny'])
 Route::prefix(PortalPath::prefix())->group(function () {
     Route::get('forgot-password', [PasswordAssistanceController::class, 'show'])
         ->middleware('no-store')->name('password.request');
+
+    // The session-ended dialog asks here before sending anyone to the login page. Outside
+    // `auth` so a guest gets JSON 401 (plus a pending code challenge) instead of a redirect.
+    Route::get('session/status', SessionStatusController::class)
+        ->middleware(['no-store', 'throttle:30,1'])->name('session.status');
 });
 
 Route::middleware(['mfa.pending', 'no-store'])->group(function () {

@@ -21,7 +21,10 @@ class PasswordAssistanceController extends Controller
             && preg_match('#^https://wa\.me/[1-9][0-9]{7,14}$#', $configuredWhatsappUrl) === 1
                 ? trim($configuredWhatsapp)
                 : null;
-        $supportWhatsappUrl = $supportWhatsapp === null ? null : $configuredWhatsappUrl;
+        // The prefilled chat text comes from lang only; the base URL is validated above before anything is appended.
+        $supportWhatsappUrl = $supportWhatsapp === null ? null : $configuredWhatsappUrl.'?'.http_build_query([
+            'text' => str_replace(["\r\n", "\r"], "\n", __('auth.password_assistance.whatsapp_message')),
+        ], '', '&', PHP_QUERY_RFC3986);
         $subject = __('auth.password_assistance.subject');
         $template = str_replace(["\r\n", "\r"], "\n", __('auth.password_assistance.template'));
         $mailto = $supportEmail === null ? null : 'mailto:'.str_replace('%40', '@', rawurlencode($supportEmail)).'?'.http_build_query([

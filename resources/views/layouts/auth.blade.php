@@ -304,59 +304,59 @@
             }
         }
 
-        /* Language switcher toggle track & pills */
+        /* Language selector segmented control */
         .lang-toggle-track {
             display: inline-flex;
             align-items: center;
-            padding: 0.25rem;
-            border-radius: var(--md-shape-full);
-            background: var(--md-surface-container-high);
-            border: 1px solid var(--md-outline-strong);
-            box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+            gap: 0.125rem;
+            padding: 0.125rem;
+            border-radius: var(--ui-radius-control, var(--md-shape-sm));
+            background: var(--md-surface-container);
+            border: 1px solid var(--md-outline);
+            box-shadow: none;
         }
         .lang-pill-btn {
             display: inline-flex;
             align-items: center;
-            gap: 0.375rem;
-            padding: 0.375rem 0.75rem;
-            min-height: 2rem;
-            border-radius: var(--md-shape-full);
+            justify-content: center;
+            padding: 0.2rem 0.55rem;
+            min-height: 1.625rem;
+            min-width: 2rem;
+            border-radius: var(--md-shape-xs);
             font-size: var(--ui-font-size-xs);
-            font-weight: 700;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            line-height: 1;
             border: 1px solid transparent;
             color: var(--md-on-surface-variant);
             background: transparent;
             cursor: pointer;
             outline: none;
-            transition-property: background-color, color, border-color, box-shadow, transform;
-            transition-duration: 160ms;
-            transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+            user-select: none;
+            transition: background-color var(--ui-motion-fast) var(--ui-easing-standard),
+                        color var(--ui-motion-fast) var(--ui-easing-standard),
+                        border-color var(--ui-motion-fast) var(--ui-easing-standard);
         }
         .lang-pill-btn.is-active {
             background: var(--md-surface) !important;
             color: var(--md-primary) !important;
+            font-weight: 700;
             border-color: var(--md-outline) !important;
-            box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.1), 0 1px 2px -1px rgba(15, 23, 42, 0.08) !important;
+            box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.05) !important;
             cursor: default;
         }
         .lang-pill-btn:not(.is-active):hover {
             color: var(--md-on-surface);
-            background: rgba(255, 255, 255, 0.65);
-            border-color: rgba(203, 213, 225, 0.4);
+            background: rgba(var(--md-on-surface-rgb), 0.05);
+            border-color: transparent;
         }
         .lang-pill-btn:active {
-            transform: scale(0.96);
+            background: rgba(var(--md-on-surface-rgb), 0.08);
         }
-        .lang-flag-badge {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 20px;
-            height: 14px;
-            border-radius: 2.5px;
-            overflow: hidden;
-            box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
-            flex-shrink: 0;
+        .lang-pill-btn:focus-visible {
+            outline: 2px solid var(--md-primary);
+            outline-offset: 1px;
+            z-index: 1;
         }
         @media (prefers-reduced-motion: reduce) {
             .lang-pill-btn {

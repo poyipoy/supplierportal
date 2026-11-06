@@ -62,6 +62,17 @@ final class ShipmentExportFilters
 
     public static function schema(): array
     {
-        return [['name' => 'supplier_id', 'type' => 'supplier'], ['name' => 'status', 'type' => 'select', 'domain' => 'shipment', 'options' => ['draft', 'submitted', 'arrived', 'cancelled']], ['name' => 'search', 'type' => 'text'], ['name' => 'shipment_number', 'type' => 'text'], ['name' => 'start_date', 'type' => 'date'], ['name' => 'end_date', 'type' => 'date']];
+        return [
+            ['name' => 'supplier_id', 'type' => 'supplier'],
+            ['name' => 'status', 'type' => 'select', 'domain' => 'shipment', 'options' => ['draft', 'submitted', 'arrived', 'cancelled']],
+            [
+                'name' => 'search',
+                'type' => 'text',
+                'placeholder' => 'exports.advanced.filters.placeholders.shipment_search',
+                'hint' => 'exports.advanced.filters.hints.shipment_search',
+            ],
+            ['name' => 'start_date', 'type' => 'date'],
+            ['name' => 'end_date', 'type' => 'date'],
+        ];
     }
 }
