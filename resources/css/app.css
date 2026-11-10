@@ -2978,8 +2978,14 @@ html.js [data-calendar-native-submit] {
         position: relative;
         transition: background var(--ui-motion-standard), color var(--ui-motion-standard);
     }
-.ui-calendar-panel calendar-month::part(button):hover:not([disabled]) {
+.ui-calendar-panel calendar-month::part(button):hover:not(:disabled) {
         background: var(--md-surface-container);
+    }
+.ui-calendar-panel calendar-month::part(today) {
+        color: var(--md-primary);
+        font-weight: 700;
+        box-shadow: inset 0 0 0 1.5px var(--md-primary);
+        border-radius: 6px;
     }
 .ui-calendar-panel calendar-month::part(range-start),
     .ui-calendar-panel calendar-month::part(range-end),
@@ -3007,14 +3013,9 @@ html.js [data-calendar-native-submit] {
 .ui-calendar-panel calendar-month::part(range-inner) {
         background: var(--ui-calendar-range-bg) !important;
         border-radius: 0 !important;
+        box-shadow: none;
         color: var(--ui-calendar-range-fg) !important;
         font-weight: 600;
-    }
-.ui-calendar-panel calendar-month::part(today):not([aria-pressed="true"]) {
-        color: var(--md-primary);
-        font-weight: 700;
-        box-shadow: inset 0 0 0 1.5px var(--md-primary);
-        border-radius: 6px;
     }
 .ui-calendar-panel calendar-month::part(disallowed),
     .ui-calendar-panel calendar-month::part(outside) {
@@ -3661,13 +3662,43 @@ table.dataTable thead > tr > :is(th, td):is(.sorting, .sorting_asc, .sorting_des
         margin-inline-end: 0;
     }
 
-    .topbar-user-chip > span,
-    .role-badge {
-        display: none;
+    .topbar-page-title {
+        max-width: 12rem;
+        font-size: var(--ui-font-size-xs);
+    }
+
+    .top-navbar .role-badge,
+    .topbar-user-chip > span:not(:first-child) {
+        display: none !important;
     }
 
     .topbar-user-chip {
-        padding-inline-end: .25rem;
+        padding: 0.125rem !important;
+        padding-inline-end: 0.125rem !important;
+        max-width: none !important;
+        background: transparent !important;
+    }
+
+    .topbar-user-trigger {
+        padding: 0.25rem !important;
+        min-height: 40px;
+        min-width: 40px;
+        justify-content: center;
+    }
+
+    .topbar-user-trigger::after {
+        display: none !important;
+    }
+}
+
+@supports (padding: max(0px)) {
+    .content-area {
+        padding-bottom: max(1.25rem, calc(var(--ui-density-page-block, 1.25rem) + env(safe-area-inset-bottom, 0px)));
+        padding-left: max(1rem, env(safe-area-inset-left, 0px));
+        padding-right: max(1rem, env(safe-area-inset-right, 0px));
+    }
+    .ui-action-bar {
+        padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px)) !important;
     }
 }
 @media (min-width: 992px) {
@@ -4638,4 +4669,16 @@ div.dataTables_wrapper div.dataTables_processing {
     .ui-form-section__body, .ui-dashboard-layout { gap: 1rem; }
     .ui-data-table__header, .ui-data-table__footer, .ui-card__header, .ui-card__footer { padding: .875rem 1rem; }
     .ui-page-header { margin-bottom: 1.25rem; }
+}
+
+.ui-table-sticky-col {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background-color: var(--color-surface);
+    box-shadow: inset -1px 0 0 var(--color-outline-variant);
+}
+
+.quotation-sticky-material.ui-table-sticky-col {
+    left: var(--q-col-no);
 }

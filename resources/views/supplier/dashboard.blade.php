@@ -84,6 +84,28 @@
                         @endforeach
                     </tbody>
                 </table>
+
+                <x-slot:cards>
+                    @foreach($prBelumRespons as $pr)
+                        <x-ui.mobile-card
+                            :title="$pr->pr_number ?? '-'"
+                            :subtitle="$pr->period->display_label ?? $pr->period->name"
+                        >
+                            <x-ui.mobile-card-row :label="__('supplier.copy.items')">
+                                {{ trans_choice('purchasing.copy.item_count', $pr->items->count(), ['count' => $pr->items->count()]) }}
+                            </x-ui.mobile-card-row>
+                            <x-ui.mobile-card-row :label="__('supplier.copy.date_issued')">
+                                {{ $regionalFormatter->timestamp($pr->created_at, 'date') }}
+                            </x-ui.mobile-card-row>
+                            <x-slot:actions>
+                                <x-ui.button :href="route('supplier.quotations.create', $pr)" size="sm" class="tw:w-full tw:justify-center tw:min-h-11">
+                                    <x-ui.icon name="square-pen" size="sm" />
+                                    <span>{{ __('supplier.copy.quote_price') }}</span>
+                                </x-ui.button>
+                            </x-slot:actions>
+                        </x-ui.mobile-card>
+                    @endforeach
+                </x-slot:cards>
             </x-ui.data-table>
         </x-slot:quotations>
 
@@ -143,6 +165,43 @@
                         @endforeach
                     </tbody>
                 </table>
+
+                <x-slot:cards>
+                    @foreach($poTerbaru as $po)
+                        @php
+                            $pendingClaim = $po->materialClaims->where('status', 'pending')->sortByDesc('created_at')->first();
+                            $latestClaim = $po->materialClaims->sortByDesc('created_at')->first();
+                        @endphp
+                        <x-ui.mobile-card
+                            :title="$po->po_number"
+                            :subtitle="$po->quotations->map(fn($q) => optional(optional($q->purchaseRequisition)->period)->display_label)->filter()->first() ?? '-'"
+                        >
+                            <x-slot:statusSlot>
+                                <x-status-badge type="po" :status="$po->status" :is-overdue="$po->is_overdue" />
+                            </x-slot:statusSlot>
+                            <x-ui.mobile-card-row :label="__('supplier.copy.po_date')" :fullWidth="true">
+                                {{ $regionalFormatter->timestamp($po->created_at, 'date') }}
+                            </x-ui.mobile-card-row>
+                            <x-slot:actions>
+                                @if($pendingClaim)
+                                    <x-ui.button :href="route('supplier.claims.show', $pendingClaim)" variant="danger" size="sm" class="tw:w-full tw:justify-center tw:min-h-11">
+                                        <x-ui.icon name="reply" size="sm" />
+                                        <span>{{ __('supplier.copy.respond_to_ng_claim') }}</span>
+                                    </x-ui.button>
+                                @elseif($latestClaim)
+                                    <x-ui.button :href="route('supplier.claims.show', $latestClaim)" variant="danger" size="sm" class="tw:w-full tw:justify-center tw:min-h-11">
+                                        <x-ui.icon name="octagon-alert" size="sm" />
+                                        <span>{{ __('supplier.copy.view_claim') }}</span>
+                                    </x-ui.button>
+                                @endif
+                                <x-ui.button :href="route('supplier.purchase-orders.show', $po)" variant="outline" size="sm" class="tw:w-full tw:justify-center tw:min-h-11">
+                                    <x-ui.icon name="eye" size="sm" />
+                                    <span>{{ __('supplier.copy.view_po_details') }}</span>
+                                </x-ui.button>
+                            </x-slot:actions>
+                        </x-ui.mobile-card>
+                    @endforeach
+                </x-slot:cards>
             </x-ui.data-table>
         </x-slot:orders>
 

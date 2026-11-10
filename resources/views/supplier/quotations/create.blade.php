@@ -896,7 +896,7 @@
                             <thead class="table-light text-center">
                                 <tr class="quotation-field-header">
                                     <th scope="col" class="quotation-sticky-number">{{ __('supplier.copy.no') }}</th>
-                                    <th scope="col" class="quotation-sticky-material">{{ __('supplier.copy.material') }}</th>
+                                    <th scope="col" class="quotation-sticky-material ui-table-sticky-col">{{ __('supplier.copy.material') }}</th>
                                     <th scope="col" class="quotation-sticky-row-type">{{ __('supplier.copy.row_type') }}</th>
                                     <th scope="col">{{ __('supplier.copy.qty') }}</th>
                                     @foreach($quotationDimensionOrder as $dimensionField)
@@ -944,7 +944,7 @@
                                 >
                                     <tr class="quotation-requested-row">
                                         <td rowspan="2" class="text-center quotation-sticky-number tw:text-on-surface-variant ui-tabular-nums">{{ $index + 1 }}</td>
-                                        <td rowspan="2" class="quotation-sticky-material align-top">
+                                        <td rowspan="2" class="quotation-sticky-material ui-table-sticky-col align-top">
                                             <div class="fw-bold tw:text-on-surface">{{ $item->material_name }}</div>
                                             <div class="tw:text-on-surface-variant tw:text-ui-xs tw:mt-0.5">
                                                 {{ $item->hs_code ? 'HS '.$item->hs_code.' · ' : '' }}{{ $item->shape ?: '-' }}

@@ -1,4 +1,4 @@
-<div class="table-responsive">
+<div class="d-none d-md-block table-responsive">
     <table class="table table-hover align-middle tw:m-0 tw:text-ui-sm w-100">
         <thead class="table-light">
             @if(($portal ?? '') === 'finance')
@@ -262,4 +262,62 @@
             @endforelse
         </tbody>
     </table>
+</div>
+
+{{-- Mobile Adaptive Card View (Rendered only on < 768px viewports) --}}
+<div class="d-md-none tw:flex tw:flex-col tw:gap-3 tw:p-3">
+    @forelse($invoices as $row)
+        <x-ui.mobile-card
+            :title="$row->invoice_number"
+            :subtitle="'PO: ' . $row->po_number . ' · ' . $row->submission_number"
+            :href="route($portal.'.invoices.show', $row)"
+        >
+            <x-slot:statusSlot>
+                <x-ui.status-chip :tone="\App\Support\StatusHelper::localInvoiceTone($row->status)">
+                    {{ \App\Support\StatusHelper::localInvoiceLabel($row->status) }}
+                </x-ui.status-chip>
+            </x-slot:statusSlot>
+
+            @if(!auth()->user()?->isSupplier())
+                <x-ui.mobile-card-row :label="__('local_invoice.labels.supplier')" :fullWidth="true">
+                    {{ $row->supplier->supplier?->company_name ?: $row->supplier->name }}
+                </x-ui.mobile-card-row>
+            @endif
+
+            <x-ui.mobile-card-row :label="__('ga.labels.submission_date')">
+                {{ $row->submitted_at ? $regionalFormatter->timestamp($row->submitted_at, 'date') : '-' }}
+            </x-ui.mobile-card-row>
+
+            <x-ui.mobile-card-row :label="__('local_invoice.labels.due_date')">
+                {{ $row->due_date ? $regionalFormatter->date($row->due_date, 'human') : '-' }}
+            </x-ui.mobile-card-row>
+
+            <x-ui.mobile-card-row :label="__('local_invoice.table.amount_ppn')" :fullWidth="true">
+                <span class="tw:font-bold ui-tabular-nums tw:text-on-surface">
+                    Rp {{ $regionalFormatter->number(number_format($row->invoice_amount, 0, ',', '.'), 'indonesian') }}
+                </span>
+                <span class="tw:block tw:text-ui-xs ui-tabular-nums tw:text-on-surface-variant">
+                    PPN: Rp {{ $regionalFormatter->number(number_format($row->tax_amount, 0, ',', '.'), 'indonesian') }}
+                </span>
+            </x-ui.mobile-card-row>
+
+            <x-slot:actions>
+                <x-ui.button
+                    :href="route($portal.'.invoices.show', $row)"
+                    size="sm"
+                    variant="outline"
+                    class="tw:w-full tw:justify-center tw:min-h-11"
+                >
+                    <x-ui.icon name="eye" size="sm" class="tw:text-primary" />
+                    <span>{{ __('local_invoice.table.view_detail') }}</span>
+                </x-ui.button>
+            </x-slot:actions>
+        </x-ui.mobile-card>
+    @empty
+        <x-ui.empty-state
+            icon="inbox"
+            :title="__('local_invoice.empty.invoice')"
+            :description="__('local_invoice.empty.search_hint')"
+        />
+    @endforelse
 </div>

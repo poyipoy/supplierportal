@@ -38,11 +38,35 @@
     @elseif($empty)
         @isset($emptyState){{ $emptyState }}@else<x-ui.empty-state :title="__('common.states.empty')" :description="__('common.states.empty_description')" />@endisset
     @else
-        @if($sticky)
-            <div class="ui-data-table__scroll ui-table-sticky tw:w-full tw:min-w-0 tw:max-w-full" role="region" tabindex="0" aria-label="{{ $scrollLabel ?? $title }}">{{ $slot }}</div>
+        @isset($cards)
+            <div x-data="{ viewMode: 'cards' }" class="ui-data-table__hybrid">
+                <div class="d-md-none tw:flex tw:items-center tw:justify-between tw:px-3.5 tw:py-2 tw:bg-surface-container-low tw:border-b tw:border-outline-variant">
+                    <span class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant" x-text="viewMode === 'cards' ? 'Mode Kartu (Mobile)' : 'Mode Tabel'"></span>
+                    <div class="tw:inline-flex tw:items-center tw:rounded-ui-xs tw:bg-surface-container tw:p-0.5 tw:border tw:border-outline" role="group" aria-label="Table display mode">
+                        <button type="button" class="ui-focus-ring tw:flex tw:items-center tw:gap-1 tw:px-2.5 tw:py-1 tw:rounded-ui-xs tw:text-ui-xs tw:font-semibold tw:border-0" :class="viewMode === 'cards' ? 'tw:bg-surface tw:text-primary tw:shadow-xs' : 'tw:bg-transparent tw:text-on-surface-variant'" x-on:click="viewMode = 'cards'">
+                            <x-ui.icon name="layout-grid" size="xs" />
+                            <span>Cards</span>
+                        </button>
+                        <button type="button" class="ui-focus-ring tw:flex tw:items-center tw:gap-1 tw:px-2.5 tw:py-1 tw:rounded-ui-xs tw:text-ui-xs tw:font-semibold tw:border-0" :class="viewMode === 'table' ? 'tw:bg-surface tw:text-primary tw:shadow-xs' : 'tw:bg-transparent tw:text-on-surface-variant'" x-on:click="viewMode = 'table'">
+                            <x-ui.icon name="table" size="xs" />
+                            <span>Table</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="ui-data-table__cards-container tw:p-3 tw:grid tw:gap-2.5 d-md-none" x-show="viewMode === 'cards'">
+                    {{ $cards }}
+                </div>
+                <div class="ui-data-table__scroll tw:overflow-x-auto tw:w-full tw:min-w-0 tw:max-w-full" :class="{ 'd-none d-md-block': viewMode === 'cards' }">
+                    {{ $slot }}
+                </div>
+            </div>
         @else
-            <div class="ui-data-table__scroll tw:overflow-x-auto tw:w-full tw:min-w-0 tw:max-w-full">{{ $slot }}</div>
-        @endif
+            @if($sticky)
+                <div class="ui-data-table__scroll ui-table-sticky tw:w-full tw:min-w-0 tw:max-w-full" role="region" tabindex="0" aria-label="{{ $scrollLabel ?? $title }}">{{ $slot }}</div>
+            @else
+                <div class="ui-data-table__scroll tw:overflow-x-auto tw:w-full tw:min-w-0 tw:max-w-full">{{ $slot }}</div>
+            @endif
+        @endisset
     @endif
 
     @isset($pagination)<footer class="ui-data-table__footer tw:border-t tw:border-outline-variant tw:bg-surface-low ">{{ $pagination }}</footer>@endisset

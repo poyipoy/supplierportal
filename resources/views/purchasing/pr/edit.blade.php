@@ -97,14 +97,17 @@
                         @if($pr->status === 'draft')
                             @include('purchasing.pr._import_controls')
                         @endif
-                        <x-ui.button type="button" variant="outline" size="sm" id="btnAddRow">
+                        <x-ui.button type="button" variant="outline" size="sm" id="btnAddRow" class="d-none d-md-inline-flex">
                             <x-ui.icon name="plus" size="sm" />
                             <span>{{ __('purchasing.copy.add_material') }}</span>
                         </x-ui.button>
                     </div>
                 </x-slot:actions>
 
-                <div class="table-responsive pr-form-table-scroll ui-table-sticky border rounded" role="region" tabindex="0" aria-label="{{ __('procurement.tables.pr_items') }}">
+                {{-- Mobile Material Cards & Modal Editor --}}
+                @include('purchasing.pr._mobile_item_editor')
+
+                <div id="prTableContainer" class="table-responsive pr-form-table-scroll ui-table-sticky border rounded d-none d-md-block" role="region" tabindex="0" aria-label="{{ __('procurement.tables.pr_items') }}">
                     <table class="table table-bordered table-hover table-sm align-middle pr-items-table mb-0 tw:text-ui-xs" id="itemsTable">
                         <caption class="visually-hidden">{{ __('purchasing.copy.required_material_entry_table_with_shape_aware_dimension_columns') }}</caption>
                         <colgroup>
@@ -239,9 +242,20 @@
     function submitForm(action) {
         if ($('#itemsBody tr').length === 0) {
             $('#noItemAlert').removeClass('d-none');
-            document.getElementById('btnAddRow')?.focus();
+            const targetBtn = window.innerWidth < 768 ? document.getElementById('btnOpenMobileMaterialModal') : document.getElementById('btnAddRow');
+            targetBtn?.focus();
             return;
         }
+
+        // Clean up completely blank unconfigured rows before submission if multiple rows exist
+        $('#itemsBody tr.item-row').each(function() {
+            const matName = String($(this).find('.material-master-search').val() || '').trim();
+            const matId = String($(this).find('.material-master-id').val() || '').trim();
+            if (!matName && !matId && $('#itemsBody tr.item-row').length > 1) {
+                $(this).remove();
+            }
+        });
+        renumberPrRows();
 
         const form = document.getElementById('prForm');
         if (form && !form.checkValidity()) {
@@ -265,9 +279,20 @@
     function confirmSubmit() {
         if ($('#itemsBody tr').length === 0) {
             $('#noItemAlert').removeClass('d-none');
-            document.getElementById('btnAddRow')?.focus();
+            const targetBtn = window.innerWidth < 768 ? document.getElementById('btnOpenMobileMaterialModal') : document.getElementById('btnAddRow');
+            targetBtn?.focus();
             return;
         }
+
+        // Clean up completely blank unconfigured rows before submission if multiple rows exist
+        $('#itemsBody tr.item-row').each(function() {
+            const matName = String($(this).find('.material-master-search').val() || '').trim();
+            const matId = String($(this).find('.material-master-id').val() || '').trim();
+            if (!matName && !matId && $('#itemsBody tr.item-row').length > 1) {
+                $(this).remove();
+            }
+        });
+        renumberPrRows();
 
         const form = document.getElementById('prForm');
         if (form && !form.checkValidity()) {
@@ -300,6 +325,7 @@
     $(document).ready(function() {
         $('#btnAddRow').click(addRow);
         initializeMaterialShapeRows();
+        renderMobileMaterialCards();
 
         $('#prForm').on('keydown', 'input, select', function(event) {
             if (event.key === 'Enter') {

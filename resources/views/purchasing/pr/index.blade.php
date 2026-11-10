@@ -33,8 +33,8 @@
     {{-- 2. Operational Toolbar --}}
     <x-ui.toolbar :sticky="true">
         <x-slot:filters>
-            <div class="d-flex flex-wrap align-items-center gap-2">
-                <div style="min-width: 200px;">
+            <div class="d-flex flex-column flex-sm-row flex-wrap align-items-stretch align-items-sm-center gap-2 w-100">
+                <div class="tw:w-full tw:sm:w-auto tw:sm:min-w-[200px]">
                     <select name="period_id" id="period_id" class="form-select form-select-sm" aria-label="{{ __('purchasing.copy.filter_by_period') }}">
                         <option value="">{{ __('purchasing.copy.all_periods') }}</option>
                         @foreach($periods as $period)
@@ -43,7 +43,7 @@
                     </select>
                 </div>
 
-                <div style="min-width: 150px;">
+                <div class="tw:w-full tw:sm:w-auto tw:sm:min-w-[150px]">
                     <select name="status" id="status" class="form-select form-select-sm" aria-label="{{ __('purchasing.copy.filter_by_status') }}">
                         <option value="">{{ __('purchasing.copy.all_statuses') }}</option>
                         <option value="draft">{{ __('purchasing.copy.draft') }}</option>
@@ -54,7 +54,7 @@
                     </select>
                 </div>
 
-                <x-ui.button variant="ghost" size="sm" id="resetFilter" class="pr-filter-reset">
+                <x-ui.button variant="ghost" size="sm" id="resetFilter" class="pr-filter-reset tw:w-full tw:sm:w-auto tw:justify-center">
                     <x-ui.icon name="rotate-ccw" />
                     <span>{{ __('purchasing.copy.reset') }}</span>
                 </x-ui.button>

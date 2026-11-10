@@ -8,6 +8,46 @@
     x-on:click="if (!viewportIsDesktop && $event.target.closest('a[href]')) closeMobileSidebar(false)"
     aria-label="{{ __('navigation.primary') }}"
 >
+    {{-- Mobile Drawer Context Header --}}
+    @auth
+        <div class="sidebar-mobile-header d-lg-none tw:flex tw:items-center tw:justify-between tw:px-3 tw:py-2.5 tw:border-b tw:border-outline-variant tw:bg-surface-container-low">
+            <div class="tw:flex tw:items-center tw:gap-2 tw:min-w-0">
+                <x-ui.avatar :name="auth()->user()->name" size="xs" />
+                <div class="tw:min-w-0">
+                    <span class="tw:block tw:truncate tw:text-ui-xs tw:font-bold tw:text-on-surface">{{ auth()->user()->name }}</span>
+                    <span class="role-badge role-badge-{{ auth()->user()->role }} tw:text-[10px] tw:mt-0.5">
+                        {{ __('navigation.roles.'.auth()->user()->role) }}
+                    </span>
+                </div>
+            </div>
+            {{-- Language switcher inside mobile drawer --}}
+            <form action="{{ route('locale.switch') }}" method="POST" data-locale-switcher data-managed-submit data-track-unsaved="false" class="lang-toggle-track tw:inline-flex tw:items-center tw:gap-0.5 tw:p-0.5 tw:rounded-ui-sm tw:bg-surface tw:border tw:border-outline tw:m-0" role="group" aria-label="{{ __('customization.language.label') }}">
+                @csrf
+                <input type="hidden" name="return_to" value="{{ request()->getRequestUri() }}">
+                <button
+                    type="submit"
+                    name="locale"
+                    value="id"
+                    data-locale-option="id"
+                    class="lang-pill-btn ui-focus-ring tw:flex tw:items-center tw:justify-center tw:px-2 tw:py-0.5 tw:min-h-6 tw:rounded-ui-xs tw:text-ui-xs {{ app()->getLocale() === 'id' ? 'is-active tw:bg-surface tw:text-primary tw:font-bold tw:border tw:border-outline' : 'tw:border-transparent tw:text-on-surface-variant tw:font-semibold' }}"
+                    {{ app()->getLocale() === 'id' ? 'disabled aria-pressed=true' : 'aria-pressed=false' }}
+                >
+                    <span class="tw:tracking-wider">ID</span>
+                </button>
+                <button
+                    type="submit"
+                    name="locale"
+                    value="en"
+                    data-locale-option="en"
+                    class="lang-pill-btn ui-focus-ring tw:flex tw:items-center tw:justify-center tw:px-2 tw:py-0.5 tw:min-h-6 tw:rounded-ui-xs tw:text-ui-xs {{ app()->getLocale() === 'en' ? 'is-active tw:bg-surface tw:text-primary tw:font-bold tw:border tw:border-outline' : 'tw:border-transparent tw:text-on-surface-variant tw:font-semibold' }}"
+                    {{ app()->getLocale() === 'en' ? 'disabled aria-pressed=true' : 'aria-pressed=false' }}
+                >
+                    <span class="tw:tracking-wider">EN</span>
+                </button>
+            </form>
+        </div>
+    @endauth
+
     <div class="sidebar-brand">
         <a href="{{ \App\Support\PageRegistry::url('dashboard', $dashboardUrl) }}" class="sidebar-brand-link" aria-label="{{ __('navigation.portal_dashboard') }}">
             <img src="{{ asset('assets/images/logo-adasi.png') }}" alt="" class="sidebar-brand-logo" draggable="false">

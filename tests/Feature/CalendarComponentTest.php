@@ -91,6 +91,10 @@ BLADE);
         $this->assertStringContainsString('--ui-calendar-anchor-gap: var(--ui-space-1);', $styles);
         $this->assertStringContainsString('.ui-calendar-mobile-scrim', $styles);
         $this->assertStringContainsString('calendar-month::part(range-inner)', $styles);
+        $this->assertStringContainsString('calendar-month::part(button):hover:not(:disabled)', $styles);
+        $this->assertStringContainsString('calendar-month::part(today)', $styles);
+        $this->assertStringNotContainsString('calendar-month::part(button):hover:not([disabled])', $styles);
+        $this->assertStringNotContainsString('calendar-month::part(today):not([aria-pressed="true"])', $styles);
         $this->assertStringNotContainsString('linear-gradient', implode('', [
             file_get_contents(resource_path('views/components/ui/date-picker.blade.php')),
             file_get_contents(resource_path('views/components/ui/date-range-picker.blade.php')),

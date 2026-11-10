@@ -93,6 +93,43 @@
                 @endforeach
             </tbody>
         </table>
+
+        <x-slot:cards>
+            @foreach($operationalChecks as $check)
+                @php
+                    $checkTone = $check['class'] === 'danger' ? 'error' : ($check['class'] === 'warning' ? 'warning' : ($check['class'] === 'success' ? 'success' : 'info'));
+                    $checkIconClass = $checkTone === 'error' ? 'tw:text-error' : ($checkTone === 'warning' ? 'tw:text-warning' : ($checkTone === 'success' ? 'tw:text-success' : 'tw:text-primary'));
+                @endphp
+                <x-ui.mobile-card
+                    :title="$check['label']"
+                    :subtitle="$check['description'] ?? null"
+                >
+                    <x-slot:statusSlot>
+                        @if($check['count'] > 0)
+                            <x-ui.status-chip :tone="$checkTone" class="ui-tabular-nums">
+                                {{ trans_choice('purchasing.summary.pending_count', $check['count'], ['count' => $check['count']]) }}
+                            </x-ui.status-chip>
+                        @else
+                            <x-ui.status-chip tone="neutral" class="ui-tabular-nums">
+                                {{ __('purchasing.copy.0_safe') }}
+                            </x-ui.status-chip>
+                        @endif
+                    </x-slot:statusSlot>
+
+                    <x-slot:actions>
+                        <x-ui.button
+                            :href="$check['url']"
+                            size="sm"
+                            variant="{{ $check['count'] > 0 ? 'primary' : 'ghost' }}"
+                            class="tw:w-full tw:justify-center tw:min-h-11"
+                        >
+                            <span>{{ __('purchasing.copy.review') }}</span>
+                            <x-ui.icon name="arrow-right" size="sm" />
+                        </x-ui.button>
+                    </x-slot:actions>
+                </x-ui.mobile-card>
+            @endforeach
+        </x-slot:cards>
     </x-ui.data-table>
         </x-slot:exceptions>
 

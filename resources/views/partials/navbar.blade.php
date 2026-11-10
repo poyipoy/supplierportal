@@ -24,13 +24,13 @@
             </x-slot:visual>
         </x-ui.icon-button>
         <div class="vr mx-1 my-2 tw:text-outline d-none d-sm-block d-lg-none" style="height: 18px;"></div>
-        <p class="topbar-page-title text-truncate">@yield('page-title', __('navigation.dashboard'))</p>
+        <p class="topbar-page-title text-truncate tw:text-balance">@yield('page-title', __('navigation.dashboard'))</p>
     </div>
 
     {{-- Right: Global Utility + Activity Alerts + User Identity --}}
-    <div class="d-flex align-items-center tw:gap-2.5">
-        {{-- 1. Global System Utility: Language Switcher --}}
-        <form action="{{ route('locale.switch') }}" method="POST" data-locale-switcher data-managed-submit data-track-unsaved="false" class="lang-toggle-track tw:inline-flex tw:items-center tw:gap-0.5 tw:p-0.5 tw:rounded-ui-sm tw:bg-surface-container tw:border tw:border-outline tw:m-0" role="group" aria-label="{{ __('customization.language.label') }}">
+    <div class="d-flex align-items-center tw:gap-2 tw:sm:gap-2.5">
+        {{-- 1. Global System Utility: Language Switcher (Desktop only in topbar; mobile accessed via sidebar drawer / user menu) --}}
+        <form action="{{ route('locale.switch') }}" method="POST" data-locale-switcher data-managed-submit data-track-unsaved="false" class="lang-toggle-track tw:inline-flex tw:items-center tw:gap-0.5 tw:p-0.5 tw:rounded-ui-sm tw:bg-surface-container tw:border tw:border-outline tw:m-0 d-none d-lg-inline-flex" role="group" aria-label="{{ __('customization.language.label') }}">
             @csrf
             <input type="hidden" name="return_to" value="{{ request()->getRequestUri() }}">
             <button
@@ -57,7 +57,7 @@
             </button>
         </form>
 
-        <div class="tw:h-4 tw:w-px tw:bg-outline-variant tw:shrink-0" aria-hidden="true"></div>
+        <div class="tw:h-4 tw:w-px tw:bg-outline-variant tw:shrink-0 d-none d-lg-block" aria-hidden="true"></div>
 
         {{-- 2. Operational Activity & Alerts: Chat + Notifications --}}
         <div class="tw:inline-flex tw:items-center tw:gap-1">
@@ -107,12 +107,12 @@
             </div>
         </div>
 
-        <div class="tw:h-4 tw:w-px tw:bg-outline-variant tw:shrink-0" aria-hidden="true"></div>
+        <div class="tw:h-4 tw:w-px tw:bg-outline-variant tw:shrink-0 d-none d-lg-block" aria-hidden="true"></div>
 
         {{-- 3. User Identity & Role Cluster --}}
         <div class="tw:inline-flex tw:items-center tw:gap-2">
-            {{-- Role Badge --}}
-            <span class="role-badge role-badge-{{ auth()->user()->role }}">
+            {{-- Role Badge (Desktop only; on mobile rendered inside user dropdown & drawer header) --}}
+            <span class="role-badge role-badge-{{ auth()->user()->role }} d-none d-lg-inline-flex">
                 {{ __('navigation.roles.'.auth()->user()->role) }}
             </span>
 
@@ -129,6 +129,35 @@
                             <span class="role-badge role-badge-{{ auth()->user()->role }} tw:text-[10px] d-lg-none">
                                 {{ __('navigation.roles.'.auth()->user()->role) }}
                             </span>
+                        </div>
+                    </li>
+                    <li class="d-lg-none">
+                        <div class="dropdown-item-text tw:py-1.5 tw:flex tw:items-center tw:justify-between tw:gap-2 tw:bg-surface-container-low tw:rounded-ui-xs tw:mx-1 tw:my-1">
+                            <span class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('customization.language.label') }}</span>
+                            <form action="{{ route('locale.switch') }}" method="POST" data-locale-switcher data-managed-submit data-track-unsaved="false" class="lang-toggle-track tw:inline-flex tw:items-center tw:gap-0.5 tw:p-0.5 tw:rounded-ui-sm tw:bg-surface tw:border tw:border-outline tw:m-0" role="group" aria-label="{{ __('customization.language.label') }}">
+                                @csrf
+                                <input type="hidden" name="return_to" value="{{ request()->getRequestUri() }}">
+                                <button
+                                    type="submit"
+                                    name="locale"
+                                    value="id"
+                                    data-locale-option="id"
+                                    class="lang-pill-btn ui-focus-ring tw:flex tw:items-center tw:justify-center tw:px-2 tw:py-0.5 tw:min-h-7 tw:rounded-ui-xs tw:text-ui-xs {{ app()->getLocale() === 'id' ? 'is-active tw:bg-surface tw:text-primary tw:font-bold tw:border tw:border-outline' : 'tw:border-transparent tw:text-on-surface-variant tw:font-semibold tw:hover:text-on-surface' }}"
+                                    {{ app()->getLocale() === 'id' ? 'disabled aria-pressed=true' : 'aria-pressed=false' }}
+                                >
+                                    <span class="tw:tracking-wider">ID</span>
+                                </button>
+                                <button
+                                    type="submit"
+                                    name="locale"
+                                    value="en"
+                                    data-locale-option="en"
+                                    class="lang-pill-btn ui-focus-ring tw:flex tw:items-center tw:justify-center tw:px-2 tw:py-0.5 tw:min-h-7 tw:rounded-ui-xs tw:text-ui-xs {{ app()->getLocale() === 'en' ? 'is-active tw:bg-surface tw:text-primary tw:font-bold tw:border tw:border-outline' : 'tw:border-transparent tw:text-on-surface-variant tw:font-semibold tw:hover:text-on-surface' }}"
+                                    {{ app()->getLocale() === 'en' ? 'disabled aria-pressed=true' : 'aria-pressed=false' }}
+                                >
+                                    <span class="tw:tracking-wider">EN</span>
+                                </button>
+                            </form>
                         </div>
                     </li>
                 <li>
