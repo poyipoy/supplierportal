@@ -8,7 +8,15 @@ class LocalInvoicePhysicalVerification extends Model
 {
     public $timestamps = false;
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'local_invoice_id',
+        'revision_number',
+        'status',
+        'verified_by',
+        'verified_at',
+        'notes',
+        'created_at',
+    ];
 
     protected function casts(): array
     {

@@ -325,7 +325,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         resultsContainer.innerHTML = `
             <div class="p-5 text-center tw:bg-surface border rounded tw:text-on-surface-variant">
-                <x-ui.icon name="trending-up" size="lg" class="tw:text-outline mb-2" />
+                <x-ui.icon name="trending-up" size="lg" class="tw:text-on-surface-variant mb-2" />
                 <p class="mb-0 tw:text-ui-sm">${escapeOptionText(message)}</p>
             </div>
         `;

@@ -269,4 +269,42 @@ class LocalInvoiceViewTimezoneTest extends TestCase
         $this->assertSame('2026-10-14 02:00:00', $invoice->fresh()->getRawOriginal('cashier_received_at'));
         $this->assertSame('2026-11-13', $invoice->fresh()->getRawOriginal('due_date'));
     }
+
+    public function test_invoice_query_filtered_date_range_uses_wib_business_day_boundaries(): void
+    {
+        $supplier = $this->createLocalSupplier();
+
+        // 2026-10-14 01:30:00 WIB == 2026-10-13 18:30:00 UTC
+        $invoice = LocalInvoice::create([
+            'supplier_id' => $supplier->id,
+            'invoice_number' => 'INV-WIB-0130',
+            'submission_number' => 'SUB-2026-00099',
+            'invoice_date' => '2026-10-14',
+            'po_source' => 'MANUAL',
+            'po_number' => 'PO-MANUAL-99',
+            'status' => LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT,
+            'currency' => 'IDR',
+            'invoice_amount' => 1000000,
+            'tax_amount' => 110000,
+            'submitted_at' => Carbon::parse('2026-10-13 18:30:00', 'UTC'),
+            'due_date' => '2026-11-13',
+        ]);
+
+        $queryService = app(\App\Services\LocalInvoice\InvoiceQuery::class);
+
+        $matchedOnWibDay = $queryService->filtered([
+            'from' => '2026-10-14',
+            'to' => '2026-10-14',
+            'due_from' => '2026-11-13',
+            'due_to' => '2026-11-13',
+        ], $supplier->id)->pluck('id')->all();
+
+        $matchedOnPreviousUtcDay = $queryService->filtered([
+            'from' => '2026-10-13',
+            'to' => '2026-10-13',
+        ], $supplier->id)->pluck('id')->all();
+
+        $this->assertContains($invoice->id, $matchedOnWibDay);
+        $this->assertNotContains($invoice->id, $matchedOnPreviousUtcDay);
+    }
 }

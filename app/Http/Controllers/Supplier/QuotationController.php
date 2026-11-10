@@ -63,11 +63,13 @@ class QuotationController extends Controller
         $supplierId = auth()->id();
 
         $periods = Period::where('status', 'open')
-            ->whereHas('purchaseRequisitions', function ($query) use ($supplierId) {
-                $query->visibleToSupplier($supplierId);
-            })
-            ->orWhereHas('purchaseRequisitions.quotations', function ($query) use ($supplierId) {
-                $query->where('supplier_id', $supplierId);
+            ->where(function ($periodQuery) use ($supplierId) {
+                $periodQuery->whereHas('purchaseRequisitions', function ($query) use ($supplierId) {
+                    $query->visibleToSupplier($supplierId);
+                })
+                    ->orWhereHas('purchaseRequisitions.quotations', function ($query) use ($supplierId) {
+                        $query->where('supplier_id', $supplierId);
+                    });
             })
             ->orderByDesc('year')
             ->orderByRaw('month IS NULL DESC')
@@ -171,7 +173,7 @@ class QuotationController extends Controller
                     $status = $quotation ? $quotation->status : 'unresponded';
 
                     return match ($status) {
-                        'unresponded' => '<span class="ui-status-chip ui-status-chip--error">Not Responded</span>',
+                        'unresponded' => '<span class="ui-status-chip ui-status-chip--error">'.e(__('supplier.copy.not_responded')).'</span>',
                         'draft' => '<span class="ui-status-chip ui-status-chip--neutral">'.e(__('supplier.copy.draft')).'</span>',
                         'revision_requested' => '<span class="ui-status-chip ui-status-chip--warning">'.e(__('supplier.copy.revision_requested')).'</span>',
                         'submitted' => '<span class="ui-status-chip ui-status-chip--success">Submitted ('.($quotation->submitted_at ? BusinessTime::format($quotation->submitted_at, 'd M Y H:i') : '-').')</span>',
@@ -187,7 +189,7 @@ class QuotationController extends Controller
 
                     $action = match ($status) {
                         'unresponded' => '<a href="'.route('supplier.quotations.create', $pr).'" class="ui-data-action ui-data-action--primary ui-focus-ring">'.e(__('supplier.copy.create_quotation')).'</a>',
-                        'draft' => '<a href="'.route('supplier.quotations.create', $pr).'" class="ui-data-action ui-data-action--primary ui-focus-ring">Continue</a>',
+                        'draft' => '<a href="'.route('supplier.quotations.create', $pr).'" class="ui-data-action ui-data-action--primary ui-focus-ring">'.e(__('supplier.copy.continue')).'</a>',
                         'revision_requested' => '<a href="'.route('supplier.quotations.create', $pr).'" class="ui-data-action ui-data-action--warning ui-focus-ring">'.e(__('supplier.copy.revise_quotation')).'</a>',
                         default => $quotation ? '<a href="'.route('supplier.quotations.show', $quotation).'" class="ui-data-action ui-data-action--primary ui-focus-ring">'.e(__('supplier.copy.view')).'</a>' : '-',
                     };

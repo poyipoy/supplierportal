@@ -5,7 +5,9 @@ namespace App\Models;
 use App\Support\BusinessTime;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Validation\Rule;
 
 class ExchangeRate extends Model
 {
@@ -121,5 +123,21 @@ class ExchangeRate extends Model
     {
         Cache::forget('exchange_rate_latest_'.strtoupper($currency));
         Cache::forget('exchange_rate_latest_'.strtoupper($currency).'_'.BusinessTime::today()->toDateString());
+    }
+
+    public static function recordFromRequest(Request $request, ?int $userId): self
+    {
+        $validated = $request->validate([
+            'currency' => ['required', Rule::in(self::CURRENCIES)],
+            'rate_to_idr' => 'required|numeric|min:0.01',
+        ]);
+
+        return static::create([
+            'currency' => $validated['currency'],
+            'rate_to_idr' => $validated['rate_to_idr'],
+            // valid_from is a DATE: the business calendar day, never the UTC date.
+            'valid_from' => BusinessTime::today()->toDateString(),
+            'created_by' => $userId,
+        ]);
     }
 }

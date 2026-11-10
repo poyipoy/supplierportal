@@ -58,7 +58,7 @@
                             @if($conv->latestMessage)
                                 <div class="d-flex align-items-center gap-1">
                                     @if($conv->latestMessage->sender_id === auth()->id())
-                                <x-ui.icon name="reply" size="sm" class="tw:shrink-0 tw:text-outline" />
+                                <x-ui.icon name="reply" size="sm" class="tw:shrink-0 tw:text-on-surface-variant" />
                                     @endif
                                     <span class="text-truncate tw:max-w-64">{{ Str::limit($conv->latestMessage->body, 55) }}</span>
                                 </div>

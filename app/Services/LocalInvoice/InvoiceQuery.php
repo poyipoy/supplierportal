@@ -58,10 +58,17 @@ class InvoiceQuery
                 $query->whereNotIn('status', [LocalInvoice::STATUS_PAID, 'COMPLETED']);
             }
         }
-        foreach (['from' => ['submitted_at', '>='], 'to' => ['submitted_at', '<='], 'due_from' => ['due_date', '>='], 'due_to' => ['due_date', '<=']] as $key => [$column, $operator]) {
-            if (! empty($filters[$key])) {
-                $query->whereDate($column, $operator, $filters[$key]);
-            }
+        if (! empty($filters['from'])) {
+            $query->where('submitted_at', '>=', BusinessTime::toStorage(BusinessTime::parse((string) $filters['from'])->startOfDay()));
+        }
+        if (! empty($filters['to'])) {
+            $query->where('submitted_at', '<=', BusinessTime::toStorage(BusinessTime::parse((string) $filters['to'])->endOfDay()));
+        }
+        if (! empty($filters['due_from'])) {
+            $query->where('due_date', '>=', (string) $filters['due_from']);
+        }
+        if (! empty($filters['due_to'])) {
+            $query->where('due_date', '<=', (string) $filters['due_to']);
         }
         if (! empty($filters['year'])) {
             $query->whereYear('invoice_date', $filters['year']);

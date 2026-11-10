@@ -25,7 +25,15 @@ class SupplierAuditStatusHistory extends Model
 
     public $timestamps = false;
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'supplier_audit_id',
+        'from_status',
+        'to_status',
+        'event',
+        'actor_id',
+        'notes',
+        'created_at',
+    ];
 
     protected function casts(): array
     {

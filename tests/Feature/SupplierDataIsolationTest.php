@@ -162,6 +162,43 @@ class SupplierDataIsolationTest extends TestCase
         $response->assertStatus(403);
     }
 
+    public function test_closed_period_with_supplier_quotation_does_not_appear_in_supplier_quotations_index(): void
+    {
+        $dataOpen = $this->createFullDataChainFor($this->supplierA);
+        $dataOpen['period']->update(['name' => 'Open Period IMP02', 'status' => 'open']);
+
+        $closedPeriod = Period::create([
+            'name' => 'Closed Period IMP02',
+            'month' => 4,
+            'year' => 2026,
+            'status' => 'closed',
+            'created_by' => $this->admin->id,
+        ]);
+
+        $closedPr = PurchaseRequisition::create([
+            'period_id' => $closedPeriod->id,
+            'created_by' => $this->purchasing->id,
+            'pr_number' => 'REQ/CLOSED/IMP02',
+            'notes' => 'Closed PR',
+            'status' => 'completed',
+        ]);
+
+        Quotation::create([
+            'pr_id' => $closedPr->id,
+            'supplier_id' => $this->supplierA->id,
+            'currency' => 'USD',
+            'status' => 'submitted',
+            'submitted_at' => now(),
+        ]);
+
+        $response = $this->actingAs($this->supplierA)
+            ->get(route('supplier.quotations.index'));
+
+        $response->assertOk();
+        $response->assertSee('Open Period IMP02');
+        $response->assertDontSee('Closed Period IMP02');
+    }
+
     // ─────────────────────────────────────────────────
     //  PURCHASE ORDER ISOLATION
     // ─────────────────────────────────────────────────

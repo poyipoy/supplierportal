@@ -14,7 +14,37 @@ class LocalPoDocumentBatch extends Model
 
     public const TERMINAL = ['COMPLETED', 'REJECTED', 'FAILED'];
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'user_id',
+        'supplier_id',
+        'request_key',
+        'locale',
+        'status',
+        'asynchronous',
+        'budget',
+        'original_path',
+        'original_filename',
+        'sha256',
+        'upload_bytes',
+        'original_file_inspection_id',
+        'pdf_count',
+        'processed_count',
+        'actual_bytes',
+        'reserved_bytes',
+        'attempt',
+        'retry_count',
+        'processing_milliseconds',
+        'dispatch_token',
+        'run_token',
+        'dispatch_requested_at',
+        'dispatched_at',
+        'lease_expires_at',
+        'finished_at',
+        'cleaned_at',
+        'failure_code',
+        'created_at',
+        'updated_at',
+    ];
 
     protected function casts(): array
     {

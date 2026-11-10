@@ -125,7 +125,7 @@
                     @elseif($isSubmitted)
                         <x-ui.icon name="truck" size="sm" class="text-primary" />
                     @else
-                        <x-ui.icon name="circle" size="sm" class="tw:text-outline" />
+                        <x-ui.icon name="circle" size="sm" class="tw:text-on-surface-variant" />
                     @endif
                 </div>
                 <div class="fw-bold fs-6 tw:text-on-surface">{{ __('shipments.copy.in_transit') }}</div>
@@ -147,7 +147,7 @@
                     @elseif($isArrived)
                         <x-ui.icon name="package-check" size="sm" class="text-primary" />
                     @else
-                        <x-ui.icon name="circle" size="sm" class="tw:text-outline" />
+                        <x-ui.icon name="circle" size="sm" class="tw:text-on-surface-variant" />
                     @endif
                 </div>
                 <div class="fw-bold fs-6 tw:text-on-surface">{{ __('shipments.copy.arrived_at_plant') }}</div>
@@ -170,7 +170,7 @@
                         @php $allOk = $shipment->qcInspections->every(fn($i) => $i->status === 'ok'); @endphp
                         <x-ui.icon :name="$allOk ? 'check-circle' : 'alert-circle'" size="sm" :class="$allOk ? 'text-success' : 'text-danger'" />
                     @else
-                        <x-ui.icon name="circle" size="sm" class="tw:text-outline" />
+                        <x-ui.icon name="circle" size="sm" class="tw:text-on-surface-variant" />
                     @endif
                 </div>
                 <div class="fw-bold fs-6 tw:text-on-surface">{{ __('shipments.copy.qc_inspection') }}</div>

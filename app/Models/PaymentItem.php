@@ -12,7 +12,18 @@ class PaymentItem extends Model
 
     public const STATUS_REMOVED = 'REMOVED';
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'payment_group_id',
+        'payable_type',
+        'payable_id',
+        'amount',
+        'status',
+        'removed_by',
+        'removed_at',
+        'removal_reason',
+        'created_at',
+        'updated_at',
+    ];
 
     protected function casts(): array
     {

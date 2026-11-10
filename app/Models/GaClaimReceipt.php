@@ -7,7 +7,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class GaClaimReceipt extends Model
 {
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'ga_claim_id',
+        'receipt_number',
+        'issued_at',
+        'created_at',
+        'updated_at',
+    ];
 
     protected function casts(): array
     {

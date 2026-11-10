@@ -18,7 +18,42 @@ class LocalInvoiceVerification extends Model
 
     public const PPN_TIDAK_SESUAI = 'TIDAK_SESUAI';
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'local_invoice_id',
+        'revision_number',
+        'invoice_check',
+        'invoice_notes',
+        'tax_invoice_check',
+        'tax_invoice_notes',
+        'po_check',
+        'po_notes',
+        'delivery_note_check',
+        'delivery_note_notes',
+        'gr_check',
+        'gr_notes',
+        'ppn_status',
+        'submitted_ppn',
+        'verified_ppn',
+        'pph_23_applicable',
+        'pph_23_base',
+        'pph_23_rate',
+        'pph_23_amount',
+        'pph_4_2_applicable',
+        'pph_4_2_amount',
+        'pph_21_applicable',
+        'pph_21_amount',
+        'tax_notes',
+        'is_section_a_passed',
+        'is_section_b_passed',
+        'is_locked',
+        'verified_by',
+        'verified_at',
+        'section_a_verified_by',
+        'section_b_verified_by',
+        'actor_tracking_required',
+        'created_at',
+        'updated_at',
+    ];
 
     protected static function booted(): void
     {

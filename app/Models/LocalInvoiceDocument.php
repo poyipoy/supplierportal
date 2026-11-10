@@ -26,7 +26,19 @@ class LocalInvoiceDocument extends Model
 
     public const DEFAULT_MAX_FILES = 5;
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'local_invoice_id',
+        'local_invoice_revision_id',
+        'document_type',
+        'file_path',
+        'original_filename',
+        'mime_type',
+        'file_size',
+        'uploaded_by',
+        'file_inspection_id',
+        'created_at',
+        'updated_at',
+    ];
 
     public static function maxFilesFor(string $type): int
     {

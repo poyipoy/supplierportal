@@ -17,7 +17,20 @@ class LocalInvoicePayment extends Model
 
     public const STATUS_FINALIZED = 'FINALIZED';
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'local_invoice_id',
+        'local_invoice_voucher_id',
+        'payment_item_id',
+        'expected_amount',
+        'actual_paid_total',
+        'status',
+        'finalized_by',
+        'finalized_at',
+        'created_by',
+        'updated_by',
+        'created_at',
+        'updated_at',
+    ];
 
     protected function casts(): array
     {

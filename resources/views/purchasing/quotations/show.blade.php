@@ -139,8 +139,8 @@
                 <div class="tw:text-on-surface-variant tw:text-ui-xs tw:mt-0.5">{{ $quotation->supplier->email }}</div>
                 @if($quotation->supplier->supplier)
                     <div class="tw:text-on-surface-variant tw:text-ui-xs mt-2 pt-2 border-top">
-                        <div class="mb-1"><x-ui.icon name="map-pin" size="sm" class="me-1 tw:text-outline" />{{ $quotation->supplier->supplier->address ?? '-' }}</div>
-                        <div><x-ui.icon name="phone" size="sm" class="me-1 tw:text-outline" />{{ $quotation->supplier->supplier->phone ?? '-' }}</div>
+                        <div class="mb-1"><x-ui.icon name="map-pin" size="sm" class="me-1 tw:text-on-surface-variant" />{{ $quotation->supplier->supplier->address ?? '-' }}</div>
+                        <div><x-ui.icon name="phone" size="sm" class="me-1 tw:text-on-surface-variant" />{{ $quotation->supplier->supplier->phone ?? '-' }}</div>
                     </div>
                 @endif
                 {{-- Decision 10: Supplier PIC ("–" when absent). --}}
@@ -293,8 +293,8 @@
                     <div class="list-group list-group-flush">
                         @foreach($quotation->attachments as $att)
                             <a href="{{ route('attachments.show', $att) }}" class="list-group-item list-group-item-action py-2 px-3 tw:text-ui-xs d-flex justify-content-between align-items-center" target="_blank">
-                                <span class="text-truncate"><x-ui.icon name="paperclip" size="sm" class="tw:me-1.5 tw:text-outline" />{{ $att->file_name }}</span>
-                                <x-ui.icon name="download" size="sm" class="tw:text-outline" />
+                                <span class="text-truncate"><x-ui.icon name="paperclip" size="sm" class="tw:me-1.5 tw:text-on-surface-variant" />{{ $att->file_name }}</span>
+                                <x-ui.icon name="download" size="sm" class="tw:text-on-surface-variant" />
                             </a>
                         @endforeach
                     </div>

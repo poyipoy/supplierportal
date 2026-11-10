@@ -38,7 +38,7 @@
     <x-ui.toolbar :sticky="true">
         <x-slot:search>
             <div class="input-group input-group-sm">
-                <span class="input-group-text tw:bg-surface border-end-0 tw:text-outline">
+                <span class="input-group-text tw:bg-surface border-end-0 tw:text-on-surface-variant">
                     <x-ui.icon name="search" size="sm" />
                 </span>
                 <input

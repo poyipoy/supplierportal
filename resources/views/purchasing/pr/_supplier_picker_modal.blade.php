@@ -66,7 +66,7 @@
                     <div class="row g-2 align-items-center mb-3">
                         <div class="col">
                             <div class="input-group input-group-sm">
-                                <span class="input-group-text tw:bg-surface tw:text-outline"><x-ui.icon name="search" size="sm" /></span>
+                                <span class="input-group-text tw:bg-surface tw:text-on-surface-variant"><x-ui.icon name="search" size="sm" /></span>
                                 <input type="text" class="form-control supplier-search-input" placeholder="{{ __('purchasing.copy.search_by_supplier_name_company_or_email') }}" aria-label="{{ __('purchasing.copy.search_suppliers') }}">
                             </div>
                         </div>

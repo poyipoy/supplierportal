@@ -173,6 +173,7 @@ return [
         'back_to_material_claim' => 'Back to Material Claim',
         'back_to_po' => 'Back to PO',
         'material_claims' => 'Material Claims',
+        'start_inspection' => 'Start Inspection',
     ],
     'notify' => [
         'ok_title' => 'QC Inspection Completed',

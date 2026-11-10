@@ -8,7 +8,16 @@ class LocalFinanceAuditLog extends Model
 {
     public $timestamps = false;
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'auditable_type',
+        'auditable_id',
+        'action',
+        'actor_id',
+        'before_values',
+        'after_values',
+        'metadata',
+        'created_at',
+    ];
 
     protected function casts(): array
     {

@@ -10,7 +10,20 @@ class LocalInvoicePaymentTransfer extends Model
 
     public const TYPE_CORRECTION = 'CORRECTION';
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'local_invoice_payment_id',
+        'sequence_no',
+        'transfer_type',
+        'primary_guard',
+        'amount',
+        'transfer_reference',
+        'transfer_date',
+        'correction_reason',
+        'notes',
+        'entered_by',
+        'created_at',
+        'updated_at',
+    ];
 
     protected function casts(): array
     {

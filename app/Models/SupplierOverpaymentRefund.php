@@ -13,7 +13,21 @@ class SupplierOverpaymentRefund extends Model
 
     public const STATUS_SETTLED = 'SETTLED';
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'local_invoice_payment_id',
+        'local_invoice_id',
+        'supplier_id',
+        'overpayment_amount',
+        'status',
+        'refund_amount',
+        'refund_date',
+        'notes',
+        'created_by',
+        'settled_by',
+        'settled_at',
+        'created_at',
+        'updated_at',
+    ];
 
     protected function casts(): array
     {

@@ -172,6 +172,7 @@ return [
         'back_to_material_claim' => 'Kembali ke Klaim Material',
         'back_to_po' => 'Kembali ke PO',
         'material_claims' => 'Klaim Material',
+        'start_inspection' => 'Mulai Inspeksi',
     ],
     'notify' => [
         'ok_title' => 'Inspeksi QC Selesai',

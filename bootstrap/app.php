@@ -119,11 +119,12 @@ return Application::configure(basePath: dirname(__DIR__))
                     'purchasing' => route('purchasing.dashboard', absolute: false),
                     'supplier', 'accounting', 'finance' => PortalContext::dashboard(auth()->user()),
                     'qc' => route('qc.dashboard', absolute: false),
-                    default => '/',
+                    'ga' => route('ga.dashboard', absolute: false),
+                    default => route('login', absolute: false),
                 };
             }
 
-            return '/';
+            return route('login', absolute: false);
         });
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -13,7 +13,7 @@
         <ol class="tw:m-0 tw:flex tw:list-none tw:flex-wrap tw:items-center tw:gap-1 tw:p-0 tw:text-ui-xs tw:text-on-surface-variant">
             @foreach($normalizedItems as $item)
                 <li class="tw:flex tw:min-w-0 tw:items-center tw:gap-1">
-                    @if(!$loop->first)<x-ui.icon name="chevron-right" size="sm" class="tw:text-outline" />@endif
+                    @if(!$loop->first)<x-ui.icon name="chevron-right" size="sm" class="tw:text-on-surface-variant" />@endif
                     @if($loop->last || empty($item['url']))
                         <span class="tw:max-w-[18rem] tw:truncate tw:font-semibold tw:text-on-surface" aria-current="page">{{ $item['label'] }}</span>
                     @else

@@ -9,10 +9,10 @@ use Illuminate\Support\Facades\Storage;
 
 class FileAccessGuard
 {
-    public function classification(Model $document): string
+    public function classification(Model $document, ?FileInspection $inspection = null): string
     {
         if ($document->file_inspection_id) {
-            $inspection = FileInspection::find($document->file_inspection_id);
+            $inspection ??= FileInspection::find($document->file_inspection_id);
             if ($inspection?->status === 'HISTORICAL_UNVERIFIED') {
                 $table = $inspection->metadata['source_table'] ?? '';
                 $id = $inspection->metadata['source_id'] ?? 0;
@@ -54,10 +54,12 @@ class FileAccessGuard
     public function assertReadable(Model $document): void
     {
         abort_unless(is_file(Storage::disk('private')->path($document->file_path)), 404);
-        $classification = $this->classification($document);
+        $inspection = $document->file_inspection_id
+            ? FileInspection::find($document->file_inspection_id)
+            : null;
+        $classification = $this->classification($document, $inspection);
         abort_unless(in_array($classification, ['VALIDATED', 'HISTORICAL_UNVERIFIED'], true), 404);
-        if ($document->file_inspection_id) {
-            $inspection = FileInspection::findOrFail($document->file_inspection_id);
+        if ($inspection !== null) {
             abort_unless($inspection->file_path === $document->file_path, 404);
             if (isset($inspection->metadata['po_document_batch_id'])) {
                 abort_unless(DB::table('local_po_document_batches')->where('id', $inspection->metadata['po_document_batch_id'])->value('status') === 'COMPLETED', 404);

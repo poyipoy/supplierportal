@@ -737,7 +737,7 @@
                                     </div>
                                 @else
                                     <div class="tw:rounded-lg tw:bg-surface-container-low/50 tw:border tw:border-dashed tw:border-outline-variant/60 tw:p-2 tw:text-center tw:flex tw:flex-col tw:items-center tw:justify-center" style="min-height: 72px;">
-                                        <x-ui.icon name="file" size="sm" class="tw:text-outline/40 tw:mb-1" />
+                                        <x-ui.icon name="file" size="sm" class="tw:text-on-surface-variant tw:mb-1" />
                                         <span class="tw:text-on-surface-variant tw:text-ui-xs tw:font-medium">{{ __('purchasing.copy.no_file_uploaded') }}</span>
                                     </div>
                                 @endif

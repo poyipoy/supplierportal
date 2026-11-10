@@ -6,7 +6,13 @@ use Illuminate\Database\Eloquent\Model;
 
 class LocalInvoiceReceipt extends Model
 {
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'local_invoice_id',
+        'receipt_number',
+        'issued_at',
+        'created_at',
+        'updated_at',
+    ];
 
     protected function casts(): array
     {

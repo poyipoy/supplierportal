@@ -25,12 +25,17 @@ class SupplierRegistrationRequest extends FormRequest
      */
     public static function registrationPasswordRule(): Password
     {
-        return Password::min(8)
+        $rule = Password::min(8)
             ->max(255)
             ->mixedCase()
             ->numbers()
             ->symbols();
 
+        if (app()->environment('production') && config('auth_security.password.uncompromised_in_production', true)) {
+            $rule->uncompromised((int) config('auth_security.password.uncompromised_threshold', 3));
+        }
+
+        return $rule;
     }
 
     public function rules(): array

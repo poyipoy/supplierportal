@@ -21,30 +21,32 @@ class PurchasingController extends Controller
     {
         // ─── Cached dashboard widgets (10 menit) ───
         $dashboardData = Cache::remember(
-            'purchasing_dashboard_widgets:'.app()->getLocale(),
-            now()->addMinutes(10),
-            function () use ($regionalFormatter) {
+            'purchasing_dashboard_widgets',
+            BusinessTime::now()->addMinutes(10),
+            function () {
+                $today = BusinessTime::today();
                 $prAktif = PurchaseRequisition::whereIn('status', ['submitted', 'bidding'])->count();
                 $menungguPenawaran = PurchaseRequisition::where('status', 'submitted')
                     ->whereDoesntHave('quotations')->count();
                 $poBerjalan = PurchaseOrder::whereIn('status', ['active', 'overdue', 'waiting_qc'])->count();
                 $materialMingguIni = PurchaseOrder::where('status', 'active')
-                    ->whereBetween('estimated_arrival', [now(), now()->addDays(7)])->count();
+                    ->whereBetween('estimated_arrival', [$today->toDateString(), $today->copy()->addDays(7)->toDateString()])->count();
 
                 // Chart: PR by month using one grouped query instead of six separate queries.
-                $sixMonthsAgo = Carbon::now()->subMonths(5)->startOfMonth();
+                $sixMonthsAgo = BusinessTime::toStorage(BusinessTime::now()->subMonths(5)->startOfMonth());
                 $prCounts = PurchaseRequisition::where('created_at', '>=', $sixMonthsAgo)
                     ->selectRaw('YEAR(created_at) as yr, MONTH(created_at) as mn, COUNT(*) as total')
                     ->groupByRaw('YEAR(created_at), MONTH(created_at)')
                     ->get()
                     ->keyBy(fn ($row) => $row->yr.'-'.$row->mn);
 
-                $prPerBulan = [];
+                $prMonthlyCounts = [];
                 for ($i = 5; $i >= 0; $i--) {
-                    $d = Carbon::now()->subMonths($i);
+                    $d = BusinessTime::now()->subMonths($i);
                     $key = $d->year.'-'.$d->month;
-                    $prPerBulan[] = [
-                        'label' => $regionalFormatter->monthYear($d),
+                    $prMonthlyCounts[] = [
+                        'year' => $d->year,
+                        'month' => $d->month,
                         'count' => (int) ($prCounts->get($key)?->total ?? 0),
                     ];
                 }
@@ -78,16 +80,16 @@ class PurchasingController extends Controller
 
                 $waitingQcLong = PurchaseOrder::where('status', 'waiting_qc')
                     ->whereNotNull('actual_arrival')
-                    ->whereDate('actual_arrival', '<', BusinessTime::today()->subDays(2)->toDateString())
+                    ->whereDate('actual_arrival', '<', $today->copy()->subDays(2)->toDateString())
                     ->count();
 
                 $claimsPastDeadline = MaterialClaim::where('status', 'pending')
-                    ->whereDate('deadline', '<', BusinessTime::today()->toDateString())
+                    ->whereDate('deadline', '<', $today->toDateString())
                     ->count();
 
                 return compact(
                     'prAktif', 'menungguPenawaran', 'poBerjalan', 'materialMingguIni',
-                    'prPerBulan', 'poStatusDist', 'poDocumentsIncomplete',
+                    'prMonthlyCounts', 'poStatusDist', 'poDocumentsIncomplete',
                     'completedPrWithoutPo', 'waitingQcLong', 'claimsPastDeadline'
                 );
             }
@@ -95,6 +97,14 @@ class PurchasingController extends Controller
 
         // Extract cached data
         extract($dashboardData);
+
+        $prPerBulan = array_map(
+            fn (array $row) => [
+                'label' => $regionalFormatter->monthYear(Carbon::create($row['year'], $row['month'], 1)),
+                'count' => $row['count'],
+            ],
+            $prMonthlyCounts
+        );
 
         $operationalChecks = [
             [
@@ -151,18 +161,8 @@ class PurchasingController extends Controller
 
     public function updateKurs(Request $request)
     {
-        $request->validate([
-            'currency' => ['required', Rule::in(ExchangeRate::CURRENCIES)],
-            'rate_to_idr' => 'required|numeric|min:0.01',
-        ]);
-        ExchangeRate::create([
-            'currency' => $request->currency,
-            'rate_to_idr' => $request->rate_to_idr,
-            // valid_from is a DATE: the business calendar day, never the UTC date.
-            'valid_from' => BusinessTime::today()->toDateString(),
-            'created_by' => auth()->id(),
-        ]);
+        $rate = ExchangeRate::recordFromRequest($request, auth()->id());
 
-        return back()->with('success', __('purchasing.feedback.rate_updated', ['currency' => $request->currency]));
+        return back()->with('success', __('purchasing.feedback.rate_updated', ['currency' => $rate->currency]));
     }
 }

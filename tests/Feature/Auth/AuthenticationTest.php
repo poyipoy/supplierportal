@@ -128,4 +128,13 @@ class AuthenticationTest extends TestCase
 
         $this->assertNull(session('url.intended'));
     }
+
+    public function test_authenticated_ga_user_visiting_guest_login_redirects_to_ga_dashboard(): void
+    {
+        $gaUser = User::factory()->create(['role' => 'ga']);
+
+        $this->actingAs($gaUser)
+            ->get('/login')
+            ->assertRedirect(route('ga.dashboard', absolute: false));
+    }
 }

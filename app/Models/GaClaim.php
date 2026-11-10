@@ -66,7 +66,29 @@ class GaClaim extends Model
         };
     }
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'claim_number',
+        'employee_id',
+        'claim_type',
+        'claim_date',
+        'amount',
+        'description',
+        'status',
+        'revision_number',
+        'revision_reason',
+        'submitted_by',
+        'submitted_at',
+        'basic_verified_by',
+        'basic_verified_at',
+        'finance_verified_by',
+        'finance_verified_at',
+        'ready_to_pay_at',
+        'paid_at',
+        'approved_bank_snapshot',
+        'approved_bank_hash',
+        'created_at',
+        'updated_at',
+    ];
 
     protected function casts(): array
     {

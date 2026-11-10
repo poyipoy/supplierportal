@@ -57,6 +57,7 @@ class QcInspectionController extends Controller
             'supplier',
             'quotations' => fn ($query) => $query->withCount('items'),
             'shipmentItems.shipment',
+            'qcInspections:id,po_id,shipment_id',
         ])
             ->orderBy('actual_arrival', 'asc');
 
@@ -70,7 +71,7 @@ class QcInspectionController extends Controller
                 return trans_choice('purchasing.copy.item_count', $count, ['count' => $count]);
             })
             ->addColumn('action', function ($po) {
-                $inspectedShipmentIds = QcInspection::where('po_id', $po->id)
+                $inspectedShipmentIds = $po->qcInspections
                     ->whereNotNull('shipment_id')
                     ->pluck('shipment_id')
                     ->all();
@@ -81,7 +82,7 @@ class QcInspectionController extends Controller
                     ? route('qc.inspections.create', ['po_id' => $po, 'shipment_id' => $waitingShipment])
                     : route('qc.inspections.create', $po);
 
-                return '<a href="'.$url.'" class="ui-data-action ui-data-action--primary ui-focus-ring">Start Inspection</a>';
+                return '<a href="'.$url.'" class="ui-data-action ui-data-action--primary ui-focus-ring">'.e(__('qc.copy.start_inspection')).'</a>';
             })
             ->rawColumns(['action'])
             ->make(true);

@@ -480,6 +480,9 @@ return [
         'estimated_ready' => 'Perkiraan Siap:',
         'revised_quotation_draft_successfully_saved' => 'Draf penawaran revisi berhasil disimpan.',
         'total_kg' => 'Total KG',
+        'view_history' => 'Lihat Riwayat',
+        'not_responded' => 'Belum Ditanggapi',
+        'continue' => 'Lanjutkan',
     ],
     'notify' => [
         'revised_title' => 'Penawaran Revisi Diterima',

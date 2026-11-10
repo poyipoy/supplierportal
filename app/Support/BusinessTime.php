@@ -52,6 +52,16 @@ final class BusinessTime
     }
 
     /**
+     * Parse string tanggal/waktu ke dalam zona bisnis.
+     */
+    public static function parse(DateTimeInterface|string $at): CarbonImmutable
+    {
+        return $at instanceof DateTimeInterface
+            ? CarbonImmutable::instance($at)->setTimezone(self::tz())
+            : CarbonImmutable::parse($at, self::tz());
+    }
+
+    /**
      * Tanggal kalender 'Y-m-d' -> awal hari di zona bisnis (untuk dibandingkan dengan today()).
      */
     public static function parseDate(string $date): CarbonImmutable

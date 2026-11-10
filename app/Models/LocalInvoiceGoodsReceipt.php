@@ -12,7 +12,20 @@ class LocalInvoiceGoodsReceipt extends Model
 
     public const STATE_RELEASED = 'RELEASED';
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'local_invoice_id',
+        'local_purchase_order_id',
+        'local_goods_receipt_id',
+        'state',
+        'gr_number_snapshot',
+        'gr_qty_snapshot',
+        'gr_uom_snapshot',
+        'reserved_at',
+        'consumed_at',
+        'released_at',
+        'created_at',
+        'updated_at',
+    ];
 
     protected function casts(): array
     {

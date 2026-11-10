@@ -480,6 +480,9 @@ return [
         'estimated_ready' => 'Estimated Ready:',
         'revised_quotation_draft_successfully_saved' => 'Revised quotation draft successfully saved.',
         'total_kg' => 'Total KG',
+        'view_history' => 'View History',
+        'not_responded' => 'Not Responded',
+        'continue' => 'Continue',
     ],
     'notify' => [
         'revised_title' => 'Revised Quotation Received',

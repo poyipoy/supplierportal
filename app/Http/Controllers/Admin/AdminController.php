@@ -44,18 +44,8 @@ class AdminController extends Controller
 
     public function updateKurs(Request $request)
     {
-        $request->validate([
-            'currency' => ['required', Rule::in(ExchangeRate::CURRENCIES)],
-            'rate_to_idr' => 'required|numeric|min:0.01',
-        ]);
-        ExchangeRate::create([
-            'currency' => $request->currency,
-            'rate_to_idr' => $request->rate_to_idr,
-            // valid_from is a DATE: the business calendar day, never the UTC date.
-            'valid_from' => BusinessTime::today()->toDateString(),
-            'created_by' => auth()->id(),
-        ]);
+        $rate = ExchangeRate::recordFromRequest($request, auth()->id());
 
-        return back()->with('success', __('admin.feedback.rate_updated', ['currency' => $request->currency]));
+        return back()->with('success', __('admin.feedback.rate_updated', ['currency' => $rate->currency]));
     }
 }

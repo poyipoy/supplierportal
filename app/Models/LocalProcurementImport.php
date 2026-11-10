@@ -14,7 +14,28 @@ class LocalProcurementImport extends Model
 
     public const KINDS = ['PO', 'GR'];
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'user_id',
+        'kind',
+        'locale',
+        'status',
+        'token_hash',
+        'checksum',
+        'original_filename',
+        'attempt',
+        'processed_rows',
+        'source_rows',
+        'summary',
+        'warnings',
+        'failure',
+        'lease_expires_at',
+        'owner_job_key',
+        'expires_at',
+        'finished_at',
+        'cleaned_at',
+        'created_at',
+        'updated_at',
+    ];
 
     protected function casts(): array
     {

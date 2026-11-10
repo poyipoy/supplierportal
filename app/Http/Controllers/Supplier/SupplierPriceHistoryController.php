@@ -248,7 +248,7 @@ class SupplierPriceHistoryController extends Controller
                     'currency' => $row->currency,
                 ]);
 
-                return '<a href="'.$url.'" class="ui-data-action ui-data-action--primary ui-focus-ring">View History</a>';
+                return '<a href="'.$url.'" class="ui-data-action ui-data-action--primary ui-focus-ring">'.e(__('supplier.copy.view_history')).'</a>';
             })
             ->addColumn('price_info', function ($row) {
                 $latest = $row->latest_price ?? 0;

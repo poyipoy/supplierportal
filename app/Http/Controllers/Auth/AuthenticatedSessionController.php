@@ -53,20 +53,6 @@ class AuthenticatedSessionController extends Controller
     }
 
     /**
-     * Determine redirect path based on user role.
-     */
-    protected function redirectByRole(string $role): string
-    {
-        return match ($role) {
-            'admin' => route('admin.dashboard', absolute: false),
-            'purchasing' => route('purchasing.dashboard', absolute: false),
-            'supplier' => route('supplier.dashboard', absolute: false),
-            'qc' => route('qc.dashboard', absolute: false),
-            default => '/',
-        };
-    }
-
-    /**
      * Destroy an authenticated session.
      */
     public function destroy(Request $request, SessionRevocationService $revocation): RedirectResponse

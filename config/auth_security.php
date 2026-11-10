@@ -30,7 +30,7 @@ return [
         // destroy scanner throughput. Bounded so a flood of failures cannot
         // starve PHP-FPM workers by pinning them all in usleep().
         'tarpit' => [
-            'enabled' => (bool) env('AUTH_TARPIT_ENABLED', true),
+            'enabled' => (bool) env('AUTH_TARPIT_ENABLED', false),
             'threshold' => 3,
             'delay_step_ms' => 1000,
             'max_delay_ms' => 2000,

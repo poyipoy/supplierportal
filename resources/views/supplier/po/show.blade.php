@@ -392,7 +392,7 @@
                         <div class="tw:border tw:border-outline-variant/70 tw:bg-surface tw:rounded-lg tw:p-3 tw:text-ui-xs tw-shadow-2xs">
                             <div class="tw:flex tw:items-center tw:justify-between tw:gap-2">
                                 <div class="tw:flex tw:items-center tw:gap-2 tw:min-w-0">
-                                    <x-ui.icon :name="$docIcons[$docType] ?? 'file-text'" size="sm" class="{{ $item['status'] === 'pending' ? 'tw:text-outline' : 'text-primary' }} flex-shrink-0" />
+                                    <x-ui.icon :name="$docIcons[$docType] ?? 'file-text'" size="sm" class="{{ $item['status'] === 'pending' ? 'tw:text-on-surface-variant' : 'text-primary' }} flex-shrink-0" />
                                     <span class="fw-semibold tw:text-on-surface text-truncate">{{ $item['label'] }}</span>
                                 </div>
                                 <span class="ui-status-chip {{ $chipClasses }} tw-shadow-2xs flex-shrink-0">

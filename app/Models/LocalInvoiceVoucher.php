@@ -17,7 +17,35 @@ class LocalInvoiceVoucher extends Model
 
     public const METHOD_KAS = 'KAS';
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'local_invoice_id',
+        'payment_batch_id',
+        'payment_group_id',
+        'payment_item_id',
+        'voucher_number',
+        'voucher_date',
+        'payment_method',
+        'status',
+        'supplier_name_snapshot',
+        'bank_name_snapshot',
+        'bank_account_snapshot',
+        'bank_account_holder_snapshot',
+        'npwp_snapshot',
+        'invoice_number_snapshot',
+        'po_number_snapshot',
+        'gr_references_snapshot',
+        'dpp_snapshot',
+        'ppn_snapshot',
+        'pph_snapshot',
+        'net_payable_snapshot',
+        'amount',
+        'terbilang_snapshot',
+        'remarks_snapshot',
+        'finalized_by',
+        'finalized_at',
+        'created_at',
+        'updated_at',
+    ];
 
     protected function casts(): array
     {

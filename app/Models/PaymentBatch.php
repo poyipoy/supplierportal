@@ -35,7 +35,24 @@ class PaymentBatch extends Model
         self::STATUS_PARTIALLY_PAID,
     ];
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'batch_number',
+        'batch_type',
+        'status',
+        'total_subtotal',
+        'total_bank_fee',
+        'total_net_amount',
+        'created_by',
+        'finalized_by',
+        'finalized_at',
+        'paid_at',
+        'notes',
+        'actor_tracking_required',
+        'transfer_exported_at',
+        'transfer_exported_by',
+        'created_at',
+        'updated_at',
+    ];
 
     protected static function booted(): void
     {

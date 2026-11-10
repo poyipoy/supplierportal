@@ -26,7 +26,29 @@ class PaymentGroup extends Model
         self::STATUS_CANCELLED,
     ];
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'payment_batch_id',
+        'payee_type',
+        'payee_id',
+        'payee_name',
+        'bank_name',
+        'account_number',
+        'account_holder_name',
+        'subtotal_amount',
+        'bank_fee',
+        'net_payment_amount',
+        'fee_override_reason',
+        'status',
+        'transfer_reference',
+        'transfer_date',
+        'payment_notes',
+        'voucher_number',
+        'voucher_date',
+        'paid_by',
+        'paid_at',
+        'created_at',
+        'updated_at',
+    ];
 
     protected function casts(): array
     {

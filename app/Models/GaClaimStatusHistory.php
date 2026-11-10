@@ -9,7 +9,15 @@ class GaClaimStatusHistory extends Model
 {
     public $timestamps = false;
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'ga_claim_id',
+        'from_status',
+        'to_status',
+        'actor_id',
+        'event',
+        'notes',
+        'created_at',
+    ];
 
     protected function casts(): array
     {
