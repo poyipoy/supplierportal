@@ -26,6 +26,8 @@ class SecurityHeadersTest extends TestCase
         $policy = $response->headers->get('Content-Security-Policy');
         $this->assertStringContainsString("default-src 'self'", $policy);
         $this->assertStringContainsString("'unsafe-inline'", $policy);
+        $this->assertStringNotContainsString("script-src 'self' 'unsafe-inline'", $policy);
+        $this->assertStringContainsString("script-src 'self' 'unsafe-eval' 'nonce-", $policy);
         $this->assertStringContainsString("'unsafe-eval'", $policy);
         $this->assertStringContainsString("'nonce-", $policy);
         $this->assertStringContainsString('https://cdn.jsdelivr.net', $policy);
@@ -92,7 +94,7 @@ class SecurityHeadersTest extends TestCase
 
         $this->get('http://adasi-portal.test/login')->assertHeaderMissing('Strict-Transport-Security');
         $this->get('https://adasi-portal.test/login')
-            ->assertHeader('Strict-Transport-Security', 'max-age=31536000');
+            ->assertHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
     }
 
     public function test_mfa_setup_and_recovery_pages_are_not_cacheable(): void

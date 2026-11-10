@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Purchasing;
 
-use App\Enums\PurchaseRequisitionStatus;
 use App\Exports\PrImportTemplateExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Export\Filters\RequisitionExportFilters;
@@ -13,12 +12,10 @@ use App\Models\PrItem;
 use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
 use App\Models\User;
-use App\Services\Materials\MaterialResolver;
 use App\Services\Materials\PurchaseRequisitionItemSynchronizer;
 use App\Services\NotificationService;
-use App\Services\Procurement\PurchaseRequisitionStateEngine;
+use App\Services\Procurement\PurchaseRequisitionSubmissionService;
 use App\Support\BusinessTime;
-use App\Support\NotificationCategory;
 use App\Support\NumberFormat;
 use App\Support\Procurement\LogisticsTerms;
 use App\Support\PurchasingNavigation;
@@ -37,6 +34,7 @@ class PurchaseRequisitionController extends Controller
     public function __construct(
         private readonly NotificationService $notifications,
         private readonly PurchaseRequisitionItemSynchronizer $itemSynchronizer,
+        private readonly PurchaseRequisitionSubmissionService $submissionService,
     ) {}
 
     /**
@@ -253,21 +251,7 @@ class PurchaseRequisitionController extends Controller
         }
 
         try {
-            DB::transaction(function () use ($pr) {
-                $this->itemSynchronizer->reprocessForSubmission($pr, auth()->id());
-                app(PurchaseRequisitionStateEngine::class)->transition(
-                    model: $pr,
-                    target: PurchaseRequisitionStatus::SUBMITTED,
-                    actor: auth()->user(),
-                    metadata: [
-                        'attributes' => [
-                            'pr_number' => $pr->pr_number ?: PurchaseRequisition::generatePrNumber(),
-                        ],
-                    ]
-                );
-            });
-
-            $this->notifyAdminsOfSubmission($pr);
+            $this->submissionService->submitDraft($pr, auth()->user());
 
             return redirect(PurchasingNavigation::backUrl('purchasing.requisitions.index'))
                 ->with('success', __('purchasing.copy.purchase_requisition_successfully_submitted'));
@@ -291,31 +275,7 @@ class PurchaseRequisitionController extends Controller
         $validated = $request->validated();
 
         try {
-            $pr = DB::transaction(function () use ($validated) {
-                $pr = PurchaseRequisition::create([
-                    'period_id' => $validated['period_id'],
-                    'created_by' => auth()->id(),
-                    'pr_number' => $validated['action'] === 'submitted' ? PurchaseRequisition::generatePrNumber() : null,
-                    'notes' => $validated['notes'] ?? null,
-                    'port_of_discharge' => $validated['port_of_discharge'] ?? null,
-                    'incoterm' => $validated['incoterm'] ?? null,
-                    'status' => $validated['action'],
-                ]);
-
-                $this->itemSynchronizer->sync(
-                    $pr,
-                    $validated['items'],
-                    $validated['action'] === 'submitted',
-                    auth()->id(),
-                );
-                $this->syncInvitedSuppliers($pr, $this->supplierIdsFromValidated($validated));
-
-                return $pr;
-            });
-
-            if ($validated['action'] === 'submitted') {
-                $this->notifyAdminsOfSubmission($pr);
-            }
+            $this->submissionService->create($validated, auth()->user());
 
             $message = $validated['action'] === 'submitted'
                 ? __('purchasing.copy.purchase_requisition_successfully_submitted')
@@ -423,25 +383,7 @@ class PurchaseRequisitionController extends Controller
                 ->with('error', __('purchasing.copy.you_cannot_edit_this_requisition'));
         }
 
-        $resolver = app(MaterialResolver::class);
-        $materialIndex = $resolver->activeIndex();
-        foreach ($pr->items as $item) {
-            if ($item->material_master_id === null && ! empty($item->material_name)) {
-                $matched = $resolver->resolveExact($item->material_name, $materialIndex);
-                if (! $matched) {
-                    $stripped = preg_replace('/[\s\-_]+(F|R|H|FLAT|ROUND|HOLLOW)$/i', '', trim($item->material_name));
-                    $matched = $resolver->resolveExact($stripped, $materialIndex);
-                    if (! $matched) {
-                        $nospace = str_replace(' ', '', $stripped);
-                        $matched = $resolver->resolveExact($nospace, $materialIndex);
-                    }
-                }
-                if ($matched) {
-                    $item->material_master_id = $matched->id;
-                    $item->setRelation('materialMaster', $matched);
-                }
-            }
-        }
+        $this->submissionService->resolveUnlinkedMaterials($pr);
 
         $periods = Period::where('status', 'open')
             ->orWhere('id', $pr->period_id) // Allow keeping current period even if closed
@@ -472,43 +414,7 @@ class PurchaseRequisitionController extends Controller
         $validated = $request->validated();
 
         try {
-            DB::transaction(function () use ($pr, $validated, $request) {
-                $this->itemSynchronizer->sync(
-                    $pr,
-                    $validated['items'],
-                    $validated['action'] === 'submitted',
-                    auth()->id(),
-                );
-
-                $prAttributes = [
-                    'period_id' => $validated['period_id'],
-                    'pr_number' => ($validated['action'] === 'submitted' && ! $pr->pr_number)
-                        ? PurchaseRequisition::generatePrNumber()
-                        : $pr->pr_number,
-                    'notes' => $validated['notes'] ?? null,
-                    'port_of_discharge' => $validated['port_of_discharge'] ?? null,
-                    'incoterm' => $validated['incoterm'] ?? null,
-                ];
-                $targetPrStatus = PurchaseRequisitionStatus::tryFromWithLegacy($validated['action']);
-                if ($pr->statusEnum() !== $targetPrStatus) {
-                    app(PurchaseRequisitionStateEngine::class)->transition(
-                        model: $pr,
-                        target: $targetPrStatus,
-                        actor: auth()->user(),
-                        metadata: ['attributes' => $prAttributes]
-                    );
-                } else {
-                    $pr->update($prAttributes);
-                }
-
-                if ($request->boolean('supplier_selection_present') || $request->has('supplier_id') || $request->has('supplier_ids')) {
-                    $this->syncInvitedSuppliers($pr, $this->supplierIdsFromValidated($validated));
-                }
-            });
-
-            if ($validated['action'] === 'submitted') {
-                $this->notifyAdminsOfSubmission($pr);
-            }
+            $this->submissionService->update($pr, $validated, $request, auth()->user());
 
             $message = $validated['action'] === 'submitted'
                 ? __('purchasing.copy.purchase_requisition_successfully_submitted')
@@ -523,55 +429,6 @@ class PurchaseRequisitionController extends Controller
 
             return back()->withInput()->with('error', __('purchasing.copy.a_system_error_occurred_while_saving_the_requisition'));
         }
-    }
-
-    private function supplierIdsFromValidated(array $validated): array
-    {
-        if (! empty($validated['supplier_id'])) {
-            return [(int) $validated['supplier_id']];
-        }
-
-        return collect($validated['supplier_ids'] ?? [])
-            ->filter()
-            ->map(fn ($supplierId) => (int) $supplierId)
-            ->all();
-    }
-
-    private function syncInvitedSuppliers(PurchaseRequisition $pr, array $supplierIds): void
-    {
-        $syncData = collect($supplierIds)
-            ->filter()
-            ->unique()
-            ->mapWithKeys(fn ($supplierId) => [
-                (int) $supplierId => ['invited_at' => now()],
-            ])
-            ->all();
-
-        $pr->invitedSuppliers()->sync($syncData);
-    }
-
-    private function notifyAdminsOfSubmission(PurchaseRequisition $pr): void
-    {
-        $admins = User::where('role', 'admin')->where('is_active', true)->get();
-
-        $this->notifications->send(
-            $admins,
-            'pr.submitted',
-            'pr.submitted:'.$pr->id.':'.($pr->updated_at?->format('YmdHis.u') ?? 'initial'),
-            'purchasing.copy.new_purchase_requisition',
-            'purchasing.notify.pr_submitted_body',
-            route('admin.requisitions.show', $pr, absolute: false),
-            'clipboard-plus text-primary',
-            [
-                'category' => NotificationCategory::QUOTATION,
-                'pr_id' => $pr->id,
-                'pr_number' => $pr->pr_number,
-            ],
-            [
-                'pr_number' => $pr->pr_number ?? '-',
-                'name' => auth()->user()->name,
-            ],
-        );
     }
 
     private function importFailurePayload(array $messages): array

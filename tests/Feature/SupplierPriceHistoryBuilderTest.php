@@ -11,6 +11,7 @@ use App\Models\Quotation;
 use App\Models\User;
 use App\Support\SupplierPriceHistoryBuilder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class SupplierPriceHistoryBuilderTest extends TestCase
@@ -267,7 +268,7 @@ class SupplierPriceHistoryBuilderTest extends TestCase
             ->assertJsonMissingPath('chartData.pricesIdr');
 
         $overviewSql = [];
-        \Illuminate\Support\Facades\DB::listen(function ($query) use (&$overviewSql) {
+        DB::listen(function ($query) use (&$overviewSql) {
             $overviewSql[] = $query->sql;
         });
 

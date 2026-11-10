@@ -552,8 +552,16 @@
                 });
             }
 
-            // Polling every 30 seconds
-            setInterval(updateBadges, 30000);
+            // Adaptive polling: skip 30s tick while Pusher WebSocket is connected (reconcile every 300s as fallback)
+            let pollTicksSinceSync = 0;
+            setInterval(() => {
+                pollTicksSinceSync += 1;
+                if (window.Echo?.connector?.pusher?.connection?.state === 'connected' && pollTicksSinceSync < 10) {
+                    return;
+                }
+                pollTicksSinceSync = 0;
+                updateBadges();
+            }, 30000);
         @endauth
     </script>
     @auth

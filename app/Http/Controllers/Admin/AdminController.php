@@ -11,7 +11,6 @@ use App\Models\Supplier;
 use App\Models\User;
 use App\Support\BusinessTime;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class AdminController extends Controller
 {

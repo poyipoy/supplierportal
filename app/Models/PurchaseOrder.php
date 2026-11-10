@@ -4,7 +4,7 @@ namespace App\Models;
 
 use App\Casts\PurchaseOrderStatusCast;
 use App\Enums\PurchaseOrderStatus;
-use App\Services\Procurement\PurchaseOrderStateEngine;
+use App\Services\Procurement\PurchaseOrderDeliveryMetricsService;
 use App\Support\BusinessTime;
 use App\Support\Money;
 use App\Support\Procurement\CustomsDocumentationProgressCalculator;
@@ -419,62 +419,7 @@ class PurchaseOrder extends Model
      */
     public function customsDocumentationSummary(): array
     {
-        $this->loadMissing([
-            'documents',
-            'shipmentItems.shipment.documents.latestAttachment',
-        ]);
-
-        $docLabels = [
-            'invoice' => __('purchasing.copy.commercial_invoice'),
-            'bl' => __('purchasing.copy.bill_of_lading_b_l'),
-            'packing_list' => __('purchasing.copy.packing_list'),
-            'form_e' => 'Form-E Certificate',
-        ];
-
-        $poDocsByType = $this->documents->keyBy('doc_type');
-
-        $shipments = $this->shipments();
-
-        // One rule for every screen: the least advanced active shipment document
-        // (manual status for legacy POs). See CustomsDocumentationProgressCalculator.
-        $derivedStatuses = app(CustomsDocumentationProgressCalculator::class)->derivedStatuses($this);
-
-        $summary = [];
-
-        foreach (['invoice', 'bl', 'packing_list', 'form_e'] as $docType) {
-            $poDoc = $poDocsByType->get($docType);
-
-            $shipmentDocs = [];
-
-            foreach ($shipments as $shipment) {
-                $sDoc = $shipment->documents->firstWhere('doc_type', $docType);
-                if ($sDoc) {
-                    $attachment = $sDoc->relationLoaded('latestAttachment')
-                        ? $sDoc->latestAttachment
-                        : ($sDoc->attachments()->latest('id')->first() ?? $sDoc->latestAttachment);
-
-                    $shipmentDocs[] = [
-                        'shipment' => $shipment,
-                        'shipment_id' => $shipment->id,
-                        'shipment_hash' => $shipment->hash,
-                        'shipment_number' => $shipment->shipment_number,
-                        'status' => $sDoc->status,
-                        'document_number' => $sDoc->document_number,
-                        'attachment' => $attachment,
-                    ];
-                }
-            }
-
-            $summary[$docType] = [
-                'doc_type' => $docType,
-                'label' => $docLabels[$docType] ?? ucfirst(str_replace('_', ' ', $docType)),
-                'po_doc' => $poDoc,
-                'status' => $derivedStatuses[$docType] ?? ($poDoc?->status ?? PoDocument::STATUSES[0]),
-                'shipment_documents' => $shipmentDocs,
-            ];
-        }
-
-        return $summary;
+        return app(PurchaseOrderDeliveryMetricsService::class)->customsDocumentationSummary($this);
     }
 
     /**
@@ -515,34 +460,7 @@ class PurchaseOrder extends Model
 
     public function getDeliveryProgressAttribute(): string
     {
-        // Legacy POs without any shipment records
-        if ($this->shipmentItems()->doesntExist()) {
-            return $this->actual_arrival ? 'received' : 'not_shipped';
-        }
-
-        $totalOrdered = $this->total_ordered_quantity;
-
-        $arrivedAllocations = (int) $this->shipmentItems()
-            ->whereHas('shipment', fn ($q) => $q->where('status', Shipment::STATUS_ARRIVED))
-            ->sum('shipped_qty');
-
-        if ($totalOrdered > 0 && $arrivedAllocations >= $totalOrdered) {
-            return 'received';
-        }
-
-        $activeAllocations = (int) $this->shipmentItems()
-            ->whereHas('shipment', fn ($q) => $q->whereIn('status', [Shipment::STATUS_SUBMITTED, Shipment::STATUS_ARRIVED]))
-            ->sum('shipped_qty');
-
-        if ($activeAllocations <= 0) {
-            return 'not_shipped';
-        }
-
-        if ($totalOrdered > 0 && $activeAllocations >= $totalOrdered) {
-            return 'fully_shipped';
-        }
-
-        return 'partially_shipped';
+        return app(PurchaseOrderDeliveryMetricsService::class)->deliveryProgress($this);
     }
 
     /**
@@ -607,154 +525,11 @@ class PurchaseOrder extends Model
     /**
      * Authoritative per-line commercial fulfillment projection.
      *
-     * Resolved NG lines are retained as physical history but released from
-     * commercial reservation so replacement delivery can be allocated.
-     * All fulfillment logic operates on integer quantity (pcs).
-     *
      * @return array<string, int|float|bool>
      */
     public function itemFulfillmentStatus(int $quotationItemId, ?int $excludeShipmentId = null): array
     {
-        $quotationItem = QuotationItem::with('prItem')->findOrFail($quotationItemId);
-        // I-2/I-15: the shipment limit is the resolved ordered quantity (frozen
-        // when present); lines outside this PO keep the offer quantity.
-        $orderedQty = $this->orderedLineFor($quotationItemId)?->qty ?? $quotationItem->fulfillment_quantity;
-
-        $query = $this->shipmentItems()
-            ->where('quotation_item_id', $quotationItemId)
-            ->whereHas('shipment', fn ($shipmentQuery) => $shipmentQuery
-                ->whereIn('status', [Shipment::STATUS_SUBMITTED, Shipment::STATUS_ARRIVED]))
-            ->with([
-                'shipment',
-                'qcItems.inspection.materialClaims',
-            ])
-            ->orderBy('id');
-
-        if ($excludeShipmentId !== null) {
-            $query->where('shipment_id', '!=', $excludeShipmentId);
-        }
-
-        // Fresh query on purpose: ShipmentService calls this inside its row locks (Gate 2 §3-E).
-        return self::tallyFulfillment($query->get(), $orderedQty, (int) $this->id);
-    }
-
-    /**
-     * Pure tally shared by itemFulfillmentStatus() and fulfillmentProjection(). Adds the split of
-     * reserved into in transit, waiting QC and unresolved NG; every existing key is unchanged.
-     *
-     * @param  iterable<ShipmentItem>  $shipmentItems  submitted or arrived lines of one quotation item
-     * @return array<string, int|float|bool>
-     */
-    private static function tallyFulfillment(iterable $shipmentItems, int $orderedQty, int $poId): array
-    {
-        $physicalShippedQty = 0;
-        $physicalArrivedQty = 0;
-        $acceptedQty = 0;
-        $ngQty = 0;
-        $replacementEligibleQty = 0;
-        $reservedQty = 0;
-        $inTransitQty = 0;
-        $waitingQcQty = 0;
-        $unresolvedNgQty = 0;
-
-        foreach ($shipmentItems as $shipmentItem) {
-            $qty = (int) $shipmentItem->shipped_qty;
-            $physicalShippedQty += $qty;
-
-            if ($shipmentItem->shipment?->status !== Shipment::STATUS_ARRIVED) {
-                $reservedQty += $qty;
-                $inTransitQty += $qty;
-
-                continue;
-            }
-
-            $physicalArrivedQty += $qty;
-            $qcItems = $shipmentItem->qcItems->filter(function (QcItem $qcItem) use ($shipmentItem, $poId) {
-                return $qcItem->inspection
-                    && (int) $qcItem->inspection->po_id === $poId
-                    && (int) $qcItem->inspection->shipment_id === (int) $shipmentItem->shipment_id;
-            });
-
-            if ($qcItems->isEmpty()) {
-                $reservedQty += $qty;
-                $waitingQcQty += $qty;
-
-                continue;
-            }
-
-            if ($qcItems->contains(fn (QcItem $qcItem) => $qcItem->status === 'ng')) {
-                $ngQty += $qty;
-                $claims = $qcItems
-                    ->map(fn (QcItem $qcItem) => $qcItem->inspection?->materialClaims)
-                    ->filter()
-                    ->flatten();
-                $hasActiveClaim = $claims->contains(fn (MaterialClaim $claim) => in_array(
-                    $claim->status,
-                    ['pending', 'responded', 'escalated'],
-                    true
-                ));
-                $hasResolvedClaim = $claims->contains(fn (MaterialClaim $claim) => $claim->status === 'resolved');
-
-                if ($hasResolvedClaim && ! $hasActiveClaim) {
-                    $replacementEligibleQty += $qty;
-                } else {
-                    $reservedQty += $qty;
-                    $unresolvedNgQty += $qty;
-                }
-
-                continue;
-            }
-
-            if ($qcItems->contains(fn (QcItem $qcItem) => $qcItem->status === 'ok')) {
-                $acceptedQty += $qty;
-            } else {
-                $reservedQty += $qty;
-                $waitingQcQty += $qty;
-            }
-        }
-
-        $allocatedQty = $acceptedQty + $reservedQty;
-        $remainingQty = max(0, $orderedQty - $allocatedQty);
-
-        return [
-            'ordered_qty' => $orderedQty,
-            'physical_shipped_qty' => $physicalShippedQty,
-            'physical_arrived_qty' => $physicalArrivedQty,
-            'accepted_qty' => $acceptedQty,
-            'ng_qty' => $ngQty,
-            'replacement_eligible_qty' => $replacementEligibleQty,
-            'reserved_qty' => $reservedQty,
-            'allocated_qty' => $allocatedQty,
-            'remaining_qty' => $remainingQty,
-
-            // Backward compatibility keys
-            'ordered_units' => $orderedQty,
-            'physical_shipped_units' => $physicalShippedQty,
-            'physical_arrived_units' => $physicalArrivedQty,
-            'accepted_units' => $acceptedQty,
-            'ng_units' => $ngQty,
-            'replacement_eligible_units' => $replacementEligibleQty,
-            'reserved_units' => $reservedQty,
-            'allocated_units' => $allocatedQty,
-            'remaining_units' => $remainingQty,
-            'ordered' => (float) $orderedQty,
-            'physical_shipped' => (float) $physicalShippedQty,
-            'physical_arrived' => (float) $physicalArrivedQty,
-            'accepted' => (float) $acceptedQty,
-            'ng' => (float) $ngQty,
-            'replacement_eligible' => (float) $replacementEligibleQty,
-            'reserved' => (float) $reservedQty,
-            'allocated' => (float) $allocatedQty,
-            'remaining' => (float) $remainingQty,
-
-            'is_fully_allocated' => $remainingQty === 0,
-            'is_fully_accepted' => $acceptedQty >= $orderedQty,
-
-            // Gate 2 §3-E: reserved = in transit + waiting QC + unresolved NG.
-            'in_transit_qty' => $inTransitQty,
-            'waiting_qc_qty' => $waitingQcQty,
-            'unresolved_ng_qty' => $unresolvedNgQty,
-        ];
+        return app(PurchaseOrderDeliveryMetricsService::class)->itemFulfillmentStatus($this, $quotationItemId, $excludeShipmentId);
     }
 
     /**
@@ -765,21 +540,7 @@ class PurchaseOrder extends Model
      */
     public function fulfillmentProjection(): array
     {
-        $byItem = $this->shipmentItems()
-            ->whereHas('shipment', fn ($shipmentQuery) => $shipmentQuery
-                ->whereIn('status', [Shipment::STATUS_SUBMITTED, Shipment::STATUS_ARRIVED]))
-            ->with(['shipment', 'qcItems.inspection.materialClaims'])
-            ->orderBy('id')
-            ->get()
-            ->groupBy('quotation_item_id');
-
-        $items = [];
-        foreach ($this->orderedLines() as $line) {
-            $id = (int) $line->quotationItem->id;
-            $items[$id] = self::tallyFulfillment($byItem->get($id, collect()), (int) ($line->qty ?? $line->quotationItem->fulfillment_quantity), (int) $this->id);
-        }
-
-        return ['items' => $items];
+        return app(PurchaseOrderDeliveryMetricsService::class)->fulfillmentProjection($this);
     }
 
     /**
@@ -787,29 +548,7 @@ class PurchaseOrder extends Model
      */
     public function isFullyFulfilledAndInspected(?Shipment $currentOkShipment = null): bool
     {
-        // Legacy POs without shipment records
-        if ($this->shipmentItems()->doesntExist()) {
-            $hasNg = QcInspection::where('po_id', $this->id)->where('status', 'ng')->exists();
-            $hasOk = QcInspection::where('po_id', $this->id)->where('status', 'ok')->exists();
-
-            return ! $hasNg && ($hasOk || (bool) $this->actual_arrival);
-        }
-
-        // PUR-09: an unavailable line was never ordered, so it can never block completion.
-        $quotationItems = ($this->awards()->exists()
-            ? $this->awards()->with('quotationItem.prItem')->get()->pluck('quotationItem')->filter()
-            : $this->allQuotationItems())
-            ->filter(fn (QuotationItem $item) => $item->is_available !== false);
-
-        if ($quotationItems->isEmpty()) {
-            return true;
-        }
-
-        return $quotationItems->every(function (QuotationItem $quotationItem) {
-            $status = $this->itemFulfillmentStatus($quotationItem->id);
-
-            return $status['accepted_qty'] >= $status['ordered_qty'];
-        });
+        return app(PurchaseOrderDeliveryMetricsService::class)->isFullyFulfilledAndInspected($this, $currentOkShipment);
     }
 
     /**
@@ -817,26 +556,7 @@ class PurchaseOrder extends Model
      */
     public function hasArrivedShipmentsAwaitingQc(?int $excludeShipmentId = null): bool
     {
-        $inspectedShipmentIds = QcInspection::where('po_id', $this->id)
-            ->whereNotNull('shipment_id')
-            ->pluck('shipment_id')
-            ->all();
-
-        $query = DB::table('shipment_items')
-            ->join('shipments', 'shipments.id', '=', 'shipment_items.shipment_id')
-            ->where('shipment_items.purchase_order_id', $this->id)
-            ->where('shipments.status', Shipment::STATUS_ARRIVED)
-            ->whereNull('shipments.deleted_at');
-
-        if (! empty($inspectedShipmentIds)) {
-            $query->whereNotIn('shipments.id', $inspectedShipmentIds);
-        }
-
-        if ($excludeShipmentId) {
-            $query->where('shipments.id', '!=', $excludeShipmentId);
-        }
-
-        return $query->exists();
+        return app(PurchaseOrderDeliveryMetricsService::class)->hasArrivedShipmentsAwaitingQc($this, $excludeShipmentId);
     }
 
     /**
@@ -844,43 +564,7 @@ class PurchaseOrder extends Model
      */
     public function reconcileOperationalStatus(): string
     {
-        if (in_array($this->status, ['cancelled', 'completed'], true)) {
-            return $this->status;
-        }
-
-        $hasActiveClaim = $this->materialClaims()
-            ->whereIn('status', ['pending', 'responded', 'escalated'])
-            ->exists();
-
-        $hasUnresolvedNg = $this->qcInspections()
-            ->where('status', 'ng')
-            ->where(function ($query) {
-                $query->whereDoesntHave('materialClaims', fn ($claimQuery) => $claimQuery
-                    ->where('status', 'resolved'))
-                    ->orWhereHas('materialClaims', fn ($claimQuery) => $claimQuery
-                        ->whereIn('status', ['pending', 'responded', 'escalated']));
-            })
-            ->exists();
-
-        if ($hasActiveClaim || $hasUnresolvedNg) {
-            $target = 'claim_needed';
-        } elseif ($this->hasArrivedShipmentsAwaitingQc()) {
-            $target = 'waiting_qc';
-        } elseif ($this->isFullyFulfilledAndInspected()) {
-            $target = 'completed';
-        } else {
-            $target = $this->status === 'overdue' ? 'overdue' : 'active';
-        }
-
-        if ($this->status !== $target) {
-            app(PurchaseOrderStateEngine::class)->transition(
-                model: $this,
-                target: PurchaseOrderStatus::tryFromWithLegacy($target),
-                reason: 'Operational status reconciliation'
-            );
-        }
-
-        return $target;
+        return app(PurchaseOrderDeliveryMetricsService::class)->reconcileOperationalStatus($this);
     }
 
     // ─── Helpers ───

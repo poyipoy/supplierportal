@@ -4,9 +4,11 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use App\Notifications\SystemNotification;
+use App\Services\NotificationSummaryService;
 use App\Support\NotificationCategory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Notifications\DatabaseNotification;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -102,13 +104,13 @@ class NotificationControllerTest extends TestCase
     {
         $user = $this->user('purchasing');
         $n1 = $this->notification($user, NotificationCategory::PO, 'PO notification');
-        $service = app(\App\Services\NotificationSummaryService::class);
+        $service = app(NotificationSummaryService::class);
 
         $first = $service->countsForUser($user);
         $this->assertSame(1, $first['unread_count']);
 
         $notificationQueries = 0;
-        \Illuminate\Support\Facades\DB::listen(function ($query) use (&$notificationQueries) {
+        DB::listen(function ($query) use (&$notificationQueries) {
             if (str_contains($query->sql, 'notifications')) {
                 $notificationQueries++;
             }

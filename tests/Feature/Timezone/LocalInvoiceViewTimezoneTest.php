@@ -9,6 +9,7 @@ use App\Models\PurchaseOrder;
 use App\Models\Supplier;
 use App\Models\SupplierScope;
 use App\Models\User;
+use App\Services\LocalInvoice\InvoiceQuery;
 use Carbon\Carbon;
 use DOMDocument;
 use DOMXPath;
@@ -290,7 +291,7 @@ class LocalInvoiceViewTimezoneTest extends TestCase
             'due_date' => '2026-11-13',
         ]);
 
-        $queryService = app(\App\Services\LocalInvoice\InvoiceQuery::class);
+        $queryService = app(InvoiceQuery::class);
 
         $matchedOnWibDay = $queryService->filtered([
             'from' => '2026-10-14',

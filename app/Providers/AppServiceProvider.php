@@ -11,6 +11,7 @@ use App\Services\FileSecurity\FileInspectionService;
 use App\Services\LocalInvoice\Contracts\LocalPoProviderInterface;
 use App\Services\LocalInvoice\Providers\DatabaseLocalPoProvider;
 use App\Services\NotificationPreferenceService;
+use App\Services\NotificationSummaryService;
 use App\Services\Pricing\AnnualExchangeRateResolver;
 use App\Services\Pricing\ExchangeRateResolver;
 use App\Services\QuickAccessService;
@@ -159,22 +160,22 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(NotificationSending::class, ApplyNotificationPreferences::class);
         Event::listen(NotificationSent::class, function (NotificationSent $event): void {
             if ($event->notifiable instanceof User) {
-                \App\Services\NotificationSummaryService::forgetForUser((int) $event->notifiable->getKey());
+                NotificationSummaryService::forgetForUser((int) $event->notifiable->getKey());
             }
         });
         Event::listen(BroadcastNotificationCreated::class, function (BroadcastNotificationCreated $event): void {
             if ($event->notifiable instanceof User) {
-                \App\Services\NotificationSummaryService::forgetForUser((int) $event->notifiable->getKey());
+                NotificationSummaryService::forgetForUser((int) $event->notifiable->getKey());
             }
         });
         DatabaseNotification::saved(function (DatabaseNotification $notification): void {
             if ($notification->notifiable_type === User::class) {
-                \App\Services\NotificationSummaryService::forgetForUser((int) $notification->notifiable_id);
+                NotificationSummaryService::forgetForUser((int) $notification->notifiable_id);
             }
         });
         DatabaseNotification::deleted(function (DatabaseNotification $notification): void {
             if ($notification->notifiable_type === User::class) {
-                \App\Services\NotificationSummaryService::forgetForUser((int) $notification->notifiable_id);
+                NotificationSummaryService::forgetForUser((int) $notification->notifiable_id);
             }
         });
         // Supplier scope memos live for one request or job only.

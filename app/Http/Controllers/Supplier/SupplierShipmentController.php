@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Supplier;
 use App\Exceptions\MtcRequiredException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Supplier\BatchUploadShipmentDocumentsRequest;
+use App\Http\Requests\Supplier\StoreSupplierShipmentRequest;
+use App\Http\Requests\Supplier\UpdateSupplierShipmentRequest;
 use App\Models\Attachment;
 use App\Models\PurchaseOrder;
 use App\Models\Shipment;
@@ -289,8 +291,8 @@ class SupplierShipmentController extends Controller
     public function store(Request $request)
     {
         Gate::authorize('create', Shipment::class);
-        $this->validateShipmentPayload($request, true);
-        $request->validate(self::MTC_RULES);
+        StoreSupplierShipmentRequest::validateFor($request, true);
+        $request->validate(StoreSupplierShipmentRequest::MTC_RULES);
 
         try {
             $shipment = $this->shipmentService->createDraft(auth()->user(), [
@@ -335,8 +337,8 @@ class SupplierShipmentController extends Controller
         $shipment = Shipment::findOrFail($id);
         Gate::authorize('update', $shipment);
 
-        $this->validateShipmentPayload($request, false);
-        $request->validate(self::MTC_RULES);
+        UpdateSupplierShipmentRequest::validateFor($request, false);
+        $request->validate(UpdateSupplierShipmentRequest::MTC_RULES);
 
         try {
             $shipment = $this->shipmentService->updateDraft($shipment, auth()->user(), [
@@ -389,7 +391,7 @@ class SupplierShipmentController extends Controller
 
         Gate::authorize('submit', $shipment);
 
-        $validated = $this->validateShipmentPayload($request, false, false);
+        $validated = UpdateSupplierShipmentRequest::validateFor($request, false, false);
 
         try {
             $submitted = $this->shipmentService->submitShipment($shipment, $validated);
@@ -575,72 +577,5 @@ class SupplierShipmentController extends Controller
 
             return back()->with('error', __('shipments.copy.an_unexpected_error_occurred_while_uploading_the_document_please_try_again'));
         }
-    }
-
-    private function validateShipmentPayload(Request $request, bool $allowAction, bool $required = true): array
-    {
-        $this->removeUnselectedRows($request);
-
-        $requiredRule = $required ? 'required' : 'sometimes';
-        $rules = [
-            'shipment_date' => $requiredRule.'|date',
-            'estimated_arrival_date' => $requiredRule.'|date|after_or_equal:shipment_date',
-            'notes' => 'nullable|string|max:1000',
-            'items' => $requiredRule.'|array|min:1',
-            'items.*' => 'required|array',
-            'items.*.purchase_order_id' => 'required|integer|exists:purchase_orders,id',
-            'items.*.quotation_item_id' => 'required|integer|exists:quotation_items,id',
-            // pcs and kg are independent measurements. Neither may be omitted and
-            // neither may be satisfied by the legacy `shipped_quantity` alias,
-            // which previously let a request supply pcs and inherit it as kg.
-            'items.*.shipped_qty' => ['required', 'integer', 'min:1'],
-            'items.*.actual_weight_kg' => ['required', 'numeric', 'gt:0', 'decimal:0,4'],
-        ];
-        if ($allowAction) {
-            $rules['action'] = 'nullable|string|in:draft,submit';
-        }
-
-        $validator = validator($request->all(), $rules);
-        $validator->after(function ($validator) use ($request) {
-            $seen = [];
-            foreach ((array) $request->input('items', []) as $index => $item) {
-                if (! is_array($item) || ! isset($item['purchase_order_id'], $item['quotation_item_id'])) {
-                    continue;
-                }
-
-                $key = (int) $item['purchase_order_id'].':'.(int) $item['quotation_item_id'];
-                if (isset($seen[$key])) {
-                    $validator->errors()->add("items.{$index}", __('shipments.copy.duplicate_item_allocation_for_the_same_purchase_order_item_is_not_allowed'));
-                }
-                $seen[$key] = true;
-            }
-        });
-
-        return $validator->validate();
-    }
-
-    /**
-     * The allocation table renders one row per available PO item. Rows with
-     * no quantity are intentionally unselected and must not fail the nested
-     * required quantity rule (or reach the service layer).
-     */
-    private function removeUnselectedRows(Request $request): void
-    {
-        $items = $request->input('items');
-        if (! is_array($items)) {
-            return;
-        }
-
-        $items = array_filter($items, static function ($item): bool {
-            if (! is_array($item)) {
-                return true;
-            }
-
-            $qty = $item['shipped_qty'] ?? $item['shipped_quantity'] ?? null;
-
-            return $qty !== null && trim((string) $qty) !== '';
-        });
-
-        $request->merge(['items' => $items]);
     }
 }

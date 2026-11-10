@@ -32,7 +32,7 @@ class AddSecurityHeaders
         }
 
         if (config('app.env') === 'production' && $request->isSecure()) {
-            $response->headers->set('Strict-Transport-Security', 'max-age=31536000');
+            $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
         }
 
         $contentType = (string) $response->headers->get('Content-Type');
@@ -70,7 +70,7 @@ class AddSecurityHeaders
             "img-src 'self' data: blob:",
             "font-src 'self' data: https://fonts.gstatic.com https://fonts.bunny.net https://cdn.jsdelivr.net",
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.bunny.net https://cdn.jsdelivr.net https://cdn.datatables.net",
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'nonce-{$nonce}' https://cdn.jsdelivr.net https://code.jquery.com https://cdn.datatables.net https://challenges.cloudflare.com",
+            "script-src 'self' 'unsafe-eval' 'nonce-{$nonce}' https://cdn.jsdelivr.net https://code.jquery.com https://cdn.datatables.net https://challenges.cloudflare.com",
             "script-src-attr 'unsafe-inline'",
             "connect-src 'self' ws: wss: https://challenges.cloudflare.com https://*.pusher.com wss://*.pusher.com https://cdn.jsdelivr.net",
             'frame-src https://challenges.cloudflare.com',
