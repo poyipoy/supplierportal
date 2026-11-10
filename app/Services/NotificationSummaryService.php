@@ -6,9 +6,21 @@ use App\Models\User;
 use App\Support\NotificationCategory;
 use App\Support\NotificationDomain;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 
 class NotificationSummaryService
 {
+    public static function forgetForUser(int $userId): void
+    {
+        if ($userId <= 0) {
+            return;
+        }
+
+        $versionKey = "user_notif_counts_version:{$userId}";
+        Cache::put($versionKey, ((int) Cache::get($versionKey, 1)) + 1, 3600);
+        Cache::forget("user_notif_counts:{$userId}");
+    }
+
     public function forUser(User $user, int $limit = 30): array
     {
         $categories = NotificationCategory::optionsForUser($user);
@@ -30,22 +42,26 @@ class NotificationSummaryService
     {
         $categories = NotificationCategory::optionsForUser($user);
         $allowedDomains = NotificationDomain::allowedDomainsForUser($user);
+        $version = (int) Cache::get("user_notif_counts_version:{$user->id}", 1);
+        $cacheKey = 'user_notif_counts:'.$user->id.':v'.$version.':'.md5(implode(',', array_keys($categories)).'|'.implode(',', $allowedDomains).'|'.$limit);
 
-        $notifications = $this->filterByDomains(
-            $user->notifications()->latest()->take($limit)->get(['id', 'data', 'read_at']),
-            $allowedDomains,
-        );
-        $unreadNotifications = $this->excludeSilent($this->filterByDomains(
-            $user->unreadNotifications()->get(['id', 'data', 'read_at']),
-            $allowedDomains,
-        ));
+        return Cache::remember($cacheKey, 60, function () use ($user, $limit, $categories, $allowedDomains): array {
+            $notifications = $this->filterByDomains(
+                $user->notifications()->latest()->take($limit)->get(['id', 'data', 'read_at']),
+                $allowedDomains,
+            );
+            $unreadNotifications = $this->excludeSilent($this->filterByDomains(
+                $user->unreadNotifications()->get(['id', 'data', 'read_at']),
+                $allowedDomains,
+            ));
 
-        $summary = $this->summary($categories, $notifications, $unreadNotifications);
+            $summary = $this->summary($categories, $notifications, $unreadNotifications);
 
-        return [
-            'count' => $summary['count'],
-            'category_counts' => $summary['category_counts'],
-        ];
+            return [
+                'count' => $summary['count'],
+                'category_counts' => $summary['category_counts'],
+            ];
+        });
     }
 
     private function excludeSilent(Collection $notifications): Collection

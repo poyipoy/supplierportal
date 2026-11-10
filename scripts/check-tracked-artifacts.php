@@ -1,31 +1,46 @@
 <?php
 
-// Run before dependency installation; inspect names without reading private data.
-$process = proc_open(['git', 'ls-files', '-z'], [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, dirname(__DIR__));
-if (! is_resource($process)) {
-    fwrite(STDERR, "Could not inspect tracked paths.\n");
-    exit(2);
-}
-fclose($pipes[0]);
-$paths = stream_get_contents($pipes[1]);
-$error = stream_get_contents($pipes[2]);
-fclose($pipes[1]);
-fclose($pipes[2]);
-if (proc_close($process) !== 0 || $paths === false) {
-    fwrite(STDERR, 'Could not inspect tracked paths. '.$error."\n");
+declare(strict_types=1);
+
+exec('git ls-files -z', $unused, $code);
+if ($code !== 0) {
+    fwrite(STDERR, "Unable to read git index.\n");
     exit(2);
 }
 
-$blocked = array_values(array_filter(explode("\0", $paths), static function (string $path): bool {
-    // The directory's ignore scaffold contains no application data.
-    return preg_match('/\.zip$/i', $path) === 1
-        || (str_starts_with($path, 'storage/app/private/') && $path !== 'storage/app/private/.gitignore');
-}));
-if ($blocked !== []) {
-    fwrite(STDERR, "Tracked archives or private application files must be removed by the repository owner:\n");
-    foreach ($blocked as $path) {
-        fwrite(STDERR, '  '.json_encode($path, JSON_UNESCAPED_SLASHES)."\n");
+$raw = shell_exec('git ls-files -z');
+$files = array_filter(explode("\0", (string) $raw), static fn (string $file): bool => $file !== '');
+
+$blocked = array_values(array_filter($files, static function (string $file): bool {
+    if (preg_match('/(^|\/)\.env(\.|$)/', $file) === 1) {
+        return ! in_array($file, ['.env.example', '.env.testing.example'], true);
     }
+
+    if (str_ends_with(strtolower($file), '.zip')) {
+        return true;
+    }
+
+    if (str_ends_with(strtolower($file), '.sql') && ! str_starts_with($file, 'database/sql/')) {
+        return true;
+    }
+
+    if (in_array($file, ['api/index.php', 'temp_view.html', 'PNR261178.pdf', 'TARIKAN TRANSFER.xlsx', 'docs/naufal raw material.xlsx'], true)) {
+        return true;
+    }
+
+    if (! str_contains($file, '/') && preg_match('/\.(xlsx|pdf)$/i', $file) === 1) {
+        return true;
+    }
+
+    return str_starts_with($file, 'Revise Portal/')
+        || str_starts_with($file, 'scratch/')
+        || str_starts_with($file, '.agents/')
+        || str_starts_with($file, '.claude/')
+        || str_contains($file, 'chrome-profile');
+}));
+
+if ($blocked !== []) {
+    fwrite(STDERR, "Blocked tracked files detected:\n".implode("\n", $blocked)."\n");
     exit(1);
 }
 

@@ -272,9 +272,27 @@
     }
 
     function ignoreNativePromptAfterConfirmedLeave(event) {
-        if (!leaveConfirmed) return;
+        if (!leaveConfirmed) {
+            try {
+                if (!Object.getOwnPropertyDescriptor(event, 'returnValue')) {
+                    let val = '';
+                    Object.defineProperty(event, 'returnValue', {
+                        configurable: true,
+                        get: () => val,
+                        set: (v) => { val = v; },
+                    });
+                }
+            } catch (e) {
+                // Ignore non-configurable returnValue on synthetic Event instances
+            }
+            return;
+        }
         event.preventDefault = () => {};
-        Object.defineProperty(event, 'returnValue', { configurable: true, get: () => '', set: () => {} });
+        try {
+            Object.defineProperty(event, 'returnValue', { configurable: true, get: () => '', set: () => {} });
+        } catch (e) {
+            // Ignore non-configurable returnValue on synthetic Event instances
+        }
     }
 
     const AdasiUnsaved = {

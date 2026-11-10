@@ -55,6 +55,7 @@ class NotificationController extends Controller
 
         $targetUrl = $this->urlResolver->resolve($notification, $request->user());
         $notification->markAsRead();
+        NotificationSummaryService::forgetForUser((int) $request->user()->getKey());
 
         if ($request->expectsJson()) {
             return response()->json(array_merge([
@@ -99,6 +100,7 @@ class NotificationController extends Controller
                 ->whereIn('id', $ids->all())
                 ->whereNull('read_at')
                 ->update(['read_at' => now()]);
+            NotificationSummaryService::forgetForUser((int) $request->user()->getKey());
         }
 
         $categoryLabel = NotificationCategory::optionsForUser($request->user())[$category]['label'] ?? __('notifications.center.other');

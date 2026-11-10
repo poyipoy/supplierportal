@@ -304,8 +304,11 @@ class LocalProcurementImportService
                 }
                 $ids = array_values(array_unique($ids));
                 sort($ids, SORT_NUMERIC);
+                $lockedPoMap = collect();
                 foreach (array_chunk($ids, $this->batchSize()) as $chunk) {
-                    LocalPurchaseOrder::whereIn('id', $chunk)->orderBy('id')->lockForUpdate()->get(['id']);
+                    foreach (LocalPurchaseOrder::whereIn('id', $chunk)->orderBy('id')->lockForUpdate()->get() as $lockedPo) {
+                        $lockedPoMap->put(mb_strtolower($lockedPo->po_number), $lockedPo);
+                    }
                     $this->commitDeadline($started);
                 }
                 $counts = ['newPo' => 0, 'existingPo' => 0, 'newGr' => 0, 'existingGr' => 0, 'filledPoPr' => 0,
@@ -328,7 +331,7 @@ class LocalProcurementImportService
                         }
                         $normalized = $result['rows'];
                     }
-                    $batchCounts = app(LocalProcurementMasterService::class)->createImportBatch($actor, $import->kind, $records->all(), $normalized);
+                    $batchCounts = app(LocalProcurementMasterService::class)->createImportBatch($actor, $import->kind, $records->all(), $normalized, $lockedPoMap);
                     foreach ($batchCounts as $key => $value) {
                         $counts[$key] += $value;
                     }

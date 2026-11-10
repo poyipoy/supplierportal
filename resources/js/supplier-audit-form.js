@@ -39,7 +39,11 @@ export function supplierAuditForm(config) {
             const beforeUnload = (event) => {
                 if (!this.submitting && this.hasUnpersistedAnswers()) {
                     event.preventDefault();
-                    event.returnValue = '';
+                    try {
+                        event.returnValue = '';
+                    } catch (e) {
+                        // Synthetic Event instances may expose returnValue as getter-only.
+                    }
                 }
             };
             window.addEventListener('beforeunload', beforeUnload);

@@ -13,6 +13,7 @@ use App\Models\SupplierScope;
 use App\Models\User;
 use App\Support\LocalPoPrNumber;
 use App\Support\Money;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
@@ -22,7 +23,7 @@ class LocalProcurementMasterService
 {
     public function __construct(private LocalFinanceAuditService $audit) {}
 
-    public function createImportBatch(User $actor, string $kind, array $records, array $normalized): array
+    public function createImportBatch(User $actor, string $kind, array $records, array $normalized, ?Collection $lockedPoMap = null): array
     {
         $this->authorize($actor);
         if (! in_array($kind, LocalProcurementImport::KINDS, true)) {
@@ -33,8 +34,8 @@ class LocalProcurementMasterService
         }
         $valuesByRow = collect($normalized)->keyBy('_row');
         $numbers = array_map(fn ($r) => json_decode($r->values, true)['po_number'], $records);
-        // MySQL otherwise chooses a full scan for large IN lists, widening locks.
-        $poMap = LocalPurchaseOrder::forceIndex('local_purchase_orders_po_number_unique')->whereIn('po_number', $numbers)->orderBy('id')->lockForUpdate()->get()->keyBy(fn ($po) => mb_strtolower($po->po_number));
+        // Reuse the globally locked PO map from commit() when available; otherwise lock per batch.
+        $poMap = $lockedPoMap ?? LocalPurchaseOrder::forceIndex('local_purchase_orders_po_number_unique')->whereIn('po_number', $numbers)->orderBy('id')->lockForUpdate()->get()->keyBy(fn ($po) => mb_strtolower($po->po_number));
         $counts = ['newPo' => 0, 'existingPo' => 0, 'newGr' => 0, 'existingGr' => 0, 'filledPoPr' => 0];
         $inserts = [];
         $prFills = [];
@@ -76,7 +77,7 @@ class LocalProcurementMasterService
                             continue;
                         }
                         if (blank($existing->pr_number)) {
-                            $prFills[] = ['id' => $existing->id, 'pr_number' => $prNumber];
+                            $prFills[] = ['id' => $existing->id, 'pr_number' => $prNumber, 'po_key' => mb_strtolower($existing->po_number)];
                             $prAudits[] = ['auditable_type' => LocalPurchaseOrder::class, 'auditable_id' => $existing->id,
                                 'action' => 'po_pr_filled', 'actor_id' => $actor->id,
                                 'before_values' => json_encode(['pr_number' => $existing->pr_number], JSON_THROW_ON_ERROR),
@@ -99,6 +100,9 @@ class LocalProcurementMasterService
             if ($inserts) {
                 LocalPurchaseOrder::insert($inserts);
                 $created = LocalPurchaseOrder::forceIndex('local_purchase_orders_po_number_unique')->whereIn('po_number', array_column($inserts, 'po_number'))->get();
+                foreach ($created as $createdPo) {
+                    $poMap->put(mb_strtolower($createdPo->po_number), $createdPo);
+                }
                 $this->audit->recordCreatedBatch($created, 'po_created', $actor);
                 $counts['newPo'] = count($inserts);
             }
@@ -115,6 +119,11 @@ class LocalProcurementMasterService
                     .implode(',', array_fill(0, count($prFills), '?')).") AND (`pr_number` IS NULL OR `pr_number` = '')", $bindings);
                 if ($changed !== count($prFills)) {
                     throw new \LogicException('Locked PO references changed unexpectedly.');
+                }
+                foreach ($prFills as $fill) {
+                    if ($lockedExisting = $poMap->get($fill['po_key'])) {
+                        $lockedExisting->pr_number = $fill['pr_number'];
+                    }
                 }
                 DB::table('local_finance_audit_logs')->insert($prAudits);
                 $counts['filledPoPr'] = count($prFills);

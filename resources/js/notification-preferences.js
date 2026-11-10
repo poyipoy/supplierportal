@@ -184,7 +184,11 @@ export function notificationPreferencesForm(config) {
             this.listen(window, 'beforeunload', (event) => {
                 if (this.dirtyCount > 0 && !this.isSubmitting) {
                     event.preventDefault();
-                    event.returnValue = '';
+                    try {
+                        event.returnValue = '';
+                    } catch (e) {
+                        // Synthetic Event instances may expose returnValue as getter-only.
+                    }
                 }
             });
             // Any form on the page (save or the reset dialog) is a deliberate departure.

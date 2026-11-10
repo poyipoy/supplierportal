@@ -266,6 +266,11 @@ class SupplierPriceHistoryBuilderTest extends TestCase
             ->assertJsonPath('tableData.0.currency', 'IDR')
             ->assertJsonMissingPath('chartData.pricesIdr');
 
+        $overviewSql = [];
+        \Illuminate\Support\Facades\DB::listen(function ($query) use (&$overviewSql) {
+            $overviewSql[] = $query->sql;
+        });
+
         $response = $this->actingAs($this->supplier)
             ->withHeaders(['X-Requested-With' => 'XMLHttpRequest', 'Accept' => 'application/json'])
             ->getJson(route('supplier.price-history.index', [
@@ -276,6 +281,7 @@ class SupplierPriceHistoryBuilderTest extends TestCase
             ->assertOk()
             ->assertJsonPath('recordsTotal', 2);
 
+        $this->assertTrue(collect($overviewSql)->every(fn (string $sql) => ! str_contains(strtoupper($sql), 'GROUP_CONCAT')));
         $overviewRows = collect($response->json('data'));
         $this->assertSame(['IDR', 'USD'], $overviewRows->pluck('currency')->sort()->values()->all());
         $this->assertTrue($overviewRows->every(fn ($row) => ! str_contains($row['price_info'], 'Rp ')));

@@ -26,9 +26,11 @@ use App\Support\View\CompiledViewFilesystem;
 use DateInterval;
 use Illuminate\Broadcasting\BroadcastEvent;
 use Illuminate\Console\Events\CommandStarting;
+use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Notifications\Events\BroadcastNotificationCreated;
 use Illuminate\Notifications\Events\NotificationFailed;
 use Illuminate\Notifications\Events\NotificationSending;
+use Illuminate\Notifications\Events\NotificationSent;
 use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Routing\Events\RouteMatched;
@@ -155,6 +157,26 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Event::listen(NotificationSending::class, ApplyNotificationPreferences::class);
+        Event::listen(NotificationSent::class, function (NotificationSent $event): void {
+            if ($event->notifiable instanceof User) {
+                \App\Services\NotificationSummaryService::forgetForUser((int) $event->notifiable->getKey());
+            }
+        });
+        Event::listen(BroadcastNotificationCreated::class, function (BroadcastNotificationCreated $event): void {
+            if ($event->notifiable instanceof User) {
+                \App\Services\NotificationSummaryService::forgetForUser((int) $event->notifiable->getKey());
+            }
+        });
+        DatabaseNotification::saved(function (DatabaseNotification $notification): void {
+            if ($notification->notifiable_type === User::class) {
+                \App\Services\NotificationSummaryService::forgetForUser((int) $notification->notifiable_id);
+            }
+        });
+        DatabaseNotification::deleted(function (DatabaseNotification $notification): void {
+            if ($notification->notifiable_type === User::class) {
+                \App\Services\NotificationSummaryService::forgetForUser((int) $notification->notifiable_id);
+            }
+        });
         // Supplier scope memos live for one request or job only.
         Event::listen(RouteMatched::class, fn () => User::resetSupplierScopeMemos());
         Event::listen(JobProcessing::class, fn () => User::resetSupplierScopeMemos());

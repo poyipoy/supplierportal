@@ -210,7 +210,7 @@ class SupplierPriceHistoryController extends Controller
 
     private function getOverviewData(Request $request, $supplierId)
     {
-        $rows = DB::table('quotation_items')
+        $baseQuery = DB::table('quotation_items')
             ->join('po_quotations', 'quotation_items.quotation_id', '=', 'po_quotations.quotation_id')
             ->join('purchase_orders', 'po_quotations.po_id', '=', 'purchase_orders.id')
             ->join('quotations', 'quotation_items.quotation_id', '=', 'quotations.id')
@@ -221,27 +221,63 @@ class SupplierPriceHistoryController extends Controller
             ->where(function ($query) {
                 $query->whereNull('quotation_items.is_available')
                     ->orWhere('quotation_items.is_available', true);
-            })
+            });
+
+        $rankedLatest = (clone $baseQuery)
+            ->select([
+                'pr_items.material_name',
+                'quotations.currency',
+                DB::raw('CAST(quotation_items.price_per_kg AS DECIMAL(20,4)) as latest_price'),
+                'quotations.status as latest_status',
+                DB::raw('ROW_NUMBER() OVER (PARTITION BY pr_items.material_name, quotations.currency ORDER BY purchase_orders.created_at DESC, purchase_orders.id DESC, quotation_items.id DESC) as rn'),
+            ]);
+
+        $latestPerMaterial = DB::query()
+            ->fromSub($rankedLatest, 'ranked_latest')
+            ->where('rn', 1)
+            ->select(['material_name', 'currency', 'latest_price', 'latest_status']);
+
+        $aggregated = (clone $baseQuery)
             ->select([
                 'pr_items.material_name',
                 'quotations.currency',
                 DB::raw('COUNT(DISTINCT CONCAT(purchase_orders.id, ":", quotation_items.id)) as total_quotations'),
                 DB::raw('MIN(quotation_items.price_per_kg) as min_price'),
                 DB::raw('MAX(quotation_items.price_per_kg) as max_price'),
-                DB::raw("CAST(SUBSTRING_INDEX(GROUP_CONCAT(quotation_items.price_per_kg ORDER BY purchase_orders.created_at DESC SEPARATOR '|'), '|', 1) AS DECIMAL(20,4)) as latest_price"),
-                DB::raw("SUBSTRING_INDEX(GROUP_CONCAT(quotations.status ORDER BY purchase_orders.created_at DESC SEPARATOR '|'), '|', 1) as latest_status"),
                 DB::raw('MAX(purchase_orders.created_at) as last_submitted_at'),
             ])
-            ->groupBy('pr_items.material_name', 'quotations.currency')
-            ->get();
+            ->groupBy('pr_items.material_name', 'quotations.currency');
 
-        $search = $request->input('search.value');
-        if (! empty($search)) {
-            $rows = $rows->filter(fn ($row) => stripos($row->material_name, $search) !== false
-                || stripos($row->currency, $search) !== false)->values();
-        }
+        $overviewSub = DB::query()
+            ->fromSub($aggregated, 'agg')
+            ->joinSub($latestPerMaterial, 'latest', function ($join) {
+                $join->on('latest.material_name', '=', 'agg.material_name')
+                    ->on('latest.currency', '=', 'agg.currency');
+            })
+            ->select([
+                'agg.material_name',
+                'agg.currency',
+                'agg.total_quotations',
+                'agg.min_price',
+                'agg.max_price',
+                'latest.latest_price',
+                'latest.latest_status',
+                'agg.last_submitted_at',
+            ]);
 
-        return DataTables::collection($rows)
+        $query = DB::query()->fromSub($overviewSub, 'overview_rows');
+
+        return DataTables::query($query)
+            ->filter(function ($query) use ($request) {
+                $search = trim((string) $request->input('search.value', ''));
+                if ($search !== '') {
+                    $like = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $search).'%';
+                    $query->where(function ($sub) use ($like) {
+                        $sub->where('material_name', 'like', $like)
+                            ->orWhere('currency', 'like', $like);
+                    });
+                }
+            })
             ->addColumn('action', function ($row) {
                 $url = route('supplier.price-history.historical', [
                     'material_name' => $row->material_name,

@@ -98,6 +98,31 @@ class NotificationControllerTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_summary_service_caches_counts_per_user_and_invalidates_on_write(): void
+    {
+        $user = $this->user('purchasing');
+        $n1 = $this->notification($user, NotificationCategory::PO, 'PO notification');
+        $service = app(\App\Services\NotificationSummaryService::class);
+
+        $first = $service->countsForUser($user);
+        $this->assertSame(1, $first['unread_count']);
+
+        $notificationQueries = 0;
+        \Illuminate\Support\Facades\DB::listen(function ($query) use (&$notificationQueries) {
+            if (str_contains($query->sql, 'notifications')) {
+                $notificationQueries++;
+            }
+        });
+
+        $cached = $service->countsForUser($user);
+        $this->assertSame(1, $cached['unread_count']);
+        $this->assertSame(0, $notificationQueries);
+
+        $this->actingAs($user)->postJson(route('notifications.mark-read', $n1->id))->assertOk();
+        $afterRead = $service->countsForUser($user);
+        $this->assertSame(0, $afterRead['unread_count']);
+    }
+
     private function user(string $role, bool $active = true): User
     {
         return User::factory()->create(['role' => $role, 'is_active' => $active]);
