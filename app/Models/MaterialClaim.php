@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Casts\MaterialClaimStatusCast;
+use App\Enums\MaterialClaimStatus;
 use App\Traits\HasHashids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -13,6 +15,20 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class MaterialClaim extends Model
 {
     use HasFactory, HasHashids, SoftDeletes;
+
+    public const STATUS_PENDING = 'pending';
+
+    public const STATUS_IN_PROGRESS = 'in_progress';
+
+    public const STATUS_RESPONDED = 'responded';
+
+    public const STATUS_RESOLVED = 'resolved';
+
+    public const STATUS_ESCALATED = 'escalated';
+
+    public const STATUS_REJECTED = 'rejected';
+
+    public const STATUS_CLOSED = 'closed';
 
     protected $fillable = [
         'inspection_id',
@@ -29,8 +45,14 @@ class MaterialClaim extends Model
     protected function casts(): array
     {
         return [
+            'status' => MaterialClaimStatusCast::class,
             'deadline' => 'date',
         ];
+    }
+
+    public function statusEnum(): MaterialClaimStatus
+    {
+        return MaterialClaimStatus::tryFromWithLegacy($this->status ?? self::STATUS_PENDING);
     }
 
     // ─── Relationships ───

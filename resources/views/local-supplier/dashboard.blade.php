@@ -72,7 +72,7 @@
 
     </x-slot:statuses>
     <x-slot:company>
-    {{-- Vendor Organization Quick Status --}}
+    {{-- Supplier Organization Quick Status --}}
     <x-ui.card>
         <div class="tw:flex tw:flex-col tw:sm:flex-row tw:sm:items-center tw:sm:justify-between tw:gap-4">
             <div class="tw:flex tw:items-center tw:gap-3">

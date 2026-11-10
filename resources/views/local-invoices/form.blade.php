@@ -155,7 +155,7 @@
 >
     @csrf
 
-    {{-- Banner Profil Vendor (Global Header) --}}
+    {{-- Banner Profil Supplier (Global Header) --}}
     <div class="tw:mb-6 tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container tw:p-4">
         <div class="tw:flex tw:flex-col tw:sm:flex-row tw:sm:items-center tw:sm:justify-between tw:gap-3">
             <div class="tw:flex tw:items-center tw:gap-3">

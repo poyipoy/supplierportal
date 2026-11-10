@@ -21,6 +21,7 @@ use App\Support\FinanceConfigurationGuard;
 use App\Support\PortalPath;
 use App\Support\Pricing\EvaluationContext;
 use App\Support\Procurement\ProcurementFeatures;
+use App\Support\Security\CspNonce;
 use App\Support\View\CompiledViewFilesystem;
 use DateInterval;
 use Illuminate\Broadcasting\BroadcastEvent;
@@ -80,6 +81,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->scoped(EvaluationContext::class, fn (): EvaluationContext => EvaluationContext::forBusinessToday());
         $this->app->scoped(ExchangeRateResolver::class);
         $this->app->scoped(AnnualExchangeRateResolver::class);
+        $this->app->scoped(CspNonce::class);
 
         // Same construction as Illuminate\View\ViewServiceProvider::registerBladeCompiler(),
         // except that compiled views are published through a Filesystem that survives
@@ -132,6 +134,25 @@ class AppServiceProvider extends ServiceProvider
         }
 
         Blade::directive('bizdt', fn ($expr) => "<?php echo e(\\App\\Support\\BusinessTime::format($expr)); ?>");
+        Blade::directive('nonce', fn () => 'nonce="<?php echo e(app(\\App\\Support\\Security\\CspNonce::class)->get()); ?>"');
+        Blade::precompiler(function (string $value): string {
+            return (string) preg_replace_callback(
+                '/<script\b([^>]*)>/i',
+                static function (array $matches): string {
+                    $attributes = $matches[1];
+                    if (
+                        preg_match('/\b(?:src|nonce)\s*=/i', $attributes)
+                        || str_contains($attributes, '@nonce')
+                        || preg_match('/\btype\s*=\s*["\'](?:application\/(?:ld\+)?json|text\/template)["\']/i', $attributes)
+                    ) {
+                        return $matches[0];
+                    }
+
+                    return '<script nonce="<?php echo e(app(\\App\\Support\\Security\\CspNonce::class)->get()); ?>"'.$attributes.'>';
+                },
+                $value
+            );
+        });
 
         Event::listen(NotificationSending::class, ApplyNotificationPreferences::class);
         // Supplier scope memos live for one request or job only.

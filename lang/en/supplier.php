@@ -453,7 +453,7 @@ return [
         'currently_under_supplier_control' => 'currently under Supplier control.',
         'est' => 'Est',
         'exchange_rate_for' => 'Exchange rate for',
-        'is_not_recorded_in_master_exchange_rates_contact_admin_before_final_submission' => 'is not recorded in master exchange rates. Contact Admin before final submission.',
+        'is_not_recorded_in_master_exchange_rates_contact_admin_before_final_submission' => 'is not recorded in master data exchange rates. Contact Admin before final submission.',
         'issued' => 'Issued',
         'off' => 'Off:',
         'offered_dimensions_cannot_be_negative' => 'Offered dimensions cannot be negative.',

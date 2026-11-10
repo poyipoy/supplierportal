@@ -95,11 +95,10 @@ class SupplierRegistrationReviewTest extends TestCase
         $attempt = $this->createPendingAttempt();
         $purchasingReviewer = User::factory()->create(['role' => 'purchasing', 'is_active' => true]);
 
-        // Purchasing approves with both scopes
+        // Public registration approval locks scope to local automatically (even when scopes is omitted)
         $response = $this->actingAs($purchasingReviewer)->post(route('supplier-registrations.approve', $attempt->hash), [
-            'scopes' => ['import', 'local'],
             'vendor_category' => 'Barang',
-            'notes' => 'Supplier verified and approved for both import and local procurement.',
+            'notes' => 'Supplier verified and approved for local procurement.',
         ]);
 
         $response->assertRedirect(route('supplier-registrations.show', $attempt->hash));
@@ -112,12 +111,25 @@ class SupplierRegistrationReviewTest extends TestCase
         $this->assertSame(User::ACCOUNT_STATUS_ACTIVE, $user->account_status);
         $this->assertTrue((bool) $user->is_active);
 
-        // Verify scopes assigned
-        $this->assertTrue($user->hasSupplierScope('import'));
+        // Verify only local scope is assigned from public registration approval
+        $this->assertFalse($user->hasSupplierScope('import'));
         $this->assertTrue($user->hasSupplierScope('local'));
 
         // Verify access token revoked
         $this->assertNotNull($user->registrationAccesses()->latest()->first()->revoked_at);
+    }
+
+    public function test_public_registration_approval_rejects_import_scope(): void
+    {
+        $attempt = $this->createPendingAttempt();
+        $reviewer = User::factory()->create(['role' => 'purchasing', 'is_active' => true]);
+
+        $this->actingAs($reviewer)->post(route('supplier-registrations.approve', $attempt->hash), [
+            'scopes' => ['import'],
+            'vendor_category' => 'Barang',
+        ])->assertSessionHasErrors('scopes.0');
+
+        $this->assertSame(SupplierRegistrationAttempt::STATUS_PENDING, $attempt->fresh()->status);
     }
 
     public function test_approval_with_confirmation_assigns_vendor_category_and_verifies_the_bank_account(): void
@@ -312,7 +324,7 @@ class SupplierRegistrationReviewTest extends TestCase
 
         foreach ([null, 'Supplier'] as $invalid) {
             $this->actingAs($admin)->post(route('supplier-registrations.approve', $attempt->hash), array_filter([
-                'scopes' => ['import'],
+                'scopes' => ['local'],
                 'vendor_category' => $invalid,
             ]))->assertSessionHasErrors('vendor_category');
         }

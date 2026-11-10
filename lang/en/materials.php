@@ -154,7 +154,7 @@ return [
         'price_invalid' => 'The price per KG must be greater than 0.',
         'validity_invalid' => 'Valid Until must not be earlier than Valid From.',
         'overlap' => 'This range overlaps an active reference price (:min to :max, :from to :until) for the same material, shape and currency.',
-        'material_not_found' => 'No material master has this code.',
+        'material_not_found' => 'No master data material has this code.',
         'reference_price' => 'Reference Price',
         'reference_delta' => 'vs Reference',
         'reasons' => [

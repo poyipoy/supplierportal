@@ -32,7 +32,7 @@ return [
     */
     'bank_transfer' => [
         'llg_max_amount' => env('FINANCE_LLG_MAX_AMOUNT', '1000000000.00'),
-        'rtgs_fee' => env('FINANCE_BANK_FEE_RTGS', '25000.00'),
+        'rtgs_fee' => env('FINANCE_BANK_FEE_RTGS', '2500.00'),
     ],
 
     /*

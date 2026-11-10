@@ -132,7 +132,51 @@ test('a navigation safety release only frees its own token, not later requests',
 
     loader.hide(ajax);
     timers.advance(MIN_VISIBLE);
-    assert.deepEqual(calls, ['activate', 'deactivate']);
+    assert.deepEqual(calls, ['activate', 'slow', 'deactivate']);
+});
+
+test('navigation remains active through slow transitions and triggers showSlow at SLOW_AFTER before NAV_RELEASE', () => {
+    const { timers, calls, loader } = setup();
+
+    loader.trackNavigation();
+    timers.advance(SHOW_DELAY);
+    assert.deepEqual(calls, ['activate']);
+
+    // Advance 10 seconds (the old premature release threshold): it MUST STILL be active!
+    timers.advance(10000);
+    assert.equal(loader.isActive(), true, 'loader must not stop at the old 10s mark');
+    assert.equal(loader.pendingCount(), 1);
+
+    // Advance to SLOW_AFTER (20s from activation): triggers slow watchdog with dismiss button
+    timers.advance(SLOW_AFTER - 10000);
+    assert.deepEqual(calls, ['activate', 'slow'], 'slow watchdog must trigger at 20s while navigation is still active');
+    assert.equal(loader.isActive(), true);
+
+    // Advance to NAV_RELEASE (60s total): safety watchdog releases token
+    timers.advance(NAV_RELEASE - SLOW_AFTER);
+    assert.deepEqual(calls, ['activate', 'slow', 'deactivate'], 'navigation safety release only frees after NAV_RELEASE (60s)');
+    assert.equal(loader.isActive(), false);
+});
+
+test('loader.reset calls window.AdasiButton.resetAll if present', () => {
+    const { loader } = setup();
+    let resetAllCalled = false;
+    const originalWindow = globalThis.window;
+    globalThis.window = {
+        AdasiButton: {
+            resetAll() {
+                resetAllCalled = true;
+            },
+        },
+    };
+
+    try {
+        loader.show();
+        loader.reset();
+        assert.equal(resetAllCalled, true, 'AdasiButton.resetAll must be called on loader reset');
+    } finally {
+        globalThis.window = originalWindow;
+    }
 });
 
 test('a new request during the deferred hide keeps the overlay active', () => {

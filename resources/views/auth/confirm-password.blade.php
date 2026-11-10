@@ -9,7 +9,7 @@
     <p class="tw:m-0 tw:mt-1.5 tw:text-ui-sm tw:text-on-surface-variant">{{ __('auth.confirm.help') }}</p>
 </header>
 
-<form method="POST" action="{{ route('password.confirm') }}" class="tw:grid tw:gap-4" novalidate>
+<form method="POST" action="{{ route('password.confirm') }}" data-track-unsaved="false" class="tw:grid tw:gap-4" novalidate>
     @csrf
 
     <div x-data="{ visible: false }" class="tw:grid tw:gap-1.5">
@@ -22,7 +22,7 @@
                 id="password"
                 :type="visible ? 'text' : 'password'"
                 name="password"
-                class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:pl-10 tw:pr-11 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary {{ $errors->has('password') ? 'tw:border-error' : 'tw:border-outline-variant' }}"
+                class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:pl-10 tw:pr-11 tw:text-ui-sm tw:text-on-surface tw:hover:border-outline-strong tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary {{ $errors->has('password') ? 'tw:border-error' : 'tw:border-outline' }}"
                 placeholder="{{ __('auth.confirm.enter') }}"
                 autocomplete="current-password"
                 maxlength="255"

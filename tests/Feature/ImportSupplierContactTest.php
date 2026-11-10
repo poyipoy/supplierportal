@@ -311,4 +311,121 @@ class ImportSupplierContactTest extends TestCase
             ->assertNotFound();
         $this->assertSame('Daido Trading Co.', $supplier->supplier->fresh()->company_name);
     }
+
+    public function test_purchasing_can_register_import_supplier_with_minimal_fields(): void
+    {
+        $purchasing = $this->staff('purchasing');
+
+        $this->actingAs($purchasing)
+            ->get(route('purchasing.import-suppliers.create'))
+            ->assertOk()
+            ->assertSee(__('supplier_contact.register.title'));
+
+        $response = $this->actingAs($purchasing)
+            ->post(route('purchasing.import-suppliers.store'), [
+                'company_name' => '  Nippon Special Steel Corp.  ',
+                'email' => '  SALES@NipponSteel.example  ',
+                'password' => 'StrongPass#2026!',
+                'password_confirmation' => 'StrongPass#2026!',
+            ]);
+
+        $user = User::where('email', 'sales@nipponsteel.example')->firstOrFail();
+        $response->assertRedirect(route('purchasing.import-suppliers.show', $user))
+            ->assertSessionHas('success', __('supplier_contact.register.created'));
+
+        $this->assertSame('Nippon Special Steel Corp.', $user->name);
+        $this->assertSame('supplier', $user->role);
+        $this->assertTrue((bool) $user->is_active);
+        $this->assertSame(User::ACCOUNT_STATUS_ACTIVE, $user->account_status);
+        $this->assertTrue((bool) $user->must_change_password);
+        $this->assertSame(['import'], $user->supplierScopes()->pluck('scope')->all());
+        $this->assertTrue($user->isImportEligible());
+        $this->assertFalse($user->isLocalEligible());
+        $this->assertSame('Nippon Special Steel Corp.', $user->supplier->company_name);
+        $this->assertNull($user->supplier->address);
+        $this->assertNull($user->supplier->pic_name);
+        $this->assertTrue(LocalFinanceAuditLog::where('action', 'import_supplier_registered')->where('actor_id', $purchasing->id)->exists());
+        $this->assertSame(1, $user->notifications()->where('data->event', 'auth.password_set_by_admin')->count());
+    }
+
+    public function test_non_purchasing_roles_cannot_register_import_supplier(): void
+    {
+        foreach (['finance', 'qc'] as $role) {
+            $staff = $this->staff($role);
+            $this->actingAs($staff)->get(route('purchasing.import-suppliers.create'))->assertForbidden();
+            $this->actingAs($staff)->post(route('purchasing.import-suppliers.store'), [
+                'company_name' => 'Blocked Co.',
+                'email' => $role.'-blocked@example.com',
+                'password' => 'StrongPass#2026!',
+                'password_confirmation' => 'StrongPass#2026!',
+            ])->assertForbidden();
+        }
+
+        $supplier = $this->supplier();
+        $this->actingAs($supplier)->get(route('purchasing.import-suppliers.create'))->assertForbidden();
+        $this->assertNull(User::where('email', 'finance-blocked@example.com')->first());
+    }
+
+    public function test_register_import_supplier_validates_duplicate_email_and_password_policy(): void
+    {
+        $existing = $this->supplier();
+        $purchasing = $this->staff('purchasing');
+
+        $this->actingAs($purchasing)
+            ->post(route('purchasing.import-suppliers.store'), [
+                'company_name' => 'Duplicate Ltd',
+                'email' => strtoupper($existing->email),
+                'password' => 'short',
+                'password_confirmation' => 'mismatch',
+            ])
+            ->assertSessionHasErrors(['email', 'password']);
+    }
+
+    public function test_company_details_can_be_completed_by_supplier_proposal_or_purchasing_direct_edit(): void
+    {
+        $supplier = $this->supplier(['import'], ['address' => null, 'phone' => null, 'category' => null]);
+        $purchasing = $this->staff('purchasing');
+
+        // 1. Import supplier proposes contact + company details (address, phone, category)
+        $this->actingAs($supplier)
+            ->post(route('supplier.company-profile.contact-requests.store'), $this->contact([
+                'address' => '1-2-3 Marunouchi, Chiyoda-ku, Tokyo',
+                'phone' => '+81 3 9999 0000',
+                'category' => 'Alloy Steel',
+            ]))
+            ->assertRedirect(route('supplier.company-profile.show'));
+
+        $changeRequest = SupplierChangeRequest::sole();
+        $this->assertSame('1-2-3 Marunouchi, Chiyoda-ku, Tokyo', $changeRequest->proposed_data['address']);
+        $this->assertSame('+81 3 9999 0000', $changeRequest->proposed_data['phone']);
+        $this->assertSame('Alloy Steel', $changeRequest->proposed_data['category']);
+
+        $this->actingAs($purchasing)
+            ->post(route('purchasing.import-suppliers.contact-requests.approve', $changeRequest))
+            ->assertRedirect();
+
+        $profile = $supplier->supplier->fresh();
+        $this->assertSame('1-2-3 Marunouchi, Chiyoda-ku, Tokyo', $profile->address);
+        $this->assertSame('+81 3 9999 0000', $profile->phone);
+        $this->assertSame('Alloy Steel', $profile->category);
+        $this->assertSame('Kenji Sato', $profile->pic_name);
+
+        // 2. Purchasing edits company details and contact directly
+        $this->actingAs($purchasing)
+            ->patch(route('purchasing.import-suppliers.contact.update', $supplier), $this->contact([
+                'company_name' => 'Daido Trading International Co.',
+                'address' => 'Nagoya, Aichi, Japan',
+                'phone' => '+81 52 111 2222',
+                'category' => 'Tool Steel',
+                'reason' => 'Updated from signed PO header sheet',
+            ]))
+            ->assertRedirect();
+
+        $profile->refresh();
+        $this->assertSame('Daido Trading International Co.', $profile->company_name);
+        $this->assertSame('Daido Trading International Co.', $supplier->fresh()->name);
+        $this->assertSame('Nagoya, Aichi, Japan', $profile->address);
+        $this->assertSame('+81 52 111 2222', $profile->phone);
+        $this->assertSame('Tool Steel', $profile->category);
+    }
 }

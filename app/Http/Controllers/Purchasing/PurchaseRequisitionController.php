@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Purchasing;
 
+use App\Enums\PurchaseRequisitionStatus;
 use App\Exports\PrImportTemplateExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Export\Filters\RequisitionExportFilters;
@@ -15,6 +16,7 @@ use App\Models\User;
 use App\Services\Materials\MaterialResolver;
 use App\Services\Materials\PurchaseRequisitionItemSynchronizer;
 use App\Services\NotificationService;
+use App\Services\Procurement\PurchaseRequisitionStateEngine;
 use App\Support\BusinessTime;
 use App\Support\NotificationCategory;
 use App\Support\NumberFormat;
@@ -253,10 +255,16 @@ class PurchaseRequisitionController extends Controller
         try {
             DB::transaction(function () use ($pr) {
                 $this->itemSynchronizer->reprocessForSubmission($pr, auth()->id());
-                $pr->update([
-                    'pr_number' => $pr->pr_number ?: PurchaseRequisition::generatePrNumber(),
-                    'status' => 'submitted',
-                ]);
+                app(PurchaseRequisitionStateEngine::class)->transition(
+                    model: $pr,
+                    target: PurchaseRequisitionStatus::SUBMITTED,
+                    actor: auth()->user(),
+                    metadata: [
+                        'attributes' => [
+                            'pr_number' => $pr->pr_number ?: PurchaseRequisition::generatePrNumber(),
+                        ],
+                    ]
+                );
             });
 
             $this->notifyAdminsOfSubmission($pr);
@@ -472,7 +480,7 @@ class PurchaseRequisitionController extends Controller
                     auth()->id(),
                 );
 
-                $pr->update([
+                $prAttributes = [
                     'period_id' => $validated['period_id'],
                     'pr_number' => ($validated['action'] === 'submitted' && ! $pr->pr_number)
                         ? PurchaseRequisition::generatePrNumber()
@@ -480,8 +488,18 @@ class PurchaseRequisitionController extends Controller
                     'notes' => $validated['notes'] ?? null,
                     'port_of_discharge' => $validated['port_of_discharge'] ?? null,
                     'incoterm' => $validated['incoterm'] ?? null,
-                    'status' => $validated['action'],
-                ]);
+                ];
+                $targetPrStatus = PurchaseRequisitionStatus::tryFromWithLegacy($validated['action']);
+                if ($pr->statusEnum() !== $targetPrStatus) {
+                    app(PurchaseRequisitionStateEngine::class)->transition(
+                        model: $pr,
+                        target: $targetPrStatus,
+                        actor: auth()->user(),
+                        metadata: ['attributes' => $prAttributes]
+                    );
+                } else {
+                    $pr->update($prAttributes);
+                }
 
                 if ($request->boolean('supplier_selection_present') || $request->has('supplier_id') || $request->has('supplier_ids')) {
                     $this->syncInvitedSuppliers($pr, $this->supplierIdsFromValidated($validated));

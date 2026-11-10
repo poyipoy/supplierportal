@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Casts\PurchaseRequisitionStatusCast;
+use App\Enums\PurchaseRequisitionStatus;
 use App\Support\BusinessTime;
 use App\Traits\HasHashids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -17,6 +19,16 @@ class PurchaseRequisition extends Model
 {
     use HasFactory, HasHashids, SoftDeletes;
 
+    public const STATUS_DRAFT = 'draft';
+
+    public const STATUS_SUBMITTED = 'submitted';
+
+    public const STATUS_BIDDING = 'bidding';
+
+    public const STATUS_COMPLETED = 'completed';
+
+    public const STATUS_REJECTED = 'rejected';
+
     protected $table = 'purchase_requisitions';
 
     protected $fillable = [
@@ -28,6 +40,18 @@ class PurchaseRequisition extends Model
         'port_of_discharge',
         'incoterm',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'status' => PurchaseRequisitionStatusCast::class,
+        ];
+    }
+
+    public function statusEnum(): PurchaseRequisitionStatus
+    {
+        return PurchaseRequisitionStatus::tryFromWithLegacy($this->status ?? self::STATUS_DRAFT);
+    }
 
     // ─── Helpers ───
 

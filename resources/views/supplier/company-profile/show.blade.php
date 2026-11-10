@@ -6,11 +6,15 @@
 @section('content')
 @php
     $hasContact = filled($profile?->pic_name);
-    $formSource = $pendingRequest?->proposed_data ?? [
+    $formSource = array_merge([
         'pic_name' => $profile?->pic_name,
         'pic_email' => $profile?->pic_email,
         'pic_phone' => $profile?->pic_phone,
-    ];
+        'address' => $profile?->address,
+        'phone' => $profile?->phone,
+        'category' => $profile?->category,
+    ], $pendingRequest?->proposed_data ?? []);
+    $hasCompanyDetails = filled($profile?->address) && filled($profile?->phone);
 @endphp
 <div class="tw:grid tw:gap-4">
     <x-ui.breadcrumb :items="[
@@ -27,7 +31,7 @@
         <x-ui.alert tone="info" :title="__('supplier_contact.profile.pending_title')">
             {{ __('supplier_contact.profile.pending_body', ['date' => $regionalFormatter->timestamp($pendingRequest->requested_at, 'datetime')]) }}
         </x-ui.alert>
-    @elseif(! $hasContact)
+    @elseif(! $hasContact || ! $hasCompanyDetails)
         <x-ui.alert tone="warning" :title="__('supplier_contact.profile.missing_title')">
             {{ __('supplier_contact.profile.missing_body') }}
         </x-ui.alert>
@@ -42,6 +46,8 @@
                 <dd class="tw:m-0 tw:wrap-break-word">{{ $profile?->address ?: '–' }}</dd>
                 <dt class="tw:font-normal tw:text-on-surface-variant">{{ __('supplier_contact.profile.phone') }}</dt>
                 <dd class="tw:m-0">{{ $profile?->phone ?: '–' }}</dd>
+                <dt class="tw:font-normal tw:text-on-surface-variant">{{ __('supplier_contact.profile.category') }}</dt>
+                <dd class="tw:m-0 tw:wrap-break-word">{{ $profile?->category ?: '–' }}</dd>
                 <dt class="tw:font-normal tw:text-on-surface-variant">{{ __('supplier_contact.profile.account_email') }}</dt>
                 <dd class="tw:m-0 tw:break-all">{{ $user->email }}</dd>
             </dl>
@@ -67,6 +73,11 @@
                 <div class="tw:grid tw:gap-3 tw:sm:grid-cols-2">
                     <x-ui.input name="pic_email" id="company-pic-email" type="email" :label="__('supplier_contact.fields.email')" :value="$formSource['pic_email'] ?? null" :placeholder="__('supplier_contact.placeholders.email')" autocomplete="email" maxlength="100" required />
                     <x-ui.input name="pic_phone" id="company-pic-phone" type="tel" :label="__('supplier_contact.fields.phone')" :value="$formSource['pic_phone'] ?? null" :placeholder="__('supplier_contact.placeholders.phone')" autocomplete="tel" maxlength="30" required />
+                </div>
+                <x-ui.textarea name="address" id="company-address" :label="__('supplier_contact.profile.address')" :value="$formSource['address'] ?? null" :placeholder="__('supplier_contact.placeholders.address')" rows="2" maxlength="1000" />
+                <div class="tw:grid tw:gap-3 tw:sm:grid-cols-2">
+                    <x-ui.input name="phone" id="company-phone" type="tel" :label="__('supplier_contact.profile.phone')" :value="$formSource['phone'] ?? null" :placeholder="__('supplier_contact.placeholders.phone')" autocomplete="tel" maxlength="50" />
+                    <x-ui.input name="category" id="company-category" :label="__('supplier_contact.profile.category')" :value="$formSource['category'] ?? null" :placeholder="__('supplier_contact.placeholders.category')" autocomplete="off" maxlength="100" />
                 </div>
                 <div class="tw:flex tw:justify-end">
                     <x-ui.button type="submit" variant="primary">

@@ -110,7 +110,7 @@
                         </div>
 
                         <div>
-                            <div class="tw:flex tw:items-center tw:justify-between tw:mb-1">
+                            <div class="tw:flex tw:items-center tw:justify-between tw:min-h-6 tw:mb-1">
                                 <label for="supplier_id" class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-0">
                                     {{ __('local_invoice.labels.local_supplier') }} <span class="tw:text-error">*</span>
                                 </label>
@@ -161,14 +161,17 @@
 
                         {{-- Tanggal PO --}}
                         <div>
-                            <label for="local_po_date" class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1">
-                                {{ __('local_procurement.labels.po_document_date') }} <span class="tw:text-error">*</span>
-                            </label>
+                            <div class="tw:flex tw:items-center tw:justify-between tw:min-h-6 tw:mb-1">
+                                <label for="local_po_date" class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-0">
+                                    {{ __('local_procurement.labels.po_document_date') }} <span class="tw:text-error">*</span>
+                                </label>
+                            </div>
                             <x-ui.date-picker
                                 id="local_po_date"
                                 name="po_date"
                                 :value="old('po_date', $purchaseOrder->po_date?->format('Y-m-d') ?? now()->format('Y-m-d'))"
                                 required="true"
+                                size="sm"
                             />
                             @error('po_date')
                                 <div class="text-danger tw:text-ui-xs tw:mt-1">{{ $message }}</div>

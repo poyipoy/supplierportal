@@ -2,6 +2,8 @@
 
 namespace App\Services\LocalInvoice;
 
+use App\Enums\LocalGoodsReceiptStatus;
+use App\Enums\LocalPurchaseOrderStatus;
 use App\Models\LocalGoodsReceipt;
 use App\Models\LocalInvoice;
 use App\Models\LocalInvoiceGoodsReceipt;
@@ -286,8 +288,19 @@ class LocalProcurementMasterService
             if ($po->status !== LocalPurchaseOrder::STATUS_OPEN) {
                 throw ValidationException::withMessages(['status' => __('local_procurement.validation.close_open')]);
             }
-            $po->update(['status' => LocalPurchaseOrder::STATUS_CLOSED, 'updated_by' => $actor->id]);
-            $this->audit->record($po, 'po_closed', $actor, ['status' => LocalPurchaseOrder::STATUS_OPEN], ['status' => LocalPurchaseOrder::STATUS_CLOSED]);
+            $po = app(LocalPurchaseOrderStateEngine::class)->transition(
+                model: $po,
+                target: LocalPurchaseOrderStatus::CLOSED,
+                actor: $actor,
+                metadata: [
+                    'attributes' => [
+                        'updated_by' => $actor->id,
+                    ],
+                    'audit_action' => 'po_closed',
+                    'audit_before' => ['status' => LocalPurchaseOrder::STATUS_OPEN],
+                    'audit_after' => ['status' => LocalPurchaseOrder::STATUS_CLOSED],
+                ]
+            );
 
             return $po->fresh();
         });
@@ -307,9 +320,29 @@ class LocalProcurementMasterService
             if ($blocked) {
                 throw ValidationException::withMessages(['status' => __('local_procurement.validation.reserved_cancel')]);
             }
-            $po->update(['status' => LocalPurchaseOrder::STATUS_CANCELLED, 'updated_by' => $actor->id]);
-            $po->goodsReceipts()->where('status', LocalGoodsReceipt::STATUS_AVAILABLE)
-                ->update(['status' => LocalGoodsReceipt::STATUS_CANCELLED, 'updated_by' => $actor->id, 'updated_at' => now()]);
+            $po = app(LocalPurchaseOrderStateEngine::class)->transition(
+                model: $po,
+                target: LocalPurchaseOrderStatus::CANCELLED,
+                actor: $actor,
+                metadata: [
+                    'attributes' => [
+                        'updated_by' => $actor->id,
+                    ],
+                ]
+            );
+            $availableReceipts = $po->goodsReceipts()->where('status', LocalGoodsReceipt::STATUS_AVAILABLE)->orderBy('id')->lockForUpdate()->get();
+            foreach ($availableReceipts as $gr) {
+                app(LocalGoodsReceiptStateEngine::class)->transition(
+                    model: $gr,
+                    target: LocalGoodsReceiptStatus::CANCELLED,
+                    actor: $actor,
+                    metadata: [
+                        'attributes' => [
+                            'updated_by' => $actor->id,
+                        ],
+                    ]
+                );
+            }
             $this->audit->record($po, 'po_cancelled', $actor, ['status' => LocalPurchaseOrder::STATUS_OPEN], ['status' => LocalPurchaseOrder::STATUS_CANCELLED]);
 
             return $po->fresh();
@@ -397,8 +430,19 @@ class LocalProcurementMasterService
             if ($gr->status !== LocalGoodsReceipt::STATUS_AVAILABLE) {
                 throw ValidationException::withMessages(['status' => __('local_procurement.validation.gr_cancel_available')]);
             }
-            $gr->update(['status' => LocalGoodsReceipt::STATUS_CANCELLED, 'updated_by' => $actor->id]);
-            $this->audit->record($gr, 'gr_cancelled', $actor, ['status' => LocalGoodsReceipt::STATUS_AVAILABLE], ['status' => LocalGoodsReceipt::STATUS_CANCELLED]);
+            $gr = app(LocalGoodsReceiptStateEngine::class)->transition(
+                model: $gr,
+                target: LocalGoodsReceiptStatus::CANCELLED,
+                actor: $actor,
+                metadata: [
+                    'attributes' => [
+                        'updated_by' => $actor->id,
+                    ],
+                    'audit_action' => 'gr_cancelled',
+                    'audit_before' => ['status' => LocalGoodsReceipt::STATUS_AVAILABLE],
+                    'audit_after' => ['status' => LocalGoodsReceipt::STATUS_CANCELLED],
+                ]
+            );
 
             return $gr->fresh();
         });
@@ -426,9 +470,19 @@ class LocalProcurementMasterService
                 || LocalInvoiceGoodsReceipt::where('local_purchase_order_id', $po->id)->whereIn('state', ['RESERVED', 'CONSUMED'])->exists()) {
                 throw ValidationException::withMessages(['status' => __('local_procurement.recovery.dependencies')]);
             }
-            $before = $po->toArray();
-            $po->update(['status' => LocalPurchaseOrder::STATUS_OPEN, 'updated_by' => $actor->id]);
-            $this->audit->record($po, 'po_restored', $actor, $before, $po->fresh()->toArray(), ['reason' => $reason, 'business_document_valid' => true]);
+            $po = app(LocalPurchaseOrderStateEngine::class)->transition(
+                model: $po,
+                target: LocalPurchaseOrderStatus::OPEN,
+                actor: $actor,
+                reason: $reason,
+                metadata: [
+                    'attributes' => [
+                        'updated_by' => $actor->id,
+                    ],
+                    'audit_action' => 'po_restored',
+                    'audit_meta' => ['reason' => $reason, 'business_document_valid' => true],
+                ]
+            );
 
             return $po->fresh();
         });
@@ -457,9 +511,19 @@ class LocalProcurementMasterService
             if ($gr->current_invoice_id !== null || LocalInvoiceGoodsReceipt::where('local_goods_receipt_id', $gr->id)->whereIn('state', ['RESERVED', 'CONSUMED'])->exists()) {
                 throw ValidationException::withMessages(['status' => __('local_procurement.recovery.dependencies')]);
             }
-            $before = $gr->toArray();
-            $gr->update(['status' => LocalGoodsReceipt::STATUS_AVAILABLE, 'updated_by' => $actor->id]);
-            $this->audit->record($gr, 'gr_restored', $actor, $before, $gr->fresh()->toArray(), ['reason' => $reason, 'business_document_valid' => true]);
+            $gr = app(LocalGoodsReceiptStateEngine::class)->transition(
+                model: $gr,
+                target: LocalGoodsReceiptStatus::AVAILABLE,
+                actor: $actor,
+                reason: $reason,
+                metadata: [
+                    'attributes' => [
+                        'updated_by' => $actor->id,
+                    ],
+                    'audit_action' => 'gr_restored',
+                    'audit_meta' => ['reason' => $reason, 'business_document_valid' => true],
+                ]
+            );
 
             return $gr->fresh();
         });

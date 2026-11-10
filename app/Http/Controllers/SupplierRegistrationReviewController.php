@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\SupplierRegistration\ApproveRegistrationRequest;
 use App\Http\Requests\SupplierRegistration\RejectRegistrationRequest;
 use App\Http\Requests\SupplierRegistration\RevisionRequest;
+use App\Models\Supplier;
 use App\Models\SupplierBankAccount;
 use App\Models\SupplierMasterDocument;
 use App\Models\SupplierRegistrationAttempt;
@@ -226,7 +227,7 @@ class SupplierRegistrationReviewController extends Controller
             $this->registrationService->approveRegistration(
                 attempt: $attempt,
                 reviewer: $request->user(),
-                scopes: $request->validated('scopes'),
+                scopes: [Supplier::SCOPE_LOCAL],
                 vendorCategory: $request->validated('vendor_category'),
                 notes: $request->validated('notes'),
                 confirmBankDeclaration: $request->boolean('confirm_bank_declaration'),

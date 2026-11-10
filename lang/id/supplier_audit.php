@@ -2,7 +2,7 @@
 
 return [
     'title' => 'Supplier Audit',
-    'description' => 'Checklist audit supplier dan vendor ISO 14001, ISO 9001 & AGC AFC.',
+    'description' => 'Checklist audit supplier ISO 14001, ISO 9001 & AGC AFC.',
     'eyebrow' => 'Local Supplier',
     'purchasing_description' => 'Tugaskan checklist audit ke supplier local, tinjau jawaban yang disubmit, dan terbitkan hasil penilaian.',
     'supplier_description' => 'Isi checklist audit yang ditugaskan Purchasing dan unduh hasil penilaiannya.',
@@ -209,7 +209,7 @@ return [
 
     'export' => [
         'label' => 'Supplier Audit :supplier (:period)',
-        'vendor_header' => 'Vendor/Supplier: :supplier — Periode: :period',
+        'vendor_header' => 'Supplier: :supplier — Periode: :period',
         'sub_total' => 'Sub Total',
         'columns' => [
             'no' => 'No',

@@ -21,7 +21,7 @@
     $describedBy = collect([$helperId, $errorId])->filter()->implode(' ');
 @endphp
 
-<div {{ $attributes->only('class')->class(['tw:grid tw:gap-1.5']) }}>
+<div {{ $attributes->only('class')->class(['tw:grid tw:content-start tw:gap-1.5']) }}>
     @if($label)
         <label for="{{ $resolvedId }}" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">
             {{ $label }}

@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Casts\PaymentBatchStatusCast;
+use App\Enums\PaymentBatchStatus;
 use App\Traits\HasHashids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -43,6 +45,7 @@ class PaymentBatch extends Model
     protected function casts(): array
     {
         return [
+            'status' => PaymentBatchStatusCast::class,
             'total_subtotal' => 'decimal:2',
             'total_bank_fee' => 'decimal:2',
             'total_net_amount' => 'decimal:2',
@@ -73,29 +76,34 @@ class PaymentBatch extends Model
         return $this->belongsTo(User::class, 'finalized_by');
     }
 
+    public function statusEnum(): PaymentBatchStatus
+    {
+        return PaymentBatchStatus::tryFromWithLegacy((string) $this->status);
+    }
+
     public function isDraft(): bool
     {
-        return $this->status === self::STATUS_DRAFT;
+        return PaymentBatchStatus::tryFromWithLegacyOrNull((string) $this->status) === PaymentBatchStatus::DRAFT;
     }
 
     public function isFinalized(): bool
     {
-        return $this->status === self::STATUS_FINALIZED;
+        return PaymentBatchStatus::tryFromWithLegacyOrNull((string) $this->status) === PaymentBatchStatus::FINALIZED;
     }
 
     public function isPaid(): bool
     {
-        return $this->status === self::STATUS_PAID;
+        return PaymentBatchStatus::tryFromWithLegacyOrNull((string) $this->status) === PaymentBatchStatus::PAID;
     }
 
     public function isPartiallyPaid(): bool
     {
-        return $this->status === self::STATUS_PARTIALLY_PAID;
+        return PaymentBatchStatus::tryFromWithLegacyOrNull((string) $this->status) === PaymentBatchStatus::PARTIALLY_PAID;
     }
 
     public function isCancelled(): bool
     {
-        return $this->status === self::STATUS_CANCELLED;
+        return PaymentBatchStatus::tryFromWithLegacyOrNull((string) $this->status) === PaymentBatchStatus::CANCELLED;
     }
 
     public function getTotalAmountAttribute(): float

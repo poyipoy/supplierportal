@@ -17,7 +17,25 @@ class AuthenticationTest extends TestCase
 
         $response->assertStatus(200)
             ->assertSee('Forgot password?')
-            ->assertSee(route('password.request'), false);
+            ->assertSee(route('password.request'), false)
+            ->assertSee('Email address')
+            ->assertSee('Email cannot be empty')
+            ->assertSee('Password cannot be empty');
+    }
+
+    public function test_login_requires_username_and_password_with_custom_messages(): void
+    {
+        $response = $this->post('/login', [
+            'email' => '',
+            'password' => '',
+        ]);
+
+        $response->assertSessionHasErrors([
+            'email' => __('auth.login.email_empty'),
+            'password' => __('auth.login.password_empty'),
+        ]);
+
+        $this->assertGuest();
     }
 
     public function test_users_can_authenticate_using_the_login_screen(): void

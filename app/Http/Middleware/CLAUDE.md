@@ -2,7 +2,7 @@
 
 Registration lives in `bootstrap/app.php`, not in a Kernel.
 
-- Web group append order: `ApplyUserLocale`, `ShareAuthSplashState`, `DecodeHashids`, `EnforceAuthSessionSecurity`, `EnforcePasswordChange`, `AddSecurityHeaders`, `EnforceSupplierDomain`, `LimitOperationalRequests`. These run on every web request, so any change here affects every role.
+- Web group append order: `ApplyUserLocale`, `ShareAuthSplashState`, `DecodeHashids`, `EnforceAuthSessionSecurity`, `EnforcePasswordChange`, `AddSecurityHeaders`, `EnforceSupplierDomain`, `EnforceMaintenance`, `LimitOperationalRequests`. These run on every web request, so any change here affects every role.
 - Aliases: `role`, `supplier.scope`, `password.confirm`, `purchasing.navigation`, `mfa.pending`, `no-store`, `registration.session`.
 
 ## DecodeHashids
@@ -14,6 +14,10 @@ Registration lives in `bootstrap/app.php`, not in a Kernel.
 ## EnforceSupplierDomain
 - Keeps the Import and Local cores apart on shared endpoints. It is not an authorization layer; policies still apply.
 - The `attachments.show` exceptions for `SupplierOverpaymentRefund`, `LocalPurchaseOrder`, and `SupplierAudit` are intentional. Keep all three.
+
+## EnforceMaintenance
+- Maintenance gate for every signed-in role except admin (AGENTS.md, "Pemeliharaan Portal"). It runs before `role`/`supplier.scope`, so a module only blocks roles that work in its core: `MaintenanceModuleRegistry::scopesFor()` (suppliers: held scopes; purchasing: import + local; qc: import; finance, accounting, ga: local). Admin, guests and background work are never blocked.
+- Route ownership lives in `App\Support\Maintenance\MaintenanceModuleRegistry`. A new route reachable by any non-admin role must be classified there (module pattern, `STAFF_PORTAL_ROUTES` for Global-only areas, or always-allowed); `MaintenanceModuleRegistryTest` fails otherwise.
 
 ## Role and scope
 - `RoleMiddleware`: exact match against the listed roles. Admin gets no bypass, and denials are logged.

@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use App\Casts\PurchaseOrderStatusCast;
+use App\Enums\PurchaseOrderStatus;
+use App\Services\Procurement\PurchaseOrderStateEngine;
 use App\Support\BusinessTime;
 use App\Support\Money;
 use App\Support\Procurement\CustomsDocumentationProgressCalculator;
@@ -46,9 +49,15 @@ class PurchaseOrder extends Model
     protected function casts(): array
     {
         return [
+            'status' => PurchaseOrderStatusCast::class,
             'estimated_arrival' => 'date',
             'actual_arrival' => 'date',
         ];
+    }
+
+    public function statusEnum(): PurchaseOrderStatus
+    {
+        return PurchaseOrderStatus::tryFromWithLegacy($this->status ?? self::STATUS_DRAFT);
     }
 
     /**
@@ -864,7 +873,11 @@ class PurchaseOrder extends Model
         }
 
         if ($this->status !== $target) {
-            $this->update(['status' => $target]);
+            app(PurchaseOrderStateEngine::class)->transition(
+                model: $this,
+                target: PurchaseOrderStatus::tryFromWithLegacy($target),
+                reason: 'Operational status reconciliation'
+            );
         }
 
         return $target;

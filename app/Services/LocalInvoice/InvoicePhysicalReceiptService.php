@@ -2,6 +2,7 @@
 
 namespace App\Services\LocalInvoice;
 
+use App\Enums\LocalInvoiceStatus;
 use App\Exceptions\BusinessRuleArgumentException;
 use App\Exceptions\BusinessRuleException;
 use App\Models\LocalInvoice;
@@ -89,65 +90,63 @@ class InvoicePhysicalReceiptService
                 ->addDays($paymentTermDays)
                 ->toDateString();
 
-            $inv->update([
-                'status' => LocalInvoice::STATUS_UNDER_VERIFICATION,
-                'cashier_received_at' => $receivedAt,
-                'cashier_received_by' => $cashier->id,
-                'payment_term_days_snapshot' => $paymentTermDays,
-                'due_date' => $dueDate,
-                'physical_verified_at' => $receivedAt,
-                'review_started_at' => $receivedAt,
-            ]);
+            $historyNotes = $notes ?: __('local_invoice.history.physical_received', ['payment_term' => $paymentTermDays, 'due_date' => $dueDate]);
 
-            // 3. Create or update physical verification record
-            LocalInvoicePhysicalVerification::updateOrCreate(
-                [
-                    'local_invoice_id' => $inv->id,
-                    'revision_number' => $inv->revision_number,
-                    'status' => 'matched',
-                ],
-                [
-                    'verified_by' => $cashier->id,
-                    'verified_at' => $receivedAt,
-                    'notes' => $notes ?: __('local_invoice.history.physical_received', ['payment_term' => $paymentTermDays, 'due_date' => $dueDate]),
-                    'created_at' => $receivedAt,
+            return app(LocalInvoiceStateEngine::class)->transition(
+                model: $inv,
+                target: LocalInvoiceStatus::UNDER_VERIFICATION,
+                actor: $cashier,
+                reason: $historyNotes,
+                metadata: [
+                    'event' => 'physical_received',
+                    'timestamp' => $receivedAt,
+                    'error_message' => __('local_invoice.validation.receipt_status', ['status' => ':status']),
+                    'attributes' => [
+                        'cashier_received_at' => $receivedAt,
+                        'cashier_received_by' => $cashier->id,
+                        'payment_term_days_snapshot' => $paymentTermDays,
+                        'due_date' => $dueDate,
+                        'physical_verified_at' => $receivedAt,
+                        'review_started_at' => $receivedAt,
+                    ],
+                    'after_transition' => function (LocalInvoice $lockedInv) use ($cashier, $receivedAt, $historyNotes, $supplierProfile): void {
+                        LocalInvoicePhysicalVerification::updateOrCreate(
+                            [
+                                'local_invoice_id' => $lockedInv->id,
+                                'revision_number' => $lockedInv->revision_number,
+                                'status' => 'matched',
+                            ],
+                            [
+                                'verified_by' => $cashier->id,
+                                'verified_at' => $receivedAt,
+                                'notes' => $historyNotes,
+                                'created_at' => $receivedAt,
+                            ]
+                        );
+
+                        LocalInvoiceVerification::firstOrCreate(
+                            [
+                                'local_invoice_id' => $lockedInv->id,
+                                'revision_number' => $lockedInv->revision_number,
+                            ],
+                            [
+                                'invoice_check' => LocalInvoiceVerification::CHECK_OK,
+                                'tax_invoice_check' => ($supplierProfile && $supplierProfile->is_pkp) ? LocalInvoiceVerification::CHECK_OK : LocalInvoiceVerification::CHECK_NOT_APPLICABLE,
+                                'po_check' => LocalInvoiceVerification::CHECK_OK,
+                                'delivery_note_check' => ($supplierProfile && $supplierProfile->requiresSuratJalan()) ? LocalInvoiceVerification::CHECK_OK : LocalInvoiceVerification::CHECK_NOT_APPLICABLE,
+                                'gr_check' => LocalInvoiceVerification::CHECK_OK,
+                                'submitted_ppn' => $lockedInv->tax_amount,
+                                'verified_ppn' => $lockedInv->tax_amount,
+                            ]
+                        );
+                    },
+                    'notification_data' => [
+                        'payment_term' => (string) $paymentTermDays,
+                        'due_date' => $dueDate,
+                        'raw_notes' => (string) ($notes ?? ''),
+                    ],
                 ]
             );
-
-            // 4. Initialize Section A & B verification record if not present
-            LocalInvoiceVerification::firstOrCreate(
-                [
-                    'local_invoice_id' => $inv->id,
-                    'revision_number' => $inv->revision_number,
-                ],
-                [
-                    'invoice_check' => LocalInvoiceVerification::CHECK_OK,
-                    'tax_invoice_check' => ($supplierProfile && $supplierProfile->is_pkp) ? LocalInvoiceVerification::CHECK_OK : LocalInvoiceVerification::CHECK_NOT_APPLICABLE,
-                    'po_check' => LocalInvoiceVerification::CHECK_OK,
-                    'delivery_note_check' => ($supplierProfile && $supplierProfile->requiresSuratJalan()) ? LocalInvoiceVerification::CHECK_OK : LocalInvoiceVerification::CHECK_NOT_APPLICABLE,
-                    'gr_check' => LocalInvoiceVerification::CHECK_OK,
-                    'submitted_ppn' => $inv->tax_amount,
-                    'verified_ppn' => $inv->tax_amount,
-                ]
-            );
-
-            // 5. Record status history & send notification
-            $history = $inv->statusHistories()->create([
-                'from_status' => LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT,
-                'to_status' => LocalInvoice::STATUS_UNDER_VERIFICATION,
-                'actor_id' => $cashier->id,
-                'event' => 'physical_received',
-                'notes' => $notes ?: __('local_invoice.history.physical_received', ['payment_term' => $paymentTermDays, 'due_date' => $dueDate]),
-                'created_at' => $receivedAt,
-            ]);
-
-            app(InvoiceNotificationService::class)->send($inv, $history, [
-                'payment_term' => (string) $paymentTermDays,
-                'due_date' => $dueDate,
-                'raw_notes' => (string) ($notes ?? ''),
-            ]);
-
-            return $inv->fresh();
         });
     }
 }

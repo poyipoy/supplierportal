@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Casts\CustomsDocumentStatusCast;
+use App\Enums\CustomsDocumentStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -55,6 +57,18 @@ class ShipmentDocument extends Model
         'document_number',
         'notes',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'status' => CustomsDocumentStatusCast::class,
+        ];
+    }
+
+    public function statusEnum(): CustomsDocumentStatus
+    {
+        return CustomsDocumentStatus::tryFromWithLegacy($this->status ?? self::STATUS_PENDING);
+    }
 
     // ─── Relationships ───
 

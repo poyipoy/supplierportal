@@ -30,7 +30,7 @@ Dengan batas seluruh kategori existing ditambah PO/GR, satu pengiriman dapat mem
 - Periksa konfigurasi **SAPI web**, bukan hanya PHP CLI.
 - `max_file_uploads` harus mengizinkan minimal 18 file; nilai 20 mencukupi batas aplikasi ini.
 - `post_max_size` perlu menampung 90 MiB ditambah overhead multipart; 100M adalah titik awal konfigurasi untuk diuji, bukan bukti kapasitas hosting.
-- `upload_max_filesize` harus menampung 5 MiB per file invoice. Pertahankan batas global yang dibutuhkan modul lain, misalnya upload Master PO/ZIP 50 MiB.
+- `upload_max_filesize` harus menampung 5 MiB per file invoice. Pertahankan batas global yang dibutuhkan modul lain, misalnya upload Master PO/ZIP 20 MB.
 - Cocokkan batas body web server/ModSecurity, waktu proses, direktori sementara, disk/inode, dan kuota akun. Jangan menaikkan atau menonaktifkan batas inspeksi native hanya agar upload lolos.
 - Verifikasi kasus maksimal pada staging dengan sumber daya setara produksi. HTTP 413 harus menjelaskan batas pengiriman, bukan menyatakan berkas wajib belum diisi.
 

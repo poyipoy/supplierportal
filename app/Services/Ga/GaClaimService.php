@@ -2,6 +2,7 @@
 
 namespace App\Services\Ga;
 
+use App\Enums\GaClaimStatus;
 use App\Exceptions\BusinessRuleArgumentException;
 use App\Exceptions\BusinessRuleException;
 use App\Models\Employee;
@@ -146,22 +147,7 @@ class GaClaimService
                 }
 
                 $newRev = $clm->revision_number + 1;
-
-                $clm->update([
-                    'claim_type' => $data['claim_type'],
-                    'claim_date' => $data['claim_date'],
-                    'amount' => app(FinanceConfigurationGuard::class)->amount($data['amount'], 'ga_claim_max_amount', 'amount', '0.01'),
-                    'description' => $data['description'] ?? null,
-                    'status' => GaClaim::STATUS_SUBMITTED,
-                    'revision_number' => $newRev,
-                    'submitted_at' => now(),
-                    'basic_verified_by' => null,
-                    'basic_verified_at' => null,
-                    'finance_verified_by' => null,
-                    'finance_verified_at' => null,
-                    'approved_bank_snapshot' => null,
-                    'approved_bank_hash' => null,
-                ]);
+                $amount = app(FinanceConfigurationGuard::class)->amount($data['amount'], 'ga_claim_max_amount', 'amount', '0.01');
 
                 if ($supportingFile !== null) {
                     $path = 'ga-claims/'.$clm->id.'/revisions/'.$newRev.'/'.$supportingFile->hashName();
@@ -181,14 +167,30 @@ class GaClaimService
                     ]);
                 }
 
-                $clm->statusHistories()->create([
-                    'from_status' => GaClaim::STATUS_NEED_REVISION,
-                    'to_status' => GaClaim::STATUS_SUBMITTED,
-                    'actor_id' => $actor->id,
-                    'event' => 'resubmitted',
-                    'notes' => __('ga.history.resubmitted', ['revision' => $newRev]),
-                    'created_at' => now(),
-                ]);
+                $clm = app(GaClaimStateEngine::class)->transition(
+                    model: $clm,
+                    target: GaClaimStatus::SUBMITTED,
+                    actor: $actor,
+                    reason: __('ga.history.resubmitted', ['revision' => $newRev]),
+                    metadata: [
+                        'event' => 'resubmitted',
+                        'from_status_override' => GaClaim::STATUS_NEED_REVISION,
+                        'attributes' => [
+                            'claim_type' => $data['claim_type'],
+                            'claim_date' => $data['claim_date'],
+                            'amount' => $amount,
+                            'description' => $data['description'] ?? null,
+                            'revision_number' => $newRev,
+                            'submitted_at' => now(),
+                            'basic_verified_by' => null,
+                            'basic_verified_at' => null,
+                            'finance_verified_by' => null,
+                            'finance_verified_at' => null,
+                            'approved_bank_snapshot' => null,
+                            'approved_bank_hash' => null,
+                        ],
+                    ]
+                );
 
                 return $clm->fresh();
             });
@@ -238,20 +240,20 @@ class GaClaimService
 
             app(MakerCheckerService::class)->assertDifferent('ga_basic_verify', $clm, $gaActor, [$clm->submitted_by], $overrideReason, true);
 
-            $clm->update([
-                'status' => GaClaim::STATUS_BASIC_VERIFIED,
-                'basic_verified_by' => $gaActor->id,
-                'basic_verified_at' => now(),
-            ]);
-
-            $clm->statusHistories()->create([
-                'from_status' => GaClaim::STATUS_SUBMITTED,
-                'to_status' => GaClaim::STATUS_BASIC_VERIFIED,
-                'actor_id' => $gaActor->id,
-                'event' => 'basic_verified',
-                'notes' => $notes ?: __('ga.history.basic_verified'),
-                'created_at' => now(),
-            ]);
+            $clm = app(GaClaimStateEngine::class)->transition(
+                model: $clm,
+                target: GaClaimStatus::BASIC_VERIFIED,
+                actor: $gaActor,
+                reason: $notes ?: __('ga.history.basic_verified'),
+                metadata: [
+                    'event' => 'basic_verified',
+                    'from_status_override' => GaClaim::STATUS_SUBMITTED,
+                    'attributes' => [
+                        'basic_verified_by' => $gaActor->id,
+                        'basic_verified_at' => now(),
+                    ],
+                ]
+            );
 
             return $clm->fresh();
         });

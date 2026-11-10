@@ -33,6 +33,28 @@ BLADE);
         $this->assertStringNotContainsString('#', $html, 'Date picker must not introduce raw colour literals.');
     }
 
+    public function test_date_picker_supports_compact_size(): void
+    {
+        $html = Blade::render(<<<'BLADE'
+<x-ui.date-picker name="po_date" id="local_po_date" size="sm" value="2026-11-06" />
+BLADE);
+
+        $this->assertStringContainsString('ui-calendar--sm', $html);
+        $this->assertStringContainsString('ui-calendar-trigger--sm', $html);
+        $this->assertStringContainsString('tw:min-h-[calc(1.5em+0.5rem+2px)]', $html);
+        $this->assertStringNotContainsString('tw:min-h-[var(--ui-control-height-md)]', $html);
+    }
+
+    public function test_local_procurement_form_uses_compact_date_picker_and_aligned_labels(): void
+    {
+        $content = file_get_contents(resource_path('views/finance/local-procurement/form.blade.php'));
+
+        $this->assertStringContainsString('<label for="supplier_id" class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-0">', $content);
+        $this->assertStringContainsString('<label for="local_po_date" class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-0">', $content);
+        $this->assertStringContainsString('id="local_po_date"', $content);
+        $this->assertStringContainsString('size="sm"', $content);
+    }
+
     public function test_date_range_picker_keeps_names_ids_and_range_commit_contract(): void
     {
         $html = Blade::render(<<<'BLADE'

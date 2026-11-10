@@ -10,7 +10,7 @@ Pause affected upload admission while capturing the historical cutovers and inst
 
 ## Existing limits and policies
 
-`config/native_file_security.php` contains domain profiles. The production-default PO ceilings remain 50 MiB uploaded ZIP, 100 raw entries, 100 accepted PDFs and 100 MiB actual expanded bytes. A ZIP PDF can inherit the 100 MiB aggregate compatibility ceiling; individual direct PDF upload remains 50 MiB. Compression ratio alone is not an admission rule.
+`config/native_file_security.php` contains domain profiles. The production-default PO ceilings remain 20 MiB uploaded ZIP, 100 raw entries, 100 accepted PDFs and 100 MiB actual expanded bytes. A ZIP PDF can inherit the 100 MiB aggregate compatibility ceiling; individual direct PDF upload remains 20 MiB. Compression ratio alone is not an admission rule.
 
 Native format rules are stricter than MIME-only validation. They include extension pairing, PDF envelope checks, image dimensions, bounded Office containers/XML and OLE metadata chains. Legacy DOC/XLS active content and PDF client vulnerabilities remain residual risks. ZIP64 is disabled by default; bounded ZIP64 has an explicit test-only compatibility scenario.
 

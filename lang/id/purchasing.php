@@ -2,7 +2,7 @@
 
 return [
     'copy.material_progress_locked_po' => 'Progres material tidak dapat diperbarui untuk pesanan pembelian dengan status :status.',
-    'closure.vendor_list_title' => 'Master Local Supplier - Pengadaan',
+    'closure.vendor_list_title' => 'Master Data Local Supplier - Pengadaan',
     'closure.vendor_title' => 'Detail Supplier :name - Pengadaan',
     'closure.pr_draft' => 'Draf Permintaan Pembelian',
     'closure.quotation_title' => 'Penawaran: :number',
@@ -217,6 +217,9 @@ return [
         'hs_status' => 'Status HS',
         'idr_snapshot' => 'Snapshot IDR',
         'import_data' => 'Impor Data',
+        'batch_update_po_docs' => 'Batch Update Dokumen PO',
+        'apply_to_all_tabs' => 'Terapkan ke Semua Tipe Dokumen',
+        'save_all_po_doc_statuses' => 'Simpan Semua Status Dokumen PO',
         'import_document_completion' => 'Kelengkapan dokumen impor',
         'import_document_tracking' => 'Pemantauan Dokumen Impor',
         'import_documents' => 'Dokumen Impor',
@@ -443,7 +446,7 @@ return [
         'e_g_po_05_2026_001_or_supplier_name' => 'mis. PO/05/2026/001 atau nama supplier...',
         'e_g_prime_grade_ultrasonic_test_e_e_mtc_required' => 'mis. Prime grade, uji ultrasonik E/e, MTC wajib...',
         'e_g_required_delivery_cikarang_plant_strict_thickness_tolerance' => 'mis. Wajib dikirim ke pabrik Cikarang, toleransi ketebalan ketat...',
-        'no_active_master_material_found' => 'Tidak ditemukan master material aktif.',
+        'no_active_master_material_found' => 'Tidak ditemukan master data material aktif.',
         'no_active_upcoming_purchase_orders' => 'Tidak ada PO aktif yang akan tiba.',
         'no_additional_instructions_provided' => 'Tidak ada instruksi tambahan.',
         'no_additional_offer_selections_are_currently_available_for_this_pr' => 'Tidak ada pilihan penawaran tambahan yang tersedia untuk PR ini.',

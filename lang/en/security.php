@@ -85,5 +85,6 @@ return [
     'session_reconnect' => [
         'restored' => 'Session restored. You can continue where you left off.',
         'failed' => 'Could not reach the portal. Check your connection and try again.',
+        'unauthenticated' => 'Session is not active yet. You remain on this page. Please sign in in another tab to continue saving changes.',
     ],
 ];

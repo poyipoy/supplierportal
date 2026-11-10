@@ -8,6 +8,7 @@ use App\Http\Requests\Purchasing\UpdatePoShipmentDocumentStatusRequest;
 use App\Models\PurchaseOrder;
 use App\Services\PoShipmentDocumentStatusService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class PoShipmentDocumentStatusController extends Controller
 {
@@ -26,6 +27,36 @@ class PoShipmentDocumentStatusController extends Controller
                 rows: $request->validated('rows'),
                 target: (string) $request->validated('target_status'),
                 reason: $request->validated('reason'),
+                actor: $request->user(),
+            );
+
+            return response()->json($result);
+        } catch (PoShipmentDocumentBatchRefused $exception) {
+            return response()->json($exception->toPayload(), $exception->httpStatus);
+        }
+    }
+
+    public function batchUpdateMultiType(
+        Request $request,
+        $id,
+        PoShipmentDocumentStatusService $service,
+    ): JsonResponse {
+        $po = PurchaseOrder::findOrFail($id);
+
+        $validated = $request->validate([
+            'documents' => ['required', 'array', 'min:1', 'max:4'],
+            'documents.*.rows' => ['required', 'array', 'min:1', 'max:50'],
+            'documents.*.rows.*.shipment' => ['required', 'string'],
+            'documents.*.rows.*.expected_status' => ['nullable', 'string'],
+            'documents.*.rows.*.expected_attachment' => ['nullable', 'string'],
+            'documents.*.target_status' => ['required', 'string'],
+            'documents.*.reason' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        try {
+            $result = $service->updatePoDocumentsMultiType(
+                po: $po,
+                payloadByDocType: $validated['documents'],
                 actor: $request->user(),
             );
 

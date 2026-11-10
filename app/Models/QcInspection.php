@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Casts\QcInspectionStatusCast;
+use App\Enums\QcInspectionStatus;
 use App\Traits\HasHashids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -14,6 +16,12 @@ class QcInspection extends Model
 {
     use HasFactory, HasHashids, SoftDeletes;
 
+    public const STATUS_PENDING = 'pending';
+
+    public const STATUS_OK = 'ok';
+
+    public const STATUS_NG = 'ng';
+
     protected $fillable = [
         'po_id',
         'shipment_id',
@@ -25,8 +33,14 @@ class QcInspection extends Model
     protected function casts(): array
     {
         return [
+            'status' => QcInspectionStatusCast::class,
             'inspected_at' => 'datetime',
         ];
+    }
+
+    public function statusEnum(): QcInspectionStatus
+    {
+        return QcInspectionStatus::tryFromWithLegacy($this->status ?? self::STATUS_PENDING);
     }
 
     // ─── Relationships ───

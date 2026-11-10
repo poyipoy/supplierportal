@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Casts\LocalInvoiceStatusCast;
+use App\Enums\LocalInvoiceStatus;
 use App\Support\BusinessTime;
 use App\Traits\HasHashids;
 use Illuminate\Database\Eloquent\Builder;
@@ -44,6 +46,7 @@ class LocalInvoice extends Model
     protected function casts(): array
     {
         return [
+            'status' => LocalInvoiceStatusCast::class,
             'invoice_date' => 'date',
             'invoice_amount' => 'decimal:2',
             'tax_amount' => 'decimal:2',
@@ -157,19 +160,24 @@ class LocalInvoice extends Model
         return $this->hasOne(SupplierOverpaymentRefund::class, 'local_invoice_id');
     }
 
+    public function statusEnum(): LocalInvoiceStatus
+    {
+        return LocalInvoiceStatus::tryFromWithLegacy((string) $this->status);
+    }
+
     public function isPaid(): bool
     {
-        return $this->status === self::STATUS_PAID || $this->status === 'COMPLETED';
+        return LocalInvoiceStatus::tryFromWithLegacyOrNull((string) $this->status) === LocalInvoiceStatus::PAID;
     }
 
     public function isExpired(): bool
     {
-        return $this->status === self::STATUS_EXPIRED;
+        return LocalInvoiceStatus::tryFromWithLegacyOrNull((string) $this->status) === LocalInvoiceStatus::EXPIRED;
     }
 
     public function isReadyToPay(): bool
     {
-        return $this->status === self::STATUS_READY_TO_PAY || $this->status === 'APPROVED';
+        return LocalInvoiceStatus::tryFromWithLegacyOrNull((string) $this->status) === LocalInvoiceStatus::READY_TO_PAY;
     }
 
     public function scopeEligibleForPaymentBatch($query)
@@ -202,7 +210,7 @@ class LocalInvoice extends Model
             return __('local_invoice.payment_category.due_soon');
         }
 
-        if ($this->status === 'PAYMENT_SCHEDULED' || $this->scheduled_payment_date) {
+        if (($this->attributes['status'] ?? null) === 'PAYMENT_SCHEDULED' || $this->status === 'PAYMENT_SCHEDULED' || $this->scheduled_payment_date) {
             return __('local_invoice.payment_category.scheduled');
         }
 

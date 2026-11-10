@@ -39,6 +39,19 @@ class LocalPoZipStorageMessageTest extends TestCase
         $this->assertDatabaseCount('local_po_document_batches', 0);
     }
 
+    public function test_twenty_one_mib_zip_is_rejected_by_the_twenty_megabyte_limit_in_both_locales(): void
+    {
+        foreach (['en', 'id'] as $locale) {
+            [$actor, $supplier] = $this->actors('finance', $locale);
+            $this->actingAs($actor)->postJson(route('finance.local-procurement.upload-po'), [
+                'supplier_id' => $supplier->id,
+                'file' => UploadedFile::fake()->create('documents.zip', 20481, 'application/zip'),
+            ])->assertUnprocessable()->assertJsonPath('errors.file.0', trans('local_procurement.validation.po_file_size', [], $locale));
+        }
+        $this->assertNoPublication();
+        $this->assertDatabaseCount('local_po_document_batches', 0);
+    }
+
     public function test_sync_working_storage_limit_returns_localized_file_error_without_publication(): void
     {
         config(['po_documents.async_enabled' => false, 'native_file_security.zip.max_working_bytes' => 1]);

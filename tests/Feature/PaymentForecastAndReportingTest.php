@@ -613,7 +613,98 @@ class PaymentForecastAndReportingTest extends TestCase
         // 5. Export Excel route dispatches export job
         $resExport = $this->actingAs($finance)->post(route('finance.master-invoices.export'));
         $resExport->assertRedirect(route('exports.index'));
-        $resExport->assertSessionHas('success', 'Master invoices export queued.');
+        $resExport->assertSessionHas('success', __('local_invoice.feedback.export_queued'));
+    }
+
+    public function test_master_invoice_supports_server_tabs_and_preserves_filters(): void
+    {
+        [$supplier] = $this->createSupplierWithBank();
+        $finance = User::factory()->create(['role' => 'finance', 'is_active' => true]);
+
+        LocalInvoice::create([
+            'supplier_id' => $supplier->id,
+            'submission_number' => 'SUB-TAB-UNPAID',
+            'invoice_number' => 'INV-TAB-UNPAID',
+            'po_number' => 'PO-TAB-01',
+            'currency' => 'IDR',
+            'invoice_amount' => 4000000,
+            'tax_amount' => 440000,
+            'status' => LocalInvoice::STATUS_READY_TO_PAY,
+            'invoice_date' => '2026-06-10',
+            'submitted_at' => now(),
+        ]);
+
+        LocalInvoice::create([
+            'supplier_id' => $supplier->id,
+            'submission_number' => 'SUB-TAB-PAID',
+            'invoice_number' => 'INV-TAB-PAID',
+            'po_number' => 'PO-TAB-02',
+            'currency' => 'IDR',
+            'invoice_amount' => 7000000,
+            'tax_amount' => 770000,
+            'status' => LocalInvoice::STATUS_PAID,
+            'invoice_date' => '2026-06-12',
+            'paid_at' => now(),
+            'submitted_at' => now(),
+        ]);
+
+        // Full page render includes server-tabs container, nav, content, and form attributes
+        $pageResponse = $this->actingAs($finance)->get(route('finance.master-invoices'));
+        $pageResponse->assertOk()
+            ->assertSee('id="masterInvoicesContainer"', false)
+            ->assertSee('data-server-tabs-container', false)
+            ->assertSee('data-server-tabs-nav', false)
+            ->assertSee('data-server-tabs-content', false)
+            ->assertSee('data-server-tabs-form', false)
+            ->assertSee('data-tab-name="ALL"', false)
+            ->assertSee('data-tab-name="UNPAID"', false)
+            ->assertSee('data-tab-name="PAID"', false)
+            ->assertSee('data-tab-count="ALL"', false)
+            ->assertSee('data-tab-count="UNPAID"', false)
+            ->assertSee('data-tab-count="PAID"', false);
+
+        // Fragment request for UNPAID tab with search filter
+        $unpaidFragment = $this->actingAs($finance)
+            ->withHeaders([
+                'X-Requested-With' => 'XMLHttpRequest',
+                'X-Adasi-Server-Tabs' => '1',
+            ])
+            ->getJson(route('finance.master-invoices', ['payment_status' => 'UNPAID', 'q' => 'INV-TAB']));
+
+        $unpaidFragment->assertOk()
+            ->assertJsonPath('tab', 'UNPAID')
+            ->assertJsonPath('counts.ALL', 2)
+            ->assertJsonPath('counts.UNPAID', 1)
+            ->assertJsonPath('counts.PAID', 1);
+
+        $this->assertStringContainsString('SUB-TAB-UNPAID', $unpaidFragment->json('html'));
+        $this->assertStringNotContainsString('SUB-TAB-PAID', $unpaidFragment->json('html'));
+        $this->assertStringContainsString('name="payment_status"', $unpaidFragment->json('html'));
+        $this->assertStringContainsString('value="UNPAID"', $unpaidFragment->json('html'));
+        $this->assertStringContainsString('q=INV-TAB', $unpaidFragment->json('nav'));
+
+        // Fragment request for PAID tab
+        $paidFragment = $this->actingAs($finance)
+            ->withHeaders([
+                'X-Requested-With' => 'XMLHttpRequest',
+                'X-Adasi-Server-Tabs' => '1',
+            ])
+            ->getJson(route('finance.master-invoices', ['payment_status' => 'PAID']));
+
+        $paidFragment->assertOk()
+            ->assertJsonPath('tab', 'PAID')
+            ->assertJsonPath('counts.PAID', 1);
+        $this->assertStringContainsString('SUB-TAB-PAID', $paidFragment->json('html'));
+        $this->assertStringNotContainsString('SUB-TAB-UNPAID', $paidFragment->json('html'));
+
+        // Unauthorized role is rejected on server-tabs fragment endpoint
+        $this->actingAs($supplier)
+            ->withHeaders([
+                'X-Requested-With' => 'XMLHttpRequest',
+                'X-Adasi-Server-Tabs' => '1',
+            ])
+            ->getJson(route('finance.master-invoices', ['payment_status' => 'UNPAID']))
+            ->assertForbidden();
     }
 
     public function test_supplier_in_app_events_and_no_internal_dates_exposed(): void

@@ -2,6 +2,8 @@
 
 namespace App\Services\VendorMaster;
 
+use App\Enums\SupplierChangeRequestStatus;
+use App\Events\AuthSecurityEvent;
 use App\Models\Supplier;
 use App\Models\SupplierChangeRequest;
 use App\Models\SupplierMasterDocument;
@@ -11,6 +13,7 @@ use App\Services\LocalInvoice\LocalFinanceAuditService;
 use App\Services\NotificationService;
 use App\Support\NotificationDomain;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 use RuntimeException;
@@ -79,7 +82,7 @@ class VendorChangeRequestService
             $request = SupplierChangeRequest::create([
                 'supplier_id' => $user->id,
                 'change_type' => SupplierChangeRequest::TYPE_CONTACT,
-                'current_data_snapshot' => $this->contactSnapshot($user->supplier),
+                'current_data_snapshot' => $this->contactSnapshot($user->supplier, array_keys($contact)),
                 'proposed_data' => $contact,
                 'status' => SupplierChangeRequest::STATUS_PENDING,
                 'requested_by' => $user->id,
@@ -108,7 +111,11 @@ class VendorChangeRequestService
     public function updateContact(User $supplierUser, array $contact, User $actor, string $reason): Supplier
     {
         $this->assertContactReviewer($actor);
+        $companyName = trim((string) ($contact['company_name'] ?? ''));
         $contact = $this->contactFields($contact);
+        if ($companyName !== '') {
+            $contact['company_name'] = $companyName;
+        }
 
         return DB::transaction(function () use ($supplierUser, $contact, $actor, $reason) {
             $user = User::whereKey($supplierUser->id)->lockForUpdate()->firstOrFail();
@@ -119,14 +126,59 @@ class VendorChangeRequestService
             $this->cancelPendingContactRequests($user);
 
             $supplier = Supplier::where('user_id', $user->id)->lockForUpdate()->first()
-                ?? new Supplier(['user_id' => $user->id]);
-            $before = $this->contactSnapshot($supplier->exists ? $supplier : null);
+                ?? new Supplier(['user_id' => $user->id, 'company_name' => $user->name]);
+            $before = $this->contactSnapshot($supplier->exists ? $supplier : null, array_keys($contact));
             $supplier->fill($contact)->save();
+
+            if (isset($contact['company_name']) && $user->name !== $contact['company_name']) {
+                $user->forceFill(['name' => $contact['company_name']])->save();
+            }
 
             app(LocalFinanceAuditService::class)->record($supplier, 'vendor_contact_updated', $actor, $before, $contact, ['reason' => trim($reason)]);
 
             return $supplier;
         });
+    }
+
+    /**
+     * Purchasing registers a new Import supplier directly. The account is active at once with
+     * only the Import scope, and the supplier must replace the initial password on first login.
+     */
+    public function registerImportSupplier(User $actor, array $data): User
+    {
+        $this->assertContactReviewer($actor);
+
+        $user = DB::transaction(function () use ($actor, $data) {
+            $companyName = trim((string) $data['company_name']);
+
+            $user = User::create([
+                'name' => $companyName,
+                'email' => Str::lower(trim((string) $data['email'])),
+                'password' => $data['password'],
+                'role' => 'supplier',
+                'is_active' => true,
+                'account_status' => User::ACCOUNT_STATUS_ACTIVE,
+                'must_change_password' => true,
+            ]);
+
+            $supplier = Supplier::create(['user_id' => $user->id, 'company_name' => $companyName]);
+            $user->supplierScopes()->create(['scope' => 'import']);
+            $user->forgetSupplierScopes();
+
+            app(LocalFinanceAuditService::class)->record($supplier, 'import_supplier_registered', $actor, null, [
+                'company_name' => $companyName,
+                'email' => $user->email,
+                'scope' => 'import',
+            ]);
+
+            return $user;
+        });
+
+        event(new AuthSecurityEvent('password_changed', $user, metadata: ['actor_user_id' => $actor->id, 'reason' => 'import_supplier_create']));
+        app(NotificationService::class)->send($user, 'auth.password_set_by_admin', 'auth:password-set:'.$user->id.':'.$user->auth_session_version,
+            'finance_controls.password_notice_title', 'finance_controls.password_notice_body', route('profile.security'), 'shield');
+
+        return $user;
     }
 
     /**
@@ -229,12 +281,17 @@ class VendorChangeRequestService
                 ], $reviewer, autoVerify: true);
             }
 
-            $req->update([
-                'status' => SupplierChangeRequest::STATUS_APPROVED,
-                'reviewed_by' => $reviewer->id,
-                'reviewed_at' => now(),
-                'review_notes' => $notes,
-            ]);
+            $req = app(SupplierChangeRequestStateEngine::class)->transition(
+                changeRequest: $req,
+                target: SupplierChangeRequestStatus::APPROVED,
+                actor: $reviewer,
+                reason: $notes,
+                attributes: [
+                    'reviewed_by' => $reviewer->id,
+                    'reviewed_at' => now(),
+                    'review_notes' => $notes,
+                ],
+            );
             app(LocalFinanceAuditService::class)->record($req, 'vendor_change_approved', $reviewer, $req->current_data_snapshot, $proposed, ['bank_confirmation_document_id' => $hasBankChange ? $document->id : null, 'review_notes' => $notes]);
 
             return $req->fresh();
@@ -271,12 +328,17 @@ class VendorChangeRequestService
             $supplierUser = $req->supplier;
             $this->assertReviewable($req, $supplierUser, $reviewer);
 
-            $req->update([
-                'status' => SupplierChangeRequest::STATUS_REJECTED,
-                'reviewed_by' => $reviewer->id,
-                'reviewed_at' => now(),
-                'review_notes' => trim($notes),
-            ]);
+            $req = app(SupplierChangeRequestStateEngine::class)->transition(
+                changeRequest: $req,
+                target: SupplierChangeRequestStatus::REJECTED,
+                actor: $reviewer,
+                reason: trim($notes),
+                attributes: [
+                    'reviewed_by' => $reviewer->id,
+                    'reviewed_at' => now(),
+                    'review_notes' => trim($notes),
+                ],
+            );
 
             if ($req->isContactChange()) {
                 $this->notifyContactDecision($req, $supplierUser, 'rejected', ['notes' => trim($notes)]);
@@ -317,56 +379,83 @@ class VendorChangeRequestService
     {
         $supplier = Supplier::where('user_id', $supplierUser->id)->lockForUpdate()->first()
             ?? new Supplier(['user_id' => $supplierUser->id]);
-        $current = $this->contactSnapshot($supplier->exists ? $supplier : null);
+        $proposed = $this->contactFields($req->proposed_data ?? []);
         $snapshot = $req->current_data_snapshot ?? [];
+        $current = $this->contactSnapshot(
+            $supplier->exists ? $supplier : null,
+            array_unique([...SupplierChangeRequest::CONTACT_FIELDS, ...array_keys($snapshot), ...array_keys($proposed)]),
+        );
 
-        foreach (SupplierChangeRequest::CONTACT_FIELDS as $field) {
+        foreach (array_unique([...SupplierChangeRequest::CONTACT_FIELDS, ...array_keys($snapshot)]) as $field) {
             if ((string) ($current[$field] ?? '') !== (string) ($snapshot[$field] ?? '')) {
                 throw new RuntimeException(__('supplier_contact.validation.stale'));
             }
         }
 
-        $proposed = $this->contactFields($req->proposed_data ?? []);
         $supplier->fill($proposed)->save();
 
-        $req->update([
-            'status' => SupplierChangeRequest::STATUS_APPROVED,
-            'reviewed_by' => $reviewer->id,
-            'reviewed_at' => now(),
-            'review_notes' => $notes,
-        ]);
+        $req = app(SupplierChangeRequestStateEngine::class)->transition(
+            changeRequest: $req,
+            target: SupplierChangeRequestStatus::APPROVED,
+            actor: $reviewer,
+            reason: $notes,
+            attributes: [
+                'reviewed_by' => $reviewer->id,
+                'reviewed_at' => now(),
+                'review_notes' => $notes,
+            ],
+        );
         app(LocalFinanceAuditService::class)->record($req, 'vendor_contact_approved', $reviewer, $current, $proposed, ['review_notes' => $notes]);
         $this->notifyContactDecision($req, $supplierUser, 'approved');
 
         return $req->fresh();
     }
 
-    /** @return array{pic_name: string, pic_email: string, pic_phone: string} */
+    /** @return array<string, string> contact person always, company details only when filled in */
     private function contactFields(array $input): array
     {
         $contact = [];
         foreach (SupplierChangeRequest::CONTACT_FIELDS as $field) {
             $contact[$field] = trim((string) ($input[$field] ?? ''));
         }
+        foreach (SupplierChangeRequest::COMPANY_FIELDS as $field) {
+            $value = trim((string) ($input[$field] ?? ''));
+            if ($value !== '') {
+                $contact[$field] = $value;
+            }
+        }
 
         return $contact;
     }
 
-    private function contactSnapshot(?Supplier $supplier): array
+    /** @param list<string>|null $fields */
+    private function contactSnapshot(?Supplier $supplier, ?array $fields = null): array
     {
-        return [
-            'pic_name' => $supplier?->pic_name,
-            'pic_email' => $supplier?->pic_email,
-            'pic_phone' => $supplier?->pic_phone,
-        ];
+        $snapshot = [];
+        foreach ($fields ?? SupplierChangeRequest::CONTACT_FIELDS as $field) {
+            $snapshot[$field] = $supplier?->{$field};
+        }
+
+        return $snapshot;
     }
 
     private function cancelPendingContactRequests(User $user): void
     {
-        SupplierChangeRequest::where('supplier_id', $user->id)
+        $pendingRequests = SupplierChangeRequest::where('supplier_id', $user->id)
             ->contact()
             ->pending()
-            ->update(['status' => SupplierChangeRequest::STATUS_CANCELLED, 'reviewed_at' => now()]);
+            ->lockForUpdate()
+            ->get();
+
+        $engine = app(SupplierChangeRequestStateEngine::class);
+        foreach ($pendingRequests as $pendingRequest) {
+            $engine->transition(
+                changeRequest: $pendingRequest,
+                target: SupplierChangeRequestStatus::CANCELLED,
+                actor: $user,
+                attributes: ['reviewed_at' => now()],
+            );
+        }
     }
 
     private function notifyContactDecision(SupplierChangeRequest $req, User $supplierUser, string $decision, array $replace = []): void

@@ -2330,6 +2330,12 @@ html.js [data-calendar-native-submit] {
         width: 100%;
         cursor: pointer;
     }
+.ui-calendar-trigger--sm,
+.ui-calendar--sm .ui-calendar-trigger {
+        min-height: calc(1.5em + 0.5rem + 2px);
+        height: calc(1.5em + 0.5rem + 2px);
+        padding-block: 0.25rem;
+    }
 .ui-calendar-trigger:hover {
         background: var(--md-surface-container-low);
     }
@@ -2483,6 +2489,111 @@ html.js [data-calendar-native-submit] {
         width: 316px;
         padding: 12px 14px 10px;
     }
+/* Time picker (<x-ui.time-picker>): typed field plus hour/minute listboxes. */
+.ui-time-picker__field {
+        position: relative;
+    }
+.ui-time-picker__input {
+        cursor: text;
+    }
+.ui-time-picker__icon {
+        align-items: center;
+        color: var(--md-on-surface-variant);
+        display: flex;
+        inset-block: 0;
+        inset-inline-end: 0.75rem;
+        pointer-events: none;
+        position: absolute;
+    }
+.ui-time-panel {
+        background: var(--ui-calendar-panel-bg);
+        border: 1px solid var(--ui-calendar-panel-border);
+        border-radius: var(--ui-radius-surface, 6px);
+        box-shadow: var(--ui-shadow-2);
+        color: var(--md-on-surface);
+        opacity: 0;
+        padding: 0.75rem;
+        position: fixed;
+        transform: translateY(-4px);
+        transition: opacity var(--ui-motion-fast) var(--ui-easing-standard), transform var(--ui-motion-fast) var(--ui-easing-standard);
+        width: 13.5rem;
+        z-index: var(--ui-z-calendar);
+    }
+.ui-time-panel[hidden] {
+        display: none !important;
+    }
+.ui-time-panel.is-open {
+        opacity: 1;
+        transform: translateY(0);
+    }
+.ui-time-panel__columns {
+        display: grid;
+        gap: 0.5rem;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+.ui-time-panel__heading {
+        color: var(--md-on-surface-variant);
+        display: block;
+        font-size: var(--ui-font-size-xs, 0.75rem);
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+        text-align: center;
+    }
+.ui-time-panel__list {
+        border: 1px solid var(--md-outline-variant);
+        border-radius: var(--ui-radius-control, 4px);
+        list-style: none;
+        margin: 0;
+        max-height: 13.5rem;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        padding: 0.25rem;
+        scroll-padding-block: 0.25rem;
+    }
+.ui-time-panel__option {
+        align-items: center;
+        border-radius: var(--ui-radius-control, 4px);
+        cursor: pointer;
+        display: flex;
+        font-variant-numeric: tabular-nums;
+        justify-content: center;
+        min-height: 2.25rem;
+        transition: background-color var(--ui-motion-fast) var(--ui-easing-standard), color var(--ui-motion-fast) var(--ui-easing-standard);
+    }
+.ui-time-panel__option:hover {
+        background: var(--md-surface-container);
+    }
+.ui-time-panel__option[aria-selected="true"] {
+        background: var(--md-primary);
+        color: var(--md-on-primary);
+        font-weight: 600;
+    }
+.ui-time-panel__option:focus-visible {
+        outline: 2px solid var(--md-primary);
+        outline-offset: 1px;
+    }
+.ui-time-panel__footer {
+        border-top: 1px solid var(--md-outline-variant);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+        justify-content: flex-end;
+        margin-top: 0.75rem;
+        padding-top: 0.5rem;
+    }
+@media (prefers-reduced-motion: reduce) {
+    .ui-time-panel,
+    .ui-time-panel__option {
+        transition: none;
+    }
+}
+@media (forced-colors: active) {
+    .ui-time-panel__option[aria-selected="true"] {
+        forced-color-adjust: none;
+        background: Highlight;
+        color: HighlightText;
+    }
+}
 .ui-calendar-panel.is-open {
         opacity: 1;
         transform: translateY(0);

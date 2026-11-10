@@ -3,7 +3,9 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
+use App\Support\Security\CspNonce;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Vite;
 use Tests\TestCase;
 
 class SecurityHeadersTest extends TestCase
@@ -25,8 +27,45 @@ class SecurityHeadersTest extends TestCase
         $this->assertStringContainsString("default-src 'self'", $policy);
         $this->assertStringContainsString("'unsafe-inline'", $policy);
         $this->assertStringContainsString("'unsafe-eval'", $policy);
+        $this->assertStringContainsString("'nonce-", $policy);
+        $this->assertStringContainsString('https://cdn.jsdelivr.net', $policy);
+        $this->assertStringContainsString("connect-src 'self' ws: wss: https://challenges.cloudflare.com https://*.pusher.com wss://*.pusher.com https://cdn.jsdelivr.net", $policy);
+        $this->assertStringContainsString('https://cdn.jsdelivr.net', $policy);
+        $this->assertStringContainsString("connect-src 'self' ws: wss: https://challenges.cloudflare.com https://*.pusher.com wss://*.pusher.com https://cdn.jsdelivr.net", $policy);
         $this->assertStringContainsString('no-store', $response->headers->get('Cache-Control'));
         $response->assertHeaderMissing('Strict-Transport-Security');
+    }
+
+    public function test_csp_nonce_is_bound_to_vite_and_included_in_header(): void
+    {
+        $response = $this->get('/login');
+        $response->assertOk();
+
+        $policy = $response->headers->get('Content-Security-Policy');
+        $this->assertMatchesRegularExpression("/'nonce-[A-Za-z0-9+\/]+=*'/", $policy);
+        $this->assertStringContainsString("script-src-attr 'unsafe-inline'", $policy);
+
+        $nonce = app(CspNonce::class)->get();
+        $this->assertStringContainsString("'nonce-{$nonce}'", $policy);
+        $this->assertSame($nonce, Vite::cspNonce());
+
+        $html = $response->getContent();
+        $this->assertStringContainsString('<script nonce="'.e($nonce).'"', $html);
+
+        preg_match_all('/<script\b([^>]*)>/i', $html, $matches);
+        $this->assertNotEmpty($matches[1]);
+        $inlineAndViteCount = 0;
+        foreach ($matches[1] as $attributes) {
+            if (preg_match('/\bsrc\s*=/i', $attributes) && ! str_contains($attributes, '/build/')) {
+                continue;
+            }
+            if (preg_match('/\btype\s*=\s*["\'](?:application\/(?:ld\+)?json|text\/template)["\']/i', $attributes)) {
+                continue;
+            }
+            $this->assertStringContainsString('nonce="'.e($nonce).'"', $attributes);
+            $inlineAndViteCount++;
+        }
+        $this->assertGreaterThanOrEqual(2, $inlineAndViteCount);
     }
 
     public function test_csp_can_be_actively_enforced(): void

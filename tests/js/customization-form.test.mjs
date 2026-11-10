@@ -253,3 +253,15 @@ test('a valid rejected draft starts dirty and uses the same effective preview as
         assert.equal(fixture.form.saveDisabled, false, 'server errors keep retry available');
     } finally { fixture.cleanup(); }
 });
+
+test('unrendered import-only fields (country_code, import_timezone) do not mark non-import customization form dirty on init', () => {
+    const fixture = settingsFixture({ country_code: 'JP', import_timezone: 'Asia/Tokyo' });
+    delete fixture.fields.country_code;
+    delete fixture.fields.import_timezone;
+    try {
+        fixture.form.init();
+        assert.equal(fixture.form.dirtyCount, 0, 'unrendered fields must not count as dirty');
+        assert.equal(fixture.form.saveDisabled, true);
+        assert.equal(fixture.navigation.dirty, false, 'AdasiUnsaved must remain clean on init');
+    } finally { fixture.cleanup(); }
+});

@@ -583,11 +583,22 @@
             >
                 <x-slot:actions>
                     @php
+                        $customsSummary = $customsSummary ?? $po->customsDocumentationSummary();
+                        $customsProgress = $customsProgress ?? $po->customsDocumentationProgress();
+                        $usesShipmentWorkflow = (bool) ($customsProgress['uses_shipment_workflow'] ?? false);
                         $docProgressTone = str_contains($docProgress['class'], 'success') ? 'success' : (str_contains($docProgress['class'], 'danger') ? 'error' : 'warning');
                     @endphp
-                    <span class="ui-status-chip ui-status-chip--{{ $docProgressTone }}" id="docProgressBadge" data-bs-toggle="tooltip" data-bs-title="{{ $docProgress['description'] }}">
-                        {{ $docProgress['label'] }}
-                    </span>
+                    <div class="tw:flex tw:items-center tw:gap-2">
+                        @if($usesShipmentWorkflow)
+                            <x-ui.button type="button" variant="outline" size="sm" id="btnOpenBatchPoDocDialog">
+                                <x-ui.icon name="layers" size="sm" class="me-1" />
+                                <span>{{ __('purchasing.copy.batch_update_po_docs') }}</span>
+                            </x-ui.button>
+                        @endif
+                        <span class="ui-status-chip ui-status-chip--{{ $docProgressTone }}" id="docProgressBadge" data-bs-toggle="tooltip" data-bs-title="{{ $docProgress['description'] }}">
+                            {{ $docProgress['label'] }}
+                        </span>
+                    </div>
                 </x-slot:actions>
 
                 {{-- Progress Bar --}}
@@ -982,6 +993,144 @@
         <x-ui.button type="button" size="sm" id="btnSubmitShipmentDocStatus" disabled>
             <span class="spinner-border spinner-border-sm d-none me-1" id="shipmentDocSpinner" role="status" aria-hidden="true"></span>
             <span>{{ __('documents.sync.submit_button') }}</span>
+        </x-ui.button>
+    </x-slot:actions>
+</x-ui.dialog>
+
+{{-- Batch Multi-Doc PO Tracking Dialog --}}
+<x-ui.dialog
+    name="batch-update-po-docs"
+    maxWidth="4xl"
+    :title="__('purchasing.copy.batch_update_po_docs')"
+    :description="__('purchasing.copy.status_tracking_for_4_mandatory_import_customs_documents_invoice_bill_of_lading_packing_list_and_for')"
+>
+    <div id="batchPoDocDialogRoot" class="tw:space-y-4">
+        {{-- Batch Feedback Alert --}}
+        <div id="batchPoDocDialogFeedback" class="d-none" role="status" aria-live="polite"></div>
+
+        {{-- Global Apply / Quick Batch Controls --}}
+        <div class="tw:rounded-lg tw:border tw:border-outline-variant/80 tw:bg-surface-container-low tw:p-3 tw:space-y-2.5">
+            <div class="tw:flex tw:items-center tw:justify-between tw:gap-2">
+                <span class="tw:text-ui-xs tw:font-semibold tw:text-on-surface">
+                    {{ __('purchasing.copy.apply_to_all_tabs') }}
+                </span>
+                <span class="tw:text-ui-xs tw:text-on-surface-variant ui-tabular-nums" id="batchPoGlobalCounterSummary"></span>
+            </div>
+            <div class="tw:grid tw:grid-cols-1 tw:sm:grid-cols-12 tw:gap-2 tw:items-end">
+                <div class="tw:sm:col-span-4">
+                    <label class="form-label small fw-semibold tw:text-on-surface mb-1" for="batchPoGlobalTargetStatus">
+                        {{ __('purchasing.copy.select_new_status') }}
+                    </label>
+                    <select class="form-select form-select-sm" id="batchPoGlobalTargetStatus">
+                        <option value="" selected disabled>{{ __('documents.sync.select_target_placeholder') }}</option>
+                        <option value="received">{{ \App\Support\StatusHelper::shipmentDocLabel('received') }}</option>
+                        <option value="verified">{{ \App\Support\StatusHelper::shipmentDocLabel('verified') }}</option>
+                    </select>
+                </div>
+                <div class="tw:sm:col-span-5">
+                    <label class="form-label small fw-semibold tw:text-on-surface mb-1" for="batchPoGlobalReason">
+                        {{ __('documents.sync.reason_label') }}
+                    </label>
+                    <input type="text" class="form-control form-control-sm" id="batchPoGlobalReason" maxlength="1000" placeholder="{{ __('documents.sync.reason_placeholder') }}">
+                </div>
+                <div class="tw:sm:col-span-3">
+                    <x-ui.button type="button" variant="outline" size="sm" class="w-100" id="btnApplyGlobalToAllTabs">
+                        <x-ui.icon name="check-check" size="sm" class="me-1" />
+                        <span>{{ __('purchasing.copy.apply_to_all_tabs') }}</span>
+                    </x-ui.button>
+                </div>
+            </div>
+        </div>
+
+        {{-- Tabs Navigation --}}
+        <div class="tw:border-b tw:border-outline-variant/80">
+            <ul class="nav nav-tabs border-0 gap-1" id="batchPoDocNavTabs" role="tablist">
+                @php
+                    $batchTabDefinitions = [
+                        'invoice' => ['label' => __('purchasing.copy.invoice_document'), 'icon' => 'receipt'],
+                        'packing_list' => ['label' => __('purchasing.copy.packing_list'), 'icon' => 'list-checks'],
+                        'bl' => ['label' => __('purchasing.copy.bill_of_lading'), 'icon' => 'truck'],
+                        'form_e' => ['label' => 'Form-E', 'icon' => 'file-badge'],
+                    ];
+                @endphp
+                @foreach($batchTabDefinitions as $docType => $def)
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link {{ $loop->first ? 'active' : '' }} rounded-top-1 tw:text-ui-xs tw:font-semibold"
+                                id="batch-tab-{{ $docType }}"
+                                data-bs-toggle="tab"
+                                data-bs-target="#batch-pane-{{ $docType }}"
+                                type="button"
+                                role="tab"
+                                aria-controls="batch-pane-{{ $docType }}"
+                                aria-selected="{{ $loop->first ? 'true' : 'false' }}">
+                            <x-ui.icon name="{{ $def['icon'] }}" size="sm" class="me-1" />
+                            <span>{{ $def['label'] }}</span>
+                            <span class="badge rounded-pill tw:bg-surface-container-high tw:text-on-surface-variant ms-1" id="batchPoTabBadge_{{ $docType }}">0</span>
+                        </button>
+                    </li>
+                @endforeach
+            </ul>
+        </div>
+
+        {{-- Tab Panes Content --}}
+        <div class="tab-content" id="batchPoDocTabContent">
+            @foreach($batchTabDefinitions as $docType => $def)
+                <div class="tab-pane fade {{ $loop->first ? 'show active' : '' }}"
+                     id="batch-pane-{{ $docType }}"
+                     role="tabpanel"
+                     aria-labelledby="batch-tab-{{ $docType }}"
+                     tabindex="0">
+                    <div class="tw:space-y-3">
+                        <div class="tw:flex tw:items-center tw:justify-between tw:gap-2 tw:rounded-lg tw:border tw:border-outline-variant/80 tw:bg-surface-container-low tw:px-3 tw:py-2">
+                            <span class="tw:text-ui-xs tw:font-semibold tw:text-on-surface ui-tabular-nums" id="batchPoDocSelectionSummary_{{ $docType }}">
+                                {{ __('documents.sync.selection_summary', ['count' => 0]) }}
+                            </span>
+                            <div class="tw:flex tw:items-center tw:gap-1.5">
+                                <x-ui.button type="button" variant="ghost" size="xs" class="btn-select-all-tab" data-doc-type="{{ $docType }}">
+                                    {{ __('purchasing.copy.select_all') }}
+                                </x-ui.button>
+                                <x-ui.button type="button" variant="ghost" size="xs" class="btn-clear-tab" data-doc-type="{{ $docType }}">
+                                    {{ __('purchasing.copy.clear_all') }}
+                                </x-ui.button>
+                            </div>
+                        </div>
+
+                        <div id="batchPoDocRowsContainer_{{ $docType }}" class="tw:space-y-2.5 tw:max-h-64 tw:overflow-y-auto tw:p-0.5" role="group" aria-label="{{ $def['label'] }}"></div>
+
+                        <div class="tw:grid tw:grid-cols-1 tw:sm:grid-cols-12 tw:gap-2 tw:pt-2 tw:border-t tw:border-outline-variant/80 tw:items-start">
+                            <div class="tw:sm:col-span-4">
+                                <label class="form-label small fw-semibold tw:text-on-surface mb-1" for="batchPoTabTarget_{{ $docType }}">
+                                    {{ __('purchasing.copy.select_new_status') }}
+                                </label>
+                                <select class="form-select form-select-sm batch-po-tab-target" id="batchPoTabTarget_{{ $docType }}" data-doc-type="{{ $docType }}">
+                                    <option value="" selected disabled>{{ __('documents.sync.select_target_placeholder') }}</option>
+                                    <option value="received">{{ \App\Support\StatusHelper::shipmentDocLabel('received') }}</option>
+                                    <option value="verified">{{ \App\Support\StatusHelper::shipmentDocLabel('verified') }}</option>
+                                </select>
+                            </div>
+                            <div class="tw:sm:col-span-8">
+                                <label class="form-label small fw-semibold tw:text-on-surface mb-1" for="batchPoTabReason_{{ $docType }}">
+                                    {{ __('documents.sync.reason_label') }}
+                                </label>
+                                <input type="text" class="form-control form-control-sm batch-po-tab-reason" id="batchPoTabReason_{{ $docType }}" data-doc-type="{{ $docType }}" maxlength="1000" placeholder="{{ __('documents.sync.reason_placeholder') }}">
+                                <p id="batchPoTabReasonHint_{{ $docType }}" class="tw:m-0 tw:mt-1 tw:text-ui-xs tw:text-on-surface-variant d-none">
+                                    {{ __('documents.sync.reason_required_hint') }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    </div>
+
+    <x-slot:actions>
+        <x-ui.button type="button" variant="ghost" size="sm" id="btnCancelBatchPoDocDialog" onclick="window.dispatchEvent(new CustomEvent('close-ui-dialog', { detail: 'batch-update-po-docs' }))">
+            {{ __('purchasing.copy.cancel') }}
+        </x-ui.button>
+        <x-ui.button type="button" size="sm" id="btnSubmitBatchPoDocStatus" disabled>
+            <span class="spinner-border spinner-border-sm d-none me-1" id="batchPoDocSpinner" role="status" aria-hidden="true"></span>
+            <span>{{ __('purchasing.copy.save_all_po_doc_statuses') }}</span>
         </x-ui.button>
     </x-slot:actions>
 </x-ui.dialog>
@@ -1720,6 +1869,443 @@
         })
         .catch(() => {
             bodyEl.innerHTML = '<div class="alert alert-danger py-2 px-3">' + window.AdasiI18n.t('purchasing.js.history_failed') + '</div>';
+        });
+    });
+
+    // ==========================================
+    // Batch PO Multi-Doc Tracking Dialog Controller
+    // ==========================================
+    const batchPoDialogState = {
+        docTypes: ['invoice', 'packing_list', 'bl', 'form_e'],
+        updateUrl: @json(route('purchasing.purchase-orders.documents.shipments.batch-update', $po)),
+        dataByDocType: {
+            invoice: { rows: [], selected: new Set(), targetStatus: '', reason: '', rowOutcomes: {} },
+            packing_list: { rows: [], selected: new Set(), targetStatus: '', reason: '', rowOutcomes: {} },
+            bl: { rows: [], selected: new Set(), targetStatus: '', reason: '', rowOutcomes: {} },
+            form_e: { rows: [], selected: new Set(), targetStatus: '', reason: '', rowOutcomes: {} }
+        }
+    };
+
+    function initBatchPoDocDialog() {
+        $('#batchPoDocDialogFeedback').addClass('d-none').empty();
+        $('#batchPoGlobalTargetStatus').val('');
+        $('#batchPoGlobalReason').val('');
+
+        batchPoDialogState.docTypes.forEach(docType => {
+            const docProgress = (customsProgressData.documents && customsProgressData.documents[docType]) || { rows: [] };
+            const tabData = batchPoDialogState.dataByDocType[docType];
+            tabData.rows = Array.isArray(docProgress.rows) ? docProgress.rows.map(r => ({ ...r })) : [];
+            tabData.selected = new Set();
+            tabData.targetStatus = '';
+            tabData.reason = '';
+            tabData.rowOutcomes = {};
+
+            $(`#batchPoTabTarget_${docType}`).val('');
+            $(`#batchPoTabReason_${docType}`).val('');
+            $(`#batchPoTabReasonHint_${docType}`).addClass('d-none');
+
+            renderBatchPoTabRows(docType);
+        });
+
+        syncBatchPoDialogControls();
+
+        const firstTabBtn = document.querySelector('#batchPoDocNavTabs button:first-child');
+        if (firstTabBtn && window.bootstrap && window.bootstrap.Tab) {
+            new window.bootstrap.Tab(firstTabBtn).show();
+        }
+    }
+
+    function renderBatchPoTabRows(docType) {
+        const container = document.getElementById(`batchPoDocRowsContainer_${docType}`);
+        if (!container) return;
+        container.replaceChildren();
+
+        const tabData = batchPoDialogState.dataByDocType[docType];
+
+        if (!tabData.rows || tabData.rows.length === 0) {
+            const emptyEl = document.createElement('div');
+            emptyEl.className = 'tw:text-center tw:py-6 tw:text-on-surface-variant tw:text-ui-xs';
+            emptyEl.textContent = @json(__('purchasing.copy.not_available'));
+            container.appendChild(emptyEl);
+            return;
+        }
+
+        tabData.rows.forEach((row, index) => {
+            const checkboxId = `batch-po-row-${docType}-${index}`;
+            const isChecked = row.eligible && tabData.selected.has(row.shipment);
+            const outcome = tabData.rowOutcomes[row.shipment] || null;
+
+            const card = document.createElement('div');
+            card.className = 'tw:rounded-lg tw:border tw:border-outline-variant/80 tw:bg-surface tw:p-3 tw:space-y-2';
+            card.setAttribute('data-shipment-row', row.shipment);
+
+            const topBar = document.createElement('div');
+            topBar.className = 'tw:flex tw:items-start tw:justify-between tw:gap-3';
+
+            const leftGroup = document.createElement('div');
+            leftGroup.className = 'tw:flex tw:items-start tw:gap-2.5 tw:min-w-0';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = checkboxId;
+            checkbox.className = 'form-check-input mt-1';
+            checkbox.style.minWidth = '1.25rem';
+            checkbox.style.minHeight = '1.25rem';
+            checkbox.value = row.shipment;
+            checkbox.disabled = !row.eligible;
+            checkbox.checked = isChecked;
+
+            const docStatusLabel = shipmentDocStatusLabels[row.status] || row.status;
+            const shpStatusLabel = shipmentStatusLabels[row.shipment_status] || row.shipment_status;
+            checkbox.setAttribute(
+                'aria-label',
+                shipmentDocCopy.checkbox_label
+                    .replace(':shipment_status', shpStatusLabel)
+                    .replace(':doc_status', docStatusLabel)
+                    .replace(':shipment', row.shipment_number)
+            );
+
+            checkbox.addEventListener('change', function() {
+                if (this.checked) {
+                    tabData.selected.add(row.shipment);
+                } else {
+                    tabData.selected.delete(row.shipment);
+                }
+                syncBatchPoDialogControls();
+            });
+
+            const labelWrap = document.createElement('div');
+            labelWrap.className = 'tw:min-w-0';
+
+            const titleRow = document.createElement('div');
+            titleRow.className = 'tw:flex tw:flex-wrap tw:items-center tw:gap-2';
+
+            const labelEl = document.createElement('label');
+            labelEl.htmlFor = checkboxId;
+            labelEl.className = 'tw:text-ui-sm tw:font-semibold tw:text-on-surface tw:cursor-pointer mb-0';
+            labelEl.textContent = row.shipment_number;
+
+            const shpBadge = document.createElement('span');
+            shpBadge.className = `ui-status-chip ${shipmentRowStatusChipClass(row.shipment_status)}`;
+            shpBadge.textContent = shpStatusLabel;
+
+            const shipmentLink = document.createElement('a');
+            shipmentLink.href = row.shipment_url;
+            shipmentLink.className = 'tw:text-ui-xs text-primary text-decoration-none tw:hover:underline';
+            shipmentLink.textContent = `(${shpStatusLabel})`;
+
+            titleRow.append(labelEl, shpBadge, shipmentLink);
+            labelWrap.appendChild(titleRow);
+
+            const fileRow = document.createElement('div');
+            fileRow.className = 'tw:flex tw:flex-wrap tw:items-center tw:gap-2 tw:mt-1 tw:text-ui-xs';
+            if (row.has_file && row.attachment_url) {
+                const fileNameSpan = document.createElement('span');
+                fileNameSpan.className = 'tw:text-on-surface-variant tw:truncate';
+                fileNameSpan.textContent = row.attachment_name || '';
+
+                const viewLink = document.createElement('a');
+                viewLink.href = row.attachment_url;
+                viewLink.target = '_blank';
+                viewLink.rel = 'noopener';
+                viewLink.className = 'fw-semibold text-primary text-decoration-none tw:hover:underline';
+                viewLink.textContent = shipmentDocCopy.view_file;
+
+                fileRow.append(fileNameSpan, viewLink);
+
+                if (row.is_legacy_evidence) {
+                    const legacyChip = document.createElement('span');
+                    legacyChip.className = 'ui-status-chip ui-status-chip--warning';
+                    legacyChip.textContent = shipmentDocCopy.legacy_file;
+                    fileRow.appendChild(legacyChip);
+                }
+            } else {
+                const noFileSpan = document.createElement('span');
+                noFileSpan.className = 'tw:text-on-surface-variant';
+                noFileSpan.textContent = shipmentDocCopy.no_file;
+                fileRow.appendChild(noFileSpan);
+            }
+            labelWrap.appendChild(fileRow);
+
+            if (!row.eligible) {
+                const ineligibleNote = document.createElement('p');
+                ineligibleNote.className = 'tw:m-0 tw:mt-1 tw:text-ui-xs tw:text-on-surface-variant';
+                ineligibleNote.textContent = shipmentDocCopy.ineligible;
+                labelWrap.appendChild(ineligibleNote);
+            }
+
+            if (row.is_multi_po && Array.isArray(row.shared_po_numbers) && row.shared_po_numbers.length > 0) {
+                const multiPoNote = document.createElement('p');
+                multiPoNote.className = 'tw:m-0 tw:mt-1 tw:text-ui-xs text-warning fw-medium';
+                multiPoNote.textContent = shipmentDocCopy.multi_po.replace(':pos', row.shared_po_numbers.join(', '));
+                labelWrap.appendChild(multiPoNote);
+            }
+
+            leftGroup.append(checkbox, labelWrap);
+
+            const rightGroup = document.createElement('div');
+            rightGroup.className = 'tw:flex tw:flex-col tw:items-end tw:gap-1 flex-shrink-0';
+
+            const docChip = document.createElement('span');
+            docChip.className = `ui-status-chip ${shipmentDocStatusChipClass(row.status)}`;
+            docChip.textContent = docStatusLabel;
+            rightGroup.appendChild(docChip);
+
+            if (outcome) {
+                const outcomeChip = document.createElement('span');
+                const outcomeTone = outcome.result === 'updated'
+                    ? 'ui-status-chip--success'
+                    : (outcome.result === 'skipped' ? 'ui-status-chip--neutral' : 'ui-status-chip--error');
+                const outcomeKey = `result_${outcome.result}`;
+                outcomeChip.className = `ui-status-chip ${outcomeTone}`;
+                outcomeChip.textContent = shipmentDocCopy[outcomeKey] || outcome.result;
+                rightGroup.appendChild(outcomeChip);
+            }
+
+            topBar.append(leftGroup, rightGroup);
+            card.appendChild(topBar);
+
+            if (outcome && outcome.message) {
+                const outcomeMsg = document.createElement('p');
+                outcomeMsg.className = 'tw:m-0 tw:pt-1 tw:border-t tw:border-outline-variant/60 tw:text-ui-xs text-danger';
+                outcomeMsg.textContent = outcome.message;
+                card.appendChild(outcomeMsg);
+            }
+
+            container.appendChild(card);
+        });
+    }
+
+    function isReasonRequiredForTab(docType) {
+        const tabData = batchPoDialogState.dataByDocType[docType];
+        const target = tabData.targetStatus;
+        if (!target) return false;
+        const targetRank = statusRanks[target] ?? 0;
+        for (const row of tabData.rows) {
+            if (!row.eligible || !tabData.selected.has(row.shipment)) continue;
+            const currentRank = statusRanks[row.status] ?? 0;
+            if (targetRank <= currentRank && row.status !== target) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function syncBatchPoDialogControls() {
+        let totalSelectedAll = 0;
+        let anyTabConfigured = false;
+        let allConfiguredTabsValid = true;
+
+        batchPoDialogState.docTypes.forEach(docType => {
+            const tabData = batchPoDialogState.dataByDocType[docType];
+            const selectedCount = tabData.selected.size;
+            totalSelectedAll += selectedCount;
+
+            $(`#batchPoDocSelectionSummary_${docType}`).text(
+                shipmentDocCopy.selection_summary.replace(':count', String(selectedCount))
+            );
+            $(`#batchPoTabBadge_${docType}`).text(String(selectedCount));
+
+            const target = tabData.targetStatus;
+            const reason = (tabData.reason || '').trim();
+            const needsReason = isReasonRequiredForTab(docType);
+
+            const $reasonHint = $(`#batchPoTabReasonHint_${docType}`);
+            if (needsReason) {
+                $reasonHint.removeClass('d-none').addClass('text-warning fw-semibold');
+            } else {
+                $reasonHint.addClass('d-none').removeClass('text-warning fw-semibold');
+            }
+
+            if (selectedCount > 0) {
+                anyTabConfigured = true;
+                if (!target || (needsReason && reason.length === 0)) {
+                    allConfiguredTabsValid = false;
+                }
+            }
+        });
+
+        $('#batchPoGlobalCounterSummary').text(
+            shipmentDocCopy.selection_summary.replace(':count', String(totalSelectedAll))
+        );
+
+        const canSubmit = anyTabConfigured && allConfiguredTabsValid;
+        $('#btnSubmitBatchPoDocStatus').prop('disabled', !canSubmit);
+    }
+
+    $('#btnOpenBatchPoDocDialog').on('click', function() {
+        initBatchPoDocDialog();
+        window.dispatchEvent(new CustomEvent('open-ui-dialog', { detail: 'batch-update-po-docs' }));
+    });
+
+    $(document).on('click', '.btn-select-all-tab', function() {
+        const docType = $(this).data('doc-type');
+        const tabData = batchPoDialogState.dataByDocType[docType];
+        if (!tabData) return;
+        tabData.rows.forEach(r => {
+            if (r.eligible) {
+                tabData.selected.add(r.shipment);
+            }
+        });
+        renderBatchPoTabRows(docType);
+        syncBatchPoDialogControls();
+    });
+
+    $(document).on('click', '.btn-clear-tab', function() {
+        const docType = $(this).data('doc-type');
+        const tabData = batchPoDialogState.dataByDocType[docType];
+        if (!tabData) return;
+        tabData.selected.clear();
+        renderBatchPoTabRows(docType);
+        syncBatchPoDialogControls();
+    });
+
+    $(document).on('change', '.batch-po-tab-target', function() {
+        const docType = $(this).data('doc-type');
+        const tabData = batchPoDialogState.dataByDocType[docType];
+        if (!tabData) return;
+        tabData.targetStatus = $(this).val();
+        syncBatchPoDialogControls();
+    });
+
+    $(document).on('input', '.batch-po-tab-reason', function() {
+        const docType = $(this).data('doc-type');
+        const tabData = batchPoDialogState.dataByDocType[docType];
+        if (!tabData) return;
+        tabData.reason = $(this).val();
+        syncBatchPoDialogControls();
+    });
+
+    $('#btnApplyGlobalToAllTabs').on('click', function() {
+        const globalTarget = $('#batchPoGlobalTargetStatus').val();
+        const globalReason = ($('#batchPoGlobalReason').val() || '').trim();
+
+        if (!globalTarget) {
+            return;
+        }
+
+        batchPoDialogState.docTypes.forEach(docType => {
+            const tabData = batchPoDialogState.dataByDocType[docType];
+            tabData.targetStatus = globalTarget;
+            tabData.reason = globalReason;
+            $(`#batchPoTabTarget_${docType}`).val(globalTarget);
+            $(`#batchPoTabReason_${docType}`).val(globalReason);
+
+            if (tabData.selected.size === 0) {
+                tabData.rows.forEach(r => {
+                    if (r.eligible) {
+                        tabData.selected.add(r.shipment);
+                    }
+                });
+                renderBatchPoTabRows(docType);
+            }
+        });
+
+        syncBatchPoDialogControls();
+    });
+
+    $('#btnSubmitBatchPoDocStatus').on('click', function() {
+        const documentsPayload = {};
+
+        batchPoDialogState.docTypes.forEach(docType => {
+            const tabData = batchPoDialogState.dataByDocType[docType];
+            if (tabData.selected.size > 0 && tabData.targetStatus) {
+                const rowsPayload = [];
+                tabData.rows.forEach(row => {
+                    if (row.eligible && tabData.selected.has(row.shipment)) {
+                        rowsPayload.push({
+                            shipment: row.shipment,
+                            expected_status: row.status,
+                            expected_attachment: row.attachment_hash || null
+                        });
+                    }
+                });
+
+                if (rowsPayload.length > 0) {
+                    documentsPayload[docType] = {
+                        target_status: tabData.targetStatus,
+                        reason: (tabData.reason || '').trim() || null,
+                        rows: rowsPayload
+                    };
+                }
+            }
+        });
+
+        if (Object.keys(documentsPayload).length === 0) {
+            return;
+        }
+
+        $('#batchPoDocSpinner').removeClass('d-none');
+        $('#btnSubmitBatchPoDocStatus').prop('disabled', true);
+
+        $.ajax({
+            url: batchPoDialogState.updateUrl,
+            method: 'PUT',
+            contentType: 'application/json',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            },
+            data: JSON.stringify({
+                documents: documentsPayload
+            }),
+            success: function(res) {
+                if (res && res.success) {
+                    AdasiToast.show({
+                        type: 'success',
+                        title: @json(__('common.feedback.success')),
+                        message: res.message,
+                        autoClose: 1500
+                    });
+                    window.location.reload();
+                }
+            },
+            error: function(xhr) {
+                const payload = xhr.responseJSON || {};
+                const message = payload.message || shipmentDocCopy.update_failed;
+
+                batchPoDialogState.docTypes.forEach(docType => {
+                    batchPoDialogState.dataByDocType[docType].rowOutcomes = {};
+                });
+
+                if (Array.isArray(payload.rows)) {
+                    payload.rows.forEach(r => {
+                        if (r && r.doc_type && r.shipment && batchPoDialogState.dataByDocType[r.doc_type]) {
+                            batchPoDialogState.dataByDocType[r.doc_type].rowOutcomes[r.shipment] = r;
+                        }
+                    });
+                }
+
+                if (payload.projection && payload.projection.documents) {
+                    Object.assign(customsProgressData.documents, payload.projection.documents);
+                    batchPoDialogState.docTypes.forEach(docType => {
+                        const docProgress = customsProgressData.documents[docType] || { rows: [] };
+                        const tabData = batchPoDialogState.dataByDocType[docType];
+                        tabData.rows = Array.isArray(docProgress.rows) ? docProgress.rows.map(r => ({ ...r })) : [];
+                        const eligibleSet = new Set(tabData.rows.filter(r => r.eligible).map(r => r.shipment));
+                        for (const s of Array.from(tabData.selected)) {
+                            if (!eligibleSet.has(s)) {
+                                tabData.selected.delete(s);
+                            }
+                        }
+                    });
+                }
+
+                const $feedback = $('#batchPoDocDialogFeedback');
+                $feedback
+                    .removeClass('d-none')
+                    .attr('class', 'tw:rounded-lg tw:border tw:border-error/40 tw:bg-error-container/20 tw:p-3 tw:text-ui-xs text-danger')
+                    .text(message);
+
+                batchPoDialogState.docTypes.forEach(docType => {
+                    renderBatchPoTabRows(docType);
+                });
+                syncBatchPoDialogControls();
+            },
+            complete: function() {
+                $('#batchPoDocSpinner').addClass('d-none');
+                syncBatchPoDialogControls();
+            }
         });
     });
 </script>

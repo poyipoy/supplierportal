@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Casts\PaymentGroupStatusCast;
+use App\Enums\PaymentGroupStatus;
 use App\Support\BankTransferMapping;
 use App\Traits\HasHashids;
 use Illuminate\Database\Eloquent\Model;
@@ -29,6 +31,7 @@ class PaymentGroup extends Model
     protected function casts(): array
     {
         return [
+            'status' => PaymentGroupStatusCast::class,
             'subtotal_amount' => 'decimal:2',
             'bank_fee' => 'decimal:2',
             'net_payment_amount' => 'decimal:2',
@@ -36,6 +39,11 @@ class PaymentGroup extends Model
             'voucher_date' => 'date',
             'paid_at' => 'datetime',
         ];
+    }
+
+    public function statusEnum(): PaymentGroupStatus
+    {
+        return PaymentGroupStatus::tryFromWithLegacy($this->status ?? self::STATUS_UNPAID);
     }
 
     public function batch(): BelongsTo
@@ -58,14 +66,19 @@ class PaymentGroup extends Model
         return $this->belongsTo(User::class, 'paid_by');
     }
 
+    public function isUnpaid(): bool
+    {
+        return $this->statusEnum() === PaymentGroupStatus::UNPAID;
+    }
+
     public function isPaid(): bool
     {
-        return $this->status === self::STATUS_PAID;
+        return $this->statusEnum() === PaymentGroupStatus::PAID;
     }
 
     public function isCancelled(): bool
     {
-        return $this->status === self::STATUS_CANCELLED;
+        return $this->statusEnum() === PaymentGroupStatus::CANCELLED;
     }
 
     public function isBca(): bool

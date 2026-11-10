@@ -17,7 +17,7 @@
     const SUBMITTER_MIRROR_ATTR = 'data-submit-submitter-mirror';
     const MANAGED_SUBMIT_ATTR = 'data-managed-submit';
     const NO_AUTO_SPINNER_ATTR = 'data-no-auto-spinner';
-    const TIMEOUT_MS = 12000;
+    const TIMEOUT_MS = 60000;
 
     /**
      * Create the accessible .ui-spinner element
@@ -206,6 +206,7 @@
 
     // Expose public API
     window.AdasiButton = {
+        TIMEOUT_MS,
         startLoading,
         stopLoading,
         resetForm,

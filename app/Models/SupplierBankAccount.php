@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Casts\SupplierBankAccountStatusCast;
+use App\Enums\SupplierBankAccountStatus;
 use App\Support\BankTransferMapping;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -32,10 +34,16 @@ class SupplierBankAccount extends Model
     protected function casts(): array
     {
         return [
+            'status' => SupplierBankAccountStatusCast::class,
             'verified_at' => 'datetime',
             'activated_at' => 'datetime',
             'deactivated_at' => 'datetime',
         ];
+    }
+
+    public function statusEnum(): SupplierBankAccountStatus
+    {
+        return SupplierBankAccountStatus::tryFromWithLegacy($this->status ?? self::STATUS_PENDING);
     }
 
     // ─── Relationships ───

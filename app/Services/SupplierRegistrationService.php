@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Enums\SupplierBankAccountStatus;
+use App\Enums\SupplierRegistrationAttemptStatus;
 use App\Exceptions\DuplicateSupplierRegistration;
 use App\Models\Supplier;
 use App\Models\SupplierBankAccount;
@@ -13,6 +15,7 @@ use App\Models\User;
 use App\Services\FileSecurity\FileAccessGuard;
 use App\Services\FileSecurity\FileInspectionService;
 use App\Services\LocalInvoice\LocalFinanceAuditService;
+use App\Services\VendorMaster\SupplierRegistrationAttemptStateEngine;
 use App\Services\VendorMaster\VendorMasterService;
 use App\Support\BusinessTime;
 use App\Support\NotificationCategory;
@@ -439,19 +442,23 @@ class SupplierRegistrationService
                 // Update Bank Account
                 $bankAccount = $user->supplierBankAccounts()->latest()->first();
                 if ($bankAccount) {
-                    $bankAccount->update([
+                    $bankUpdates = [
                         'bank_name' => $data['bank_name'],
                         'account_number' => $data['account_number'],
                         'account_holder_name' => $data['account_holder_name'],
-                        'status' => SupplierBankAccount::STATUS_PENDING,
-                    ]);
+                    ];
+                    if ($bankAccount->status !== SupplierBankAccount::STATUS_PENDING) {
+                        $bankAccount->fill($bankUpdates)->save();
+                    } else {
+                        $bankAccount->update($bankUpdates);
+                    }
                 } else {
                     $bankAccount = SupplierBankAccount::create([
                         'supplier_id' => $user->id,
                         'bank_name' => $data['bank_name'],
                         'account_number' => $data['account_number'],
                         'account_holder_name' => $data['account_holder_name'],
-                        'status' => SupplierBankAccount::STATUS_PENDING,
+                        'status' => SupplierBankAccountStatus::PENDING->value,
                     ]);
                 }
 
@@ -564,12 +571,17 @@ class SupplierRegistrationService
                 throw new \DomainException(__('local_procurement.registration.request_pending'));
             }
 
-            $attempt->update([
-                'status' => SupplierRegistrationAttempt::STATUS_REVISION,
-                'reviewed_by' => $reviewer->id,
-                'reviewed_at' => now(),
-                'revision_reason' => $reason,
-            ]);
+            $attempt = app(SupplierRegistrationAttemptStateEngine::class)->transition(
+                attempt: $attempt,
+                target: SupplierRegistrationAttemptStatus::REVISION,
+                actor: $reviewer,
+                reason: $reason,
+                attributes: [
+                    'reviewed_by' => $reviewer->id,
+                    'reviewed_at' => now(),
+                    'revision_reason' => $reason,
+                ],
+            );
 
             $user->update(['account_status' => User::ACCOUNT_STATUS_REVISION]);
 
@@ -610,13 +622,18 @@ class SupplierRegistrationService
                 throw new \DomainException(__('local_procurement.registration.reject_status'));
             }
 
-            $attempt->update([
-                'status' => SupplierRegistrationAttempt::STATUS_REJECTED,
-                'reviewed_by' => $reviewer->id,
-                'reviewed_at' => now(),
-                'rejection_reason' => $reason,
-                'rejected_at' => now(),
-            ]);
+            $attempt = app(SupplierRegistrationAttemptStateEngine::class)->transition(
+                attempt: $attempt,
+                target: SupplierRegistrationAttemptStatus::REJECTED,
+                actor: $reviewer,
+                reason: $reason,
+                attributes: [
+                    'reviewed_by' => $reviewer->id,
+                    'reviewed_at' => now(),
+                    'rejection_reason' => $reason,
+                    'rejected_at' => now(),
+                ],
+            );
 
             $user->update([
                 'account_status' => User::ACCOUNT_STATUS_REJECTED,
@@ -667,8 +684,8 @@ class SupplierRegistrationService
     public function approveRegistration(
         SupplierRegistrationAttempt $attempt,
         User $reviewer,
-        array $scopes,
-        string $vendorCategory,
+        array $scopes = [Supplier::SCOPE_LOCAL],
+        string $vendorCategory = '',
         ?string $notes = null,
         bool $confirmBankDeclaration = false,
     ): SupplierRegistrationAttempt {
@@ -694,12 +711,17 @@ class SupplierRegistrationService
             }
 
             // 1. Transition attempt to APPROVED
-            $attempt->update([
-                'status' => SupplierRegistrationAttempt::STATUS_APPROVED,
-                'reviewed_by' => $reviewer->id,
-                'reviewed_at' => now(),
-                'approved_at' => now(),
-            ]);
+            $attempt = app(SupplierRegistrationAttemptStateEngine::class)->transition(
+                attempt: $attempt,
+                target: SupplierRegistrationAttemptStatus::APPROVED,
+                actor: $reviewer,
+                reason: $notes,
+                attributes: [
+                    'reviewed_by' => $reviewer->id,
+                    'reviewed_at' => now(),
+                    'approved_at' => now(),
+                ],
+            );
 
             // 2. Activate user
             $user->update([

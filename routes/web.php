@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\AnnouncementController;
 use App\Http\Controllers\Admin\AuthAuditLogController;
 use App\Http\Controllers\Admin\ExchangeRateController;
 use App\Http\Controllers\Admin\HsCodeRuleController;
+use App\Http\Controllers\Admin\MaintenanceController;
 use App\Http\Controllers\Admin\MaterialHsCodeController;
 use App\Http\Controllers\Admin\MaterialMasterController;
 use App\Http\Controllers\Admin\PurchaseRequisitionController;
@@ -59,7 +60,9 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Purchasing\AwardConsolidationController;
 use App\Http\Controllers\Purchasing\ConversationController;
 use App\Http\Controllers\Purchasing\ExportController;
+use App\Http\Controllers\Purchasing\HistoricalPriceComparisonController;
 use App\Http\Controllers\Purchasing\ImportSupplierController;
+use App\Http\Controllers\Purchasing\InterSupplierComparisonController;
 use App\Http\Controllers\Purchasing\MaterialCalculationController;
 use App\Http\Controllers\Purchasing\MaterialClaimController;
 use App\Http\Controllers\Purchasing\MaterialMasterSearchController;
@@ -69,7 +72,7 @@ use App\Http\Controllers\Purchasing\PeriodController;
 use App\Http\Controllers\Purchasing\PoDocumentController;
 use App\Http\Controllers\Purchasing\PoItemProgressController;
 use App\Http\Controllers\Purchasing\PoShipmentDocumentStatusController;
-use App\Http\Controllers\Purchasing\PriceComparisonController;
+use App\Http\Controllers\Purchasing\PriceComparisonAwardController;
 use App\Http\Controllers\Purchasing\PrItemController;
 use App\Http\Controllers\Purchasing\PurchaseOrderController;
 use App\Http\Controllers\Purchasing\PurchaseRequisitionSupplierController;
@@ -80,6 +83,7 @@ use App\Http\Controllers\Purchasing\QuotationListController;
 use App\Http\Controllers\Purchasing\ReportController;
 use App\Http\Controllers\Purchasing\ShipmentController;
 use App\Http\Controllers\Purchasing\SupplierAuditController as PurchasingSupplierAuditController;
+use App\Http\Controllers\Purchasing\VsBestPriceComparisonController;
 use App\Http\Controllers\Qc\DashboardController;
 use App\Http\Controllers\Qc\QcExportController;
 use App\Http\Controllers\Qc\QcInspectionController;
@@ -128,6 +132,8 @@ Route::prefix(PortalPath::prefix())->group(function () {
         Route::post('/invoices/{invoice}/resubmit', [LocalSupplierInvoiceController::class, 'resubmit'])->middleware('throttle:30,1')->name('invoices.resubmit');
         Route::post('/invoices/{invoice}/cancel', [LocalSupplierInvoiceController::class, 'cancel'])->middleware('throttle:30,1')->name('invoices.cancel');
         Route::get('/invoices/{invoice}/receipt', [LocalInvoiceReceiptController::class, 'show'])->name('invoices.receipt');
+        // Name ends in ".print" so LimitOperationalRequests applies the pdf budget.
+        Route::get('/invoices/{invoice}/receipt/print', [LocalInvoiceReceiptController::class, 'pdf'])->name('invoices.receipt.print');
         Route::get('/vendor-profile', [VendorProfileController::class, 'show'])->name('vendor-profile.show');
         Route::post('/vendor-profile/change-requests', [VendorProfileController::class, 'storeChangeRequest'])->name('vendor-profile.change-requests.store');
         Route::post('/vendor-profile/documents', [VendorProfileController::class, 'uploadDocument'])->name('vendor-profile.documents.upload');
@@ -155,6 +161,7 @@ Route::prefix(PortalPath::prefix())->group(function () {
         Route::get('/payment-schedule', [AccountingInvoiceController::class, 'index'])->name('payment-schedule');
         Route::get('/invoices/{invoice}', [AccountingInvoiceController::class, 'show'])->name('invoices.show');
         Route::get('/invoices/{invoice}/receipt', [LocalInvoiceReceiptController::class, 'show'])->name('invoices.receipt');
+        Route::get('/invoices/{invoice}/receipt/print', [LocalInvoiceReceiptController::class, 'pdf'])->name('invoices.receipt.print');
         Route::get('/reports', [AccountingReportController::class, 'index'])->name('reports');
         Route::post('/reports/export', [AccountingReportController::class, 'export'])->name('reports.export');
     });
@@ -166,6 +173,7 @@ Route::prefix(PortalPath::prefix())->group(function () {
     */
     Route::middleware(['auth', 'role:finance,admin,purchasing'])->prefix('finance')->name('finance.')->group(function () {
         Route::get('/invoices/{invoice}/receipt', [LocalInvoiceReceiptController::class, 'show'])->name('invoices.receipt');
+        Route::get('/invoices/{invoice}/receipt/print', [LocalInvoiceReceiptController::class, 'pdf'])->name('invoices.receipt.print');
     });
 
     Route::middleware(['auth', 'role:finance,admin'])->prefix('finance')->name('finance.')->group(function () {
@@ -284,6 +292,7 @@ Route::prefix(PortalPath::prefix())->group(function () {
     */
     Route::middleware(['auth', 'role:ga,admin,finance'])->prefix('ga')->name('ga.')->group(function () {
         Route::get('/claims/{claim}/receipt', [GaController::class, 'receipt'])->name('claims.receipt');
+        Route::get('/claims/{claim}/receipt/print', [GaController::class, 'receiptPdf'])->name('claims.receipt.print');
     });
 
     Route::middleware(['auth', 'role:ga,admin'])->prefix('ga')->name('ga.')->group(function () {
@@ -481,6 +490,18 @@ Route::prefix(PortalPath::prefix())->group(function () {
         // Pengumuman
         Route::resource('announcements', AnnouncementController::class);
         Route::post('/announcements/{announcement}/toggle-publish', [AnnouncementController::class, 'togglePublish'])->name('announcements.toggle-publish');
+
+        // Supplier Portal maintenance (Global / Module). The detail page also opens soft-deleted records.
+        Route::get('/maintenance', [MaintenanceController::class, 'index'])->name('maintenance.index');
+        Route::get('/maintenance/create', [MaintenanceController::class, 'create'])->name('maintenance.create');
+        Route::post('/maintenance', [MaintenanceController::class, 'store'])->name('maintenance.store');
+        Route::get('/maintenance/{maintenance}', [MaintenanceController::class, 'show'])->withTrashed()->name('maintenance.show');
+        Route::get('/maintenance/{maintenance}/edit', [MaintenanceController::class, 'edit'])->name('maintenance.edit');
+        Route::put('/maintenance/{maintenance}', [MaintenanceController::class, 'update'])->name('maintenance.update');
+        Route::delete('/maintenance/{maintenance}', [MaintenanceController::class, 'destroy'])->name('maintenance.destroy');
+        Route::post('/maintenance/{maintenance}/activate', [MaintenanceController::class, 'activate'])->name('maintenance.activate');
+        Route::post('/maintenance/{maintenance}/deactivate', [MaintenanceController::class, 'deactivate'])->name('maintenance.deactivate');
+        Route::post('/maintenance/{maintenance}/modules/{module}/deactivate', [MaintenanceController::class, 'deactivateModule'])->name('maintenance.modules.deactivate');
     });
 
     /*
@@ -553,12 +574,17 @@ Route::prefix(PortalPath::prefix())->group(function () {
         Route::get('/purchase-orders/{id}', [PurchaseOrderController::class, 'show'])->name('purchase-orders.show');
         Route::get('/purchase-orders/{po_id}/items/{award_id}/progress/history', [PoItemProgressController::class, 'history'])->name('purchase-orders.item-progress.history');
         Route::post('/purchase-orders/{id}/confirm-arrival', [PurchaseOrderController::class, 'confirmArrival'])->name('purchase-orders.confirm-arrival');
+        Route::put('/purchase-orders/{id}/documents/shipments/batch-update', [PoShipmentDocumentStatusController::class, 'batchUpdateMultiType'])
+            ->middleware('throttle:30,1')
+            ->name('purchase-orders.documents.shipments.batch-update');
         Route::put('/purchase-orders/{id}/documents/{doc_type}/shipments', PoShipmentDocumentStatusController::class)
             ->middleware('throttle:30,1')
             ->whereIn('doc_type', ShipmentDocument::DOC_TYPES)
             ->name('purchase-orders.documents.shipments.update');
         Route::resource('shipments', ShipmentController::class)->only(['index', 'show']);
         Route::post('/shipments/{id}/confirm-arrival', [ShipmentController::class, 'confirmArrival'])->name('shipments.confirm-arrival');
+        Route::put('/shipments/{id}/documents/batch-status', [ShipmentController::class, 'updateDocumentStatusesBatch'])->name('shipments.documents.batch-status');
+        Route::post('/shipments/{id}/documents/verify-all', [ShipmentController::class, 'verifyAllDocuments'])->name('shipments.documents.verify-all');
         Route::put('/shipments/{id}/documents/{document_id}/status', [ShipmentController::class, 'updateDocumentStatus'])->name('shipments.documents.status');
         Route::put('/po-documents/{id}', [PoDocumentController::class, 'update'])->name('po-documents.update');
         Route::get('/claims/data-action', [MaterialClaimController::class, 'dataActionNeeded'])->name('claims.data-action');
@@ -579,12 +605,12 @@ Route::prefix(PortalPath::prefix())->group(function () {
         Route::post('/quotations/{id}/generate-po', [QuotationListController::class, 'generatePo'])->name('quotations.generate-po');
         Route::get('/quotations/{id}', [QuotationListController::class, 'show'])->name('quotations.show');
         // Perbandingan Harga
-        Route::get('/comparison/inter-supplier', [PriceComparisonController::class, 'interSupplier'])->name('comparison.inter-supplier');
-        Route::get('/comparison/historical', [PriceComparisonController::class, 'historical'])->name('comparison.historical');
-        Route::get('/comparison/historical/materials', [PriceComparisonController::class, 'historicalMaterials'])->name('comparison.historical.materials');
-        Route::get('/comparison/vs-best', [PriceComparisonController::class, 'vsBestPrice'])->name('comparison.vs-best');
-        Route::get('/comparison/vs-best/data', [PriceComparisonController::class, 'vsBestPriceData'])->name('comparison.vs-best.data');
-        Route::post('/comparison/awards', [PriceComparisonController::class, 'saveItemAwards'])->name('comparison.save-awards');
+        Route::get('/comparison/inter-supplier', [InterSupplierComparisonController::class, 'interSupplier'])->name('comparison.inter-supplier');
+        Route::get('/comparison/historical', [HistoricalPriceComparisonController::class, 'historical'])->name('comparison.historical');
+        Route::get('/comparison/historical/materials', [HistoricalPriceComparisonController::class, 'historicalMaterials'])->name('comparison.historical.materials');
+        Route::get('/comparison/vs-best', [VsBestPriceComparisonController::class, 'vsBestPrice'])->name('comparison.vs-best');
+        Route::get('/comparison/vs-best/data', [VsBestPriceComparisonController::class, 'vsBestPriceData'])->name('comparison.vs-best.data');
+        Route::post('/comparison/awards', [PriceComparisonAwardController::class, 'saveItemAwards'])->name('comparison.save-awards');
         Route::get('/comparison/{pr_id}', function ($pr_id) {
             $requisition = PurchaseRequisition::findOrFail($pr_id);
 
@@ -618,6 +644,8 @@ Route::prefix(PortalPath::prefix())->group(function () {
         Route::get('/local-invoices/{invoice}', [PurchasingLocalVendorController::class, 'showInvoice'])->name('local-invoices.show');
         // Import supplier directory & contact person review
         Route::get('/import-suppliers', [ImportSupplierController::class, 'index'])->name('import-suppliers.index');
+        Route::get('/import-suppliers/create', [ImportSupplierController::class, 'create'])->name('import-suppliers.create');
+        Route::post('/import-suppliers', [ImportSupplierController::class, 'store'])->middleware('throttle:20,1')->name('import-suppliers.store');
         Route::post('/import-suppliers/contact-requests/{changeRequest}/approve', [ImportSupplierController::class, 'approve'])->middleware('throttle:30,1')->name('import-suppliers.contact-requests.approve');
         Route::post('/import-suppliers/contact-requests/{changeRequest}/reject', [ImportSupplierController::class, 'reject'])->middleware('throttle:30,1')->name('import-suppliers.contact-requests.reject');
         Route::get('/import-suppliers/{vendor}', [ImportSupplierController::class, 'show'])->name('import-suppliers.show');
@@ -714,6 +742,7 @@ Route::prefix(PortalPath::prefix())->group(function () {
             ->only(['index', 'create', 'store', 'show', 'edit', 'update']);
         Route::post('/shipments/{id}/submit', [SupplierShipmentController::class, 'submit'])->name('shipments.submit');
         Route::post('/shipments/{id}/cancel', [SupplierShipmentController::class, 'cancel'])->name('shipments.cancel');
+        Route::post('/shipments/{id}/documents/batch', [SupplierShipmentController::class, 'uploadDocumentsBatch'])->name('shipments.documents.batch-upload');
         Route::post('/shipments/{id}/documents/{document_id}', [SupplierShipmentController::class, 'uploadDocument'])->name('shipments.documents.upload');
         // Mission 05 (Q6B): shipment MTC. Status allow-lists live in ShipmentService.
         Route::post('/shipments/{id}/mtc', [SupplierShipmentController::class, 'storeMtc'])->name('shipments.mtc.store');

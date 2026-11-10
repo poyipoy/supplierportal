@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\QuotationStatus;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\NotificationMute;
@@ -12,6 +13,7 @@ use App\Models\User;
 use App\Services\FileSecurity\FileInspectionService;
 use App\Services\NotificationPreferenceService;
 use App\Services\NotificationService;
+use App\Services\Procurement\QuotationStateEngine;
 use App\Support\BusinessTime;
 use App\Support\ConversationPresenter;
 use App\Support\NotificationCategory;
@@ -493,12 +495,18 @@ class ConversationMessageController extends Controller
             ]);
         }
 
-        $quotation->update([
-            'status' => Quotation::STATUS_REVISION_REQUESTED,
-            'reviewed_at' => now(),
-            'reviewed_by' => auth()->id(),
-            'reviewer_notes' => $note,
-        ]);
+        app(QuotationStateEngine::class)->transition(
+            model: $quotation,
+            target: QuotationStatus::REVISION_REQUESTED,
+            actor: auth()->user(),
+            metadata: [
+                'attributes' => [
+                    'reviewed_at' => now(),
+                    'reviewed_by' => auth()->id(),
+                    'reviewer_notes' => $note,
+                ],
+            ]
+        );
 
         $message = $conversation->messages()->create([
             'sender_id' => auth()->id(),
@@ -536,11 +544,17 @@ class ConversationMessageController extends Controller
             ]);
         }
 
-        $quotation->update([
-            'status' => Quotation::STATUS_ACCEPTED,
-            'reviewed_at' => now(),
-            'reviewed_by' => auth()->id(),
-        ]);
+        app(QuotationStateEngine::class)->transition(
+            model: $quotation,
+            target: QuotationStatus::ACCEPTED,
+            actor: auth()->user(),
+            metadata: [
+                'attributes' => [
+                    'reviewed_at' => now(),
+                    'reviewed_by' => auth()->id(),
+                ],
+            ]
+        );
 
         $message = $conversation->messages()->create([
             'sender_id' => auth()->id(),
@@ -566,12 +580,18 @@ class ConversationMessageController extends Controller
             ]);
         }
 
-        $quotation->update([
-            'status' => Quotation::STATUS_REJECTED,
-            'reviewed_at' => now(),
-            'reviewed_by' => auth()->id(),
-            'reviewer_notes' => $note,
-        ]);
+        app(QuotationStateEngine::class)->transition(
+            model: $quotation,
+            target: QuotationStatus::REJECTED,
+            actor: auth()->user(),
+            metadata: [
+                'attributes' => [
+                    'reviewed_at' => now(),
+                    'reviewed_by' => auth()->id(),
+                    'reviewer_notes' => $note,
+                ],
+            ]
+        );
 
         $message = $conversation->messages()->create([
             'sender_id' => auth()->id(),

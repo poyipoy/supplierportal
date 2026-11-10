@@ -165,7 +165,9 @@ class PresentationLayerTimezoneTest extends TestCase
 
         $qcView = view('pdf.qc-inspection-pdf', ['inspection' => $inspection])->render();
         $this->assertStringContainsString('25 October 2026, 11:30', $qcView);
-        $this->assertStringContainsString('28 October 2026, 10:00 WIB', $qcView);
+        // The generated-at footer was removed from the form on 7 November 2026;
+        // the inspection timestamp is the remaining business-time value.
+        $this->assertStringNotContainsString('generated automatically', $qcView);
         $this->assertStringNotContainsString('WIB WIB', $qcView);
 
         $poView = view('pdf.po-pdf', ['po' => $po])->render();
@@ -178,7 +180,11 @@ class PresentationLayerTimezoneTest extends TestCase
         app()->setLocale('id');
         $qcViewId = view('pdf.qc-inspection-pdf', ['inspection' => $inspection])->render();
         $poViewId = view('pdf.po-pdf', ['po' => $po])->render();
-        $this->assertStringContainsString('25 Oktober 2026, 11:30', $qcViewId);
+        // The QC report is a fixed English form like the PO: neither the locale
+        // nor the user's regional preferences may change what it prints.
+        $this->assertStringContainsString('25 October 2026, 11:30', $qcViewId);
+        $this->assertStringNotContainsString('25 Oktober 2026', $qcViewId);
+        $this->assertSame($qcView, $qcViewId);
         $this->assertSame($poView, $poViewId);
         $this->assertStringNotContainsString('2026-10-20', $poViewId, 'The fixed PDF date pattern must not inherit a user ISO preference.');
         $this->assertStringContainsString('20 Oct 2026', $poViewId);

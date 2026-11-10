@@ -39,6 +39,12 @@ Schedule::command('supplier-audits:notify-invoice-blocked')
     ->timezone(config('app.business_timezone', 'Asia/Jakarta'))
     ->withoutOverlapping();
 
+// Enforcement already treats due schedules as active; this only persists the transition.
+Schedule::command('maintenance:activate-due')
+    ->everyMinute()
+    ->timezone(config('app.business_timezone', 'Asia/Jakarta'))
+    ->withoutOverlapping();
+
 Schedule::command('po-documents:reconcile')
     ->everyMinute()
     ->withoutOverlapping();

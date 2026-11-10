@@ -171,6 +171,14 @@ return [
         'result_published' => 'Hasil Terbit',
         'cancelled' => 'Dibatalkan',
     ],
+    'maintenance' => [
+        'draft' => 'Draf',
+        'scheduled' => 'Terjadwal',
+        'active' => 'Aktif',
+        'overdue' => 'Melewati Estimasi',
+        'completed' => 'Selesai',
+        'deleted' => 'Dihapus',
+    ],
     'supplier_contact' => [
         'pending' => 'Menunggu Review',
         'approved' => 'Disetujui',

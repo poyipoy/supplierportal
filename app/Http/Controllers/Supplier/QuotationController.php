@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Supplier;
 
+use App\Enums\PurchaseRequisitionStatus;
+use App\Enums\QuotationStatus;
 use App\Exports\QuotationFormExport;
 use App\Exports\QuotationImportTemplateExport;
 use App\Http\Controllers\Controller;
@@ -21,6 +23,8 @@ use App\Services\FileSecurity\FileAccessGuard;
 use App\Services\FileSecurity\FileInspectionService;
 use App\Services\Materials\MaterialWeightCalculator;
 use App\Services\NotificationService;
+use App\Services\Procurement\PurchaseRequisitionStateEngine;
+use App\Services\Procurement\QuotationStateEngine;
 use App\Support\BusinessTime;
 use App\Support\Materials\DimensionRange;
 use App\Support\Materials\MaterialDimensionRules;
@@ -669,16 +673,26 @@ class QuotationController extends Controller
                     'general_notes' => $request->general_notes,
                 ]);
             } else {
-                $quotation->update([
+                $quotationAttributes = [
                     'currency' => $supplierCurrency,
-                    'status' => $nextStatus,
                     'submitted_at' => $request->action === 'submitted' ? now() : $quotation->submitted_at,
                     'exchange_rate_id' => $exchangeRateId,
                     'estimated_delivery' => $estimatedDelivery,
                     'payment_terms' => $paymentTerms,
                     'validity_period' => $validityPeriod,
                     'general_notes' => $request->general_notes,
-                ]);
+                ];
+                $nextStatusEnum = QuotationStatus::tryFromWithLegacy($nextStatus);
+                if ($quotation->statusEnum() !== $nextStatusEnum) {
+                    $quotation = app(QuotationStateEngine::class)->transition(
+                        model: $quotation,
+                        target: $nextStatusEnum,
+                        actor: auth()->user(),
+                        metadata: ['attributes' => $quotationAttributes]
+                    );
+                } else {
+                    $quotation->update($quotationAttributes);
+                }
             }
 
             $existingItemAttachments = $quotation ? $quotation->items()
@@ -829,14 +843,24 @@ class QuotationController extends Controller
 
             // Move the PR to bidding when a quotation is submitted.
             if ($request->action === 'submitted' && $pr->status === 'submitted') {
-                $pr->update(['status' => 'bidding']);
+                app(PurchaseRequisitionStateEngine::class)->transition(
+                    model: $pr,
+                    target: PurchaseRequisitionStatus::BIDDING,
+                    actor: auth()->user()
+                );
             }
 
             // Automatic quotation availability state determination (BUG-001)
             if ($request->action === 'submitted') {
                 $hasAvailable = $quotation->items()->where('is_available', true)->exists();
-                $finalStatus = $hasAvailable ? Quotation::STATUS_SUBMITTED : Quotation::STATUS_ALL_UNAVAILABLE;
-                $quotation->update(['status' => $finalStatus]);
+                $finalStatusEnum = $hasAvailable ? QuotationStatus::SUBMITTED : QuotationStatus::ALL_UNAVAILABLE;
+                if ($quotation->statusEnum() !== $finalStatusEnum) {
+                    $quotation = app(QuotationStateEngine::class)->transition(
+                        model: $quotation,
+                        target: $finalStatusEnum,
+                        actor: auth()->user()
+                    );
+                }
             }
 
             DB::commit();

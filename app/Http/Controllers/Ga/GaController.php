@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Employee;
 use App\Models\GaClaim;
 use App\Services\Ga\GaClaimService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use chillerlan\QRCode\QRCode;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -97,6 +98,28 @@ class GaController extends Controller
 
     public function receipt(GaClaim $claim)
     {
+        return view('ga.claims.receipt', $this->receiptData($claim));
+    }
+
+    /** Printable receipt as a PDF form; same data and authorization as the page. */
+    public function receiptPdf(GaClaim $claim)
+    {
+        $data = $this->receiptData($claim);
+
+        $pdf = Pdf::loadView('pdf.ga-claim-receipt', $data)->setPaper('a4', 'portrait');
+
+        return $pdf->download('GA_Receipt_'.str_replace('/', '-', (string) $claim->receipt->receipt_number).'.pdf')
+            ->header('Cache-Control', 'private, no-store');
+    }
+
+    /**
+     * Authorization, QR and navigation shared by the receipt page and its PDF.
+     *
+     * @return array<string, mixed>
+     */
+    private function receiptData(GaClaim $claim): array
+    {
+        Gate::authorize('view', $claim);
         $claim->load(['employee', 'receipt']);
         abort_unless($claim->receipt, 404);
 
@@ -115,7 +138,7 @@ class GaController extends Controller
             ? route('finance.ga-claims.index')
             : route('ga.claims.index');
 
-        return view('ga.claims.receipt', compact('claim', 'qrCode', 'signedUrl', 'detailUrl', 'indexUrl'));
+        return compact('claim', 'qrCode', 'signedUrl', 'detailUrl', 'indexUrl');
     }
 
     public function basicVerify(GaClaim $claim, Request $request, GaClaimService $service)

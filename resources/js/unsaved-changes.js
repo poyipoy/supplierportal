@@ -19,7 +19,20 @@
     let reloadConfirmation = null;
 
     const formSnapshots = new WeakMap();
+    const interactedForms = new WeakSet();
     const dirtySources = new Map();
+
+    const EXCLUDED_ACTION_SUFFIXES = [
+        '/login',
+        '/logout',
+        '/confirm-password',
+        '/two-factor-challenge',
+        '/supplier/registration/access',
+        '/supplier/registration/access/credentials',
+        '/supplier/registration/logout',
+        '/supplier-context',
+        '/notifications/mark-all-read',
+    ];
 
     function getCopy() {
         const t = window.AdasiI18n.t;
@@ -58,27 +71,54 @@
 
     function shouldTrackForm(form) {
         if (!form || !(form instanceof HTMLFormElement)) return false;
-        if (form.matches('[data-track-unsaved="false"]')) return false;
+        if (form.matches?.('[data-track-unsaved="false"], [data-logout-form], [data-notification-mark-form], [data-async-export]')) return false;
         // Component-owned state (presets/autosave) is authoritative for its form.
         if ([...dirtySources.values()].some((source) => source.form === form)) return false;
 
-        // Skip auth/session action forms with no real form inputs
-        const action = (form.getAttribute('action') || '').toLowerCase();
-        if (action.endsWith('/logout') || form.id === 'logout-form') return false;
+        // Ignore forms inside closed Bootstrap modals or hidden containers
+        const modal = form.closest?.('.modal');
+        if (modal && !modal.classList?.contains?.('show')) return false;
+        if (form.closest?.('[hidden]')) return false;
+
+        // Skip auth/session/credential action forms
+        const rawAction = (form.getAttribute?.('action') || '').toLowerCase();
+        const actionPath = rawAction.split('?')[0].replace(/\/+$/, '');
+        if (
+            form.id === 'logout-form'
+            || EXCLUDED_ACTION_SUFFIXES.some((suffix) => actionPath === suffix || actionPath.endsWith(suffix))
+        ) {
+            return false;
+        }
 
         // Explicitly tracked forms
-        if (form.matches('[data-track-unsaved="true"], #prForm, #quotationForm, #poForm, #inspectionForm, #localInvoiceForm, .form-track-unsaved')) {
+        if (form.matches?.('[data-track-unsaved="true"], #prForm, #quotationForm, #poForm, #inspectionForm, #qcForm, #claimForm, #localInvoiceForm, .form-track-unsaved')) {
             return true;
         }
 
-        // Track standard POST forms
-        return Boolean(form.method && form.method.toLowerCase() === 'post');
+        // Track standard POST forms only if they contain at least one trackable user input
+        if (!form.method || form.method.toLowerCase() !== 'post') {
+            return false;
+        }
+
+        const elements = form.querySelectorAll?.('input, select, textarea') || [];
+        for (let i = 0; i < elements.length; i++) {
+            if (shouldTrackElement(elements[i])) {
+                return true;
+            }
+        }
+        return false;
     }
 
     function shouldTrackElement(el) {
         if (!el || !el.tagName) return false;
         if (el.disabled) return false;
-        if (el.hasAttribute('data-ignore-dirty') || el.closest('[data-ignore-dirty="true"]')) return false;
+        if (
+            el.hasAttribute?.('data-ignore-dirty')
+            || el.hasAttribute?.('data-unsaved-ignore')
+            || el.closest?.('[data-ignore-dirty="true"], [data-unsaved-ignore="true"]')
+        ) {
+            return false;
+        }
 
         const tag = el.tagName.toLowerCase();
         if (tag === 'button') return false;
@@ -86,17 +126,32 @@
         if (tag === 'input') {
             const type = (el.type || 'text').toLowerCase();
             if (type === 'submit' || type === 'button' || type === 'reset' || type === 'image') return false;
-            // Ignore hidden inputs so internal tokens or IDs never cause false dirty signals
-            if (type === 'hidden') return false;
+            // Ignore hidden inputs and search filter inputs so internal tokens or filters never cause false dirty signals
+            if (type === 'hidden' || type === 'search') return false;
 
             // Skip un-named search filter fields inside custom popovers
-            if (!el.name && (type === 'search' || el.classList.contains('form-control') || el.hasAttribute('x-ref'))) {
+            if (!el.name && (el.classList?.contains?.('form-control') || el.hasAttribute?.('x-ref'))) {
                 return false;
             }
             return true;
         }
 
         return tag === 'select' || tag === 'textarea';
+    }
+
+    function hasAutofilledElements(form) {
+        const elements = form?.querySelectorAll?.('input, select, textarea') || [];
+        for (let i = 0; i < elements.length; i++) {
+            const el = elements[i];
+            try {
+                if (el?.matches?.(':-webkit-autofill, :autofill')) {
+                    return true;
+                }
+            } catch (e) {
+                // Ignore unsupported pseudo-class in older engines
+            }
+        }
+        return false;
     }
 
     function getFormSnapshot(form) {
@@ -166,7 +221,14 @@
         }
         const initial = formSnapshots.get(form);
         const current = getFormSnapshot(form);
-        return initial !== current;
+        if (initial === current) return false;
+
+        if (!interactedForms.has(form) && hasAutofilledElements(form)) {
+            formSnapshots.set(form, current);
+            return false;
+        }
+
+        return true;
     }
 
     function isAnyFormDirty() {
@@ -230,8 +292,15 @@
             manualDirty = false;
             userHasInteracted = false;
             hasPushedHistoryState = false;
+            document.querySelectorAll('form').forEach((form) => interactedForms.delete(form));
             initSnapshots(true);
             syncDirtyState();
+        },
+        hasUserInteracted(form = null) {
+            if (form) {
+                return interactedForms.has(form);
+            }
+            return userHasInteracted;
         },
         isDirty() {
             return syncDirtyState();
@@ -252,8 +321,10 @@
         },
         resetSnapshot(form) {
             if (form) {
+                interactedForms.delete(form);
                 snapshotForm(form);
             } else {
+                document.querySelectorAll('form').forEach((f) => interactedForms.delete(f));
                 initSnapshots(true);
             }
             syncDirtyState();
@@ -358,8 +429,16 @@
 
     // Capture phase on window: runs before any page-level beforeunload handler, so it can neutralise their prompt request.
     window.addEventListener('beforeunload', ignoreNativePromptAfterConfirmedLeave, true);
-    // A page restored from the back/forward cache must start with no pending confirmation.
-    window.addEventListener('pageshow', () => { leaveConfirmed = false; });
+    // A page restored from the back/forward cache must start with no pending confirmation or stale autofill diffs.
+    window.addEventListener('pageshow', (event) => {
+        leaveConfirmed = false;
+        if (event?.persisted) {
+            userHasInteracted = false;
+            document.querySelectorAll('form').forEach((form) => interactedForms.delete(form));
+            initSnapshots(true);
+            syncDirtyState();
+        }
+    });
 
     function initUnsavedTracker() {
         // Initial snapshot of server-rendered forms
@@ -369,30 +448,32 @@
         setTimeout(() => initSnapshots(false), 250);
         window.addEventListener('load', () => setTimeout(() => initSnapshots(false), 100));
 
-        // Track inputs inside relevant forms
-        document.addEventListener('input', (event) => {
+        function handleFieldMutation(event) {
             const target = event.target;
             if (!target || target.type === 'hidden' || target.type === 'search') return;
+            const form = target.closest?.('form');
+            if (!shouldTrackForm(form) || !shouldTrackElement(target)) return;
             if (event.isTrusted) {
                 userHasInteracted = true;
+                interactedForms.add(form);
             }
-            const form = target.closest('form');
-            if (shouldTrackForm(form)) {
-                syncDirtyState();
-            }
-        }, true);
+            syncDirtyState();
+        }
 
-        document.addEventListener('change', (event) => {
-            const target = event.target;
-            if (!target || target.type === 'hidden') return;
-            if (event.isTrusted) {
-                userHasInteracted = true;
-            }
-            const form = target.closest('form');
-            if (shouldTrackForm(form)) {
-                syncDirtyState();
-            }
-        }, true);
+        // Track inputs inside relevant forms
+        document.addEventListener('input', handleFieldMutation, true);
+        document.addEventListener('change', handleFieldMutation, true);
+
+        // Reset form snapshots and interaction state when a Bootstrap modal is dismissed
+        document.addEventListener('hidden.bs.modal', (event) => {
+            const modal = event.target;
+            const forms = modal?.querySelectorAll?.('form') || [];
+            forms.forEach((form) => {
+                interactedForms.delete(form);
+                formSnapshots.delete(form);
+            });
+            syncDirtyState();
+        });
 
         // Reset dirty flag on legitimate form submission
         document.addEventListener('submit', () => {

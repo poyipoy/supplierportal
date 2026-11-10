@@ -228,6 +228,26 @@
         :title="__('shipments.copy.shipping_import_documents')"
         :description="__('shipments.copy.verify_and_update_shipping_documentation_commercial_invoice_packing_list_bill_of_lading_form_e_for_t')"
     >
+        @if(in_array($shipment->status, \App\Support\Procurement\CustomsDocumentationProgressCalculator::ACTIVE_SHIPMENT_STATUSES, true))
+            <x-slot:actions>
+                <div class="tw:flex tw:items-center tw:gap-2">
+                    @php
+                        $canVerifyAll = $shipment->documents->contains(fn ($d) => ! in_array($d->status, ['verified', 'done'], true) && $d->latestAttachment !== null);
+                    @endphp
+                    @if($canVerifyAll)
+                        <x-ui.button type="button" variant="primary" size="sm" id="btnVerifyAllDocs">
+                            <x-ui.icon name="check-check" size="sm" class="me-1" />
+                            <span>{{ __('shipments.copy.verify_all_documents') }}</span>
+                        </x-ui.button>
+                    @endif
+                    <x-ui.button type="button" variant="outline" size="sm" id="btnSaveAllDocStatuses" disabled>
+                        <x-ui.icon name="save" size="sm" class="me-1" />
+                        <span>{{ __('shipments.copy.save_all_statuses') }}</span>
+                    </x-ui.button>
+                </div>
+            </x-slot:actions>
+        @endif
+
         <div class="tw:grid tw:gap-3 tw:sm:grid-cols-2 tw:lg:grid-cols-4">
             @foreach($shipment->documents as $doc)
                 @php
@@ -240,7 +260,7 @@
                         default => strtoupper($doc->doc_type),
                     };
                 @endphp
-                <div class="p-3 border tw:border-outline-variant rounded tw:bg-surface-low d-flex flex-column justify-content-between gap-2">
+                <div class="p-3 border tw:border-outline-variant rounded tw:bg-surface-low d-flex flex-column justify-content-between gap-2" data-purchasing-doc-card="{{ $doc->doc_type }}">
                     <div>
                         <div class="d-flex align-items-center justify-content-between gap-1">
                             <span class="fw-bold tw:text-ui-xs tw:text-on-surface">{{ $docLabel }}</span>
@@ -271,7 +291,7 @@
 
                     {{-- Status Update Form: same rules as the PO page dialog --}}
                     @if(in_array($shipment->status, \App\Support\Procurement\CustomsDocumentationProgressCalculator::ACTIVE_SHIPMENT_STATUSES, true))
-                        <form method="POST" action="{{ route('purchasing.shipments.documents.status', ['id' => $shipment, 'document_id' => $doc->id]) }}" class="pt-2 border-top tw:border-outline-variant" data-shipment-doc-status-form>
+                        <form method="POST" action="{{ route('purchasing.shipments.documents.status', ['id' => $shipment, 'document_id' => $doc->id]) }}" class="pt-2 border-top tw:border-outline-variant" data-shipment-doc-status-form data-doc-id="{{ $doc->id }}" data-doc-type="{{ $doc->doc_type }}">
                             @csrf
                             @method('PUT')
                             <input type="hidden" name="expected_status" value="{{ $doc->status }}">
@@ -466,3 +486,162 @@
 </div>
 @endif
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const verifyAllBtn = document.getElementById('btnVerifyAllDocs');
+    const saveAllBtn = document.getElementById('btnSaveAllDocStatuses');
+    const batchStatusUrl = @js(route('purchasing.shipments.documents.batch-status', $shipment));
+    const verifyAllUrl = @js(route('purchasing.shipments.documents.verify-all', $shipment));
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || @js(csrf_token());
+
+    verifyAllBtn?.addEventListener('click', async () => {
+        const title = @js(__('shipments.copy.verify_all_confirm_title'));
+        const text = @js(__('shipments.copy.verify_all_confirm_desc'));
+
+        const doVerify = async () => {
+            window.AdasiButton?.startLoading(verifyAllBtn);
+            verifyAllBtn.disabled = true;
+
+            try {
+                const resp = await fetch(verifyAllUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: JSON.stringify({}),
+                });
+
+                const data = await resp.json();
+
+                if (! resp.ok) {
+                    window.AdasiButton?.stopLoading(verifyAllBtn);
+                    verifyAllBtn.disabled = false;
+                    const err = data.message || 'Verification failed.';
+                    if (window.AdasiAlert) {
+                        window.AdasiAlert.alert({ tone: 'error', title: 'Error', text: err });
+                    } else {
+                        alert(err);
+                    }
+                    return;
+                }
+
+                window.location.reload();
+            } catch (err) {
+                window.AdasiButton?.stopLoading(verifyAllBtn);
+                verifyAllBtn.disabled = false;
+                alert(err.message || 'An error occurred.');
+            }
+        };
+
+        if (window.AdasiAlert) {
+            window.AdasiAlert.confirm({
+                title: title,
+                text: text,
+                confirmText: @js(__('shipments.copy.verify_all_documents')),
+                confirmTone: 'primary',
+            }).then(res => {
+                if (res.isConfirmed) doVerify();
+            });
+        } else if (confirm(`${title}\n\n${text}`)) {
+            doVerify();
+        }
+    });
+
+    function checkDocStatusChanges() {
+        let hasChanges = false;
+        const forms = document.querySelectorAll('[data-shipment-doc-status-form]');
+        forms.forEach(form => {
+            const statusSelect = form.querySelector('select[name="status"]');
+            const reasonInput = form.querySelector('textarea[name="reason"]');
+            const expectedStatus = form.querySelector('input[name="expected_status"]')?.value;
+            if (statusSelect && statusSelect.value && statusSelect.value !== expectedStatus) {
+                hasChanges = true;
+            }
+            if (reasonInput && reasonInput.value.trim().length > 0) {
+                hasChanges = true;
+            }
+        });
+        if (saveAllBtn) {
+            saveAllBtn.disabled = !hasChanges;
+        }
+    }
+
+    document.querySelectorAll('[data-shipment-doc-status-form]').forEach(form => {
+        form.querySelector('select[name="status"]')?.addEventListener('change', checkDocStatusChanges);
+        form.querySelector('textarea[name="reason"]')?.addEventListener('input', checkDocStatusChanges);
+    });
+    checkDocStatusChanges();
+
+    saveAllBtn?.addEventListener('click', async () => {
+        const forms = document.querySelectorAll('[data-shipment-doc-status-form]');
+        const documents = [];
+
+        forms.forEach(form => {
+            const statusSelect = form.querySelector('select[name="status"]');
+            const reasonInput = form.querySelector('textarea[name="reason"]');
+            const expectedStatus = form.querySelector('input[name="expected_status"]')?.value;
+            const expectedAttachment = form.querySelector('input[name="expected_attachment"]')?.value;
+            const docId = form.dataset.docId;
+            const docType = form.dataset.docType;
+
+            const isStatusChanged = statusSelect && statusSelect.value && statusSelect.value !== expectedStatus;
+            const hasReason = reasonInput && reasonInput.value.trim().length > 0;
+
+            if (isStatusChanged || hasReason) {
+                documents.push({
+                    document_id: docId,
+                    doc_type: docType,
+                    status: statusSelect.value,
+                    reason: reasonInput ? reasonInput.value.trim() : '',
+                    expected_status: expectedStatus,
+                    expected_attachment: expectedAttachment,
+                });
+            }
+        });
+
+        if (documents.length === 0) return;
+
+        window.AdasiButton?.startLoading(saveAllBtn);
+        saveAllBtn.disabled = true;
+
+        try {
+            const resp = await fetch(batchStatusUrl, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify({ documents }),
+            });
+
+            const data = await resp.json();
+
+            if (! resp.ok) {
+                window.AdasiButton?.stopLoading(saveAllBtn);
+                saveAllBtn.disabled = false;
+                const err = data.message || 'Failed to update statuses.';
+                if (window.AdasiAlert) {
+                    window.AdasiAlert.alert({ tone: 'error', title: 'Update Error', text: err });
+                } else {
+                    alert(err);
+                }
+                return;
+            }
+
+            window.location.reload();
+        } catch (err) {
+            window.AdasiButton?.stopLoading(saveAllBtn);
+            saveAllBtn.disabled = false;
+            alert(err.message || 'An error occurred.');
+        }
+    });
+});
+</script>
+@endpush

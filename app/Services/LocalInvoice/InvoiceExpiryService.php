@@ -2,6 +2,7 @@
 
 namespace App\Services\LocalInvoice;
 
+use App\Enums\LocalInvoiceStatus;
 use App\Models\LocalInvoice;
 use App\Models\User;
 use App\Support\StatusHelper;
@@ -41,21 +42,25 @@ class InvoiceExpiryService
 
             if ($currentMissed >= 1) {
                 // Second missed delivery -> EXPIRED (Terminal)
-                $inv->update([
-                    'status' => LocalInvoice::STATUS_EXPIRED,
-                    'missed_delivery_count' => $currentMissed + 1,
-                    'expired_at' => now(),
-                ]);
+                $actorUser = $actor ?: User::find($inv->supplier_id);
 
-                $inv->statusHistories()->create([
-                    'from_status' => LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT,
-                    'to_status' => LocalInvoice::STATUS_EXPIRED,
-                    'actor_id' => $actor ? $actor->id : $inv->supplier_id,
-                    'event' => 'expired',
-                    'notes' => __('local_invoice.history.expired'),
-                    'created_at' => now(),
-                ]);
-                $this->reservations->release($inv, $actor);
+                return app(LocalInvoiceStateEngine::class)->transition(
+                    model: $inv,
+                    target: LocalInvoiceStatus::EXPIRED,
+                    actor: $actorUser,
+                    reason: __('local_invoice.history.expired'),
+                    metadata: [
+                        'event' => 'expired',
+                        'send_notification' => false,
+                        'attributes' => [
+                            'missed_delivery_count' => $currentMissed + 1,
+                            'expired_at' => now(),
+                        ],
+                        'after_transition' => function (LocalInvoice $lockedInv) use ($actor): void {
+                            $this->reservations->release($lockedInv, $actor);
+                        },
+                    ]
+                );
             } else {
                 // First missed delivery
                 $inv->update([

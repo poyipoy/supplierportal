@@ -20,7 +20,7 @@
     @php $sup = $vendor->supplier; @endphp
 
     <div class="tw:grid tw:grid-cols-1 tw:lg:grid-cols-12 tw:gap-6">
-        {{-- Left: Vendor Profile & Bank Accounts --}}
+        {{-- Left: Supplier Profile & Bank Accounts --}}
         <div class="tw:lg:col-span-8 tw:space-y-6">
             {{-- Profile Card --}}
             <x-ui.card :title="__('local_invoice.labels.company_profile')">
@@ -158,7 +158,7 @@
             </x-ui.card>
         </div>
 
-        {{-- Right: Vendor Master Documents (Requirement 6) --}}
+        {{-- Right: Supplier Master Documents (Requirement 6) --}}
         <div class="tw:lg:col-span-4 tw:space-y-6">
             <x-ui.card
                 :title="__('local_invoice.labels.legal_master')"

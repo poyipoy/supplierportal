@@ -2,6 +2,7 @@
 
 namespace App\Services\LocalInvoice;
 
+use App\Enums\LocalInvoiceStatus;
 use App\Exceptions\BusinessRuleArgumentException;
 use App\Exceptions\BusinessRuleException;
 use App\Models\LocalInvoice;
@@ -207,27 +208,25 @@ class InvoiceVerificationService
                 'verified_at' => $now,
             ]);
 
-            $inv->update([
-                'status' => LocalInvoice::STATUS_READY_TO_PAY,
-                'approved_at' => $now,
-                'ready_to_pay_at' => $now,
-            ]);
-
-            $history = $inv->statusHistories()->create([
-                'from_status' => LocalInvoice::STATUS_UNDER_VERIFICATION,
-                'to_status' => LocalInvoice::STATUS_READY_TO_PAY,
-                'actor_id' => $reviewer->id,
-                'event' => 'approved',
-                'notes' => __('local_invoice.history.verification_approved'),
-                'created_at' => $now,
-            ]);
-
-            $this->notifications->send($inv, $history, [
-                'due_date' => $inv->due_date?->format('Y-m-d') ?? '',
-                'payment_term' => (string) ($inv->payment_term_days_snapshot ?? ''),
-            ]);
-
-            return $inv->fresh();
+            return app(LocalInvoiceStateEngine::class)->transition(
+                model: $inv,
+                target: LocalInvoiceStatus::READY_TO_PAY,
+                actor: $reviewer,
+                reason: __('local_invoice.history.verification_approved'),
+                metadata: [
+                    'event' => 'approved',
+                    'timestamp' => $now,
+                    'error_message' => __('local_invoice.validation.approve_status', ['status' => ':status']),
+                    'attributes' => [
+                        'approved_at' => $now,
+                        'ready_to_pay_at' => $now,
+                    ],
+                    'notification_data' => [
+                        'due_date' => $inv->due_date?->format('Y-m-d') ?? '',
+                        'payment_term' => (string) ($inv->payment_term_days_snapshot ?? ''),
+                    ],
+                ]
+            );
         });
     }
 
@@ -250,25 +249,17 @@ class InvoiceVerificationService
                 throw new BusinessRuleException(__('local_invoice.validation.revision_status', ['status' => $inv->status]));
             }
 
-            $now = now();
-            $fromStatus = $inv->status;
-
-            $inv->update([
-                'status' => LocalInvoice::STATUS_NEED_REVISION,
-            ]);
-
-            $history = $inv->statusHistories()->create([
-                'from_status' => $fromStatus,
-                'to_status' => LocalInvoice::STATUS_NEED_REVISION,
-                'actor_id' => $reviewer->id,
-                'event' => 'revision_requested',
-                'notes' => trim($reason),
-                'created_at' => $now,
-            ]);
-
-            $this->notifications->send($inv, $history, ['reason' => trim($reason)]);
-
-            return $inv->fresh();
+            return app(LocalInvoiceStateEngine::class)->transition(
+                model: $inv,
+                target: LocalInvoiceStatus::NEED_REVISION,
+                actor: $reviewer,
+                reason: trim($reason),
+                metadata: [
+                    'event' => 'revision_requested',
+                    'error_message' => __('local_invoice.validation.revision_status', ['status' => ':status']),
+                    'notification_data' => ['reason' => trim($reason)],
+                ]
+            );
         });
     }
 
@@ -284,13 +275,19 @@ class InvoiceVerificationService
             if (! in_array($inv->status, [LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT, LocalInvoice::STATUS_UNDER_VERIFICATION, LocalInvoice::STATUS_NEED_REVISION], true)) {
                 throw new BusinessRuleException(__('local_invoice.validation.rejection_status', ['status' => $inv->status]));
             }
-            $from = $inv->status;
             $this->reservations->release($inv, $reviewer);
-            $inv->update(['status' => LocalInvoice::STATUS_REJECTED]);
-            $history = $inv->statusHistories()->create(['from_status' => $from, 'to_status' => LocalInvoice::STATUS_REJECTED, 'actor_id' => $reviewer->id, 'event' => 'rejected', 'notes' => trim($reason), 'created_at' => now()]);
-            $this->notifications->send($inv, $history, ['reason' => trim($reason)]);
 
-            return $inv->fresh();
+            return app(LocalInvoiceStateEngine::class)->transition(
+                model: $inv,
+                target: LocalInvoiceStatus::REJECTED,
+                actor: $reviewer,
+                reason: trim($reason),
+                metadata: [
+                    'event' => 'rejected',
+                    'error_message' => __('local_invoice.validation.rejection_status', ['status' => ':status']),
+                    'notification_data' => ['reason' => trim($reason)],
+                ]
+            );
         });
     }
 

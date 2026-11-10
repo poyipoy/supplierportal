@@ -2,6 +2,7 @@
 
 namespace App\Services\LocalInvoice;
 
+use App\Enums\LocalGoodsReceiptStatus;
 use App\Models\LocalGoodsReceipt;
 use App\Models\LocalInvoice;
 use App\Models\LocalInvoiceGoodsReceipt;
@@ -70,21 +71,42 @@ class LocalGrReservationService
 
         $removed = $current->whereNotIn('id', $ids);
         foreach ($removed as $receipt) {
-            $before = $receipt->toArray();
-            $receipt->update(['status' => LocalGoodsReceipt::STATUS_AVAILABLE, 'current_invoice_id' => null, 'updated_by' => $supplier->id]);
+            app(LocalGoodsReceiptStateEngine::class)->transition(
+                model: $receipt,
+                target: LocalGoodsReceiptStatus::AVAILABLE,
+                actor: $supplier,
+                metadata: [
+                    'attributes' => [
+                        'current_invoice_id' => null,
+                        'updated_by' => $supplier->id,
+                    ],
+                    'audit_action' => 'gr_released',
+                    'audit_meta' => ['invoice_id' => $invoice->id],
+                ]
+            );
             LocalInvoiceGoodsReceipt::where('local_invoice_id', $invoice->id)
                 ->where('local_goods_receipt_id', $receipt->id)
                 ->where('state', LocalInvoiceGoodsReceipt::STATE_RESERVED)
                 ->update(['state' => LocalInvoiceGoodsReceipt::STATE_RELEASED, 'released_at' => now(), 'updated_at' => now()]);
-            app(LocalFinanceAuditService::class)->record($receipt, 'gr_released', $supplier, $before, $receipt->fresh()->toArray(), ['invoice_id' => $invoice->id]);
         }
 
         foreach ($receipts as $receipt) {
             if ((int) $receipt->current_invoice_id === (int) $invoice->id) {
                 continue;
             }
-            $before = $receipt->toArray();
-            $receipt->update(['status' => LocalGoodsReceipt::STATUS_RESERVED, 'current_invoice_id' => $invoice->id, 'updated_by' => $supplier->id]);
+            app(LocalGoodsReceiptStateEngine::class)->transition(
+                model: $receipt,
+                target: LocalGoodsReceiptStatus::RESERVED,
+                actor: $supplier,
+                metadata: [
+                    'attributes' => [
+                        'current_invoice_id' => $invoice->id,
+                        'updated_by' => $supplier->id,
+                    ],
+                    'audit_action' => 'gr_reserved',
+                    'audit_meta' => ['invoice_id' => $invoice->id, 'po_id' => $po->id],
+                ]
+            );
             LocalInvoiceGoodsReceipt::create([
                 'local_invoice_id' => $invoice->id,
                 'local_purchase_order_id' => $po->id,
@@ -95,7 +117,6 @@ class LocalGrReservationService
                 'gr_uom_snapshot' => $receipt->uom,
                 'reserved_at' => now(),
             ]);
-            app(LocalFinanceAuditService::class)->record($receipt, 'gr_reserved', $supplier, $before, $receipt->fresh()->toArray(), ['invoice_id' => $invoice->id, 'po_id' => $po->id]);
         }
 
         $invoice->update([
@@ -126,9 +147,20 @@ class LocalGrReservationService
             if ($receipt->status !== LocalGoodsReceipt::STATUS_RESERVED) {
                 continue;
             }
-            $before = $receipt->toArray();
-            $receipt->update(['status' => LocalGoodsReceipt::STATUS_AVAILABLE, 'current_invoice_id' => null, 'updated_by' => $actor?->id]);
-            app(LocalFinanceAuditService::class)->record($receipt, 'gr_released', $auditActor, $before, $receipt->fresh()->toArray(), ['invoice_id' => $invoice->id]);
+            app(LocalGoodsReceiptStateEngine::class)->transition(
+                model: $receipt,
+                target: LocalGoodsReceiptStatus::AVAILABLE,
+                actor: $actor,
+                metadata: [
+                    'attributes' => [
+                        'current_invoice_id' => null,
+                        'updated_by' => $actor?->id,
+                    ],
+                    'audit_actor' => $auditActor,
+                    'audit_action' => 'gr_released',
+                    'audit_meta' => ['invoice_id' => $invoice->id],
+                ]
+            );
         }
         LocalInvoiceGoodsReceipt::where('local_invoice_id', $invoice->id)
             ->where('state', LocalInvoiceGoodsReceipt::STATE_RESERVED)
@@ -153,9 +185,18 @@ class LocalGrReservationService
             if ($receipt->status !== LocalGoodsReceipt::STATUS_RESERVED) {
                 throw ValidationException::withMessages(['goods_receipt_ids' => __('local_procurement.validation.gr_not_reserved', ['gr' => $receipt->gr_number])]);
             }
-            $before = $receipt->toArray();
-            $receipt->update(['status' => LocalGoodsReceipt::STATUS_INVOICED, 'updated_by' => $actor->id]);
-            app(LocalFinanceAuditService::class)->record($receipt, 'gr_consumed', $actor, $before, $receipt->fresh()->toArray(), ['invoice_id' => $invoice->id]);
+            app(LocalGoodsReceiptStateEngine::class)->transition(
+                model: $receipt,
+                target: LocalGoodsReceiptStatus::INVOICED,
+                actor: $actor,
+                metadata: [
+                    'attributes' => [
+                        'updated_by' => $actor->id,
+                    ],
+                    'audit_action' => 'gr_consumed',
+                    'audit_meta' => ['invoice_id' => $invoice->id],
+                ]
+            );
         }
         LocalInvoiceGoodsReceipt::where('local_invoice_id', $invoice->id)
             ->where('state', LocalInvoiceGoodsReceipt::STATE_RESERVED)

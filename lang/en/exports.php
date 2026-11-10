@@ -77,7 +77,7 @@ return [
         'supplier_quotation_summary' => 'Supplier Quotation Summary',
         'supplier_po_summary' => 'Supplier Purchase Order Summary',
         'qc_summary' => 'QC Inspection Summary',
-        'invoice_master' => 'Master Invoices Report',
+        'invoice_master' => 'Master Data Invoice Report',
         'invoice_register' => 'Local Invoice Register',
         'invoice_payments' => 'Local Invoice Payments',
         'drp' => 'Supplier DRP :number',

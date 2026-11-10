@@ -1,420 +1,166 @@
-<!DOCTYPE html>
-<html lang="{{ app()->getLocale() === 'id' ? 'id' : 'en' }}">
-<head>
-    <meta charset="UTF-8">
-    <title>{{ __('qc.copy.qc_inspection_report') }} - {{ $inspection->purchaseOrder->po_number ?? 'N/A' }}</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+{{--
+    Quality Control Inspection Report — fixed English form, styled after PNR261178.
+    Monochrome: NG is carried by the literal status text plus row rules, never
+    by a colour fill, so the report survives a black-and-white printer and a
+    reader who cannot distinguish red from green (WCAG 1.4.1).
 
-        body {
-            font-family: 'DejaVu Sans', Arial, sans-serif;
-            font-size: 11px;
-            color: #1e293b;
-            line-height: 1.5;
-        }
+    Labels never follow the viewer's locale or regional preferences. Status text
+    still goes through StatusHelper::qcLabel(), which returns OK/NG verbatim.
+--}}
+@php
+    use App\Models\PrItem;
+    use App\Support\BusinessTime;
+    use App\Support\Pdf\FormDocument;
+    use App\Support\StatusHelper;
 
-        .page {
-            padding: 25px 30px;
-        }
+    $label = fn (string $key, array $replace = []) => trans('documents.qc.'.$key, $replace, 'en');
 
-        /* ── Header ── */
-        .header {
-            border-bottom: 3px solid #1F5FA6;
-            padding-bottom: 15px;
-            margin-bottom: 20px;
-        }
+    $po = $inspection->purchaseOrder;
+    $requisition = $po?->quotations->first()?->purchaseRequisition;
+    $period = $requisition?->period;
 
-        .header-top {
-            display: table;
-            width: 100%;
-        }
+    $items = $inspection->items;
+    $okItems = $items->where('status', 'ok')->count();
+    $ngItems = $items->where('status', 'ng')->count();
 
-        .header-left {
-            display: table-cell;
-            vertical-align: middle;
-            width: 60%;
-        }
+    $dimension = fn ($value, int $precision) => $value ? FormDocument::number($value, $precision) : '-';
 
-        .header-right {
-            display: table-cell;
-            vertical-align: middle;
-            width: 40%;
-            text-align: right;
-        }
+    // actual_arrival and estimated_arrival are date columns: no timezone shift.
+    $arrivedDate = $po?->actual_arrival?->locale('en')->translatedFormat('d F Y') ?? '-';
 
-        .company-name {
-            font-size: 18px;
-            font-weight: 700;
-            color: #1F5FA6;
-            letter-spacing: 0.5px;
-        }
+    $documentTitle = $label('title');
+    $documentNumber = $po?->po_number;
+    $documentNumberLabel = $label('po_number_heading');
+    $formKey = 'qc_inspection';
+    if ($documentNumber) {
+        $stamp = FormDocument::barcode($documentNumber);
+        $stampImage = $stamp['barcode'];
+        $stampWidthMm = $stamp['barcode_width'];
+        $stampCaption = $documentNumber;
+    }
+@endphp
+@extends('pdf.layout')
 
-        .company-subtitle {
-            font-size: 10px;
-            color: #64748b;
-            margin-top: 2px;
-        }
+@section('document')
+    {{-- Percentages, not millimetres: dompdf splits the columns equally when a
+         fixed-layout table is sized in mm, which leaves a gap after each colon. --}}
+    <table class="fields" style="width: 188.6mm; table-layout: fixed">
+        <tr>
+            <td class="field-label" style="width: 15%">{{ $label('supplier') }}</td>
+            <td style="width: 2%">:</td>
+            <td style="width: 35%">{{ $po?->supplier?->name ?: '-' }}</td>
+            <td class="field-label" style="width: 16%">{{ $label('arrived_date') }}</td>
+            <td style="width: 2%">:</td>
+            <td style="width: 30%">{{ $arrivedDate }}</td>
+        </tr>
+        <tr>
+            <td class="field-label">{{ $label('period') }}</td>
+            <td>:</td>
+            <td>{{ $period?->display_label ?: ($period?->name ?: '-') }}</td>
+            <td class="field-label">{{ $label('inspection_date') }}</td>
+            <td>:</td>
+            <td>{{ $inspection->inspected_at ? BusinessTime::toBusiness($inspection->inspected_at)->locale('en')->translatedFormat('d F Y, H:i') : '-' }}</td>
+        </tr>
+        <tr>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td class="field-label">{{ $label('result') }}</td>
+            <td>:</td>
+            <td><strong>{{ StatusHelper::qcLabel($inspection->status) }}</strong></td>
+        </tr>
+    </table>
 
-        .doc-title {
-            font-size: 18px;
-            font-weight: 700;
-            color: #C0392B;
-            letter-spacing: 0.5px;
-        }
+    <div class="spacer-5"></div>
 
-        .doc-subtitle {
-            font-size: 10px;
-            color: #475569;
-            margin-top: 2px;
-        }
+    <table class="form-table">
+        <thead>
+            <tr>
+                <th rowspan="2" style="width: 3.7%">{{ $label('no') }}</th>
+                <th rowspan="2" style="width: 24%">{{ $label('material') }}</th>
+                <th colspan="2" style="width: 14%">{{ $label('thickness') }}</th>
+                <th colspan="2" style="width: 14%">{{ $label('width') }}</th>
+                <th colspan="2" style="width: 14%">{{ $label('length') }}</th>
+                <th rowspan="2" style="width: 6.3%">{{ $label('qty') }}</th>
+                <th colspan="2" style="width: 17%">{{ $label('weight') }}</th>
+                <th rowspan="2" style="width: 7%">{{ $label('status') }}</th>
+            </tr>
+            <tr>
+                <th style="width: 7%">{{ $label('requested') }}</th>
+                <th style="width: 7%">{{ $label('actual') }}</th>
+                <th style="width: 7%">{{ $label('requested') }}</th>
+                <th style="width: 7%">{{ $label('actual') }}</th>
+                <th style="width: 7%">{{ $label('requested') }}</th>
+                <th style="width: 7%">{{ $label('actual') }}</th>
+                <th style="width: 8.5%">{{ $label('per_unit') }}</th>
+                <th style="width: 8.5%">{{ $label('actual') }}</th>
+            </tr>
+        </thead>
+        <tbody>
+        @forelse($items as $index => $item)
+            @php
+                $prItem = $item->prItem;
+                // canonicalShape() returns 'Flat'/'Round'/'Hollow'; the lang keys are lowercase.
+                $shapeKey = PrItem::canonicalShape($prItem?->shape);
+                $materialText = trim((string) ($prItem?->material_name ?: '-'));
+                if ($shapeKey) {
+                    $shapeLine = trans('materials.shape.'.strtolower($shapeKey), [], 'en');
+                    $materialText .= ' · '.(str_starts_with($shapeLine, 'materials.') ? $shapeKey : $shapeLine);
+                }
+            @endphp
+            <tr class="{{ $item->status === 'ng' ? 'row-flagged' : '' }}">
+                <td class="row-number">{{ $index + 1 }}</td>
+                <td>@foreach(FormDocument::wrap($materialText, 42) as $line)<div class="cell-line">{{ $line }}</div>@endforeach</td>
+                <td class="numeric">{{ $dimension($prItem?->thickness, 2) }}</td>
+                <td class="numeric">{{ $dimension($item->actual_thickness, 2) }}</td>
+                <td class="numeric">{{ $dimension($prItem?->width, 1) }}</td>
+                <td class="numeric">{{ $dimension($item->actual_width, 1) }}</td>
+                <td class="numeric">{{ $dimension($prItem?->length, 1) }}</td>
+                <td class="numeric">{{ $dimension($item->actual_length, 1) }}</td>
+                <td class="numeric">{{ FormDocument::number($prItem?->quantity_value ?? 0, 0) }}</td>
+                <td class="numeric">{{ FormDocument::number($prItem?->weight_needed ?? 0, 0) }}</td>
+                <td class="numeric">{{ $dimension($item->actual_weight, 0) }}</td>
+                <td class="row-number flag-value">{{ StatusHelper::qcLabel($item->status) }}</td>
+            </tr>
+        @empty
+            <tr><td colspan="12">{{ $label('no_items') }}</td></tr>
+        @endforelse
+        </tbody>
+    </table>
 
-        /* ── Info Section ── */
-        .info-section {
-            display: table;
-            width: 100%;
-            margin-bottom: 20px;
-        }
+    <table class="totals" style="margin-top: 4mm">
+        <tr>
+            <td class="total-label" style="width: 40%">{{ $label('summary') }}</td>
+            <td class="amount" style="width: 12%">{{ $label('total_items') }}</td>
+            <td class="amount" style="width: 8%">{{ $items->count() }}</td>
+            <td class="amount" style="width: 12%">{{ $label('item_ok') }}</td>
+            <td class="amount" style="width: 8%">{{ $okItems }}</td>
+            <td class="amount" style="width: 12%">{{ $label('item_ng') }}</td>
+            <td class="amount" style="width: 8%">{{ $ngItems }}</td>
+        </tr>
+    </table>
 
-        .info-box {
-            display: table-cell;
-            width: 50%;
-            vertical-align: top;
-        }
+    <table class="form-notes" style="margin-top: 4mm">
+        <tr>
+            <td class="note-label">{{ $label('conclusion') }}</td>
+            <td>@foreach(FormDocument::wrap($inspection->status === 'ok' ? $label('conclusion_ok') : $label('conclusion_ng', ['count' => $ngItems]), 144, 8) as $line)<div class="note-line">{{ $line }}</div>@endforeach</td>
+        </tr>
+    </table>
 
-        .info-box-right {
-            padding-left: 20px;
-        }
+    <div class="spacer-5"></div>
 
-        .info-label {
-            font-size: 9px;
-            text-transform: uppercase;
-            font-weight: 700;
-            color: #94a3b8;
-            letter-spacing: 0.5px;
-            margin-bottom: 2px;
-        }
-
-        .info-value {
-            font-size: 11px;
-            color: #1e293b;
-            margin-bottom: 8px;
-        }
-
-        .info-value strong {
-            font-weight: 700;
-        }
-
-        /* ── Status Badge ── */
-        .status-ok {
-            display: inline-block;
-            background-color: #22c55e;
-            color: #ffffff;
-            padding: 3px 12px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-        }
-
-        .status-ng {
-            display: inline-block;
-            background-color: #ef4444;
-            color: #ffffff;
-            padding: 3px 12px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-        }
-
-        /* ── Table ── */
-        .items-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-
-        .items-table thead th {
-            background-color: #1F5FA6;
-            color: #ffffff;
-            font-size: 8px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-            padding: 7px 5px;
-            text-align: center;
-            border: 1px solid #1a5290;
-        }
-
-        .items-table tbody td {
-            padding: 6px 5px;
-            font-size: 9px;
-            border: 1px solid #cbd5e1;
-            vertical-align: middle;
-            text-align: center;
-        }
-
-        .items-table tbody tr:nth-child(even) {
-            background-color: #f8fafc;
-        }
-
-        .text-left {
-            text-align: left !important;
-        }
-
-        .text-right {
-            text-align: right !important;
-        }
-
-        .text-center {
-            text-align: center !important;
-        }
-
-        .cell-ok {
-            background-color: #dcfce7 !important;
-            color: #166534;
-            font-weight: 700;
-        }
-
-        .cell-ng {
-            background-color: #fee2e2 !important;
-            color: #991b1b;
-            font-weight: 700;
-        }
-
-        /* ── Summary ── */
-        .summary-section {
-            display: table;
-            width: 100%;
-            margin-bottom: 20px;
-            border: 1px solid #cbd5e1;
-            border-radius: 4px;
-        }
-
-        .summary-cell {
-            display: table-cell;
-            width: 33.33%;
-            text-align: center;
-            padding: 12px;
-            vertical-align: middle;
-        }
-
-        .summary-cell + .summary-cell {
-            border-left: 1px solid #cbd5e1;
-        }
-
-        .summary-number {
-            font-size: 24px;
-            font-weight: 700;
-        }
-
-        .summary-label {
-            font-size: 9px;
-            text-transform: uppercase;
-            font-weight: 600;
-            color: #64748b;
-            letter-spacing: 0.3px;
-            margin-top: 2px;
-        }
-
-        .color-total { color: #1F5FA6; }
-        .color-ok { color: #22c55e; }
-        .color-ng { color: #ef4444; }
-
-        /* ── Conclusion ── */
-        .conclusion {
-            padding: 12px 15px;
-            border-radius: 4px;
-            margin-bottom: 25px;
-            font-size: 12px;
-            font-weight: 700;
-        }
-
-        .conclusion-ok {
-            background-color: #dcfce7;
-            border: 1px solid #86efac;
-            color: #166534;
-        }
-
-        .conclusion-ng {
-            background-color: #fee2e2;
-            border: 1px solid #fca5a5;
-            color: #991b1b;
-        }
-
-        /* ── Signatures ── */
-        .signature-section {
-            display: table;
-            width: 100%;
-            margin-top: 40px;
-            page-break-inside: avoid;
-        }
-
-        .signature-box {
-            display: table-cell;
-            width: 50%;
-            text-align: center;
-            vertical-align: top;
-            padding: 0 20px;
-        }
-
-        .signature-title {
-            font-size: 10px;
-            font-weight: 700;
-            color: #475569;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-            margin-bottom: 60px;
-        }
-
-        .signature-line {
-            border-top: 1px solid #1e293b;
-            padding-top: 5px;
-            font-size: 10px;
-            color: #475569;
-        }
-
-        /* ── Footer ── */
-        .footer {
-            margin-top: 30px;
-            padding-top: 10px;
-            border-top: 1px solid #e2e8f0;
-            font-size: 8px;
-            color: #94a3b8;
-            text-align: center;
-        }
-    </style>
-</head>
-<body>
-    <div class="page">
-        <!-- Header -->
-        <div class="header">
-            <div class="header-top">
-                <div class="header-left">
-                    <div class="company-name">PT. ASTRA DAIDO STEEL INDONESIA</div>
-                    <div class="company-subtitle">Kawasan Industri Suryacipta, Karawang, Jawa Barat 41363</div>
-                </div>
-                <div class="header-right">
-                    <div class="doc-title">{{ __('qc.pdf.report') }}</div>
-                    <div class="doc-subtitle">{{ __('qc.copy.quality_control_inspection') }}</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Info Section -->
-        <div class="info-section">
-            <div class="info-box">
-                <div class="info-label">{{ __('qc.copy.no_purchase_order') }}</div>
-                <div class="info-value"><strong>{{ $inspection->purchaseOrder->po_number ?? '-' }}</strong></div>
-
-                <div class="info-label">{{ __('qc.copy.period') }}</div>
-                <div class="info-value">{{ $inspection->purchaseOrder->quotations->first()?->purchaseRequisition->period->display_label ?? $inspection->purchaseOrder->quotations->first()?->purchaseRequisition->period->name ?? '-' }}</div>
-
-                <div class="info-label">{{ __('qc.copy.supplier') }}</div>
-                <div class="info-value"><strong>{{ $inspection->purchaseOrder->supplier->name ?? '-' }}</strong></div>
-            </div>
-            <div class="info-box info-box-right">
-                <div class="info-label">{{ __('qc.copy.inspection_date') }}</div>
-                <div class="info-value"><strong>{{ $inspection->inspected_at ? \App\Support\BusinessTime::toBusiness($inspection->inspected_at)->locale(app()->getLocale())->translatedFormat('d F Y, H:i') : '-' }}</strong></div>
-
-                <div class="info-label">{{ __('qc.pdf.inspector_short', []) }}</div>
-                <div class="info-value">{{ $inspection->inspector->name ?? '-' }}</div>
-
-                <div class="info-label">{{ __('qc.copy.inspection_result') }}</div>
-                <div class="info-value">
-                    <span class="status-{{ $inspection->status }}">{{ \App\Support\StatusHelper::qcLabel($inspection->status) }}</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Summary -->
-        @php
-            $totalItems = $inspection->items->count();
-            $okItems = $inspection->items->where('status', 'ok')->count();
-            $ngItems = $inspection->items->where('status', 'ng')->count();
-        @endphp
-        <div class="summary-section">
-            <div class="summary-cell">
-                <div class="summary-number color-total">{{ $totalItems }}</div>
-                <div class="summary-label">{{ __('qc.copy.total_items_inspected') }}</div>
-            </div>
-            <div class="summary-cell">
-                <div class="summary-number color-ok">{{ $okItems }}</div>
-                <div class="summary-label">{{ __('qc.copy.item_ok') }}</div>
-            </div>
-            <div class="summary-cell">
-                <div class="summary-number color-ng">{{ $ngItems }}</div>
-                <div class="summary-label">{{ __('qc.copy.item_ng') }}</div>
-            </div>
-        </div>
-
-        <!-- Items Table -->
-        <table class="items-table">
-            <thead>
-                <tr>
-                    <th scope="col" style="width:25px;">{{ __('qc.copy.no') }}</th>
-                    <th scope="col">{{ __('qc.copy.material') }}</th>
-                    <th scope="col">{{ __('qc.copy.thickness') }}<br>{{ __('qc.copy.requested') }}</th>
-                    <th scope="col">{{ __('qc.copy.thickness') }}<br>{{ __('qc.copy.actual') }}</th>
-                    <th scope="col">{{ __('qc.copy.width') }}<br>{{ __('qc.copy.requested') }}</th>
-                    <th scope="col">{{ __('qc.copy.width') }}<br>{{ __('qc.copy.actual') }}</th>
-                    <th scope="col">{{ __('qc.copy.length') }}<br>{{ __('qc.copy.requested') }}</th>
-                    <th scope="col">{{ __('qc.copy.length') }}<br>{{ __('qc.copy.actual') }}</th>
-                    <th scope="col">{{ __('qc.copy.qty') }}</th>
-                    <th scope="col">{{ __('qc.copy.weight_unit') }}<br>{{ __('qc.copy.requested') }}</th>
-                    <th scope="col">{{ __('qc.copy.weight') }}<br>{{ __('qc.copy.actual') }}</th>
-                    <th scope="col">{{ __('qc.copy.status') }}</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($inspection->items as $index => $item)
-                    <tr>
-                        <td>{{ $index + 1 }}</td>
-                        <td class="text-left"><strong>{{ $item->prItem->material_name ?? '-' }}</strong></td>
-                        <td>{{ $item->prItem->thickness ? number_format($item->prItem->thickness, 2) : '-' }}</td>
-                        <td>{{ $item->actual_thickness ? number_format($item->actual_thickness, 2) : '-' }}</td>
-                        <td>{{ $item->prItem->width ? number_format($item->prItem->width, 1) : '-' }}</td>
-                        <td>{{ $item->actual_width ? number_format($item->actual_width, 1) : '-' }}</td>
-                        <td>{{ $item->prItem->length ? number_format($item->prItem->length, 1) : '-' }}</td>
-                        <td>{{ $item->actual_length ? number_format($item->actual_length, 1) : '-' }}</td>
-                        <td>{{ number_format($item->prItem->quantity_value, 0) }}</td>
-                        <td>{{ number_format($item->prItem->weight_needed, 0) }}</td>
-                        <td>{{ $item->actual_weight ? number_format($item->actual_weight, 0) : '-' }}</td>
-                        <td class="cell-{{ $item->status }}">{{ \App\Support\StatusHelper::qcLabel($item->status) }}</td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
-
-        <!-- Conclusion -->
-        <div class="conclusion conclusion-{{ $inspection->status }}">
-            @if($inspection->status === 'ok')
-                {{ __('qc.pdf.conclusion_ok') }}
-            @else
-                {{ __('qc.pdf.conclusion_ng', ['count' => $ngItems]) }}
-            @endif
-        </div>
-
-        <!-- Signatures -->
-        <div class="signature-section">
-            <div class="signature-box">
-                <div class="signature-title">{{ __('qc.pdf.inspector') }}</div>
-                <div class="signature-line">{{ $inspection->inspector->name ?? '_______________' }}<br>{{ __('qc.copy.quality_control') }}</div>
-            </div>
-            <div class="signature-box">
-                <div class="signature-title">{{ __('qc.pdf.acknowledged') }}</div>
-                <div class="signature-line">_______________<br>{{ __('qc.copy.manager_qc') }}</div>
-            </div>
-        </div>
-
-        <!-- Footer -->
-        <div class="footer">
-            {{ __('documents.pdf.generated', ['date' => \App\Support\BusinessTime::now()->locale(app()->getLocale())->translatedFormat('d F Y, H:i').' '.\App\Support\BusinessTime::label()]) }}
-        </div>
-    </div>
-</body>
-</html>
+    <table class="signatures">
+        <thead>
+            <tr>
+                <th style="width: 50%">{{ $label('inspected_by') }}</th>
+                <th style="width: 50%">{{ $label('acknowledged_by') }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><div class="signature-role">( {{ $label('signature_inspector') }} )</div></td>
+                <td><div class="signature-role">( {{ $label('signature_production') }} )</div></td>
+            </tr>
+        </tbody>
+    </table>
+@endsection

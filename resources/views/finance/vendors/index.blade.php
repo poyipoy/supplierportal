@@ -169,7 +169,7 @@
         </x-ui.card>
     @endif
 
-    {{-- Daftar Master Rekanan Vendor Lokal --}}
+    {{-- Daftar Master Supplier Lokal --}}
     <x-ui.data-table
         :title="__('local_procurement.labels.vendor_register_old')"
         :description="__('local_invoice.labels.company_data')"

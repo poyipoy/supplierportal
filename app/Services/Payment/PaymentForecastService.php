@@ -8,6 +8,24 @@ use App\Support\Money;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 
+/**
+ * PaymentForecastService
+ *
+ * Operational contract: Ready-to-Pay Realization / Velocity Tracker
+ * UI Representation: "Akumulasi Invoice Siap Dibayar" (finance.labels.ready_accumulation)
+ *
+ * This service calculates the volume and total net payable of Local Invoices that reached
+ * readiness for payment (event timestamp: ready_to_pay_at, fallback approved_at) across
+ * weekly and rolling monthly time buckets.
+ *
+ * Key Invariants:
+ * 1. Event Window: Grouping is strictly by the Ready-to-Pay event date (in Asia/Jakarta business timezone),
+ *    independent of invoice due_date or actual payment execution date.
+ * 2. Historical Realization: Invoices that have transitioned to PAID remain recorded in their original
+ *    Ready-to-Pay historical bucket to reflect operational milestone velocity.
+ * 3. Scope & Legacy Compatibility: Only Local Invoices are evaluated. For API and export compatibility,
+ *    `ga_amount` and `drp_amount` are returned with constant 0.0 values.
+ */
 class PaymentForecastService
 {
     public const DEFAULT_WEEKLY_PERIODS = 12;

@@ -6,6 +6,7 @@ use App\Http\Middleware\AddSecurityHeaders;
 use App\Http\Middleware\ApplyUserLocale;
 use App\Http\Middleware\DecodeHashids;
 use App\Http\Middleware\EnforceAuthSessionSecurity;
+use App\Http\Middleware\EnforceMaintenance;
 use App\Http\Middleware\EnforcePasswordChange;
 use App\Http\Middleware\EnforceSupplierDomain;
 use App\Http\Middleware\EnsurePasswordConfirmation;
@@ -95,6 +96,7 @@ return Application::configure(basePath: dirname(__DIR__))
             EnforcePasswordChange::class,
             AddSecurityHeaders::class,
             EnforceSupplierDomain::class,
+            EnforceMaintenance::class,
             LimitOperationalRequests::class,
         ]);
         $middleware->appendToPriorityList(StartSession::class, ApplyUserLocale::class);

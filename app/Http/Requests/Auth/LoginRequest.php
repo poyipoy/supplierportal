@@ -64,6 +64,19 @@ class LoginRequest extends FormRequest
     }
 
     /**
+     * Get custom error messages for validator errors.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'email.required' => __('auth.login.email_empty'),
+            'password.required' => __('auth.login.password_empty'),
+        ];
+    }
+
+    /**
      * Attempt to authenticate the request's credentials.
      *
      * @throws ValidationException

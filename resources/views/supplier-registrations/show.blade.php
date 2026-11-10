@@ -387,14 +387,13 @@
         <div
             class="tw:w-full tw:max-w-lg tw:rounded-ui-sm tw:bg-surface tw:p-6 tw:shadow-xl tw:border tw:border-outline-variant"
             @click.away="approveModal = false"
-            x-data="{ scopeImport: true, scopeLocal: false }"
         >
             <div class="tw:flex tw:items-center tw:justify-between tw:mb-4">
                 <div class="tw:flex tw:items-center tw:gap-2.5 tw:text-success">
                     <x-ui.icon name="check-circle" size="md" />
                     <h3 class="tw:m-0 tw:text-ui-lg tw:font-bold tw:text-on-surface">{{ __('local_procurement.registration.approve_supplier') }}</h3>
                 </div>
-                <button type="button" class="tw:border-0 tw:bg-transparent tw:text-on-surface-variant tw:hover:text-on-surface" @click="approveModal = false">
+                <button type="button" class="tw:border-0 tw:bg-transparent tw:text-on-surface-variant tw:hover:text-on-surface" @click="approveModal = false" aria-label="{{ __('local_invoice.actions.cancel') }}">
                     <x-ui.icon name="x" size="sm" />
                 </button>
             </div>
@@ -405,43 +404,16 @@
 
             <form method="POST" action="{{ route('supplier-registrations.approve', $attempt->hash) }}">
                 @csrf
+                <input type="hidden" name="scopes[]" value="local">
 
-                {{-- SCOPE ASSIGNMENT --}}
+                {{-- SCOPE ASSIGNMENT (Public registration is strictly for Local Suppliers) --}}
                 <div class="tw:rounded-ui-xs tw:border tw:border-outline-variant tw:bg-surface-container-lowest tw:p-4 tw:mb-4">
-                    <label class="tw:block tw:text-ui-sm tw:font-bold tw:text-on-surface tw:mb-2">
-                        {{ __('local_procurement.registration.assign_scopes') }} <span class="tw:text-error">*</span>
-                    </label>
-
-                    {{-- PRESET SHORTCUTS --}}
-                    <div class="tw:flex tw:gap-2 tw:mb-3">
-                        <button type="button" class="ui-focus-ring tw:px-2.5 tw:py-1 tw:rounded-ui-xs tw:border tw:border-outline-variant tw:bg-surface tw:text-ui-xs tw:font-medium tw:hover:bg-surface-container" @click="scopeImport = true; scopeLocal = false">
-                            {{ __('local_procurement.registration.import_only') }}
-                        </button>
-                        <button type="button" class="ui-focus-ring tw:px-2.5 tw:py-1 tw:rounded-ui-xs tw:border tw:border-outline-variant tw:bg-surface tw:text-ui-xs tw:font-medium tw:hover:bg-surface-container" @click="scopeImport = false; scopeLocal = true">
-                            {{ __('local_procurement.registration.local_only') }}
-                        </button>
-                        <button type="button" class="ui-focus-ring tw:px-2.5 tw:py-1 tw:rounded-ui-xs tw:border tw:border-outline-variant tw:bg-surface tw:text-ui-xs tw:font-medium tw:hover:bg-surface-container" @click="scopeImport = true; scopeLocal = true">
-                            {{ __('local_procurement.registration.both') }}
-                        </button>
+                    <div class="tw:flex tw:items-center tw:justify-between tw:gap-2 tw:mb-1">
+                        <span class="tw:text-ui-sm tw:font-bold tw:text-on-surface">{{ __('local_procurement.registration.assign_scopes') }}</span>
+                        <x-ui.status-chip tone="info" size="sm">{{ __('local_procurement.registration.local_only') }}</x-ui.status-chip>
                     </div>
-
-                    <div class="tw:space-y-2">
-                        <label class="tw:flex tw:items-center tw:gap-2.5 tw:cursor-pointer">
-                            <input type="checkbox" name="scopes[]" value="import" x-model="scopeImport" class="form-check-input tw:mt-0">
-                            <div>
-                                <span class="tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('local_procurement.registration.import_scope') }}</span>
-                                <span class="tw:text-ui-xs tw:text-on-surface-variant tw:block">{{ __('local_procurement.registration.import_scope_help') }}</span>
-                            </div>
-                        </label>
-
-                        <label class="tw:flex tw:items-center tw:gap-2.5 tw:cursor-pointer">
-                            <input type="checkbox" name="scopes[]" value="local" x-model="scopeLocal" class="form-check-input tw:mt-0">
-                            <div>
-                                <span class="tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('local_procurement.registration.local_scope') }}</span>
-                                <span class="tw:text-ui-xs tw:text-on-surface-variant tw:block">{{ __('local_procurement.registration.local_scope_help') }}</span>
-                            </div>
-                        </label>
-                    </div>
+                    <p class="tw:m-0 tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('local_procurement.registration.local_scope') }}</p>
+                    <p class="tw:m-0 tw:mt-0.5 tw:text-ui-xs tw:text-on-surface-variant">{{ __('local_procurement.registration.local_scope_help') }}</p>
                 </div>
 
                 {{-- VENDOR CATEGORY (decides whether a Surat Jalan is required on invoices) --}}
@@ -522,7 +494,6 @@
                     </button>
                     <button
                         type="submit"
-                        :disabled="!scopeImport && !scopeLocal"
                         class="ui-focus-ring tw:px-5 tw:py-2 tw:rounded-ui-sm tw:bg-success tw:text-on-success tw:text-ui-sm tw:font-semibold tw:border-0 tw:hover:brightness-95 tw:disabled:opacity-50"
                     >
                         {{ __('local_procurement.registration.confirm_approval') }}

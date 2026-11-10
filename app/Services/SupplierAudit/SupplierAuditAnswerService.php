@@ -2,6 +2,7 @@
 
 namespace App\Services\SupplierAudit;
 
+use App\Enums\SupplierAuditStatus;
 use App\Models\SupplierAudit;
 use App\Models\SupplierAuditAnswer;
 use App\Models\SupplierAuditStatusHistory;
@@ -48,29 +49,27 @@ class SupplierAuditAnswerService
             if ($submit) {
                 $this->assertComplete($rows);
 
-                $from = $locked->status;
-                $locked->update([
-                    'status' => SupplierAudit::STATUS_SUBMITTED,
-                    'submitted_at' => now(),
-                ]);
-                $history = $locked->statusHistories()->create([
-                    'from_status' => $from,
-                    'to_status' => SupplierAudit::STATUS_SUBMITTED,
-                    'event' => SupplierAuditStatusHistory::EVENT_SUBMITTED,
-                    'actor_id' => $supplier->id,
-                ]);
+                $locked = app(SupplierAuditStateEngine::class)->transition(
+                    audit: $locked,
+                    target: SupplierAuditStatus::SUBMITTED,
+                    actor: $supplier,
+                    metadata: ['history_event' => SupplierAuditStatusHistory::EVENT_SUBMITTED],
+                    attributes: ['submitted_at' => now()],
+                );
+                /** @var SupplierAuditStatusHistory $history */
+                $history = $locked->getRelation('latestTransitionHistory')
+                    ?? $locked->statusHistories()->latest('id')->first();
 
                 return [$locked, $history];
             }
 
             if ($locked->status === SupplierAudit::STATUS_ASSIGNED) {
-                $locked->update(['status' => SupplierAudit::STATUS_DRAFT]);
-                $locked->statusHistories()->create([
-                    'from_status' => SupplierAudit::STATUS_ASSIGNED,
-                    'to_status' => SupplierAudit::STATUS_DRAFT,
-                    'event' => SupplierAuditStatusHistory::EVENT_DRAFT_STARTED,
-                    'actor_id' => $supplier->id,
-                ]);
+                $locked = app(SupplierAuditStateEngine::class)->transition(
+                    audit: $locked,
+                    target: SupplierAuditStatus::DRAFT,
+                    actor: $supplier,
+                    metadata: ['history_event' => SupplierAuditStatusHistory::EVENT_DRAFT_STARTED],
+                );
             }
 
             return [$locked, null];

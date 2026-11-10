@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Casts\LocalInvoicePaymentStatusCast;
+use App\Enums\LocalInvoicePaymentStatus;
 use App\Traits\HasHashids;
 use Illuminate\Database\Eloquent\Model;
 
@@ -19,7 +21,32 @@ class LocalInvoicePayment extends Model
 
     protected function casts(): array
     {
-        return ['expected_amount' => 'decimal:2', 'actual_paid_total' => 'decimal:2', 'finalized_at' => 'datetime'];
+        return [
+            'status' => LocalInvoicePaymentStatusCast::class,
+            'expected_amount' => 'decimal:2',
+            'actual_paid_total' => 'decimal:2',
+            'finalized_at' => 'datetime',
+        ];
+    }
+
+    public function statusEnum(): LocalInvoicePaymentStatus
+    {
+        return LocalInvoicePaymentStatus::tryFromWithLegacy($this->status ?? self::STATUS_OPEN);
+    }
+
+    public function isOpen(): bool
+    {
+        return $this->statusEnum() === LocalInvoicePaymentStatus::OPEN;
+    }
+
+    public function isCorrectionRequired(): bool
+    {
+        return $this->statusEnum() === LocalInvoicePaymentStatus::CORRECTION_REQUIRED;
+    }
+
+    public function isFinalized(): bool
+    {
+        return $this->statusEnum() === LocalInvoicePaymentStatus::FINALIZED;
     }
 
     public function invoice()

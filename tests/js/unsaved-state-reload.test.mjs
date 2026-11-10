@@ -315,3 +315,106 @@ test('notification and audit repeated init/destroy keep one owned dirty source a
     notification.init();
     assert.equal(f.guard.isDirty(), true, 'remount registers current component state');
 });
+
+test('auth/session forms, closed modal forms, and action-only POST forms are not tracked for unsaved changes', (t) => {
+    const f = fixture(t);
+    const makeForm = ({ action = '/save', explicit = false, inClosedModal = false, hiddenAncestor = false, elements = null } = {}) => {
+        const frm = new f.form.constructor();
+        frm.matches = (selector) => explicit && selector.includes('data-track-unsaved="true"');
+        frm.getAttribute = (attr) => (attr === 'action' ? action : null);
+        frm.closest = (selector) => {
+            if (selector === '.modal' && inClosedModal) {
+                return { classList: { contains: () => false } };
+            }
+            if (selector === '[hidden]' && hiddenAncestor) {
+                return {};
+            }
+            return null;
+        };
+        frm.querySelectorAll = (selector) => {
+            if (selector !== 'input, select, textarea') return [];
+            return elements ?? [{ tagName: 'INPUT', type: 'text', name: 'field', value: frm.value, disabled: false, hasAttribute: () => false, closest: () => null }];
+        };
+        return frm;
+    };
+
+    const loginForm = makeForm({ action: 'http://localhost/login' });
+    const confirmPasswordForm = makeForm({ action: '/confirm-password' });
+    const twoFactorForm = makeForm({ action: '/two-factor-challenge' });
+    const regAccessForm = makeForm({ action: '/supplier/registration/access' });
+    const closedModalForm = makeForm({ action: '/items', explicit: true, inClosedModal: true });
+    const hiddenForm = makeForm({ action: '/items', explicit: true, hiddenAncestor: true });
+    const actionOnlyPostForm = makeForm({
+        action: '/custom-action',
+        elements: [{ tagName: 'INPUT', type: 'hidden', name: '_token', value: 'csrf', disabled: false, hasAttribute: () => false, closest: () => null }],
+    });
+
+    const forms = [loginForm, confirmPasswordForm, twoFactorForm, regAccessForm, closedModalForm, hiddenForm, actionOnlyPostForm];
+    f.document.querySelectorAll = () => forms;
+    f.guard.resetSnapshot();
+
+    for (const frm of forms) {
+        frm.value = 'mutated-by-autofill-or-script';
+    }
+
+    assert.equal(f.guard.isDirty(), false, 'excluded forms must never trigger dirty state');
+});
+
+test('search inputs do not mark interaction, autofill on untouched form updates baseline, and modal close resets form state', (t) => {
+    const f = fixture(t);
+    let isAutofilled = false;
+    const trackedInput = {
+        tagName: 'INPUT',
+        type: 'text',
+        name: 'field',
+        get value() { return f.form.value; },
+        disabled: false,
+        hasAttribute: () => false,
+        closest: (sel) => (sel === 'form' ? f.form : null),
+        matches: (sel) => isAutofilled && sel.includes('autofill'),
+    };
+    f.form.closest = () => null;
+    f.form.querySelectorAll = (selector) => (selector === 'input, select, textarea' ? [trackedInput] : []);
+    f.guard.resetSnapshot(f.form);
+
+    // 1. Search input change event must not mark form as interacted
+    const searchInput = {
+        tagName: 'INPUT',
+        type: 'search',
+        name: '',
+        value: 'filter query',
+        disabled: false,
+        hasAttribute: () => false,
+        closest: () => f.form,
+    };
+    const searchChange = new Event('change');
+    Object.defineProperty(searchChange, 'target', { value: searchInput });
+    Object.defineProperty(searchChange, 'isTrusted', { value: true });
+    f.document.dispatchEvent(searchChange);
+    assert.equal(f.guard.hasUserInteracted(f.form), false, 'search input must not mark form as interacted');
+
+    // 2. Browser autofill on untouched form updates baseline snapshot instead of flagging dirty
+    isAutofilled = true;
+    f.form.value = 'autofilled-value';
+    assert.equal(f.guard.isDirty(), false, 'autofill on untouched form must not trigger Leave This Page');
+    isAutofilled = false;
+    assert.equal(f.guard.isDirty(), false, 'baseline snapshot was updated to autofilled value');
+
+    // 3. Real trusted user input on tracked element marks form interacted and dirty
+    f.form.value = 'user-typed-value';
+    const userInput = new Event('input');
+    Object.defineProperty(userInput, 'target', { value: trackedInput });
+    Object.defineProperty(userInput, 'isTrusted', { value: true });
+    f.document.dispatchEvent(userInput);
+    assert.equal(f.guard.hasUserInteracted(f.form), true);
+    assert.equal(f.guard.isDirty(), true);
+
+    // 4. Closing a Bootstrap modal resets forms inside that modal
+    const modalEvent = new Event('hidden.bs.modal');
+    Object.defineProperty(modalEvent, 'target', {
+        value: { querySelectorAll: (sel) => (sel === 'form' ? [f.form] : []) },
+    });
+    f.document.dispatchEvent(modalEvent);
+    assert.equal(f.guard.hasUserInteracted(f.form), false, 'modal close clears interaction state');
+    assert.equal(f.guard.isDirty(), false, 'modal close resets form baseline snapshot');
+});

@@ -163,6 +163,24 @@ class LocalProcurementStreamingReaderTest extends TestCase
         iterator_to_array(app(LocalProcurementStreamingReader::class)->rows($path, 'GR'));
     }
 
+    public function test_inspect_file_rejects_file_exceeding_ten_mebibytes(): void
+    {
+        $path = tempnam(sys_get_temp_dir(), 'adasi-oversized-');
+        $handle = fopen($path, 'wb');
+        ftruncate($handle, (10240 * 1024) + 1);
+        fclose($handle);
+
+        try {
+            $this->expectException(ValidationException::class);
+            $this->expectExceptionMessage(__('local_procurement.formats.invalid_file'));
+            app(LocalProcurementStreamingReader::class)->inspectFile($path, 'xlsx');
+        } finally {
+            if (file_exists($path)) {
+                unlink($path);
+            }
+        }
+    }
+
     protected function tearDown(): void
     {
         InforExportFixtures::cleanup();

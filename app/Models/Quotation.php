@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Casts\QuotationStatusCast;
+use App\Enums\QuotationStatus;
 use App\Support\BusinessTime;
 use App\Support\StatusHelper;
 use App\Traits\HasHashids;
@@ -63,11 +65,17 @@ class Quotation extends Model
     protected function casts(): array
     {
         return [
+            'status' => QuotationStatusCast::class,
             'submitted_at' => 'datetime',
             'reviewed_at' => 'datetime',
             'estimated_delivery' => 'date',
             'validity_period' => 'date',
         ];
+    }
+
+    public function statusEnum(): QuotationStatus
+    {
+        return QuotationStatus::tryFromWithLegacy($this->status ?? self::STATUS_DRAFT);
     }
 
     public function isExpired(): bool

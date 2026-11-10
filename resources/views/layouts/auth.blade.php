@@ -153,8 +153,9 @@
         }
         .auth-registration-actions {
             margin-top: 1.25rem;
-            border: 1px solid var(--md-outline-variant);
-            border-radius: var(--md-shape-sm);
+            border: 1px solid var(--md-outline);
+            border-radius: var(--md-shape-md);
+            background: var(--md-surface-container-low);
             overflow: hidden;
         }
         .auth-next-step {
@@ -167,11 +168,11 @@
             transition: background-color 160ms ease;
         }
         .auth-next-step + .auth-next-step {
-            border-top: 1px solid var(--md-outline-variant);
+            border-top: 1px solid var(--md-outline);
         }
         .auth-next-step:hover,
         .auth-next-step:focus-visible {
-            background: var(--md-surface-container-low);
+            background: var(--md-surface-container);
         }
         .auth-next-step__icon {
             display: inline-flex;
@@ -215,7 +216,7 @@
             min-height: 100vh;
             min-height: 100dvh;
             padding: 2rem 1.5rem;
-            background: var(--md-background);
+            background: var(--ui-workspace-bg);
         }
         @media (min-width: 640px) {
             .auth-form-panel { padding: 2.5rem; }
@@ -263,11 +264,12 @@
             .auth-mobile-brand { display: none; }
         }
 
-        /* Auth card — clean, flat, no glass */
+        /* Auth card — clean, elevated, no glass */
         .auth-card {
             background: var(--md-surface);
-            border: 1px solid var(--md-outline-variant);
-            border-radius: var(--md-shape-sm);
+            border: 1px solid var(--md-outline);
+            border-radius: var(--md-shape-lg);
+            box-shadow: var(--ui-shadow-1);
             padding: 1.75rem;
         }
         @media (min-width: 640px) {

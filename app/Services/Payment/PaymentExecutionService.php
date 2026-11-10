@@ -2,6 +2,10 @@
 
 namespace App\Services\Payment;
 
+use App\Enums\GaClaimStatus;
+use App\Enums\LocalInvoiceStatus;
+use App\Enums\PaymentBatchStatus;
+use App\Enums\PaymentGroupStatus;
 use App\Exceptions\BusinessRuleArgumentException;
 use App\Exceptions\BusinessRuleException;
 use App\Models\GaClaim;
@@ -12,7 +16,9 @@ use App\Models\PaymentBatch;
 use App\Models\PaymentGroup;
 use App\Models\PaymentItem;
 use App\Models\User;
+use App\Services\Ga\GaClaimStateEngine;
 use App\Services\LocalInvoice\InvoiceNotificationService;
+use App\Services\LocalInvoice\LocalInvoiceStateEngine;
 use App\Services\LocalInvoice\MakerCheckerService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -90,14 +96,20 @@ class PaymentExecutionService
 
             $now = now();
 
-            $grp->update([
-                'status' => PaymentGroup::STATUS_PAID,
-                'transfer_reference' => trim((string) $data['transfer_reference']),
-                'transfer_date' => $data['transfer_date'],
-                'payment_notes' => $data['payment_notes'] ?? null,
-                'paid_by' => $actor->id,
-                'paid_at' => $now,
-            ]);
+            $grp = app(PaymentGroupStateEngine::class)->transition(
+                model: $grp,
+                target: PaymentGroupStatus::PAID,
+                actor: $actor,
+                metadata: [
+                    'attributes' => [
+                        'transfer_reference' => trim((string) $data['transfer_reference']),
+                        'transfer_date' => $data['transfer_date'],
+                        'payment_notes' => $data['payment_notes'] ?? null,
+                        'paid_by' => $actor->id,
+                        'paid_at' => $now,
+                    ],
+                ]
+            );
 
             // Update all active payable items in this group
             foreach ($activeItems as $item) {
@@ -109,24 +121,25 @@ class PaymentExecutionService
                             throw new BusinessRuleException(__('finance.execution_validation.invoice_status', ['number' => $inv->invoice_number, 'status' => $inv->status]));
                         }
 
-                        $originalStatus = $inv->status;
-
-                        $inv->update([
-                            'status' => LocalInvoice::STATUS_PAID,
-                            'paid_at' => $now,
-                            'completed_at' => $now,
-                        ]);
-
-                        $history = $inv->statusHistories()->create([
-                            'from_status' => $originalStatus,
-                            'to_status' => LocalInvoice::STATUS_PAID,
-                            'actor_id' => $actor->id,
-                            'event' => 'paid',
-                            'notes' => __('finance.history.payment_confirmed', ['reference' => $data['transfer_reference']]),
-                            'created_at' => $now,
-                        ]);
-
-                        $this->notifications->send($inv, $history, ['reference' => (string) $data['transfer_reference'], 'amount' => (string) $item->amount]);
+                        app(LocalInvoiceStateEngine::class)->transition(
+                            model: $inv,
+                            target: LocalInvoiceStatus::PAID,
+                            actor: $actor,
+                            reason: __('finance.history.payment_confirmed', ['reference' => $data['transfer_reference']]),
+                            metadata: [
+                                'event' => 'paid',
+                                'timestamp' => $now,
+                                'from_status_override' => $inv->status,
+                                'attributes' => [
+                                    'paid_at' => $now,
+                                    'completed_at' => $now,
+                                ],
+                                'notification_data' => [
+                                    'reference' => (string) $data['transfer_reference'],
+                                    'amount' => (string) $item->amount,
+                                ],
+                            ]
+                        );
                     }
                 } elseif ($item->payable_type === GaClaim::class) {
                     /** @var GaClaim $clm */
@@ -136,21 +149,20 @@ class PaymentExecutionService
                             throw new BusinessRuleException(__('finance.execution_validation.claim_status', ['number' => $clm->claim_number, 'status' => $clm->status]));
                         }
 
-                        $originalStatus = $clm->status;
-
-                        $clm->update([
-                            'status' => GaClaim::STATUS_PAID,
-                            'paid_at' => $now,
-                        ]);
-
-                        $clm->statusHistories()->create([
-                            'from_status' => $originalStatus,
-                            'to_status' => GaClaim::STATUS_PAID,
-                            'actor_id' => $actor->id,
-                            'event' => 'paid',
-                            'notes' => __('finance.history.payment_confirmed', ['reference' => $data['transfer_reference']]),
-                            'created_at' => $now,
-                        ]);
+                        app(GaClaimStateEngine::class)->transition(
+                            model: $clm,
+                            target: GaClaimStatus::PAID,
+                            actor: $actor,
+                            reason: __('finance.history.payment_confirmed', ['reference' => $data['transfer_reference']]),
+                            metadata: [
+                                'event' => 'paid',
+                                'timestamp' => $now,
+                                'from_status_override' => $clm->status,
+                                'attributes' => [
+                                    'paid_at' => $now,
+                                ],
+                            ]
+                        );
                     }
                 }
             }
@@ -161,15 +173,18 @@ class PaymentExecutionService
                 ->where('subtotal_amount', '>', 0)
                 ->count();
 
-            if ($unpaidCount === 0) {
-                $batch->update([
-                    'status' => PaymentBatch::STATUS_PAID,
-                    'paid_at' => $now,
-                ]);
-            } else {
-                $batch->update([
-                    'status' => PaymentBatch::STATUS_PARTIALLY_PAID,
-                ]);
+            $targetBatchStatus = $unpaidCount === 0 ? PaymentBatchStatus::PAID : PaymentBatchStatus::PARTIALLY_PAID;
+            $batchAttributes = $unpaidCount === 0 ? ['paid_at' => $now] : [];
+
+            if ($batch->statusEnum() !== $targetBatchStatus) {
+                app(PaymentBatchStateEngine::class)->transition(
+                    model: $batch,
+                    target: $targetBatchStatus,
+                    actor: $actor,
+                    metadata: ['attributes' => $batchAttributes]
+                );
+            } elseif ($batchAttributes !== []) {
+                $batch->update($batchAttributes);
             }
 
             return $grp->fresh(['items', 'batch']);
@@ -294,20 +309,24 @@ class PaymentExecutionService
             }
 
             $now = now();
+            $lockedBatch = PaymentBatch::whereKey($lockedBatch->id)->lockForUpdate()->firstOrFail();
             $unpaidCount = $lockedBatch->groups()
                 ->whereNotIn('status', [PaymentGroup::STATUS_PAID, PaymentGroup::STATUS_CANCELLED])
                 ->where('subtotal_amount', '>', 0)
                 ->count();
 
-            if ($unpaidCount === 0) {
-                $lockedBatch->update([
-                    'status' => PaymentBatch::STATUS_PAID,
-                    'paid_at' => $now,
-                ]);
-            } else {
-                $lockedBatch->update([
-                    'status' => PaymentBatch::STATUS_PARTIALLY_PAID,
-                ]);
+            $targetBatchStatus = $unpaidCount === 0 ? PaymentBatchStatus::PAID : PaymentBatchStatus::PARTIALLY_PAID;
+            $batchAttributes = $unpaidCount === 0 ? ['paid_at' => $now] : [];
+
+            if ($lockedBatch->statusEnum() !== $targetBatchStatus) {
+                $lockedBatch = app(PaymentBatchStateEngine::class)->transition(
+                    model: $lockedBatch,
+                    target: $targetBatchStatus,
+                    actor: $actor,
+                    metadata: ['attributes' => $batchAttributes]
+                );
+            } elseif ($batchAttributes !== []) {
+                $lockedBatch->update($batchAttributes);
             }
 
             return $lockedBatch->fresh(['groups.items', 'creator', 'finalizer']);

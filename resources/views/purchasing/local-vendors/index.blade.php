@@ -168,7 +168,7 @@
         </x-ui.card>
     @endif
 
-    {{-- Vendors Table --}}
+    {{-- Suppliers Table --}}
     <x-ui.data-table
         :title="__('local_procurement.labels.vendor_register')"
         :description="__('local_procurement.labels.vendor_list_help')"

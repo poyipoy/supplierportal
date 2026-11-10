@@ -60,7 +60,7 @@ function askToReconnectDialog(win, checkSession) {
 }
 
 function isReconnectOutcome(value) {
-    return value !== null && typeof value === 'object' && (typeof value.token === 'string' || typeof value.url === 'string');
+    return value !== null && typeof value === 'object' && (typeof value.token === 'string' || typeof value.url === 'string' || value.unauthenticated === true);
 }
 
 // The page keeps working with the session the server confirmed: every place that sends the
@@ -237,7 +237,8 @@ export function bootSessionSync(win, doc) {
         }
         if ([401, 403, 419].includes(response.status)) {
             const challenge = typeof body?.two_factor_url === 'string' && isSameOrigin(win, body.two_factor_url) ? body.two_factor_url : null;
-            return { url: challenge ?? currentPageUrl(win) };
+            if (challenge) return { url: challenge };
+            return { unauthenticated: true };
         }
         throw new Error(failedText());
     };
@@ -262,16 +263,21 @@ export function bootSessionSync(win, doc) {
         } catch { /* A failing alert must not strand the page; the next failed request asks again. */ }
         if (answer?.isConfirmed) {
             let outcome = isReconnectOutcome(answer.value) ? answer.value : null;
+            let checkFailed = false;
             if (!outcome && resumable) {
-                try { outcome = await checkSession(); } catch (error) { notify('error', error?.message); }
+                try { outcome = await checkSession(); } catch (error) { checkFailed = true; notify('error', error?.message); }
             }
             asking = false;
-            if (!resumable) {
-                leave(currentPageUrl(win));
-            } else if (typeof outcome?.token === 'string') {
+            if (checkFailed) return;
+            if (typeof outcome?.token === 'string') {
                 resume(outcome.token);
             } else if (typeof outcome?.url === 'string') {
                 leave(outcome.url);
+            } else if (!resumable) {
+                leave(currentPageUrl(win));
+            } else {
+                refusedAt = Date.now();
+                notify('warning', copy.unauthenticated || win.AdasiI18n.t('js.session.expired_text'));
             }
             return;
         }

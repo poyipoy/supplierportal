@@ -10,6 +10,9 @@
         'pic_name' => __('supplier_contact.fields.name'),
         'pic_email' => __('supplier_contact.fields.email'),
         'pic_phone' => __('supplier_contact.fields.phone'),
+        'address' => __('supplier_contact.profile.address'),
+        'phone' => __('supplier_contact.profile.phone'),
+        'category' => __('supplier_contact.profile.category'),
     ];
     $notSet = __('supplier_contact.common.not_set');
 @endphp
@@ -50,6 +53,7 @@
                     </thead>
                     <tbody>
                         @foreach($fieldLabels as $field => $label)
+                            @continue(in_array($field, \App\Models\SupplierChangeRequest::COMPANY_FIELDS, true) && blank($proposed[$field] ?? null))
                             @php
                                 $currentValue = $profile?->{$field};
                                 $proposedValue = $proposed[$field] ?? null;
@@ -103,12 +107,30 @@
     <div class="tw:grid tw:items-start tw:gap-4 tw:lg:grid-cols-2">
         <x-ui.card :title="__('supplier_contact.directory.current_title')">
             @include('supplier-contact._contact', ['profile' => $profile])
+            <dl class="tw:m-0 tw:mt-4 tw:grid tw:grid-cols-[auto_minmax(0,1fr)] tw:gap-x-4 tw:gap-y-2 tw:border-t tw:border-outline-variant tw:pt-4 tw:text-ui-sm">
+                <dt class="tw:font-normal tw:text-on-surface-variant">{{ __('supplier_contact.profile.company_name') }}</dt>
+                <dd class="tw:m-0 tw:font-semibold tw:text-on-surface tw:wrap-break-word">{{ $profile?->company_name ?: $vendor->name }}</dd>
+                <dt class="tw:font-normal tw:text-on-surface-variant">{{ __('supplier_contact.profile.address') }}</dt>
+                <dd class="tw:m-0 tw:wrap-break-word">{{ $profile?->address ?: $notSet }}</dd>
+                <dt class="tw:font-normal tw:text-on-surface-variant">{{ __('supplier_contact.profile.phone') }}</dt>
+                <dd class="tw:m-0 tw:wrap-break-word">{{ $profile?->phone ?: $notSet }}</dd>
+                <dt class="tw:font-normal tw:text-on-surface-variant">{{ __('supplier_contact.profile.category') }}</dt>
+                <dd class="tw:m-0 tw:wrap-break-word">{{ $profile?->category ?: $notSet }}</dd>
+                <dt class="tw:font-normal tw:text-on-surface-variant">{{ __('supplier_contact.profile.account_email') }}</dt>
+                <dd class="tw:m-0 tw:break-all">{{ $vendor->email }}</dd>
+            </dl>
         </x-ui.card>
 
         <x-ui.card :title="__('supplier_contact.directory.edit_title')" :description="__('supplier_contact.directory.edit_help')">
             <form method="POST" action="{{ route('purchasing.import-suppliers.contact.update', $vendor) }}" class="tw:grid tw:gap-3" novalidate>
                 @csrf
                 @method('PATCH')
+                <x-ui.input name="company_name" id="direct-company-name" :label="__('supplier_contact.profile.company_name')" :value="$profile?->company_name ?: $vendor->name" autocomplete="off" maxlength="255" />
+                <x-ui.textarea name="address" id="direct-address" :label="__('supplier_contact.profile.address')" :value="$profile?->address" :placeholder="__('supplier_contact.placeholders.address')" rows="2" maxlength="1000" />
+                <div class="tw:grid tw:gap-3 tw:sm:grid-cols-2">
+                    <x-ui.input name="phone" id="direct-company-phone" type="tel" :label="__('supplier_contact.profile.phone')" :value="$profile?->phone" :placeholder="__('supplier_contact.placeholders.phone')" autocomplete="off" maxlength="50" />
+                    <x-ui.input name="category" id="direct-category" :label="__('supplier_contact.profile.category')" :value="$profile?->category" :placeholder="__('supplier_contact.placeholders.category')" autocomplete="off" maxlength="100" />
+                </div>
                 <x-ui.input name="pic_name" id="direct-pic-name" :label="__('supplier_contact.fields.name')" :value="$profile?->pic_name" :placeholder="__('supplier_contact.placeholders.name')" autocomplete="off" maxlength="100" required />
                 <div class="tw:grid tw:gap-3 tw:sm:grid-cols-2">
                     <x-ui.input name="pic_email" id="direct-pic-email" type="email" :label="__('supplier_contact.fields.email')" :value="$profile?->pic_email" :placeholder="__('supplier_contact.placeholders.email')" autocomplete="off" maxlength="100" required />

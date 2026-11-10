@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Supplier;
 
 use App\Exceptions\MtcRequiredException;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Supplier\BatchUploadShipmentDocumentsRequest;
 use App\Models\Attachment;
 use App\Models\PurchaseOrder;
 use App\Models\Shipment;
@@ -518,6 +519,51 @@ class SupplierShipmentController extends Controller
         } catch (\InvalidArgumentException|\DomainException|\RuntimeException $e) {
             if ($request->expectsJson()) {
                 throw ValidationException::withMessages(['file' => $e->getMessage()]);
+            }
+
+            return back()->with('error', __('shipments.errors.upload_with_reason', ['message' => $e->getMessage()]));
+        } catch (\Throwable $e) {
+            if ($request->expectsJson()) {
+                throw $e;
+            }
+            report($e);
+
+            return back()->with('error', __('shipments.copy.an_unexpected_error_occurred_while_uploading_the_document_please_try_again'));
+        }
+    }
+
+    /**
+     * Batch upload multiple document attachments for this shipment.
+     */
+    public function uploadDocumentsBatch(BatchUploadShipmentDocumentsRequest $request, $id)
+    {
+        $shipment = Shipment::findOrFail($id);
+
+        Gate::authorize('uploadDocument', $shipment);
+
+        try {
+            $attachments = $this->shipmentService->uploadDocumentsBatch(
+                $shipment,
+                $request->validated('documents'),
+                $request->user()
+            );
+
+            if ($request->expectsJson()) {
+                $request->session()->flash('success', __('shipments.copy.batch_upload_success'));
+
+                return response()->json([
+                    'success' => true,
+                    'count' => count($attachments),
+                    'redirect' => route('supplier.shipments.show', $shipment),
+                ]);
+            }
+
+            return back()->with('success', __('shipments.copy.batch_upload_success'));
+        } catch (ValidationException $e) {
+            throw $e;
+        } catch (\InvalidArgumentException|\DomainException|\RuntimeException $e) {
+            if ($request->expectsJson()) {
+                throw ValidationException::withMessages(['documents' => $e->getMessage()]);
             }
 
             return back()->with('error', __('shipments.errors.upload_with_reason', ['message' => $e->getMessage()]));

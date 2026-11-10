@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Casts\GaClaimStatusCast;
+use App\Enums\GaClaimStatus;
 use App\Traits\HasHashids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -69,6 +71,7 @@ class GaClaim extends Model
     protected function casts(): array
     {
         return [
+            'status' => GaClaimStatusCast::class,
             'claim_date' => 'date',
             'amount' => 'decimal:2',
             'approved_bank_snapshot' => 'array',
@@ -79,6 +82,11 @@ class GaClaim extends Model
             'ready_to_pay_at' => 'datetime',
             'paid_at' => 'datetime',
         ];
+    }
+
+    public function statusEnum(): GaClaimStatus
+    {
+        return GaClaimStatus::tryFromWithLegacy((string) $this->status);
     }
 
     public function employee(): BelongsTo
@@ -113,7 +121,7 @@ class GaClaim extends Model
 
     public function isReadyToPay(): bool
     {
-        return $this->status === self::STATUS_READY_TO_PAY;
+        return GaClaimStatus::tryFromWithLegacyOrNull((string) $this->status) === GaClaimStatus::READY_TO_PAY;
     }
 
     public function scopeEligibleForPaymentBatch($query)
@@ -129,6 +137,6 @@ class GaClaim extends Model
 
     public function isPaid(): bool
     {
-        return $this->status === self::STATUS_PAID;
+        return GaClaimStatus::tryFromWithLegacyOrNull((string) $this->status) === GaClaimStatus::PAID;
     }
 }

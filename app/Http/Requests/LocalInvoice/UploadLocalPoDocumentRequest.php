@@ -33,7 +33,7 @@ class UploadLocalPoDocumentRequest extends FormRequest
                 'file',
                 'mimes:pdf,zip',
                 'extensions:pdf,zip',
-                'max:'.intdiv((int) config('native_file_security.zip.max_upload_bytes', 50 * 1024 * 1024), 1024),
+                'max:'.intdiv((int) config('native_file_security.zip.max_upload_bytes', 20 * 1024 * 1024), 1024),
             ],
         ];
     }

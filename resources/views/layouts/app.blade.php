@@ -7,7 +7,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <script>
         window.AdasiLoginUrl = @js(route('login'));
-        window.AdasiSession = @js(auth()->check() && (config('portal_session.cross_tab_logout') || config('portal_session.scoped_storage_cleanup')) ? ['crossTab' => (bool) config('portal_session.cross_tab_logout'), 'cleanup' => (bool) config('portal_session.scoped_storage_cleanup'), 'userId' => (int) auth()->id(), 'statusUrl' => route('session.status'), 'copy' => ['restored' => __('security.session_reconnect.restored'), 'failed' => __('security.session_reconnect.failed')]] : null);
+        window.AdasiSession = @js(auth()->check() && (config('portal_session.cross_tab_logout') || config('portal_session.scoped_storage_cleanup')) ? ['crossTab' => (bool) config('portal_session.cross_tab_logout'), 'cleanup' => (bool) config('portal_session.scoped_storage_cleanup'), 'userId' => (int) auth()->id(), 'statusUrl' => route('session.status'), 'copy' => ['restored' => __('security.session_reconnect.restored'), 'failed' => __('security.session_reconnect.failed'), 'unauthenticated' => __('security.session_reconnect.unauthenticated')]] : null);
     </script>
     <script>
         window.AdasiPortal = Object.assign(window.AdasiPortal || {}, { pathPrefix: @js(\App\Support\PortalPath::prefix()) });
@@ -674,8 +674,13 @@
                     btn.disabled = true;
                 });
 
-                // Safety reset after 10 seconds if the request fails or times out.
-                setTimeout(function () {
+                // Safety reset after 60 seconds if the request fails or times out.
+                const safetyTimeoutMs = (window.AdasiButton && window.AdasiButton.TIMEOUT_MS) ? window.AdasiButton.TIMEOUT_MS : 60000;
+                if (form._submitGuardTimeout) {
+                    clearTimeout(form._submitGuardTimeout);
+                }
+                form._submitGuardTimeout = setTimeout(function () {
+                    delete form._submitGuardTimeout;
                     form.dataset.submitting = 'false';
                     if (window.AdasiButton && typeof window.AdasiButton.resetForm === 'function') {
                         window.AdasiButton.resetForm(form);
@@ -689,7 +694,7 @@
                         });
                     }
                     if (submitterMirror) submitterMirror.remove();
-                }, 10000);
+                }, safetyTimeoutMs);
             });
         });
     </script>

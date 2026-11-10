@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Purchasing;
 
+use App\Enums\PurchaseOrderStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Export\Filters\PurchaseOrderExportFilters;
 use App\Models\MaterialClaim;
@@ -11,6 +12,7 @@ use App\Models\Quotation;
 use App\Models\User;
 use App\Services\MaterialProgressService;
 use App\Services\NotificationService;
+use App\Services\Procurement\PurchaseOrderStateEngine;
 use App\Services\RegionalDisplayFormatter;
 use App\Support\BusinessTime;
 use App\Support\HashidCodec;
@@ -300,10 +302,16 @@ class PurchaseOrderController extends Controller
                 ];
             }
 
-            $po->update([
-                'actual_arrival' => BusinessTime::today()->toDateString(),
-                'status' => 'waiting_qc',
-            ]);
+            $po = app(PurchaseOrderStateEngine::class)->transition(
+                model: $po,
+                target: PurchaseOrderStatus::WAITING_QC,
+                actor: auth()->user(),
+                metadata: [
+                    'attributes' => [
+                        'actual_arrival' => BusinessTime::today()->toDateString(),
+                    ],
+                ]
+            );
 
             return ['po' => $po->fresh(), 'error' => null];
         });

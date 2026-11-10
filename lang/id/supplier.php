@@ -453,7 +453,7 @@ return [
         'currently_under_supplier_control' => 'saat ini dikelola Supplier.',
         'est' => 'Perkiraan',
         'exchange_rate_for' => 'Kurs untuk',
-        'is_not_recorded_in_master_exchange_rates_contact_admin_before_final_submission' => 'belum tercatat pada master kurs. Hubungi Admin sebelum pengajuan final.',
+        'is_not_recorded_in_master_exchange_rates_contact_admin_before_final_submission' => 'belum tercatat pada master data kurs. Hubungi Admin sebelum pengajuan final.',
         'issued' => 'Diterbitkan',
         'off' => 'Tidak Tersedia:',
         'offered_dimensions_cannot_be_negative' => 'Dimensi penawaran tidak boleh negatif.',

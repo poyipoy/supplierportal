@@ -2,6 +2,24 @@
 
 namespace App\Support;
 
+use App\Enums\CustomsDocumentStatus;
+use App\Enums\GaClaimStatus;
+use App\Enums\LocalGoodsReceiptStatus;
+use App\Enums\LocalInvoicePaymentStatus;
+use App\Enums\LocalInvoiceStatus;
+use App\Enums\LocalPurchaseOrderStatus;
+use App\Enums\MaterialClaimStatus;
+use App\Enums\PaymentBatchStatus;
+use App\Enums\PaymentGroupStatus;
+use App\Enums\PurchaseOrderStatus;
+use App\Enums\PurchaseRequisitionStatus;
+use App\Enums\QcInspectionStatus;
+use App\Enums\QuotationStatus;
+use App\Enums\ShipmentStatus;
+use App\Enums\SupplierAuditStatus;
+use App\Enums\SupplierBankAccountStatus;
+use App\Enums\SupplierChangeRequestStatus;
+use App\Enums\SupplierRegistrationAttemptStatus;
 use App\Models\Quotation;
 use DateTimeInterface;
 use Illuminate\Support\Carbon;
@@ -14,8 +32,21 @@ use Illuminate\Support\Carbon;
  */
 class StatusHelper
 {
-    public static function localFinanceTone(string $status): string
-    {
+    public static function localFinanceTone(
+        string|LocalGoodsReceiptStatus|PaymentBatchStatus|LocalPurchaseOrderStatus|PaymentGroupStatus|LocalInvoicePaymentStatus|SupplierBankAccountStatus $status
+    ): string {
+        if ($status instanceof LocalGoodsReceiptStatus
+            || $status instanceof LocalPurchaseOrderStatus
+            || $status instanceof PaymentGroupStatus
+            || $status instanceof LocalInvoicePaymentStatus
+            || $status instanceof SupplierBankAccountStatus) {
+            return $status->tone();
+        }
+
+        if ($status instanceof PaymentBatchStatus) {
+            return self::localFinanceTone($status->value);
+        }
+
         return match (strtoupper($status)) {
             'OPEN', 'AVAILABLE', 'FINAL', 'FINALIZED', 'SETTLED', 'PAID', 'VERIFIED', 'APPROVED', 'ACTIVE', 'CONSUMED' => 'success',
             'RESERVED', 'CORRECTION_REQUIRED', 'PARTIALLY_PAID', 'UNPAID', 'PENDING' => 'warning',
@@ -26,32 +57,36 @@ class StatusHelper
         };
     }
 
-    public static function paymentBatchTone(string $status): string
+    public static function paymentBatchTone(string|PaymentBatchStatus $status): string
     {
+        if ($status instanceof PaymentBatchStatus) {
+            return $status->tone();
+        }
+
         return match (strtoupper($status)) {
-            'PAID' => 'success',
-            'FINALIZED' => 'info',
-            'PARTIALLY_PAID', 'UNPAID' => 'warning',
-            'DRAFT' => 'neutral',
-            'CANCELLED' => 'error',
-            default => 'neutral',
+            'UNPAID' => 'warning',
+            default => PaymentBatchStatus::tryFromWithLegacyOrNull($status)?->tone() ?? 'neutral',
         };
     }
 
-    public static function gaClaimTone(string $status): string
+    public static function gaClaimTone(string|GaClaimStatus $status): string
     {
+        if ($status instanceof GaClaimStatus) {
+            return $status->tone();
+        }
+
         return match (strtoupper($status)) {
-            'PAID', 'READY_TO_PAY' => 'success',
-            'SUBMITTED', 'BASIC_VERIFIED', 'UNDER_VERIFICATION', 'UNDER_REVIEW' => 'info',
-            'NEED_REVISION' => 'warning',
-            'CANCELLED', 'REJECTED' => 'error',
             'DRAFT' => 'neutral',
-            default => 'neutral',
+            default => GaClaimStatus::tryFromWithLegacyOrNull($status)?->tone() ?? 'neutral',
         };
     }
 
-    public static function registrationTone(string $status): string
+    public static function registrationTone(string|SupplierRegistrationAttemptStatus $status): string
     {
+        if ($status instanceof SupplierRegistrationAttemptStatus) {
+            return $status->tone();
+        }
+
         return match (strtoupper($status)) {
             'APPROVED', 'ACTIVE' => 'success',
             'PENDING' => 'warning',
@@ -61,8 +96,12 @@ class StatusHelper
         };
     }
 
-    public static function supplierAuditTone(string $status): string
+    public static function supplierAuditTone(string|SupplierAuditStatus $status): string
     {
+        if ($status instanceof SupplierAuditStatus) {
+            return $status->tone();
+        }
+
         return match (strtoupper($status)) {
             'ASSIGNED', 'SUBMITTED' => 'info',
             'REVISION_REQUESTED' => 'warning',
@@ -71,28 +110,65 @@ class StatusHelper
         };
     }
 
-    public static function supplierAuditLabel(string $status): string
+    public static function supplierAuditLabel(string|SupplierAuditStatus $status): string
     {
+        if ($status instanceof SupplierAuditStatus) {
+            return $status->label();
+        }
+
         return self::label('supplier_audit', strtolower($status), $status);
     }
 
-    public static function localInvoiceLabel(string $status): string
+    /** Maintenance display status (MaintenanceRecord::displayStatus()); active blocks users, overdue still blocks. */
+    public static function maintenanceTone(string $status): string
     {
+        return match (strtolower($status)) {
+            'scheduled' => 'info',
+            'active' => 'warning',
+            'overdue' => 'error',
+            'completed' => 'success',
+            default => 'neutral',
+        };
+    }
+
+    public static function maintenanceLabel(string $status): string
+    {
+        return self::label('maintenance', strtolower($status), $status);
+    }
+
+    public static function localInvoiceLabel(string|LocalInvoiceStatus $status): string
+    {
+        if ($status instanceof LocalInvoiceStatus) {
+            return $status->label();
+        }
+
         return self::label('local_invoice', strtolower($status), $status);
     }
 
-    public static function gaClaimLabel(string $status): string
+    public static function gaClaimLabel(string|GaClaimStatus $status): string
     {
+        if ($status instanceof GaClaimStatus) {
+            return $status->label();
+        }
+
         return self::label('ga', strtolower($status), $status);
     }
 
-    public static function registrationLabel(string $status): string
+    public static function registrationLabel(string|SupplierRegistrationAttemptStatus $status): string
     {
+        if ($status instanceof SupplierRegistrationAttemptStatus) {
+            return $status->label();
+        }
+
         return self::label('registration', strtolower($status), $status);
     }
 
-    public static function contactRequestTone(string $status): string
+    public static function contactRequestTone(string|SupplierChangeRequestStatus $status): string
     {
+        if ($status instanceof SupplierChangeRequestStatus) {
+            return $status->tone();
+        }
+
         return match (strtoupper($status)) {
             'PENDING' => 'warning',
             'APPROVED' => 'success',
@@ -101,8 +177,12 @@ class StatusHelper
         };
     }
 
-    public static function contactRequestLabel(string $status): string
+    public static function contactRequestLabel(string|SupplierChangeRequestStatus $status): string
     {
+        if ($status instanceof SupplierChangeRequestStatus) {
+            return $status->label();
+        }
+
         return self::label('supplier_contact', strtolower($status), $status);
     }
 
@@ -118,8 +198,18 @@ class StatusHelper
         return $key === null ? (string) $category : __('local_procurement.vendor_ui.'.$key);
     }
 
-    public static function localFinanceLabel(string $status): string
-    {
+    public static function localFinanceLabel(
+        string|LocalGoodsReceiptStatus|PaymentBatchStatus|LocalPurchaseOrderStatus|PaymentGroupStatus|LocalInvoicePaymentStatus|SupplierBankAccountStatus $status
+    ): string {
+        if ($status instanceof LocalGoodsReceiptStatus
+            || $status instanceof PaymentBatchStatus
+            || $status instanceof LocalPurchaseOrderStatus
+            || $status instanceof PaymentGroupStatus
+            || $status instanceof LocalInvoicePaymentStatus
+            || $status instanceof SupplierBankAccountStatus) {
+            return $status->label();
+        }
+
         return self::label('finance', strtolower($status), $status);
     }
 
@@ -135,23 +225,17 @@ class StatusHelper
         return $unknownValue === '' ? '' : __('status.meta.unknown_value', ['value' => $unknownValue]);
     }
 
-    public static function localInvoiceTone(string $status): string
+    public static function localInvoiceTone(string|LocalInvoiceStatus $status): string
     {
-        return [
+        if ($status instanceof LocalInvoiceStatus) {
+            return $status->tone();
+        }
+
+        return match ($status) {
             'SUBMITTED' => 'primary',
-            'WAITING_PHYSICAL_DOCUMENT' => 'warning',
-            'UNDER_REVIEW' => 'info',
-            'UNDER_VERIFICATION' => 'info',
-            'NEED_REVISION' => 'warning',
-            'REJECTED' => 'error',
-            'CANCELLED' => 'error',
-            'EXPIRED' => 'error',
-            'APPROVED' => 'success',
-            'READY_TO_PAY' => 'success',
             'PAYMENT_SCHEDULED' => 'info',
-            'PAID' => 'success',
-            'COMPLETED' => 'success',
-        ][$status] ?? 'neutral';
+            default => LocalInvoiceStatus::tryFromWithLegacyOrNull($status)?->tone() ?? 'neutral',
+        };
     }
 
     // ─── Purchase Requisition ───
@@ -163,13 +247,19 @@ class StatusHelper
         'completed' => 'bg-success',
     ];
 
-    public static function prBadge(string $status): string
+    public static function prBadge(string|PurchaseRequisitionStatus $status): string
     {
-        return self::$prBadges[$status] ?? 'bg-secondary';
+        $val = $status instanceof PurchaseRequisitionStatus ? $status->value : $status;
+
+        return self::$prBadges[$val] ?? 'bg-secondary';
     }
 
-    public static function prLabel(string $status): string
+    public static function prLabel(string|PurchaseRequisitionStatus $status): string
     {
+        if ($status instanceof PurchaseRequisitionStatus) {
+            return $status->label();
+        }
+
         return self::label('pr', $status);
     }
 
@@ -184,13 +274,19 @@ class StatusHelper
         'all_unavailable' => 'bg-secondary',
     ];
 
-    public static function quotationBadge(string $status): string
+    public static function quotationBadge(string|QuotationStatus $status): string
     {
-        return self::$quotationBadges[$status] ?? 'bg-secondary';
+        $val = $status instanceof QuotationStatus ? $status->value : $status;
+
+        return self::$quotationBadges[$val] ?? 'bg-secondary';
     }
 
-    public static function quotationLabel(string $status): string
+    public static function quotationLabel(string|QuotationStatus $status): string
     {
+        if ($status instanceof QuotationStatus) {
+            return $status->label();
+        }
+
         return self::label('quotation', $status);
     }
 
@@ -271,22 +367,28 @@ class StatusHelper
     /**
      * PO badge - automatically returns 'bg-danger' when $isOverdue is true.
      */
-    public static function poBadge(string $status, bool $isOverdue = false): string
+    public static function poBadge(string|PurchaseOrderStatus $status, bool $isOverdue = false): string
     {
         if ($isOverdue) {
             return 'bg-danger';
         }
 
-        return self::$poBadges[$status] ?? 'bg-secondary';
+        $val = $status instanceof PurchaseOrderStatus ? $status->value : $status;
+
+        return self::$poBadges[$val] ?? 'bg-secondary';
     }
 
     /**
      * PO label - automatically returns 'Overdue' when $isOverdue is true.
      */
-    public static function poLabel(string $status, bool $isOverdue = false): string
+    public static function poLabel(string|PurchaseOrderStatus $status, bool $isOverdue = false): string
     {
         if ($isOverdue) {
             return self::label('po', 'overdue');
+        }
+
+        if ($status instanceof PurchaseOrderStatus) {
+            return $status->label();
         }
 
         return self::label('po', $status);
@@ -358,13 +460,19 @@ class StatusHelper
         'closed' => 'bg-secondary',
     ];
 
-    public static function claimBadge(string $status): string
+    public static function claimBadge(string|MaterialClaimStatus $status): string
     {
-        return self::$claimBadges[$status] ?? 'bg-secondary';
+        $val = $status instanceof MaterialClaimStatus ? $status->value : $status;
+
+        return self::$claimBadges[$val] ?? 'bg-secondary';
     }
 
-    public static function claimLabel(string $status): string
+    public static function claimLabel(string|MaterialClaimStatus $status): string
     {
+        if ($status instanceof MaterialClaimStatus) {
+            return $status->label();
+        }
+
         return self::label('claim', $status);
     }
 
@@ -424,14 +532,18 @@ class StatusHelper
         'rejected' => 'bg-danger',
     ];
 
-    public static function docBadge(string $status): string
+    public static function docBadge(string|CustomsDocumentStatus $status): string
     {
-        return self::$docBadges[$status] ?? 'bg-secondary';
+        $val = $status instanceof CustomsDocumentStatus ? $status->value : $status;
+
+        return self::$docBadges[$val] ?? 'bg-secondary';
     }
 
-    public static function docLabel(string $status): string
+    public static function docLabel(string|CustomsDocumentStatus $status): string
     {
-        return self::label('document', $status);
+        $val = $status instanceof CustomsDocumentStatus ? $status->value : $status;
+
+        return self::label('document', $val);
     }
 
     public static function documentProgressMeta(int $completed, int $total = 4): array
@@ -457,13 +569,19 @@ class StatusHelper
         'pending' => 'bg-warning text-dark',
     ];
 
-    public static function qcBadge(string $status): string
+    public static function qcBadge(string|QcInspectionStatus $status): string
     {
-        return self::$qcBadges[$status] ?? 'bg-secondary';
+        $val = $status instanceof QcInspectionStatus ? $status->value : $status;
+
+        return self::$qcBadges[$val] ?? 'bg-secondary';
     }
 
-    public static function qcLabel(string $status): string
+    public static function qcLabel(string|QcInspectionStatus $status): string
     {
+        if ($status instanceof QcInspectionStatus) {
+            return $status->label();
+        }
+
         return in_array($status, ['ok', 'ng'], true) ? strtoupper($status) : self::label('qc', $status);
     }
 
@@ -476,18 +594,28 @@ class StatusHelper
         'cancelled' => 'bg-danger',
     ];
 
-    public static function shipmentBadge(string $status): string
+    public static function shipmentBadge(string|ShipmentStatus $status): string
     {
-        return self::$shipmentBadges[$status] ?? 'bg-secondary';
+        $val = $status instanceof ShipmentStatus ? $status->value : $status;
+
+        return self::$shipmentBadges[$val] ?? 'bg-secondary';
     }
 
-    public static function shipmentLabel(string $status): string
+    public static function shipmentLabel(string|ShipmentStatus $status): string
     {
+        if ($status instanceof ShipmentStatus) {
+            return $status->label();
+        }
+
         return self::label('shipment', $status);
     }
 
-    public static function shipmentTone(string $status): string
+    public static function shipmentTone(string|ShipmentStatus $status): string
     {
+        if ($status instanceof ShipmentStatus) {
+            return $status->tone();
+        }
+
         return match ($status) {
             'submitted' => 'info',
             'arrived' => 'success',
@@ -554,18 +682,28 @@ class StatusHelper
         'done' => 'bg-success',
     ];
 
-    public static function shipmentDocBadge(string $status): string
+    public static function shipmentDocBadge(string|CustomsDocumentStatus $status): string
     {
-        return self::$shipmentDocBadges[$status] ?? 'bg-secondary';
+        $val = $status instanceof CustomsDocumentStatus ? $status->value : $status;
+
+        return self::$shipmentDocBadges[$val] ?? 'bg-secondary';
     }
 
-    public static function shipmentDocLabel(string $status): string
+    public static function shipmentDocLabel(string|CustomsDocumentStatus $status): string
     {
+        if ($status instanceof CustomsDocumentStatus) {
+            return $status->label();
+        }
+
         return self::label('shipment_document', $status);
     }
 
-    public static function shipmentDocTone(string $status): string
+    public static function shipmentDocTone(string|CustomsDocumentStatus $status): string
     {
+        if ($status instanceof CustomsDocumentStatus) {
+            return $status->tone();
+        }
+
         return match ($status) {
             'verified', 'done' => 'success',
             'received', 'issued' => 'info',

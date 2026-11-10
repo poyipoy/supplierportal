@@ -10,7 +10,7 @@ return [
     'email_immutable' => 'The login email cannot be changed.',
     'email_help' => 'Use this email to sign in. It is fixed when the account is created and cannot be changed, including by an administrator.',
     'display_name' => 'Display Name',
-    'display_name_help' => 'This name identifies your account in the portal. Changing it does not update the company name or PIC details in Vendor Master.',
+    'display_name_help' => 'This name identifies your account in the portal. Changing it does not update the company name or PIC details in Master Data Supplier.',
     'role' => 'Role',
     'portal_access' => 'Portal Access',
     'scope_import' => 'Import Supplier',

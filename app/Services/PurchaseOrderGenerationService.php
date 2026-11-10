@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Enums\PurchaseRequisitionStatus;
+use App\Enums\QuotationStatus;
 use App\Exceptions\PoGenerationDisabledException;
 use App\Models\AwardReferencePriceSnapshot;
 use App\Models\ExchangeRate;
@@ -15,6 +17,8 @@ use App\Models\Quotation;
 use App\Models\QuotationItem;
 use App\Models\User;
 use App\Services\Pricing\ReferencePriceResolver;
+use App\Services\Procurement\PurchaseRequisitionStateEngine;
+use App\Services\Procurement\QuotationStateEngine;
 use App\Support\Money;
 use App\Support\NotificationCategory;
 use App\Support\Pricing\EvaluationContext;
@@ -285,12 +289,21 @@ class PurchaseOrderGenerationService
                         $notes = $notes ? "{$notes} | {$partialNote}" : $partialNote;
                     }
 
-                    $quotation->update([
-                        'status' => Quotation::STATUS_ACCEPTED,
+                    $qAttributes = [
                         'reviewed_at' => now(),
                         'reviewed_by' => $creator->id,
                         'reviewer_notes' => $notes,
-                    ]);
+                    ];
+                    if ($quotation->statusEnum() !== QuotationStatus::ACCEPTED) {
+                        app(QuotationStateEngine::class)->transition(
+                            model: $quotation,
+                            target: QuotationStatus::ACCEPTED,
+                            actor: $creator,
+                            metadata: ['attributes' => $qAttributes]
+                        );
+                    } else {
+                        $quotation->update($qAttributes);
+                    }
                 }
 
                 // 6. Notify supplier user
@@ -331,7 +344,13 @@ class PurchaseOrderGenerationService
 
                 // If all items are awarded and assigned to POs, mark PR completed
                 if ($totalItemsCount > 0 && $awardedAndPoCount === $totalItemsCount) {
-                    $pr->update(['status' => 'completed']);
+                    if ($pr->statusEnum() !== PurchaseRequisitionStatus::COMPLETED) {
+                        app(PurchaseRequisitionStateEngine::class)->transition(
+                            model: $pr,
+                            target: PurchaseRequisitionStatus::COMPLETED,
+                            actor: $creator
+                        );
+                    }
 
                     // Now that all items are awarded and PR is finalized,
                     // reject competing quotations for this PR that have ZERO winning items
@@ -341,19 +360,34 @@ class PurchaseOrderGenerationService
                         ->unique()
                         ->all();
 
-                    Quotation::where('pr_id', $pr->id)
+                    $losingQuotations = Quotation::where('pr_id', $pr->id)
                         ->whereNotIn('id', $participatingQuotationIds)
                         ->whereIn('status', [Quotation::STATUS_SUBMITTED, 'revision_requested'])
-                        ->update([
-                            'status' => Quotation::STATUS_REJECTED,
-                            'reviewed_at' => now(),
-                            'reviewed_by' => $creator->id,
-                            'reviewer_notes' => __('purchasing.copy.awarded_to_alternative_supplier_offers'),
-                        ]);
+                        ->lockForUpdate()
+                        ->get();
+
+                    foreach ($losingQuotations as $losingQuotation) {
+                        app(QuotationStateEngine::class)->transition(
+                            model: $losingQuotation,
+                            target: QuotationStatus::REJECTED,
+                            actor: $creator,
+                            metadata: [
+                                'attributes' => [
+                                    'reviewed_at' => now(),
+                                    'reviewed_by' => $creator->id,
+                                    'reviewer_notes' => __('purchasing.copy.awarded_to_alternative_supplier_offers'),
+                                ],
+                            ]
+                        );
+                    }
                 } else {
                     // Items still remain unresolved - ensure PR remains actionable (e.g. bidding)
                     if ($pr->status !== 'bidding') {
-                        $pr->update(['status' => 'bidding']);
+                        app(PurchaseRequisitionStateEngine::class)->transition(
+                            model: $pr,
+                            target: PurchaseRequisitionStatus::BIDDING,
+                            actor: $creator
+                        );
                     }
                 }
             }

@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Casts\SupplierAuditStatusCast;
+use App\Enums\SupplierAuditStatus;
 use App\Support\BusinessTime;
 use App\Traits\HasHashids;
 use Illuminate\Database\Eloquent\Builder;
@@ -83,6 +85,7 @@ class SupplierAudit extends Model
     protected function casts(): array
     {
         return [
+            'status' => SupplierAuditStatusCast::class,
             'due_date' => 'date',
             'assigned_at' => 'datetime',
             'submitted_at' => 'datetime',
@@ -90,6 +93,11 @@ class SupplierAudit extends Model
             'result_published_at' => 'datetime',
             'cancelled_at' => 'datetime',
         ];
+    }
+
+    public function statusEnum(): SupplierAuditStatus
+    {
+        return SupplierAuditStatus::tryFromWithLegacy($this->status ?? self::STATUS_ASSIGNED);
     }
 
     // ─── Relationships ───

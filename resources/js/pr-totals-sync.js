@@ -239,7 +239,12 @@ export function bootPrTotalsSync(root = document) {
         new MutationObserver(() => controller.schedule()).observe(tbody, { childList: true });
     }
 
-    void controller.syncNow();
+    const form = tbody.closest?.('form') || (root.getElementById ? root.getElementById('prForm') : root.querySelector?.('#prForm'));
+    void controller.syncNow().then((result) => {
+        if (result?.ok && form && typeof window !== 'undefined' && window.AdasiUnsaved && !window.AdasiUnsaved.hasUserInteracted?.(form)) {
+            window.AdasiUnsaved.resetSnapshot?.(form);
+        }
+    });
 
     return controller;
 }

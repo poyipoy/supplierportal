@@ -10,7 +10,34 @@
     <p class="tw:m-0 tw:mt-1.5 tw:text-ui-sm tw:text-on-surface-variant">{{ __('auth.login.instructions') }}</p>
 </header>
 
-<form method="POST" action="{{ route('login.store') }}" class="tw:grid tw:gap-4">
+<form
+    method="POST"
+    action="{{ route('login.store') }}"
+    data-track-unsaved="false"
+    novalidate
+    class="tw:grid tw:gap-4"
+    x-data="{
+        visible: false,
+        emailError: false,
+        passwordError: false,
+        handleSubmit(e) {
+            const emailVal = this.$refs.email ? this.$refs.email.value.trim() : '';
+            const passwordVal = this.$refs.password ? this.$refs.password.value : '';
+            this.emailError = !emailVal;
+            this.passwordError = !passwordVal;
+            if (this.emailError || this.passwordError) {
+                e.preventDefault();
+                if (this.emailError && this.$refs.email) {
+                    this.$refs.email.focus();
+                } else if (this.passwordError && this.$refs.password) {
+                    this.$refs.password.focus();
+                }
+                return false;
+            }
+        }
+    }"
+    @submit="handleSubmit($event)"
+>
     @csrf
 
     <div class="tw:grid tw:gap-1.5">
@@ -23,18 +50,33 @@
                 id="email"
                 type="email"
                 name="email"
-                class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:pl-10 tw:pr-3 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary {{ (isset($errors) && $errors->has('email')) ? 'tw:border-error' : 'tw:border-outline-variant' }}"
+                x-ref="email"
+                class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:pl-10 tw:pr-3 tw:text-ui-sm tw:text-on-surface tw:hover:border-outline-strong tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary {{ (isset($errors) && $errors->has('email')) ? 'tw:border-error' : 'tw:border-outline' }}"
+                :class="{ 'tw:border-error': emailError || {{ $errors->has('email') ? 'true' : 'false' }}, 'tw:border-outline': !(emailError || {{ $errors->has('email') ? 'true' : 'false' }}) }"
                 placeholder="{{ __('common.fields.email') }}"
                 value="{{ old('email') }}"
                 autocomplete="email"
                 required
                 autofocus
+                @input="if ($el.value.trim().length > 0) emailError = false"
+                :aria-invalid="(emailError || {{ $errors->has('email') ? 'true' : 'false' }}) ? 'true' : 'false'"
+                aria-describedby="email-error"
             >
         </div>
-        @if(isset($errors) && $errors->has('email'))<p class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error" role="alert">{{ $errors->first('email') }}</p>@endif
+        <p
+            id="email-error"
+            class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error"
+            role="alert"
+            x-show="emailError || {{ $errors->has('email') ? 'true' : 'false' }}"
+            {{ $errors->has('email') ? '' : 'x-cloak style="display: none;"' }}
+        >
+            <span x-text="emailError ? @js(__('auth.login.email_empty')) : @js($errors->first('email') ?? __('auth.login.email_empty'))">
+                {{ $errors->first('email') ?? __('auth.login.email_empty') }}
+            </span>
+        </p>
     </div>
 
-    <div x-data="{ visible: false }" class="tw:grid tw:gap-1.5">
+    <div class="tw:grid tw:gap-1.5">
         <div class="tw:flex tw:items-center tw:justify-between tw:gap-3">
             <label for="password" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('auth.login.password') }}</label>
             <a href="{{ route('password.request') }}" class="ui-focus-ring tw:rounded-ui-xs tw:text-ui-xs tw:font-semibold tw:text-primary tw:no-underline tw:hover:underline">{{ __('auth.login.reset') }}</a>
@@ -48,19 +90,33 @@
                 type="password"
                 :type="visible ? 'text' : 'password'"
                 name="password"
-                class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:pl-10 tw:pr-11 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary {{ (isset($errors) && $errors->has('password')) ? 'tw:border-error' : 'tw:border-outline-variant' }}"
+                x-ref="password"
+                class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:pl-10 tw:pr-11 tw:text-ui-sm tw:text-on-surface tw:hover:border-outline-strong tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary {{ (isset($errors) && $errors->has('password')) ? 'tw:border-error' : 'tw:border-outline' }}"
+                :class="{ 'tw:border-error': passwordError || {{ $errors->has('password') ? 'true' : 'false' }}, 'tw:border-outline': !(passwordError || {{ $errors->has('password') ? 'true' : 'false' }}) }"
                 placeholder="{{ __('auth.login.password') }}"
                 autocomplete="current-password"
                 maxlength="255"
-                @if(isset($errors) && $errors->has('password')) aria-invalid="true" aria-describedby="password-error" @endif
                 required
+                @input="if ($el.value.length > 0) passwordError = false"
+                :aria-invalid="(passwordError || {{ $errors->has('password') ? 'true' : 'false' }}) ? 'true' : 'false'"
+                aria-describedby="password-error"
             >
             <button type="button" disabled :disabled="false" aria-label="{{ __('auth.login.show_password') }}" class="ui-focus-ring tw:absolute tw:inset-y-0 tw:end-0.5 tw:my-auto tw:inline-flex tw:h-9 tw:w-9 tw:items-center tw:justify-center tw:rounded-ui-full tw:border-0 tw:bg-transparent tw:text-on-surface-variant tw:hover:bg-surface-container" @click="visible = !visible" :aria-label="visible ? @js(__('auth.login.hide_password')) : @js(__('auth.login.show_password'))">
                 <x-ui.icon name="eye-off" x-show="visible" />
                 <x-ui.icon name="eye" x-show="!visible" />
             </button>
         </div>
-        @if(isset($errors) && $errors->has('password'))<p id="password-error" class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error" role="alert">{{ $errors->first('password') }}</p>@endif
+        <p
+            id="password-error"
+            class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error"
+            role="alert"
+            x-show="passwordError || {{ $errors->has('password') ? 'true' : 'false' }}"
+            {{ $errors->has('password') ? '' : 'x-cloak style="display: none;"' }}
+        >
+            <span x-text="passwordError ? @js(__('auth.login.password_empty')) : @js($errors->first('password') ?? __('auth.login.password_empty'))">
+                {{ $errors->first('password') ?? __('auth.login.password_empty') }}
+            </span>
+        </p>
     </div>
 
     <label class="tw:flex tw:items-center tw:gap-2 tw:text-ui-sm tw:cursor-pointer" for="remember">

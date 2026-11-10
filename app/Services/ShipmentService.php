@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\ShipmentStatus;
 use App\Exceptions\BusinessRuleArgumentException;
 use App\Exceptions\MtcRequiredException;
 use App\Models\Attachment;
@@ -15,6 +16,7 @@ use App\Models\ShipmentDocument;
 use App\Models\ShipmentItem;
 use App\Models\User;
 use App\Services\FileSecurity\FileInspectionService;
+use App\Services\Procurement\ShipmentStateEngine;
 use App\Support\BusinessTime;
 use App\Support\NotificationCategory;
 use App\Support\Procurement\CustomsDocumentationProgressCalculator;
@@ -500,13 +502,18 @@ class ShipmentService
             }
 
             // Update shipment to SUBMITTED
-            $lockedShipment->update([
-                'status' => Shipment::STATUS_SUBMITTED,
-                'submitted_at' => now(),
-                'shipment_date' => $data['shipment_date'] ?? $lockedShipment->shipment_date ?? BusinessTime::today()->toDateString(),
-                'estimated_arrival_date' => $data['estimated_arrival_date'] ?? $lockedShipment->estimated_arrival_date ?? BusinessTime::today()->addDays(14)->toDateString(),
-                'notes' => $data['notes'] ?? $lockedShipment->notes,
-            ]);
+            $lockedShipment = app(ShipmentStateEngine::class)->transition(
+                model: $lockedShipment,
+                target: ShipmentStatus::SUBMITTED,
+                metadata: [
+                    'attributes' => [
+                        'submitted_at' => now(),
+                        'shipment_date' => $data['shipment_date'] ?? $lockedShipment->shipment_date ?? BusinessTime::today()->toDateString(),
+                        'estimated_arrival_date' => $data['estimated_arrival_date'] ?? $lockedShipment->estimated_arrival_date ?? BusinessTime::today()->addDays(14)->toDateString(),
+                        'notes' => $data['notes'] ?? $lockedShipment->notes,
+                    ],
+                ]
+            );
 
             // The shipment now counts toward each PO's derived document status.
             PoDocument::recomputeAfterCommit($lockedPos->pluck('id')->all());
@@ -556,9 +563,10 @@ class ShipmentService
                 return $lockedShipment;
             }
 
-            $lockedShipment->update([
-                'status' => Shipment::STATUS_CANCELLED,
-            ]);
+            $lockedShipment = app(ShipmentStateEngine::class)->transition(
+                model: $lockedShipment,
+                target: ShipmentStatus::CANCELLED
+            );
 
             // A cancelled shipment no longer counts toward the derived PO document status.
             PoDocument::recomputeAfterCommit($lockedShipment->items()->pluck('purchase_order_id')->all());
@@ -579,7 +587,7 @@ class ShipmentService
     ): Shipment {
         $shipmentId = $shipment instanceof Shipment ? $shipment->id : $shipment;
 
-        return DB::transaction(function () use ($shipmentId, $options) {
+        return DB::transaction(function () use ($shipmentId, $purchasingUser, $options) {
             /** @var Shipment|null $lockedShipment */
             $lockedShipment = Shipment::with(['items.purchaseOrder', 'supplier'])->where('id', $shipmentId)->lockForUpdate()->first();
             if (! $lockedShipment) {
@@ -592,10 +600,17 @@ class ShipmentService
 
             $arrivalDate = $options['actual_arrival_date'] ?? BusinessTime::today()->toDateString();
 
-            $lockedShipment->update([
-                'status' => Shipment::STATUS_ARRIVED,
-                'actual_arrival_date' => $arrivalDate,
-            ]);
+            $lockedShipment = app(ShipmentStateEngine::class)->transition(
+                model: $lockedShipment,
+                target: ShipmentStatus::ARRIVED,
+                actor: $purchasingUser,
+                metadata: [
+                    'attributes' => [
+                        'actual_arrival_date' => $arrivalDate,
+                    ],
+                ]
+            );
+            $lockedShipment->loadMissing(['items.purchaseOrder', 'supplier']);
 
             // Update associated POs under deterministic locks.
             $poIds = $lockedShipment->items
@@ -702,6 +717,127 @@ class ShipmentService
                 'status' => 'ERROR',
                 'error_code' => 'publication_failed',
             ]);
+
+            throw $exception;
+        }
+    }
+
+    /**
+     * Batch upload multiple documents for a shipment atomically.
+     * All files are inspected first. If any file fails admission or the transaction rolls back,
+     * all stored files on disk are deleted and their inspections set to ERROR.
+     *
+     * @param  array<int, array{doc_type: string, file: UploadedFile, document_number?: ?string}>  $documentsData
+     * @return list<Attachment>
+     */
+    public function uploadDocumentsBatch(
+        Shipment $shipment,
+        array $documentsData,
+        User $user
+    ): array {
+        if ((int) $shipment->supplier_id !== (int) $user->id) {
+            throw new InvalidArgumentException(__('shipments.copy.this_shipment_document_does_not_belong_to_the_authenticated_supplier'));
+        }
+
+        if ($shipment->status === Shipment::STATUS_CANCELLED) {
+            throw new InvalidArgumentException(__('shipments.guard_copy.cancelled_document_upload'));
+        }
+
+        if ($documentsData === [] || count($documentsData) > 4) {
+            throw new InvalidArgumentException(__('documents.sync.invalid_row_count'));
+        }
+
+        $existingDocs = $shipment->documents()->whereIn('doc_type', array_column($documentsData, 'doc_type'))->get()->keyBy('doc_type');
+        foreach ($documentsData as $item) {
+            $existing = $existingDocs->get($item['doc_type']);
+            if ($existing && in_array($existing->status, [ShipmentDocument::STATUS_VERIFIED, ShipmentDocument::STATUS_DONE], true)) {
+                throw new InvalidArgumentException(__('shipments.guard_copy.final_document_upload'));
+            }
+        }
+
+        $inspections = app(FileInspectionService::class);
+        $disk = Storage::disk('private');
+        $stored = [];
+
+        try {
+            foreach (array_values($documentsData) as $index => $item) {
+                $file = $item['file'];
+                $path = 'attachments/'.now()->format('Y/m').'/'.$file->hashName(); // biz-time:ignore storage path
+                $stored[] = [
+                    'path' => $path,
+                    'doc_type' => $item['doc_type'],
+                    'document_number' => $item['document_number'] ?? null,
+                    ...$inspections->storeUpload($file, 'shipment', $path, "documents.{$index}.file"),
+                ];
+            }
+
+            return DB::transaction(function () use ($shipment, $stored, $user) {
+                $lockedShipment = Shipment::query()->whereKey($shipment->id)->lockForUpdate()->firstOrFail();
+                if ((int) $lockedShipment->supplier_id !== (int) $user->id) {
+                    throw new InvalidArgumentException(__('shipments.copy.this_shipment_document_does_not_belong_to_the_authenticated_supplier'));
+                }
+                if ($lockedShipment->status === Shipment::STATUS_CANCELLED) {
+                    throw new InvalidArgumentException(__('shipments.guard_copy.cancelled_document_upload'));
+                }
+
+                $lockedDocs = ShipmentDocument::query()
+                    ->where('shipment_id', $lockedShipment->id)
+                    ->whereIn('doc_type', array_column($stored, 'doc_type'))
+                    ->lockForUpdate()
+                    ->get()
+                    ->keyBy('doc_type');
+
+                $attachments = [];
+                foreach ($stored as $item) {
+                    $docType = $item['doc_type'];
+                    /** @var ShipmentDocument|null $lockedDocument */
+                    $lockedDocument = $lockedDocs->get($docType);
+
+                    if (! $lockedDocument) {
+                        $lockedDocument = ShipmentDocument::create([
+                            'shipment_id' => $lockedShipment->id,
+                            'doc_type' => $docType,
+                            'status' => ShipmentDocument::STATUS_PENDING,
+                        ]);
+                        $lockedDocument = ShipmentDocument::query()
+                            ->whereKey($lockedDocument->id)
+                            ->lockForUpdate()
+                            ->first() ?? $lockedDocument;
+                        $lockedDocs->put($docType, $lockedDocument);
+                    }
+
+                    $this->assertDocumentUploadAllowed($lockedDocument, $lockedShipment);
+
+                    $attachment = $lockedDocument->attachments()->create([
+                        'file_path' => $item['file_path'],
+                        'file_name' => $item['file_name'],
+                        'file_type' => $item['file_type'],
+                        'file_inspection_id' => $item['file_inspection_id'],
+                        'uploaded_by' => $user->id,
+                    ]);
+
+                    $lockedDocument->update([
+                        'document_number' => $item['document_number'] ?? $lockedDocument->document_number,
+                        'status' => $lockedDocument->status === ShipmentDocument::STATUS_PENDING
+                            ? (CustomsDocumentationProgressCalculator::INITIAL_UPLOAD_STATUS[$lockedDocument->doc_type] ?? ShipmentDocument::STATUS_RECEIVED)
+                            : $lockedDocument->status,
+                    ]);
+
+                    PoDocument::syncFromShipmentDocument($lockedDocument);
+
+                    $attachments[] = $attachment;
+                }
+
+                return $attachments;
+            });
+        } catch (Throwable $exception) {
+            foreach ($stored as $item) {
+                $disk->delete($item['path']);
+                FileInspection::whereKey($item['file_inspection_id'])->update([
+                    'status' => 'ERROR',
+                    'error_code' => 'publication_failed',
+                ]);
+            }
 
             throw $exception;
         }

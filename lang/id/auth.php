@@ -23,6 +23,10 @@ return [
     'login.heading' => 'Masuk ke akun Anda',
     'login.instructions' => 'Masuk menggunakan alamat email yang terdaftar.',
     'login.email' => 'Alamat email',
+    'login.username' => 'Username',
+    'login.username_empty' => 'Username tidak boleh kosong',
+    'login.email_empty' => 'Email tidak boleh kosong',
+    'login.password_empty' => 'Kata sandi tidak boleh kosong',
     'login.password' => 'Kata Sandi',
     'login.sign_in' => 'Masuk',
     'login.remember' => 'Ingat saya',
@@ -65,7 +69,7 @@ Email Terdaftar: [Email Terdaftar]',
 Saya memohon bantuan untuk mengatur ulang kata sandi Supplier Portal.
 
 Nama Perusahaan: [Nama Perusahaan]
-Nama Supplier/Vendor: [Nama Supplier/Vendor]
+Nama Supplier: [Nama Supplier]
 Email Terdaftar: [Email Terdaftar]
 Narahubung: [Narahubung]
 

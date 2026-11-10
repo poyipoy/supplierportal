@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Casts\SupplierRegistrationAttemptStatusCast;
+use App\Enums\SupplierRegistrationAttemptStatus;
 use App\Traits\HasHashids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -37,6 +39,7 @@ class SupplierRegistrationAttempt extends Model
     protected function casts(): array
     {
         return [
+            'status' => SupplierRegistrationAttemptStatusCast::class,
             'attempt_number' => 'integer',
             'submission_snapshot' => 'array',
             'submitted_at' => 'datetime',
@@ -44,6 +47,11 @@ class SupplierRegistrationAttempt extends Model
             'approved_at' => 'datetime',
             'rejected_at' => 'datetime',
         ];
+    }
+
+    public function statusEnum(): SupplierRegistrationAttemptStatus
+    {
+        return SupplierRegistrationAttemptStatus::tryFromWithLegacy($this->status ?? self::STATUS_PENDING);
     }
 
     // ─── Relationships ───

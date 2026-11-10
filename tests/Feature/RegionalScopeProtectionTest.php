@@ -72,8 +72,10 @@ class RegionalScopeProtectionTest extends TestCase
             'finalized_at' => Carbon::parse('2026-09-28T23:35:00Z'),
         ];
         $before = view('finance.vouchers.print', compact('voucher'))->render();
-        $this->assertStringContainsString('Phone: 021-39506699', $before);
-        $this->assertStringContainsString('Website: www.astra-daido.co.id', $before);
+        // The scanned letterhead already carries the address and phone, so the
+        // form no longer prints a contact line (requested 7 November 2026).
+        $this->assertStringNotContainsString('Phone:', $before);
+        $this->assertStringNotContainsString('Website:', $before);
         $this->assertStringContainsString('Rp 1.362.500,55', $before);
         foreach (['PAYMENT VOUCHER', 'VB/09/2026/001', 'Account Holder', 'BCA / 1234', 'Document', 'Batch'] as $expected) {
             $this->assertStringContainsString($expected, $before);

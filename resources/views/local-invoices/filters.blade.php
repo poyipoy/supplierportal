@@ -1,4 +1,10 @@
 @php
+    $serverTabs = (bool) ($serverTabs ?? false);
+    $activePaymentStatus = strtoupper((string) ($paymentStatus ?? request('payment_status', 'ALL')));
+    if (! in_array($activePaymentStatus, ['ALL', 'UNPAID', 'PAID'], true)) {
+        $activePaymentStatus = 'ALL';
+    }
+
     $advancedFilterCount = collect([
         request()->filled('from') || request()->filled('to'),
         request()->filled('due_from') || request()->filled('due_to'),
@@ -10,13 +16,24 @@
 
     $hasAdvancedFilters = $advancedFilterCount > 0;
     $hasAnyFilters = request()->hasAny(['q', 'status', 'from', 'to', 'due_from', 'due_to', 'supplier', 'overdue', 'history', 'overpayment_status']);
+    $resetUrl = $serverTabs && $activePaymentStatus !== 'ALL'
+        ? url()->current().'?'.http_build_query(['payment_status' => $activePaymentStatus])
+        : url()->current();
 
     $suppliers = $suppliers ?? (auth()->check() && ! auth()->user()->isSupplier()
         ? \App\Models\User::localEligible()->with('supplier')->orderBy('name')->get()
         : collect());
 @endphp
 
-<form method="GET" action="{{ url()->current() }}" class="tw:mb-4" id="invoiceFilterForm">
+<form method="GET" action="{{ url()->current() }}" class="tw:mb-4" id="invoiceFilterForm" @if($serverTabs) data-server-tabs-form @endif>
+    @if($serverTabs)
+        <input
+            type="hidden"
+            id="invoice-payment-status"
+            @if($activePaymentStatus !== 'ALL') name="payment_status" @endif
+            value="{{ $activePaymentStatus !== 'ALL' ? $activePaymentStatus : '' }}"
+        >
+    @endif
     <x-ui.toolbar :aria-label="__('local_invoice.filters.controls')">
         <x-slot:search>
             <div class="tw:relative tw:w-full">
@@ -72,7 +89,7 @@
                 <span>{{ __('local_invoice.actions.apply') }}</span>
             </x-ui.button>
             @if($hasAnyFilters)
-                <x-ui.button :href="url()->current()" variant="ghost" size="sm">
+                <x-ui.button :href="$resetUrl" variant="ghost" size="sm" :data-server-tabs-reset="$serverTabs ? '' : null">
                     <x-ui.icon name="rotate-ccw" size="sm" />
                     <span>{{ __('local_invoice.filters.reset') }}</span>
                 </x-ui.button>
@@ -211,7 +228,7 @@
                     </x-ui.button>
 
                     @if($hasAnyFilters)
-                        <x-ui.button :href="url()->current()" variant="ghost" size="sm">
+                        <x-ui.button :href="$resetUrl" variant="ghost" size="sm" :data-server-tabs-reset="$serverTabs ? '' : null">
                             <x-ui.icon name="rotate-ccw" size="sm" />
                             <span>{{ __('local_invoice.filters.reset') }}</span>
                         </x-ui.button>

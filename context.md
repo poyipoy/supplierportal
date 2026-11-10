@@ -367,19 +367,20 @@ Authoritative invoices (`local_purchase_order_id` set) follow one invoice → on
 - If any supplier item is an authoritative invoice, the call is rejected with `finance.execution_validation.invoice_settlement`. This prevents bypassing the per-invoice settlement.
 - On success it sets the group `PAID` and each item's payable `PAID`, then recalculates the batch (`PARTIALLY_PAID` or `PAID`).
 - The batch-level action at `/finance/drp-paid/{batch}/mark-paid` (`FinanceDrpPaidController::markBatchPaid`) goes through this service.
-- **Known issue:** the route `POST /finance/drp-groups/{group}/pay` (`finance.drp.mark-paid`) points to `FinanceDrpController::markPaid`, which does not exist. See [§11](#11-reconciliation-log-and-open-discrepancies).
+- **Removed dead route:** the legacy route `POST /finance/drp-groups/{group}/pay` (`finance.drp.mark-paid`) was removed from `routes/web.php` and is locked as absent by `ConfigurationDefaultsTest`.
 
 ### 7.7 Voucher amounts vs group fees
 - A voucher amount is the invoice's **net payable**.
 - A group's fee and net transfer have their own meaning in the batch. Do not treat the two amounts as the same without checking the service.
 
-### 7.8 Cashflow forecast (`PaymentForecastService`) — current behavior
+### 7.8 Cashflow forecast (`PaymentForecastService`) — Ready-to-Pay Realization Contract
 - Weekly view: one calendar month split into blocks 1–7, 8–14, 15–21, 22–28, and 29–end. Monthly view: rolling 6 months.
+- Concept: The dashboard displays "Akumulasi Invoice Siap Dibayar" (`finance.labels.ready_accumulation`). It operates as an operational **Ready-to-Pay Realization / Velocity Tracker** (tracking when invoices reached payment readiness), not a forward-looking treasury cash outflow simulation.
 - Event date for each invoice: `ready_to_pay_at`, falling back to `approved_at`, converted to the business timezone.
 - Amount: `netPayableExact()` of the current verification.
 - Excluded statuses: `REJECTED` and `CANCELLED`.
-- **Only Local invoices are counted.** GA claims and DRP items are not included (`ga_amount` and `drp_amount` are fixed to 0), `due_date` and `payment_items` are not used, and invoices under review are not counted because they have no `ready_to_pay_at`.
-- Invoices already `PAID` remain in a window if their Ready to Pay event falls in it. This may be intended for a historical view. See [§11](#11-reconciliation-log-and-open-discrepancies).
+- **Scope & Legacy Keys:** Only Local invoices are counted. Invoices under review are not counted because they have no `ready_to_pay_at`. Keys `ga_amount` and `drp_amount` are returned with value 0.0 for legacy interface compatibility.
+- **Historical retention:** Invoices already `PAID` remain in their historical Ready to Pay event window. This preserves historical event velocity and audit parity (`PaymentForecastAndReportingTest`).
 
 ---
 
@@ -611,14 +612,17 @@ The following statements in v2.0 were wrong and have been corrected above:
 - Roles: `accounting` added as a legacy role.
 - Removed: `refund_reference` (dropped by `2026_10_07_000003`).
 
-### 11.2 Open discrepancies (documentation or code, not fixed here)
-1. **Dead route for group payment.** `POST /finance/drp-groups/{group}/pay` (`finance.drp.mark-paid`) calls `FinanceDrpController::markPaid`, which does not exist. Calling it raises a runtime error. No view or test uses the route. Either implement the handler through `PaymentExecutionService::markGroupPaid` or remove the route.
-2. **Forecast precedence not implemented.** [AGENTS.md](AGENTS.md) says `PaymentForecastService` gives DRP items priority, then unbatched Ready to Pay items, and excludes items under review, to avoid double counting. The code counts only Local invoices by Ready to Pay event date, ignores GA claims and DRP items, and keeps `PAID` invoices in the window. Confirm the intended behavior with the Finance owner before changing either side.
-3. **Quantity precision.** [AGENTS.md](AGENTS.md) says GR `qty` allows up to four decimals. `LocalGoodsReceipt::QUANTITY_PATTERN` (used by the request) allows up to **three** decimals and eight integer digits. The column is `decimal(12,4)`. The request is the stricter rule and is what users hit.
-4. **Legacy due-date recompute (resolved).** `InvoiceWorkflowService::approve` recomputed `due_date` from a UTC `startOfDay()`. The service had no callers and has been removed (see §8).
-5. **AGENTS.md drift note.** AGENTS.md still describes `context.md` as drifting on whole-GR and polymorphic-storage rules. Those rules are now corrected here. AGENTS.md was not edited in this update.
+### 11.2 Corrected in v2.2 (2026-11-09)
+- Dead route removed: `POST /finance/drp-groups/{group}/pay` (`finance.drp.mark-paid`) has been removed from `routes/web.php` and is asserted absent by `ConfigurationDefaultsTest` and `ContextFreshnessTest`.
+- Cashflow forecast formalization: `PaymentForecastService` contract formalized as Ready-to-Pay Realization / Velocity Tracker ("Akumulasi Invoice Siap Dibayar"). Outdated DRP priority text removed from `AGENTS.md`. Legacy compatibility keys `ga_amount` and `drp_amount` documented as 0.0.
+- Context freshness gate: `tests/Feature/Architecture/ContextFreshnessTest.php` introduced to prevent documentation drift for absent dead routes and security configuration defaults.
 
-### 11.3 Not verified in this update
+### 11.3 Open discrepancies (documentation or code, not fixed here)
+1. **Quantity precision.** [AGENTS.md](AGENTS.md) says GR `qty` allows up to four decimals. `LocalGoodsReceipt::QUANTITY_PATTERN` (used by the request) allows up to **three** decimals and eight integer digits. The column is `decimal(12,4)`. The request is the stricter rule and is what users hit.
+2. **Legacy due-date recompute (resolved).** `InvoiceWorkflowService::approve` recomputed `due_date` from a UTC `startOfDay()`. The service had no callers and has been removed (see §8).
+3. **AGENTS.md drift reconciled.** `AGENTS.md` and `context.md` have been reconciled in v2.2 regarding forecast behavior and dead routes.
+
+### 11.4 Not verified in this update
 - Which migrations are applied on local, staging, or production (`php artisan migrate:status`).
 - Current test-suite status. No baseline is pinned. Verify failures on a clean checkout.
 - Pusher credentials and runtime configuration.

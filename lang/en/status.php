@@ -171,6 +171,14 @@ return [
         'result_published' => 'Result Published',
         'cancelled' => 'Cancelled',
     ],
+    'maintenance' => [
+        'draft' => 'Draft',
+        'scheduled' => 'Scheduled',
+        'active' => 'Active',
+        'overdue' => 'Overdue',
+        'completed' => 'Completed',
+        'deleted' => 'Deleted',
+    ],
     'supplier_contact' => [
         'pending' => 'Awaiting Review',
         'approved' => 'Approved',

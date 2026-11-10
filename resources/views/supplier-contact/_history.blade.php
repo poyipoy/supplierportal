@@ -27,6 +27,11 @@
                                 <span class="tw:block tw:font-medium tw:text-on-surface tw:wrap-break-word">{{ $proposed['pic_name'] ?? '' }}</span>
                                 <span class="tw:block tw:text-ui-xs tw:text-on-surface-variant tw:break-all">{{ $proposed['pic_email'] ?? '' }}</span>
                                 <span class="tw:block tw:text-ui-xs tw:text-on-surface-variant">{{ $proposed['pic_phone'] ?? '' }}</span>
+                                @foreach(\App\Models\SupplierChangeRequest::COMPANY_FIELDS as $companyField)
+                                    @if(filled($proposed[$companyField] ?? null))
+                                        <span class="tw:block tw:text-ui-xs tw:text-on-surface-variant tw:wrap-break-word">{{ __('supplier_contact.profile.'.$companyField) }}: {{ $proposed[$companyField] }}</span>
+                                    @endif
+                                @endforeach
                             </td>
                             <td>
                                 <x-ui.status-chip :tone="\App\Support\StatusHelper::contactRequestTone($item->status)">

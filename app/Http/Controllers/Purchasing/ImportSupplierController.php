@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Purchasing;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Purchasing\StoreImportSupplierRequest;
 use App\Http\Requests\SupplierContact\UpdateImportSupplierContactRequest;
 use App\Models\Supplier;
 use App\Models\SupplierChangeRequest;
@@ -69,6 +70,21 @@ class ImportSupplierController extends Controller
         }
 
         return view('purchasing.import-suppliers.index', $viewData);
+    }
+
+    public function create()
+    {
+        Gate::authorize('manageImportContact', Supplier::class);
+
+        return view('purchasing.import-suppliers.create');
+    }
+
+    public function store(StoreImportSupplierRequest $request, VendorChangeRequestService $service)
+    {
+        $vendor = $service->registerImportSupplier($request->user(), $request->validated());
+
+        return redirect()->route('purchasing.import-suppliers.show', $vendor)
+            ->with('success', __('supplier_contact.register.created'));
     }
 
     public function show(User $vendor)

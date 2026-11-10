@@ -10,7 +10,7 @@ return [
     'email_immutable' => 'Email login tidak dapat diubah.',
     'email_help' => 'Gunakan email ini untuk masuk. Email ditetapkan saat akun dibuat dan tidak dapat diubah, termasuk oleh admin.',
     'display_name' => 'Nama Tampilan',
-    'display_name_help' => 'Nama ini digunakan untuk mengenali akun Anda di portal. Perubahan tidak mengubah nama perusahaan atau data PIC pada Vendor Master.',
+    'display_name_help' => 'Nama ini digunakan untuk mengenali akun Anda di portal. Perubahan tidak mengubah nama perusahaan atau data PIC pada Master Data Supplier.',
     'role' => 'Role',
     'portal_access' => 'Akses Portal',
     'scope_import' => 'Import Supplier',

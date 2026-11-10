@@ -484,4 +484,21 @@ class LocalGrImportTest extends TestCase
         $this->assertSame([], $mixed['rows']);
         $this->assertSame('uom', $mixed['errors'][0]['column']);
     }
+
+    public function test_gr_import_spreadsheet_exceeding_ten_mebibytes_is_rejected(): void
+    {
+        $oversizedFile = UploadedFile::fake()->create('gr_import.xlsx', 10241, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+
+        $response = $this->actingAs($this->finance)
+            ->post(route('finance.local-procurement.import.gr.preview'), [
+                'import_file' => $oversizedFile,
+            ], ['Accept' => 'application/json']);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['import_file']);
+        $this->assertSame(
+            __('local_procurement.validation.sheet_size'),
+            $response->json('errors.import_file.0')
+        );
+    }
 }

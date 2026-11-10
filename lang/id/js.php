@@ -249,7 +249,7 @@ return [
     'local_import.column.po_amount' => 'Nilai PO',
     'local_import.column.supplier_name' => 'Nama Supplier',
     'local_import.column.other' => 'Data spreadsheet',
-    'local_import.correct_help' => ':count baris spreadsheet bermasalah. Belum ada data dari impor ini yang disimpan. Perbaiki file atau master terkait, lalu periksa kembali.',
+    'local_import.correct_help' => ':count baris spreadsheet bermasalah. Belum ada data dari impor ini yang disimpan. Perbaiki file atau master data terkait, lalu periksa kembali.',
     'local_import.ready_summary' => ':count :kind baru valid siap disimpan. :existing data yang sudah terdaftar tidak akan dibuat ulang.',
     'local_import.stored_help' => 'Pemeriksaan ulang memakai salinan yang diunggah. Jika spreadsheet di komputer diubah, pilih Ganti file.',
     'local_import.generic_fix' => 'Perbaiki baris ini di spreadsheet, lalu pilih Ganti file.',

@@ -9,7 +9,7 @@
     <p class="tw:m-0 tw:mt-1.5 tw:text-ui-sm tw:text-on-surface-variant">{{ __('auth.two_factor.help') }}</p>
 </header>
 
-<form method="POST" action="{{ route('two-factor.challenge') }}" class="tw:grid tw:gap-4">
+<form method="POST" action="{{ route('two-factor.challenge') }}" data-track-unsaved="false" class="tw:grid tw:gap-4">
     @csrf
     <x-ui.input name="code" id="code" type="text" :label="__('security.authentication_code')" inputmode="text" autocomplete="one-time-code" maxlength="32" class="tw:[&_input]:text-center tw:[&_input]:font-mono tw:[&_input]:text-ui-lg tw:[&_input]:tracking-[0.25em]" required autofocus />
 

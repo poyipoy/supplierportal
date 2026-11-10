@@ -78,6 +78,7 @@
         aria-labelledby="access_tab_key"
         method="POST"
         action="{{ route('supplier.registration.access') }}"
+        data-track-unsaved="false"
         class="access-panel tw:grid tw:gap-4"
         x-show="tab === 'key'"
         @if ($initialTab !== 'key') x-cloak style="display: none;" @endif
@@ -147,6 +148,7 @@
         aria-labelledby="access_tab_credentials"
         method="POST"
         action="{{ route('supplier.registration.access.credentials') }}"
+        data-track-unsaved="false"
         class="access-panel tw:grid tw:gap-4"
         x-show="tab === 'credentials'"
         @if ($initialTab !== 'credentials') x-cloak style="display: none;" @endif

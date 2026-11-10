@@ -59,6 +59,7 @@ export function customizationForm(config) {
             this.navigationDirty = null;
             this.syncDashboardVisibilityControls();
             for (const [name, method] of Object.entries({ theme: 'previewTheme', accent: 'previewAccent', density: 'previewDensity' })) {
+                if (!this.hasField(name)) continue;
                 const value = this.val(name);
                 if (value !== this.saved[name] && (name !== 'density' || this.densityKeys.includes(value))) {
                     window.AdasiPreferences?.[method](value);
@@ -141,6 +142,12 @@ export function customizationForm(config) {
             this.recompute();
         },
 
+        hasField(name) {
+            const root = this.root();
+            if (!root) return false;
+            return Boolean(root.querySelector(`input[name="${name}"]:checked`) || root.querySelector(`[name="${name}"]`));
+        },
+
         val(name) {
             const checked = this.root().querySelector(`input[name="${name}"]:checked`);
             if (checked) return checked.value;
@@ -175,6 +182,7 @@ export function customizationForm(config) {
             syncWireframe(this.root().querySelector?.('[data-dashboard-controls]'));
             let count = 0;
             SIMPLE_FIELDS.forEach((field) => {
+                if (!this.hasField(field)) return;
                 if (String(this.val(field) ?? '') !== String(this.saved[field] ?? '')) count++;
             });
             if (!sameOrder(this.dashboardOrder(), this.saved.dashboardOrder) || !sameSet(this.dashboardHidden(), this.saved.dashboardHidden)) {
@@ -336,7 +344,9 @@ export function customizationForm(config) {
         },
 
         discard() {
-            SIMPLE_FIELDS.forEach((field) => { this.setVal(field, this.saved[field]); });
+            SIMPLE_FIELDS.forEach((field) => {
+                if (this.hasField(field)) this.setVal(field, this.saved[field]);
+            });
             this.applyDashboardOrder(this.saved.dashboardOrder);
             this.root().querySelectorAll('input[name="dashboard[hidden][]"]').forEach((el) => {
                 el.checked = this.saved.dashboardHidden.includes(el.value);

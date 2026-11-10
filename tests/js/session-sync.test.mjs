@@ -415,7 +415,7 @@ test('badge polling stops while the reconnect dialog is open or declined', async
 });
 
 const STATUS_URL = `${ORIGIN}/session/status`;
-const RESUMABLE = { crossTab: true, cleanup: true, userId: 41, statusUrl: STATUS_URL, copy: { restored: 'restored copy', failed: 'failed copy' } };
+const RESUMABLE = { crossTab: true, cleanup: true, userId: 41, statusUrl: STATUS_URL, copy: { restored: 'restored copy', failed: 'failed copy', unauthenticated: 'unauthenticated copy' } };
 const flush = async () => { for (let i = 0; i < 6; i++) await settle(); };
 
 function tokenDom(token = 'old-token') {
@@ -499,12 +499,12 @@ test('requests still carrying the old token from inline scripts are sent with th
     assert.deepEqual(cross, { crossDomain: true, headers: { 'X-CSRF-TOKEN': 'old-token' }, data: '_token=old-token' });
 });
 
-test('a session that cannot be restored goes to the page (and from there to sign-in) or the code challenge', async () => {
+test('a session that cannot be restored stays on the page with a warning toast or goes to the code challenge', async () => {
     const cases = [
-        [{ status: 401, body: { authenticated: false } }, PAGE_URL],
+        [{ status: 401, body: { authenticated: false } }, null],
         [{ status: 401, body: { authenticated: false, two_factor_url: `${ORIGIN}/two-factor-challenge` } }, `${ORIGIN}/two-factor-challenge`],
-        [{ status: 401, body: { authenticated: false, two_factor_url: 'https://evil.example.test/two-factor-challenge' } }, PAGE_URL],
-        [{ status: 403, body: { message: 'change password', redirect: `${ORIGIN}/profile/security` } }, PAGE_URL],
+        [{ status: 401, body: { authenticated: false, two_factor_url: 'https://evil.example.test/two-factor-challenge' } }, null],
+        [{ status: 403, body: { message: 'change password', redirect: `${ORIGIN}/profile/security` } }, null],
         [{ status: 200, body: { authenticated: true, user_id: 99, csrf_token: 'other-account' } }, PAGE_URL],
     ];
     for (const [reply, destination] of cases) {
@@ -512,10 +512,26 @@ test('a session that cannot be restored goes to the page (and from there to sign
         const f = fixture({ session: RESUMABLE, answers: [CONFIRMED], dom, fetchImpl: statusServer(reply).impl });
         f.api.handleActionResponse({ status: 401 });
         await flush();
-        assert.deepEqual(f.redirects, [destination], JSON.stringify(reply));
+        assert.deepEqual(f.redirects, destination ? [destination] : [], JSON.stringify(reply));
         assert.equal(dom.meta.getAttribute('content'), 'old-token', 'no token from another account or a failed check is applied');
-        assert.deepEqual(f.toasts, []);
+        if (!destination) {
+            assert.deepEqual(f.toasts, [{ type: 'warning', text: 'unauthenticated copy' }], JSON.stringify(reply));
+            assert.equal(f.api.isSessionExpired(), true, 'polling remains paused when staying unauthenticated');
+        } else {
+            assert.deepEqual(f.toasts, [], JSON.stringify(reply));
+        }
     }
+});
+
+test('an unauthenticated session without custom copy falls back to js.session.expired_text', async () => {
+    const session = { ...RESUMABLE, copy: { restored: 'restored copy', failed: 'failed copy' } };
+    const unauth = statusServer({ status: 401, body: { authenticated: false } });
+    const f = fixture({ session, answers: [CONFIRMED], dom: tokenDom(), fetchImpl: unauth.impl });
+    f.api.handleActionResponse({ status: 401 });
+    await flush();
+    assert.deepEqual(f.redirects, []);
+    assert.deepEqual(f.toasts, [{ type: 'warning', text: 'js.session.expired_text' }]);
+    assert.equal(f.api.isSessionExpired(), true);
 });
 
 test('an unknown answer keeps the page and the dialog message so the user can retry', async () => {
@@ -528,13 +544,21 @@ test('an unknown answer keeps the page and the dialog message so the user can re
     }
 });
 
-test('an alert that does not run the check (native fallback) still restores, or reports a failure as a toast', async () => {
+test('an alert that does not run the check (native fallback) still restores, stays with warning, or reports a failure as a toast', async () => {
     const ok = statusServer({ status: 200, body: { authenticated: true, user_id: 41, csrf_token: 'new-token' } });
     const restored = fixture({ session: RESUMABLE, answers: [CONFIRMED], dom: tokenDom(), alertRunsPreConfirm: false, fetchImpl: ok.impl });
     restored.api.handleActionResponse({ status: 419 });
     await flush();
     assert.deepEqual(restored.redirects, []);
     assert.deepEqual(restored.toasts, [{ type: 'success', text: 'restored copy' }]);
+
+    const unauth = statusServer({ status: 401, body: { authenticated: false } });
+    const stayed = fixture({ session: RESUMABLE, answers: [CONFIRMED], dom: tokenDom(), alertRunsPreConfirm: false, fetchImpl: unauth.impl });
+    stayed.api.handleActionResponse({ status: 419 });
+    await flush();
+    assert.deepEqual(stayed.redirects, []);
+    assert.deepEqual(stayed.toasts, [{ type: 'warning', text: 'unauthenticated copy' }]);
+    assert.equal(stayed.api.isSessionExpired(), true);
 
     const offline = fixture({ session: RESUMABLE, answers: [CONFIRMED], dom: tokenDom(), alertRunsPreConfirm: false, fetchImpl: statusServer(new TypeError('offline')).impl });
     offline.api.handleActionResponse({ status: 419 });

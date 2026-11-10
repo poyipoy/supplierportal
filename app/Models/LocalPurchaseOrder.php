@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Casts\LocalPurchaseOrderStatusCast;
+use App\Enums\LocalPurchaseOrderStatus;
 use App\Support\LocalPoPrNumber;
 use App\Traits\HasHashids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -41,9 +43,30 @@ class LocalPurchaseOrder extends Model
     ];
 
     protected $casts = [
+        'status' => LocalPurchaseOrderStatusCast::class,
         'total_amount' => 'decimal:2',
         'po_date' => 'date',
     ];
+
+    public function statusEnum(): LocalPurchaseOrderStatus
+    {
+        return LocalPurchaseOrderStatus::tryFromWithLegacy($this->status ?? self::STATUS_OPEN);
+    }
+
+    public function isOpen(): bool
+    {
+        return $this->statusEnum() === LocalPurchaseOrderStatus::OPEN;
+    }
+
+    public function isClosed(): bool
+    {
+        return $this->statusEnum() === LocalPurchaseOrderStatus::CLOSED;
+    }
+
+    public function isCancelled(): bool
+    {
+        return $this->statusEnum() === LocalPurchaseOrderStatus::CANCELLED;
+    }
 
     protected static function booted(): void
     {

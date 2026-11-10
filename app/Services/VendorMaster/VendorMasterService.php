@@ -2,6 +2,7 @@
 
 namespace App\Services\VendorMaster;
 
+use App\Enums\SupplierBankAccountStatus;
 use App\Models\Supplier;
 use App\Models\SupplierBankAccount;
 use App\Models\User;
@@ -50,12 +51,20 @@ class VendorMasterService
 
             if ($autoVerify) {
                 // Deactivate previously verified bank accounts
-                SupplierBankAccount::where('supplier_id', $supplierUser->id)
+                $previousAccounts = SupplierBankAccount::where('supplier_id', $supplierUser->id)
                     ->where('status', SupplierBankAccount::STATUS_VERIFIED)
-                    ->update([
-                        'status' => SupplierBankAccount::STATUS_INACTIVE,
-                        'deactivated_at' => now(),
-                    ]);
+                    ->lockForUpdate()
+                    ->get();
+
+                $engine = app(SupplierBankAccountStateEngine::class);
+                foreach ($previousAccounts as $prev) {
+                    $engine->transition(
+                        bankAccount: $prev,
+                        target: SupplierBankAccountStatus::INACTIVE,
+                        actor: $actor,
+                        attributes: ['deactivated_at' => now()],
+                    );
+                }
             }
 
             return SupplierBankAccount::create([
@@ -89,20 +98,34 @@ class VendorMasterService
             $account = SupplierBankAccount::where('id', $bankAccount->id)->lockForUpdate()->firstOrFail();
 
             // Deactivate previous active bank accounts for this supplier
-            SupplierBankAccount::where('supplier_id', $account->supplier_id)
+            $previousAccounts = SupplierBankAccount::where('supplier_id', $account->supplier_id)
                 ->where('id', '!=', $account->id)
                 ->where('status', SupplierBankAccount::STATUS_VERIFIED)
-                ->update([
-                    'status' => SupplierBankAccount::STATUS_INACTIVE,
-                    'deactivated_at' => now(),
-                ]);
+                ->lockForUpdate()
+                ->get();
 
-            $account->update([
-                'status' => SupplierBankAccount::STATUS_VERIFIED,
-                'verified_by' => $reviewer->id,
-                'verified_at' => now(),
-                'activated_at' => now(),
-            ]);
+            $engine = app(SupplierBankAccountStateEngine::class);
+            foreach ($previousAccounts as $prev) {
+                $engine->transition(
+                    bankAccount: $prev,
+                    target: SupplierBankAccountStatus::INACTIVE,
+                    actor: $reviewer,
+                    attributes: ['deactivated_at' => now()],
+                );
+            }
+
+            if ($account->status !== SupplierBankAccount::STATUS_VERIFIED) {
+                $account = $engine->transition(
+                    bankAccount: $account,
+                    target: SupplierBankAccountStatus::VERIFIED,
+                    actor: $reviewer,
+                    attributes: [
+                        'verified_by' => $reviewer->id,
+                        'verified_at' => now(),
+                        'activated_at' => now(),
+                    ],
+                );
+            }
 
             return $account;
         });

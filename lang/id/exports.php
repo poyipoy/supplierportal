@@ -77,7 +77,7 @@ return [
         'supplier_quotation_summary' => 'Rekap Penawaran Supplier',
         'supplier_po_summary' => 'Rekap PO Supplier',
         'qc_summary' => 'Rekap Inspeksi QC',
-        'invoice_master' => 'Laporan Data Induk Invoice',
+        'invoice_master' => 'Laporan Master Data Invoice',
         'invoice_register' => 'Daftar Invoice Lokal',
         'invoice_payments' => 'Pembayaran Invoice Lokal',
         'drp' => 'DRP Supplier :number',

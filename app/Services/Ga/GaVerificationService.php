@@ -2,6 +2,7 @@
 
 namespace App\Services\Ga;
 
+use App\Enums\GaClaimStatus;
 use App\Exceptions\BusinessRuleArgumentException;
 use App\Exceptions\BusinessRuleException;
 use App\Models\Employee;
@@ -41,41 +42,41 @@ class GaVerificationService
 
             if ($approve) {
                 $this->assertCompleteBank($employee);
-                $clm->update([
-                    'status' => GaClaim::STATUS_READY_TO_PAY,
-                    'finance_verified_by' => $financeActor->id,
-                    'finance_verified_at' => now(),
-                    'ready_to_pay_at' => now(),
-                    'approved_bank_snapshot' => $employee->bankDetails(),
-                    'approved_bank_hash' => $employee->bankFingerprint(),
-                ]);
-
-                $clm->statusHistories()->create([
-                    'from_status' => $clm->getOriginal('status'),
-                    'to_status' => GaClaim::STATUS_READY_TO_PAY,
-                    'actor_id' => $financeActor->id,
-                    'event' => 'approved',
-                    'notes' => __('ga.history.approved'),
-                    'created_at' => now(),
-                ]);
+                $clm = app(GaClaimStateEngine::class)->transition(
+                    model: $clm,
+                    target: GaClaimStatus::READY_TO_PAY,
+                    actor: $financeActor,
+                    reason: __('ga.history.approved'),
+                    metadata: [
+                        'event' => 'approved',
+                        'from_status_override' => $clm->getOriginal('status'),
+                        'attributes' => [
+                            'finance_verified_by' => $financeActor->id,
+                            'finance_verified_at' => now(),
+                            'ready_to_pay_at' => now(),
+                            'approved_bank_snapshot' => $employee->bankDetails(),
+                            'approved_bank_hash' => $employee->bankFingerprint(),
+                        ],
+                    ]
+                );
             } else {
                 if (empty(trim((string) $reason))) {
                     throw new BusinessRuleArgumentException(__('ga.validation.revision_reason'));
                 }
 
-                $clm->update([
-                    'status' => GaClaim::STATUS_NEED_REVISION,
-                    'revision_reason' => trim((string) $reason),
-                ]);
-
-                $clm->statusHistories()->create([
-                    'from_status' => $clm->getOriginal('status'),
-                    'to_status' => GaClaim::STATUS_NEED_REVISION,
-                    'actor_id' => $financeActor->id,
-                    'event' => 'revision_requested',
-                    'notes' => trim((string) $reason),
-                    'created_at' => now(),
-                ]);
+                $clm = app(GaClaimStateEngine::class)->transition(
+                    model: $clm,
+                    target: GaClaimStatus::NEED_REVISION,
+                    actor: $financeActor,
+                    reason: trim((string) $reason),
+                    metadata: [
+                        'event' => 'revision_requested',
+                        'from_status_override' => $clm->getOriginal('status'),
+                        'attributes' => [
+                            'revision_reason' => trim((string) $reason),
+                        ],
+                    ]
+                );
             }
 
             return $clm->fresh();

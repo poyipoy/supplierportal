@@ -43,7 +43,7 @@ TURNSTILE_SECRET_KEY=
 TURNSTILE_TIMEOUT_SECONDS=3
 ```
 
-An optional CSP report collector can be supplied with `CSP_REPORT_URI`. The policy remains report-only in this release.
+An optional CSP report collector can be supplied with `CSP_REPORT_URI`. Content Security Policy enforcement is enabled by default (`CSP_ENFORCE=true`) sending `Content-Security-Policy`; setting `CSP_ENFORCE=false` temporarily reverts to `Content-Security-Policy-Report-Only` during staging testing. Per-request cryptographic nonces (`@nonce`, `Vite::useCspNonce()`) are generated for scripts.
 
 The global failed-login velocity brake detects distributed credential stuffing and requests Turnstile while active. It does not create an application-wide HTTP 429 or account lockout. Its CAPTCHA protection depends on valid Turnstile credentials. When enabling Turnstile in production, configure and smoke-test both credentials. Registration without CAPTCHA still requires validation, rate limits and supplier review before account activation.
 
@@ -132,7 +132,7 @@ php artisan model:prune --model="App\Models\AuthAuditLog"
 - Open the alert and confirm `/profile#active-sessions` resolves to the Active Sessions list.
 - Create a fourth active session and confirm only the oldest active session is evicted; idle-expired rows must not consume a slot.
 - Open Authentication Audit as Admin and confirm other roles receive 403.
-- Verify login and MFA responses contain no-store and report-only CSP headers.
+- Verify login and MFA responses contain no-store, active Content-Security-Policy headers with script nonces (or report-only when explicitly opted into).
 
 ## Rollback
 

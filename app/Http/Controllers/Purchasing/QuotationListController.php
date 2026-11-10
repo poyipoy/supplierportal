@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Purchasing;
 
+use App\Enums\QuotationStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Export\Filters\QuotationExportFilters;
 use App\Models\Conversation;
@@ -15,6 +16,7 @@ use App\Models\User;
 use App\Services\NotificationService;
 use App\Services\Pricing\ReferencePriceResolver;
 use App\Services\PrItemAwardService;
+use App\Services\Procurement\QuotationStateEngine;
 use App\Services\PurchaseOrderGenerationService;
 use App\Support\NotificationCategory;
 use App\Support\Pricing\EvaluationContext;
@@ -304,12 +306,18 @@ class QuotationListController extends Controller
                     throw new InvalidArgumentException(__('purchasing.copy.this_quotation_has_expired_ask_the_supplier_to_submit_a_revision_before_accepting_it'));
                 }
 
-                $quotation->update([
-                    'status' => Quotation::STATUS_ACCEPTED,
-                    'reviewed_at' => now(),
-                    'reviewed_by' => auth()->id(),
-                    'reviewer_notes' => $request->input('reviewer_notes'),
-                ]);
+                $quotation = app(QuotationStateEngine::class)->transition(
+                    model: $quotation,
+                    target: QuotationStatus::ACCEPTED,
+                    actor: auth()->user(),
+                    metadata: [
+                        'attributes' => [
+                            'reviewed_at' => now(),
+                            'reviewed_by' => auth()->id(),
+                            'reviewer_notes' => $request->input('reviewer_notes'),
+                        ],
+                    ]
+                );
 
                 return $quotation;
             });
@@ -343,12 +351,18 @@ class QuotationListController extends Controller
                     throw new InvalidArgumentException(__('purchasing.copy.cannot_reject_a_quotation_that_has_no_available_items'));
                 }
 
-                $quotation->update([
-                    'status' => Quotation::STATUS_REJECTED,
-                    'reviewed_at' => now(),
-                    'reviewed_by' => auth()->id(),
-                    'reviewer_notes' => $request->reviewer_notes,
-                ]);
+                $quotation = app(QuotationStateEngine::class)->transition(
+                    model: $quotation,
+                    target: QuotationStatus::REJECTED,
+                    actor: auth()->user(),
+                    metadata: [
+                        'attributes' => [
+                            'reviewed_at' => now(),
+                            'reviewed_by' => auth()->id(),
+                            'reviewer_notes' => $request->reviewer_notes,
+                        ],
+                    ]
+                );
 
                 return $quotation;
             });
@@ -386,12 +400,18 @@ class QuotationListController extends Controller
                     throw new InvalidArgumentException(__('purchasing.copy.a_revision_can_only_be_requested_for_submitted_or_unavailable_quotations_that_have_not_been_used_to'));
                 }
 
-                $quotation->update([
-                    'status' => Quotation::STATUS_REVISION_REQUESTED,
-                    'reviewed_at' => now(),
-                    'reviewed_by' => auth()->id(),
-                    'reviewer_notes' => $revisionNote !== '' ? $revisionNote : null,
-                ]);
+                $quotation = app(QuotationStateEngine::class)->transition(
+                    model: $quotation,
+                    target: QuotationStatus::REVISION_REQUESTED,
+                    actor: auth()->user(),
+                    metadata: [
+                        'attributes' => [
+                            'reviewed_at' => now(),
+                            'reviewed_by' => auth()->id(),
+                            'reviewer_notes' => $revisionNote !== '' ? $revisionNote : null,
+                        ],
+                    ]
+                );
 
                 $conversation = Conversation::firstOrCreate([
                     'conversable_type' => PurchaseRequisition::class,

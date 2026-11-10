@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Supplier;
 
+use App\Enums\MaterialClaimStatus;
 use App\Http\Controllers\Controller;
 use App\Models\MaterialClaim;
 use App\Models\PurchaseOrder;
@@ -9,6 +10,7 @@ use App\Models\QcInspection;
 use App\Models\User;
 use App\Services\FileSecurity\FileInspectionService;
 use App\Services\NotificationService;
+use App\Services\Procurement\MaterialClaimStateEngine;
 use App\Services\RegionalDisplayFormatter;
 use App\Support\BusinessTime;
 use App\Support\NotificationCategory;
@@ -110,10 +112,16 @@ class ClaimController extends Controller
                     throw new \RuntimeException(__('claims.copy.this_claim_can_no_longer_accept_a_supplier_response'));
                 }
 
-                $claim->update([
-                    'supplier_response' => $request->supplier_response,
-                    'status' => 'responded',
-                ]);
+                $claim = app(MaterialClaimStateEngine::class)->transition(
+                    model: $claim,
+                    target: MaterialClaimStatus::RESPONDED,
+                    actor: auth()->user(),
+                    metadata: [
+                        'attributes' => [
+                            'supplier_response' => $request->supplier_response,
+                        ],
+                    ]
+                );
                 foreach ($staged as $stored) {
                     $claim->attachments()->create([
                         'file_path' => $stored['file_path'],

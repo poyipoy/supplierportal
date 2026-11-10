@@ -2,6 +2,7 @@
 
 namespace App\Services\LocalInvoice;
 
+use App\Enums\LocalInvoiceStatus;
 use App\Models\LocalInvoice;
 use App\Models\LocalPurchaseOrder;
 use App\Models\PaymentItem;
@@ -347,10 +348,9 @@ class InvoiceSubmissionService
                     'notes' => __('local_invoice.history.physical_verification_superseded', ['revision' => $revision->revision_number]),
                 ]);
 
-                $invoice->fill(array_merge($this->values($data), [
+                $updatedAttributes = array_merge($this->values($data), [
                     'revision_number' => $revision->revision_number,
                     'tax_amount' => $taxAmount,
-                    'status' => LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT,
                     'physical_verified_at' => null,
                     'approved_at' => null,
                     'ready_to_pay_at' => null,
@@ -373,25 +373,26 @@ class InvoiceSubmissionService
                     'has_po_discrepancy' => $poResolved['has_po_discrepancy'],
                     'ppn_scheme' => $ppnScheme,
                     'submitted_ppn_amount' => $taxAmount,
-                ]))->save();
-
-                if (array_key_exists('local_purchase_order_id', $data)) {
-                    $this->reservations->reserve($actor, $invoice, (int) $data['local_purchase_order_id'], $data['goods_receipt_ids']);
-                    $invoice->refresh();
-                    $revision->update(['internal_gr_reference' => $invoice->internal_gr_reference]);
-                }
-
-                $history = $invoice->statusHistories()->create([
-                    'from_status' => $fromStatus,
-                    'to_status' => $invoice->status,
-                    'actor_id' => $actor->id,
-                    'event' => 'resubmitted',
-                    'notes' => $recovering ? $data['recovery_reason'] : null,
-                    'created_at' => now(),
                 ]);
-                $this->notifications->send($invoice, $history);
 
-                return $invoice;
+                return app(LocalInvoiceStateEngine::class)->transition(
+                    model: $invoice,
+                    target: LocalInvoiceStatus::WAITING_PHYSICAL_DOCUMENT,
+                    actor: $actor,
+                    reason: $recovering ? $data['recovery_reason'] : null,
+                    metadata: [
+                        'event' => 'resubmitted',
+                        'from_status_override' => $fromStatus,
+                        'attributes' => $updatedAttributes,
+                        'after_transition' => function (LocalInvoice $lockedInv) use ($actor, $data, $revision): void {
+                            if (array_key_exists('local_purchase_order_id', $data)) {
+                                $this->reservations->reserve($actor, $lockedInv, (int) $data['local_purchase_order_id'], $data['goods_receipt_ids']);
+                                $lockedInv->refresh();
+                                $revision->update(['internal_gr_reference' => $lockedInv->internal_gr_reference]);
+                            }
+                        },
+                    ]
+                );
             });
         } catch (Throwable $exception) {
             $this->documents->compensate($written);
@@ -406,13 +407,17 @@ class InvoiceSubmissionService
         return DB::transaction(function () use ($actor, $invoice) {
             $locked = LocalInvoice::whereKey($invoice->id)->lockForUpdate()->firstOrFail();
             Gate::forUser($actor->fresh())->authorize('cancel', $locked);
-            $from = $locked->status;
             $this->reservations->release($locked, $actor);
-            $locked->update(['status' => LocalInvoice::STATUS_CANCELLED]);
-            $history = $locked->statusHistories()->create(['from_status' => $from, 'to_status' => LocalInvoice::STATUS_CANCELLED, 'actor_id' => $actor->id, 'event' => 'cancelled', 'created_at' => now()]);
-            $this->notifications->send($locked, $history);
 
-            return $locked->fresh();
+            return app(LocalInvoiceStateEngine::class)->transition(
+                model: $locked,
+                target: LocalInvoiceStatus::CANCELLED,
+                actor: $actor,
+                reason: null,
+                metadata: [
+                    'event' => 'cancelled',
+                ]
+            );
         });
     }
 

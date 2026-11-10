@@ -2,6 +2,10 @@
 
 namespace App\Services\Payment;
 
+use App\Enums\LocalInvoicePaymentStatus;
+use App\Enums\LocalInvoiceStatus;
+use App\Enums\PaymentBatchStatus;
+use App\Enums\PaymentGroupStatus;
 use App\Exceptions\BusinessRuleException;
 use App\Models\LocalInvoice;
 use App\Models\LocalInvoicePayment;
@@ -14,6 +18,7 @@ use App\Models\SupplierOverpaymentRefund;
 use App\Models\User;
 use App\Services\LocalInvoice\InvoiceNotificationService;
 use App\Services\LocalInvoice\LocalFinanceAuditService;
+use App\Services\LocalInvoice\LocalInvoiceStateEngine;
 use App\Services\LocalInvoice\MakerCheckerService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -105,7 +110,21 @@ class LocalInvoicePaymentService
         $actual = $payment->transfers()->sum('amount');
         $comparison = bccomp((string) $actual, (string) $payment->expected_amount, 2);
         if ($comparison < 0) {
-            $payment->update(['actual_paid_total' => $actual, 'status' => LocalInvoicePayment::STATUS_CORRECTION_REQUIRED, 'updated_by' => $actor->id]);
+            if ($payment->statusEnum() !== LocalInvoicePaymentStatus::CORRECTION_REQUIRED) {
+                $payment = app(LocalInvoicePaymentStateEngine::class)->transition(
+                    model: $payment,
+                    target: LocalInvoicePaymentStatus::CORRECTION_REQUIRED,
+                    actor: $actor,
+                    metadata: [
+                        'attributes' => [
+                            'actual_paid_total' => $actual,
+                            'updated_by' => $actor->id,
+                        ],
+                    ]
+                );
+            } else {
+                $payment->update(['actual_paid_total' => $actual, 'updated_by' => $actor->id]);
+            }
 
             $invoice = LocalInvoice::whereKey($payment->local_invoice_id)->lockForUpdate()->firstOrFail();
             $latestTransfer = $payment->transfers()->latest('sequence_no')->first();
@@ -142,17 +161,42 @@ class LocalInvoicePaymentService
         }
 
         $now = now();
-        $payment->update(['actual_paid_total' => $actual, 'status' => LocalInvoicePayment::STATUS_FINALIZED, 'finalized_by' => $actor->id, 'finalized_at' => $now, 'updated_by' => $actor->id]);
+        $payment = app(LocalInvoicePaymentStateEngine::class)->transition(
+            model: $payment,
+            target: LocalInvoicePaymentStatus::FINALIZED,
+            actor: $actor,
+            metadata: [
+                'attributes' => [
+                    'actual_paid_total' => $actual,
+                    'finalized_by' => $actor->id,
+                    'finalized_at' => $now,
+                    'updated_by' => $actor->id,
+                ],
+            ]
+        );
         $invoice = LocalInvoice::whereKey($payment->local_invoice_id)->lockForUpdate()->firstOrFail();
         if ($invoice->status !== LocalInvoice::STATUS_PAID) {
-            $invoice->update(['status' => LocalInvoice::STATUS_PAID, 'paid_at' => $now, 'completed_at' => $now]);
-            $history = $invoice->statusHistories()->create(['from_status' => LocalInvoice::STATUS_READY_TO_PAY, 'to_status' => LocalInvoice::STATUS_PAID, 'actor_id' => $actor->id, 'event' => 'paid', 'notes' => __('local_invoice.history.settlement_finalized'), 'created_at' => $now]);
-            $this->notifications->send($invoice, $history, [
-                'amount' => (string) $actual,
-                'reference' => (string) ($payment->transfers()->latest('sequence_no')->value('transfer_reference') ?? ''),
-                'expected' => (string) $payment->expected_amount,
-                'actual' => (string) $actual,
-            ]);
+            $invoice = app(LocalInvoiceStateEngine::class)->transition(
+                model: $invoice,
+                target: LocalInvoiceStatus::PAID,
+                actor: $actor,
+                reason: __('local_invoice.history.settlement_finalized'),
+                metadata: [
+                    'event' => 'paid',
+                    'timestamp' => $now,
+                    'from_status_override' => LocalInvoice::STATUS_READY_TO_PAY,
+                    'attributes' => [
+                        'paid_at' => $now,
+                        'completed_at' => $now,
+                    ],
+                    'notification_data' => [
+                        'amount' => (string) $actual,
+                        'reference' => (string) ($payment->transfers()->latest('sequence_no')->value('transfer_reference') ?? ''),
+                        'expected' => (string) $payment->expected_amount,
+                        'actual' => (string) $actual,
+                    ],
+                ]
+            );
         }
         if ($comparison > 0) {
             $overpaymentAmount = bcsub((string) $actual, (string) $payment->expected_amount, 2);
@@ -186,14 +230,35 @@ class LocalInvoicePaymentService
         $group = PaymentGroup::whereKey($item->payment_group_id)->lockForUpdate()->firstOrFail();
         $unsettled = $group->activeItems()->where('payable_type', LocalInvoice::class)
             ->whereDoesntHave('localInvoicePayment', fn ($q) => $q->where('status', LocalInvoicePayment::STATUS_FINALIZED))->exists();
-        if (! $unsettled) {
+        if (! $unsettled && $group->statusEnum() !== PaymentGroupStatus::PAID) {
             $primary = $payment->transfers()->where('transfer_type', LocalInvoicePaymentTransfer::TYPE_PRIMARY)->first();
-            $group->update(['status' => PaymentGroup::STATUS_PAID, 'transfer_reference' => $primary?->transfer_reference,
-                'transfer_date' => $primary?->transfer_date, 'paid_by' => $payment->finalized_by, 'paid_at' => $payment->finalized_at]);
+            app(PaymentGroupStateEngine::class)->transition(
+                model: $group,
+                target: PaymentGroupStatus::PAID,
+                metadata: [
+                    'attributes' => [
+                        'transfer_reference' => $primary?->transfer_reference,
+                        'transfer_date' => $primary?->transfer_date,
+                        'paid_by' => $payment->finalized_by,
+                        'paid_at' => $payment->finalized_at,
+                    ],
+                ]
+            );
         }
         $batch = PaymentBatch::whereKey($group->payment_batch_id)->lockForUpdate()->firstOrFail();
         $remaining = $batch->groups()->whereNotIn('status', [PaymentGroup::STATUS_PAID, PaymentGroup::STATUS_CANCELLED])->where('subtotal_amount', '>', 0)->exists();
-        $batch->update($remaining ? ['status' => PaymentBatch::STATUS_PARTIALLY_PAID] : ['status' => PaymentBatch::STATUS_PAID, 'paid_at' => now()]);
+        $targetBatchStatus = $remaining ? PaymentBatchStatus::PARTIALLY_PAID : PaymentBatchStatus::PAID;
+        $batchAttributes = $remaining ? [] : ['paid_at' => now()];
+
+        if ($batch->statusEnum() !== $targetBatchStatus) {
+            app(PaymentBatchStateEngine::class)->transition(
+                model: $batch,
+                target: $targetBatchStatus,
+                metadata: ['attributes' => $batchAttributes]
+            );
+        } elseif ($batchAttributes !== []) {
+            $batch->update($batchAttributes);
+        }
     }
 
     private function authorize(User $actor): void

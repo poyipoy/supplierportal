@@ -2,14 +2,21 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\Security\CspNonce;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Vite;
 use Symfony\Component\HttpFoundation\Response;
 
 class AddSecurityHeaders
 {
     public function handle(Request $request, Closure $next): Response
     {
+        $nonce = app(CspNonce::class)->get();
+        if (class_exists(Vite::class)) {
+            Vite::useCspNonce($nonce);
+        }
+
         $response = $next($request);
 
         // Headers applicable to all response classes (HTML, JSON, binary streams)
@@ -45,13 +52,15 @@ class AddSecurityHeaders
             ? 'Content-Security-Policy'
             : 'Content-Security-Policy-Report-Only';
 
-        $response->headers->set($cspHeader, $this->contentSecurityPolicy());
+        $response->headers->set($cspHeader, $this->contentSecurityPolicy($nonce));
 
         return $response;
     }
 
-    private function contentSecurityPolicy(): string
+    private function contentSecurityPolicy(?string $nonce = null): string
     {
+        $nonce ??= app(CspNonce::class)->get();
+
         $directives = [
             "default-src 'self'",
             "base-uri 'self'",
@@ -61,8 +70,9 @@ class AddSecurityHeaders
             "img-src 'self' data: blob:",
             "font-src 'self' data: https://fonts.gstatic.com https://fonts.bunny.net https://cdn.jsdelivr.net",
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.bunny.net https://cdn.jsdelivr.net https://cdn.datatables.net",
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://code.jquery.com https://cdn.datatables.net https://challenges.cloudflare.com",
-            "connect-src 'self' ws: wss: https://challenges.cloudflare.com https://*.pusher.com wss://*.pusher.com",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'nonce-{$nonce}' https://cdn.jsdelivr.net https://code.jquery.com https://cdn.datatables.net https://challenges.cloudflare.com",
+            "script-src-attr 'unsafe-inline'",
+            "connect-src 'self' ws: wss: https://challenges.cloudflare.com https://*.pusher.com wss://*.pusher.com https://cdn.jsdelivr.net",
             'frame-src https://challenges.cloudflare.com',
         ];
 

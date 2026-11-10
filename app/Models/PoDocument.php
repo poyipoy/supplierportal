@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Casts\CustomsDocumentStatusCast;
+use App\Enums\CustomsDocumentStatus;
 use App\Support\Procurement\CustomsDocumentationProgressCalculator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -34,6 +36,18 @@ class PoDocument extends Model
         'doc_type',
         'status',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'status' => CustomsDocumentStatusCast::class,
+        ];
+    }
+
+    public function statusEnum(): CustomsDocumentStatus
+    {
+        return CustomsDocumentStatus::tryFromWithLegacy($this->status ?? 'pending');
+    }
 
     /**
      * Refresh the PO document status of every purchase order linked to the

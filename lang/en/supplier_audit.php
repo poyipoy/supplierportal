@@ -2,7 +2,7 @@
 
 return [
     'title' => 'Supplier Audit',
-    'description' => 'ISO 14001, ISO 9001 & AGC AFC supplier and vendor audit checklist.',
+    'description' => 'ISO 14001, ISO 9001 & AGC AFC supplier audit checklist.',
     'eyebrow' => 'Local Supplier',
     'purchasing_description' => 'Assign the audit checklist to local suppliers, review submitted answers, and publish the assessment result.',
     'supplier_description' => 'Complete the audit checklist assigned by Purchasing and download the assessment result.',
@@ -209,7 +209,7 @@ return [
 
     'export' => [
         'label' => 'Supplier Audit :supplier (:period)',
-        'vendor_header' => 'Vendor/Supplier: :supplier — Period: :period',
+        'vendor_header' => 'Supplier: :supplier — Period: :period',
         'sub_total' => 'Sub Total',
         'columns' => [
             'no' => 'No',

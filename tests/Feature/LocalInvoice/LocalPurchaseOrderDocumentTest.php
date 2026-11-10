@@ -360,4 +360,41 @@ class LocalPurchaseOrderDocumentTest extends TestCase
         $indexResponse = $this->actingAs($this->supplierA)->get(route('local-supplier.purchase-orders.index'));
         $indexResponse->assertDontSee('PO-BETA-001');
     }
+
+    public function test_po_document_exceeding_twenty_megabytes_is_rejected(): void
+    {
+        $oversizedFile = UploadedFile::fake()->create('PO-ALPHA-001.pdf', 20481, 'application/pdf');
+
+        $response = $this->actingAs($this->finance)->post(route('finance.local-procurement.upload-po'), [
+            'supplier_id' => $this->supplierA->id,
+            'file' => $oversizedFile,
+        ]);
+
+        $response->assertSessionHasErrors(['file']);
+        $this->assertSame(
+            __('local_procurement.validation.po_file_size'),
+            session('errors')->first('file')
+        );
+        $this->assertDatabaseMissing('attachments', [
+            'attachable_type' => LocalPurchaseOrder::class,
+            'attachable_id' => $this->poA1->id,
+        ]);
+    }
+
+    public function test_po_zip_document_exceeding_twenty_megabytes_is_rejected(): void
+    {
+        $oversizedZip = UploadedFile::fake()->create('documents.zip', 20481, 'application/zip');
+
+        $response = $this->actingAs($this->finance)->post(route('finance.local-procurement.upload-po'), [
+            'supplier_id' => $this->supplierA->id,
+            'file' => $oversizedZip,
+        ]);
+
+        $response->assertSessionHasErrors(['file']);
+        $this->assertSame(
+            __('local_procurement.validation.po_file_size'),
+            session('errors')->first('file')
+        );
+        $this->assertDatabaseCount('local_po_document_batches', 0);
+    }
 }

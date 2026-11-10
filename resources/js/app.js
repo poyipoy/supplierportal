@@ -498,6 +498,7 @@ const bootImports = () => {
     if (hasMarker('[data-dashboard-audience] [data-editor-config]')) import('./dashboard-editor');
     if (hasMarker('[data-quotation-form-export]')) import('./quotation-form-export');
     if (hasMarker('#prFormTotals')) import('./pr-totals-sync');
+    if (hasMarker('[data-adasi-time-picker]')) import('./time-picker').then(module => module.bootTimePickers(document));
 };
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootImports);
 else bootImports();

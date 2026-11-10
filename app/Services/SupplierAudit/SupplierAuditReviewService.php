@@ -2,6 +2,7 @@
 
 namespace App\Services\SupplierAudit;
 
+use App\Enums\SupplierAuditStatus;
 use App\Models\SupplierAudit;
 use App\Models\SupplierAuditStatusHistory;
 use App\Models\User;
@@ -60,19 +61,21 @@ class SupplierAuditReviewService
                 $this->applyDeadline($locked, $actor, $dueDate, null);
             }
 
-            $locked->update([
-                'status' => SupplierAudit::STATUS_REVISION_REQUESTED,
-                'revision_note' => $note,
-                'revision_requested_at' => now(),
-            ]);
+            $locked = app(SupplierAuditStateEngine::class)->transition(
+                audit: $locked,
+                target: SupplierAuditStatus::REVISION_REQUESTED,
+                actor: $actor,
+                reason: $note,
+                metadata: ['history_event' => SupplierAuditStatusHistory::EVENT_REVISION_REQUESTED],
+                attributes: [
+                    'revision_note' => $note,
+                    'revision_requested_at' => now(),
+                ],
+            );
 
-            $history = $locked->statusHistories()->create([
-                'from_status' => SupplierAudit::STATUS_SUBMITTED,
-                'to_status' => SupplierAudit::STATUS_REVISION_REQUESTED,
-                'event' => SupplierAuditStatusHistory::EVENT_REVISION_REQUESTED,
-                'actor_id' => $actor->id,
-                'notes' => $note,
-            ]);
+            /** @var SupplierAuditStatusHistory $history */
+            $history = $locked->getRelation('latestTransitionHistory')
+                ?? $locked->statusHistories()->latest('id')->first();
 
             return [$locked, $history];
         });
@@ -90,21 +93,17 @@ class SupplierAuditReviewService
                 throw ValidationException::withMessages(['reason' => __('supplier_audit.errors.invalid_status')]);
             }
 
-            $from = $locked->status;
-            $locked->update([
-                'status' => SupplierAudit::STATUS_CANCELLED,
-                'cancelled_at' => now(),
-                'cancel_reason' => $reason,
-            ]);
-            $locked->statusHistories()->create([
-                'from_status' => $from,
-                'to_status' => SupplierAudit::STATUS_CANCELLED,
-                'event' => SupplierAuditStatusHistory::EVENT_CANCELLED,
-                'actor_id' => $actor->id,
-                'notes' => $reason,
-            ]);
-
-            return $locked;
+            return app(SupplierAuditStateEngine::class)->transition(
+                audit: $locked,
+                target: SupplierAuditStatus::CANCELLED,
+                actor: $actor,
+                reason: $reason,
+                metadata: ['history_event' => SupplierAuditStatusHistory::EVENT_CANCELLED],
+                attributes: [
+                    'cancelled_at' => now(),
+                    'cancel_reason' => $reason,
+                ],
+            );
         });
 
         $this->notifier->cancelled($locked);
@@ -141,19 +140,22 @@ class SupplierAuditReviewService
                 ]);
 
                 if (! $replacing) {
-                    $locked->update([
-                        'status' => SupplierAudit::STATUS_RESULT_PUBLISHED,
-                        'result_published_at' => now(),
+                    $locked = app(SupplierAuditStateEngine::class)->transition(
+                        audit: $locked,
+                        target: SupplierAuditStatus::RESULT_PUBLISHED,
+                        actor: $actor,
+                        metadata: ['history_event' => SupplierAuditStatusHistory::EVENT_RESULT_PUBLISHED],
+                        attributes: ['result_published_at' => now()],
+                    );
+                } else {
+                    $locked->statusHistories()->create([
+                        'from_status' => SupplierAudit::STATUS_RESULT_PUBLISHED,
+                        'to_status' => SupplierAudit::STATUS_RESULT_PUBLISHED,
+                        'event' => SupplierAuditStatusHistory::EVENT_RESULT_REPLACED,
+                        'actor_id' => $actor->id,
+                        'notes' => trim((string) $reason),
                     ]);
                 }
-
-                $locked->statusHistories()->create([
-                    'from_status' => $replacing ? SupplierAudit::STATUS_RESULT_PUBLISHED : SupplierAudit::STATUS_SUBMITTED,
-                    'to_status' => SupplierAudit::STATUS_RESULT_PUBLISHED,
-                    'event' => $replacing ? SupplierAuditStatusHistory::EVENT_RESULT_REPLACED : SupplierAuditStatusHistory::EVENT_RESULT_PUBLISHED,
-                    'actor_id' => $actor->id,
-                    'notes' => $replacing ? trim((string) $reason) : null,
-                ]);
 
                 return [$locked, $attachment];
             });

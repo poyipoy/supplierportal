@@ -9,6 +9,10 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Supplier extends Model
 {
+    public const SCOPE_IMPORT = 'import';
+
+    public const SCOPE_LOCAL = 'local';
+
     /** Vendor categories a reviewer can assign; only `Barang` requires a Surat Jalan. */
     public const VENDOR_CATEGORIES = ['Barang', 'Jasa', 'Lainnya'];
 

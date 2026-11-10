@@ -35,6 +35,7 @@
             <exclude>tests/Feature/LocalInvoice/LocalPoPrReferenceConcurrencyTest.php</exclude>
             <exclude>tests/Feature/LocalInvoice/ManualPoPrConcurrencyTest.php</exclude>
             <exclude>tests/Feature/LocaleRuntimeTest.php</exclude>
+            <exclude>tests/Feature/Maintenance/MaintenanceMigrationTest.php</exclude>
             <exclude>tests/Feature/LocalizationExportTest.php</exclude>
             <exclude>tests/Feature/LocalizationPerformanceTest.php</exclude>
             <exclude>tests/Feature/LocalizationRenderingTest.php</exclude>
@@ -70,6 +71,7 @@
             <file>tests/Feature/LocalInvoice/LocalPoPrReferenceConcurrencyTest.php</file>
             <file>tests/Feature/LocalInvoice/ManualPoPrConcurrencyTest.php</file>
             <file>tests/Feature/LocaleRuntimeTest.php</file>
+            <file>tests/Feature/Maintenance/MaintenanceMigrationTest.php</file>
             <file>tests/Feature/LocalizationExportTest.php</file>
             <file>tests/Feature/LocalizationPerformanceTest.php</file>
             <file>tests/Feature/LocalizationRenderingTest.php</file>

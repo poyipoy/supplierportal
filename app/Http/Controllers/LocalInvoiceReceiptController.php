@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\LocalInvoice;
+use Barryvdh\DomPDF\Facade\Pdf;
 use chillerlan\QRCode\QRCode;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\URL;
@@ -10,6 +11,29 @@ use Illuminate\Support\Facades\URL;
 class LocalInvoiceReceiptController extends Controller
 {
     public function show(LocalInvoice $invoice)
+    {
+        return response()->view('local-supplier.invoices.receipt', $this->receiptData($invoice))
+            ->header('Cache-Control', 'private, no-store');
+    }
+
+    /** Printable receipt as a PDF form; same data and authorization as the page. */
+    public function pdf(LocalInvoice $invoice)
+    {
+        $data = $this->receiptData($invoice);
+
+        $pdf = Pdf::loadView('pdf.local-invoice-receipt', $data)->setPaper('a4', 'portrait');
+
+        return $pdf->download('Receipt_'.str_replace('/', '-', (string) $invoice->receipt->receipt_number).'.pdf')
+            ->header('Cache-Control', 'private, no-store');
+    }
+
+    /**
+     * Authorization, QR and portal-specific navigation shared by the receipt
+     * page and its PDF.
+     *
+     * @return array<string, mixed>
+     */
+    private function receiptData(LocalInvoice $invoice): array
     {
         Gate::authorize('view', $invoice);
         $invoice->load(['receipt', 'supplier.supplier']);
@@ -52,8 +76,15 @@ class LocalInvoiceReceiptController extends Controller
             $indexLabel = __('local_invoice.list.title');
         }
 
-        return response()->view('local-supplier.invoices.receipt', compact(
-            'invoice', 'qrCode', 'signedUrl', 'detailUrl', 'indexUrl', 'indexLabel', 'portal'
-        ))->header('Cache-Control', 'private, no-store');
+        // Purchasing reads receipts through the finance group, which admits it.
+        $pdfUrl = match ($portal) {
+            'accounting' => route('accounting.invoices.receipt.print', $invoice),
+            'finance', 'purchasing' => route('finance.invoices.receipt.print', $invoice),
+            default => route('local-supplier.invoices.receipt.print', $invoice),
+        };
+
+        return compact(
+            'invoice', 'qrCode', 'signedUrl', 'detailUrl', 'indexUrl', 'indexLabel', 'portal', 'pdfUrl'
+        );
     }
 }

@@ -85,5 +85,6 @@ return [
     'session_reconnect' => [
         'restored' => 'Sesi tersambung kembali. Anda dapat melanjutkan pekerjaan.',
         'failed' => 'Portal tidak dapat dihubungi. Periksa koneksi lalu coba lagi.',
+        'unauthenticated' => 'Sesi belum aktif. Anda tetap berada di halaman ini. Silakan masuk kembali di tab baru untuk menyimpan perubahan.',
     ],
 ];

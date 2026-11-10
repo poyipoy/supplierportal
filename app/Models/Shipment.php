@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Casts\ShipmentStatusCast;
+use App\Enums\ShipmentStatus;
 use App\Support\BusinessTime;
 use App\Traits\HasHashids;
 use Illuminate\Database\Eloquent\Builder;
@@ -53,11 +55,17 @@ class Shipment extends Model
     protected function casts(): array
     {
         return [
+            'status' => ShipmentStatusCast::class,
             'shipment_date' => 'date',
             'estimated_arrival_date' => 'date',
             'actual_arrival_date' => 'date',
             'submitted_at' => 'datetime',
         ];
+    }
+
+    public function statusEnum(): ShipmentStatus
+    {
+        return ShipmentStatus::tryFromWithLegacy($this->status ?? self::STATUS_DRAFT);
     }
 
     // ─── Relationships ───

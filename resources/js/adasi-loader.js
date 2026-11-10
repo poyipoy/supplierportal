@@ -3,7 +3,7 @@ import { t } from './i18n.js';
 export const SHOW_DELAY = 150;
 export const MIN_VISIBLE = 300;
 export const SLOW_AFTER = 20000;
-export const NAV_RELEASE = 10000;
+export const NAV_RELEASE = 60000;
 
 const INERT_SELECTOR = '#sidebar, .top-navbar, #main-content';
 
@@ -89,6 +89,9 @@ export function createLoaderController({ view, timers }) {
             showTimer = clear(showTimer);
             hideTimer = clear(hideTimer);
             deactivate();
+            if (typeof globalThis.window !== 'undefined' && globalThis.window?.AdasiButton?.resetAll) {
+                globalThis.window.AdasiButton.resetAll();
+            }
         },
         /** For navigations: the page unload ends it, otherwise (e.g. a file download) release after NAV_RELEASE. */
         trackNavigation() {

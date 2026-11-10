@@ -12,6 +12,7 @@
     'readonly' => false,
     'allowedDaysOfWeek' => null,
     'allowedDaysMessage' => null,
+    'size' => 'md',
 ])
 
 @php
@@ -36,7 +37,7 @@
 @endphp
 
 <div
-    {{ $attributes->only('class')->class(['ui-calendar ui-date-picker tw:grid tw:gap-1.5']) }}
+    {{ $attributes->only('class')->class(['ui-calendar ui-date-picker tw:grid tw:gap-1.5', 'ui-calendar--sm' => $size === 'sm']) }}
     data-adasi-date-picker
     data-calendar-required="{{ $required ? 'true' : 'false' }}"
     @if($allowedDaysAttr !== null) data-calendar-allowed-days="{{ $allowedDaysAttr }}" @endif
@@ -64,7 +65,9 @@
             @if($describedBy) aria-describedby="{{ $describedBy }}" @endif
             @if($message) aria-invalid="true" @endif
             {{ $attributes->except('class')->class([
-                'ui-calendar__native-input ui-motion tw:min-h-[var(--ui-control-height-md)] tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:px-3 tw:py-2 tw:text-ui-sm tw:text-on-surface tw:shadow-none tw:placeholder:text-on-surface-variant tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary tw:disabled:cursor-not-allowed tw:disabled:bg-surface-container tw:disabled:opacity-50',
+                'ui-calendar__native-input ui-motion tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:px-3 tw:text-ui-sm tw:text-on-surface tw:shadow-none tw:placeholder:text-on-surface-variant tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary tw:disabled:cursor-not-allowed tw:disabled:bg-surface-container tw:disabled:opacity-50',
+                'tw:min-h-[var(--ui-control-height-md)] tw:py-2' => $size !== 'sm',
+                'tw:min-h-[calc(1.5em+0.5rem+2px)] tw:py-1' => $size === 'sm',
                 'tw:border-error' => $message,
                 'tw:border-outline-strong' => !$message,
             ]) }}
@@ -80,7 +83,7 @@
         @endif
         <button
             type="button"
-            class="ui-calendar-trigger"
+            class="ui-calendar-trigger {{ $size === 'sm' ? 'ui-calendar-trigger--sm' : '' }}"
             data-calendar-trigger
             data-calendar-label="{{ $label ?: __('common.calendar.choose_date') }}"
             aria-haspopup="dialog"

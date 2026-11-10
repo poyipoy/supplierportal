@@ -291,6 +291,25 @@
         :title="__('shipments.copy.shared_shipping_import_documents')"
         :description="__('shipments.copy.one_shared_set_of_documents_invoice_packing_list_bl_form_e_covers_all_purchase_orders_consolidated_i')"
     >
+        {{-- Staged Batch Action Bar --}}
+        <div id="supplierBatchActionBar" class="tw:mb-3 tw:p-3 tw:rounded-lg tw:border tw:border-primary/30 tw:bg-primary-container/20 tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-2 d-none">
+            <div class="tw:flex tw:items-center tw:gap-2">
+                <x-ui.icon name="files" size="sm" class="text-primary" />
+                <span class="tw:text-ui-xs tw:font-semibold tw:text-on-surface" id="stagedFilesSummary">
+                    {{ __('shipments.copy.staged_files_summary', ['count' => 0]) }}
+                </span>
+            </div>
+            <div class="tw:flex tw:items-center tw:gap-2">
+                <x-ui.button type="button" variant="ghost" size="sm" id="btnClearStagedFiles">
+                    {{ __('shipments.copy.clear_all_staged') }}
+                </x-ui.button>
+                <x-ui.button type="button" variant="primary" size="sm" id="btnUploadAllStaged">
+                    <x-ui.icon name="upload" size="sm" class="me-1" />
+                    <span id="btnUploadAllStagedText">{{ __('shipments.copy.upload_all_staged', ['count' => 0]) }}</span>
+                </x-ui.button>
+            </div>
+        </div>
+
         <div class="tw:grid tw:gap-3 tw:sm:grid-cols-2 tw:lg:grid-cols-4">
             @foreach($shipment->documents as $doc)
                 @php
@@ -303,7 +322,7 @@
                     };
                     $latestAtt = $doc->latestAttachment;
                 @endphp
-                <div class="p-3 border tw:border-outline-variant rounded tw:bg-surface-low d-flex flex-column justify-content-between gap-2">
+                <div class="p-3 border tw:border-outline-variant rounded tw:bg-surface-low d-flex flex-column justify-content-between gap-2 supplier-doc-card" data-doc-type="{{ $doc->doc_type }}">
                     <div>
                         <div class="d-flex align-items-center justify-content-between gap-1">
                             <span class="fw-bold tw:text-ui-xs tw:text-on-surface">{{ $docLabel }}</span>
@@ -333,19 +352,28 @@
                     </div>
 
                     @if($shipment->status !== 'cancelled' && ! in_array($doc->status, \App\Support\Procurement\CustomsDocumentationProgressCalculator::VERIFIED_STATUSES, true))
-                        <form method="POST" action="{{ route('supplier.shipments.documents.upload', [$shipment, $doc]) }}" enctype="multipart/form-data" data-async-submit class="pt-2 border-top tw:border-outline-variant">
+                        <form method="POST" action="{{ route('supplier.shipments.documents.upload', [$shipment, $doc]) }}" enctype="multipart/form-data" data-async-submit class="pt-2 border-top tw:border-outline-variant supplier-doc-form" data-doc-type="{{ $doc->doc_type }}">
                             @csrf
                             <input
                                 type="text"
                                 name="document_number"
                                 value="{{ old('document_number', $doc->document_number) }}"
-                                class="form-control form-control-sm mb-1.5 tw:text-ui-xs"
+                                class="form-control form-control-sm mb-1.5 tw:text-ui-xs doc-ref-input"
                                 placeholder="{{ __('shipments.copy.doc_ref_no_optional') }}"
                             >
                             <div class="input-group input-group-sm">
-                                <input type="file" name="file" class="form-control form-control-sm" required accept=".pdf,.jpg,.jpeg,.png,.xlsx,.doc,.docx">
-                                <button type="submit" class="btn btn-outline-primary btn-sm" title="{{ __('shipments.copy.upload_file') }}">
+                                <input type="file" name="file" class="form-control form-control-sm doc-file-input" required accept=".pdf,.jpg,.jpeg,.png,.xlsx,.doc,.docx" data-doc-type="{{ $doc->doc_type }}">
+                                <button type="submit" class="btn btn-outline-primary btn-sm btn-single-upload" title="{{ __('shipments.copy.upload_file') }}">
                                     <x-ui.icon name="upload" size="sm" />
+                                </button>
+                            </div>
+                            <div class="staged-file-badge tw:mt-1.5 tw:p-1.5 tw:rounded tw:bg-primary-container/30 tw:border tw:border-primary/20 tw:flex tw:items-center tw:justify-between tw:gap-1 d-none">
+                                <div class="tw:flex tw:items-center tw:gap-1 tw:min-w-0">
+                                    <x-ui.icon name="file-check" size="sm" class="text-primary flex-shrink-0" />
+                                    <span class="staged-file-info tw:text-ui-xs tw:truncate text-primary fw-medium"></span>
+                                </div>
+                                <button type="button" class="btn btn-link btn-sm p-0 text-muted tw:hover:text-error btn-remove-staged" title="{{ __('shipments.copy.clear_all_staged') }}">
+                                    <x-ui.icon name="x" size="xs" />
                                 </button>
                             </div>
                             <div class="tw:text-on-surface-variant" style="font-size: 10px; margin-top: 3px;">
@@ -414,6 +442,157 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (confirm(`${title}\n\n${text}`)) {
             window.AdasiButton?.startLoading(cancelBtn);
             cancelForm.submit();
+        }
+    });
+
+    // Supplier Batch Document Upload
+    const batchBar = document.getElementById('supplierBatchActionBar');
+    const summaryText = document.getElementById('stagedFilesSummary');
+    const uploadAllBtn = document.getElementById('btnUploadAllStaged');
+    const uploadAllText = document.getElementById('btnUploadAllStagedText');
+    const clearAllBtn = document.getElementById('btnClearStagedFiles');
+    const stagedMap = new Map();
+
+    const stagedSummaryTpl = @js(__('shipments.copy.staged_files_summary', ['count' => ':count']));
+    const uploadAllTpl = @js(__('shipments.copy.upload_all_staged', ['count' => ':count']));
+    const batchUploadUrl = @js(route('supplier.shipments.documents.batch-upload', $shipment));
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || @js(csrf_token());
+
+    function updateBatchUI() {
+        const count = stagedMap.size;
+        if (count > 0) {
+            batchBar?.classList.remove('d-none');
+            if (summaryText) summaryText.textContent = stagedSummaryTpl.replace(':count', count);
+            if (uploadAllText) uploadAllText.textContent = uploadAllTpl.replace(':count', count);
+        } else {
+            batchBar?.classList.add('d-none');
+        }
+    }
+
+    document.querySelectorAll('.doc-file-input').forEach(input => {
+        const docType = input.dataset.docType;
+        const card = input.closest('.supplier-doc-card');
+        const form = input.closest('form');
+        const refInput = form?.querySelector('.doc-ref-input');
+        const badge = form?.querySelector('.staged-file-badge');
+        const info = badge?.querySelector('.staged-file-info');
+        const removeBtn = badge?.querySelector('.btn-remove-staged');
+
+        input.addEventListener('change', () => {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                stagedMap.set(docType, {
+                    file: file,
+                    ref: refInput ? refInput.value : '',
+                    input: input,
+                    card: card,
+                });
+                if (info) {
+                    const sizeKiB = Math.round(file.size / 1024);
+                    info.textContent = `${file.name} (${sizeKiB} KB)`;
+                }
+                badge?.classList.remove('d-none');
+                card?.classList.add('tw:border-primary', 'tw:ring-1', 'tw:ring-primary/40');
+            } else {
+                stagedMap.delete(docType);
+                badge?.classList.add('d-none');
+                card?.classList.remove('tw:border-primary', 'tw:ring-1', 'tw:ring-primary/40');
+            }
+            updateBatchUI();
+        });
+
+        refInput?.addEventListener('input', () => {
+            if (stagedMap.has(docType)) {
+                stagedMap.get(docType).ref = refInput.value;
+            }
+        });
+
+        removeBtn?.addEventListener('click', (e) => {
+            e.preventDefault();
+            input.value = '';
+            stagedMap.delete(docType);
+            badge?.classList.add('d-none');
+            card?.classList.remove('tw:border-primary', 'tw:ring-1', 'tw:ring-primary/40');
+            updateBatchUI();
+        });
+    });
+
+    clearAllBtn?.addEventListener('click', () => {
+        document.querySelectorAll('.doc-file-input').forEach(input => {
+            input.value = '';
+            const badge = input.closest('form')?.querySelector('.staged-file-badge');
+            const card = input.closest('.supplier-doc-card');
+            badge?.classList.add('d-none');
+            card?.classList.remove('tw:border-primary', 'tw:ring-1', 'tw:ring-primary/40');
+        });
+        stagedMap.clear();
+        updateBatchUI();
+    });
+
+    uploadAllBtn?.addEventListener('click', async () => {
+        if (stagedMap.size === 0) return;
+
+        window.AdasiButton?.startLoading(uploadAllBtn);
+        uploadAllBtn.disabled = true;
+
+        const formData = new FormData();
+        formData.append('_token', csrfToken);
+
+        let idx = 0;
+        stagedMap.forEach((val, docType) => {
+            formData.append(`documents[${idx}][doc_type]`, docType);
+            formData.append(`documents[${idx}][file]`, val.file);
+            if (val.ref) {
+                formData.append(`documents[${idx}][document_number]`, val.ref);
+            }
+            idx++;
+        });
+
+        try {
+            const resp = await fetch(batchUploadUrl, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: formData,
+            });
+
+            const data = await resp.json();
+
+            if (! resp.ok) {
+                window.AdasiButton?.stopLoading(uploadAllBtn);
+                uploadAllBtn.disabled = false;
+                const errMessage = data.message || Object.values(data.errors || {})[0]?.[0] || 'Upload failed.';
+                if (window.AdasiAlert) {
+                    window.AdasiAlert.alert({
+                        tone: 'error',
+                        title: 'Upload Error',
+                        text: errMessage,
+                    });
+                } else {
+                    alert(errMessage);
+                }
+                return;
+            }
+
+            if (data.redirect) {
+                window.location.href = data.redirect;
+            } else {
+                window.location.reload();
+            }
+        } catch (err) {
+            window.AdasiButton?.stopLoading(uploadAllBtn);
+            uploadAllBtn.disabled = false;
+            if (window.AdasiAlert) {
+                window.AdasiAlert.alert({
+                    tone: 'error',
+                    title: 'Upload Error',
+                    text: err.message || 'An error occurred while uploading documents.',
+                });
+            } else {
+                alert('An error occurred while uploading documents.');
+            }
         }
     });
 });

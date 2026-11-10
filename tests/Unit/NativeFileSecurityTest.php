@@ -312,6 +312,66 @@ class NativeFileSecurityTest extends TestCase
         $this->assertSame('VALIDATED', app(FileInspectionService::class)->inspectUpload($file, 'spreadsheet_import')->status);
     }
 
+    public function test_po_and_spreadsheet_security_profiles_and_zip_limits_match_expected_sizes(): void
+    {
+        $mib = 1024 * 1024;
+        $profiles = config('native_file_security.profiles');
+
+        $this->assertSame(10 * $mib, $profiles['spreadsheet_import']['max_bytes']);
+        $this->assertSame(20 * $mib, $profiles['po_pdf']['max_bytes']);
+        $this->assertSame(20 * $mib, $profiles['po_zip']['max_bytes']);
+        $this->assertSame(20 * $mib, config('native_file_security.zip.max_upload_bytes'));
+        $this->assertSame(10240, config('local_procurement_imports.max_file_kib'));
+    }
+
+    public function test_file_inspection_service_rejects_files_exceeding_profile_budgets(): void
+    {
+        $mib = 1024 * 1024;
+        $service = app(FileInspectionService::class);
+
+        // Test spreadsheet_import profile (10 MiB limit)
+        $sheetPath = tempnam(sys_get_temp_dir(), 'adasi-sheet-');
+        $this->paths[] = $sheetPath;
+        $handle = fopen($sheetPath, 'wb');
+        ftruncate($handle, 10 * $mib + 1);
+        fclose($handle);
+
+        try {
+            $service->inspectPath($sheetPath, 'import.xlsx', 'spreadsheet_import', 'import_file');
+            $this->fail('Expected budget rejection for spreadsheet_import');
+        } catch (ValidationException $e) {
+            $this->assertSame(__('file_security.errors.budget'), $e->validator->errors()->first('import_file'));
+        }
+
+        // Test po_pdf profile (20 MiB limit)
+        $pdfPath = tempnam(sys_get_temp_dir(), 'adasi-pdf-');
+        $this->paths[] = $pdfPath;
+        $handle = fopen($pdfPath, 'wb');
+        ftruncate($handle, 20 * $mib + 1);
+        fclose($handle);
+
+        try {
+            $service->inspectPath($pdfPath, 'PO-123.pdf', 'po_pdf', 'file');
+            $this->fail('Expected budget rejection for po_pdf');
+        } catch (ValidationException $e) {
+            $this->assertSame(__('file_security.errors.budget'), $e->validator->errors()->first('file'));
+        }
+
+        // Test po_zip profile (20 MiB limit)
+        $zipPath = tempnam(sys_get_temp_dir(), 'adasi-zip-');
+        $this->paths[] = $zipPath;
+        $handle = fopen($zipPath, 'wb');
+        ftruncate($handle, 20 * $mib + 1);
+        fclose($handle);
+
+        try {
+            $service->inspectPath($zipPath, 'batch.zip', 'po_zip', 'file');
+            $this->fail('Expected budget rejection for po_zip');
+        } catch (ValidationException $e) {
+            $this->assertSame(__('file_security.errors.budget'), $e->validator->errors()->first('file'));
+        }
+    }
+
     private function archive(array $entries): string
     {
         $path = tempnam(sys_get_temp_dir(), 'adasi-zip-');

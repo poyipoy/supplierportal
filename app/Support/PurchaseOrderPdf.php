@@ -3,34 +3,20 @@
 namespace App\Support;
 
 use App\Models\PurchaseOrder;
-use Dompdf\Dompdf;
-use Dompdf\FontMetrics;
-use Dompdf\Options;
-use Illuminate\Support\Facades\File;
-use Picqer\Barcode\Renderers\SvgRenderer;
-use Picqer\Barcode\Types\TypeCode128;
+use App\Support\Pdf\FormDocument;
 use RuntimeException;
 
 /** Presentation and measured pagination for the fixed, English PO form. */
 final class PurchaseOrderPdf
 {
-    private const MM = 72 / 25.4;
+    private const LINE_HEIGHT = FormDocument::LINE_HEIGHT;
 
-    private const LINE_HEIGHT = 4.1;
-
-    private const NOTE_LINE_HEIGHT = 3.8;
+    private const NOTE_LINE_HEIGHT = FormDocument::NOTE_LINE_HEIGHT;
 
     public static function data(PurchaseOrder $po): array
     {
-        $metrics = (new Dompdf(new Options(config('dompdf.options', []))))->getFontMetrics();
-        File::ensureDirectoryExists($metrics->getOptions()->getFontDir());
-        foreach (['normal' => 'Regular', 'bold' => 'Bold'] as $weight => $file) {
-            if (! $metrics->registerFont(['family' => 'PO Noto Sans', 'style' => 'normal', 'weight' => $weight], self::asset("fonts/noto-sans/NotoSans-{$file}.ttf"))) {
-                throw new RuntimeException('Unable to load the local PO PDF font.');
-            }
-        }
-        $font = $metrics->getFont('PO Noto Sans', 'normal');
-        $wrap = fn (string $text, float $width, float $size = 9): array => self::wrap($text, $width, $size, $metrics, $font);
+        FormDocument::metrics();
+        $wrap = fn (string $text, float $width, float $size = 9): array => FormDocument::wrap($text, $width, $size);
         $supplier = $po->supplier;
         $profile = $supplier && ($supplier->exists || $supplier->relationLoaded('supplier')) ? $supplier->supplier : null;
         $supplierLines = $wrap($profile?->company_name ?: ($supplier?->name ?: '-'), 112);
@@ -153,17 +139,12 @@ final class PurchaseOrderPdf
             $pages[] = $final;
         }
 
-        $barcode = (new TypeCode128)->getBarcode($po->po_number);
-        $svg = (new SvgRenderer)->setSvgType(SvgRenderer::TYPE_SVG_INLINE)->render($barcode, max(125, $barcode->getWidth()), 34);
-
         return [
             'pages' => $pages, 'table_top' => $tableTop - 10, 'note_top' => $noteTop - 10,
             'footer_lines' => $footerLines, 'supplier_lines' => $supplierLines,
-            'barcode' => 'data:image/svg+xml;base64,'.base64_encode($svg),
-            'barcode_width' => max(33.08, $barcode->getWidth() * 0.22),
-            'company_header' => self::asset('images/po-company-header.png'),
-            'font_regular' => self::asset('fonts/noto-sans/NotoSans-Regular.ttf'),
-            'font_bold' => self::asset('fonts/noto-sans/NotoSans-Bold.ttf'),
+            ...FormDocument::barcode($po->po_number),
+            'company_header' => FormDocument::asset('images/po-company-header.png'),
+            ...FormDocument::fonts(),
             'po_number_lines' => $wrap($po->po_number, 67),
             'currency' => strtoupper($po->currency ?: 'USD'),
             // Q7 (released only after G-PDF): PO logistics snapshot, fixed English form; "-" when NULL.
@@ -175,50 +156,8 @@ final class PurchaseOrderPdf
         ];
     }
 
-    private static function asset(string $path): string
-    {
-        return str_replace('\\', '/', public_path('assets/'.$path));
-    }
-
     private static function number(mixed $value, int $precision = 4): string
     {
-        if ($value === null) {
-            return '-';
-        }
-        $text = number_format((float) $value, $precision, '.', ',');
-        if ($precision > 2) {
-            $text = rtrim($text, '0');
-            $fraction = strlen(substr(strrchr($text, '.'), 1));
-            $text .= str_repeat('0', max(0, 2 - $fraction));
-        }
-
-        return $text;
-    }
-
-    private static function wrap(string $text, float $width, float $size, FontMetrics $metrics, string $font): array
-    {
-        $lines = [];
-        foreach (preg_split('/\R/u', $text) as $paragraph) {
-            $line = '';
-            foreach (preg_split('/\s+/u', trim($paragraph), -1, PREG_SPLIT_NO_EMPTY) as $word) {
-                $candidate = $line.$word;
-                if ($line !== '' && $metrics->getTextWidth($candidate, $font, $size) > $width * self::MM) {
-                    $lines[] = rtrim($line);
-                    $line = '';
-                }
-                foreach (mb_str_split($word) as $character) {
-                    $candidate = $line.$character;
-                    if ($line !== '' && $metrics->getTextWidth($candidate, $font, $size) > $width * self::MM) {
-                        $lines[] = rtrim($line);
-                        $line = '';
-                    }
-                    $line .= $character;
-                }
-                $line .= ' ';
-            }
-            $lines[] = rtrim($line);
-        }
-
-        return $lines ?: ['-'];
+        return FormDocument::number($value, $precision);
     }
 }

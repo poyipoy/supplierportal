@@ -24,7 +24,7 @@
                             id="localPoImportFile"
                             :label="__('local_procurement.import.po_file')"
                             :helper="__('local_procurement.import.po_format')"
-                            :max-size-mb="50"
+                            :max-size-mb="10"
                             accept=".xlsx,.csv,.xls"
                         />
                     </div>

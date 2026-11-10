@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Purchasing;
 use App\Exceptions\PoShipmentDocumentBatchRefused;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Export\Filters\ShipmentExportFilters;
+use App\Http\Requests\Purchasing\BatchUpdateShipmentDocumentStatusRequest;
 use App\Models\Shipment;
 use App\Models\ShipmentDocument;
 use App\Models\User;
@@ -213,5 +214,104 @@ class ShipmentController extends Controller
         }
 
         return back()->with('success', __('shipments.feedback.document_status', ['status' => StatusHelper::shipmentDocLabel($validated['status'])]));
+    }
+
+    /**
+     * Batch update multiple document statuses for a shipment.
+     */
+    public function updateDocumentStatusesBatch(
+        BatchUpdateShipmentDocumentStatusRequest $request,
+        $id,
+        PoShipmentDocumentStatusService $documentStatus
+    ) {
+        $shipment = Shipment::findOrFail($id);
+        Gate::authorize('reviewDocument', $shipment);
+
+        try {
+            $result = $documentStatus->updateShipmentDocumentsBatch(
+                $shipment,
+                $request->validated('documents'),
+                $request->user(),
+            );
+        } catch (PoShipmentDocumentBatchRefused $refused) {
+            if ($request->expectsJson()) {
+                return response()->json($refused->toPayload(), $refused->httpStatus);
+            }
+
+            $rowMessage = collect($refused->rows)->pluck('message')->filter()->first();
+
+            return back()->withInput()->with('error', trim($refused->getMessage().' '.$rowMessage));
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json($result);
+        }
+
+        return back()->with('success', __('shipments.copy.batch_status_update_success'));
+    }
+
+    /**
+     * 1-Click action to verify all eligible documents on a shipment.
+     */
+    public function verifyAllDocuments(
+        Request $request,
+        $id,
+        PoShipmentDocumentStatusService $documentStatus
+    ) {
+        $shipment = Shipment::findOrFail($id);
+        Gate::authorize('reviewDocument', $shipment);
+
+        // Eligible documents: have latest attachment and are not yet verified or done
+        $eligibleDocs = $shipment->documents()
+            ->with('latestAttachment')
+            ->whereNotIn('status', [ShipmentDocument::STATUS_VERIFIED, ShipmentDocument::STATUS_DONE])
+            ->get()
+            ->filter(fn ($d) => $d->latestAttachment !== null);
+
+        if ($eligibleDocs->isEmpty()) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => __('shipments.copy.batch_status_update_success'),
+                    'counts' => ['updated' => 0, 'skipped' => 0, 'total' => 0],
+                ]);
+            }
+
+            return back()->with('info', __('shipments.copy.batch_status_update_success'));
+        }
+
+        $specs = [];
+        foreach ($eligibleDocs as $doc) {
+            $specs[] = [
+                'document_id' => $doc->id,
+                'doc_type' => $doc->doc_type,
+                'status' => ShipmentDocument::STATUS_VERIFIED,
+                'reason' => null,
+                'expected_status' => $doc->status,
+                'expected_attachment' => $doc->latestAttachment?->hash,
+            ];
+        }
+
+        try {
+            $result = $documentStatus->updateShipmentDocumentsBatch(
+                $shipment,
+                $specs,
+                $request->user(),
+            );
+        } catch (PoShipmentDocumentBatchRefused $refused) {
+            if ($request->expectsJson()) {
+                return response()->json($refused->toPayload(), $refused->httpStatus);
+            }
+
+            $rowMessage = collect($refused->rows)->pluck('message')->filter()->first();
+
+            return back()->withInput()->with('error', trim($refused->getMessage().' '.$rowMessage));
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json($result);
+        }
+
+        return back()->with('success', __('shipments.copy.batch_status_update_success'));
     }
 }

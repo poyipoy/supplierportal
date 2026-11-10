@@ -23,8 +23,12 @@ return [
     'login.heading' => 'Sign in to your account',
     'login.instructions' => 'Sign in with your registered email address.',
     'login.email' => 'Email address',
+    'login.username' => 'Username',
+    'login.username_empty' => 'Username cannot be empty',
+    'login.email_empty' => 'Email cannot be empty',
+    'login.password_empty' => 'Password cannot be empty',
     'login.password' => 'Password',
-    'login.sign_in' => 'Sign In',
+    'login.sign_in' => 'Sign in',
     'login.remember' => 'Remember me',
     'login.help' => 'Password Assistance',
     'login.new_supplier' => 'New supplier?',
@@ -65,7 +69,7 @@ Registered Email: [Registered Email]',
 I would like to request assistance resetting my Supplier Portal password.
 
 Company Name: [Company Name]
-Supplier/Vendor Name: [Supplier/Vendor Name]
+Supplier Name: [Supplier Name]
 Registered Email: [Registered Email]
 Contact Person: [Contact Person]
 

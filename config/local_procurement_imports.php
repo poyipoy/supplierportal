@@ -2,7 +2,7 @@
 
 return [
     'max_rows' => 70000,
-    'max_file_kib' => 51200,
+    'max_file_kib' => 10240,
     'max_expanded_bytes' => 512 * 1024 * 1024,
     'max_zip_entries' => 1000,
     'batch_size' => 500,

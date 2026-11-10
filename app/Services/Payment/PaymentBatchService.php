@@ -2,6 +2,8 @@
 
 namespace App\Services\Payment;
 
+use App\Enums\PaymentBatchStatus;
+use App\Enums\PaymentGroupStatus;
 use App\Exceptions\BusinessRuleArgumentException;
 use App\Exceptions\BusinessRuleException;
 use App\Models\Employee;
@@ -333,23 +335,43 @@ class PaymentBatchService
             }
             $newNet = Money::atLeastZero(Money::subtract($newSubtotal, $newFee));
 
-            $group->update([
+            $groupAttributes = [
                 'subtotal_amount' => $newSubtotal,
                 'bank_fee' => $newFee,
                 'net_payment_amount' => $newNet,
-                'status' => $activeItems->isEmpty() ? PaymentGroup::STATUS_CANCELLED : $group->status,
-            ]);
+            ];
+
+            if ($activeItems->isEmpty() && $group->statusEnum() !== PaymentGroupStatus::CANCELLED) {
+                app(PaymentGroupStateEngine::class)->transition(
+                    model: $group,
+                    target: PaymentGroupStatus::CANCELLED,
+                    actor: $actor,
+                    reason: trim($reason),
+                    metadata: ['attributes' => $groupAttributes]
+                );
+            } else {
+                $group->update($groupAttributes);
+            }
 
             // Recalculate batch
             $allActiveGroups = $batch->groups()->where('status', '!=', PaymentGroup::STATUS_CANCELLED)->get();
-            $batchStatus = $allActiveGroups->isEmpty() ? PaymentBatch::STATUS_CANCELLED : $batch->status;
-
-            $batch->update([
+            $totals = [
                 'total_subtotal' => Money::sum($allActiveGroups->pluck('subtotal_amount')),
                 'total_bank_fee' => Money::sum($allActiveGroups->pluck('bank_fee')),
                 'total_net_amount' => Money::sum($allActiveGroups->pluck('net_payment_amount')),
-                'status' => $batchStatus,
-            ]);
+            ];
+
+            if ($allActiveGroups->isEmpty()) {
+                app(PaymentBatchStateEngine::class)->transition(
+                    model: $batch,
+                    target: PaymentBatchStatus::CANCELLED,
+                    actor: $actor,
+                    reason: trim($reason),
+                    metadata: ['attributes' => $totals]
+                );
+            } else {
+                $batch->update($totals);
+            }
         });
     }
 
@@ -387,20 +409,38 @@ class PaymentBatchService
                     'removal_reason' => trim($reason),
                 ]);
 
-                $group->update([
+                $groupAttributes = [
                     'subtotal_amount' => Money::ZERO,
                     'bank_fee' => Money::ZERO,
                     'net_payment_amount' => Money::ZERO,
-                    'status' => PaymentGroup::STATUS_CANCELLED,
-                ]);
+                ];
+
+                if ($group->statusEnum() !== PaymentGroupStatus::CANCELLED) {
+                    app(PaymentGroupStateEngine::class)->transition(
+                        model: $group,
+                        target: PaymentGroupStatus::CANCELLED,
+                        actor: $actor,
+                        reason: trim($reason),
+                        metadata: ['attributes' => $groupAttributes]
+                    );
+                } else {
+                    $group->update($groupAttributes);
+                }
             }
 
-            $b->update([
-                'status' => PaymentBatch::STATUS_CANCELLED,
-                'total_subtotal' => Money::ZERO,
-                'total_bank_fee' => Money::ZERO,
-                'total_net_amount' => Money::ZERO,
-            ]);
+            $b = app(PaymentBatchStateEngine::class)->transition(
+                model: $b,
+                target: PaymentBatchStatus::CANCELLED,
+                actor: $actor,
+                reason: trim($reason),
+                metadata: [
+                    'attributes' => [
+                        'total_subtotal' => Money::ZERO,
+                        'total_bank_fee' => Money::ZERO,
+                        'total_net_amount' => Money::ZERO,
+                    ],
+                ]
+            );
 
             return $b->fresh(['groups.items']);
         });
@@ -525,11 +565,17 @@ class PaymentBatchService
                 }
             }
 
-            $b->update([
-                'status' => PaymentBatch::STATUS_FINALIZED,
-                'finalized_by' => $actor->id,
-                'finalized_at' => now(),
-            ]);
+            $b = app(PaymentBatchStateEngine::class)->transition(
+                model: $b,
+                target: PaymentBatchStatus::FINALIZED,
+                actor: $actor,
+                metadata: [
+                    'attributes' => [
+                        'finalized_by' => $actor->id,
+                        'finalized_at' => now(),
+                    ],
+                ]
+            );
 
             return $b->fresh(['groups.items']);
         });

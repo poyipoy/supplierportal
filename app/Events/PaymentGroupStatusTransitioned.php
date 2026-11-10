@@ -1,0 +1,27 @@
+<?php
+
+namespace App\Events;
+
+use App\Enums\PaymentGroupStatus;
+use App\Models\PaymentGroup;
+use App\Models\User;
+use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
+use Illuminate\Foundation\Events\Dispatchable;
+use Illuminate\Queue\SerializesModels;
+
+class PaymentGroupStatusTransitioned implements ShouldDispatchAfterCommit
+{
+    use Dispatchable, SerializesModels;
+
+    /**
+     * @param  array<string, mixed>  $metadata
+     */
+    public function __construct(
+        public readonly PaymentGroup $group,
+        public readonly PaymentGroupStatus $fromStatus,
+        public readonly PaymentGroupStatus $toStatus,
+        public readonly ?User $actor = null,
+        public readonly ?string $reason = null,
+        public readonly array $metadata = []
+    ) {}
+}

@@ -93,10 +93,10 @@ return [
     ],
     'master_data' => [
         'delete' => 'Hapus',
-        'delete_confirm_title' => 'Hapus data master ini secara permanen?',
+        'delete_confirm_title' => 'Hapus master data ini secara permanen?',
         'delete_refused_title' => 'Tidak dapat dihapus',
         'deactivate_instead' => 'Nonaktifkan saja',
-        'deleted' => 'Data master dihapus.',
+        'deleted' => 'Master data dihapus.',
         'delete_refused_material' => 'Tidak dapat dihapus: dipakai oleh :pr_items item PR, :aliases alias, dan :reference_prices harga referensi. Nonaktifkan saja.',
         'delete_refused_rule' => 'Tidak dapat dihapus: dipakai oleh :pr_items item PR. Nonaktifkan saja.',
     ],
@@ -154,7 +154,7 @@ return [
         'price_invalid' => 'Harga per KG harus lebih dari 0.',
         'validity_invalid' => 'Berlaku Sampai tidak boleh lebih awal dari Berlaku Dari.',
         'overlap' => 'Rentang ini tumpang-tindih dengan harga referensi aktif (:min sampai :max, :from sampai :until) untuk material, bentuk, dan mata uang yang sama.',
-        'material_not_found' => 'Tidak ada material master dengan kode ini.',
+        'material_not_found' => 'Tidak ada master data material dengan kode ini.',
         'reference_price' => 'Harga Referensi',
         'reference_delta' => 'vs Referensi',
         'reasons' => [

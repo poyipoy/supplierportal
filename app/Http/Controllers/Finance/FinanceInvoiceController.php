@@ -15,6 +15,7 @@ use App\Services\LocalInvoice\InvoiceQuery;
 use App\Services\LocalInvoice\InvoiceVerificationService;
 use App\Support\ExportConfirmation;
 use App\Support\ExportDispatcher;
+use App\Support\ServerTabsResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
@@ -184,13 +185,41 @@ class FinanceInvoiceController extends Controller
     public function masterInvoice(InvoiceFilterRequest $request, InvoiceQuery $query)
     {
         $filters = $request->validated();
-        $invoices = $query->filtered($filters)->latest('id')->paginate(25)->withQueryString();
+        $rawTab = strtoupper((string) ($filters['payment_status'] ?? 'ALL'));
+        $paymentStatus = in_array($rawTab, ['ALL', 'UNPAID', 'PAID'], true) ? $rawTab : 'ALL';
 
-        return view('finance.master-invoices.index', [
+        $baseFilters = collect($filters)->except('payment_status')->all();
+        $baseQuery = $query->filtered($baseFilters);
+        $paidCount = (clone $baseQuery)->whereIn('status', [LocalInvoice::STATUS_PAID, 'COMPLETED'])->count();
+        $unpaidCount = (clone $baseQuery)->whereNotIn('status', [LocalInvoice::STATUS_PAID, 'COMPLETED'])->count();
+        $counts = [
+            'ALL' => $paidCount + $unpaidCount,
+            'UNPAID' => $unpaidCount,
+            'PAID' => $paidCount,
+        ];
+
+        $invoices = $query->filtered($filters)->latest('id')->paginate(25)->withQueryString();
+        $viewData = [
             'invoices' => $invoices,
             'filters' => $filters,
+            'paymentStatus' => $paymentStatus,
+            'counts' => $counts,
             'suppliers' => User::localEligible()->with('supplier')->orderBy('name')->get(),
-        ]);
+        ];
+
+        if (ServerTabsResponse::wants($request)) {
+            return ServerTabsResponse::make(
+                html: view('finance.master-invoices._content', $viewData)->render(),
+                tab: $paymentStatus,
+                request: $request,
+                extra: [
+                    'nav' => view('finance.master-invoices._status_nav', $viewData)->render(),
+                    'counts' => $counts,
+                ],
+            );
+        }
+
+        return view('finance.master-invoices.index', $viewData);
     }
 
     public function exportMasterInvoice(AdvancedExportRequest $request)

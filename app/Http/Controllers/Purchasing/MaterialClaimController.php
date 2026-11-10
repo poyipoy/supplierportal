@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Purchasing;
 
+use App\Enums\MaterialClaimStatus;
 use App\Http\Controllers\Controller;
 use App\Models\MaterialClaim;
 use App\Models\PurchaseOrder;
 use App\Models\QcInspection;
 use App\Models\User;
 use App\Services\NotificationService;
+use App\Services\Procurement\MaterialClaimStateEngine;
 use App\Services\RegionalDisplayFormatter;
 use App\Support\BusinessTime;
 use App\Support\NotificationCategory;
@@ -229,7 +231,11 @@ class MaterialClaimController extends Controller
                     throw new \RuntimeException(__('claims.copy.only_responded_claims_can_be_resolved'));
                 }
 
-                $claim->update(['status' => 'resolved']);
+                $claim = app(MaterialClaimStateEngine::class)->transition(
+                    model: $claim,
+                    target: MaterialClaimStatus::RESOLVED,
+                    actor: auth()->user()
+                );
                 $po?->reconcileOperationalStatus();
 
                 return $claim->fresh('purchaseOrder');

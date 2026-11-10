@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Casts\LocalGoodsReceiptStatusCast;
+use App\Enums\LocalGoodsReceiptStatus;
 use App\Traits\HasHashids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -63,7 +65,33 @@ class LocalGoodsReceipt extends Model
     protected $casts = [
         'gr_date' => 'date',
         'qty' => 'decimal:4',
+        'status' => LocalGoodsReceiptStatusCast::class,
     ];
+
+    public function statusEnum(): LocalGoodsReceiptStatus
+    {
+        return LocalGoodsReceiptStatus::tryFromWithLegacy((string) $this->status);
+    }
+
+    public function isAvailable(): bool
+    {
+        return LocalGoodsReceiptStatus::tryFromWithLegacyOrNull((string) $this->status) === LocalGoodsReceiptStatus::AVAILABLE;
+    }
+
+    public function isReserved(): bool
+    {
+        return LocalGoodsReceiptStatus::tryFromWithLegacyOrNull((string) $this->status) === LocalGoodsReceiptStatus::RESERVED;
+    }
+
+    public function isInvoiced(): bool
+    {
+        return LocalGoodsReceiptStatus::tryFromWithLegacyOrNull((string) $this->status) === LocalGoodsReceiptStatus::INVOICED;
+    }
+
+    public function isCancelled(): bool
+    {
+        return LocalGoodsReceiptStatus::tryFromWithLegacyOrNull((string) $this->status) === LocalGoodsReceiptStatus::CANCELLED;
+    }
 
     public function purchaseOrder(): BelongsTo
     {

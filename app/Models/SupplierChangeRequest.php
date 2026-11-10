@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Casts\SupplierChangeRequestStatusCast;
+use App\Enums\SupplierChangeRequestStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -27,6 +29,9 @@ class SupplierChangeRequest extends Model
 
     public const CONTACT_FIELDS = ['pic_name', 'pic_email', 'pic_phone'];
 
+    /** Company details an Import supplier may propose next to the contact person; blank means unchanged. */
+    public const COMPANY_FIELDS = ['address', 'phone', 'category'];
+
     protected $fillable = [
         'supplier_id',
         'change_type',
@@ -43,11 +48,17 @@ class SupplierChangeRequest extends Model
     protected function casts(): array
     {
         return [
+            'status' => SupplierChangeRequestStatusCast::class,
             'current_data_snapshot' => 'array',
             'proposed_data' => 'array',
             'requested_at' => 'datetime',
             'reviewed_at' => 'datetime',
         ];
+    }
+
+    public function statusEnum(): SupplierChangeRequestStatus
+    {
+        return SupplierChangeRequestStatus::tryFromWithLegacy($this->status ?? self::STATUS_PENDING);
     }
 
     // ─── Relationships ───
