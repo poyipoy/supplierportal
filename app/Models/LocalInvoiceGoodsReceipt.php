@@ -20,6 +20,7 @@ class LocalInvoiceGoodsReceipt extends Model
         'gr_number_snapshot',
         'gr_qty_snapshot',
         'gr_uom_snapshot',
+        'gr_amount_snapshot',
         'reserved_at',
         'consumed_at',
         'released_at',
@@ -31,6 +32,7 @@ class LocalInvoiceGoodsReceipt extends Model
     {
         return [
             'gr_qty_snapshot' => 'decimal:4',
+            'gr_amount_snapshot' => 'decimal:2',
             'reserved_at' => 'datetime',
             'consumed_at' => 'datetime',
             'released_at' => 'datetime',

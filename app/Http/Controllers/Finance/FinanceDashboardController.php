@@ -36,6 +36,13 @@ class FinanceDashboardController extends Controller
 
         $recentBatches = PaymentBatch::with('creator')->latest('id')->limit(5)->get();
         $recentInvoices = $dashboardData['invoices'] ?? LocalInvoice::latest('id')->limit(5)->get();
+        $threeWayVarianceInvoices = LocalInvoice::query()
+            ->with(['supplier.supplier', 'localPurchaseOrder'])
+            ->where('three_way_match_status', 'VARIANCE_DETECTED')
+            ->whereIn('status', [LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT, LocalInvoice::STATUS_UNDER_VERIFICATION])
+            ->latest('id')
+            ->limit(5)
+            ->get();
 
         return view('finance.dashboard', array_merge($dashboardData, [
             'kpis' => $kpis,
@@ -46,6 +53,7 @@ class FinanceDashboardController extends Controller
             'readyToPaySummary' => $readyToPaySummary,
             'recentBatches' => $recentBatches,
             'recentInvoices' => $recentInvoices,
+            'threeWayVarianceInvoices' => $threeWayVarianceInvoices,
         ]));
     }
 

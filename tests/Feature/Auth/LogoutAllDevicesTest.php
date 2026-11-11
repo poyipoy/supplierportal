@@ -136,4 +136,15 @@ class LogoutAllDevicesTest extends TestCase
                 ->assertSee("const draftKey = 'quotation_draft_' + draftUserId + '_' + prId;", false);
         }
     }
+
+    public function test_logout_all_devices_is_enabled_by_default_and_js_cleanup_clears_user_scoped_and_chat_drafts(): void
+    {
+        $this->assertTrue((bool) config('portal_session.logout_all_devices'));
+
+        $syncSource = file_get_contents(resource_path('js/session-sync.js'));
+        $this->assertNotFalse($syncSource);
+        $this->assertStringContainsString('/^quotation_draft_\\d+(?:_[A-Za-z0-9]+)?$/.test(key)', $syncSource);
+        $this->assertStringContainsString('/^adasi_chat_draft_/.test(key)', $syncSource);
+        $this->assertStringContainsString("['localStorage', 'sessionStorage']", $syncSource);
+    }
 }

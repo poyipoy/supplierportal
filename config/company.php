@@ -39,6 +39,7 @@ return [
         'purchase_order' => ['code' => 'F-PC-01-01-01:00'],
         'qc_inspection' => ['code' => env('COMPANY_FORM_CODE_QC')],
         'payment_voucher' => ['code' => env('COMPANY_FORM_CODE_VOUCHER')],
+        'manual_payment_voucher' => ['code' => env('COMPANY_FORM_CODE_MANUAL_VOUCHER')],
         'invoice_receipt' => ['code' => env('COMPANY_FORM_CODE_INVOICE_RECEIPT')],
         'ga_claim_receipt' => ['code' => env('COMPANY_FORM_CODE_GA_RECEIPT')],
     ],

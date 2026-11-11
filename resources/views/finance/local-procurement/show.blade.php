@@ -19,6 +19,17 @@
         :description="($purchaseOrder->supplier->supplier?->company_name ?: $purchaseOrder->supplier->name) . ' · IDR ' . $regionalFormatter->money($purchaseOrder->total_amount)"
         :eyebrow="__('local_procurement.surface.local_audience')">
         <x-slot:actions>
+            <x-ui.button
+                type="button"
+                variant="outline"
+                size="sm"
+                data-smart-panel-trigger
+                :data-smart-panel-url="route('context-panel.show', ['entityType' => 'local-po', 'hash' => $purchaseOrder->hashid], false)"
+            >
+                <x-ui.icon name="git-branch" size="sm" />
+                <span>{{ __('smart_panel.trigger') }}</span>
+            </x-ui.button>
+
             <x-ui.button :href="route($routePrefix.'.index')" variant="ghost" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>{{ __('local_invoice.form.back_list') }}</span>

@@ -16,6 +16,7 @@ return [
         'vendor' => $profile(10 * $mib, $documents),
         'invoice' => $profile(5 * $mib, ['pdf']),
         'ga' => $profile(10 * $mib, $office),
+        'payment_voucher' => $profile(10 * $mib, $office),
         'mtc' => $profile(5 * $mib, $documents),
         'shipment' => $profile(10 * $mib, array_diff($office, ['xls'])),
         'qc' => $profile(10 * $mib, ['jpg', 'jpeg', 'png']),

@@ -19,6 +19,18 @@
     >
         <x-slot:actions>
             <x-status-badge type="po" :status="$po->status" :is-overdue="$po->is_overdue" />
+            <x-ui.button
+                type="button"
+                variant="outline"
+                size="sm"
+                data-smart-panel-trigger
+                data-entity-type="import-po"
+                :data-entity-hash="$po->hashid"
+                :data-smart-panel-url="route('context-panel.show', ['entityType' => 'import-po', 'hash' => $po->hashid], false)"
+            >
+                <x-ui.icon name="git-branch" size="sm" />
+                <span>{{ __('smart_panel.trigger') }}</span>
+            </x-ui.button>
             <x-ui.button :href="route('supplier.export.purchase-orders.detail', $po)" variant="outline" size="sm" data-async-export data-export-source-singular="{{ __('exports.sources.purchase_order') }}" data-export-source-plural="{{ __('exports.sources.purchase_orders') }}" data-export-source-count="1" data-export-filtered="false" data-export-row-label="{{ __('supplier.copy.ordered_material_rows') }}" data-export-row-explanation="{{ __('supplier.copy.each_ordered_material_item_will_be_written_as_a_separate_excel_row') }}">
                 <x-ui.icon name="file-spreadsheet" />
                 <span>{{ __('supplier.copy.export_excel') }}</span>
@@ -84,6 +96,48 @@
             </div>
         </div>
     </div>
+
+    {{-- PO Acknowledgement & Promise Date Handshake Card (A1) --}}
+    <x-ui.card
+        :title="__('purchasing.po_ack.card_title')"
+        :description="__('purchasing.po_ack.card_subtitle')"
+        id="sec-po-acknowledgement"
+    >
+        <x-slot:actions>
+            <x-ui.status-chip :tone="\App\Support\StatusHelper::poAcknowledgementTone($po->acknowledgement_status)">
+                {{ \App\Support\StatusHelper::poAcknowledgementLabel($po->acknowledgement_status) }}
+            </x-ui.status-chip>
+        </x-slot:actions>
+
+        <div class="tw:grid tw:gap-4 tw:md:grid-cols-3 tw:text-ui-xs">
+            <div>
+                <span class="tw:text-on-surface-variant tw:block">{{ __('purchasing.po_ack.fields.target_date') }}</span>
+                <strong class="ui-tabular-nums tw:text-on-surface">{{ $po->estimated_arrival ? $regionalFormatter->date($po->estimated_arrival) : '-' }}</strong>
+            </div>
+            <div>
+                <span class="tw:text-on-surface-variant tw:block">{{ __('purchasing.po_ack.fields.promised_date') }}</span>
+                <strong class="ui-tabular-nums tw:text-on-surface">{{ $po->supplier_promised_date ? $regionalFormatter->date($po->supplier_promised_date) : '-' }}</strong>
+            </div>
+            <div>
+                <span class="tw:text-on-surface-variant tw:block">{{ __('purchasing.po_ack.fields.acknowledged_at') }}</span>
+                <strong class="ui-tabular-nums tw:text-on-surface">{{ $po->acknowledged_at ? $regionalFormatter->timestamp($po->acknowledged_at, 'datetime') : '-' }}</strong>
+            </div>
+            @if($po->acknowledgement_notes)
+                <div class="tw:md:col-span-3 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container tw:p-3">
+                    <span class="tw:text-on-surface-variant tw:font-semibold tw:block">{{ __('purchasing.po_ack.fields.notes') }}</span>
+                    <p class="tw:mb-0 tw:mt-1 tw:text-on-surface">{{ $po->acknowledgement_notes }}</p>
+                </div>
+            @endif
+        </div>
+
+        @include('partials.po-acknowledgement-form', [
+            'po' => $po,
+            'action' => route('supplier.purchase-orders.acknowledge', $po),
+            'idPrefix' => 'po-ack',
+            'dateFieldId' => 'supplier_promised_date',
+            'candidateProposedDate' => $po->supplier_promised_date ?? $po->estimated_arrival,
+        ])
+    </x-ui.card>
 
     {{-- Main Content & Sidebar --}}
     <div class="tw:grid tw:items-start tw:gap-4 tw:xl:grid-cols-[minmax(0,2fr)_minmax(19rem,1fr)]">

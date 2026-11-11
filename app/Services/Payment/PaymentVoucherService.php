@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\LocalInvoice\LocalFinanceAuditService;
 use App\Services\LocalInvoice\MakerCheckerService;
 use App\Support\BusinessTime;
+use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -55,6 +56,28 @@ class PaymentVoucherService
     }
 
     /**
+     * Convert an exact decimal money string into Indonesian terbilang without
+     * PHP float precision loss on large amounts.
+     */
+    public function terbilangFromDecimal(string $amount): string
+    {
+        $normalized = Money::normalize($amount);
+        if (Money::compare($normalized, Money::ZERO) <= 0) {
+            return 'Nol Rupiah';
+        }
+
+        [$integerPart, $fractionPart] = explode('.', $normalized);
+        $words = $this->integerStringToTerbilang($integerPart);
+        $cents = (int) $fractionPart;
+
+        if ($cents > 0) {
+            $words .= ' Koma '.$this->integerStringToTerbilang((string) $cents);
+        }
+
+        return trim(preg_replace('/\s+/', ' ', $words)).' Rupiah';
+    }
+
+    /**
      * Convert a number to Indonesian terbilang.
      */
     public function terbilang(?float $number): string
@@ -64,6 +87,23 @@ class PaymentVoucherService
         }
 
         return trim(preg_replace('/\s+/', ' ', $this->rawTerbilang($number)));
+    }
+
+    protected function integerStringToTerbilang(string $digits): string
+    {
+        $digits = ltrim($digits, '0');
+        if ($digits === '') {
+            return 'Nol';
+        }
+
+        if (bccomp($digits, '1000000000000000', 0) >= 0) {
+            $quad = bcdiv($digits, '1000000000000000', 0);
+            $rem = bcmod($digits, '1000000000000000');
+
+            return $this->integerStringToTerbilang($quad).' Kuadriliun'.($rem !== '0' ? ' '.$this->integerStringToTerbilang($rem) : '');
+        }
+
+        return $this->rawTerbilang((float) $digits);
     }
 
     protected function rawTerbilang(float $number): string

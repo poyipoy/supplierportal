@@ -12,6 +12,8 @@
         :description="__('supplier.copy.focus_on_open_quotation_opportunities_active_orders_and_quality_claims_requiring_your_response')"
     />
 
+    <x-ui.supplier-scorecard :supplier="auth()->user()" scope="import" />
+
     {{-- Operational Action Banner if unresponded PRs exist --}}
     @if($belumDirespons > 0)
         <x-ui.alert tone="warning" :title="__('supplier.copy.quotation_response_required')">

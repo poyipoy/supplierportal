@@ -8,18 +8,26 @@ const REFUSAL_COOLDOWN_MS = 3000;
 const USER_DISMISSALS = ['cancel', 'esc', 'close', 'backdrop'];
 
 export function storageKeysToClear(keys) {
-    return keys.filter((key) => key === PENDING_EXPORT_STORAGE_KEY || /^quotation_draft_\d+$/.test(key));
+    return keys.filter(
+        (key) =>
+            key === PENDING_EXPORT_STORAGE_KEY ||
+            /^quotation_draft_\d+(?:_[A-Za-z0-9]+)?$/.test(key) ||
+            /^adasi_chat_draft_/.test(key),
+    );
 }
 
 export function clearUserScopedStorage(win) {
-    try {
-        const storage = win.localStorage;
-        const keys = [];
-        for (let index = 0; index < storage.length; index++) keys.push(storage.key(index));
-        for (const key of storageKeysToClear(keys)) {
-            try { storage.removeItem(key); } catch { /* Continue with other allowed keys. */ }
-        }
-    } catch { /* Storage access and enumeration can be blocked independently. */ }
+    for (const area of ['localStorage', 'sessionStorage']) {
+        try {
+            const storage = win?.[area];
+            if (!storage) continue;
+            const keys = [];
+            for (let index = 0; index < storage.length; index++) keys.push(storage.key(index));
+            for (const key of storageKeysToClear(keys)) {
+                try { storage.removeItem(key); } catch { /* Continue with other allowed keys. */ }
+            }
+        } catch { /* Storage access and enumeration can be blocked independently. */ }
+    }
 }
 
 export function isSignedOutMessage(message) {

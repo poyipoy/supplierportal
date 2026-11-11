@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Casts\PurchaseOrderStatusCast;
+use App\Enums\PoAcknowledgementStatus;
 use App\Enums\PurchaseOrderStatus;
 use App\Services\Procurement\PurchaseOrderDeliveryMetricsService;
 use App\Support\BusinessTime;
@@ -38,10 +39,15 @@ class PurchaseOrder extends Model
         'exchange_rate_id',
         'po_number',
         'status',
+        'acknowledgement_status',
+        'acknowledged_at',
+        'acknowledged_by',
         'created_by',
         'estimated_arrival',
+        'supplier_promised_date',
         'actual_arrival',
         'notes',
+        'acknowledgement_notes',
         'port_of_discharge',
         'incoterm',
     ];
@@ -50,7 +56,10 @@ class PurchaseOrder extends Model
     {
         return [
             'status' => PurchaseOrderStatusCast::class,
+            'acknowledgement_status' => PoAcknowledgementStatus::class,
+            'acknowledged_at' => 'datetime',
             'estimated_arrival' => 'date',
+            'supplier_promised_date' => 'date',
             'actual_arrival' => 'date',
         ];
     }
@@ -58,6 +67,27 @@ class PurchaseOrder extends Model
     public function statusEnum(): PurchaseOrderStatus
     {
         return PurchaseOrderStatus::tryFromWithLegacy($this->status ?? self::STATUS_DRAFT);
+    }
+
+    public function acknowledgementStatusEnum(): PoAcknowledgementStatus
+    {
+        return PoAcknowledgementStatus::tryFromOrDefault($this->acknowledgement_status);
+    }
+
+    public function isAcknowledged(): bool
+    {
+        return $this->acknowledgementStatusEnum()->isAcknowledged();
+    }
+
+    public function canAcknowledge(): bool
+    {
+        return in_array((string) $this->status, ['active', 'overdue'], true)
+            && $this->acknowledgementStatusEnum() === PoAcknowledgementStatus::PENDING;
+    }
+
+    public function acknowledgedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'acknowledged_by');
     }
 
     /**

@@ -26,6 +26,7 @@ class PurchasingNavigation
         'purchasing.drp.supplier',
         'purchasing.drp.ga',
         'purchasing.drp.paid.index',
+        'purchasing.payment-vouchers.index',
         'purchasing.conversations.index',
         'purchasing.claims.index',
         'purchasing.reports.index',

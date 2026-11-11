@@ -76,6 +76,19 @@ class InvoiceVerificationService
 
             $verification->is_section_a_passed = $allPassed;
             $verification->section_a_verified_by = $reviewer->id;
+
+            $matchSummary = app(ThreeWayMatchCalculator::class)->summaryForInvoice($inv);
+            $verification->three_way_match_status = $matchSummary['three_way_match_status'];
+            $verification->three_way_variance_amount = $matchSummary['gr_dpp_variance_amount'];
+
+            if (
+                $matchSummary['three_way_match_status'] === ThreeWayMatchCalculator::STATUS_VARIANCE_DETECTED
+                && $verification->gr_check === LocalInvoiceVerification::CHECK_OK
+                && empty(trim((string) ($verification->gr_notes ?? '')))
+            ) {
+                throw new BusinessRuleArgumentException(__('finance.three_way_match.validation.variance_notes_required'));
+            }
+
             $verification->save();
             app(LocalFinanceAuditService::class)->record($verification, 'section_a_verified', $reviewer, $before, $verification->toArray());
 

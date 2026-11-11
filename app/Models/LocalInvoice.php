@@ -41,6 +41,14 @@ class LocalInvoice extends Model
         self::STATUS_CANCELLED,
     ];
 
+    public const MATCH_EXACT = 'EXACT_MATCH';
+
+    public const MATCH_WITHIN_TOLERANCE = 'WITHIN_TOLERANCE';
+
+    public const MATCH_VARIANCE_DETECTED = 'VARIANCE_DETECTED';
+
+    public const MATCH_PO_CEILING_ONLY = 'PO_CEILING_ONLY';
+
     protected $fillable = [
         'submission_number',
         'supplier_id',
@@ -56,6 +64,9 @@ class LocalInvoice extends Model
         'po_value_snapshot',
         'po_invoiced_snapshot',
         'po_remaining_snapshot',
+        'expected_gr_dpp_amount',
+        'gr_dpp_variance_amount',
+        'three_way_match_status',
         'has_po_discrepancy',
         'currency',
         'invoice_amount',
@@ -98,6 +109,8 @@ class LocalInvoice extends Model
             'po_value_snapshot' => 'decimal:2',
             'po_invoiced_snapshot' => 'decimal:2',
             'po_remaining_snapshot' => 'decimal:2',
+            'expected_gr_dpp_amount' => 'decimal:2',
+            'gr_dpp_variance_amount' => 'decimal:2',
             'has_po_discrepancy' => 'boolean',
             'submitted_ppn_amount' => 'decimal:2',
             'scheduled_physical_delivery_date' => 'date',
@@ -223,6 +236,11 @@ class LocalInvoice extends Model
     public function isReadyToPay(): bool
     {
         return LocalInvoiceStatus::tryFromWithLegacyOrNull((string) $this->status) === LocalInvoiceStatus::READY_TO_PAY;
+    }
+
+    public function hasThreeWayVariance(): bool
+    {
+        return $this->three_way_match_status === self::MATCH_VARIANCE_DETECTED;
     }
 
     public function scopeEligibleForPaymentBatch($query)

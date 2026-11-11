@@ -102,7 +102,7 @@ graph TD
    For a loaded model, compare `(int) $model->supplier_id === (int) auth()->id()`.
 3. **Models without an owner column** follow their own rule. `PurchaseRequisition` uses `scopeVisibleToSupplier()` (invitation and quotation pivot). Conversations use membership and policy. `LocalGoodsReceipt` is reached through its PO.
 4. **Partitioning by supplier scope:** `supplier_scopes` maps a supplier to `import` and/or `local`. Middleware `supplier.scope:import` and `supplier.scope:local` enforces it. Login also requires `is_active` and `account_status = ACTIVE`.
-5. **Authorization:** 11 policies are auto-discovered from `App\Policies\<Model>Policy`. New Core 2 actions add a policy method rather than an inline `abort_unless`.
+5. **Authorization:** 21 policies are auto-discovered (including `PurchaseOrderPolicy`: `acknowledge`, `respondPromiseChange`) from `App\Policies\<Model>Policy`. New Core 2 actions add a policy method rather than an inline `abort_unless`.
 
 ---
 
@@ -163,6 +163,7 @@ stateDiagram-v2
    - `purchase_orders.created_at`
    - `purchase_orders.estimated_arrival` (entered by Purchasing)
    - `purchase_orders.actual_arrival` (set through the shipment arrival path, or through the legacy QC path when its guard passes)
+8. **PO Acknowledgement & Promise Date Handshake (A1):** Import POs start with `acknowledgement_status = PENDING`. Suppliers confirm or propose a revised delivery date (`supplier_promised_date` + required notes → `CHANGE_REQUESTED`) via `PoAcknowledgementService`, and Purchasing accepts or rejects proposals (`ACCEPTED_CHANGE` or reset to `PENDING`). Shipment creation is gated on acknowledgement only when `PROCUREMENT_REQUIRE_PO_ACK=true`.
 
 ---
 
@@ -208,9 +209,10 @@ sequenceDiagram
 - A new invoice references **exactly one** Local PO and **one or more complete** GR records that belong to that supplier and PO. There is no partial GR allocation.
 - The service generates no synthetic GR identifiers. The legacy `manual_gr_reference` value remains only for legacy data.
 
-#### 2. Financial ceiling
-- Invoice DPP (`invoice_amount`) is checked against `LocalPurchaseOrder::total_amount`, not against the sum of GR amounts. GR records carry quantity (`qty`, optional `uom`), not nominal amounts (see §7).
-- `LocalGrReservationService` sums the other invoices on the PO, excluding `REJECTED` and `CANCELLED`, and uses BCMath so the total DPP cannot exceed the PO.
+#### 2. Financial ceiling & Value-Aware 3-Way Match (A3)
+- Invoice DPP (`invoice_amount`) continues to be checked against the `LocalPurchaseOrder::total_amount` ceiling via `LocalGrReservationService` (excluding `REJECTED` and `CANCELLED` invoices, computed with BCMath). Legacy 4-column GR imports without pricing remain 100% valid (`PO_CEILING_ONLY`).
+- When selected GRs carry optional line values (`unit_price` / `receipt_amount`, snapshotted to `local_invoice_goods_receipts.gr_amount_snapshot`), `ThreeWayMatchCalculator` evaluates `expected_gr_dpp_amount`, `gr_dpp_variance_amount`, and `three_way_match_status` (`EXACT_MATCH`, `WITHIN_TOLERANCE`, `VARIANCE_DETECTED`, `PO_CEILING_ONLY`) against `config('finance.three_way_match')` tolerances (`FINANCE_THREE_WAY_MATCH_TOLERANCE_IDR` / `_PERCENT`).
+- Finance Section A requires `gr_notes` whenever `three_way_match_status === VARIANCE_DETECTED` and `gr_check === OK`. Local POs do not require supplier acknowledgement (PO Acknowledgement A1 applies to Import POs only).
 
 #### 3. Digital submission & tax invoice number (NSFP)
 - PKP suppliers must provide a tax invoice number. Accepted formats (validated by `StoreLocalInvoiceRequest` and `ResubmitLocalInvoiceRequest`):
@@ -486,6 +488,7 @@ Route names follow `role.resource.action`. Verified against `routes/web.php`.
   - `/ga-claim-documents/{document}`: ga, finance, admin
   - `/shared/pdf/purchase-order/{id}`: purchasing, supplier, admin
   - `/shared/pdf/qc-inspection/{id}`: purchasing, qc, admin
+- Context Smart Panel: `GET /context-panel/{entityType}/{hash}` (`context-panel.show`, throttled 120/min; `entityType` in `import-pr`, `import-po`, `local-po`, `local-invoice`, `payment-batch`; enforces policy `view` + supplier ownership)
 
 ### 9.2 Finance (`role:finance,admin`, prefix `finance`)
 - Dashboard and forecast: `GET /finance/dashboard`, `GET /finance/forecast`
@@ -521,7 +524,7 @@ Route names follow `role.resource.action`. Verified against `routes/web.php`.
 - Dashboard, currency rate update (`POST /purchasing/kurs/update`), periods (index, store, update)
 - Material masters: search; material calculation preview
 - Requisitions: resource, `PUT /purchasing/requisitions/{id}/submit`, import template and preview; PR items: store, update, destroy
-- Purchase orders: `create/{quotation_id}`, store, index, show, `consolidate-awards` (GET and POST), `POST .../{id}/confirm-arrival`, item progress history
+- Purchase orders: `create/{quotation_id}`, store, index, show, `consolidate-awards` (GET and POST), `POST .../{id}/respond-promise-change`, `POST .../{id}/confirm-arrival`, item progress history
 - Shipments: index, show, `POST .../confirm-arrival`, `PUT .../documents/{document_id}/status`; PO documents: `PUT /purchasing/po-documents/{id}`
 - Claims: `GET /purchasing/claims` (resource, no edit or update), create from inspection, `POST .../claims/{id}/resolve`
 - Conversations: index, show, start from PR or PO
@@ -535,7 +538,7 @@ Route names follow `role.resource.action`. Verified against `routes/web.php`.
 ### 9.6 Import Supplier (`role:supplier`, `supplier.scope:import`, prefix `supplier`)
 - Dashboard; exports: quotations, purchase orders (`GET|POST`)
 - Quotations: period listing, import template and preview, create and store per PR, index, show
-- Purchase orders: index, show, item progress update and history
+- Purchase orders: index, show, `POST .../{id}/acknowledge`, item progress update and history
 - Shipments: resource (index, create, store, show, edit, update), submit, cancel, document upload
 - Claims: index, show, respond
 - Conversations: index, show; price history: index, historical, materials, export; announcements
@@ -616,6 +619,14 @@ The following statements in v2.0 were wrong and have been corrected above:
 - Dead route removed: `POST /finance/drp-groups/{group}/pay` (`finance.drp.mark-paid`) has been removed from `routes/web.php` and is asserted absent by `ConfigurationDefaultsTest` and `ContextFreshnessTest`.
 - Cashflow forecast formalization: `PaymentForecastService` contract formalized as Ready-to-Pay Realization / Velocity Tracker ("Akumulasi Invoice Siap Dibayar"). Outdated DRP priority text removed from `AGENTS.md`. Legacy compatibility keys `ga_amount` and `drp_amount` documented as 0.0.
 - Context freshness gate: `tests/Feature/Architecture/ContextFreshnessTest.php` introduced to prevent documentation drift for absent dead routes and security configuration defaults.
+
+### 11.2b Infor capability package (2026-11-10)
+- **PO acknowledgement (A1):** Import `purchase_orders` carry `acknowledgement_status` (`PENDING`, `ACKNOWLEDGED`, `CHANGE_REQUESTED`, `ACCEPTED_CHANGE`), `supplier_promised_date`, `acknowledged_at/by` and `acknowledgement_notes` (Local POs do not require supplier acknowledgement). Logic lives in `App\Services\Procurement\PoAcknowledgementService` (row lock, Gate `acknowledge` / `respondPromiseChange` + `canAcknowledge()` strictly on `PENDING`). Shipment creation is blocked until acknowledged only when `PROCUREMENT_REQUIRE_PO_ACK=true`.
+- **Value-aware 3-Way Match (A3):** `local_goods_receipts` gained nullable `unit_price`, `receipt_amount`, `po_line_reference`; `local_invoice_goods_receipts.gr_amount_snapshot`; `local_invoices.expected_gr_dpp_amount`, `gr_dpp_variance_amount`, `three_way_match_status`. `ThreeWayMatchCalculator` (BCMath via `Money`) yields `EXACT_MATCH`, `WITHIN_TOLERANCE`, `VARIANCE_DETECTED` or `PO_CEILING_ONLY` (legacy 4-column GR files stay valid). Finance Section A requires `gr_notes` when `VARIANCE_DETECTED` and `gr_check = OK`. Tolerances: `FINANCE_THREE_WAY_MATCH_TOLERANCE_IDR` / `_PERCENT`.
+- **SLA watchdog (A4):** `php artisan sla:watchdog` (`routes/console.php`, toggle `SLA_WATCHDOG_ENABLED`) evaluates `config/sla_monitors.php` rules and records each stage once in `sla_escalation_logs` (unique `rule_key, subject_type, subject_id, stage`).
+- **Scorecard (B1):** `SupplierScorecardService` + `<x-ui.supplier-scorecard>`; composite score is the average of available metric percentages, grade A ≥ 85, B ≥ 70, C ≥ 55, else D.
+- **Smart panel (C1/C2):** `GET /context-panel/{entityType}/{hash}` (`context-panel.show`) backed by `DocumentChainResolverService`; supplier isolation uses `supplier_id = users.id` plus the Gate `view` policy. New 12-column dashboard widgets: `purchasing.po_acknowledgements` and `finance.three_way_exceptions`.
+- **Session hygiene (D1-D3):** `storageKeysToClear()` removes quotation and chat drafts; `portal_session.logout_all_devices` defaults to `true`.
 
 ### 11.3 Open discrepancies (documentation or code, not fixed here)
 1. **Quantity precision.** [AGENTS.md](AGENTS.md) says GR `qty` allows up to four decimals. `LocalGoodsReceipt::QUANTITY_PATTERN` (used by the request) allows up to **three** decimals and eight integer digits. The column is `decimal(12,4)`. The request is the stricter rule and is what users hit.

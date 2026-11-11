@@ -51,6 +51,7 @@ return [
     'drp_supplier' => 'DRP Supplier',
     'drp_ga' => 'DRP GA',
     'drp_paid' => 'DRP Lunas',
+    'payment_vouchers' => 'Voucher Bayar',
     'invoice_register' => 'Daftar Invoice',
     'master_invoices' => 'Master Data Invoice',
     'local_vendors' => 'Supplier Lokal',

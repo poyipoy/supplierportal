@@ -42,6 +42,18 @@
         </x-slot:meta>
 
         <x-slot:actions>
+            <x-ui.button
+                type="button"
+                variant="outline"
+                size="sm"
+                data-smart-panel-trigger
+                data-entity-type="local-invoice"
+                :data-entity-hash="$invoice->hashid"
+                :data-smart-panel-url="route('context-panel.show', ['entityType' => 'local-invoice', 'hash' => $invoice->hashid], false)"
+            >
+                <x-ui.icon name="git-branch" size="sm" />
+                <span>{{ __('smart_panel.trigger') }}</span>
+            </x-ui.button>
             {{-- Quick action for Supplier on Revision --}}
             @if(in_array($invoice->status, ['NEED_REVISION', 'CANCELLED'], true) && auth()->user()->isSupplier())
                 @can('resubmit', $invoice)

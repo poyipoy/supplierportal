@@ -48,3 +48,9 @@ Schedule::command('maintenance:activate-due')
 Schedule::command('po-documents:reconcile')
     ->everyMinute()
     ->withoutOverlapping();
+
+Schedule::command('sla:watchdog')
+    ->hourly()
+    ->timezone(config('app.business_timezone', 'Asia/Jakarta'))
+    ->when(fn () => (bool) config('sla_monitors.enabled', true))
+    ->withoutOverlapping();

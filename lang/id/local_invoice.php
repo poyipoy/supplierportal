@@ -521,4 +521,15 @@ return [
         'duplicate_invoice' => 'Nomor invoice ini milik pengajuan yang dibatalkan. Buka pengajuan tersebut dan pilih Ajukan ulang.',
         'duplicate_tax' => 'Faktur pajak :number milik pengajuan yang dibatalkan. Buka pengajuan tersebut dan pilih Ajukan ulang.',
     ],
+    'three_way_match' => [
+        'title' => '3-Way Match (PO · GR · DPP Invoice)',
+        'expected_gr_dpp' => 'Estimasi DPP dari GR',
+        'submitted_dpp' => 'DPP Invoice Diajukan',
+        'dpp_variance' => 'Selisih DPP vs GR',
+        'gr_amount' => 'Nilai GR',
+        'variance_note_required' => 'DPP Invoice berbeda dari akumulasi nilai GR melebihi batas toleransi. Finance wajib mengisi catatan pemeriksaan GR sebelum memilih status OK.',
+        'queue_description' => 'Invoice lokal yang memiliki selisih nilai DPP terhadap akumulasi nilai Penerimaan Barang (GR).',
+        'queue_empty_title' => 'Tidak ada selisih 3-Way Match',
+        'queue_empty_description' => 'Seluruh invoice lokal aktif sesuai dengan nilai GR atau plafon PO.',
+    ],
 ];

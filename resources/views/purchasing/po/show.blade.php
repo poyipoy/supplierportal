@@ -165,6 +165,18 @@
     >
         <x-slot:actions>
             <x-status-badge type="po" :status="$po->status" :is-overdue="$po->is_overdue" size="lg" />
+            <x-ui.button
+                type="button"
+                variant="outline"
+                size="sm"
+                data-smart-panel-trigger
+                data-entity-type="import-po"
+                :data-entity-hash="$po->hashid"
+                :data-smart-panel-url="route('context-panel.show', ['entityType' => 'import-po', 'hash' => $po->hashid], false)"
+            >
+                <x-ui.icon name="git-branch" size="sm" />
+                <span>{{ __('smart_panel.trigger') }}</span>
+            </x-ui.button>
             <x-ui.button :href="route('purchasing.export.purchase-orders.detail', $po)" variant="outline" size="sm" data-async-export data-export-source-singular="{{ __('exports.sources.purchase_order') }}" data-export-source-plural="{{ __('exports.sources.purchase_orders') }}" data-export-source-count="1" data-export-filtered="false" data-export-row-label="{{ __('purchasing.copy.ordered_material_rows') }}" data-export-row-explanation="{{ __('purchasing.copy.each_ordered_material_item_will_be_written_as_a_separate_excel_row') }}">
                 <x-ui.icon name="file-spreadsheet" />
                 <span>{{ __('purchasing.copy.export_excel') }}</span>
@@ -220,6 +232,62 @@
             </div>
         </div>
     </div>
+
+    {{-- Supplier PO Acknowledgement & Promise Date Handshake Status (A1) --}}
+    <x-ui.card
+        :title="__('purchasing.po_ack.card_title')"
+        :description="__('purchasing.po_ack.purchasing_subtitle')"
+        id="sec-po-acknowledgement"
+    >
+        <x-slot:actions>
+            <x-ui.status-chip :tone="\App\Support\StatusHelper::poAcknowledgementTone($po->acknowledgement_status)">
+                {{ \App\Support\StatusHelper::poAcknowledgementLabel($po->acknowledgement_status) }}
+            </x-ui.status-chip>
+        </x-slot:actions>
+
+        <div class="tw:grid tw:gap-4 tw:md:grid-cols-3 tw:text-ui-xs">
+            <div>
+                <span class="tw:text-on-surface-variant tw:block">{{ __('purchasing.po_ack.fields.target_date') }}</span>
+                <strong class="ui-tabular-nums tw:text-on-surface">{{ $po->estimated_arrival ? $regionalFormatter->date($po->estimated_arrival) : '-' }}</strong>
+            </div>
+            <div>
+                <span class="tw:text-on-surface-variant tw:block">{{ __('purchasing.po_ack.fields.promised_date') }}</span>
+                <strong class="ui-tabular-nums tw:text-on-surface">{{ $po->supplier_promised_date ? $regionalFormatter->date($po->supplier_promised_date) : '-' }}</strong>
+            </div>
+            <div>
+                <span class="tw:text-on-surface-variant tw:block">{{ __('purchasing.po_ack.fields.acknowledged_at') }}</span>
+                <strong class="ui-tabular-nums tw:text-on-surface">{{ $po->acknowledged_at ? $regionalFormatter->timestamp($po->acknowledged_at, 'datetime') : '-' }}</strong>
+            </div>
+            @if($po->acknowledgement_notes)
+                <div class="tw:md:col-span-3 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container tw:p-3">
+                    <span class="tw:text-on-surface-variant tw:font-semibold tw:block">{{ __('purchasing.po_ack.fields.notes') }}</span>
+                    <p class="tw:mb-0 tw:mt-1 tw:text-on-surface">{{ $po->acknowledgement_notes }}</p>
+                </div>
+            @endif
+        </div>
+
+        @if($po->acknowledgementStatusEnum() === \App\Enums\PoAcknowledgementStatus::CHANGE_REQUESTED)
+            <form method="POST" action="{{ route('purchasing.purchase-orders.respond-promise-change', $po) }}" class="tw:mt-4 tw:border-t tw:border-outline-variant tw:pt-4 tw:grid tw:gap-3 tw:md:grid-cols-12 tw:items-end">
+                @csrf
+                <div class="tw:md:col-span-6">
+                    <label for="purchasing-ack-response-notes" class="form-label tw:text-ui-xs tw:font-semibold">{{ __('purchasing.po_ack.fields.response_notes') }}</label>
+                    <input type="text" name="response_notes" id="purchasing-ack-response-notes" class="form-control form-control-sm" placeholder="{{ __('purchasing.po_ack.placeholders.response_notes') }}">
+                </div>
+                <div class="tw:md:col-span-3">
+                    <x-ui.button type="submit" name="decision" value="accept" variant="primary" size="sm" class="tw:w-full tw:justify-center">
+                        <x-ui.icon name="check" size="sm" />
+                        <span>{{ __('purchasing.po_ack.actions.accept_change') }}</span>
+                    </x-ui.button>
+                </div>
+                <div class="tw:md:col-span-3">
+                    <x-ui.button type="submit" name="decision" value="reject" variant="danger" size="sm" class="tw:w-full tw:justify-center">
+                        <x-ui.icon name="x" size="sm" />
+                        <span>{{ __('purchasing.po_ack.actions.reject_change') }}</span>
+                    </x-ui.button>
+                </div>
+            </form>
+        @endif
+    </x-ui.card>
 
     {{-- Sticky In-Page Navigation Bar --}}
     <nav class="po-sticky-nav-bar" aria-label="{{ __('purchasing.copy.purchase_order_sections') }}">

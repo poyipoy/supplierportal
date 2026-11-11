@@ -262,6 +262,7 @@ class AppServiceProvider extends ServiceProvider
             'finance.drp._paid_table_content', 'finance.drp.ga', 'finance.drp.paid', 'finance.drp.show', 'finance.drp.supplier',
             'finance.local-procurement.form', 'finance.local-procurement.index', 'finance.local-procurement.show', 'finance.overpayments.index',
             'finance.vouchers.print', 'finance.vouchers.show', 'finance.vendors.index', 'finance.vendors.show',
+            'payment-vouchers.create', 'payment-vouchers.index', 'payment-vouchers.show',
             'ga.claims.receipt', 'ga.drp.draft',
             'local-supplier.purchase-orders.index',
             'local-supplier.purchase-orders.show', 'local-supplier.vendor-profile.show',

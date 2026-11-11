@@ -379,9 +379,21 @@ class LocalProcurementMasterService
                 throw ValidationException::withMessages(['qty' => __('local_procurement.validation.quantity_precision')]);
             }
             $uom = $this->uom($data['uom'] ?? null);
+            $unitPrice = isset($data['unit_price']) && $data['unit_price'] !== null && trim((string) $data['unit_price']) !== ''
+                ? Money::normalize($data['unit_price'])
+                : null;
+            $receiptAmount = isset($data['receipt_amount']) && $data['receipt_amount'] !== null && trim((string) $data['receipt_amount']) !== ''
+                ? Money::normalize($data['receipt_amount'])
+                : ($unitPrice !== null ? Money::multiply($qty, $unitPrice) : null);
+            $poLineReference = isset($data['po_line_reference']) && $data['po_line_reference'] !== null && trim((string) $data['po_line_reference']) !== ''
+                ? mb_substr(trim((string) $data['po_line_reference']), 0, 64)
+                : null;
             $gr = $po->goodsReceipts()->create([
                 'gr_number' => $grNumber, 'gr_date' => $data['gr_date'],
                 'qty' => $qty, 'uom' => $uom,
+                'unit_price' => $unitPrice,
+                'receipt_amount' => $receiptAmount,
+                'po_line_reference' => $poLineReference,
                 'description' => $data['description'] ?? null,
                 'notes' => $data['notes'] ?? null,
                 'status' => LocalGoodsReceipt::STATUS_AVAILABLE, 'source' => $source,

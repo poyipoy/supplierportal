@@ -30,5 +30,7 @@ return [
         'invoice_status' => 'Invoice status',
         'company_and_tax_summary' => 'Company and tax summary',
         'recent_invoices' => 'Recent invoices',
+        'po_acknowledgement_queue' => 'PO acknowledgement queue',
+        'three_way_match_exceptions' => '3-Way Match variance queue',
     ],
 ];

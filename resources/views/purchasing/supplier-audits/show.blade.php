@@ -42,6 +42,10 @@
 
     @include('supplier-audits._status-flow', ['audit' => $audit])
 
+    @if($audit->supplier)
+        <x-ui.supplier-scorecard :supplier="$audit->supplier" scope="local" />
+    @endif
+
     {{-- U7: Langkah berikutnya — satu aksi utama sesuai status --}}
     <section class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface" aria-labelledby="next-step-title" data-next-step="{{ strtolower($audit->status) }}">
         <header class="tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-2 tw:border-b tw:border-outline-variant tw:px-4 tw:py-3">

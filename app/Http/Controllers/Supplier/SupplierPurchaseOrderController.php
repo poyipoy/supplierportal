@@ -2,11 +2,15 @@
 
 namespace App\Http\Controllers\Supplier;
 
+use App\Enums\PoAcknowledgementStatus;
+use App\Exceptions\BusinessRuleArgumentException;
+use App\Exceptions\BusinessRuleException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Export\Filters\PurchaseOrderExportFilters;
 use App\Models\MaterialClaim;
 use App\Models\PurchaseOrder;
 use App\Services\MaterialProgressService;
+use App\Services\Procurement\PoAcknowledgementService;
 use App\Services\RegionalDisplayFormatter;
 use App\Support\HashidCodec;
 use App\Support\StatusHelper;
@@ -191,5 +195,29 @@ class SupplierPurchaseOrderController extends Controller
         $customsSummary = $po->customsDocumentationSummary();
 
         return view('supplier.po.show', compact('po', 'quotationRates', 'itemProjections', 'poSummary', 'customsSummary'));
+    }
+
+    public function acknowledge(Request $request, $id, PoAcknowledgementService $acknowledgementService)
+    {
+        $po = PurchaseOrder::where('supplier_id', auth()->id())->findOrFail($id);
+
+        $validated = $request->validate([
+            'mode' => ['nullable', 'string', 'in:confirm,propose_change'],
+            'supplier_promised_date' => ['nullable', 'date'],
+            'acknowledgement_notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        try {
+            $updatedPo = $acknowledgementService->acknowledgeImportPo($po, $request->user(), $validated);
+        } catch (BusinessRuleArgumentException|BusinessRuleException $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
+
+        $message = $updatedPo->acknowledgementStatusEnum() === PoAcknowledgementStatus::CHANGE_REQUESTED
+            ? __('purchasing.po_ack.messages.change_requested')
+            : __('purchasing.po_ack.messages.acknowledged');
+
+        return redirect()->route('supplier.purchase-orders.show', $updatedPo)
+            ->with('success', $message);
     }
 }

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Purchasing;
 
 use App\Enums\PurchaseOrderStatus;
+use App\Exceptions\BusinessRuleArgumentException;
+use App\Exceptions\BusinessRuleException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Export\Filters\PurchaseOrderExportFilters;
 use App\Models\MaterialClaim;
@@ -12,6 +14,7 @@ use App\Models\Quotation;
 use App\Models\User;
 use App\Services\MaterialProgressService;
 use App\Services\NotificationService;
+use App\Services\Procurement\PoAcknowledgementService;
 use App\Services\Procurement\PurchaseOrderStateEngine;
 use App\Services\RegionalDisplayFormatter;
 use App\Support\BusinessTime;
@@ -342,5 +345,28 @@ class PurchaseOrderController extends Controller
 
         return redirect()->route('purchasing.purchase-orders.show', $po)
             ->with('success', __('purchasing.copy.material_arrival_confirmed_qc_will_be_notified_for_inspection'));
+    }
+
+    public function respondPromiseChange(Request $request, $id, PoAcknowledgementService $acknowledgementService)
+    {
+        $po = PurchaseOrder::findOrFail($id);
+
+        $validated = $request->validate([
+            'decision' => ['required', 'string', 'in:accept,reject'],
+            'response_notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        try {
+            $updatedPo = $acknowledgementService->respondImportPromiseChange($po, $request->user(), $validated);
+        } catch (BusinessRuleArgumentException|BusinessRuleException $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
+
+        $message = $validated['decision'] === 'accept'
+            ? __('purchasing.po_ack.messages.change_accepted')
+            : __('purchasing.po_ack.messages.change_rejected');
+
+        return redirect()->route('purchasing.purchase-orders.show', $updatedPo)
+            ->with('success', $message);
     }
 }

@@ -31,6 +31,8 @@
         </x-slot:actions>
     </x-ui.page-header>
 
+    <x-ui.supplier-scorecard :supplier="$vendor" scope="import" />
+
     @if($pendingRequest)
         @php $proposed = $pendingRequest->proposed_data ?? []; @endphp
         <section aria-labelledby="pending-contact-title" class="tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-warning tw:bg-surface">

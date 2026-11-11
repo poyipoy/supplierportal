@@ -5,6 +5,7 @@ namespace App\Services\LocalInvoice;
 use App\Models\LocalGoodsReceipt;
 use App\Models\LocalPurchaseOrder;
 use App\Models\User;
+use App\Support\Money;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -74,6 +75,43 @@ class LocalGrImportService
                 $desc = null;
             }
 
+            $unitPrice = null;
+            if (isset($row['unit_price']) && $row['unit_price'] !== null && trim((string) $row['unit_price']) !== '') {
+                $rawPrice = $this->decimal($row['unit_price']);
+                if ($rawPrice === null || bccomp($rawPrice, '0', 2) < 0) {
+                    $rowErrors[] = ['unit_price', __('local_procurement.validation.amount_positive')];
+                } else {
+                    $unitPrice = Money::normalize($rawPrice);
+                }
+            }
+
+            $receiptAmount = null;
+            if (isset($row['receipt_amount']) && $row['receipt_amount'] !== null && trim((string) $row['receipt_amount']) !== '') {
+                $rawAmount = $this->decimal($row['receipt_amount']);
+                if ($rawAmount === null || bccomp($rawAmount, '0', 2) < 0) {
+                    $rowErrors[] = ['receipt_amount', __('local_procurement.validation.amount_positive')];
+                } else {
+                    $receiptAmount = Money::normalize($rawAmount);
+                }
+            } elseif ($unitPrice !== null && $qty !== null && LocalGoodsReceipt::validQuantity($qty)) {
+                $receiptAmount = Money::multiply($qty, $unitPrice);
+            }
+
+            $poLineReference = isset($row['po_line_reference']) && $row['po_line_reference'] !== null
+                ? mb_substr(trim((string) $row['po_line_reference']), 0, 64)
+                : null;
+            if ($poLineReference === '') {
+                $poLineReference = null;
+            }
+
+            if ($rowErrors !== []) {
+                foreach ($rowErrors as [$field, $message]) {
+                    if (! collect($errors)->contains(fn ($e) => $e['row'] === $number && $e['column'] === $field && $e['message'] === $message)) {
+                        $errors[] = ['row' => $number, 'column' => $field, 'message' => $message];
+                    }
+                }
+            }
+
             if ($rowErrors === []) {
                 $parsedRows[] = [
                     '_row' => $number,
@@ -82,6 +120,9 @@ class LocalGrImportService
                     'description' => $desc,
                     'qty' => $qty,
                     'uom' => $uom,
+                    'unit_price' => $unitPrice,
+                    'receipt_amount' => $receiptAmount,
+                    'po_line_reference' => $poLineReference,
                     'gr_date' => $grDate,
                 ];
             }
@@ -150,6 +191,19 @@ class LocalGrImportService
             $poKey = mb_strtolower($first['po_number']);
             $uniquePoKeys[] = $poKey;
 
+            $allHaveReceiptAmount = $groupRows->every(fn ($r) => ($r['receipt_amount'] ?? null) !== null);
+            $consolidatedReceiptAmount = $allHaveReceiptAmount
+                ? Money::sum($groupRows->pluck('receipt_amount')->all())
+                : null;
+            $distinctPrices = $groupRows->pluck('unit_price')->filter(fn ($p) => $p !== null)->unique();
+            $consolidatedUnitPrice = ($allHaveReceiptAmount && $distinctPrices->count() === 1)
+                ? $distinctPrices->first()
+                : null;
+            $lineRefs = $groupRows->pluck('po_line_reference')->filter(fn ($ref) => filled($ref))->unique()->values();
+            $consolidatedLineRef = $lineRefs->isNotEmpty()
+                ? mb_substr($lineRefs->implode(', '), 0, 64)
+                : null;
+
             $consolidated[] = [
                 '_row' => $first['_row'],
                 'gr_number' => $first['gr_number'],
@@ -161,6 +215,9 @@ class LocalGrImportService
                 'gr_date' => $first['gr_date'],
                 'qty' => rtrim(rtrim($totalQty, '0'), '.'),
                 'uom' => $first['uom'],
+                'unit_price' => $consolidatedUnitPrice,
+                'receipt_amount' => $consolidatedReceiptAmount,
+                'po_line_reference' => $consolidatedLineRef,
                 'source_rows_count' => $groupRows->count(),
                 'contributing_rows' => $groupRows->pluck('_row')->all(),
                 'action' => 'NEW',
@@ -309,6 +366,9 @@ class LocalGrImportService
                     'gr_date' => $group['gr_date'],
                     'qty' => $group['qty'],
                     'uom' => $group['uom'],
+                    'unit_price' => $group['unit_price'] ?? null,
+                    'receipt_amount' => $group['receipt_amount'] ?? null,
+                    'po_line_reference' => $group['po_line_reference'] ?? null,
                     'description' => $group['description'] ?? null,
                     'notes' => "Imported via Infor ERP Goods Receipt ({$group['source_rows_count']} line rows)",
                 ], LocalPurchaseOrder::SOURCE_IMPORT);

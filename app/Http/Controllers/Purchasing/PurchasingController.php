@@ -146,6 +146,13 @@ class PurchasingController extends Controller
             ->withExists('shipmentItems as has_shipment_items')
             ->whereIn('status', ['active', 'overdue'])->whereNotNull('estimated_arrival')
             ->orderBy('estimated_arrival', 'asc')->take(5)->get();
+        $pendingPoAcknowledgements = PurchaseOrder::with('supplier')
+            ->whereIn('status', ['active', 'overdue'])
+            ->whereIn('acknowledgement_status', ['PENDING', 'CHANGE_REQUESTED'])
+            ->orderByRaw("CASE WHEN acknowledgement_status = 'CHANGE_REQUESTED' THEN 0 ELSE 1 END")
+            ->orderBy('created_at', 'asc')
+            ->take(5)
+            ->get();
 
         // Exchange rates are cached by ExchangeRate::latestRate.
         $latestRates = collect(ExchangeRate::CURRENCIES)
@@ -154,7 +161,7 @@ class PurchasingController extends Controller
         return view('purchasing.dashboard', compact(
             'prAktif', 'menungguPenawaran', 'poBerjalan', 'materialMingguIni',
             'prPerBulan', 'poStatusDist', 'prTerbaru', 'poTerdekat', 'latestRates',
-            'operationalChecks'
+            'operationalChecks', 'pendingPoAcknowledgements'
         ));
     }
 

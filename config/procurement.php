@@ -46,4 +46,6 @@ return [
     'historical_comparison' => [
         'stale_rate_days' => (int) env('PROCUREMENT_HISTORY_STALE_RATE_DAYS', 31),
     ],
+
+    'require_po_acknowledgement_before_shipment' => (bool) env('PROCUREMENT_REQUIRE_PO_ACK', false),
 ];

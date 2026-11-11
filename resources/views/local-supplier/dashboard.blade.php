@@ -23,6 +23,8 @@
 
     @include('local-supplier.supplier-audits._invoice-block-banner')
 
+    <x-ui.supplier-scorecard :supplier="auth()->user()" scope="local" />
+
     <x-ui.dashboard-layout audience="supplier.local">
     <x-slot:statuses>
     {{-- KPI Metric Cards Grid --}}

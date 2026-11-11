@@ -73,7 +73,7 @@ class AddSecurityHeaders
             "script-src 'self' 'unsafe-eval' 'nonce-{$nonce}' https://cdn.jsdelivr.net https://code.jquery.com https://cdn.datatables.net https://challenges.cloudflare.com",
             "script-src-attr 'unsafe-inline'",
             "connect-src 'self' ws: wss: https://challenges.cloudflare.com https://*.pusher.com wss://*.pusher.com https://cdn.jsdelivr.net",
-            'frame-src https://challenges.cloudflare.com',
+            "frame-src 'self' https://challenges.cloudflare.com",
         ];
 
         $reportUri = (string) config('auth_security.headers.csp_report_uri');

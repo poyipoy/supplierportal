@@ -684,4 +684,15 @@ return [
         'claim_number' => 'Nomor Klaim',
         'amount_rupiah' => 'Nominal (Rp)',
     ],
+    'three_way_match' => [
+        'status' => [
+            'exact_match' => 'Sesuai Nilai GR',
+            'within_tolerance' => 'Dalam Toleransi',
+            'variance_detected' => 'Terdapat Selisih GR',
+            'po_ceiling_only' => 'Hanya Plafon PO',
+        ],
+        'validation' => [
+            'variance_notes_required' => 'Isi catatan pemeriksaan GR saat menyetujui invoice yang memiliki selisih DPP 3-Way Match.',
+        ],
+    ],
 ];

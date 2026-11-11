@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Casts\LocalPurchaseOrderStatusCast;
 use App\Enums\LocalPurchaseOrderStatus;
+use App\Enums\PoAcknowledgementStatus;
 use App\Support\LocalPoPrNumber;
 use App\Traits\HasHashids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -35,8 +36,13 @@ class LocalPurchaseOrder extends Model
         'total_amount',
         'currency',
         'status',
+        'acknowledgement_status',
+        'acknowledged_at',
+        'acknowledged_by',
         'description',
+        'acknowledgement_notes',
         'po_date',
+        'supplier_promised_date',
         'source',
         'created_by',
         'updated_by',
@@ -44,13 +50,36 @@ class LocalPurchaseOrder extends Model
 
     protected $casts = [
         'status' => LocalPurchaseOrderStatusCast::class,
+        'acknowledgement_status' => PoAcknowledgementStatus::class,
+        'acknowledged_at' => 'datetime',
         'total_amount' => 'decimal:2',
         'po_date' => 'date',
+        'supplier_promised_date' => 'date',
     ];
 
     public function statusEnum(): LocalPurchaseOrderStatus
     {
         return LocalPurchaseOrderStatus::tryFromWithLegacy($this->status ?? self::STATUS_OPEN);
+    }
+
+    public function acknowledgementStatusEnum(): PoAcknowledgementStatus
+    {
+        return PoAcknowledgementStatus::tryFromOrDefault($this->acknowledgement_status);
+    }
+
+    public function isAcknowledged(): bool
+    {
+        return $this->acknowledgementStatusEnum()->isAcknowledged();
+    }
+
+    public function canAcknowledge(): bool
+    {
+        return false;
+    }
+
+    public function acknowledgedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'acknowledged_by');
     }
 
     public function isOpen(): bool

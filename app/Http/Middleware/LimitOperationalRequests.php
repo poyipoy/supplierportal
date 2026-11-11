@@ -39,6 +39,7 @@ class LimitOperationalRequests
         if (! $request->isMethod('GET') && $request->routeIs(
             'local-supplier.invoices.store', 'local-supplier.invoices.resubmit',
             'ga.claims.store', 'ga.claims.resubmit', 'supplier.register.store', 'supplier.registration.resubmit',
+            'finance.payment-vouchers.store', 'purchasing.payment-vouchers.store',
             '*.documents.upload', '*.attachments.store', '*.claims.respond', '*.supplier-audits.result',
             '*.upload-po', '*.import.po.preview', '*.import.gr.preview', '*.quotations.import-preview', '*.requisitions.import-preview', 'finance.overpayments.refund'
         )) {

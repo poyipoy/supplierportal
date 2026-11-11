@@ -1,0 +1,46 @@
+<?php
+
+return [
+    'eyebrow' => 'Contextual Drillback',
+    'title' => 'Document Chain & Context',
+    'trigger' => 'Document Chain',
+    'close' => 'Close context panel',
+    'loading' => 'Loading document chain and related files...',
+    'error' => 'Could not load context details for this document.',
+    'empty_documents' => 'No previewable PDF or attachment files are linked to this document yet.',
+    'open_in_new_tab' => 'Open / Download',
+    'expand_preview' => 'Full width',
+    'collapse_preview' => 'Default width',
+    'tabs' => [
+        'chain' => 'Document Chain',
+        'preview' => 'Split PDF Preview',
+        'sla' => 'SLA & Status',
+    ],
+    'node_types' => [
+        'pr' => 'Purchase Requisition',
+        'quotation' => 'Quotation',
+        'po' => 'Purchase Order',
+        'shipment' => 'Shipment',
+        'qc' => 'QC Inspection',
+        'claim' => 'Material Claim',
+        'local_po' => 'Local Purchase Order',
+        'gr' => 'Goods Receipt',
+        'local_invoice' => 'Local Invoice',
+        'drp' => 'Payment Batch (DRP)',
+        'voucher' => 'Payment Voucher',
+        'payment' => 'Settlement Payment',
+    ],
+    'documents' => [
+        'po_pdf' => 'Purchase Order PDF',
+        'po_attachment' => 'PO Attachment',
+        'local_po_pdf' => 'Local PO Document',
+    ],
+    'sla' => [
+        'created_date' => 'Created Date',
+        'quotations_count' => 'Submitted Quotations',
+        'finalized_date' => 'Finalized Date',
+        'groups_count' => 'Supplier Payment Groups',
+        'scheduled_delivery' => 'Scheduled Physical Delivery',
+        'due_date' => 'Payment Due Date',
+    ],
+];

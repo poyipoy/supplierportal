@@ -24,6 +24,7 @@ function fixture({ session = { crossTab: true, cleanup: false, userId: 41 }, log
     const toasts = [];
     const validation = [];
     const values = new Map(initialStorage.map((key) => [key, 'saved']));
+    const sessionValues = new Map(initialStorage.map((key) => [key, 'saved']));
     let disconnects = 0;
     let channel;
     Object.assign(win, {
@@ -56,10 +57,17 @@ function fixture({ session = { crossTab: true, cleanup: false, userId: 41 }, log
         removeItem: (key) => { sent.push({ remove: key }); values.delete(key); },
         setItem: (key, value) => { sent.push({ key, value }); values.set(key, value); },
     };
+    const sessionStorageArea = {
+        get length() { return sessionValues.size; },
+        key: (index) => [...sessionValues.keys()][index] ?? null,
+        removeItem: (key) => { sessionValues.delete(key); },
+        setItem: (key, value) => { sessionValues.set(key, value); },
+    };
     Object.defineProperty(win, 'localStorage', { get() { if (blocked) throw Error('blocked'); return storage; } });
+    Object.defineProperty(win, 'sessionStorage', { get() { if (blocked) throw Error('blocked'); return sessionStorageArea; } });
     const api = bootSessionSync(win, doc);
     return {
-        win, doc, api, redirects, sent, values, storage, prompts, submitting, toasts, validation,
+        win, doc, api, redirects, sent, values, sessionValues, storage, prompts, submitting, toasts, validation,
         disconnects: () => disconnects,
         receive(data) { channel.dispatchEvent(Object.assign(new Event('message'), { data })); },
         storageEvent(newValue, key = SESSION_EVENT_KEY, storageArea = storage) {
@@ -178,10 +186,18 @@ test('ended sessions suppress native dirty prompts while allowing draft-saving h
     assert.equal(event.defaultPrevented, false);
 });
 
-const removable = [PENDING_EXPORT_STORAGE_KEY, 'quotation_draft_123', 'quotation_draft_0'];
-const retained = ['quotation_draft_41_123', 'quotation_draft_42_123', 'quotation_draft_41_hash', 'quotation_draft_hash', 'quotation_draft_123_extra', 'adasi_supplier_reg_draft', 'adasi.sidebar.41', 'adasi_chat_draft_41_1', 'supplierAuditScoreGuide'];
+const removable = [
+    PENDING_EXPORT_STORAGE_KEY,
+    'quotation_draft_123',
+    'quotation_draft_0',
+    'quotation_draft_41_123',
+    'quotation_draft_42_123',
+    'quotation_draft_41_hash',
+    'adasi_chat_draft_41_1',
+];
+const retained = ['quotation_draft_hash', 'quotation_draft_123_456_extra', 'adasi_supplier_reg_draft', 'adasi.sidebar.41', 'supplierAuditScoreGuide'];
 
-test('cleanup removes only the exact export key and numeric legacy drafts, retaining account drafts and other state', async () => {
+test('cleanup removes export key, legacy and account-scoped quotation drafts, and chat drafts in localStorage and sessionStorage', async () => {
     assert.deepEqual(storageKeysToClear([...removable, ...retained]), removable);
     for (const trigger of ['submit', 'receive', 'poll', 'login']) {
         const f = fixture({
@@ -197,7 +213,8 @@ test('cleanup removes only the exact export key and numeric legacy drafts, retai
             assert.equal(f.values.size, removable.length + retained.length, 'nothing is cleared before the user agrees to reconnect');
             await settle();
         }
-        assert.deepEqual([...f.values.keys()], retained, trigger);
+        assert.deepEqual([...f.values.keys()], retained, `${trigger} localStorage`);
+        assert.deepEqual([...f.sessionValues.keys()], retained, `${trigger} sessionStorage`);
     }
 });
 

@@ -46,6 +46,11 @@ final class ProcurementFeatures
         return (bool) config('procurement.require_ready_to_ship_for_shipment', true);
     }
 
+    public static function requirePoAcknowledgementBeforeShipment(): bool
+    {
+        return (bool) config('procurement.require_po_acknowledgement_before_shipment', false);
+    }
+
     /**
      * Surplus requested without the write path that can order it.
      */

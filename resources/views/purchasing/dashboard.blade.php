@@ -348,6 +348,51 @@
             </table>
         </x-ui.data-table>
         </x-slot:arrivals>
+
+        <x-slot:po_acknowledgements>
+            <x-ui.data-table
+                :title="__('dashboard.widgets.po_acknowledgement_queue')"
+                :description="__('purchasing.po_ack.queue_description')"
+                :empty="($pendingPoAcknowledgements ?? collect())->isEmpty()"
+            >
+                <x-slot:emptyState>
+                    <x-ui.empty-state
+                        icon="check-circle"
+                        :title="__('purchasing.po_ack.queue_empty_title')"
+                        :description="__('purchasing.po_ack.queue_empty_description')"
+                    />
+                </x-slot:emptyState>
+
+                <table class="table table-hover align-middle mb-0 tw:text-ui-xs w-100">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col">{{ __('purchasing.copy.po_no') }}</th>
+                            <th scope="col">{{ __('purchasing.copy.supplier') }}</th>
+                            <th scope="col">{{ __('purchasing.po_ack.title') }}</th>
+                            <th scope="col">{{ __('purchasing.po_ack.promised_date') }}</th>
+                            <th scope="col" class="text-end">{{ __('purchasing.copy.action') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($pendingPoAcknowledgements ?? [] as $ackPo)
+                            @php $ackStatus = $ackPo->acknowledgementStatusEnum(); @endphp
+                            <tr>
+                                <td class="ui-tabular-nums fw-semibold">{{ $ackPo->po_number }}</td>
+                                <td>{{ $ackPo->supplier?->name ?? '—' }}</td>
+                                <td><x-ui.status-chip :tone="$ackStatus->tone()">{{ $ackStatus->label() }}</x-ui.status-chip></td>
+                                <td class="ui-tabular-nums">{{ $ackPo->supplier_promised_date ? $regionalFormatter->date($ackPo->supplier_promised_date) : '—' }}</td>
+                                <td class="text-end">
+                                    <x-ui.button :href="route('purchasing.purchase-orders.show', $ackPo)" size="sm" variant="outline">
+                                        <span>{{ __('purchasing.copy.review') }}</span>
+                                        <x-ui.icon name="arrow-right" size="sm" />
+                                    </x-ui.button>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </x-ui.data-table>
+        </x-slot:po_acknowledgements>
     </x-ui.dashboard-layout>
 </div>
 

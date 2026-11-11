@@ -18,6 +18,18 @@
         :eyebrow="__('finance.labels.workflow')"
     >
         <x-slot:actions>
+            <x-ui.button
+                type="button"
+                variant="outline"
+                size="sm"
+                data-smart-panel-trigger
+                data-entity-type="local-invoice"
+                :data-entity-hash="$invoice->hashid"
+                :data-smart-panel-url="route('context-panel.show', ['entityType' => 'local-invoice', 'hash' => $invoice->hashid], false)"
+            >
+                <x-ui.icon name="git-branch" size="sm" />
+                <span>{{ __('smart_panel.trigger') }}</span>
+            </x-ui.button>
             <x-ui.button :href="route('finance.invoices.index')" variant="ghost" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>{{ __('ga.detail.back') }}</span>
@@ -110,19 +122,68 @@
                         <div><span class="tw:text-on-surface-variant tw:block">{{ __('local_procurement.labels.po_date') }}</span><strong class="tw:text-on-surface">{{ $invoice->localPurchaseOrder?->po_date ? $regionalFormatter->date($invoice->localPurchaseOrder->po_date, 'human') : '—' }}</strong></div>
                         <div><span class="tw:text-on-surface-variant tw:block">{{ __('local_procurement.labels.po_total') }}</span><strong class="ui-tabular-nums tw:text-on-surface">Rp {{ $regionalFormatter->number(number_format($invoice->localPurchaseOrder?->total_amount ?? $invoice->po_value_snapshot ?? 0, 2, ',', '.'), 'indonesian') }}</strong></div>
                     </div>
+
+                    {{-- 3-Way Match Comparison Card --}}
+                    <div class="tw:mb-4 tw:p-3.5 tw:rounded-ui-md tw:bg-surface-container tw:border tw:border-outline-variant">
+                        <div class="tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-2 tw:mb-3">
+                            <span class="tw:text-ui-xs tw:font-semibold tw:text-on-surface">{{ __('local_invoice.three_way_match.title') }}</span>
+                            <x-ui.status-chip :tone="\App\Support\StatusHelper::threeWayMatchTone($invoice->three_way_match_status)">
+                                {{ \App\Support\StatusHelper::threeWayMatchLabel($invoice->three_way_match_status) }}
+                            </x-ui.status-chip>
+                        </div>
+                        <div class="tw:grid tw:grid-cols-1 tw:sm:grid-cols-3 tw:gap-3 tw:text-ui-xs">
+                            <div>
+                                <span class="tw:text-on-surface-variant tw:block">{{ __('local_invoice.three_way_match.expected_gr_dpp') }}</span>
+                                <strong class="ui-tabular-nums tw:text-on-surface">
+                                    @if($invoice->expected_gr_dpp_amount !== null)
+                                        Rp {{ $regionalFormatter->money($invoice->expected_gr_dpp_amount) }}
+                                    @else
+                                        —
+                                    @endif
+                                </strong>
+                            </div>
+                            <div>
+                                <span class="tw:text-on-surface-variant tw:block">{{ __('local_invoice.three_way_match.submitted_dpp') }}</span>
+                                <strong class="ui-tabular-nums tw:text-on-surface">
+                                    Rp {{ $regionalFormatter->money($invoice->invoice_amount) }}
+                                </strong>
+                            </div>
+                            <div>
+                                <span class="tw:text-on-surface-variant tw:block">{{ __('local_invoice.three_way_match.dpp_variance') }}</span>
+                                <strong @class([
+                                    'ui-tabular-nums',
+                                    'tw:text-warning' => $invoice->hasThreeWayVariance(),
+                                    'tw:text-on-surface' => !$invoice->hasThreeWayVariance(),
+                                ])>
+                                    @if($invoice->gr_dpp_variance_amount !== null)
+                                        {{ \App\Support\Money::compare((string) $invoice->gr_dpp_variance_amount, '0.00') < 0 ? '-' : '+' }}Rp {{ $regionalFormatter->money(ltrim((string) $invoice->gr_dpp_variance_amount, '+-')) }}
+                                    @else
+                                        —
+                                    @endif
+                                </strong>
+                            </div>
+                        </div>
+                        @if($invoice->hasThreeWayVariance())
+                            <p class="tw:mt-2.5 tw:mb-0 tw:text-ui-xs tw:text-warning">
+                                {{ __('local_invoice.three_way_match.variance_note_required') }}
+                            </p>
+                        @endif
+                    </div>
+
                     <div class="table-responsive">
                         <table class="table table-sm align-middle tw:m-0 tw:text-ui-xs">
-                            <thead><tr><th>{{ __('local_invoice.detail.gr_number') }}</th><th>{{ __('local_invoice.labels.date') }}</th><th class="text-end">{{ __('common.fields.qty') }}</th><th scope="col">{{ __('local_procurement.labels.uom') }}</th><th>{{ __('local_invoice.labels.status') }}</th></tr></thead>
+                            <thead><tr><th>{{ __('local_invoice.detail.gr_number') }}</th><th>{{ __('local_invoice.labels.date') }}</th><th class="text-end">{{ __('common.fields.qty') }}</th><th scope="col">{{ __('local_procurement.labels.uom') }}</th><th class="text-end">{{ __('local_invoice.three_way_match.gr_amount') }}</th><th>{{ __('local_invoice.labels.status') }}</th></tr></thead>
                             <tbody>
                             @forelse($invoice->goodsReceiptHistories->sortBy('id') as $history)
                                 <tr>
                                     <td class="ui-tabular-nums">{{ $history->gr_number_snapshot }}</td>
                                     <td>{{ $history->goodsReceipt?->gr_date ? $regionalFormatter->date($history->goodsReceipt->gr_date, 'human') : '—' }}</td>
                                     <td class="text-end ui-tabular-nums">{{ $history->gr_qty_snapshot !== null ? rtrim(rtrim(number_format((float) $history->gr_qty_snapshot, 4, ',', '.'), '0'), ',') : ($history->goodsReceipt?->qty !== null ? rtrim(rtrim(number_format((float) $history->goodsReceipt->qty, 4, ',', '.'), '0'), ',') : '—') }}</td><td>{{ $history->gr_uom_snapshot ?? '—' }}</td>
+                                    <td class="text-end ui-tabular-nums">{{ $history->gr_amount_snapshot !== null ? 'Rp ' . $regionalFormatter->money($history->gr_amount_snapshot) : '—' }}</td>
                                     <td><x-ui.status-chip :tone="$history->state === 'CONSUMED' ? 'success' : ($history->state === 'RELEASED' ? 'neutral' : 'warning')">{{ \App\Support\StatusHelper::localFinanceLabel($history->state) }}</x-ui.status-chip></td>
                                 </tr>
                             @empty
-                                <tr><td colspan="5" class="tw:text-center tw:text-on-surface-variant">{{ __('local_procurement.empty.authoritative_history') }}</td></tr>
+                                <tr><td colspan="6" class="tw:text-center tw:text-on-surface-variant">{{ __('local_procurement.empty.authoritative_history') }}</td></tr>
                             @endforelse
                             </tbody>
                         </table>
@@ -296,7 +357,10 @@
                                         </label>
                                     </div>
                                 </div>
-                                <input type="text" name="gr_notes" class="form-control form-control-sm" placeholder="{{ __('local_procurement.labels.gr_notes') }}" value="{{ $verification->gr_notes ?? '' }}">
+                                <input type="text" name="gr_notes" class="form-control form-control-sm @error('gr_notes') is-invalid @enderror" placeholder="{{ __('local_procurement.labels.gr_notes') }}" value="{{ old('gr_notes', $verification->gr_notes ?? '') }}">
+                                @error('gr_notes')
+                                    <div class="invalid-feedback tw:text-ui-xs">{{ $message }}</div>
+                                @enderror
                             </div>
 
                             @if(!$isLocked)

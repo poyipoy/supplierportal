@@ -521,4 +521,15 @@ return [
         'duplicate_invoice' => 'This invoice number belongs to a cancelled submission. Open that submission and choose Resubmit.',
         'duplicate_tax' => 'Tax invoice :number belongs to a cancelled submission. Open that submission and choose Resubmit.',
     ],
+    'three_way_match' => [
+        'title' => '3-Way Match (PO · GR · Invoice DPP)',
+        'expected_gr_dpp' => 'Expected GR DPP',
+        'submitted_dpp' => 'Submitted Invoice DPP',
+        'dpp_variance' => 'GR vs Invoice Variance',
+        'gr_amount' => 'GR Amount',
+        'variance_note_required' => 'Invoice DPP differs from the accumulated GR value beyond tolerance. Finance must provide a GR check note before marking GR as OK.',
+        'queue_description' => 'Local invoices with a detected DPP variance against accumulated Goods Receipt value.',
+        'queue_empty_title' => 'No 3-Way Match variances',
+        'queue_empty_description' => 'All active local invoices match their Goods Receipt values or PO ceilings.',
+    ],
 ];

@@ -19,6 +19,8 @@
 
     @php $sup = $vendor->supplier; @endphp
 
+    <x-ui.supplier-scorecard :supplier="$vendor" scope="local" />
+
     <div class="tw:grid tw:grid-cols-1 tw:lg:grid-cols-12 tw:gap-6">
         <div class="tw:lg:col-span-8 tw:space-y-6">
             <x-ui.card :title="__('local_invoice.labels.company_profile')">

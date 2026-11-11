@@ -27,6 +27,7 @@ use App\Http\Controllers\Auth\SsoCallbackController;
 use App\Http\Controllers\Auth\SsoEntryController;
 use App\Http\Controllers\Auth\SupplierRegistrationController;
 use App\Http\Controllers\Auth\TwoFactorChallengeController;
+use App\Http\Controllers\ContextSmartPanelController;
 use App\Http\Controllers\ConversationMessageController;
 use App\Http\Controllers\ExportDefinitionController;
 use App\Http\Controllers\ExportDownloadController;
@@ -41,6 +42,7 @@ use App\Http\Controllers\Finance\LocalInvoiceSettlementController;
 use App\Http\Controllers\Finance\LocalPoDocumentBatchController;
 use App\Http\Controllers\Finance\LocalProcurementController;
 use App\Http\Controllers\Finance\LocalProcurementImportController;
+use App\Http\Controllers\Finance\PaymentVoucherController as FinancePaymentVoucherController;
 use App\Http\Controllers\Ga\EmployeeController;
 use App\Http\Controllers\Ga\GaController;
 use App\Http\Controllers\GaClaimDocumentController;
@@ -67,6 +69,7 @@ use App\Http\Controllers\Purchasing\MaterialCalculationController;
 use App\Http\Controllers\Purchasing\MaterialClaimController;
 use App\Http\Controllers\Purchasing\MaterialMasterSearchController;
 use App\Http\Controllers\Purchasing\MaterialReferencePriceController;
+use App\Http\Controllers\Purchasing\PaymentVoucherController as PurchasingPaymentVoucherController;
 use App\Http\Controllers\Purchasing\PdfController;
 use App\Http\Controllers\Purchasing\PeriodController;
 use App\Http\Controllers\Purchasing\PoDocumentController;
@@ -148,6 +151,10 @@ Route::prefix(PortalPath::prefix())->group(function () {
     Route::get('/local-invoice-documents/{document}', [LocalInvoiceDocumentController::class, 'show'])->middleware(['auth', 'role:supplier,accounting,finance,admin,purchasing'])->name('local-invoice-documents.show');
     Route::get('/supplier-master-documents/{document}', [SupplierMasterDocumentController::class, 'show'])->middleware(['auth', 'role:supplier,finance,purchasing,admin'])->name('supplier-master-documents.show');
     Route::get('/ga-claim-documents/{document}', [GaClaimDocumentController::class, 'show'])->middleware(['auth', 'role:ga,finance,admin'])->name('ga-claim-documents.show');
+    Route::get('/context-panel/{entityType}/{hash}', [ContextSmartPanelController::class, 'show'])
+        ->middleware(['auth', 'throttle:120,1'])
+        ->whereIn('entityType', ['import-pr', 'import-po', 'local-po', 'local-invoice', 'payment-batch'])
+        ->name('context-panel.show');
 
     /*
     |--------------------------------------------------------------------------
@@ -268,6 +275,17 @@ Route::prefix(PortalPath::prefix())->group(function () {
         Route::post('/settlements/{payment}/corrections', [LocalInvoiceSettlementController::class, 'correction'])->name('settlements.correction');
         Route::get('/supplier-overpayments', [LocalInvoiceSettlementController::class, 'overpayments'])->name('overpayments.index');
         Route::post('/supplier-overpayments/{refund}/settle', [LocalInvoiceSettlementController::class, 'refund'])->name('overpayments.refund');
+
+        // Standalone Payment Vouchers (Voucher Bayar shared with Purchasing)
+        Route::prefix('payment-vouchers')->name('payment-vouchers.')->controller(FinancePaymentVoucherController::class)->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/create', 'create')->name('create');
+            Route::post('/', 'store')->name('store');
+            Route::get('/{paymentVoucher}', 'show')->name('show');
+            Route::get('/{paymentVoucher}/print', 'print')->name('print');
+            Route::post('/{paymentVoucher}/void', 'void')->name('void');
+            Route::get('/{paymentVoucher}/documents/{document}', 'showDocument')->name('documents.show');
+        });
 
         // Master Invoice (Reporting / Query Repository)
         Route::get('/master-invoices', [FinanceInvoiceController::class, 'masterInvoice'])->name('master-invoices');
@@ -572,6 +590,7 @@ Route::prefix(PortalPath::prefix())->group(function () {
         Route::get('/purchase-orders/consolidate-awards', [AwardConsolidationController::class, 'create'])->name('purchase-orders.consolidate-awards');
         Route::post('/purchase-orders/consolidate-awards', [AwardConsolidationController::class, 'store'])->name('purchase-orders.consolidate-awards.store');
         Route::get('/purchase-orders/{id}', [PurchaseOrderController::class, 'show'])->name('purchase-orders.show');
+        Route::post('/purchase-orders/{id}/respond-promise-change', [PurchaseOrderController::class, 'respondPromiseChange'])->middleware('throttle:30,1')->name('purchase-orders.respond-promise-change');
         Route::get('/purchase-orders/{po_id}/items/{award_id}/progress/history', [PoItemProgressController::class, 'history'])->name('purchase-orders.item-progress.history');
         Route::post('/purchase-orders/{id}/confirm-arrival', [PurchaseOrderController::class, 'confirmArrival'])->name('purchase-orders.confirm-arrival');
         Route::put('/purchase-orders/{id}/documents/shipments/batch-update', [PoShipmentDocumentStatusController::class, 'batchUpdateMultiType'])
@@ -692,6 +711,17 @@ Route::prefix(PortalPath::prefix())->group(function () {
             Route::get('/{batch}', 'show')->name('show');
         });
         Route::get('/vouchers/{voucher}/print', [PurchasingDrpController::class, 'printVoucher'])->name('vouchers.print');
+
+        // Standalone Payment Vouchers (Voucher Bayar shared with Finance)
+        Route::prefix('payment-vouchers')->name('payment-vouchers.')->controller(PurchasingPaymentVoucherController::class)->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/create', 'create')->name('create');
+            Route::post('/', 'store')->name('store');
+            Route::get('/{paymentVoucher}', 'show')->name('show');
+            Route::get('/{paymentVoucher}/print', 'print')->name('print');
+            Route::post('/{paymentVoucher}/void', 'void')->name('void');
+            Route::get('/{paymentVoucher}/documents/{document}', 'showDocument')->name('documents.show');
+        });
     });
 
     /*
@@ -735,6 +765,7 @@ Route::prefix(PortalPath::prefix())->group(function () {
         Route::get('/requests/{pr_id}', [PurchasingRequestController::class, 'show'])->name('requests.show');
         Route::get('/purchase-orders', [SupplierPurchaseOrderController::class, 'index'])->name('purchase-orders.index');
         Route::get('/purchase-orders/{id}', [SupplierPurchaseOrderController::class, 'show'])->name('purchase-orders.show');
+        Route::post('/purchase-orders/{id}/acknowledge', [SupplierPurchaseOrderController::class, 'acknowledge'])->middleware('throttle:30,1')->name('purchase-orders.acknowledge');
         Route::post('/purchase-orders/{po_id}/items/{award_id}/progress', [App\Http\Controllers\Supplier\PoItemProgressController::class, 'update'])->name('purchase-orders.item-progress.update');
         Route::get('/purchase-orders/{po_id}/items/{award_id}/progress/history', [App\Http\Controllers\Supplier\PoItemProgressController::class, 'history'])->name('purchase-orders.item-progress.history');
         // Shipments

@@ -196,4 +196,10 @@ return [
         'comparable_unverified' => 'Indicative',
         'comparable' => 'Comparable',
     ],
+    'three_way_match' => [
+        'exact_match' => 'Exact Match',
+        'within_tolerance' => 'Within Tolerance',
+        'variance_detected' => 'Variance Detected',
+        'po_ceiling_only' => 'PO Ceiling Only',
+    ],
 ];

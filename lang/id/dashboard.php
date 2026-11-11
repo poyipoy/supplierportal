@@ -30,5 +30,7 @@ return [
         'invoice_status' => 'Status invoice',
         'company_and_tax_summary' => 'Ringkasan perusahaan dan pajak',
         'recent_invoices' => 'Invoice terbaru',
+        'po_acknowledgement_queue' => 'Antrean konfirmasi PO',
+        'three_way_match_exceptions' => 'Antrean selisih 3-Way Match',
     ],
 ];

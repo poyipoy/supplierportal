@@ -78,6 +78,18 @@
         :description="__('purchasing.copy.review_material_requirements_invited_suppliers_quotation_responses_and_workflow_progress')"
     >
         <x-slot:actions>
+            <x-ui.button
+                type="button"
+                variant="outline"
+                size="sm"
+                data-smart-panel-trigger
+                data-entity-type="import-pr"
+                :data-entity-hash="$pr->hashid"
+                :data-smart-panel-url="route('context-panel.show', ['entityType' => 'import-pr', 'hash' => $pr->hashid], false)"
+            >
+                <x-ui.icon name="git-branch" size="sm" />
+                <span>{{ __('smart_panel.trigger') }}</span>
+            </x-ui.button>
             <x-ui.button :href="route('purchasing.export.requisitions.detail', $pr)" variant="outline" size="sm" data-async-export data-export-source-singular="{{ __('exports.sources.requisition') }}" data-export-source-plural="{{ __('exports.sources.requisitions') }}" data-export-source-count="1" data-export-filtered="false" data-export-row-label="{{ __('purchasing.copy.material_rows') }}" data-export-row-explanation="{{ __('purchasing.copy.each_material_item_will_be_written_as_a_separate_excel_row') }}">
                 <x-ui.icon name="file-spreadsheet" />
                 <span>{{ __('purchasing.copy.export_excel') }}</span>

@@ -180,6 +180,12 @@ class ShipmentService
             if ($po->hasLegacyOnlyArrivalState()) {
                 throw new InvalidArgumentException(__(self::LEGACY_ONLY_ARRIVAL_MESSAGE));
             }
+
+            if (ProcurementFeatures::requirePoAcknowledgementBeforeShipment() && ! $po->isAcknowledged()) {
+                throw new BusinessRuleArgumentException(__('purchasing.po_ack.errors.acknowledgement_required_before_shipment', [
+                    'po' => $po->po_number,
+                ]));
+            }
         }
 
         $validatedItems = [];

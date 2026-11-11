@@ -6,14 +6,16 @@ use App\Http\Controllers\Controller;
 use App\Models\PurchaseOrder;
 use App\Models\QcInspection;
 use App\Support\PurchaseOrderPdf;
+use App\Support\Security\InlinePreviewResponse;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\Request;
 
 class PdfController extends Controller
 {
     /**
      * Generate PDF document Purchase Order.
      */
-    public function purchaseOrder($id)
+    public function purchaseOrder(Request $request, $id)
     {
         $query = PurchaseOrder::with([
             'supplier.supplier',
@@ -33,7 +35,13 @@ class PdfController extends Controller
         $pdf = Pdf::loadView('pdf.po-pdf', compact('po', 'document'))
             ->setPaper('a4', 'portrait');
 
-        return $pdf->download('PO_'.str_replace('/', '-', $po->po_number).'.pdf');
+        $filename = 'PO_'.str_replace('/', '-', $po->po_number).'.pdf';
+
+        if ($request->boolean('inline')) {
+            return InlinePreviewResponse::applySameOriginFramingHeaders($pdf->stream($filename));
+        }
+
+        return $pdf->download($filename);
     }
 
     /**

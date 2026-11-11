@@ -10,6 +10,18 @@
         :eyebrow="__('finance.drp_ui.engine')"
     >
         <x-slot:actions>
+            <x-ui.button
+                type="button"
+                variant="outline"
+                size="sm"
+                data-smart-panel-trigger
+                data-entity-type="payment-batch"
+                :data-entity-hash="$batch->hashid"
+                :data-smart-panel-url="route('context-panel.show', ['entityType' => 'payment-batch', 'hash' => $batch->hashid], false)"
+            >
+                <x-ui.icon name="git-branch" size="sm" />
+                <span>{{ __('smart_panel.trigger') }}</span>
+            </x-ui.button>
             <x-ui.button :href="$batch->batch_type === 'SUPPLIER' ? route('finance.drp.supplier') : route('finance.drp.ga')" variant="ghost" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>{{ __('local_invoice.form.back_list') }}</span>

@@ -357,6 +357,55 @@
         @include('local-invoices.table', ['invoices' => $recentInvoices ?? $invoices ?? [], 'portal' => 'finance', 'payments' => false])
     </x-ui.data-table>
         </x-slot:invoices>
+
+        <x-slot:three_way_exceptions>
+            <x-ui.data-table
+                :title="__('dashboard.widgets.three_way_match_exceptions')"
+                :description="__('local_invoice.three_way_match.queue_description')"
+                :empty="($threeWayVarianceInvoices ?? collect())->isEmpty()"
+            >
+                <x-slot:emptyState>
+                    <x-ui.empty-state
+                        icon="check-circle"
+                        :title="__('local_invoice.three_way_match.queue_empty_title')"
+                        :description="__('local_invoice.three_way_match.queue_empty_description')"
+                    />
+                </x-slot:emptyState>
+
+                <table class="table table-hover align-middle mb-0 tw:text-ui-xs w-100">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col">{{ __('terms.invoice') }}</th>
+                            <th scope="col">{{ __('purchasing.copy.supplier') }}</th>
+                            <th scope="col" class="text-end">{{ __('local_invoice.three_way_match.expected_gr_dpp') }}</th>
+                            <th scope="col" class="text-end">{{ __('local_invoice.three_way_match.submitted_dpp') }}</th>
+                            <th scope="col" class="text-end">{{ __('local_invoice.three_way_match.dpp_variance') }}</th>
+                            <th scope="col" class="text-end">{{ __('purchasing.copy.action') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($threeWayVarianceInvoices ?? [] as $varInv)
+                            <tr>
+                                <td class="ui-tabular-nums fw-semibold">{{ $varInv->invoice_number }}</td>
+                                <td>{{ $varInv->supplier?->supplier?->company_name ?: $varInv->supplier?->name ?? '—' }}</td>
+                                <td class="text-end ui-tabular-nums">Rp {{ $regionalFormatter->money($varInv->expected_gr_dpp_amount ?? '0.00') }}</td>
+                                <td class="text-end ui-tabular-nums">Rp {{ $regionalFormatter->money($varInv->invoice_amount) }}</td>
+                                <td class="text-end ui-tabular-nums tw:text-warning fw-semibold">
+                                    @php $dashVariance = (string) ($varInv->gr_dpp_variance_amount ?? '0.00'); @endphp
+                                    {{ \App\Support\Money::compare($dashVariance, '0.00') < 0 ? '-' : '+' }}Rp {{ $regionalFormatter->money(ltrim($dashVariance, '+-')) }}
+                                </td>
+                                <td class="text-end">
+                                    <x-ui.button :href="route('finance.invoices.show', $varInv)" size="sm" variant="outline">
+                                        <span>{{ __('purchasing.copy.review') }}</span>
+                                        <x-ui.icon name="arrow-right" size="sm" />
+                                    </x-ui.button>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </x-ui.data-table>
+        </x-slot:three_way_exceptions>
     </x-ui.dashboard-layout>
 </div>
 @endsection

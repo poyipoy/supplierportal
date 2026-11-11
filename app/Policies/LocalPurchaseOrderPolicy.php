@@ -50,4 +50,14 @@ class LocalPurchaseOrderPolicy
     {
         return $this->restore($user, $purchaseOrder);
     }
+
+    public function acknowledge(User $user, LocalPurchaseOrder $purchaseOrder): bool
+    {
+        return false;
+    }
+
+    public function respondPromiseChange(User $user, LocalPurchaseOrder $purchaseOrder): bool
+    {
+        return false;
+    }
 }

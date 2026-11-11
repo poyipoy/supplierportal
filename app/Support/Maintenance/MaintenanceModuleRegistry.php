@@ -140,6 +140,7 @@ final class MaintenanceModuleRegistry
         'accounting.payment-schedule' => 'local.invoices',
         'accounting.reports*' => 'local.invoices',
         'purchasing.local-procurement.*' => 'local.purchase_orders',
+        'purchasing.local-pos.*' => 'local.purchase_orders',
         'finance.local-procurement.*' => 'local.purchase_orders',
     ];
 
@@ -182,6 +183,7 @@ final class MaintenanceModuleRegistry
     private const PORTAL_ROUTES = [
         'dashboard', 'supplier.dashboard', 'local-supplier.dashboard',
         'supplier-context.*', 'portal.page', 'notifications.*', 'profile.*',
+        'context-panel.*',
     ];
 
     /**

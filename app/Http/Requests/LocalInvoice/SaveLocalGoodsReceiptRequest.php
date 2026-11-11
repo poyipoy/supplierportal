@@ -27,6 +27,9 @@ class SaveLocalGoodsReceiptRequest extends FormRequest
             'gr_date' => ['required', 'date_format:Y-m-d'],
             'qty' => ['required', 'numeric', 'gt:0', 'regex:'.LocalGoodsReceipt::QUANTITY_PATTERN],
             'uom' => ['required', Rule::in(LocalGoodsReceipt::UOMS)],
+            'unit_price' => ['nullable', 'numeric', 'min:0'],
+            'receipt_amount' => ['nullable', 'numeric', 'min:0'],
+            'po_line_reference' => ['nullable', 'string', 'max:64'],
             'description' => ['nullable', 'string', 'max:2000'],
             'notes' => ['nullable', 'string', 'max:2000'],
         ];

@@ -11,6 +11,18 @@
         :eyebrow="__('local_procurement.list.detail_short')"
     >
         <x-slot:actions>
+            <x-ui.button
+                type="button"
+                variant="outline"
+                size="sm"
+                data-smart-panel-trigger
+                data-entity-type="local-po"
+                :data-entity-hash="$purchaseOrder->hashid"
+                :data-smart-panel-url="route('context-panel.show', ['entityType' => 'local-po', 'hash' => $purchaseOrder->hashid], false)"
+            >
+                <x-ui.icon name="git-branch" size="sm" />
+                <span>{{ __('smart_panel.trigger') }}</span>
+            </x-ui.button>
             <x-ui.button :href="route('local-supplier.purchase-orders.index')" variant="ghost" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>{{ __('local_invoice.form.back_list') }}</span>

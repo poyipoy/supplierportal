@@ -31,6 +31,8 @@ class LocalInvoiceVerification extends Model
         'delivery_note_notes',
         'gr_check',
         'gr_notes',
+        'three_way_match_status',
+        'three_way_variance_amount',
         'ppn_status',
         'submitted_ppn',
         'verified_ppn',
@@ -65,6 +67,7 @@ class LocalInvoiceVerification extends Model
         return [
             'revision_number' => 'integer',
             'actor_tracking_required' => 'boolean',
+            'three_way_variance_amount' => 'decimal:2',
             'submitted_ppn' => 'decimal:2',
             'verified_ppn' => 'decimal:2',
             'pph_23_applicable' => 'boolean',

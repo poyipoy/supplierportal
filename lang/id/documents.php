@@ -69,6 +69,18 @@ return [
     ],
     'voucher' => [
         'number_heading' => 'NO. VOUCHER',
+        'voucher_date' => 'Tanggal Voucher',
+        'department' => 'Departemen',
+        'issued_by' => 'Diterbitkan Oleh',
+        'notes' => 'Catatan',
+        'void_status' => 'DIBATALKAN / VOID',
+        'void_notice' => 'DIBATALKAN / VOID: Voucher bayar ini telah dibatalkan dan tidak berlaku untuk pencairan pembayaran.',
+        'void_reason' => 'Alasan Pembatalan',
+        'purchasing_department' => 'DEPARTEMEN PENGADAAN (PURCHASING)',
+        'admin_department' => 'DEPARTEMEN ADMINISTRASI',
+        'dept_finance' => 'Finance',
+        'dept_purchasing' => 'Purchasing',
+        'dept_admin' => 'Administrasi',
     ],
     'receipt' => [
         'number_heading' => 'NO. TANDA TERIMA',

@@ -51,6 +51,7 @@ return [
     'drp_supplier' => 'DRP Supplier',
     'drp_ga' => 'DRP GA',
     'drp_paid' => 'DRP Paid',
+    'payment_vouchers' => 'Payment Vouchers',
     'invoice_register' => 'Invoice Register',
     'master_invoices' => 'Master Data Invoice',
     'local_vendors' => 'Local Supplier',

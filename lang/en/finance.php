@@ -690,4 +690,15 @@ return [
         'claim_number' => 'Claim Number',
         'amount_rupiah' => 'Amount (Rp)',
     ],
+    'three_way_match' => [
+        'status' => [
+            'exact_match' => 'Exact Match',
+            'within_tolerance' => 'Within Tolerance',
+            'variance_detected' => 'Variance Detected',
+            'po_ceiling_only' => 'PO Ceiling Only',
+        ],
+        'validation' => [
+            'variance_notes_required' => 'Enter a GR verification note when approving an invoice with a 3-Way Match DPP variance.',
+        ],
+    ],
 ];

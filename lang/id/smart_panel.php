@@ -1,0 +1,46 @@
+<?php
+
+return [
+    'eyebrow' => 'Telusur Kontekstual',
+    'title' => 'Rantai Dokumen & Konteks',
+    'trigger' => 'Rantai Dokumen',
+    'close' => 'Tutup panel konteks',
+    'loading' => 'Memuat rantai dokumen dan berkas terkait...',
+    'error' => 'Rincian konteks untuk dokumen ini tidak dapat dimuat.',
+    'empty_documents' => 'Belum ada berkas PDF atau lampiran pratinjau yang terhubung ke dokumen ini.',
+    'open_in_new_tab' => 'Buka / Unduh',
+    'expand_preview' => 'Lebar penuh',
+    'collapse_preview' => 'Lebar standar',
+    'tabs' => [
+        'chain' => 'Rantai Dokumen',
+        'preview' => 'Pratinjau PDF',
+        'sla' => 'SLA & Status',
+    ],
+    'node_types' => [
+        'pr' => 'Purchase Requisition',
+        'quotation' => 'Penawaran',
+        'po' => 'Purchase Order',
+        'shipment' => 'Pengiriman',
+        'qc' => 'Inspeksi QC',
+        'claim' => 'Klaim Material',
+        'local_po' => 'Local Purchase Order',
+        'gr' => 'Goods Receipt',
+        'local_invoice' => 'Invoice Lokal',
+        'drp' => 'Batch Pembayaran (DRP)',
+        'voucher' => 'Voucher Bayar',
+        'payment' => 'Pelunasan Pembayaran',
+    ],
+    'documents' => [
+        'po_pdf' => 'PDF Purchase Order',
+        'po_attachment' => 'Lampiran PO',
+        'local_po_pdf' => 'Dokumen Local PO',
+    ],
+    'sla' => [
+        'created_date' => 'Tanggal Dibuat',
+        'quotations_count' => 'Penawaran Masuk',
+        'finalized_date' => 'Tanggal Difinalisasi',
+        'groups_count' => 'Grup Pembayaran Supplier',
+        'scheduled_delivery' => 'Jadwal Pengantaran Fisik',
+        'due_date' => 'Jatuh Tempo Pembayaran',
+    ],
+];

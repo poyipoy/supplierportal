@@ -305,6 +305,7 @@
     </div>
 
     @include('partials.chat-drawer')
+    <x-ui.smart-panel />
     <x-ui.toast-container context="app" />
     <x-ui.image-lightbox />
 

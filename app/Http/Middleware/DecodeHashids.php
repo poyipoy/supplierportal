@@ -43,6 +43,7 @@ class DecodeHashids
         'purchase_order',
         'goodsReceipt',
         'voucher',
+        'paymentVoucher',
         'payment',
         'refund',
         'batch',
@@ -63,6 +64,7 @@ class DecodeHashids
         'user',          // Route::resource('users')        → User (admin)
         'shipment',      // Route::resource('shipments')    → Shipment
         'attempt',       // Supplier registration attempt
+        'hash',          // Context Smart Panel entity hashid (/context-panel/{entityType}/{hash})
     ];
 
     /**

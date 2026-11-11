@@ -69,6 +69,18 @@ return [
     ],
     'voucher' => [
         'number_heading' => 'VOUCHER NO.',
+        'voucher_date' => 'Voucher Date',
+        'department' => 'Department',
+        'issued_by' => 'Issued By',
+        'notes' => 'Notes',
+        'void_status' => 'VOID / CANCELLED',
+        'void_notice' => 'VOID / CANCELLED: This payment voucher was cancelled and is no longer valid for disbursement.',
+        'void_reason' => 'Cancellation Reason',
+        'purchasing_department' => 'PURCHASING PROCUREMENT DEPARTMENT',
+        'admin_department' => 'ADMINISTRATION DEPARTMENT',
+        'dept_finance' => 'Finance',
+        'dept_purchasing' => 'Purchasing',
+        'dept_admin' => 'Administration',
     ],
     'receipt' => [
         'number_heading' => 'RECEIPT NO.',

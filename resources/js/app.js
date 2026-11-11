@@ -14,6 +14,7 @@ import './async-form-submit';
 import './adasi-loader';
 import './asset-protection';
 import './server-tabs';
+import './smart-panel';
 import { adasiFileUploadComponent } from './file-upload';
 import { searchableSelect } from './searchable-select';
 
@@ -34,6 +35,8 @@ const pageComponents = [
         .then((module) => Alpine.data('notificationPreferencesForm', module.notificationPreferencesForm))],
     ['[x-data^="supplierAuditForm"]', () => import('./supplier-audit-form')
         .then((module) => Alpine.data('supplierAuditForm', module.supplierAuditForm))],
+    ['[x-data^="paymentVoucherForm"]', () => import('./payment-voucher-form')
+        .then((module) => Alpine.data('paymentVoucherForm', module.paymentVoucherForm))],
 ].filter(([selector]) => hasMarker(selector)).map(([, load]) => load());
 
 // Calendars initialize asynchronously (the engine itself is lazy), so this module loads on demand.

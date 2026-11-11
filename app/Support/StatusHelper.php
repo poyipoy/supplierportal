@@ -11,6 +11,7 @@ use App\Enums\LocalPurchaseOrderStatus;
 use App\Enums\MaterialClaimStatus;
 use App\Enums\PaymentBatchStatus;
 use App\Enums\PaymentGroupStatus;
+use App\Enums\PoAcknowledgementStatus;
 use App\Enums\PurchaseOrderStatus;
 use App\Enums\PurchaseRequisitionStatus;
 use App\Enums\QcInspectionStatus;
@@ -184,6 +185,33 @@ class StatusHelper
         }
 
         return self::label('supplier_contact', strtolower($status), $status);
+    }
+
+    public static function poAcknowledgementTone(PoAcknowledgementStatus|string|null $status): string
+    {
+        return PoAcknowledgementStatus::tryFromOrDefault($status)->tone();
+    }
+
+    public static function poAcknowledgementLabel(PoAcknowledgementStatus|string|null $status): string
+    {
+        return PoAcknowledgementStatus::tryFromOrDefault($status)->label();
+    }
+
+    public static function threeWayMatchTone(?string $status): string
+    {
+        return match (strtoupper((string) $status)) {
+            'EXACT_MATCH' => 'success',
+            'WITHIN_TOLERANCE' => 'info',
+            'VARIANCE_DETECTED' => 'warning',
+            default => 'neutral',
+        };
+    }
+
+    public static function threeWayMatchLabel(?string $status): string
+    {
+        $key = strtolower((string) ($status ?: 'PO_CEILING_ONLY'));
+
+        return __('finance.three_way_match.status.'.$key);
     }
 
     public static function vendorCategoryLabel(?string $category): string
@@ -608,6 +636,38 @@ class StatusHelper
         }
 
         return self::label('shipment', $status);
+    }
+
+    /** Maps a legacy badge class to the status-chip tone vocabulary. */
+    private static function toneFromBadge(string $badgeClass): string
+    {
+        return match (true) {
+            str_contains($badgeClass, 'success') => 'success',
+            str_contains($badgeClass, 'danger') => 'error',
+            str_contains($badgeClass, 'warning') => 'warning',
+            str_contains($badgeClass, 'primary'), str_contains($badgeClass, 'info') => 'info',
+            default => 'neutral',
+        };
+    }
+
+    public static function prTone(string|PurchaseRequisitionStatus $status): string
+    {
+        return self::toneFromBadge(self::prBadge($status));
+    }
+
+    public static function quotationTone(string|QuotationStatus $status): string
+    {
+        return self::toneFromBadge(self::quotationBadge($status));
+    }
+
+    public static function poTone(string|PurchaseOrderStatus $status, bool $isOverdue = false): string
+    {
+        return self::toneFromBadge(self::poBadge($status, $isOverdue));
+    }
+
+    public static function claimTone(string|MaterialClaimStatus $status): string
+    {
+        return self::toneFromBadge(self::claimBadge($status));
     }
 
     public static function shipmentTone(string|ShipmentStatus $status): string

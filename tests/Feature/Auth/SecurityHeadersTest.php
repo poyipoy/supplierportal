@@ -34,6 +34,8 @@ class SecurityHeadersTest extends TestCase
         $this->assertStringContainsString("connect-src 'self' ws: wss: https://challenges.cloudflare.com https://*.pusher.com wss://*.pusher.com https://cdn.jsdelivr.net", $policy);
         $this->assertStringContainsString('https://cdn.jsdelivr.net', $policy);
         $this->assertStringContainsString("connect-src 'self' ws: wss: https://challenges.cloudflare.com https://*.pusher.com wss://*.pusher.com https://cdn.jsdelivr.net", $policy);
+        $this->assertStringContainsString("frame-src 'self' https://challenges.cloudflare.com", $policy);
+        $this->assertStringContainsString("frame-ancestors 'none'", $policy);
         $this->assertStringContainsString('no-store', $response->headers->get('Cache-Control'));
         $response->assertHeaderMissing('Strict-Transport-Security');
     }

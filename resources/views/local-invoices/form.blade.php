@@ -78,6 +78,8 @@
                     $description = $gr->description ?: $gr->notes ?: null;
                     $dateFormatted = $gr->gr_date ? app(\App\Services\RegionalDisplayFormatter::class)->date($gr->gr_date, 'human') : null;
 
+                    $effectiveAmount = $gr->effectiveReceiptAmount();
+
                     return [
                         'value' => (string) $gr->id,
                         'label' => $gr->gr_number,
@@ -85,6 +87,7 @@
                         'sublabel' => $dateFormatted ? __('local_invoice.labels.date') . ': ' . $dateFormatted : null,
                         'qty' => (float) $gr->qty,
                         'uom' => $gr->uom,
+                        'receipt_amount' => $effectiveAmount !== null ? (float) $effectiveAmount : null,
                         'quantityLabel' => \App\Models\LocalGoodsReceipt::formatQuantity($gr->qty),
                         'date' => $gr->gr_date?->format('Y-m-d'),
                         'dateFormatted' => $dateFormatted,
@@ -834,6 +837,14 @@
                             <span class="tw:text-on-surface-variant">{{ __('local_procurement.labels.qty_by_uom') }}:</span>
                             <span id="summary-gr-qty" class="ui-tabular-nums tw:font-semibold tw:text-on-surface">—</span>
                         </div>
+                        <div id="summary-gr-dpp-row" class="tw:hidden tw:flex tw:items-center tw:justify-between tw:text-ui-xs">
+                            <span class="tw:text-on-surface-variant">{{ __('local_invoice.three_way_match.expected_gr_dpp') }}:</span>
+                            <span id="summary-gr-dpp" class="ui-tabular-nums tw:font-semibold tw:text-on-surface">—</span>
+                        </div>
+                        <div id="summary-gr-variance-row" class="tw:hidden tw:flex tw:items-center tw:justify-between tw:text-ui-xs">
+                            <span class="tw:text-on-surface-variant">{{ __('local_invoice.three_way_match.dpp_variance') }}:</span>
+                            <span id="summary-gr-variance" class="ui-tabular-nums tw:font-semibold tw:text-on-surface">—</span>
+                        </div>
                         <div class="tw:flex tw:items-center tw:justify-between tw:text-ui-xs tw:border-t tw:border-outline-variant tw:pt-2">
                             <span class="tw:text-on-surface-variant">{{ __('local_procurement.labels.ceiling_status') }}:</span>
                             <span id="summary-match-chip">
@@ -995,6 +1006,10 @@ const schemeSelect = document.getElementById('ppn-scheme');
 const summaryPoCeiling = document.getElementById('summary-po-ceiling');
 const summaryGrCount = document.getElementById('summary-gr-count');
 const summaryGrQty = document.getElementById('summary-gr-qty');
+const summaryGrDppRow = document.getElementById('summary-gr-dpp-row');
+const summaryGrDpp = document.getElementById('summary-gr-dpp');
+const summaryGrVarianceRow = document.getElementById('summary-gr-variance-row');
+const summaryGrVariance = document.getElementById('summary-gr-variance');
 const summaryDpp = document.getElementById('summary-dpp');
 const summaryTax = document.getElementById('summary-tax');
 const summaryGrandTotal = document.getElementById('summary-grand-total');
@@ -1005,6 +1020,7 @@ const submitBtn = document.getElementById('btnSubmitInvoice');
 
 let selectedGrCount = 0;
 let selectedGrQty = 0;
+let selectedGrDppExpected = null;
 
 function rupiah(n) {
     return 'Rp ' + Number(n || 0).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -1032,6 +1048,25 @@ function updateValidation() {
     if (summaryDpp) summaryDpp.textContent = rupiah(dpp);
     if (summaryTax) summaryTax.textContent = rupiah(tax);
     if (summaryGrandTotal) summaryGrandTotal.textContent = rupiah(grandTotal);
+
+    if (summaryGrDppRow && summaryGrDpp && summaryGrVarianceRow && summaryGrVariance) {
+        if (selectedGrDppExpected !== null) {
+            summaryGrDppRow.classList.remove('tw:hidden');
+            summaryGrDpp.textContent = rupiah(selectedGrDppExpected);
+            if (dpp > 0) {
+                const variance = dpp - selectedGrDppExpected;
+                summaryGrVarianceRow.classList.remove('tw:hidden');
+                summaryGrVariance.textContent = (variance >= 0 ? '+' : '') + rupiah(variance);
+                summaryGrVariance.classList.toggle('tw:text-warning', Math.abs(variance) > 100);
+                summaryGrVariance.classList.toggle('tw:text-success', Math.abs(variance) <= 100);
+            } else {
+                summaryGrVarianceRow.classList.add('tw:hidden');
+            }
+        } else {
+            summaryGrDppRow.classList.add('tw:hidden');
+            summaryGrVarianceRow.classList.add('tw:hidden');
+        }
+    }
 
     if (!summaryMatchChip) return;
 
@@ -1084,6 +1119,11 @@ grSelect?.addEventListener('multi-select-change', (e) => {
     const options = e.detail?.options || [];
     selectedGrCount = options.length;
     selectedGrQty = options.map(opt => `${opt.quantityLabel} ${opt.uom || '—'}`).join(', ');
+    if (options.length > 0 && options.every(opt => opt.receipt_amount !== null && opt.receipt_amount !== undefined)) {
+        selectedGrDppExpected = options.reduce((acc, opt) => acc + Number(opt.receipt_amount || 0), 0);
+    } else {
+        selectedGrDppExpected = null;
+    }
     updateValidation();
 });
 
@@ -1115,6 +1155,11 @@ if (initialPoVal && localPoGr[String(initialPoVal)]) {
     const matching = poGrs.filter(g => preselectedGrs.includes(String(g.value)));
     selectedGrCount = matching.length;
     selectedGrQty = matching.map(g => `${g.quantityLabel} ${g.uom || '—'}`).join(', ');
+    if (matching.length > 0 && matching.every(opt => opt.receipt_amount !== null && opt.receipt_amount !== undefined)) {
+        selectedGrDppExpected = matching.reduce((acc, opt) => acc + Number(opt.receipt_amount || 0), 0);
+    } else {
+        selectedGrDppExpected = null;
+    }
 }
 updateValidation();
 

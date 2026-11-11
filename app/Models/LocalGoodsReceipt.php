@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Casts\LocalGoodsReceiptStatusCast;
 use App\Enums\LocalGoodsReceiptStatus;
+use App\Support\Money;
 use App\Traits\HasHashids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -53,6 +54,9 @@ class LocalGoodsReceipt extends Model
         'gr_date',
         'qty',
         'uom',
+        'unit_price',
+        'receipt_amount',
+        'po_line_reference',
         'description',
         'notes',
         'status',
@@ -65,6 +69,8 @@ class LocalGoodsReceipt extends Model
     protected $casts = [
         'gr_date' => 'date',
         'qty' => 'decimal:4',
+        'unit_price' => 'decimal:2',
+        'receipt_amount' => 'decimal:2',
         'status' => LocalGoodsReceiptStatusCast::class,
     ];
 
@@ -106,5 +112,18 @@ class LocalGoodsReceipt extends Model
     public function getReceivedDateAttribute()
     {
         return $this->gr_date;
+    }
+
+    public function effectiveReceiptAmount(): ?string
+    {
+        if ($this->receipt_amount !== null && trim((string) $this->receipt_amount) !== '') {
+            return Money::normalize($this->receipt_amount);
+        }
+
+        if ($this->unit_price !== null && trim((string) $this->unit_price) !== '' && $this->qty !== null) {
+            return Money::multiply((string) $this->qty, (string) $this->unit_price);
+        }
+
+        return null;
     }
 }

@@ -51,4 +51,12 @@ trait HasHashids
     {
         return HashidCodec::encode($this->getKey());
     }
+
+    /**
+     * Alias accessor for $model->hashid.
+     */
+    public function getHashidAttribute(): string
+    {
+        return $this->getHashAttribute();
+    }
 }

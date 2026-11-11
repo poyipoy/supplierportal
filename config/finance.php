@@ -32,7 +32,7 @@ return [
     */
     'bank_transfer' => [
         'llg_max_amount' => env('FINANCE_LLG_MAX_AMOUNT', '1000000000.00'),
-        'rtgs_fee' => env('FINANCE_BANK_FEE_RTGS', '2500.00'),
+        'rtgs_fee' => env('FINANCE_BANK_FEE_RTGS', '25000.00'),
     ],
 
     /*
@@ -65,4 +65,9 @@ return [
     |
     */
     'transfer_debit_account' => env('ADASI_TRANSFER_DEBIT_ACCOUNT', $isProduction ? null : '5220310053'),
+
+    'three_way_match' => [
+        'tolerance_idr' => env('FINANCE_THREE_WAY_MATCH_TOLERANCE_IDR', '100.00'),
+        'tolerance_percent' => env('FINANCE_THREE_WAY_MATCH_TOLERANCE_PERCENT', '0.50'),
+    ],
 ];

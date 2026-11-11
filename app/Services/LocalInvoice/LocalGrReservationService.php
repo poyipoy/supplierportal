@@ -90,8 +90,15 @@ class LocalGrReservationService
                 ->update(['state' => LocalInvoiceGoodsReceipt::STATE_RELEASED, 'released_at' => now(), 'updated_at' => now()]);
         }
 
+        $calculator = app(ThreeWayMatchCalculator::class);
         foreach ($receipts as $receipt) {
+            $grAmountSnapshot = $calculator->resolveReceiptAmount($receipt);
             if ((int) $receipt->current_invoice_id === (int) $invoice->id) {
+                LocalInvoiceGoodsReceipt::where('local_invoice_id', $invoice->id)
+                    ->where('local_goods_receipt_id', $receipt->id)
+                    ->where('state', LocalInvoiceGoodsReceipt::STATE_RESERVED)
+                    ->update(['gr_amount_snapshot' => $grAmountSnapshot, 'updated_at' => now()]);
+
                 continue;
             }
             app(LocalGoodsReceiptStateEngine::class)->transition(
@@ -115,9 +122,12 @@ class LocalGrReservationService
                 'gr_number_snapshot' => $receipt->gr_number,
                 'gr_qty_snapshot' => $receipt->qty,
                 'gr_uom_snapshot' => $receipt->uom,
+                'gr_amount_snapshot' => $grAmountSnapshot,
                 'reserved_at' => now(),
             ]);
         }
+
+        $match = $calculator->evaluate($po, $receipts, $invoice->invoice_amount);
 
         $invoice->update([
             'local_purchase_order_id' => $po->id,
@@ -130,6 +140,9 @@ class LocalGrReservationService
             'po_value_snapshot' => $po->total_amount,
             'po_invoiced_snapshot' => null,
             'po_remaining_snapshot' => null,
+            'expected_gr_dpp_amount' => $match['expected_gr_dpp_amount'],
+            'gr_dpp_variance_amount' => $match['gr_dpp_variance_amount'],
+            'three_way_match_status' => $match['three_way_match_status'],
             'has_po_discrepancy' => false,
         ]);
     }

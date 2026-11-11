@@ -196,4 +196,10 @@ return [
         'comparable_unverified' => 'Indikatif',
         'comparable' => 'Sebanding',
     ],
+    'three_way_match' => [
+        'exact_match' => 'Sesuai Nilai GR',
+        'within_tolerance' => 'Dalam Toleransi',
+        'variance_detected' => 'Terdapat Selisih GR',
+        'po_ceiling_only' => 'Hanya Plafon PO',
+    ],
 ];

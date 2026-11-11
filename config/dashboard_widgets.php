@@ -18,10 +18,12 @@ return [
             'purchasing.analytics' => ['slot' => 'analytics', 'label' => 'dashboard.widgets.charts_and_exchange_rate_benchmark', 'required' => false, 'span' => 12, 'kind' => 'chart'],
             'purchasing.recent_requisitions' => ['slot' => 'recent_requisitions', 'label' => 'dashboard.widgets.recent_requisitions', 'required' => false, 'span' => 5, 'kind' => 'table'],
             'purchasing.arrivals' => ['slot' => 'arrivals', 'label' => 'dashboard.widgets.upcoming_po_arrivals', 'required' => true, 'span' => 7, 'kind' => 'table'],
+            'purchasing.po_acknowledgements' => ['slot' => 'po_acknowledgements', 'label' => 'dashboard.widgets.po_acknowledgement_queue', 'required' => false, 'span' => 12, 'kind' => 'table'],
         ]],
         'finance' => ['route' => 'finance.dashboard', 'roles' => ['finance', 'admin'], 'context' => null, 'widgets' => [
             'finance.statuses' => ['slot' => 'statuses', 'label' => 'dashboard.widgets.invoice_status_actions', 'required' => true, 'span' => 12, 'kind' => 'metrics'],
             'finance.forecast' => ['slot' => 'forecast', 'label' => 'dashboard.widgets.payment_forecast', 'required' => true, 'span' => 12, 'kind' => 'chart'],
+            'finance.three_way_exceptions' => ['slot' => 'three_way_exceptions', 'label' => 'dashboard.widgets.three_way_match_exceptions', 'required' => false, 'span' => 12, 'kind' => 'table'],
             'finance.batches' => ['slot' => 'batches', 'label' => 'dashboard.widgets.recent_payment_batches', 'required' => false, 'span' => 12, 'kind' => 'table'],
             'finance.invoices' => ['slot' => 'invoices', 'label' => 'dashboard.widgets.recent_invoice_submissions', 'required' => false, 'span' => 12, 'kind' => 'table'],
         ]],
