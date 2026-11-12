@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Purchasing;
 
+use App\Exports\PrFormExport;
 use App\Exports\PrImportTemplateExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Export\Filters\RequisitionExportFilters;
+use App\Http\Requests\ExportPrFormRequest;
 use App\Http\Requests\SavePurchaseRequisitionRequest;
 use App\Imports\PrItemsImport;
 use App\Models\Period;
@@ -26,6 +28,8 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\File;
 use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Facades\Excel;
+use PhpOffice\PhpSpreadsheet\Cell\Cell;
+use PhpOffice\PhpSpreadsheet\Cell\DefaultValueBinder;
 use Throwable;
 use Yajra\DataTables\Facades\DataTables;
 
@@ -190,6 +194,26 @@ class PurchaseRequisitionController extends Controller
     public function importTemplate()
     {
         return Excel::download(new PrImportTemplateExport, 'template_import_pr.xlsx');
+    }
+
+    public function exportForm(ExportPrFormRequest $request)
+    {
+        $validated = $request->validated();
+        $items = $validated['items'] ?? [];
+        $prNumber = trim((string) ($validated['pr_number'] ?? ''));
+        $safeNumber = trim((string) preg_replace('/[^A-Za-z0-9_-]+/', '_', $prNumber), '_');
+        $filename = $safeNumber !== ''
+            ? 'template_import_pr_'.$safeNumber.'.xlsx'
+            : 'template_import_pr.xlsx';
+
+        $response = Excel::download(
+            new PrFormExport($items),
+            $filename
+        );
+        $response->headers->set('Cache-Control', 'no-store, private');
+        Cell::setValueBinder(new DefaultValueBinder);
+
+        return $response;
     }
 
     public function importPreview(Request $request)

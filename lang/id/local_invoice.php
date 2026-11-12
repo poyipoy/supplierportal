@@ -139,8 +139,8 @@ return [
         'document_count' => ':count Dokumen',
         'select_po' => 'Pilih PO',
         'input_dpp' => 'Input DPP',
-        'ceiling_exceeded' => 'Melebihi Batas Nilai PO',
-        'ceiling_valid' => 'Dalam Batas Nilai PO',
+        'ceiling_exceeded' => 'Melebihi Nilai PO',
+        'ceiling_valid' => 'Sesuai Nilai PO',
         'empty_gr' => 'Tidak ada GR TERSEDIA untuk PO ini.',
         'select_po_first' => 'Pilih PO terlebih dahulu...',
         'different_filenames' => 'Peringatan: Berkas invoice yang dipilih memiliki nama berbeda (:files)',
@@ -530,6 +530,6 @@ return [
         'variance_note_required' => 'DPP Invoice berbeda dari akumulasi nilai GR melebihi batas toleransi. Finance wajib mengisi catatan pemeriksaan GR sebelum memilih status OK.',
         'queue_description' => 'Invoice lokal yang memiliki selisih nilai DPP terhadap akumulasi nilai Penerimaan Barang (GR).',
         'queue_empty_title' => 'Tidak ada selisih 3-Way Match',
-        'queue_empty_description' => 'Seluruh invoice lokal aktif sesuai dengan nilai GR atau plafon PO.',
+        'queue_empty_description' => 'Seluruh invoice lokal aktif sesuai dengan nilai GR atau Nilai PO.',
     ],
 ];

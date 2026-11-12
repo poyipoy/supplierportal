@@ -94,6 +94,10 @@
                 <x-ui.icon name="file-spreadsheet" />
                 <span>{{ __('purchasing.copy.export_excel') }}</span>
             </x-ui.button>
+            <x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.requisitions.index')" variant="ghost" size="sm">
+                <x-ui.icon name="arrow-left" />
+                <span>{{ __('purchasing.copy.back_to_requisitions') }}</span>
+            </x-ui.button>
             <x-status-badge type="pr" :status="$pr->status" size="lg" />
             @if($pr->status === 'bidding')
                 <span

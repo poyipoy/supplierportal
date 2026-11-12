@@ -493,6 +493,17 @@ Route::prefix(PortalPath::prefix())->group(function () {
         // Q3: guarded hard delete (refused while referenced).
         Route::delete('/material-masters/{materialMaster}', [MaterialMasterController::class, 'destroy'])->name('material-masters.destroy');
         Route::delete('/hs-code-rules/{hsCodeRule}', [HsCodeRuleController::class, 'destroy'])->name('hs-code-rules.destroy');
+        // Reference Prices (Admin)
+        Route::get('/reference-prices', [MaterialReferencePriceController::class, 'index'])->name('reference-prices.index');
+        Route::post('/reference-prices/rules/import-preview', [MaterialReferencePriceController::class, 'importPreview'])->name('reference-prices.rules.import-preview');
+        Route::post('/reference-prices/rules/import-confirm', [MaterialReferencePriceController::class, 'importConfirm'])->name('reference-prices.rules.import-confirm');
+        Route::post('/reference-prices/rules/{ruleSet}/activate', [MaterialReferencePriceController::class, 'activateRuleSet'])->name('reference-prices.rules.activate');
+        Route::post('/reference-prices/rules/category', [MaterialReferencePriceController::class, 'saveCategory'])->name('reference-prices.rules.category.save');
+        Route::patch('/reference-prices/rules/category/{rule}/toggle', [MaterialReferencePriceController::class, 'toggleCategoryStatus'])->name('reference-prices.rules.category.toggle');
+        Route::post('/reference-prices', [MaterialReferencePriceController::class, 'store'])->name('reference-prices.store');
+        Route::post('/reference-prices/{referencePrice}/supersede', [MaterialReferencePriceController::class, 'supersede'])->name('reference-prices.supersede');
+        Route::post('/reference-prices/{referencePrice}/void', [MaterialReferencePriceController::class, 'void'])->name('reference-prices.void');
+        Route::patch('/reference-prices/{referencePrice}/notes', [MaterialReferencePriceController::class, 'notes'])->name('reference-prices.notes');
         Route::get('/requisitions/{requisition}', [PurchaseRequisitionController::class, 'show'])->name('requisitions.show');
         Route::post('/kurs/update', [AdminController::class, 'updateKurs'])->name('kurs.update');
         Route::get('/auth-audit-logs', [AuthAuditLogController::class, 'index'])->name('auth-audit-logs.index');
@@ -545,8 +556,13 @@ Route::prefix(PortalPath::prefix())->group(function () {
         Route::put('/hs-code-rules/{hsCodeRule}', [HsCodeRuleController::class, 'update'])->name('hs-code-rules.update');
         Route::patch('/hs-code-rules/{hsCodeRule}/status', [HsCodeRuleController::class, 'status'])->name('hs-code-rules.status');
         Route::delete('/hs-code-rules/{hsCodeRule}', [HsCodeRuleController::class, 'destroy'])->name('hs-code-rules.destroy');
-        // Mission 06B: Master Reference Price (no edit, no delete).
+        // Reference Prices: Rules, Historical, Legacy
         Route::get('/reference-prices', [MaterialReferencePriceController::class, 'index'])->name('reference-prices.index');
+        Route::post('/reference-prices/rules/import-preview', [MaterialReferencePriceController::class, 'importPreview'])->name('reference-prices.rules.import-preview');
+        Route::post('/reference-prices/rules/import-confirm', [MaterialReferencePriceController::class, 'importConfirm'])->name('reference-prices.rules.import-confirm');
+        Route::post('/reference-prices/rules/{ruleSet}/activate', [MaterialReferencePriceController::class, 'activateRuleSet'])->name('reference-prices.rules.activate');
+        Route::post('/reference-prices/rules/category', [MaterialReferencePriceController::class, 'saveCategory'])->name('reference-prices.rules.category.save');
+        Route::patch('/reference-prices/rules/category/{rule}/toggle', [MaterialReferencePriceController::class, 'toggleCategoryStatus'])->name('reference-prices.rules.category.toggle');
         Route::post('/reference-prices', [MaterialReferencePriceController::class, 'store'])->name('reference-prices.store');
         Route::post('/reference-prices/{referencePrice}/supersede', [MaterialReferencePriceController::class, 'supersede'])->name('reference-prices.supersede');
         Route::post('/reference-prices/{referencePrice}/void', [MaterialReferencePriceController::class, 'void'])->name('reference-prices.void');
@@ -572,6 +588,9 @@ Route::prefix(PortalPath::prefix())->group(function () {
             ->name('material-calculations.totals');
 
         Route::get('/requisitions/import-template', [App\Http\Controllers\Purchasing\PurchaseRequisitionController::class, 'importTemplate'])->name('requisitions.import-template');
+        Route::post('/requisitions/export-form', [App\Http\Controllers\Purchasing\PurchaseRequisitionController::class, 'exportForm'])
+            ->middleware('throttle:15,1')
+            ->name('requisitions.export-form');
         Route::post('/requisitions/import-preview', [App\Http\Controllers\Purchasing\PurchaseRequisitionController::class, 'importPreview'])
             ->middleware('throttle:15,1')
             ->name('requisitions.import-preview');

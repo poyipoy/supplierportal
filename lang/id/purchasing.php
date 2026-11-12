@@ -98,6 +98,7 @@ return [
         'average_idr_kg' => 'Rata-rata IDR/Kg',
         'back_to_chat_list' => 'Kembali ke Daftar Percakapan',
         'back_to_quotations' => 'Kembali ke Penawaran',
+        'back_to_requisitions' => 'Kembali ke Permintaan Pembelian',
         'best_total' => 'Total Terbaik',
         'bidding' => 'Proses Penawaran',
         'cancel' => 'Batal',
@@ -943,6 +944,9 @@ return [
         'history_failed' => 'Gagal memuat riwayat progres.',
         'pagination_summary' => 'Menampilkan :from-:to dari :total data',
         'pagination_page' => 'Halaman :current dari :last',
+        'export_form_invalid' => 'Isian permintaan pembelian tidak valid. Template kosong telah diunduh.',
+        'export_form_failed' => 'Isian formulir tidak dapat disertakan. Template kosong diunduh.',
+        'export_form_done' => 'Template permintaan pembelian berhasil diunduh beserta isian Anda saat ini.',
     ],
     'a11y' => [
         'select_item' => 'Pilih :material',

@@ -139,8 +139,8 @@ return [
         'document_count' => ':count Documents',
         'select_po' => 'Select PO',
         'input_dpp' => 'Enter DPP',
-        'ceiling_exceeded' => 'Exceeds PO Amount Limit',
-        'ceiling_valid' => 'Within PO Amount Limit',
+        'ceiling_exceeded' => 'Exceeds PO Value',
+        'ceiling_valid' => 'Within PO Value',
         'empty_gr' => 'No AVAILABLE GR exists for this PO.',
         'select_po_first' => 'Select a PO first...',
         'different_filenames' => 'Warning: selected invoice files have different names (:files)',
@@ -530,6 +530,6 @@ return [
         'variance_note_required' => 'Invoice DPP differs from the accumulated GR value beyond tolerance. Finance must provide a GR check note before marking GR as OK.',
         'queue_description' => 'Local invoices with a detected DPP variance against accumulated Goods Receipt value.',
         'queue_empty_title' => 'No 3-Way Match variances',
-        'queue_empty_description' => 'All active local invoices match their Goods Receipt values or PO ceilings.',
+        'queue_empty_description' => 'All active local invoices match their Goods Receipt values or PO values.',
     ],
 ];

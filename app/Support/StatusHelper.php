@@ -424,24 +424,68 @@ class StatusHelper
 
     public static function poArrivalMeta(mixed $estimatedArrival, bool $isOverdue = false, ?string $status = null, mixed $actualArrival = null): array
     {
-        if ($isOverdue) {
+        if ($status === 'cancelled') {
             return [
-                'label' => __('status.po.overdue'),
+                'label' => __('status.po.cancelled'),
+                'class' => 'bg-secondary',
+                'description' => __('status.meta.order_cancelled'),
+            ];
+        }
+
+        if ($status === 'claim_needed') {
+            return [
+                'label' => __('status.po.claim_needed'),
                 'class' => 'bg-danger',
-                'description' => __('status.meta.arrival_overdue'),
+                'description' => __('status.meta.arrival_claim_needed'),
             ];
         }
 
         $actualDate = self::asDate($actualArrival);
-        if ($status === 'waiting_qc' && $actualDate) {
-            $daysWaiting = (int) $actualDate->diffInDays(BusinessTime::today(), false);
+        $estimatedDate = self::asDate($estimatedArrival);
 
-            if ($daysWaiting > 2) {
+        if ($status === 'completed') {
+            if ($actualDate && $estimatedDate) {
+                if ($actualDate->lte($estimatedDate)) {
+                    return [
+                        'label' => __('status.meta.arrived_on_time'),
+                        'class' => 'bg-success',
+                        'description' => __('status.meta.arrival_on_time'),
+                    ];
+                }
+
                 return [
-                    'label' => __('status.meta.waiting_qc_days'),
+                    'label' => __('status.meta.arrived_late'),
                     'class' => 'bg-warning text-dark',
-                    'description' => trans_choice('status.meta.qc_wait', $daysWaiting, ['count' => $daysWaiting]),
+                    'description' => __('status.meta.arrival_late'),
                 ];
+            }
+
+            if ($actualDate) {
+                return [
+                    'label' => __('status.meta.received'),
+                    'class' => 'bg-success',
+                    'description' => __('status.meta.arrival_received'),
+                ];
+            }
+
+            return [
+                'label' => __('status.po.completed'),
+                'class' => 'bg-success',
+                'description' => __('status.meta.arrival_received'),
+            ];
+        }
+
+        if ($status === 'waiting_qc') {
+            if ($actualDate) {
+                $daysWaiting = (int) $actualDate->diffInDays(BusinessTime::today(), false);
+
+                if ($daysWaiting > 2) {
+                    return [
+                        'label' => __('status.meta.waiting_qc_days'),
+                        'class' => 'bg-warning text-dark',
+                        'description' => trans_choice('status.meta.qc_wait', $daysWaiting, ['count' => $daysWaiting]),
+                    ];
+                }
             }
 
             return [
@@ -451,8 +495,15 @@ class StatusHelper
             ];
         }
 
-        $date = self::asDate($estimatedArrival);
-        if (! $date) {
+        if ($isOverdue) {
+            return [
+                'label' => __('status.po.overdue'),
+                'class' => 'bg-danger',
+                'description' => __('status.meta.arrival_overdue'),
+            ];
+        }
+
+        if (! $estimatedDate) {
             return [
                 'label' => __('status.meta.estimated_missing'),
                 'class' => 'bg-secondary',
@@ -460,7 +511,7 @@ class StatusHelper
             ];
         }
 
-        $days = (int) BusinessTime::today()->diffInDays($date, false);
+        $days = (int) BusinessTime::today()->diffInDays($estimatedDate, false);
         if ($status === 'active' && $days >= 0 && $days <= 7) {
             return [
                 'label' => __('status.meta.arrives_soon'),

@@ -500,6 +500,7 @@ const bootImports = () => {
     if (hasMarker('[data-advanced-export], [data-format-export-form]')) import('./advanced-export');
     if (hasMarker('[data-dashboard-audience] [data-editor-config]')) import('./dashboard-editor');
     if (hasMarker('[data-quotation-form-export]')) import('./quotation-form-export');
+    if (hasMarker('[data-pr-form-export]')) import('./pr-form-export');
     if (hasMarker('#prFormTotals')) import('./pr-totals-sync');
     if (hasMarker('[data-adasi-time-picker]')) import('./time-picker').then(module => module.bootTimePickers(document));
 };

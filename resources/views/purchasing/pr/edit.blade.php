@@ -40,6 +40,7 @@
         <input type="hidden" name="return_url" value="{{ request('return_url') }}">
         <input type="hidden" name="action" id="formAction" value="draft">
         <input type="hidden" name="supplier_selection_present" value="1">
+        <input type="hidden" name="pr_number" value="{{ $pr->pr_number }}">
 
         <div class="tw:grid tw:gap-5">
             {{-- Section 1: General Information --}}

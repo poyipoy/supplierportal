@@ -178,7 +178,7 @@
                             @enderror
                         </div>
 
-                        {{-- Plafon Nilai PO (IDR) --}}
+                        {{-- Nilai PO (IDR) --}}
                         <div>
                             <label for="total_amount" class="form-label tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1">
                                 {{ __('local_procurement.surface.po_amount_cap') }} <span class="tw:text-error">*</span>
@@ -236,7 +236,7 @@
             <div class="tw:lg:col-span-4 tw:sticky" style="top: calc(var(--topbar-height, 56px) + 1.25rem)">
                 <x-ui.card :title="__('local_procurement.labels.po_document_summary')">
                     <div class="tw:space-y-4">
-                        {{-- Kartu Highlight Plafon Nilai PO --}}
+                        {{-- Kartu Highlight Nilai PO --}}
                         <div class="tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container tw:p-3.5 tw:space-y-1">
                             <div class="tw:flex tw:items-center tw:justify-between tw:text-ui-xs">
                                 <span class="tw:font-medium tw:text-on-surface-variant">{{ __('local_procurement.surface.po_ceiling') }}</span>

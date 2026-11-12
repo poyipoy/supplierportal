@@ -4,7 +4,11 @@
         {{ __('purchasing.copy.import_data') }}
     </x-ui.button>
     <ul class="dropdown-menu dropdown-menu-end">
-        <li><a class="dropdown-item" href="{{ route('purchasing.requisitions.import-template') }}">
+        <li><a class="dropdown-item" href="{{ route('purchasing.requisitions.import-template') }}"
+               data-pr-form-export
+               data-form="#prForm"
+               data-url="{{ route('purchasing.requisitions.export-form') }}"
+               data-fallback-url="{{ route('purchasing.requisitions.import-template') }}">
                 <x-ui.icon name="file-down" class="me-1" /> {{ __('purchasing.copy.download_template') }}
             </a></li>
         <li><hr class="dropdown-divider"></li>

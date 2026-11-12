@@ -12,6 +12,7 @@ return [
     '86978c46-b049-449d-bf47-cd0903a5b64b' => 'admin.dashboard',
     'a2db4cbe-a16a-497e-8806-ec5df2bfa20d' => 'admin.exchange-rates.index',
     '9dda7d95-6c84-41d1-b5b4-da275ab7f8c9' => 'admin.material-hs-code.index',
+    '38c62b9a-4e89-4a9f-a887-21a7c06e8b4e' => 'admin.reference-prices.index',
     'f2d977b9-66df-45a4-ae5f-fd7e267c8411' => 'admin.maintenance.index',
     'acaa7945-55cc-4890-bd18-08dae0100d1d' => 'admin.users.index',
     '4e5e45a9-e738-4870-9deb-5efddec4dec9' => 'dashboard',

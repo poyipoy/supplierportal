@@ -269,7 +269,7 @@ return [
         'existing_po' => 'PO Terdaftar (Skip)',
         'header_conflict' => 'Konflik Header',
         'po_preview' => 'Pratinjau Baris PO',
-        'po_ceiling' => 'Batas Nilai PO (IDR)',
+        'po_ceiling' => 'Nilai PO (IDR)',
         'confirm_po' => 'Konfirmasi Impor PO',
         'weeks' => 'Menampilkan :count minggu (Minggu 1 s/d Minggu :count)',
         'months' => 'Menampilkan :count bulan terakhir',
@@ -689,7 +689,7 @@ return [
             'exact_match' => 'Sesuai Nilai GR',
             'within_tolerance' => 'Dalam Toleransi',
             'variance_detected' => 'Terdapat Selisih GR',
-            'po_ceiling_only' => 'Hanya Plafon PO',
+            'po_ceiling_only' => 'Berdasarkan Nilai PO',
         ],
         'validation' => [
             'variance_notes_required' => 'Isi catatan pemeriksaan GR saat menyetujui invoice yang memiliki selisih DPP 3-Way Match.',

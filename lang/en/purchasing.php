@@ -98,6 +98,7 @@ return [
         'average_idr_kg' => 'Average IDR/Kg',
         'back_to_chat_list' => 'Back to Chat List',
         'back_to_quotations' => 'Back to Quotations',
+        'back_to_requisitions' => 'Back to Requisitions',
         'best_total' => 'Best Total',
         'bidding' => 'Bidding',
         'cancel' => 'Cancel',
@@ -943,6 +944,9 @@ return [
         'history_failed' => 'Failed to load progress history.',
         'pagination_summary' => 'Showing :from-:to of :total records',
         'pagination_page' => 'Page :current of :last',
+        'export_form_invalid' => 'Requisition entries are invalid. A blank template was downloaded.',
+        'export_form_failed' => 'Could not include form entries. A blank template was downloaded.',
+        'export_form_done' => 'Requisition template downloaded with your current entries.',
     ],
     'a11y' => [
         'select_item' => 'Select :material',

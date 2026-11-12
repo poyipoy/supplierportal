@@ -273,7 +273,7 @@ return [
         'existing_po' => 'Registered PO (Skip)',
         'header_conflict' => 'Header Conflict',
         'po_preview' => 'PO Row Preview',
-        'po_ceiling' => 'PO Amount Limit (IDR)',
+        'po_ceiling' => 'PO Value (IDR)',
         'confirm_po' => 'Confirm PO Import',
 
         'weeks' => 'Showing :count weeks (Week 1 to Week :count)',
@@ -695,7 +695,7 @@ return [
             'exact_match' => 'Exact Match',
             'within_tolerance' => 'Within Tolerance',
             'variance_detected' => 'Variance Detected',
-            'po_ceiling_only' => 'PO Ceiling Only',
+            'po_ceiling_only' => 'Based on PO Value',
         ],
         'validation' => [
             'variance_notes_required' => 'Enter a GR verification note when approving an invoice with a 3-Way Match DPP variance.',
