@@ -5,7 +5,6 @@ namespace App\Services\Pricing;
 use App\Models\PrItem;
 use App\Models\QuotationItem;
 use App\Models\ReferencePriceRule;
-use App\Models\ReferencePriceRuleSet;
 use App\Support\BusinessTime;
 use App\Support\Money;
 use DateTimeInterface;
@@ -36,7 +35,6 @@ class HistoricalReferencePriceService
         ?int $benchmarkYear = null,
         DateTimeInterface|string|null $historyAsOfAt = null,
         array $excludePoIds = [],
-        ?ReferencePriceRuleSet $ruleSet = null,
     ): HistoricalCalculationResult {
         $targetCurrency = strtoupper(trim($targetCurrency));
         $materialMasterId = $prItem->material_master_id;
@@ -52,7 +50,7 @@ class HistoricalReferencePriceService
             );
         }
 
-        $ruleResult = $this->ruleResolver->resolveForPrItem($prItem, $ruleSet);
+        $ruleResult = $this->ruleResolver->resolveForPrItem($prItem);
 
         if (! $ruleResult->isMatched()) {
             return HistoricalCalculationResult::notAvailable(
@@ -63,7 +61,6 @@ class HistoricalReferencePriceService
                 dimensionField: $ruleResult->dimensionField,
                 rawDimension: $ruleResult->rawDimension,
                 roundedDimension: $ruleResult->roundedDimension,
-                ruleSetId: $ruleResult->rule?->rule_set_id,
                 ruleId: $ruleResult->rule?->id,
                 categoryKey: $ruleResult->rule?->category_key,
                 benchmarkYear: $benchmarkYear,
@@ -92,7 +89,6 @@ class HistoricalReferencePriceService
         ?int $benchmarkYear = null,
         DateTimeInterface|string|null $historyAsOfAt = null,
         array $excludePoIds = [],
-        ?ReferencePriceRuleSet $ruleSet = null,
     ): HistoricalCalculationResult {
         $targetCurrency = strtoupper(trim($targetCurrency));
         $prItem = $quotationItem->prItem;
@@ -109,7 +105,7 @@ class HistoricalReferencePriceService
             );
         }
 
-        $ruleResult = $this->ruleResolver->resolveForQuotationItem($quotationItem, $ruleSet);
+        $ruleResult = $this->ruleResolver->resolveForQuotationItem($quotationItem);
 
         if (! $ruleResult->isMatched()) {
             return HistoricalCalculationResult::notAvailable(
@@ -120,7 +116,6 @@ class HistoricalReferencePriceService
                 dimensionField: $ruleResult->dimensionField,
                 rawDimension: $ruleResult->rawDimension,
                 roundedDimension: $ruleResult->roundedDimension,
-                ruleSetId: $ruleResult->rule?->rule_set_id,
                 ruleId: $ruleResult->rule?->id,
                 categoryKey: $ruleResult->rule?->category_key,
                 benchmarkYear: $benchmarkYear,
@@ -164,7 +159,6 @@ class HistoricalReferencePriceService
         $dimensionField = ReferencePriceRuleResolver::DIMENSION_FIELD_BY_SHAPE[$shape] ?? null;
 
         $calcKey = self::buildCalculationKey(
-            ruleSetId: $rule->rule_set_id,
             materialMasterId: $materialMasterId,
             shape: $shape,
             ruleId: $rule->id,
@@ -216,7 +210,6 @@ class HistoricalReferencePriceService
                 dimensionField: $dimensionField,
                 rawDimension: $rawDimension,
                 roundedDimension: $roundedDimension,
-                ruleSetId: $rule->rule_set_id,
                 ruleId: $rule->id,
                 categoryKey: $rule->category_key,
                 benchmarkYear: $benchmarkYear,
@@ -244,7 +237,7 @@ class HistoricalReferencePriceService
             dimensionField: $dimensionField,
             rawDimension: $rawDimension,
             roundedDimension: $roundedDimension,
-            ruleSetId: $rule->rule_set_id,
+            ruleSetId: null,
             ruleId: $rule->id,
             categoryKey: $rule->category_key,
             benchmarkYear: $benchmarkYear,
@@ -485,7 +478,6 @@ class HistoricalReferencePriceService
     }
 
     public static function buildCalculationKey(
-        int $ruleSetId,
         int $materialMasterId,
         string $shape,
         int $ruleId,
@@ -493,10 +485,11 @@ class HistoricalReferencePriceService
         string $targetCurrency,
         string $basisType = 'requested',
         ?string $historyAsOfAt = null,
+        ?int $ruleSetId = null,
     ): string {
         $cutoff = $historyAsOfAt ? substr($historyAsOfAt, 0, 19) : 'live';
 
-        return "{$ruleSetId}:{$materialMasterId}:{$shape}:{$ruleId}:{$benchmarkYear}:{$targetCurrency}:{$basisType}:{$cutoff}";
+        return "{$materialMasterId}:{$shape}:{$ruleId}:{$benchmarkYear}:{$targetCurrency}:{$basisType}:{$cutoff}";
     }
 
     public function clearMemo(): void

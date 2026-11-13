@@ -155,7 +155,7 @@ class LocalPurchaseOrder extends Model
     public function remainingCeiling(?int $excludeInvoiceId = null): float
     {
         $invoiced = (float) $this->invoices
-            ->whereNotIn('status', [LocalInvoice::STATUS_REJECTED, LocalInvoice::STATUS_CANCELLED])
+            ->whereNotIn('status', [LocalInvoice::STATUS_REJECTED, LocalInvoice::STATUS_CANCELLED, LocalInvoice::STATUS_EXPIRED])
             ->when($excludeInvoiceId, fn ($collection) => $collection->where('id', '!=', $excludeInvoiceId))
             ->sum('invoice_amount');
 

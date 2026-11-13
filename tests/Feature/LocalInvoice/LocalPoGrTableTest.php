@@ -110,4 +110,39 @@ class LocalPoGrTableTest extends TestCase
             'total_amount' => '1.00', 'currency' => 'IDR', 'status' => 'OPEN']);
         $this->getJson(route('local-supplier.purchase-orders.goods-receipts.data', $empty))->assertOk()->assertJsonCount(0, 'data');
     }
+
+    public function test_add_gr_modal_uses_wide_scrollable_bootstrap_hierarchy_and_accessible_labels(): void
+    {
+        $finance = User::factory()->create(['role' => 'finance', 'is_active' => true]);
+
+        $response = $this->actingAs($finance)->get(route('finance.local-procurement.show', $this->po));
+        $response->assertOk();
+
+        $html = $response->getContent();
+        $modalStart = strpos($html, 'id="addGrModal"');
+        $this->assertNotFalse($modalStart);
+        $modalEnd = strpos($html, 'id="closePoModal"', $modalStart);
+        $this->assertNotFalse($modalEnd);
+        $modalHtml = substr($html, $modalStart - 40, $modalEnd - $modalStart + 40);
+
+        $this->assertStringContainsString('local-po-gr-modal', $modalHtml);
+        $this->assertStringContainsString('aria-labelledby="addGrModalTitle"', $modalHtml);
+        $this->assertStringContainsString('id="addGrModalTitle"', $modalHtml);
+        // .modal-content must be the direct flex child of .modal-dialog so Bootstrap preserves dialog width.
+        $this->assertMatchesRegularExpression(
+            '/<div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">\s*<div class="modal-content">\s*<form/s',
+            $modalHtml
+        );
+        $this->assertStringContainsString('tw:grid tw:grid-cols-1 tw:sm:grid-cols-2 tw:gap-3', $modalHtml);
+        $this->assertStringContainsString('ui-calendar--sm', $modalHtml);
+        $this->assertStringContainsString('for="add_gr_number"', $modalHtml);
+        $this->assertStringContainsString('id="add_gr_number"', $modalHtml);
+        $this->assertStringContainsString('for="add_gr_qty"', $modalHtml);
+        $this->assertStringContainsString('id="add_gr_qty"', $modalHtml);
+        $this->assertStringContainsString('for="gr_uom_new"', $modalHtml);
+        $this->assertStringContainsString('for="add_gr_description"', $modalHtml);
+        $this->assertStringContainsString('id="add_gr_description"', $modalHtml);
+        $this->assertStringContainsString('for="add_gr_notes"', $modalHtml);
+        $this->assertStringContainsString('id="add_gr_notes"', $modalHtml);
+    }
 }

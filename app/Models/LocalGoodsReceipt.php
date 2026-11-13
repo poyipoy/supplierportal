@@ -9,6 +9,8 @@ use App\Traits\HasHashids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 
 class LocalGoodsReceipt extends Model
 {
@@ -102,6 +104,22 @@ class LocalGoodsReceipt extends Model
     public function purchaseOrder(): BelongsTo
     {
         return $this->belongsTo(LocalPurchaseOrder::class, 'local_purchase_order_id');
+    }
+
+    public function attachments(): MorphMany
+    {
+        return $this->morphMany(Attachment::class, 'attachable');
+    }
+
+    public function latestGrAttachment(): MorphOne
+    {
+        return $this->morphOne(Attachment::class, 'attachable')->latestOfMany('id');
+    }
+
+    /** Read once per instance; list feeds eager-load `latestGrAttachment` instead of querying per row. */
+    public function latestGrDocument(): ?Attachment
+    {
+        return $this->loadMissing('latestGrAttachment')->latestGrAttachment;
     }
 
     public function currentInvoice(): BelongsTo

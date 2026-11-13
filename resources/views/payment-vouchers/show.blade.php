@@ -30,7 +30,7 @@
                 {{ __('payment_voucher.actions.print_pdf') }}
             </x-ui.button>
 
-            <x-ui.button :href="route($routePrefix.'.print', ['paymentVoucher' => $voucher, 'download' => 1])" variant="secondary" size="md">
+            <x-ui.button :href="route($routePrefix.'.print', ['paymentVoucher' => $voucher, 'download' => 1])" variant="secondary" size="md" data-download-pdf data-no-loader>
                 <x-slot:leading><x-ui.icon name="download" size="sm" /></x-slot:leading>
                 {{ __('payment_voucher.actions.download_pdf') }}
             </x-ui.button>

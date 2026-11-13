@@ -121,9 +121,33 @@ class LocalInvoiceAuthoritativeReferenceTest extends TestCase
         $this->submitInvoice([
             'local_purchase_order_id' => $this->po->id,
             'goods_receipt_ids' => [$this->po->goodsReceipts()->value('id')],
-        ])->assertSessionHasErrors('goods_receipt_ids');
+        ])->assertSessionHasErrors(['goods_receipt_ids', 'invoice_amount']);
 
         $this->assertNothingStored();
+    }
+
+    public function test_store_request_rejects_invoice_amount_exceeding_po_ceiling(): void
+    {
+        $request = StoreLocalInvoiceRequest::create('/local-supplier/invoices', 'POST', [
+            'local_purchase_order_id' => $this->po->id,
+            'goods_receipt_ids' => [$this->po->goodsReceipts()->value('id')],
+            'po_number' => $this->po->po_number,
+            'invoice_number' => 'INV-REQ-CEIL-001',
+            'invoice_date' => '2026-09-08',
+            'invoice_amount' => '5000000.00',
+            'ppn_scheme' => '11%',
+            'tax_invoice_number' => '010.000-26.12345678',
+        ], [], [...NativeFileFixtures::invoiceReferences(),
+            'invoice' => NativeFileFixtures::upload('invoice.pdf', 10),
+            'tax_invoice' => NativeFileFixtures::upload('tax.pdf'),
+        ]);
+        $request->setUserResolver(fn () => $this->supplier);
+        $validator = Validator::make($request->all(), $request->rules(), $request->messages());
+        $request->withValidator($validator);
+
+        $this->assertTrue($validator->fails());
+        $this->assertTrue($validator->errors()->has('invoice_amount'));
+        $this->assertTrue($validator->errors()->has('goods_receipt_ids'));
     }
 
     public static function requiredInvoiceFields(): array

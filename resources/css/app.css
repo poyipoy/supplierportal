@@ -2288,7 +2288,7 @@ html.js .ui-calendar [data-calendar-native] {
         display: none !important;
     }
 html.js .ui-calendar [data-calendar-enhanced][hidden] {
-        display: block !important;
+        display: grid !important;
     }
 html.js [data-calendar-native-submit] {
         display: none !important;

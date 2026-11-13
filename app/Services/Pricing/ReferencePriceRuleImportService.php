@@ -4,9 +4,8 @@ namespace App\Services\Pricing;
 
 use App\Models\ReferencePriceImport;
 use App\Models\ReferencePriceRule;
-use App\Models\ReferencePriceRuleSet;
-use App\Models\ReferencePriceSetting;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -95,76 +94,84 @@ class ReferencePriceRuleImportService
 
             if ($rawCatVal !== null && trim((string) $rawCatVal) !== '') {
                 $label = trim((string) $rawCatVal);
-                // In some formulas it might evaluate to a range string
                 if (preg_match('/^(\d+)\s*[-–—]\s*(\d+)$/', $label, $m)) {
                     $currentCategoryLabel = "{$m[1]}-{$m[2]}";
-                    if (! isset($groups[$currentCategoryLabel])) {
-                        $groups[$currentCategoryLabel] = [
-                            'expected_min' => (int) $m[1],
-                            'expected_max' => (int) $m[2],
-                            'dimensions' => [],
-                        ];
-                    }
+                } else {
+                    $currentCategoryLabel = $label;
                 }
             }
 
-            if ($currentCategoryLabel !== null) {
-                $groups[$currentCategoryLabel]['dimensions'][] = $dim;
+            if ($currentCategoryLabel === null) {
+                continue;
             }
+
+            if (! isset($groups[$currentCategoryLabel])) {
+                $groups[$currentCategoryLabel] = [
+                    'category_key' => $currentCategoryLabel,
+                    'category_name' => $currentCategoryLabel,
+                    'dimensions' => [],
+                ];
+            }
+
+            $groups[$currentCategoryLabel]['dimensions'][] = $dim;
+            $lastDimension = $dim;
         }
 
         if (empty($groups)) {
-            throw new InvalidArgumentException('No category range groups could be parsed from the worksheet.');
+            throw new InvalidArgumentException("No valid dimension rows found in worksheet [{$sheetName}].");
         }
 
-        // 3. Validate each group
-        $normalizedRules = [];
-        $sortOrder = 1;
+        // 3. Normalize into min/max ranges
+        $rules = [];
+        $order = 1;
+        $lastMax = 0;
 
-        foreach ($groups as $catKey => $group) {
-            $dims = $group['dimensions'];
-            if (empty($dims)) {
-                throw new InvalidArgumentException("Category [{$catKey}] has no dimension rows.");
+        foreach ($groups as $label => $data) {
+            $dims = $data['dimensions'];
+            sort($dims, SORT_NUMERIC);
+            $min = (int) min($dims);
+            $max = (int) max($dims);
+
+            if (preg_match('/^(\d+)\s*[-–—]\s*(\d+)$/', $label, $m)) {
+                $nominalMin = (int) $m[1];
+                $nominalMax = (int) $m[2];
+                $min = min($min, $nominalMin);
+                $max = max($max, $nominalMax);
             }
 
-            $actualMin = min($dims);
-            $actualMax = max($dims);
-
-            if ($actualMin !== $group['expected_min'] || $actualMax !== $group['expected_max']) {
-                throw new InvalidArgumentException(
-                    "Category [{$catKey}] range bounds mismatch: expected {$group['expected_min']}-{$group['expected_max']}, found {$actualMin}-{$actualMax}."
-                );
-            }
-
-            // Check continuity: count must equal (max - min + 1)
-            $expectedCount = ($actualMax - $actualMin) + 1;
-            if (count($dims) !== $expectedCount) {
-                throw new InvalidArgumentException("Category [{$catKey}] has missing or duplicate dimensions in range {$actualMin}-{$actualMax}.");
-            }
-
-            $normalizedRules[] = [
-                'category_key' => $catKey,
-                'category_name' => $catKey,
-                'dimension_min' => $actualMin,
-                'dimension_max' => $actualMax,
-                'sort_order' => $sortOrder++,
+            $rules[] = [
+                'category_key' => $label,
+                'category_name' => $label,
+                'dimension_min' => $min,
+                'dimension_max' => $max,
+                'sort_order' => $order++,
             ];
         }
 
-        // 4. Validate no overlaps between parsed categories
-        $overlapErrors = $this->validateRuleIntervals($normalizedRules);
-        if (! empty($overlapErrors)) {
-            throw new InvalidArgumentException('Parsed categories contain overlaps: '.implode('; ', $overlapErrors));
+        // 4. Validate sequence continuity
+        usort($rules, fn ($a, $b) => $a['dimension_min'] <=> $b['dimension_min']);
+        for ($i = 0; $i < count($rules); $i++) {
+            $rules[$i]['sort_order'] = $i + 1;
+            if ($i > 0) {
+                $prevMax = $rules[$i - 1]['dimension_max'];
+                $currMin = $rules[$i]['dimension_min'];
+                if ($currMin <= $prevMax) {
+                    throw new InvalidArgumentException("Overlapping range detected between [{$rules[$i - 1]['category_key']}] (max {$prevMax}) and [{$rules[$i]['category_key']}] (min {$currMin}).");
+                }
+                if ($currMin > $prevMax + 1) {
+                    throw new InvalidArgumentException("Gap detected between [{$rules[$i - 1]['category_key']}] (max {$prevMax}) and [{$rules[$i]['category_key']}] (min {$currMin}).");
+                }
+            }
         }
 
-        return $normalizedRules;
+        return $rules;
     }
 
     /**
-     * Validate intervals for range validity and active overlap.
+     * Validate candidate rule list for interval correctness and overlaps among active rules.
      *
      * @param  list<array{category_key?: string, dimension_min: int, dimension_max: int, status?: string}>  $rules
-     * @return list<string> error messages
+     * @return list<string> Error messages
      */
     public function validateRuleIntervals(array $rules): array
     {
@@ -201,9 +208,10 @@ class ReferencePriceRuleImportService
     }
 
     /**
-     * Build preview diff comparing incoming rules against current active rule set.
+     * Build preview diff comparing incoming rules against current rules.
      *
      * @param  list<array{category_key: string, category_name: string, dimension_min: int, dimension_max: int, sort_order: int}>  $incomingRules
+     * @param  iterable<ReferencePriceRule|array<string, mixed>>|null  $existingRules
      * @return array{
      *     mode: string,
      *     valid: bool,
@@ -216,9 +224,22 @@ class ReferencePriceRuleImportService
      *     candidate_rules: list<array<string, mixed>>
      * }
      */
-    public function buildPreview(array $incomingRules, string $importMode, ?ReferencePriceRuleSet $currentSet = null): array
+    public function buildPreview(array $incomingRules, string $importMode, ?iterable $existingRules = null): array
     {
-        $currentRules = $currentSet?->rules->keyBy('category_key')->all() ?? [];
+        if ($existingRules === null) {
+            $currentRules = ReferencePriceRule::query()->get()->keyBy('category_key')->all();
+        } elseif ($existingRules instanceof \Illuminate\Support\Collection) {
+            $currentRules = $existingRules->keyBy('category_key')->all();
+        } else {
+            $currentRules = [];
+            foreach ($existingRules as $r) {
+                if ($r instanceof ReferencePriceRule) {
+                    $currentRules[$r->category_key] = $r;
+                } elseif (is_array($r) && isset($r['category_key'])) {
+                    $currentRules[$r['category_key']] = (object) $r;
+                }
+            }
+        }
 
         $new = [];
         $updated = [];
@@ -229,18 +250,21 @@ class ReferencePriceRuleImportService
 
         $candidateRules = [];
 
-        if ($importMode === ReferencePriceRuleSet::MODE_REPLACE) {
+        if ($importMode === ReferencePriceImport::MODE_REPLACE) {
             foreach ($incomingRules as $incoming) {
                 $key = $incoming['category_key'];
                 if (! isset($currentRules[$key])) {
                     $new[] = $incoming;
                 } else {
                     $curr = $currentRules[$key];
-                    if ($curr->dimension_min !== (int) $incoming['dimension_min'] || $curr->dimension_max !== (int) $incoming['dimension_max']) {
+                    $currMin = is_array($curr) ? (int) $curr['dimension_min'] : (int) $curr->dimension_min;
+                    $currMax = is_array($curr) ? (int) $curr['dimension_max'] : (int) $curr->dimension_max;
+
+                    if ($currMin !== (int) $incoming['dimension_min'] || $currMax !== (int) $incoming['dimension_max']) {
                         $updated[] = [
                             ...$incoming,
-                            'old_min' => $curr->dimension_min,
-                            'old_max' => $curr->dimension_max,
+                            'old_min' => $currMin,
+                            'old_max' => $currMax,
                         ];
                     } else {
                         $unchanged[] = $incoming;
@@ -252,23 +276,23 @@ class ReferencePriceRuleImportService
             foreach ($currentRules as $key => $curr) {
                 if (! collect($incomingRules)->contains('category_key', $key)) {
                     $removed[] = [
-                        'category_key' => $curr->category_key,
-                        'category_name' => $curr->category_name,
-                        'dimension_min' => $curr->dimension_min,
-                        'dimension_max' => $curr->dimension_max,
+                        'category_key' => is_array($curr) ? $curr['category_key'] : $curr->category_key,
+                        'category_name' => is_array($curr) ? $curr['category_name'] : $curr->category_name,
+                        'dimension_min' => is_array($curr) ? (int) $curr['dimension_min'] : (int) $curr->dimension_min,
+                        'dimension_max' => is_array($curr) ? (int) $curr['dimension_max'] : (int) $curr->dimension_max,
                     ];
                 }
             }
-        } elseif ($importMode === ReferencePriceRuleSet::MODE_MERGE) {
+        } elseif ($importMode === ReferencePriceImport::MODE_MERGE) {
             $merged = [];
             foreach ($currentRules as $key => $curr) {
                 $merged[$key] = [
-                    'category_key' => $curr->category_key,
-                    'category_name' => $curr->category_name,
-                    'dimension_min' => $curr->dimension_min,
-                    'dimension_max' => $curr->dimension_max,
-                    'sort_order' => $curr->sort_order,
-                    'status' => $curr->status,
+                    'category_key' => is_array($curr) ? $curr['category_key'] : $curr->category_key,
+                    'category_name' => is_array($curr) ? $curr['category_name'] : $curr->category_name,
+                    'dimension_min' => is_array($curr) ? (int) $curr['dimension_min'] : (int) $curr->dimension_min,
+                    'dimension_max' => is_array($curr) ? (int) $curr['dimension_max'] : (int) $curr->dimension_max,
+                    'sort_order' => is_array($curr) ? (int) ($curr['sort_order'] ?? 0) : (int) ($curr->sort_order ?? 0),
+                    'status' => is_array($curr) ? ($curr['status'] ?? ReferencePriceRule::STATUS_ACTIVE) : ($curr->status ?? ReferencePriceRule::STATUS_ACTIVE),
                 ];
             }
 
@@ -296,11 +320,11 @@ class ReferencePriceRuleImportService
             foreach ($currentRules as $key => $curr) {
                 if (! collect($incomingRules)->contains('category_key', $key)) {
                     $unchanged[] = [
-                        'category_key' => $curr->category_key,
-                        'category_name' => $curr->category_name,
-                        'dimension_min' => $curr->dimension_min,
-                        'dimension_max' => $curr->dimension_max,
-                        'sort_order' => $curr->sort_order,
+                        'category_key' => is_array($curr) ? $curr['category_key'] : $curr->category_key,
+                        'category_name' => is_array($curr) ? $curr['category_name'] : $curr->category_name,
+                        'dimension_min' => is_array($curr) ? (int) $curr['dimension_min'] : (int) $curr->dimension_min,
+                        'dimension_max' => is_array($curr) ? (int) $curr['dimension_max'] : (int) $curr->dimension_max,
+                        'sort_order' => is_array($curr) ? (int) ($curr['sort_order'] ?? 0) : (int) ($curr->sort_order ?? 0),
                     ];
                 }
             }
@@ -336,113 +360,48 @@ class ReferencePriceRuleImportService
     }
 
     /**
-     * Commit candidate rules into a new active version atomically.
+     * Commit candidate rules directly into reference_price_rules atomically.
      *
      * @param  list<array{category_key: string, category_name: string, dimension_min: int, dimension_max: int, sort_order?: int, status?: string}>  $candidateRules
+     * @return Collection<int, ReferencePriceRule>
      */
-    public function commit(ReferencePriceImport $import, array $candidateRules, User $actor): ReferencePriceRuleSet
+    public function commit(ReferencePriceImport $import, array $candidateRules, User $actor): Collection
     {
         return DB::transaction(function () use ($import, $candidateRules, $actor) {
-            // Lock setting singleton
-            $setting = ReferencePriceSetting::query()->lockForUpdate()->first();
-            if (! $setting) {
-                $setting = ReferencePriceSetting::create(['updated_by' => $actor->id]);
-            }
-
             // Validate no overlaps
             $overlapErrors = $this->validateRuleIntervals($candidateRules);
             if (! empty($overlapErrors)) {
                 throw new RuntimeException('Cannot commit rules with overlapping ranges: '.implode('; ', $overlapErrors));
             }
 
-            $nextVersion = (ReferencePriceRuleSet::max('version_no') ?? 0) + 1;
+            $candidateKeys = collect($candidateRules)->pluck('category_key')->all();
 
-            $newRuleSet = ReferencePriceRuleSet::create([
-                'version_no' => $nextVersion,
-                'status' => ReferencePriceRuleSet::STATUS_ACTIVE,
-                'import_mode' => $import->import_mode,
-                'source_file_name' => $import->source_file_name,
-                'source_file_hash' => $import->source_file_hash,
-                'source_sheet' => $import->source_sheet,
-                'created_by' => $actor->id,
-                'activated_by' => $actor->id,
-                'activated_at' => now(),
-            ]);
-
-            foreach ($candidateRules as $index => $ruleData) {
-                ReferencePriceRule::create([
-                    'rule_set_id' => $newRuleSet->id,
-                    'category_key' => $ruleData['category_key'],
-                    'category_name' => $ruleData['category_name'],
-                    'dimension_min' => (int) $ruleData['dimension_min'],
-                    'dimension_max' => (int) $ruleData['dimension_max'],
-                    'sort_order' => $ruleData['sort_order'] ?? ($index + 1),
-                    'status' => $ruleData['status'] ?? ReferencePriceRule::STATUS_ACTIVE,
-                    'created_by' => $actor->id,
-                    'updated_by' => $actor->id,
-                ]);
+            if ($import->import_mode === ReferencePriceImport::MODE_REPLACE) {
+                ReferencePriceRule::whereNotIn('category_key', $candidateKeys)->delete();
             }
 
-            // Archive all other rule sets
-            ReferencePriceRuleSet::where('id', '<>', $newRuleSet->id)
-                ->where('status', ReferencePriceRuleSet::STATUS_ACTIVE)
-                ->update(['status' => ReferencePriceRuleSet::STATUS_ARCHIVED]);
-
-            // Update setting pointer
-            $setting->update([
-                'active_rule_set_id' => $newRuleSet->id,
-                'updated_by' => $actor->id,
-            ]);
+            foreach ($candidateRules as $index => $ruleData) {
+                ReferencePriceRule::updateOrCreate(
+                    ['category_key' => $ruleData['category_key']],
+                    [
+                        'category_name' => $ruleData['category_name'],
+                        'dimension_min' => (int) $ruleData['dimension_min'],
+                        'dimension_max' => (int) $ruleData['dimension_max'],
+                        'sort_order' => $ruleData['sort_order'] ?? ($index + 1),
+                        'status' => $ruleData['status'] ?? ReferencePriceRule::STATUS_ACTIVE,
+                        'updated_by' => $actor->id,
+                        'created_by' => DB::raw('COALESCE(created_by, '.(int) $actor->id.')'),
+                    ]
+                );
+            }
 
             // Update import status
             $import->update([
                 'status' => ReferencePriceImport::STATUS_CONFIRMED,
-                'confirmed_rule_set_id' => $newRuleSet->id,
                 'confirmed_at' => now(),
             ]);
 
-            return $newRuleSet->load('rules');
-        });
-    }
-
-    /**
-     * Atomically activate a specific rule set version.
-     */
-    public function activateVersion(ReferencePriceRuleSet $ruleSet, User $actor): void
-    {
-        DB::transaction(function () use ($ruleSet, $actor) {
-            $setting = ReferencePriceSetting::query()->lockForUpdate()->first();
-            if (! $setting) {
-                $setting = ReferencePriceSetting::create(['updated_by' => $actor->id]);
-            }
-
-            // Validate the rule set has no internal overlaps among active rules
-            $activeRules = $ruleSet->activeRules->map(fn ($r) => [
-                'category_key' => $r->category_key,
-                'dimension_min' => $r->dimension_min,
-                'dimension_max' => $r->dimension_max,
-                'status' => $r->status,
-            ])->all();
-
-            $overlapErrors = $this->validateRuleIntervals($activeRules);
-            if (! empty($overlapErrors)) {
-                throw new RuntimeException('Cannot activate rule set with overlapping ranges: '.implode('; ', $overlapErrors));
-            }
-
-            ReferencePriceRuleSet::where('id', '<>', $ruleSet->id)
-                ->where('status', ReferencePriceRuleSet::STATUS_ACTIVE)
-                ->update(['status' => ReferencePriceRuleSet::STATUS_ARCHIVED]);
-
-            $ruleSet->update([
-                'status' => ReferencePriceRuleSet::STATUS_ACTIVE,
-                'activated_by' => $actor->id,
-                'activated_at' => now(),
-            ]);
-
-            $setting->update([
-                'active_rule_set_id' => $ruleSet->id,
-                'updated_by' => $actor->id,
-            ]);
+            return ReferencePriceRule::query()->orderBy('sort_order')->orderBy('dimension_min')->get();
         });
     }
 }

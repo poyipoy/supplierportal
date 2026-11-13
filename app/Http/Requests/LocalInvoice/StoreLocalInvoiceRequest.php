@@ -4,6 +4,7 @@ namespace App\Http\Requests\LocalInvoice;
 
 use App\Models\LocalInvoice;
 use App\Models\LocalInvoiceDocument;
+use App\Models\LocalPurchaseOrder;
 use App\Services\LocalInvoice\DeliveryScheduleValidator;
 use App\Services\LocalInvoice\InvoiceFilenameParser;
 use App\Services\VendorMaster\VendorMasterService;
@@ -289,6 +290,30 @@ class StoreLocalInvoiceRequest extends FormRequest
                         foreach ($messages as $msg) {
                             $validator->errors()->add($key, $msg);
                         }
+                    }
+                }
+            }
+
+            $poId = $this->input('local_purchase_order_id');
+            $invoiceAmount = $this->input('invoice_amount');
+
+            if ($poId && is_numeric($invoiceAmount) && (float) $invoiceAmount > 0 && ! $validator->errors()->has('local_purchase_order_id')) {
+                $po = LocalPurchaseOrder::whereKey($poId)
+                    ->when($this->user()?->id, fn ($q, $userId) => $q->where('supplier_id', $userId))
+                    ->first();
+
+                if ($po) {
+                    $excludeInvoiceId = $this->route('invoice')?->id;
+                    $otherInvoiced = LocalInvoice::where('local_purchase_order_id', $po->id)
+                        ->when($excludeInvoiceId, fn ($q) => $q->where('id', '!=', $excludeInvoiceId))
+                        ->whereNotIn('status', [LocalInvoice::STATUS_REJECTED, LocalInvoice::STATUS_CANCELLED, LocalInvoice::STATUS_EXPIRED])
+                        ->sum('invoice_amount');
+
+                    if (bccomp(bcadd((string) $otherInvoiced, (string) $invoiceAmount, 2), (string) $po->total_amount, 2) > 0) {
+                        $remaining = max(0.0, (float) bcsub((string) $po->total_amount, (string) $otherInvoiced, 2));
+                        $message = __('local_procurement.validation.dpp_ceiling', ['amount' => number_format($remaining, 2, ',', '.')]);
+                        $validator->errors()->add('invoice_amount', $message);
+                        $validator->errors()->add('goods_receipt_ids', $message);
                     }
                 }
             }

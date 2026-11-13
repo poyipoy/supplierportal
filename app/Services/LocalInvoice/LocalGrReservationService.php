@@ -65,6 +65,7 @@ class LocalGrReservationService
         if (bccomp(bcadd((string) $otherInvoiced, (string) $invoice->invoice_amount, 2), (string) $po->total_amount, 2) > 0) {
             $remaining = bcsub((string) $po->total_amount, (string) $otherInvoiced, 2);
             throw ValidationException::withMessages([
+                'invoice_amount' => __('local_procurement.validation.dpp_ceiling', ['amount' => number_format((float) $remaining, 2, ',', '.')]),
                 'goods_receipt_ids' => __('local_procurement.validation.dpp_ceiling', ['amount' => number_format((float) $remaining, 2, ',', '.')]),
             ]);
         }

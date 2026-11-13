@@ -33,6 +33,31 @@ export function bootLocalPoGrTable(root = document) {
         if (modal.dataset.recoveryReopen === '1') window.bootstrap.Modal.getOrCreateInstance(modal).show();
     }
     root.addEventListener('click', event => {
+        const button = event.target.closest('[data-gr-document]');
+        if (!button || element.dataset.readOnly === '1') return;
+        const modal = root.querySelector('#uploadGrDocumentModal');
+        if (!modal) return;
+        let action;
+        try { action = new URL(button.dataset.grDocumentUrl, window.location.origin); } catch { return; }
+        if (action.origin !== window.location.origin || action.username || action.password) return;
+        event.preventDefault();
+        const form = modal.querySelector('form');
+        form?.reset?.();
+        form?.querySelectorAll?.('[aria-invalid="true"]')?.forEach(field => {
+            field.removeAttribute('aria-invalid');
+            field.classList.remove('is-invalid');
+        });
+        modal.querySelectorAll?.('.invalid-feedback')?.forEach(error => { error.hidden = true; });
+        if (form) form.action = action.href;
+        const numberEl = modal.querySelector('[data-gr-modal-number]');
+        if (numberEl) numberEl.textContent = button.dataset.grNumber;
+        modal.addEventListener('shown.bs.modal', () => {
+            (modal.querySelector('[aria-invalid="true"]') || form?.querySelector('input[type="file"]'))?.focus();
+        }, { once: true });
+        modal.addEventListener('hidden.bs.modal', () => (button?.isConnected ? button : filter)?.focus(), { once: true });
+        window.bootstrap.Modal.getOrCreateInstance(modal).show();
+    });
+    root.addEventListener('click', event => {
         const button = event.target.closest('[data-gr-restore]');
         if (!button || element.dataset.readOnly === '1') return;
         const modal = root.querySelector('#restorePoGrModal');
@@ -76,6 +101,7 @@ export function bootLocalPoGrTable(root = document) {
             { data: 'uom', name: 'uom', defaultContent: '—' },
             { data: 'status_badge', name: 'status' },
             { data: 'invoice', orderable: false, searchable: false },
+            { data: 'document', orderable: false, searchable: false },
             { data: 'source_label', orderable: false, searchable: false, visible: !readOnly },
             { data: 'actions', orderable: false, searchable: false, visible: !readOnly },
         ],
@@ -102,7 +128,7 @@ export function bootLocalPoGrTable(root = document) {
             }
             window.AdasiCalendar?.reset(form.querySelector('[name="gr_date"]'));
         }
-        modal.addEventListener('hidden.bs.modal', () => (button.isConnected ? button : filter).focus(), { once: true });
+        modal.addEventListener('hidden.bs.modal', () => (button?.isConnected ? button : filter)?.focus(), { once: true });
         window.bootstrap.Modal.getOrCreateInstance(modal).show();
     });
 }

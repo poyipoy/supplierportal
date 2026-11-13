@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\Attachment;
+use App\Models\LocalGoodsReceipt;
 use App\Models\LocalPurchaseOrder;
 use App\Models\SupplierAudit;
 use App\Models\SupplierOverpaymentRefund;
@@ -18,6 +19,7 @@ class EnforceSupplierDomain
             if ($attachment instanceof Attachment && in_array($attachment->attachable_type, [
                 SupplierOverpaymentRefund::class,
                 LocalPurchaseOrder::class,
+                LocalGoodsReceipt::class,
                 SupplierAudit::class,
             ], true)) {
                 return $next($request);

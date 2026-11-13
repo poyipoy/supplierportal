@@ -2,9 +2,8 @@
 
 namespace Tests\Feature\Procurement;
 
+use App\Models\ReferencePriceImport;
 use App\Models\ReferencePriceRule;
-use App\Models\ReferencePriceRuleSet;
-use App\Models\ReferencePriceSetting;
 use App\Models\User;
 use Database\Seeders\ReferencePriceRulesInitialSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -67,6 +66,18 @@ class ReferencePriceRulesManagementTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_server_tabs_request_returns_partial_json(): void
+    {
+        $response = $this->actingAs($this->purchasing)
+            ->get(route('purchasing.master-data.reference-prices.index', ['tab' => 'rules']), [
+                'X-Adasi-Server-Tabs' => '1',
+                'Accept' => 'application/json',
+            ]);
+
+        $response->assertOk()
+            ->assertJsonStructure(['html', 'nav']);
+    }
+
     public function test_import_preview_with_valid_fixture_returns_preview_data(): void
     {
         $path = base_path('tests/Fixtures/Kategori Range.xlsx');
@@ -75,7 +86,7 @@ class ReferencePriceRulesManagementTest extends TestCase
         $response = $this->actingAs($this->purchasing)
             ->post(route('purchasing.master-data.reference-prices.rules.import-preview'), [
                 'file' => $file,
-                'import_mode' => ReferencePriceRuleSet::MODE_REPLACE,
+                'import_mode' => ReferencePriceImport::MODE_REPLACE,
                 'sheet_name' => 'Kategori',
             ], ['Accept' => 'application/json']);
 
@@ -85,13 +96,13 @@ class ReferencePriceRulesManagementTest extends TestCase
 
         $this->assertDatabaseHas('reference_price_imports', [
             'source_file_name' => 'Kategori Range.xlsx',
-            'import_mode' => 'replace',
-            'status' => 'previewed',
+            'import_mode' => ReferencePriceImport::MODE_REPLACE,
+            'status' => ReferencePriceImport::STATUS_PREVIEWED,
             'parsed_count' => 11,
         ]);
     }
 
-    public function test_import_confirm_activates_new_rule_set_version(): void
+    public function test_import_confirm_updates_rules_directly(): void
     {
         $path = base_path('tests/Fixtures/Kategori Range.xlsx');
         $file = new UploadedFile($path, 'Kategori Range.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
@@ -99,7 +110,7 @@ class ReferencePriceRulesManagementTest extends TestCase
         $previewResp = $this->actingAs($this->purchasing)
             ->post(route('purchasing.master-data.reference-prices.rules.import-preview'), [
                 'file' => $file,
-                'import_mode' => ReferencePriceRuleSet::MODE_REPLACE,
+                'import_mode' => ReferencePriceImport::MODE_REPLACE,
                 'sheet_name' => 'Kategori',
             ], ['Accept' => 'application/json']);
 
@@ -113,16 +124,14 @@ class ReferencePriceRulesManagementTest extends TestCase
         $confirmResp->assertOk()
             ->assertJsonPath('success', true);
 
-        $activeSet = ReferencePriceSetting::getActiveRuleSet();
-        $this->assertEquals(2, $activeSet->version_no);
-        $this->assertEquals(ReferencePriceRuleSet::STATUS_ACTIVE, $activeSet->status);
-
-        // Previous version is archived
-        $v1 = ReferencePriceRuleSet::where('version_no', 1)->first();
-        $this->assertEquals(ReferencePriceRuleSet::STATUS_ARCHIVED, $v1->status);
+        $this->assertEquals(11, ReferencePriceRule::count());
+        $this->assertDatabaseHas('reference_price_rules', [
+            'category_key' => '1-15',
+            'status' => ReferencePriceRule::STATUS_ACTIVE,
+        ]);
     }
 
-    public function test_manual_category_addition_creates_new_version(): void
+    public function test_manual_category_addition_saves_rule_directly(): void
     {
         $response = $this->actingAs($this->admin)
             ->post(route('admin.reference-prices.rules.category.save'), [
@@ -134,49 +143,24 @@ class ReferencePriceRulesManagementTest extends TestCase
 
         $response->assertRedirect(route('admin.reference-prices.index', ['tab' => 'rules']));
 
-        $activeSet = ReferencePriceSetting::getActiveRuleSet();
-        $this->assertEquals(2, $activeSet->version_no);
-        $this->assertCount(12, $activeSet->rules);
-        $this->assertTrue($activeSet->rules->contains('category_key', '701-800'));
+        $this->assertDatabaseHas('reference_price_rules', [
+            'category_key' => '701-800',
+            'dimension_min' => 701,
+            'dimension_max' => 800,
+            'status' => ReferencePriceRule::STATUS_ACTIVE,
+        ]);
+        $this->assertEquals(12, ReferencePriceRule::count());
     }
 
-    public function test_toggle_category_status_creates_new_version_with_inactive_rule(): void
+    public function test_toggle_category_status_updates_rule_directly(): void
     {
-        $activeSet = ReferencePriceSetting::getActiveRuleSet();
-        $firstRule = $activeSet->rules->first();
+        $firstRule = ReferencePriceRule::firstOrFail();
 
         $response = $this->actingAs($this->purchasing)
             ->patch(route('purchasing.master-data.reference-prices.rules.category.toggle', $firstRule));
 
         $response->assertRedirect(route('purchasing.master-data.reference-prices.index', ['tab' => 'rules']));
 
-        $newActiveSet = ReferencePriceSetting::getActiveRuleSet();
-        $this->assertEquals(2, $newActiveSet->version_no);
-
-        $toggledRule = $newActiveSet->rules->where('category_key', $firstRule->category_key)->first();
-        $this->assertEquals(ReferencePriceRule::STATUS_INACTIVE, $toggledRule->status);
-    }
-
-    public function test_activating_previous_version_switches_active_pointer(): void
-    {
-        // Create version 2
-        $this->actingAs($this->admin)
-            ->post(route('admin.reference-prices.rules.category.save'), [
-                'category_key' => '701-800',
-                'category_name' => '701-800',
-                'dimension_min' => 701,
-                'dimension_max' => 800,
-            ]);
-
-        $v1 = ReferencePriceRuleSet::where('version_no', 1)->first();
-        $this->assertEquals(ReferencePriceRuleSet::STATUS_ARCHIVED, $v1->status);
-
-        // Reactivate version 1
-        $this->actingAs($this->admin)
-            ->post(route('admin.reference-prices.rules.activate', $v1))
-            ->assertRedirect();
-
-        $this->assertEquals(1, ReferencePriceSetting::getActiveRuleSet()->version_no);
-        $this->assertEquals(ReferencePriceRuleSet::STATUS_ARCHIVED, ReferencePriceRuleSet::where('version_no', 2)->first()->status);
+        $this->assertEquals(ReferencePriceRule::STATUS_INACTIVE, $firstRule->fresh()->status);
     }
 }

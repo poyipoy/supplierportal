@@ -17,6 +17,12 @@ class ReferencePriceImport extends Model
 
     public const STATUS_FAILED = 'failed';
 
+    public const MODE_REPLACE = 'replace';
+
+    public const MODE_MERGE = 'merge';
+
+    public const MODE_MANUAL = 'manual';
+
     protected $fillable = [
         'uploaded_by',
         'source_file_name',
@@ -28,7 +34,6 @@ class ReferencePriceImport extends Model
         'parsed_count',
         'preview_diff',
         'validation_errors',
-        'confirmed_rule_set_id',
         'confirmed_at',
     ];
 
@@ -45,10 +50,5 @@ class ReferencePriceImport extends Model
     public function uploader(): BelongsTo
     {
         return $this->belongsTo(User::class, 'uploaded_by');
-    }
-
-    public function confirmedRuleSet(): BelongsTo
-    {
-        return $this->belongsTo(ReferencePriceRuleSet::class, 'confirmed_rule_set_id');
     }
 }

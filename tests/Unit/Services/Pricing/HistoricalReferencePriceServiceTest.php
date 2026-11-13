@@ -10,12 +10,12 @@ use App\Models\PrItemAward;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
-use App\Models\ReferencePriceRuleSet;
-use App\Models\ReferencePriceSetting;
+use App\Models\ReferencePriceRule;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Services\Pricing\HistoricalReferencePriceService;
 use Database\Seeders\ReferencePriceRulesInitialSeeder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -38,7 +38,8 @@ class HistoricalReferencePriceServiceTest extends TestCase
 
     private MaterialMaster $materialB;
 
-    private ReferencePriceRuleSet $ruleSet;
+    /** @var Collection<int, ReferencePriceRule> */
+    private Collection $rules;
 
     private int $seq = 0;
 
@@ -60,7 +61,7 @@ class HistoricalReferencePriceServiceTest extends TestCase
         ]);
 
         $this->seed(ReferencePriceRulesInitialSeeder::class);
-        $this->ruleSet = ReferencePriceSetting::getActiveRuleSet();
+        $this->rules = ReferencePriceRule::all();
 
         $this->materialA = MaterialMaster::create([
             'material_code' => 'SKD11',
@@ -106,7 +107,7 @@ class HistoricalReferencePriceServiceTest extends TestCase
 
     public function test_three_pos_with_different_prices_and_weights_calculate_correct_weighted_average(): void
     {
-        $rule = $this->ruleSet->rules->where('category_key', '1-15')->first();
+        $rule = $this->rules->where('category_key', '1-15')->first();
 
         // PO 1: 10 kg @ 100 IDR/kg = 1,000 IDR
         $this->createHistoricalPo(
@@ -164,7 +165,7 @@ class HistoricalReferencePriceServiceTest extends TestCase
 
     public function test_pos_from_different_calendar_years_are_isolated_and_not_mixed(): void
     {
-        $rule = $this->ruleSet->rules->where('category_key', '1-15')->first();
+        $rule = $this->rules->where('category_key', '1-15')->first();
 
         // 2025 PO: 10 kg @ 150 IDR
         $this->createHistoricalPo(
@@ -207,7 +208,7 @@ class HistoricalReferencePriceServiceTest extends TestCase
 
     public function test_current_year_ytd_is_isolated_when_no_current_year_pos_exist(): void
     {
-        $rule = $this->ruleSet->rules->where('category_key', '1-15')->first();
+        $rule = $this->rules->where('category_key', '1-15')->first();
 
         // Only 2025 PO exists
         $this->createHistoricalPo(
@@ -240,7 +241,7 @@ class HistoricalReferencePriceServiceTest extends TestCase
 
     public function test_different_material_master_ids_do_not_mix_even_with_same_material_name(): void
     {
-        $rule = $this->ruleSet->rules->where('category_key', '1-15')->first();
+        $rule = $this->rules->where('category_key', '1-15')->first();
 
         // PO for material B (different ID)
         $this->createHistoricalPo(
@@ -267,7 +268,7 @@ class HistoricalReferencePriceServiceTest extends TestCase
 
     public function test_different_shapes_are_excluded(): void
     {
-        $rule = $this->ruleSet->rules->where('category_key', '1-15')->first();
+        $rule = $this->rules->where('category_key', '1-15')->first();
 
         // PO for Round with outer diameter 10
         $this->createHistoricalPo(
@@ -294,8 +295,8 @@ class HistoricalReferencePriceServiceTest extends TestCase
 
     public function test_different_categories_do_not_enter_main_calculation(): void
     {
-        $rule1_15 = $this->ruleSet->rules->where('category_key', '1-15')->first();
-        $rule16_50 = $this->ruleSet->rules->where('category_key', '16-50')->first();
+        $rule1_15 = $this->rules->where('category_key', '1-15')->first();
+        $rule16_50 = $this->rules->where('category_key', '16-50')->first();
 
         // PO with thickness 30 (falls into 16-50)
         $this->createHistoricalPo(
@@ -334,8 +335,8 @@ class HistoricalReferencePriceServiceTest extends TestCase
 
     public function test_decimal_key_dimension_uses_ceil_to_classify_category(): void
     {
-        $rule1_15 = $this->ruleSet->rules->where('category_key', '1-15')->first();
-        $rule16_50 = $this->ruleSet->rules->where('category_key', '16-50')->first();
+        $rule1_15 = $this->rules->where('category_key', '1-15')->first();
+        $rule16_50 = $this->rules->where('category_key', '16-50')->first();
 
         // PO with thickness 15.2 -> CEIL is 16 -> should be in 16-50, not 1-15
         $this->createHistoricalPo(
@@ -370,7 +371,7 @@ class HistoricalReferencePriceServiceTest extends TestCase
 
     public function test_annual_exchange_rate_converts_currencies_correctly(): void
     {
-        $rule = $this->ruleSet->rules->where('category_key', '1-15')->first();
+        $rule = $this->rules->where('category_key', '1-15')->first();
 
         // PO in USD: 10 kg @ 10 USD/kg. In 2026, 1 USD = 16,000 IDR.
         // Converted price = 160,000 IDR/kg.
@@ -398,7 +399,7 @@ class HistoricalReferencePriceServiceTest extends TestCase
 
     public function test_unsupported_or_missing_exchange_rate_currencies_are_excluded_and_reported(): void
     {
-        $rule = $this->ruleSet->rules->where('category_key', '1-15')->first();
+        $rule = $this->rules->where('category_key', '1-15')->first();
 
         // PO in JPY: no rate exists in annual_exchange_rates for JPY
         $this->createHistoricalPo(
@@ -428,7 +429,7 @@ class HistoricalReferencePriceServiceTest extends TestCase
 
     public function test_excluded_kg_line_count_and_currencies_are_tracked_accurately_with_convertible_lines(): void
     {
-        $rule = $this->ruleSet->rules->where('category_key', '1-15')->first();
+        $rule = $this->rules->where('category_key', '1-15')->first();
 
         // Valid IDR PO: 10 kg @ 100 IDR
         $this->createHistoricalPo(
@@ -471,7 +472,7 @@ class HistoricalReferencePriceServiceTest extends TestCase
 
     public function test_last_purchase_price_tie_breaker_is_deterministic(): void
     {
-        $rule = $this->ruleSet->rules->where('category_key', '1-15')->first();
+        $rule = $this->rules->where('category_key', '1-15')->first();
 
         // Line 1: earlier date
         $this->createHistoricalPo(
@@ -519,7 +520,7 @@ class HistoricalReferencePriceServiceTest extends TestCase
 
     public function test_cancelled_pos_are_excluded(): void
     {
-        $rule = $this->ruleSet->rules->where('category_key', '1-15')->first();
+        $rule = $this->rules->where('category_key', '1-15')->first();
 
         $this->createHistoricalPo(
             material: $this->materialA,
@@ -545,7 +546,7 @@ class HistoricalReferencePriceServiceTest extends TestCase
 
     public function test_exclude_po_ids_prevents_self_inclusion(): void
     {
-        $rule = $this->ruleSet->rules->where('category_key', '1-15')->first();
+        $rule = $this->rules->where('category_key', '1-15')->first();
 
         [$po, $quotation, $qi] = $this->createHistoricalPo(
             material: $this->materialA,

@@ -43,7 +43,7 @@
     @if($allowedDaysAttr !== null) data-calendar-allowed-days="{{ $allowedDaysAttr }}" @endif
     @if($allowedDaysMessage) data-calendar-allowed-days-message="{{ $allowedDaysMessage }}" @endif
 >
-    <div data-calendar-native>
+    <div data-calendar-native class="tw:grid tw:gap-1.5">
         @if($label)
             <label id="{{ $labelId }}" for="{{ $resolvedId }}" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">
                 {{ $label }}
@@ -74,9 +74,9 @@
         >
     </div>
 
-    <div data-calendar-enhanced hidden>
+    <div data-calendar-enhanced hidden class="tw:grid tw:gap-1.5">
         @if($label)
-            <span id="{{ $labelId }}-enhanced" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">
+            <span id="{{ $labelId }}-enhanced" class="tw:block tw:text-ui-sm tw:font-medium tw:text-on-surface">
                 {{ $label }}
                 @if($required)<span class="tw:text-error" aria-hidden="true">*</span><span class="tw:sr-only"> {{ __('common.required') }}</span>@endif
             </span>

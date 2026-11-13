@@ -5,8 +5,6 @@ namespace App\Services\Pricing;
 use App\Models\PrItem;
 use App\Models\QuotationItem;
 use App\Models\ReferencePriceRule;
-use App\Models\ReferencePriceRuleSet;
-use App\Models\ReferencePriceSetting;
 use App\Support\Money;
 
 class ReferencePriceRuleResolver
@@ -19,8 +17,7 @@ class ReferencePriceRuleResolver
 
     public function resolve(
         ?string $shape,
-        float|string|int|null $dimension,
-        ?ReferencePriceRuleSet $ruleSet = null
+        float|string|int|null $dimension
     ): ReferencePriceRuleResult {
         if (empty($shape) || ! isset(self::DIMENSION_FIELD_BY_SHAPE[$shape])) {
             return new ReferencePriceRuleResult(
@@ -51,8 +48,12 @@ class ReferencePriceRuleResolver
         $rawFormatted = Money::normalize((string) $dimension, 4);
         $rounded = self::ceilDimension($dimension);
 
-        $ruleSet ??= ReferencePriceSetting::getActiveRuleSet();
-        if (! $ruleSet) {
+        $rules = ReferencePriceRule::query()
+            ->orderBy('sort_order')
+            ->orderBy('dimension_min')
+            ->get();
+
+        if ($rules->isEmpty()) {
             return new ReferencePriceRuleResult(
                 matched: false,
                 dimensionField: $dimensionField,
@@ -61,8 +62,6 @@ class ReferencePriceRuleResolver
                 reasonCode: 'rule_not_found',
             );
         }
-
-        $rules = $ruleSet->relationLoaded('rules') ? $ruleSet->rules : $ruleSet->rules()->orderBy('sort_order')->get();
 
         $matchedRule = $rules->first(fn (ReferencePriceRule $r) => $rounded >= $r->dimension_min && $rounded <= $r->dimension_max);
 
@@ -96,16 +95,16 @@ class ReferencePriceRuleResolver
         );
     }
 
-    public function resolveForPrItem(PrItem $prItem, ?ReferencePriceRuleSet $ruleSet = null): ReferencePriceRuleResult
+    public function resolveForPrItem(PrItem $prItem): ReferencePriceRuleResult
     {
         $shape = $prItem->shape;
         $dimensionField = self::DIMENSION_FIELD_BY_SHAPE[$shape] ?? null;
         $dimension = $dimensionField ? $prItem->{$dimensionField} : null;
 
-        return $this->resolve($shape, $dimension, $ruleSet);
+        return $this->resolve($shape, $dimension);
     }
 
-    public function resolveForQuotationItem(QuotationItem $quotationItem, ?ReferencePriceRuleSet $ruleSet = null): ReferencePriceRuleResult
+    public function resolveForQuotationItem(QuotationItem $quotationItem): ReferencePriceRuleResult
     {
         $prItem = $quotationItem->prItem;
         $shape = $prItem?->shape;
@@ -115,7 +114,7 @@ class ReferencePriceRuleResolver
             ? $quotationItem->{$availableField}
             : ($dimensionField ? $prItem?->{$dimensionField} : null);
 
-        return $this->resolve($shape, $dimension, $ruleSet);
+        return $this->resolve($shape, $dimension);
     }
 
     public static function ceilDimension(string|float|int $dimension): int

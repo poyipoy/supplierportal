@@ -132,6 +132,80 @@ BLADE;
         $this->assertStringContainsString('name="bank_select"', $html);
     }
 
+    public function test_searchable_select_wraps_long_digits_in_options_and_meets_wcag_controls(): void
+    {
+        $options = [[
+            'value' => '1',
+            'label' => 'PO-LOC-2026-000123456 · Rp 12.500.000.000 · PR: PR-LOC-2026-999999',
+            'sublabel' => 'Date: 12 Nov 2026 · Account 1234567890123456',
+            'badge' => 'OPEN',
+            'badgeTone' => 'success',
+        ]];
+
+        $html = Blade::render('<x-ui.searchable-select name="local_purchase_order_id" id="local_purchase_order_id" label="Local PO" :options="$options" />', [
+            'options' => $options,
+        ]);
+
+        $this->assertNoCompilerLeakage($html);
+        $this->assertStringContainsString('tw:min-w-0', $html);
+        $this->assertStringContainsString('tw:z-dropdown', $html);
+        $this->assertStringContainsString('tw:shadow-ui-2', $html);
+        $this->assertStringContainsString('overflow-wrap: anywhere', $html);
+        $this->assertStringContainsString('tw:flex-wrap', $html);
+        $this->assertStringContainsString('tw:shrink-0', $html);
+        $this->assertStringNotContainsString('<span
+                    @click.stop="clear()"', $html);
+        $this->assertStringContainsString('id="local_purchase_order_id-trigger"', $html);
+        $this->assertStringContainsString('width: 24px; height: 24px;', $html);
+        $this->assertStringContainsString('@mousedown.prevent', $html);
+        $this->assertStringContainsString('tabindex="-1"', $html);
+        $this->assertDoesNotMatchRegularExpression('/<span[^>]*@click\.stop="clear\(\)"[^>]*>/', $html);
+    }
+
+    public function test_multi_select_handles_long_digits_layout_and_wcag_listbox_contract(): void
+    {
+        $options = [[
+            'value' => '101',
+            'label' => 'GR-3WAY-2026-000123456789',
+            'description' => 'Plat Baja SPCC 1.2mm Sheet Cold Rolled Coil Industrial Spec',
+            'sublabel' => 'Date: 12 Nov 2026',
+            'amount' => 1250000000.50,
+            'qty' => 10000.25,
+            'uom' => 'PCS',
+            'receipt_amount' => 1250000000.50,
+            'quantityLabel' => '10.000,25',
+        ]];
+
+        $html = Blade::render('<x-ui.multi-select name="goods_receipt_ids[]" id="goods_receipt_ids" label="Whole Goods Receipt (GR)" :options="$options" />', [
+            'options' => $options,
+        ]);
+
+        $this->assertNoCompilerLeakage($html);
+        $this->assertStringContainsString('id="goods_receipt_ids-label"', $html);
+        $this->assertStringContainsString('id="goods_receipt_ids-trigger"', $html);
+        $this->assertStringContainsString('aria-labelledby="goods_receipt_ids-label goods_receipt_ids-trigger"', $html);
+        $this->assertStringContainsString('aria-controls="goods_receipt_ids-listbox"', $html);
+        $this->assertStringContainsString('id="goods_receipt_ids-search"', $html);
+        $this->assertStringNotContainsString('name="goods_receipt_ids-search"', $html);
+        $this->assertStringContainsString('for="goods_receipt_ids-search"', $html);
+        $this->assertStringContainsString(':aria-activedescendant=', $html);
+        $this->assertStringContainsString('id="goods_receipt_ids-listbox"', $html);
+        $this->assertStringContainsString('role="status"', $html);
+        $this->assertStringContainsString('aria-live="polite"', $html);
+        $this->assertStringContainsString('tw:z-dropdown', $html);
+        $this->assertStringContainsString('tw:shadow-ui-2', $html);
+        $this->assertStringContainsString('overflow-wrap: anywhere', $html);
+        $this->assertStringContainsString('tw:min-h-6', $html);
+        $this->assertStringContainsString('tw:size-6', $html);
+        $this->assertStringContainsString('width: 24px; height: 24px;', $html);
+        $this->assertStringContainsString('@mousedown.prevent', $html);
+        $this->assertStringContainsString('tabindex="-1"', $html);
+        $this->assertStringContainsString("[data-option-index='\${this.highlightedIndex}']", $html);
+        $this->assertDoesNotMatchRegularExpression('/<span[^>]*@click\.stop="clearAll\(\)"[^>]*>/', $html);
+        // Options list container owns role="listbox", not the popover wrapper containing the search input.
+        $this->assertMatchesRegularExpression('/id="goods_receipt_ids-listbox"[^>]*x-ref="optionsList"[^>]*role="listbox"|x-ref="optionsList"[^>]*id="goods_receipt_ids-listbox"[^>]*role="listbox"/', $html);
+    }
+
     public function test_modal_renders_cleanly(): void
     {
         $template = <<<'BLADE'

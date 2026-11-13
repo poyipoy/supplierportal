@@ -162,83 +162,139 @@
 
 {{-- Modal Tambah GR Baru --}}
 @if($purchaseOrder->status === 'OPEN')
-    <div class="modal fade" id="addGrModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <form method="POST" action="{{ route($routePrefix.'.goods-receipts.store', $purchaseOrder) }}">
-                @csrf
-                <div class="modal-content">
+    <div class="modal fade local-po-gr-modal" id="addGrModal" tabindex="-1" aria-labelledby="addGrModalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <form method="POST" action="{{ route($routePrefix.'.goods-receipts.store', $purchaseOrder) }}" enctype="multipart/form-data" class="tw:flex tw:flex-col tw:flex-1 tw:min-h-0 tw:overflow-hidden">
+                    @csrf
                     <div class="modal-header">
-                        <h5 class="modal-title tw:text-ui-sm tw:font-bold tw:text-on-surface tw:flex tw:items-center tw:gap-2">
-                            <x-ui.icon name="plus-circle" size="sm" class="tw:text-primary" />
+                        <h2 id="addGrModalTitle" class="modal-title tw:text-ui-base tw:font-bold tw:text-on-surface tw:flex tw:items-center tw:gap-2">
+                            <x-ui.icon name="plus-circle" size="sm" class="tw:text-primary tw:shrink-0" />
                             <span>{{ __('local_procurement.actions.add_gr_full') }}</span>
-                        </h5>
+                        </h2>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('local_invoice.actions.close') }}"></button>
                     </div>
-                    <div class="modal-body tw:space-y-3">
-                        <div class="tw:rounded-lg tw:bg-surface-container tw:p-3 tw:text-ui-xs tw:space-y-1">
-                            <div class="tw:flex tw:justify-between">
+                    <div class="modal-body tw:min-w-0 tw:space-y-4">
+                        <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container tw:px-3.5 tw:py-2.5 tw:text-ui-xs tw:min-w-0">
+                            <div class="tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-2 tw:min-w-0">
                                 <span class="tw:text-on-surface-variant">{{ __('terms.purchase_order') }}:</span>
-                                <strong class="ui-tabular-nums">{{ $purchaseOrder->po_number }}</strong>
+                                <strong class="ui-tabular-nums tw:min-w-0 tw:text-on-surface tw:break-words" style="overflow-wrap: anywhere;">{{ $purchaseOrder->po_number }}</strong>
                             </div>
                         </div>
 
-                        <div>
-                            <label class="form-label tw:text-ui-xs tw:font-semibold">{{ __('local_procurement.surface.gr_number') }}<span class="text-danger">*</span></label>
-                            <input name="gr_number" class="form-control form-control-sm" placeholder="{{ __('common.reference_example', ['reference' => 'GR-2026-09-001']) }}" required>
+                        <div class="tw:grid tw:grid-cols-1 tw:sm:grid-cols-2 tw:gap-3">
+                            <div class="tw:grid tw:gap-1.5 tw:min-w-0 tw:content-start">
+                                <label for="add_gr_number" class="form-label tw:m-0 tw:text-ui-sm tw:font-medium tw:text-on-surface">
+                                    {{ __('local_procurement.surface.gr_number') }}
+                                    <span class="tw:text-error" aria-hidden="true">*</span><span class="tw:sr-only"> {{ __('common.required') }}</span>
+                                </label>
+                                <input
+                                    id="add_gr_number"
+                                    name="gr_number"
+                                    maxlength="100"
+                                    value="{{ old('gr_number') }}"
+                                    class="form-control form-control-sm ui-tabular-nums @error('gr_number') is-invalid @enderror"
+                                    @error('gr_number') aria-invalid="true" aria-describedby="add_gr_number_error" @enderror
+                                    placeholder="{{ __('common.reference_example', ['reference' => 'GR-2026-09-001']) }}"
+                                    required
+                                >
+                                @error('gr_number')<div id="add_gr_number_error" class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+
+                            <div class="tw:min-w-0">
+                                <x-ui.date-picker
+                                    id="add_new_gr_date"
+                                    name="gr_date"
+                                    :label="__('local_procurement.labels.gr_date')"
+                                    :value="now()->format('Y-m-d')"
+                                    required="true"
+                                    size="sm"
+                                />
+                            </div>
+
+                            <div class="tw:grid tw:gap-1.5 tw:min-w-0 tw:content-start">
+                                <label for="add_gr_qty" class="form-label tw:m-0 tw:text-ui-sm tw:font-medium tw:text-on-surface">
+                                    {{ __('local_procurement.closure.quantity') }}
+                                    <span class="tw:text-error" aria-hidden="true">*</span><span class="tw:sr-only"> {{ __('common.required') }}</span>
+                                </label>
+                                <input
+                                    id="add_gr_qty"
+                                    name="qty"
+                                    type="number"
+                                    step="0.001"
+                                    min="0.001"
+                                    value="{{ old('qty') }}"
+                                    class="form-control form-control-sm ui-tabular-nums @error('qty') is-invalid @enderror"
+                                    @error('qty') aria-invalid="true" aria-describedby="add_gr_qty_error" @enderror
+                                    placeholder="1.125"
+                                    required
+                                >
+                                @error('qty')<div id="add_gr_qty_error" class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+
+                            <div class="tw:grid tw:gap-1.5 tw:min-w-0 tw:content-start">
+                                <label for="gr_uom_new" class="form-label tw:m-0 tw:text-ui-sm tw:font-medium tw:text-on-surface">
+                                    {{ __('local_procurement.labels.uom') }}
+                                    <span class="tw:text-error" aria-hidden="true">*</span><span class="tw:sr-only"> {{ __('common.required') }}</span>
+                                </label>
+                                <select name="uom" id="gr_uom_new" class="form-select form-select-sm @error('uom') is-invalid @enderror" @error('uom') aria-invalid="true" aria-describedby="gr_uom_new_error" @enderror required>
+                                    <option value="">{{ __('local_procurement.labels.choose_uom') }}</option>
+                                    @foreach(\App\Models\LocalGoodsReceipt::UOMS as $uom)
+                                        <option value="{{ $uom }}" @selected(old('uom') === $uom)>{{ $uom }}</option>
+                                    @endforeach
+                                </select>
+                                @error('uom')<div id="gr_uom_new_error" class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+
+                            <div class="tw:grid tw:gap-1.5 tw:min-w-0 tw:content-start">
+                                <label for="add_gr_description" class="form-label tw:m-0 tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('local_procurement.labels.goods_description_optional') }}</label>
+                                <input
+                                    id="add_gr_description"
+                                    name="description"
+                                    maxlength="2000"
+                                    value="{{ old('description') }}"
+                                    class="form-control form-control-sm @error('description') is-invalid @enderror"
+                                    @error('description') aria-invalid="true" aria-describedby="add_gr_description_error" @enderror
+                                    placeholder="{{ __('local_procurement.surface.material_placeholder') }}"
+                                >
+                                @error('description')<div id="add_gr_description_error" class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+
+                            <div class="tw:grid tw:gap-1.5 tw:min-w-0 tw:content-start">
+                                <label for="add_gr_notes" class="form-label tw:m-0 tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('local_procurement.surface.notes') }}</label>
+                                <input
+                                    id="add_gr_notes"
+                                    name="notes"
+                                    maxlength="2000"
+                                    value="{{ old('notes') }}"
+                                    class="form-control form-control-sm @error('notes') is-invalid @enderror"
+                                    @error('notes') aria-invalid="true" aria-describedby="add_gr_notes_error" @enderror
+                                    placeholder="{{ __('local_procurement.surface.physical_notes') }}"
+                                >
+                                @error('notes')<div id="add_gr_notes_error" class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
                         </div>
 
-                        <div>
-                            <x-ui.date-picker
-                                id="add_new_gr_date"
-                                name="gr_date"
-                                :label="__('local_procurement.labels.gr_date')"
-                                :value="now()->format('Y-m-d')"
-                                required="true"
+                        <div class="tw:min-w-0">
+                            <x-ui.file-upload
+                                name="document"
+                                id="addGrDocument"
+                                accept=".pdf"
+                                :label="__('local_procurement.gr_documents.optional_label')"
+                                :helper="__('local_procurement.gr_documents.optional_help')"
+                                :max-size-mb="5"
                             />
                         </div>
-
-                        <div>
-                            <label class="form-label tw:text-ui-xs tw:font-semibold">{{ __('local_procurement.closure.quantity') }} <span class="text-danger">*</span></label>
-                            <input
-                                name="qty"
-                                type="number"
-                                step="0.001"
-                                min="0.001"
-                                class="form-control form-control-sm ui-tabular-nums"
-                                placeholder="1.125"
-                                required
-                            >
-                        </div>
-                        <div>
-                            <label for="gr_uom_new" class="form-label tw:text-ui-xs tw:font-semibold">{{ __('local_procurement.labels.uom') }} <span class="text-danger">*</span></label>
-                            <select name="uom" id="gr_uom_new" class="form-select form-select-sm @error('uom') is-invalid @enderror" @error('uom') aria-invalid="true" aria-describedby="gr_uom_new_error" @enderror required>
-                                <option value="">{{ __('local_procurement.labels.choose_uom') }}</option>
-                                @foreach(\App\Models\LocalGoodsReceipt::UOMS as $uom)
-                                    <option value="{{ $uom }}" @selected(old('uom') === $uom)>{{ $uom }}</option>
-                                @endforeach
-                            </select>
-                            @error('uom')<div id="gr_uom_new_error" class="invalid-feedback">{{ $message }}</div>@enderror
-                        </div>
-
-                        <div>
-                            <label class="form-label tw:text-ui-xs tw:font-semibold">{{ __('local_procurement.labels.goods_description_optional') }}</label>
-                            <input name="description" class="form-control form-control-sm" placeholder="{{ __('local_procurement.surface.material_placeholder') }}">
-                        </div>
-
-                        <div>
-                            <label class="form-label tw:text-ui-xs tw:font-semibold">{{ __('local_procurement.surface.notes') }}</label>
-                            <input name="notes" class="form-control form-control-sm" placeholder="{{ __('local_procurement.surface.physical_notes') }}">
-                        </div>
                     </div>
-                    <div class="modal-footer">
+                    <div class="modal-footer tw:flex tw:flex-wrap tw:items-center tw:justify-end tw:gap-2">
                         <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('local_invoice.actions.cancel') }}</x-ui.button>
                         <x-ui.button type="submit" variant="primary" size="sm">
                             <x-ui.icon name="plus" size="sm" />
                             <span>{{ __('local_procurement.actions.save_gr') }}</span>
                         </x-ui.button>
                     </div>
-                </div>
-            </form>
+                </form>
+            </div>
         </div>
     </div>
 

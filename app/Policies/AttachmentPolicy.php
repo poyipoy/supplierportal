@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Models\Attachment;
+use App\Models\LocalGoodsReceipt;
 use App\Models\LocalPurchaseOrder;
 use App\Models\MaterialClaim;
 use App\Models\Message;
@@ -57,10 +58,11 @@ class AttachmentPolicy
 
         $type = $attachment->attachable_type;
 
-        if ($user->role === 'finance') {
+        if (in_array($user->role, ['finance', 'accounting'], true)) {
             return in_array($type, [
                 SupplierOverpaymentRefund::class,
                 LocalPurchaseOrder::class,
+                LocalGoodsReceipt::class,
             ], true);
         }
 
@@ -96,6 +98,11 @@ class AttachmentPolicy
 
                 SupplierOverpaymentRefund::class, LocalPurchaseOrder::class => $user->hasSupplierScope('local')
                     && (int) $attachable->supplier_id === (int) $user->id,
+
+                // GR evidence is visible to the owning local supplier until the GR is cancelled.
+                LocalGoodsReceipt::class => $user->hasSupplierScope('local')
+                    && ! $attachable->isCancelled()
+                    && (int) $attachable->purchaseOrder?->supplier_id === (int) $user->id,
 
                 default => false,
             };

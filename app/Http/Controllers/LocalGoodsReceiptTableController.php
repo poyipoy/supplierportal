@@ -26,13 +26,13 @@ class LocalGoodsReceiptTableController extends Controller
         $request->validate(['draw' => ['required', 'integer', 'min:0'], 'start' => ['required', 'integer', 'min:0'],
             'length' => ['required', 'integer', Rule::in([10, 25, 50, 100])],
             'search.value' => ['nullable', 'string', 'max:200'], 'status' => ['nullable', Rule::in($statuses)],
-            'order' => ['sometimes', 'array', 'max:1'], 'order.0.column' => ['required_with:order', 'integer', 'min:0', 'max:9'],
+            'order' => ['sometimes', 'array', 'max:1'], 'order.0.column' => ['required_with:order', 'integer', 'min:0', 'max:10'],
             'order.0.dir' => ['required_with:order', Rule::in(['asc', 'desc'])]]);
         // Column names and column-level searches are never selected by the client.
         $request->merge(['columns' => array_map(fn ($name) => ['data' => $name, 'name' => $name,
             'searchable' => false, 'orderable' => true, 'search' => ['value' => '', 'regex' => false]],
-            ['DT_RowIndex', 'gr_number', 'gr_date', 'description', 'qty', 'uom', 'status_badge', 'invoice', 'source_label', 'actions'])]);
-        $query = $purchaseOrder->goodsReceipts()->with('currentInvoice')
+            ['DT_RowIndex', 'gr_number', 'gr_date', 'description', 'qty', 'uom', 'status_badge', 'invoice', 'document', 'source_label', 'actions'])]);
+        $query = $purchaseOrder->goodsReceipts()->with(['currentInvoice', 'latestGrAttachment'])
             ->when($supplier, fn ($q) => $q->where('status', '!=', LocalGoodsReceipt::STATUS_CANCELLED));
 
         return DataTables::eloquent($query)
@@ -59,6 +59,7 @@ class LocalGoodsReceiptTableController extends Controller
 
                 return view('finance.local-procurement._gr_invoice', ['invoice' => $gr->currentInvoice, 'invoiceRoute' => $route])->render();
             })
+            ->addColumn('document', fn ($gr) => view('finance.local-procurement._gr_document', ['gr' => $gr])->render())
             ->addColumn('source_label', fn ($gr) => __('local_procurement.sources.'.strtolower($gr->source ?: 'MANUAL')))
             ->addColumn('edit_data', function ($gr) use ($supplier, $prefix) {
                 if ($supplier || $gr->status !== LocalGoodsReceipt::STATUS_AVAILABLE) {
@@ -71,9 +72,9 @@ class LocalGoodsReceiptTableController extends Controller
             })
             ->addColumn('actions', fn ($gr) => ! $supplier
                 ? view('finance.local-procurement._gr_actions', ['gr' => $gr, 'purchaseOrder' => $purchaseOrder, 'routePrefix' => $prefix])->render() : '')
-            ->only(['DT_RowIndex', 'gr_number', 'gr_date', 'description', 'qty', 'uom', 'status_badge', 'invoice', 'source_label', 'edit_data', 'actions'])
+            ->only(['DT_RowIndex', 'gr_number', 'gr_date', 'description', 'qty', 'uom', 'status_badge', 'invoice', 'document', 'source_label', 'edit_data', 'actions'])
             ->escapeColumns(['gr_number', 'gr_date', 'description', 'qty', 'uom', 'source_label'])
-            ->rawColumns(['status_badge', 'invoice', 'actions'])
+            ->rawColumns(['status_badge', 'invoice', 'document', 'actions'])
             ->toJson()->header('Cache-Control', 'private, no-store');
     }
 }

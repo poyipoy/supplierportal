@@ -52,7 +52,7 @@ class PurchaseOrderController extends Controller
         ]);
 
         $purchaseOrder->loadCount(['goodsReceipts as active_gr_count' => fn ($q) => $q->where('status', '!=', LocalGoodsReceipt::STATUS_CANCELLED)]);
-        $purchaseOrder->setRelation('goodsReceipts', $purchaseOrder->goodsReceipts()->where('status', '!=', LocalGoodsReceipt::STATUS_CANCELLED)->with('currentInvoice')->orderByDesc('gr_date')->orderByDesc('id')->limit(25)->get());
+        $purchaseOrder->setRelation('goodsReceipts', $purchaseOrder->goodsReceipts()->where('status', '!=', LocalGoodsReceipt::STATUS_CANCELLED)->with(['currentInvoice', 'latestGrAttachment'])->orderByDesc('gr_date')->orderByDesc('id')->limit(25)->get());
 
         return view('local-supplier.purchase-orders.show', [
             'purchaseOrder' => $purchaseOrder,

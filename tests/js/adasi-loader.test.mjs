@@ -8,6 +8,9 @@ import {
     createDomView,
     createLoaderController,
     isDataTableRequest,
+    isFullPageNavigation,
+    isPdfDownloadLink,
+    downloadFileWithLoader,
 } from '../../resources/js/adasi-loader.js';
 
 function fakeTimers() {
@@ -344,6 +347,173 @@ test('loader handoff preserves a closed sidebar inert state and preexisting body
     view.deactivate();
     assert.equal(sidebar.inert, true, 'a closed mobile sidebar must stay inaccessible after foreground work settles');
     assert.equal(doc.body.attributes['aria-busy'], 'false');
+});
+
+test('isPdfDownloadLink identifies PDF and receipt download links', () => {
+    const win = { location: { href: 'http://localhost/supplier/local/invoices/123/receipt', origin: 'http://localhost' } };
+
+    const mockLink = (props = {}) => ({
+        href: props.href || 'http://localhost/test',
+        target: props.target || '',
+        attributes: props.attributes || {},
+        hasAttribute(name) { return Object.prototype.hasOwnProperty.call(this.attributes, name); },
+        getAttribute(name) { return this.attributes[name] ?? null; },
+    });
+
+    // Receipt print URLs should match
+    assert.equal(isPdfDownloadLink(mockLink({ href: 'http://localhost/supplier/local/invoices/123/receipt/print' }), win), true);
+    assert.equal(isPdfDownloadLink(mockLink({ href: 'http://localhost/finance/invoices/123/receipt/print' }), win), true);
+    assert.equal(isPdfDownloadLink(mockLink({ href: 'http://localhost/ga/claims/456/receipt/print' }), win), true);
+
+    // Links with data-download-pdf or data-pdf-download should match
+    assert.equal(isPdfDownloadLink(mockLink({ href: 'http://localhost/custom-pdf', attributes: { 'data-download-pdf': '' } }), win), true);
+    assert.equal(isPdfDownloadLink(mockLink({ href: 'http://localhost/custom-pdf', attributes: { 'data-pdf-download': '' } }), win), true);
+
+    // Download query param on print routes should match
+    assert.equal(isPdfDownloadLink(mockLink({ href: 'http://localhost/finance/vouchers/123/print?download=1' }), win), true);
+
+    // target="_blank" should NOT be intercepted (user explicitly wants new tab)
+    assert.equal(isPdfDownloadLink(mockLink({ href: 'http://localhost/supplier/local/invoices/123/receipt/print', target: '_blank' }), win), false);
+
+    // Standard HTML pages should not match
+    assert.equal(isPdfDownloadLink(mockLink({ href: 'http://localhost/supplier/local/invoices/123' }), win), false);
+    assert.equal(isPdfDownloadLink(mockLink({ href: 'http://localhost/dashboard' }), win), false);
+
+    // Cross-origin links should not match
+    assert.equal(isPdfDownloadLink(mockLink({ href: 'https://example.com/receipt/print' }), win), false);
+});
+
+test('isFullPageNavigation excludes downloads, PDF print routes, and non-navigating links', () => {
+    const win = {
+        location: {
+            href: 'http://localhost/supplier/local/invoices/123/receipt',
+            origin: 'http://localhost',
+            pathname: '/supplier/local/invoices/123/receipt',
+            search: '',
+        },
+    };
+
+    const mockLink = (props = {}) => ({
+        href: props.href || 'http://localhost/supplier/local/invoices',
+        target: props.target || '',
+        attributes: props.attributes || {},
+        hasAttribute(name) { return Object.prototype.hasOwnProperty.call(this.attributes, name); },
+        getAttribute(name) { return this.attributes[name] ?? null; },
+    });
+
+    // Real navigation to another page should be true
+    assert.equal(isFullPageNavigation(mockLink({ href: 'http://localhost/supplier/local/invoices' }), win), true);
+
+    // Receipt print route should be false (file download, does not unload page)
+    assert.equal(isFullPageNavigation(mockLink({ href: 'http://localhost/supplier/local/invoices/123/receipt/print' }), win), false);
+
+    // Links with download attribute should be false
+    assert.equal(isFullPageNavigation(mockLink({ href: 'http://localhost/export', attributes: { download: '' } }), win), false);
+
+    // Links with data-no-loader, data-download-pdf, or data-pdf-download should be false
+    assert.equal(isFullPageNavigation(mockLink({ href: 'http://localhost/nav', attributes: { 'data-no-loader': '' } }), win), false);
+    assert.equal(isFullPageNavigation(mockLink({ href: 'http://localhost/nav', attributes: { 'data-download-pdf': '' } }), win), false);
+    assert.equal(isFullPageNavigation(mockLink({ href: 'http://localhost/nav', attributes: { 'data-pdf-download': '' } }), win), false);
+
+    // Direct binary file extensions should be false
+    assert.equal(isFullPageNavigation(mockLink({ href: 'http://localhost/files/report.pdf' }), win), false);
+    assert.equal(isFullPageNavigation(mockLink({ href: 'http://localhost/files/export.xlsx' }), win), false);
+    assert.equal(isFullPageNavigation(mockLink({ href: 'http://localhost/files/data.csv' }), win), false);
+
+    // URL with download query param should be false
+    assert.equal(isFullPageNavigation(mockLink({ href: 'http://localhost/vouchers/1/print?download=1' }), win), false);
+
+    // Target _blank should be false
+    assert.equal(isFullPageNavigation(mockLink({ href: 'http://localhost/supplier/local/invoices', target: '_blank' }), win), false);
+});
+
+test('downloadFileWithLoader activates loader and hides it immediately after download completes', async () => {
+    const { loader } = setup();
+
+    let appendedElement = null;
+    let clicked = false;
+    let revoked = false;
+
+    const fakeAnchor = {
+        href: '',
+        download: '',
+        click() { clicked = true; },
+        remove() {},
+    };
+
+    const win = {
+        location: { href: 'http://localhost' },
+        fetch: async () => ({
+            ok: true,
+            status: 200,
+            headers: new Map([
+                ['content-disposition', 'attachment; filename="Receipt_REC-2026-0001.pdf"'],
+            ]),
+            blob: async () => ({ size: 1024, type: 'application/pdf' }),
+        }),
+        URL: {
+            createObjectURL: () => 'blob:http://localhost/test-blob-uuid',
+            revokeObjectURL: () => { revoked = true; },
+        },
+        document: {
+            body: {
+                appendChild: (el) => { appendedElement = el; return el; },
+            },
+            createElement: (tag) => tag === 'a' ? fakeAnchor : {},
+        },
+        setTimeout: (fn) => fn(),
+    };
+
+    const link = {
+        href: 'http://localhost/supplier/local/invoices/123/receipt/print',
+        dataset: {},
+        hasAttribute: () => false,
+        getAttribute: () => null,
+    };
+
+    assert.equal(loader.isActive(), false);
+    await downloadFileWithLoader(link, loader, win);
+
+    assert.equal(clicked, true, 'download link should have been clicked');
+    assert.equal(fakeAnchor.download, 'Receipt_REC-2026-0001.pdf', 'filename should be parsed from disposition header');
+    assert.equal(link.dataset.downloadActive, undefined, 'downloadActive should be cleared');
+    assert.equal(loader.isActive(), false, 'loader must be inactive after download completes');
+    assert.equal(loader.pendingCount(), 0, 'no pending loader tokens remaining');
+});
+
+test('downloadFileWithLoader hides loader and reports error when fetch fails', async () => {
+    const { loader } = setup();
+    let toastErrorCalled = false;
+
+    const win = {
+        location: { href: 'http://localhost' },
+        fetch: async () => ({
+            ok: false,
+            status: 500,
+            headers: new Map(),
+            blob: async () => null,
+        }),
+        AdasiToast: {
+            error: () => { toastErrorCalled = true; },
+        },
+        AdasiI18n: {
+            t: (key) => key,
+        },
+    };
+
+    const link = {
+        href: 'http://localhost/supplier/local/invoices/123/receipt/print',
+        dataset: {},
+        hasAttribute: () => false,
+        getAttribute: () => null,
+    };
+
+    await downloadFileWithLoader(link, loader, win);
+
+    assert.equal(toastErrorCalled, true, 'AdasiToast.error must be called on download failure');
+    assert.equal(link.dataset.downloadActive, undefined, 'downloadActive should be cleared on failure');
+    assert.equal(loader.isActive(), false, 'loader must be inactive after error');
+    assert.equal(loader.pendingCount(), 0, 'no pending loader tokens remaining after error');
 });
 
 /** Just enough DOM for createDomView: nodes are plain objects, unknown queries return an inert stub. */

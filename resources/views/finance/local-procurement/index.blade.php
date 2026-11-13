@@ -14,6 +14,10 @@
                 <x-ui.icon name="file-up" size="sm" />
                 <span>{{ __('local_procurement.actions.upload_po') }}</span>
             </x-ui.button>
+            <x-ui.button type="button" variant="outline" size="sm" data-bs-toggle="modal" data-bs-target="#uploadGrBulkModal">
+                <x-ui.icon name="file-up" size="sm" />
+                <span>{{ __('local_procurement.gr_documents.action') }}</span>
+            </x-ui.button>
             <x-ui.button type="button" variant="outline" size="sm" data-bs-toggle="modal" data-bs-target="#localPoImportModal">
                 <x-ui.icon name="file-spreadsheet" size="sm" />
                 <span>{{ __('local_procurement.import.po') }}</span>
@@ -241,4 +245,5 @@
 @include('finance.local-procurement._import_po_modal')
 @include('finance.local-procurement._import_gr_modal')
 @include('finance.local-procurement._upload_po_modal')
+@include('finance.local-procurement._upload_gr_modal')
 @endsection

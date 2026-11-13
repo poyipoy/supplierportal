@@ -237,6 +237,7 @@ Route::prefix(PortalPath::prefix())->group(function () {
             Route::get('/', [LocalProcurementController::class, 'index'])->name('index');
             Route::get('/create', [LocalProcurementController::class, 'create'])->name('create');
             Route::get('/pr-suggestions', [LocalProcurementController::class, 'prSuggestions'])->middleware('throttle:120,1')->name('pr-suggestions');
+            Route::get('/po-suggestions', [LocalProcurementController::class, 'poSuggestions'])->middleware('throttle:120,1')->name('po-suggestions');
             Route::get('/imports', [LocalProcurementImportController::class, 'index'])->name('imports.index');
             Route::get('/imports/{procurementImport}', [LocalProcurementImportController::class, 'status'])->name('imports.status');
             Route::get('/imports/{procurementImport}/records', [LocalProcurementImportController::class, 'records'])->name('imports.records');
@@ -251,6 +252,7 @@ Route::prefix(PortalPath::prefix())->group(function () {
             Route::post('/import/gr/preview', [LocalProcurementController::class, 'grPreview'])->middleware('throttle:15,1')->name('import.gr.preview');
             Route::post('/import/gr/confirm', [LocalProcurementController::class, 'grConfirm'])->middleware('throttle:15,1')->name('import.gr.confirm');
             Route::post('/upload-po', [LocalProcurementController::class, 'uploadPo'])->name('upload-po');
+            Route::post('/upload-gr', [LocalProcurementController::class, 'uploadGr'])->middleware('throttle:15,1')->name('upload-gr');
             Route::get('/po-documents/{poDocumentBatch}', [LocalPoDocumentBatchController::class, 'status'])->name('po-documents.status');
             Route::post('/po-documents/{poDocumentBatch}/retry', [LocalPoDocumentBatchController::class, 'retry'])->middleware('throttle:15,1')->name('po-documents.retry');
             Route::get('/{purchaseOrder}/goods-receipts/data', LocalGoodsReceiptTableController::class)->name('goods-receipts.data');
@@ -260,9 +262,10 @@ Route::prefix(PortalPath::prefix())->group(function () {
             Route::post('/{purchaseOrder}/close', [LocalProcurementController::class, 'close'])->name('close');
             Route::post('/{purchaseOrder}/cancel', [LocalProcurementController::class, 'cancel'])->name('cancel');
             Route::post('/{purchaseOrder}/restore', [LocalProcurementController::class, 'restore'])->middleware('throttle:30,1')->name('restore');
-            Route::post('/{purchaseOrder}/goods-receipts', [LocalProcurementController::class, 'storeGoodsReceipt'])->name('goods-receipts.store');
+            Route::post('/{purchaseOrder}/goods-receipts', [LocalProcurementController::class, 'storeGoodsReceipt'])->middleware('throttle:30,1')->name('goods-receipts.store');
             Route::put('/goods-receipts/{goodsReceipt}', [LocalProcurementController::class, 'updateGoodsReceipt'])->name('goods-receipts.update');
             Route::post('/goods-receipts/{goodsReceipt}/cancel', [LocalProcurementController::class, 'cancelGoodsReceipt'])->name('goods-receipts.cancel');
+            Route::post('/goods-receipts/{goodsReceipt}/document', [LocalProcurementController::class, 'uploadGrDocument'])->middleware('throttle:30,1')->name('goods-receipts.document');
             Route::post('/goods-receipts/{goodsReceipt}/restore', [LocalProcurementController::class, 'restoreGoodsReceipt'])->middleware('throttle:30,1')->name('goods-receipts.restore');
         });
 
@@ -497,7 +500,6 @@ Route::prefix(PortalPath::prefix())->group(function () {
         Route::get('/reference-prices', [MaterialReferencePriceController::class, 'index'])->name('reference-prices.index');
         Route::post('/reference-prices/rules/import-preview', [MaterialReferencePriceController::class, 'importPreview'])->name('reference-prices.rules.import-preview');
         Route::post('/reference-prices/rules/import-confirm', [MaterialReferencePriceController::class, 'importConfirm'])->name('reference-prices.rules.import-confirm');
-        Route::post('/reference-prices/rules/{ruleSet}/activate', [MaterialReferencePriceController::class, 'activateRuleSet'])->name('reference-prices.rules.activate');
         Route::post('/reference-prices/rules/category', [MaterialReferencePriceController::class, 'saveCategory'])->name('reference-prices.rules.category.save');
         Route::patch('/reference-prices/rules/category/{rule}/toggle', [MaterialReferencePriceController::class, 'toggleCategoryStatus'])->name('reference-prices.rules.category.toggle');
         Route::post('/reference-prices', [MaterialReferencePriceController::class, 'store'])->name('reference-prices.store');
@@ -560,7 +562,6 @@ Route::prefix(PortalPath::prefix())->group(function () {
         Route::get('/reference-prices', [MaterialReferencePriceController::class, 'index'])->name('reference-prices.index');
         Route::post('/reference-prices/rules/import-preview', [MaterialReferencePriceController::class, 'importPreview'])->name('reference-prices.rules.import-preview');
         Route::post('/reference-prices/rules/import-confirm', [MaterialReferencePriceController::class, 'importConfirm'])->name('reference-prices.rules.import-confirm');
-        Route::post('/reference-prices/rules/{ruleSet}/activate', [MaterialReferencePriceController::class, 'activateRuleSet'])->name('reference-prices.rules.activate');
         Route::post('/reference-prices/rules/category', [MaterialReferencePriceController::class, 'saveCategory'])->name('reference-prices.rules.category.save');
         Route::patch('/reference-prices/rules/category/{rule}/toggle', [MaterialReferencePriceController::class, 'toggleCategoryStatus'])->name('reference-prices.rules.category.toggle');
         Route::post('/reference-prices', [MaterialReferencePriceController::class, 'store'])->name('reference-prices.store');
@@ -699,6 +700,7 @@ Route::prefix(PortalPath::prefix())->group(function () {
             Route::get('/', 'index')->name('index');
             Route::get('/create', 'create')->name('create');
             Route::get('/pr-suggestions', 'prSuggestions')->middleware('throttle:120,1')->name('pr-suggestions');
+            Route::get('/po-suggestions', 'poSuggestions')->middleware('throttle:120,1')->name('po-suggestions');
             Route::post('/', 'store')->name('store');
             Route::get('/import/po/template', 'poTemplate')->name('import.po.template');
             Route::post('/import/po/preview', 'poPreview')->middleware('throttle:15,1')->name('import.po.preview');
@@ -707,6 +709,7 @@ Route::prefix(PortalPath::prefix())->group(function () {
             Route::post('/import/gr/preview', 'grPreview')->middleware('throttle:15,1')->name('import.gr.preview');
             Route::post('/import/gr/confirm', 'grConfirm')->middleware('throttle:15,1')->name('import.gr.confirm');
             Route::post('/upload-po', 'uploadPo')->name('upload-po');
+            Route::post('/upload-gr', 'uploadGr')->middleware('throttle:15,1')->name('upload-gr');
             Route::get('/po-documents/{poDocumentBatch}', [LocalPoDocumentBatchController::class, 'status'])->name('po-documents.status');
             Route::post('/po-documents/{poDocumentBatch}/retry', [LocalPoDocumentBatchController::class, 'retry'])->middleware('throttle:15,1')->name('po-documents.retry');
             Route::get('/{purchaseOrder}/goods-receipts/data', LocalGoodsReceiptTableController::class)->name('goods-receipts.data');
@@ -716,9 +719,10 @@ Route::prefix(PortalPath::prefix())->group(function () {
             Route::post('/{purchaseOrder}/close', 'close')->name('close');
             Route::post('/{purchaseOrder}/cancel', 'cancel')->name('cancel');
             Route::post('/{purchaseOrder}/restore', 'restore')->middleware('throttle:30,1')->name('restore');
-            Route::post('/{purchaseOrder}/goods-receipts', 'storeGoodsReceipt')->name('goods-receipts.store');
+            Route::post('/{purchaseOrder}/goods-receipts', 'storeGoodsReceipt')->middleware('throttle:30,1')->name('goods-receipts.store');
             Route::put('/goods-receipts/{goodsReceipt}', 'updateGoodsReceipt')->name('goods-receipts.update');
             Route::post('/goods-receipts/{goodsReceipt}/cancel', 'cancelGoodsReceipt')->name('goods-receipts.cancel');
+            Route::post('/goods-receipts/{goodsReceipt}/document', 'uploadGrDocument')->middleware('throttle:30,1')->name('goods-receipts.document');
             Route::post('/goods-receipts/{goodsReceipt}/restore', 'restoreGoodsReceipt')->middleware('throttle:30,1')->name('goods-receipts.restore');
         });
 

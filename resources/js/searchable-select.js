@@ -12,16 +12,35 @@ export function searchableSelect(config = {}) {
         highlightedIndex: -1,
         allowCustom: Boolean(config.allowCustom),
         suggestionsUrl: config.suggestionsUrl || null,
+        remoteSearch: Boolean(config.remoteSearch),
         isDisabled: Boolean(config.disabled),
+        hasAsyncError: false,
         loadingSuggestions: false,
         debounceTimer: null,
+        latestRequestId: 0,
 
         init() {
             this.$watch('selectedValue', (val) => {
-                this.syncNativeSelect(val);
+                if (this.$refs?.nativeSelect && this.$refs.nativeSelect.value !== String(val ?? '')) {
+                    this.syncNativeSelect(val);
+                }
             });
+            const selectEl = this.$refs?.nativeSelect;
+            const form = selectEl?.form;
+            if (form && typeof form.addEventListener === 'function') {
+                const validationKey = String(selectEl.name || '')
+                    .replace(/\[([^\]]*)\]/g, '.$1')
+                    .replace(/^\.+|\.+$/g, '');
+                form.addEventListener('adasi:form-submitting', () => {
+                    this.hasAsyncError = false;
+                });
+                form.addEventListener('adasi:form-errors', (event) => {
+                    const errors = event.detail?.errors || {};
+                    this.hasAsyncError = Boolean(validationKey && errors[validationKey]);
+                });
+            }
             if (this.selectedValue) {
-                if (this.allowCustom && !this.options.some((opt) => String(opt.value) === String(this.selectedValue))) {
+                if ((this.allowCustom || this.remoteSearch) && !this.options.some((opt) => String(opt.value) === String(this.selectedValue))) {
                     this.options.unshift({
                         value: String(this.selectedValue),
                         label: String(this.selectedValue),
@@ -33,7 +52,7 @@ export function searchableSelect(config = {}) {
                 }
                 this.syncNativeSelect(this.selectedValue);
             }
-            if (this.allowCustom && this.suggestionsUrl) {
+            if ((this.allowCustom || this.remoteSearch) && this.suggestionsUrl) {
                 this.$watch('search', (val) => {
                     this.fetchSuggestions(val);
                 });
@@ -41,14 +60,19 @@ export function searchableSelect(config = {}) {
         },
 
         fetchSuggestions(query) {
-            if (!this.suggestionsUrl || !this.allowCustom) return;
+            if (!this.suggestionsUrl || !(this.allowCustom || this.remoteSearch)) return;
             const q = query ? query.trim() : '';
             if (this.debounceTimer) {
                 clearTimeout(this.debounceTimer);
             }
-            if (q.length < 2) return;
+            if (q.length < 2) {
+                this.latestRequestId++;
+                this.loadingSuggestions = false;
+                return;
+            }
 
             this.debounceTimer = setTimeout(async () => {
+                const requestId = ++this.latestRequestId;
                 this.loadingSuggestions = true;
                 try {
                     const origin = globalThis.location?.origin || 'http://localhost';
@@ -59,27 +83,34 @@ export function searchableSelect(config = {}) {
                     });
                     if (res.ok) {
                         const json = await res.json();
-                        const items = json.data || [];
-                        items.forEach((item) => {
-                            const val = String(item.pr_number || item.value || '');
-                            if (val && !this.options.some((o) => o.value.toLowerCase() === val.toLowerCase())) {
-                                this.options.push({
-                                    value: val,
-                                    label: val,
-                                    sublabel: null,
-                                    badge: null,
-                                    badgeTone: 'neutral',
-                                    searchKeywords: val.toLowerCase(),
-                                });
-                            }
-                        });
+                        if (requestId !== this.latestRequestId) return;
+                        (json.data || []).forEach((item) => this.addSuggestion(item));
                     }
                 } catch (e) {
                     // Graceful degradation on network/offline
                 } finally {
-                    this.loadingSuggestions = false;
+                    if (requestId === this.latestRequestId) this.loadingSuggestions = false;
                 }
             }, 300);
+        },
+
+        addSuggestion(item) {
+            const val = String(item.pr_number || item.value || '');
+            if (!val || this.options.some((o) => o.value.toLowerCase() === val.toLowerCase())) return;
+            const label = item.label ? String(item.label) : val;
+            const sublabel = item.sublabel ? String(item.sublabel) : null;
+            const badge = item.badge ? String(item.badge) : null;
+            const keywords = item.searchKeywords
+                ? String(item.searchKeywords)
+                : [label, sublabel, badge].filter(Boolean).join(' ');
+            this.options.push({
+                value: val,
+                label,
+                sublabel,
+                badge,
+                badgeTone: item.badgeTone ? String(item.badgeTone) : 'neutral',
+                searchKeywords: keywords.toLowerCase(),
+            });
         },
 
         get filteredOptions() {
@@ -113,6 +144,7 @@ export function searchableSelect(config = {}) {
 
         select(option) {
             this.selectedValue = option ? String(option.value) : '';
+            this.hasAsyncError = false;
             this.syncNativeSelect(this.selectedValue);
             this.open = false;
             this.search = '';
@@ -170,11 +202,12 @@ export function searchableSelect(config = {}) {
         syncNativeSelect(val) {
             const selectEl = this.$refs?.nativeSelect;
             if (selectEl) {
-                if (this.allowCustom && val) {
-                    const escaped = CSS.escape ? CSS.escape(val) : val.replace(/["\\]/g, '\\$&');
+                if ((this.allowCustom || this.remoteSearch) && val) {
+                    const escaped = globalThis.CSS?.escape ? globalThis.CSS.escape(val) : String(val).replace(/["\\]/g, '\\$&');
                     let opt = selectEl.querySelector('option[value="' + escaped + '"]');
                     if (!opt) {
-                        opt = new Option(val, val, true, true);
+                        const known = this.options.find((o) => String(o.value) === String(val));
+                        opt = new Option(known?.label ?? val, val, true, true);
                         selectEl.add(opt);
                     }
                 }

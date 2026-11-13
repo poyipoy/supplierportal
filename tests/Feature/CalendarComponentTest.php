@@ -55,6 +55,20 @@ BLADE);
         $this->assertStringContainsString('size="sm"', $content);
     }
 
+    public function test_date_picker_enhanced_container_keeps_grid_gap_for_label_alignment(): void
+    {
+        $html = Blade::render(<<<'BLADE'
+<x-ui.date-picker name="gr_date" id="add_new_gr_date" label="Tanggal GR" size="sm" :required="true" />
+BLADE);
+
+        $this->assertStringContainsString('<div data-calendar-native class="tw:grid tw:gap-1.5">', $html);
+        $this->assertStringContainsString('<div data-calendar-enhanced hidden class="tw:grid tw:gap-1.5">', $html);
+        $this->assertMatchesRegularExpression('/id="[^"]+-enhanced"[^>]*class="tw:block tw:text-ui-sm tw:font-medium tw:text-on-surface"/', $html);
+
+        $css = file_get_contents(resource_path('css/app.css'));
+        $this->assertMatchesRegularExpression('/html\.js\s+\.ui-calendar\s+\[data-calendar-enhanced\]\[hidden\]\s*\{[^}]*display:\s*grid\s*!important;/', $css);
+    }
+
     public function test_date_range_picker_keeps_names_ids_and_range_commit_contract(): void
     {
         $html = Blade::render(<<<'BLADE'

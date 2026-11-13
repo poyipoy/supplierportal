@@ -213,22 +213,121 @@ function setTableBusy(wrapper, busy) {
     }
 }
 
-function isFullPageNavigation(link, win) {
+export function isPdfDownloadLink(link, win = globalThis.window) {
+    if (!link || !link.href) return false;
+    if (link.target && link.target !== '_self') return false;
+
+    if (link.hasAttribute('data-download-pdf') || link.hasAttribute('data-pdf-download')) {
+        return true;
+    }
+
+    let url;
+    try {
+        url = new URL(link.href, win?.location?.href || 'http://localhost');
+    } catch {
+        return false;
+    }
+
+    if (win?.location && url.origin !== win.location.origin) return false;
+
+    if (/\/receipt\/print(\/|$)/i.test(url.pathname)) return true;
+    if (url.searchParams.has('download') && /\/print(\/|$)/i.test(url.pathname)) return true;
+
+    return false;
+}
+
+export function isFullPageNavigation(link, win) {
     if ((link.target && link.target !== '_self') || link.hasAttribute('download')
-        || link.hasAttribute('data-bs-toggle') || link.hasAttribute('data-no-loader')) {
+        || link.hasAttribute('data-bs-toggle') || link.hasAttribute('data-no-loader')
+        || link.hasAttribute('data-download-pdf') || link.hasAttribute('data-pdf-download')) {
         return false;
     }
 
     let url;
     try {
-        url = new URL(link.href, win.location.href);
+        url = new URL(link.href, win?.location?.href || 'http://localhost');
     } catch (error) {
         return false;
     }
 
-    if (!/^https?:$/.test(url.protocol) || url.origin !== win.location.origin) return false;
+    if (!/^https?:$/.test(url.protocol) || (win?.location && url.origin !== win.location.origin)) return false;
+
+    if (/\.(pdf|xlsx|xls|csv|zip|docx|doc)$/i.test(url.pathname)) return false;
+    if (url.searchParams.has('download')) return false;
+    if (/\/receipt\/print(\/|$)/i.test(url.pathname)) return false;
 
     return url.pathname !== win.location.pathname || url.search !== win.location.search;
+}
+
+export async function downloadFileWithLoader(link, loader, win = globalThis.window) {
+    if (!link || !link.href) return;
+    if (link.dataset.downloadActive === 'true') return;
+    link.dataset.downloadActive = 'true';
+
+    const token = loader?.show();
+    if (win.AdasiButton?.startLoading) {
+        win.AdasiButton.startLoading(link);
+    }
+
+    try {
+        const fetchFn = win.fetch ? win.fetch.bind(win) : globalThis.fetch;
+        if (!fetchFn) {
+            win.location.href = link.href;
+            return;
+        }
+
+        const response = await fetchFn(link.href, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/pdf, application/octet-stream, */*',
+            },
+            credentials: 'same-origin',
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error ${response.status}`);
+        }
+
+        const blob = await response.blob();
+        let disposition = '';
+        if (response.headers) {
+            if (typeof response.headers.get === 'function') {
+                disposition = response.headers.get('Content-Disposition') || response.headers.get('content-disposition') || '';
+            } else {
+                disposition = response.headers['content-disposition'] || response.headers['Content-Disposition'] || '';
+            }
+        }
+        let filename = 'document.pdf';
+        const match = disposition.match(/filename\*?=(?:UTF-8'')?["']?([^"';]+)["']?/i);
+        if (match && match[1]) {
+            filename = decodeURIComponent(match[1]);
+        } else if (link.hasAttribute('download') && link.getAttribute('download')) {
+            filename = link.getAttribute('download');
+        }
+
+        const URLObj = win.URL || globalThis.URL;
+        const blobUrl = URLObj.createObjectURL(blob);
+        const a = win.document.createElement('a');
+        a.href = blobUrl;
+        a.download = filename;
+        win.document.body.appendChild(a);
+        a.click();
+        a.remove();
+        win.setTimeout(() => URLObj.revokeObjectURL(blobUrl), 1000);
+    } catch (error) {
+        console.error('Download error:', error);
+        if (win.AdasiToast) {
+            win.AdasiToast.error(win.AdasiI18n?.t?.('js.toast.failed') || 'Download failed');
+        }
+    } finally {
+        delete link.dataset.downloadActive;
+        if (token && loader) {
+            loader.hide(token, true);
+        }
+        if (win.AdasiButton?.stopLoading) {
+            win.AdasiButton.stopLoading(link);
+        }
+    }
 }
 
 export function bootAdasiLoader(win = globalThis.window) {
@@ -246,6 +345,7 @@ export function bootAdasiLoader(win = globalThis.window) {
     view.bind(() => loader.reset(), () => loader.pendingCount() > 0);
     view.mount();
     win.AdasiLoader = loader;
+    loader.download = (link) => downloadFileWithLoader(link, loader, win);
 
     const $ = win.jQuery;
     if ($) {
@@ -266,6 +366,13 @@ export function bootAdasiLoader(win = globalThis.window) {
         const link = event.target instanceof win.Element ? event.target.closest('a[href]') : null;
         if (!link || event.defaultPrevented || event.button !== 0
             || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+
+        if (isPdfDownloadLink(link, win)) {
+            event.preventDefault();
+            downloadFileWithLoader(link, loader, win);
+            return;
+        }
+
         if (isFullPageNavigation(link, win)) loader.trackNavigation();
     });
 

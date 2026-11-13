@@ -85,6 +85,7 @@
                         'label' => $gr->gr_number,
                         'description' => $description,
                         'sublabel' => $dateFormatted ? __('local_invoice.labels.date') . ': ' . $dateFormatted : null,
+                        'amount' => $effectiveAmount !== null ? (float) $effectiveAmount : 0.0,
                         'qty' => (float) $gr->qty,
                         'uom' => $gr->uom,
                         'receipt_amount' => $effectiveAmount !== null ? (float) $effectiveAmount : null,
@@ -563,7 +564,7 @@
                         </div>
                     </div>
 
-                    <div>
+                    <div class="tw:min-w-0">
                         <x-ui.multi-select
                             name="goods_receipt_ids[]"
                             id="goods_receipt_ids"
@@ -597,6 +598,7 @@
                                     required
                                 >
                             </div>
+                            <div id="dpp-ceiling-error" class="tw:hidden tw:text-[11px] tw:text-error tw:font-medium tw:mt-1" role="alert"></div>
                             <div class="tw:text-[11px] tw:text-on-surface-variant tw:mt-1">
                                 {{ __('local_invoice.form.dpp_help') }}
                             </div>
@@ -982,6 +984,13 @@ function localInvoiceWizard(config) {
                 this.errorMessage = '';
             }
             this.step = target;
+            if (target === 2) {
+                this.$nextTick(() => {
+                    if (typeof updateValidation === 'function') {
+                        updateValidation();
+                    }
+                });
+            }
             window.scrollTo({ top: 0, behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
         },
 
@@ -1068,28 +1077,64 @@ function updateValidation() {
         }
     }
 
-    if (!summaryMatchChip) return;
+    const isCeilingExceeded = Boolean(poData && dpp > poCeiling + 0.005);
+    const dppCeilingError = document.getElementById('dpp-ceiling-error');
 
-    if (!poVal) {
-        summaryMatchChip.innerHTML = '<span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-medium tw:bg-surface-high tw:text-on-surface-variant"></span>';
-        summaryMatchChip.firstElementChild.textContent = @js(__('local_invoice.interaction.select_po'));
-        if (summaryDiffContainer) summaryDiffContainer.classList.add('tw:hidden');
-    } else if (dpp <= 0) {
-        summaryMatchChip.innerHTML = '<span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-medium tw:bg-surface-high tw:text-on-surface-variant"></span>';
-        summaryMatchChip.firstElementChild.textContent = @js(__('local_invoice.interaction.input_dpp'));
-        if (summaryDiffContainer) summaryDiffContainer.classList.add('tw:hidden');
-    } else if (dpp > poCeiling + 0.005) {
+    if (isCeilingExceeded) {
         const excess = dpp - poCeiling;
-        summaryMatchChip.innerHTML = '<span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-semibold tw:bg-error/10 tw:text-error"><svg class="tw:w-3 tw:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg></span>';
-        summaryMatchChip.firstElementChild.append(document.createTextNode(@js(__('local_invoice.interaction.ceiling_exceeded'))));
+        const exceededMsg = @js(__('local_invoice.interaction.dpp_exceeded')).replace(':amount', () => rupiah(dpp)).replace(':ceiling', () => rupiah(poCeiling));
+
+        if (summaryMatchChip) {
+            summaryMatchChip.innerHTML = '<span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-semibold tw:bg-error/10 tw:text-error"><svg class="tw:w-3 tw:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg></span>';
+            summaryMatchChip.firstElementChild.append(document.createTextNode(@js(__('local_invoice.interaction.ceiling_exceeded'))));
+        }
         if (summaryDiffContainer) {
             summaryDiffContainer.classList.remove('tw:hidden');
             if (summaryDiffAmount) summaryDiffAmount.textContent = rupiah(excess);
         }
+        if (dppCeilingError) {
+            dppCeilingError.textContent = exceededMsg;
+            dppCeilingError.classList.remove('tw:hidden');
+        }
+        dppInput?.classList.add('is-invalid');
+        dppInput?.setAttribute('aria-invalid', 'true');
+
+        if (submitBtn) {
+            submitBtn.setAttribute('disabled', 'true');
+            submitBtn.setAttribute('aria-disabled', 'true');
+            submitBtn.title = exceededMsg;
+        }
     } else {
-        summaryMatchChip.innerHTML = '<span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-semibold tw:bg-success/10 tw:text-success"><svg class="tw:w-3 tw:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg></span>';
-        summaryMatchChip.firstElementChild.append(document.createTextNode(@js(__('local_invoice.interaction.ceiling_valid'))));
+        if (dppCeilingError) {
+            dppCeilingError.textContent = '';
+            dppCeilingError.classList.add('tw:hidden');
+        }
+        if (dppInput && !dppInput.hasAttribute('data-async-invalid')) {
+            dppInput.classList.remove('is-invalid');
+            dppInput.removeAttribute('aria-invalid');
+        }
+
+        if (submitBtn && !submitBtn.classList.contains('tw:pointer-events-none')) {
+            submitBtn.removeAttribute('disabled');
+            submitBtn.removeAttribute('aria-disabled');
+            submitBtn.removeAttribute('title');
+            submitBtn.title = '';
+        }
+
         if (summaryDiffContainer) summaryDiffContainer.classList.add('tw:hidden');
+
+        if (summaryMatchChip) {
+            if (!poVal) {
+                summaryMatchChip.innerHTML = '<span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-medium tw:bg-surface-high tw:text-on-surface-variant"></span>';
+                summaryMatchChip.firstElementChild.textContent = @js(__('local_invoice.interaction.select_po'));
+            } else if (dpp <= 0) {
+                summaryMatchChip.innerHTML = '<span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-medium tw:bg-surface-high tw:text-on-surface-variant"></span>';
+                summaryMatchChip.firstElementChild.textContent = @js(__('local_invoice.interaction.input_dpp'));
+            } else {
+                summaryMatchChip.innerHTML = '<span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-semibold tw:bg-success/10 tw:text-success"><svg class="tw:w-3 tw:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg></span>';
+                summaryMatchChip.firstElementChild.append(document.createTextNode(@js(__('local_invoice.interaction.ceiling_valid'))));
+            }
+        }
     }
 }
 
@@ -1283,7 +1328,7 @@ invoiceForm?.addEventListener('submit', function(e) {
 
     if (poData && dpp > poCeiling + 0.005) {
         e.preventDefault();
-        alert(@js(__('local_invoice.interaction.dpp_exceeded')).replace(':amount', () => rupiah(dpp)).replace(':ceiling', () => rupiah(poCeiling)));
+        updateValidation();
         dppInput?.focus();
         return false;
     }
@@ -1304,5 +1349,6 @@ invoiceForm?.addEventListener('adasi:form-settled', function() {
     submitBtn.removeAttribute('disabled');
     submitBtn.classList.remove('tw:opacity-80', 'tw:pointer-events-none');
     submitBtn.querySelector('svg, .ui-icon')?.classList.remove('tw:animate-spin');
+    updateValidation();
 });
 </script>

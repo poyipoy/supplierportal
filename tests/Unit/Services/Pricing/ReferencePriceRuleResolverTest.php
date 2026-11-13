@@ -4,7 +4,6 @@ namespace Tests\Unit\Services\Pricing;
 
 use App\Models\PrItem;
 use App\Models\ReferencePriceRule;
-use App\Models\ReferencePriceSetting;
 use App\Models\User;
 use App\Services\Pricing\ReferencePriceRuleResolver;
 use Database\Seeders\ReferencePriceRulesInitialSeeder;
@@ -105,8 +104,7 @@ class ReferencePriceRuleResolverTest extends TestCase
 
     public function test_inactive_rule_returns_rule_inactive(): void
     {
-        $activeSet = ReferencePriceSetting::getActiveRuleSet();
-        $rule = $activeSet->rules->where('category_key', '1-15')->first();
+        $rule = ReferencePriceRule::where('category_key', '1-15')->firstOrFail();
         $rule->update(['status' => ReferencePriceRule::STATUS_INACTIVE]);
 
         $result = $this->resolver->resolve(PrItem::SHAPE_FLAT, 10.0);

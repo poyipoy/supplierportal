@@ -25,3 +25,16 @@
         </form>
     </div></div>
 </div>
+<div class="modal fade local-po-gr-modal" id="uploadGrDocumentModal" tabindex="-1" aria-labelledby="uploadGrDocumentTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+        <form method="POST" enctype="multipart/form-data" data-gr-document-form data-async-submit data-async-summary-skip-file-errors="true">
+            @csrf
+            <div class="modal-header"><h2 id="uploadGrDocumentTitle" class="modal-title tw:text-ui-sm tw:font-bold">{{ __('local_procurement.gr_documents.row_title') }} <span data-gr-modal-number></span></h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('local_invoice.actions.close') }}"></button></div>
+            <div class="modal-body tw:space-y-3">
+                <p class="tw:text-ui-xs tw:text-on-surface-variant tw:mb-0">{{ __('local_procurement.gr_documents.row_help') }}</p>
+                <x-ui.file-upload name="file" id="grRowDocumentFile" accept=".pdf" :label="__('local_procurement.gr_documents.row_file')" :helper="__('local_procurement.gr_documents.optional_help')" :max-size-mb="5" required />
+            </div>
+            <div class="modal-footer"><x-ui.button type="button" variant="ghost" data-bs-dismiss="modal">{{ __('local_invoice.actions.cancel') }}</x-ui.button><x-ui.button type="submit"><x-ui.icon name="upload" size="sm" /><span>{{ __('local_invoice.form.document_upload') }}</span></x-ui.button></div>
+        </form>
+    </div></div>
+</div>

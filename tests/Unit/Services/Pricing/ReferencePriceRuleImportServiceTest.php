@@ -4,8 +4,6 @@ namespace Tests\Unit\Services\Pricing;
 
 use App\Models\ReferencePriceImport;
 use App\Models\ReferencePriceRule;
-use App\Models\ReferencePriceRuleSet;
-use App\Models\ReferencePriceSetting;
 use App\Models\User;
 use App\Services\Pricing\ReferencePriceRuleImportService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -68,32 +66,19 @@ class ReferencePriceRuleImportServiceTest extends TestCase
 
     public function test_replace_mode_replaces_all_categories_in_preview(): void
     {
-        // Seed an initial set with 2 categories
-        $initialSet = ReferencePriceRuleSet::create([
-            'version_no' => 1,
-            'status' => ReferencePriceRuleSet::STATUS_ACTIVE,
-            'created_by' => $this->user->id,
-            'activated_by' => $this->user->id,
-            'activated_at' => now(),
-        ]);
         ReferencePriceRule::create([
-            'rule_set_id' => $initialSet->id,
             'category_key' => 'old-category',
             'category_name' => 'Old Category',
             'dimension_min' => 1,
             'dimension_max' => 10,
             'status' => ReferencePriceRule::STATUS_ACTIVE,
         ]);
-        ReferencePriceSetting::create([
-            'active_rule_set_id' => $initialSet->id,
-            'updated_by' => $this->user->id,
-        ]);
 
         $newRules = [
             ['category_key' => '1-15', 'category_name' => '1-15', 'dimension_min' => 1, 'dimension_max' => 15, 'sort_order' => 1],
         ];
 
-        $preview = $this->service->buildPreview($newRules, ReferencePriceRuleSet::MODE_REPLACE, $initialSet);
+        $preview = $this->service->buildPreview($newRules, ReferencePriceImport::MODE_REPLACE);
 
         $this->assertTrue($preview['valid']);
         $this->assertCount(1, $preview['new']);
@@ -103,15 +88,7 @@ class ReferencePriceRuleImportServiceTest extends TestCase
 
     public function test_merge_mode_preserves_non_overlapping_categories(): void
     {
-        $initialSet = ReferencePriceRuleSet::create([
-            'version_no' => 1,
-            'status' => ReferencePriceRuleSet::STATUS_ACTIVE,
-            'created_by' => $this->user->id,
-            'activated_by' => $this->user->id,
-            'activated_at' => now(),
-        ]);
         ReferencePriceRule::create([
-            'rule_set_id' => $initialSet->id,
             'category_key' => '1-15',
             'category_name' => '1-15',
             'dimension_min' => 1,
@@ -119,7 +96,6 @@ class ReferencePriceRuleImportServiceTest extends TestCase
             'status' => ReferencePriceRule::STATUS_ACTIVE,
         ]);
         ReferencePriceRule::create([
-            'rule_set_id' => $initialSet->id,
             'category_key' => '16-50',
             'category_name' => '16-50',
             'dimension_min' => 16,
@@ -132,7 +108,7 @@ class ReferencePriceRuleImportServiceTest extends TestCase
             ['category_key' => '51-100', 'category_name' => '51-100', 'dimension_min' => 51, 'dimension_max' => 100, 'sort_order' => 3],
         ];
 
-        $preview = $this->service->buildPreview($newRules, ReferencePriceRuleSet::MODE_MERGE, $initialSet);
+        $preview = $this->service->buildPreview($newRules, ReferencePriceImport::MODE_MERGE);
 
         $this->assertTrue($preview['valid']);
         $this->assertCount(1, $preview['new']);
@@ -142,15 +118,7 @@ class ReferencePriceRuleImportServiceTest extends TestCase
 
     public function test_merge_mode_detects_overlap_conflicts(): void
     {
-        $initialSet = ReferencePriceRuleSet::create([
-            'version_no' => 1,
-            'status' => ReferencePriceRuleSet::STATUS_ACTIVE,
-            'created_by' => $this->user->id,
-            'activated_by' => $this->user->id,
-            'activated_at' => now(),
-        ]);
         ReferencePriceRule::create([
-            'rule_set_id' => $initialSet->id,
             'category_key' => '16-50',
             'category_name' => '16-50',
             'dimension_min' => 16,
@@ -163,13 +131,13 @@ class ReferencePriceRuleImportServiceTest extends TestCase
             ['category_key' => '10-30', 'category_name' => '10-30', 'dimension_min' => 10, 'dimension_max' => 30, 'sort_order' => 1],
         ];
 
-        $preview = $this->service->buildPreview($newRules, ReferencePriceRuleSet::MODE_MERGE, $initialSet);
+        $preview = $this->service->buildPreview($newRules, ReferencePriceImport::MODE_MERGE);
 
         $this->assertFalse($preview['valid']);
         $this->assertNotEmpty($preview['conflicts']);
     }
 
-    public function test_commit_creates_new_version_and_sets_active_atomically(): void
+    public function test_commit_applies_rules_atomically_without_versions(): void
     {
         $path = base_path('tests/Fixtures/Kategori Range.xlsx');
         $parsed = $this->service->parseWorkbook($path, 'Kategori');
@@ -180,19 +148,15 @@ class ReferencePriceRuleImportServiceTest extends TestCase
             'private_storage_path' => 'fixtures/Kategori Range.xlsx',
             'source_file_hash' => hash_file('sha256', $path),
             'source_sheet' => 'Kategori',
-            'import_mode' => ReferencePriceRuleSet::MODE_REPLACE,
+            'import_mode' => ReferencePriceImport::MODE_REPLACE,
             'status' => ReferencePriceImport::STATUS_PREVIEWED,
             'parsed_count' => count($parsed),
         ]);
 
-        $newSet = $this->service->commit($import, $parsed, $this->user);
+        $rules = $this->service->commit($import, $parsed, $this->user);
 
-        $this->assertEquals(1, $newSet->version_no);
-        $this->assertEquals(ReferencePriceRuleSet::STATUS_ACTIVE, $newSet->status);
-        $this->assertCount(11, $newSet->rules);
-
-        $activeSetting = ReferencePriceSetting::first();
-        $this->assertNotNull($activeSetting);
-        $this->assertEquals($newSet->id, $activeSetting->active_rule_set_id);
+        $this->assertCount(11, $rules);
+        $this->assertEquals(11, ReferencePriceRule::count());
+        $this->assertEquals(ReferencePriceImport::STATUS_CONFIRMED, $import->fresh()->status);
     }
 }

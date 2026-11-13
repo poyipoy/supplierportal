@@ -4,7 +4,6 @@ namespace App\Services\Pricing;
 
 use App\Models\PrItem;
 use App\Models\QuotationItem;
-use App\Models\ReferencePriceRuleSet;
 use App\Support\BusinessTime;
 use App\Support\Money;
 use DateTimeInterface;
@@ -28,7 +27,6 @@ class ReferencePriceBenchmarkResolver
         ?int $benchmarkYear = null,
         DateTimeInterface|string|null $historyAsOfAt = null,
         array $excludePoIds = [],
-        ?ReferencePriceRuleSet $ruleSet = null,
     ): ReferencePriceBenchmarkResult {
         $targetCurrency = strtoupper(trim($targetCurrency));
 
@@ -39,7 +37,6 @@ class ReferencePriceBenchmarkResolver
             benchmarkYear: $benchmarkYear,
             historyAsOfAt: $historyAsOfAt,
             excludePoIds: $excludePoIds,
-            ruleSet: $ruleSet,
         );
 
         // 2. Optional Supplier Alternative benchmark
@@ -47,7 +44,7 @@ class ReferencePriceBenchmarkResolver
         $hasAlternative = false;
 
         if ($quotationItem !== null) {
-            $offeredRuleResult = $this->ruleResolver->resolveForQuotationItem($quotationItem, $ruleSet);
+            $offeredRuleResult = $this->ruleResolver->resolveForQuotationItem($quotationItem);
 
             if ($offeredRuleResult->isMatched() && $offeredRuleResult->rule?->category_key !== $mainCalc->categoryKey) {
                 $hasAlternative = true;
@@ -57,7 +54,6 @@ class ReferencePriceBenchmarkResolver
                     benchmarkYear: $benchmarkYear,
                     historyAsOfAt: $historyAsOfAt,
                     excludePoIds: $excludePoIds,
-                    ruleSet: $ruleSet,
                 );
             }
         }

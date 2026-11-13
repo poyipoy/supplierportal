@@ -9,8 +9,6 @@ use App\Models\PrItemAward;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
-use App\Models\ReferencePriceRuleSet;
-use App\Models\ReferencePriceSetting;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Services\Pricing\ReferencePriceBenchmarkResolver;
@@ -34,8 +32,6 @@ class ReferencePriceBenchmarkResolverTest extends TestCase
 
     private MaterialMaster $material;
 
-    private ReferencePriceRuleSet $ruleSet;
-
     private int $seq = 0;
 
     protected function setUp(): void
@@ -56,7 +52,6 @@ class ReferencePriceBenchmarkResolverTest extends TestCase
         ]);
 
         $this->seed(ReferencePriceRulesInitialSeeder::class);
-        $this->ruleSet = ReferencePriceSetting::getActiveRuleSet();
 
         $this->material = MaterialMaster::create([
             'material_code' => 'SKD11',

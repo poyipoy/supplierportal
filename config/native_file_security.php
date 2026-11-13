@@ -25,6 +25,7 @@ return [
         'refund' => $profile(10 * $mib, $documents),
         'audit' => $profile(10 * $mib, [...$documents, 'xlsx']),
         'po_pdf' => $profile(20 * $mib, ['pdf']),
+        'gr_pdf' => $profile(5 * $mib, ['pdf']),
         'po_zip_pdf' => $profile(100 * $mib, ['pdf']),
         'po_zip' => $profile(20 * $mib, ['zip']),
         'spreadsheet_preview' => $profile(10 * $mib, ['xlsx', 'xls', 'csv']),

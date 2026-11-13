@@ -13,7 +13,6 @@ class ReferencePriceRule extends Model
     public const STATUS_INACTIVE = 'inactive';
 
     protected $fillable = [
-        'rule_set_id',
         'category_key',
         'category_name',
         'dimension_min',
@@ -31,11 +30,6 @@ class ReferencePriceRule extends Model
             'dimension_max' => 'integer',
             'sort_order' => 'integer',
         ];
-    }
-
-    public function ruleSet(): BelongsTo
-    {
-        return $this->belongsTo(ReferencePriceRuleSet::class, 'rule_set_id');
     }
 
     public function creator(): BelongsTo

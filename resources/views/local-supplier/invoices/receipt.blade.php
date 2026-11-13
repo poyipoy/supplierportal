@@ -47,7 +47,7 @@
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>{{ __('local_invoice.actions.view_detail') }}</span>
             </x-ui.button>
-            <x-ui.button :href="$pdfUrl ?? null" variant="primary" size="sm" class="d-print-none">
+            <x-ui.button :href="$pdfUrl ?? null" variant="primary" size="sm" class="d-print-none" data-download-pdf data-no-loader>
                 <x-ui.icon name="printer" size="sm" />
                 <span>{{ __('local_invoice.actions.print_receipt') }}</span>
             </x-ui.button>
@@ -111,7 +111,7 @@
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>{{ __('local_invoice.actions.view_detail') }}</span>
             </x-ui.button>
-            <x-ui.button :href="$pdfUrl ?? null" variant="primary" size="sm">
+            <x-ui.button :href="$pdfUrl ?? null" variant="primary" size="sm" data-download-pdf data-no-loader>
                 <x-ui.icon name="printer" size="sm" />
                 <span>{{ __('local_invoice.actions.print_receipt') }}</span>
             </x-ui.button>

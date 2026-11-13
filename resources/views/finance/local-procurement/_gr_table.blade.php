@@ -28,6 +28,7 @@
             <th scope="col">{{ __('local_procurement.labels.uom') }}</th>
             <th scope="col">{{ __('local_invoice.labels.status') }}</th>
             <th scope="col">{{ __('local_procurement.labels.gr_invoice') }}</th>
+            <th scope="col">{{ __('local_procurement.gr_documents.column') }}</th>
             <th scope="col">{{ __('local_invoice.labels.source') }}</th>
             <th scope="col">{{ __('local_invoice.labels.actions') }}</th>
         </tr></thead>
@@ -42,6 +43,7 @@
                         @php $invoiceRoute = $readOnly ? 'local-supplier.invoices.show' : ($routePrefix === 'purchasing.local-procurement' ? 'purchasing.local-invoices.show' : 'finance.invoices.show'); @endphp
                         @include('finance.local-procurement._gr_invoice', ['invoice' => $gr->currentInvoice, 'invoiceRoute' => $invoiceRoute])
                     </td>
+                    <td>@include('finance.local-procurement._gr_document', ['gr' => $gr])</td>
                     <td>{{ __('local_procurement.sources.'.strtolower($gr->source ?: 'MANUAL')) }}</td><td>@unless($readOnly)@include('finance.local-procurement._gr_actions')@endunless</td>
                 </tr>
             @endforeach

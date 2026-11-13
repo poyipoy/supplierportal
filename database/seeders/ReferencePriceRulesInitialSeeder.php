@@ -3,8 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\ReferencePriceImport;
-use App\Models\ReferencePriceRuleSet;
-use App\Models\ReferencePriceSetting;
+use App\Models\ReferencePriceRule;
 use App\Models\User;
 use App\Services\Pricing\ReferencePriceRuleImportService;
 use Illuminate\Database\Seeder;
@@ -13,7 +12,7 @@ class ReferencePriceRulesInitialSeeder extends Seeder
 {
     public function run(): void
     {
-        if (ReferencePriceSetting::getActiveRuleSet() !== null) {
+        if (ReferencePriceRule::query()->exists()) {
             return;
         }
 
@@ -38,7 +37,7 @@ class ReferencePriceRulesInitialSeeder extends Seeder
                 'private_storage_path' => 'tests/Fixtures/Kategori Range.xlsx',
                 'source_file_hash' => hash_file('sha256', $fixturePath),
                 'source_sheet' => 'Kategori',
-                'import_mode' => ReferencePriceRuleSet::MODE_REPLACE,
+                'import_mode' => ReferencePriceImport::MODE_REPLACE,
                 'status' => ReferencePriceImport::STATUS_PREVIEWED,
                 'parsed_count' => count($parsed),
             ]);
@@ -69,7 +68,7 @@ class ReferencePriceRulesInitialSeeder extends Seeder
             'private_storage_path' => 'system/initial',
             'source_file_hash' => hash('sha256', 'initial_categories'),
             'source_sheet' => 'Kategori',
-            'import_mode' => ReferencePriceRuleSet::MODE_REPLACE,
+            'import_mode' => ReferencePriceImport::MODE_REPLACE,
             'status' => ReferencePriceImport::STATUS_PREVIEWED,
             'parsed_count' => count($defaultCategories),
         ]);

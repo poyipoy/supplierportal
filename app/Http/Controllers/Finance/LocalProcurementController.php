@@ -8,6 +8,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\LocalInvoice\RestoreLocalProcurementRequest;
 use App\Http\Requests\LocalInvoice\SaveLocalGoodsReceiptRequest;
 use App\Http\Requests\LocalInvoice\SaveLocalPurchaseOrderRequest;
+use App\Http\Requests\LocalInvoice\UploadGoodsReceiptDocumentRequest;
+use App\Http\Requests\LocalInvoice\UploadLocalGrDocumentRequest;
 use App\Http\Requests\LocalInvoice\UploadLocalGrImportRequest;
 use App\Http\Requests\LocalInvoice\UploadLocalPoDocumentRequest;
 use App\Http\Requests\LocalInvoice\UploadLocalPoImportRequest;
@@ -15,17 +17,23 @@ use App\Models\LocalGoodsReceipt;
 use App\Models\LocalInvoice;
 use App\Models\LocalPurchaseOrder;
 use App\Models\User;
+use App\Services\LocalInvoice\LocalGrDocumentService;
 use App\Services\LocalInvoice\LocalPoDocumentBatchService;
 use App\Services\LocalInvoice\LocalPoDocumentService;
 use App\Services\LocalInvoice\LocalProcurementImportService;
 use App\Services\LocalInvoice\LocalProcurementMasterService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Facades\Excel;
 
 class LocalProcurementController extends Controller
 {
+    private const PO_PRELOAD_LIMIT = 100;
+
+    private const PO_SUGGESTION_LIMIT = 20;
+
     public function index(Request $request)
     {
         $supplier = $this->resolveSupplierFilter($request->query('supplier_id'));
@@ -60,6 +68,7 @@ class LocalProcurementController extends Controller
         return view('finance.local-procurement.index', [
             'purchaseOrders' => $query->latest('po_date')->paginate(25)->withQueryString(),
             'suppliers' => $this->suppliers(),
+            'grPoOptions' => $this->grUploadPoOptions(),
             'routePrefix' => $this->prefix(),
             'metrics' => $metrics,
         ]);
@@ -101,7 +110,7 @@ class LocalProcurementController extends Controller
         $purchaseOrder->load('supplier.supplier');
         $purchaseOrder->loadSum(['invoices as active_invoice_amount' => fn ($q) => $q->whereNotIn('status', [LocalInvoice::STATUS_REJECTED, LocalInvoice::STATUS_CANCELLED])], 'invoice_amount');
         $purchaseOrder->loadCount(['goodsReceipts', 'goodsReceipts as active_gr_count' => fn ($q) => $q->where('status', '!=', LocalGoodsReceipt::STATUS_CANCELLED)]);
-        $purchaseOrder->setRelation('goodsReceipts', $purchaseOrder->goodsReceipts()->with('currentInvoice')->orderByDesc('gr_date')->orderByDesc('id')->limit(25)->get());
+        $purchaseOrder->setRelation('goodsReceipts', $purchaseOrder->goodsReceipts()->with(['currentInvoice', 'latestGrAttachment'])->orderByDesc('gr_date')->orderByDesc('id')->limit(25)->get());
 
         return view('finance.local-procurement.show', ['purchaseOrder' => $purchaseOrder, 'routePrefix' => $this->prefix()]);
     }
@@ -136,11 +145,94 @@ class LocalProcurementController extends Controller
         return back()->with('success', __('local_procurement.feedback.po_cancelled'));
     }
 
-    public function storeGoodsReceipt(SaveLocalGoodsReceiptRequest $request, LocalPurchaseOrder $purchaseOrder, LocalProcurementMasterService $service)
+    public function storeGoodsReceipt(SaveLocalGoodsReceiptRequest $request, LocalPurchaseOrder $purchaseOrder, LocalProcurementMasterService $service, LocalGrDocumentService $documents)
     {
-        $service->createGoodsReceipt($request->user(), $purchaseOrder, $request->validated());
+        $data = Arr::except($request->validated(), ['document']);
+        if ($request->hasFile('document')) {
+            $documents->createGoodsReceiptWithDocument($request->user(), $purchaseOrder, $data, $request->file('document'), $service);
+        } else {
+            $service->createGoodsReceipt($request->user(), $purchaseOrder, $data);
+        }
 
         return back()->with('success', __('local_procurement.feedback.gr_added'));
+    }
+
+    public function uploadGr(UploadLocalGrDocumentRequest $request, LocalGrDocumentService $service)
+    {
+        $purchaseOrder = $request->purchaseOrder();
+        $file = $request->file('file');
+
+        if (strtolower($file->getClientOriginalExtension()) === 'zip') {
+            $result = $service->uploadZip($request->user(), $purchaseOrder, $file);
+            $message = __('local_procurement.gr_documents.zip_uploaded', ['count' => $result['count'], 'po' => $purchaseOrder->po_number]);
+        } else {
+            $gr = $service->uploadSinglePdf($request->user(), $purchaseOrder, $file);
+            $message = __('local_procurement.gr_documents.uploaded', ['number' => $gr->gr_number]);
+        }
+
+        return $this->documentUploaded($request, $message, route($this->prefix().'.show', $purchaseOrder));
+    }
+
+    public function poSuggestions(Request $request)
+    {
+        $this->authorize('manage', LocalPurchaseOrder::class);
+        $request->validate(['q' => ['nullable', 'string', 'max:100']]);
+        $term = trim((string) $request->input('q', ''));
+        $options = [];
+        if (mb_strlen($term) >= 2) {
+            $like = '%'.addcslashes($term, '\\%_').'%';
+            $options = $this->purchaseOrderOptionQuery()
+                ->where(fn ($query) => $query->where('po_number', 'like', $like)
+                    ->orWhere('pr_number', 'like', $like)
+                    ->orWhereHas('supplier', fn ($supplier) => $supplier->where('name', 'like', $like)
+                        ->orWhereHas('supplier', fn ($profile) => $profile->where('company_name', 'like', $like))))
+                ->limit(self::PO_SUGGESTION_LIMIT)->get()
+                ->map(fn (LocalPurchaseOrder $po) => $this->purchaseOrderOption($po))->all();
+        }
+
+        return response()->json(['data' => $options])->header('Cache-Control', 'private, no-store');
+    }
+
+    private function grUploadPoOptions(): array
+    {
+        return $this->purchaseOrderOptionQuery()->limit(self::PO_PRELOAD_LIMIT)->get()
+            ->map(fn (LocalPurchaseOrder $po) => $this->purchaseOrderOption($po))->all();
+    }
+
+    private function purchaseOrderOptionQuery()
+    {
+        return LocalPurchaseOrder::query()->with('supplier.supplier')
+            ->where('status', '!=', LocalPurchaseOrder::STATUS_CANCELLED)
+            ->whereHas('supplier', fn ($query) => $query->localEligible())
+            ->orderByDesc('po_date')->orderByDesc('id');
+    }
+
+    private function purchaseOrderOption(LocalPurchaseOrder $po): array
+    {
+        $keywords = array_filter([
+            $po->po_number,
+            $po->pr_number,
+            $po->supplier?->name,
+            $po->supplier?->supplier?->company_name,
+            $po->status,
+        ]);
+
+        return [
+            'value' => $po->hash,
+            'label' => $po->po_number,
+            'sublabel' => $po->supplier?->supplier?->company_name ?: $po->supplier?->name,
+            'badge' => $po->status,
+            'badgeTone' => $po->status === LocalPurchaseOrder::STATUS_OPEN ? 'success' : 'neutral',
+            'searchKeywords' => strtolower(implode(' ', $keywords)),
+        ];
+    }
+
+    public function uploadGrDocument(UploadGoodsReceiptDocumentRequest $request, LocalGoodsReceipt $goodsReceipt, LocalGrDocumentService $service)
+    {
+        $gr = $service->attachPdf($request->user(), $goodsReceipt, $request->file('file'));
+
+        return $this->documentUploaded($request, __('local_procurement.gr_documents.uploaded', ['number' => $gr->gr_number]),
+            route($this->prefix().'.show', $gr->purchaseOrder));
     }
 
     public function restore(RestoreLocalProcurementRequest $request, LocalPurchaseOrder $purchaseOrder, LocalProcurementMasterService $service)
@@ -260,6 +352,15 @@ class LocalProcurementController extends Controller
     private function suppliers()
     {
         return User::localEligible()->with('supplier')->orderBy('name')->get();
+    }
+
+    private function documentUploaded(Request $request, string $message, string $redirect)
+    {
+        $request->session()->flash('success', $message);
+
+        return $request->expectsJson()
+            ? response()->json(['status' => 'COMPLETED', 'redirect' => $redirect])
+            : redirect($redirect);
     }
 
     private function resolveSupplierFilter(mixed $value): ?User

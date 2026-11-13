@@ -32,6 +32,17 @@ class SaveLocalGoodsReceiptRequest extends FormRequest
             'po_line_reference' => ['nullable', 'string', 'max:64'],
             'description' => ['nullable', 'string', 'max:2000'],
             'notes' => ['nullable', 'string', 'max:2000'],
+            // The optional document is accepted only when a GR is created; edits go through the row upload.
+            ...($this->isMethod('POST') ? ['document' => ['nullable', 'file', 'mimes:pdf', 'extensions:pdf', 'max:5120']] : []),
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'document.mimes' => __('local_procurement.gr_documents.pdf_type'),
+            'document.extensions' => __('local_procurement.gr_documents.pdf_type'),
+            'document.max' => __('local_procurement.gr_documents.pdf_size'),
         ];
     }
 }

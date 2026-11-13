@@ -54,7 +54,7 @@ class InvoiceController extends Controller
 
             return response()->json(['data' => $orders->map(function (LocalPurchaseOrder $po) {
                 $previouslyInvoiced = (float) LocalInvoice::where('local_purchase_order_id', $po->id)
-                    ->whereNotIn('status', [LocalInvoice::STATUS_REJECTED, LocalInvoice::STATUS_CANCELLED])
+                    ->whereNotIn('status', [LocalInvoice::STATUS_REJECTED, LocalInvoice::STATUS_CANCELLED, LocalInvoice::STATUS_EXPIRED])
                     ->sum('invoice_amount');
                 $remainingAmount = max(0.0, round((float) $po->total_amount - $previouslyInvoiced, 2));
 
@@ -179,7 +179,7 @@ class InvoiceController extends Controller
             ->with([
                 'goodsReceipts' => fn ($q) => $q->where('status', LocalGoodsReceipt::STATUS_AVAILABLE)
                     ->when($invoice, fn ($q) => $q->orWhere('current_invoice_id', $invoice->id))->orderBy('gr_date'),
-                'invoices' => fn ($q) => $q->whereNotIn('status', [LocalInvoice::STATUS_REJECTED, LocalInvoice::STATUS_CANCELLED]),
+                'invoices' => fn ($q) => $q->whereNotIn('status', [LocalInvoice::STATUS_REJECTED, LocalInvoice::STATUS_CANCELLED, LocalInvoice::STATUS_EXPIRED]),
             ])
             ->orderByDesc('po_date')->get();
     }
