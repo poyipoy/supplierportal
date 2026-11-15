@@ -339,6 +339,7 @@
                         :multiple="false"
                         :required="!isset($invoice)"
                         :existing-files="$existingInvoiceDocs"
+                        data-wasm-pdf-compress
                     />
 
                     <x-ui.file-upload
@@ -351,6 +352,7 @@
                         :multiple="false"
                         :required="$isPkp && !isset($invoice)"
                         :existing-files="$existingTaxDocs"
+                        data-wasm-pdf-compress
                     />
 
                     <x-ui.file-upload
@@ -365,6 +367,7 @@
                         :show-count="true"
                         :required="true"
                         :existing-files="$existingPoDocs"
+                        data-wasm-pdf-compress
                     />
 
                     <x-ui.file-upload
@@ -379,6 +382,7 @@
                         :required="true"
                         :show-count="true"
                         :existing-files="$existingGrDocs"
+                        data-wasm-pdf-compress
                     />
 
                     <x-ui.file-upload
@@ -392,6 +396,7 @@
                         :max-files="5"
                         :required="$requiresDeliveryNote && !isset($invoice)"
                         :existing-files="$existingDnDocs"
+                        data-wasm-pdf-compress
                     />
 
 
@@ -405,6 +410,7 @@
                         :multiple="true"
                         :max-files="5"
                         :existing-files="$existingSuppDocs"
+                        data-wasm-pdf-compress
                     />
                 </div>
 

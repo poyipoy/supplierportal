@@ -503,6 +503,7 @@ const bootImports = () => {
     if (hasMarker('[data-pr-form-export]')) import('./pr-form-export');
     if (hasMarker('#prFormTotals')) import('./pr-totals-sync');
     if (hasMarker('[data-adasi-time-picker]')) import('./time-picker').then(module => module.bootTimePickers(document));
+    if (hasMarker('[data-erp-delta-sync], [data-wasm-pdf-compress]')) import('./erp-wasm-bridge').then(module => module.bootErpWasmBridge(document));
 };
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootImports);
 else bootImports();

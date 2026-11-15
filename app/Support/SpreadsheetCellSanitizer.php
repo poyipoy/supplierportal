@@ -11,19 +11,21 @@ final class SpreadsheetCellSanitizer
         }
 
         $text = (string) $value;
+        $hasFormulaPrefix = preg_match('/^(?:[\s\v\0\x{FEFF}]*[\t\r=+\-@])/u', $text) === 1;
+
         if ($preserveWhitespace) {
             // Legacy raw-text exports keep safe text byte-for-byte; only escape
-            // formula prefixes, including prefixes hidden behind whitespace.
-            return preg_match('/^[=+\-@]/u', trim($text)) === 1 ? "'".$text : $text;
+            // formula prefixes, including prefixes hidden behind whitespace or tabs/CR.
+            return $hasFormulaPrefix ? "'".$text : $text;
         }
-        $text = trim($text);
 
-        if ($text === '') {
+        $trimmed = trim($text);
+        if ($trimmed === '') {
             return $fallback;
         }
 
-        return preg_match('/^[=+\-@]/u', $text) === 1
-            ? "'".$text
-            : $text;
+        return $hasFormulaPrefix
+            ? "'".$trimmed
+            : $trimmed;
     }
 }

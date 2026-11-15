@@ -49,6 +49,7 @@
                             :helper="__('local_procurement.documents.upload_formats')"
                             accept=".pdf,.zip"
                             :max-size-mb="config('native_file_security.zip.max_upload_bytes') / 1024 / 1024"
+                            data-wasm-pdf-compress
                             required
                         />
                     </div>
