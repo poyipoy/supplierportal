@@ -15,6 +15,7 @@ use App\Http\Requests\LocalInvoice\UploadLocalPoDocumentRequest;
 use App\Http\Requests\LocalInvoice\UploadLocalPoImportRequest;
 use App\Models\LocalGoodsReceipt;
 use App\Models\LocalInvoice;
+use App\Models\LocalProcurementImport;
 use App\Models\LocalPurchaseOrder;
 use App\Models\User;
 use App\Services\LocalInvoice\LocalGrDocumentService;
@@ -307,8 +308,14 @@ class LocalProcurementController extends Controller
     {
         [$import, $token] = $service->start($request->user(), $request->file('import_file'), $kind);
 
+        if (in_array($import->status, LocalProcurementImport::TERMINAL, true)) {
+            return response()->json(app(LocalProcurementImportController::class)->statusPayload($request, $import, $service), 200)
+                ->header('Cache-Control', 'private, no-store');
+        }
+
         return response()->json(['id' => $import->hash, 'status' => $import->status, 'token' => $token,
-            'status_url' => route($this->prefix().'.imports.status', $import)], 202);
+            'status_url' => route($this->prefix().'.imports.status', $import)], 202)
+            ->header('Cache-Control', 'private, no-store');
     }
 
     private function queuedConfirm(Request $request, LocalProcurementImportService $service, string $kind)
@@ -316,8 +323,14 @@ class LocalProcurementController extends Controller
         $data = $request->validate(['token' => ['required', 'string', 'size:40']]);
         $import = $service->confirm($request->user(), $data['token'], $kind);
 
+        if (in_array($import->status, LocalProcurementImport::TERMINAL, true)) {
+            return response()->json(app(LocalProcurementImportController::class)->statusPayload($request, $import, $service), 200)
+                ->header('Cache-Control', 'private, no-store');
+        }
+
         return response()->json(['id' => $import->hash, 'status' => $import->status,
-            'status_url' => route($this->prefix().'.imports.status', $import)], $import->status === 'COMPLETED' ? 200 : 202);
+            'status_url' => route($this->prefix().'.imports.status', $import)], 202)
+            ->header('Cache-Control', 'private, no-store');
     }
 
     public function uploadPo(UploadLocalPoDocumentRequest $request, LocalPoDocumentService $service)

@@ -2,6 +2,7 @@
 
 namespace App\Services\LocalInvoice;
 
+use App\Models\FileInspection;
 use App\Models\LocalPurchaseOrder;
 use App\Models\User;
 use App\Services\FileSecurity\FileInspectionService;
@@ -44,7 +45,7 @@ class LocalPoDocumentService
         $this->authorizePublication($actor, $supplier);
         $po = $this->matchPo($supplier, $file->getClientOriginalName());
         $path = 'attachments/'.now()->format('Y/m').'/'.Str::uuid().'.pdf'; // biz-time:ignore storage path
-        $stored = app(FileInspectionService::class)->storeUpload($file, 'po_pdf', $path);
+        $stored = app(FileInspectionService::class)->storeUpload($file, 'po_pdf', $path, compressPdf: true);
         try {
             return DB::transaction(function () use ($actor, $supplier, $po, $file, $stored) {
                 $lockedSupplier = User::whereKey($supplier->id)->lockForUpdate()->firstOrFail();
@@ -64,7 +65,14 @@ class LocalPoDocumentService
                 return $locked;
             });
         } catch (\Throwable $exception) {
-            Storage::disk('private')->delete($path);
+            try {
+                Storage::disk('private')->delete($path);
+                FileInspection::whereKey($stored['file_inspection_id'])
+                    ->whereIn('status', ['PENDING', 'VALIDATED'])
+                    ->update(['status' => 'ERROR', 'error_code' => 'publication_failed']);
+            } catch (\Throwable $cleanupFailure) {
+                report($cleanupFailure);
+            }
             throw $exception;
         }
     }

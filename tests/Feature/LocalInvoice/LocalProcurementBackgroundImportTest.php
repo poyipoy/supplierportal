@@ -125,6 +125,7 @@ class LocalProcurementBackgroundImportTest extends TestCase
 
     public function test_failure_after_first_write_batch_rolls_back_domain_and_audit(): void
     {
+        config(['local_procurement_imports.fast_path_max_rows' => 0, 'local_procurement_imports.fast_path_commit_max_records' => 0]);
         $service = app(LocalProcurementImportService::class);
         [$import, $token] = $service->start($this->actor, $this->workbook('PO', 501), 'PO');
         $service->preview($import->id);
@@ -149,6 +150,7 @@ class LocalProcurementBackgroundImportTest extends TestCase
 
     public function test_http_endpoints_are_asynchronous_paginated_and_owned(): void
     {
+        config(['local_procurement_imports.fast_path_max_rows' => 0]);
         $response = $this->actingAs($this->actor)->post(route('finance.local-procurement.import.po.preview'), ['import_file' => $this->workbook('PO', 501)], ['Accept' => 'application/json']);
         $response->assertStatus(202);
         $this->assertArrayNotHasKey('rows', $response->json());
@@ -163,14 +165,14 @@ class LocalProcurementBackgroundImportTest extends TestCase
 
     public function test_external_queue_is_rejected_before_work(): void
     {
-        config(['queue.default' => 'redis']);
+        config(['queue.default' => 'redis', 'local_procurement_imports.fast_path_max_rows' => 0]);
         $this->expectException(\RuntimeException::class);
         app(LocalProcurementImportService::class)->start($this->actor, $this->workbook('PO', 1), 'PO');
     }
 
     public function test_queue_insert_failure_rolls_back_import_attachment_and_private_upload(): void
     {
-        config(['queue.default' => 'database']);
+        config(['queue.default' => 'database', 'local_procurement_imports.fast_path_max_rows' => 0]);
         $queue = \Mockery::mock(\Illuminate\Contracts\Queue\Queue::class);
         $queue->shouldReceive('push')->once()->andThrow(new \RuntimeException('Injected queue failure'));
         Queue::shouldReceive('connection')->andReturn($queue);
@@ -187,6 +189,7 @@ class LocalProcurementBackgroundImportTest extends TestCase
 
     public function test_stale_delivery_does_not_publish_or_fail_newer_live_attempt(): void
     {
+        config(['local_procurement_imports.fast_path_max_rows' => 0]);
         $service = app(LocalProcurementImportService::class);
         [$import] = $service->start($this->actor, $this->workbook('GR', 1), 'GR');
         $job = new ProcessLocalProcurementImport($import->id, 'preview');
@@ -305,6 +308,7 @@ class LocalProcurementBackgroundImportTest extends TestCase
 
     public function test_deployment_pause_blocks_admission_and_allows_existing_work_to_drain(): void
     {
+        config(['local_procurement_imports.fast_path_max_rows' => 0, 'local_procurement_imports.fast_path_commit_max_records' => 0]);
         $service = app(LocalProcurementImportService::class);
         [$import, $token] = $service->start($this->actor, $this->workbook('GR', 1), 'GR');
         Cache::put('local_procurement_imports.paused', true, 60);
@@ -357,8 +361,13 @@ class LocalProcurementBackgroundImportTest extends TestCase
                 app(LocalProcurementImportService::class)->preview($import->id);
                 $this->assertSame('READY', $import->fresh()->status, $kind.'/'.$format.' '.($import->fresh()->failure ?? ''));
                 $this->assertSame(2001, $import->fresh()->source_rows);
-                $this->postJson(route('finance.local-procurement.import.'.strtolower($kind).'.confirm'), ['token' => $response->json('token')])->assertStatus(202);
-                app(LocalProcurementImportService::class)->commit($import->id);
+                $confirmResponse = $this->postJson(route('finance.local-procurement.import.'.strtolower($kind).'.confirm'), ['token' => $response->json('token')]);
+                if ($kind === 'PO') {
+                    $confirmResponse->assertStatus(202);
+                    app(LocalProcurementImportService::class)->commit($import->id);
+                } else {
+                    $confirmResponse->assertOk()->assertJsonPath('status', 'COMPLETED');
+                }
                 $this->assertSame('COMPLETED', $import->fresh()->status);
             }
         }
@@ -392,7 +401,7 @@ class LocalProcurementBackgroundImportTest extends TestCase
             ->assertOk()->assertJsonPath('status', 'CANCELLED');
         $this->assertSame('CANCELLED', $poImport->fresh()->status);
         [$replacement] = $service->start($this->actor, $this->workbook('PO', 1), 'PO');
-        $this->assertSame('QUEUED', $replacement->status);
+        $this->assertSame('READY', $replacement->status);
         $this->assertSame('READY', $grImport->fresh()->status);
     }
 
@@ -460,7 +469,7 @@ class LocalProcurementBackgroundImportTest extends TestCase
 
         // Rejected duplicate previews do not consume an active slot.
         [$next] = $service->start($this->actor, $this->workbook($kind, 1, distinctGr: true, offset: 10), $kind);
-        $this->assertSame('QUEUED', $next->status);
+        $this->assertSame('READY', $next->status);
     }
 
     #[DataProvider('importKinds')]

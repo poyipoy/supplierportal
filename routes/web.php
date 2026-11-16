@@ -29,7 +29,6 @@ use App\Http\Controllers\Auth\SupplierRegistrationController;
 use App\Http\Controllers\Auth\TwoFactorChallengeController;
 use App\Http\Controllers\ContextSmartPanelController;
 use App\Http\Controllers\ConversationMessageController;
-use App\Http\Controllers\Erp\ErpDeltaImportController;
 use App\Http\Controllers\ExportDefinitionController;
 use App\Http\Controllers\ExportDownloadController;
 use App\Http\Controllers\ExportPresetController;
@@ -124,9 +123,6 @@ Route::prefix(PortalPath::prefix())->group(function () {
     });
     Route::middleware(['auth', 'role:supplier', 'supplier.scope:local'])->prefix('local-supplier')->name('local-supplier.')->group(function () {
         Route::get('/dashboard', [LocalSupplierInvoiceController::class, 'dashboard'])->name('dashboard');
-        Route::get('/erp-delta/hashes', [ErpDeltaImportController::class, 'hashes'])->middleware('throttle:60,1')->name('erp-delta.hashes');
-        Route::post('/erp-delta/sync', [ErpDeltaImportController::class, 'sync'])->middleware('throttle:30,1')->name('erp-delta.sync');
-        Route::get('/erp-delta/reconciliation', [ErpDeltaImportController::class, 'reconciliation'])->middleware('throttle:60,1')->name('erp-delta.reconciliation');
         Route::get('/purchase-orders', [LocalSupplierPurchaseOrderController::class, 'index'])->name('purchase-orders.index');
         Route::get('/purchase-orders/search', [LocalSupplierInvoiceController::class, 'searchPurchaseOrders'])->name('purchase-orders.search');
         Route::get('/purchase-orders/{purchaseOrder}/goods-receipts/data', LocalGoodsReceiptTableController::class)->name('purchase-orders.goods-receipts.data');
@@ -248,11 +244,6 @@ Route::prefix(PortalPath::prefix())->group(function () {
             Route::get('/imports/{procurementImport}/errors', [LocalProcurementImportController::class, 'errors'])->name('imports.errors');
             Route::post('/imports/{procurementImport}/cancel', [LocalProcurementImportController::class, 'cancel'])->middleware('throttle:15,1')->name('imports.cancel');
             Route::post('/imports/{procurementImport}/revalidate', [LocalProcurementImportController::class, 'revalidate'])->middleware('throttle:15,1')->name('imports.revalidate');
-            Route::get('/erp-delta/hashes', [ErpDeltaImportController::class, 'hashes'])->middleware('throttle:60,1')->name('erp-delta.hashes');
-            Route::post('/erp-delta/sync', [ErpDeltaImportController::class, 'sync'])->middleware('throttle:30,1')->name('erp-delta.sync');
-            Route::get('/erp-delta/reconciliation', [ErpDeltaImportController::class, 'reconciliation'])->middleware('throttle:60,1')->name('erp-delta.reconciliation');
-            Route::post('/erp-delta/apply-document', [ErpDeltaImportController::class, 'applyDocument'])->middleware('throttle:30,1')->name('erp-delta.apply-document');
-            Route::post('/erp-delta/ignore-document', [ErpDeltaImportController::class, 'ignoreDocument'])->middleware('throttle:30,1')->name('erp-delta.ignore-document');
             Route::post('/', [LocalProcurementController::class, 'store'])->name('store');
             Route::get('/import/po/template', [LocalProcurementController::class, 'poTemplate'])->name('import.po.template');
             Route::post('/import/po/preview', [LocalProcurementController::class, 'poPreview'])->middleware('throttle:15,1')->name('import.po.preview');
@@ -706,11 +697,6 @@ Route::prefix(PortalPath::prefix())->group(function () {
             Route::get('/imports/{procurementImport}/errors', [LocalProcurementImportController::class, 'errors'])->name('imports.errors');
             Route::post('/imports/{procurementImport}/cancel', [LocalProcurementImportController::class, 'cancel'])->middleware('throttle:15,1')->name('imports.cancel');
             Route::post('/imports/{procurementImport}/revalidate', [LocalProcurementImportController::class, 'revalidate'])->middleware('throttle:15,1')->name('imports.revalidate');
-            Route::get('/erp-delta/hashes', [ErpDeltaImportController::class, 'hashes'])->middleware('throttle:60,1')->name('erp-delta.hashes');
-            Route::post('/erp-delta/sync', [ErpDeltaImportController::class, 'sync'])->middleware('throttle:30,1')->name('erp-delta.sync');
-            Route::get('/erp-delta/reconciliation', [ErpDeltaImportController::class, 'reconciliation'])->middleware('throttle:60,1')->name('erp-delta.reconciliation');
-            Route::post('/erp-delta/apply-document', [ErpDeltaImportController::class, 'applyDocument'])->middleware('throttle:30,1')->name('erp-delta.apply-document');
-            Route::post('/erp-delta/ignore-document', [ErpDeltaImportController::class, 'ignoreDocument'])->middleware('throttle:30,1')->name('erp-delta.ignore-document');
             Route::get('/', 'index')->name('index');
             Route::get('/create', 'create')->name('create');
             Route::get('/pr-suggestions', 'prSuggestions')->middleware('throttle:120,1')->name('pr-suggestions');
@@ -783,9 +769,6 @@ Route::prefix(PortalPath::prefix())->group(function () {
     */
     Route::middleware(['auth', 'role:supplier', 'supplier.scope:import'])->prefix('supplier')->name('supplier.')->group(function () {
         Route::get('/dashboard', [SupplierController::class, 'dashboard'])->name('dashboard');
-        Route::get('/erp-delta/hashes', [ErpDeltaImportController::class, 'hashes'])->middleware('throttle:60,1')->name('erp-delta.hashes');
-        Route::post('/erp-delta/sync', [ErpDeltaImportController::class, 'sync'])->middleware('throttle:30,1')->name('erp-delta.sync');
-        Route::get('/erp-delta/reconciliation', [ErpDeltaImportController::class, 'reconciliation'])->middleware('throttle:60,1')->name('erp-delta.reconciliation');
         Route::match(['get', 'post'], '/export/quotations', [SupplierExportController::class, 'quotations'])->name('export.quotations');
         Route::match(['get', 'post'], '/export/quotations/{quotation}', [SupplierExportController::class, 'quotationDetail'])->name('export.quotations.detail');
         Route::match(['get', 'post'], '/export/purchase-orders', [SupplierExportController::class, 'purchaseOrders'])->name('export.purchase-orders');

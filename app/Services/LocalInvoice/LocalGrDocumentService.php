@@ -238,7 +238,7 @@ class LocalGrDocumentService
 
     private function storeUpload(UploadedFile $file, string $field): array
     {
-        return app(FileInspectionService::class)->storeUpload($file, self::PROFILE, $this->destination(), $field);
+        return app(FileInspectionService::class)->storeUpload($file, self::PROFILE, $this->destination(), $field, compressPdf: true);
     }
 
     private function storeFromPath(string $path, string $name): array

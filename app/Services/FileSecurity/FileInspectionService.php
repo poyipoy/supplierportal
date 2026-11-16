@@ -194,11 +194,46 @@ class FileInspectionService
         }
     }
 
-    public function storeUpload(UploadedFile $file, string $profile, string $desiredPrivatePath, string $field = 'file'): array
+    public function storeUpload(UploadedFile $file, string $profile, string $desiredPrivatePath, string $field = 'file', bool $compressPdf = false): array
     {
-        $result = $this->inspectUpload($file, $profile, $field);
+        $originalResult = $this->inspectUpload($file, $profile, $field);
+        $originalPath = $file->getPathname();
+        $result = $originalResult;
+        $sourcePath = $originalPath;
+        $compressedTempPath = null;
 
-        return $this->storeInspected($file->getPathname(), $file->getClientOriginalName(), $result, $desiredPrivatePath, $field);
+        try {
+            if ($compressPdf && strtolower(pathinfo($file->getClientOriginalName(), PATHINFO_EXTENSION)) === 'pdf') {
+                try {
+                    $candidateTempPath = app(PdfCompressionService::class)->compressToTempFile($originalPath);
+                    if ($candidateTempPath !== null) {
+                        $compressedTempPath = $candidateTempPath;
+                        $result = $this->inspectPath($candidateTempPath, $file->getClientOriginalName(), $profile, $field);
+                        $sourcePath = $candidateTempPath;
+                    }
+                } catch (\Throwable $compressionFailure) {
+                    report($compressionFailure);
+                    $sourcePath = $originalPath;
+                    $result = $originalResult;
+                    $this->removeCompressedTempFile($compressedTempPath);
+                    $compressedTempPath = null;
+                }
+            }
+
+            return $this->storeInspected($sourcePath, $file->getClientOriginalName(), $result, $desiredPrivatePath, $field);
+        } finally {
+            $this->removeCompressedTempFile($compressedTempPath);
+        }
+    }
+
+    private function removeCompressedTempFile(?string $path): void
+    {
+        if ($path === null || ! is_file($path)) {
+            return;
+        }
+        if (! @unlink($path)) {
+            report(new \RuntimeException("Failed to remove temporary compressed PDF: {$path}"));
+        }
     }
 
     public function storePath(string $path, string $name, string $profile, string $desiredPrivatePath, string $field = 'file'): array

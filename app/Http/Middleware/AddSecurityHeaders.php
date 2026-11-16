@@ -70,9 +70,8 @@ class AddSecurityHeaders
             "img-src 'self' data: blob:",
             "font-src 'self' data: https://fonts.gstatic.com https://fonts.bunny.net https://cdn.jsdelivr.net",
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.bunny.net https://cdn.jsdelivr.net https://cdn.datatables.net",
-            "script-src 'self' 'unsafe-eval' 'nonce-{$nonce}' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://code.jquery.com https://cdn.datatables.net https://challenges.cloudflare.com",
+            "script-src 'self' 'unsafe-eval' 'nonce-{$nonce}' https://cdn.jsdelivr.net https://code.jquery.com https://cdn.datatables.net https://challenges.cloudflare.com",
             "script-src-attr 'unsafe-inline'",
-            "worker-src 'self' 'wasm-unsafe-eval'",
             "connect-src 'self' ws: wss: https://challenges.cloudflare.com https://*.pusher.com wss://*.pusher.com https://cdn.jsdelivr.net",
             "frame-src 'self' https://challenges.cloudflare.com",
         ];

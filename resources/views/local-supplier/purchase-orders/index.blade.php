@@ -14,10 +14,6 @@
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>{{ __('common.labels_review.dashboard') }}</span>
             </x-ui.button>
-            <x-ui.button type="button" variant="outline" size="sm" data-bs-toggle="modal" data-bs-target="#erpDeltaSyncModal">
-                <x-ui.icon name="refresh-cw" size="sm" />
-                <span>{{ __('local_procurement.delta_sync.button') }}</span>
-            </x-ui.button>
             <x-ui.button :href="route('local-supplier.invoices.create')" :disabled="(bool) ($supplierAuditInvoiceBlock ?? null)" :title="($supplierAuditInvoiceBlock ?? null) ? __('supplier_audit.invoice_block.short') : null" variant="primary" size="sm">
                 <x-ui.icon name="plus" size="sm" />
                 <span>{{ __('local_invoice.actions.submit') }}</span>
@@ -179,11 +175,4 @@
         @endif
     </x-ui.data-table>
 </div>
-
-<x-erp.delta-sync-modal
-    :hashes-url="route('local-supplier.erp-delta.hashes')"
-    :sync-url="route('local-supplier.erp-delta.sync')"
-    :reconciliation-url="route('local-supplier.erp-delta.reconciliation')"
-    :can-apply="false"
-/>
 @endsection

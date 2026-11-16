@@ -26,10 +26,6 @@
                 <x-ui.icon name="package-check" size="sm" />
                 <span>{{ __('local_procurement.import.gr') }}</span>
             </x-ui.button>
-            <x-ui.button type="button" variant="outline" size="sm" data-bs-toggle="modal" data-bs-target="#erpDeltaSyncModal">
-                <x-ui.icon name="refresh-cw" size="sm" />
-                <span>{{ __('local_procurement.delta_sync.button') }}</span>
-            </x-ui.button>
             <x-ui.button :href="route($routePrefix.'.create')" size="sm" variant="primary">
                 <x-ui.icon name="plus" size="sm" />
                 <span>{{ __('local_procurement.actions.new_po') }}</span>
@@ -250,13 +246,4 @@
 @include('finance.local-procurement._import_gr_modal')
 @include('finance.local-procurement._upload_po_modal')
 @include('finance.local-procurement._upload_gr_modal')
-<x-erp.delta-sync-modal
-    :hashes-url="route($routePrefix.'.erp-delta.hashes')"
-    :sync-url="route($routePrefix.'.erp-delta.sync')"
-    :reconciliation-url="route($routePrefix.'.erp-delta.reconciliation')"
-    :apply-url="route($routePrefix.'.erp-delta.apply-document')"
-    :ignore-url="route($routePrefix.'.erp-delta.ignore-document')"
-    :can-apply="true"
-    :suppliers="$suppliers"
-/>
 @endsection

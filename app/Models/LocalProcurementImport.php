@@ -12,6 +12,8 @@ class LocalProcurementImport extends Model
 
     public const ACTIVE = ['QUEUED', 'READING', 'VALIDATING', 'READY', 'IMPORTING'];
 
+    public const TERMINAL = ['READY', 'VALIDATION_FAILED', 'FAILED', 'COMPLETED'];
+
     public const KINDS = ['PO', 'GR'];
 
     protected $fillable = [

@@ -18,10 +18,6 @@
         :description="__('supplier.copy.monitor_active_purchase_orders_delivery_milestones_and_quality_inspection_statuses_issued_to_your_co')"
     >
         <x-slot:actions>
-            <x-ui.button type="button" variant="outline" size="sm" data-bs-toggle="modal" data-bs-target="#erpDeltaSyncModal">
-                <x-ui.icon name="refresh-cw" size="sm" />
-                <span>{{ __('local_procurement.delta_sync.button') }}</span>
-            </x-ui.button>
             <x-export.advanced-modal export-key="supplier.po" :action="route('supplier.export.purchase-orders')" table="#poTable" trigger-id="exportSupplierPurchaseOrdersBtn" />
         </x-slot:actions>
     </x-ui.page-header>
@@ -48,13 +44,6 @@
         </table>
     </x-ui.data-table>
 </div>
-
-<x-erp.delta-sync-modal
-    :hashes-url="route('supplier.erp-delta.hashes')"
-    :sync-url="route('supplier.erp-delta.sync')"
-    :reconciliation-url="route('supplier.erp-delta.reconciliation')"
-    :can-apply="false"
-/>
 @endsection
 
 @push('scripts')

@@ -388,7 +388,7 @@ class LocalGrImportTest extends TestCase
         }
         $response = $this->actingAs($this->finance)->postJson(route('finance.local-procurement.import.gr.preview'), [
             'import_file' => new UploadedFile($path, 'sample.xlsx', null, null, true),
-        ])->assertStatus(202);
+        ])->assertOk()->assertJsonPath('status', 'READY');
         $this->getJson($response->json('status_url'))->assertOk()->assertJsonPath('status', 'READY');
         $this->postJson(route('finance.local-procurement.import.gr.confirm'), ['token' => $response->json('token')])
             ->assertOk()->assertJsonPath('status', 'COMPLETED');
@@ -430,11 +430,12 @@ class LocalGrImportTest extends TestCase
                 'import_file' => $fileForPost,
             ], ['Accept' => 'application/json']);
 
-        $response->assertStatus(202);
-        $data = $this->getJson($response->json('status_url'))->assertOk()->json();
+        $response->assertOk()->assertJsonPath('status', 'READY');
+        $data = $response->json();
         $this->assertTrue($data['preview']['success'], json_encode($data['preview']));
         $this->assertSame(count($base['rows']), $data['preview']['source_row_count']);
         $this->assertGreaterThan(0, $data['preview']['summary']['new_gr']);
+        $this->getJson($data['status_url'])->assertOk()->assertJsonPath('status', 'READY');
     }
 
     public function test_template_download_route(): void

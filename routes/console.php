@@ -54,3 +54,8 @@ Schedule::command('sla:watchdog')
     ->timezone(config('app.business_timezone', 'Asia/Jakarta'))
     ->when(fn () => (bool) config('sla_monitors.enabled', true))
     ->withoutOverlapping();
+
+Schedule::command('storage:inode-guard --hours=2')
+    ->hourly()
+    ->timezone(config('app.business_timezone', 'Asia/Jakarta'))
+    ->withoutOverlapping();

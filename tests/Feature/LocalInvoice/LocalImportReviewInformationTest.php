@@ -71,6 +71,7 @@ class LocalImportReviewInformationTest extends TestCase
 
     public function test_active_entries_cannot_be_hidden_by_many_recoverable_entries(): void
     {
+        config(['local_procurement_imports.fast_path_max_rows' => 0]);
         [$active] = app(LocalProcurementImportService::class)->start($this->actor, $this->workbook(), 'GR');
         foreach (range(1, 105) as $index) {
             LocalProcurementImport::create(['user_id' => $this->actor->id, 'kind' => 'GR', 'locale' => 'en',

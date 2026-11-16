@@ -56,9 +56,7 @@ class LocalProcurementImportController extends Controller
     {
         Gate::authorize('view', $procurementImport);
         $request->validate(['progress_only' => ['sometimes', 'boolean']]);
-        $status = in_array($procurementImport->status, ['QUEUED', 'READY', 'VALIDATION_FAILED', 'FAILED'], true) && $procurementImport->expires_at->isPast()
-            ? 'EXPIRED' : $procurementImport->status;
-        $supported = in_array($procurementImport->kind, LocalProcurementImport::KINDS, true);
+        $status = $this->effectiveStatus($procurementImport);
         $progress = app(LocalProcurementImportProgress::class)->read($procurementImport, $status);
         if ($request->boolean('progress_only')) {
             return response()->json(['id' => $procurementImport->hash, 'kind' => $procurementImport->kind, 'status' => $status,
@@ -67,16 +65,27 @@ class LocalProcurementImportController extends Controller
                 'validation_attempt' => (int) $procurementImport->attempt,
                 'progress' => $progress])->header('Cache-Control', 'private, no-store');
         }
+
+        return response()->json($this->statusPayload($request, $procurementImport, $service))
+            ->header('Cache-Control', 'private, no-store');
+    }
+
+    public function statusPayload(Request $request, LocalProcurementImport $procurementImport, LocalProcurementImportService $service): array
+    {
+        $status = $this->effectiveStatus($procurementImport);
+        $supported = in_array($procurementImport->kind, LocalProcurementImport::KINDS, true);
+        $progress = app(LocalProcurementImportProgress::class)->read($procurementImport, $status);
         $page = $this->page($procurementImport, false);
         $errors = $this->page($procurementImport, true);
 
-        return response()->json(['id' => $procurementImport->hash, 'kind' => $procurementImport->kind, 'status' => $status,
+        return ['id' => $procurementImport->hash, 'kind' => $procurementImport->kind, 'status' => $status,
             'filename' => $procurementImport->original_filename,
             'progress' => $progress,
             'validation_attempt' => (int) $procurementImport->attempt,
             'can_revalidate' => $supported && $service->canRevalidate($procurementImport),
             'expires_at' => $procurementImport->expires_at->toIso8601String(),
             'revalidate_url' => $supported ? route($this->prefix($request).'.imports.revalidate', $procurementImport) : null,
+            'status_url' => route($this->prefix($request).'.imports.status', $procurementImport),
             'results_url' => $status === 'COMPLETED' ? $this->resultsUrl($request, $procurementImport) : null,
             'processed_rows' => $procurementImport->processed_rows, 'source_rows' => $procurementImport->source_rows,
             'failure' => $procurementImport->failure, 'warnings' => array_slice($procurementImport->warnings ?? [], 0, 100),
@@ -87,7 +96,13 @@ class LocalProcurementImportController extends Controller
                 'rows' => $page['data'], 'errors' => $errors['data'], 'source_row_count' => $procurementImport->source_rows],
             'records_url' => route($this->prefix($request).'.imports.records', $procurementImport),
             'records_total' => $page['total'], 'errors_total' => $errors['total'],
-            'errors_url' => route($this->prefix($request).'.imports.errors', $procurementImport)])->header('Cache-Control', 'private, no-store');
+            'errors_url' => route($this->prefix($request).'.imports.errors', $procurementImport)];
+    }
+
+    private function effectiveStatus(LocalProcurementImport $procurementImport): string
+    {
+        return in_array($procurementImport->status, ['QUEUED', 'READY', 'VALIDATION_FAILED', 'FAILED'], true) && $procurementImport->expires_at->isPast()
+            ? 'EXPIRED' : $procurementImport->status;
     }
 
     public function records(Request $request, LocalProcurementImport $procurementImport)
@@ -121,6 +136,11 @@ class LocalProcurementImportController extends Controller
     public function revalidate(RevalidateLocalProcurementImportRequest $request, LocalProcurementImport $procurementImport, LocalProcurementImportService $service)
     {
         $import = $service->revalidate($request->user(), $procurementImport, (int) $request->validated('expected_attempt'));
+
+        if (in_array($import->status, LocalProcurementImport::TERMINAL, true)) {
+            return response()->json($this->statusPayload($request, $import, $service), 200)
+                ->header('Cache-Control', 'private, no-store');
+        }
 
         return response()->json(['id' => $import->hash, 'status' => $import->status,
             'validation_attempt' => (int) $import->attempt, 'status_url' => route($this->prefix($request).'.imports.status', $import)], 202)
@@ -198,9 +218,28 @@ class LocalProcurementImportController extends Controller
     {
         $prefix = $this->prefix($request);
         if ($import->kind === 'GR') {
-            $keys = DB::table('local_procurement_import_rows')->where('import_id', $import->id)->where('attempt', $import->attempt)
-                ->whereNotNull('po_key')->distinct()->limit(2)->pluck('po_key');
-            if ($keys->count() === 1 && ($po = LocalPurchaseOrder::where('po_number', $keys->first())->first(['id']))) {
+            $poKeys = [];
+            DB::table('local_procurement_import_records')
+                ->where('import_id', $import->id)
+                ->where('attempt', $import->attempt)
+                ->where('kind', 'GR')
+                ->select(['id', 'values'])
+                ->chunkById(500, function ($rows) use (&$poKeys) {
+                    foreach ($rows as $row) {
+                        $values = json_decode($row->values, true);
+                        $poKey = mb_strtolower(trim((string) ($values['po_key'] ?? $values['po_number'] ?? '')));
+                        if ($poKey === '') {
+                            continue;
+                        }
+                        $poKeys[$poKey] = true;
+                        if (count($poKeys) > 1) {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                });
+            if (count($poKeys) === 1 && ($po = LocalPurchaseOrder::where('po_number', array_key_first($poKeys))->first(['id']))) {
                 return route($prefix.'.show', $po);
             }
         }

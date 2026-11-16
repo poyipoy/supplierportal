@@ -251,7 +251,7 @@ class LocalPoPrReferenceTest extends TestCase
 
     public function test_later_batch_failure_rolls_back_pr_fill_and_new_po_with_audits(): void
     {
-        config(['local_procurement_imports.batch_size' => 1]);
+        config(['local_procurement_imports.batch_size' => 1, 'local_procurement_imports.fast_path_commit_max_records' => 0]);
         $po = $this->po('A-EXISTING-FILL');
         [$import, $token] = $this->preview([$this->row($po->po_number, 'PR-ROLLBACK'), $this->row('Z-LATER-FAIL', 'PR-ROLLBACK')]);
         $this->assertSame('READY', $import->fresh()->status);

@@ -17,6 +17,7 @@ $app = require dirname(__DIR__, 2).'/bootstrap/app.php';
 $app->make(Kernel::class)->bootstrap();
 config(['database.default' => 'mysql', 'database.connections.mysql.database' => 'adasi_portal_test',
     'database.connections.mysql.username' => 'root', 'database.connections.mysql.password' => '', 'database.connections.mysql.url' => null,
+    'local_procurement_imports.fast_path_max_rows' => 0, 'local_procurement_imports.fast_path_commit_max_records' => 0,
     'filesystems.disks.private.root' => $argv[5], 'cache.default' => 'array', 'broadcasting.default' => 'null', 'queue.default' => 'sync', 'session.driver' => 'array']);
 DB::purge('mysql');
 if (DB::connection()->getDatabaseName() !== 'adasi_portal_test') {
