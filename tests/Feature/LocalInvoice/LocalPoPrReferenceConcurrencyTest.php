@@ -47,6 +47,7 @@ class LocalPoPrReferenceConcurrencyTest extends TestCase
     {
         Storage::fake('private');
         Queue::fake();
+        config(['local_procurement_imports.fast_path_commit_max_records' => 0]);
         $supplier = User::factory()->create();
         $supplier->supplierScopes()->create(['scope' => 'local']);
         Supplier::create(['user_id' => $supplier->id, 'company_name' => 'PR Race Vendor', 'category' => 'Parts', 'is_pkp' => false, 'payment_term_days' => 30]);

@@ -2,6 +2,7 @@
 
 namespace App\Services\LocalInvoice;
 
+use App\Models\FileInspection;
 use App\Models\LocalInvoiceDocument;
 use App\Models\LocalInvoiceRevision;
 use App\Models\User;
@@ -123,7 +124,7 @@ class InvoiceDocumentService
 
                 $path = 'local-invoices/'.$revision->local_invoice_id.'/revisions/'.$revision->revision_number.'/'.$file->hashName();
                 $written[] = $path;
-                $stored = app(FileInspectionService::class)->storeUpload($file, 'invoice', $path, $type);
+                $stored = app(FileInspectionService::class)->storeUpload($file, 'invoice', $path, $type, compressPdf: true);
 
                 $revision->documents()->create([
                     'local_invoice_id' => $revision->local_invoice_id,
@@ -146,6 +147,9 @@ class InvoiceDocumentService
                 if (! Storage::disk('private')->delete($path)) {
                     throw new RuntimeException('Document compensation failed.');
                 }
+                FileInspection::where('file_path', $path)
+                    ->whereIn('status', ['PENDING', 'VALIDATED'])
+                    ->update(['status' => 'ERROR', 'error_code' => 'publication_failed']);
             } catch (\Throwable $exception) {
                 report($exception);
             }

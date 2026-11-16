@@ -36,6 +36,17 @@ test('each marker selector matches the markup that needs the module', () => {
         assert.ok(read(view).includes(markup), `${view} still renders ${markup}`);
     }
     assert.ok(read('resources/views/components/ui/date-range-picker.blade.php').includes('data-adasi-date-range'));
+    assert.ok(!app.includes('data-wasm-pdf-compress'), 'app.js must not reference removed data-wasm-pdf-compress');
+    assert.ok(!app.includes('pdf-wasm-compress'), 'app.js must not import removed pdf-wasm-compress');
+    assert.ok(!app.includes('erp-wasm-bridge'), 'app.js must not reference removed erp-wasm-bridge');
+    assert.ok(!app.includes('data-erp-delta-sync'), 'app.js must not reference removed data-erp-delta-sync');
+    for (const view of [
+        'resources/views/finance/local-procurement/_upload_po_modal.blade.php',
+        'resources/views/finance/local-procurement/_upload_gr_modal.blade.php',
+        'resources/views/local-invoices/form.blade.php',
+    ]) {
+        assert.ok(!read(view).includes('data-wasm-pdf-compress'), `${view} must not retain data-wasm-pdf-compress`);
+    }
 });
 
 test('the calendar stand-in keeps the AdasiCalendar contract until calendar.js replaces it', () => {

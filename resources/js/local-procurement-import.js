@@ -609,6 +609,20 @@ export function bootLocalProcurementImports(root = document) {
                 helper.textContent = t('js.local_import.network_status'); tell(error); retry.hidden = false; timer = setTimeout(poll, 10000);
             }
         }
+        const hasTerminalPayload = body => Boolean(body && !active.has(body.status) && body.preview !== undefined);
+        async function applyInitialResponse(body) {
+            statusUrl = body.status_url || statusUrl;
+            if (hasTerminalPayload(body)) {
+                clearTimeout(timer);
+                timer = null;
+                pollSequence++;
+                render(body);
+                announceOutcome(body);
+
+                return;
+            }
+            await poll();
+        }
         parse.addEventListener('click', async () => {
             if (requestInFlight) return;
             const file = find('File').files[0];
@@ -625,10 +639,9 @@ export function bootLocalProcurementImports(root = document) {
             try {
                 const body = await json(config.dataset.importPreview, { method: 'POST', body: data });
                 if (generation !== modalGeneration) return;
-                statusUrl = body.status_url;
                 page = 1;
                 errorPage = 1;
-                await poll();
+                await applyInitialResponse(body);
                 if (generation === modalGeneration) await loadActiveImports();
             } catch (error) { if (generation === modalGeneration) { tell(error); await loadActiveImports(); } }
             finally {
@@ -653,14 +666,13 @@ export function bootLocalProcurementImports(root = document) {
             try {
                 const response = await json(candidate.revalidate_url, { method: 'POST', body: new URLSearchParams({_token:csrf(), expected_attempt:String(candidate.validation_attempt)}) });
                 if (generation !== modalGeneration) return;
-                statusUrl = response.status_url;
                 page = errorPage = 1;
-                await poll();
-                await loadActiveImports();
+                await applyInitialResponse(response);
+                if (generation === modalGeneration) await loadActiveImports();
             } catch (error) {
                 if (generation === modalGeneration) { tell(error); await poll(); }
             } finally {
-                if (generation === modalGeneration) { requestInFlight = false; if (last) render(last); }
+                if (generation === modalGeneration) { requestInFlight = false; parse.disabled = Boolean(statusUrl) && (!last || active.has(last.status)); if (last) render(last); }
             }
         });
         replace?.addEventListener('click', () => {
@@ -680,8 +692,7 @@ export function bootLocalProcurementImports(root = document) {
                 if (generation !== modalGeneration) return;
                 // Worker bisa selesai sebelum poll pertama, jadi IMPORTING mungkin tak pernah terlihat.
                 awaitingCommit = true;
-                statusUrl = body.status_url;
-                await poll();
+                await applyInitialResponse(body);
                 if (generation === modalGeneration) await loadActiveImports();
             } catch (error) {
                 if (generation === modalGeneration) { tell(error); confirm.disabled = !canConfirm(last); }

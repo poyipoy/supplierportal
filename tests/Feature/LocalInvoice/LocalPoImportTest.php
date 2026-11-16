@@ -282,7 +282,7 @@ class LocalPoImportTest extends TestCase
                 'import_file' => $uploaded,
             ], ['Accept' => 'application/json']);
 
-        $response->assertStatus(202);
+        $response->assertOk()->assertJsonPath('status', 'READY');
         $data = $response->json();
         $status = $this->getJson($data['status_url'])->assertOk()->json();
         $this->assertSame('READY', $status['status'], json_encode($status));

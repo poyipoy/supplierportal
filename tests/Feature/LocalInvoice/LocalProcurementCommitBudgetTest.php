@@ -37,6 +37,7 @@ class LocalProcurementCommitBudgetTest extends TestCase
     {
         parent::setUp();
         Storage::fake('private');
+        config(['local_procurement_imports.fast_path_commit_max_records' => 0]);
         $this->actor = User::factory()->create(['role' => 'finance', 'is_active' => true]);
         $supplier = User::factory()->create(['role' => 'supplier', 'is_active' => true]);
         SupplierScope::create(['supplier_id' => $supplier->id, 'scope' => 'local']);
@@ -78,7 +79,7 @@ class LocalProcurementCommitBudgetTest extends TestCase
         // The failed imports no longer hold an active slot.
         config(['local_procurement_imports.active_per_user' => 1]);
         [$next] = app(LocalProcurementImportService::class)->start($this->actor, $this->workbook('GR', 1), 'GR');
-        $this->assertSame('QUEUED', $next->status);
+        $this->assertSame('READY', $next->status);
     }
 
     public function test_budget_overrun_on_the_database_queue_fails_once_without_retry(): void

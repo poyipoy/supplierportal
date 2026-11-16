@@ -33,7 +33,7 @@ class Element {
     }
     dispatchEvent(event) { return this.fire(event.type, event); }
 }
-function boot(locale, kind = 'PO', jobs = null, bothKinds = false, { storage = new Map(), storageBlocked = false, confirmStatus = 'IMPORTING' } = {}) {
+function boot(locale, kind = 'PO', jobs = null, bothKinds = false, { storage = new Map(), storageBlocked = false, confirmStatus = 'IMPORTING', sync = false } = {}) {
     const name = kind === 'PO' ? 'Po' : 'Gr';
     const elements = new Map();
     const created = [];
@@ -131,10 +131,15 @@ function boot(locale, kind = 'PO', jobs = null, bothKinds = false, { storage = n
             if (failures.delete(url)) return { ok: false, json: async () => ({ message: 'Server unavailable' }) };
             const wait = responseWaits.get(url);
             if (wait) { responseWaits.delete(url); await wait; }
-            const response = url === '/preview' ? { status_url: '/imports/current' }
-                : url === '/confirm' ? (status = confirmStatus, { status_url: '/imports/current' })
+            const response = url === '/preview'
+                ? (sync ? { ...payload(), status_url: '/imports/current' } : { status_url: '/imports/current' })
+                : url === '/confirm'
+                    ? (status = confirmStatus, sync ? { ...payload(), status_url: '/imports/current' } : { status_url: '/imports/current' })
                     : url.startsWith('/imports?active=1&include_recoverable=1') ? recentJobs
-                        : url.endsWith('/revalidate') ? (status = 'QUEUED', validationAttempt++, { status_url: '/imports/current', status: 'QUEUED', validation_attempt: validationAttempt })
+                        : url.endsWith('/revalidate')
+                            ? (validationAttempt++, sync
+                                ? { ...payload(), status_url: '/imports/current' }
+                                : (status = 'QUEUED', { status_url: '/imports/current', status: 'QUEUED', validation_attempt: validationAttempt }))
                         : url.endsWith('/cancel') ? (recentJobs = recentJobs.filter(entry => `${entry.status_url}/cancel` !== url), { status: 'CANCELLED' })
                         : payload();
             return { ok: true, json: async () => response };
@@ -824,3 +829,36 @@ test('PO: malformed or negative PR fill counts never enable confirmation', async
         assert.equal(app.get('localPoImportToken').value, '');
     }
 });
+
+for (const kind of ['PO', 'GR']) {
+    test(`${kind} Mode 1A: terminal 200 parse, revalidate, and confirm responses render directly without polling`, async () => {
+        const app = boot('en', kind, [], false, { confirmStatus: 'COMPLETED', sync: true });
+        const name = kind === 'PO' ? 'Po' : 'Gr';
+        const isStatusPoll = request => request.url === '/imports/current' || request.url.startsWith('/imports/current?');
+
+        app.setStatus('VALIDATION_FAILED');
+        app.setSummary({ source_rows: 1, invalid: 1, new_po: 0, new_gr: 0 });
+        await app.get(`btnParseLocal${name}Import`).fire('click');
+
+        assert.equal(app.requests.some(isStatusPoll), false, 'sync validation failure must not poll status endpoint');
+        assert.equal(app.timers.filter(timer => !timer.recovery && timer.delay === 3000).length, 0);
+        assert.equal(app.get(`btnConfirmLocal${name}Import`).disabled, true);
+        assert.equal(app.get(`btnRevalidateLocal${name}Import`).hidden, false);
+
+        app.setStatus('READY');
+        app.setSummary({ source_rows: 1, invalid: 0, new_po: 1, po_pr_filled: 0, existing_po: 0, new_gr: 1, existing_gr: 0 });
+        await app.get(`btnRevalidateLocal${name}Import`).fire('click');
+
+        assert.equal(app.requests.some(isStatusPoll), false, 'sync revalidation must not poll status endpoint');
+        assert.equal(app.timers.filter(timer => !timer.recovery && timer.delay === 3000).length, 0);
+        assert.equal(app.get(`btnConfirmLocal${name}Import`).disabled, false);
+        assert.equal(app.get(`local${name}ImportToken`).value, 'opaque-token-2');
+
+        await app.form.fire('submit');
+
+        assert.equal(app.requests.some(isStatusPoll), false, 'sync confirm must not poll status endpoint');
+        assert.equal(app.timers.filter(timer => !timer.recovery && timer.delay === 3000).length, 0);
+        assert.equal(app.get(`btnConfirmLocal${name}Import`).hidden, true);
+        assert.match(app.get(`local${name}ImportSummaryMessage`).textContent, /completed:/i);
+    });
+}

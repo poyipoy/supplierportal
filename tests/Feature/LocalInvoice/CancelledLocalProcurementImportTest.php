@@ -139,17 +139,17 @@ class CancelledLocalProcurementImportTest extends TestCase
     public function test_cancelled_identity_blocks_http_preview_and_confirmation(string $kind): void
     {
         $existing = $this->existing($kind, 'CANCELLED');
+        $service = app(LocalProcurementImportService::class);
         $response = $this->actingAs($this->actor)->postJson(route('finance.local-procurement.import.'.strtolower($kind).'.preview'), ['import_file' => $this->workbook($kind)]);
-        $response->assertStatus(202);
+        $response->assertOk()->assertJsonPath('status', 'VALIDATION_FAILED')->assertJsonPath('token', null);
+        Queue::assertNothingPushed();
         $import = LocalProcurementImport::firstOrFail();
-        app(LocalProcurementImportService::class)->preview($import->id);
-        $this->getJson($response->json('status_url'))->assertOk()->assertJsonPath('status', 'VALIDATION_FAILED');
         $this->assertGreaterThan(0, $import->fresh()->summary['invalid']);
         $this->assertSame(0, $import->fresh()->summary['existing_'.strtolower($kind)]);
         $status = $this->getJson($response->json('status_url'))->assertOk();
         $errors = $this->getJson($status->json('errors_url'))->assertOk()->json('data');
         $this->assertContains($this->cancelledMessage($kind, 3), array_column($errors, 'message'));
-        $this->postJson(route('finance.local-procurement.import.'.strtolower($kind).'.confirm'), ['token' => $response->json('token')])->assertStatus(409);
+        $this->postJson(route('finance.local-procurement.import.'.strtolower($kind).'.confirm'), ['token' => $service->tokenFor($import->fresh())])->assertStatus(409);
         $this->assertSame('CANCELLED', $existing->fresh()->status);
         $this->assertDatabaseMissing($kind === 'PO' ? 'local_purchase_orders' : 'local_goods_receipts', [strtolower($kind).'_number' => 'NEW-'.$kind]);
     }

@@ -37,6 +37,7 @@ class LocalImportRevalidationTest extends TestCase
         parent::setUp();
         Storage::fake('private');
         Queue::fake();
+        config(['local_procurement_imports.fast_path_max_rows' => 0, 'local_procurement_imports.fast_path_commit_max_records' => 0]);
         $this->actor = User::factory()->create(['role' => 'finance']);
         $this->supplier = User::factory()->create();
         $this->supplier->supplierScopes()->create(['scope' => 'local']);
