@@ -71,7 +71,15 @@ class FrontendAssetLoadingTest extends TestCase
         request()->attributes->set('ui.auth_splash_bootstrap_available', true);
         $html = Blade::render('<x-ui.auth-splash />');
         $this->assertTrue(request()->attributes->get('ui.auth_splash_rendered'));
-        $this->assertSame(5, substr_count($html, 'class="auth-splash__letter"'));
+        $this->assertStringContainsString('<picture class="auth-splash__picture">', $html);
+        $this->assertStringContainsString('media="(prefers-reduced-motion: reduce)"', $html);
+        $this->assertStringContainsString('data-auth-splash-media', $html);
+        $this->assertStringContainsString('logo-adasi.gif', $html);
+        $this->assertStringContainsString('logo-adasi-wordmark.png', $html);
+        $this->assertStringContainsString('width="384"', $html);
+        $this->assertStringContainsString('height="153"', $html);
+        $this->assertStringContainsString('alt=""', $html);
+        $this->assertStringNotContainsString('class="auth-splash__letter"', $html);
         $this->assertStringContainsString('hidden aria-hidden="true"', $html);
         $this->assertStringContainsString('role="status" aria-live="polite" aria-atomic="true"', $html);
         $this->assertStringNotContainsString('private-marker-id', $html);
@@ -80,6 +88,22 @@ class FrontendAssetLoadingTest extends TestCase
         request()->attributes->remove('ui.auth_splash_rendered');
         $this->assertStringNotContainsString('data-auth-splash', Blade::render('<x-ui.auth-splash :error="true" />'));
         $this->assertFalse(request()->attributes->get('ui.auth_splash_rendered', false));
+    }
+
+    public function test_auth_splash_gif_and_static_wordmark_assets_exist_under_public_images(): void
+    {
+        $this->assertFileExists(public_path('assets/images/logo-adasi.gif'));
+        $this->assertFileExists(public_path('assets/images/logo-adasi-wordmark.png'));
+        $this->assertFileDoesNotExist(base_path('logo-adasi.gif'));
+
+        config(['ui.auth_splash.enabled' => true]);
+        request()->attributes->set('ui.auth_splash', ['reason' => 'login-page']);
+
+        $bootstrap = Blade::render("@include('partials.auth-splash-bootstrap', ['authSplashLayout' => 'auth', 'authSplashReadiness' => 'native-login'])");
+        $this->assertStringContainsString('rel="preload" as="image"', $bootstrap);
+        $this->assertStringContainsString('logo-adasi.gif', $bootstrap);
+        $this->assertStringContainsString('logo-adasi-wordmark.png', $bootstrap);
+        $this->assertStringContainsString('data-media-fallback-ms="500"', $bootstrap);
     }
 
     public function test_missing_or_unreadable_standalone_source_omits_bootstrap_and_component(): void

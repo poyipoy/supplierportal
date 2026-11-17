@@ -22,7 +22,7 @@ function settingsFixture(overrides = {}, draft = {}) {
     const previousWindow = globalThis.window;
     const previousDocument = globalThis.document;
     const saved = {
-        theme: 'light', accent: 'brand', density: 'comfortable', sidebar_state: 'expanded', page_size: '25',
+        theme: 'light', shell_style: 'classic', accent: 'brand', density: 'comfortable', sidebar_state: 'expanded', page_size: '25',
         locale: 'en', timezone: 'system', date_format: 'system', time_format: 'system', number_format: 'system',
         dashboardOrder: [], dashboardHidden: [], quickAccess: [], ...overrides,
     };
@@ -52,14 +52,15 @@ function settingsFixture(overrides = {}, draft = {}) {
     };
     const browser = new EventTarget();
     const calls = [];
-    const effective = { theme: saved.theme, accent: saved.accent, density: saved.density };
+    const effective = { theme: saved.theme, shellStyle: saved.shell_style, accent: saved.accent, density: saved.density };
     const navigation = { dirty: false, submitting: false };
     browser.AdasiPreferences = {
         ...effective,
         previewTheme(value) { effective.theme = value; calls.push(['theme', value]); },
+        previewShellStyle(value) { effective.shellStyle = value; calls.push(['shell_style', value]); },
         previewAccent(value) { effective.accent = value; calls.push(['accent', value]); },
         previewDensity(value) { effective.density = value; calls.push(['density', value]); },
-        restoreSaved() { Object.assign(effective, { theme: saved.theme, accent: saved.accent, density: saved.density }); },
+        restoreSaved() { Object.assign(effective, { theme: saved.theme, shellStyle: saved.shell_style, accent: saved.accent, density: saved.density }); },
     };
     browser.AdasiUnsaved = {
         markDirty() { navigation.dirty = true; },
@@ -71,7 +72,7 @@ function settingsFixture(overrides = {}, draft = {}) {
     globalThis.document = { querySelectorAll: () => [] };
     const form = customizationForm({
         saved,
-        defaults: { ...saved, theme: 'system', accent: 'brand', density: 'comfortable', sidebar_state: 'expanded', page_size: '25' },
+        defaults: { ...saved, theme: 'system', shell_style: 'classic', accent: 'brand', density: 'comfortable', sidebar_state: 'expanded', page_size: '25' },
         densityKeys,
         densityLabels: Object.fromEntries(densityKeys.map(key => [key, key[0].toUpperCase() + key.slice(1)])),
         otherContextCount: 0, quickAccessLimit: 6, hasServerErrors: false,
@@ -263,5 +264,30 @@ test('unrendered import-only fields (country_code, import_timezone) do not mark 
         assert.equal(fixture.form.dirtyCount, 0, 'unrendered fields must not count as dirty');
         assert.equal(fixture.form.saveDisabled, true);
         assert.equal(fixture.navigation.dirty, false, 'AdasiUnsaved must remain clean on init');
+    } finally { fixture.cleanup(); }
+});
+
+test('shell_style supports live preview, dirty tracking, appearance reset, and discard', () => {
+    const fixture = settingsFixture({ shell_style: 'classic' });
+    const { form, fields, effective, emit } = fixture;
+    try {
+        form.init();
+        assert.equal(form.dirtyCount, 0);
+
+        fields.shell_style.value = 'slate';
+        emit(fields.shell_style, 'change');
+        assert.equal(effective.shellStyle, 'slate');
+        assert.equal(form.dirtyCount, 1);
+
+        form.discard();
+        assert.equal(effective.shellStyle, 'classic');
+        assert.equal(fields.shell_style.value, 'classic');
+        assert.equal(form.dirtyCount, 0);
+
+        fields.shell_style.value = 'slate';
+        emit(fields.shell_style, 'change');
+        form.resetSection('appearance');
+        assert.equal(effective.shellStyle, 'classic');
+        assert.equal(fields.shell_style.value, 'classic');
     } finally { fixture.cleanup(); }
 });

@@ -113,7 +113,8 @@ class LoginRequest extends FormRequest
             ? (string) $user->password
             : (string) config('auth_security.dummy_hash', '$2y$12$e80yq9M2XvH0WJ1aR8P1eeS4xLgXk2.mK6uV4C7W1A4rK5eS8V1ee');
 
-        $passwordMatches = Hash::check($this->string('password')->toString(), $targetHash);
+        $plainPassword = $this->string('password')->toString();
+        $passwordMatches = Hash::check($plainPassword, $targetHash);
 
         if (! $isActiveAndEligible || ! $passwordMatches) {
             $limiter->hit($this, $email);
@@ -133,6 +134,10 @@ class LoginRequest extends FormRequest
             $this->applyTarpitDelay($limiter, $email);
 
             throw ValidationException::withMessages(['email' => trans('auth.failed')]);
+        }
+
+        if (Hash::needsRehash((string) $user->password)) {
+            $user->forceFill(['password' => Hash::make($plainPassword)])->saveQuietly();
         }
 
         $limiter->clearAfterSuccess($this, $email);

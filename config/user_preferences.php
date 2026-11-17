@@ -1,8 +1,12 @@
 <?php
 
 return [
-    'defaults' => ['theme' => 'system', 'density' => 'comfortable', 'sidebar_state' => 'expanded', 'page_size' => 25, 'quick_access' => [], 'accent' => 'brand', 'dashboard_preferences' => [], 'sidebar_revision' => 1, 'timezone' => 'system', 'country_code' => null, 'import_timezone' => null, 'date_format' => 'system', 'time_format' => 'system', 'number_format' => 'system', 'locale' => 'en'],
+    'defaults' => ['theme' => 'system', 'shell_style' => 'classic', 'density' => 'comfortable', 'sidebar_state' => 'expanded', 'page_size' => 25, 'quick_access' => [], 'accent' => 'brand', 'dashboard_preferences' => [], 'sidebar_revision' => 1, 'timezone' => 'system', 'country_code' => null, 'import_timezone' => null, 'date_format' => 'system', 'time_format' => 'system', 'number_format' => 'system', 'locale' => 'en'],
     'locales' => ['en' => 'English', 'id' => 'Bahasa Indonesia'],
+    'shell_styles' => [
+        'classic' => 'Classic Light',
+        'slate' => 'Dark Slate',
+    ],
     'accents' => [
         'brand' => 'ADASI Blue',
         'slate' => 'Slate',

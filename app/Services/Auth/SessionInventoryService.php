@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\DB;
 
 class SessionInventoryService
 {
+    private int $lastEvictionRevokedPerDeviceCount = 0;
+
     public function activeSessionsFor(User $user, ?string $currentSessionId): Collection
     {
         return $this->query()
@@ -28,24 +30,57 @@ class SessionInventoryService
                     && hash_equals($currentSessionId, (string) $session->id),
                 'ip_address' => $session->ip_address,
                 'user_agent' => (string) $session->user_agent,
+                'device_label' => KnownDeviceService::deviceLabel($session->user_agent),
                 'last_active_at' => Carbon::createFromTimestamp((int) $session->last_activity),
             ]);
     }
 
     public function revoke(User $user, string $sessionId): bool
     {
+        return $this->revokeMany($user, [$sessionId]) > 0;
+    }
+
+    /**
+     * @param  list<string>  $sessionIds
+     */
+    public function revokeMany(User $user, array $sessionIds): int
+    {
+        $ids = array_values(array_filter($sessionIds, fn ($id): bool => is_string($id) && $id !== ''));
+
+        if ($ids === []) {
+            return 0;
+        }
+
         return $this->query()
             ->where('user_id', $user->getKey())
-            ->where('id', $sessionId)
-            ->delete() > 0;
+            ->whereIn('id', $ids)
+            ->delete();
     }
 
     public function enforceConcurrentLimit(User $user, ?string $currentSessionId = null): int
     {
+        $evictedIds = $this->enforceConcurrentLimitWithEvictedIds($user, $currentSessionId);
+        $this->lastEvictionRevokedPerDeviceCount = $evictedIds === []
+            ? 0
+            : app(RememberTokenService::class)->revokeForSessions($user, $evictedIds);
+
+        return count($evictedIds);
+    }
+
+    public function lastEvictionRevokedPerDeviceCount(): int
+    {
+        return $this->lastEvictionRevokedPerDeviceCount;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function enforceConcurrentLimitWithEvictedIds(User $user, ?string $currentSessionId = null): array
+    {
         $limit = (int) config('auth_security.session.max_concurrent_sessions', 3);
 
         if ($limit < 1) {
-            return 0;
+            return [];
         }
 
         $query = $this->query()
@@ -60,16 +95,19 @@ class SessionInventoryService
             ->orderByDesc('last_activity')
             ->pluck('id')
             ->slice(max(0, $limit - 1))
+            ->values()
             ->all();
 
         if ($toEvict === []) {
-            return 0;
+            return [];
         }
 
-        return $this->query()
+        $deleted = $this->query()
             ->where('user_id', $user->getKey())
             ->whereIn('id', $toEvict)
             ->delete();
+
+        return $deleted > 0 ? $toEvict : [];
     }
 
     private function query(): Builder

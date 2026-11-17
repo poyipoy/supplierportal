@@ -33,6 +33,7 @@ class UserPreferenceController extends Controller
                 ? $oldDensity : null,
             'defaults' => config('user_preferences.defaults'),
             'accentChoices' => collect(config('user_preferences.accents'))->map(fn ($label, $key) => __('customization.accents.'.$key))->all(),
+            'shellStyleChoices' => collect(config('user_preferences.shell_styles'))->map(fn ($label, $key) => __('customization.shell_styles.'.$key))->all(),
             'regionalChoices' => array_intersect_key(config('regional_display'), array_flip(['timezones', 'date_formats', 'time_formats', 'number_formats'])),
             'dashboardAudience' => $dashboardWidgets->audienceFor($user),
             'dashboardWidgets' => $dashboardWidgets->layoutFor($user, $effective['dashboard_preferences']),
@@ -82,7 +83,7 @@ class UserPreferenceController extends Controller
         UserPreferenceService $preferences,
     ): RedirectResponse {
         $saved = $preferences->save($request->user(), $request->safe()->only([
-            'theme', 'density', 'sidebar_state', 'page_size', 'quick_access', 'accent', 'dashboard', 'timezone', 'date_format', 'time_format', 'number_format', 'locale',
+            'theme', 'shell_style', 'density', 'sidebar_state', 'page_size', 'quick_access', 'accent', 'dashboard', 'timezone', 'date_format', 'time_format', 'number_format', 'locale',
             'country_code', 'import_timezone',
         ]));
 
@@ -127,6 +128,7 @@ class UserPreferenceController extends Controller
                     'page_size' => $stored?->page_size ?? config('user_preferences.defaults.page_size'),
                     'quick_access' => is_array($stored?->quick_access) ? $stored->quick_access : [],
                     'accent' => $stored?->accent ?? config('user_preferences.defaults.accent'),
+                    'shell_style' => $stored?->shell_style ?? config('user_preferences.defaults.shell_style'),
                     'dashboard' => ['hidden' => [], 'order' => []],
                     'timezone' => $stored?->timezone ?? config('user_preferences.defaults.timezone'),
                     'date_format' => $stored?->date_format ?? config('user_preferences.defaults.date_format'),

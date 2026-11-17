@@ -12,6 +12,7 @@ use App\Models\SupplierRegistrationAccess;
 use App\Models\SupplierRegistrationAttempt;
 use App\Models\SupplierRegistrationAudit;
 use App\Models\User;
+use App\Services\Auth\PasswordHistoryService;
 use App\Services\FileSecurity\FileAccessGuard;
 use App\Services\FileSecurity\FileInspectionService;
 use App\Services\LocalInvoice\LocalFinanceAuditService;
@@ -234,6 +235,8 @@ class SupplierRegistrationService
                         'account_status' => User::ACCOUNT_STATUS_PENDING,
                     ]);
                 }
+
+                app(PasswordHistoryService::class)->record($user, (string) $user->password);
 
                 // Create or update Supplier master
                 $supplier = Supplier::updateOrCreate(

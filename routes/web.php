@@ -20,6 +20,7 @@ use App\Http\Controllers\Auth\LogoutOtherDevicesController;
 use App\Http\Controllers\Auth\PasswordAssistanceController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\ProfileTwoFactorController;
+use App\Http\Controllers\Auth\RevokeKnownDeviceController;
 use App\Http\Controllers\Auth\RevokeSessionController;
 use App\Http\Controllers\Auth\SessionStatusController;
 use App\Http\Controllers\Auth\SsoAuthorizeController;
@@ -579,28 +580,28 @@ Route::prefix(PortalPath::prefix())->group(function () {
         Route::resource('periods', PeriodController::class)->only(['index', 'store', 'update']);
 
         Route::get('/material-masters/search', MaterialMasterSearchController::class)
-            ->middleware('throttle:120,1')
+            ->middleware('throttle:120,1,purchasing.material-masters.search')
             ->name('material-masters.search');
         Route::post('/material-calculations/preview', [MaterialCalculationController::class, 'preview'])
-            ->middleware('throttle:120,1')
+            ->middleware('throttle:120,1,purchasing.material-calculations.preview')
             ->name('material-calculations.preview');
         Route::post('/material-calculations/totals', [MaterialCalculationController::class, 'totals'])
-            ->middleware('throttle:120,1')
+            ->middleware('throttle:120,1,purchasing.material-calculations.totals')
             ->name('material-calculations.totals');
 
         Route::get('/requisitions/import-template', [App\Http\Controllers\Purchasing\PurchaseRequisitionController::class, 'importTemplate'])->name('requisitions.import-template');
         Route::post('/requisitions/export-form', [App\Http\Controllers\Purchasing\PurchaseRequisitionController::class, 'exportForm'])
-            ->middleware('throttle:15,1')
+            ->middleware('throttle:15,1,purchasing.requisitions.export-form')
             ->name('requisitions.export-form');
         Route::post('/requisitions/import-preview', [App\Http\Controllers\Purchasing\PurchaseRequisitionController::class, 'importPreview'])
-            ->middleware('throttle:15,1')
+            ->middleware('throttle:15,1,purchasing.requisitions.import-preview')
             ->name('requisitions.import-preview');
         Route::put('/requisitions/{id}/submit', [App\Http\Controllers\Purchasing\PurchaseRequisitionController::class, 'submitDraft'])->name('requisitions.submit');
         Route::post('/requisitions/{requisition}/suppliers', [PurchaseRequisitionSupplierController::class, 'store'])
-            ->middleware('throttle:30,1')
+            ->middleware('throttle:30,1,purchasing.requisitions.suppliers')
             ->name('requisitions.suppliers.store');
         Route::delete('/requisitions/{requisition}/suppliers/{supplier}', [PurchaseRequisitionSupplierController::class, 'destroy'])
-            ->middleware('throttle:30,1')
+            ->middleware('throttle:30,1,purchasing.requisitions.suppliers')
             ->name('requisitions.suppliers.destroy');
         Route::resource('requisitions', App\Http\Controllers\Purchasing\PurchaseRequisitionController::class);
         Route::resource('pr-items', PrItemController::class)->only(['store', 'update', 'destroy']);
@@ -776,10 +777,10 @@ Route::prefix(PortalPath::prefix())->group(function () {
         Route::get('/quotations/period/{period_id}', [QuotationController::class, 'period'])->name('quotations.period');
         Route::get('/quotations/{pr_id}/import-template', [QuotationController::class, 'importTemplate'])->name('quotations.import-template');
         Route::post('/quotations/{pr_id}/import-preview', [QuotationController::class, 'importPreview'])
-            ->middleware('throttle:15,1')
+            ->middleware('throttle:15,1,supplier.quotations.import-preview')
             ->name('quotations.import-preview');
         Route::post('/quotations/{pr_id}/export-form', [QuotationController::class, 'exportForm'])
-            ->middleware('throttle:15,1')
+            ->middleware('throttle:15,1,supplier.quotations.export-form')
             ->name('quotations.export-form');
         Route::get('/quotations/{pr_id}/create', [QuotationController::class, 'create'])->name('quotations.create');
         Route::post('/quotations/{pr_id}', [QuotationController::class, 'store'])->name('quotations.store');
@@ -897,7 +898,8 @@ Route::middleware('auth')->group(function () {
         ->middleware('no-store')->name('password.confirm');
 
     Route::post('confirm-password', [ConfirmablePasswordController::class, 'store'])
-        ->middleware(['throttle:auth.credentials', 'no-store']);
+        ->middleware(['throttle:auth.credentials', 'no-store'])
+        ->name('password.confirm.store');
 
     Route::put('password', [PasswordController::class, 'update'])
         ->middleware('throttle:auth.credentials')->name('password.update');
@@ -917,6 +919,10 @@ Route::middleware('auth')->group(function () {
         Route::delete('profile/sessions', RevokeSessionController::class)
             ->middleware(['auth.session', 'throttle:auth.security-action'])
             ->name('profile.sessions.revoke');
+
+        Route::delete('profile/known-devices', RevokeKnownDeviceController::class)
+            ->middleware(['auth.session', 'throttle:auth.security-action'])
+            ->name('profile.known-devices.revoke');
 
         Route::post('profile/two-factor/setup', [ProfileTwoFactorController::class, 'start'])
             ->middleware(['auth.session', 'password.confirm', 'throttle:auth.security-action'])->name('profile.two-factor.start');

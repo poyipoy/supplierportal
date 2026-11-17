@@ -1,7 +1,10 @@
 <!DOCTYPE html>
-<html lang="{{ app()->getLocale() }}" class="js">
+<html lang="{{ app()->getLocale() }}" class="js" @if($isWorkspaceShell ?? false) data-workspace-shell="true" @endif @if(($isWorkspaceEmbed ?? false) && ! isset($exception)) data-workspace-embed="true" @endif>
 
 <head>
+    @php
+        $isWorkspaceEmbed = ($isWorkspaceEmbed ?? false) && ! isset($exception);
+    @endphp
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -12,7 +15,32 @@
     <script>
         window.AdasiPortal = Object.assign(window.AdasiPortal || {}, { pathPrefix: @js(\App\Support\PortalPath::prefix()) });
     </script>
-    @include('partials.auth-splash-bootstrap', ['authSplashLayout' => 'app', 'authSplashReadiness' => 'core'])
+    @if($workspaceShellEnabled ?? config('ui.workspace_shell.enabled', false))
+        <script>
+            (() => {
+                const root = document.documentElement;
+                if (@js($isWorkspaceShell ?? false)) {
+                    root.dataset.workspaceShell = 'true';
+                }
+                if (@js($isWorkspaceEmbed ?? false)) {
+                    root.dataset.workspaceEmbed = 'true';
+                } else if (window.self !== window.top) {
+                    try {
+                        if (window.top.location && window.top.location.origin === window.location.origin) {
+                            root.dataset.workspaceEmbed = 'true';
+                        }
+                    } catch (e) {}
+                }
+                window.AdasiWorkspaceShellConfig = @js($workspaceConfig ?? null);
+            })();
+        </script>
+        @if(isset($workspaceConfig))
+            <script id="adasi-workspace-shell-config" type="application/json">{!! json_encode($workspaceConfig, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR) !!}</script>
+        @endif
+    @endif
+    @if(!($isWorkspaceEmbed ?? false))
+        @include('partials.auth-splash-bootstrap', ['authSplashLayout' => 'app', 'authSplashReadiness' => 'core'])
+    @endif
     @include('partials.i18n-bootstrap')
     <meta name="robots" content="noindex, nofollow">
     <meta name="portal-scope" content="{{ \App\Support\PortalContext::current() ?? 'import' }}">
@@ -35,6 +63,7 @@
                 let previewTheme = null;
                 let previewDensity = densityKeys.includes(initialDensity) ? initialDensity : null;
                 let previewAccent = null;
+                let previewShellStyle = null;
 
                 try {
                     const cached = JSON.parse(window.localStorage.getItem(storageKey) || 'null');
@@ -50,9 +79,15 @@
                 const savedDensity = densityKeys.includes(preferences.density) ? preferences.density : 'comfortable';
                 const savedAccent = preferences.accent || 'brand';
                 const accentKeys = preferences.accentKeys || ['brand'];
+                const shellStyleKeys = preferences.shellStyleKeys || ['classic', 'slate'];
+                const savedShellStyle = shellStyleKeys.includes(preferences.shellStyle) ? preferences.shellStyle : 'classic';
                 const applyAccent = () => {
                     root.dataset.accent = previewAccent ?? savedAccent;
                     window.dispatchEvent(new CustomEvent('adasi:accent-change', { detail: { accent: root.dataset.accent } }));
+                };
+                const applyShellStyle = () => {
+                    root.dataset.shell = previewShellStyle ?? savedShellStyle;
+                    window.dispatchEvent(new CustomEvent('adasi:shell-change', { detail: { shellStyle: root.dataset.shell } }));
                 };
                 const applyTheme = () => {
                     const choice = previewTheme ?? savedTheme;
@@ -220,14 +255,17 @@
                     theme: savedTheme,
                     density: savedDensity,
                     accent: savedAccent,
+                    shellStyle: savedShellStyle,
                     previewAccent: (value) => { if (accentKeys.includes(value)) { previewAccent = value; applyAccent(); } },
+                    previewShellStyle: (value) => { if (shellStyleKeys.includes(value)) { previewShellStyle = value; applyShellStyle(); } },
                     previewTheme: (value) => { previewTheme = value; applyTheme(); },
                     previewDensity: (value) => { if (densityKeys.includes(value)) { previewDensity = value; applyDensity(); } },
-                    restoreSaved: () => { previewTheme = null; previewDensity = null; previewAccent = null; applyTheme(); applyDensity(); applyAccent(); },
+                    restoreSaved: () => { previewTheme = null; previewDensity = null; previewAccent = null; previewShellStyle = null; applyTheme(); applyDensity(); applyAccent(); applyShellStyle(); },
                 });
                 applyTheme();
                 applyDensity();
                 applyAccent();
+                applyShellStyle();
                 media.addEventListener('change', () => { if ((previewTheme ?? savedTheme) === 'system') applyTheme(); });
             })();
         </script>
@@ -256,16 +294,26 @@
     @include('partials.loader-logo')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('styles')
+    @if(($isWorkspaceShell ?? false) || ($isWorkspaceEmbed ?? false) || \App\Support\WorkspaceShell::enabled())
+        <style>
+            @view-transition {
+                navigation: none;
+            }
+        </style>
+    @endif
 </head>
 
 <body
     x-data="adasiShell"
     x-on:ui-sidebar-toggle.window="toggleSidebar($event.detail?.trigger)"
+    x-on:ui-sidebar-close.window="closeMobileSidebar(false)"
     x-on:keydown.escape.window="closeMobileSidebar()"
     x-on:keydown.tab.window="trapSidebarFocus($event)"
     x-effect="document.body.classList.toggle('ui-nav-open', mobileOpen)"
 >
-    <x-ui.auth-splash :error="isset($exception)" />
+    @if(!($isWorkspaceEmbed ?? false))
+        <x-ui.auth-splash :error="isset($exception)" />
+    @endif
     <a href="#main-content" class="ui-skip-link">{{ __('navigation.skip') }}</a>
     @php
         $initNotifCount = 0;
@@ -278,36 +326,51 @@
             $dashboardUrl = \App\Support\PortalContext::dashboard(auth()->user());
         }
     @endphp
-    {{-- Sidebar --}}
-    @include('partials.sidebar')
+    @if(!($isWorkspaceEmbed ?? false))
+        {{-- Sidebar --}}
+        @include('partials.sidebar')
 
-    {{-- Mobile Overlay --}}
-    <div
-        class="sidebar-overlay"
-        id="sidebarOverlay"
-        x-bind:class="{ 'show': mobileOpen }"
-        x-on:click="closeMobileSidebar()"
-        aria-hidden="true"
-    ></div>
+        {{-- Mobile Overlay --}}
+        <div
+            class="sidebar-overlay"
+            id="sidebarOverlay"
+            x-bind:class="{ 'show': mobileOpen }"
+            x-on:click="closeMobileSidebar()"
+            aria-hidden="true"
+        ></div>
+    @endif
 
     {{-- Main Wrapper --}}
     <div class="main-wrapper" id="mainWrapper" x-bind:class="{ 'expanded': desktopCollapsed }">
-        {{-- Navbar --}}
-        @include('partials.navbar')
+        @if(!($isWorkspaceEmbed ?? false))
+            {{-- Navbar --}}
+            @include('partials.navbar')
+        @endif
 
-        {{-- Content Area --}}
-        <main class="content-area" id="main-content" tabindex="-1">
-            <div class="content-container">
-                @include('partials.alerts')
+        @if($isWorkspaceShell ?? false)
+            @include('partials.workspace-tab-bar')
+
+            {{-- Workspace Iframe Stage --}}
+            <main class="content-area workspace-stage" id="main-content" data-workspace-stage tabindex="-1">
                 @yield('content')
-            </div>
-        </main>
+            </main>
+        @else
+            {{-- Content Area --}}
+            <main class="content-area ui-page-fade" id="main-content" tabindex="-1">
+                <div class="content-container">
+                    @include('partials.alerts')
+                    @yield('content')
+                </div>
+            </main>
+        @endif
     </div>
 
-    @include('partials.chat-drawer')
-    <x-ui.smart-panel />
-    <x-ui.toast-container context="app" />
-    <x-ui.image-lightbox />
+    @if(!($isWorkspaceEmbed ?? false))
+        @include('partials.chat-drawer')
+        <x-ui.smart-panel />
+        <x-ui.toast-container context="app" />
+        <x-ui.image-lightbox />
+    @endif
 
     <!-- Bootstrap 5 JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
@@ -450,6 +513,7 @@
     </script>
 
     <!-- Custom JS -->
+    @if(!($isWorkspaceEmbed ?? false))
     <script>
         @auth
             let badgeFetchActive = false;
@@ -565,6 +629,7 @@
             }, 30000);
         @endauth
     </script>
+    @endif
     @auth
         @if(auth()->user()->role === 'purchasing')
             <script>
@@ -611,6 +676,7 @@
 
                     const currentUrl = new URL(window.location.href);
                     currentUrl.searchParams.delete('return_url');
+                    currentUrl.searchParams.delete('_embed');
                     targetUrl.searchParams.set('return_url', currentUrl.toString());
                     link.href = targetUrl.toString();
                 }, true);
@@ -807,7 +873,24 @@
             // Alt + D -> Dashboard
             if (e.altKey && e.key.toLowerCase() === 'd') {
                 e.preventDefault();
-                window.location.href = @json($dashboardUrl);
+                const dashUrl = @json($dashboardUrl);
+                let parentShell = null;
+                if (document.documentElement.dataset.workspaceEmbed === 'true') {
+                    try {
+                        if (window.parent?.location?.origin === window.location.origin) {
+                            parentShell = window.parent.AdasiWorkspaceShell || null;
+                        }
+                    } catch (err) {
+                        parentShell = null;
+                    }
+                }
+                if (window.AdasiWorkspaceShell) {
+                    window.AdasiWorkspaceShell.openUrl(dashUrl);
+                } else if (parentShell) {
+                    parentShell.openUrl(dashUrl);
+                } else {
+                    window.location.href = dashUrl;
+                }
             }
 
             // ? -> Modal Shortcut
@@ -845,7 +928,7 @@
 @endphp
 
 @auth
-    @if($pusherClientReady)
+    @if($pusherClientReady && !($isWorkspaceEmbed ?? false))
         <!-- Laravel Echo + Pusher Channels -->
         <script src="https://cdn.jsdelivr.net/npm/pusher-js@8.4.0/dist/web/pusher.min.js" integrity="sha384-F0kpynobTwTZnUdhUu3W6P6QcdLW2hKKDTh6ECx+p/osH1JYIKlYqUjNc4ObdiTj" crossorigin="anonymous"></script>
         <script src="https://cdn.jsdelivr.net/npm/laravel-echo@1.19.0/dist/echo.iife.js" integrity="sha384-ScNZkQp2Eq+lxW1uQEWSn+2+fQYxKc1pCX6Vl1lxSRzJBvJ5DRR98jdTDqdde2iX" crossorigin="anonymous"></script>
@@ -1205,7 +1288,7 @@
 @endauth
 
     @stack('scripts')
-    @if (! isset($exception) && request()->attributes->get('ui.auth_splash_rendered'))
+    @if (!($isWorkspaceEmbed ?? false) && ! isset($exception) && request()->attributes->get('ui.auth_splash_rendered'))
         <template data-auth-splash-layout-ready="app" data-readiness="core"></template>
     @endif
 </body>

@@ -284,6 +284,8 @@
     @endif
     x-on:set-multi-options.window="if ($event.detail.id === '{{ $resolvedId }}') setOptions($event.detail.options, $event.detail.autoSelect, $event.detail.emptyPlaceholder)"
     @click.outside="close(false)"
+    x-on:pointerdown.window="if (open && !$el.contains($event.target)) close(false)"
+    x-on:adasi:dismiss-overlays.window="if (open) close(false)"
     @keydown.escape.stop="close(true)"
     @focusout="if ($event.relatedTarget && !$el.contains($event.relatedTarget)) close(false)"
 >

@@ -33,6 +33,7 @@ class UpdateUserPreferenceRequest extends FormRequest
             'time_format' => ['sometimes', 'required', 'string', Rule::in(array_keys(config('regional_display.time_formats')))],
             'number_format' => ['sometimes', 'required', 'string', Rule::in(array_keys(config('regional_display.number_formats')))],
             'accent' => ['sometimes', 'required', Rule::in(array_keys(config('user_preferences.accents')))],
+            'shell_style' => ['sometimes', 'required', 'string', Rule::in(array_keys(config('user_preferences.shell_styles')))],
             ...$this->dashboardLayoutRules($dashboardWidgets, $this->user()),
             'theme' => ['required', Rule::in(config('user_preferences.themes'))],
             'density' => ['required', 'string', Rule::in(config('user_preferences.densities'))],

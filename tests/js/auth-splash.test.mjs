@@ -6,7 +6,26 @@ import vm from 'node:vm';
 const sourcePath = new URL('../../resources/js/auth-splash.js', import.meta.url);
 const source = existsSync(sourcePath) ? readFileSync(sourcePath, 'utf8') : '';
 
-function environment({ mode = 'core', reduced = false, body = true, css = true, parsed = false, failFocus = false, autofocus = false, holdFrames = false, minVisible = '0' } = {}) {
+const GIF_SRC = '/assets/images/logo-adasi.gif';
+const FALLBACK_SRC = '/assets/images/logo-adasi-wordmark.png';
+
+function environment({
+    mode = 'core',
+    reduced = false,
+    body = true,
+    css = true,
+    parsed = false,
+    failFocus = false,
+    autofocus = false,
+    holdFrames = false,
+    minVisible = '0',
+    mediaFallbackMs = '500',
+    mediaComplete = true,
+    mediaWidth = 384,
+    mediaSrc = GIF_SRC,
+    fallbackSrc = FALLBACK_SRC,
+    withMedia = true,
+} = {}) {
     let now = 0;
     let sequence = 0;
     const queue = new Map();
@@ -89,18 +108,54 @@ function environment({ mode = 'core', reduced = false, body = true, css = true, 
     document.activeElement = root;
     document.querySelector = selector => root.matches(selector) ? root : root.querySelector(selector);
     document.querySelectorAll = selector => root.querySelectorAll(selector);
-    document.currentScript = { dataset: { hardTimeout: '10000', slowAfter: '2000', fadeMs: '650', cleanupMs: '750', layout: mode === 'native-login' ? 'auth' : 'app', readiness: mode } };
+    document.currentScript = {
+        dataset: {
+            hardTimeout: '10000',
+            slowAfter: '2000',
+            fadeMs: '650',
+            cleanupMs: '750',
+            mediaFallbackMs,
+            layout: mode === 'native-login' ? 'auth' : 'app',
+            readiness: mode,
+        },
+    };
     // Existing readiness-only cases explicitly disable the branding minimum.
     if (minVisible !== null) document.currentScript.dataset.minVisibleMs = minVisible;
     const overlay = node('div', { 'data-auth-splash': '', class: 'auth-splash', 'aria-hidden': 'true' });
     overlay.hidden = true;
     overlay.dataset = { splashReason: 'post-login' };
     const panel = overlay.appendChild(node('div', { class: 'auth-splash__panel', tabindex: '-1' }));
-    const letters = [...'ADASI'].map(letter => {
-        const el = panel.appendChild(node('span', { class: 'auth-splash__letter' }));
-        el.textContent = letter;
-        return el;
-    });
+    const brand = panel.appendChild(node('div', { class: 'auth-splash__brand', 'aria-hidden': 'true' }));
+    const picture = brand.appendChild(node('picture', { class: 'auth-splash__picture' }));
+    picture.appendChild(node('source', { media: '(prefers-reduced-motion: reduce)', srcset: fallbackSrc }));
+    const media = withMedia
+        ? picture.appendChild(node('img', {
+            class: 'auth-splash__media',
+            'data-auth-splash-media': '',
+            'data-fallback-src': fallbackSrc,
+            src: mediaSrc,
+            width: '384',
+            height: '153',
+            alt: '',
+        }))
+        : null;
+    if (media) {
+        media.complete = mediaComplete;
+        media.naturalWidth = mediaComplete ? mediaWidth : 0;
+        media.naturalHeight = mediaComplete && mediaWidth > 0 ? 153 : 0;
+        Object.defineProperty(media, 'src', {
+            get() { return this.getAttribute('src') || ''; },
+            set(value) {
+                this.setAttribute('src', value);
+                this.complete = false;
+                this.naturalWidth = 0;
+                this.naturalHeight = 0;
+            },
+        });
+        Object.defineProperty(media, 'currentSrc', {
+            get() { return reduced ? fallbackSrc : (this.getAttribute('src') || ''); },
+        });
+    }
     const status = overlay.appendChild(node('span', { 'data-auth-splash-status': '' }));
     const skip = overlay.appendChild(node('button', { 'data-auth-splash-skip': '' }));
     skip.hidden = true;
@@ -130,7 +185,7 @@ function environment({ mode = 'core', reduced = false, body = true, css = true, 
         requestAnimationFrame: callback => holdFrames ? ++sequence : setTimeout(callback, 16), cancelAnimationFrame: id => queue.delete(id),
         performance: { now: () => now, mark() {}, measure() {} },
         matchMedia: () => motion,
-        getComputedStyle: element => ({ transform: 'matrix(1, 0, 0, 1, 0, 42)', getPropertyValue: () => css ? '1' : '' }),
+        getComputedStyle: () => ({ transform: 'none', getPropertyValue: () => css ? '1' : '' }),
         CustomEvent: class { constructor(type, options = {}) { this.type = type; this.detail = options.detail; } },
         MutationObserver: class {
             constructor(callback) { this.callback = callback; observations.push(this); }
@@ -159,11 +214,24 @@ function environment({ mode = 'core', reduced = false, body = true, css = true, 
         now = end;
     };
     boot();
-    return { window, document, overlay, panel, letters, skip, status, workspace, root, sentinel, email, password, submit, motion,
+    return {
+        window, document, overlay, panel, brand, picture, media, skip, status, workspace, root, sentinel, email, password, submit, motion,
         queue, events, changes, boot, mutate, advance, node,
         parsed() { root.appendChild(sentinel); mutate(); },
         domReady() { document.readyState = 'interactive'; document.dispatchEvent({ type: 'DOMContentLoaded' }); },
         coreReady() { assert.ok(window.AdasiAuthSplash, 'standalone bridge exists'); window.AdasiAuthSplash.markCoreReady(); },
+        mediaLoad(width = 384) {
+            media.complete = true;
+            media.naturalWidth = width;
+            media.naturalHeight = width > 0 ? 153 : 0;
+            media.dispatchEvent({ type: 'load', target: media });
+        },
+        mediaError() {
+            media.complete = true;
+            media.naturalWidth = 0;
+            media.naturalHeight = 0;
+            media.dispatchEvent({ type: 'error', target: media });
+        },
     };
 }
 
@@ -188,7 +256,6 @@ for (const mode of ['native-login', 'core']) test('minimum holds interaction aft
     assert.equal(e.window.AdasiAuthSplash.state, 'RELEASED');
     assert.equal(e.workspace.inert, false);
     assert.equal(e.document.activeElement, e.email);
-    assert.ok(e.letters.every(letter => letter.animationCancellations > 0));
     assert.equal(e.events.filter(event => event.type === 'adasi:page-ready').length, 1);
     assert.equal(e.events.filter(event => event.type === 'adasi:auth-splash-released').length, 1);
     e.advance(750);
@@ -234,8 +301,91 @@ test('readiness before late markup stays sticky until activation plus the minimu
     assert.equal(e.window.AdasiAuthSplash.state, 'RELEASED');
 });
 
+test('pending GIF delays 2000ms minimum until load fires before fallback timeout', () => {
+    const e = environment({ mode: 'native-login', parsed: true, minVisible: '2000', mediaComplete: false, mediaFallbackMs: '500' });
+    e.advance(32);
+    assert.equal(e.window.AdasiAuthSplash.renderReady, true);
+    assert.equal(e.window.AdasiAuthSplash.state, 'WAITING');
+    e.advance(218); // t = 250ms
+    e.mediaLoad(384);
+    assert.equal(e.media.getAttribute('src'), GIF_SRC);
+    assert.equal(e.window.AdasiAuthSplash.state, 'WAITING');
+    e.advance(1999);
+    assert.equal(e.window.AdasiAuthSplash.state, 'WAITING');
+    e.advance(1); // t = 2250ms
+    assert.equal(e.window.AdasiAuthSplash.state, 'RELEASED');
+    e.advance(750);
+    assert.equal(e.window.AdasiAuthSplash.state, 'REMOVED');
+    assert.equal(e.queue.size, 0);
+});
+
+test('slow GIF past mediaFallbackMs swaps to static PNG and anchors 2000ms minimum at timeout', () => {
+    const e = environment({ mode: 'native-login', parsed: true, minVisible: '2000', mediaComplete: false, mediaFallbackMs: '500' });
+    e.advance(499);
+    assert.equal(e.media.getAttribute('src'), GIF_SRC);
+    assert.equal(e.window.AdasiAuthSplash.state, 'WAITING');
+    e.advance(1); // t = 500ms
+    assert.equal(e.media.getAttribute('src'), FALLBACK_SRC);
+    assert.equal(e.window.AdasiAuthSplash.state, 'WAITING');
+    e.advance(100);
+    e.mediaLoad(384); // Late fallback load must not restart the 2000ms minimum.
+    e.advance(1899);
+    assert.equal(e.window.AdasiAuthSplash.state, 'WAITING');
+    e.advance(1); // t = 2500ms
+    assert.equal(e.window.AdasiAuthSplash.state, 'RELEASED');
+    e.advance(750);
+    assert.equal(e.window.AdasiAuthSplash.state, 'REMOVED');
+    assert.equal(e.queue.size, 0);
+});
+
+test('GIF load error falls back to static PNG and double error hides image without deadlock', () => {
+    const recovered = environment({ mode: 'native-login', parsed: true, minVisible: '2000', mediaComplete: false });
+    recovered.advance(40);
+    recovered.mediaError();
+    assert.equal(recovered.media.getAttribute('src'), FALLBACK_SRC);
+    assert.equal(recovered.media.hidden, false);
+    recovered.advance(40); // t = 80ms
+    recovered.mediaLoad(384);
+    recovered.advance(1999);
+    assert.equal(recovered.window.AdasiAuthSplash.state, 'WAITING');
+    recovered.advance(1);
+    assert.equal(recovered.window.AdasiAuthSplash.state, 'RELEASED');
+
+    const broken = environment({ mode: 'native-login', parsed: true, minVisible: '2000', mediaComplete: false });
+    broken.advance(40);
+    broken.mediaError();
+    assert.equal(broken.media.getAttribute('src'), FALLBACK_SRC);
+    broken.advance(40); // t = 80ms
+    broken.mediaError();
+    assert.equal(broken.media.hidden, true);
+    broken.advance(1999);
+    assert.equal(broken.window.AdasiAuthSplash.state, 'WAITING');
+    broken.advance(1);
+    assert.equal(broken.window.AdasiAuthSplash.state, 'RELEASED');
+    broken.advance(750);
+    assert.equal(broken.window.AdasiAuthSplash.state, 'REMOVED');
+    assert.equal(broken.queue.size, 0);
+});
+
+test('pre-broken media and same-URL fallback hide cleanly with zero infinite error loop', () => {
+    const e = environment({
+        mode: 'native-login',
+        parsed: true,
+        minVisible: '2000',
+        mediaComplete: true,
+        mediaWidth: 0,
+        mediaSrc: FALLBACK_SRC,
+        fallbackSrc: FALLBACK_SRC,
+    });
+    assert.equal(e.media.hidden, true);
+    e.advance(32);
+    assert.equal(e.window.AdasiAuthSplash.state, 'WAITING');
+    e.advance(1968);
+    assert.equal(e.window.AdasiAuthSplash.state, 'RELEASED');
+});
+
 for (const action of ['Escape', 'skip', 'pagehide', 'pageswap', 'bfcache', 'css-timeout']) test('minimum never blocks immediate exit: ' + action, () => {
-    const e = environment({ mode: 'native-login', parsed: true, minVisible: '5000' });
+    const e = environment({ mode: 'native-login', parsed: true, minVisible: '5000', mediaComplete: false });
     e.advance(action === 'skip' ? 2000 : 32);
     if (action === 'Escape') e.document.dispatchEvent({ type: 'keydown', key: 'Escape' });
     else if (action === 'skip') e.skip.dispatchEvent({ type: 'click' });
@@ -249,12 +399,13 @@ for (const action of ['Escape', 'skip', 'pagehide', 'pageswap', 'bfcache', 'css-
     assert.equal(e.window.AdasiAuthSplash.state, 'REMOVED');
 });
 
-test('initial and live reduced motion bypass the minimum without a fade', () => {
-    const initial = environment({ mode: 'native-login', parsed: true, minVisible: '2000', reduced: true });
+test('initial and live reduced motion bypass media wait and minimum without a fade', () => {
+    const initial = environment({ mode: 'native-login', parsed: true, minVisible: '2000', reduced: true, mediaComplete: false });
     initial.advance(32);
     assert.equal(initial.window.AdasiAuthSplash.state, 'REMOVED');
     assert.equal(initial.queue.size, 0);
-    const live = environment({ mode: 'native-login', parsed: true, minVisible: '2000' });
+
+    const live = environment({ mode: 'native-login', parsed: true, minVisible: '2000', mediaComplete: false });
     live.advance(100);
     assert.equal(live.window.AdasiAuthSplash.state, 'WAITING');
     live.motion.matches = true; live.motion.dispatchEvent({ type: 'change' });
@@ -263,7 +414,7 @@ test('initial and live reduced motion bypass the minimum without a fade', () => 
 });
 
 test('an initialization error while holding the minimum restores interaction and cancels timers', () => {
-    const e = environment({ mode: 'native-login', parsed: true, minVisible: '2000' });
+    const e = environment({ mode: 'native-login', parsed: true, minVisible: '2000', mediaComplete: false });
     e.advance(32);
     assert.equal(e.window.AdasiAuthSplash.state, 'WAITING');
     e.document.querySelector = () => { throw new Error('DOM integration failed'); };
@@ -274,8 +425,8 @@ test('an initialization error while holding the minimum restores interaction and
     assert.equal(e.queue.size, 0);
 });
 
-test('the hard deadline wins over a late activation minimum', () => {
-    const e = environment({ mode: 'native-login', body: false, minVisible: '2000' });
+test('the hard deadline wins over a late activation minimum and pending media', () => {
+    const e = environment({ mode: 'native-login', body: false, minVisible: '2000', mediaComplete: false });
     e.advance(9500);
     e.document.body = e.root;
     e.root.appendChild(e.overlay); e.root.appendChild(e.workspace); e.parsed();
@@ -299,8 +450,8 @@ test('returning from a background tab does not restart the minimum', () => {
     assert.equal(e.window.AdasiAuthSplash.state, 'RELEASED');
 });
 
-test('native login releases without app.js or DOMContentLoaded', () => {
-    const e = environment({ mode: 'native-login' });
+test('native login releases without app.js or DOMContentLoaded even while media is pending', () => {
+    const e = environment({ mode: 'native-login', mediaComplete: false });
     assert.equal(e.window.AdasiAuthSplash.state, 'WAITING');
     e.parsed();
     e.advance(32);
@@ -326,29 +477,11 @@ for (const order of ['pdc', 'cdp', 'dpc']) test('core readiness requires all fac
     assert.equal(e.events.filter(event => event.type === 'adasi:page-ready').length, 1);
 });
 
-test('exact ADASI rise/sink stagger and loop timings', () => {
-    const e = environment();
-    e.advance(4370);
-    const starts = name => e.changes.filter(change => change.name === name).map(change => [change.element.textContent, change.at]);
-    assert.deepEqual(starts('is-rising'), [['A', 50], ['D', 140], ['A', 230], ['S', 320], ['I', 410]]);
-    assert.deepEqual(starts('is-sinking'), [['A', 2310], ['D', 2400], ['A', 2490], ['S', 2580], ['I', 2670]]);
-    e.advance(50);
-    assert.equal(starts('is-rising').at(-1)[1], 4420);
-});
-
-for (const offset of [80, 2600]) test('ready cancels all wave work at ' + offset + 'ms and releases immediately', () => {
-    const e = environment();
-    e.advance(offset);
-    e.parsed(); e.domReady(); e.coreReady(); e.advance(32);
-    const count = e.changes.filter(c => ['is-rising', 'is-sinking'].includes(c.name)).length;
+test('missing media element does not activate overlay', () => {
+    const e = environment({ withMedia: false, parsed: true });
+    assert.equal(e.overlay.hidden, true);
     assert.equal(e.workspace.inert, false);
-    assert.equal(e.workspace.hasAttribute('aria-busy'), false);
-    assert.equal(e.document.body.hasAttribute('aria-busy'), false);
-    assert.ok(e.letters.every(letter => letter.animationCancellations > 0));
-    assert.equal(e.letters[0].style.transform, 'matrix(1, 0, 0, 1, 0, 42)');
-    e.advance(10000);
-    assert.equal(e.changes.filter(c => ['is-rising', 'is-sinking'].includes(c.name)).length, count);
-    assert.equal(e.queue.size, 0);
+    assert.equal(e.window.AdasiAuthSplash.state, 'ARMED');
 });
 
 test('independent deadline survives absent body, late markup, late core and duplicate boot', () => {
@@ -380,16 +513,13 @@ test('reduced motion changes do not cancel the hard watchdog', () => {
     e.advance(100);
     e.motion.matches = true;
     e.motion.dispatchEvent({ type: 'change' });
-    assert.ok(e.letters.every(letter => letter.classList.contains('is-up')));
     e.advance(9900);
     assert.equal(e.window.AdasiAuthSplash.state, 'REMOVED');
     assert.equal(e.workspace.inert, false);
 });
 
-test('initial reduced motion has no wave and no fade at readiness', () => {
+test('initial reduced motion has no fade at readiness', () => {
     const e = environment({ reduced: true });
-    e.advance(500);
-    assert.equal(e.changes.filter(c => c.name === 'is-rising').length, 0);
     e.parsed(); e.domReady(); e.coreReady(); e.advance(32);
     assert.equal(e.window.AdasiAuthSplash.state, 'REMOVED');
 });
@@ -419,7 +549,7 @@ test('normal pageshow does not consume later bfcache cleanup', () => {
 test('fade is interrupted before user interaction and child transitions cannot remove it', () => {
     const e = environment();
     e.parsed(); e.domReady(); e.coreReady(); e.advance(32);
-    e.overlay.dispatchEvent({ type: 'transitionend', target: e.letters[0], propertyName: 'transform' });
+    e.overlay.dispatchEvent({ type: 'transitionend', target: e.media, propertyName: 'opacity' });
     assert.equal(e.window.AdasiAuthSplash.state, 'RELEASED');
     e.document.dispatchEvent({ type: 'pointerdown', target: e.email });
     assert.equal(e.window.AdasiAuthSplash.state, 'REMOVED');
@@ -447,7 +577,7 @@ test('native DOM present at bootstrap still waits for visual readiness', () => {
     assert.equal(e.document.activeElement, e.email);
 });
 
-test('a page visually ready before component insertion skips without focus or animation', () => {
+test('a page visually ready before component insertion skips without focus or activation', () => {
     const e = environment({ mode: 'native-login', body: false });
     e.document.body = e.root;
     e.root.appendChild(e.workspace);
@@ -459,7 +589,6 @@ test('a page visually ready before component insertion skips without focus or an
     assert.equal(e.overlay.hidden, true);
     assert.equal(e.workspace.inert, false);
     assert.equal(e.document.activeElement, e.email);
-    assert.equal(e.changes.filter(c => c.name === 'is-rising').length, 0);
 });
 
 test('hard deadline remains independent during the cosmetic fade', () => {
@@ -574,4 +703,128 @@ for (const late of [false, true]) test('actual app bridge acknowledges after DOM
     assert.equal(e.window.AdasiAuthSplash.coreReady, true);
     e.parsed(); e.advance(32);
     assert.equal(e.window.AdasiAuthSplash.renderReady, true);
+});
+
+test('activateClientPostLoginSplash records client_start in sessionStorage and mounts client overlay', () => {
+    const store = new Map();
+    const epoch = 1_700_000_000_000;
+    const storage = {
+        getItem: key => store.get(key) ?? null,
+        setItem: (key, value) => store.set(key, String(value)),
+        removeItem: key => store.delete(key),
+    };
+    const MockDate = class extends Date {
+        static now() { return epoch; }
+    };
+    const sub = environment({ mode: 'core', minVisible: '600' });
+    sub.document.createElement = tag => sub.node(tag);
+    sub.document.body.dataset = { splashGif: GIF_SRC, splashWordmark: FALLBACK_SRC };
+    sub.window.sessionStorage = storage;
+    sub.window.Date = MockDate;
+    sub.overlay.remove();
+    sub.window.AdasiAuthSplash.activateClientPostLoginSplash('/admin/dashboard');
+    assert.equal(store.get('adasi.auth_splash.client_start'), String(epoch));
+    const mounted = sub.root.querySelector('[data-auth-splash]');
+    assert.ok(mounted);
+    assert.equal(mounted.className, 'auth-splash adasi-client-splash');
+    assert.equal(mounted.getAttribute('data-splash-reason'), 'post-login');
+});
+
+test('releaseWhenReady subtracts sessionStorage client_start elapsed time before booting', () => {
+    const store = new Map();
+    const fakeNow = 1_700_000_000_000;
+    const storage = {
+        getItem: key => store.get(key) ?? null,
+        setItem: (key, value) => store.set(key, String(value)),
+        removeItem: key => store.delete(key),
+    };
+    store.set('adasi.auth_splash.client_start', String(fakeNow - 400));
+    let now = 0;
+    let seq = 0;
+    const queue = new Map();
+    const FakeDate = class extends Date { static now() { return fakeNow; } };
+    const e = environment({ mode: 'core', minVisible: '600' });
+    // Patch a clean vm context via helper-style direct check using real Date offset
+    const e2Source = source;
+    const preWaitStore = new Map([['adasi.auth_splash.client_start', String(Date.now() - 420)]]);
+    assert.ok(e2Source.includes('adasi.auth_splash.client_start'));
+    assert.ok(e2Source.includes('data-auth-splash-wait'));
+    // Using a live vm context that has sessionStorage populated BEFORE boot
+    const target = () => ({
+        listeners: new Map(),
+        addEventListener(type, cb) { if (!this.listeners.has(type)) this.listeners.set(type, new Set()); this.listeners.get(type).add(cb); },
+        removeEventListener(type, cb) { this.listeners.get(type)?.delete(cb); },
+        dispatchEvent(ev) { ev.target ??= this; for (const cb of [...(this.listeners.get(ev.type) || [])]) cb(ev); return true; },
+    });
+    const doc = Object.assign(target(), { readyState: 'loading', hidden: false });
+    const makeEl = (tag, attrs = {}) => {
+        const cls = new Set((attrs.class || '').split(' ').filter(Boolean));
+        const el = Object.assign(target(), {
+            tagName: tag.toUpperCase(), attributes: { ...attrs }, children: [], dataset: {}, style: { setProperty() {} }, hidden: false, disabled: false, isConnected: true,
+            getAttribute(k) { return this.attributes[k] ?? null; },
+            hasAttribute(k) { return k in this.attributes; },
+            setAttribute(k, v) { this.attributes[k] = String(v); },
+            removeAttribute(k) { delete this.attributes[k]; },
+            appendChild(c) { c.parentElement = this; this.children.push(c); return c; },
+            contains(c) { return this === c || this.children.some(n => n.contains(c)); },
+            matches(s) { return s.split(',').some(p => { p = p.trim(); if (p.startsWith('.')) return cls.has(p.slice(1)); const a = [...p.matchAll(/\[([^=\]]+)(?:=["']?([^"'\]]+)["']?)?\]/g)]; return a.every(([, k, v]) => this.hasAttribute(k) && (v === undefined || this.getAttribute(k) === v)); }); },
+            querySelectorAll(s) { return this.children.flatMap(c => [...(c.matches(s) ? [c] : []), ...c.querySelectorAll(s)]); },
+            querySelector(s) { return this.querySelectorAll(s)[0] || null; },
+            focus() {}, remove() { this.isConnected = false; }, getAnimations() { return []; },
+            classList: { add: (...n) => n.forEach(x => cls.add(x)), remove: (...n) => n.forEach(x => cls.delete(x)), contains: x => cls.has(x) },
+        });
+        Object.defineProperty(el, 'inert', { get: () => el.hasAttribute('inert'), set: v => v ? el.setAttribute('inert', '') : el.removeAttribute('inert') });
+        return el;
+    };
+    const root = makeEl('body');
+    doc.body = root;
+    doc.documentElement = makeEl('html');
+    doc.querySelector = s => root.matches(s) ? root : root.querySelector(s);
+    doc.querySelectorAll = s => root.querySelectorAll(s);
+    doc.currentScript = { dataset: { hardTimeout: '8000', minVisibleMs: '600', mediaFallbackMs: '500', slowAfter: '2000', cleanupMs: '600', layout: 'app', readiness: 'core' } };
+    const overlay = root.appendChild(makeEl('div', { 'data-auth-splash': '', class: 'auth-splash' }));
+    overlay.dataset = { splashReason: 'post-login' };
+    overlay.appendChild(makeEl('div', { class: 'auth-splash__panel', tabindex: '-1' }));
+    overlay.appendChild(makeEl('span', { 'data-auth-splash-status': '' }));
+    const skip = overlay.appendChild(makeEl('button', { 'data-auth-splash-skip': '' })); skip.hidden = true;
+    const media = overlay.appendChild(makeEl('img', { 'data-auth-splash-media': '', src: GIF_SRC }));
+    media.complete = true; media.naturalWidth = 384; media.naturalHeight = 153; media.currentSrc = GIF_SRC;
+    root.appendChild(makeEl('main', { id: 'main-content' }));
+    const sentinel = root.appendChild(makeEl('template', { 'data-auth-splash-layout-ready': 'app' })); sentinel.dataset.readiness = 'core';
+    const win = Object.assign(target(), {
+        document: doc, Date: FakeDate, Element: Object, HTMLElement: Object,
+        sessionStorage: storage,
+        setTimeout: (cb, d = 0) => { const id = ++seq; queue.set(id, { cb, at: now + d }); return id; },
+        clearTimeout: id => queue.delete(id),
+        requestAnimationFrame: cb => win.setTimeout(cb, 16),
+        cancelAnimationFrame: id => queue.delete(id),
+        performance: { now: () => now, mark() {}, measure() {} },
+        matchMedia: () => ({ matches: false, addEventListener() {}, removeEventListener() {} }),
+        getComputedStyle: () => ({ transform: 'none', getPropertyValue: () => '1' }),
+        CustomEvent: class { constructor(t, o = {}) { this.type = t; this.detail = o.detail; } },
+        MutationObserver: class { observe() {} disconnect() {} },
+    });
+    const ctx = vm.createContext({ window: win, document: doc, console, performance: win.performance, MutationObserver: win.MutationObserver, CustomEvent: win.CustomEvent, HTMLElement: win.HTMLElement });
+    vm.runInContext(source, ctx);
+    doc.readyState = 'interactive';
+    doc.dispatchEvent({ type: 'DOMContentLoaded' });
+    win.AdasiAuthSplash.markCoreReady();
+    const advance = ms => {
+        const end = now + ms;
+        for (;;) {
+            const next = [...queue].filter(([, v]) => v.at <= end).sort((a, b) => a[1].at - b[1].at || a[0] - b[0])[0];
+            if (!next) break;
+            queue.delete(next[0]); now = next[1].at; next[1].cb();
+        }
+        now = end;
+    };
+    advance(32); // renderReady reached -> 400ms pre-elapsed + 32ms = 432ms < 600ms
+    assert.equal(win.AdasiAuthSplash.state, 'WAITING');
+    assert.equal(doc.documentElement.getAttribute('data-auth-splash-wait'), '1');
+    advance(167); // total 599ms
+    assert.equal(win.AdasiAuthSplash.state, 'WAITING');
+    advance(1); // total 600ms (with only 200ms after boot instead of full 600ms!)
+    assert.equal(win.AdasiAuthSplash.state, 'RELEASED');
+    assert.equal(store.has('adasi.auth_splash.client_start'), false);
+    assert.equal(doc.documentElement.getAttribute('data-auth-splash-wait'), null);
 });

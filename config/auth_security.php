@@ -9,6 +9,9 @@ return [
         // Allowed number of appearances in the HaveIBeenPwned corpus before a
         // password is rejected outright.
         'uncompromised_threshold' => 3,
+
+        // Number of recent password hashes (including current) blocked from reuse.
+        'history_count' => (int) env('AUTH_PASSWORD_HISTORY_COUNT', 5),
     ],
 
     'login' => [
@@ -61,14 +64,13 @@ return [
         ],
     ],
 
-    // Precomputed bcrypt hash of a random 32-character string, used as the
-    // verification target when the submitted email has no account or the
-    // account is inactive. Hash::check() then burns the same CPU cycles as a
-    // real wrong-password attempt, so response time no longer discloses
-    // whether an address is registered. The cost MUST match hashing.bcrypt
-    // rounds (12 in production, overridden per-environment in phpunit.xml),
-    // otherwise the two branches diverge again.
-    'dummy_hash' => env('AUTH_DUMMY_HASH', '$2y$12$e8p2xPjG.oQZkGgJ7K7Ie.4gPZ9Z7V1X2Y3Z4A5B6C7D8E9F0G1H2'),
+    // Precomputed Argon2id hash of a random string, used as the verification
+    // target when the submitted email has no account or the account is
+    // inactive. Hash::check() then burns the same CPU/memory cost as a real
+    // wrong-password attempt, so response time no longer discloses whether an
+    // address is registered. Cost MUST match hashing.argon parameters (or be
+    // overridden per-environment in phpunit.xml).
+    'dummy_hash' => env('AUTH_DUMMY_HASH', '$argon2id$v=19$m=65536,t=4,p=1$djRZQldMZ3lPUllpZC8ydw$EGlwxcyCskJgVMdt7ZkY5nOqdz0EFcUbsiDDcCDEzK4'),
 
     'rate_limits' => [
         'credentials' => [
@@ -77,7 +79,8 @@ return [
         ],
 
         'mfa_code' => [
-            'subject' => ['attempts' => 5, 'decay_seconds' => 300],
+            'subject' => ['attempts' => 5, 'decay_seconds' => 600],
+            'ip' => ['attempts' => 20, 'decay_seconds' => 300],
         ],
 
         'security_action' => [

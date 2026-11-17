@@ -60,6 +60,7 @@ class SidebarShellTest extends TestCase
         $layout = file_get_contents(resource_path('views/layouts/app.blade.php'));
         $this->assertLessThan(strpos($layout, "@vite(['resources/css/app.css', 'resources/js/app.js'])"), strpos($layout, 'const preferences = @js($preferenceFrontendPayload)'));
         $this->assertStringContainsString('root.dataset.bsTheme = effective', $layout);
+        $this->assertStringContainsString('root.dataset.shell = previewShellStyle ?? savedShellStyle', $layout);
         $this->assertStringContainsString('root.dataset.density = previewDensity ?? savedDensity', $layout);
         $this->assertStringContainsString('id="sidebarOverlay"', $layout);
     }
@@ -86,6 +87,8 @@ class SidebarShellTest extends TestCase
         $this->assertStringContainsString('--sidebar-width: 256px', $styles);
         $this->assertStringContainsString('--sidebar-width-collapsed: 64px', $styles);
         $this->assertStringContainsString('--sidebar-rail-center: 32px', $styles);
+        $this->assertStringContainsString('--topbar-height: 44px', $styles);
+        $this->assertStringContainsString('--topbar-height: 52px', $styles);
         $this->assertStringContainsString('--ui-motion-sidebar: 280ms', $styles);
         $this->assertStringContainsString('--ui-motion-sidebar-fade: 160ms', $styles);
         $this->assertStringContainsString('--ui-motion-sidebar-icon: 140ms', $styles);

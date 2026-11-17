@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Normalizer;
+use Throwable;
 
 class LoginRateLimiter
 {
@@ -107,15 +108,32 @@ class LoginRateLimiter
     private function recordDistinctFailedEmail(Request $request, string $email): void
     {
         $window = (int) config('auth_security.login.distinct_email.window_seconds', 300);
-        $emails = Cache::get($this->distinctEmailKey($request), []);
+        $threshold = (int) config('auth_security.login.distinct_email.threshold', 5);
+        $maxTracked = max(20, $threshold * 2);
+        $key = $this->distinctEmailKey($request);
+        $emailHash = hash('sha256', $this->normalizedEmail($email));
 
-        if (! is_array($emails)) {
-            $emails = [];
+        $update = function () use ($key, $emailHash, $window, $maxTracked): void {
+            $emails = Cache::get($key, []);
+
+            if (! is_array($emails)) {
+                $emails = [];
+            }
+
+            if (! array_key_exists($emailHash, $emails) && count($emails) >= $maxTracked) {
+                return;
+            }
+
+            $emails[$emailHash] = true;
+
+            Cache::put($key, $emails, $window);
+        };
+
+        try {
+            Cache::lock($key.':lock', 2)->block(1, $update);
+        } catch (Throwable) {
+            $update();
         }
-
-        $emails[hash('sha256', $this->normalizedEmail($email))] = true;
-
-        Cache::put($this->distinctEmailKey($request), $emails, $window);
     }
 
     private function distinctEmailThresholdExceeded(Request $request): bool

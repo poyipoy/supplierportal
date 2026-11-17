@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { exportEntries, errorMessages, fileNameFrom, runExport } from '../../resources/js/quotation-form-export.js';
+import { exportEntries, errorMessages, fileNameFrom, resolveExportUrl, runExport } from '../../resources/js/quotation-form-export.js';
 
 const read = (path) => readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8');
 
@@ -11,9 +11,10 @@ const formData = (pairs) => {
     return data;
 };
 
-test('export entries drop files and the save action but keep every entered field', () => {
+test('export entries drop files, action, and _method override but keep every entered field', () => {
     const entries = exportEntries(formData([
         ['_token', 'csrf'],
+        ['_method', 'PUT'],
         ['action', 'submitted'],
         ['items[0][pr_item_id]', '7'],
         ['items[0][available_length_input]', '2300-2500'],
@@ -26,6 +27,49 @@ test('export entries drop files and the save action but keep every entered field
         ['items[0][available_length_input]', '2300-2500'],
         ['items[0][notes]', ''],
     ]);
+});
+
+test('resolveExportUrl normalizes same-host URLs to avoid scheme mismatch', () => {
+    const originalWindow = globalThis.window;
+    globalThis.window = { location: { origin: 'https://portal.test', host: 'portal.test' } };
+    try {
+        assert.equal(
+            resolveExportUrl('http://portal.test/v2/ADSI_PRD/purchasing/requisitions/export-form'),
+            '/v2/ADSI_PRD/purchasing/requisitions/export-form'
+        );
+        assert.equal(resolveExportUrl('https://other.test/export'), 'https://other.test/export');
+        assert.equal(resolveExportUrl('/relative/export'), '/relative/export');
+    } finally {
+        globalThis.window = originalWindow;
+    }
+});
+
+test('runExport normalizes both primary and fallback URLs on same-host HTTPS', async () => {
+    const originalWindow = globalThis.window;
+    globalThis.window = { location: { origin: 'https://portal.test', host: 'portal.test' } };
+    try {
+        const fetched = [];
+        const fallbacks = [];
+        const result = await runExport({
+            form: fakeForm(),
+            url: 'http://portal.test/v2/ADSI_PRD/purchasing/requisitions/export-form',
+            fallbackUrl: 'http://portal.test/v2/ADSI_PRD/purchasing/requisitions/import-template',
+            formDataFactory: () => formData([['items[0][material_name]', 'SKD11']]),
+            fetchImpl: async (url) => {
+                fetched.push(url);
+                return new Response(JSON.stringify({ message: 'Rate limited' }), { status: 429, headers: { 'Content-Type': 'application/json' } });
+            },
+            notify: () => {},
+            download: () => {},
+            fallbackDownload: (url) => fallbacks.push(url),
+        });
+        assert.equal(result.ok, false);
+        assert.equal(result.fallback, true);
+        assert.deepEqual(fetched, ['/v2/ADSI_PRD/purchasing/requisitions/export-form']);
+        assert.deepEqual(fallbacks, ['/v2/ADSI_PRD/purchasing/requisitions/import-template']);
+    } finally {
+        globalThis.window = originalWindow;
+    }
 });
 
 test('error messages are flattened, de-duplicated and bounded', () => {

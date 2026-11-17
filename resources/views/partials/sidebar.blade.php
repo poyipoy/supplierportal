@@ -12,9 +12,9 @@
     @auth
         <div class="sidebar-mobile-header d-lg-none tw:flex tw:items-center tw:justify-between tw:px-3 tw:py-2.5 tw:border-b tw:border-outline-variant tw:bg-surface-container-low">
             <div class="tw:flex tw:items-center tw:gap-2 tw:min-w-0">
-                <x-ui.avatar :name="auth()->user()->name" size="xs" />
+                <x-ui.avatar :name="auth()->user()->name" size="xs" class="sidebar-mobile-avatar" />
                 <div class="tw:min-w-0">
-                    <span class="tw:block tw:truncate tw:text-ui-xs tw:font-bold tw:text-on-surface">{{ auth()->user()->name }}</span>
+                    <span class="sidebar-mobile-user-name tw:block tw:truncate tw:text-ui-xs tw:font-bold tw:text-on-surface">{{ auth()->user()->name }}</span>
                     <span class="role-badge role-badge-{{ auth()->user()->role }} tw:text-[10px] tw:mt-0.5">
                         {{ __('navigation.roles.'.auth()->user()->role) }}
                     </span>
@@ -105,7 +105,7 @@
                 aria-label="{{ __('navigation.current_portal', ['portal' => $currentLabel ?: __('navigation.portal')]) }}"
             >
                 <span class="sidebar-portal-switcher-icon" aria-hidden="true">
-                    <span class="tw:w-6 tw:h-6 tw:rounded-sm tw:bg-primary/10 tw:text-primary tw:flex tw:items-center tw:justify-center tw:shrink-0">
+                    <span class="sidebar-portal-switcher-icon-badge tw:w-6 tw:h-6 tw:rounded-sm tw:bg-primary/10 tw:text-primary tw:flex tw:items-center tw:justify-center tw:shrink-0">
                         <x-ui.icon :name="$currentIcon" size="sm" />
                     </span>
                 </span>
@@ -233,7 +233,7 @@
                 <x-ui.sidebar-item :href="\App\Support\PageRegistry::url('supplier.company-profile.show')" icon="building-2" :active="request()->routeIs('supplier.company-profile.*')" :label="__('navigation.company_profile')">{{ __('navigation.company_profile') }}</x-ui.sidebar-item>
             @else
                 <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 6;">{{ __('navigation.portal') }}</span></div>
-                <div class="px-3 py-3 tw:text-ui-xs tw:text-on-surface-variant d-flex flex-column align-items-center text-center tw:gap-2">
+                <div class="sidebar-empty-scope-notice px-3 py-3 tw:text-ui-xs tw:text-on-surface-variant d-flex flex-column align-items-center text-center tw:gap-2">
                     <x-ui.icon name="info" size="sm" class="tw:text-on-surface-variant tw:shrink-0" />
                     <span>{{ __('navigation.choose_first') }}</span>
                 </div>

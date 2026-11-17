@@ -1,6 +1,6 @@
 import { t } from './i18n.js';
 
-export const SHOW_DELAY = 150;
+export const SHOW_DELAY = 2500;
 export const MIN_VISIBLE = 300;
 export const SLOW_AFTER = 20000;
 export const NAV_RELEASE = 60000;
@@ -66,6 +66,16 @@ export function createLoaderController({ view, timers }) {
             if (!active && showTimer === null) {
                 showTimer = timers.setTimeout(activate, SHOW_DELAY);
             }
+            return seq;
+        },
+        /** Bypasses SHOW_DELAY when an external controller has already waited out its slow-load timer. */
+        showImmediate() {
+            seq += 1;
+            pending.add(seq);
+            hideTimer = clear(hideTimer);
+            showTimer = clear(showTimer);
+            if (active) view.reconcile?.();
+            else activate();
             return seq;
         },
         /**
@@ -373,7 +383,13 @@ export function bootAdasiLoader(win = globalThis.window) {
             return;
         }
 
-        if (isFullPageNavigation(link, win)) loader.trackNavigation();
+        if (isFullPageNavigation(link, win)) {
+            // Defer until synchronous bubble handlers (such as workspace embed click routing) finish,
+            // matching the submit listener so prevented clicks never leave #adasiLoader active.
+            win.setTimeout(() => {
+                if (!event.defaultPrevented) loader.trackNavigation();
+            }, 0);
+        }
     });
 
     win.document.addEventListener('submit', (event) => {

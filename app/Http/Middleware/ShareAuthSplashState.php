@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Services\Auth\TwoFactorService;
 use Closure;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\ViewErrorBag;
 use Symfony\Component\HttpFoundation\Response;
@@ -121,11 +122,22 @@ class ShareAuthSplashState
             return;
         }
 
-        $target = $response->isRedirection()
-            ? $this->targetPath($request, $response->headers->get('Location'))
-            : null;
+        $clientTarget = $request->attributes->get('ui.auth_splash_client_target');
+        if (! is_string($clientTarget) && $response instanceof JsonResponse && $request->hasHeader('X-Auth-Splash-Client')) {
+            $payload = $response->getData(true);
+            if (is_array($payload) && ($payload['ok'] ?? false) === true && ($payload['splash'] ?? false) === true && is_string($payload['redirect_url'] ?? null)) {
+                $clientTarget = $payload['redirect_url'];
+            }
+        }
+        $isClientHandoff = is_string($clientTarget) && $clientTarget !== '' && $request->hasHeader('X-Auth-Splash-Client');
 
-        if (! $this->isDocumentNavigation($request)
+        $target = $isClientHandoff
+            ? $this->targetPath($request, $clientTarget)
+            : ($response->isRedirection()
+                ? $this->targetPath($request, $response->headers->get('Location'))
+                : null);
+
+        if ((! $isClientHandoff && ! $this->isDocumentNavigation($request))
             || ! $this->validMarker($marker, allowUnbound: true)
             || $target === null
             || ! $this->eligibleReason($request, $marker['reason'], issuing: true)) {

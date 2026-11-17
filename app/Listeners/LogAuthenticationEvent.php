@@ -84,14 +84,12 @@ class LogAuthenticationEvent
         $countKey = 'auth-lockout-streak:'.hash('sha256', $normalized);
         $alertedKey = 'auth-lockout-streak-alerted:'.hash('sha256', $normalized);
 
-        $count = ((int) Cache::get($countKey, 0)) + 1;
-        Cache::put($countKey, $count, $window);
+        Cache::add($countKey, 0, $window);
+        $count = (int) Cache::increment($countKey);
 
-        if ($count < $threshold || Cache::has($alertedKey)) {
+        if ($count < $threshold || ! Cache::add($alertedKey, true, $window)) {
             return;
         }
-
-        Cache::put($alertedKey, true, $window);
 
         $this->logger->write('repeated_lockouts_detected', email: $normalized, metadata: ['count' => $count]);
 

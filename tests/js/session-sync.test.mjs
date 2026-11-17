@@ -11,11 +11,12 @@ const DECLINED = { isConfirmed: false, isDismissed: true, dismiss: 'cancel' };
 const REPLACED = { isConfirmed: false, isDismissed: true };
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 
-function fixture({ session = { crossTab: true, cleanup: false, userId: 41 }, login = null, broadcast = true, blocked = false, initialStorage = [], channelFailure = null, answers = [DECLINED], dirty = false, fetchImpl = null, jquery = null, dom = null, alertRunsPreConfirm = true } = {}) {
+function fixture({ session = { crossTab: true, cleanup: false, userId: 41 }, login = null, broadcast = true, blocked = false, initialStorage = [], channelFailure = null, answers = [DECLINED], dirty = false, fetchImpl = null, jquery = null, dom = null, alertRunsPreConfirm = true, embed = false, parentWin = null, topWin = null, iframes = [] } = {}) {
     const win = new EventTarget();
     const doc = Object.assign(new EventTarget(), {
+        documentElement: { dataset: embed ? { workspaceEmbed: 'true' } : {} },
         querySelector: (selector) => (dom ? dom.querySelector(selector) : login),
-        querySelectorAll: (selector) => (dom ? dom.querySelectorAll(selector) : []),
+        querySelectorAll: (selector) => (dom ? dom.querySelectorAll(selector) : (selector === 'iframe' ? iframes : [])),
     });
     const redirects = [];
     const sent = [];
@@ -30,6 +31,7 @@ function fixture({ session = { crossTab: true, cleanup: false, userId: 41 }, log
     Object.assign(win, {
         Event, AdasiSession: session, AdasiLoginUrl: `${ORIGIN}/login`,
         location: { href: `${PAGE_URL}#details`, origin: ORIGIN, assign: (url) => redirects.push(url) },
+        ...(embed ? { self: win, parent: parentWin, top: topWin ?? parentWin } : {}),
         AdasiI18n: { t: (key) => key },
         AdasiAlert: {
             // Like SweetAlert: the confirm button runs preConfirm; a throw keeps the dialog open
@@ -194,6 +196,7 @@ const removable = [
     'quotation_draft_42_123',
     'quotation_draft_41_hash',
     'adasi_chat_draft_41_1',
+    'adasi:workspace:usage:41:import',
 ];
 const retained = ['quotation_draft_hash', 'quotation_draft_123_456_extra', 'adasi_supplier_reg_draft', 'adasi.sidebar.41', 'supplierAuditScoreGuide'];
 
@@ -593,4 +596,104 @@ test('applyCsrfToken remembers every replaced value and tolerates a page without
     assert.deepEqual([...retired].sort(), ['a', 'b']);
     assert.deepEqual(dom.inputs.map((input) => input.value), ['c', 'c', 'c', 'c']);
     assert.doesNotThrow(() => applyCsrfToken({ querySelector: () => null }, 'c', new Set()));
+});
+
+test('embedded shell iframe does not hijack top navigation on signed-out broadcasts when top manages session sync', () => {
+    const topRedirects = [];
+    const topWin = {
+        AdasiSession: { crossTab: true, cleanup: true, userId: 41 },
+        AdasiSessionSync: { requestReconnect: () => {} },
+        location: { origin: ORIGIN, assign: (url) => topRedirects.push(url) },
+    };
+    const child = fixture({ embed: true, parentWin: topWin, topWin });
+    child.receive({ type: 'signed-out' });
+    child.storageEvent('{"type":"signed-out"}');
+    assert.deepEqual(topRedirects, []);
+    assert.deepEqual(child.redirects, []);
+    assert.equal(child.disconnects(), 0);
+});
+
+test('top shell cross-tab sign-out redirects top once and disarms dirty prompts inside embedded iframes', () => {
+    const iframeStub = { contentWindow: null };
+    const topShell = fixture({ iframes: [iframeStub] });
+    const child = fixture({ embed: true, parentWin: topShell.win, topWin: topShell.win });
+    iframeStub.contentWindow = child.win;
+    child.win.addEventListener('beforeunload', (event) => {
+        event.preventDefault();
+        event.returnValue = 'dirty';
+    });
+
+    topShell.receive({ type: 'signed-out' });
+
+    assert.deepEqual(topShell.redirects, [`${ORIGIN}/login`]);
+    assert.equal(topShell.disconnects(), 1);
+    const unloadEvent = new Event('beforeunload', { cancelable: true });
+    child.win.dispatchEvent(unloadEvent);
+    assert.equal(unloadEvent.defaultPrevented, false);
+    assert.deepEqual(child.submitting, [true]);
+});
+
+test('direct logout form submission disarms dirty prompts inside embedded iframes', () => {
+    const iframeStub = { contentWindow: null };
+    const topShell = fixture({ iframes: [iframeStub] });
+    const child = fixture({ embed: true, parentWin: topShell.win, topWin: topShell.win });
+    iframeStub.contentWindow = child.win;
+    child.win.addEventListener('beforeunload', (event) => {
+        event.preventDefault();
+        event.returnValue = 'dirty';
+    });
+
+    topShell.submit();
+
+    assert.deepEqual(topShell.sent, [{ type: 'signed-out' }]);
+    assert.deepEqual(topShell.redirects, []);
+    const unloadEvent = new Event('beforeunload', { cancelable: true });
+    child.win.dispatchEvent(unloadEvent);
+    assert.equal(unloadEvent.defaultPrevented, false);
+    assert.deepEqual(child.submitting, [true]);
+});
+
+test('embedded frame without top session sync still forwards cross-tab sign-out to top and falls back if top blocks navigation', () => {
+    const topRedirects = [];
+    const topWin = {
+        location: { origin: ORIGIN, assign: (url) => topRedirects.push(url) },
+    };
+    const child = fixture({ embed: true, parentWin: topWin, topWin });
+    child.receive({ type: 'signed-out' });
+    assert.deepEqual(topRedirects, [`${ORIGIN}/login`]);
+    assert.equal(child.disconnects(), 1);
+
+    const restrictedTop = {
+        location: {
+            origin: ORIGIN,
+            assign() { throw Error('sandbox blocked top navigation'); },
+        },
+    };
+    const fallbackChild = fixture({ embed: true, parentWin: restrictedTop, topWin: restrictedTop });
+    fallbackChild.receive({ type: 'signed-out' });
+    assert.deepEqual(fallbackChild.redirects, [`${ORIGIN}/login`]);
+});
+
+test('applyExternalToken updates CSRF tokens, Echo headers, retires stale tokens, and clears expired state', async () => {
+    const dom = tokenDom('stale-token');
+    const fetchImpl = async () => ({ status: 200, url: `${ORIGIN}/ok` });
+    const child = fixture({ session: RESUMABLE, answers: [DECLINED], dom, fetchImpl });
+    child.win.Echo.connector = { options: { auth: { headers: { 'X-CSRF-TOKEN': 'stale-token' } } } };
+
+    child.api.handleActionResponse({ status: 419 });
+    await flush();
+    assert.equal(child.api.isSessionExpired(), true);
+
+    child.api.applyExternalToken('');
+    assert.equal(dom.meta.getAttribute('content'), 'stale-token');
+
+    child.api.applyExternalToken('fresh-token');
+    assert.equal(child.api.isSessionExpired(), false);
+    assert.equal(dom.meta.getAttribute('content'), 'fresh-token');
+    assert.deepEqual(dom.inputs.map((input) => input.value), ['fresh-token', 'fresh-token']);
+    assert.equal(child.win.Echo.connector.options.auth.headers['X-CSRF-TOKEN'], 'fresh-token');
+
+    const headers = { 'X-CSRF-TOKEN': 'stale-token' };
+    await child.win.fetch('/action', { method: 'POST', headers });
+    assert.equal(headers['X-CSRF-TOKEN'], 'fresh-token');
 });

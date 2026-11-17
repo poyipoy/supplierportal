@@ -24,15 +24,18 @@
     }
 @endphp
 @if ($authSplashSources !== null)
+    <link rel="preload" as="image" href="{{ asset('assets/images/logo-adasi.gif') }}" fetchpriority="high" media="(prefers-reduced-motion: no-preference)">
+    <link rel="preload" as="image" href="{{ asset('assets/images/logo-adasi-wordmark.png') }}" fetchpriority="high" media="(prefers-reduced-motion: reduce)">
     <style data-auth-splash-styles>{!! $authSplashSources['style'] !!}</style>
     <script data-auth-splash-bootstrap
         data-reason="{{ $authSplash['reason'] }}"
         data-layout="{{ $authSplashLayout }}"
         data-readiness="{{ $authSplashReadiness }}"
-        data-hard-timeout="{{ (int) config('ui.auth_splash.hard_timeout_ms', 10000) }}"
-        data-min-visible-ms="{{ config('ui.auth_splash.min_visible_ms', 2000) }}"
+        data-hard-timeout="{{ (int) config('ui.auth_splash.hard_timeout_ms', 8000) }}"
+        data-min-visible-ms="{{ config('ui.auth_splash.min_visible_ms', 600) }}"
+        data-media-fallback-ms="{{ (int) config('ui.auth_splash.media_fallback_ms', 500) }}"
         data-slow-after="{{ (int) config('ui.auth_splash.slow_after_ms', 2000) }}"
-        data-fade-ms="{{ (int) config('ui.auth_splash.fade_ms', 650) }}"
-        data-cleanup-ms="{{ (int) config('ui.auth_splash.cleanup_ms', 750) }}"
+        data-fade-ms="{{ (int) config('ui.auth_splash.fade_ms', 500) }}"
+        data-cleanup-ms="{{ (int) config('ui.auth_splash.cleanup_ms', 600) }}"
     >{!! $authSplashSources['script'] !!}</script>
 @endif

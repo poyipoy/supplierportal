@@ -433,9 +433,12 @@ function applyData(state, container, tableTarget, data, url, pushHistory, option
         },
     }));
 
-    // 1. Swap table HTML
+    // 1. Swap table HTML with subtle 500ms opacity fade-in
     if (data.html) {
+        tableTarget.classList.remove('ui-page-fade');
         tableTarget.innerHTML = data.html;
+        void tableTarget.offsetWidth;
+        tableTarget.classList.add('ui-page-fade');
     }
 
     // 1b. Server-rendered tab nav: hrefs (carried filters), counts and tones come from the server.

@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Auth\DeviceAwareUserProvider;
 use App\Events\AuthSecurityEvent;
 use App\Listeners\LogAuthenticationEvent;
 use App\Services\Auth\TwoFactorService;
@@ -13,6 +14,7 @@ use Illuminate\Auth\Events\Logout;
 use Illuminate\Auth\Events\OtherDeviceLogout;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
@@ -22,6 +24,9 @@ class AuthSecurityServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
+        Auth::provider('device-eloquent', function ($app, array $config) {
+            return new DeviceAwareUserProvider($app['hash'], $config['model']);
+        });
         Password::defaults(function (): Password {
             $rule = Password::min((int) config('auth_security.password.min', 12))
                 ->max((int) config('auth_security.password.max', 255))
@@ -59,11 +64,19 @@ class AuthSecurityServiceProvider extends ServiceProvider
         }
 
         RateLimiter::for('auth.credentials', function (Request $request): Limit {
-            return $this->limit('credentials:user', $this->authenticatedIdentity($request), 'credentials');
+            $userId = $request->user()?->getAuthIdentifier();
+            if ($userId !== null && $userId !== '') {
+                return $this->limit('credentials:user', 'user:'.$userId, 'credentials', 'subject');
+            }
+
+            return $this->limit('credentials:guest-ip', 'ip:'.$this->ipIdentity($request), 'credentials', 'guest_ip');
         });
 
-        RateLimiter::for('auth.mfa-code', function (Request $request): Limit {
-            return $this->limit('mfa-code:user', $this->authenticatedIdentity($request), 'mfa_code');
+        RateLimiter::for('auth.mfa-code', function (Request $request): array {
+            return [
+                $this->limit('mfa-code:user', $this->authenticatedIdentity($request), 'mfa_code', 'subject'),
+                $this->limit('mfa-code:ip', 'ip:'.$this->ipIdentity($request), 'mfa_code', 'ip'),
+            ];
         });
 
         RateLimiter::for('auth.security-action', function (Request $request): Limit {
@@ -75,16 +88,15 @@ class AuthSecurityServiceProvider extends ServiceProvider
     {
         $defaults = [
             'credentials' => [
-                'subject' => ['attempts' => 5, 'decay_seconds' => 60],
-                'ip' => ['attempts' => 20, 'decay_seconds' => 60],
+                'subject' => ['attempts' => 5, 'decay_seconds' => 300],
+                'guest_ip' => ['attempts' => 10, 'decay_seconds' => 300],
             ],
             'mfa_code' => [
-                'subject' => ['attempts' => 5, 'decay_seconds' => 300],
+                'subject' => ['attempts' => 5, 'decay_seconds' => 600],
                 'ip' => ['attempts' => 20, 'decay_seconds' => 300],
             ],
             'security_action' => [
-                'subject' => ['attempts' => 10, 'decay_seconds' => 60],
-                'ip' => ['attempts' => 30, 'decay_seconds' => 60],
+                'subject' => ['attempts' => 3, 'decay_seconds' => 900],
             ],
         ];
 

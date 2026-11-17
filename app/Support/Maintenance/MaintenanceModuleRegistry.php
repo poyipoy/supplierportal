@@ -168,7 +168,7 @@ final class MaintenanceModuleRegistry
     private const ALWAYS_ALLOWED_ROUTES = [
         'login', 'login.store', 'logout',
         'password.*', 'two-factor.*', 'sso.*', 'passport.*', 'locale.*', 'session.*',
-        'profile.security', 'profile.two-factor.*', 'profile.sessions.revoke', 'profile.logout-other-devices',
+        'profile.security', 'profile.two-factor.*', 'profile.sessions.revoke', 'profile.known-devices.revoke', 'profile.logout-other-devices',
         'supplier.register', 'supplier.register.*', 'supplier.registration.*',
         'receipts.verify-*',
     ];

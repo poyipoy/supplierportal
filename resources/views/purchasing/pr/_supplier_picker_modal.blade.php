@@ -27,7 +27,7 @@
     @endpush
 @endonce
 
-<div class="supplier-picker tw:grid tw:gap-1.5" data-supplier-picker>
+<div class="supplier-picker tw:grid tw:gap-1.5" data-supplier-picker="{{ $modalId }}">
     <label class="form-label small fw-semibold tw:text-on-surface mb-0">{{ __('purchasing.copy.supplier_audience') }}</label>
     <x-ui.button
         type="button"
@@ -52,7 +52,7 @@
     @error('supplier_ids') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
     @error('supplier_ids.*') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
 
-    <div class="modal fade ui-density-modal" id="{{ $modalId }}" tabindex="-1" aria-labelledby="{{ $modalId }}Label" aria-hidden="true">
+    <div class="modal fade ui-density-modal" id="{{ $modalId }}" data-supplier-picker-modal="{{ $modalId }}" tabindex="-1" aria-labelledby="{{ $modalId }}Label" aria-hidden="true">
         <div class="modal-dialog modal-dialog-scrollable modal-lg modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
@@ -87,7 +87,7 @@
                                     $supplierKey = strtolower($supplierName . ' ' . $supplierEmail . ' ' . ($supplier->name ?? ''));
                                 @endphp
                                 <label class="supplier-option d-flex gap-3 align-items-start tw:p-2.5 border-bottom mb-0" data-supplier-key="{{ $supplierKey }}">
-                                    <input class="form-check-input mt-1 supplier-checkbox" type="checkbox" name="supplier_ids[]" value="{{ $supplier->id }}" data-supplier-name="{{ $supplierName }}" aria-label="{{ __('purchasing.a11y.select_supplier', ['supplier' => $supplierName]) }}" @checked(in_array((string) $supplier->id, $selectedSupplierIds, true))>
+                                    <input class="form-check-input mt-1 supplier-checkbox" type="checkbox" name="supplier_ids[]" form="{{ $formId ?? 'prForm' }}" value="{{ $supplier->id }}" data-supplier-name="{{ $supplierName }}" aria-label="{{ __('purchasing.a11y.select_supplier', ['supplier' => $supplierName]) }}" @checked(in_array((string) $supplier->id, $selectedSupplierIds, true))>
                                     <span class="flex-grow-1">
                                         <span class="d-block fw-semibold tw:text-on-surface tw:text-ui-sm">{{ $supplierName }}</span>
                                         <span class="d-block tw:text-on-surface-variant tw:text-ui-xs">{{ $supplierEmail ?: $supplier->name }}</span>
@@ -113,8 +113,24 @@
 @once
     @push('scripts')
         <script>
+            function getSupplierPicker($el) {
+                const $direct = $el.closest('[data-supplier-picker]');
+                if ($direct.length) {
+                    return $direct;
+                }
+
+                const modalId = $el.closest('[data-supplier-picker-modal]').data('supplier-picker-modal');
+                return modalId ? $('[data-supplier-picker="' + modalId + '"]') : $();
+            }
+
+            function getSupplierModal($picker) {
+                const modalId = $picker.data('supplier-picker');
+                return modalId ? $('[data-supplier-picker-modal="' + modalId + '"]') : $picker;
+            }
+
             function updateSupplierPickerState($picker) {
-                const checked = $picker.find('.supplier-checkbox:checked');
+                const $modal = getSupplierModal($picker);
+                const checked = $modal.find('.supplier-checkbox:checked');
                 const count = checked.length;
                 const emptyText = $picker.find('.supplier-selected-summary').data('empty-text') || @json(__('purchasing.copy.all_registered_suppliers'));
 
@@ -135,32 +151,38 @@
             }
 
             $(document).on('change', '.supplier-checkbox', function() {
-                updateSupplierPickerState($(this).closest('[data-supplier-picker]'));
+                updateSupplierPickerState(getSupplierPicker($(this)));
             });
 
             $(document).on('input', '.supplier-search-input', function() {
                 const keyword = $(this).val().toLowerCase().trim();
-                const $picker = $(this).closest('[data-supplier-picker]');
+                const $modal = $(this).closest('[data-supplier-picker-modal]');
 
-                $picker.find('.supplier-option').each(function() {
+                $modal.find('.supplier-option').each(function() {
                     const key = ($(this).data('supplier-key') || '').toString();
                     $(this).toggleClass('d-none', keyword !== '' && !key.includes(keyword));
                 });
             });
 
             $(document).on('click', '.supplier-select-all', function() {
-                const $picker = $(this).closest('[data-supplier-picker]');
-                $picker.find('.supplier-option:not(.d-none) .supplier-checkbox').prop('checked', true);
-                updateSupplierPickerState($picker);
+                const $modal = $(this).closest('[data-supplier-picker-modal]');
+                $modal.find('.supplier-option:not(.d-none) .supplier-checkbox').prop('checked', true);
+                updateSupplierPickerState(getSupplierPicker($(this)));
             });
 
             $(document).on('click', '.supplier-clear-all', function() {
-                const $picker = $(this).closest('[data-supplier-picker]');
-                $picker.find('.supplier-checkbox').prop('checked', false);
-                updateSupplierPickerState($picker);
+                const $modal = $(this).closest('[data-supplier-picker-modal]');
+                $modal.find('.supplier-checkbox').prop('checked', false);
+                updateSupplierPickerState(getSupplierPicker($(this)));
             });
 
             $(function() {
+                $('[data-supplier-picker-modal]').each(function() {
+                    if (this.parentElement !== document.body) {
+                        document.body.appendChild(this);
+                    }
+                });
+
                 $('[data-supplier-picker]').each(function() {
                     updateSupplierPickerState($(this));
                 });

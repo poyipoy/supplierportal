@@ -37,7 +37,7 @@ class EnforceMaintenance
             return $next($request);
         }
 
-        $resolver = new MaintenanceResolver;
+        $resolver = app(MaintenanceResolver::class);
         if ($resolver->effectiveRecords()->isEmpty()) {
             return $next($request);
         }

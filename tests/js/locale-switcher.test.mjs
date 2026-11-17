@@ -418,3 +418,126 @@ test('bootLocaleSwitcher completes full server-side switch, morphs DOM regions, 
     assert.equal(events[0].detail.locale, 'id');
 });
 
+test('morphDomTree updates live DataTables wrapper thead headers from SSR table markup', () => {
+    const liveTh = makeElement('th', { children: [makeTextNode('PO Number')] });
+    const liveThead = makeElement('thead', {
+        children: [makeElement('tr', { children: [liveTh] })],
+    });
+    const liveInnerTable = makeElement('table', {
+        attrs: { id: 'poTable' },
+        children: [liveThead],
+    });
+    liveInnerTable.querySelector = (selector) => (selector === 'thead' ? liveThead : null);
+    const liveWrapper = makeElement('div', {
+        attrs: { id: 'poTable_wrapper' },
+        classes: ['dataTables_wrapper'],
+        children: [liveInnerTable],
+    });
+    liveWrapper.querySelectorAll = (selector) => {
+        if (selector === 'table') return [liveInnerTable];
+        return [];
+    };
+    const liveResponsive = makeElement('div', {
+        classes: ['table-responsive'],
+        children: [liveWrapper],
+    });
+
+    const serverTh = makeElement('th', { children: [makeTextNode('Nomor PO')] });
+    const serverThead = makeElement('thead', {
+        children: [makeElement('tr', { children: [serverTh] })],
+    });
+    const serverTable = makeElement('table', {
+        attrs: { id: 'poTable' },
+        children: [serverThead],
+    });
+    serverTable.querySelector = (selector) => (selector === 'thead' ? serverThead : null);
+    const serverResponsive = makeElement('div', {
+        classes: ['table-responsive'],
+        children: [serverTable],
+    });
+
+    morphDomTree(liveResponsive, serverResponsive);
+    assert.equal(liveTh.textContent, 'Nomor PO');
+});
+
+test('syncLocaleInPlace morphs .workspace-tabbar chrome while leaving data-locale-ignore tablist intact', async () => {
+    const shortcutsText = makeElement('span', {
+        classes: ['workspace-tab__label'],
+        children: [makeTextNode('Shortcuts')],
+    });
+    const liveDynamicTabText = makeElement('span', {
+        classes: ['workspace-tab__label'],
+        children: [makeTextNode('DYNAMIC-KEEP')],
+    });
+    const liveTablist = makeElement('div', {
+        attrs: { 'data-workspace-tablist': '', 'data-locale-ignore': '' },
+        children: [liveDynamicTabText],
+    });
+    const liveTabbar = makeElement('div', {
+        classes: ['workspace-tabbar'],
+        children: [shortcutsText, liveTablist],
+    });
+
+    const serverShortcutsText = makeElement('span', {
+        classes: ['workspace-tab__label'],
+        children: [makeTextNode('Pintasan')],
+    });
+    const serverEmptyTablist = makeElement('div', {
+        attrs: { 'data-workspace-tablist': '', 'data-locale-ignore': '' },
+        children: [makeElement('span', { classes: ['workspace-tab__label'], children: [makeTextNode('SHOULD-IGNORE')] })],
+    });
+    const serverTabbar = makeElement('div', {
+        classes: ['workspace-tabbar'],
+        children: [serverShortcutsText, serverEmptyTablist],
+    });
+
+    let capturedDetail = null;
+    const doc = Object.assign(new EventTarget(), {
+        documentElement: { lang: 'en' },
+        title: 'Dashboard - ADASI',
+        querySelector: (sel) => (sel === '.workspace-tabbar' ? liveTabbar : null),
+        querySelectorAll: () => [],
+    });
+    const win = Object.assign(new EventTarget(), {
+        CustomEvent: class {
+            constructor(type, init) {
+                this.type = type;
+                this.detail = init?.detail;
+            }
+        },
+        DOMParser: class {
+            parseFromString() {
+                return {
+                    title: 'Dasbor - ADASI',
+                    querySelector: (sel) => (sel === '.workspace-tabbar' ? serverTabbar : null),
+                };
+            }
+        },
+        location: {
+            href: 'https://portal.example.test/purchasing/dashboard?_embed=1',
+            origin: 'https://portal.example.test',
+        },
+        fetch: async (_url, init) => {
+            assert.equal(init?.cache, 'no-store');
+            return {
+                ok: true,
+                status: 200,
+                url: 'https://portal.example.test/purchasing/dashboard?_embed=1',
+                text: async () => '<html></html>',
+            };
+        },
+    });
+    win.dispatchEvent = (evt) => {
+        if (evt.type === 'adasi:locale-changed') capturedDetail = evt.detail;
+    };
+
+    const switcher = bootLocaleSwitcher(win, doc);
+    const result = await switcher.syncLocaleInPlace({ locale: 'id' });
+
+    assert.equal(result.ok, true);
+    assert.equal(doc.documentElement.lang, 'id');
+    assert.equal(shortcutsText.textContent, 'Pintasan');
+    assert.equal(liveDynamicTabText.textContent, 'DYNAMIC-KEEP');
+    assert.equal(capturedDetail?.locale, 'id');
+});
+

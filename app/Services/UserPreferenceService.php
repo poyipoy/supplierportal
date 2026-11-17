@@ -92,6 +92,8 @@ class UserPreferenceService
                 'quick_access' => is_array($stored->quick_access) ? $stored->quick_access : [],
                 'revision' => $stored->revision,
                 'accent' => isset(config('user_preferences.accents')[$stored->accent]) ? $stored->accent : $defaults['accent'],
+                'shell_style' => is_string($stored->shell_style) && isset(config('user_preferences.shell_styles')[$stored->shell_style])
+                    ? $stored->shell_style : $defaults['shell_style'],
                 'dashboard_preferences' => $this->dashboardWidgets->normalizeLayouts($user, is_array($stored->dashboard_preferences) ? $stored->dashboard_preferences : []),
                 'sidebar_revision' => max(1, (int) $stored->sidebar_revision),
                 'notification_preferences' => is_array($stored->notification_preferences) ? $stored->notification_preferences : [],
@@ -138,6 +140,10 @@ class UserPreferenceService
             if (! is_string($savedAccent) || ! isset(config('user_preferences.accents')[$savedAccent])) {
                 $savedAccent = config('user_preferences.defaults.accent');
             }
+            $savedShellStyle = $stored?->shell_style;
+            if (! is_string($savedShellStyle) || ! isset(config('user_preferences.shell_styles')[$savedShellStyle])) {
+                $savedShellStyle = config('user_preferences.defaults.shell_style');
+            }
             $savedLayouts = is_array($stored?->dashboard_preferences) ? $stored->dashboard_preferences : [];
             $layouts = array_key_exists('dashboard', $values)
                 ? $this->dashboardWidgets->mergeLayout($lockedUser, $savedLayouts, $values['dashboard'])
@@ -151,6 +157,8 @@ class UserPreferenceService
                 'page_size' => $values['page_size'],
                 'quick_access' => $quickAccess,
                 'accent' => $values['accent'] ?? $savedAccent,
+                'shell_style' => isset($values['shell_style']) && isset(config('user_preferences.shell_styles')[$values['shell_style']])
+                    ? $values['shell_style'] : $savedShellStyle,
                 'locale' => self::normalizeLocale($values['locale'] ?? $stored?->locale),
                 'dashboard_preferences' => $layouts,
                 ...$this->regionalValues($stored, $values),
@@ -315,6 +323,8 @@ class UserPreferenceService
             'densityKeys' => config('user_preferences.densities'),
             'accent' => $preferences['accent'],
             'accentKeys' => array_keys(config('user_preferences.accents')),
+            'shellStyle' => $preferences['shell_style'],
+            'shellStyleKeys' => array_keys(config('user_preferences.shell_styles')),
             'sidebarState' => $preferences['sidebar_state'],
             'pageSize' => $preferences['page_size'],
             'sidebarRevision' => $this->sidebarCacheVersion($user, $preferences),

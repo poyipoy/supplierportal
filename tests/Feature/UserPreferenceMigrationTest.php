@@ -29,8 +29,11 @@ class UserPreferenceMigrationTest extends TestCase
         $notifications = require database_path('migrations/2026_09_30_000001_add_notification_preferences_to_user_preferences_table.php');
         $locale = require database_path('migrations/2026_10_04_000001_add_locale_to_user_preferences_table.php');
         $importTimezone = require database_path('migrations/2026_11_06_000001_add_import_timezone_to_user_preferences_table.php');
+        $shellStyle = require database_path('migrations/2026_11_16_000001_add_shell_style_to_user_preferences_table.php');
 
         try {
+            $shellStyle->down();
+            $this->assertFalse(Schema::hasColumn('user_preferences', 'shell_style'));
             $importTimezone->down();
             $this->assertFalse(Schema::hasColumn('user_preferences', 'country_code'));
             $locale->down();
@@ -69,7 +72,10 @@ class UserPreferenceMigrationTest extends TestCase
             $importTimezone->up();
             $this->assertNull($user->fresh()->preference->country_code, 'existing rows keep no country until the user picks one');
             $this->assertNull($user->fresh()->preference->import_timezone);
-            $this->assertDatabaseHas('user_preferences', ['user_id' => $user->id, 'theme' => 'dark', 'timezone' => 'system', 'revision' => 7]);
+            $shellStyle->up();
+            $this->assertTrue(Schema::hasColumn('user_preferences', 'shell_style'));
+            $this->assertSame('classic', $user->fresh()->preference->shell_style);
+            $this->assertDatabaseHas('user_preferences', ['user_id' => $user->id, 'theme' => 'dark', 'timezone' => 'system', 'shell_style' => 'classic', 'revision' => 7]);
         } finally {
             if (! Schema::hasTable('user_preferences')) {
                 $migration->up();
@@ -88,6 +94,9 @@ class UserPreferenceMigrationTest extends TestCase
             }
             if (! Schema::hasColumn('user_preferences', 'country_code')) {
                 $importTimezone->up();
+            }
+            if (! Schema::hasColumn('user_preferences', 'shell_style')) {
+                $shellStyle->up();
             }
         }
     }

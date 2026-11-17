@@ -242,9 +242,22 @@
         return false;
     }
 
+    let lastDispatchedDirty = false;
+
+    function dispatchDirtyChange(dirty) {
+        if (lastDispatchedDirty === dirty) return;
+        lastDispatchedDirty = dirty;
+        try {
+            window.dispatchEvent(new CustomEvent('adasi:dirty-change', { detail: { dirty } }));
+        } catch {
+            // Optional listeners only.
+        }
+    }
+
     function syncDirtyState() {
         if (isSubmitting || leaveConfirmed) {
             window.isFormDirty = false;
+            dispatchDirtyChange(false);
             return false;
         }
 
@@ -258,6 +271,7 @@
             hasPushedHistoryState = false;
         }
 
+        dispatchDirtyChange(reallyDirty);
         return reallyDirty;
     }
 
@@ -515,7 +529,7 @@
             if (link.closest('[data-server-tabs-unsaved="managed"]')) return;
 
             // Allow elements explicitly marked to bypass dirty check or modal triggers
-            if (link.closest('[data-allow-dirty="true"], [data-quotation-form-export], [data-bs-toggle], [data-bs-dismiss]')) return;
+            if (link.closest('[data-allow-dirty="true"], [data-quotation-form-export], [data-pr-form-export], [data-bs-toggle], [data-bs-dismiss]')) return;
 
             // Prevent direct browser navigation and show custom AdasiAlert
             event.preventDefault();

@@ -198,6 +198,8 @@
                                 x-ref="quickSetup"
                                 @keydown.escape="$refs.quickSetup.open = false"
                                 @click.outside="$refs.quickSetup.open = false"
+                                x-on:pointerdown.window="if ($refs.quickSetup?.open && !$el.contains($event.target)) $refs.quickSetup.open = false"
+                                x-on:adasi:dismiss-overlays.window="if ($refs.quickSetup) $refs.quickSetup.open = false"
                             >
                                 <summary class="ui-focus-ring ui-motion tw:inline-flex tw:min-h-[var(--ui-control-height-sm)] tw:cursor-pointer tw:select-none tw:list-none tw:items-center tw:gap-1.5 tw:rounded-ui-sm tw:border tw:border-outline tw:bg-surface tw:px-2.5 tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:hover:bg-surface-container tw:[&::-webkit-details-marker]:hidden">
                                     <x-ui.icon name="sliders-horizontal" size="xs" />

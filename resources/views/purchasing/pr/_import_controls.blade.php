@@ -6,6 +6,8 @@
     <ul class="dropdown-menu dropdown-menu-end">
         <li><a class="dropdown-item" href="{{ route('purchasing.requisitions.import-template') }}"
                data-pr-form-export
+               data-allow-dirty="true"
+               data-no-loader
                data-form="#prForm"
                data-url="{{ route('purchasing.requisitions.export-form') }}"
                data-fallback-url="{{ route('purchasing.requisitions.import-template') }}">

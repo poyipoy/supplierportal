@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\Auth\CompleteLoginService;
 use App\Services\Auth\TwoFactorService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -23,7 +24,7 @@ class TwoFactorChallengeController extends Controller
         Request $request,
         TwoFactorService $twoFactor,
         CompleteLoginService $completeLogin,
-    ): RedirectResponse {
+    ): RedirectResponse|JsonResponse {
         $twoFactor->rejectAuthenticatedLogin($request);
 
         $validated = $request->validate([
@@ -57,10 +58,10 @@ class TwoFactorChallengeController extends Controller
         }
 
         $remember = (bool) ($pending['remember'] ?? false);
-        $intended = TwoFactorService::safeIntendedUrl(
+        $intended = $completeLogin->resolvePostLoginDestination(
             $request,
+            $user,
             (string) ($pending['intended'] ?? ''),
-            route('dashboard', absolute: false)
         );
         if ($method === 'recovery') {
             // Consumption is a fact even if final admission or completion later fails.
@@ -71,6 +72,17 @@ class TwoFactorChallengeController extends Controller
 
         if ($method !== 'recovery') {
             event(new AuthSecurityEvent('mfa_challenge_succeeded', $user));
+        }
+
+        if ($request->hasHeader('X-Auth-Splash-Client')) {
+            $request->attributes->set('ui.auth_splash_client_target', $intended);
+
+            return response()->json([
+                'ok' => true,
+                'two_factor' => false,
+                'redirect_url' => $intended,
+                'splash' => (bool) config('ui.auth_splash.enabled', true),
+            ]);
         }
 
         return redirect()->to($intended);

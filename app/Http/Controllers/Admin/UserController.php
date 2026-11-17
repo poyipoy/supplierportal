@@ -7,6 +7,8 @@ use App\Http\Controllers\Controller;
 use App\Models\LocalInvoice;
 use App\Models\Supplier;
 use App\Models\User;
+use App\Services\Auth\PasswordHistoryService;
+use App\Services\Auth\RememberTokenService;
 use App\Services\NotificationService;
 use App\Support\BusinessTime;
 use Illuminate\Http\Request;
@@ -133,6 +135,8 @@ class UserController extends Controller
                 'must_change_password' => true,
             ]);
 
+            app(PasswordHistoryService::class)->record($user, (string) $user->password);
+
             if ($request->role === 'supplier') {
                 Supplier::create([
                     'user_id' => $user->id,
@@ -250,7 +254,19 @@ class UserController extends Controller
                 $data['remember_token'] = Str::random(60);
             }
 
+            if ($passwordChanged) {
+                app(PasswordHistoryService::class)->seedIfEmpty($user);
+            }
+
             $user->forceFill($data)->save();
+
+            if ($passwordChanged) {
+                app(PasswordHistoryService::class)->record($user, (string) $user->password);
+            }
+
+            if ($securityChanged) {
+                app(RememberTokenService::class)->revokeOtherTokens($user);
+            }
 
             if ($request->role === 'supplier') {
                 Supplier::updateOrCreate(

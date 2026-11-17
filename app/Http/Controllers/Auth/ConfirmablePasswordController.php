@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Events\AuthSecurityEvent;
 use App\Http\Controllers\Controller;
 use App\Services\Auth\PasswordConfirmationContinuationService;
 use App\Services\Auth\TwoFactorService;
@@ -34,6 +35,8 @@ class ConfirmablePasswordController extends Controller
             'email' => $request->user()->email,
             'password' => $request->password,
         ])) {
+            event(new AuthSecurityEvent('password_confirmation_failed', $request->user()));
+
             throw ValidationException::withMessages([
                 'password' => __('auth.confirmation.incorrect'),
             ]);

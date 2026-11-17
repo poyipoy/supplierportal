@@ -12,18 +12,21 @@
     const later = win.setTimeout.bind(win);
     const cancel = win.clearTimeout.bind(win);
     const clock = () => win.performance.now();
+    const nowEpoch = () => (win.Date || Date).now();
+    const bootClock = clock();
+    const bootEpoch = nowEpoch();
     const deadline = clock() + delay(config.hardTimeout, 10000, 10000);
     const configuredMinimum = Number(config.minVisibleMs);
     const minimumVisible = typeof config.minVisibleMs === 'string' && config.minVisibleMs.trim() !== ''
         && Number.isFinite(configuredMinimum) && configuredMinimum >= 0 && configuredMinimum <= 10000
         ? configuredMinimum : 2000;
+    const mediaFallbackMs = delay(config.mediaFallbackMs, 500, 5000);
     const slowAfter = delay(config.slowAfter, 2000, 2000);
     const cleanupAfter = delay(config.cleanupMs, 750, 750);
     const layout = config.layout || 'app';
     const mode = config.readiness || 'core';
     const roots = new Map();
     const ownedWrites = new Map();
-    const waveTimers = new Set();
     const removers = [];
     let state = 'ARMED';
     let ready = false;
@@ -33,18 +36,21 @@
     let domReady = doc.readyState === 'complete';
     let overlay = null;
     let panel = null;
+    let media = null;
     let skip = null;
-    let letters = [];
     let observer = null;
     let motion = null;
     let watchdog = null;
+    let mediaTimer = null;
     let skipTimer = null;
     let fadeTimer = null;
     let minimumTimer = null;
     let visibleAt = null;
+    let mediaVisibleAt = null;
+    let mediaSettled = false;
+    let mediaFallbackApplied = false;
     let minimumBypassed = false;
     let readyFrame = null;
-    let runId = 0;
     let returnFocus = null;
     let restoringFocus = false;
     let visible = false;
@@ -63,19 +69,6 @@
         target.addEventListener(type, callback, options);
         removers.push(() => target.removeEventListener(type, callback, options));
     };
-    const freezeWave = freeze => {
-        runId++;
-        waveTimers.forEach(cancel);
-        waveTimers.clear();
-        letters.forEach(letter => {
-            try {
-                if (freeze) letter.style.transform = win.getComputedStyle(letter).transform;
-                letter.getAnimations?.().forEach(animation => animation.cancel());
-                letter.classList.remove('is-rising', 'is-sinking', 'is-up');
-                letter.style.willChange = freeze ? 'auto' : '';
-            } catch { /* Continue releasing other letters and the page. */ }
-        });
-    };
     const restoreRoots = () => {
         roots.forEach((saved, root) => {
             try {
@@ -91,14 +84,18 @@
     const removeVisual = exit => {
         if (state === 'REMOVED' || state === 'WAITING') return;
         state = 'REMOVED';
-        freezeWave(false);
         restoreRoots();
         observer?.disconnect();
-        [watchdog, skipTimer, fadeTimer, minimumTimer].forEach(cancel);
+        [watchdog, mediaTimer, skipTimer, fadeTimer, minimumTimer].forEach(cancel);
+        mediaTimer = null;
         minimumTimer = null;
         if (readyFrame !== null) win.cancelAnimationFrame?.(readyFrame);
         readyFrame = null;
         removers.splice(0).forEach(remove => { try { remove(); } catch { /* Continue cleanup. */ } });
+        try {
+            win.sessionStorage?.removeItem?.('adasi.auth_splash.client_start');
+        } catch {}
+        doc.documentElement?.removeAttribute?.('data-auth-splash-wait');
         try {
             if (overlay) {
                 overlay.hidden = true;
@@ -117,8 +114,9 @@
         }
         const ownedFocus = overlay?.contains(doc.activeElement);
         state = 'RELEASED';
-        freezeWave(!immediate);
         observer?.disconnect();
+        cancel(mediaTimer);
+        mediaTimer = null;
         cancel(skipTimer);
         cancel(minimumTimer);
         minimumTimer = null;
@@ -142,6 +140,10 @@
                 }
             }
         } finally {
+            doc.documentElement?.removeAttribute?.('data-auth-splash-wait');
+            try {
+                win.sessionStorage?.removeItem?.('adasi.auth_splash.client_start');
+            } catch {}
             mark('interaction-released');
             if (immediate || motion?.matches || !visible) removeVisual(exit);
             else fadeTimer = later(() => removeVisual(exit), cleanupAfter);
@@ -150,35 +152,6 @@
     };
     const safe = fn => (...args) => {
         try { fn(...args); } catch { release('error', true); }
-    };
-    const scheduleWave = (ms, callback, run) => {
-        const id = later(safe(() => {
-            waveTimers.delete(id);
-            if (state === 'WAITING' && run === runId) callback();
-        }), ms);
-        waveTimers.add(id);
-    };
-    const cycle = run => {
-        if (state !== 'WAITING' || run !== runId || motion.matches) return;
-        letters.forEach(letter => {
-            letter.style.transform = '';
-            letter.classList.remove('is-rising', 'is-up', 'is-sinking');
-        });
-        letters.forEach((letter, index) => {
-            scheduleWave(50 + index * 90, () => {
-                letter.classList.add('is-rising');
-                scheduleWave(1600, () => {
-                    letter.classList.remove('is-rising');
-                    letter.classList.add('is-up');
-                }, run);
-            }, run);
-            scheduleWave(2310 + index * 90, () => {
-                letter.classList.remove('is-rising', 'is-up');
-                letter.classList.add('is-sinking');
-                scheduleWave(1600, () => letter.classList.remove('is-sinking'), run);
-            }, run);
-        });
-        scheduleWave(4370, () => cycle(run), run);
     };
     const ownAttribute = (root, name) => {
         const value = name === 'inert' ? '' : 'true';
@@ -231,17 +204,72 @@
     const releaseWhenReady = () => {
         if (!renderReady || state === 'REMOVED' || state === 'RELEASED') return;
         if (clock() >= deadline) return release('hard-timeout', true);
+        const effectiveMinimum = minimumBypassed ? 0 : minimumVisible;
         // Early readiness is a fact, not permission to discard late markup.
         if (state === 'ARMED') {
-            if (minimumVisible === 0) release('ready');
+            if (effectiveMinimum === 0) release('ready');
             return;
         }
-        const remaining = minimumBypassed ? 0 : visibleAt + minimumVisible - clock();
+        if (effectiveMinimum > 0 && !mediaSettled) return;
+        let clientStartMs = null;
+        try {
+            const rawStart = win.sessionStorage?.getItem?.('adasi.auth_splash.client_start');
+            if (rawStart !== null && rawStart !== undefined && rawStart !== '') {
+                const parsedStart = Number(rawStart);
+                if (Number.isFinite(parsedStart) && parsedStart > 0) clientStartMs = parsedStart;
+            }
+        } catch {}
+        let remaining;
+        if (clientStartMs !== null) {
+            const elapsedSinceClientStart = Math.max(0, (bootEpoch - clientStartMs) + (clock() - bootClock));
+            remaining = Math.max(0, effectiveMinimum - elapsedSinceClientStart);
+        } else {
+            const anchor = mediaVisibleAt ?? visibleAt;
+            remaining = effectiveMinimum === 0 ? 0 : anchor + effectiveMinimum - clock();
+        }
         if (remaining <= 0) return release('ready');
         if (minimumTimer === null) minimumTimer = later(safe(() => {
             minimumTimer = null;
             releaseWhenReady();
         }), Math.min(remaining, Math.max(0, deadline - clock())));
+    };
+    const settleMedia = (markName, at = clock()) => {
+        cancel(mediaTimer);
+        mediaTimer = null;
+        if (!mediaSettled) {
+            mediaSettled = true;
+            mediaVisibleAt = at;
+            if (markName) mark(markName);
+        }
+        releaseWhenReady();
+    };
+    const applyMediaFallback = reason => {
+        cancel(mediaTimer);
+        mediaTimer = null;
+        if (!media) return settleMedia(reason);
+        const fallbackSrc = media.getAttribute('data-fallback-src') || '';
+        const currentSrc = media.currentSrc || media.getAttribute('src') || '';
+        // Guard against looping if the active <picture> source already matches fallback.
+        const canSwap = !mediaFallbackApplied && fallbackSrc !== '' && currentSrc !== fallbackSrc;
+        if (canSwap) {
+            mediaFallbackApplied = true;
+            media.src = fallbackSrc;
+            if (reason === 'media-error' && !mediaSettled && state === 'WAITING' && !motion?.matches && minimumVisible > 0) {
+                const remainingBudget = Math.max(0, Math.min(mediaFallbackMs, deadline - clock(), visibleAt + mediaFallbackMs - clock()));
+                if (remainingBudget > 0) {
+                    mediaTimer = later(safe(() => {
+                        mediaTimer = null;
+                        if (!mediaSettled && state === 'WAITING') settleMedia('media-fallback-timeout');
+                    }), remainingBudget);
+                    return;
+                }
+            }
+            settleMedia(reason);
+            return;
+        }
+        mediaFallbackApplied = true;
+        media.hidden = true;
+        settleMedia(reason);
     };
     const queueReady = () => {
         if (readyFrame !== null || ready || state === 'REMOVED' || state === 'RELEASED') return;
@@ -282,16 +310,17 @@
             else if (prerequisitesReady) queueReady();
             return;
         }
-        letters = Array.from(overlay.querySelectorAll('.auth-splash__letter'));
+        media = overlay.querySelector('[data-auth-splash-media]');
         panel = overlay.querySelector('.auth-splash__panel');
         skip = overlay.querySelector('[data-auth-splash-skip]');
-        if (letters.length !== 5 || !panel || !skip || !overlay.querySelector('[data-auth-splash-status]')) return;
+        if (!media || !panel || !skip || !overlay.querySelector('[data-auth-splash-status]')) return;
         if (!('inert' in overlay) || win.getComputedStyle(overlay).getPropertyValue('--auth-splash-css-ready').trim() !== '1') {
             return release('unsupported', true);
         }
         motion = win.matchMedia('(prefers-reduced-motion: reduce)');
         returnFocus = doc.activeElement;
         state = 'WAITING';
+        doc.documentElement?.setAttribute?.('data-auth-splash-wait', '1');
         acquireRoots();
         overlay.hidden = false;
         overlay.removeAttribute('aria-hidden');
@@ -302,8 +331,32 @@
         minimumBypassed = motion.matches;
         mark('visible-start');
         panel.focus({ preventScroll: true });
-        if (motion.matches) letters.forEach(letter => letter.classList.add('is-up'));
-        else cycle(++runId);
+        listen(media, 'load', safe(() => {
+            if (state !== 'WAITING' || mediaSettled) return;
+            if (media.naturalWidth > 0) settleMedia('media-ready');
+        }));
+        listen(media, 'error', safe(() => {
+            if (state === 'RELEASED') { media.hidden = true; return; }
+            if (state === 'WAITING') applyMediaFallback('media-error');
+        }));
+        if (motion.matches || minimumVisible === 0) {
+            mediaSettled = true;
+            mediaVisibleAt = visibleAt;
+            if (media.complete && media.naturalWidth === 0) applyMediaFallback('media-error');
+        } else if (media.complete) {
+            if (media.naturalWidth > 0) {
+                mediaSettled = true;
+                mediaVisibleAt = visibleAt;
+                mark('media-ready');
+            } else {
+                applyMediaFallback('media-error');
+            }
+        } else {
+            mediaTimer = later(safe(() => {
+                mediaTimer = null;
+                if (!mediaSettled && state === 'WAITING') applyMediaFallback('media-timeout');
+            }), Math.min(mediaFallbackMs, Math.max(0, deadline - clock())));
+        }
         skipTimer = later(safe(() => {
             if (state === 'WAITING') { skip.hidden = false; skip.disabled = false; }
         }), slowAfter);
@@ -317,14 +370,16 @@
         listen(motion, 'change', safe(() => {
             if (state !== 'WAITING') return;
             if (clock() >= deadline) return release('hard-timeout', true);
-            freezeWave(false);
-            letters.forEach(letter => { letter.style.transform = ''; });
-            if (motion.matches) letters.forEach(letter => letter.classList.add('is-up'));
-            else cycle(++runId);
             if (motion.matches) {
                 minimumBypassed = true;
+                cancel(mediaTimer);
+                mediaTimer = null;
                 cancel(minimumTimer);
                 minimumTimer = null;
+                if (!mediaSettled) {
+                    mediaSettled = true;
+                    mediaVisibleAt = clock();
+                }
             }
             releaseWhenReady();
         }));
@@ -349,6 +404,61 @@
         isWaiting: () => state === 'WAITING',
         hasVisual: () => visible && state !== 'REMOVED',
         removeVisual: exit => removeVisual(exit || 'loader-handoff'),
+        activateClientPostLoginSplash(redirectUrl) {
+            try {
+                win.sessionStorage?.setItem?.('adasi.auth_splash.client_start', String(nowEpoch()));
+            } catch {}
+
+            const gifSrc = doc.body?.dataset?.splashGif || '';
+            const fallbackSrc = doc.body?.dataset?.splashWordmark || '';
+            const reduced = Boolean(win.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
+            if (doc.body && !doc.querySelector('[data-auth-splash]')) {
+                const clientOverlay = doc.createElement('div');
+                clientOverlay.className = 'auth-splash adasi-client-splash';
+                clientOverlay.setAttribute('data-auth-splash', '');
+                clientOverlay.setAttribute('data-splash-reason', 'post-login');
+                clientOverlay.setAttribute('data-state', 'waiting');
+                clientOverlay.setAttribute('role', 'status');
+                clientOverlay.setAttribute('aria-live', 'polite');
+
+                const panelNode = doc.createElement('div');
+                panelNode.className = 'auth-splash__panel';
+                const brandNode = doc.createElement('div');
+                brandNode.className = 'auth-splash__brand';
+                brandNode.setAttribute('aria-hidden', 'true');
+                const pictureNode = doc.createElement('picture');
+                pictureNode.className = 'auth-splash__picture';
+                if (fallbackSrc) {
+                    const sourceNode = doc.createElement('source');
+                    sourceNode.media = '(prefers-reduced-motion: reduce)';
+                    sourceNode.srcset = fallbackSrc;
+                    pictureNode.appendChild(sourceNode);
+                }
+                const imgNode = doc.createElement('img');
+                imgNode.className = 'auth-splash__media';
+                imgNode.width = 384;
+                imgNode.height = 153;
+                imgNode.alt = '';
+                imgNode.decoding = 'sync';
+                imgNode.src = (reduced && fallbackSrc) ? fallbackSrc : (gifSrc || fallbackSrc);
+                pictureNode.appendChild(imgNode);
+                brandNode.appendChild(pictureNode);
+                panelNode.appendChild(brandNode);
+                clientOverlay.appendChild(panelNode);
+                doc.body.appendChild(clientOverlay);
+
+                // Fail-safe cleanup if navigation stalls or is aborted offline.
+                later(() => {
+                    if (clientOverlay.isConnected) clientOverlay.remove();
+                }, delay(config.hardTimeout, 8000, 15000));
+            }
+
+            if (typeof redirectUrl === 'string' && redirectUrl !== '') {
+                later(() => {
+                    try { win.location.assign(redirectUrl); } catch { win.location.href = redirectUrl; }
+                }, 24);
+            }
+        },
     });
     mark('bootstrap-start');
     watchdog = later(() => release('hard-timeout', true), Math.max(0, deadline - clock()));

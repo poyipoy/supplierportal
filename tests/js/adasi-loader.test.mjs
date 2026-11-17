@@ -326,7 +326,7 @@ test('completed suppressed work does not flash during minimum visibility, and ne
     const loader = createLoaderController({ view, timers });
     view.bind(() => loader.reset(), () => loader.pendingCount() > 0);
     const first = loader.show();
-    timers.advance(200);
+    timers.advance(SHOW_DELAY + 50);
     loader.hide(first);
     waiting = false;
     released();

@@ -40,7 +40,9 @@ class AuthSplashTest extends TestCase
     {
         $defaults = require base_path('config/ui.php');
         $this->assertFalse($defaults['auth_splash']['enabled']);
-        $this->assertSame(2000, $defaults['auth_splash']['min_visible_ms']);
+        $this->assertStringContainsString("env('AUTH_SPLASH_ENABLED', true)", (string) file_get_contents(config_path('ui.php')));
+        $this->assertSame(600, $defaults['auth_splash']['min_visible_ms']);
+        $this->assertSame(500, $defaults['auth_splash']['media_fallback_ms']);
         config(['ui.auth_splash.enabled' => false]);
         $this->withSession(['ui.auth_splash' => $this->marker('/login', 'post-logout')])
             ->get('/login')->assertOk()->assertDontSee('data-auth-splash', false)
@@ -51,7 +53,9 @@ class AuthSplashTest extends TestCase
 
     public function test_minimum_visibility_is_shared_with_the_independent_bootstrap(): void
     {
-        $this->get('/login')->assertOk()->assertSee('data-min-visible-ms="2000"', false);
+        $this->get('/login')->assertOk()
+            ->assertSee('data-min-visible-ms="600"', false)
+            ->assertSee('data-media-fallback-ms="500"', false);
         foreach ([0, 500, 10000, 'invalid'] as $minimum) {
             config(['ui.auth_splash.min_visible_ms' => $minimum]);
             $this->get('/login')->assertOk()->assertSee('data-min-visible-ms="'.$minimum.'"', false);
@@ -434,6 +438,29 @@ class AuthSplashTest extends TestCase
         }
         $this->assertSame($queries[0], $queries[1]);
         $this->assertSame($queries[2], $queries[3]);
+    }
+
+    public function test_client_splash_login_header_returns_json_redirect_target_and_binds_marker_only_on_success(): void
+    {
+        $user = User::factory()->create(['role' => 'admin']);
+
+        $this->withHeaders(['X-Auth-Splash-Client' => '1'])
+            ->postJson('/login', ['email' => $user->email, 'password' => 'wrong-password'])
+            ->assertStatus(422)
+            ->assertJson(['ok' => false])
+            ->assertSessionMissing('ui.auth_splash');
+
+        $response = $this->withHeaders(['X-Auth-Splash-Client' => '1'])
+            ->postJson('/login', ['email' => $user->email, 'password' => 'password'])
+            ->assertOk()
+            ->assertJson([
+                'ok' => true,
+                'two_factor' => false,
+                'redirect_url' => '/admin/dashboard',
+                'splash' => true,
+            ]);
+
+        $response->assertSessionHas('ui.auth_splash', fn (array $marker) => $marker['reason'] === 'post-login' && $marker['target'] === '/admin/dashboard' && is_string($marker['id']));
     }
 
     public static function queryCountDestinations(): array

@@ -39,7 +39,7 @@ class RevokeSessionController extends Controller
         $deleted = $sessions->revoke($request->user(), $sessionId);
 
         if ($deleted) {
-            $revocation->invalidateRememberTokens($request->user(), $request);
+            $revocation->revokeSessionRememberTokens($request->user(), [$sessionId], $request);
             event(new AuthSecurityEvent('session_revoked', $request->user(), metadata: ['reason' => 'manual_single_session']));
         }
 

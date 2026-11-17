@@ -2,7 +2,9 @@
     x-data="searchableFreeInput(@js(['value' => $resolvedValue, 'url' => $suggestionsUrl, 'messages' => [
         'minimum' => __('common.select.free_minimum'), 'loading' => __('common.select.free_loading'),
         'failed' => __('common.select.free_failed'), 'results' => __('common.select.free_results'), 'empty' => __('common.select.free_empty'),
-    ]]))" @click.outside="close()">
+    ]]))" @click.outside="close()"
+    x-on:pointerdown.window="if (open && !$el.contains($event.target)) close()"
+    x-on:adasi:dismiss-overlays.window="if (open) close()">
     @if($label)<label for="{{ $resolvedId }}" class="form-label tw:flex tw:items-center tw:min-h-6 tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1">{{ $label }}</label>@endif
     <div class="tw:relative tw:min-w-0">
     <span class="ui-searchable-free-input__search" aria-hidden="true"><x-ui.icon name="search" size="sm" /></span>

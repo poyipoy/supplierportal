@@ -1,4 +1,3 @@
-import { bootPoDocumentUploads } from './po-document-upload';
 import { t } from './i18n.js';
 import Alpine from 'alpinejs';
 import { searchableFreeInput } from './searchable-free-input';
@@ -314,7 +313,13 @@ const runToastAction = (id, action) => {
             action.onClick({ id, dismiss: () => dismissToast(id, 'action') });
         } else if (action.url) {
             const target = new URL(action.url, window.location.href);
-            if (['http:', 'https:'].includes(target.protocol)) window.location.assign(target.href);
+            if (['http:', 'https:'].includes(target.protocol)) {
+                if (window.AdasiWorkspaceShell && target.origin === window.location.origin) {
+                    window.AdasiWorkspaceShell.openUrl(target.href);
+                } else {
+                    window.location.assign(target.href);
+                }
+            }
         }
     } finally {
         if (action.dismiss) dismissToast(id, 'action');
@@ -335,6 +340,18 @@ window.AdasiToast = Object.freeze({
         toastState.visible.slice().forEach((toast) => dismissToast(toast.id, 'clear'));
     },
 });
+
+if (document.documentElement.dataset.workspaceEmbed === 'true') {
+    if (window.self === window.top) {
+        try {
+            const cleanUrl = new URL(window.location.href);
+            cleanUrl.searchParams.delete('_embed');
+            window.location.replace(cleanUrl.toString());
+        } catch {}
+    } else {
+        await import('./workspace-embed-bridge').then((module) => module.bootWorkspaceEmbedBridge());
+    }
+}
 
 if (Array.isArray(window.__adasiToastQueue) && window.__adasiToastQueue.length > 0) {
     window.__adasiToastQueue.splice(0).forEach((options) => window.AdasiToast.show(options));
@@ -493,6 +510,60 @@ Alpine.data('adasiShell', () => ({
 
 Alpine.start();
 window.AdasiCalendar.initialize(document);
+
+const resolveDropdownParts = (node) => {
+    const container = node.closest('.dropdown, .dropup, .dropstart, .dropend, .btn-group') || node.parentElement;
+    const toggle = node.matches('[data-bs-toggle="dropdown"]')
+        ? node
+        : container?.querySelector('[data-bs-toggle="dropdown"]')
+            || (node.getAttribute('aria-labelledby') ? document.getElementById(node.getAttribute('aria-labelledby')) : null);
+    return { container, toggle };
+};
+
+const hideDropdownNode = (node) => {
+    const { container, toggle } = resolveDropdownParts(node);
+    if (toggle && window.bootstrap?.Dropdown) {
+        window.bootstrap.Dropdown.getOrCreateInstance(toggle).hide();
+        return;
+    }
+
+    node.classList.remove('show');
+    toggle?.classList.remove('show');
+    toggle?.setAttribute('aria-expanded', 'false');
+    container?.querySelector('.dropdown-menu.show')?.classList.remove('show');
+};
+
+window.AdasiDismissDropdowns = (exceptToggle = null) => {
+    document.querySelectorAll('.dropdown-menu.show, [data-bs-toggle="dropdown"].show').forEach((node) => {
+        const { toggle } = resolveDropdownParts(node);
+        if (exceptToggle && toggle === exceptToggle) return;
+        hideDropdownNode(node);
+    });
+};
+
+document.addEventListener('pointerdown', (event) => {
+    const openNodes = document.querySelectorAll('.dropdown-menu.show, [data-bs-toggle="dropdown"].show');
+    if (!openNodes.length) return;
+
+    const target = event.target instanceof Element ? event.target : event.target?.parentElement;
+    const keepToggles = new Set();
+    if (target) {
+        openNodes.forEach((node) => {
+            const { container, toggle } = resolveDropdownParts(node);
+            if (toggle && (container?.contains(target) || node.contains(target))) {
+                keepToggles.add(toggle);
+            }
+        });
+    }
+
+    openNodes.forEach((node) => {
+        const { container, toggle } = resolveDropdownParts(node);
+        if (toggle && keepToggles.has(toggle)) return;
+        if (!toggle && target && (container?.contains(target) || node.contains(target))) return;
+        hideDropdownNode(node);
+    });
+}, true);
+
 const bootImports = () => {
     if (hasMarker('[data-exchange-rates-workspace]')) import('./exchange-rates').then(module => module.bootExchangeRates());
     if (document.querySelector('[data-local-import]')) import('./local-procurement-import');
@@ -502,19 +573,152 @@ const bootImports = () => {
     if (hasMarker('[data-quotation-form-export]')) import('./quotation-form-export');
     if (hasMarker('[data-pr-form-export]')) import('./pr-form-export');
     if (hasMarker('#prFormTotals')) import('./pr-totals-sync');
+    if (hasMarker('[data-po-document-upload]')) import('./po-document-upload').then(module => module.bootPoDocumentUploads());
     if (hasMarker('[data-adasi-time-picker]')) import('./time-picker').then(module => module.bootTimePickers(document));
 };
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootImports);
-else bootImports();
+
+const showFallbackClientSplash = (redirectUrl) => {
+    try {
+        window.sessionStorage?.setItem('adasi.auth_splash.client_start', String(Date.now()));
+    } catch {}
+
+    const gifSrc = document.body?.dataset?.splashGif || '';
+    const fallbackSrc = document.body?.dataset?.splashWordmark || '';
+    const reduced = Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
+
+    if (document.body && !document.querySelector('[data-auth-splash]')) {
+        const overlay = document.createElement('div');
+        overlay.className = 'adasi-client-splash';
+        overlay.setAttribute('data-auth-splash', '');
+        overlay.setAttribute('data-splash-reason', 'post-login');
+        overlay.setAttribute('role', 'status');
+        overlay.setAttribute('aria-live', 'polite');
+
+        const img = document.createElement('img');
+        img.className = 'adasi-client-splash__media';
+        img.width = 384;
+        img.height = 153;
+        img.alt = '';
+        img.decoding = 'sync';
+        img.src = (reduced && fallbackSrc) ? fallbackSrc : (gifSrc || fallbackSrc);
+        overlay.appendChild(img);
+        document.body.appendChild(overlay);
+    }
+
+    if (typeof redirectUrl === 'string' && redirectUrl !== '') {
+        window.setTimeout(() => window.location.assign(redirectUrl), 24);
+    }
+};
+
+const bootLoginSplashForms = () => {
+    document.querySelectorAll('form[data-login-splash-form]').forEach((form) => {
+        if (form.dataset.loginSplashBound === 'true') return;
+        form.dataset.loginSplashBound = 'true';
+
+        form.addEventListener('submit', async (event) => {
+            if (event.defaultPrevented || form.dataset.loginNativeFallback === 'true') return;
+            if (!document.body?.dataset?.splashGif || typeof window.fetch !== 'function') return;
+
+            event.preventDefault();
+
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const errorAlert = form.querySelector('[data-login-error-alert]');
+            if (errorAlert) {
+                errorAlert.hidden = true;
+                errorAlert.textContent = '';
+            }
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.setAttribute('aria-busy', 'true');
+            }
+
+            try {
+                const response = await window.fetch(form.action, {
+                    method: 'POST',
+                    body: new FormData(form),
+                    credentials: 'same-origin',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-Auth-Splash-Client': '1',
+                    },
+                });
+
+                const payload = await response.json().catch(() => null);
+
+                if (response.ok && payload?.ok && typeof payload.redirect_url === 'string') {
+                    if (payload.splash && window.AdasiAuthSplash?.activateClientPostLoginSplash) {
+                        window.AdasiAuthSplash.activateClientPostLoginSplash(payload.redirect_url);
+                    } else if (payload.splash) {
+                        showFallbackClientSplash(payload.redirect_url);
+                    } else {
+                        window.location.assign(payload.redirect_url);
+                    }
+                    return;
+                }
+
+                if (response.status === 422 && payload?.errors) {
+                    if (payload.turnstile_required && !form.querySelector('.cf-turnstile')) {
+                        form.dataset.loginNativeFallback = 'true';
+                        HTMLFormElement.prototype.submit.call(form);
+                        return;
+                    }
+                    const firstFieldErrors = Object.values(payload.errors)[0];
+                    const firstMessage = Array.isArray(firstFieldErrors) ? firstFieldErrors[0] : (payload.message || '');
+                    if (errorAlert && firstMessage) {
+                        errorAlert.textContent = firstMessage;
+                        errorAlert.hidden = false;
+                    }
+                    window.turnstile?.reset?.();
+                    form.querySelector('input[name="password"], input[name="code"]')?.focus?.();
+                    return;
+                }
+
+                if (response.status === 419) {
+                    window.location.reload();
+                    return;
+                }
+
+                // Unknown non-OK or throttling response: fall back cleanly to standard POST rendering.
+                form.dataset.loginNativeFallback = 'true';
+                HTMLFormElement.prototype.submit.call(form);
+            } catch {
+                form.dataset.loginNativeFallback = 'true';
+                HTMLFormElement.prototype.submit.call(form);
+            } finally {
+                if (!document.querySelector('[data-auth-splash]') && submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.removeAttribute('aria-busy');
+                }
+            }
+        });
+    });
+};
+
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => bootPoDocumentUploads());
+    document.addEventListener('DOMContentLoaded', () => {
+        bootImports();
+        bootLoginSplashForms();
+    });
 } else {
-    bootPoDocumentUploads();
+    bootImports();
+    bootLoginSplashForms();
 }
 
 // Registered last so the synchronous DOM-ready work above completes first.
 // Optional imports and network requests do not gate core readiness.
 const acknowledgeAuthSplashCore = () => {
+    if (document.documentElement.dataset.workspaceShell === 'true') {
+        import('./workspace-shell')
+            .then((module) => module.bootWorkspaceShell())
+            .then((shell) => shell?.whenInitialFrameReady?.())
+            .catch(() => null)
+            .finally(() => {
+                queueMicrotask(() => Alpine.nextTick(() => window.AdasiAuthSplash?.markCoreReady()));
+            });
+        return;
+    }
+
     // The microtask runs after synchronous DOM-ready listeners, including
     // handlers registered later in the parsed document. Alpine settles next.
     queueMicrotask(() => Alpine.nextTick(() => window.AdasiAuthSplash?.markCoreReady()));

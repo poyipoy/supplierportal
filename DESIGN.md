@@ -88,9 +88,11 @@ Diaktifkan lewat `:root[data-theme="dark"]` (preferensi user `light | dark | sys
 - Seri chart dark memakai `--md-chart-primary` / `--md-chart-warning` (≥ 3:1 terhadap surface, WCAG 1.4.11).
 - Penjaga: tes "dark overlays form a tonal elevation ladder…" di `tests/js/preferences.test.mjs`.
 
-### 3.4 Accent preset
+### 3.4 Accent preset & Shell style
 
 Preferensi `accent`: `brand` (ADASI Blue, default), `slate`, `indigo`, `teal`, `violet` (`config/user_preferences.php`). Preset **hanya** mengganti keluarga `--md-primary*`, `--ui-primary-text`, focus, dan link. **Token status dan seri chart tetap di palet brand.** Preset baru wajib punya pasangan light + dark dan adapter `.btn-primary` / `.btn-outline-primary`.
+
+Preferensi `shell_style`: `classic` (default, sidebar & topbar mengikuti surface tema) atau `slate` (Dark Slate: `:root[data-shell="slate"]` memberi topbar `#232B38` dan sidebar `#2A3444` bernada steel-slate lembut melalui token `--ui-shell-*` yang terisolasi dari `.dropdown-menu` mengambang, memakai teks off-white anti-halation, dan diselaraskan dengan kelima accent preset serta dark mode).
 
 ### 3.5 Density
 
@@ -108,7 +110,7 @@ Token lain: `page-block`, `stack-sm|md|lg`, `card-padding`, `metric-padding`, `p
 
 ### 3.6 Tipografi
 
-- **Font:** Source Sans Pro (`@fontsource/source-sans-pro` versi eksak, dibundel Vite dari `resources/css/app.css`, tanpa CDN) untuk semua layout web: app, auth, guest, dan dokumen publik. Bobot 400, 600, 700, dan 400 italic; `font-medium` (500) dirender sebagai 400 karena family ini tidak punya bobot 500. Satu token `--ui-font-sans` di `:root` dipakai Bootstrap (`--bs-body-font-family`), `tw:font-sans`, ADASI Alert, dan Chart.js (`AdasiChart`, digambar ulang setelah font termuat). PDF tetap memakai font tertanamnya sendiri (Noto Sans / DejaVu Sans); wordmark splash tetap Arial Black sebagai grafik identitas.
+- **Font:** Source Sans Pro (`@fontsource/source-sans-pro` versi eksak, dibundel Vite dari `resources/css/app.css`, tanpa CDN) untuk semua layout web: app, auth, guest, dan dokumen publik. Bobot 400, 600, 700, dan 400 italic; `font-medium` (500) dirender sebagai 400 karena family ini tidak punya bobot 500. Satu token `--ui-font-sans` di `:root` dipakai Bootstrap (`--bs-body-font-family`), `tw:font-sans`, ADASI Alert, dan Chart.js (`AdasiChart`, digambar ulang setelah font termuat). PDF tetap memakai font tertanamnya sendiri (Noto Sans / DejaVu Sans); splash autentikasi memakai aset brand `public/assets/images/logo-adasi.gif` dan fallback statis `logo-adasi-wordmark.png`.
 - **Angka dan identifier:** proporsional (Source Sans Pro), dengan `ui-tabular-nums` untuk kolom nominal, nomor dokumen, dan nilai yang perlu rata. Jangan memakai `tw:font-mono` untuk data bisnis. Monospace hanya untuk kode acak yang disalin/diketik pengguna (recovery code dan input kode 2FA, nomor referensi dan access key registrasi) serta metadata JSON audit log; daftar ini dikunci `tests/js/typography.test.mjs`.
 - **Skala** (`tw:text-ui-*`): `xs .75rem` · `sm .875rem` · `base 1rem` · `lg 1.125rem` · `xl 1.25rem` · `2xl 1.5rem`. Line-height `tight 1.25` (lg ke atas), `normal 1.5`.
 - **Grammar hierarki:**
@@ -133,7 +135,7 @@ Token lain: `page-block`, `stack-sm|md|lg`, `card-padding`, `metric-padding`, `p
 
 ### 3.9 Dimensi shell
 
-`--sidebar-width 256px` · `--sidebar-width-collapsed 64px` (icon rail) · `--sidebar-item-height 40px` · `--topbar-height 56px` · kontrol `sm 2.125rem` / `md 2.5rem` / `lg 2.875rem` · baris tabel compact `2.5rem`. Breakpoint `tw:shell:` = **993px** (selaras dengan batas Bootstrap `lg`, yang membuat sidebar menjadi drawer di bawahnya).
+`--sidebar-width 256px` · `--sidebar-width-collapsed 64px` (icon rail) · `--sidebar-item-height 40px` · `--topbar-height 44px` (desktop, 52px di bawah 992px) · kontrol `sm 2.125rem` / `md 2.5rem` / `lg 2.875rem` · baris tabel compact `2.5rem`. Breakpoint `tw:shell:` = **993px** (selaras dengan batas Bootstrap `lg`, yang membuat sidebar menjadi drawer di bawahnya).
 
 ---
 
@@ -184,8 +186,8 @@ Komponen kalender sengaja merender native `type="date"` sebagai dasar progressiv
 
 ### 6.1 Shell
 
-- Sidebar terang, lebar tetap 256px, bisa diciutkan menjadi icon rail 64px (`html[data-sidebar-collapsed]`). Item aktif ditandai halus (bar indikator + warna primary), tanpa blok warna besar.
-- Topbar minimal setinggi 56px. Konten full-width adaptif dengan padding dari token density.
+- Sidebar berlebar tetap 256px (`data-shell="classic"` mengikuti surface tema sebagai default; `data-shell="slate"` memakai palet steel-slate lembut dengan token `--ui-shell-*`), bisa diciutkan menjadi icon rail 64px (`html[data-sidebar-collapsed]`). Item aktif ditandai halus (bar indikator + warna primary/aksen), tanpa blok warna besar.
+- Topbar setinggi 44px di desktop (52px di bawah 992px). Konten full-width adaptif dengan padding dari token density.
 - Di bawah 993px, sidebar menjadi drawer.
 - Setiap layout yang memuat `resources/js/app.js` wajib `@include('partials.loader-logo')` sebelum `@vite`.
 

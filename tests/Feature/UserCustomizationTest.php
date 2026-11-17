@@ -33,6 +33,7 @@ class UserCustomizationTest extends TestCase
                     'quick_access' => [],
                     'revision' => 0,
                     'accent' => 'brand',
+                    'shell_style' => 'classic',
                     'dashboard_preferences' => [],
                     'sidebar_revision' => 1,
                     'timezone' => 'system',

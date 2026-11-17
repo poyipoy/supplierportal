@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Services\Auth\KnownDeviceService;
 use App\Services\Auth\SessionInventoryService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -11,7 +12,10 @@ use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
-    public function __construct(private readonly SessionInventoryService $sessions) {}
+    public function __construct(
+        private readonly SessionInventoryService $sessions,
+        private readonly KnownDeviceService $knownDevices,
+    ) {}
 
     /**
      * Display the user's profile form.
@@ -39,6 +43,10 @@ class ProfileController extends Controller
             'activeSessions' => $this->sessions->activeSessionsFor(
                 $request->user(),
                 $request->session()->getId(),
+            ),
+            'knownDevices' => $this->knownDevices->devicesFor(
+                $request->user(),
+                $this->knownDevices->currentDeviceHash($request),
             ),
         ]);
     }

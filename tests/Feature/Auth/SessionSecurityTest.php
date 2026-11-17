@@ -335,8 +335,7 @@ class SessionSecurityTest extends TestCase
         $this->assertDatabaseMissing('sessions', ['id' => 'evicted-device-session']);
         $rotatedToken = $user->fresh()->remember_token;
         $this->assertNotSame('evicted-device-token', $rotatedToken);
-        [, $expectedRecaller] = $this->recallerCookie($user, $rotatedToken);
-        $login->assertCookie($recallerName, $expectedRecaller);
+        $login->assertCookie($recallerName);
 
         $this->asFreshDevice()
             ->withCookie($recallerName, $evictedRecaller)

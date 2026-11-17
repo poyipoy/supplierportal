@@ -10,6 +10,9 @@
     </script>
     @include('partials.auth-splash-bootstrap', ['authSplashLayout' => 'auth', 'authSplashReadiness' => request()->routeIs('login', 'passport.authorizations.authorize') ? 'native-login' : 'core'])
     @include('partials.i18n-bootstrap')
+    @if(config('ui.auth_splash.enabled', true) && ! request()->attributes->get('ui.auth_splash_bootstrap_available'))
+        <link rel="preload" as="image" href="{{ asset('assets/images/logo-adasi.gif') }}" fetchpriority="high" media="(prefers-reduced-motion: no-preference)">
+    @endif
     <meta name="robots" content="noindex, nofollow">
     @yield('meta')
     <title>@yield('title', __('auth.login.title'))</title>
@@ -370,8 +373,15 @@
             }
         }
     </style>
+    @if(\App\Support\WorkspaceShell::enabled())
+        <style>
+            @view-transition {
+                navigation: none;
+            }
+        </style>
+    @endif
 </head>
-<body class="tw:m-0 tw:min-h-screen tw:bg-surface tw:font-sans tw:text-on-surface tw:antialiased">
+<body class="tw:m-0 tw:min-h-screen tw:bg-surface tw:font-sans tw:text-on-surface tw:antialiased" @if(config('ui.auth_splash.enabled', true)) data-splash-gif="{{ asset('assets/images/logo-adasi.gif') }}" data-splash-wordmark="{{ asset('assets/images/logo-adasi-wordmark.png') }}" @endif>
     <x-ui.auth-splash :error="isset($exception)" />
     <main class="auth-shell" @yield('shell-attributes')>
         @hasSection('brand-panel')
@@ -420,7 +430,7 @@
                     </span>
                 </a>
 
-                <div class="auth-card">
+                <div class="auth-card ui-page-fade">
                     @include('partials.alerts')
                     @yield('content')
                 </div>

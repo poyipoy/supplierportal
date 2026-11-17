@@ -5,7 +5,7 @@
  * If the form is completely empty, it downloads the blank template directly.
  */
 
-import { runExport } from './quotation-form-export.js';
+import { resolveExportUrl, runExport } from './quotation-form-export.js';
 
 export function hasEnteredItems(form) {
     if (!form) return false;
@@ -61,7 +61,7 @@ export function bootPrFormExport(root = document) {
             const fallbackUrl = button.dataset.fallbackUrl || button.getAttribute('href') || '';
 
             if (!form || !hasEnteredItems(form)) {
-                saveFallbackUrl(fallbackUrl);
+                saveFallbackUrl(resolveExportUrl(fallbackUrl));
                 return;
             }
 

@@ -9,8 +9,14 @@
     <p class="tw:m-0 tw:mt-1.5 tw:text-ui-sm tw:text-on-surface-variant">{{ __('auth.two_factor.help') }}</p>
 </header>
 
-<form method="POST" action="{{ route('two-factor.challenge') }}" data-track-unsaved="false" class="tw:grid tw:gap-4">
+<form method="POST" action="{{ route('two-factor.challenge') }}" data-track-unsaved="false" data-no-loader data-login-splash-form class="tw:grid tw:gap-4">
     @csrf
+    <div
+        data-login-error-alert
+        role="alert"
+        hidden
+        class="tw:rounded-ui-sm tw:border tw:border-error/30 tw:bg-error/10 tw:px-3.5 tw:py-2.5 tw:text-ui-sm tw:font-medium tw:text-error"
+    ></div>
     <x-ui.input name="code" id="code" type="text" :label="__('security.authentication_code')" inputmode="text" autocomplete="one-time-code" maxlength="32" class="tw:[&_input]:text-center tw:[&_input]:font-mono tw:[&_input]:text-ui-lg tw:[&_input]:tracking-[0.25em]" required autofocus />
 
     <button type="submit" class="ui-focus-ring ui-motion tw:flex tw:h-11 tw:w-full tw:items-center tw:justify-center tw:gap-2 tw:rounded-ui-sm tw:border-0 tw:bg-primary tw:text-ui-sm tw:font-semibold tw:text-primary-foreground tw:hover:brightness-95 tw:active:brightness-90">

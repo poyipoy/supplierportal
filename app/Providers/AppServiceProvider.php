@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Listeners\ApplyNotificationPreferences;
+use App\Models\MaterialReferencePrice;
 use App\Models\Passport\Client;
 use App\Models\SupplierAudit;
 use App\Models\User;
@@ -10,10 +11,12 @@ use App\Notifications\SystemNotification;
 use App\Services\FileSecurity\FileInspectionService;
 use App\Services\LocalInvoice\Contracts\LocalPoProviderInterface;
 use App\Services\LocalInvoice\Providers\DatabaseLocalPoProvider;
+use App\Services\Maintenance\MaintenanceResolver;
 use App\Services\NotificationPreferenceService;
 use App\Services\NotificationSummaryService;
 use App\Services\Pricing\AnnualExchangeRateResolver;
 use App\Services\Pricing\ExchangeRateResolver;
+use App\Services\Pricing\ReferencePriceResolver;
 use App\Services\QuickAccessService;
 use App\Services\RegionalDisplayFormatter;
 use App\Services\SupplierAudit\SupplierAuditInvoiceGate;
@@ -84,7 +87,9 @@ class AppServiceProvider extends ServiceProvider
         $this->app->scoped(EvaluationContext::class, fn (): EvaluationContext => EvaluationContext::forBusinessToday());
         $this->app->scoped(ExchangeRateResolver::class);
         $this->app->scoped(AnnualExchangeRateResolver::class);
+        $this->app->scoped(ReferencePriceResolver::class);
         $this->app->scoped(CspNonce::class);
+        $this->app->scoped(MaintenanceResolver::class, fn (): MaintenanceResolver => new MaintenanceResolver);
 
         // Same construction as Illuminate\View\ViewServiceProvider::registerBladeCompiler(),
         // except that compiled views are published through a Filesystem that survives
@@ -179,8 +184,18 @@ class AppServiceProvider extends ServiceProvider
             }
         });
         // Supplier scope memos live for one request or job only.
-        Event::listen(RouteMatched::class, fn () => User::resetSupplierScopeMemos());
-        Event::listen(JobProcessing::class, fn () => User::resetSupplierScopeMemos());
+        Event::listen(RouteMatched::class, function (): void {
+            User::resetSupplierScopeMemos();
+            app()->forgetInstance(MaintenanceResolver::class);
+            app()->forgetInstance(ReferencePriceResolver::class);
+        });
+        Event::listen(JobProcessing::class, function (): void {
+            User::resetSupplierScopeMemos();
+            app()->forgetInstance(MaintenanceResolver::class);
+            app()->forgetInstance(ReferencePriceResolver::class);
+        });
+        MaterialReferencePrice::saved(fn () => app()->forgetInstance(ReferencePriceResolver::class));
+        MaterialReferencePrice::deleted(fn () => app()->forgetInstance(ReferencePriceResolver::class));
 
         // Enforce safety: testing environment (--env=testing or APP_ENV=testing) MUST NEVER touch adasi_portal
         if ($this->app->environment('testing') || (isset($_SERVER['argv']) && in_array('--env=testing', $_SERVER['argv'], true))) {
@@ -313,15 +328,20 @@ class AppServiceProvider extends ServiceProvider
 
             $preferenceService = app(UserPreferenceService::class);
             $preferences = $preferenceService->for($user);
-            $quickAccess = app(QuickAccessService::class);
-
-            $view->with('userPreferences', $preferences)
-                ->with('preferenceFrontendPayload', $preferenceService->frontendPayload($user, $preferences))
-                ->with('quickAccessItems', $quickAccess->selectedFor(
+            $isEmbedded = (View::shared('isWorkspaceEmbed') === true) && ! isset($view->getData()['exception']);
+            $quickAccessItems = [];
+            if (! $isEmbedded) {
+                $quickAccess = app(QuickAccessService::class);
+                $quickAccessItems = $quickAccess->selectedFor(
                     $user,
                     $preferences['quick_access'],
                     $quickAccess->contextFor($user),
-                ));
+                );
+            }
+
+            $view->with('userPreferences', $preferences)
+                ->with('preferenceFrontendPayload', $preferenceService->frontendPayload($user, $preferences))
+                ->with('quickAccessItems', $quickAccessItems);
         });
 
         View::composer(['accounting.invoices.index', 'accounting.reports.index'], function ($view) {

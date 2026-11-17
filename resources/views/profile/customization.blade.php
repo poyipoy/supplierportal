@@ -43,7 +43,7 @@
         'densityKeys' => config('user_preferences.densities'),
         'densityLabels' => __('customization.density_levels'),
         'saved' => [
-            'theme' => $preferences['theme'], 'accent' => $preferences['accent'], 'density' => $preferences['density'],
+            'theme' => $preferences['theme'], 'shell_style' => $preferences['shell_style'], 'accent' => $preferences['accent'], 'density' => $preferences['density'],
             'sidebar_state' => $preferences['sidebar_state'], 'page_size' => (string) $preferences['page_size'],
             'locale' => $preferences['locale'], 'timezone' => $preferences['timezone'], 'date_format' => $preferences['date_format'],
             'time_format' => $preferences['time_format'], 'number_format' => $preferences['number_format'],
@@ -52,7 +52,7 @@
             'quickAccess' => $selectedQuickAccess,
         ],
         'defaults' => [
-            'theme' => $defaults['theme'], 'accent' => $defaults['accent'], 'density' => $defaults['density'],
+            'theme' => $defaults['theme'], 'shell_style' => $defaults['shell_style'], 'accent' => $defaults['accent'], 'density' => $defaults['density'],
             'sidebar_state' => $defaults['sidebar_state'], 'page_size' => (string) $defaults['page_size'],
             'timezone' => $defaults['timezone'], 'date_format' => $defaults['date_format'],
             'time_format' => $defaults['time_format'], 'number_format' => $defaults['number_format'],
@@ -126,7 +126,7 @@
             <input type="hidden" name="supplier_context" value="{{ $supplierContext ?? '' }}">
 
             {{-- Appearance & display ----------------------------------------------------- --}}
-            <section id="appearance" data-settings-section class="tw:border tw:border-outline tw:bg-surface" aria-labelledby="appearance-title">
+            <section id="appearance" data-settings-section class="tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface" aria-labelledby="appearance-title">
                 <header class="tw:flex tw:flex-wrap tw:items-start tw:justify-between tw:gap-3 tw:border-b tw:border-outline-variant tw:bg-surface-container tw:px-5 tw:py-4">
                     <div>
                         <h2 id="appearance-title" class="tw:m-0 tw:text-ui-sm tw:font-semibold">{{ __('customization.sections.appearance') }}</h2>
@@ -134,8 +134,9 @@
                     </div>
                     <x-ui.button type="button" variant="ghost" size="sm" x-on:click="resetSection('appearance')">{{ __('customization.reset_section') }}</x-ui.button>
                 </header>
-                <div class="tw:grid tw:gap-5 tw:p-5">
-                    <div class="ui-appearance-options">
+                <div class="tw:grid tw:gap-6 tw:p-5">
+                    {{-- Sub-group 1: Theme & Shell Style --}}
+                    <div class="tw:grid tw:grid-cols-1 tw:items-start tw:gap-5 tw:md:grid-cols-2">
                         <fieldset class="tw:grid tw:content-start tw:gap-2" aria-describedby="theme-help @error('theme') theme-error @enderror">
                             <legend class="tw:text-ui-sm tw:font-semibold">{{ __('customization.theme') }}</legend>
                             <p id="theme-help" class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ __('customization.theme_help') }}</p>
@@ -150,6 +151,52 @@
                             @error('theme')<p id="theme-error" class="tw:m-0 tw:text-ui-xs tw:text-error">{{ $message }}</p>@enderror
                         </fieldset>
 
+                        <fieldset class="tw:grid tw:content-start tw:gap-2" aria-describedby="shell-style-help @error('shell_style') shell-style-error @enderror">
+                            <legend class="tw:text-ui-sm tw:font-semibold">{{ __('customization.shell_style') }}</legend>
+                            <p id="shell-style-help" class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ __('customization.shell_style_help') }}</p>
+                            <div class="ui-segmented" role="radiogroup" aria-label="{{ __('customization.shell_style') }}">
+                                @foreach($shellStyleChoices as $value => $label)
+                                    <label class="ui-segmented__option">
+                                        <input type="radio" name="shell_style" value="{{ $value }}" @checked(old('shell_style', $preferences['shell_style']) === $value) aria-invalid="{{ $errors->has('shell_style') ? 'true' : 'false' }}">
+                                        <span>{{ $label }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
+                            @error('shell_style')<p id="shell-style-error" class="tw:m-0 tw:text-ui-xs tw:text-error">{{ $message }}</p>@enderror
+                        </fieldset>
+                    </div>
+
+                    {{-- Sub-group 2: Accent color paired with contextual live preview --}}
+                    <div class="tw:grid tw:grid-cols-1 tw:items-start tw:gap-5 tw:border-t tw:border-outline-variant tw:pt-5 tw:lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+                        <fieldset class="tw:grid tw:content-start tw:gap-2" aria-describedby="accent-help @error('accent') accent-error @enderror">
+                            <legend class="tw:text-ui-sm tw:font-semibold">{{ __('customization.accent') }}</legend>
+                            <p id="accent-help" class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ __('customization.accent_help') }}</p>
+                            <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-2.5" role="radiogroup" aria-label="{{ __('customization.accent') }}">
+                                @foreach($accentChoices as $value => $label)
+                                    <label class="ui-swatch-option">
+                                        <input type="radio" name="accent" value="{{ $value }}" @checked(old('accent', $preferences['accent']) === $value) aria-invalid="{{ $errors->has('accent') ? 'true' : 'false' }}" aria-label="{{ $label }}">
+                                        <span class="ui-swatch" data-accent-swatch="{{ $value }}" aria-hidden="true"></span>
+                                        <span class="tw:text-ui-xs">{{ $label }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
+                            @error('accent')<p id="accent-error" class="tw:m-0 tw:text-ui-xs tw:text-error">{{ $message }}</p>@enderror
+                        </fieldset>
+
+                        <div class="tw:grid tw:gap-2 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container tw:p-4">
+                            <p class="tw:m-0 tw:text-ui-xs tw:font-semibold tw:text-on-surface">{{ __('customization.preview.title') }}</p>
+                            <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-2.5">
+                                <x-ui.button size="sm">{{ __('customization.preview.primary_action') }}</x-ui.button>
+                                <x-ui.button variant="outline" size="sm">{{ __('customization.preview.secondary_action') }}</x-ui.button>
+                                <x-ui.status-chip tone="success">{{ __('customization.preview.status_a') }}</x-ui.status-chip>
+                                <x-ui.status-chip tone="warning">{{ __('customization.preview.status_b') }}</x-ui.status-chip>
+                            </div>
+                            <p class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ __('customization.preview.help') }}</p>
+                        </div>
+                    </div>
+
+                    {{-- Sub-group 3: Sidebar & Rows per page --}}
+                    <div class="tw:grid tw:grid-cols-1 tw:items-start tw:gap-5 tw:border-t tw:border-outline-variant tw:pt-5 tw:md:grid-cols-2">
                         <fieldset class="tw:grid tw:content-start tw:gap-2" aria-describedby="sidebar-state-help @error('sidebar_state') sidebar-state-error @enderror">
                             <legend class="tw:text-ui-sm tw:font-semibold">{{ __('customization.sidebar_default') }}</legend>
                             <p id="sidebar-state-help" class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ __('customization.sidebar_default_help') }}</p>
@@ -167,7 +214,7 @@
                         <div class="tw:grid tw:content-start tw:gap-2">
                             <label for="page_size" class="tw:text-ui-sm tw:font-semibold">{{ __('customization.rows') }}</label>
                             <p class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ __('customization.data_help') }}</p>
-                            <select id="page_size" name="page_size" class="ui-input tw:min-h-10 tw:w-full tw:max-w-xs" aria-invalid="{{ $errors->has('page_size') ? 'true' : 'false' }}" @error('page_size') aria-describedby="page-size-error" @enderror>
+                            <select id="page_size" name="page_size" class="ui-input tw:min-h-10 tw:w-full tw:md:max-w-xs" aria-invalid="{{ $errors->has('page_size') ? 'true' : 'false' }}" @error('page_size') aria-describedby="page-size-error" @enderror>
                                 @foreach(config('user_preferences.page_sizes') as $size)
                                     <option value="{{ $size }}" @selected((int) old('page_size', $preferences['page_size']) === $size)>{{ $size }}</option>
                                 @endforeach
@@ -176,7 +223,8 @@
                         </div>
                     </div>
 
-                    <fieldset id="density-fieldset" class="ui-density-fieldset" aria-describedby="density-help @error('density') density-error @enderror">
+                    {{-- Sub-group 4: Interface Density --}}
+                    <fieldset id="density-fieldset" class="ui-density-fieldset tw:border-t tw:border-outline-variant tw:pt-5" aria-describedby="density-help @error('density') density-error @enderror">
                         <legend id="density-label" class="tw:text-ui-sm tw:font-semibold">{{ __('customization.density') }}</legend>
                         <div class="ui-density-layout">
                             <div class="ui-density-controls">
@@ -190,7 +238,7 @@
                                         <option value="{{ $value }}" @selected($selectedDensity === $value)>{{ __('customization.density_levels.'.$value) }}</option>
                                     @endforeach
                                 </select>
-                                <div class="ui-density-active">
+                                <div class="ui-density-active tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container tw:px-3 tw:py-2">
                                     <output for="density-range" aria-live="off" data-density-label>{{ __('customization.density_levels.'.$selectedDensity) }}</output>
                                     <span class="ui-density-unsaved-slot tw:text-ui-xs tw:text-on-surface-variant"><span data-density-unsaved @if($selectedDensity === $preferences['density']) hidden @endif>{{ __('customization.density_unsaved') }}</span></span>
                                 </div>
@@ -200,43 +248,17 @@
                                 <p id="density-preview-help" class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ __('customization.density_preview_help') }}</p>
                                 @error('density')<p id="density-error" class="tw:m-0 tw:text-ui-xs tw:text-error">{{ $message }}</p>@enderror
                             </div>
-                            <div class="ui-density-preview-frame" aria-hidden="true">
+                            <div class="ui-density-preview-frame tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container/60 tw:p-3" aria-hidden="true">
                                 <div class="ui-density-preview ui-density-preview__reserve">@include('profile.partials.density-preview')</div>
                                 <div class="ui-density-preview">@include('profile.partials.density-preview')</div>
                             </div>
                         </div>
                     </fieldset>
-
-                    <fieldset class="tw:grid tw:gap-2" aria-describedby="accent-help @error('accent') accent-error @enderror">
-                        <legend class="tw:text-ui-sm tw:font-semibold">{{ __('customization.accent') }}</legend>
-                        <p id="accent-help" class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ __('customization.accent_help') }}</p>
-                        <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-3" role="radiogroup" aria-label="{{ __('customization.accent') }}">
-                            @foreach($accentChoices as $value => $label)
-                                <label class="ui-swatch-option">
-                                    <input type="radio" name="accent" value="{{ $value }}" @checked(old('accent', $preferences['accent']) === $value) aria-invalid="{{ $errors->has('accent') ? 'true' : 'false' }}" aria-label="{{ $label }}">
-                                    <span class="ui-swatch" data-accent-swatch="{{ $value }}" aria-hidden="true"></span>
-                                    <span class="tw:text-ui-xs">{{ $label }}</span>
-                                </label>
-                            @endforeach
-                        </div>
-                        @error('accent')<p id="accent-error" class="tw:m-0 tw:text-ui-xs tw:text-error">{{ $message }}</p>@enderror
-                    </fieldset>
-
-                    <div>
-                        <p class="tw:m-0 tw:mb-2 tw:text-ui-xs tw:font-semibold tw:uppercase tw:tracking-wider tw:text-on-surface-variant">{{ __('customization.preview.title') }}</p>
-                        <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-3 tw:border tw:border-outline tw:bg-surface-container tw:p-4">
-                            <x-ui.button size="sm">{{ __('customization.preview.primary_action') }}</x-ui.button>
-                            <x-ui.button variant="outline" size="sm">{{ __('customization.preview.secondary_action') }}</x-ui.button>
-                            <x-ui.status-chip tone="success">{{ __('customization.preview.status_a') }}</x-ui.status-chip>
-                            <x-ui.status-chip tone="warning">{{ __('customization.preview.status_b') }}</x-ui.status-chip>
-                        </div>
-                        <p class="tw:m-0 tw:mt-1 tw:text-ui-xs tw:text-on-surface-variant">{{ __('customization.preview.help') }}</p>
-                    </div>
                 </div>
             </section>
 
             {{-- Language & region ----------------------------------------------------------- --}}
-            <section id="language-region" data-settings-section class="tw:border tw:border-outline tw:bg-surface" aria-labelledby="language-region-title">
+            <section id="language-region" data-settings-section class="tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface" aria-labelledby="language-region-title">
                 <header class="tw:flex tw:flex-wrap tw:items-start tw:justify-between tw:gap-3 tw:border-b tw:border-outline-variant tw:bg-surface-container tw:px-5 tw:py-4">
                     <div>
                         <h2 id="language-region-title" class="tw:m-0 tw:text-ui-sm tw:font-semibold">{{ __('customization.sections.region') }}</h2>
@@ -245,21 +267,31 @@
                     <x-ui.button type="button" variant="ghost" size="sm" x-on:click="resetSection('region')">{{ __('customization.reset_section') }}</x-ui.button>
                 </header>
                 <div class="tw:grid tw:gap-5 tw:p-5">
-                    <fieldset class="tw:grid tw:gap-2" aria-describedby="language-help @error('locale') language-error @enderror">
-                        <legend class="tw:text-ui-sm tw:font-semibold">{{ __('customization.language.label') }}</legend>
-                        <p id="language-help" class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ __('customization.language.help') }} {{ __('customization.language_applies_after_save') }}</p>
-                        <div class="ui-segmented tw:max-w-sm" role="radiogroup" aria-label="{{ __('customization.language.label') }}">
-                            @foreach(config('user_preferences.locales') as $value => $label)
-                                <label class="ui-segmented__option">
-                                    <input type="radio" name="locale" value="{{ $value }}" @checked(old('locale', $preferences['locale']) === $value) aria-invalid="{{ $errors->has('locale') ? 'true' : 'false' }}">
-                                    <span>{{ $label }}</span>
-                                </label>
-                            @endforeach
-                        </div>
-                        @error('locale')<p id="language-error" class="tw:m-0 tw:text-ui-xs tw:text-error">{{ $message }}</p>@enderror
-                    </fieldset>
+                    <div class="tw:grid tw:grid-cols-1 tw:items-start tw:gap-5 tw:md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+                        <fieldset class="tw:grid tw:gap-2" aria-describedby="language-help @error('locale') language-error @enderror">
+                            <legend class="tw:text-ui-sm tw:font-semibold">{{ __('customization.language.label') }}</legend>
+                            <p id="language-help" class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ __('customization.language.help') }} {{ __('customization.language_applies_after_save') }}</p>
+                            <div class="ui-segmented tw:max-w-sm" role="radiogroup" aria-label="{{ __('customization.language.label') }}">
+                                @foreach(config('user_preferences.locales') as $value => $label)
+                                    <label class="ui-segmented__option">
+                                        <input type="radio" name="locale" value="{{ $value }}" @checked(old('locale', $preferences['locale']) === $value) aria-invalid="{{ $errors->has('locale') ? 'true' : 'false' }}">
+                                        <span>{{ $label }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
+                            @error('locale')<p id="language-error" class="tw:m-0 tw:text-ui-xs tw:text-error">{{ $message }}</p>@enderror
+                        </fieldset>
 
-                    <div class="tw:grid tw:grid-cols-1 tw:gap-5 tw:shell:grid-cols-2">
+                        <div class="tw:grid tw:gap-1.5 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container tw:px-4 tw:py-3">
+                            <p class="tw:m-0 tw:inline-flex tw:items-center tw:gap-1.5 tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">
+                                <x-ui.icon name="calendar-clock" size="xs" />
+                                <span>{{ __('customization.live_sample_label') }}</span>
+                            </p>
+                            <p class="tw:m-0 tw:text-ui-sm tw:font-medium tw:text-on-surface" style="font-variant-numeric: tabular-nums;" x-text="regionalSample"></p>
+                        </div>
+                    </div>
+
+                    <div class="tw:grid tw:grid-cols-1 tw:gap-5 tw:border-t tw:border-outline-variant tw:pt-5 tw:md:grid-cols-2">
                         @php
                             $regionalFields = [
                                 'timezone' => ['label' => __('customization.timezone'), 'choices' => 'timezones', 'help' => __('customization.timezone_help')],
@@ -283,11 +315,11 @@
                     </div>
 
                     @if($importTimezone)
-                        <fieldset class="tw:m-0 tw:min-w-0 tw:border-0 tw:border-t tw:border-outline-variant tw:p-0 tw:pt-4" aria-describedby="import-timezone-help" data-import-timezone>
+                        <fieldset class="tw:m-0 tw:min-w-0 tw:border-0 tw:border-t tw:border-outline-variant tw:p-0 tw:pt-5" aria-describedby="import-timezone-help" data-import-timezone>
                             {{-- Floated legend sits in normal flow so the heading and its help text keep the section rhythm. --}}
                             <legend class="tw:float-left tw:w-full tw:p-0 tw:text-ui-sm tw:font-semibold">{{ __('customization.import_timezone.title') }}</legend>
                             <p id="import-timezone-help" class="tw:clear-both tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ __('customization.import_timezone.help') }}</p>
-                            <div class="tw:mt-4 tw:grid tw:grid-cols-1 tw:gap-5 tw:shell:grid-cols-2">
+                            <div class="tw:mt-4 tw:grid tw:grid-cols-1 tw:gap-5 tw:md:grid-cols-2">
                                 <x-ui.searchable-select
                                     class="tw:content-start"
                                     label-class="tw:text-ui-sm tw:font-semibold tw:text-on-surface"
@@ -320,16 +352,11 @@
                             </div>
                         </fieldset>
                     @endif
-
-                    <div>
-                        <p class="tw:m-0 tw:mb-1 tw:text-ui-xs tw:font-semibold tw:uppercase tw:tracking-wider tw:text-on-surface-variant">{{ __('customization.live_sample_label') }}</p>
-                        <p class="tw:m-0 tw:border tw:border-outline tw:bg-surface-container tw:px-4 tw:py-3 tw:text-ui-sm" style="font-variant-numeric: tabular-nums;" x-text="regionalSample"></p>
-                    </div>
                 </div>
             </section>
 
             {{-- Dashboard layout --------------------------------------------------------------- --}}
-            <section id="dashboard-layout" data-settings-section class="tw:border tw:border-outline tw:bg-surface" aria-labelledby="dashboard-layout-title" data-dashboard-section>
+            <section id="dashboard-layout" data-settings-section class="tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface" aria-labelledby="dashboard-layout-title" data-dashboard-section>
                 <header class="tw:flex tw:flex-wrap tw:items-start tw:justify-between tw:gap-3 tw:border-b tw:border-outline-variant tw:bg-surface-container tw:px-5 tw:py-4">
                     <div>
                         <h2 id="dashboard-layout-title" class="tw:m-0 tw:text-ui-sm tw:font-semibold">{{ __('customization.dashboard_layout') }}</h2>
@@ -361,13 +388,13 @@
                                 ));
                             @endphp
                             {{-- A miniature of the dashboard grid: each tile is as wide as its panel will be, so hiding or moving one shows its effect before saving. --}}
-                            <ol class="tw:m-0 tw:grid tw:list-none tw:grid-cols-12 tw:gap-2 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container tw:p-2" data-dashboard-controls>
+                            <ol class="tw:m-0 tw:grid tw:list-none tw:grid-cols-12 tw:gap-2.5 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container tw:p-3" data-dashboard-controls>
                                 @foreach($dashboardRows as $widget)
                                     @php
                                         $tileHidden = in_array($widget['key'], $hiddenDashboardKeys, true);
                                         $tileSpan = $tileHidden ? $widget['span'] : ($tileEffectiveSpans[$widget['key']] ?? 12);
                                     @endphp
-                                    <li class="{{ $tileSpanClasses[$tileSpan] ?? $tileSpanClasses[12] }} tw:flex tw:min-w-0 tw:flex-col tw:gap-2 tw:rounded-ui-sm tw:border tw:border-outline tw:bg-surface tw:p-2.5 tw:transition-colors{{ $tileHidden ? ' tw:border-dashed tw:opacity-70' : '' }}" data-dashboard-choice data-widget-key="{{ $widget['key'] }}" data-widget-label="{{ $widget['label'] }}" data-widget-span="{{ $widget['span'] }}" draggable="true">
+                                    <li class="{{ $tileSpanClasses[$tileSpan] ?? $tileSpanClasses[12] }} tw:flex tw:min-w-0 tw:flex-col tw:gap-2 tw:rounded-ui-sm tw:border tw:border-outline tw:bg-surface tw:p-3 tw:transition-colors tw:hover:border-primary/40{{ $tileHidden ? ' tw:border-dashed tw:opacity-70' : '' }}" data-dashboard-choice data-widget-key="{{ $widget['key'] }}" data-widget-label="{{ $widget['label'] }}" data-widget-span="{{ $widget['span'] }}" draggable="true">
                                         <input type="hidden" name="dashboard[order][]" value="{{ $widget['key'] }}" data-dashboard-order-input>
                                         <div class="tw:flex tw:min-w-0 tw:items-start tw:gap-1.5">
                                             <span class="tw:hidden tw:shell:inline-flex tw:cursor-grab tw:items-center tw:text-on-surface-variant tw:active:cursor-grabbing" data-dashboard-handle title="{{ __('customization.drag', ['label' => $widget['label']]) }}" aria-hidden="true">
@@ -414,31 +441,36 @@
             </section>
 
             {{-- Shortcuts ------------------------------------------------------------------------ --}}
-            <section id="quick-access" data-settings-section class="tw:border tw:border-outline tw:bg-surface" aria-labelledby="quick-access-title">
+            <section id="quick-access" data-settings-section class="tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface" aria-labelledby="quick-access-title">
                 <header class="tw:flex tw:flex-wrap tw:items-start tw:justify-between tw:gap-3 tw:border-b tw:border-outline-variant tw:bg-surface-container tw:px-5 tw:py-4">
-                    <div>
-                        <h2 id="quick-access-title" class="tw:m-0 tw:text-ui-sm tw:font-semibold">{{ __('customization.sections.quick_access') }}</h2>
-                        <p class="tw:m-0 tw:mt-1 tw:text-ui-xs tw:text-on-surface-variant" x-text="copy.quickAccessCount.replace(':count', quickAccessSelectedCount).replace(':limit', quickAccessLimit)"></p>
+                    <div class="tw:grid tw:gap-1">
+                        <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-2">
+                            <h2 id="quick-access-title" class="tw:m-0 tw:text-ui-sm tw:font-semibold">{{ __('customization.sections.quick_access') }}</h2>
+                            <span class="tw:inline-flex tw:items-center tw:rounded-ui-full tw:border tw:border-outline-variant tw:bg-surface tw:px-2.5 tw:py-0.5 tw:text-ui-xs tw:font-medium tw:text-on-surface-variant" style="font-variant-numeric: tabular-nums;" x-text="copy.quickAccessCount.replace(':count', quickAccessSelectedCount).replace(':limit', quickAccessLimit)"></span>
+                        </div>
                         @if(auth()->user()->isSupplier() && $supplierContext === null)
-                            <p class="tw:m-0 tw:mt-1 tw:text-ui-xs tw:text-on-surface-variant">{{ __('customization.choose_portal') }}</p>
+                            <p class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ __('customization.choose_portal') }}</p>
                         @endif
                     </div>
                     @if(count($quickAccessChoices))
                         <x-ui.button type="button" variant="ghost" size="sm" x-on:click="resetSection('quick_access')">{{ __('customization.reset_section') }}</x-ui.button>
                     @endif
                 </header>
-                <div class="ui-density-settings-body tw:grid tw:gap-2 tw:p-5">
+                <div class="ui-density-settings-body tw:grid tw:gap-3 tw:p-5">
                     @if(count($quickAccessChoices))
-                        <div class="tw:grid tw:grid-cols-1 tw:gap-2 tw:shell:grid-cols-2">
+                        <p class="tw:m-0 tw:inline-flex tw:items-center tw:gap-1.5 tw:rounded-ui-sm tw:border tw:border-error/30 tw:bg-error-container tw:px-3 tw:py-2 tw:text-ui-xs tw:font-medium tw:text-on-error-container" x-show="quickAccessSelectedCount >= quickAccessLimit" x-cloak>
+                            <x-ui.icon name="circle-alert" size="xs" />
+                            <span>{{ __('customization.quick_access_limit_reached') }}</span>
+                        </p>
+                        <div class="tw:grid tw:grid-cols-1 tw:gap-2.5 tw:md:grid-cols-2">
                             @foreach($quickAccessChoices as $key => $choice)
-                                <label class="ui-preference-option ui-focus-ring tw:flex tw:min-h-11 tw:cursor-pointer tw:items-center tw:gap-3 tw:rounded-ui-sm tw:border tw:border-outline tw:bg-surface tw:px-3 tw:text-ui-sm tw:hover:bg-surface-container">
+                                <label class="ui-preference-option ui-focus-ring tw:flex tw:min-h-11 tw:items-center tw:gap-3 tw:rounded-ui-sm tw:border tw:border-outline tw:bg-surface tw:px-3.5 tw:py-2 tw:text-ui-sm tw:transition-colors">
                                     <input class="tw:h-4 tw:w-4 tw:shrink-0 tw:accent-primary" type="checkbox" name="quick_access[]" value="{{ $key }}" @checked(in_array($key, $quickAccessSelection, true)) aria-describedby="quick-access-help @error('quick_access') quick-access-error @enderror" @error('quick_access') aria-invalid="true" @enderror>
-                                    <x-ui.icon :name="$choice['icon']" size="sm" class="tw:text-on-surface-variant" />
-                                    <span>{{ $choice['label'] }}</span>
+                                    <x-ui.icon :name="$choice['icon']" size="sm" class="tw:shrink-0 tw:text-on-surface-variant" />
+                                    <span class="tw:min-w-0 tw:flex-1">{{ $choice['label'] }}</span>
                                 </label>
                             @endforeach
                         </div>
-                        <p class="tw:m-0 tw:text-ui-xs tw:text-error" x-show="quickAccessSelectedCount >= quickAccessLimit" x-cloak>{{ __('customization.quick_access_limit_reached') }}</p>
                     @else
                         <p class="tw:m-0 tw:text-ui-sm tw:text-on-surface-variant">{{ __('customization.no_shortcuts') }}</p>
                     @endif

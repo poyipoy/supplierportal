@@ -210,7 +210,7 @@ class PurchasingNavigation
             return route('purchasing.dashboard');
         }
 
-        return request()->fullUrlWithoutQuery([self::RETURN_URL_KEY]);
+        return request()->fullUrlWithoutQuery([self::RETURN_URL_KEY, WorkspaceShell::EMBED_QUERY_PARAM]);
     }
 
     public static function isSafeUrl(?string $url): bool

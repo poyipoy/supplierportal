@@ -231,6 +231,18 @@ class QuotationFormExportTest extends TestCase
         $response->assertDontSee('Export Form (entered data)');
     }
 
+    public function test_other_throttled_endpoints_do_not_exhaust_quotation_export_form_rate_limit(): void
+    {
+        for ($i = 0; $i < 16; $i++) {
+            $this->actingAs($this->supplier)
+                ->getJson(route('session.status'))
+                ->assertOk();
+        }
+
+        $sheet = $this->sheet($this->export(['items' => $this->validItems()])->assertOk());
+        $this->assertSame('SS400 Plate', $sheet->getCell('B2')->getValue());
+    }
+
     private function export(array $payload): TestResponse
     {
         return $this->actingAs($this->supplier)

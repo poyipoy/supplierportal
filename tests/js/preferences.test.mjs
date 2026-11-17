@@ -537,3 +537,80 @@ test('dark button hover rules are explicitly defined for indigo, teal, and viole
         'dark theme hover overrides are declared for new presets'
     );
 });
+
+test('shellStyle defaults to classic, supports slate live preview, rejects invalid keys, and restores saved', () => {
+    const fallbackState = boot({ theme: 'light', density: 'comfortable', sidebarState: 'expanded', pageSize: 25, sidebarRevision: '1:1', accountId: '41' });
+    assert.equal(fallbackState.root.dataset.shell, 'classic');
+
+    const state = boot({
+        theme: 'light',
+        shellStyle: 'slate',
+        shellStyleKeys: ['classic', 'slate'],
+        density: 'comfortable',
+        sidebarState: 'expanded',
+        pageSize: 25,
+        sidebarRevision: '1:1',
+        accountId: '41',
+    });
+    assert.equal(state.root.dataset.shell, 'slate');
+    assert.equal(state.windowRef.AdasiPreferences.shellStyle, 'slate');
+
+    state.windowRef.AdasiPreferences.previewShellStyle('classic');
+    assert.equal(state.root.dataset.shell, 'classic');
+
+    state.windowRef.AdasiPreferences.previewShellStyle('midnight-black');
+    assert.equal(state.root.dataset.shell, 'classic', 'unknown shell style candidate is ignored');
+
+    state.windowRef.AdasiPreferences.restoreSaved();
+    assert.equal(state.root.dataset.shell, 'slate');
+});
+
+test('dark slate shell tokens meet WCAG 2.2 AA contrast without halation glare across topbar, sidebar, role badges, and all five accents', async () => {
+    const css = await readFile(new URL('../../resources/css/app.css', import.meta.url), 'utf8');
+    const body = selector => {
+        const index = css.indexOf(selector + ' {');
+        assert.notEqual(index, -1, 'selector ' + selector + ' exists in app.css');
+        return css.slice(index, css.indexOf('}', index));
+    };
+    const value = (text, token) => text.match(new RegExp(token + ':\\s*(#[0-9a-fA-F]{6})'))?.[1];
+    const luminance = hex => {
+        assert.ok(hex, 'shell token has an explicit hex value');
+        return [1, 3, 5].map(index => parseInt(hex.slice(index, index + 2), 16) / 255)
+            .map(c => c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4)
+            .reduce((sum, c, i) => sum + c * [0.2126, 0.7152, 0.0722][i], 0);
+    };
+    const ratio = (a, b) => (Math.max(luminance(a), luminance(b)) + 0.05) / (Math.min(luminance(a), luminance(b)) + 0.05);
+
+    const slate = body(':root[data-shell="slate"]');
+    const topbarBg = value(slate, '--ui-shell-topbar-bg');
+    const sidebarBg = value(slate, '--ui-shell-sidebar-bg');
+    const sidebarActiveBg = value(slate, '--ui-shell-sidebar-active-bg');
+
+    const topbarPrimaryRatio = ratio(value(slate, '--ui-shell-topbar-fg'), topbarBg);
+    const sidebarPrimaryRatio = ratio(value(slate, '--ui-shell-sidebar-fg'), sidebarBg);
+    const sidebarActiveRatio = ratio(value(slate, '--ui-shell-sidebar-active-fg'), sidebarActiveBg);
+
+    assert.ok(topbarPrimaryRatio >= 4.5 && topbarPrimaryRatio < 14.5, 'topbar primary text stays AA compliant without harsh halation');
+    assert.ok(ratio(value(slate, '--ui-shell-topbar-fg-muted'), topbarBg) >= 4.5, 'topbar muted text >= 4.5:1');
+    assert.ok(ratio(value(slate, '--ui-shell-topbar-control-border'), topbarBg) >= 3.0, 'topbar control border >= 3:1');
+    assert.ok(ratio(value(slate, '--ui-shell-topbar-pill-active-fg'), value(slate, '--ui-shell-topbar-pill-active-bg')) >= 4.5, 'active lang pill >= 4.5:1');
+    assert.ok(ratio(value(slate, '--ui-shell-topbar-avatar-fg'), value(slate, '--ui-shell-topbar-avatar-bg')) >= 4.5, 'topbar avatar >= 4.5:1');
+
+    assert.ok(sidebarPrimaryRatio >= 4.5 && sidebarPrimaryRatio < 14.5, 'sidebar item text stays AA compliant without harsh halation');
+    assert.ok(ratio(value(slate, '--ui-shell-sidebar-fg-muted'), sidebarBg) >= 4.5, 'sidebar headings & disabled >= 4.5:1');
+    assert.ok(sidebarActiveRatio >= 4.5 && sidebarActiveRatio < 14.5, 'sidebar active text stays AA compliant without harsh halation');
+    assert.ok(ratio(value(slate, '--ui-shell-sidebar-control-border'), sidebarBg) >= 3.0, 'sidebar control border >= 3:1');
+
+    assert.ok(ratio(value(slate, '--ui-shell-role-default-fg'), value(slate, '--ui-shell-role-default-bg')) >= 4.5, 'default role badge >= 4.5:1');
+    assert.ok(ratio(value(slate, '--ui-shell-role-purchasing-fg'), value(slate, '--ui-shell-role-purchasing-bg')) >= 4.5, 'purchasing role badge >= 4.5:1');
+    assert.ok(ratio(value(slate, '--ui-shell-role-qc-fg'), value(slate, '--ui-shell-role-qc-bg')) >= 4.5, 'qc role badge >= 4.5:1');
+
+    assert.ok(ratio(value(slate, '--ui-shell-accent'), sidebarActiveBg) >= 4.5, 'brand shell accent on active bg >= 4.5:1');
+    assert.ok(ratio(value(slate, '--ui-shell-focus'), topbarBg) >= 3.0, 'brand shell focus ring >= 3:1');
+
+    for (const accent of ['slate', 'indigo', 'teal', 'violet']) {
+        const accentBlock = body(`:root[data-shell="slate"][data-accent="${accent}"]`);
+        assert.ok(ratio(value(accentBlock, '--ui-shell-accent'), sidebarActiveBg) >= 4.5, `${accent} shell accent >= 4.5:1`);
+        assert.ok(ratio(value(accentBlock, '--ui-shell-focus'), topbarBg) >= 3.0, `${accent} shell focus >= 3:1`);
+    }
+});

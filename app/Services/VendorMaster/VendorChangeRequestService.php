@@ -8,6 +8,7 @@ use App\Models\Supplier;
 use App\Models\SupplierChangeRequest;
 use App\Models\SupplierMasterDocument;
 use App\Models\User;
+use App\Services\Auth\PasswordHistoryService;
 use App\Services\FileSecurity\FileAccessGuard;
 use App\Services\LocalInvoice\LocalFinanceAuditService;
 use App\Services\NotificationService;
@@ -160,6 +161,8 @@ class VendorChangeRequestService
                 'account_status' => User::ACCOUNT_STATUS_ACTIVE,
                 'must_change_password' => true,
             ]);
+
+            app(PasswordHistoryService::class)->record($user, (string) $user->password);
 
             $supplier = Supplier::create(['user_id' => $user->id, 'company_name' => $companyName]);
             $user->supplierScopes()->create(['scope' => 'import']);

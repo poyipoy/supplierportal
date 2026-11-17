@@ -19,6 +19,7 @@ use App\Http\Middleware\RememberPurchasingListUrl;
 use App\Http\Middleware\RoleMiddleware;
 use App\Http\Middleware\ShareAuthSplashState;
 use App\Http\Middleware\SupplierScopeMiddleware;
+use App\Http\Middleware\WrapWorkspaceShell;
 use App\Support\PortalContext;
 use App\Support\RateLimitResponse;
 use Illuminate\Auth\AuthenticationException;
@@ -98,6 +99,7 @@ return Application::configure(basePath: dirname(__DIR__))
             EnforceSupplierDomain::class,
             EnforceMaintenance::class,
             LimitOperationalRequests::class,
+            WrapWorkspaceShell::class,
         ]);
         $middleware->appendToPriorityList(StartSession::class, ApplyUserLocale::class);
         $middleware->appendToPriorityList(ApplyUserLocale::class, ShareAuthSplashState::class);

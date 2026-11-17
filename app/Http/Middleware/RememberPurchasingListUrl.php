@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Support\PurchasingNavigation;
 use App\Support\ServerTabsResponse;
+use App\Support\WorkspaceShell;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -30,7 +31,7 @@ class RememberPurchasingListUrl
             if (PurchasingNavigation::isListRoute($routeName)) {
                 PurchasingNavigation::rememberListUrl(
                     $routeName,
-                    $request->fullUrlWithoutQuery([PurchasingNavigation::RETURN_URL_KEY])
+                    $request->fullUrlWithoutQuery([PurchasingNavigation::RETURN_URL_KEY, WorkspaceShell::EMBED_QUERY_PARAM])
                 );
             }
         }

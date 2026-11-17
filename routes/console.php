@@ -13,6 +13,11 @@ Schedule::command('model:prune --model="App\\Models\\AuthAuditLog"')
     ->timezone(config('app.business_timezone', 'Asia/Jakarta'))
     ->withoutOverlapping();
 
+Schedule::command('model:prune --model="App\\Models\\AuthRememberToken"')
+    ->dailyAt('02:15')
+    ->timezone(config('app.business_timezone', 'Asia/Jakarta'))
+    ->withoutOverlapping();
+
 Schedule::command('exports:cleanup')
     ->dailyAt('02:20')
     ->timezone(config('app.business_timezone', 'Asia/Jakarta'))

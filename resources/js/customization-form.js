@@ -23,7 +23,7 @@ export function sameSet(a, b) {
     return sortedA.every((value, index) => value === sortedB[index]);
 }
 
-const SIMPLE_FIELDS = ['theme', 'accent', 'density', 'sidebar_state', 'page_size', 'locale', 'timezone', 'date_format', 'time_format', 'number_format', 'country_code', 'import_timezone'];
+const SIMPLE_FIELDS = ['theme', 'shell_style', 'accent', 'density', 'sidebar_state', 'page_size', 'locale', 'timezone', 'date_format', 'time_format', 'number_format', 'country_code', 'import_timezone'];
 
 export function customizationForm(config) {
     return {
@@ -58,11 +58,11 @@ export function customizationForm(config) {
             this.initialized = true;
             this.navigationDirty = null;
             this.syncDashboardVisibilityControls();
-            for (const [name, method] of Object.entries({ theme: 'previewTheme', accent: 'previewAccent', density: 'previewDensity' })) {
+            for (const [name, method] of Object.entries({ theme: 'previewTheme', shell_style: 'previewShellStyle', accent: 'previewAccent', density: 'previewDensity' })) {
                 if (!this.hasField(name)) continue;
                 const value = this.val(name);
                 if (value !== this.saved[name] && (name !== 'density' || this.densityKeys.includes(value))) {
-                    window.AdasiPreferences?.[method](value);
+                    window.AdasiPreferences?.[method]?.(value);
                 }
             }
             this.recompute();
@@ -86,7 +86,7 @@ export function customizationForm(config) {
             this.listen(this.root(), 'invalid', () => this.recoverSubmission(), true);
             this.listen(this.root(), 'adasi:form-settled', () => this.recoverSubmission());
             this.listen(window, 'adasi:preferences-restored', () => {
-                ['theme', 'accent', 'density'].forEach((name) => this.setVal(name, this.saved[name]));
+                ['theme', 'shell_style', 'accent', 'density'].forEach((name) => this.setVal(name, this.saved[name]));
                 this.recoverSubmission();
             });
             this.listen(window, 'adasi:locale-changed', (event) => {
@@ -130,9 +130,9 @@ export function customizationForm(config) {
                 const hidden = field.closest('[data-dashboard-choice]')?.querySelector('input[name="dashboard[hidden][]"]');
                 if (hidden) hidden.checked = !field.checked;
             }
-            if (['theme', 'accent', 'density'].includes(field.name)) {
+            if (['theme', 'shell_style', 'accent', 'density'].includes(field.name)) {
                 if (field.type === 'radio' && !field.checked) return;
-                const method = { theme: 'previewTheme', accent: 'previewAccent', density: 'previewDensity' }[field.name];
+                const method = { theme: 'previewTheme', shell_style: 'previewShellStyle', accent: 'previewAccent', density: 'previewDensity' }[field.name];
                 this[method](field.value);
             } else {
                 this.recompute();
@@ -220,6 +220,7 @@ export function customizationForm(config) {
         },
 
         previewTheme(value) { this.setVal('theme', value); window.AdasiPreferences?.previewTheme(value); this.recompute(); },
+        previewShellStyle(value) { this.setVal('shell_style', value); window.AdasiPreferences?.previewShellStyle?.(value); this.recompute(); },
         previewAccent(value) { this.setVal('accent', value); window.AdasiPreferences?.previewAccent(value); this.recompute(); },
         previewDensity(value) {
             if (!this.densityKeys.includes(value)) return;
@@ -316,11 +317,13 @@ export function customizationForm(config) {
         resetSection(section) {
             if (section === 'appearance') {
                 this.setVal('theme', this.defaults.theme);
+                if (this.hasField('shell_style')) this.setVal('shell_style', this.defaults.shell_style);
                 this.setVal('accent', this.defaults.accent);
                 this.setVal('density', this.defaults.density);
                 this.setVal('sidebar_state', this.defaults.sidebar_state);
                 this.setVal('page_size', this.defaults.page_size);
                 window.AdasiPreferences?.previewTheme(this.defaults.theme);
+                if (this.defaults.shell_style) window.AdasiPreferences?.previewShellStyle?.(this.defaults.shell_style);
                 window.AdasiPreferences?.previewAccent(this.defaults.accent);
                 window.AdasiPreferences?.previewDensity(this.defaults.density);
             } else if (section === 'region') {

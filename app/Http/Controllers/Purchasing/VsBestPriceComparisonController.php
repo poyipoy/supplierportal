@@ -98,11 +98,27 @@ class VsBestPriceComparisonController extends Controller
                 }
             );
         } else {
-            $summaryQuery = $this->queryService->applyVsBestKeywordFilter(
-                $this->queryService->buildVsBestQuery($dateFrom, $dateTo, $currency, $context, $material),
-                $keyword
+            $summaryKey = 'purchasing:vs_best_summary_filtered:v1:'.sha1(json_encode([
+                'date' => $context->dateString(),
+                'currency' => $currency,
+                'threshold' => $competitiveThreshold,
+                'date_from' => $dateFrom?->toDateString(),
+                'date_to' => $dateTo?->toDateString(),
+                'material' => $material,
+                'keyword' => $keyword,
+            ], JSON_THROW_ON_ERROR));
+            $summary = Cache::remember(
+                $summaryKey,
+                now()->addSeconds(60),
+                function () use ($dateFrom, $dateTo, $currency, $context, $material, $keyword, $competitiveThreshold) {
+                    $summaryQuery = $this->queryService->applyVsBestKeywordFilter(
+                        $this->queryService->buildVsBestQuery($dateFrom, $dateTo, $currency, $context, $material),
+                        $keyword
+                    );
+
+                    return $this->queryService->buildVsBestSummary($summaryQuery, $competitiveThreshold);
+                }
             );
-            $summary = $this->queryService->buildVsBestSummary($summaryQuery, $competitiveThreshold);
         }
 
         $dataTable = DataTables::query($this->queryService->buildVsBestQuery($dateFrom, $dateTo, $currency, $context, $material))

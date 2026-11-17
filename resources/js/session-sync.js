@@ -12,7 +12,8 @@ export function storageKeysToClear(keys) {
         (key) =>
             key === PENDING_EXPORT_STORAGE_KEY ||
             /^quotation_draft_\d+(?:_[A-Za-z0-9]+)?$/.test(key) ||
-            /^adasi_chat_draft_/.test(key),
+            /^adasi_chat_draft_/.test(key) ||
+            /^adasi:workspace:/.test(key),
     );
 }
 
@@ -195,11 +196,59 @@ export function bootSessionSync(win, doc) {
     let refusedAt = null;
     let channel = null;
 
-    const leave = (url) => {
+    const isEmbeddedInShell = (() => {
+        try {
+            return doc.documentElement?.dataset?.workspaceEmbed === 'true'
+                && win.self !== win.top
+                && win.parent?.location?.origin === win.location?.origin;
+        } catch {
+            return false;
+        }
+    })();
+
+    // When the parent shell already runs cross-tab sync, child iframes must not react to
+    // BroadcastChannel/storage "signed-out" events by calling top.location.assign('/login'):
+    // the top window's own synchronous broadcast would otherwise have its child iframe cancel
+    // the top window's in-flight POST /logout submission before it reaches the server.
+    const isTopManagedEmbed = () => {
+        if (!isEmbeddedInShell) return false;
+        try {
+            return Boolean(win.top?.AdasiSessionSync || win.top?.AdasiSession?.crossTab === true);
+        } catch {
+            return false;
+        }
+    };
+
+    const markEnded = () => {
         ended = true;
-        clearStorage();
         win.AdasiUnsaved?.setSubmitting?.(true);
+    };
+
+    const disarmEmbeddedFrames = () => {
+        if (isEmbeddedInShell) return;
+        try {
+            const frames = doc.querySelectorAll?.('iframe') ?? [];
+            for (const frame of frames) {
+                try {
+                    if (frame.contentWindow?.location?.origin === win.location?.origin) {
+                        frame.contentWindow.AdasiSessionSync?.markEnded?.();
+                    }
+                } catch { /* Cross-origin or unloaded frame cannot be accessed. */ }
+            }
+        } catch { /* Frame query unsupported in constrained contexts. */ }
+    };
+
+    const leave = (url) => {
+        markEnded();
+        disarmEmbeddedFrames();
+        clearStorage();
         try { win.Echo?.disconnect?.(); } catch { /* Navigation must still proceed. */ }
+        if (isEmbeddedInShell && win.top) {
+            try {
+                win.top.location.assign(url);
+                return;
+            } catch { /* Sandboxed or restricted top navigation falls back to current frame. */ }
+        }
         win.location.assign(url);
     };
 
@@ -258,10 +307,18 @@ export function bootSessionSync(win, doc) {
         if (echoHeaders && typeof echoHeaders === 'object') replaceRetiredHeader(echoHeaders, tokens.retired, token);
         refusedAt = null;
         notify('success', copy.restored);
-        try { win.dispatchEvent(new win.Event('adasi:session-restored')); } catch { /* Listeners are optional. */ }
+        try {
+            const evt = new win.Event('adasi:session-restored');
+            evt.token = token;
+            win.dispatchEvent(evt);
+        } catch { /* Listeners are optional. */ }
     };
 
     const askToReconnect = async (background) => {
+        if (isEmbeddedInShell && typeof win.parent?.AdasiSessionSync?.requestReconnect === 'function') {
+            win.parent.AdasiSessionSync.requestReconnect(background);
+            return;
+        }
         if (!authenticated || ended || asking || !win.AdasiLoginUrl) return;
         if (refusedAt !== null && (background || Date.now() - refusedAt < REFUSAL_COOLDOWN_MS)) return;
         asking = true;
@@ -296,7 +353,7 @@ export function bootSessionSync(win, doc) {
     };
 
     const receive = (message) => {
-        if (isSignedOutMessage(message)) endSession();
+        if (isSignedOutMessage(message) && !isTopManagedEmbed()) endSession();
     };
 
     try {
@@ -338,6 +395,9 @@ export function bootSessionSync(win, doc) {
 
     doc.addEventListener('submit', (event) => {
         if (!event.defaultPrevented && event.target?.matches?.('[data-logout-form]')) {
+            // Disarm embedded keep-alive iframes without marking the top shell `ended`,
+            // so a failed POST /logout never permanently disables cross-tab sign-out here.
+            disarmEmbeddedFrames();
             clearStorage();
             publish();
         }
@@ -355,10 +415,22 @@ export function bootSessionSync(win, doc) {
         handleActionResponse(response) {
             if (crossTab && sessionExpiredByResponse(response)) askToReconnect(false);
         },
+        requestReconnect(background = false) {
+            return askToReconnect(background);
+        },
+        applyExternalToken(token) {
+            if (typeof token !== 'string' || token === '') return;
+            applyCsrfToken(doc, token, tokens.retired);
+            tokens.current = token;
+            const echoHeaders = win.Echo?.connector?.options?.auth?.headers;
+            if (echoHeaders && typeof echoHeaders === 'object') replaceRetiredHeader(echoHeaders, tokens.retired, token);
+            refusedAt = null;
+        },
         // True while the dialog is open or after the user chose to stay; background polling stops then.
         isSessionExpired() {
             return asking || refusedAt !== null;
         },
+        markEnded,
     });
 
     if (authenticated && crossTab) {

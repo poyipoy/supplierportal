@@ -15,7 +15,8 @@
     {{-- Desktop rail --}}
     <nav
         aria-label="{{ __('navigation.account_nav.label') }}"
-        class="ui-account-rail tw:hidden tw:border tw:border-outline tw:bg-surface-container tw:shell:sticky tw:shell:top-5 tw:shell:block"
+        class="ui-account-rail tw:hidden tw:border tw:border-outline tw:bg-surface-container tw:shell:sticky tw:shell:block"
+        style="top: calc(var(--topbar-height, 56px) + 1.25rem);"
     >
         <div class="tw:border-b tw:border-outline-variant tw:bg-surface-low tw:px-4 tw:py-3">
             <h2 class="tw:m-0 tw:text-ui-xs tw:font-semibold tw:uppercase tw:tracking-wider tw:text-on-surface-variant">{{ __('navigation.account_nav.group') }}</h2>

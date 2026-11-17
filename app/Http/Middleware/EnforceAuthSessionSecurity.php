@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Events\AuthSecurityEvent;
 use App\Models\User;
+use App\Services\Auth\RememberTokenService;
 use App\Services\Auth\TwoFactorService;
 use Closure;
 use Illuminate\Http\JsonResponse;
@@ -14,7 +15,10 @@ use Symfony\Component\HttpFoundation\Response;
 
 class EnforceAuthSessionSecurity
 {
-    public function __construct(private readonly TwoFactorService $twoFactor) {}
+    public function __construct(
+        private readonly TwoFactorService $twoFactor,
+        private readonly RememberTokenService $rememberTokens,
+    ) {}
 
     public function handle(Request $request, Closure $next): Response
     {
@@ -24,11 +28,17 @@ class EnforceAuthSessionSecurity
             return $next($request);
         }
 
-        if (! $user->is_active) {
+        if (! $user->isAuthenticationEligible()) {
             return $this->terminateSession($request, $user, 'account_deactivated');
         }
 
-        if (Auth::guard('web')->viaRemember() && $user->hasTwoFactorAuthentication()) {
+        $viaRemember = Auth::guard('web')->viaRemember();
+
+        if ($viaRemember && $user->hasTwoFactorAuthentication()) {
+            // Revoke the single-use recaller token while staging the MFA code
+            // challenge; CompleteLoginService issues a fresh token on success.
+            $this->rememberTokens->revokeRecalledToken($request, $user);
+
             // A background request (badge poll) usually notices the expired session first. It
             // stages the same code-only challenge a page load would, so the session-ended dialog
             // can resume it instead of asking for the password again. A JSON URL is never a
@@ -48,6 +58,10 @@ class EnforceAuthSessionSecurity
             }
 
             return redirect()->route('two-factor.challenge');
+        }
+
+        if ($viaRemember) {
+            $this->rememberTokens->bindToCurrentSession($request, $user);
         }
 
         $sessionVersion = $request->session()->get('auth_session_version');

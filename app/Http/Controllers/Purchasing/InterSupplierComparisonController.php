@@ -27,6 +27,9 @@ class InterSupplierComparisonController extends Controller
 {
     use PriceComparisonSharedTrait;
 
+    /** @var array<string, array<string, mixed>> */
+    private array $historySummaryMemo = [];
+
     public function __construct(
         ?RegionalDisplayFormatter $regionalFormatter = null
     ) {
@@ -146,6 +149,11 @@ class InterSupplierComparisonController extends Controller
                     'estimated_delivery' => $q->estimated_delivery ? $q->estimated_delivery->format('Y-m-d') : null,
                     'estimated_delivery_formatted' => $q->estimated_delivery ? $this->regionalFormatter->date($q->estimated_delivery, 'human') : '-',
                 ]);
+
+                $this->historySummaryMemo = [];
+                app(ReferencePriceResolver::class)->preload(
+                    $comparisonItems->pluck('material_master_id')->filter()->unique()->all()
+                );
 
                 $matrix = [];
                 foreach ($comparisonItems as $item) {
@@ -369,7 +377,15 @@ class InterSupplierComparisonController extends Controller
 
         $field = MaterialReferencePrice::DIMENSION_FIELD_BY_SHAPE[$item->shape] ?? null;
         $key = $field !== null && $item->{$field} !== null ? Money::normalize((string) $item->{$field}, 4) : null;
-        $summary = $history->summarize([
+        $memoKey = json_encode([
+            $item->material_master_id,
+            $item->material_name,
+            $item->shape,
+            $key,
+            $currency,
+            $context->dateString(),
+        ], JSON_THROW_ON_ERROR);
+        $summary = $this->historySummaryMemo[$memoKey] ??= $history->summarize([
             'material_master_id' => $item->material_master_id,
             'material_name' => $item->material_name,
             'shape' => $item->shape,

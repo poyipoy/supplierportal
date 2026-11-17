@@ -30,7 +30,7 @@ final class ServerTabsResponse
         return response()->json([
             'html' => $html,
             'tab' => $tab,
-            'url' => $request->fullUrl(),
+            'url' => WorkspaceShell::stripEmbedParam($request->fullUrl()),
             ...$extra,
         ]);
     }

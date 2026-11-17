@@ -36,6 +36,7 @@ const TRANSLATED_ATTRIBUTES = [
     'placeholder',
     'data-bs-title',
     'data-bs-original-title',
+    'data-sidebar-tooltip',
     'data-loading-text',
     'alt',
 ];
@@ -97,6 +98,29 @@ export function applySegmentedButtonState(root, activeLocale, busy = false) {
  * from `serverRoot` into `liveRoot` while preserving user-typed form values,
  * `<input type="file">` FileList objects, Alpine state, and event listeners.
  */
+function syncDataTableWrapperHeaders(liveWrapper, serverTable) {
+    const serverThead = serverTable.querySelector?.('thead');
+    if (!serverThead || typeof liveWrapper.querySelectorAll !== 'function') return;
+
+    const tableId = serverTable.getAttribute?.('id');
+    const allTables = Array.from(liveWrapper.querySelectorAll('table') || []);
+    const matchedTables = tableId
+        ? allTables.filter((table) => table.getAttribute?.('id') === tableId)
+        : allTables;
+    const scrollHeadTables = Array.from(liveWrapper.querySelectorAll('.dataTables_scrollHeadInner table') || []);
+    const targetTables = new Set([
+        ...(matchedTables.length ? matchedTables : allTables),
+        ...scrollHeadTables,
+    ]);
+
+    targetTables.forEach((liveTable) => {
+        const liveThead = liveTable?.querySelector?.('thead');
+        if (liveThead) {
+            morphDomTree(liveThead, serverThead);
+        }
+    });
+}
+
 export function morphDomTree(liveRoot, serverRoot) {
     if (!liveRoot || !serverRoot) return;
 
@@ -187,6 +211,19 @@ export function morphDomTree(liveRoot, serverRoot) {
             continue;
         }
 
+        // DataTables wraps SSR <table> inside <div class="dataTables_wrapper">; keep visible column headers translated.
+        if (
+            liveChild.nodeType === 1
+            && serverChild.nodeType === 1
+            && serverChild.tagName?.toUpperCase?.() === 'TABLE'
+            && liveChild.classList?.contains?.('dataTables_wrapper')
+        ) {
+            syncDataTableWrapperHeaders(liveChild, serverChild);
+            li++;
+            si++;
+            continue;
+        }
+
         // Skip unmatched comment or whitespace text nodes on either side
         if (liveChild.nodeType !== 1 && serverChild.nodeType === 1) {
             li++;
@@ -235,6 +272,8 @@ function refreshDataTablesLanguage(windowRef, documentRef, dtLang) {
             const tableApi = new jq.fn.dataTable.Api(settings);
             if (settings.ajax && typeof tableApi.ajax?.reload === 'function') {
                 tableApi.ajax.reload(null, false);
+            } else if (typeof tableApi.draw === 'function') {
+                tableApi.draw('page');
             }
         }
     } catch {
@@ -247,6 +286,178 @@ export function bootLocaleSwitcher(windowRef = globalThis.window, documentRef = 
 
     let activeController = null;
     let requestSequence = 0;
+
+    async function performLocaleSync({
+        locale,
+        i18n = null,
+        datatables = null,
+        session_copy = null,
+        signal = null,
+        seq = requestSequence,
+        restoreFocusTrigger = null,
+        wasDirtyBeforeSwitch = Boolean(windowRef.AdasiUnsaved?.isDirty?.()),
+    }) {
+        const resolvedLocale = normalizeTargetLocale(locale);
+
+        // Hot-swap client runtime dictionaries from payload
+        if (i18n) {
+            windowRef.AdasiI18n?.setPayload?.(i18n);
+        }
+        if (session_copy && windowRef.AdasiSession?.copy) {
+            Object.assign(windowRef.AdasiSession.copy, session_copy);
+        }
+        if (documentRef.documentElement) {
+            documentRef.documentElement.lang = resolvedLocale;
+        }
+        windowRef.AdasiServerTabs?.invalidateCache?.();
+
+        // Fetch server-rendered HTML of current page & non-destructively morph DOM
+        const currentUrl = windowRef.location?.href;
+        let parsedDoc = null;
+
+        if (
+            currentUrl
+            && isSameOriginUrl(currentUrl, windowRef.location?.origin)
+            && typeof windowRef.DOMParser === 'function'
+        ) {
+            const pageResponse = await windowRef.fetch(currentUrl, {
+                method: 'GET',
+                credentials: 'same-origin',
+                cache: 'no-store',
+                signal,
+                headers: {
+                    Accept: 'text/html, application/xhtml+xml',
+                    'X-Adasi-Locale-Refresh': '1',
+                },
+            });
+
+            if (
+                pageResponse?.ok
+                && (!pageResponse.url || isSameOriginUrl(pageResponse.url, windowRef.location?.origin))
+            ) {
+                const htmlText = await pageResponse.text();
+                if (seq !== requestSequence) {
+                    return { ok: false, locale: resolvedLocale, title: documentRef.title || '', document: null };
+                }
+                parsedDoc = new windowRef.DOMParser().parseFromString(htmlText, 'text/html');
+
+                if (parsedDoc?.title) {
+                    documentRef.title = parsedDoc.title;
+                }
+
+                const regions = [
+                    '.ui-skip-link',
+                    'nav.top-navbar',
+                    '#sidebar',
+                    '#chatDrawer',
+                    '.workspace-tabbar',
+                    '#main-content',
+                    '.auth-shell',
+                    '#adasi-smart-panel',
+                    '#adasiImageLightbox',
+                ];
+
+                regions.forEach((selector) => {
+                    const liveRegion = documentRef.querySelector?.(selector);
+                    const serverRegion = parsedDoc.querySelector?.(selector);
+                    if (liveRegion && serverRegion) {
+                        morphDomTree(liveRegion, serverRegion);
+                    }
+                });
+
+                // Reset notification dropdown summary container if idle/loaded so next open fetches in new locale
+                const notifContainer = documentRef.querySelector?.('[data-notification-summary-container]');
+                const serverNotifContainer = parsedDoc.querySelector?.('[data-notification-summary-container]');
+                if (notifContainer && notifContainer.dataset?.notificationSummaryState === 'loaded') {
+                    notifContainer.dataset.notificationSummaryState = 'idle';
+                    if (serverNotifContainer) {
+                        notifContainer.textContent = serverNotifContainer.textContent.trim();
+                    }
+                }
+            }
+        }
+
+        // Refresh DataTables language & reload active AJAX tables
+        if (datatables) {
+            refreshDataTablesLanguage(windowRef, documentRef, datatables);
+        }
+
+        // Keep clean forms clean after <option> label text morphing
+        if (!wasDirtyBeforeSwitch) {
+            windowRef.AdasiUnsaved?.resetSnapshot?.();
+        }
+
+        // Settle segmented button state & optionally restore focus to active language option
+        applySegmentedButtonState(documentRef, resolvedLocale, false);
+
+        if (restoreFocusTrigger) {
+            const activeBtn = documentRef.querySelector?.(
+                `.lang-pill-btn[data-locale-option="${resolvedLocale}"], .lang-pill-btn[value="${resolvedLocale}"]`,
+            );
+            activeBtn?.focus?.({ preventScroll: true });
+        }
+
+        // Notify Alpine & shell components (workspace shell, embeds, wizards, forms)
+        const EventCtor = windowRef.CustomEvent || globalThis.CustomEvent;
+        if (typeof EventCtor === 'function') {
+            windowRef.dispatchEvent?.(
+                new EventCtor('adasi:locale-changed', {
+                    detail: {
+                        locale: resolvedLocale,
+                        i18n: i18n || null,
+                        datatables: datatables || null,
+                        session_copy: session_copy || null,
+                        document: parsedDoc,
+                    },
+                }),
+            );
+        }
+
+        return {
+            ok: true,
+            locale: resolvedLocale,
+            title: parsedDoc?.title || documentRef.title || '',
+            document: parsedDoc,
+        };
+    }
+
+    async function syncLocaleInPlace({
+        locale,
+        i18n = null,
+        datatables = null,
+        session_copy = null,
+    } = {}) {
+        const resolvedLocale = normalizeTargetLocale(
+            locale || documentRef.documentElement?.lang || windowRef.AdasiI18n?.locale || 'en',
+        );
+
+        if (activeController) {
+            activeController.abort();
+        }
+        const controller = new AbortController();
+        activeController = controller;
+        const seq = ++requestSequence;
+
+        try {
+            return await performLocaleSync({
+                locale: resolvedLocale,
+                i18n,
+                datatables,
+                session_copy,
+                signal: controller.signal,
+                seq,
+            });
+        } catch (error) {
+            if (error?.name === 'AbortError') {
+                return { ok: false, aborted: true, locale: resolvedLocale, title: documentRef.title || '', document: null };
+            }
+            return { ok: false, error, locale: resolvedLocale, title: documentRef.title || '', document: null };
+        } finally {
+            if (activeController === controller) {
+                activeController = null;
+            }
+        }
+    }
 
     async function switchLocale(targetLocale, { actionUrl = null, triggerElement = null } = {}) {
         const nextLocale = normalizeTargetLocale(targetLocale);
@@ -304,115 +515,18 @@ export function bootLocaleSwitcher(windowRef = globalThis.window, documentRef = 
             const payload = await postResponse.json();
             if (seq !== requestSequence) return false;
 
-            const resolvedLocale = normalizeTargetLocale(payload?.locale || nextLocale);
+            const result = await performLocaleSync({
+                locale: payload?.locale || nextLocale,
+                i18n: payload?.i18n || null,
+                datatables: payload?.datatables || null,
+                session_copy: payload?.session_copy || null,
+                signal: controller.signal,
+                seq,
+                restoreFocusTrigger: triggerElement,
+                wasDirtyBeforeSwitch,
+            });
 
-            // 3. Hot-swap client runtime dictionaries from server payload
-            if (payload?.i18n) {
-                windowRef.AdasiI18n?.setPayload?.(payload.i18n);
-            }
-            if (payload?.session_copy && windowRef.AdasiSession?.copy) {
-                Object.assign(windowRef.AdasiSession.copy, payload.session_copy);
-            }
-            if (documentRef.documentElement) {
-                documentRef.documentElement.lang = resolvedLocale;
-            }
-            windowRef.AdasiServerTabs?.invalidateCache?.();
-
-            // 4. Fetch server-rendered HTML of current page & non-destructively morph DOM
-            const currentUrl = windowRef.location?.href;
-            let parsedDoc = null;
-
-            if (
-                currentUrl
-                && isSameOriginUrl(currentUrl, windowRef.location?.origin)
-                && typeof windowRef.DOMParser === 'function'
-            ) {
-                const pageResponse = await windowRef.fetch(currentUrl, {
-                    method: 'GET',
-                    credentials: 'same-origin',
-                    signal: controller.signal,
-                    headers: {
-                        Accept: 'text/html, application/xhtml+xml',
-                        'X-Adasi-Locale-Refresh': '1',
-                    },
-                });
-
-                if (
-                    pageResponse?.ok
-                    && (!pageResponse.url || isSameOriginUrl(pageResponse.url, windowRef.location?.origin))
-                ) {
-                    const htmlText = await pageResponse.text();
-                    if (seq !== requestSequence) return false;
-                    parsedDoc = new windowRef.DOMParser().parseFromString(htmlText, 'text/html');
-
-                    if (parsedDoc?.title) {
-                        documentRef.title = parsedDoc.title;
-                    }
-
-                    const regions = [
-                        '.ui-skip-link',
-                        'nav.top-navbar',
-                        '#sidebar',
-                        '#chatDrawer',
-                        '#main-content',
-                        '.auth-shell',
-                    ];
-
-                    regions.forEach((selector) => {
-                        const liveRegion = documentRef.querySelector?.(selector);
-                        const serverRegion = parsedDoc.querySelector?.(selector);
-                        if (liveRegion && serverRegion) {
-                            morphDomTree(liveRegion, serverRegion);
-                        }
-                    });
-
-                    // Reset notification dropdown summary container if idle/loaded so next open fetches in new locale
-                    const notifContainer = documentRef.querySelector?.('[data-notification-summary-container]');
-                    const serverNotifContainer = parsedDoc.querySelector?.('[data-notification-summary-container]');
-                    if (notifContainer && notifContainer.dataset?.notificationSummaryState === 'loaded') {
-                        notifContainer.dataset.notificationSummaryState = 'idle';
-                        if (serverNotifContainer) {
-                            notifContainer.textContent = serverNotifContainer.textContent.trim();
-                        }
-                    }
-                }
-            }
-
-            // 5. Refresh DataTables language & reload active AJAX tables
-            if (payload?.datatables) {
-                refreshDataTablesLanguage(windowRef, documentRef, payload.datatables);
-            }
-
-            // 6. Keep clean forms clean after <option> label text morphing
-            if (!wasDirtyBeforeSwitch) {
-                windowRef.AdasiUnsaved?.resetSnapshot?.();
-            }
-
-            // 7. Settle segmented button state & restore focus if triggered via keyboard/click
-            applySegmentedButtonState(documentRef, resolvedLocale, false);
-
-            if (triggerElement) {
-                const activeBtn = documentRef.querySelector?.(
-                    `.lang-pill-btn[data-locale-option="${resolvedLocale}"], .lang-pill-btn[value="${resolvedLocale}"]`,
-                );
-                activeBtn?.focus?.({ preventScroll: true });
-            }
-
-            // 8. Notify Alpine components (registration wizard, customization form, etc.)
-            const EventCtor = windowRef.CustomEvent || globalThis.CustomEvent;
-            if (typeof EventCtor === 'function') {
-                windowRef.dispatchEvent?.(
-                    new EventCtor('adasi:locale-changed', {
-                        detail: {
-                            locale: resolvedLocale,
-                            i18n: payload?.i18n || null,
-                            document: parsedDoc,
-                        },
-                    }),
-                );
-            }
-
-            return true;
+            return Boolean(result?.ok);
         } catch (error) {
             if (error?.name === 'AbortError') {
                 return false;
@@ -449,6 +563,7 @@ export function bootLocaleSwitcher(windowRef = globalThis.window, documentRef = 
 
     const api = Object.freeze({
         switchLocale,
+        syncLocaleInPlace,
         applySegmentedButtonState,
         morphDomTree,
     });

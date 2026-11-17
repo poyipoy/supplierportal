@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Support\Security\CspNonce;
+use App\Support\WorkspaceShell;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Vite;
@@ -42,7 +43,9 @@ class AddSecurityHeaders
             return $response;
         }
 
-        $response->headers->set('X-Frame-Options', 'DENY');
+        $allowSameOriginFrame = WorkspaceShell::isAllowedEmbedRequest($request);
+
+        $response->headers->set('X-Frame-Options', $allowSameOriginFrame ? 'SAMEORIGIN' : 'DENY');
         $response->headers->set('Referrer-Policy', $request->routeIs('passport.*', 'sso.*')
             ? 'no-referrer' : 'strict-origin-when-cross-origin');
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
@@ -52,12 +55,12 @@ class AddSecurityHeaders
             ? 'Content-Security-Policy'
             : 'Content-Security-Policy-Report-Only';
 
-        $response->headers->set($cspHeader, $this->contentSecurityPolicy($nonce));
+        $response->headers->set($cspHeader, $this->contentSecurityPolicy($nonce, $allowSameOriginFrame));
 
         return $response;
     }
 
-    private function contentSecurityPolicy(?string $nonce = null): string
+    private function contentSecurityPolicy(?string $nonce = null, bool $allowSameOriginFrame = false): string
     {
         $nonce ??= app(CspNonce::class)->get();
 
@@ -65,7 +68,7 @@ class AddSecurityHeaders
             "default-src 'self'",
             "base-uri 'self'",
             "object-src 'none'",
-            "frame-ancestors 'none'",
+            'frame-ancestors '.($allowSameOriginFrame ? "'self'" : "'none'"),
             "form-action 'self'",
             "img-src 'self' data: blob:",
             "font-src 'self' data: https://fonts.gstatic.com https://fonts.bunny.net https://cdn.jsdelivr.net",

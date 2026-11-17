@@ -14,6 +14,8 @@
     method="POST"
     action="{{ route('login.store') }}"
     data-track-unsaved="false"
+    data-no-loader
+    data-login-splash-form
     novalidate
     class="tw:grid tw:gap-4"
     x-data="{
@@ -39,6 +41,13 @@
     @submit="handleSubmit($event)"
 >
     @csrf
+
+    <div
+        data-login-error-alert
+        role="alert"
+        hidden
+        class="tw:rounded-ui-sm tw:border tw:border-error/30 tw:bg-error/10 tw:px-3.5 tw:py-2.5 tw:text-ui-sm tw:font-medium tw:text-error"
+    ></div>
 
     <div class="tw:grid tw:gap-1.5">
         <label for="email" class="tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ __('auth.login.email') }}</label>

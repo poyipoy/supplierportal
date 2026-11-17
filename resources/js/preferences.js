@@ -11,7 +11,7 @@ export function resolveEffectiveTheme(choice, prefersDark) {
 }
 
 export function bindCustomizationPreviews(documentRef, preferences) {
-    for (const [name, method] of Object.entries({ theme: 'previewTheme', accent: 'previewAccent', density: 'previewDensity' })) {
+    for (const [name, method] of Object.entries({ theme: 'previewTheme', shell_style: 'previewShellStyle', accent: 'previewAccent', density: 'previewDensity' })) {
         documentRef.querySelectorAll(`input[name="${name}"]`).forEach((input) => {
             if (input.closest?.('#customizationForm') || previewInputs.has(input)) return;
             previewInputs.add(input);
@@ -34,9 +34,10 @@ export function bindBackForwardRestoration(windowRef, preferences, documentRef =
             windowRef.dispatchEvent(new Event('adasi:preferences-restored'));
             return;
         }
-        ['theme', 'density', 'accent'].forEach((name) => {
-            documentRef?.querySelectorAll('input[name="' + name + '"]').forEach((input) => {
-                input.checked = input.value === preferences[name];
+        ['theme', 'shell_style', 'density', 'accent'].forEach((name) => {
+            const prop = name === 'shell_style' ? 'shellStyle' : name;
+            documentRef?.querySelectorAll('input[name="' + name + '"]')?.forEach((input) => {
+                input.checked = input.value === preferences[prop];
             });
         });
     });

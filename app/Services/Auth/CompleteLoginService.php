@@ -6,6 +6,7 @@ use App\Events\AuthSecurityEvent;
 use App\Models\User;
 use App\Services\NotificationService;
 use App\Support\NotificationDomain;
+use App\Support\PortalContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -19,6 +20,7 @@ class CompleteLoginService
         private readonly SessionRevocationService $revocation,
         private readonly NotificationService $notifications,
         private readonly TwoFactorService $twoFactor,
+        private readonly RememberTokenService $rememberTokens,
     ) {}
 
     public function complete(Request $request, User $user, bool $remember): void
@@ -48,6 +50,16 @@ class CompleteLoginService
         ]);
 
         $isNewDevice = $this->knownDevices->registerOrTouch($request, $user);
+        $deviceHash = $this->knownDevices->currentDeviceHash($request);
+
+        if ($remember) {
+            $this->rememberTokens->issueForSession(
+                $request,
+                $user,
+                $request->session()->getId(),
+                $deviceHash,
+            );
+        }
 
         $evicted = $this->sessions->enforceConcurrentLimit(
             $user,
@@ -55,7 +67,9 @@ class CompleteLoginService
         );
 
         if ($evicted > 0) {
-            $this->revocation->invalidateRememberTokens($user, $request);
+            if ($this->sessions->lastEvictionRevokedPerDeviceCount() === 0 && $user->getRememberToken() !== null) {
+                $this->revocation->invalidateRememberTokens($user, $request);
+            }
             event(new AuthSecurityEvent('concurrent_session_limit_enforced', $user, metadata: ['count' => $evicted]));
         }
 
@@ -75,7 +89,7 @@ class CompleteLoginService
 
         }
 
-        if (config('ui.auth_splash.enabled', false)) {
+        if (config('ui.auth_splash.enabled', false) && (! $request->expectsJson() || $request->hasHeader('X-Auth-Splash-Client'))) {
             $request->session()->put('ui.auth_splash', [
                 'id' => (string) Str::uuid(),
                 'reason' => 'post-login',
@@ -83,5 +97,38 @@ class CompleteLoginService
                 'target' => null,
             ]);
         }
+    }
+
+    /**
+     * Resolve post-login destination directly to the role dashboard when the splash
+     * handshake requests an immediate single-hop navigation.
+     */
+    public function resolvePostLoginDestination(Request $request, User $user, ?string $intended): string
+    {
+        $redirectUrl = TwoFactorService::safeIntendedUrl($request, $intended, route('dashboard', absolute: false));
+
+        if (! $request->hasHeader('X-Auth-Splash-Client')) {
+            return $redirectUrl;
+        }
+
+        if ($user->must_change_password) {
+            return route('profile.security', absolute: false);
+        }
+
+        $dashboardPath = rtrim((string) parse_url(route('dashboard', absolute: false), PHP_URL_PATH), '/');
+        $redirectPath = rtrim((string) parse_url($redirectUrl, PHP_URL_PATH), '/');
+
+        if ($redirectPath !== $dashboardPath) {
+            return $redirectUrl;
+        }
+
+        return match ($user->role) {
+            'admin' => route('admin.dashboard', absolute: false),
+            'purchasing' => route('purchasing.dashboard', absolute: false),
+            'supplier', 'accounting', 'finance' => PortalContext::dashboard($user),
+            'ga' => route('ga.dashboard', absolute: false),
+            'qc' => route('qc.dashboard', absolute: false),
+            default => $redirectUrl,
+        };
     }
 }

@@ -41,6 +41,15 @@
             </div>
         </section>
 
+        <section class="tw:border tw:border-outline tw:bg-surface" aria-labelledby="security-known-devices-title">
+            <header class="tw:border-b tw:border-outline-variant tw:bg-surface-container tw:px-5 tw:py-4">
+                <h2 id="security-known-devices-title" class="tw:m-0 tw:text-ui-sm tw:font-semibold">{{ __('security.known_devices') }}</h2>
+            </header>
+            <div class="tw:p-5">
+                @include('profile.partials.known-devices')
+            </div>
+        </section>
+
         <section class="tw:border tw:border-outline tw:bg-surface" aria-labelledby="security-logout-other-devices-title">
             <header class="tw:border-b tw:border-outline-variant tw:bg-surface-container tw:px-5 tw:py-4">
                 <h2 id="security-logout-other-devices-title" class="tw:m-0 tw:text-ui-sm tw:font-semibold">{{ __('security.logout_devices') }}</h2>

@@ -53,7 +53,7 @@ $project=${JSON.stringify(project.replaceAll('\\', '/'))};
 $path=parse_url($_SERVER['REQUEST_URI'],PHP_URL_PATH);
 $file=realpath($project.'/public'.$path);
 if($file && str_starts_with($file,realpath($project.'/public').DIRECTORY_SEPARATOR) && is_file($file)) {
- header('Content-Type: '.(str_ends_with($file,'.js')?'application/javascript':(str_ends_with($file,'.css')?'text/css':(str_ends_with($file,'.png')?'image/png':'application/octet-stream')))); readfile($file); return;
+ header('Content-Type: '.(str_ends_with($file,'.js')?'application/javascript':(str_ends_with($file,'.css')?'text/css':(str_ends_with($file,'.png')?'image/png':(str_ends_with($file,'.gif')?'image/gif':'application/octet-stream'))))); readfile($file); return;
 }
 if($path==='/__splash-prototype') { header('Content-Type: text/html'); readfile($project.'/docs/auth/references/adasi-post-login-splash-loop.html'); return; }
 require $project.'/vendor/autoload.php';
@@ -146,7 +146,7 @@ function assertMinimum(actual) {
     return { visible, ready, released, heldMs: released - visible };
 }
 async function passed(name, data = {}) { findings.push({ name, passed: true, ...data }); console.log('PASS ' + name); }
-const wordmarkStyles = selector => `(()=>{const e=document.querySelector(${JSON.stringify(selector)}),s=getComputedStyle(e);return Object.fromEntries(['fontFamily','fontSize','fontWeight','lineHeight','letterSpacing','height','paddingTop','paddingRight','color','overflow','whiteSpace'].map(k=>[k,s[k]]))})()`;
+const mediaState = () => `(()=>{const e=document.querySelector('[data-auth-splash-media]'),s=e?getComputedStyle(e):null,r=e?e.getBoundingClientRect():null;return e?{src:e.getAttribute('src'),currentSrc:e.currentSrc,complete:e.complete,naturalWidth:e.naturalWidth,naturalHeight:e.naturalHeight,hidden:e.hidden,width:r.width,height:r.height,objectFit:s.objectFit}:null})()`;
 
 try {
     for (let i = 0; i < 100; i++) {
@@ -194,8 +194,9 @@ try {
         if (message.method === 'Fetch.requestPaused') {
             const { requestId, request } = message.params;
             const app = /\/build\/assets\/app-[^/]+\.js(?:\?|$)/.test(request.url);
-            if ((policy.hangApp && app) || (policy.hangCdn && request.url.startsWith('https://'))) { held.add(requestId); return; }
-            if ((policy.blockApp && app) || (policy.failImport && /\/build\/assets\/cally-/.test(request.url))) {
+            const gif = /\/assets\/images\/logo-adasi\.gif(?:\?|$)/.test(request.url);
+            if ((policy.hangApp && app) || (policy.hangCdn && request.url.startsWith('https://')) || (policy.hangGif && gif)) { held.add(requestId); return; }
+            if ((policy.blockApp && app) || (policy.failImport && /\/build\/assets\/cally-/.test(request.url)) || (policy.failGif && gif)) {
                 command('Fetch.failRequest', { requestId, errorReason: 'Failed' }).catch(() => {}); return;
             }
             const asset = vendor.get(request.url);
@@ -280,28 +281,33 @@ try {
 
     await command('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
     await navigate('/__splash-fixture/core?without_sentinel=1');
-    await until('Boolean(window.Alpine) && window.AdasiAuthSplash?.isWaiting()');
-    assert.equal(await evaluate('getComputedStyle(document.querySelector(".auth-splash__letter")).animationName'), 'none');
+    await until('Boolean(window.Alpine) && window.AdasiAuthSplash?.isWaiting() && document.querySelector("[data-auth-splash-media]")?.complete');
+    const reducedMedia = await evaluate(mediaState());
+    assert.ok(reducedMedia.currentSrc.endsWith('/assets/images/logo-adasi-wordmark.png'), JSON.stringify(reducedMedia));
+    assert.equal(reducedMedia.naturalWidth, 384);
+    assert.equal(reducedMedia.naturalHeight, 153);
+    assert.equal(await evaluate('getComputedStyle(document.querySelector("[data-auth-splash]")).transitionDuration'), '0s');
     const ax = await command('Accessibility.getFullAXTree');
     assert.ok(ax.nodes.some(n => n.role?.value === 'status'));
-    assert.ok(!ax.nodes.some(n => n.role?.value === 'StaticText' && ['A', 'D', 'S', 'I'].includes(n.name?.value)), 'Decorative letters absent from accessibility tree');
+    assert.ok(!ax.nodes.some(n => n.role?.value === 'StaticText' && ['A', 'D', 'S', 'I', 'ADASI'].includes(n.name?.value)), 'Decorative brand visual absent from accessibility tree');
     await evaluate('document.body.insertAdjacentHTML("beforeend",`<template data-auth-splash-layout-ready="app" data-readiness="core"></template>`)');
     await until('window.AdasiAuthSplash?.state === "REMOVED"');
     const reduced = await snapshot();
     const reducedReady = reduced.measurements.events.find(e => e.name === 'adasi:page-ready');
     const reducedRelease = reduced.measurements.events.find(e => e.name === 'adasi:auth-splash-released');
     assert.ok(reducedRelease.at - reducedReady.at < 50, 'Reduced motion bypasses the branding minimum');
-    await passed('reduced-motion-and-accessibility-tree');
+    await passed('reduced-motion-and-accessibility-tree', { reducedMedia });
     for (const scale of [2, 4]) {
         const width = Math.floor(1366 / scale), height = Math.floor(900 / scale);
         await command('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false });
         await navigate('/__splash-fixture/core', { blockApp: true });
-        await until('!document.querySelector("[data-auth-splash-skip]").hidden');
+        await until('!document.querySelector("[data-auth-splash-skip]").hidden && document.querySelector("[data-auth-splash-media]")?.complete');
         assert.equal(await evaluate('getComputedStyle(document.querySelector("[data-auth-splash-skip]")).clipPath'), 'inset(50%)');
         await key('Tab', 9);
-        const geometry = await evaluate('(()=>{const b=document.querySelector("[data-auth-splash-skip]"),w=document.querySelector(".auth-splash__wordmark"),r=b.getBoundingClientRect(),m=w.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:innerWidth,height:innerHeight,wordmarkWidth:m.width,controlWidth:r.width,controlHeight:r.height}})()');
+        const geometry = await evaluate('(()=>{const b=document.querySelector("[data-auth-splash-skip]"),w=document.querySelector("[data-auth-splash-media]"),r=b.getBoundingClientRect(),m=w.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:innerWidth,height:innerHeight,mediaWidth:m.width,mediaHeight:m.height,mediaBottom:m.bottom,controlWidth:r.width,controlHeight:r.height}})()');
         assert.ok(geometry.left >= 0 && geometry.right <= width && geometry.top >= 0 && geometry.bottom <= height, JSON.stringify(geometry));
-        assert.ok(geometry.wordmarkWidth <= width && geometry.controlWidth >= 24 && geometry.controlHeight >= 24);
+        assert.ok(geometry.mediaWidth <= width && geometry.mediaHeight <= height && geometry.mediaBottom <= geometry.top, JSON.stringify(geometry));
+        assert.ok(geometry.controlWidth >= 44 && geometry.controlHeight >= 44, JSON.stringify(geometry));
         await key('Tab', 9);
         assert.equal(await evaluate('document.activeElement.hasAttribute("data-auth-splash-skip")'), true);
         await key('Escape', 27);
@@ -322,26 +328,54 @@ try {
     assert.equal(await evaluate('document.querySelector("#main-content").inert'), false);
     await passed('foreground-loader-handoff-without-overlay-overlap');
 
-    const styleComparisons = [];
+    for (const [modeName, options] of [['gif-error-fallback', { failGif: true }], ['gif-timeout-fallback', { hangGif: true }]]) {
+        await navigate('/__splash-fixture/core', options);
+        await until('window.AdasiAuthSplash?.state === "REMOVED"', 8000);
+        const fallbackSnapshot = await snapshot();
+        assert.equal(fallbackSnapshot.ready, true);
+        assert.equal(fallbackSnapshot.inert, false);
+        await passed(modeName, assertMinimum(fallbackSnapshot));
+    }
+
+    const visualChecks = [];
     for (const width of [1366, 375]) {
         await command('Emulation.setDeviceMetricsOverride', { width, height: 900, deviceScaleFactor: 1, mobile: false });
-        await navigate('/__splash-prototype'); const reference = await evaluate(wordmarkStyles('.wordmark'));
         await navigate('/__splash-fixture/core', { blockApp: true });
-        await until('window.AdasiAuthSplash?.isWaiting()');
-        assert.deepEqual(await evaluate(wordmarkStyles('.auth-splash__wordmark')), reference);
+        await until('window.AdasiAuthSplash?.isWaiting() && document.querySelector("[data-auth-splash-media]")?.complete');
+        const gifActual = await evaluate(mediaState());
+        assert.ok(gifActual.currentSrc.endsWith('/assets/images/logo-adasi.gif'), JSON.stringify(gifActual));
+        assert.equal(gifActual.naturalWidth, 1536);
+        assert.equal(gifActual.naturalHeight, 612);
+        assert.ok(gifActual.width >= 135 && gifActual.width <= 168 && gifActual.width <= width, JSON.stringify(gifActual));
+        assert.ok(Math.abs((gifActual.width / gifActual.height) - (384 / 153)) < 0.05, JSON.stringify(gifActual));
+        // Wait inside the full-wordmark hold window (1,320-3,080 ms) before capturing the GIF screenshot.
+        await sleep(1500);
+        const gifShot = await command('Page.captureScreenshot', { format: 'png' });
+        await writeFile(path.join(artifacts, `splash-${width}-gif.png`), Buffer.from(gifShot.data, 'base64'));
         for (const theme of ['light', 'dark']) {
             await evaluate(`document.documentElement.dataset.theme=${JSON.stringify(theme)}`);
             assert.equal(await evaluate('getComputedStyle(document.querySelector("[data-auth-splash]")).backgroundColor'), 'rgb(255, 255, 255)');
             await command('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
-            await until('getComputedStyle(document.querySelector(".auth-splash__letter")).transform === "matrix(1, 0, 0, 1, 0, 0)"');
+            await until('document.querySelector("[data-auth-splash-media]")?.currentSrc.endsWith("logo-adasi-wordmark.png") && document.querySelector("[data-auth-splash-media]")?.naturalWidth === 384');
             const shot = await command('Page.captureScreenshot', { format: 'png' });
-            await writeFile(path.join(artifacts, `wordmark-${width}-${theme}.png`), Buffer.from(shot.data, 'base64'));
+            await writeFile(path.join(artifacts, `splash-${width}-${theme}-reduced.png`), Buffer.from(shot.data, 'base64'));
         }
         await command('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'no-preference' }] });
-        styleComparisons.push({ width, computedStylesMatch: true });
+        visualChecks.push({ width, gifActual });
         await key('Escape', 27);
     }
-    await passed('prototype-desktop-mobile-dark-style-comparison', { styleComparisons });
+    await command('Emulation.setDeviceMetricsOverride', { width: 1536, height: 864, deviceScaleFactor: 1, mobile: false });
+    await navigate('/__splash-fixture/core', { blockApp: true });
+    await until('window.AdasiAuthSplash?.isWaiting() && document.querySelector("[data-auth-splash-media]")?.complete');
+    const desktop1536 = await evaluate(mediaState());
+    assert.ok(desktop1536.width >= 152 && desktop1536.width <= 156, JSON.stringify(desktop1536));
+    assert.ok(Math.abs((desktop1536.width / desktop1536.height) - (384 / 153)) < 0.05, JSON.stringify(desktop1536));
+    await sleep(1500);
+    const desktop1536Shot = await command('Page.captureScreenshot', { format: 'png' });
+    await writeFile(path.join(artifacts, 'splash-1536-gif.png'), Buffer.from(desktop1536Shot.data, 'base64'));
+    visualChecks.push({ width: 1536, gifActual: desktop1536 });
+    await key('Escape', 27);
+    await passed('desktop-mobile-dark-gif-and-reduced-visual-check', { visualChecks });
     await command('Emulation.setDeviceMetricsOverride', { width: 1366, height: 900, deviceScaleFactor: 1, mobile: false });
 
     await navigate('/__splash-fixture/core'); await until('window.AdasiAuthSplash?.state === "REMOVED"');

@@ -103,12 +103,19 @@
         <env name="PORTAL_LONG_HASHIDS_ENABLED" value="false" force="true"/>
         <env name="PORTAL_PATH_PREFIX_ENABLED" value="false" force="true"/>
         <env name="PORTAL_PAGE_REGISTRY_ENABLED" value="false" force="true"/>
+        <env name="AUTH_SPLASH_ENABLED" value="false" force="true"/>
+        <env name="WORKSPACE_SHELL_ENABLED" value="false" force="true"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
+        <env name="HASH_DRIVER" value="argon2id"/>
+        <env name="ARGON_MEMORY" value="1024"/>
+        <env name="ARGON_THREADS" value="1"/>
+        <env name="ARGON_TIME" value="1"/>
+        <env name="HASH_VERIFY" value="false"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <!-- Dummy verification hash for the constant-time login path. Cost must
-             track BCRYPT_ROUNDS above, or the miss branch costs ~200ms per
-             failed login while the hit branch costs ~1ms. -->
-        <env name="AUTH_DUMMY_HASH" value="$2y$04$PIaDjQhlFb2EYQPyu9.sa.7DTQ4tAZxYbPlaT8tEoER/f686zf4D."/>
+             track ARGON_* above, or the miss branch runs at production cost
+             while the hit branch runs fast. -->
+        <env name="AUTH_DUMMY_HASH" value="$argon2id$v=19$m=1024,t=1,p=1$Q0ZGOUJNYWxkUnpLejAvdw$E1YyYaSmqQyhd2BVQTGN3vqk1nYJx7vVZdSl1dVLoic"/>
         <!-- The tarpit sleeps real seconds; LoginSecurityTest enables it
              explicitly for the one test that asserts the delay. -->
         <env name="AUTH_TARPIT_ENABLED" value="false"/>

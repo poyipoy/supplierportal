@@ -9,11 +9,27 @@ const MAX_MESSAGES = 5;
 export function exportEntries(formData) {
     const entries = new FormData();
     for (const [key, value] of formData.entries()) {
-        if (key === 'action' || (typeof File !== 'undefined' && value instanceof File)) continue;
+        if (key === 'action' || key === '_method' || (typeof File !== 'undefined' && value instanceof File)) continue;
         entries.append(key, value);
     }
 
     return entries;
+}
+
+export function resolveExportUrl(url) {
+    if (typeof url !== 'string' || url === '' || typeof window === 'undefined' || !window.location?.origin) {
+        return url;
+    }
+    try {
+        const parsed = new URL(url, window.location.origin);
+        if (parsed.host === window.location.host) {
+            return `${parsed.pathname}${parsed.search}`;
+        }
+    } catch {
+        // Keep the original URL if parsing fails.
+    }
+
+    return url;
 }
 
 export function errorMessages(errors) {
@@ -57,13 +73,13 @@ export async function runExport({
     const body = exportEntries(formDataFactory(form));
     const triggerFallback = () => {
         if (!fallbackUrl || typeof fallbackDownload !== 'function') return false;
-        fallbackDownload(fallbackUrl);
+        fallbackDownload(resolveExportUrl(fallbackUrl));
 
         return true;
     };
     let response;
     try {
-        response = await fetchImpl(url, {
+        response = await fetchImpl(resolveExportUrl(url), {
             method: 'POST',
             body,
             credentials: 'same-origin',

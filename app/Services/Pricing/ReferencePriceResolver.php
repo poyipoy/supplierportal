@@ -7,6 +7,7 @@ use App\Models\QuotationItem;
 use App\Support\Money;
 use App\Support\Pricing\EvaluationContext;
 use App\Support\Pricing\ReferencePriceResult;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -18,7 +19,53 @@ class ReferencePriceResolver
 {
     private const SCALE = 4;
 
+    /** @var array<string, Collection<int, MaterialReferencePrice>> */
+    private array $activeRowsByMaterialShape = [];
+
+    /** @var array<int, true> */
+    private array $preloadedMaterialIds = [];
+
     public function __construct(private readonly ExchangeRateResolver $rates) {}
+
+    /**
+     * Batch-load active reference price bands for multiple material masters so
+     * comparison matrices avoid one query per PR item.
+     *
+     * @param  list<int|string|null>  $materialMasterIds
+     */
+    public function preload(array $materialMasterIds): void
+    {
+        $missingIds = [];
+        foreach ($materialMasterIds as $id) {
+            $intId = (int) $id;
+            if ($intId > 0 && ! isset($this->preloadedMaterialIds[$intId])) {
+                $missingIds[$intId] = $intId;
+            }
+        }
+
+        if ($missingIds === []) {
+            return;
+        }
+
+        $rows = MaterialReferencePrice::query()
+            ->whereIn('material_master_id', array_values($missingIds))
+            ->where('status', MaterialReferencePrice::STATUS_ACTIVE)
+            ->get();
+
+        foreach ($rows->groupBy(fn (MaterialReferencePrice $row) => $row->material_master_id.'|'.$row->shape) as $key => $grouped) {
+            $this->activeRowsByMaterialShape[$key] = $grouped->values();
+        }
+
+        foreach ($missingIds as $id) {
+            $this->preloadedMaterialIds[$id] = true;
+        }
+    }
+
+    public function reset(): void
+    {
+        $this->activeRowsByMaterialShape = [];
+        $this->preloadedMaterialIds = [];
+    }
 
     public function resolve(QuotationItem $line, EvaluationContext $context, string $targetCurrency): ReferencePriceResult
     {
@@ -39,11 +86,7 @@ class ReferencePriceResolver
         }
         $value = Money::normalize((string) $raw, self::SCALE);
 
-        $rows = MaterialReferencePrice::query()
-            ->where('material_master_id', $prItem->material_master_id)
-            ->where('shape', $prItem->shape)
-            ->where('status', MaterialReferencePrice::STATUS_ACTIVE)
-            ->get();
+        $rows = $this->activeRowsFor((int) $prItem->material_master_id, (string) $prItem->shape);
 
         if ($rows->isEmpty()) {
             return $miss(ReferencePriceResult::NO_PRICE_FOR_MATERIAL, $value);
@@ -94,6 +137,27 @@ class ReferencePriceResolver
             $this->rates->rateAsOf($targetCurrency, $date)?->exchangeRateId,
             $diff, $diffPercent,
         );
+    }
+
+    /**
+     * @return Collection<int, MaterialReferencePrice>
+     */
+    private function activeRowsFor(int $materialMasterId, string $shape): Collection
+    {
+        $key = $materialMasterId.'|'.$shape;
+        if (array_key_exists($key, $this->activeRowsByMaterialShape)) {
+            return $this->activeRowsByMaterialShape[$key];
+        }
+
+        if (isset($this->preloadedMaterialIds[$materialMasterId])) {
+            return $this->activeRowsByMaterialShape[$key] = collect();
+        }
+
+        return $this->activeRowsByMaterialShape[$key] = MaterialReferencePrice::query()
+            ->where('material_master_id', $materialMasterId)
+            ->where('shape', $shape)
+            ->where('status', MaterialReferencePrice::STATUS_ACTIVE)
+            ->get();
     }
 
     /**
