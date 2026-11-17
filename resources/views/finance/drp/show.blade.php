@@ -355,40 +355,42 @@
                                         @endif
                                     </td>
                                 </tr>
-
-                                {{-- Remove Item Modal --}}
-                                @if($batch->status === \App\Models\PaymentBatch::STATUS_DRAFT)
-                                    <div class="modal fade" id="removeItemModal-{{ $item->id }}" tabindex="-1" aria-hidden="true">
-                                        <div class="modal-dialog">
-                                            <form method="POST" action="{{ route('finance.drp.remove-item', $item) }}">
-                                                @csrf
-                                                <div class="modal-content">
-                                                    <div class="modal-header">
-                                                        <h5 class="modal-title tw:text-ui-sm tw:font-bold">{{ __('finance.drp_ui.remove_title') }}</h5>
-                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('local_invoice.actions.close') }}"></button>
-                                                    </div>
-                                                    <div class="modal-body">
-                                                        <p class="tw:text-ui-xs tw:text-on-surface-variant">
-                                                            {{ __('finance.drp_ui.remove_help', ['reference' => $item->item_reference]) }}
-                                                        </p>
-                                                        <div class="mb-3">
-                                                            <label class="form-label tw:text-ui-xs tw:font-semibold">{{ __('finance.drp_ui.remove_reason') }} <span class="text-danger">*</span></label>
-                                                            <textarea name="reason" class="form-control form-control-sm" rows="2" required placeholder="{{ __('finance.drp_ui.remove_example') }}"></textarea>
-                                                        </div>
-                                                    </div>
-                                                    <div class="modal-footer">
-                                                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{{ __('local_invoice.actions.cancel') }}</button>
-                                                        <button type="submit" class="btn btn-danger btn-sm">{{ __('finance.drp_ui.remove') }}</button>
-                                                    </div>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div>
-                                @endif
                             @endforeach
                         </tbody>
                     </table>
                 </div>
+
+                @if($batch->status === \App\Models\PaymentBatch::STATUS_DRAFT)
+                    {{-- Remove Item Modals (placed outside table for valid DOM & stacking) --}}
+                    @foreach($group->items as $item)
+                        <div class="modal fade" id="removeItemModal-{{ $item->id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <form method="POST" action="{{ route('finance.drp.remove-item', $item) }}">
+                                    @csrf
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title tw:text-ui-sm tw:font-bold">{{ __('finance.drp_ui.remove_title') }}</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('local_invoice.actions.close') }}"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <p class="tw:text-ui-xs tw:text-on-surface-variant">
+                                                {{ __('finance.drp_ui.remove_help', ['reference' => $item->item_reference]) }}
+                                            </p>
+                                            <div class="mb-3">
+                                                <label class="form-label tw:text-ui-xs tw:font-semibold">{{ __('finance.drp_ui.remove_reason') }} <span class="text-danger">*</span></label>
+                                                <textarea name="reason" class="form-control form-control-sm" rows="2" required placeholder="{{ __('finance.drp_ui.remove_example') }}"></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{{ __('local_invoice.actions.cancel') }}</button>
+                                            <button type="submit" class="btn btn-danger btn-sm">{{ __('finance.drp_ui.remove') }}</button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    @endforeach
+                @endif
 
                 {{-- Modals for this Group: Assign Voucher, Mark Paid, Override Fee --}}
                 {{-- 1. Voucher Modal --}}

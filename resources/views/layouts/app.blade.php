@@ -387,6 +387,26 @@
         };
 
         document.addEventListener('DOMContentLoaded', () => window.initAdasiTooltips());
+
+        document.addEventListener('animationend', (event) => {
+            if (event.animationName === 'ui-page-fade-in' && event.target instanceof Element) {
+                event.target.classList.remove('ui-page-fade');
+            }
+        });
+
+        // Drop any active page-fade animation before Bootstrap shows a modal so the ancestor never traps it behind .modal-backdrop.
+        document.addEventListener('show.bs.modal', (event) => {
+            if (!(event.target instanceof Element)) {
+                return;
+            }
+            let ancestor = event.target.parentElement;
+            while (ancestor) {
+                if (ancestor.classList?.contains('ui-page-fade')) {
+                    ancestor.classList.remove('ui-page-fade');
+                }
+                ancestor = ancestor.parentElement;
+            }
+        });
     </script>
 
     <!-- jQuery -->

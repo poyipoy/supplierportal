@@ -1,7 +1,7 @@
 # DESIGN.md: ADASI Portal Supplier
 
 > Kontrak desain visual dan interaksi untuk seluruh UI portal (Core Impor dan Core Local Supplier & Payment).
-> Disusun dari kode pada working tree **2 November 2026**: `resources/css/app.css`, `tailwind.config.js`, `resources/views/components/ui/`, `app/View/Components/Ui/Icon.php`, `app/Support/StatusHelper.php`, `resources/js/chart-theme.js`, `config/user_preferences.php`, [AGENTS.md](AGENTS.md), dan [REDESIGN-PHASE2-GLOBAL-CONTRACT.md](ADASI-UI-REDESIGN-PHASE2-MISSIONS/ADASI-UI-REDESIGN-PHASE2-MISSIONS/REDESIGN-PHASE2-GLOBAL-CONTRACT.md).
+> Disusun dari kode pada working tree **2 November 2026** dan diperbarui **17 November 2026**: `config/ui.php`, `resources/css/app.css`, `resources/css/workspace-shell.css`, `resources/css/auth-splash.css`, `tailwind.config.js`, `resources/views/components/ui/`, `resources/js/{workspace-shell.js,auth-splash.js,adasi-loader.js}`, `app/View/Components/Ui/Icon.php`, `app/Support/StatusHelper.php`, `resources/js/chart-theme.js`, `config/user_preferences.php`, [AGENTS.md](AGENTS.md), dan [REDESIGN-PHASE2-GLOBAL-CONTRACT.md](ADASI-UI-REDESIGN-PHASE2-MISSIONS/ADASI-UI-REDESIGN-PHASE2-MISSIONS/REDESIGN-PHASE2-GLOBAL-CONTRACT.md).
 
 ## 0. Kedudukan dokumen ini
 
@@ -130,8 +130,8 @@ Token lain: `page-block`, `stack-sm|md|lg`, `card-padding`, `metric-padding`, `p
 
 - **State layer:** hover .05 · focus .08 · pressed .08 · dragged .12 · disabled .4. Komponen memakai `hover:bg-surface-container` / `brightness-95` dan `disabled:opacity-50`.
 - **Focus:** `.ui-focus-ring:focus-visible` = cincin ganda (offset 2px warna surface + 2px `--md-primary`). Jangan menghapus outline tanpa pengganti yang terlihat.
-- **Motion:** `fast 150ms` · `standard 200ms` · `slow 300ms`; easing `standard cubic-bezier(.2,0,0,1)`. `.ui-motion` hanya mentransisikan warna, border, bayangan, opacity, dan transform. Motion sidebar baru aktif setelah `data-sidebar-motion-ready`. Hormati `prefers-reduced-motion`. View transition navigasi berdurasi 0s, kecuali region toast. **Dilarang:** spring, bounce, confetti.
-- **z-index** (`tw:z-*`): dropdown 1000 · sticky 1020 · drawer 1040 · modal 1060 · calendar 1070 · toast 1080. Jangan menulis z-index angka baru di luar skala ini.
+- **Motion:** `fast 150ms` · `standard 200ms` · `slow 300ms`; easing `standard cubic-bezier(.2,0,0,1)`. Transisi masuk konten antar halaman/tab menggunakan `--ui-page-fade-duration: 500ms` (`config/ui.php` → `navigation.page_fade_ms`, `cubic-bezier(0.22, 1, 0.36, 1)`) yang **hanya mengubah `opacity: 0 → 1`** (`CLS = 0`) pada `.ui-page-fade` (`#main-content`, `.auth-card`, dan swap konten `AdasiServerTabs`) serta `.workspace-panel.is-active` (`@keyframes workspace-panel-enter`). Ketika `html[data-auth-splash-wait="1"]` aktif selama auth splash berlangsung, animasi `.ui-page-fade` ditunda agar dimulai tepat setelah splash dilepas. `.ui-motion` hanya mentransisikan warna, border, bayangan, opacity, dan transform. Motion sidebar baru aktif setelah `data-sidebar-motion-ready`. Hormati `prefers-reduced-motion` (menonaktifkan `.ui-page-fade`, `workspace-panel.is-active`, dan fade splash). View transition dokumen MPA berdurasi `0s`, kecuali region toast (`adasi-toast-region`). **Dilarang:** spring, bounce, confetti.
+- **z-index** (`tw:z-*`): dropdown 1000 · sticky 1020 · drawer 1040 · modal 1060 · calendar 1070 · toast 1080 · full-screen loader `#adasiLoader` & `.auth-splash`/`.adasi-client-splash` `9999`. Jangan menulis z-index angka baru di luar skala ini.
 
 ### 3.9 Dimensi shell
 
@@ -187,9 +187,10 @@ Komponen kalender sengaja merender native `type="date"` sebagai dasar progressiv
 ### 6.1 Shell
 
 - Sidebar berlebar tetap 256px (`data-shell="classic"` mengikuti surface tema sebagai default; `data-shell="slate"` memakai palet steel-slate lembut dengan token `--ui-shell-*`), bisa diciutkan menjadi icon rail 64px (`html[data-sidebar-collapsed]`). Item aktif ditandai halus (bar indikator + warna primary/aksen), tanpa blok warna besar.
-- Topbar setinggi 44px di desktop (52px di bawah 992px). Konten full-width adaptif dengan padding dari token density.
+- Topbar setinggi 44px di desktop (52px di bawah 992px). Konten full-width adaptif dengan padding dari token density, memakai kelas `.ui-page-fade` pada `#main-content` (`layouts/app.blade.php`) dan `.auth-card` (`layouts/auth.blade.php`).
 - Di bawah 993px, sidebar menjadi drawer.
 - Setiap layout yang memuat `resources/js/app.js` wajib `@include('partials.loader-logo')` sebelum `@vite`.
+- **Workspace Tab Shell (`WORKSPACE_SHELL_ENABLED=true`, `layouts/workspace-shell.blade.php`, `partials/workspace-tab-bar.blade.php`, `workspace-shell.css`):** route terautentikasi yang memenuhi syarat dibungkus shell multi-tab di atas iframe embed keep-alive. Navigasi menu/tab memakai mekanisme **render-first**: panel tujuan di-stage tersembunyi (`.workspace-panel.is-staging`: `visibility: hidden; opacity: 0; pointer-events: none`) sementara tab aktif tetap tampil tanpa layar kosong; trigger menu diberi tanda ringan `[data-workspace-pending="true"]` (`opacity: 0.78; cursor: progress`) dan `aria-busy="true"`. Ketika render selesai, panel dipindah menjadi `.workspace-panel.is-active` dengan fade-in 500 ms. `WrapWorkspaceShell` menyuplai hasil embed pertama top-level lewat cache sekali pakai 15 detik (`Cache::pull` + rewrite `CspNonce`) agar tidak terjadi render ganda.
 
 ### 6.2 Halaman daftar
 
@@ -212,7 +213,7 @@ Page header ringkas dengan status dan metadata utama → section datar dengan hi
 
 ### 6.5 Tab, filter, dan paginasi tanpa reload
 
-Memakai `AdasiServerTabs` (`data-server-tabs-container`, `-content`, `-form`, `data-server-tab`). Gaya tab aktif ditulis `tw:aria-[current=page]:…` karena JS hanya memindahkan `aria-current`. Pola state terpilih memakai **satu sumber** (varian `aria-*`), jangan mencampur class statis dengan `:class` Alpine.
+Memakai `AdasiServerTabs` (`data-server-tabs-container`, `-content`, `-form`, `data-server-tab`, dengan pemicuan ulang `.ui-page-fade` saat pertukaran konten `applyData()`). Gaya tab aktif ditulis `tw:aria-[current=page]:…` karena JS hanya memindahkan `aria-current`. Pola state terpilih memakai **satu sumber** (varian `aria-*`), jangan mencampur class statis dengan `:class` Alpine.
 
 ### 6.6 Dashboard
 
@@ -228,7 +229,8 @@ Memakai `AdasiServerTabs` (`data-server-tabs-container`, `-content`, `-form`, `d
 | Sukses/gagal transient | AdasiToast |
 | Konfirmasi, prompt, keputusan blocking | AdasiAlert / SweetAlert2 |
 | Pesan inline persisten | `x-ui.alert` |
-| Memuat | `x-ui.skeleton`; DataTables busy state di tabel (bukan indikator bawaan) |
+| Memuat | `x-ui.skeleton`; DataTables busy state di tabel (bukan indikator bawaan); `#adasiLoader` (`resources/js/adasi-loader.js`) memiliki ambang tunda **`SHOW_DELAY = 2500 ms`** (`config/ui.php` → `navigation.slow_loader_threshold_ms`) agar navigasi cepat `< 2,5s` bebas overlay, sedangkan staging workspace tab yang melebihi `2,5s` memanggil `AdasiLoader.showImmediate()` |
+| Auth splash | `.auth-splash` / `.adasi-client-splash` (`resources/js/auth-splash.js`, `resources/css/auth-splash.css`) menampilkan `logo-adasi.gif` secara instan setelah validasi login/2FA `X-Auth-Splash-Client` sukses (min. total `600 ms`, fail-open `8000 ms`, fade `500 ms`, fallback `logo-adasi-wordmark.png` pada `prefers-reduced-motion: reduce` atau gagal muat media) |
 | Kosong | `x-ui.empty-state` (ikon kecil, judul, deskripsi, satu aksi opsional) |
 | Sesi berakhir | Dialog "Sambungkan kembali / Nanti saja", bukan redirect paksa |
 
@@ -311,8 +313,8 @@ Konsistensi lintas modul: radius, card, grammar page header, grammar filter, hie
 ## 12. Kompatibilitas dan aset frontend
 
 - Pertahankan atribut `data-bs-*`, dropdown, modal, offcanvas, DataTables, serta ID, class, dan relasi DOM yang dipakai jQuery/AJAX. Bila markup terikat JS, bangun ulang komposisi visual di sekitarnya.
-- Bootstrap, jQuery, SweetAlert2, dan Chart.js lewat CDN versi eksak + SRI. Vite membundel `resources/css/app.css` dan `resources/js/app.js`.
-- Modul JS per halaman di-`import()` lazy berdasarkan penanda DOM; komponen Alpine halaman didaftarkan di `pageComponents` (`tests/js/app-lazy-modules.test.mjs`).
+- Bootstrap, jQuery, SweetAlert2, dan Chart.js lewat CDN versi eksak + SRI. Vite membundel `resources/css/app.css` dan `resources/js/app.js`. Layout auth dan `partials/auth-splash-bootstrap.blade.php` menambahkan `<link rel="preload" as="image">` untuk `logo-adasi.gif` dan `logo-adasi-wordmark.png`.
+- Modul JS per halaman di-`import()` lazy berdasarkan penanda DOM (`calendar`, `advanced-export`, `dashboard-editor`, `customization-form`, `notification-preferences`, `supplier-audit-form`, `regional-sample`, `exchange-rates`, `time-picker`, `po-document-upload`, serta `workspace-shell` saat `data-workspace-shell="true"`); komponen Alpine halaman didaftarkan di `pageComponents` (`tests/js/app-lazy-modules.test.mjs`).
 - Rilis yang mengubah komponen Blade wajib `view:cache`, termasuk saat rollback.
 
 ---
@@ -323,7 +325,8 @@ Konsistensi lintas modul: radius, card, grammar page header, grammar filter, hie
 |---|---|
 | Ikon | `tests/Feature/UiIconComponentTest.php` |
 | Komponen | `RenderedComponentTest`, `CalendarComponentTest`, `tests/js/calendar.test.mjs` |
-| Aset / loader | `FrontendAssetLoadingTest`, `tests/js/adasi-loader.test.mjs`, `tests/js/tailwind-build.test.mjs` |
+| Aset / loader / splash | `FrontendAssetLoadingTest`, `AuthSplashTest`, `tests/js/adasi-loader.test.mjs`, `tests/js/auth-splash.test.mjs`, `tests/js/tailwind-build.test.mjs`, `tests/js/app-lazy-modules.test.mjs` |
+| Workspace Shell | `WorkspaceShellSecurityTest`, `WorkspaceShellRouteClassificationTest`, `tests/js/workspace-shell.test.mjs` |
 | Dark mode, accent, preferensi | `tests/js/preferences.test.mjs`, `tests/js/customization-form.test.mjs` |
 | Density | `tests/js/density-contract.test.mjs` |
 | Dashboard | `DashboardSmartSpanTest`, `tests/js/dashboard-{layout-core,editor,wireframe}.test.mjs` |

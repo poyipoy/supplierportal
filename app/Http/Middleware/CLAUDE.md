@@ -2,7 +2,7 @@
 
 Registration lives in `bootstrap/app.php`, not in a Kernel.
 
-- Web group append order: `ApplyUserLocale`, `ShareAuthSplashState`, `DecodeHashids`, `EnforceAuthSessionSecurity`, `EnforcePasswordChange`, `AddSecurityHeaders`, `EnforceSupplierDomain`, `EnforceMaintenance`, `LimitOperationalRequests`. These run on every web request, so any change here affects every role.
+- Web group append order (`bootstrap/app.php`): `ApplyUserLocale`, `ShareAuthSplashState`, `DecodeHashids`, `EnforceAuthSessionSecurity`, `EnsureSsoSession`, `EnforcePasswordChange`, `AddSecurityHeaders`, `EnforceSupplierDomain`, `EnforceMaintenance`, `LimitOperationalRequests`, `WrapWorkspaceShell`. Priority list places `ApplyUserLocale` and `ShareAuthSplashState` immediately after `StartSession`. These run on every web request, so any change here affects every role.
 - Aliases: `role`, `supplier.scope`, `password.confirm`, `purchasing.navigation`, `mfa.pending`, `no-store`, `registration.session`.
 
 ## DecodeHashids
@@ -23,7 +23,15 @@ Registration lives in `bootstrap/app.php`, not in a Kernel.
 - `RoleMiddleware`: exact match against the listed roles. Admin gets no bypass, and denials are logged.
 - `SupplierScopeMiddleware` (`supplier.scope:import|local`): 403 without the scope; it then writes `session('supplier_context')`, which `App\Support\PortalContext` reads.
 
+## ShareAuthSplashState
+- Reads/consumes one-time `ui.auth_splash` session markers only on real GET document navigations (`isDocumentNavigation`), keeping polling/XHR requests untouched.
+- On `X-Auth-Splash-Client` JSON login/2FA handoffs, `bindNewMarker()` reads `redirect_url` from the successful `JsonResponse` fallback when `FormRequest` attribute bags are cloned away from the outer request, binding `ui.auth_splash.target` directly to the resolved role dashboard.
+
+## WrapWorkspaceShell
+- Wraps eligible authenticated top-level HTML GET requests in `layouts.workspace-shell` when `WORKSPACE_SHELL_ENABLED=true`, excluding `top_level_security` and `non_shell_direct` routes (`WorkspaceShell::isShellEligibleRoute()`).
+- Top-level wrap candidates render as embedded (`isWorkspaceEmbed = true`) once and store HTML + originating `CspNonce` in a 15s single-use cache (`WorkspaceShell::prerenderCacheKey()`). The immediate `?_embed=1` iframe request pulls that entry via `Cache::pull()` and rewrites `nonce="..."` to its own fresh `CspNonce`, skipping duplicate controller/view execution.
+
 ## LimitOperationalRequests
 - Maps routes to per-user limiter buckets by route-name pattern (`exports`, `pdf`, `search`, ...). Renaming routes can silently move them between buckets.
 
-Tests: `HashidUrlSecurityTest`, `SupplierDataIsolationTest`, `AttachmentAuthorizationBoundaryTest`, `tests/Feature/Auth/`.
+Tests: `HashidUrlSecurityTest`, `SupplierDataIsolationTest`, `AttachmentAuthorizationBoundaryTest`, `WorkspaceShellSecurityTest`, `WorkspaceShellRouteClassificationTest`, `tests/Feature/Auth/`.

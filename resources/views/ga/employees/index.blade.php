@@ -133,67 +133,6 @@
                                 </div>
                             </td>
                         </tr>
-
-                        {{-- Edit Modal --}}
-                        <div class="modal fade ui-density-modal" id="editEmployeeModal-{{ $emp->id }}" tabindex="-1" aria-hidden="true">
-                            <div class="modal-dialog">
-                                <form method="POST" action="{{ route('ga.employees.update', $emp) }}">
-                                    @csrf
-                                    @method('PUT')
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title tw:text-ui-sm tw:font-bold">{{ __('ga.actions.edit_employee') }}</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('local_invoice.actions.close') }}"></button>
-                                        </div>
-                                        <div class="modal-body tw:space-y-3 tw:text-ui-xs">
-                                            <div>
-                                                <label class="form-label tw:font-semibold">{{ __('common.fields.full_name') }}</label>
-                                                <input type="text" name="name" class="form-control form-control-sm" value="{{ $emp->name }}" required>
-                                            </div>
-                                            <div>
-                                                <label class="form-label tw:font-semibold">{{ __('local_invoice.labels.department') }}</label>
-                                                <input type="text" name="department" class="form-control form-control-sm" value="{{ $emp->department }}" required>
-                                            </div>
-                                            <div>
-                                                <x-ui.searchable-select
-                                                    name="bank_name"
-                                                    id="bank_name_edit_{{ $emp->id }}"
-                                                    :label="__('ga.review.bank')"
-                                                    :placeholder="__('ga.review.choose_bank')"
-                                                    :search-placeholder="__('ga.review.bank_search')"
-                                                    :options="\App\Support\BankList::options(old('bank_name', $emp->bank_name))"
-                                                    :value="old('bank_name', $emp->bank_name)"
-                                                    required
-                                                />
-                                            </div>
-                                            <div>
-                                                <label class="form-label tw:font-semibold">{{ __('ga.detail.bank_number') }}</label>
-                                                <input type="text" name="account_number" class="form-control form-control-sm" value="{{ $emp->account_number }}" required>
-                                            </div>
-                                            <div>
-                                                <label class="form-label tw:font-semibold">{{ __('ga.review.account_holder') }}</label>
-                                                <input type="text" name="account_holder_name" class="form-control form-control-sm" value="{{ $emp->account_holder_name }}" required>
-                                            </div>
-                                            <div>
-                                                <label class="form-label tw:font-semibold">{{ __('ga.labels.employee_status') }}</label>
-                                                <select name="is_active" class="form-select form-select-sm">
-                                                    <option value="1" @selected($emp->is_active)>{{ __('ga.labels.active_claims') }}</option>
-                                                    <option value="0" @selected(! $emp->is_active)>{{ __('common.labels_review.inactive') }}</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                        <div class="modal-footer tw:gap-2">
-                                            <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">
-                                                <span>{{ __('local_invoice.actions.cancel') }}</span>
-                                            </x-ui.button>
-                                            <x-ui.button type="submit" variant="primary" size="sm">
-                                                <span>{{ __('local_invoice.actions.save_changes') }}</span>
-                                            </x-ui.button>
-                                        </div>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
                     @empty
                         <tr>
                             <td colspan="7" class="text-center tw:py-8 tw:text-on-surface-variant">
@@ -212,6 +151,69 @@
         @endif
     </x-ui.data-table>
 </div>
+
+{{-- Edit Employee Modals (placed outside table for valid HTML5 DOM & stacking) --}}
+@foreach($employees as $emp)
+    <div class="modal fade ui-density-modal" id="editEmployeeModal-{{ $emp->id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <form method="POST" action="{{ route('ga.employees.update', $emp) }}">
+                @csrf
+                @method('PUT')
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title tw:text-ui-sm tw:font-bold">{{ __('ga.actions.edit_employee') }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('local_invoice.actions.close') }}"></button>
+                    </div>
+                    <div class="modal-body tw:space-y-3 tw:text-ui-xs">
+                        <div>
+                            <label class="form-label tw:font-semibold">{{ __('common.fields.full_name') }}</label>
+                            <input type="text" name="name" class="form-control form-control-sm" value="{{ $emp->name }}" required>
+                        </div>
+                        <div>
+                            <label class="form-label tw:font-semibold">{{ __('local_invoice.labels.department') }}</label>
+                            <input type="text" name="department" class="form-control form-control-sm" value="{{ $emp->department }}" required>
+                        </div>
+                        <div>
+                            <x-ui.searchable-select
+                                name="bank_name"
+                                id="bank_name_edit_{{ $emp->id }}"
+                                :label="__('ga.review.bank')"
+                                :placeholder="__('ga.review.choose_bank')"
+                                :search-placeholder="__('ga.review.bank_search')"
+                                :options="\App\Support\BankList::options(old('bank_name', $emp->bank_name))"
+                                :value="old('bank_name', $emp->bank_name)"
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label class="form-label tw:font-semibold">{{ __('ga.detail.bank_number') }}</label>
+                            <input type="text" name="account_number" class="form-control form-control-sm" value="{{ $emp->account_number }}" required>
+                        </div>
+                        <div>
+                            <label class="form-label tw:font-semibold">{{ __('ga.review.account_holder') }}</label>
+                            <input type="text" name="account_holder_name" class="form-control form-control-sm" value="{{ $emp->account_holder_name }}" required>
+                        </div>
+                        <div>
+                            <label class="form-label tw:font-semibold">{{ __('ga.labels.employee_status') }}</label>
+                            <select name="is_active" class="form-select form-select-sm">
+                                <option value="1" @selected($emp->is_active)>{{ __('ga.labels.active_claims') }}</option>
+                                <option value="0" @selected(! $emp->is_active)>{{ __('common.labels_review.inactive') }}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer tw:gap-2">
+                        <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">
+                            <span>{{ __('local_invoice.actions.cancel') }}</span>
+                        </x-ui.button>
+                        <x-ui.button type="submit" variant="primary" size="sm">
+                            <span>{{ __('local_invoice.actions.save_changes') }}</span>
+                        </x-ui.button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+@endforeach
 
 {{-- Add Employee Modal --}}
 <div class="modal fade ui-density-modal" id="addEmployeeModal" tabindex="-1" aria-hidden="true">
