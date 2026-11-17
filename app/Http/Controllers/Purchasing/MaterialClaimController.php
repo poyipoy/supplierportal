@@ -79,7 +79,8 @@ class MaterialClaimController extends Controller
         $query = MaterialClaim::with(['purchaseOrder.supplier', 'inspection'])
             ->orderBy('created_at', 'desc');
 
-        return DataTables::eloquent($query)
+        $payload = DataTables::eloquent($query)
+            ->setRowId(fn (MaterialClaim $c): string => $c->getRouteKey())
             ->addColumn('claim_id', fn ($c) => $c->claim_number)
             ->addColumn('po_number', fn ($c) => $c->purchaseOrder->po_number ?? '-')
             ->addColumn('supplier_name', fn ($c) => $c->purchaseOrder->supplier->name ?? '-')
@@ -101,7 +102,11 @@ class MaterialClaimController extends Controller
             })
             ->addColumn('action', fn ($c) => '<a href="'.PurchasingNavigation::toRoute('purchasing.claims.show', $c).'" class="ui-data-action ui-data-action--primary ui-focus-ring">'.e(__('claims.copy.details')).'</a>')
             ->rawColumns(['deadline_display', 'status_badge', 'action'])
-            ->make(true);
+            ->toArray();
+
+        PurchasingNavigation::rememberRecordWindowFromDataTable('purchasing.claims.index', $payload, $request);
+
+        return response()->json($payload);
     }
 
     public function create($inspection_id)
@@ -212,7 +217,13 @@ class MaterialClaimController extends Controller
             'submitter',
         ])->findOrFail($id);
 
-        return view('purchasing.claims.show', compact('claim'));
+        $recordNav = PurchasingNavigation::recordWindowNavigation(
+            'purchasing.claims.index',
+            'purchasing.claims.show',
+            $claim->getRouteKey(),
+        );
+
+        return view('purchasing.claims.show', compact('claim', 'recordNav'));
     }
 
     public function resolve($id)

@@ -32,6 +32,7 @@
         :title="__('purchasing.closure.quotation_title', ['number' => $quotation->purchaseRequisition->pr_number ?? '-'])"
         :eyebrow="__('purchasing.copy.commercial_evaluation')"
         :description="__('purchasing.page.quotation_help', ['reference' => $quotation->purchaseRequisition->pr_number ?? __('purchasing.copy.quotation'), 'supplier' => $supplierDisplayName])"
+        :record-nav="$recordNav ?? null"
     >
         <x-slot:actions>
             <x-status-badge type="quotation" :status="$quotation->status" size="lg" />

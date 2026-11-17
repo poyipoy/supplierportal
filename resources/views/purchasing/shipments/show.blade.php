@@ -60,6 +60,7 @@
         :title="__('shipments.closure.title', ['number' => $shipment->shipment_number])"
         :eyebrow="__('shipments.copy.consignment_logistics_receiving')"
         :description="__('shipments.copy.physical_delivery_verification_consolidated_shipping_documents_and_receiving_status')"
+        :record-nav="$recordNav ?? null"
     >
         <x-slot:actions>
             <div class="tw:flex tw:flex-wrap tw:gap-2 align-items-center">

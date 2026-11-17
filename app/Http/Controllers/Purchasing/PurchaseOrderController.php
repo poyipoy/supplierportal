@@ -21,9 +21,11 @@ use App\Support\BusinessTime;
 use App\Support\HashidCodec;
 use App\Support\NotificationCategory;
 use App\Support\PurchasingNavigation;
+use App\Support\ServerTabsResponse;
 use App\Support\StatusHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Yajra\DataTables\Facades\DataTables;
 
@@ -86,8 +88,16 @@ class PurchaseOrderController extends Controller
         $query->withExists('shipmentItems as has_shipment_items');
 
         if ($request->ajax()) {
-            return DataTables::eloquent($query)
+            $payload = DataTables::eloquent($query)
                 ->filter(fn ($query) => null)
+                ->setRowId(fn (PurchaseOrder $po): string => $po->getRouteKey())
+                ->setRowAttr([
+                    'data-mmt-row-url' => fn (PurchaseOrder $po): string => route('purchasing.purchase-orders.satellite', $po, false),
+                    'data-mmt-row-ref' => fn (PurchaseOrder $po): string => (string) $po->po_number,
+                    'tabindex' => '0',
+                    'role' => 'row',
+                    'aria-selected' => 'false',
+                ])
                 ->addColumn('po_number_display', fn ($po) => $po->po_number)
                 ->addColumn('supplier_name', fn ($po) => $po->supplier->name ?? '-')
                 ->addColumn('period_name', function ($po) {
@@ -172,7 +182,11 @@ class PurchaseOrderController extends Controller
                     'estimated_date',
                     'action',
                 ])
-                ->make(true);
+                ->toArray();
+
+            PurchasingNavigation::rememberRecordWindowFromDataTable('purchasing.purchase-orders.index', $payload, $request);
+
+            return response()->json($payload);
         }
 
         $suppliers = User::importEligible()
@@ -276,8 +290,74 @@ class PurchaseOrderController extends Controller
         $totalDocs = max(count($customsSummary), 4);
         $allDocsComplete = ($completedDocs >= 4);
         $docProgress = StatusHelper::documentProgressMeta($completedDocs, $totalDocs);
+        $recordNav = PurchasingNavigation::recordWindowNavigation(
+            'purchasing.purchase-orders.index',
+            'purchasing.purchase-orders.show',
+            $po->getRouteKey(),
+        );
 
-        return view('purchasing.po.show', compact('po', 'quotationRates', 'completedDocs', 'totalDocs', 'allDocsComplete', 'docProgress', 'itemProjections', 'poProgressSummary', 'customsSummary', 'customsProgress'));
+        return view('purchasing.po.show', compact('po', 'quotationRates', 'completedDocs', 'totalDocs', 'allDocsComplete', 'docProgress', 'itemProjections', 'poProgressSummary', 'customsSummary', 'customsProgress', 'recordNav'));
+    }
+
+    /**
+     * Render the Master-Satellite preview tabs for a single Purchase Order.
+     */
+    public function satellite(Request $request, $id, RegionalDisplayFormatter $regionalFormatter)
+    {
+        $po = PurchaseOrder::query()
+            ->with([
+                'supplier:id,name',
+                'awards.prItem',
+                'awards.quotation',
+                'awards.quotationItem',
+                'quotations.items.prItem',
+                'quotations.purchaseRequisition:id,pr_number,period_id',
+                'quotations.exchange_rate',
+                'shipmentItems.shipment',
+                'materialClaims',
+            ])
+            ->findOrFail($id);
+
+        Gate::authorize('view', $po);
+
+        if (! ServerTabsResponse::wants($request)) {
+            return redirect()->route('purchasing.purchase-orders.show', $po);
+        }
+
+        $orderedLines = $po->orderedLines();
+        $shipments = $po->shipments();
+        $claims = $po->materialClaims->sortByDesc('created_at')->values();
+
+        $allowedTabs = ['items', 'shipments', 'claims'];
+        $activeTab = (string) $request->query('tab', 'items');
+        if (! in_array($activeTab, $allowedTabs, true)) {
+            $activeTab = 'items';
+        }
+
+        $counts = [
+            'items' => $orderedLines->count(),
+            'shipments' => $shipments->count(),
+            'claims' => $claims->count(),
+        ];
+
+        $viewData = [
+            'po' => $po,
+            'activeTab' => $activeTab,
+            'counts' => $counts,
+            'orderedLines' => $orderedLines,
+            'shipments' => $shipments,
+            'claims' => $claims,
+            'regionalFormatter' => $regionalFormatter,
+        ];
+
+        return ServerTabsResponse::make(
+            html: view('purchasing.po._mmt_satellite_content', $viewData)->render(),
+            tab: $activeTab,
+            request: $request,
+            extra: [
+                'nav' => view('purchasing.po._mmt_satellite_nav', $viewData)->render(),
+            ],
+        );
     }
 
     /**

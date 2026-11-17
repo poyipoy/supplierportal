@@ -86,6 +86,7 @@ class WorkspaceShell
         '*.errors',
         '*.records',
         '*.history',
+        '*.satellite',
     ];
 
     public static function enabled(): bool

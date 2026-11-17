@@ -48,6 +48,11 @@ class QuotationListController extends Controller
             ->paginate(20)
             ->appends($request->except(PurchasingNavigation::RETURN_URL_KEY));
 
+        PurchasingNavigation::rememberRecordWindow(
+            'purchasing.quotations.index',
+            $quotations->getCollection()->map->getRouteKey()->all(),
+        );
+
         $suppliers = User::importEligible()
             ->orWhereIn('id', DB::table('quotations')->distinct()->pluck('supplier_id'))
             ->orderBy('name')->get();
@@ -143,6 +148,12 @@ class QuotationListController extends Controller
             ->filter(fn (QuotationItem $item) => $item->is_available)
             ->mapWithKeys(fn (QuotationItem $item) => [$item->id => $referenceResolver->resolve($item, EvaluationContext::current(), (string) $quotation->currency)]);
 
+        $recordNav = PurchasingNavigation::recordWindowNavigation(
+            'purchasing.quotations.index',
+            'purchasing.quotations.show',
+            $quotation->getRouteKey(),
+        );
+
         return view('purchasing.quotations.show', compact(
             'quotation',
             'quotationRate',
@@ -157,7 +168,8 @@ class QuotationListController extends Controller
             'directPoTotalAmount',
             'directPoTotalIdr',
             'orderedQuantityWriteEnabled',
-            'referencePrices'
+            'referencePrices',
+            'recordNav'
         ));
     }
 

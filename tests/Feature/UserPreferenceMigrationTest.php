@@ -30,8 +30,11 @@ class UserPreferenceMigrationTest extends TestCase
         $locale = require database_path('migrations/2026_10_04_000001_add_locale_to_user_preferences_table.php');
         $importTimezone = require database_path('migrations/2026_11_06_000001_add_import_timezone_to_user_preferences_table.php');
         $shellStyle = require database_path('migrations/2026_11_16_000001_add_shell_style_to_user_preferences_table.php');
+        $quickFlow = require database_path('migrations/2026_11_17_000001_add_quick_flow_to_user_preferences_table.php');
 
         try {
+            $quickFlow->down();
+            $this->assertFalse(Schema::hasColumn('user_preferences', 'quick_flow'));
             $shellStyle->down();
             $this->assertFalse(Schema::hasColumn('user_preferences', 'shell_style'));
             $importTimezone->down();
@@ -75,7 +78,10 @@ class UserPreferenceMigrationTest extends TestCase
             $shellStyle->up();
             $this->assertTrue(Schema::hasColumn('user_preferences', 'shell_style'));
             $this->assertSame('classic', $user->fresh()->preference->shell_style);
-            $this->assertDatabaseHas('user_preferences', ['user_id' => $user->id, 'theme' => 'dark', 'timezone' => 'system', 'shell_style' => 'classic', 'revision' => 7]);
+            $quickFlow->up();
+            $this->assertTrue(Schema::hasColumn('user_preferences', 'quick_flow'));
+            $this->assertFalse((bool) $user->fresh()->preference->quick_flow);
+            $this->assertDatabaseHas('user_preferences', ['user_id' => $user->id, 'theme' => 'dark', 'timezone' => 'system', 'shell_style' => 'classic', 'quick_flow' => false, 'revision' => 7]);
         } finally {
             if (! Schema::hasTable('user_preferences')) {
                 $migration->up();
@@ -97,6 +103,9 @@ class UserPreferenceMigrationTest extends TestCase
             }
             if (! Schema::hasColumn('user_preferences', 'shell_style')) {
                 $shellStyle->up();
+            }
+            if (! Schema::hasColumn('user_preferences', 'quick_flow')) {
+                $quickFlow->up();
             }
         }
     }

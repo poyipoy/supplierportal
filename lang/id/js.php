@@ -56,6 +56,7 @@ return [
     'server_tabs.failed' => 'Gagal memuat data. Coba beberapa saat lagi.',
     'server_tabs.unpaid' => ':count batch belum lunas',
     'server_tabs.paid' => ':count batch selesai dibayar',
+    'server_tabs.retry' => 'Coba lagi',
     'upload.file' => 'Berkas :number',
     'upload.extension' => 'Berkas ":name" dilewati. Pilih format :formats.',
     'upload.size' => 'Berkas melebihi :limit MB (:size). Pilih berkas lebih kecil.',

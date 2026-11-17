@@ -162,6 +162,7 @@
         :title="$po->po_number"
         :eyebrow="__('purchasing.copy.purchase_order_details')"
         :description="__('purchasing.page.po_help', ['supplier' => $po->supplier->name])"
+        :record-nav="$recordNav ?? null"
     >
         <x-slot:actions>
             <x-status-badge type="po" :status="$po->status" :is-overdue="$po->is_overdue" size="lg" />

@@ -117,6 +117,16 @@ return [
     'keyboard_shortcuts' => 'Pintasan Keyboard',
     'back_dashboard' => 'Kembali ke Dashboard',
     'open_help' => 'Buka Bantuan Ini',
+    'shortcut_prev_record' => 'Dokumen Sebelumnya',
+    'shortcut_next_record' => 'Dokumen Berikutnya',
+    'record_nav' => [
+        'label' => 'Navigasi dokumen',
+        'previous' => 'Sebelumnya',
+        'next' => 'Berikutnya',
+        'previous_hint' => 'Dokumen sebelumnya (Alt + [)',
+        'next_hint' => 'Dokumen berikutnya (Alt + ])',
+        'position' => 'Dokumen :position dari :total',
+    ],
     'just_now' => 'Baru saja',
     'quick' => [
         'dashboard' => 'Dashboard',

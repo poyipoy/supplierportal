@@ -257,6 +257,7 @@ Route::prefix(PortalPath::prefix())->group(function () {
             Route::get('/po-documents/{poDocumentBatch}', [LocalPoDocumentBatchController::class, 'status'])->name('po-documents.status');
             Route::post('/po-documents/{poDocumentBatch}/retry', [LocalPoDocumentBatchController::class, 'retry'])->middleware('throttle:15,1')->name('po-documents.retry');
             Route::get('/{purchaseOrder}/goods-receipts/data', LocalGoodsReceiptTableController::class)->name('goods-receipts.data');
+            Route::get('/{purchaseOrder}/satellite', [LocalProcurementController::class, 'satellite'])->name('satellite');
             Route::get('/{purchaseOrder}', [LocalProcurementController::class, 'show'])->name('show');
             Route::get('/{purchaseOrder}/edit', [LocalProcurementController::class, 'edit'])->name('edit');
             Route::put('/{purchaseOrder}', [LocalProcurementController::class, 'update'])->name('update');
@@ -610,6 +611,7 @@ Route::prefix(PortalPath::prefix())->group(function () {
         Route::get('/purchase-orders', [PurchaseOrderController::class, 'index'])->name('purchase-orders.index');
         Route::get('/purchase-orders/consolidate-awards', [AwardConsolidationController::class, 'create'])->name('purchase-orders.consolidate-awards');
         Route::post('/purchase-orders/consolidate-awards', [AwardConsolidationController::class, 'store'])->name('purchase-orders.consolidate-awards.store');
+        Route::get('/purchase-orders/{id}/satellite', [PurchaseOrderController::class, 'satellite'])->name('purchase-orders.satellite');
         Route::get('/purchase-orders/{id}', [PurchaseOrderController::class, 'show'])->name('purchase-orders.show');
         Route::post('/purchase-orders/{id}/respond-promise-change', [PurchaseOrderController::class, 'respondPromiseChange'])->middleware('throttle:30,1')->name('purchase-orders.respond-promise-change');
         Route::get('/purchase-orders/{po_id}/items/{award_id}/progress/history', [PoItemProgressController::class, 'history'])->name('purchase-orders.item-progress.history');
@@ -714,6 +716,7 @@ Route::prefix(PortalPath::prefix())->group(function () {
             Route::get('/po-documents/{poDocumentBatch}', [LocalPoDocumentBatchController::class, 'status'])->name('po-documents.status');
             Route::post('/po-documents/{poDocumentBatch}/retry', [LocalPoDocumentBatchController::class, 'retry'])->middleware('throttle:15,1')->name('po-documents.retry');
             Route::get('/{purchaseOrder}/goods-receipts/data', LocalGoodsReceiptTableController::class)->name('goods-receipts.data');
+            Route::get('/{purchaseOrder}/satellite', 'satellite')->name('satellite');
             Route::get('/{purchaseOrder}', 'show')->name('show');
             Route::get('/{purchaseOrder}/edit', 'edit')->name('edit');
             Route::put('/{purchaseOrder}', 'update')->name('update');

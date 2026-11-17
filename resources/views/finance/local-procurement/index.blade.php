@@ -141,11 +141,20 @@
         </x-ui.toolbar>
     </form>
 
-    {{-- Data Table --}}
-    <x-ui.data-table
-        :title="__('local_procurement.list.local')"
-        :description="__('local_procurement.register.po_count', ['count' => $purchaseOrders->total()])"
+    {{-- Multi Main Table Workspace (Master + Satellite Preview) --}}
+    <x-ui.mmt-workspace
+        id="localPoMmtWorkspace"
+        satellite-id="local-po-mmt-satellite"
+        :master-label="__('local_procurement.mmt.master_label')"
+        :satellite-title="__('local_procurement.mmt.satellite_title')"
+        :satellite-empty-title="__('local_procurement.mmt.satellite_empty_title')"
+        :satellite-empty="__('local_procurement.mmt.satellite_empty')"
+        :master-frameless="true"
     >
+        <x-ui.data-table
+            :title="__('local_procurement.list.local')"
+            :description="__('local_procurement.register.po_count', ['count' => $purchaseOrders->total()])"
+        >
         <div class="table-responsive">
             <table class="table table-hover align-middle tw:m-0 tw:text-ui-sm w-100">
                 <thead class="table-light">
@@ -163,7 +172,12 @@
                 </thead>
                 <tbody>
                     @forelse($purchaseOrders as $po)
-                        <tr>
+                        <tr
+                            data-mmt-row-url="{{ route($routePrefix.'.satellite', $po, false) }}"
+                            data-mmt-row-ref="{{ $po->po_number }}"
+                            tabindex="0"
+                            aria-selected="false"
+                        >
                             <td>
                                 <div class="d-flex align-items-center tw:gap-1.5">
                                     <a href="{{ route($routePrefix.'.show', $po) }}" class="ui-tabular-nums tw:font-semibold tw:text-primary hover:tw-text-primary-hover tw:no-underline tw:hover:underline">
@@ -239,7 +253,8 @@
                 {{ $purchaseOrders->links() }}
             </x-slot:pagination>
         @endif
-    </x-ui.data-table>
+        </x-ui.data-table>
+    </x-ui.mmt-workspace>
 </div>
 
 @include('finance.local-procurement._import_po_modal')

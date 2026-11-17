@@ -117,6 +117,16 @@ return [
     'keyboard_shortcuts' => 'Keyboard Shortcuts',
     'back_dashboard' => 'Back to Dashboard',
     'open_help' => 'Open This Help',
+    'shortcut_prev_record' => 'Previous Record',
+    'shortcut_next_record' => 'Next Record',
+    'record_nav' => [
+        'label' => 'Record navigation',
+        'previous' => 'Previous',
+        'next' => 'Next',
+        'previous_hint' => 'Previous record (Alt + [)',
+        'next_hint' => 'Next record (Alt + ])',
+        'position' => 'Record :position of :total',
+    ],
     'just_now' => 'Just now',
     'quick' => [
         'dashboard' => 'Dashboard',

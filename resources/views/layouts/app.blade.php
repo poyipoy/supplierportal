@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ app()->getLocale() }}" class="js" @if($isWorkspaceShell ?? false) data-workspace-shell="true" @endif @if(($isWorkspaceEmbed ?? false) && ! isset($exception)) data-workspace-embed="true" @endif>
+<html lang="{{ app()->getLocale() }}" class="js" @auth data-quick-flow="{{ ! empty($preferenceFrontendPayload['quickFlow'] ?? false) ? 'true' : 'false' }}" @endauth @if($isWorkspaceShell ?? false) data-workspace-shell="true" @endif @if(($isWorkspaceEmbed ?? false) && ! isset($exception)) data-workspace-embed="true" @endif>
 
 <head>
     @php
@@ -101,6 +101,9 @@
                 };
 
                 root.dataset.sidebarCollapsed = String(window.matchMedia('(min-width: 992px)').matches && sidebarCollapsed);
+                const quickFlowEnabled = Boolean(preferences.quickFlow);
+                root.dataset.quickFlow = String(quickFlowEnabled);
+                try { window.localStorage.setItem('adasi.quick_flow.' + preferences.accountId, String(quickFlowEnabled)); } catch (error) { /* Keep the in-memory state. */ }
                 window.__adasiSidebarInitialCollapsed = sidebarCollapsed;
                 window.AdasiSidebarPreferences = Object.freeze({
                     read: () => sidebarCollapsed,
@@ -893,8 +896,29 @@
     {{-- Keyboard Shortcuts --}}
     <script>
         document.addEventListener('keydown', function (e) {
-            // Ignore shortcuts while focus is inside a form field.
-            if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
+            const active = document.activeElement;
+            if (active && (['INPUT', 'TEXTAREA', 'SELECT'].includes(active.tagName) || active.isContentEditable)) {
+                return;
+            }
+            if (document.querySelector('.modal.show')) {
+                return;
+            }
+
+            if (e.altKey && (e.code === 'BracketLeft' || e.key === '[')) {
+                const prevLink = document.querySelector('a[data-record-nav="prev"][href]');
+                if (prevLink) {
+                    e.preventDefault();
+                    prevLink.click();
+                }
+                return;
+            }
+
+            if (e.altKey && (e.code === 'BracketRight' || e.key === ']')) {
+                const nextLink = document.querySelector('a[data-record-nav="next"][href]');
+                if (nextLink) {
+                    e.preventDefault();
+                    nextLink.click();
+                }
                 return;
             }
 
@@ -932,6 +956,14 @@
                                 <tr>
                                     <td width="40%"><kbd>Alt + D</kbd></td>
                                     <td>{{ __('navigation.back_dashboard') }}</td>
+                                </tr>
+                                <tr>
+                                    <td><kbd>Alt + [</kbd></td>
+                                    <td>{{ __('navigation.shortcut_prev_record') }}</td>
+                                </tr>
+                                <tr>
+                                    <td><kbd>Alt + ]</kbd></td>
+                                    <td>{{ __('navigation.shortcut_next_record') }}</td>
                                 </tr>
                                 <tr>
                                     <td><kbd>?</kbd></td>

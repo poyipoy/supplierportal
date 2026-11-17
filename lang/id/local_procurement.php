@@ -722,4 +722,30 @@ return [
         'supplier_ineligible' => 'Supplier harus aktif dan memenuhi syarat pengadaan lokal sebelum dokumen dipulihkan.',
         'po_open_required' => 'Pulihkan atau buka PO sebelum memulihkan GR ini.',
     ],
+    'mmt' => [
+        'master_label' => 'Daftar Purchase Order Lokal',
+        'satellite_title' => 'Detail PO Lokal Terpilih',
+        'satellite_empty_title' => 'Pilih baris PO Lokal',
+        'satellite_empty' => 'Klik baris PO di atas (atau tekan Enter) untuk melihat Goods Receipt, invoice terkait, dan dokumen PDF PO di sini.',
+        'open_detail' => 'Buka Detail PO',
+        'tabs' => [
+            'goods_receipts' => 'Goods Receipt',
+            'invoices' => 'Invoice',
+            'documents' => 'Dokumen PO',
+        ],
+        'empty' => [
+            'goods_receipts' => 'Belum ada Goods Receipt yang tercatat untuk PO ini.',
+            'invoices' => 'Belum ada invoice yang terhubung ke PO ini.',
+            'documents' => 'Belum ada dokumen PDF PO yang diunggah.',
+        ],
+        'fields' => [
+            'submission_number' => 'No. Pengajuan',
+            'invoice_number' => 'No. Invoice',
+            'invoice_date' => 'Tanggal Invoice',
+            'invoice_amount' => 'Nominal Invoice',
+            'document_file' => 'Berkas Dokumen',
+            'uploaded_at' => 'Diunggah Pada',
+            'open_pdf' => 'Buka PDF',
+        ],
+    ],
 ];

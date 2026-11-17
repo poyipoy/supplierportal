@@ -1290,4 +1290,21 @@ return [
             'rejected_body' => 'Purchasing menolak usulan tanggal kirim untuk Purchase Order :po. Silakan tinjau kembali.',
         ],
     ],
+    'mmt' => [
+        'master_label' => 'Daftar Purchase Order Impor',
+        'satellite_title' => 'Pratinjau Purchase Order Terpilih',
+        'satellite_empty_title' => 'Pilih baris Purchase Order',
+        'satellite_empty' => 'Klik salah satu baris pada tabel di atas (atau tekan Enter) untuk melihat item pesanan, pengiriman, dan klaim material tanpa meninggalkan halaman.',
+        'open_detail' => 'Buka Detail PO',
+        'tabs' => [
+            'items' => 'Item Dipesan',
+            'shipments' => 'Pengiriman',
+            'claims' => 'Klaim Material',
+        ],
+        'empty' => [
+            'items' => 'Belum ada item pesanan pada PO ini.',
+            'shipments' => 'Belum ada pengiriman yang terhubung ke PO ini.',
+            'claims' => 'Tidak ada klaim material untuk PO ini.',
+        ],
+    ],
 ];

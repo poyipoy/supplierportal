@@ -22,12 +22,17 @@ function settingsFixture(overrides = {}, draft = {}) {
     const previousWindow = globalThis.window;
     const previousDocument = globalThis.document;
     const saved = {
-        theme: 'light', shell_style: 'classic', accent: 'brand', density: 'comfortable', sidebar_state: 'expanded', page_size: '25',
+        theme: 'light', shell_style: 'classic', accent: 'brand', density: 'comfortable', sidebar_state: 'expanded', quick_flow: false, page_size: '25',
         locale: 'en', timezone: 'system', date_format: 'system', time_format: 'system', number_format: 'system',
         dashboardOrder: [], dashboardHidden: [], quickAccess: [], ...overrides,
     };
     const fields = Object.fromEntries(Object.entries({ ...saved, ...draft }).filter(([, value]) => !Array.isArray(value)).map(([name, value]) => [name, {
-        name, value, type: 'select-one', disabled: false, hidden: false,
+        name,
+        value: typeof value === 'boolean' ? '1' : value,
+        checked: typeof value === 'boolean' ? value : false,
+        type: typeof value === 'boolean' ? 'checkbox' : 'select-one',
+        disabled: false,
+        hidden: false,
         hasAttribute: () => false,
         closest: () => null,
     }]));
@@ -72,7 +77,7 @@ function settingsFixture(overrides = {}, draft = {}) {
     globalThis.document = { querySelectorAll: () => [] };
     const form = customizationForm({
         saved,
-        defaults: { ...saved, theme: 'system', shell_style: 'classic', accent: 'brand', density: 'comfortable', sidebar_state: 'expanded', page_size: '25' },
+        defaults: { ...saved, theme: 'system', shell_style: 'classic', accent: 'brand', density: 'comfortable', sidebar_state: 'expanded', quick_flow: false, page_size: '25' },
         densityKeys,
         densityLabels: Object.fromEntries(densityKeys.map(key => [key, key[0].toUpperCase() + key.slice(1)])),
         otherContextCount: 0, quickAccessLimit: 6, hasServerErrors: false,
@@ -289,5 +294,30 @@ test('shell_style supports live preview, dirty tracking, appearance reset, and d
         form.resetSection('appearance');
         assert.equal(effective.shellStyle, 'classic');
         assert.equal(fields.shell_style.value, 'classic');
+    } finally { fixture.cleanup(); }
+});
+
+test('quick_flow boolean switch tracks dirty state, discard, and appearance reset', () => {
+    const fixture = settingsFixture({ theme: 'system', quick_flow: false });
+    const { form, fields, emit } = fixture;
+    try {
+        form.init();
+        assert.equal(form.dirtyCount, 0);
+
+        fields.quick_flow.checked = true;
+        emit(fields.quick_flow, 'change');
+        assert.equal(form.dirtyCount, 1);
+
+        form.discard();
+        assert.equal(fields.quick_flow.checked, false);
+        assert.equal(form.dirtyCount, 0);
+
+        fields.quick_flow.checked = true;
+        emit(fields.quick_flow, 'change');
+        assert.equal(form.dirtyCount, 1);
+
+        form.resetSection('appearance');
+        assert.equal(fields.quick_flow.checked, false);
+        assert.equal(form.dirtyCount, 0);
     } finally { fixture.cleanup(); }
 });

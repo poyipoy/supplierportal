@@ -1208,7 +1208,9 @@
         confirmationOpen = true;
 
         try {
-            if (await confirmExport(control)) {
+            const bypassConfirm = control?.dataset?.quickFlow === 'true'
+                || Boolean(window.AdasiQuickFlow?.isEnabled?.(control, 'export'));
+            if (bypassConfirm || await confirmExport(control)) {
                 await startExport(control);
             }
         } finally {

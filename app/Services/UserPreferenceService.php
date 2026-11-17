@@ -88,6 +88,7 @@ class UserPreferenceService
                 'theme' => $stored->theme,
                 'density' => self::normalizeDensity($stored->density),
                 'sidebar_state' => $stored->sidebar_state,
+                'quick_flow' => (bool) ($stored->quick_flow ?? $defaults['quick_flow']),
                 'page_size' => $stored->page_size,
                 'quick_access' => is_array($stored->quick_access) ? $stored->quick_access : [],
                 'revision' => $stored->revision,
@@ -154,6 +155,9 @@ class UserPreferenceService
                 'theme' => $values['theme'],
                 'density' => $values['density'],
                 'sidebar_state' => $values['sidebar_state'],
+                'quick_flow' => array_key_exists('quick_flow', $values)
+                    ? (bool) $values['quick_flow']
+                    : (bool) ($stored?->quick_flow ?? config('user_preferences.defaults.quick_flow')),
                 'page_size' => $values['page_size'],
                 'quick_access' => $quickAccess,
                 'accent' => $values['accent'] ?? $savedAccent,
@@ -326,6 +330,7 @@ class UserPreferenceService
             'shellStyle' => $preferences['shell_style'],
             'shellStyleKeys' => array_keys(config('user_preferences.shell_styles')),
             'sidebarState' => $preferences['sidebar_state'],
+            'quickFlow' => (bool) ($preferences['quick_flow'] ?? false),
             'pageSize' => $preferences['page_size'],
             'sidebarRevision' => $this->sidebarCacheVersion($user, $preferences),
             'accountId' => (string) $user->getKey(),

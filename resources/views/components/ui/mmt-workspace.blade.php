@@ -3,11 +3,14 @@
     'satelliteId' => null,
     'masterLabel' => '',
     'satelliteTitle' => '',
+    'satelliteEmptyTitle' => '',
     'satelliteEmpty' => '',
+    'masterFrameless' => false,
 ])
 
 @php
     $resolvedSatelliteId = $satelliteId ?: $id.'-satellite';
+    $resolvedEmptyTitle = $satelliteEmptyTitle !== '' ? $satelliteEmptyTitle : ($satelliteTitle !== '' ? $satelliteTitle : __('common.states.empty'));
 @endphp
 
 <div
@@ -17,7 +20,7 @@
     data-mmt-satellite-target="#{{ $resolvedSatelliteId }}"
 >
     <section
-        class="ui-card tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface tw:shadow-ui-1 tw:overflow-hidden"
+        class="{{ $masterFrameless ? 'tw:min-w-0' : 'ui-card tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface tw:shadow-ui-1 tw:overflow-hidden tw:min-w-0' }}"
         data-mmt-master-pane
         @if ($masterLabel !== '') aria-label="{{ $masterLabel }}" @endif
     >
@@ -33,7 +36,7 @@
     </section>
 
     <section
-        class="ui-card tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface tw:shadow-ui-1 tw:overflow-hidden"
+        class="ui-card tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface tw:shadow-ui-1 tw:overflow-hidden tw:min-w-0"
         data-mmt-satellite-pane-wrapper
         @if ($satelliteTitle !== '') aria-label="{{ $satelliteTitle }}" @endif
     >
@@ -45,7 +48,7 @@
                         <h2 class="tw:m-0 tw:truncate tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ $satelliteTitle }}</h2>
                     @endif
                     <span
-                        class="tw:hidden tw:inline-flex tw:items-center tw:rounded-ui-full tw:border tw:border-outline-variant tw:bg-surface-low tw:px-2.5 tw:py-0.5 tw:text-ui-xs tw:font-medium tw:text-on-surface-variant"
+                        class="tw:hidden tw:inline-flex tw:items-center tw:rounded-ui-full tw:border tw:border-outline-variant tw:bg-surface-low tw:px-2.5 tw:py-0.5 tw:text-ui-xs tw:font-semibold tw:text-primary ui-tabular-nums"
                         data-mmt-active-ref
                         hidden
                     ></span>
@@ -58,7 +61,7 @@
             <div class="tw:flex tw:items-center tw:gap-2 tw:border-b tw:border-outline-variant tw:bg-surface-container tw:px-4 tw:py-2" data-mmt-ref-bar hidden>
                 <x-ui.icon name="layers" size="xs" class="tw:shrink-0 tw:text-primary" aria-hidden="true" />
                 <span
-                    class="tw:hidden tw:inline-flex tw:items-center tw:rounded-ui-full tw:border tw:border-outline-variant tw:bg-surface-low tw:px-2.5 tw:py-0.5 tw:text-ui-xs tw:font-medium tw:text-on-surface-variant"
+                    class="tw:hidden tw:inline-flex tw:items-center tw:rounded-ui-full tw:border tw:border-outline-variant tw:bg-surface-low tw:px-2.5 tw:py-0.5 tw:text-ui-xs tw:font-semibold tw:text-primary ui-tabular-nums"
                     data-mmt-active-ref
                     hidden
                 ></span>
@@ -78,7 +81,12 @@
                 @isset($satellite)
                     {{ $satellite }}
                 @elseif ($satelliteEmpty !== '')
-                    <p class="tw:m-0 tw:text-ui-sm tw:text-on-surface-variant">{{ $satelliteEmpty }}</p>
+                    <x-ui.empty-state
+                        icon="mouse-pointer-click"
+                        :title="$resolvedEmptyTitle"
+                        :description="$satelliteEmpty"
+                        class="tw:py-6"
+                    />
                 @endisset
             </div>
         </div>

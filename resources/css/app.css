@@ -3857,6 +3857,16 @@ html[data-sidebar-motion-ready="true"] {
 }
 tr[data-mmt-row-url] {
     cursor: pointer;
+    transition: background-color 140ms ease;
+}
+tr[data-mmt-row-url]:hover {
+    background-color: var(--md-surface-container-low);
+}
+tr[data-mmt-row-url].is-mmt-selected > td {
+    background-color: color-mix(in srgb, var(--md-primary) 7%, var(--md-surface));
+}
+tr[data-mmt-row-url].is-mmt-selected > td:first-child {
+    box-shadow: inset 3px 0 0 var(--md-primary);
 }
 tr[data-mmt-row-url]:focus-visible {
     outline: 2px solid var(--md-primary);

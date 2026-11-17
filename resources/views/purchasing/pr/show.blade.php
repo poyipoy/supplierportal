@@ -76,6 +76,7 @@
         :title="$pr->pr_number ?? __('purchasing.closure.pr_draft')"
         :eyebrow="__('purchasing.copy.purchase_requisition_details')"
         :description="__('purchasing.copy.review_material_requirements_invited_suppliers_quotation_responses_and_workflow_progress')"
+        :record-nav="$recordNav ?? null"
     >
         <x-slot:actions>
             <x-ui.button

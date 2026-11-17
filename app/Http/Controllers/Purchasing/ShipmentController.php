@@ -14,6 +14,7 @@ use App\Services\RegionalDisplayFormatter;
 use App\Services\ShipmentService;
 use App\Support\BusinessTime;
 use App\Support\NumberFormat;
+use App\Support\PurchasingNavigation;
 use App\Support\StatusHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -38,7 +39,8 @@ class ShipmentController extends Controller
         ShipmentExportFilters::apply($query, $filters);
 
         if ($request->ajax()) {
-            return DataTables::eloquent($query)
+            $payload = DataTables::eloquent($query)
+                ->setRowId(fn (Shipment $shp): string => $shp->getRouteKey())
                 ->addColumn('shipment_number_display', function ($shp) {
                     $url = route('purchasing.shipments.show', $shp);
 
@@ -93,10 +95,18 @@ class ShipmentController extends Controller
                     return '<a href="'.e($url).'" class="ui-data-action ui-data-action--primary">'.e(__('shipments.copy.details')).'</a>';
                 })
                 ->rawColumns(['shipment_number_display', 'consolidated_pos', 'items_count', 'total_qty', 'actual_weight', 'total_weight', 'shipment_date', 'shipment_date_display', 'estimated_arrival', 'actual_arrival', 'status_badge', 'action'])
-                ->toJson();
+                ->toArray();
+
+            PurchasingNavigation::rememberRecordWindowFromDataTable('purchasing.shipments.index', $payload, $request);
+
+            return response()->json($payload);
         }
 
         $shipments = $query->paginate(15)->withQueryString();
+        PurchasingNavigation::rememberRecordWindow(
+            'purchasing.shipments.index',
+            $shipments->getCollection()->map->getRouteKey()->all(),
+        );
         $suppliers = User::importEligible()
             ->orWhereIn('id', DB::table('purchase_orders')->distinct()->pluck('supplier_id'))
             ->orderBy('name')->get();
@@ -138,7 +148,13 @@ class ShipmentController extends Controller
 
         Gate::authorize('view', $shipment);
 
-        return view('purchasing.shipments.show', compact('shipment'));
+        $recordNav = PurchasingNavigation::recordWindowNavigation(
+            'purchasing.shipments.index',
+            'purchasing.shipments.show',
+            $shipment->getRouteKey(),
+        );
+
+        return view('purchasing.shipments.show', compact('shipment', 'recordNav'));
     }
 
     /**

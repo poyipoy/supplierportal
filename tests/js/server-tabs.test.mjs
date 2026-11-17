@@ -8,6 +8,22 @@ function makeClassList() {
         add: (...names) => names.forEach((name) => classes.add(name)),
         remove: (...names) => names.forEach((name) => classes.delete(name)),
         contains: (name) => classes.has(name),
+        toggle: (name, force) => {
+            if (force === undefined) {
+                if (classes.has(name)) {
+                    classes.delete(name);
+                    return false;
+                }
+                classes.add(name);
+                return true;
+            }
+            if (force) {
+                classes.add(name);
+                return true;
+            }
+            classes.delete(name);
+            return false;
+        },
     };
 }
 
@@ -47,6 +63,7 @@ const realFetch = globalThis.fetch;
 const toasts = [];
 const containers = new Map();
 const windowListeners = {};
+const documentListeners = {};
 
 globalThis.window = {
     history: { state: null, pushState() {}, replaceState() {} },
@@ -60,7 +77,8 @@ globalThis.document = {
     querySelector: (selector) => containers.get(selector) ?? null,
     querySelectorAll: () => [],
     createElement: () => makeElement({ querySelector: () => ({}) }),
-    addEventListener() {},
+    addEventListener(type, handler) { (documentListeners[type] ??= []).push(handler); },
+    dispatchEvent(event) { for (const handler of documentListeners[event.type] ?? []) handler(event); return true; },
 };
 
 await import('../../resources/js/server-tabs.js');
@@ -651,6 +669,164 @@ test('a failed managed Back restores its original physical position before notif
     } finally {
         console.error = originalConsoleError;
         history.restore();
+        restoreNetwork();
+    }
+});
+
+test('MMT row click, Enter/Space delegation, error retry, and clearMmtSelection work without pushState', async () => {
+    const calls = stubNetwork();
+    const realDocQuery = globalThis.document.querySelector;
+    const realWindowSelection = globalThis.window.getSelection;
+    const realLocation = globalThis.window.location;
+    const pushCalls = [];
+    const realPushState = globalThis.window.history.pushState;
+    const realCreateElement = globalThis.document.createElement;
+
+    try {
+        globalThis.window.location = { href: 'http://localhost/purchasing/purchase-orders', pathname: '/purchasing/purchase-orders', origin: 'http://localhost' };
+        globalThis.window.getSelection = () => ({ toString: () => '' });
+        globalThis.window.history.pushState = (...args) => pushCalls.push(args);
+
+        const navEl = makeElement();
+        const contentEl = makeElement({ innerHTML: '<p>empty prompt</p>' });
+        const overlays = [];
+        contentEl.appendChild = (child) => { overlays.push(child); return child; };
+        contentEl.querySelector = (sel) => (sel === '.server-tabs-loading-overlay' ? overlays.find((c) => c.className?.includes('loading-overlay')) ?? null : null);
+
+        const satListeners = {};
+        const satEl = makeElement({
+            id: 'sat-pane',
+            hasAttribute: (name) => name === 'data-mmt-satellite',
+            addEventListener: (type, fn) => { (satListeners[type] ??= []).push(fn); },
+            dispatchEvent: (event) => { for (const fn of satListeners[event.type] ?? []) fn(event); return true; },
+            querySelector: (sel) => (
+                sel === '[data-server-tabs-nav]' ? navEl
+                    : sel === '[data-server-tabs-content]' ? contentEl
+                        : null
+            ),
+        });
+        const refBadge = makeElement({ hidden: true });
+        const refBar = makeElement({ hidden: true });
+        let rowA;
+        let rowB;
+        const workspace = makeElement({
+            dataset: { mmtSatelliteTarget: '#sat-pane' },
+            querySelector: (sel) => (
+                sel === '[data-mmt-active-ref]' ? refBadge
+                    : sel === '[data-mmt-ref-bar]' ? refBar
+                        : sel === '[data-mmt-satellite][data-server-tabs-container]' ? satEl
+                            : null
+            ),
+            querySelectorAll: (sel) => (sel === 'tr[data-mmt-row-url].is-mmt-selected'
+                ? [rowA, rowB].filter((r) => r.classList.contains('is-mmt-selected'))
+                : []),
+        });
+        const masterPane = makeElement({
+            querySelectorAll: (sel) => (sel === 'tr[data-mmt-row-url].is-mmt-selected'
+                ? [rowA, rowB].filter((r) => r.classList.contains('is-mmt-selected'))
+                : []),
+        });
+        rowA = makeElement({
+            dataset: { mmtRowUrl: '/purchasing/purchase-orders/hashA/satellite', mmtRowRef: 'PO-001' },
+            closest: (sel) => (sel === '[data-mmt-workspace]' ? workspace : sel === '[data-mmt-master-pane]' ? masterPane : sel === 'tr[data-mmt-row-url]' ? rowA : null),
+        });
+        rowB = makeElement({
+            dataset: { mmtRowUrl: '/purchasing/purchase-orders/hashB/satellite', mmtRowRef: 'PO-002' },
+            closest: (sel) => (sel === '[data-mmt-workspace]' ? workspace : sel === '[data-mmt-master-pane]' ? masterPane : sel === 'tr[data-mmt-row-url]' ? rowB : null),
+        });
+
+        containers.set('#sat-pane', satEl);
+        globalThis.document.querySelector = (sel) => (
+            sel === '#sat-pane' ? satEl
+                : sel === '#mmt-ws' ? workspace
+                    : realDocQuery(sel)
+        );
+        globalThis.document.createElement = () => {
+            const el = makeElement({ children: [] });
+            el.appendChild = (child) => { el.children.push(child); return child; };
+            el.querySelector = () => ({});
+            return el;
+        };
+
+        window.AdasiServerTabs.init('#sat-pane');
+
+        const childButton = {
+            closest: (sel) => (sel === 'tr[data-mmt-row-url]' ? rowA : sel.includes('button') ? childButton : null),
+        };
+        const cellTarget = {
+            closest: (sel) => (sel === 'tr[data-mmt-row-url]' ? rowA : null),
+        };
+
+        // Clicking an inner button must not hijack MMT selection.
+        globalThis.document.dispatchEvent({ type: 'click', target: childButton, defaultPrevented: false });
+        assert.equal(calls.length, 0);
+
+        // Clicking row cell activates MMT and loads satellite without pushState.
+        globalThis.document.dispatchEvent({ type: 'click', target: cellTarget, defaultPrevented: false });
+        assert.equal(calls.length, 1);
+        assert.equal(calls[0].url, 'http://localhost/purchasing/purchase-orders/hashA/satellite');
+        assert.equal(calls[0].options.headers['X-Adasi-Server-Tabs'], '1');
+        assert.equal(rowA.classList.contains('is-mmt-selected'), true);
+        assert.equal(rowA.getAttribute('aria-selected'), 'true');
+        assert.equal(refBadge.textContent, 'PO-001');
+        assert.equal(refBadge.hidden, false);
+
+        calls[0].respond({ html: '<p>PO-001 details</p>', nav: '<a>Items</a>', tab: 'items', url: calls[0].url });
+        await settle();
+        assert.equal(contentEl.innerHTML, '<p>PO-001 details</p>');
+        assert.equal(navEl.innerHTML, '<a>Items</a>');
+        assert.equal(pushCalls.length, 0);
+
+        // Pressing Enter on row B switches selection and active badge.
+        let keyPrevented = false;
+        globalThis.document.dispatchEvent({
+            type: 'keydown',
+            key: 'Enter',
+            target: rowB,
+            defaultPrevented: false,
+            preventDefault() { keyPrevented = true; },
+        });
+        assert.equal(keyPrevented, true);
+        assert.equal(calls.length, 2);
+        assert.equal(rowA.classList.contains('is-mmt-selected'), false);
+        assert.equal(rowB.classList.contains('is-mmt-selected'), true);
+        assert.equal(refBadge.textContent, 'PO-002');
+        calls[1].respond({ html: '<p>PO-002 details</p>', nav: '<a>Items</a>', tab: 'items', url: calls[1].url });
+        await settle();
+
+        // clearMmtSelection clears highlight, badge, nav, and restores initial prompt.
+        window.AdasiServerTabs.clearMmtSelection('#mmt-ws');
+        assert.equal(rowB.classList.contains('is-mmt-selected'), false);
+        assert.equal(rowB.getAttribute('aria-selected'), 'false');
+        assert.equal(refBadge.hidden, true);
+        assert.equal(navEl.innerHTML, '');
+        assert.equal(contentEl.innerHTML, '<p>empty prompt</p>');
+
+        // Network failure inside [data-mmt-satellite] renders accessible [role="alert"] and allows retry.
+        const realConsoleError = console.error;
+        console.error = () => {};
+        const appended = [];
+        contentEl.appendChild = (child) => {
+            appended.push(child);
+            overlays.push(child);
+            return child;
+        };
+        try {
+            globalThis.fetch = async () => ({ ok: false, status: 500 });
+            await window.AdasiServerTabs.navigate('#sat-pane', 'http://localhost/purchasing/purchase-orders/hashFail/satellite', { pushHistory: false });
+            const alertBox = appended.find((node) => node.getAttribute('role') === 'alert');
+            assert.ok(alertBox, 'failed MMT load renders an alert panel');
+            const retryButton = alertBox.children.find((node) => node.getAttribute('data-mmt-retry-url'));
+            assert.equal(retryButton?.getAttribute('data-mmt-retry-url'), 'http://localhost/purchasing/purchase-orders/hashFail/satellite');
+        } finally {
+            console.error = realConsoleError;
+        }
+    } finally {
+        globalThis.document.querySelector = realDocQuery;
+        globalThis.document.createElement = realCreateElement;
+        globalThis.window.getSelection = realWindowSelection;
+        globalThis.window.location = realLocation;
+        globalThis.window.history.pushState = realPushState;
         restoreNetwork();
     }
 });

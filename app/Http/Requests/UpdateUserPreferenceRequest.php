@@ -38,6 +38,7 @@ class UpdateUserPreferenceRequest extends FormRequest
             'theme' => ['required', Rule::in(config('user_preferences.themes'))],
             'density' => ['required', 'string', Rule::in(config('user_preferences.densities'))],
             'sidebar_state' => ['required', Rule::in(config('user_preferences.sidebar_states'))],
+            'quick_flow' => ['sometimes', 'boolean'],
             'page_size' => ['required', 'integer', Rule::in(config('user_preferences.page_sizes'))],
             'quick_access' => ['sometimes', 'array', 'max:'.(int) config('user_preferences.quick_access_limit')],
             'quick_access.*' => ['string'],

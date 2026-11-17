@@ -29,6 +29,7 @@ class UserCustomizationTest extends TestCase
                     'theme' => 'system',
                     'density' => 'comfortable',
                     'sidebar_state' => 'expanded',
+                    'quick_flow' => false,
                     'page_size' => 25,
                     'quick_access' => [],
                     'revision' => 0,
@@ -417,6 +418,44 @@ class UserCustomizationTest extends TestCase
             $this->assertStringContainsString('value="'.$density.'"', $html);
         }
         $response->assertSee('data-density-label', false)->assertSee('ui-density-preview-frame', false);
+    }
+
+    public function test_quick_flow_preference_persists_syncs_layout_dataset_and_resets(): void
+    {
+        $user = User::factory()->create(['role' => 'purchasing']);
+
+        $this->actingAs($user)
+            ->get(route('profile.customization'))
+            ->assertOk()
+            ->assertSee('data-quick-flow="false"', false)
+            ->assertSee('name="quick_flow"', false);
+
+        $this->actingAs($user)
+            ->patch(route('profile.customization.update'), $this->validPreferences(['quick_flow' => '1']))
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('profile.customization'));
+
+        $this->assertTrue((bool) $user->fresh()->preference->quick_flow);
+
+        $this->actingAs($user)
+            ->get(route('purchasing.purchase-orders.index'))
+            ->assertOk()
+            ->assertSee('data-quick-flow="true"', false)
+            ->assertSee('\u0022quickFlow\u0022:true', false);
+
+        $this->actingAs($user)
+            ->patch(route('profile.customization.update'), $this->validPreferences(['quick_flow' => '0']))
+            ->assertSessionHasNoErrors();
+
+        $this->assertFalse((bool) $user->fresh()->preference->quick_flow);
+
+        $this->actingAs($user)
+            ->patch(route('profile.customization.update'), $this->validPreferences(['quick_flow' => '1']))
+            ->assertSessionHasNoErrors();
+        $this->actingAs($user)->delete(route('profile.customization.reset'))
+            ->assertRedirect(route('profile.customization'));
+
+        $this->assertFalse((bool) $user->fresh()->preference->quick_flow);
     }
 
     private function validPreferences(array $overrides = []): array

@@ -83,7 +83,7 @@ class UserPreferenceController extends Controller
         UserPreferenceService $preferences,
     ): RedirectResponse {
         $saved = $preferences->save($request->user(), $request->safe()->only([
-            'theme', 'shell_style', 'density', 'sidebar_state', 'page_size', 'quick_access', 'accent', 'dashboard', 'timezone', 'date_format', 'time_format', 'number_format', 'locale',
+            'theme', 'shell_style', 'density', 'sidebar_state', 'quick_flow', 'page_size', 'quick_access', 'accent', 'dashboard', 'timezone', 'date_format', 'time_format', 'number_format', 'locale',
             'country_code', 'import_timezone',
         ]));
 
@@ -125,6 +125,7 @@ class UserPreferenceController extends Controller
                     'theme' => $stored?->theme ?? config('user_preferences.defaults.theme'),
                     'density' => $stored?->density ?? config('user_preferences.defaults.density'),
                     'sidebar_state' => $stored?->sidebar_state ?? config('user_preferences.defaults.sidebar_state'),
+                    'quick_flow' => (bool) ($stored?->quick_flow ?? config('user_preferences.defaults.quick_flow')),
                     'page_size' => $stored?->page_size ?? config('user_preferences.defaults.page_size'),
                     'quick_access' => is_array($stored?->quick_access) ? $stored->quick_access : [],
                     'accent' => $stored?->accent ?? config('user_preferences.defaults.accent'),

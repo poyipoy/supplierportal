@@ -81,25 +81,35 @@
         </x-slot:filters>
     </x-ui.toolbar>
 
-    {{-- 3. Balanced Data Table --}}
-    <x-ui.data-table density="compact">
-        <table class="table table-hover align-middle mb-0 tw:text-ui-sm w-100" id="poTable">
-            <thead class="table-light">
-                <tr>
-                    <th scope="col">{{ __('purchasing.copy.po_number') }}</th>
-                    <th scope="col">{{ __('purchasing.copy.supplier') }}</th>
-                    <th scope="col">{{ __('purchasing.copy.period') }}</th>
-                    <th scope="col">{{ __('purchasing.copy.reference_pr') }}</th>
-                    <th scope="col">{{ __('purchasing.copy.remark') }}</th>
-                    <th scope="col" class="text-end">{{ __('purchasing.copy.total_idr') }}</th>
-                    <th scope="col" class="text-center">{{ __('purchasing.copy.status') }}</th>
-                    <th scope="col">{{ __('purchasing.copy.estimated_arrival') }}</th>
-                    <th scope="col" class="text-end" style="width: 80px;">{{ __('purchasing.copy.action') }}</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-    </x-ui.data-table>
+    {{-- 3. Multi Main Table Workspace (Master + Satellite Preview) --}}
+    <x-ui.mmt-workspace
+        id="poMmtWorkspace"
+        satellite-id="po-mmt-satellite"
+        :master-label="__('purchasing.mmt.master_label')"
+        :satellite-title="__('purchasing.mmt.satellite_title')"
+        :satellite-empty-title="__('purchasing.mmt.satellite_empty_title')"
+        :satellite-empty="__('purchasing.mmt.satellite_empty')"
+        :master-frameless="true"
+    >
+        <x-ui.data-table density="compact">
+            <table class="table table-hover align-middle mb-0 tw:text-ui-sm w-100" id="poTable">
+                <thead class="table-light">
+                    <tr>
+                        <th scope="col">{{ __('purchasing.copy.po_number') }}</th>
+                        <th scope="col">{{ __('purchasing.copy.supplier') }}</th>
+                        <th scope="col">{{ __('purchasing.copy.period') }}</th>
+                        <th scope="col">{{ __('purchasing.copy.reference_pr') }}</th>
+                        <th scope="col">{{ __('purchasing.copy.remark') }}</th>
+                        <th scope="col" class="text-end">{{ __('purchasing.copy.total_idr') }}</th>
+                        <th scope="col" class="text-center">{{ __('purchasing.copy.status') }}</th>
+                        <th scope="col">{{ __('purchasing.copy.estimated_arrival') }}</th>
+                        <th scope="col" class="text-end" style="width: 80px;">{{ __('purchasing.copy.action') }}</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </x-ui.data-table>
+    </x-ui.mmt-workspace>
 </div>
 @endsection
 
@@ -134,6 +144,10 @@
             language: {},
 
             order: []
+        });
+
+        table.on('draw.dt', function () {
+            window.AdasiServerTabs?.clearMmtSelection?.('#poMmtWorkspace');
         });
 
         // Filter event listeners

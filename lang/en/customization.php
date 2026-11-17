@@ -118,6 +118,10 @@ return [
     'choices.collapsed' => 'Collapsed',
     'sidebar_default' => 'Sidebar Default',
     'sidebar_default_help' => 'This is the desktop starting state.',
+    'quick_flow' => [
+        'label' => 'Quick Flow (skip download confirmation)',
+        'help' => 'Download PDF previews and trigger quick Excel exports without showing a confirmation dialog first.',
+    ],
     'sections' => [
         'appearance' => 'Appearance & display',
         'appearance_help' => 'Theme, accent, density, and table defaults for your account.',

@@ -17,7 +17,8 @@
     <x-ui.page-header
         :title="'PO ' . $purchaseOrder->po_number"
         :description="($purchaseOrder->supplier->supplier?->company_name ?: $purchaseOrder->supplier->name) . ' · IDR ' . $regionalFormatter->money($purchaseOrder->total_amount)"
-        :eyebrow="__('local_procurement.surface.local_audience')">
+        :eyebrow="__('local_procurement.surface.local_audience')"
+        :record-nav="$recordNav ?? null">
         <x-slot:actions>
             <x-ui.button
                 type="button"

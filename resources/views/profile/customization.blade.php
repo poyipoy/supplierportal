@@ -44,7 +44,7 @@
         'densityLabels' => __('customization.density_levels'),
         'saved' => [
             'theme' => $preferences['theme'], 'shell_style' => $preferences['shell_style'], 'accent' => $preferences['accent'], 'density' => $preferences['density'],
-            'sidebar_state' => $preferences['sidebar_state'], 'page_size' => (string) $preferences['page_size'],
+            'sidebar_state' => $preferences['sidebar_state'], 'quick_flow' => (bool) $preferences['quick_flow'], 'page_size' => (string) $preferences['page_size'],
             'locale' => $preferences['locale'], 'timezone' => $preferences['timezone'], 'date_format' => $preferences['date_format'],
             'time_format' => $preferences['time_format'], 'number_format' => $preferences['number_format'],
             'country_code' => (string) ($preferences['country_code'] ?? ''), 'import_timezone' => (string) ($preferences['import_timezone'] ?? ''),
@@ -53,7 +53,7 @@
         ],
         'defaults' => [
             'theme' => $defaults['theme'], 'shell_style' => $defaults['shell_style'], 'accent' => $defaults['accent'], 'density' => $defaults['density'],
-            'sidebar_state' => $defaults['sidebar_state'], 'page_size' => (string) $defaults['page_size'],
+            'sidebar_state' => $defaults['sidebar_state'], 'quick_flow' => (bool) $defaults['quick_flow'], 'page_size' => (string) $defaults['page_size'],
             'timezone' => $defaults['timezone'], 'date_format' => $defaults['date_format'],
             'time_format' => $defaults['time_format'], 'number_format' => $defaults['number_format'],
             'country_code' => '', 'import_timezone' => '',
@@ -221,6 +221,30 @@
                             </select>
                             @error('page_size')<p id="page-size-error" class="tw:m-0 tw:text-ui-xs tw:text-error">{{ $message }}</p>@enderror
                         </div>
+                    </div>
+
+                    {{-- Sub-group 3b: Workflow Acceleration (Quick Flow) --}}
+                    <div class="tw:grid tw:gap-2 tw:border-t tw:border-outline-variant tw:pt-5">
+                        <input type="hidden" name="quick_flow" value="0">
+                        <div class="tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-3">
+                            <div class="tw:min-w-0 tw:flex-1">
+                                <label for="quick_flow" class="tw:block tw:cursor-pointer tw:text-ui-sm tw:font-semibold tw:text-on-surface">
+                                    {{ __('customization.quick_flow.label') }}
+                                </label>
+                                <p id="quick-flow-help" class="tw:m-0 tw:mt-0.5 tw:text-ui-xs tw:text-on-surface-variant">
+                                    {{ __('customization.quick_flow.help') }}
+                                </p>
+                            </div>
+                            <x-ui.switch
+                                id="quick_flow"
+                                name="quick_flow"
+                                value="1"
+                                :checked="(bool) old('quick_flow', $preferences['quick_flow'])"
+                                aria-describedby="quick-flow-help @error('quick_flow') quick-flow-error @enderror"
+                                aria-invalid="{{ $errors->has('quick_flow') ? 'true' : 'false' }}"
+                            />
+                        </div>
+                        @error('quick_flow')<p id="quick-flow-error" class="tw:m-0 tw:text-ui-xs tw:text-error">{{ $message }}</p>@enderror
                     </div>
 
                     {{-- Sub-group 4: Interface Density --}}

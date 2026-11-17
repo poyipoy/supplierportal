@@ -107,12 +107,25 @@ function init(containerSelector, options = {}) {
         viewIndex: null,
         restoringHistory: false,
         pendingHistoryError: null,
+        initialContentHtml: container.hasAttribute('data-mmt-satellite')
+            ? (container.querySelector('[data-server-tabs-content]')?.innerHTML ?? '')
+            : '',
     };
 
     instances.set(containerSelector, state);
 
     // --- Tab click delegation ---
     container.addEventListener('click', (e) => {
+        const retryBtn = e.target.closest('[data-mmt-retry-url]');
+        if (retryBtn) {
+            e.preventDefault();
+            const retryUrl = retryBtn.getAttribute('data-mmt-retry-url');
+            if (retryUrl) {
+                fetchAndSwap(state, retryUrl, false);
+            }
+            return;
+        }
+
         const tabLink = e.target.closest('[data-server-tab]');
         if (tabLink) {
             e.preventDefault();
@@ -443,11 +456,15 @@ async function fetchAndSwap(state, url, pushHistory, historyIndex = null) {
             state.previousTab = null;
         }
 
+        const message = isTimeout
+            ? t('js.server_tabs.timeout')
+            : t('js.server_tabs.failed');
+
         if (window.AdasiToast && typeof window.AdasiToast.error === 'function') {
-            const message = isTimeout
-                ? t('js.server_tabs.timeout')
-                : t('js.server_tabs.failed');
             window.AdasiToast.error(message);
+        }
+        if (container.hasAttribute('data-mmt-satellite') && !options.managedHistory) {
+            renderMmtError(tableTarget, message, url);
         }
         if (options.managedHistory && Number.isInteger(historyIndex)) {
             // Resuming dirty tracking can add history entries. Restore the source entry first.
@@ -740,6 +757,79 @@ function reinitTooltips(container) {
     });
 }
 
+function renderMmtError(target, message, retryUrl) {
+    target.innerHTML = '';
+    if (typeof document.createElement !== 'function') {
+        return;
+    }
+    const box = document.createElement('div');
+    box.className = 'tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-3 tw:rounded-ui-sm tw:border tw:border-error/40 tw:bg-error-container/20 tw:px-3.5 tw:py-3 tw:text-ui-sm tw:text-on-surface';
+    box.setAttribute('role', 'alert');
+
+    const text = document.createElement('span');
+    text.textContent = message;
+    box.appendChild(text);
+
+    if (retryUrl) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn btn-sm btn-outline-danger';
+        btn.setAttribute('data-mmt-retry-url', retryUrl);
+        btn.textContent = t('js.server_tabs.retry');
+        box.appendChild(btn);
+    }
+
+    target.appendChild(box);
+}
+
+function clearMmtSelection(workspaceSelector) {
+    if (typeof document === 'undefined') return;
+    const workspace = typeof workspaceSelector === 'string'
+        ? document.querySelector(workspaceSelector)
+        : workspaceSelector;
+    if (!workspace) return;
+
+    const selectedRows = workspace.querySelectorAll('tr[data-mmt-row-url].is-mmt-selected');
+    selectedRows.forEach((row) => {
+        row.classList.remove('is-mmt-selected', 'tw:bg-primary/5');
+        row.setAttribute('aria-selected', 'false');
+    });
+
+    const refBadge = workspace.querySelector('[data-mmt-active-ref]');
+    const refBar = workspace.querySelector('[data-mmt-ref-bar]');
+    const hadRef = Boolean(refBadge && !refBadge.hidden);
+    if (refBadge) {
+        refBadge.textContent = '';
+        refBadge.hidden = true;
+        refBadge.classList.add('tw:hidden');
+    }
+    if (refBar) {
+        refBar.hidden = true;
+    }
+
+    const targetSelector = workspace.dataset?.mmtSatelliteTarget;
+    const satellitePane = (targetSelector && document.querySelector(targetSelector))
+        || workspace.querySelector('[data-mmt-satellite][data-server-tabs-container]');
+    if (!satellitePane) return;
+
+    const nav = satellitePane.querySelector('[data-server-tabs-nav]');
+    const content = satellitePane.querySelector('[data-server-tabs-content]');
+    const hadNav = Boolean(nav && nav.innerHTML.trim() !== '');
+    const hadAlert = Boolean(content?.querySelector?.('[role="alert"]'));
+    if (nav) {
+        nav.innerHTML = '';
+    }
+
+    if (selectedRows.length === 0 && !hadRef && !hadNav && !hadAlert) {
+        return;
+    }
+
+    const state = satellitePane.id ? instances.get(`#${satellitePane.id}`) : null;
+    if (content && state && typeof state.initialContentHtml === 'string') {
+        content.innerHTML = state.initialContentHtml;
+    }
+}
+
 let mmtDelegationBound = false;
 
 function activateMmtRow(row) {
@@ -814,6 +904,10 @@ function bindMmtWorkspaceDelegation() {
         if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
             return;
         }
+        const selectedText = typeof window !== 'undefined' ? window.getSelection?.()?.toString?.()?.trim() : '';
+        if (selectedText) {
+            return;
+        }
         const row = e.target?.closest?.('tr[data-mmt-row-url]');
         if (!row || e.target?.closest?.(interactiveSelector)) {
             return;
@@ -860,6 +954,7 @@ window.AdasiServerTabs = Object.freeze({
     init,
     navigate,
     boot: bootServerTabs,
+    clearMmtSelection,
     invalidateCache: cacheInvalidateAll,
     invalidateCacheForTab: cacheInvalidateForTab,
 });

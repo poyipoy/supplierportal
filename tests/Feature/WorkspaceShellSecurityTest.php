@@ -55,8 +55,8 @@ class WorkspaceShellSecurityTest extends TestCase
             ->assertSee('_embed=1', false);
 
         $shellConfig = $this->extractWorkspaceConfig($shellResponse->getContent());
-        $this->assertSame(12, $shellConfig['maxTabs']);
-        $this->assertSame(6, $shellConfig['maxLiveFrames']);
+        $this->assertSame(20, $shellConfig['maxTabs']);
+        $this->assertSame(12, $shellConfig['maxLiveFrames']);
         $this->assertStringContainsString("frame-ancestors 'none'", (string) $shellResponse->headers->get('Content-Security-Policy'));
 
         $embedResponse = $this->actingAs($user)->get(route('purchasing.shipments.index', ['search' => 'SHP', '_embed' => 1]));
@@ -239,8 +239,8 @@ class WorkspaceShellSecurityTest extends TestCase
         $this->assertFalse($config['initialTab']['pinned']);
         $this->assertTrue($config['initialTab']['closable']);
         $this->assertSame(__('navigation.dashboard'), $config['initialTab']['label']);
-        $this->assertSame(12, $config['maxTabs']);
-        $this->assertSame(6, $config['maxLiveFrames']);
+        $this->assertSame(20, $config['maxTabs']);
+        $this->assertSame(12, $config['maxLiveFrames']);
         $this->assertIsArray($config['indexPaths']);
         $this->assertArrayHasKey('menuPathTitles', $config);
         $this->assertSame(

@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 
@@ -341,6 +342,12 @@ class PurchasingNavigation
             return;
         }
 
+        if (! app()->runningUnitTests() || request()->headers->has('X-Adasi-Prefetch') || request()->headers->has('Sec-Purpose')) {
+            if (self::isPrefetchRequest(request())) {
+                return;
+            }
+        }
+
         $sanitized = collect($hashids)
             ->filter(static fn (mixed $value): bool => self::isValidRecordHashid($value))
             ->map(static fn (string $value): string => trim($value))
@@ -350,6 +357,72 @@ class PurchasingNavigation
             ->all();
 
         session()->put("purchasing.record_windows.{$listRouteName}", $sanitized);
+    }
+
+    /**
+     * Extract DT_RowId hashids from a serialized Yajra DataTables payload and store the record window.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    public static function rememberRecordWindowFromDataTable(string $listRouteName, array $payload, ?Request $request = null): void
+    {
+        if (self::isPrefetchRequest($request ?? request())) {
+            return;
+        }
+
+        $rows = $payload['data'] ?? null;
+        if (! is_array($rows)) {
+            return;
+        }
+
+        $hashids = array_values(array_map(
+            static fn (mixed $row): mixed => is_array($row) ? ($row['DT_RowId'] ?? null) : null,
+            $rows
+        ));
+
+        self::rememberRecordWindow($listRouteName, $hashids);
+    }
+
+    /**
+     * Resolve Prev / Next URLs plus 1-based position and total count within the remembered window.
+     *
+     * @return array{prev: ?string, next: ?string, position: ?int, total: int}
+     */
+    public static function recordWindowNavigation(string $listRouteName, string $showRouteName, string $currentHashid): array
+    {
+        $urls = self::adjacentRecordUrls($listRouteName, $showRouteName, $currentHashid);
+
+        if (! self::isValidRecordHashid($currentHashid)) {
+            return ['prev' => null, 'next' => null, 'position' => null, 'total' => 0];
+        }
+
+        $window = session("purchasing.record_windows.{$listRouteName}", []);
+        if (! is_array($window) || $window === []) {
+            return ['prev' => null, 'next' => null, 'position' => null, 'total' => 0];
+        }
+
+        $sanitizedWindow = array_values(array_filter(
+            $window,
+            static fn (mixed $value): bool => self::isValidRecordHashid($value)
+        ));
+        $index = array_search(trim($currentHashid), $sanitizedWindow, true);
+
+        return [
+            'prev' => $urls['prev'],
+            'next' => $urls['next'],
+            'position' => $index !== false ? $index + 1 : null,
+            'total' => count($sanitizedWindow),
+        ];
+    }
+
+    private static function isPrefetchRequest(?Request $request): bool
+    {
+        if (! $request instanceof Request) {
+            return false;
+        }
+
+        return $request->header('X-Adasi-Prefetch') === '1'
+            || str_contains(strtolower((string) $request->header('Sec-Purpose')), 'prefetch');
     }
 
     /**

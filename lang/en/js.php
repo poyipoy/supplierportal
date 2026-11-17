@@ -56,6 +56,7 @@ return [
     'server_tabs.failed' => 'Could not load data. Please try again shortly.',
     'server_tabs.unpaid' => ':count unpaid batches',
     'server_tabs.paid' => ':count paid batches',
+    'server_tabs.retry' => 'Retry',
     'upload.file' => 'File :number',
     'upload.extension' => 'File ":name" was skipped. Choose a :formats file.',
     'upload.size' => 'The file exceeds :limit MB (:size). Choose a smaller file.',

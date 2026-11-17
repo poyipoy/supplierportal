@@ -23,7 +23,14 @@ export function sameSet(a, b) {
     return sortedA.every((value, index) => value === sortedB[index]);
 }
 
-const SIMPLE_FIELDS = ['theme', 'shell_style', 'accent', 'density', 'sidebar_state', 'page_size', 'locale', 'timezone', 'date_format', 'time_format', 'number_format', 'country_code', 'import_timezone'];
+const SIMPLE_FIELDS = ['theme', 'shell_style', 'accent', 'density', 'sidebar_state', 'quick_flow', 'page_size', 'locale', 'timezone', 'date_format', 'time_format', 'number_format', 'country_code', 'import_timezone'];
+
+function normalizeComparableValue(raw, reference) {
+    if (typeof reference === 'boolean') {
+        return raw === true || raw === 'true' || raw === '1' || raw === 1 ? '1' : '0';
+    }
+    return String(raw ?? '');
+}
 
 export function customizationForm(config) {
     return {
@@ -153,12 +160,21 @@ export function customizationForm(config) {
         },
 
         val(name) {
+            const checkbox = this.root().querySelector(`input[type="checkbox"][name="${name}"]`);
+            if (checkbox && checkbox.type === 'checkbox') {
+                return checkbox.checked ? '1' : '0';
+            }
             const checked = this.root().querySelector(`input[name="${name}"]:checked`);
             if (checked) return checked.value;
             const field = this.root().querySelector(`[name="${name}"]`);
             return field ? field.value : null;
         },
         setVal(name, value) {
+            const checkbox = this.root().querySelector(`input[type="checkbox"][name="${name}"]`);
+            if (checkbox && checkbox.type === 'checkbox') {
+                checkbox.checked = value === true || value === 'true' || value === '1' || value === 1;
+                return;
+            }
             const radios = this.root().querySelectorAll(`input[type="radio"][name="${name}"]`);
             if (radios.length) {
                 radios.forEach((el) => { el.checked = (el.value === String(value)); });
@@ -187,7 +203,7 @@ export function customizationForm(config) {
             let count = 0;
             SIMPLE_FIELDS.forEach((field) => {
                 if (!this.hasField(field)) return;
-                if (String(this.val(field) ?? '') !== String(this.saved[field] ?? '')) count++;
+                if (normalizeComparableValue(this.val(field), this.saved[field]) !== normalizeComparableValue(this.saved[field], this.saved[field])) count++;
             });
             if (!sameOrder(this.dashboardOrder(), this.saved.dashboardOrder) || !sameSet(this.dashboardHidden(), this.saved.dashboardHidden)) {
                 count++;
@@ -321,6 +337,7 @@ export function customizationForm(config) {
                 this.setVal('accent', this.defaults.accent);
                 this.setVal('density', this.defaults.density);
                 this.setVal('sidebar_state', this.defaults.sidebar_state);
+                if (this.hasField('quick_flow')) this.setVal('quick_flow', this.defaults.quick_flow ?? false);
                 this.setVal('page_size', this.defaults.page_size);
                 window.AdasiPreferences?.previewTheme(this.defaults.theme);
                 if (this.defaults.shell_style) window.AdasiPreferences?.previewShellStyle?.(this.defaults.shell_style);

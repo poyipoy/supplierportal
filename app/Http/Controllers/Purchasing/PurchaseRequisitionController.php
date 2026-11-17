@@ -80,8 +80,9 @@ class PurchaseRequisitionController extends Controller
 
             RequisitionExportFilters::apply($query, $filters);
 
-            return DataTables::eloquent($query)
+            $payload = DataTables::eloquent($query)
                 ->filter(fn ($query) => null)
+                ->setRowId(fn (PurchaseRequisition $pr): string => $pr->getRouteKey())
                 ->addIndexColumn()
                 ->addColumn('pr_number_display', fn ($pr) => $pr->pr_number ?? '-')
                 ->addColumn('period_name', fn ($pr) => $pr->period->display_label ?? '-')
@@ -164,7 +165,11 @@ class PurchaseRequisitionController extends Controller
                     'created_date',
                     'action',
                 ])
-                ->make(true);
+                ->toArray();
+
+            PurchasingNavigation::rememberRecordWindowFromDataTable('purchasing.requisitions.index', $payload, $request);
+
+            return response()->json($payload);
         }
 
         $periods = Period::orderByDesc('year')->orderByRaw('month IS NULL DESC')->orderByDesc('month')->get();
@@ -376,6 +381,12 @@ class PurchaseRequisitionController extends Controller
             ->limit(20)
             ->get();
 
+        $recordNav = PurchasingNavigation::recordWindowNavigation(
+            'purchasing.requisitions.index',
+            'purchasing.requisitions.show',
+            $pr->getRouteKey(),
+        );
+
         return view('purchasing.pr.show', compact(
             'pr',
             'quotations',
@@ -387,6 +398,7 @@ class PurchaseRequisitionController extends Controller
             'invitableSuppliers',
             'suppliersWithQuotation',
             'invitationEvents',
+            'recordNav',
         ));
     }
 

@@ -1290,4 +1290,21 @@ return [
             'rejected_body' => 'Purchasing rejected the proposed delivery date for Purchase Order :po. Please review and acknowledge.',
         ],
     ],
+    'mmt' => [
+        'master_label' => 'Import Purchase Order List',
+        'satellite_title' => 'Selected Purchase Order Preview',
+        'satellite_empty_title' => 'Select a Purchase Order row',
+        'satellite_empty' => 'Click a row in the table above (or press Enter) to view ordered items, shipments, and material claims without leaving this page.',
+        'open_detail' => 'Open PO Detail',
+        'tabs' => [
+            'items' => 'Ordered Items',
+            'shipments' => 'Shipments',
+            'claims' => 'Material Claims',
+        ],
+        'empty' => [
+            'items' => 'No ordered items recorded on this PO.',
+            'shipments' => 'No shipments linked to this PO yet.',
+            'claims' => 'No material claims recorded for this PO.',
+        ],
+    ],
 ];

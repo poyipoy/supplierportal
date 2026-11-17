@@ -352,24 +352,25 @@ window.AdasiQuickFlow = Object.freeze({
         if (trigger instanceof Element && trigger.dataset?.quickFlow === 'true') {
             return true;
         }
-        if (document.documentElement.dataset.quickFlow === 'true') {
-            return true;
-        }
         try {
             const accountId = document.querySelector('meta[name="user-id"]')?.content?.trim();
             const key = accountId ? `adasi.quick_flow.${accountId}` : 'adasi.quick_flow';
             const raw = window.localStorage.getItem(key);
-            if (!raw) return false;
-            if (raw === 'true' || raw === '1') return true;
-            const parsed = JSON.parse(raw);
-            if (typeof parsed === 'boolean') return parsed;
-            if (parsed && typeof parsed === 'object') {
-                return actionKey ? Boolean(parsed[actionKey] ?? parsed.enabled) : Boolean(parsed.enabled);
+            if (raw !== null) {
+                if (raw === 'true' || raw === '1') return true;
+                if (raw === 'false' || raw === '0') return false;
+                const parsed = JSON.parse(raw);
+                if (typeof parsed === 'boolean') return parsed;
+                if (parsed && typeof parsed === 'object') {
+                    return actionKey ? Boolean(parsed[actionKey] ?? parsed.enabled) : Boolean(parsed.enabled);
+                }
+                return false;
             }
-            return false;
         } catch {
-            return false;
+            // Fall back to server-delivered document dataset when localStorage is blocked.
         }
+
+        return document.documentElement.dataset.quickFlow === 'true';
     },
 });
 

@@ -727,4 +727,30 @@ return [
         'supplier_ineligible' => 'The supplier must be active and eligible for local procurement before restoring this document.',
         'po_open_required' => 'Restore or open the PO before restoring this GR.',
     ],
+    'mmt' => [
+        'master_label' => 'Local Purchase Order Register',
+        'satellite_title' => 'Selected Local PO Details',
+        'satellite_empty_title' => 'Select a Local PO row',
+        'satellite_empty' => 'Click a PO row above (or press Enter) to preview Goods Receipts, linked invoices, and PO PDF attachments here.',
+        'open_detail' => 'Open PO Detail',
+        'tabs' => [
+            'goods_receipts' => 'Goods Receipts',
+            'invoices' => 'Invoices',
+            'documents' => 'PO Documents',
+        ],
+        'empty' => [
+            'goods_receipts' => 'No Goods Receipts recorded for this PO yet.',
+            'invoices' => 'No invoices linked to this PO yet.',
+            'documents' => 'No PO PDF document uploaded yet.',
+        ],
+        'fields' => [
+            'submission_number' => 'Submission No.',
+            'invoice_number' => 'Invoice No.',
+            'invoice_date' => 'Invoice Date',
+            'invoice_amount' => 'Invoice Amount',
+            'document_file' => 'Document File',
+            'uploaded_at' => 'Uploaded At',
+            'open_pdf' => 'Open PDF',
+        ],
+    ],
 ];

@@ -118,6 +118,10 @@ return [
     'choices.collapsed' => 'Diciutkan',
     'sidebar_default' => 'Default Sidebar',
     'sidebar_default_help' => 'Ini adalah tampilan awal di desktop.',
+    'quick_flow' => [
+        'label' => 'Quick Flow (lewati konfirmasi unduhan)',
+        'help' => 'Langsung unduh pratinjau PDF dan mulai ekspor Excel tanpa menampilkan dialog konfirmasi terlebih dahulu.',
+    ],
     'sections' => [
         'appearance' => 'Tampilan dan Layar',
         'appearance_help' => 'Tema, aksen, kepadatan, dan default tabel untuk akun Anda.',

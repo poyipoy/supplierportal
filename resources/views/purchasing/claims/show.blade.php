@@ -16,6 +16,7 @@
         :title="__('claims.titles.page', ['number' => $claim->purchaseOrder?->po_number ?? $claim->claim_number])"
         :eyebrow="__('claims.copy.material_claim_details')"
         :description="__('claims.audit_ui.detail_help', ['po' => $claim->purchaseOrder?->po_number ?? '-', 'supplier' => $claim->purchaseOrder?->supplier?->name ?? __('claims.copy.supplier')])"
+        :record-nav="$recordNav ?? null"
     >
         <x-slot:actions>
             <x-status-badge type="claim" :status="$claim->status" size="lg" />
