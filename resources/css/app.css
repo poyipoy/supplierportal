@@ -3771,7 +3771,7 @@ html.js [data-calendar-native-submit] {
     .local-import-progress-fill { transition: none; }
     .local-import-progress-fill.is-indeterminate { animation: none; }
 }
-:root {
+:where(:root) {
     --ui-page-fade-duration: 500ms;
 }
 @keyframes ui-page-fade-in {
@@ -3825,6 +3825,42 @@ html[data-sidebar-motion-ready="true"] {
     --ui-sidebar-motion-icon-duration: var(--ui-motion-sidebar-icon);
     --ui-sidebar-motion-text-duration: var(--ui-motion-sidebar-text);
     --ui-sidebar-motion-text-delay: 70ms;
+}
+/* Infor LN OS-inspired hover-peek drawer when desktop sidebar is collapsed. */
+@media (min-width: 992px) {
+    html[data-sidebar-collapsed="true"][data-sidebar-hover-peek="true"] .sidebar {
+        width: var(--sidebar-width) !important;
+        box-shadow: var(--ui-shadow-2);
+        z-index: calc(var(--ui-z-drawer) - 1);
+    }
+
+    html[data-sidebar-collapsed="true"][data-sidebar-hover-peek="true"] .sidebar .sidebar-type-text {
+        clip-path: inset(0 0 0 0) !important;
+        visibility: visible !important;
+        transition-delay: var(--ui-sidebar-motion-text-delay), 0s;
+    }
+
+    html[data-sidebar-collapsed="true"][data-sidebar-hover-peek="true"] .sidebar .sidebar-portal-switcher-chevron {
+        opacity: 1;
+        transform: translateY(-50%) scale(1);
+    }
+
+    html[data-sidebar-collapsed="true"][data-sidebar-hover-peek="true"] .sidebar .sidebar-heading::after {
+        opacity: 0;
+        transform: scaleX(0.72);
+        transition-delay: 0s, 0s;
+    }
+
+    html[data-sidebar-collapsed="true"][data-sidebar-hover-peek="true"] .sidebar .sidebar-link-trailing {
+        transform: translateY(-50%);
+    }
+}
+tr[data-mmt-row-url] {
+    cursor: pointer;
+}
+tr[data-mmt-row-url]:focus-visible {
+    outline: 2px solid var(--md-primary);
+    outline-offset: -2px;
 }
 /* Keep DRP actions and table width inside the available shell content. */
 .drp-paid-tab-count {
@@ -4270,6 +4306,7 @@ table.dataTable thead > tr > :is(th, td):is(.sorting, .sorting_asc, .sorting_des
     .adasi-loader-overlay,
     .adasi-loader-card {
         transition: none;
+        transform: none;
     }
 
     .adasi-loader-ring::before {

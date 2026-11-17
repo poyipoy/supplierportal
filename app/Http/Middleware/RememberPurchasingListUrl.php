@@ -19,9 +19,13 @@ class RememberPurchasingListUrl
     public function handle(Request $request, Closure $next): Response
     {
         // Server-tabs fragments are the page the user is looking at (pushState mirrors this URL), so they count;
-        // other JSON (DataTables feeds, chart payloads) must not replace the remembered list.
+        // speculative prefetches and other JSON (DataTables feeds, chart payloads) must not replace the remembered list.
+        $isPrefetch = $request->header('X-Adasi-Prefetch') === '1'
+            || str_contains(strtolower((string) $request->header('Sec-Purpose')), 'prefetch');
+
         if (
             $request->isMethod('GET')
+            && ! $isPrefetch
             && (! $request->expectsJson() || ServerTabsResponse::wants($request))
             && $request->input('view') !== 'json'
             && $request->user()?->role === 'purchasing'

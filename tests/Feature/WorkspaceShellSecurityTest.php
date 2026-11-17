@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\SupplierScope;
 use App\Models\User;
+use App\Support\HashidCodec;
 use App\Support\PurchasingNavigation;
 use App\Support\ServerTabsResponse;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -312,6 +314,121 @@ class WorkspaceShellSecurityTest extends TestCase
 
         $freshEmbedResponse->assertOk()->assertSee('data-workspace-embed="true"', false);
         $this->assertLessThan(count($freshQueries), count($cachedQueries), 'Single-use prerender cache hit should skip controller and view queries.');
+    }
+
+    public function test_prefetch_server_tabs_request_does_not_overwrite_remembered_purchasing_list_url(): void
+    {
+        $purchasing = User::factory()->create(['role' => 'purchasing', 'is_active' => true, 'account_status' => 'ACTIVE']);
+
+        $initialUrl = route('purchasing.shipments.index');
+        $this->actingAs($purchasing)
+            ->get($initialUrl)
+            ->assertOk();
+
+        $this->assertSame($initialUrl, session('purchasing.last_list_url'));
+
+        $this->actingAs($purchasing)
+            ->get(route('purchasing.purchase-orders.index'), [
+                'X-Adasi-Server-Tabs' => '1',
+                'X-Adasi-Prefetch' => '1',
+            ])
+            ->assertOk();
+
+        $this->assertSame($initialUrl, session('purchasing.last_list_url'));
+
+        $this->actingAs($purchasing)
+            ->get(route('purchasing.purchase-orders.index'), [
+                'X-Adasi-Server-Tabs' => '1',
+                'Sec-Purpose' => 'prefetch',
+            ])
+            ->assertOk();
+
+        $this->assertSame($initialUrl, session('purchasing.last_list_url'));
+    }
+
+    public function test_background_ajax_request_does_not_flip_active_supplier_context_for_dual_scope_supplier(): void
+    {
+        $dualSupplier = User::factory()->create([
+            'role' => 'supplier',
+            'is_active' => true,
+            'account_status' => 'ACTIVE',
+        ]);
+        SupplierScope::query()->updateOrCreate(['supplier_id' => $dualSupplier->id, 'scope' => 'import']);
+        SupplierScope::query()->updateOrCreate(['supplier_id' => $dualSupplier->id, 'scope' => 'local']);
+
+        $this->actingAs($dualSupplier)
+            ->withSession(['supplier_context' => 'import'])
+            ->get(route('local-supplier.dashboard'), ['X-Requested-With' => 'XMLHttpRequest'])
+            ->assertOk();
+
+        $this->assertSame('import', session('supplier_context'));
+
+        $this->actingAs($dualSupplier)
+            ->withSession(['supplier_context' => 'import'])
+            ->get(route('local-supplier.dashboard'), ['X-Adasi-Server-Tabs' => '1'])
+            ->assertOk();
+
+        $this->assertSame('import', session('supplier_context'));
+
+        $this->actingAs($dualSupplier)
+            ->get(route('local-supplier.dashboard'))
+            ->assertOk();
+
+        $this->assertSame('local', session('supplier_context'));
+    }
+
+    public function test_purchasing_navigation_record_window_returns_valid_adjacent_urls_and_rejects_raw_numeric_ids(): void
+    {
+        $hash1 = HashidCodec::encode(101);
+        $hash2 = HashidCodec::encode(102);
+        $hash3 = HashidCodec::encode(103);
+
+        PurchasingNavigation::rememberRecordWindow('purchasing.purchase-orders.index', [
+            '123',
+            $hash1,
+            '456',
+            $hash2,
+            $hash3,
+        ]);
+
+        $stored = session('purchasing.record_windows.purchasing.purchase-orders.index');
+        $this->assertSame([$hash1, $hash2, $hash3], $stored);
+
+        $middle = PurchasingNavigation::adjacentRecordUrls(
+            'purchasing.purchase-orders.index',
+            'purchasing.purchase-orders.show',
+            $hash2
+        );
+        $this->assertStringContainsString($hash1, (string) $middle['prev']);
+        $this->assertStringContainsString($hash3, (string) $middle['next']);
+        $this->assertStringNotContainsString('/123', (string) $middle['prev']);
+
+        $first = PurchasingNavigation::adjacentRecordUrls(
+            'purchasing.purchase-orders.index',
+            'purchasing.purchase-orders.show',
+            $hash1
+        );
+        $this->assertNull($first['prev']);
+        $this->assertStringContainsString($hash2, (string) $first['next']);
+
+        $last = PurchasingNavigation::adjacentRecordUrls(
+            'purchasing.purchase-orders.index',
+            'purchasing.purchase-orders.show',
+            $hash3
+        );
+        $this->assertStringContainsString($hash2, (string) $last['prev']);
+        $this->assertNull($last['next']);
+
+        $rejected = PurchasingNavigation::adjacentRecordUrls(
+            'purchasing.purchase-orders.index',
+            'purchasing.purchase-orders.show',
+            '123'
+        );
+        $this->assertSame(['prev' => null, 'next' => null], $rejected);
+
+        $overLimit = array_map(static fn (int $i): string => HashidCodec::encode($i + 1000), range(1, 120));
+        PurchasingNavigation::rememberRecordWindow('purchasing.purchase-orders.index', $overLimit);
+        $this->assertCount(100, session('purchasing.record_windows.purchasing.purchase-orders.index'));
     }
 
     /**

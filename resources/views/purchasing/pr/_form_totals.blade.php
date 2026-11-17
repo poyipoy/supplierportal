@@ -27,7 +27,9 @@
     data-error-text="{{ __('procurement.totals.sync_error') }}"
 >
     <tr>
-        <th scope="row" colspan="5" class="text-end fw-semibold text-nowrap">
+        <td class="pr-sticky-number" aria-hidden="true"></td>
+        <td class="pr-sticky-material" aria-hidden="true"></td>
+        <th scope="row" colspan="3" class="text-end fw-semibold text-nowrap">
             {{ __('procurement.totals.total') }}
         </th>
         <td class="text-center fw-bold ui-tabular-nums text-nowrap">
@@ -38,6 +40,7 @@
         <td class="text-end fw-bold ui-tabular-nums text-nowrap">
             <output id="prFormTotalKg" aria-live="polite">{{ $initialKgDisplay }}</output>
         </td>
-        <td colspan="2"></td>
+        <td></td>
+        <td class="pr-sticky-action" aria-hidden="true"></td>
     </tr>
 </tfoot>

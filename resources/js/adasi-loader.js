@@ -22,7 +22,9 @@ export function isDataTableRequest(options = {}) {
  * Token-based loader state machine, independent of the DOM so it can be unit tested.
  * `view` supplies activate() / deactivate() / showSlow(); `timers` supplies setTimeout/clearTimeout/now.
  */
-export function createLoaderController({ view, timers }) {
+export function createLoaderController({ view, timers, showDelay = SHOW_DELAY }) {
+    const parsedShowDelay = Number(showDelay);
+    const delayMs = Number.isFinite(parsedShowDelay) && parsedShowDelay >= 0 ? parsedShowDelay : SHOW_DELAY;
     const pending = new Set();
     let seq = 0;
     let active = false;
@@ -64,7 +66,7 @@ export function createLoaderController({ view, timers }) {
             hideTimer = clear(hideTimer);
             if (active) view.reconcile?.();
             if (!active && showTimer === null) {
-                showTimer = timers.setTimeout(activate, SHOW_DELAY);
+                showTimer = timers.setTimeout(activate, delayMs);
             }
             return seq;
         },
@@ -344,8 +346,12 @@ export function bootAdasiLoader(win = globalThis.window) {
     if (!win?.document) return null;
 
     const view = createDomView(win.document);
+    const configuredDelay = win.AdasiUiConfig?.slowLoaderThresholdMs
+        ?? win.AdasiWorkspaceShellConfig?.slowLoaderThresholdMs
+        ?? SHOW_DELAY;
     const loader = createLoaderController({
         view,
+        showDelay: configuredDelay,
         timers: {
             setTimeout: (fn, ms) => win.setTimeout(fn, ms),
             clearTimeout: (id) => win.clearTimeout(id),

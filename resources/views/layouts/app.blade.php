@@ -809,6 +809,10 @@
                 return;
             }
 
+            if (pdfBtn.dataset.quickFlow === 'true' || window.AdasiQuickFlow?.isEnabled?.(pdfBtn, 'pdf')) {
+                return;
+            }
+
             e.preventDefault();
 
             if (window.pdfConfirmationOpen) {
@@ -850,6 +854,10 @@
             }
 
             if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
+                return;
+            }
+
+            if (exportBtn.dataset.quickFlow === 'true' || window.AdasiQuickFlow?.isEnabled?.(exportBtn, 'export')) {
                 return;
             }
 

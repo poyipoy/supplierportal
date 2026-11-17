@@ -282,6 +282,7 @@ test('tab and prefetch requests identify themselves as server-tabs fragment requ
         page.click(makeTabLink('/page?tab=a', 'a'));
         assert.equal(calls[0].options.headers['X-Adasi-Server-Tabs'], '1');
         assert.equal(calls[0].options.headers['X-Requested-With'], 'XMLHttpRequest');
+        assert.equal(calls[0].options.headers['X-Adasi-Prefetch'], undefined);
 
         page.hover(makeTabLink('/page?tab=prefetched', 'prefetched'));
         const debounce = timers.find((timer) => timer.ms === 60);
@@ -289,6 +290,7 @@ test('tab and prefetch requests identify themselves as server-tabs fragment requ
         await settle();
         assert.equal(calls[1].url, '/page?tab=prefetched');
         assert.equal(calls[1].options.headers['X-Adasi-Server-Tabs'], '1');
+        assert.equal(calls[1].options.headers['X-Adasi-Prefetch'], '1');
     } finally {
         restoreNetwork();
     }

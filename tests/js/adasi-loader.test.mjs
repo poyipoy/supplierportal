@@ -516,6 +516,31 @@ test('downloadFileWithLoader hides loader and reports error when fetch fails', a
     assert.equal(loader.pendingCount(), 0, 'no pending loader tokens remaining after error');
 });
 
+test('createLoaderController honors custom showDelay from runtime UI config', () => {
+    const timers = fakeTimers();
+    let active = false;
+    const loader = createLoaderController({
+        timers,
+        showDelay: 4200,
+        view: {
+            activate: () => { active = true; },
+            deactivate: () => { active = false; },
+            showSlow: () => {},
+        },
+    });
+
+    const token = loader.show();
+    timers.advance(2500);
+    assert.equal(active, false, 'loader must not show at default 2500ms when configured to 4200ms');
+
+    timers.advance(1699);
+    assert.equal(active, false);
+
+    timers.advance(1);
+    assert.equal(active, true, 'loader shows once configured 4200ms threshold elapses');
+    loader.hide(token, true);
+});
+
 /** Just enough DOM for createDomView: nodes are plain objects, unknown queries return an inert stub. */
 function fakeDocument() {
     const node = (tag) => ({

@@ -5,6 +5,8 @@
     x-bind:data-state="viewportIsDesktop ? (desktopCollapsed ? 'collapsed' : 'expanded') : (mobileOpen ? 'open' : 'closed')"
     x-bind:aria-hidden="viewportIsDesktop ? 'false' : (!mobileOpen).toString()"
     x-bind:inert="!viewportIsDesktop && !mobileOpen"
+    x-on:pointerenter="onSidebarPointerEnter()"
+    x-on:pointerleave="onSidebarPointerLeave()"
     x-on:click="if (!viewportIsDesktop && $event.target.closest('a[href]')) closeMobileSidebar(false)"
     aria-label="{{ __('navigation.primary') }}"
 >

@@ -39,7 +39,6 @@
         scrollbar-width: auto;
         padding-bottom: 0 !important;
         scroll-padding-bottom: 3.5rem;
-        min-height: 300px; /* Prevent dropdown clipping when table has few rows */
     }
 
     .pr-form-table-scroll::-webkit-scrollbar {
@@ -117,7 +116,7 @@
     #itemsTable.pr-items-table .pr-sticky-material {
         background-color: var(--md-surface) !important;
         border-right: 1px solid var(--md-outline-variant) !important;
-        box-shadow: none !important;
+        box-shadow: 4px 0 8px -2px rgba(0, 0, 0, 0.08) !important;
         left: 48px;
         position: sticky;
         width: 250px;
@@ -140,12 +139,12 @@
 
     #itemsTable.pr-items-table thead .pr-sticky-material {
         background-color: var(--md-surface-container) !important;
-        box-shadow: none !important;
+        box-shadow: 4px 0 8px -2px rgba(0, 0, 0, 0.08) !important;
         z-index: 10;
     }
 
     #itemsTable.pr-items-table tbody .pr-sticky-material {
-        box-shadow: none !important;
+        box-shadow: 4px 0 8px -2px rgba(0, 0, 0, 0.08) !important;
         z-index: 6;
     }
 
@@ -156,31 +155,39 @@
     #itemsTable.pr-items-table .pr-sticky-action {
         background-color: var(--md-surface) !important;
         border-left: 1px solid var(--md-outline-variant) !important;
-        box-shadow: none !important;
+        box-shadow: -4px 0 8px -2px rgba(0, 0, 0, 0.08) !important;
         position: sticky;
         right: 0;
-        width: 72px;
+        width: 64px;
     }
 
     #itemsTable.pr-items-table thead .pr-sticky-action {
         background-color: var(--md-surface-container) !important;
-        box-shadow: none !important;
+        box-shadow: -4px 0 8px -2px rgba(0, 0, 0, 0.08) !important;
         z-index: 10;
     }
 
     #itemsTable.pr-items-table tbody .pr-sticky-action {
-        box-shadow: none !important;
+        box-shadow: -4px 0 8px -2px rgba(0, 0, 0, 0.08) !important;
         z-index: 4;
     }
 
     #itemsTable.pr-items-table tfoot#prFormTotals th,
     #itemsTable.pr-items-table tfoot#prFormTotals td {
-        position: sticky;
-        bottom: 0;
-        z-index: 9;
         background-color: var(--md-surface-container-low) !important;
         border-top: 2px solid var(--md-outline-variant) !important;
-        box-shadow: 0 -2px 6px -1px rgba(0, 0, 0, 0.08);
+    }
+
+    #itemsTable.pr-items-table tfoot#prFormTotals .pr-sticky-number {
+        z-index: 7;
+    }
+
+    #itemsTable.pr-items-table tfoot#prFormTotals .pr-sticky-material {
+        z-index: 6;
+    }
+
+    #itemsTable.pr-items-table tfoot#prFormTotals .pr-sticky-action {
+        z-index: 4;
     }
 
     #itemsTable.pr-items-table tbody tr {

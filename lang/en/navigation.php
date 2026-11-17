@@ -206,5 +206,8 @@ return [
         'status_unsaved' => 'Has unsaved changes',
         'status_stale' => 'Updated in another tab — click refresh when ready',
         'status_hibernated' => 'Paused in background — reloads automatically on focus',
+        'status_queued' => 'Queued to load',
+        'queued_announcement' => 'Queued :label (:count loading)',
+        'ready_announcement' => ':label is ready',
     ],
 ];

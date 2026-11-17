@@ -92,6 +92,8 @@
                 data-dirty="false"
                 data-stale="false"
                 data-hibernated="false"
+                data-queued="false"
+                data-loading="false"
                 data-pinned="false"
             >
                 <button
@@ -203,4 +205,12 @@
     <template data-workspace-icon="compass">
         <x-ui.icon name="compass" size="sm" />
     </template>
+
+    <span
+        class="visually-hidden"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        data-workspace-live-region
+    ></span>
 </div>

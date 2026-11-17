@@ -264,6 +264,32 @@ class FrontendAssetLoadingTest extends TestCase
             ->assertSee('--adasi-loader-logo: url(', false);
     }
 
+    public function test_navigation_fade_and_loader_thresholds_render_across_layouts(): void
+    {
+        config([
+            'ui.navigation.page_fade_ms' => 5000,
+            'ui.navigation.slow_loader_threshold_ms' => 3200,
+        ]);
+
+        $this->get(route('login'))
+            ->assertOk()
+            ->assertSee('--ui-page-fade-duration: 5000ms;', false)
+            ->assertSee('pageFadeMs: 5000', false)
+            ->assertSee('slowLoaderThresholdMs: 3200', false);
+
+        $purchasing = User::factory()->create([
+            'role' => 'purchasing',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($purchasing)
+            ->get(route('purchasing.dashboard'))
+            ->assertOk()
+            ->assertSee('--ui-page-fade-duration: 5000ms;', false)
+            ->assertSee('pageFadeMs: 5000', false)
+            ->assertSee('slowLoaderThresholdMs: 3200', false);
+    }
+
     public function test_unused_axios_runtime_and_dependency_are_removed(): void
     {
         $this->assertStringNotContainsString('axios', file_get_contents(base_path('package.json')));

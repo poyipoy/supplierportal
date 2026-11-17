@@ -95,12 +95,12 @@ class WorkspaceShell
 
     public static function maxTabs(): int
     {
-        return max(2, min(20, (int) config('ui.workspace_shell.max_tabs', 12)));
+        return max(2, min(20, (int) config('ui.workspace_shell.max_tabs', 36)));
     }
 
     public static function maxLiveFrames(): int
     {
-        return max(2, min(12, (int) config('ui.workspace_shell.max_live_frames', 6)));
+        return max(2, min(12, (int) config('ui.workspace_shell.max_live_frames', 18)));
     }
 
     public static function staleAfterSeconds(): int
@@ -763,6 +763,9 @@ class WorkspaceShell
                     'statusUnsaved' => __('navigation.workspace_shell.status_unsaved'),
                     'statusStale' => __('navigation.workspace_shell.status_stale'),
                     'statusHibernated' => __('navigation.workspace_shell.status_hibernated'),
+                    'statusQueued' => __('navigation.workspace_shell.status_queued'),
+                    'queuedAnnouncement' => __('navigation.workspace_shell.queued_announcement'),
+                    'readyAnnouncement' => __('navigation.workspace_shell.ready_announcement'),
                 ],
             ],
         ];

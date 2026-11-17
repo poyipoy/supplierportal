@@ -339,7 +339,7 @@ export class WorkspaceTabStore {
         return `f-${this._frameSeq}`;
     }
 
-    _createFrame({ groupId, role, title, url, timestamp, staged = false, stagedNew = false }) {
+    _createFrame({ groupId, role, title, url, timestamp, staged = false, stagedNew = false, queued = false }) {
         const cleanUrl = canonicalizeUrl(url);
         return {
             frameId: this._nextFrameId(),
@@ -354,6 +354,7 @@ export class WorkspaceTabStore {
             hibernated: false,
             staged: Boolean(staged),
             stagedNew: Boolean(stagedNew),
+            queued: Boolean(queued),
             createdAt: timestamp,
             lastAccessedAt: timestamp,
             lastLoadedAt: timestamp,
@@ -365,7 +366,7 @@ export class WorkspaceTabStore {
             .filter((group) => (
                 group.groupId !== protectedGroupId
                 && !(this._activeTarget.type === 'frame' && this._activeTarget.groupId === group.groupId)
-                && !group.frames.some((frame) => frame.isDirty)
+                && !group.frames.some((frame) => frame.isDirty || frame.staged || frame.queued || frame.loading)
             ))
             .sort((a, b) => a.lastAccessedAt - b.lastAccessedAt);
 
@@ -383,6 +384,9 @@ export class WorkspaceTabStore {
                 if (
                     frame.role === 'child'
                     && !frame.isDirty
+                    && !frame.staged
+                    && !frame.queued
+                    && !frame.loading
                     && !(this._activeTarget.type === 'frame' && this._activeTarget.frameId === frame.frameId)
                 ) {
                     cleanChildren.push(frame);
@@ -416,7 +420,7 @@ export class WorkspaceTabStore {
             for (const group of this._groups) {
                 const isInactiveGroup = group.groupId !== activeGroupId;
                 for (const frame of group.frames) {
-                    if (frame.hibernated || frame.isDirty || frame.staged || frame.frameId === activeFrameId) {
+                    if (frame.hibernated || frame.isDirty || frame.staged || frame.queued || frame.frameId === activeFrameId) {
                         continue;
                     }
                     candidates.push({ frame, isInactiveGroup });
@@ -451,7 +455,7 @@ export class WorkspaceTabStore {
         });
     }
 
-    openWorkspace({ moduleKey, label, url, icon = '', insertAfterGroupId = null, activate = true, stageOnly = false }) {
+    openWorkspace({ moduleKey, label, url, icon = '', insertAfterGroupId = null, activate = true, stageOnly = false, showTabWhileStaged = false }) {
         const cleanUrl = canonicalizeUrl(url);
         const resolvedKey = moduleKey || resolveModuleKey(cleanUrl, this.catalog);
         const timestamp = this.now();
@@ -483,7 +487,8 @@ export class WorkspaceTabStore {
             url: cleanUrl,
             timestamp,
             staged: stageOnly,
-            stagedNew: stageOnly,
+            stagedNew: stageOnly && !showTabWhileStaged,
+            queued: Boolean(stageOnly && showTabWhileStaged),
         });
 
         const group = {
@@ -541,13 +546,13 @@ export class WorkspaceTabStore {
         });
     }
 
-    openChildFrame({ groupId = null, sourceFrameId = null, label, url, moduleKey = null, stageOnly = false }) {
+    openChildFrame({ groupId = null, sourceFrameId = null, label, url, moduleKey = null, stageOnly = false, showTabWhileStaged = false }) {
         const targetGroup = groupId
             ? this.getGroup(groupId)
             : (sourceFrameId ? this.getFrameContext(sourceFrameId)?.group : this.activeGroup());
 
         if (!targetGroup) {
-            return this.openWorkspace({ moduleKey, label, url, stageOnly });
+            return this.openWorkspace({ moduleKey, label, url, stageOnly, showTabWhileStaged });
         }
 
         const cleanUrl = canonicalizeUrl(url);
@@ -557,7 +562,7 @@ export class WorkspaceTabStore {
         );
 
         if (existing) {
-            const activation = this.activateFrame(existing.frameId, { stageIfHibernated: stageOnly });
+            const activation = this.activateFrame(existing.frameId, { stageIfHibernated: stageOnly, stageIfLoading: stageOnly });
             return {
                 group: targetGroup,
                 frame: activation.frame,
@@ -602,7 +607,8 @@ export class WorkspaceTabStore {
             url: cleanUrl,
             timestamp,
             staged: stageOnly,
-            stagedNew: stageOnly,
+            stagedNew: stageOnly && !showTabWhileStaged,
+            queued: Boolean(stageOnly && showTabWhileStaged),
         });
 
         targetGroup.frames.push(child);
@@ -650,7 +656,7 @@ export class WorkspaceTabStore {
         return this.activateFrame(targetFrameId, options);
     }
 
-    activateFrame(frameId, { stageIfHibernated = false } = {}) {
+    activateFrame(frameId, { stageIfHibernated = false, stageIfLoading = false } = {}) {
         const ctx = this.getFrameContext(frameId);
         if (!ctx) {
             return { group: null, frame: null, staged: false, wasHibernated: false, shouldRefresh: false, hibernatedFrameIds: [] };
@@ -660,12 +666,25 @@ export class WorkspaceTabStore {
         const timestamp = this.now();
         const wasHibernated = Boolean(frame.hibernated);
 
+        if ((frame.staged || frame.queued) && (frame.loading || frame.queued) && stageIfLoading) {
+            frame.staged = true;
+            return {
+                group,
+                frame,
+                staged: true,
+                wasHibernated: Boolean(frame._wasHibernatedBeforeStage),
+                shouldRefresh: false,
+                hibernatedFrameIds: [],
+            };
+        }
+
         if (wasHibernated && stageIfHibernated) {
             frame.hibernated = false;
             frame.stale = false;
             frame.loading = true;
             frame.staged = true;
             frame.stagedNew = false;
+            frame.queued = false;
             frame._wasHibernatedBeforeStage = true;
             frame.lastLoadedAt = timestamp;
             return { group, frame, staged: true, wasHibernated: true, shouldRefresh: true, hibernatedFrameIds: [] };
@@ -707,32 +726,44 @@ export class WorkspaceTabStore {
         return { group, frame, staged: false, wasHibernated: false, shouldRefresh: false, hibernatedFrameIds };
     }
 
-    commitStagedFrame(frameId) {
+    commitStagedFrame(frameId, { activate = true } = {}) {
         const ctx = this.getFrameContext(frameId);
         if (!ctx) {
-            return { ok: false, group: null, frame: null, hibernatedFrameIds: [] };
+            return { ok: false, group: null, frame: null, activated: false, hibernatedFrameIds: [] };
         }
 
         const { group, frame } = ctx;
         const timestamp = this.now();
         frame.staged = false;
         frame.stagedNew = false;
+        frame.queued = false;
+        frame.loading = false;
         delete frame._wasHibernatedBeforeStage;
         frame.hibernated = false;
         frame.stale = false;
         frame.lastAccessedAt = timestamp;
         frame.lastLoadedAt = timestamp;
-        group.activeFrameId = frame.frameId;
-        group.lastAccessedAt = timestamp;
-        this._activeTarget = {
-            type: 'frame',
-            groupId: group.groupId,
-            frameId: frame.frameId,
-        };
+
+        if (activate) {
+            group.activeFrameId = frame.frameId;
+            group.lastAccessedAt = timestamp;
+            this._activeTarget = {
+                type: 'frame',
+                groupId: group.groupId,
+                frameId: frame.frameId,
+            };
+        } else {
+            const hasReadyGroupActive = group.frames.some(
+                (entry) => entry.frameId === group.activeFrameId && !entry.staged && !entry.stagedNew,
+            );
+            if (!group.activeFrameId || !hasReadyGroupActive) {
+                group.activeFrameId = frame.frameId;
+            }
+        }
 
         const hibernatedFrameIds = this.rebalanceLiveFrames();
 
-        return { ok: true, group, frame, hibernatedFrameIds };
+        return { ok: true, group, frame, activated: Boolean(activate), hibernatedFrameIds };
     }
 
     discardStagedFrame(frameId) {
@@ -745,6 +776,7 @@ export class WorkspaceTabStore {
         if (frame._wasHibernatedBeforeStage) {
             frame.staged = false;
             frame.stagedNew = false;
+            frame.queued = false;
             frame.loading = false;
             frame.hibernated = true;
             delete frame._wasHibernatedBeforeStage;
@@ -966,9 +998,11 @@ export class WorkspaceTabStore {
             }
         }
         frame.loading = false;
+        frame.queued = false;
         frame.stale = false;
         frame.hibernated = false;
         frame.lastLoadedAt = this.now();
+        frame.lastAccessedAt = Math.max(frame.lastAccessedAt || 0, frame.lastLoadedAt);
     }
 
     markFresh(frameId) {
@@ -1034,6 +1068,7 @@ export class WorkspaceTabStore {
                 currentActiveFrameId: activeFrameId,
                 dirty: hasDirty,
                 stale: hasStale,
+                queued: visibleFrames.some((frame) => Boolean(frame.queued)),
                 hibernated: visibleFrames.every((frame) => frame.hibernated),
                 frames: visibleFrames.map((frame) => ({ ...frame })),
             };
@@ -1121,4 +1156,398 @@ export function computeWaterFillTabCap({
     }
 
     return Math.max(defaultMinCap, Math.min(maxCap, solved));
+}
+
+function defaultQueueTimers() {
+    const hasWin = typeof window !== 'undefined' && typeof window.setTimeout === 'function';
+    return {
+        setTimeout: (fn, ms) => (hasWin ? window.setTimeout(fn, ms) : globalThis.setTimeout(fn, ms)),
+        clearTimeout: (id) => (hasWin ? window.clearTimeout(id) : globalThis.clearTimeout(id)),
+    };
+}
+
+/**
+ * Bounded-concurrency FIFO navigation queue for workspace tabs and staged embeds.
+ *
+ * Preserves click order while capping concurrent active loads (HTML + initial data)
+ * to protect backend session/DB capacity, sharing a unified total-wait threshold for
+ * AdasiLoader until the latest user-targeted destination finishes rendering.
+ */
+export class WorkspaceNavQueue {
+    constructor({
+        maxConcurrent = 2,
+        slowThresholdMs = 2500,
+        slotTimeoutMs = 15000,
+        dataReadyTimeoutMs = 12000,
+        queueWaitTimeoutMs = 45000,
+        timers = defaultQueueTimers(),
+        onStartSlot = null,
+        onSlowThreshold = null,
+        onHideLoader = null,
+        onSlotTimeout = null,
+        onDataTimeout = null,
+        onQueueChange = null,
+    } = {}) {
+        this.maxConcurrent = Math.max(1, Number(maxConcurrent) || 2);
+        this.slowThresholdMs = Math.max(0, Number(slowThresholdMs) >= 0 ? Number(slowThresholdMs) : 2500);
+        this.slotTimeoutMs = Math.max(0, Number(slotTimeoutMs) || 0);
+        this.dataReadyTimeoutMs = Math.max(0, Number(dataReadyTimeoutMs) || 0);
+        this.queueWaitTimeoutMs = Math.max(0, Number(queueWaitTimeoutMs) || 0);
+        this.timers = timers;
+        this.onStartSlot = onStartSlot;
+        this.onSlowThreshold = onSlowThreshold;
+        this.onHideLoader = onHideLoader;
+        this.onSlotTimeout = onSlotTimeout;
+        this.onDataTimeout = onDataTimeout;
+        this.onQueueChange = onQueueChange;
+
+        this._entries = [];
+        this._byFrameId = new Map();
+        this._autoFocusFrameId = null;
+        this._slowTimerId = 0;
+        this._loaderShown = false;
+        this._prioritySeq = 0;
+    }
+
+    size() {
+        return this._entries.length;
+    }
+
+    has(frameId) {
+        return this._byFrameId.has(frameId);
+    }
+
+    get(frameId) {
+        return this._byFrameId.get(frameId) || null;
+    }
+
+    autoFocusFrameId() {
+        return this._autoFocusFrameId;
+    }
+
+    isLoaderShown() {
+        return this._loaderShown;
+    }
+
+    activeCount() {
+        let count = 0;
+        for (const entry of this._entries) {
+            if (entry.status === 'loading' || entry.status === 'waiting-data') {
+                count += 1;
+            }
+        }
+        return count;
+    }
+
+    queuedCount() {
+        let count = 0;
+        for (const entry of this._entries) {
+            if (entry.status === 'queued') {
+                count += 1;
+            }
+        }
+        return count;
+    }
+
+    entries() {
+        return this._entries.slice();
+    }
+
+    isTriggerPending(triggerEl) {
+        if (!triggerEl) return false;
+        return this._entries.some(
+            (entry) => entry.triggerEl === triggerEl
+                && (entry.status === 'queued' || entry.status === 'loading' || entry.status === 'waiting-data'),
+        );
+    }
+
+    _notifyChange() {
+        try {
+            this.onQueueChange?.({
+                total: this._entries.length,
+                active: this.activeCount(),
+                queued: this.queuedCount(),
+                autoFocusFrameId: this._autoFocusFrameId,
+                loaderShown: this._loaderShown,
+            });
+        } catch {}
+    }
+
+    _clearEntryTimers(entry) {
+        if (!entry) return;
+        if (entry.slotTimerId) {
+            this.timers.clearTimeout(entry.slotTimerId);
+            entry.slotTimerId = 0;
+        }
+        if (entry.dataTimerId) {
+            this.timers.clearTimeout(entry.dataTimerId);
+            entry.dataTimerId = 0;
+        }
+        if (entry.queueWaitTimerId) {
+            this.timers.clearTimeout(entry.queueWaitTimerId);
+            entry.queueWaitTimerId = 0;
+        }
+    }
+
+    _removeEntry(entry) {
+        this._byFrameId.delete(entry.frameId);
+        const idx = this._entries.indexOf(entry);
+        if (idx !== -1) {
+            this._entries.splice(idx, 1);
+        }
+    }
+
+    _clearWaitPresentation() {
+        if (this._slowTimerId) {
+            this.timers.clearTimeout(this._slowTimerId);
+            this._slowTimerId = 0;
+        }
+        if (this._loaderShown) {
+            this._loaderShown = false;
+            try {
+                this.onHideLoader?.();
+            } catch {}
+        }
+    }
+
+    _ensureSlowTimer() {
+        if (!this._autoFocusFrameId) {
+            this._clearWaitPresentation();
+            return;
+        }
+        if (this._loaderShown || this._slowTimerId) return;
+
+        this._slowTimerId = this.timers.setTimeout(() => {
+            this._slowTimerId = 0;
+            if (!this._autoFocusFrameId) return;
+            this._loaderShown = true;
+            try {
+                this.onSlowThreshold?.(this._autoFocusFrameId);
+            } catch {}
+            this._notifyChange();
+        }, this.slowThresholdMs);
+    }
+
+    _reassignOrClearAutoFocusAfterRemoval(removedFrameId) {
+        if (this._autoFocusFrameId !== removedFrameId) return;
+        const fallback = this._entries.length > 0 ? this._entries[this._entries.length - 1] : null;
+        if (fallback) {
+            this._autoFocusFrameId = fallback.frameId;
+            return;
+        }
+        this._autoFocusFrameId = null;
+        this._clearWaitPresentation();
+    }
+
+    _nextQueuedEntry() {
+        let best = null;
+        for (const entry of this._entries) {
+            if (entry.status !== 'queued') continue;
+            if (!best || entry.priorityOrder > best.priorityOrder) {
+                best = entry;
+            }
+        }
+        return best;
+    }
+
+    _pump() {
+        while (this.activeCount() < this.maxConcurrent) {
+            const next = this._nextQueuedEntry();
+            if (!next) break;
+
+            if (next.queueWaitTimerId) {
+                this.timers.clearTimeout(next.queueWaitTimerId);
+                next.queueWaitTimerId = 0;
+            }
+            next.status = 'loading';
+
+            if (this.slotTimeoutMs > 0) {
+                const fid = next.frameId;
+                next.slotTimerId = this.timers.setTimeout(() => {
+                    const current = this._byFrameId.get(fid);
+                    if (!current || current.status !== 'loading') return;
+                    current.slotTimerId = 0;
+                    this.fail(fid, 'timeout');
+                }, this.slotTimeoutMs);
+            }
+
+            try {
+                this.onStartSlot?.(next);
+            } catch {}
+        }
+    }
+
+    enqueue({
+        frameId,
+        groupId,
+        kind = 'workspace',
+        canonicalKey = '',
+        url = '',
+        label = '',
+        historyMode = 'push',
+        triggerEl = null,
+        wasHibernated = false,
+        autoFocus = true,
+    }) {
+        if (!frameId) return null;
+        const existing = this._byFrameId.get(frameId);
+        if (existing) {
+            if (autoFocus) {
+                this._autoFocusFrameId = frameId;
+                this._ensureSlowTimer();
+            }
+            this._pump();
+            this._notifyChange();
+            return existing;
+        }
+
+        const entry = {
+            frameId,
+            groupId,
+            kind,
+            canonicalKey,
+            url,
+            label,
+            historyMode,
+            triggerEl,
+            wasHibernated: Boolean(wasHibernated),
+            status: 'queued',
+            priorityOrder: 0,
+            slotTimerId: 0,
+            dataTimerId: 0,
+            queueWaitTimerId: 0,
+        };
+
+        this._entries.push(entry);
+        this._byFrameId.set(frameId, entry);
+
+        if (this.queueWaitTimeoutMs > 0) {
+            entry.queueWaitTimerId = this.timers.setTimeout(() => {
+                const current = this._byFrameId.get(frameId);
+                if (!current || current.status !== 'queued') return;
+                current.queueWaitTimerId = 0;
+                this.fail(frameId, 'queue-timeout');
+            }, this.queueWaitTimeoutMs);
+        }
+
+        if (autoFocus) {
+            this._autoFocusFrameId = frameId;
+            this._ensureSlowTimer();
+        }
+
+        this._pump();
+        this._notifyChange();
+        return entry;
+    }
+
+    prioritize(frameId) {
+        const entry = this._byFrameId.get(frameId);
+        if (!entry) return false;
+        this._autoFocusFrameId = frameId;
+        this._ensureSlowTimer();
+
+        if (entry.status === 'queued') {
+            entry.priorityOrder = ++this._prioritySeq;
+            this._pump();
+        }
+        this._notifyChange();
+        return true;
+    }
+
+    markDocumentLoaded(frameId, { awaitingData = false } = {}) {
+        const entry = this._byFrameId.get(frameId);
+        if (!entry || entry.status === 'ready' || entry.status === 'cancelled' || entry.status === 'failed') {
+            return false;
+        }
+
+        if (entry.slotTimerId) {
+            this.timers.clearTimeout(entry.slotTimerId);
+            entry.slotTimerId = 0;
+        }
+
+        if (!awaitingData) {
+            this.complete(frameId);
+            return true;
+        }
+
+        entry.status = 'waiting-data';
+        if (!entry.dataTimerId && this.dataReadyTimeoutMs > 0) {
+            entry.dataTimerId = this.timers.setTimeout(() => {
+                const current = this._byFrameId.get(frameId);
+                if (!current || current.status !== 'waiting-data') return;
+                current.dataTimerId = 0;
+                if (typeof this.onDataTimeout === 'function') {
+                    this.onDataTimeout(current);
+                } else {
+                    this.complete(frameId);
+                }
+            }, this.dataReadyTimeoutMs);
+        }
+
+        this._notifyChange();
+        return true;
+    }
+
+    complete(frameId) {
+        const entry = this._byFrameId.get(frameId);
+        if (!entry || entry.status === 'ready' || entry.status === 'cancelled' || entry.status === 'failed') {
+            return { handled: false, activate: false, entry: null };
+        }
+
+        this._clearEntryTimers(entry);
+        entry.status = 'ready';
+        this._removeEntry(entry);
+
+        const activate = this._autoFocusFrameId === frameId;
+        if (activate) {
+            this._autoFocusFrameId = null;
+            this._clearWaitPresentation();
+        }
+
+        this._pump();
+        this._notifyChange();
+        return { handled: true, activate, entry };
+    }
+
+    clearAutoFocus() {
+        if (!this._autoFocusFrameId && !this._loaderShown && !this._slowTimerId) {
+            return;
+        }
+        this._autoFocusFrameId = null;
+        this._clearWaitPresentation();
+        this._notifyChange();
+    }
+
+    cancel(frameId, reason = 'cancelled') {
+        const entry = this._byFrameId.get(frameId);
+        if (!entry) return null;
+
+        this._clearEntryTimers(entry);
+        entry.status = 'cancelled';
+        entry.cancelReason = reason;
+        this._removeEntry(entry);
+        this._reassignOrClearAutoFocusAfterRemoval(frameId);
+
+        this._pump();
+        this._notifyChange();
+        return entry;
+    }
+
+    fail(frameId, reason = 'timeout') {
+        const entry = this._byFrameId.get(frameId);
+        if (!entry) return null;
+
+        this._clearEntryTimers(entry);
+        entry.status = 'failed';
+        entry.failReason = reason;
+        this._removeEntry(entry);
+        this._reassignOrClearAutoFocusAfterRemoval(frameId);
+
+        this._pump();
+        try {
+            this.onSlotTimeout?.(entry, reason);
+        } catch {}
+        this._notifyChange();
+        return entry;
+    }
 }

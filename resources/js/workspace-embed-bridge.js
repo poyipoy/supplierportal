@@ -302,7 +302,13 @@ export function bootWorkspaceEmbedBridge() {
         window.AdasiCalendar?.closeActive?.();
     });
 
-    // Inform outer shell that initial DOM/Alpine setup inside embed frame is settled.
-    shell.notifyEmbedReady(window);
+    // Inform outer shell only once DOM, DataTables initial draws, and boot fetches have settled.
+    if (window.AdasiEmbedReadiness?.whenReady) {
+        window.AdasiEmbedReadiness.whenReady().then(() => {
+            shell.notifyEmbedReady(window);
+        });
+    } else {
+        shell.notifyEmbedReady(window);
+    }
     return shell;
 }

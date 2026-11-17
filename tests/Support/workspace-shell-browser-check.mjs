@@ -192,11 +192,11 @@ async function evaluate(expression) {
     return response.result.value;
 }
 
-async function until(expression, timeout = 15000) {
+async function until(expression, timeout = 15000, pollMs = 50) {
     const expires = Date.now() + timeout;
     while (Date.now() < expires) {
         if (await evaluate(expression)) return;
-        await sleep(50);
+        await sleep(pollMs);
     }
     const diag = await evaluate(`({href:location.href,ready:document.readyState,tabs:Array.from(document.querySelectorAll("[data-workspace-tab]")).map(t=>t.dataset.workspaceTab),frames:Array.from(document.querySelectorAll("[data-workspace-frame]")).map(f=>{try{return{key:f.dataset.workspaceFrame,src:f.src,ready:f.contentDocument?.readyState,docHref:f.contentWindow?.location?.href,title:f.contentDocument?.title};}catch(e){return{key:f.dataset.workspaceFrame,src:f.src,err:String(e)};}})})`).catch(() => ({}));
     throw new Error(`Condition timed out: ${expression}; diag=${JSON.stringify(diag)}`);
@@ -365,7 +365,16 @@ try {
                     const f = document.querySelector(${JSON.stringify(frameSelector)});
                     const w = f?.contentWindow;
                     const d = f?.contentDocument;
-                    return Boolean(f && w?.location?.href?.includes('_embed=1') && d?.readyState === 'complete' && d.querySelector('#main-content') && !d.querySelector('#adasiLoader.active') && (!w?.jQuery || w.jQuery.active === 0));
+                    return Boolean(
+                        f
+                        && w?.location?.href?.includes('_embed=1')
+                        && d?.readyState === 'complete'
+                        && d.querySelector('#main-content')
+                        && !d.querySelector('#adasiLoader.active')
+                        && !d.querySelector('.dataTables_wrapper.is-loading')
+                        && (!w?.jQuery || w.jQuery.active === 0)
+                        && (!w?.AdasiEmbedReadiness || w.AdasiEmbedReadiness.isReady)
+                    );
                 } catch {
                     return false;
                 }
@@ -393,6 +402,15 @@ try {
             })()`).catch(() => ({}));
             throw new Error(`${err.message}; activePanels=${JSON.stringify(extra)}`);
         }
+    };
+
+    const waitGroupActive = async (groupSelectorExpr) => {
+        await until(`(() => {
+            const g = ${groupSelectorExpr};
+            const activeTab = g?.querySelector('[data-workspace-tab].is-active');
+            return Boolean(g?.classList.contains('is-active') && activeTab && activeTab.dataset.loading !== 'true' && activeTab.dataset.queued !== 'true');
+        })()`, 20000);
+        await waitFrameSettled('.workspace-panel.is-active iframe');
     };
 
     const initialState = await evaluate(`(() => {
@@ -458,7 +476,7 @@ try {
     for (let i = 1; i <= 3; i++) {
         await evaluate(`document.querySelector('#sidebar a.sidebar-link[href*="requisitions"]')?.click()`);
         await until(`document.querySelectorAll('[data-workspace-group][data-workspace-module="requisitions"]').length === ${i}`);
-        await waitFrameSettled('.workspace-panel.is-active iframe');
+        await waitGroupActive(`document.querySelectorAll('[data-workspace-group][data-workspace-module="requisitions"]')[${i - 1}]`);
     }
 
     const prGroupIds = await evaluate(`Array.from(document.querySelectorAll('[data-workspace-group][data-workspace-module="requisitions"]')).map(el => el.dataset.workspaceGroup)`);
@@ -470,7 +488,7 @@ try {
 
     // Switch back to PR instance #1 and seed DOM marker to verify 0ms keep-alive preservation
     await evaluate(`document.querySelector('[data-workspace-group="${prGroupIds[0]}"] [data-workspace-tab-select]')?.click()`);
-    await waitFrameSettled('.workspace-panel.is-active iframe');
+    await waitGroupActive(`document.querySelector('[data-workspace-group="${prGroupIds[0]}"]')`);
     const seededMarker = await evaluate(`(() => {
         const frame = document.querySelector('.workspace-panel.is-active iframe');
         const input = frame?.contentDocument?.querySelector('.dataTables_filter input[type="search"], #main-content input:not([type="hidden"])');
@@ -488,6 +506,10 @@ try {
         frameDoc?.querySelector('a[href*="requisitions/create"]')?.click();
     })()`);
     await until(`document.querySelectorAll('[data-workspace-group="${prGroupIds[0]}"] [data-workspace-tab]').length === 2`);
+    await until(`(() => {
+        const tabs = document.querySelectorAll('[data-workspace-group="${prGroupIds[0]}"] [data-workspace-tab]');
+        return Boolean(tabs[1]?.classList.contains('is-active') && tabs[1].dataset.loading !== 'true' && tabs[1].dataset.queued !== 'true');
+    })()`, 20000);
     await waitFrameSettled('.workspace-panel.is-active iframe');
 
     const expandedPrState = await evaluate(`(() => {
@@ -512,10 +534,14 @@ try {
     // Open Import Suppliers & drill to Create Import Supplier so we have both a collapsed stacked group and an expanded group simultaneously
     await evaluate(`document.querySelector('#sidebar a.sidebar-link[href*="import-suppliers"]')?.click()`);
     await until('document.querySelectorAll(\'[data-workspace-group][data-workspace-module="import-suppliers"]\').length === 1');
-    await waitFrameSettled('.workspace-panel.is-active iframe');
+    await waitGroupActive(`document.querySelector('[data-workspace-group][data-workspace-module="import-suppliers"]')`);
     const supGroupId = await evaluate(`document.querySelector('[data-workspace-group][data-workspace-module="import-suppliers"]')?.dataset.workspaceGroup`);
     await evaluate(`document.querySelector('.workspace-panel.is-active iframe')?.contentDocument?.querySelector('a[href*="import-suppliers/create"]')?.click()`);
     await until(`document.querySelectorAll('[data-workspace-group="${supGroupId}"] [data-workspace-tab]').length === 2`);
+    await until(`(() => {
+        const tabs = document.querySelectorAll('[data-workspace-group="${supGroupId}"] [data-workspace-tab]');
+        return Boolean(tabs[1]?.classList.contains('is-active') && tabs[1].dataset.loading !== 'true' && tabs[1].dataset.queued !== 'true');
+    })()`, 20000);
     await waitFrameSettled('.workspace-panel.is-active iframe');
 
     const stackedAndExpandedState = await evaluate(`(() => {
@@ -562,7 +588,7 @@ try {
     assert.ok(menuItemsCount >= 6, 'Stack menu must list sub-frames + Duplicate + Close actions');
 
     await evaluate(`document.querySelector('[data-workspace-tab-menu] [role="menuitem"]')?.click()`);
-    await waitFrameSettled('.workspace-panel.is-active iframe');
+    await waitGroupActive(`document.querySelector('[data-workspace-group="${prGroupIds[0]}"]')`);
     const backToPrParent = await evaluate(`(() => {
         const prGrp = document.querySelector('[data-workspace-group="${prGroupIds[0]}"]');
         const supGrp = document.querySelector('[data-workspace-group="${supGroupId}"]');
@@ -657,8 +683,10 @@ try {
     await until(`document.querySelector('[data-workspace-tab="${seededMarker}"]')?.dataset.dirty === "true"`);
 
     for (const seg of ['quotations', 'purchase-orders', 'shipments', 'reports']) {
+        const beforeSegCount = await evaluate(`document.querySelectorAll('[data-workspace-group][data-workspace-module="${seg}"]').length`);
         await evaluate(`document.querySelector('#sidebar a.sidebar-link[href*="${seg}"]')?.click()`);
-        await waitFrameSettled('.workspace-panel.is-active iframe');
+        await until(`document.querySelectorAll('[data-workspace-group][data-workspace-module="${seg}"]').length === ${beforeSegCount + 1}`);
+        await waitGroupActive(`document.querySelectorAll('[data-workspace-group][data-workspace-module="${seg}"]')[${beforeSegCount}]`);
     }
 
     await until(`Math.round(document.querySelector('[data-workspace-group="${prGroupIds[1]}"] .workspace-tab')?.getBoundingClientRect().width || 0) === 112`);
@@ -708,7 +736,7 @@ try {
     })()`);
     await sleep(45);
     const clickSampleMid = await evaluate(`Math.round(document.querySelector('[data-workspace-group="${prGroupIds[1]}"] .workspace-tab')?.getBoundingClientRect().width || 0)`);
-    await waitFrameSettled('.workspace-panel.is-active iframe');
+    await waitGroupActive(`document.querySelector('[data-workspace-group="${prGroupIds[1]}"]')`);
     const clickSampleSettled = await evaluate(`Math.round(document.querySelector('[data-workspace-group="${prGroupIds[1]}"] .workspace-tab')?.getBoundingClientRect().width || 0)`);
     assert.equal(clickSampleImmediate.beforeW, 112);
     assert.equal(clickSampleImmediate.immediateW, 112, `Clicked compressed tab must not flash full label width immediately after click (got ${clickSampleImmediate.immediateW})`);
@@ -718,15 +746,16 @@ try {
     // Switch back to the last opened tab and verify live compressed tab click also stays locked at 112px
     const liveClickSample = await evaluate(`(() => {
         const groups = Array.from(document.querySelectorAll('[data-workspace-tablist] [data-workspace-group]:not(.workspace-tab-group--ghost)'));
-        const lastTab = groups[groups.length - 1]?.querySelector('.workspace-tab');
+        const lastGrp = groups[groups.length - 1];
+        const lastTab = lastGrp?.querySelector('.workspace-tab');
         const btn = lastTab?.querySelector('button[role="tab"]');
         const beforeW = Math.round(lastTab?.getBoundingClientRect().width || 0);
         btn?.click();
         const immediateW = Math.round(lastTab?.getBoundingClientRect().width || 0);
-        return { beforeW, immediateW };
+        return { beforeW, immediateW, lastGid: lastGrp?.dataset.workspaceGroup };
     })()`);
     assert.equal(liveClickSample.immediateW, liveClickSample.beforeW, 'Clicking live compressed tab must not change its width');
-    await waitFrameSettled('.workspace-panel.is-active iframe');
+    await waitGroupActive(`document.querySelector('[data-workspace-group="${liveClickSample.lastGid}"]')`);
 
     await hoverMove(10, 10);
 
@@ -780,7 +809,7 @@ try {
 
     // Re-expand PR group for Dark screenshot capture
     await evaluate(`document.querySelector('[data-workspace-group="${prGroupIds[0]}"] [data-workspace-group-select]')?.click()`);
-    await waitFrameSettled('.workspace-panel.is-active iframe');
+    await waitGroupActive(`document.querySelector('[data-workspace-group="${prGroupIds[0]}"]')`);
 
     // 5. Dark Mode Screenshot
     await evaluate(`(() => {
@@ -815,6 +844,10 @@ try {
         childTrigger?.click();
         childTrigger?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
     })()`);
+    await until(`(() => {
+        const childTab = document.querySelectorAll('[data-workspace-group="${prGroupIds[0]}"] .workspace-tab')[1];
+        return Boolean(childTab?.classList.contains('is-active') && childTab.dataset.loading !== 'true' && childTab.dataset.queued !== 'true');
+    })()`, 20000);
     await waitFrameSettled('.workspace-panel.is-active iframe');
 
     // Park mouse away from tabstrip
@@ -939,6 +972,10 @@ try {
 
     // Switch back to PR #1 index tab (which holds live DataTable + seeded input) & test full EN <-> ID language switch
     await evaluate(`document.querySelector('[data-workspace-group="${prGroupIds[0]}"] [data-workspace-tab="${seededMarker}"] button')?.click()`);
+    await until(`(() => {
+        const tab = document.querySelector('[data-workspace-group="${prGroupIds[0]}"] [data-workspace-tab="${seededMarker}"]');
+        return Boolean(tab?.classList.contains('is-active') && tab.dataset.loading !== 'true' && tab.dataset.queued !== 'true');
+    })()`, 20000);
     await waitFrameSettled('.workspace-panel.is-active iframe');
     const enSeedCheck = await evaluate(`(() => {
         const f = document.querySelector('[data-workspace-frame="${seededMarker}"]');
@@ -1031,6 +1068,7 @@ try {
         return Math.round(grp?.getBoundingClientRect()?.width || 0);
     })()`);
     await evaluate(`document.querySelector('[data-workspace-group="${supGroupId}"] [data-workspace-group-select]')?.click()`);
+    await until(`document.querySelector('[data-workspace-group="${supGroupId}"]')?.classList.contains('is-active')`, 20000, 15);
     const expandStart = await evaluate(`(() => {
         const grp = document.querySelector('[data-workspace-group="${supGroupId}"]');
         const pills = Array.from(grp?.querySelectorAll(':scope > .workspace-tab:not(.workspace-tab--ghost)') || []);
@@ -1086,20 +1124,33 @@ try {
     );
     assert.equal(supExpandedMetrics.leftoverTransients, 0, 'Morph transients must clean up after expand settles');
 
-    // Open Claims -> tests BOTH new tab calm lengthen AND expanded supGroupId smooth 260ms accordion collapse
+    // Open Claims -> tests BOTH new tab calm lengthen AND expanded supGroupId smooth 260ms accordion collapse once active
     await evaluate(`document.querySelector('#sidebar a.sidebar-link[href*="claims"]')?.click()`);
     const enterStart = await evaluate(`(() => {
         const claimsGrp = Array.from(document.querySelectorAll('[data-workspace-group][data-workspace-module="claims"]')).pop();
         const claimsTab = claimsGrp?.querySelector('.workspace-tab');
         const csGrp = claimsGrp ? getComputedStyle(claimsGrp) : null;
         const csTab = claimsTab ? getComputedStyle(claimsTab) : null;
-        const supGrp = document.querySelector('[data-workspace-group="${supGroupId}"]');
-        const supTail = supGrp?.querySelector('.workspace-tab-group__collapse-tail');
         return {
             hasEntering: Boolean(claimsGrp?.classList.contains('is-entering')),
             transitionProp: csGrp?.transitionProperty || '',
             transitionDuration: csGrp?.transitionDuration || '',
             animName: csTab?.animationName || 'none',
+        };
+    })()`);
+    assert.equal(enterStart.hasEntering, true, 'New workspace group must enter with measured-width .is-entering');
+    assert.ok(enterStart.transitionProp.includes('width'), `Expected width transition, got ${enterStart.transitionProp}`);
+    assert.ok(enterStart.transitionDuration.includes('0.28s'), `Expected calm 280ms enter transition duration, got ${enterStart.transitionDuration}`);
+    assert.equal(enterStart.animName, 'none', 'No bounce/keyframe transform animation allowed on entering tabs');
+
+    await sleep(85);
+    const midClaimsEnterW = await evaluate(`Math.round(Array.from(document.querySelectorAll('[data-workspace-group][data-workspace-module="claims"]')).pop()?.getBoundingClientRect()?.width || 0)`);
+
+    await until(`Array.from(document.querySelectorAll('[data-workspace-group][data-workspace-module="claims"]')).pop()?.classList.contains('is-active')`, 20000, 15);
+    const collapseStart = await evaluate(`(() => {
+        const supGrp = document.querySelector('[data-workspace-group="${supGroupId}"]');
+        const supTail = supGrp?.querySelector('.workspace-tab-group__collapse-tail');
+        return {
             supIsMorphingOnCollapse: Boolean(supGrp?.classList.contains('is-morphing')),
             supIsCollapsingGroup: Boolean(supGrp?.classList.contains('is-collapsing-group')),
             supCollapseDuration: supGrp ? getComputedStyle(supGrp).transitionDuration : '',
@@ -1108,23 +1159,19 @@ try {
             supTailWidthTransition: supTail ? getComputedStyle(supTail).transitionProperty : '',
         };
     })()`);
-    assert.equal(enterStart.hasEntering, true, 'New workspace group must enter with measured-width .is-entering');
-    assert.ok(enterStart.transitionProp.includes('width'), `Expected width transition, got ${enterStart.transitionProp}`);
-    assert.ok(enterStart.transitionDuration.includes('0.28s'), `Expected calm 280ms enter transition duration, got ${enterStart.transitionDuration}`);
-    assert.equal(enterStart.animName, 'none', 'No bounce/keyframe transform animation allowed on entering tabs');
-    assert.equal(enterStart.supIsMorphingOnCollapse, true, 'Collapsing expanded group to stack must morph container width smoothly');
-    assert.equal(enterStart.supIsCollapsingGroup, true);
-    assert.ok(enterStart.supCollapseDuration.includes('0.26s'), `Expected 260ms group collapse duration, got ${enterStart.supCollapseDuration}`);
-    assert.equal(enterStart.supHasCollapseTail, true, 'Collapsing group must keep inert fold tail inside container');
-    assert.equal(enterStart.supCollapsedTailAriaHidden, 'true');
-    assert.ok(enterStart.supTailWidthTransition.includes('width'), 'Collapse tail must fold its own width inward synchronously');
+    Object.assign(enterStart, collapseStart);
+    assert.equal(collapseStart.supIsMorphingOnCollapse, true, 'Collapsing expanded group to stack must morph container width smoothly');
+    assert.equal(collapseStart.supIsCollapsingGroup, true);
+    assert.ok(collapseStart.supCollapseDuration.includes('0.26s'), `Expected 260ms group collapse duration, got ${collapseStart.supCollapseDuration}`);
+    assert.equal(collapseStart.supHasCollapseTail, true, 'Collapsing group must keep inert fold tail inside container');
+    assert.equal(collapseStart.supCollapsedTailAriaHidden, 'true');
+    assert.ok(collapseStart.supTailWidthTransition.includes('width'), 'Collapse tail must fold its own width inward synchronously');
 
     await sleep(85);
     const midEnterAndCollapse = await evaluate(`(() => {
-        const claimsGrp = Array.from(document.querySelectorAll('[data-workspace-group][data-workspace-module="claims"]')).pop();
         const supGrp = document.querySelector('[data-workspace-group="${supGroupId}"]');
         return {
-            claimsMidW: Math.round(claimsGrp?.getBoundingClientRect()?.width || 0),
+            claimsMidW: ${midClaimsEnterW},
             supMidW: Math.round(supGrp?.getBoundingClientRect()?.width || 0),
         };
     })()`);
@@ -1273,8 +1320,68 @@ try {
 
     await evaluate(`document.querySelector('[data-shortcuts-frequent] button')?.click()`);
     await until('document.querySelectorAll("[data-workspace-group]").length === 2');
-    await waitFrameSettled('.workspace-panel.is-active iframe');
+    await waitGroupActive(`document.querySelectorAll('[data-workspace-group]')[1]`);
     await recordFinding('5_close_all_shortcuts_fallback_f5_and_relaunch', shortcutSearchState);
+
+    // 6b. Ordered Rapid-Click FIFO Queue + Purchase Order DataTables Readiness Gate
+    const rapidQueueProbe = await evaluate(`(() => {
+        const beforePanelId = document.querySelector('.workspace-panel.is-active')?.dataset.workspacePanel || null;
+        const reqLink = document.querySelector('#sidebar a.sidebar-link[href*="requisitions"]');
+        const quoLink = document.querySelector('#sidebar a.sidebar-link[href*="quotations"]');
+        const poLink = document.querySelector('#sidebar a.sidebar-link[href*="purchase-orders"]');
+        reqLink?.click();
+        quoLink?.click();
+        poLink?.click();
+        const groups = Array.from(document.querySelectorAll('[data-workspace-tablist] [data-workspace-group]:not([data-workspace-group="shortcuts"]):not(.workspace-tab-group--ghost)'));
+        const tail3 = groups.slice(-3);
+        const tabStates = tail3.map((g) => {
+            const tab = g.querySelector('[data-workspace-tab]');
+            return {
+                groupId: g.dataset.workspaceGroup,
+                moduleKey: g.dataset.workspaceModule,
+                loading: tab?.dataset.loading || null,
+                queued: tab?.dataset.queued || null,
+                isActive: g.classList.contains('is-active'),
+            };
+        });
+        return {
+            beforePanelId,
+            activePanelAfterClicks: document.querySelector('.workspace-panel.is-active')?.dataset.workspacePanel || null,
+            tailOrder: tabStates.map((s) => s.moduleKey),
+            loadingCount: tabStates.filter((s) => s.loading === 'true').length,
+            queuedCount: tabStates.filter((s) => s.queued === 'true').length,
+            poGroupId: tail3[2]?.dataset.workspaceGroup || null,
+        };
+    })()`);
+    assert.deepEqual(rapidQueueProbe.tailOrder, ['requisitions', 'quotations', 'purchase-orders'], 'Rapid sidebar clicks must open tabs in exact FIFO click order');
+    assert.equal(rapidQueueProbe.activePanelAfterClicks, rapidQueueProbe.beforePanelId, 'Active workspace panel must stay put while queued/loading tabs render');
+    assert.ok(rapidQueueProbe.loadingCount <= 2, `Queue must enforce maxConcurrent = 2 (loadingCount=${rapidQueueProbe.loadingCount})`);
+    assert.equal(rapidQueueProbe.queuedCount, 1, 'Third rapid-click tab must start queued while 2 slots are active');
+
+    await until(`(() => {
+        const poGrp = document.querySelector('[data-workspace-group="${rapidQueueProbe.poGroupId}"]');
+        return Boolean(poGrp?.classList.contains('is-active'));
+    })()`, 25000);
+
+    const poImmediateOnSwitch = await evaluate(`(() => {
+        const iframe = document.querySelector('.workspace-panel.is-active iframe');
+        const doc = iframe?.contentDocument;
+        const win = iframe?.contentWindow;
+        const poTable = doc?.querySelector('#poTable');
+        const wrapper = poTable?.closest('.dataTables_wrapper');
+        return {
+            href: win?.location?.href || '',
+            hasWrapperLoading: Boolean(wrapper?.classList.contains('is-loading')),
+            bodyRows: doc ? doc.querySelectorAll('#poTable tbody tr').length : 0,
+            readinessReady: Boolean(win?.AdasiEmbedReadiness?.isReady),
+        };
+    })()`);
+    assert.ok(poImmediateOnSwitch.href.includes('purchase-orders'), 'Final rapid-clicked target (Purchase Order) must become active');
+    assert.equal(poImmediateOnSwitch.hasWrapperLoading, false, 'Purchase Order DataTable must NOT still be loading when tab switches');
+    assert.ok(poImmediateOnSwitch.bodyRows >= 1, 'Purchase Order table rows (or empty-table row) must already be painted before tab switch');
+    assert.equal(poImmediateOnSwitch.readinessReady, true, 'AdasiEmbedReadiness must be settled upon tab switch');
+    await waitFrameSettled('.workspace-panel.is-active iframe');
+    await recordFinding('6b_rapid_click_fifo_queue_and_datatables_readiness', { rapidQueueProbe, poImmediateOnSwitch });
 
     // 7. Mobile 375x900 responsiveness & touch targets
     await command('Emulation.setDeviceMetricsOverride', {

@@ -15,13 +15,13 @@ return [
 
     'workspace_shell' => [
         'enabled' => (bool) env('WORKSPACE_SHELL_ENABLED', true),
-        'max_tabs' => (int) env('WORKSPACE_SHELL_MAX_TABS', 12),
-        'max_live_frames' => (int) env('WORKSPACE_SHELL_MAX_LIVE_FRAMES', 6),
-        'stale_after_seconds' => (int) env('WORKSPACE_SHELL_STALE_AFTER_SECONDS', 120),
+        'max_tabs' => (int) env('WORKSPACE_SHELL_MAX_TABS', 36),
+        'max_live_frames' => (int) env('WORKSPACE_SHELL_MAX_LIVE_FRAMES', 18),
+        'stale_after_seconds' => (int) env('WORKSPACE_SHELL_STALE_AFTER_SECONDS', 180),
     ],
 
     'navigation' => [
-        'slow_loader_threshold_ms' => (int) env('UI_SLOW_LOADER_THRESHOLD_MS', 2500),
-        'page_fade_ms' => (int) env('UI_PAGE_FADE_MS', 500),
+        'slow_loader_threshold_ms' => (int) env('UI_SLOW_LOADER_THRESHOLD_MS', 2300),
+        'page_fade_ms' => (int) env('UI_PAGE_FADE_MS', 1000),
     ],
 ];

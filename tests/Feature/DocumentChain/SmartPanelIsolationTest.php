@@ -2,20 +2,27 @@
 
 namespace Tests\Feature\DocumentChain;
 
+use App\Http\Middleware\EnforceAuthSessionSecurity;
 use App\Models\ExchangeRate;
 use App\Models\LocalGoodsReceipt;
 use App\Models\LocalInvoice;
+use App\Models\LocalInvoiceVoucher;
 use App\Models\LocalPurchaseOrder;
 use App\Models\PaymentBatch;
+use App\Models\PaymentGroup;
+use App\Models\PaymentItem;
 use App\Models\PurchaseOrder;
 use App\Models\SupplierScope;
 use App\Models\User;
+use App\Services\DocumentChain\DocumentChainResolverService;
 use App\Services\FileSecurity\FileInspectionService;
 use App\Support\BusinessTime;
 use App\Support\Security\InlinePreviewResponse;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Tests\Support\NativeFileFixtures;
 use Tests\TestCase;
 
@@ -375,5 +382,146 @@ class SmartPanelIsolationTest extends TestCase
         $this->assertStringNotContainsString('height: 62vh;', $html);
         $this->assertStringContainsString('tw:ps-0 tw:sm:ps-6', $html);
         $this->assertStringContainsString('tw:flex-1', $html);
+    }
+
+    public function test_inactive_user_is_denied_access_to_context_panel(): void
+    {
+        $inactivePurchasing = User::factory()->create([
+            'role' => 'purchasing',
+            'is_active' => false,
+            'account_status' => 'ACTIVE',
+        ]);
+
+        $po = PurchaseOrder::create([
+            'supplier_id' => $this->importSupplierA->id,
+            'currency' => 'USD',
+            'exchange_rate_id' => $this->rate->id,
+            'po_number' => 'PO/SP/INACTIVE/001',
+            'status' => 'active',
+            'created_by' => $this->purchasing->id,
+            'estimated_arrival' => BusinessTime::today()->addDays(14)->toDateString(),
+        ]);
+
+        $this->actingAs($inactivePurchasing)
+            ->getJson(route('context-panel.show', ['entityType' => 'import-po', 'hash' => $po->hashid]))
+            ->assertUnauthorized();
+
+        $this->withoutMiddleware(EnforceAuthSessionSecurity::class)
+            ->actingAs($inactivePurchasing)
+            ->getJson(route('context-panel.show', ['entityType' => 'import-po', 'hash' => $po->hashid]))
+            ->assertForbidden();
+
+        $this->expectException(AccessDeniedHttpException::class);
+        app(DocumentChainResolverService::class)->resolve($inactivePurchasing, 'import-po', $po->hashid);
+    }
+
+    public function test_accounting_role_does_not_receive_voucher_nodes_or_purchasing_urls_in_payment_batch(): void
+    {
+        $accounting = User::factory()->create([
+            'role' => 'accounting',
+            'is_active' => true,
+            'account_status' => 'ACTIVE',
+        ]);
+
+        $batch = PaymentBatch::create([
+            'batch_number' => 'DRP/ACC/001',
+            'batch_type' => PaymentBatch::TYPE_SUPPLIER,
+            'status' => PaymentBatch::STATUS_FINALIZED,
+            'created_by' => $this->finance->id,
+        ]);
+
+        $group = $batch->groups()->create([
+            'payee_type' => 'supplier',
+            'payee_id' => $this->localSupplierA->id,
+            'payee_name' => 'PT Supplier Local A',
+            'bank_name' => 'BCA',
+            'account_number' => '1234567890',
+            'account_holder_name' => 'PT Supplier Local A',
+            'subtotal_amount' => 5000000,
+            'bank_fee' => 0,
+            'net_payment_amount' => 5000000,
+            'status' => PaymentGroup::STATUS_UNPAID,
+        ]);
+
+        $invoice = LocalInvoice::create([
+            'submission_number' => 'SUB/ACC/001',
+            'supplier_id' => $this->localSupplierA->id,
+            'po_number' => 'PO-ACC-001',
+            'invoice_number' => 'INV-ACC-001',
+            'invoice_date' => BusinessTime::today()->toDateString(),
+            'due_date' => BusinessTime::today()->addDays(30)->toDateString(),
+            'transaction_type' => 'BARANG',
+            'invoice_amount' => '5000000.00',
+            'tax_amount' => '0.00',
+            'status' => LocalInvoice::STATUS_READY_TO_PAY,
+            'submitted_by' => $this->localSupplierA->id,
+            'submitted_at' => BusinessTime::now(),
+            'revision_number' => 1,
+        ]);
+
+        $item = $group->items()->create([
+            'payable_type' => LocalInvoice::class,
+            'payable_id' => $invoice->id,
+            'amount' => 5000000,
+            'subtotal_amount' => 5000000,
+            'tax_amount' => 0,
+            'total_amount' => 5000000,
+            'item_reference' => $invoice->invoice_number,
+            'status' => PaymentItem::STATUS_ACTIVE,
+        ]);
+
+        LocalInvoiceVoucher::create([
+            'voucher_number' => 'VCH-ACC-001',
+            'voucher_date' => BusinessTime::today()->toDateString(),
+            'payment_method' => 'BANK',
+            'local_invoice_id' => $invoice->id,
+            'payment_batch_id' => $batch->id,
+            'payment_group_id' => $group->id,
+            'payment_item_id' => $item->id,
+            'dpp_snapshot' => 5000000,
+            'ppn_snapshot' => 0,
+            'pph_snapshot' => 0,
+            'net_payable_snapshot' => 5000000,
+            'amount' => 5000000,
+            'bank_name_snapshot' => 'BCA',
+            'bank_account_snapshot' => '1234567890',
+            'bank_account_holder_snapshot' => 'PT Supplier Local A',
+            'supplier_name_snapshot' => 'PT Supplier Local A',
+            'invoice_number_snapshot' => $invoice->invoice_number,
+            'po_number_snapshot' => 'PO-ACC-001',
+            'gr_references_snapshot' => 'GR-001',
+            'terbilang_snapshot' => 'Lima Juta Rupiah',
+            'status' => LocalInvoiceVoucher::STATUS_FINAL,
+            'finalized_by' => $this->finance->id,
+            'finalized_at' => BusinessTime::now(),
+        ]);
+
+        $resolver = app(DocumentChainResolverService::class);
+
+        $financeNodes = collect($resolver->resolve($this->finance, 'payment-batch', $batch->hashid)['nodes']);
+        $this->assertTrue($financeNodes->contains('type', 'VOUCHER'));
+
+        $accountingNodes = collect($resolver->resolve($accounting, 'payment-batch', $batch->hashid)['nodes']);
+        $this->assertFalse($accountingNodes->contains('type', 'VOUCHER'));
+
+        $invoiceNode = $accountingNodes->firstWhere('type', 'INVOICE');
+        $this->assertNotNull($invoiceNode);
+        $this->assertNull($invoiceNode['url']);
+    }
+
+    public function test_document_chain_resolver_rejects_raw_numeric_string_identifier(): void
+    {
+        $po = PurchaseOrder::create([
+            'supplier_id' => $this->importSupplierA->id,
+            'currency' => 'USD',
+            'exchange_rate_id' => $this->rate->id,
+            'po_number' => 'PO/SP/RAWNUM/001',
+            'status' => 'active',
+            'created_by' => $this->purchasing->id,
+            'estimated_arrival' => BusinessTime::today()->addDays(14)->toDateString(),
+        ]);
+
+        $this->expectException(NotFoundHttpException::class);
+        app(DocumentChainResolverService::class)->resolve($this->purchasing, 'import-po', (string) $po->id);
     }
 }

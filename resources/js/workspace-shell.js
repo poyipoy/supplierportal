@@ -9,6 +9,7 @@ import {
     safeWebUrl,
     SHORTCUTS_KEY,
     stripEmbedParam,
+    WorkspaceNavQueue,
     WorkspaceTabStore,
 } from './workspace-shell-core.js';
 
@@ -70,6 +71,7 @@ export function bootWorkspaceShell() {
     const staleBtn = document.querySelector('[data-workspace-stale-action]');
     const progressEl = document.querySelector('[data-workspace-progress]');
     const tabMenuEl = document.querySelector('[data-workspace-tab-menu]');
+    const liveRegionEl = document.querySelector('[data-workspace-live-region]');
     const topbarTitleEl = document.querySelector('.top-navbar .topbar-page-title');
 
     const WORKSPACE_MOTION_FALLBACK_MS = 420;
@@ -750,7 +752,7 @@ export function bootWorkspaceShell() {
             const touchedGroups = new Set();
             uncachedPills.forEach((pill) => {
                 const grp = pill.parentElement;
-                if (grp && !touchedGroups.has(grp)) {
+                if (grp && !touchedGroups.has(grp) && !grp.classList.contains('is-entering') && !grp.classList.contains('is-morphing')) {
                     touchedGroups.add(grp);
                     groupSnapshots.push({
                         grp,
@@ -1128,94 +1130,114 @@ export function bootWorkspaceShell() {
     const slowLoaderThresholdMs = Number.isFinite(Number(config.slowLoaderThresholdMs)) && Number(config.slowLoaderThresholdMs) >= 0
         ? Number(config.slowLoaderThresholdMs)
         : 2500;
+    if (Number.isFinite(Number(config.pageFadeMs)) && Number(config.pageFadeMs) >= 0) {
+        document.documentElement?.style?.setProperty?.('--ui-page-fade-duration', `${Number(config.pageFadeMs)}ms`);
+    }
     let initialFrameId = null;
     let initialReadyResolve = null;
     let initialReadyDone = false;
     let lastMenuOpener = null;
-    let pendingNav = null;
+    let tabMenuCloseTimer = 0;
+    let activeLoaderToken = null;
+    const trackedTriggerEls = new Set();
+    const attachedReadinessPromises = new WeakSet();
+    const leavingPanelCleanups = new WeakMap();
 
-    const clearPendingTriggerUi = (triggerEl) => {
-        if (!triggerEl) return;
-        try {
-            triggerEl.removeAttribute('data-workspace-pending');
-            if (triggerEl.getAttribute('aria-busy') === 'true') {
-                triggerEl.removeAttribute('aria-busy');
-            }
-        } catch {}
+    const announceLiveStatus = (text) => {
+        if (!liveRegionEl || !text) return;
+        liveRegionEl.textContent = '';
+        window.requestAnimationFrame?.(() => {
+            if (liveRegionEl) liveRegionEl.textContent = text;
+        });
     };
 
-    const clearPendingNav = (reason = 'cancelled') => {
-        if (!pendingNav) return null;
-        const current = pendingNav;
-        pendingNav = null;
-        if (current.slowTimerId) window.clearTimeout(current.slowTimerId);
-        if (current.watchdogTimerId) window.clearTimeout(current.watchdogTimerId);
-        if (current.loaderToken !== null && current.loaderToken !== undefined) {
-            window.AdasiLoader?.hide?.(current.loaderToken, true);
-        }
-        clearPendingTriggerUi(current.triggerEl);
-
-        if (reason !== 'committed') {
-            const discard = store.discardStagedFrame(current.frameId);
-            if (discard.discarded) {
-                const stagedIframe = frames.get(current.frameId);
-                if (stagedIframe) {
-                    try { stagedIframe.src = 'about:blank'; } catch {}
-                    frames.delete(current.frameId);
+    const syncTriggerPendingAttributes = () => {
+        for (const triggerEl of Array.from(trackedTriggerEls)) {
+            const isPending = navQueue.isTriggerPending(triggerEl);
+            try {
+                if (isPending) {
+                    triggerEl.setAttribute('data-workspace-pending', 'true');
+                    triggerEl.setAttribute('aria-busy', 'true');
+                } else {
+                    triggerEl.removeAttribute('data-workspace-pending');
+                    if (triggerEl.getAttribute('aria-busy') === 'true') {
+                        triggerEl.removeAttribute('aria-busy');
+                    }
+                    trackedTriggerEls.delete(triggerEl);
                 }
-                framesEl.querySelector(`[data-workspace-panel="${CSS.escape(current.frameId)}"]`)?.remove();
+            } catch {
+                trackedTriggerEls.delete(triggerEl);
             }
         }
-
-        syncStageControls();
-        return current;
     };
 
-    const beginStagedNavigation = ({ frame, canonicalKey, historyMode = 'push', triggerEl = null }) => {
-        clearPendingNav('superseded');
-        if (triggerEl) {
-            triggerEl.setAttribute('data-workspace-pending', 'true');
-            triggerEl.setAttribute('aria-busy', 'true');
+    const unmountFramePanel = (frameId) => {
+        if (!frameId) return;
+        const iframe = frames.get(frameId);
+        if (iframe) {
+            try { iframe.src = 'about:blank'; } catch {}
+            frames.delete(frameId);
         }
+        const panel = framesEl.querySelector(`[data-workspace-panel="${CSS.escape(frameId)}"]`);
+        if (panel) {
+            leavingPanelCleanups.get(panel)?.();
+            panel.remove();
+        }
+    };
 
-        const state = {
-            frameId: frame.frameId,
-            groupId: frame.groupId,
-            canonicalKey,
-            historyMode,
-            triggerEl,
-            loaderToken: null,
-            slowTimerId: 0,
-            watchdogTimerId: 0,
-        };
-
-        state.slowTimerId = window.setTimeout(() => {
-            if (pendingNav !== state) return;
-            state.slowTimerId = 0;
-            state.loaderToken = window.AdasiLoader?.showImmediate?.() ?? 'shown';
-            syncStageControls();
-        }, slowLoaderThresholdMs);
-
-        state.watchdogTimerId = window.setTimeout(() => {
-            if (pendingNav !== state) return;
-            clearPendingNav('timeout');
+    const navQueue = new WorkspaceNavQueue({
+        maxConcurrent: 2,
+        slowThresholdMs: slowLoaderThresholdMs,
+        slotTimeoutMs: 15000,
+        dataReadyTimeoutMs: 12000,
+        queueWaitTimeoutMs: 45000,
+        onStartSlot: (entry) => {
+            const frame = store.getFrame(entry.frameId);
+            if (!frame) return;
+            frame.queued = false;
+            frame.loading = true;
+            ensureFrameMounted(frame);
+            syncTriggerPendingAttributes();
+            syncTabDom();
+        },
+        onSlowThreshold: () => {
+            if (activeLoaderToken === null) {
+                activeLoaderToken = window.AdasiLoader?.showImmediate?.() ?? 'shown';
+                syncStageControls();
+            }
+        },
+        onHideLoader: () => {
+            if (activeLoaderToken !== null) {
+                window.AdasiLoader?.hide?.(activeLoaderToken, true);
+                activeLoaderToken = null;
+                syncStageControls();
+            }
+        },
+        onSlotTimeout: (entry) => {
+            const discarded = store.discardStagedFrame(entry.frameId);
+            if (!discarded.discarded) {
+                store.closeFrame(entry.frameId);
+            }
+            if (!discarded.revertedHibernate) {
+                unmountFramePanel(entry.frameId);
+            }
+            syncTriggerPendingAttributes();
             syncTabDom();
             window.AdasiToast?.error?.(i18n.loadingModuleError || i18n.loadingFailed || 'Unable to load the selected page. Please try again.');
-        }, 15000);
-
-        pendingNav = state;
-        ensureFrameMounted(frame);
-        syncTabDom();
-    };
-
-    const commitPendingNavigationIfMatches = (frameId) => {
-        if (!pendingNav || pendingNav.frameId !== frameId) return false;
-        const { historyMode } = pendingNav;
-        clearPendingNav('committed');
-        store.commitStagedFrame(frameId);
-        notifyActiveSurface(historyMode || 'push');
-        return true;
-    };
+        },
+        onDataTimeout: (entry) => {
+            const iframe = frames.get(entry.frameId);
+            let frameWin = null;
+            try {
+                frameWin = iframe?.contentWindow || null;
+            } catch {}
+            finalizeFrameReady(entry.frameId, frameWin);
+        },
+        onQueueChange: () => {
+            syncTriggerPendingAttributes();
+            syncStageControls();
+        },
+    });
 
     const initialReadyPromise = new Promise((resolve) => {
         initialReadyResolve = () => {
@@ -1225,8 +1247,8 @@ export function bootWorkspaceShell() {
         };
     });
 
-    // Never block AuthSplash beyond a modest safety floor if CDN fonts/scripts lag.
-    window.setTimeout(() => initialReadyResolve?.(), 2200);
+    // Keep safety ceiling generous enough for an initial DataTables draw without blocking AuthSplash skip/timeout.
+    window.setTimeout(() => initialReadyResolve?.(), 5500);
 
     const resolveModuleForUrl = (url, preferredKey = null) => {
         const resolved = resolveLinkTarget(url);
@@ -1266,8 +1288,9 @@ export function bootWorkspaceShell() {
     const syncStageControls = () => {
         const active = store.activeFrame();
         const isShortcuts = store.isShortcutsActive();
-        const loading = Boolean(pendingNav?.loaderToken)
-            || (!pendingNav && (!initialReadyDone || Boolean(active?.loading)));
+        const hasPendingAutoFocus = Boolean(navQueue.autoFocusFrameId());
+        const loading = Boolean(activeLoaderToken)
+            || (!hasPendingAutoFocus && (!initialReadyDone || Boolean(active?.loading)));
         stageEl.classList.toggle('is-loading', loading);
         if (progressEl) progressEl.setAttribute('aria-hidden', loading ? 'false' : 'true');
         if (refreshBtn) {
@@ -1443,30 +1466,35 @@ export function bootWorkspaceShell() {
     };
 
     const syncTabPillState = (wrapper, trigger, { frame, group, isActive, isStacked, displayText }) => {
-        wrapper.classList.toggle('is-active', Boolean(isActive));
-        wrapper.dataset.dirty = (isStacked ? group.dirty : frame.isDirty) ? 'true' : 'false';
-        wrapper.dataset.stale = (isStacked ? group.stale : frame.stale) ? 'true' : 'false';
-        wrapper.dataset.hibernated = (isStacked ? group.hibernated : frame.hibernated) ? 'true' : 'false';
-        wrapper.dataset.loading = (isStacked ? group.frames.some((f) => f.loading) : Boolean(frame.loading)) ? 'true' : 'false';
-
-        trigger.setAttribute('aria-selected', isActive ? 'true' : 'false');
-        trigger.setAttribute('aria-controls', `workspace-panel-${frame.frameId}`);
-        trigger.tabIndex = isActive ? 0 : -1;
-
         const isDirty = isStacked ? group.dirty : frame.isDirty;
         const isStale = isStacked ? group.stale : frame.stale;
         const isHibernated = isStacked ? group.hibernated : frame.hibernated;
-        const isLoading = isStacked ? group.frames.some((f) => f.loading) : Boolean(frame.loading);
-        const hasStatusDot = Boolean(isDirty || isStale || isHibernated || isLoading);
-        const nextDotFlag = hasStatusDot ? 'true' : 'false';
-        if (wrapper.dataset.hasStatusDot && wrapper.dataset.hasStatusDot !== nextDotFlag) {
-            delete wrapper.dataset.naturalWidth;
-            wrapper.style.removeProperty('--workspace-tab-natural-width');
-        }
-        wrapper.dataset.hasStatusDot = nextDotFlag;
+        const isQueued = isStacked
+            ? Boolean(group.queued)
+            : Boolean(frame.queued);
+        const isLoading = isStacked
+            ? group.frames.some((f) => Boolean(f.loading) && !f.queued)
+            : (Boolean(frame.loading) && !Boolean(frame.queued));
+
+        wrapper.classList.toggle('is-active', Boolean(isActive));
+        wrapper.dataset.dirty = isDirty ? 'true' : 'false';
+        wrapper.dataset.stale = isStale ? 'true' : 'false';
+        wrapper.dataset.hibernated = isHibernated ? 'true' : 'false';
+        wrapper.dataset.queued = isQueued ? 'true' : 'false';
+        wrapper.dataset.loading = isLoading ? 'true' : 'false';
+
+        trigger.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        trigger.setAttribute('aria-controls', `workspace-panel-${frame.frameId}`);
+        trigger.setAttribute('aria-busy', (isLoading || isQueued) ? 'true' : 'false');
+        trigger.tabIndex = isActive ? 0 : -1;
+
+        const hasStatusDot = Boolean(isDirty || isStale || isHibernated || isQueued || isLoading);
+        wrapper.dataset.hasStatusDot = hasStatusDot ? 'true' : 'false';
         const statusNotes = [];
         if (isDirty) statusNotes.push(i18n.statusUnsaved || i18n.unsavedBadge || 'Unsaved changes');
         else if (isStale) statusNotes.push(i18n.statusStale || i18n.staleBadge || 'Refresh needed');
+        else if (isLoading) statusNotes.push(i18n.loadingModule || 'Loading module...');
+        else if (isQueued) statusNotes.push(i18n.statusQueued || 'Queued to load');
         else if (isHibernated) statusNotes.push(i18n.statusHibernated || i18n.hibernatedBadge || 'Hibernated');
         else if (isActive) statusNotes.push(i18n.statusActive || 'Active workspace');
 
@@ -1565,6 +1593,41 @@ export function bootWorkspaceShell() {
         return wrapper;
     };
 
+    const markPanelLeaving = (panel) => {
+        if (!panel) return;
+        const existingCleanup = leavingPanelCleanups.get(panel);
+        if (existingCleanup) existingCleanup(false);
+
+        let done = false;
+        let timerId = 0;
+        const finish = (shouldHide = true) => {
+            if (done) return;
+            done = true;
+            panel.removeEventListener('transitionend', onTransitionEnd);
+            if (timerId) window.clearTimeout(timerId);
+            leavingPanelCleanups.delete(panel);
+            panel.classList.remove('is-leaving');
+            if (shouldHide && !panel.classList.contains('is-active') && !panel.classList.contains('is-staging')) {
+                panel.hidden = true;
+            }
+        };
+        const onTransitionEnd = (event) => {
+            if (event.target === panel && event.propertyName === 'opacity') {
+                finish(true);
+            }
+        };
+
+        leavingPanelCleanups.set(panel, finish);
+        panel.classList.remove('is-active');
+        panel.classList.add('is-leaving');
+        panel.hidden = false;
+        panel.addEventListener('transitionend', onTransitionEnd);
+        const pageFadeMs = Number.isFinite(Number(config.pageFadeMs)) && Number(config.pageFadeMs) > 0
+            ? Number(config.pageFadeMs)
+            : 500;
+        timerId = window.setTimeout(() => finish(true), pageFadeMs + 80);
+    };
+
     const syncTabDom = () => {
         const displayList = store.displayGroups();
         const activeTarget = store.activeTarget();
@@ -1583,10 +1646,33 @@ export function bootWorkspaceShell() {
             const panelId = node.dataset.workspacePanel;
             if (panelId === SHORTCUTS_KEY) return;
             if (!liveOrKeptIds.has(panelId)) {
+                leavingPanelCleanups.get(node)?.(false);
                 frames.delete(panelId);
                 node.remove();
             }
         });
+
+        const prevActivePanel = Array.from(framesEl.querySelectorAll('.workspace-panel.is-active'))
+            .find((el) => el.isConnected) || null;
+        const nextActivePanelId = isShortcuts ? SHORTCUTS_KEY : activeFrameId;
+        const nextActivePanel = nextActivePanelId
+            ? framesEl.querySelector(`[data-workspace-panel="${CSS.escape(nextActivePanelId)}"]`)
+            : null;
+
+        if (
+            hasCompletedInitialSync
+            && prevActivePanel
+            && nextActivePanel
+            && prevActivePanel !== nextActivePanel
+            && !prefersReducedMotion()
+        ) {
+            framesEl.querySelectorAll('.workspace-panel.is-leaving').forEach((leavingEl) => {
+                if (leavingEl !== prevActivePanel) {
+                    leavingPanelCleanups.get(leavingEl)?.(true);
+                }
+            });
+            markPanelLeaving(prevActivePanel);
+        }
 
         // Toggle Shortcuts pinned tab & native panel
         if (shortcutsTabEl) shortcutsTabEl.classList.toggle('is-active', isShortcuts);
@@ -1595,8 +1681,16 @@ export function bootWorkspaceShell() {
             shortcutsSelectBtn.tabIndex = isShortcuts ? 0 : -1;
         }
         if (shortcutsPanel) {
-            shortcutsPanel.hidden = !isShortcuts;
-            shortcutsPanel.classList.toggle('is-active', isShortcuts);
+            if (isShortcuts) {
+                leavingPanelCleanups.get(shortcutsPanel)?.(false);
+                shortcutsPanel.classList.remove('is-leaving');
+                shortcutsPanel.hidden = false;
+                shortcutsPanel.classList.add('is-active');
+            } else {
+                const isLeaving = leavingPanelCleanups.has(shortcutsPanel);
+                shortcutsPanel.classList.remove('is-active');
+                shortcutsPanel.hidden = !isLeaving;
+            }
         }
 
         // Preserve focus if the focused trigger stays present across state updates
@@ -1637,8 +1731,8 @@ export function bootWorkspaceShell() {
                 : `open:${group.frames.map((f) => `${f.frameId}:${f.role}`).join('|')}:${group.duplicateTotal > 1 ? group.duplicateIndex : 0}`;
 
             const expectedRenderSig = group.isCollapsedStack
-                ? `${expectedLayoutSig}:${group.displayLabel}:${group.dirty}:${group.stale}:${group.hibernated}:${group.frames.some((f) => f.loading)}`
-                : `${expectedLayoutSig}:${group.frames.map((f) => `${f.title}:${f.isDirty}:${f.stale}:${f.hibernated}:${Boolean(f.loading)}:${f.frameId === activeFrameId}`).join('|')}`;
+                ? `${expectedLayoutSig}:${group.displayLabel}:${group.dirty}:${group.stale}:${group.hibernated}:${Boolean(group.queued)}:${group.frames.some((f) => Boolean(f.loading) && !f.queued)}`
+                : `${expectedLayoutSig}:${group.frames.map((f) => `${f.title}:${f.isDirty}:${f.stale}:${f.hibernated}:${Boolean(f.queued)}:${Boolean(f.loading)}:${f.frameId === activeFrameId}`).join('|')}`;
 
             const prevLayoutSig = groupEl.dataset.layoutSig || '';
             const layoutChanged = isNewGroupEl || prevLayoutSig !== expectedLayoutSig;
@@ -1811,9 +1905,18 @@ export function bootWorkspaceShell() {
                 if (panel) {
                     const isPanelActive = frame.frameId === activeFrameId;
                     const isPanelStaging = Boolean(frame.staged) && !isPanelActive;
-                    panel.classList.toggle('is-active', isPanelActive);
-                    panel.classList.toggle('is-staging', isPanelStaging);
-                    panel.hidden = !isPanelActive && !isPanelStaging;
+                    if (isPanelActive) {
+                        leavingPanelCleanups.get(panel)?.(false);
+                        panel.classList.remove('is-leaving');
+                        panel.classList.add('is-active');
+                        panel.classList.remove('is-staging');
+                        panel.hidden = false;
+                    } else {
+                        const isLeaving = leavingPanelCleanups.has(panel);
+                        panel.classList.remove('is-active');
+                        panel.classList.toggle('is-staging', isPanelStaging);
+                        panel.hidden = !isPanelStaging && !isLeaving;
+                    }
                     panel.setAttribute('aria-busy', frame.loading ? 'true' : 'false');
                 }
             }
@@ -1836,8 +1939,12 @@ export function bootWorkspaceShell() {
 
         recomputeDynamicTabCap();
 
-        for (const morph of pendingMorphs) {
-            const { targetWidth, pillWidths } = measureTargetGroupLayout(morph.groupEl, morph.transientHide);
+        const measuredMorphs = pendingMorphs.map((morph) => ({
+            morph,
+            ...measureTargetGroupLayout(morph.groupEl, morph.transientHide),
+        }));
+
+        for (const { morph, targetWidth, pillWidths } of measuredMorphs) {
             animateGroupTransition(morph.groupEl, {
                 startWidth: morph.livePrevWidth,
                 targetWidth,
@@ -1920,6 +2027,101 @@ export function bootWorkspaceShell() {
         }
     };
 
+    const attachReadinessListener = (frameId, frameWin, readiness) => {
+        if (!readiness || typeof readiness.whenReady !== 'function' || attachedReadinessPromises.has(readiness)) {
+            return;
+        }
+        attachedReadinessPromises.add(readiness);
+        readiness.whenReady().then(() => {
+            finalizeFrameReady(frameId, frameWin);
+        });
+    };
+
+    const syncLocaleIfNeeded = (frameId, iframe, frameWin, frameDoc) => {
+        const topLocale = document.documentElement?.lang;
+        const embedLocale = frameDoc?.documentElement?.lang;
+        if (!topLocale || !embedLocale || embedLocale === topLocale || syncedLocaleFrames.has(frameId)) {
+            return;
+        }
+        syncedLocaleFrames.add(frameId);
+        frameWin.AdasiLocaleSwitcher?.syncLocaleInPlace?.({ locale: topLocale })
+            .then((res) => {
+                syncedLocaleFrames.delete(frameId);
+                if (!res?.ok) return;
+                const updatedCtx = store.getFrameContext(frameId);
+                if (!updatedCtx) return;
+                const updatedTitle = resolveCanonicalFrameTitle(updatedCtx, updatedCtx.frame.url, res.title || updatedCtx.frame.title);
+                updatedCtx.frame.title = updatedTitle;
+                if (updatedCtx.frame.role === 'parent') updatedCtx.group.baseLabel = updatedTitle;
+                if (iframe) iframe.title = updatedTitle;
+                notifyActiveSurface('replace');
+            })
+            .catch(() => {
+                syncedLocaleFrames.delete(frameId);
+            });
+    };
+
+    const finalizeFrameReady = (frameId, frameWin = null) => {
+        const ctx = store.getFrameContext(frameId);
+        if (!ctx) {
+            if (frameId === initialFrameId) initialReadyResolve?.();
+            return false;
+        }
+
+        const iframe = frames.get(frameId);
+        let liveWin = frameWin;
+        let liveDoc = null;
+        if (!liveWin && iframe) {
+            try { liveWin = iframe.contentWindow; } catch {}
+        }
+        if (liveWin) {
+            try { liveDoc = liveWin.document; } catch {}
+        }
+
+        let liveHref = ctx.frame.url;
+        try {
+            if (liveWin?.location?.href && liveWin.location.href !== 'about:blank' && liveWin.location.href !== 'about:srcdoc') {
+                liveHref = liveWin.location.href;
+            }
+        } catch {}
+
+        const cleanUrl = stripEmbedParam(liveHref, origin) || ctx.frame.url;
+        const title = resolveCanonicalFrameTitle(ctx, cleanUrl, liveDoc?.title || ctx.frame.title);
+        store.markLoaded(frameId, { url: cleanUrl, label: title });
+        if (iframe && title) iframe.title = title;
+
+        if (liveWin && liveDoc) {
+            syncLocaleIfNeeded(frameId, iframe, liveWin, liveDoc);
+        }
+
+        if (navQueue.has(frameId)) {
+            const outcome = navQueue.complete(frameId);
+            syncTriggerPendingAttributes();
+            store.commitStagedFrame(frameId, { activate: outcome.activate });
+            if (outcome.activate) {
+                notifyActiveSurface(outcome.entry?.historyMode || 'push');
+            } else {
+                syncTabDom();
+                const readyMsg = String(i18n.readyAnnouncement || ':label is ready').replace(':label', title);
+                announceLiveStatus(readyMsg);
+            }
+        } else {
+            const activeFrame = store.activeFrame();
+            if (activeFrame && activeFrame.frameId === frameId) {
+                const topbarTitle = formatTopbarTitle(activeFrame, ctx.group);
+                syncTopbarTitle(topbarTitle);
+                syncSidebarHighlight(cleanUrl);
+                syncHistory('replace', cleanUrl, frameId, ctx.group.groupId, topbarTitle);
+            }
+            syncTabDom();
+        }
+
+        if (frameId === initialFrameId) {
+            initialReadyResolve?.();
+        }
+        return true;
+    };
+
     const onFrameLoad = (frameId, iframe) => {
         let frameWin;
         let frameDoc;
@@ -1948,14 +2150,14 @@ export function bootWorkspaceShell() {
             return;
         }
         if (isTopLevelOnlyUrl(frameHref, origin, pathPrefix)) {
-            if (pendingNav?.frameId === frameId) clearPendingNav('breakout');
+            navQueue.cancel(frameId, 'breakout');
             breakoutToTop(frameHref);
             return;
         }
 
         if (frameDoc.querySelector('[data-workspace-shell]')) {
             if (frameHref.includes(`${config.embedParam || '_embed'}=`)) {
-                if (pendingNav?.frameId === frameId) clearPendingNav('breakout');
+                navQueue.cancel(frameId, 'breakout');
                 breakoutToTop(frameHref);
             } else {
                 frameWin.location.replace(appendEmbedParam(frameHref, origin));
@@ -1964,7 +2166,7 @@ export function bootWorkspaceShell() {
         }
 
         if (frameDoc.querySelector('[data-auth-login-page]')) {
-            if (pendingNav?.frameId === frameId) clearPendingNav('breakout');
+            navQueue.cancel(frameId, 'breakout');
             breakoutToTop(frameHref);
             return;
         }
@@ -1974,46 +2176,27 @@ export function bootWorkspaceShell() {
 
         const cleanUrl = stripEmbedParam(frameHref, origin);
         const title = resolveCanonicalFrameTitle(ctx, cleanUrl, frameDoc.title);
-        store.markLoaded(frameId, { url: cleanUrl, label: title });
+        ctx.frame.url = canonicalizeUrl(cleanUrl, origin);
+        ctx.frame.embedUrl = appendEmbedParam(ctx.frame.url, origin);
+        ctx.frame.title = title;
+        if (ctx.frame.role === 'parent') ctx.group.baseLabel = title;
+        iframe.title = title;
 
-        const committed = commitPendingNavigationIfMatches(frameId);
+        syncLocaleIfNeeded(frameId, iframe, frameWin, frameDoc);
 
-        const topLocale = document.documentElement?.lang;
-        const embedLocale = frameDoc.documentElement?.lang;
-        if (topLocale && embedLocale && embedLocale !== topLocale && !syncedLocaleFrames.has(frameId)) {
-            syncedLocaleFrames.add(frameId);
-            frameWin.AdasiLocaleSwitcher?.syncLocaleInPlace?.({ locale: topLocale })
-                .then((res) => {
-                    syncedLocaleFrames.delete(frameId);
-                    if (!res?.ok) return;
-                    const updatedCtx = store.getFrameContext(frameId);
-                    if (!updatedCtx) return;
-                    const updatedTitle = resolveCanonicalFrameTitle(updatedCtx, updatedCtx.frame.url, res.title || updatedCtx.frame.title);
-                    updatedCtx.frame.title = updatedTitle;
-                    if (updatedCtx.frame.role === 'parent') updatedCtx.group.baseLabel = updatedTitle;
-                    iframe.title = updatedTitle;
-                    notifyActiveSurface('replace');
-                })
-                .catch(() => {
-                    syncedLocaleFrames.delete(frameId);
-                });
-        }
-
-        if (!committed) {
-            const activeFrame = store.activeFrame();
-            if (activeFrame && activeFrame.frameId === frameId) {
-                const topbarTitle = formatTopbarTitle(activeFrame, ctx.group);
-                syncTopbarTitle(topbarTitle);
-                syncSidebarHighlight(cleanUrl);
-                syncHistory('replace', cleanUrl, frameId, ctx.group.groupId, topbarTitle);
+        const readiness = frameWin.AdasiEmbedReadiness;
+        if (readiness && !readiness.isReady) {
+            ctx.frame.queued = false;
+            ctx.frame.loading = true;
+            if (navQueue.has(frameId)) {
+                navQueue.markDocumentLoaded(frameId, { awaitingData: true });
             }
-
+            attachReadinessListener(frameId, frameWin, readiness);
             syncTabDom();
+            return;
         }
 
-        if (frameId === initialFrameId) {
-            initialReadyResolve?.();
-        }
+        finalizeFrameReady(frameId, frameWin);
     };
 
     const createPanelAndFrame = (frame) => {
@@ -2125,12 +2308,6 @@ export function bootWorkspaceShell() {
         }
 
         const canonicalKey = `workspace:${canonicalizeUrl(resolvedUrl, origin)}`;
-        if (pendingNav && pendingNav.canonicalKey === canonicalKey) {
-            return;
-        }
-
-        clearPendingNav('superseded');
-
         const resolvedKey = moduleKey || target.key || resolveModuleForUrl(resolvedUrl);
         const pathTitle = menuPathTitles.get(normalizedPath(resolvedUrl, origin));
         const catalogEntry = catalog.find((item) => item.key === resolvedKey);
@@ -2141,6 +2318,7 @@ export function bootWorkspaceShell() {
             label: tabLabel,
             url: resolvedUrl,
             stageOnly: true,
+            showTabWhileStaged: true,
         });
 
         if (result.blocked) {
@@ -2150,7 +2328,28 @@ export function bootWorkspaceShell() {
 
         recordModuleUse(resolvedUrl);
         if (result.staged && result.frame) {
-            beginStagedNavigation({ frame: result.frame, canonicalKey, historyMode, triggerEl });
+            if (triggerEl) trackedTriggerEls.add(triggerEl);
+            const entry = navQueue.enqueue({
+                frameId: result.frame.frameId,
+                groupId: result.group.groupId,
+                kind: 'workspace',
+                canonicalKey,
+                url: resolvedUrl,
+                label: tabLabel,
+                historyMode,
+                triggerEl,
+                autoFocus: true,
+            });
+            if (entry && entry.status === 'queued') {
+                result.frame.queued = true;
+                result.frame.loading = false;
+            }
+            syncTriggerPendingAttributes();
+            syncTabDom();
+            const queuedMsg = String(i18n.queuedAnnouncement || 'Queued :label (:count loading)')
+                .replace(':label', tabLabel)
+                .replace(':count', String(navQueue.size()));
+            announceLiveStatus(queuedMsg);
             return;
         }
         ensureFrameMounted(result.frame);
@@ -2167,18 +2366,15 @@ export function bootWorkspaceShell() {
         }
 
         const canonicalKey = `child:${groupId}:${canonicalizeUrl(resolvedUrl, origin)}`;
-        if (pendingNav && pendingNav.canonicalKey === canonicalKey) {
-            return;
-        }
-
-        clearPendingNav('superseded');
+        const resolvedLabel = label || store.getGroup(groupId)?.baseLabel || i18n.loadingModule;
 
         const result = store.openChildFrame({
             groupId,
             sourceFrameId,
-            label: label || store.getGroup(groupId)?.baseLabel || i18n.loadingModule,
+            label: resolvedLabel,
             url: resolvedUrl,
             stageOnly: true,
+            showTabWhileStaged: true,
         });
 
         if (result.blocked) {
@@ -2187,10 +2383,33 @@ export function bootWorkspaceShell() {
         }
 
         if (result.staged && result.frame) {
-            beginStagedNavigation({ frame: result.frame, canonicalKey, historyMode: 'push', triggerEl });
+            if (navQueue.has(result.frame.frameId)) {
+                navQueue.prioritize(result.frame.frameId);
+            } else {
+                if (triggerEl) trackedTriggerEls.add(triggerEl);
+                const entry = navQueue.enqueue({
+                    frameId: result.frame.frameId,
+                    groupId: result.group.groupId,
+                    kind: 'child',
+                    canonicalKey,
+                    url: resolvedUrl,
+                    label: result.frame.title,
+                    historyMode: 'push',
+                    triggerEl,
+                    wasHibernated: Boolean(result.wasHibernated),
+                    autoFocus: true,
+                });
+                if (entry && entry.status === 'queued') {
+                    result.frame.queued = true;
+                    result.frame.loading = false;
+                }
+            }
+            syncTriggerPendingAttributes();
+            syncTabDom();
             return;
         }
 
+        navQueue.clearAutoFocus();
         if (result.created || result.wasHibernated) {
             ensureFrameMounted(result.frame);
         } else if (result.shouldRefresh) {
@@ -2201,7 +2420,7 @@ export function bootWorkspaceShell() {
     };
 
     const activateShortcuts = ({ historyMode = 'push', focusTrigger = false } = {}) => {
-        clearPendingNav('superseded');
+        navQueue.clearAutoFocus();
         store.activateShortcuts();
         notifyActiveSurface(historyMode);
         if (focusTrigger) {
@@ -2210,19 +2429,37 @@ export function bootWorkspaceShell() {
     };
 
     const activateGroup = (groupId, { historyMode = 'push', focusTrigger = false, triggerEl = null } = {}) => {
-        const res = store.activateGroup(groupId, { stageIfHibernated: true });
+        const res = store.activateGroup(groupId, { stageIfHibernated: true, stageIfLoading: true });
         if (!res.frame) return;
 
         if (res.staged) {
-            const canonicalKey = `frame:${res.frame.frameId}`;
-            if (pendingNav && pendingNav.canonicalKey === canonicalKey) {
-                return;
+            if (navQueue.has(res.frame.frameId)) {
+                navQueue.prioritize(res.frame.frameId);
+            } else {
+                if (triggerEl) trackedTriggerEls.add(triggerEl);
+                const entry = navQueue.enqueue({
+                    frameId: res.frame.frameId,
+                    groupId: res.group.groupId,
+                    kind: 'activate',
+                    canonicalKey: `frame:${res.frame.frameId}`,
+                    url: res.frame.url,
+                    label: res.frame.title,
+                    historyMode,
+                    triggerEl,
+                    wasHibernated: Boolean(res.wasHibernated),
+                    autoFocus: true,
+                });
+                if (entry && entry.status === 'queued') {
+                    res.frame.queued = true;
+                    res.frame.loading = false;
+                }
             }
-            beginStagedNavigation({ frame: res.frame, canonicalKey, historyMode, triggerEl });
+            syncTriggerPendingAttributes();
+            syncTabDom();
             return;
         }
 
-        clearPendingNav('superseded');
+        navQueue.clearAutoFocus();
         if (res.wasHibernated) {
             ensureFrameMounted(res.frame);
         } else if (res.shouldRefresh) {
@@ -2237,19 +2474,37 @@ export function bootWorkspaceShell() {
     };
 
     const activateFrame = (frameId, { historyMode = 'push', focusTrigger = false, triggerEl = null } = {}) => {
-        const res = store.activateFrame(frameId, { stageIfHibernated: true });
+        const res = store.activateFrame(frameId, { stageIfHibernated: true, stageIfLoading: true });
         if (!res.frame) return;
 
         if (res.staged) {
-            const canonicalKey = `frame:${res.frame.frameId}`;
-            if (pendingNav && pendingNav.canonicalKey === canonicalKey) {
-                return;
+            if (navQueue.has(res.frame.frameId)) {
+                navQueue.prioritize(res.frame.frameId);
+            } else {
+                if (triggerEl) trackedTriggerEls.add(triggerEl);
+                const entry = navQueue.enqueue({
+                    frameId: res.frame.frameId,
+                    groupId: res.group.groupId,
+                    kind: 'activate',
+                    canonicalKey: `frame:${res.frame.frameId}`,
+                    url: res.frame.url,
+                    label: res.frame.title,
+                    historyMode,
+                    triggerEl,
+                    wasHibernated: Boolean(res.wasHibernated),
+                    autoFocus: true,
+                });
+                if (entry && entry.status === 'queued') {
+                    res.frame.queued = true;
+                    res.frame.loading = false;
+                }
             }
-            beginStagedNavigation({ frame: res.frame, canonicalKey, historyMode, triggerEl });
+            syncTriggerPendingAttributes();
+            syncTabDom();
             return;
         }
 
-        clearPendingNav('superseded');
+        navQueue.clearAutoFocus();
         if (res.wasHibernated) {
             ensureFrameMounted(res.frame);
         } else if (res.shouldRefresh) {
@@ -2280,10 +2535,25 @@ export function bootWorkspaceShell() {
         return window.confirm(message);
     };
 
+    const cancelQueuedFrames = (frameIds = []) => {
+        if (!Array.isArray(frameIds) || frameIds.length === 0) return;
+        for (const fid of frameIds) {
+            navQueue.cancel(fid, 'closed');
+            unmountFramePanel(fid);
+        }
+        syncTriggerPendingAttributes();
+    };
+
     const handlePostCloseResult = (closeResult) => {
+        cancelQueuedFrames(closeResult?.closedFrameIds || []);
         const { nextTarget, wasHibernated, shouldRefresh } = closeResult;
         if (!nextTarget || nextTarget.type === SHORTCUTS_KEY) {
             notifyActiveSurface('push');
+            return;
+        }
+        if (navQueue.has(nextTarget.frameId)) {
+            navQueue.prioritize(nextTarget.frameId);
+            syncTabDom();
             return;
         }
         const frame = store.getFrame(nextTarget.frameId);
@@ -2330,6 +2600,7 @@ export function bootWorkspaceShell() {
     };
 
     const requestDuplicateGroup = (groupId) => {
+        navQueue.clearAutoFocus();
         const res = store.duplicateGroup(groupId);
         if (res.blocked) {
             window.AdasiToast?.warning?.(i18n.evictionBlocked || 'All open tabs have unsaved changes.');
@@ -2383,16 +2654,46 @@ export function bootWorkspaceShell() {
         });
     };
 
-    const closeTabMenu = ({ restoreFocus = false } = {}) => {
-        if (!tabMenuEl || tabMenuEl.hidden) return;
+    const finalizeTabMenuClose = () => {
+        if (!tabMenuEl) return;
+        if (tabMenuCloseTimer) {
+            window.clearTimeout(tabMenuCloseTimer);
+            tabMenuCloseTimer = 0;
+        }
+        tabMenuEl.classList.remove('is-closing');
         tabMenuEl.hidden = true;
         tabMenuEl.replaceChildren();
+    };
+
+    const closeTabMenu = ({ restoreFocus = false, immediate = false } = {}) => {
+        if (!tabMenuEl || tabMenuEl.hidden) return;
+        if (tabMenuCloseTimer) {
+            window.clearTimeout(tabMenuCloseTimer);
+            tabMenuCloseTimer = 0;
+        }
         tablistEl.querySelectorAll('[aria-expanded="true"]').forEach((btn) => btn.setAttribute('aria-expanded', 'false'));
         if (switcherBtn) switcherBtn.setAttribute('aria-expanded', 'false');
-        if (restoreFocus && lastMenuOpener?.isConnected) {
-            lastMenuOpener.focus();
-        }
+        const opener = lastMenuOpener;
         lastMenuOpener = null;
+        if (restoreFocus && opener?.isConnected) {
+            opener.focus();
+        }
+        if (immediate || prefersReducedMotion()) {
+            finalizeTabMenuClose();
+            return;
+        }
+        tabMenuEl.classList.add('is-closing');
+        const onEnd = (event) => {
+            if (event.target === tabMenuEl && event.propertyName === 'opacity') {
+                tabMenuEl.removeEventListener('transitionend', onEnd);
+                finalizeTabMenuClose();
+            }
+        };
+        tabMenuEl.addEventListener('transitionend', onEnd);
+        tabMenuCloseTimer = window.setTimeout(() => {
+            tabMenuEl.removeEventListener('transitionend', onEnd);
+            finalizeTabMenuClose();
+        }, 140);
     };
 
     const dismissTopOverlaysForMenu = (exceptToggle = null) => {
@@ -2401,14 +2702,19 @@ export function bootWorkspaceShell() {
         window.dispatchEvent(new CustomEvent('adasi:dismiss-overlays'));
     };
 
-    const dismissFloatingOverlays = ({ restoreFocus = false, excludeEmbedWindow = null, keepTopDropdownToggle = null } = {}) => {
-        closeTabMenu({ restoreFocus });
+    const dismissFloatingOverlays = ({ restoreFocus = false, excludeEmbedWindow = null, keepTopDropdownToggle = null, immediate = false } = {}) => {
+        closeTabMenu({ restoreFocus, immediate });
         dismissTopOverlaysForMenu(keepTopDropdownToggle);
         dismissEmbedOverlays(excludeEmbedWindow);
     };
 
     const positionAndShowTabMenu = (anchorEl, clientX = null, clientY = null) => {
         if (!tabMenuEl) return;
+        if (tabMenuCloseTimer) {
+            window.clearTimeout(tabMenuCloseTimer);
+            tabMenuCloseTimer = 0;
+        }
+        tabMenuEl.classList.remove('is-closing');
         tabMenuEl.hidden = false;
         const rect = anchorEl?.getBoundingClientRect?.();
         const rawX = clientX ?? (rect ? rect.left : 16);
@@ -2428,7 +2734,7 @@ export function bootWorkspaceShell() {
         const displayList = store.displayGroups();
         if (displayList.length === 0) return;
 
-        dismissFloatingOverlays({ restoreFocus: false });
+        dismissFloatingOverlays({ restoreFocus: false, immediate: true });
         lastMenuOpener = anchorEl || document.activeElement;
         if (anchorEl) anchorEl.setAttribute('aria-expanded', 'true');
 
@@ -2510,7 +2816,7 @@ export function bootWorkspaceShell() {
         const groups = store.groups();
         if (!isShortcutsTarget && !group) return;
 
-        dismissFloatingOverlays({ restoreFocus: false });
+        dismissFloatingOverlays({ restoreFocus: false, immediate: true });
         lastMenuOpener = anchorEl || document.activeElement;
         if (anchorEl?.dataset?.workspaceGroupMenu) {
             anchorEl.setAttribute('aria-expanded', 'true');
@@ -3225,26 +3531,12 @@ export function bootWorkspaceShell() {
         notifyEmbedReady(frameWin) {
             const frameId = frameIdForWindow(frameWin);
             if (!frameId) return;
-            const ctx = store.getFrameContext(frameId);
-            if (ctx) {
-                try {
-                    const cleanUrl = stripEmbedParam(frameWin.location.href, origin);
-                    const title = resolveCanonicalFrameTitle(ctx, cleanUrl, frameWin.document.title);
-                    store.markLoaded(frameId, { url: cleanUrl, label: title });
-                    const committed = commitPendingNavigationIfMatches(frameId);
-                    if (!committed) {
-                        const active = store.activeFrame();
-                        if (active?.frameId === frameId) {
-                            const topbarTitle = formatTopbarTitle(active, ctx.group);
-                            syncTopbarTitle(topbarTitle);
-                            syncSidebarHighlight(cleanUrl);
-                            syncHistory('replace', cleanUrl, frameId, ctx.group.groupId, topbarTitle);
-                        }
-                        syncTabDom();
-                    }
-                } catch {}
+            const readiness = frameWin?.AdasiEmbedReadiness;
+            if (readiness && !readiness.isReady) {
+                attachReadinessListener(frameId, frameWin, readiness);
+                return;
             }
-            if (frameId === initialFrameId) initialReadyResolve?.();
+            finalizeFrameReady(frameId, frameWin);
         },
         notifyDirty(frameWin, dirty) {
             const frameId = frameIdForWindow(frameWin);

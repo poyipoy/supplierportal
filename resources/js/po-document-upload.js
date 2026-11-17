@@ -9,6 +9,16 @@ export function bootPoDocumentUploads(root = document) {
         let timer;
         let statusUrl;
         let retryUrl;
+        let inFlight = false;
+        const isHiddenContext = () => {
+            if (document.hidden) return true;
+            try {
+                return Boolean(window.frameElement?.closest?.('[data-workspace-panel]')?.hidden);
+            } catch {
+                return false;
+            }
+        };
+        const pollIntervalMs = (defaultMs = 3000) => (isHiddenContext() ? 15000 : defaultMs);
         const safeUrl = (value) => {
             try { return new URL(value, location.origin).origin === location.origin; } catch { return false; }
         };
@@ -25,13 +35,18 @@ export function bootPoDocumentUploads(root = document) {
             if (retry) retry.hidden = !retryUrl;
             const terminal = ['COMPLETED', 'FAILED', 'REJECTED'].includes(data.status);
             form.querySelectorAll('button[type="submit"]').forEach((button) => { button.disabled = !terminal; });
+            clearTimeout(timer);
             if (!terminal) {
                 remember(statusUrl);
-                timer = setTimeout(poll, 3000);
-            } else remember(null);
+                timer = setTimeout(poll, pollIntervalMs(3000));
+            } else {
+                statusUrl = null;
+                remember(null);
+            }
         };
         const poll = async () => {
-            if (!statusUrl || !safeUrl(statusUrl)) return;
+            if (!statusUrl || !safeUrl(statusUrl) || inFlight) return;
+            inFlight = true;
             try {
                 const response = await fetch(statusUrl, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
                 if ([403, 404, 419].includes(response.status)) {
@@ -45,7 +60,10 @@ export function bootPoDocumentUploads(root = document) {
                 render(await response.json());
             } catch {
                 announce(form.dataset.offline);
-                timer = setTimeout(poll, 10000);
+                clearTimeout(timer);
+                timer = setTimeout(poll, pollIntervalMs(10000));
+            } finally {
+                inFlight = false;
             }
         };
         form.addEventListener('adasi:form-submitting', () => {
@@ -75,6 +93,12 @@ export function bootPoDocumentUploads(root = document) {
                 if (!response.ok) throw new Error('Retry unavailable');
                 render(await response.json());
             } catch { announce(form.dataset.offline); } finally { retry.disabled = false; }
+        });
+        document.addEventListener('visibilitychange', () => {
+            if (!isHiddenContext() && statusUrl && !inFlight) {
+                clearTimeout(timer);
+                timer = setTimeout(poll, 250);
+            }
         });
         try { statusUrl = sessionStorage.getItem(storageKey); } catch {}
         if (statusUrl) poll();

@@ -9,6 +9,8 @@ class PurchasingNavigation
 {
     public const RETURN_URL_KEY = 'return_url';
 
+    private const MAX_RECORD_WINDOW = 100;
+
     public const LIST_ROUTES = [
         'purchasing.dashboard',
         'purchasing.periods.index',
@@ -326,5 +328,77 @@ class PurchasingNavigation
         }
 
         return false;
+    }
+
+    /**
+     * Remember an ordered window of non-numeric record hashids for a list route (max 100 entries).
+     *
+     * @param  array<int, mixed>  $hashids
+     */
+    public static function rememberRecordWindow(string $listRouteName, array $hashids): void
+    {
+        if (trim($listRouteName) === '') {
+            return;
+        }
+
+        $sanitized = collect($hashids)
+            ->filter(static fn (mixed $value): bool => self::isValidRecordHashid($value))
+            ->map(static fn (string $value): string => trim($value))
+            ->unique()
+            ->take(self::MAX_RECORD_WINDOW)
+            ->values()
+            ->all();
+
+        session()->put("purchasing.record_windows.{$listRouteName}", $sanitized);
+    }
+
+    /**
+     * Resolve previous and next record show URLs from the remembered window while preserving return_url.
+     *
+     * @return array{prev: ?string, next: ?string}
+     */
+    public static function adjacentRecordUrls(string $listRouteName, string $showRouteName, string $currentHashid): array
+    {
+        if (! self::isValidRecordHashid($currentHashid) || ! Route::has($showRouteName)) {
+            return ['prev' => null, 'next' => null];
+        }
+
+        $normalizedCurrent = trim($currentHashid);
+        $window = session("purchasing.record_windows.{$listRouteName}", []);
+        if (! is_array($window) || $window === []) {
+            return ['prev' => null, 'next' => null];
+        }
+
+        $sanitizedWindow = array_values(array_filter(
+            $window,
+            static fn (mixed $value): bool => self::isValidRecordHashid($value)
+        ));
+
+        $index = array_search($normalizedCurrent, $sanitizedWindow, true);
+        if ($index === false) {
+            return ['prev' => null, 'next' => null];
+        }
+
+        $returnUrl = Route::has($listRouteName) ? self::backUrl($listRouteName) : self::backUrl();
+        $prevHash = $index > 0 ? $sanitizedWindow[$index - 1] : null;
+        $nextHash = $index < (count($sanitizedWindow) - 1) ? $sanitizedWindow[$index + 1] : null;
+
+        return [
+            'prev' => $prevHash !== null ? route($showRouteName, [$prevHash, self::RETURN_URL_KEY => $returnUrl]) : null,
+            'next' => $nextHash !== null ? route($showRouteName, [$nextHash, self::RETURN_URL_KEY => $returnUrl]) : null,
+        ];
+    }
+
+    private static function isValidRecordHashid(mixed $value): bool
+    {
+        if (! is_string($value)) {
+            return false;
+        }
+
+        $trimmed = trim($value);
+
+        return $trimmed !== ''
+            && preg_match('/^[+-]?\d+$/', $trimmed) !== 1
+            && preg_match('/^[A-Za-z0-9_-]+$/', $trimmed) === 1;
     }
 }

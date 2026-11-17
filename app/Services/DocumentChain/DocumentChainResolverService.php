@@ -34,6 +34,10 @@ class DocumentChainResolverService
      */
     public function resolve(User $actor, string $entityType, int|string $idOrHash): array
     {
+        if (! $actor->is_active) {
+            throw new AccessDeniedHttpException;
+        }
+
         $id = $this->resolveId($idOrHash);
 
         return match ($entityType) {
@@ -52,12 +56,8 @@ class DocumentChainResolverService
             return $idOrHash;
         }
 
-        if (ctype_digit($idOrHash)) {
-            return (int) $idOrHash;
-        }
-
         $decoded = HashidCodec::decode($idOrHash);
-        if ($decoded === null) {
+        if ($decoded === null || HashidCodec::encode($decoded) !== $idOrHash) {
             throw new NotFoundHttpException;
         }
 
@@ -658,7 +658,7 @@ class DocumentChainResolverService
             /** @var PaymentItem $item */
             foreach ($group->items as $item) {
                 $voucher = $item->localInvoiceVoucher;
-                if ($voucher) {
+                if ($voucher && Gate::forUser($actor)->allows('view', $voucher)) {
                     $nodes[] = [
                         'type' => 'VOUCHER',
                         'label' => __('smart_panel.node_types.voucher'),
@@ -674,7 +674,7 @@ class DocumentChainResolverService
                 }
 
                 $payable = $item->payable;
-                if ($payable instanceof LocalInvoice) {
+                if ($payable instanceof LocalInvoice && Gate::forUser($actor)->allows('view', $payable)) {
                     $nodes[] = [
                         'type' => 'INVOICE',
                         'label' => __('smart_panel.node_types.local_invoice'),
@@ -682,9 +682,11 @@ class DocumentChainResolverService
                         'status' => StatusHelper::localInvoiceLabel((string) $payable->status),
                         'tone' => StatusHelper::localInvoiceTone((string) $payable->status),
                         'date' => $payable->invoice_date?->format('Y-m-d'),
-                        'url' => in_array($actor->role, ['finance', 'admin'], true)
-                            ? route('finance.invoices.show', $payable, false)
-                            : route('purchasing.local-invoices.show', $payable, false),
+                        'url' => match (true) {
+                            in_array($actor->role, ['finance', 'admin'], true) => route('finance.invoices.show', $payable, false),
+                            $actor->role === 'purchasing' => route('purchasing.local-invoices.show', $payable, false),
+                            default => null,
+                        },
                         'current' => false,
                     ];
                 }

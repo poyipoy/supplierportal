@@ -4,6 +4,10 @@ import { dirname, resolve } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import {
+    createEmbedReadinessController,
+    isTrackableBootGetRequest,
+} from '../../resources/js/embed-readiness.js';
+import {
     appendEmbedParam,
     canonicalizeUrl,
     classifyInternalNavigation,
@@ -16,6 +20,7 @@ import {
     safeWebUrl,
     SHORTCUTS_KEY,
     stripEmbedParam,
+    WorkspaceNavQueue,
     WorkspaceTabStore,
 } from '../../resources/js/workspace-shell-core.js';
 
@@ -581,6 +586,17 @@ test('workspace-shell.css enforces hover/focus-visible close icon and smooth non
         'Shortcuts must sit fixed before the scrollable tablist',
     );
     assert.equal(tabbarBlade.includes('aria-owns="workspace-tab-group-shortcuts"'), true);
+    assert.equal(tabbarBlade.includes('data-workspace-live-region'), true);
+    assert.equal(css.includes('.workspace-panel.is-leaving'), true);
+    assert.equal(css.includes('.workspace-tab[data-queued="true"]'), true);
+    assert.equal(css.includes('.workspace-tab-menu.is-closing'), true);
+
+    const enNav = readFileSync(resolve(repoRoot, 'lang/en/navigation.php'), 'utf8');
+    const idNav = readFileSync(resolve(repoRoot, 'lang/id/navigation.php'), 'utf8');
+    for (const key of ['status_queued', 'queued_announcement', 'ready_announcement']) {
+        assert.equal(enNav.includes(`'${key}'`), true, `Missing ${key} in lang/en/navigation.php`);
+        assert.equal(idNav.includes(`'${key}'`), true, `Missing ${key} in lang/id/navigation.php`);
+    }
 });
 
 test('WorkspaceTabStore stageOnly keeps current tab active until committed and cleans up on discard', () => {
@@ -676,4 +692,296 @@ test('computeWaterFillTabCap progressively shrinks widest tabs down to the 112px
         computeWaterFillTabCap({ pillWidths: [], overheadPx: 0, budgetPx: 800, minCapPx: 112, maxCapPx: 248 }),
         248,
     );
+});
+
+function createFakeTimerHarness() {
+    let nowMs = 0;
+    let seq = 0;
+    const tasks = new Map();
+
+    return {
+        now: () => nowMs,
+        timers: {
+            setTimeout(fn, ms) {
+                const id = ++seq;
+                tasks.set(id, { fn, at: nowMs + Math.max(0, Number(ms) || 0) });
+                return id;
+            },
+            clearTimeout(id) {
+                tasks.delete(id);
+            },
+            raf(fn) {
+                const id = ++seq;
+                tasks.set(id, { fn, at: nowMs + 16 });
+                return id;
+            },
+            microtask(fn) {
+                fn();
+            },
+        },
+        advanceBy(deltaMs) {
+            const target = nowMs + deltaMs;
+            while (true) {
+                let nextId = null;
+                let nextTask = null;
+                for (const [id, task] of tasks.entries()) {
+                    if (task.at <= target && (!nextTask || task.at < nextTask.at || (task.at === nextTask.at && id < nextId))) {
+                        nextId = id;
+                        nextTask = task;
+                    }
+                }
+                if (!nextTask) break;
+                tasks.delete(nextId);
+                nowMs = nextTask.at;
+                nextTask.fn();
+            }
+            nowMs = target;
+        },
+    };
+}
+
+test('WorkspaceTabStore showTabWhileStaged queues tabs visibly in click order while keeping active panel undisturbed', () => {
+    let now = 30_000;
+    const store = new WorkspaceTabStore({
+        maxTabs: 5,
+        maxLiveFrames: 3,
+        staleAfterMs: 120_000,
+        now: () => now,
+        catalog: SAMPLE_CATALOG,
+        indexPaths: SAMPLE_INDEX_PATHS,
+    });
+
+    const dash = store.seedInitial({
+        moduleKey: 'dashboard',
+        label: 'Dashboard',
+        url: `${ORIGIN}${PREFIX}/purchasing/dashboard`,
+    });
+
+    now += 10;
+    const po1 = store.openWorkspace({
+        moduleKey: 'purchase-orders',
+        label: 'Purchase Order',
+        url: `${ORIGIN}${PREFIX}/purchasing/purchase-orders`,
+        stageOnly: true,
+        showTabWhileStaged: true,
+    });
+    now += 10;
+    const po2 = store.openWorkspace({
+        moduleKey: 'purchase-orders',
+        label: 'Purchase Order',
+        url: `${ORIGIN}${PREFIX}/purchasing/purchase-orders`,
+        stageOnly: true,
+        showTabWhileStaged: true,
+    });
+    now += 10;
+    const ship = store.openWorkspace({
+        moduleKey: 'shipments',
+        label: 'Shipments & Logistics',
+        url: `${ORIGIN}${PREFIX}/purchasing/shipments`,
+        stageOnly: true,
+        showTabWhileStaged: true,
+    });
+    now += 10;
+    const pr = store.openWorkspace({
+        moduleKey: 'requisitions',
+        label: 'Purchase Requisition',
+        url: `${ORIGIN}${PREFIX}/purchasing/requisitions`,
+        stageOnly: true,
+        showTabWhileStaged: true,
+    });
+
+    assert.equal(store.activeFrame().frameId, dash.frame.frameId);
+    const groups = store.displayGroups();
+    assert.deepEqual(
+        groups.map((g) => g.groupId),
+        [dash.group.groupId, po1.group.groupId, po2.group.groupId, ship.group.groupId, pr.group.groupId],
+    );
+    assert.equal(groups[1].duplicateIndex, 1);
+    assert.equal(groups[2].duplicateIndex, 2);
+    assert.equal(groups[1].queued, true);
+
+    // Next open hits maxTabs=5 while all non-active tabs are actively queued -> blocks instead of cannibalizing queued slots
+    const overflow = store.openWorkspace({
+        moduleKey: 'claims',
+        label: 'Material Claims',
+        url: `${ORIGIN}${PREFIX}/purchasing/claims`,
+        stageOnly: true,
+        showTabWhileStaged: true,
+    });
+    assert.equal(overflow.blocked, true);
+
+    // Background completion does not steal active focus from Dashboard
+    now += 200;
+    const bgCommit = store.commitStagedFrame(po1.frame.frameId, { activate: false });
+    assert.equal(bgCommit.ok, true);
+    assert.equal(bgCommit.activated, false);
+    assert.equal(store.activeFrame().frameId, dash.frame.frameId);
+    assert.equal(store.getFrame(po1.frame.frameId).staged, false);
+    assert.equal(store.getFrame(po1.frame.frameId).queued, false);
+
+    // Final target completion activates cleanly
+    now += 200;
+    const finalCommit = store.commitStagedFrame(pr.frame.frameId, { activate: true });
+    assert.equal(finalCommit.ok, true);
+    assert.equal(finalCommit.activated, true);
+    assert.equal(store.activeFrame().frameId, pr.frame.frameId);
+});
+
+test('WorkspaceNavQueue runs bounded parallel FIFO (max 2), allows duplicate clicks in order, and manages 2.5s loader', () => {
+    const harness = createFakeTimerHarness();
+    const started = [];
+    const timeouts = [];
+    const dataTimeouts = [];
+    let loaderShownCount = 0;
+    let loaderHiddenCount = 0;
+
+    const queue = new WorkspaceNavQueue({
+        maxConcurrent: 2,
+        slowThresholdMs: 2500,
+        slotTimeoutMs: 15000,
+        dataReadyTimeoutMs: 12000,
+        timers: harness.timers,
+        onStartSlot: (entry) => started.push(entry.frameId),
+        onSlowThreshold: () => { loaderShownCount += 1; },
+        onHideLoader: () => { loaderHiddenCount += 1; },
+        onSlotTimeout: (entry) => timeouts.push(entry.frameId),
+        onDataTimeout: (entry) => dataTimeouts.push(entry.frameId),
+    });
+
+    const poAnchor = { id: 'sidebar-po' };
+
+    queue.enqueue({ frameId: 'po1', groupId: 'g1', label: 'PO #1', triggerEl: poAnchor });
+    queue.enqueue({ frameId: 'po2', groupId: 'g2', label: 'PO #2', triggerEl: poAnchor });
+    queue.enqueue({ frameId: 'ship', groupId: 'g3', label: 'Shipments' });
+    queue.enqueue({ frameId: 'pr', groupId: 'g4', label: 'Requisitions' });
+
+    assert.deepEqual(started, ['po1', 'po2']);
+    assert.equal(queue.activeCount(), 2);
+    assert.equal(queue.queuedCount(), 2);
+    assert.equal(queue.autoFocusFrameId(), 'pr');
+    assert.equal(queue.isTriggerPending(poAnchor), true);
+
+    // Out-of-order completion: po2 finishes HTML without waiting for DataTables
+    harness.advanceBy(800);
+    const resPo2 = queue.complete('po2');
+    assert.equal(resPo2.handled, true);
+    assert.equal(resPo2.activate, false);
+    assert.deepEqual(started, ['po1', 'po2', 'ship']);
+    assert.equal(queue.isTriggerPending(poAnchor), true);
+
+    // po1 finishes HTML and enters waiting-data (DataTables AJAX still running) -> still holds slot 1!
+    harness.advanceBy(200);
+    assert.equal(queue.markDocumentLoaded('po1', { awaitingData: true }), true);
+    assert.equal(queue.activeCount(), 2);
+    assert.equal(queue.queuedCount(), 1);
+
+    // Crosses shared 2500ms total-wait threshold (800 + 200 + 1600 = 2600ms) -> AdasiLoader appears
+    harness.advanceBy(1600);
+    assert.equal(loaderShownCount, 1);
+    assert.equal(queue.isLoaderShown(), true);
+
+    // po1 DataTables finishes -> frees slot for pr, trigger becomes idle
+    const resPo1 = queue.complete('po1');
+    assert.equal(resPo1.activate, false);
+    assert.equal(queue.isTriggerPending(poAnchor), false);
+    assert.deepEqual(started, ['po1', 'po2', 'ship', 'pr']);
+    assert.equal(queue.isLoaderShown(), true);
+
+    // Shipments completes silently, pr (latest target) completes and hides AdasiLoader immediately
+    const resShip = queue.complete('ship');
+    assert.equal(resShip.activate, false);
+    const resPr = queue.complete('pr');
+    assert.equal(resPr.activate, true);
+    assert.equal(loaderHiddenCount, 1);
+    assert.equal(queue.isLoaderShown(), false);
+    assert.equal(queue.autoFocusFrameId(), null);
+
+    // Manual prioritize & clearAutoFocus behavior
+    queue.enqueue({ frameId: 'm1', groupId: 'gm1', label: 'M1' });
+    queue.enqueue({ frameId: 'm2', groupId: 'gm2', label: 'M2' });
+    queue.enqueue({ frameId: 'm3', groupId: 'gm3', label: 'M3' });
+    queue.enqueue({ frameId: 'm4', groupId: 'gm4', label: 'M4' });
+    assert.equal(queue.prioritize('m3'), true);
+    assert.equal(queue.autoFocusFrameId(), 'm3');
+    queue.complete('m1');
+    assert.equal(started.at(-1), 'm3', 'Prioritized item dequeues before older queued m4');
+
+    // Manual click to an already-ready tab clears auto-focus and hides loader right away
+    harness.advanceBy(2600);
+    assert.equal(loaderShownCount, 2);
+    queue.clearAutoFocus();
+    assert.equal(loaderHiddenCount, 2);
+    assert.equal(queue.complete('m3').activate, false);
+    assert.deepEqual(timeouts, []);
+
+    // Verify 12s dataReadyTimeout fires on stalled waiting-data entry
+    queue.markDocumentLoaded('m2', { awaitingData: true });
+    harness.advanceBy(12100);
+    assert.deepEqual(dataTimeouts, ['m2']);
+});
+
+test('createEmbedReadinessController waits for serverSide DataTables draw.dt and boot GET fetches before signaling ready', async () => {
+    const harness = createFakeTimerHarness();
+    let readyDetail = null;
+
+    const ctrl = createEmbedReadinessController({
+        origin: ORIGIN,
+        maxDataWaitMs: 12000,
+        timers: harness.timers,
+        onReady: (detail) => { readyDetail = detail; },
+    });
+
+    // 1. DataTable initializes during boot
+    const poTable = { id: 'poTable' };
+    ctrl.onTableInitStart(poTable);
+    ctrl.onTablePreXhr(poTable);
+    ctrl.onTableProcessing(poTable, true);
+
+    // 2. Also simulate an initial GET fetch during boot window plus ignored background endpoint
+    const tracked = ctrl.onRequestStart('req-1', { url: `${ORIGIN}${PREFIX}/purchasing/comparison/data`, method: 'GET' });
+    const ignored = ctrl.onRequestStart('req-poll', { url: `${ORIGIN}/notifications/unread-count`, method: 'GET' });
+    assert.equal(tracked, true);
+    assert.equal(ignored, false);
+    assert.equal(isTrackableBootGetRequest({ url: 'https://other.example.com/data', method: 'GET', origin: ORIGIN }), false);
+    assert.equal(isTrackableBootGetRequest({ url: `${ORIGIN}/broadcasting/auth`, method: 'POST', origin: ORIGIN }), false);
+
+    // 3. Even after DOMContentLoaded & window.load finish, page must NOT be ready while DataTable AJAX runs!
+    ctrl.markDomReady();
+    ctrl.markWindowLoaded();
+    harness.advanceBy(50);
+    assert.equal(ctrl.isReady, false);
+    assert.equal(readyDetail, null);
+
+    // Background polling started AFTER boot settle window closes must not re-block readiness
+    assert.equal(ctrl.onRequestStart('late-poll', { url: `${ORIGIN}${PREFIX}/exports`, method: 'GET' }), false);
+
+    // 4. Boot fetch finishes, still waiting for DataTable draw.dt
+    ctrl.onRequestEnd('req-1');
+    harness.advanceBy(50);
+    assert.equal(ctrl.isReady, false);
+
+    // 5. DataTable draw.dt completes -> waits 1 paint rAF then resolves whenReady()!
+    ctrl.onTableSettled(poTable);
+    assert.equal(ctrl.isReady, false, 'Allows 1 paint frame for rendered tbody rows');
+    harness.advanceBy(20);
+    assert.equal(ctrl.isReady, true);
+    const resolved = await ctrl.whenReady();
+    assert.equal(resolved.reason, 'settled');
+    assert.equal(readyDetail.reason, 'settled');
+
+    // 6. Failed DataTable (error.dt / processing=false) still settles cleanly so error UI displays
+    const errHarness = createFakeTimerHarness();
+    const errCtrl = createEmbedReadinessController({
+        origin: ORIGIN,
+        maxDataWaitMs: 12000,
+        timers: errHarness.timers,
+    });
+    const brokenTable = { id: 'brokenTable' };
+    errCtrl.onTablePreXhr(brokenTable);
+    errCtrl.markWindowLoaded();
+    errHarness.advanceBy(30);
+    assert.equal(errCtrl.isReady, false);
+    errCtrl.onTableProcessing(brokenTable, false);
+    errHarness.advanceBy(30);
+    assert.equal(errCtrl.isReady, true);
 });

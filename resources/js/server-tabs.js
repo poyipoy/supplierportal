@@ -268,6 +268,55 @@ function navigate(selector, url, { pushHistory = true } = {}) {
 }
 
 /**
+ * Sanitize an HTML fragment returned by an internal endpoint before innerHTML injection.
+ * Defense-in-depth alongside server-side Blade escaping; safe fallback when DOMParser is absent (Node tests).
+ *
+ * @param {string} rawHtml
+ * @returns {string}
+ */
+function sanitizeServerFragment(rawHtml) {
+    if (typeof rawHtml !== 'string' || rawHtml === '') {
+        return '';
+    }
+
+    if (typeof DOMParser === 'undefined') {
+        return rawHtml;
+    }
+
+    const isTableChild = /^\s*<(?:thead|tbody|tfoot|tr|caption|colgroup)\b/i.test(rawHtml);
+    const wrappedHtml = isTableChild ? `<table>${rawHtml}</table>` : rawHtml;
+    const doc = new DOMParser().parseFromString(wrappedHtml, 'text/html');
+
+    doc.querySelectorAll('script, object, embed, base, meta[http-equiv]').forEach((node) => node.remove());
+
+    const root = isTableChild ? doc.body.querySelector('table') : doc.body;
+    if (!root) {
+        return '';
+    }
+
+    root.querySelectorAll('*').forEach((el) => {
+        for (const attr of Array.from(el.attributes)) {
+            const name = attr.name.toLowerCase();
+            if (name.startsWith('on')) {
+                el.removeAttribute(attr.name);
+                continue;
+            }
+
+            if (name === 'href' || name === 'src' || name === 'action' || name === 'formaction' || name === 'xlink:href') {
+                const normalized = String(attr.value || '')
+                    .replace(/[\u0000-\u0020]+/g, '')
+                    .toLowerCase();
+                if (normalized.startsWith('javascript:') || normalized.startsWith('vbscript:') || normalized.startsWith('data:text/html')) {
+                    el.removeAttribute(attr.name);
+                }
+            }
+        }
+    });
+
+    return root.innerHTML;
+}
+
+/**
  * Speculative prefetch: fetch a tab's content in the background and cache it.
  * Does not touch the DOM. Silent on error.
  *
@@ -279,7 +328,12 @@ async function speculativePrefetch(url, ttlMs = CACHE_TTL_MS) {
 
     prefetchInFlight.add(url);
     try {
-        const response = await fetch(url, { headers: { ...FRAGMENT_REQUEST_HEADERS } });
+        const response = await fetch(url, {
+            headers: {
+                ...FRAGMENT_REQUEST_HEADERS,
+                'X-Adasi-Prefetch': '1',
+            },
+        });
 
         if (!response.ok) return;
 
@@ -436,7 +490,7 @@ function applyData(state, container, tableTarget, data, url, pushHistory, option
     // 1. Swap table HTML with subtle 500ms opacity fade-in
     if (data.html) {
         tableTarget.classList.remove('ui-page-fade');
-        tableTarget.innerHTML = data.html;
+        tableTarget.innerHTML = sanitizeServerFragment(data.html);
         void tableTarget.offsetWidth;
         tableTarget.classList.add('ui-page-fade');
     }
@@ -590,7 +644,7 @@ function swapTabNav(container, navHtml) {
     const focusedTab = document.activeElement?.closest?.('[data-server-tab]');
     const focusedTabName = focusedTab?.closest('[data-server-tabs-nav]') ? focusedTab.dataset.tabName : null;
 
-    nav.innerHTML = navHtml;
+    nav.innerHTML = sanitizeServerFragment(navHtml);
 
     if (focusedTabName) {
         [...nav.querySelectorAll('[data-server-tab]')]
@@ -686,8 +740,103 @@ function reinitTooltips(container) {
     });
 }
 
+let mmtDelegationBound = false;
+
+function activateMmtRow(row) {
+    const workspace = row?.closest?.('[data-mmt-workspace]');
+    if (!workspace || !row.closest('[data-mmt-master-pane]')) {
+        return;
+    }
+
+    const rawUrl = row.dataset.mmtRowUrl;
+    if (!rawUrl) {
+        return;
+    }
+
+    const targetSelector = workspace.dataset.mmtSatelliteTarget;
+    const satellitePane = (targetSelector && document.querySelector(targetSelector))
+        || workspace.querySelector('[data-mmt-satellite][data-server-tabs-container]');
+    if (!satellitePane?.id) {
+        return;
+    }
+
+    let resolvedUrl;
+    try {
+        const origin = typeof window !== 'undefined' && window.location?.origin
+            ? window.location.origin
+            : 'http://localhost';
+        resolvedUrl = new URL(rawUrl, origin);
+        if (typeof window !== 'undefined' && window.location?.origin && resolvedUrl.origin !== window.location.origin) {
+            return;
+        }
+    } catch {
+        return;
+    }
+
+    const activeSatTab = satellitePane.querySelector('[data-server-tab][aria-current="page"]')?.dataset.tabName;
+    if (activeSatTab && !resolvedUrl.searchParams.has('tab')) {
+        resolvedUrl.searchParams.set('tab', activeSatTab);
+    }
+
+    const masterScope = row.closest('[data-mmt-master-pane]') || workspace;
+    masterScope.querySelectorAll('tr[data-mmt-row-url].is-mmt-selected').forEach((prevRow) => {
+        prevRow.classList.remove('is-mmt-selected', 'tw:bg-primary/5');
+        prevRow.setAttribute('aria-selected', 'false');
+    });
+    row.classList.add('is-mmt-selected', 'tw:bg-primary/5');
+    row.setAttribute('aria-selected', 'true');
+
+    const refBadge = workspace.querySelector('[data-mmt-active-ref]');
+    const refBar = workspace.querySelector('[data-mmt-ref-bar]');
+    const refText = String(row.dataset.mmtRowRef || '').trim();
+    if (refBadge) {
+        const hasRef = refText !== '';
+        refBadge.textContent = refText;
+        refBadge.hidden = !hasRef;
+        refBadge.classList.toggle('tw:hidden', !hasRef);
+        if (refBar) {
+            refBar.hidden = !hasRef;
+        }
+    }
+
+    navigate(`#${satellitePane.id}`, resolvedUrl.toString(), { pushHistory: false });
+}
+
+function bindMmtWorkspaceDelegation() {
+    if (mmtDelegationBound || typeof document === 'undefined' || typeof document.addEventListener !== 'function') {
+        return;
+    }
+    mmtDelegationBound = true;
+
+    const interactiveSelector = 'a, button, input, select, textarea, label, [role="button"], [data-bs-toggle], [data-mmt-ignore]';
+
+    document.addEventListener('click', (e) => {
+        if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
+            return;
+        }
+        const row = e.target?.closest?.('tr[data-mmt-row-url]');
+        if (!row || e.target?.closest?.(interactiveSelector)) {
+            return;
+        }
+        activateMmtRow(row);
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.defaultPrevented || (e.key !== 'Enter' && e.key !== ' ')) {
+            return;
+        }
+        const row = e.target?.closest?.('tr[data-mmt-row-url]');
+        if (!row || e.target?.closest?.(interactiveSelector)) {
+            return;
+        }
+        e.preventDefault();
+        activateMmtRow(row);
+    });
+}
+
 export function bootServerTabs() {
     if (typeof document === 'undefined') return;
+    bindMmtWorkspaceDelegation();
     document.querySelectorAll('[data-server-tabs-container]').forEach((container) => {
         const selector = container.id ? `#${container.id}` : null;
         if (selector) {

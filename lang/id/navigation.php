@@ -206,5 +206,8 @@ return [
         'status_unsaved' => 'Ada perubahan belum disimpan',
         'status_stale' => 'Data diperbarui di tab lain — klik muat ulang bila siap',
         'status_hibernated' => 'Dijeda di latar belakang — dimuat ulang otomatis saat dibuka',
+        'status_queued' => 'Menunggu antrian muat',
+        'queued_announcement' => 'Mengantrikan :label (:count memuat)',
+        'ready_announcement' => ':label siap dibuka',
     ],
 ];

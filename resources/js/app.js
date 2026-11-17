@@ -11,6 +11,7 @@ import './locale-switcher';
 import './submit-guard';
 import './async-form-submit';
 import './adasi-loader';
+import { bootEmbedReadiness } from './embed-readiness';
 import './asset-protection';
 import './server-tabs';
 import './smart-panel';
@@ -57,8 +58,13 @@ window.AdasiCalendar = Object.freeze({
     closeActive: () => {},
 });
 
+const embedReadiness = bootEmbedReadiness(window);
+
 // A failed chunk only leaves its own component unregistered; the shell and toasts still start.
-if (pageComponents.length) await Promise.allSettled(pageComponents);
+if (pageComponents.length) {
+    pageComponents.forEach((componentPromise) => embedReadiness?.trackPromise?.(componentPromise));
+    await Promise.allSettled(pageComponents);
+}
 
 const toastState = Alpine.reactive({
     visible: [],
@@ -341,6 +347,32 @@ window.AdasiToast = Object.freeze({
     },
 });
 
+window.AdasiQuickFlow = Object.freeze({
+    isEnabled(trigger = null, actionKey = null) {
+        if (trigger instanceof Element && trigger.dataset?.quickFlow === 'true') {
+            return true;
+        }
+        if (document.documentElement.dataset.quickFlow === 'true') {
+            return true;
+        }
+        try {
+            const accountId = document.querySelector('meta[name="user-id"]')?.content?.trim();
+            const key = accountId ? `adasi.quick_flow.${accountId}` : 'adasi.quick_flow';
+            const raw = window.localStorage.getItem(key);
+            if (!raw) return false;
+            if (raw === 'true' || raw === '1') return true;
+            const parsed = JSON.parse(raw);
+            if (typeof parsed === 'boolean') return parsed;
+            if (parsed && typeof parsed === 'object') {
+                return actionKey ? Boolean(parsed[actionKey] ?? parsed.enabled) : Boolean(parsed.enabled);
+            }
+            return false;
+        } catch {
+            return false;
+        }
+    },
+});
+
 if (document.documentElement.dataset.workspaceEmbed === 'true') {
     if (window.self === window.top) {
         try {
@@ -371,9 +403,11 @@ Alpine.data('adasiShell', () => ({
     viewportIsDesktop: false,
     sidebarReturnFocus: null,
     viewportQuery: null,
+    hoverPeek: false,
+    hoverTimer: null,
 
     get sidebarIsExpanded() {
-        return this.viewportIsDesktop ? !this.desktopCollapsed : this.mobileOpen;
+        return this.viewportIsDesktop ? (!this.desktopCollapsed || this.hoverPeek) : this.mobileOpen;
     },
 
     get sidebarToggleLabel() {
@@ -396,6 +430,11 @@ Alpine.data('adasiShell', () => ({
         }));
         this.viewportQuery.addEventListener('change', () => this.syncViewport());
         window.addEventListener('pageshow', () => this.syncViewport(), { passive: true });
+        document.getElementById('sidebar')?.addEventListener('hidden.bs.dropdown', () => {
+            if (this.hoverPeek && !document.getElementById('sidebar')?.matches(':hover')) {
+                this.setHoverPeek(false);
+            }
+        });
     },
 
     syncViewport() {
@@ -429,10 +468,64 @@ Alpine.data('adasiShell', () => ({
         }
     },
 
+    clearHoverTimer() {
+        if (this.hoverTimer) {
+            window.clearTimeout(this.hoverTimer);
+            this.hoverTimer = null;
+        }
+    },
+
+    setHoverPeek(active) {
+        this.hoverPeek = Boolean(active);
+        if (this.hoverPeek) {
+            document.documentElement.dataset.sidebarHoverPeek = 'true';
+        } else {
+            delete document.documentElement.dataset.sidebarHoverPeek;
+        }
+        this.syncSidebarTooltips();
+    },
+
+    onSidebarPointerEnter() {
+        if (!this.viewportIsDesktop || !this.desktopCollapsed) {
+            return;
+        }
+        if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+            return;
+        }
+
+        this.clearHoverTimer();
+        this.hoverTimer = window.setTimeout(() => {
+            this.hoverTimer = null;
+            if (this.viewportIsDesktop && this.desktopCollapsed) {
+                this.setHoverPeek(true);
+            }
+        }, 140);
+    },
+
+    onSidebarPointerLeave() {
+        this.clearHoverTimer();
+        if (!this.hoverPeek) {
+            return;
+        }
+
+        this.hoverTimer = window.setTimeout(() => {
+            this.hoverTimer = null;
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar?.querySelector('.dropdown-menu.show')) {
+                return;
+            }
+            this.setHoverPeek(false);
+        }, 120);
+    },
+
     applySidebarState() {
-        document.documentElement.dataset.sidebarCollapsed = String(
-            this.viewportIsDesktop && this.desktopCollapsed,
-        );
+        const isCollapsedDesktop = this.viewportIsDesktop && this.desktopCollapsed;
+        document.documentElement.dataset.sidebarCollapsed = String(isCollapsedDesktop);
+        if (!isCollapsedDesktop) {
+            this.clearHoverTimer();
+            this.hoverPeek = false;
+            delete document.documentElement.dataset.sidebarHoverPeek;
+        }
         this.syncSidebarTooltips();
     },
 
@@ -441,7 +534,7 @@ Alpine.data('adasiShell', () => ({
             const Tooltip = window.bootstrap?.Tooltip;
             if (!Tooltip) return;
 
-            const enabled = this.viewportIsDesktop && this.desktopCollapsed;
+            const enabled = this.viewportIsDesktop && this.desktopCollapsed && !this.hoverPeek;
             document.querySelectorAll('[data-sidebar-tooltip]').forEach((element) => {
                 const instance = Tooltip.getInstance(element);
 
@@ -461,6 +554,9 @@ Alpine.data('adasiShell', () => ({
 
     toggleSidebar(trigger = null) {
         if (this.viewportIsDesktop) {
+            this.clearHoverTimer();
+            this.hoverPeek = false;
+            delete document.documentElement.dataset.sidebarHoverPeek;
             this.desktopCollapsed = !this.desktopCollapsed;
             this.storeDesktopSidebarState();
             this.applySidebarState();
@@ -567,7 +663,10 @@ document.addEventListener('pointerdown', (event) => {
 const bootImports = () => {
     if (hasMarker('[data-exchange-rates-workspace]')) import('./exchange-rates').then(module => module.bootExchangeRates());
     if (document.querySelector('[data-local-import]')) import('./local-procurement-import');
-    if (document.querySelector('[data-gr-table]')) import('./local-po-gr-table').then(module => module.bootLocalPoGrTable());
+    if (document.querySelector('[data-gr-table]')) {
+        const grTableImport = import('./local-po-gr-table').then(module => module.bootLocalPoGrTable());
+        embedReadiness?.trackPromise?.(grTableImport);
+    }
     if (hasMarker('[data-advanced-export], [data-format-export-form]')) import('./advanced-export');
     if (hasMarker('[data-dashboard-audience] [data-editor-config]')) import('./dashboard-editor');
     if (hasMarker('[data-quotation-form-export]')) import('./quotation-form-export');
