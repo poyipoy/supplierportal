@@ -406,6 +406,9 @@ Alpine.data('adasiShell', () => ({
     viewportQuery: null,
     hoverPeek: false,
     hoverTimer: null,
+    menuSearchQuery: '',
+    menuSearchMatchCount: null,
+    menuSearchStatusText: '',
 
     get sidebarIsExpanded() {
         return this.viewportIsDesktop ? (!this.desktopCollapsed || this.hoverPeek) : this.mobileOpen;
@@ -585,12 +588,88 @@ Alpine.data('adasiShell', () => ({
         }
     },
 
+    activateSidebarSearch() {
+        if (this.viewportIsDesktop && this.desktopCollapsed) {
+            this.clearHoverTimer();
+            this.hoverPeek = false;
+            delete document.documentElement.dataset.sidebarHoverPeek;
+            this.desktopCollapsed = false;
+            this.storeDesktopSidebarState();
+            this.applySidebarState();
+        }
+        this.$nextTick(() => document.getElementById('sidebarMenuSearch')?.focus());
+    },
+
+    filterSidebarMenu() {
+        const nav = document.querySelector('#sidebar .sidebar-menu');
+        if (!nav) return;
+
+        const q = String(this.menuSearchQuery || '').trim().toLowerCase();
+        let matchCount = 0;
+        let currentHeading = null;
+        let currentHeadingText = '';
+        let headingHasMatch = false;
+
+        const finalizeHeading = () => {
+            if (currentHeading) {
+                currentHeading.hidden = Boolean(q) && !headingHasMatch;
+            }
+        };
+
+        for (const child of nav.children) {
+            if (child.classList.contains('sidebar-heading')) {
+                finalizeHeading();
+                currentHeading = child;
+                currentHeadingText = (child.textContent || '').trim().toLowerCase();
+                headingHasMatch = false;
+                continue;
+            }
+
+            if (child.matches('a.sidebar-link')) {
+                const labelText = (
+                    child.querySelector('.sidebar-link-label')?.textContent
+                    || child.getAttribute('aria-label')
+                    || child.textContent
+                    || ''
+                ).trim().toLowerCase();
+                const matches = !q || labelText.includes(q) || currentHeadingText.includes(q);
+                child.hidden = !matches;
+                if (matches) {
+                    matchCount += 1;
+                    headingHasMatch = true;
+                }
+            }
+        }
+        finalizeHeading();
+
+        this.menuSearchMatchCount = q ? matchCount : null;
+        const liveEl = nav.querySelector('[data-sidebar-search-live]');
+        if (!q) {
+            this.menuSearchStatusText = '';
+        } else if (matchCount === 0) {
+            this.menuSearchStatusText = liveEl?.dataset.emptyText || '';
+        } else {
+            const tpl = liveEl?.dataset.resultsTemplate || ':count';
+            this.menuSearchStatusText = tpl.replace(':count', String(matchCount));
+        }
+    },
+
+    clearMenuSearch(event = null) {
+        if (!this.menuSearchQuery) return;
+        event?.preventDefault?.();
+        event?.stopPropagation?.();
+        this.menuSearchQuery = '';
+        this.filterSidebarMenu();
+        this.$nextTick(() => document.getElementById('sidebarMenuSearch')?.focus());
+    },
+
     trapSidebarFocus(event) {
         if (this.viewportIsDesktop || !this.mobileOpen) return;
 
         const toggle = document.querySelector('.sidebar-toggle--mobile');
-        const navigationItems = [...document.querySelectorAll('#sidebar .sidebar-menu a[href], #sidebar .sidebar-menu button:not([disabled]), #sidebar .sidebar-menu [tabindex]:not([tabindex="-1"])')];
-        const items = toggle ? [toggle, ...navigationItems] : navigationItems;
+        const sidebarControls = [...document.querySelectorAll('#sidebar .sidebar-control input, #sidebar .sidebar-control button:not([disabled]), #sidebar .sidebar-menu a[href], #sidebar .sidebar-menu button:not([disabled]), #sidebar .sidebar-menu [tabindex]:not([tabindex="-1"])')]
+            .filter((el) => !el.hidden && el.offsetParent !== null);
+        const items = toggle ? [toggle, ...sidebarControls] : sidebarControls;
         if (!items.length) return;
 
         const first = items[0];
@@ -677,60 +756,51 @@ const bootImports = () => {
     if (hasMarker('[data-adasi-time-picker]')) import('./time-picker').then(module => module.bootTimePickers(document));
 };
 
-const showFallbackClientSplash = (redirectUrl) => {
-    try {
-        window.sessionStorage?.setItem('adasi.auth_splash.client_start', String(Date.now()));
-    } catch {}
-
-    const gifSrc = document.body?.dataset?.splashGif || '';
-    const fallbackSrc = document.body?.dataset?.splashWordmark || '';
-    const reduced = Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
-
-    if (document.body && !document.querySelector('[data-auth-splash]')) {
-        const overlay = document.createElement('div');
-        overlay.className = 'adasi-client-splash';
-        overlay.setAttribute('data-auth-splash', '');
-        overlay.setAttribute('data-splash-reason', 'post-login');
-        overlay.setAttribute('role', 'status');
-        overlay.setAttribute('aria-live', 'polite');
-
-        const img = document.createElement('img');
-        img.className = 'adasi-client-splash__media';
-        img.width = 384;
-        img.height = 153;
-        img.alt = '';
-        img.decoding = 'sync';
-        img.src = (reduced && fallbackSrc) ? fallbackSrc : (gifSrc || fallbackSrc);
-        overlay.appendChild(img);
-        document.body.appendChild(overlay);
+const setLoginButtonLoading = (submitBtn, isLoading) => {
+    if (!submitBtn) return;
+    const spinner = submitBtn.querySelector('[data-login-submit-spinner]');
+    const label = submitBtn.querySelector('[data-login-submit-label]');
+    submitBtn.disabled = Boolean(isLoading);
+    if (isLoading) {
+        submitBtn.setAttribute('aria-busy', 'true');
+    } else {
+        submitBtn.removeAttribute('aria-busy');
     }
-
-    if (typeof redirectUrl === 'string' && redirectUrl !== '') {
-        window.setTimeout(() => window.location.assign(redirectUrl), 24);
-    }
+    if (spinner) spinner.hidden = !isLoading;
+    if (label) label.hidden = Boolean(isLoading);
 };
 
 const bootLoginSplashForms = () => {
+    window.addEventListener('pageshow', (event) => {
+        if (!event.persisted) return;
+        document.querySelectorAll('form[data-login-splash-form]').forEach((form) => {
+            delete form.dataset.loginNativeFallback;
+            setLoginButtonLoading(form.querySelector('[data-login-submit-btn], button[type="submit"]'), false);
+        });
+    });
+
     document.querySelectorAll('form[data-login-splash-form]').forEach((form) => {
         if (form.dataset.loginSplashBound === 'true') return;
         form.dataset.loginSplashBound = 'true';
 
         form.addEventListener('submit', async (event) => {
-            if (event.defaultPrevented || form.dataset.loginNativeFallback === 'true') return;
-            if (!document.body?.dataset?.splashGif || typeof window.fetch !== 'function') return;
+            if (event.defaultPrevented) return;
+
+            const submitBtn = form.querySelector('[data-login-submit-btn], button[type="submit"]');
+            if (form.dataset.loginNativeFallback === 'true' || typeof window.fetch !== 'function') {
+                setLoginButtonLoading(submitBtn, true);
+                return;
+            }
 
             event.preventDefault();
 
-            const submitBtn = form.querySelector('button[type="submit"]');
             const errorAlert = form.querySelector('[data-login-error-alert]');
             if (errorAlert) {
                 errorAlert.hidden = true;
                 errorAlert.textContent = '';
             }
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.setAttribute('aria-busy', 'true');
-            }
+            setLoginButtonLoading(submitBtn, true);
+            let keepLoading = false;
 
             try {
                 const response = await window.fetch(form.action, {
@@ -747,18 +817,14 @@ const bootLoginSplashForms = () => {
                 const payload = await response.json().catch(() => null);
 
                 if (response.ok && payload?.ok && typeof payload.redirect_url === 'string') {
-                    if (payload.splash && window.AdasiAuthSplash?.activateClientPostLoginSplash) {
-                        window.AdasiAuthSplash.activateClientPostLoginSplash(payload.redirect_url);
-                    } else if (payload.splash) {
-                        showFallbackClientSplash(payload.redirect_url);
-                    } else {
-                        window.location.assign(payload.redirect_url);
-                    }
+                    keepLoading = true;
+                    window.location.assign(payload.redirect_url);
                     return;
                 }
 
                 if (response.status === 422 && payload?.errors) {
                     if (payload.turnstile_required && !form.querySelector('.cf-turnstile')) {
+                        keepLoading = true;
                         form.dataset.loginNativeFallback = 'true';
                         HTMLFormElement.prototype.submit.call(form);
                         return;
@@ -775,20 +841,22 @@ const bootLoginSplashForms = () => {
                 }
 
                 if (response.status === 419) {
+                    keepLoading = true;
                     window.location.reload();
                     return;
                 }
 
                 // Unknown non-OK or throttling response: fall back cleanly to standard POST rendering.
+                keepLoading = true;
                 form.dataset.loginNativeFallback = 'true';
                 HTMLFormElement.prototype.submit.call(form);
             } catch {
+                keepLoading = true;
                 form.dataset.loginNativeFallback = 'true';
                 HTMLFormElement.prototype.submit.call(form);
             } finally {
-                if (!document.querySelector('[data-auth-splash]') && submitBtn) {
-                    submitBtn.disabled = false;
-                    submitBtn.removeAttribute('aria-busy');
+                if (!keepLoading) {
+                    setLoginButtonLoading(submitBtn, false);
                 }
             }
         });

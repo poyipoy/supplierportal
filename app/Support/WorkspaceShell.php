@@ -94,9 +94,14 @@ class WorkspaceShell
         return (bool) config('ui.workspace_shell.enabled', false);
     }
 
+    public static function maxSessions(): int
+    {
+        return max(2, min(20, (int) config('ui.workspace_shell.max_sessions', config('ui.workspace_shell.max_tabs', 36))));
+    }
+
     public static function maxTabs(): int
     {
-        return max(2, min(20, (int) config('ui.workspace_shell.max_tabs', 36)));
+        return self::maxSessions();
     }
 
     public static function maxLiveFrames(): int
@@ -702,7 +707,8 @@ class WorkspaceShell
             'dashboardUrl' => $dashboardUrl,
             'workspaceConfig' => [
                 'enabled' => true,
-                'maxTabs' => self::maxTabs(),
+                'maxSessions' => self::maxSessions(),
+                'maxTabs' => self::maxSessions(),
                 'maxLiveFrames' => self::maxLiveFrames(),
                 'staleAfterMs' => self::staleAfterSeconds() * 1000,
                 'slowLoaderThresholdMs' => max(0, (int) config('ui.navigation.slow_loader_threshold_ms', 2500)),
@@ -717,11 +723,25 @@ class WorkspaceShell
                 'menuPathTitles' => $maps['menuPathTitles'],
                 'indexPaths' => $indexPaths,
                 'quickAccessPaths' => $quickAccessPaths,
+                'shortcutsSession' => [
+                    'key' => 'shortcuts',
+                    'label' => __('navigation.workspace_shell.shortcuts'),
+                    'pinned' => true,
+                    'closable' => false,
+                ],
                 'shortcutsTab' => [
                     'key' => 'shortcuts',
                     'label' => __('navigation.workspace_shell.shortcuts'),
                     'pinned' => true,
                     'closable' => false,
+                ],
+                'initialSession' => [
+                    'key' => $moduleKey,
+                    'label' => $title,
+                    'url' => $cleanUrl,
+                    'embedUrl' => $embedUrl,
+                    'pinned' => false,
+                    'closable' => true,
                 ],
                 'initialTab' => [
                     'key' => $moduleKey,
@@ -732,22 +752,39 @@ class WorkspaceShell
                     'closable' => true,
                 ],
                 'i18n' => [
-                    'tabsLabel' => __('navigation.workspace_shell.tabs_label'),
+                    'sessionsLabel' => __('navigation.workspace_shell.sessions_label'),
+                    'tabsLabel' => __('navigation.workspace_shell.sessions_label'),
                     'shortcuts' => __('navigation.workspace_shell.shortcuts'),
+                    'favorites' => __('navigation.workspace_shell.favorites'),
+                    'bookmarks' => __('navigation.workspace_shell.bookmarks'),
                     'frequentlyUsed' => __('navigation.workspace_shell.frequently_used'),
+                    'addFavorite' => __('navigation.workspace_shell.add_favorite'),
+                    'removeFavorite' => __('navigation.workspace_shell.remove_favorite'),
+                    'addBookmark' => __('navigation.workspace_shell.add_bookmark'),
+                    'removeBookmark' => __('navigation.workspace_shell.remove_bookmark'),
+                    'removeFrequent' => __('navigation.workspace_shell.remove_frequent'),
+                    'minimizePane' => __('navigation.workspace_shell.minimize_pane'),
+                    'expandPane' => __('navigation.workspace_shell.expand_pane'),
+                    'resizeShortcutsPanes' => __('navigation.workspace_shell.resize_shortcuts_panes'),
+                    'resizePanePair' => __('navigation.workspace_shell.resize_pane_pair'),
+                    'minimizedPanels' => __('navigation.workspace_shell.minimized_panels'),
                     'allModules' => __('navigation.workspace_shell.all_modules'),
                     'searchShortcuts' => __('navigation.workspace_shell.search_shortcuts'),
                     'clearSearch' => __('navigation.workspace_shell.clear_search'),
                     'noShortcutsMatch' => __('navigation.workspace_shell.no_shortcuts_match'),
                     'openInstancesCount' => __('navigation.workspace_shell.open_instances_count'),
-                    'refreshTab' => __('navigation.workspace_shell.refresh_tab'),
-                    'closeTab' => __('navigation.workspace_shell.close_tab'),
-                    'duplicateTab' => __('navigation.workspace_shell.duplicate_tab'),
+                    'refreshSession' => __('navigation.workspace_shell.refresh_session'),
+                    'refreshTab' => __('navigation.workspace_shell.refresh_session'),
+                    'closeSession' => __('navigation.workspace_shell.close_session'),
+                    'closeTab' => __('navigation.workspace_shell.close_session'),
+                    'duplicateSession' => __('navigation.workspace_shell.duplicate_session'),
+                    'duplicateTab' => __('navigation.workspace_shell.duplicate_session'),
                     'closeOthers' => __('navigation.workspace_shell.close_others'),
                     'closeRight' => __('navigation.workspace_shell.close_right'),
                     'closeAll' => __('navigation.workspace_shell.close_all'),
                     'closeGroup' => __('navigation.workspace_shell.close_group'),
-                    'tabActions' => __('navigation.workspace_shell.tab_actions'),
+                    'sessionActions' => __('navigation.workspace_shell.session_actions'),
+                    'tabActions' => __('navigation.workspace_shell.session_actions'),
                     'stackedPagesCount' => __('navigation.workspace_shell.stacked_pages_count'),
                     'hibernatedBadge' => __('navigation.workspace_shell.hibernated_badge'),
                     'confirmCloseDirtyBulk' => __('navigation.workspace_shell.confirm_close_dirty_bulk'),
@@ -757,8 +794,11 @@ class WorkspaceShell
                     'closeDirtyConfirm' => __('navigation.workspace_shell.close_dirty_confirm'),
                     'evictionBlocked' => __('navigation.workspace_shell.eviction_blocked'),
                     'loadingModule' => __('navigation.workspace_shell.loading_module'),
-                    'scrollTabsLeft' => __('navigation.workspace_shell.scroll_tabs_left'),
-                    'scrollTabsRight' => __('navigation.workspace_shell.scroll_tabs_right'),
+                    'scrollSessionsLeft' => __('navigation.workspace_shell.scroll_sessions_left'),
+                    'scrollTabsLeft' => __('navigation.workspace_shell.scroll_sessions_left'),
+                    'scrollSessionsRight' => __('navigation.workspace_shell.scroll_sessions_right'),
+                    'scrollTabsRight' => __('navigation.workspace_shell.scroll_sessions_right'),
+                    'openSessions' => __('navigation.workspace_shell.open_workspaces'),
                     'openWorkspaces' => __('navigation.workspace_shell.open_workspaces'),
                     'statusActive' => __('navigation.workspace_shell.status_active'),
                     'statusUnsaved' => __('navigation.workspace_shell.status_unsaved'),

@@ -60,30 +60,46 @@
         </a>
     </div>
 
-    <div class="sidebar-control" aria-label="{{ __('navigation.sidebar_controls') }}">
-        <x-ui.icon-button
-            icon="panel-left"
-            :label="__('navigation.toggle_sidebar')"
-            size="lg"
-            class="sidebar-toggle sidebar-toggle--desktop tw:text-on-surface-variant"
-            x-on:click="$dispatch('ui-sidebar-toggle', { trigger: $el })"
-            x-bind:aria-label="sidebarToggleLabel"
-            x-bind:title="sidebarToggleLabel"
-            x-bind:aria-expanded="(!desktopCollapsed).toString()"
-            aria-controls="sidebar"
-        >
-            <x-slot:visual>
-                <span class="sidebar-toggle-icons" x-bind:class="sidebarIsExpanded ? 'is-expanded' : 'is-collapsed'" aria-hidden="true">
-                    <span class="sidebar-toggle-icon sidebar-toggle-icon--collapse">
-                        <x-ui.icon name="panel-left-close" size="md" />
-                    </span>
-                    <span class="sidebar-toggle-icon sidebar-toggle-icon--expand">
-                        <x-ui.icon name="panel-left-open" size="md" />
-                    </span>
-                </span>
-                <span class="sidebar-toggle-label sidebar-type-text" style="--sidebar-type-steps: 16;">{{ __('navigation.collapse_sidebar') }}</span>
-            </x-slot:visual>
-        </x-ui.icon-button>
+    <div class="sidebar-control" role="search" aria-label="{{ __('navigation.search_menu_label') }}">
+        <div class="sidebar-search">
+            <button
+                type="button"
+                class="sidebar-search__icon-btn ui-focus-ring"
+                x-on:click="activateSidebarSearch()"
+                aria-label="{{ __('navigation.search_menu_label') }}"
+                title="{{ __('navigation.search_menu_label') }}"
+                data-sidebar-search-trigger
+                data-sidebar-tooltip
+                data-bs-title="{{ __('navigation.search_menu_label') }}"
+            >
+                <x-ui.icon name="search" size="sm" />
+            </button>
+            <label for="sidebarMenuSearch" class="tw:sr-only">{{ __('navigation.search_menu_label') }}</label>
+            <input
+                type="search"
+                id="sidebarMenuSearch"
+                class="sidebar-search__input"
+                placeholder="{{ __('navigation.search_menu') }}"
+                autocomplete="off"
+                x-model="menuSearchQuery"
+                x-on:input="filterSidebarMenu()"
+                x-on:keydown.escape="clearMenuSearch($event)"
+                x-bind:tabindex="(viewportIsDesktop && desktopCollapsed && !hoverPeek) ? '-1' : '0'"
+                data-sidebar-search-input
+            />
+            <button
+                type="button"
+                class="sidebar-search__clear ui-focus-ring"
+                x-show="menuSearchQuery.trim().length > 0"
+                x-cloak
+                x-on:click="clearMenuSearch()"
+                aria-label="{{ __('navigation.clear_menu_search') }}"
+                title="{{ __('navigation.clear_menu_search') }}"
+                data-sidebar-search-clear
+            >
+                <x-ui.icon name="x" size="xs" />
+            </button>
+        </div>
     </div>
 
     @if(\App\Support\PortalContext::isDualScope())
@@ -336,5 +352,31 @@
             <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 7;">{{ __('common.fields.content') }}</span></div>
             <x-ui.sidebar-item :href="\App\Support\PageRegistry::url('admin.announcements.index')" icon="megaphone" :active="request()->routeIs('admin.announcements.*')" :label="__('navigation.announcements')">{{ __('navigation.announcements') }}</x-ui.sidebar-item>
         @endif
+
+        <div
+            class="sidebar-search-empty"
+            x-show="menuSearchQuery.trim().length > 0 && menuSearchMatchCount === 0"
+            x-cloak
+            data-sidebar-search-empty
+        >
+            <p class="sidebar-search-empty__text">{{ __('navigation.no_menu_match') }}</p>
+            <button
+                type="button"
+                class="sidebar-search-empty__reset ui-focus-ring"
+                x-on:click="clearMenuSearch()"
+            >
+                {{ __('navigation.clear_menu_search') }}
+            </button>
+        </div>
+        <span
+            class="tw:sr-only"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            x-text="menuSearchStatusText"
+            data-sidebar-search-live
+            data-results-template="{{ __('navigation.menu_search_results') }}"
+            data-empty-text="{{ __('navigation.no_menu_match') }}"
+        ></span>
     </nav>
 </aside>

@@ -44,7 +44,7 @@
         'densityLabels' => __('customization.density_levels'),
         'saved' => [
             'theme' => $preferences['theme'], 'shell_style' => $preferences['shell_style'], 'accent' => $preferences['accent'], 'density' => $preferences['density'],
-            'sidebar_state' => $preferences['sidebar_state'], 'quick_flow' => (bool) $preferences['quick_flow'], 'page_size' => (string) $preferences['page_size'],
+            'sidebar_state' => $preferences['sidebar_state'], 'quick_flow' => (bool) ($preferences['quick_flow'] ?? $defaults['quick_flow'] ?? false), 'page_size' => (string) $preferences['page_size'],
             'locale' => $preferences['locale'], 'timezone' => $preferences['timezone'], 'date_format' => $preferences['date_format'],
             'time_format' => $preferences['time_format'], 'number_format' => $preferences['number_format'],
             'country_code' => (string) ($preferences['country_code'] ?? ''), 'import_timezone' => (string) ($preferences['import_timezone'] ?? ''),
@@ -53,7 +53,7 @@
         ],
         'defaults' => [
             'theme' => $defaults['theme'], 'shell_style' => $defaults['shell_style'], 'accent' => $defaults['accent'], 'density' => $defaults['density'],
-            'sidebar_state' => $defaults['sidebar_state'], 'quick_flow' => (bool) $defaults['quick_flow'], 'page_size' => (string) $defaults['page_size'],
+            'sidebar_state' => $defaults['sidebar_state'], 'quick_flow' => (bool) ($defaults['quick_flow'] ?? false), 'page_size' => (string) $defaults['page_size'],
             'timezone' => $defaults['timezone'], 'date_format' => $defaults['date_format'],
             'time_format' => $defaults['time_format'], 'number_format' => $defaults['number_format'],
             'country_code' => '', 'import_timezone' => '',

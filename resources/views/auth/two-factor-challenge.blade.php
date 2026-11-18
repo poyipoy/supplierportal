@@ -19,8 +19,9 @@
     ></div>
     <x-ui.input name="code" id="code" type="text" :label="__('security.authentication_code')" inputmode="text" autocomplete="one-time-code" maxlength="32" class="tw:[&_input]:text-center tw:[&_input]:font-mono tw:[&_input]:text-ui-lg tw:[&_input]:tracking-[0.25em]" required autofocus />
 
-    <button type="submit" class="ui-focus-ring ui-motion tw:flex tw:h-11 tw:w-full tw:items-center tw:justify-center tw:gap-2 tw:rounded-ui-sm tw:border-0 tw:bg-primary tw:text-ui-sm tw:font-semibold tw:text-primary-foreground tw:hover:brightness-95 tw:active:brightness-90">
-        {{ __('common.review.verify') }}
+    <button type="submit" data-login-submit-btn aria-label="{{ __('common.review.verify') }}" class="ui-focus-ring ui-motion tw:flex tw:h-11 tw:w-full tw:items-center tw:justify-center tw:gap-2 tw:rounded-ui-sm tw:border-0 tw:bg-primary tw:text-ui-sm tw:font-semibold tw:text-primary-foreground tw:hover:brightness-95 tw:active:brightness-90">
+        <span class="ui-spinner" data-login-submit-spinner hidden aria-hidden="true"></span>
+        <span data-login-submit-label>{{ __('common.review.verify') }}</span>
     </button>
 </form>
 

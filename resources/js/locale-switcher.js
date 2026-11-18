@@ -350,7 +350,7 @@ export function bootLocaleSwitcher(windowRef = globalThis.window, documentRef = 
                     'nav.top-navbar',
                     '#sidebar',
                     '#chatDrawer',
-                    '.workspace-tabbar',
+                    '.workspace-sessionbar',
                     '#main-content',
                     '.auth-shell',
                     '#adasi-smart-panel',

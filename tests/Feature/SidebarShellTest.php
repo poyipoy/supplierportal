@@ -11,6 +11,7 @@ class SidebarShellTest extends TestCase
         $layout = file_get_contents(resource_path('views/layouts/app.blade.php'));
         $sidebar = file_get_contents(resource_path('views/partials/sidebar.blade.php'));
         $navbar = file_get_contents(resource_path('views/partials/navbar.blade.php'));
+        $sessionBar = file_get_contents(resource_path('views/partials/workspace-session-bar.blade.php'));
 
         $this->assertStringContainsString('localStorage.getItem(storageKey)', $layout);
         $this->assertStringContainsString("'adasi.sidebar.' + preferences.accountId", $layout);
@@ -21,17 +22,20 @@ class SidebarShellTest extends TestCase
         $this->assertStringContainsString('id="mainWrapper"', $layout);
         $this->assertStringContainsString('id="sidebar"', $sidebar);
         $this->assertStringContainsString('class="sidebar-control"', $sidebar);
-        $this->assertStringContainsString('sidebar-toggle--desktop', $sidebar);
-        $this->assertStringContainsString('sidebar-toggle-label', $sidebar);
+        $this->assertStringContainsString('id="sidebarMenuSearch"', $sidebar);
+        $this->assertStringContainsString('sidebar-search__icon-btn', $sidebar);
+        $this->assertStringContainsString('sidebar-search-empty', $sidebar);
+        $this->assertStringContainsString('data-sidebar-search-live', $sidebar);
         $this->assertStringContainsString('brand-text sidebar-type-text', $sidebar);
-        $this->assertStringContainsString('sidebar-toggle-label sidebar-type-text', $sidebar);
         $this->assertStringContainsString('sidebar-heading-label sidebar-type-text', $sidebar);
-        $this->assertStringContainsString('navigation.collapse_sidebar', $sidebar);
-        $this->assertStringContainsString('sidebar-toggle-icon--collapse', $sidebar);
-        $this->assertStringContainsString('sidebar-toggle-icon--expand', $sidebar);
+        $this->assertStringContainsString('navigation.search_menu', $sidebar);
+        $this->assertStringContainsString('data-workspace-sidebar-toggle', $sessionBar);
+        $this->assertStringContainsString('ui-sidebar-toggle', $sessionBar);
+        $this->assertStringContainsString('name="menu"', $sessionBar);
         $this->assertStringContainsString('sidebar-toggle-icon--collapse', $navbar);
         $this->assertStringContainsString('sidebar-toggle-icon--expand', $navbar);
         $this->assertStringContainsString('sidebar-toggle--mobile', $navbar);
+        $this->assertStringContainsString('sidebar-toggle--desktop-fallback', $navbar);
         $sidebarItem = file_get_contents(resource_path('views/components/ui/sidebar-item.blade.php'));
         $this->assertStringContainsString('data-sidebar-tooltip', $sidebarItem);
         $this->assertStringContainsString('sidebar-link-label sidebar-type-text', $sidebarItem);
@@ -78,6 +82,9 @@ class SidebarShellTest extends TestCase
         $this->assertStringContainsString("document.querySelector('.sidebar-toggle--mobile')", $runtime);
         $this->assertStringContainsString('dataset.sidebarMotionReady', $runtime);
         $this->assertStringContainsString('document.documentElement.dataset.sidebarCollapsed', $runtime);
+        $this->assertStringContainsString('activateSidebarSearch()', $runtime);
+        $this->assertStringContainsString('filterSidebarMenu()', $runtime);
+        $this->assertStringContainsString('clearMenuSearch(', $runtime);
     }
 
     public function test_sidebar_styles_keep_compact_dimensions_and_reduced_motion_support(): void
@@ -99,8 +106,9 @@ class SidebarShellTest extends TestCase
         $this->assertStringContainsString('@media (max-width: 991.98px)', $styles);
         $this->assertStringContainsString('.sidebar-control', $styles);
         $this->assertStringContainsString('min-height: 44px', $styles);
-        $this->assertStringContainsString('width: 100% !important', $styles);
-        $this->assertStringContainsString('.sidebar-toggle-label', $styles);
+        $this->assertStringContainsString('.sidebar-search', $styles);
+        $this->assertStringContainsString('.sidebar-search__input', $styles);
+        $this->assertStringContainsString('.sidebar-search-empty', $styles);
         $this->assertStringContainsString('height: 2.625rem', $styles);
         $this->assertStringContainsString('.sidebar-heading::after', $styles);
         $this->assertStringContainsString('.sidebar-type-text', $styles);
@@ -111,7 +119,6 @@ class SidebarShellTest extends TestCase
         $this->assertStringContainsString('opacity var(--ui-sidebar-motion-icon-duration)', $styles);
         $this->assertStringContainsString('pointer-events: none', $styles);
         $this->assertStringNotContainsString("html[data-sidebar-collapsed=\"true\"] .sidebar .sidebar-link-label {\n        display: none;", $styles);
-        $this->assertStringNotContainsString("html[data-sidebar-collapsed=\"true\"] .sidebar .sidebar-toggle-label {\n        display: none;", $styles);
         $this->assertStringNotContainsString('.sidebar.collapsed', $styles);
         $this->assertStringNotContainsString('.main-wrapper.expanded', $styles);
         $this->assertStringNotContainsString('font-size var(--ui-sidebar-motion', $styles);
@@ -122,6 +129,7 @@ class SidebarShellTest extends TestCase
         $this->assertDoesNotMatchRegularExpression('/\.sidebar-type-text\s*\{[^}]*transform:/s', $styles);
         $this->assertStringNotContainsString('@keyframes sidebar-type', $styles);
         $this->assertStringContainsString('.sidebar-toggle--mobile', $styles);
+        $this->assertStringContainsString('.sidebar-toggle--desktop-fallback', $styles);
         $this->assertStringContainsString('.sidebar-nav-tooltip', $styles);
         $this->assertStringContainsString('@media (prefers-reduced-motion: reduce)', $styles);
         $this->assertStringContainsString('html[data-sidebar-collapsed="true"]', $styles);

@@ -1,16 +1,26 @@
 import {
     appendEmbedParam,
     canonicalizeUrl,
+    clampOpenPaneWeights,
     classifyInternalNavigation,
+    computeOpenPaneWidthPx,
     computeWaterFillTabCap,
+    DEFAULT_SHORTCUTS_WEIGHTS,
     isSameOriginUrl,
     isTopLevelOnlyUrl,
+    MIN_SHORTCUTS_PANE_WIDTH_PX,
+    normalizeShortcutsLayout,
+    resizeShortcutsPairByDelta,
     resolveModuleKey,
+    resolveShortcutsSplitterPair,
+    resolveTransitionSettleMs,
+    resolveVisibleShortcutsSplitters,
     safeWebUrl,
     SHORTCUTS_KEY,
+    SHORTCUTS_PANE_KEYS,
     stripEmbedParam,
     WorkspaceNavQueue,
-    WorkspaceTabStore,
+    WorkspaceSessionStore,
 } from './workspace-shell-core.js';
 
 function cleanPageTitle(rawTitle, fallback = 'ADASI Portal') {
@@ -36,7 +46,7 @@ export function bootWorkspaceShell() {
     const config = window.AdasiWorkspaceShellConfig;
     const stageEl = document.querySelector('[data-workspace-stage]');
     const framesEl = document.querySelector('[data-workspace-frames]');
-    const tablistEl = document.querySelector('[data-workspace-tablist]');
+    const tablistEl = document.querySelector('[data-workspace-sessionlist]');
     if (!config?.enabled || !stageEl || !framesEl || !tablistEl) return null;
 
     const origin = window.location.origin;
@@ -61,8 +71,8 @@ export function bootWorkspaceShell() {
         }
     };
 
-    const tabbarEl = document.querySelector('[data-workspace-tabbar]');
-    const viewportEl = document.querySelector('[data-workspace-viewport]');
+    const tabbarEl = document.querySelector('[data-workspace-sessionbar]');
+    const viewportEl = document.querySelector('[data-workspace-session-viewport]');
     const scrollPrevBtn = document.querySelector('[data-workspace-scroll="prev"]');
     const scrollNextBtn = document.querySelector('[data-workspace-scroll="next"]');
     const switcherBtn = document.querySelector('[data-workspace-switcher]');
@@ -70,7 +80,7 @@ export function bootWorkspaceShell() {
     const refreshBtn = document.querySelector('[data-workspace-refresh]');
     const staleBtn = document.querySelector('[data-workspace-stale-action]');
     const progressEl = document.querySelector('[data-workspace-progress]');
-    const tabMenuEl = document.querySelector('[data-workspace-tab-menu]');
+    const tabMenuEl = document.querySelector('[data-workspace-session-menu]');
     const liveRegionEl = document.querySelector('[data-workspace-live-region]');
     const topbarTitleEl = document.querySelector('.top-navbar .topbar-page-title');
 
@@ -100,6 +110,17 @@ export function bootWorkspaceShell() {
         record.cleanup?.();
     };
 
+    const resolveMotionSettleMs = (el) => {
+        try {
+            const cs = window.getComputedStyle(el);
+            return resolveTransitionSettleMs(cs.transitionDuration, cs.transitionDelay, {
+                floorMs: WORKSPACE_MOTION_FALLBACK_MS,
+            });
+        } catch {
+            return WORKSPACE_MOTION_FALLBACK_MS;
+        }
+    };
+
     const finalizeElementMotionWhenSettled = (el, expectedProp, onFinish) => {
         cancelElementMotion(el);
         let done = false;
@@ -118,7 +139,7 @@ export function bootWorkspaceShell() {
             }
         };
         el.addEventListener('transitionend', onTransitionEnd);
-        timer = window.setTimeout(finish, WORKSPACE_MOTION_FALLBACK_MS);
+        timer = window.setTimeout(finish, resolveMotionSettleMs(el));
         motionCleanupMap.set(el, {
             cleanup: () => {
                 if (done) return;
@@ -170,13 +191,13 @@ export function bootWorkspaceShell() {
     const createCollapseTail = (removedPills) => {
         if (!removedPills || removedPills.length === 0) return null;
         const tail = document.createElement('div');
-        tail.className = 'workspace-tab-group__collapse-tail';
+        tail.className = 'workspace-session-group__collapse-tail';
         tail.setAttribute('aria-hidden', 'true');
         let totalWidth = 0;
         for (const pill of removedPills) {
             const pillW = roundPx(pill.getBoundingClientRect?.().width || 0);
             const clone = pill.cloneNode(true);
-            clone.querySelectorAll('.workspace-tab__morph-overlay').forEach((n) => n.remove());
+            clone.querySelectorAll('.workspace-session__morph-overlay').forEach((n) => n.remove());
             sanitizeGhostElement(clone);
             if (pillW > 0) {
                 totalWidth = roundPx(totalWidth + pillW);
@@ -184,7 +205,7 @@ export function bootWorkspaceShell() {
                 clone.style.minWidth = `${pillW}px`;
                 clone.style.maxWidth = `${pillW}px`;
                 clone.style.flex = '0 0 auto';
-                const trigger = clone.querySelector(':scope > .workspace-tab__trigger');
+                const trigger = clone.querySelector(':scope > .workspace-session__trigger');
                 if (trigger) {
                     trigger.style.width = `${pillW}px`;
                     trigger.style.minWidth = `${pillW}px`;
@@ -199,10 +220,10 @@ export function bootWorkspaceShell() {
     const createPillMorphOverlay = (prevPill) => {
         if (!prevPill) return null;
         const clone = prevPill.cloneNode(true);
-        clone.querySelectorAll('.workspace-tab__morph-overlay').forEach((n) => n.remove());
+        clone.querySelectorAll('.workspace-session__morph-overlay').forEach((n) => n.remove());
         sanitizeGhostElement(clone);
         const overlay = document.createElement('span');
-        overlay.className = 'workspace-tab__morph-overlay';
+        overlay.className = 'workspace-session__morph-overlay';
         overlay.setAttribute('aria-hidden', 'true');
         while (clone.firstChild) {
             const child = clone.firstChild;
@@ -240,7 +261,7 @@ export function bootWorkspaceShell() {
         groupEl.style.marginRight = '';
         groupEl.classList.remove('is-entering', 'is-morphing', 'is-expanding-group', 'is-collapsing-group');
 
-        const livePills = Array.from(groupEl.querySelectorAll(':scope > .workspace-tab:not(.workspace-tab--ghost)'));
+        const livePills = Array.from(groupEl.querySelectorAll(':scope > .workspace-session:not(.workspace-session--ghost)'));
         const pillSnapshots = livePills.map((pill) => {
             const snap = {
                 pill,
@@ -319,7 +340,6 @@ export function bootWorkspaceShell() {
         groupEl.classList.remove(
             'is-entering',
             'is-morphing',
-            'is-stack-entering',
             'is-expanding-group',
             'is-collapsing-group',
         );
@@ -331,7 +351,7 @@ export function bootWorkspaceShell() {
         groupEl.style.opacity = '';
         groupEl.style.borderLeftWidth = '';
         groupEl.style.borderRightWidth = '';
-        groupEl.querySelectorAll(':scope > .workspace-tab:not(.workspace-tab--ghost)').forEach((pill) => {
+        groupEl.querySelectorAll(':scope > .workspace-session:not(.workspace-session--ghost)').forEach((pill) => {
             pill.classList.remove('is-morph-pill', 'is-morph-fade-in', 'is-revealing', 'is-revealed');
             pill.style.transition = '';
             pill.style.width = '';
@@ -339,26 +359,25 @@ export function bootWorkspaceShell() {
             pill.style.maxWidth = '';
             pill.style.flexShrink = '';
             pill.style.opacity = '';
-            const trigger = pill.querySelector(':scope > .workspace-tab__trigger');
+            const trigger = pill.querySelector(':scope > .workspace-session__trigger');
             if (trigger) {
                 trigger.style.transition = '';
                 trigger.style.width = '';
                 trigger.style.minWidth = '';
                 trigger.style.opacity = '';
             }
-            const closeBtn = pill.querySelector(':scope > .workspace-tab__close');
+            const closeBtn = pill.querySelector(':scope > .workspace-session__close');
             if (closeBtn) {
                 closeBtn.style.transition = '';
                 closeBtn.style.opacity = '';
             }
-            pill.querySelectorAll(':scope > .workspace-tab__morph-overlay').forEach((n) => n.remove());
+            pill.querySelectorAll(':scope > .workspace-session__morph-overlay').forEach((n) => n.remove());
         });
-        groupEl.querySelectorAll(':scope > .workspace-tab-group__lip-ghost').forEach((n) => n.remove());
     };
 
     const insertGroupAfterAnchor = (anchor, groupEl) => {
         let nextLive = anchor ? anchor.nextElementSibling : tablistEl.firstElementChild;
-        while (nextLive?.classList?.contains('workspace-tab-group--ghost')) {
+        while (nextLive?.classList?.contains('workspace-session-group--ghost')) {
             nextLive = nextLive.nextElementSibling;
         }
         if (nextLive === groupEl) return;
@@ -387,7 +406,6 @@ export function bootWorkspaceShell() {
             tailEl?.remove();
             childGhosts.forEach((ghost) => ghost.remove());
             prevPill0Overlay?.remove();
-            groupEl?.querySelectorAll?.(':scope > .workspace-tab-group__lip-ghost').forEach((n) => n.remove());
         };
 
         if (!groupEl || !hasCompletedInitialSync || prefersReducedMotion() || targetWidth <= 0) {
@@ -397,7 +415,7 @@ export function bootWorkspaceShell() {
             return;
         }
 
-        const livePills = Array.from(groupEl.querySelectorAll(':scope > .workspace-tab:not(.workspace-tab--ghost)'));
+        const livePills = Array.from(groupEl.querySelectorAll(':scope > .workspace-session:not(.workspace-session--ghost)'));
         const pill0 = livePills[0] || null;
         const targetPill0Width = pill0 ? (pillWidths.get(pill0) || 0) : 0;
         const groupBorderH = getHorizontalBorderPx(groupEl);
@@ -439,7 +457,6 @@ export function bootWorkspaceShell() {
         groupEl.classList.remove(
             'is-entering',
             'is-morphing',
-            'is-stack-entering',
             'is-expanding-group',
             'is-collapsing-group',
         );
@@ -449,17 +466,6 @@ export function bootWorkspaceShell() {
             groupEl.classList.add('is-expanding-group');
         } else if (isCollapsingMotion) {
             groupEl.classList.add('is-collapsing-group');
-        }
-        if (isStackEntering) {
-            groupEl.classList.add('is-stack-entering');
-        }
-
-        let lipGhost = null;
-        if (wasCollapsedStack && morphType === 'stack-to-expanded') {
-            lipGhost = document.createElement('span');
-            lipGhost.className = 'workspace-tab-group__lip-ghost';
-            lipGhost.setAttribute('aria-hidden', 'true');
-            groupEl.prepend(lipGhost);
         }
 
         groupEl.style.width = `${startWidth}px`;
@@ -491,7 +497,7 @@ export function bootWorkspaceShell() {
                 return;
             }
             if (revealingSet.has(pill)) {
-                const trigger = pill.querySelector(':scope > .workspace-tab__trigger');
+                const trigger = pill.querySelector(':scope > .workspace-session__trigger');
                 if (trigger && targetW > 0) {
                     trigger.style.transition = 'none';
                     trigger.style.width = `${targetW}px`;
@@ -525,7 +531,7 @@ export function bootWorkspaceShell() {
 
         childGhosts.forEach((ghost) => {
             const gw = roundPx(ghost._startWidth || 0);
-            const trigger = ghost.querySelector(':scope > .workspace-tab__trigger');
+            const trigger = ghost.querySelector(':scope > .workspace-session__trigger');
             if (trigger && gw > 0) {
                 trigger.style.width = `${gw}px`;
                 trigger.style.minWidth = `${gw}px`;
@@ -545,7 +551,7 @@ export function bootWorkspaceShell() {
         }
         revealingPills.forEach((pill) => {
             pill.style.transition = '';
-            const trigger = pill.querySelector(':scope > .workspace-tab__trigger');
+            const trigger = pill.querySelector(':scope > .workspace-session__trigger');
             if (trigger) trigger.style.transition = '';
         });
         if (tailEl) tailEl.style.transition = '';
@@ -554,7 +560,6 @@ export function bootWorkspaceShell() {
         });
         void groupEl.offsetWidth;
 
-        groupEl.classList.remove('is-stack-entering');
         groupEl.style.width = `${targetWidth}px`;
         groupEl.style.minWidth = `${targetWidth}px`;
         groupEl.style.maxWidth = `${Math.max(startWidth, targetWidth)}px`;
@@ -563,10 +568,6 @@ export function bootWorkspaceShell() {
             groupEl.style.opacity = '1';
             groupEl.style.borderLeftWidth = '';
             groupEl.style.borderRightWidth = '';
-        }
-
-        if (lipGhost) {
-            lipGhost.classList.add('is-fading-out');
         }
 
         if (pill0MorphActive && pill0) {
@@ -615,13 +616,13 @@ export function bootWorkspaceShell() {
 
     const animateRemovedGroupNode = (groupEl) => {
         if (!groupEl || !hasCompletedInitialSync || prefersReducedMotion()) return;
-        if (tablistEl.querySelectorAll('.workspace-tab-group--ghost').length >= 12) return;
+        if (tablistEl.querySelectorAll('.workspace-session-group--ghost').length >= 12) return;
 
         const rect = groupEl.getBoundingClientRect?.();
         const startWidth = rect ? Math.round(rect.width * 100) / 100 : 0;
         if (startWidth <= 0) return;
 
-        const connectedPillWidths = Array.from(groupEl.querySelectorAll(':scope > .workspace-tab:not(.workspace-tab--ghost)'))
+        const connectedPillWidths = Array.from(groupEl.querySelectorAll(':scope > .workspace-session:not(.workspace-session--ghost)'))
             .map((pill) => roundPx(pill.getBoundingClientRect?.().width || 0));
 
         cancelElementMotion(groupEl);
@@ -631,16 +632,15 @@ export function bootWorkspaceShell() {
         ghost.classList.remove(
             'is-entering',
             'is-morphing',
-            'is-stack-entering',
             'is-expanding-group',
             'is-collapsing-group',
             'is-active',
         );
-        ghost.classList.add('workspace-tab-group--ghost', 'is-closing');
+        ghost.classList.add('workspace-session-group--ghost', 'is-closing');
         ghost.querySelectorAll(
-            '.workspace-tab-group__collapse-tail, .workspace-tab--ghost, .workspace-tab__morph-overlay, .workspace-tab-group__lip-ghost',
+            '.workspace-session-group__collapse-tail, .workspace-session--ghost, .workspace-session__morph-overlay',
         ).forEach((n) => n.remove());
-        Array.from(ghost.querySelectorAll(':scope > .workspace-tab')).forEach((pillClone, idx) => {
+        Array.from(ghost.querySelectorAll(':scope > .workspace-session')).forEach((pillClone, idx) => {
             pillClone.classList.remove('is-morph-pill', 'is-morph-fade-in', 'is-revealing', 'is-revealed');
             pillClone.style.transition = 'none';
             const pw = connectedPillWidths[idx] || 0;
@@ -649,7 +649,7 @@ export function bootWorkspaceShell() {
                 pillClone.style.minWidth = `${pw}px`;
                 pillClone.style.maxWidth = `${pw}px`;
                 pillClone.style.flexShrink = '0';
-                const trigger = pillClone.querySelector(':scope > .workspace-tab__trigger');
+                const trigger = pillClone.querySelector(':scope > .workspace-session__trigger');
                 if (trigger) {
                     trigger.style.width = `${pw}px`;
                     trigger.style.minWidth = `${pw}px`;
@@ -718,26 +718,26 @@ export function bootWorkspaceShell() {
 
         const barCs = window.getComputedStyle(tabbarEl || tablistEl);
         const listCs = window.getComputedStyle(tablistEl);
-        const minCapPx = resolveCssLengthPx(barCs.getPropertyValue('--workspace-tab-min-width'), 112);
-        const stackedMinCapPx = resolveCssLengthPx(barCs.getPropertyValue('--workspace-tab-stacked-min-width'), 136);
-        const maxCapPx = resolveCssLengthPx(barCs.getPropertyValue('--workspace-tab-max-width'), 248);
+        const minCapPx = resolveCssLengthPx(barCs.getPropertyValue('--workspace-session-min-width'), 116);
+        const stackedMinCapPx = resolveCssLengthPx(barCs.getPropertyValue('--workspace-session-stacked-min-width'), 140);
+        const maxCapPx = resolveCssLengthPx(barCs.getPropertyValue('--workspace-session-max-width'), 248);
         const tier = `${minCapPx}:${stackedMinCapPx}:${maxCapPx}`;
         const shouldInvalidate = invalidateNatural || (lastResponsiveTier !== null && lastResponsiveTier !== tier);
         lastResponsiveTier = tier;
 
-        const liveGroups = Array.from(tablistEl.querySelectorAll(':scope > [data-workspace-group]:not(.workspace-tab-group--ghost)'));
+        const liveGroups = Array.from(tablistEl.querySelectorAll(':scope > [data-workspace-group]:not(.workspace-session-group--ghost)'));
         if (liveGroups.length === 0) {
             tablistEl.dataset.capRequiresScroll = 'false';
-            tablistEl.style.setProperty('--workspace-tab-cap', 'var(--workspace-tab-max-width)');
+            tablistEl.style.setProperty('--workspace-session-cap', 'var(--workspace-session-max-width)');
             return;
         }
 
         const uncachedPills = [];
         liveGroups.forEach((groupEl) => {
-            groupEl.querySelectorAll(':scope > .workspace-tab:not(.workspace-tab--ghost)').forEach((pill) => {
+            groupEl.querySelectorAll(':scope > .workspace-session:not(.workspace-session--ghost)').forEach((pill) => {
                 if (shouldInvalidate) {
                     delete pill.dataset.naturalWidth;
-                    pill.style.removeProperty('--workspace-tab-natural-width');
+                    pill.style.removeProperty('--workspace-session-natural-width');
                 }
                 if (!pill.dataset.naturalWidth) {
                     uncachedPills.push(pill);
@@ -768,7 +768,7 @@ export function bootWorkspaceShell() {
                 }
             });
             pillSnapshots = uncachedPills.map((pill) => {
-                const closeBtn = pill.querySelector(':scope > .workspace-tab__close');
+                const closeBtn = pill.querySelector(':scope > .workspace-session__close');
                 const snap = {
                     pill,
                     transition: pill.style.transition,
@@ -785,7 +785,7 @@ export function bootWorkspaceShell() {
                 pill.style.transition = 'none';
                 pill.style.width = 'auto';
                 pill.style.minWidth = '0px';
-                pill.style.maxWidth = 'var(--workspace-tab-max-width)';
+                pill.style.maxWidth = 'var(--workspace-session-max-width)';
                 pill.style.fontWeight = '600';
                 if (isFinePointer && closeBtn) {
                     closeBtn.style.transition = 'none';
@@ -799,10 +799,10 @@ export function bootWorkspaceShell() {
             uncachedPills.forEach((pill) => {
                 const rawW = Math.ceil(pill.getBoundingClientRect?.().width || 0);
                 if (rawW > 0) {
-                    const floorW = pill.classList.contains('workspace-tab--stacked') ? stackedMinCapPx : 0;
+                    const floorW = pill.classList.contains('workspace-session--stacked') ? stackedMinCapPx : 0;
                     const naturalW = Math.max(rawW, floorW);
                     pill.dataset.naturalWidth = String(naturalW);
-                    pill.style.setProperty('--workspace-tab-natural-width', `${naturalW}px`);
+                    pill.style.setProperty('--workspace-session-natural-width', `${naturalW}px`);
                 }
             });
 
@@ -828,11 +828,11 @@ export function bootWorkspaceShell() {
         let borderOverhead = 0;
         liveGroups.forEach((groupEl) => {
             borderOverhead += getHorizontalBorderPx(groupEl);
-            groupEl.querySelectorAll(':scope > .workspace-tab:not(.workspace-tab--ghost)').forEach((pill) => {
+            groupEl.querySelectorAll(':scope > .workspace-session:not(.workspace-session--ghost)').forEach((pill) => {
                 const nw = parseFloat(pill.dataset.naturalWidth || '');
                 const w = Number.isFinite(nw) && nw > 0 ? nw : roundPx(pill.getBoundingClientRect?.().width || 0);
                 if (w > 0) {
-                    const pillMin = pill.classList.contains('workspace-tab--stacked') ? stackedMinCapPx : minCapPx;
+                    const pillMin = pill.classList.contains('workspace-session--stacked') ? stackedMinCapPx : minCapPx;
                     pillItems.push({ width: w, minWidth: pillMin });
                 }
             });
@@ -860,9 +860,9 @@ export function bootWorkspaceShell() {
         ) + overheadPx;
         tablistEl.dataset.capRequiresScroll = estimatedTotal > unscrolledBudgetPx ? 'true' : 'false';
 
-        const prevCapCss = tablistEl.style.getPropertyValue('--workspace-tab-cap');
-        const nextCapCss = solvedCap >= maxCapPx ? 'var(--workspace-tab-max-width)' : `${solvedCap}px`;
-        tablistEl.style.setProperty('--workspace-tab-cap', nextCapCss);
+        const prevCapCss = tablistEl.style.getPropertyValue('--workspace-session-cap');
+        const nextCapCss = solvedCap >= maxCapPx ? 'var(--workspace-session-max-width)' : `${solvedCap}px`;
+        tablistEl.style.setProperty('--workspace-session-cap', nextCapCss);
         if (uncachedPills.length > 0) {
             void tablistEl.offsetWidth;
             pillSnapshots.forEach((snap) => {
@@ -901,7 +901,7 @@ export function bootWorkspaceShell() {
             isCapTransitionSettling = false;
         }
         const arrowsOverhead = getScrollButtonsOverheadPx();
-        const hasClosingGhost = Boolean(tablistEl.querySelector('.workspace-tab-group--ghost, .workspace-tab--ghost'));
+        const hasClosingGhost = Boolean(tablistEl.querySelector('.workspace-session-group--ghost, .workspace-session--ghost'));
         const capRequiresScroll = tablistEl.dataset.capRequiresScroll === 'true';
         const rawMaxScroll = Math.max(0, tablistEl.scrollWidth - tablistEl.clientWidth);
         const fitsWithoutArrows = !capRequiresScroll
@@ -937,16 +937,26 @@ export function bootWorkspaceShell() {
 
     const shortcutsScope = tabbarEl || document;
     const shortcutsPanel = document.querySelector('[data-workspace-panel="shortcuts"]');
-    const shortcutsTabEl = shortcutsScope.querySelector('[data-workspace-tab="shortcuts"]');
+    const shortcutsTabEl = shortcutsScope.querySelector('[data-workspace-session="shortcuts"]');
     const shortcutsSelectBtn = shortcutsScope.querySelector('[data-workspace-shortcuts-select]');
-    const shortcutsSearchEl = document.querySelector('[data-shortcuts-search]');
-    const shortcutsClearEl = document.querySelector('[data-shortcuts-clear]');
-    const shortcutsEmptyClearEl = document.querySelector('[data-shortcuts-empty-clear]');
-    const shortcutsFrequentSection = document.querySelector('[data-shortcuts-frequent-section]');
-    const shortcutsCatalogSection = document.querySelector('[data-shortcuts-catalog-section]');
+    const shortcutsBoardEl = document.querySelector('[data-shortcuts-board]');
+    const shortcutsSplitterKeys = ['favorites-bookmarks', 'bookmarks-frequent'];
+    const shortcutsSplitterEls = Object.fromEntries(
+        shortcutsSplitterKeys.map((key) => [key, document.querySelector(`[data-shortcuts-splitter="${key}"]`)]),
+    );
+    const shortcutsFavoritesEl = document.querySelector('[data-shortcuts-favorites]');
+    const shortcutsBookmarksEl = document.querySelector('[data-shortcuts-bookmarks]');
     const shortcutsFrequentEl = document.querySelector('[data-shortcuts-frequent]');
-    const shortcutsCatalogEl = document.querySelector('[data-shortcuts-catalog]');
-    const shortcutsEmptyEl = document.querySelector('[data-shortcuts-empty]');
+    const shortcutsPaneEls = Object.fromEntries(
+        SHORTCUTS_PANE_KEYS.map((paneKey) => [paneKey, document.querySelector(`[data-shortcuts-pane="${paneKey}"]`)]),
+    );
+    const shortcutsPaneToggleEls = Object.fromEntries(
+        SHORTCUTS_PANE_KEYS.map((paneKey) => [paneKey, document.querySelector(`[data-shortcuts-pane-toggle="${paneKey}"]`)]),
+    );
+    const shortcutsDockEl = document.querySelector('[data-shortcuts-dock]');
+    const shortcutsRestoreEls = Object.fromEntries(
+        SHORTCUTS_PANE_KEYS.map((paneKey) => [paneKey, document.querySelector(`[data-shortcuts-pane-restore="${paneKey}"]`)]),
+    );
 
     const cloneTemplateIcon = (name) => {
         const tpl = document.querySelector(`template[data-workspace-icon="${name}"]`);
@@ -1091,34 +1101,293 @@ export function bootWorkspaceShell() {
         return frame.title;
     };
 
-    const usageStorageKey = `adasi:workspace:usage:${config.userId || 'guest'}:${config.portalScope || 'import'}`;
-    const readUsageMap = () => {
+    const scopedStorageSuffix = `${config.userId || 'guest'}:${config.portalScope || 'import'}`;
+    const usageStorageKey = `adasi:workspace:usage:${scopedStorageSuffix}`;
+    const favoritesStorageKey = `adasi:workspace:favorites:${scopedStorageSuffix}`;
+    const bookmarksStorageKey = `adasi:workspace:bookmarks:${scopedStorageSuffix}`;
+    const shortcutsLayoutStorageKey = `adasi:workspace:shortcuts-layout:${scopedStorageSuffix}`;
+    const SHORTCUTS_KEYBOARD_STEP_PX = 24;
+
+    const readJsonStorage = (key, fallbackValue) => {
         try {
-            const raw = window.localStorage?.getItem(usageStorageKey);
-            const parsed = raw ? JSON.parse(raw) : {};
-            return (parsed && typeof parsed === 'object') ? parsed : {};
+            const raw = window.localStorage?.getItem(key);
+            if (!raw) return fallbackValue;
+            const parsed = JSON.parse(raw);
+            return parsed ?? fallbackValue;
         } catch {
-            return {};
+            return fallbackValue;
         }
     };
 
-    const recordModuleUse = (rawUrl) => {
-        const path = normalizedPath(rawUrl, origin);
+    const writeJsonStorage = (key, value) => {
         try {
-            const current = readUsageMap();
-            const prev = current[path] && typeof current[path] === 'object' ? current[path] : { count: 0, lastUsedAt: 0 };
-            current[path] = {
-                count: Number(prev.count || 0) + 1,
-                lastUsedAt: Date.now(),
-            };
-            window.localStorage?.setItem(usageStorageKey, JSON.stringify(current));
+            window.localStorage?.setItem(key, JSON.stringify(value));
         } catch {
             // Storage blocked or quota exceeded is non-fatal.
         }
     };
 
-    const store = new WorkspaceTabStore({
-        maxTabs: config.maxTabs,
+    const readUsageMap = () => {
+        const parsed = readJsonStorage(usageStorageKey, {});
+        return (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) ? parsed : {};
+    };
+
+    const recordModuleUse = (rawUrl) => {
+        const path = normalizedPath(rawUrl, origin);
+        if (!path) return;
+        const current = readUsageMap();
+        const prev = current[path] && typeof current[path] === 'object' ? current[path] : { count: 0, lastUsedAt: 0 };
+        current[path] = {
+            count: Number(prev.count || 0) + 1,
+            lastUsedAt: Date.now(),
+        };
+        writeJsonStorage(usageStorageKey, current);
+    };
+
+    const removeUsageEntry = (rawUrl) => {
+        const path = normalizedPath(rawUrl, origin);
+        if (!path) return;
+        const current = readUsageMap();
+        if (Object.prototype.hasOwnProperty.call(current, path)) {
+            delete current[path];
+            writeJsonStorage(usageStorageKey, current);
+        }
+    };
+
+    const readFavoritesList = () => {
+        let hasKey = false;
+        try {
+            hasKey = window.localStorage?.getItem(favoritesStorageKey) !== null;
+        } catch {
+            hasKey = true;
+        }
+        if (!hasKey) {
+            const seeded = catalog
+                .filter((item) => item.isQuickAccessDefault && item.normalizedPath)
+                .map((item) => item.normalizedPath);
+            const uniqueSeed = Array.from(new Set(seeded)).slice(0, 50);
+            writeJsonStorage(favoritesStorageKey, uniqueSeed);
+            return uniqueSeed;
+        }
+        const parsed = readJsonStorage(favoritesStorageKey, []);
+        if (!Array.isArray(parsed)) return [];
+        return Array.from(new Set(parsed.map((p) => String(p || '').trim()).filter(Boolean))).slice(0, 50);
+    };
+
+    const isFavoritePath = (path) => {
+        const cleanPath = String(path || '').trim();
+        return cleanPath !== '' && readFavoritesList().includes(cleanPath);
+    };
+
+    const toggleFavoritePath = (path) => {
+        const cleanPath = String(path || '').trim();
+        if (!cleanPath) return false;
+        const current = readFavoritesList();
+        const exists = current.includes(cleanPath);
+        const next = exists
+            ? current.filter((p) => p !== cleanPath)
+            : [cleanPath, ...current].slice(0, 50);
+        writeJsonStorage(favoritesStorageKey, next);
+        renderShortcuts();
+        return !exists;
+    };
+
+    const canonicalizeBookmarkUrl = (rawUrl) => {
+        const clean = canonicalizeUrl(stripEmbedParam(String(rawUrl || ''), origin), origin);
+        if (!clean || !isSameOriginUrl(clean, origin) || isTopLevelOnlyUrl(clean, origin, pathPrefix)) {
+            return '';
+        }
+        return clean;
+    };
+
+    const readBookmarksList = () => {
+        const parsed = readJsonStorage(bookmarksStorageKey, []);
+        if (!Array.isArray(parsed)) return [];
+        const seen = new Set();
+        const valid = [];
+        for (const item of parsed) {
+            if (!item || typeof item !== 'object') continue;
+            const clean = canonicalizeBookmarkUrl(item.url);
+            if (!clean || seen.has(clean)) continue;
+            seen.add(clean);
+            valid.push({
+                url: clean,
+                normalizedPath: normalizedPath(clean, origin),
+                label: String(item.label || clean).trim() || clean,
+                moduleKey: String(item.moduleKey || '').trim() || null,
+                createdAt: Number(item.createdAt || 0),
+            });
+            if (valid.length >= 50) break;
+        }
+        return valid;
+    };
+
+    const isBookmarkedUrl = (rawUrl) => {
+        const clean = canonicalizeBookmarkUrl(rawUrl);
+        return clean !== '' && readBookmarksList().some((item) => item.url === clean);
+    };
+
+    const toggleBookmarkEntry = ({ url, label = '', moduleKey = null }) => {
+        const clean = canonicalizeBookmarkUrl(url);
+        if (!clean) return false;
+        const current = readBookmarksList();
+        const exists = current.some((item) => item.url === clean);
+        const next = exists
+            ? current.filter((item) => item.url !== clean)
+            : [
+                {
+                    url: clean,
+                    normalizedPath: normalizedPath(clean, origin),
+                    label: String(label || '').trim() || clean,
+                    moduleKey: moduleKey || resolveModuleForUrl(clean) || null,
+                    createdAt: Date.now(),
+                },
+                ...current,
+            ].slice(0, 50);
+        writeJsonStorage(bookmarksStorageKey, next);
+        renderShortcuts();
+        return !exists;
+    };
+
+    const removeBookmarkUrl = (rawUrl) => {
+        const clean = canonicalizeBookmarkUrl(rawUrl);
+        if (!clean) return;
+        const next = readBookmarksList().filter((item) => item.url !== clean);
+        writeJsonStorage(bookmarksStorageKey, next);
+        renderShortcuts();
+    };
+
+    const readShortcutsLayout = () => normalizeShortcutsLayout(readJsonStorage(shortcutsLayoutStorageKey, null));
+
+    let shortcutsLayout = readShortcutsLayout();
+
+    const getBoardWidthPx = () => {
+        const width = shortcutsBoardEl?.getBoundingClientRect?.().width || 0;
+        return width > 0 ? width : 0;
+    };
+
+    const applyShortcutsLayout = (layout = shortcutsLayout, { persistIfClamped = false } = {}) => {
+        shortcutsLayout = normalizeShortcutsLayout(layout);
+        const boardWidthPx = getBoardWidthPx();
+        if (boardWidthPx > 0) {
+            const clamped = clampOpenPaneWeights({
+                weights: shortcutsLayout.weights,
+                minimized: shortcutsLayout.minimized,
+                boardWidthPx,
+            });
+            const shifted = SHORTCUTS_PANE_KEYS.some(
+                (k) => Math.abs((clamped[k] || 0) - (shortcutsLayout.weights[k] || 0)) > 0.05,
+            );
+            shortcutsLayout.weights = clamped;
+            if (shifted && persistIfClamped) {
+                writeJsonStorage(shortcutsLayoutStorageKey, shortcutsLayout);
+            }
+        }
+
+        const fallbackPaneTitles = {
+            favorites: i18n.favorites || 'Favorites',
+            bookmarks: i18n.bookmarks || 'Bookmarks',
+            frequent: i18n.frequentlyUsed || 'Frequently Used',
+        };
+        const resolvedTitles = {};
+        const snapshot = computeOpenPaneWidthPx(
+            shortcutsLayout.weights,
+            shortcutsLayout.minimized,
+            boardWidthPx > 0 ? boardWidthPx : 1000,
+        );
+        const minimizedOrder = Array.isArray(shortcutsLayout.minimizedOrder)
+            ? shortcutsLayout.minimizedOrder.filter((paneKey) => Boolean(shortcutsLayout.minimized[paneKey]))
+            : SHORTCUTS_PANE_KEYS.filter((paneKey) => Boolean(shortcutsLayout.minimized[paneKey]));
+
+        if (shortcutsDockEl) {
+            shortcutsDockEl.hidden = minimizedOrder.length === 0;
+            shortcutsDockEl.setAttribute('aria-label', i18n.minimizedPanels || 'Minimized shortcuts panels');
+        }
+
+        for (const paneKey of SHORTCUTS_PANE_KEYS) {
+            const isMin = Boolean(shortcutsLayout.minimized[paneKey]);
+            const widthPx = snapshot.widthsPx[paneKey] || 0;
+            const isSliver = !isMin && widthPx > 0 && widthPx < 24;
+            const paneEl = shortcutsPaneEls[paneKey];
+            const toggleBtn = shortcutsPaneToggleEls[paneKey];
+            const restoreBtn = shortcutsRestoreEls[paneKey];
+            const titleText = paneEl?.querySelector('.workspace-shortcuts-pane__title')?.textContent?.trim()
+                || fallbackPaneTitles[paneKey];
+            resolvedTitles[paneKey] = titleText;
+
+            if (paneEl) {
+                paneEl.classList.toggle('is-minimized', isMin);
+                paneEl.classList.toggle('is-sliver', isSliver);
+                paneEl.style.setProperty('--shortcuts-pane-weight', String(shortcutsLayout.weights[paneKey]));
+            }
+            if (toggleBtn) {
+                const template = isMin
+                    ? (i18n.expandPane || 'Expand :pane')
+                    : (i18n.minimizePane || 'Minimize :pane');
+                const actionLabel = String(template).replace(':pane', titleText);
+                toggleBtn.setAttribute('aria-expanded', isMin ? 'false' : 'true');
+                toggleBtn.setAttribute('aria-label', actionLabel);
+                toggleBtn.title = actionLabel;
+            }
+            if (restoreBtn) {
+                const orderIdx = minimizedOrder.indexOf(paneKey);
+                restoreBtn.hidden = !isMin;
+                restoreBtn.style.order = String(orderIdx >= 0 ? orderIdx : 99);
+                const restoreLabelEl = restoreBtn.querySelector('.workspace-shortcuts-dock__label');
+                if (restoreLabelEl) {
+                    restoreLabelEl.textContent = titleText;
+                }
+                const expandLabel = String(i18n.expandPane || 'Expand :pane').replace(':pane', titleText);
+                restoreBtn.setAttribute('aria-label', expandLabel);
+                restoreBtn.title = expandLabel;
+            }
+        }
+
+        const visibleSplitters = resolveVisibleShortcutsSplitters(shortcutsLayout.minimized);
+
+        for (const splitterKey of shortcutsSplitterKeys) {
+            const splitterEl = shortcutsSplitterEls[splitterKey];
+            if (!splitterEl) continue;
+            const isVisible = visibleSplitters.includes(splitterKey);
+            const pair = isVisible ? resolveShortcutsSplitterPair(splitterKey, shortcutsLayout.minimized) : null;
+            const disabled = !pair;
+            splitterEl.hidden = !isVisible;
+            splitterEl.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+            splitterEl.tabIndex = disabled ? -1 : 0;
+
+            if (pair) {
+                const [leftKey, rightKey] = pair;
+                const leftW = snapshot.widthsPx[leftKey] || 0;
+                const rightW = snapshot.widthsPx[rightKey] || 0;
+                const pairTotal = leftW + rightW;
+                const minPx = Math.min(MIN_SHORTCUTS_PANE_WIDTH_PX, pairTotal / 2);
+                const minPct = pairTotal > 0 ? Math.max(1, Math.round((minPx / pairTotal) * 100)) : 1;
+                const maxPct = Math.max(minPct, 100 - minPct);
+                const nowPct = pairTotal > 0 ? Math.round((leftW / pairTotal) * 100) : 50;
+
+                splitterEl.setAttribute('aria-valuemin', String(minPct));
+                splitterEl.setAttribute('aria-valuemax', String(maxPct));
+                splitterEl.setAttribute('aria-valuenow', String(nowPct));
+                splitterEl.setAttribute(
+                    'aria-controls',
+                    `workspace-shortcuts-pane-${leftKey} workspace-shortcuts-pane-${rightKey}`,
+                );
+                const labelTemplate = i18n.resizePanePair || 'Resize :left and :right panels (Double-click to reset)';
+                const pairLabel = String(labelTemplate)
+                    .replace(':left', resolvedTitles[leftKey])
+                    .replace(':right', resolvedTitles[rightKey]);
+                splitterEl.setAttribute('aria-label', pairLabel);
+                splitterEl.title = pairLabel;
+            } else {
+                const fallbackLabel = i18n.resizeShortcutsPanes || 'Resize shortcuts panels (Double-click to reset)';
+                splitterEl.setAttribute('aria-label', fallbackLabel);
+                splitterEl.title = fallbackLabel;
+            }
+        }
+    };
+
+    const store = new WorkspaceSessionStore({
+        maxSessions: config.maxSessions ?? config.maxTabs,
         maxLiveFrames: config.maxLiveFrames,
         staleAfterMs: config.staleAfterMs,
         catalog,
@@ -1126,7 +1395,7 @@ export function bootWorkspaceShell() {
     });
 
     const frames = new Map();
-    const initialTab = config.initialTab;
+    const initialTab = config.initialSession || config.initialTab;
     const slowLoaderThresholdMs = Number.isFinite(Number(config.slowLoaderThresholdMs)) && Number(config.slowLoaderThresholdMs) >= 0
         ? Number(config.slowLoaderThresholdMs)
         : 2500;
@@ -1188,6 +1457,7 @@ export function bootWorkspaceShell() {
     const navQueue = new WorkspaceNavQueue({
         maxConcurrent: 2,
         slowThresholdMs: slowLoaderThresholdMs,
+        stepIntervalMs: 220,
         slotTimeoutMs: 15000,
         dataReadyTimeoutMs: 12000,
         queueWaitTimeoutMs: 45000,
@@ -1199,6 +1469,20 @@ export function bootWorkspaceShell() {
             ensureFrameMounted(frame);
             syncTriggerPendingAttributes();
             syncTabDom();
+        },
+        onCommitReady: (entry, outcome) => {
+            const committed = store.commitStagedFrame(entry.frameId, { activate: outcome.activate });
+            syncTriggerPendingAttributes();
+            if (!committed.ok) return;
+            const ctx = store.getFrameContext(entry.frameId);
+            const label = ctx?.frame?.title || entry.label || '';
+            if (outcome.activate) {
+                notifyActiveSurface(entry.historyMode || 'push');
+            } else {
+                syncTabDom();
+            }
+            const readyMsg = String(i18n.readyAnnouncement || ':label is ready').replace(':label', label);
+            announceLiveStatus(readyMsg);
         },
         onSlowThreshold: () => {
             if (activeLoaderToken === null) {
@@ -1244,11 +1528,12 @@ export function bootWorkspaceShell() {
             if (initialReadyDone) return;
             initialReadyDone = true;
             resolve();
+            syncStageControls();
         };
     });
 
-    // Keep safety ceiling generous enough for an initial DataTables draw without blocking AuthSplash skip/timeout.
-    window.setTimeout(() => initialReadyResolve?.(), 5500);
+    // Keep safety ceiling generous enough for slow initial DataTables draws while letting emergency watchdog recover hung pages.
+    window.setTimeout(() => initialReadyResolve?.(), 60000);
 
     const resolveModuleForUrl = (url, preferredKey = null) => {
         const resolved = resolveLinkTarget(url);
@@ -1288,9 +1573,11 @@ export function bootWorkspaceShell() {
     const syncStageControls = () => {
         const active = store.activeFrame();
         const isShortcuts = store.isShortcutsActive();
-        const hasPendingAutoFocus = Boolean(navQueue.autoFocusFrameId());
+        const hasPendingNav = navQueue.size() > 0 || navQueue.pendingCommitsCount() > 0;
         const loading = Boolean(activeLoaderToken)
-            || (!hasPendingAutoFocus && (!initialReadyDone || Boolean(active?.loading)));
+            || hasPendingNav
+            || !initialReadyDone
+            || Boolean(active?.loading);
         stageEl.classList.toggle('is-loading', loading);
         if (progressEl) progressEl.setAttribute('aria-hidden', loading ? 'false' : 'true');
         if (refreshBtn) {
@@ -1316,13 +1603,55 @@ export function bootWorkspaceShell() {
         return counts;
     };
 
-    const createShortcutRow = (item, openCounts, showCategory = false) => {
+    const openCountsByUrl = () => {
+        const counts = new Map();
+        for (const group of store.groups()) {
+            for (const f of group.frames) {
+                const clean = canonicalizeBookmarkUrl(f.url);
+                if (!clean) continue;
+                counts.set(clean, (counts.get(clean) || 0) + 1);
+            }
+        }
+        return counts;
+    };
+
+    const findCatalogEntryForGroup = (group) => {
+        if (!group) return null;
+        const parentPath = normalizedPath(group.frames[0]?.url || '', origin);
+        return catalog.find((item) => item.key === group.moduleKey)
+            || catalog.find((item) => item.normalizedPath === parentPath)
+            || null;
+    };
+
+    const findCatalogEntryForBookmark = (bookmark) => {
+        if (!bookmark) return null;
+        if (bookmark.moduleKey) {
+            const byKey = catalog.find((item) => item.key === bookmark.moduleKey);
+            if (byKey) return byKey;
+        }
+        let best = null;
+        let bestLen = -1;
+        for (const item of catalog) {
+            if (!item.normalizedPath) continue;
+            if (bookmark.normalizedPath === item.normalizedPath || bookmark.normalizedPath.startsWith(`${item.normalizedPath}/`)) {
+                if (item.normalizedPath.length > bestLen) {
+                    bestLen = item.normalizedPath.length;
+                    best = item;
+                }
+            }
+        }
+        return best;
+    };
+
+    const createShortcutRow = (item, openCount, { showCategory = false, fallbackIcon = 'compass', actions = [] } = {}) => {
         const li = document.createElement('li');
+        li.className = 'workspace-shortcuts__row';
+
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'workspace-shortcuts__item ui-focus-ring';
         btn.dataset.shortcutHref = item.href;
-        btn.dataset.shortcutModule = item.key;
+        if (item.key) btn.dataset.shortcutModule = item.key;
 
         const main = document.createElement('span');
         main.className = 'workspace-shortcuts__item-main';
@@ -1330,7 +1659,7 @@ export function bootWorkspaceShell() {
         const iconWrap = document.createElement('span');
         iconWrap.className = 'workspace-shortcuts__item-icon';
         iconWrap.setAttribute('aria-hidden', 'true');
-        const iconEl = item.iconSvg ? item.iconSvg.cloneNode(true) : cloneTemplateIcon('compass');
+        const iconEl = item.iconSvg ? item.iconSvg.cloneNode(true) : cloneTemplateIcon(fallbackIcon);
         if (iconEl) iconWrap.appendChild(iconEl);
 
         const textWrap = document.createElement('span');
@@ -1351,7 +1680,6 @@ export function bootWorkspaceShell() {
         main.append(iconWrap, textWrap);
         btn.appendChild(main);
 
-        const openCount = openCounts.get(item.normalizedPath) || 0;
         if (openCount > 0) {
             const badge = document.createElement('span');
             badge.className = 'workspace-shortcuts__open-badge';
@@ -1361,7 +1689,7 @@ export function bootWorkspaceShell() {
 
         btn.addEventListener('click', () => {
             openNewWorkspace({
-                moduleKey: item.key,
+                moduleKey: item.key || null,
                 label: item.label,
                 url: item.href,
                 triggerEl: btn,
@@ -1369,22 +1697,103 @@ export function bootWorkspaceShell() {
         });
 
         li.appendChild(btn);
+
+        if (actions.length > 0) {
+            const actionsWrap = document.createElement('div');
+            actionsWrap.className = 'workspace-shortcuts__item-actions';
+
+            for (const action of actions) {
+                const actBtn = document.createElement('button');
+                actBtn.type = 'button';
+                actBtn.className = 'workspace-shortcuts__action ui-focus-ring';
+                if (action.active) actBtn.classList.add('is-active');
+                if (typeof action.pressed === 'boolean') {
+                    actBtn.setAttribute('aria-pressed', action.pressed ? 'true' : 'false');
+                }
+                actBtn.setAttribute('aria-label', action.label);
+                actBtn.title = action.label;
+                const actIcon = cloneTemplateIcon(action.iconName);
+                if (actIcon) actBtn.appendChild(actIcon);
+                else actBtn.textContent = action.iconName === 'x' ? '×' : '★';
+                actBtn.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    action.onClick();
+                });
+                actionsWrap.appendChild(actBtn);
+            }
+
+            li.appendChild(actionsWrap);
+        }
+
         return li;
     };
 
     const renderShortcuts = () => {
-        if (!shortcutsPanel || !shortcutsFrequentEl || !shortcutsCatalogEl) return;
+        if (!shortcutsPanel) return;
 
-        const query = (shortcutsSearchEl?.value || '').trim().toLowerCase();
-        if (shortcutsClearEl) shortcutsClearEl.hidden = query === '';
-
-        const usage = readUsageMap();
+        const catalogByPath = new Map(catalog.map((item) => [item.normalizedPath, item]));
         const openCounts = openCountsByPath();
-        const filtered = query
-            ? catalog.filter((item) => item.label.toLowerCase().includes(query) || item.category.toLowerCase().includes(query))
-            : catalog;
+        const openUrlCounts = openCountsByUrl();
 
-        const sortedFrequent = filtered
+        // 1. Favorites (Module / Menu level)
+        const favoritePaths = readFavoritesList();
+        const favoriteSet = new Set(favoritePaths);
+        const favoriteItems = favoritePaths
+            .map((path) => catalogByPath.get(path))
+            .filter(Boolean);
+
+        if (shortcutsFavoritesEl) {
+            shortcutsFavoritesEl.replaceChildren();
+            for (const item of favoriteItems) {
+                shortcutsFavoritesEl.appendChild(createShortcutRow(item, openCounts.get(item.normalizedPath) || 0, {
+                    showCategory: true,
+                    actions: [
+                        {
+                            label: `${i18n.removeFavorite || 'Remove from Favorites'}: ${item.label}`,
+                            iconName: 'x',
+                            onClick: () => toggleFavoritePath(item.normalizedPath),
+                        },
+                    ],
+                }));
+            }
+        }
+
+        // 2. Bookmarks (Contextual / Document / Filtered URL level)
+        const bookmarkEntries = readBookmarksList();
+        const visibleBookmarks = [];
+        for (const bm of bookmarkEntries) {
+            const matchedCatalog = findCatalogEntryForBookmark(bm);
+            if (!matchedCatalog && catalog.length > 0) continue;
+            visibleBookmarks.push({
+                key: bm.moduleKey || matchedCatalog?.key || null,
+                label: bm.label,
+                category: matchedCatalog?.label || matchedCatalog?.category || '',
+                href: bm.url,
+                iconSvg: matchedCatalog?.iconSvg || null,
+            });
+        }
+
+        if (shortcutsBookmarksEl) {
+            shortcutsBookmarksEl.replaceChildren();
+            for (const bmItem of visibleBookmarks) {
+                shortcutsBookmarksEl.appendChild(createShortcutRow(bmItem, openUrlCounts.get(bmItem.href) || 0, {
+                    showCategory: true,
+                    fallbackIcon: 'bookmark',
+                    actions: [
+                        {
+                            label: `${i18n.removeBookmark || 'Remove bookmark'}: ${bmItem.label}`,
+                            iconName: 'x',
+                            onClick: () => removeBookmarkUrl(bmItem.href),
+                        },
+                    ],
+                }));
+            }
+        }
+
+        // 3. Frequently Used (Usage frequency + recency)
+        const usage = readUsageMap();
+        const frequentItems = catalog
+            .filter((item) => Number(usage[item.normalizedPath]?.count || 0) > 0)
             .slice()
             .sort((a, b) => {
                 const countA = Number(usage[a.normalizedPath]?.count || 0);
@@ -1393,56 +1802,47 @@ export function bootWorkspaceShell() {
                 const timeA = Number(usage[a.normalizedPath]?.lastUsedAt || 0);
                 const timeB = Number(usage[b.normalizedPath]?.lastUsedAt || 0);
                 if (timeA !== timeB) return timeB - timeA;
-                if (a.isQuickAccessDefault !== b.isQuickAccessDefault) return a.isQuickAccessDefault ? -1 : 1;
                 return a.label.localeCompare(b.label);
             })
-            .slice(0, query ? filtered.length : 12);
+            .slice(0, 15);
 
-        shortcutsFrequentEl.replaceChildren();
-        for (const item of sortedFrequent) {
-            shortcutsFrequentEl.appendChild(createShortcutRow(item, openCounts, true));
-        }
-
-        const byCategory = new Map();
-        for (const item of filtered) {
-            const list = byCategory.get(item.category) || [];
-            list.push(item);
-            byCategory.set(item.category, list);
-        }
-
-        shortcutsCatalogEl.replaceChildren();
-        for (const [category, items] of byCategory.entries()) {
-            const groupDiv = document.createElement('div');
-            groupDiv.className = 'workspace-shortcuts__group';
-
-            const heading = document.createElement('h3');
-            heading.className = 'workspace-shortcuts__group-heading';
-            heading.textContent = category;
-
-            const list = document.createElement('ul');
-            list.className = 'workspace-shortcuts__group-list';
-            for (const item of items) {
-                list.appendChild(createShortcutRow(item, openCounts, false));
+        if (shortcutsFrequentEl) {
+            shortcutsFrequentEl.replaceChildren();
+            for (const item of frequentItems) {
+                const isFav = favoriteSet.has(item.normalizedPath);
+                shortcutsFrequentEl.appendChild(createShortcutRow(item, openCounts.get(item.normalizedPath) || 0, {
+                    showCategory: true,
+                    actions: [
+                        {
+                            label: `${isFav ? (i18n.removeFavorite || 'Remove from Favorites') : (i18n.addFavorite || 'Add to Favorites')}: ${item.label}`,
+                            iconName: 'star',
+                            active: isFav,
+                            pressed: isFav,
+                            onClick: () => toggleFavoritePath(item.normalizedPath),
+                        },
+                        {
+                            label: `${i18n.removeFrequent || 'Remove from history'}: ${item.label}`,
+                            iconName: 'x',
+                            onClick: () => {
+                                removeUsageEntry(item.normalizedPath);
+                                renderShortcuts();
+                            },
+                        },
+                    ],
+                }));
             }
-
-            groupDiv.append(heading, list);
-            shortcutsCatalogEl.appendChild(groupDiv);
         }
-
-        const hasResults = filtered.length > 0;
-        if (shortcutsFrequentSection) shortcutsFrequentSection.hidden = !hasResults;
-        if (shortcutsCatalogSection) shortcutsCatalogSection.hidden = !hasResults || query !== '';
-        if (shortcutsEmptyEl) shortcutsEmptyEl.hidden = hasResults;
     };
 
     const createCloseButton = (label, frameId) => {
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.id = `workspace-tab-close-${frameId}`;
-        btn.className = 'workspace-tab__close ui-focus-ring';
-        btn.setAttribute('aria-label', `${i18n.closeTab || 'Close tab'}: ${label}`);
-        btn.title = i18n.closeTab || 'Close tab';
-        btn.dataset.workspaceTabClose = frameId;
+        btn.id = `workspace-session-close-${frameId}`;
+        btn.className = 'workspace-session__close ui-focus-ring';
+        const closeLabel = i18n.closeSession || i18n.closeTab || 'Close session';
+        btn.setAttribute('aria-label', `${closeLabel}: ${label}`);
+        btn.title = closeLabel;
+        btn.dataset.workspaceSessionClose = frameId;
         const icon = cloneTemplateIcon('x');
         if (icon) btn.appendChild(icon);
         else btn.textContent = '×';
@@ -1453,13 +1853,14 @@ export function bootWorkspaceShell() {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.id = `workspace-group-menu-${groupId}`;
-        btn.className = 'workspace-tab__menu-btn ui-focus-ring';
-        btn.setAttribute('aria-label', `${i18n.tabActions || 'Workspace actions'}: ${label}`);
+        btn.className = 'workspace-session__menu-btn ui-focus-ring';
+        const actionsLabel = i18n.sessionActions || i18n.tabActions || 'Session actions';
+        btn.setAttribute('aria-label', `${actionsLabel}: ${label}`);
         btn.setAttribute('aria-haspopup', 'menu');
         btn.setAttribute('aria-expanded', 'false');
-        btn.title = i18n.tabActions || 'Workspace actions';
+        btn.title = actionsLabel;
         btn.dataset.workspaceGroupMenu = groupId;
-        const icon = cloneTemplateIcon('chevron-down');
+        const icon = cloneTemplateIcon('square-stack');
         if (icon) btn.appendChild(icon);
         else btn.textContent = '▾';
         return btn;
@@ -1496,30 +1897,32 @@ export function bootWorkspaceShell() {
         else if (isLoading) statusNotes.push(i18n.loadingModule || 'Loading module...');
         else if (isQueued) statusNotes.push(i18n.statusQueued || 'Queued to load');
         else if (isHibernated) statusNotes.push(i18n.statusHibernated || i18n.hibernatedBadge || 'Hibernated');
-        else if (isActive) statusNotes.push(i18n.statusActive || 'Active workspace');
+        else if (isActive) statusNotes.push(i18n.statusActive || 'Active session');
 
-        const labelEl = trigger.querySelector('.workspace-tab__label');
+        const labelEl = trigger.querySelector('.workspace-session__label');
         if (labelEl && labelEl.textContent !== displayText) {
             labelEl.textContent = displayText;
             delete wrapper.dataset.naturalWidth;
-            wrapper.style.removeProperty('--workspace-tab-natural-width');
-            const closeBtn = wrapper.querySelector(':scope > .workspace-tab__close');
+            wrapper.style.removeProperty('--workspace-session-natural-width');
+            const closeBtn = wrapper.querySelector(':scope > .workspace-session__close');
             if (closeBtn) {
-                closeBtn.setAttribute('aria-label', `${i18n.closeTab || 'Close tab'}: ${displayText}`);
+                const closeLabel = i18n.closeSession || i18n.closeTab || 'Close session';
+                closeBtn.setAttribute('aria-label', `${closeLabel}: ${displayText}`);
             }
-            const menuBtn = wrapper.querySelector(':scope > .workspace-tab__menu-btn');
+            const menuBtn = wrapper.querySelector(':scope > .workspace-session__menu-btn');
             if (menuBtn) {
-                menuBtn.setAttribute('aria-label', `${i18n.tabActions || 'Workspace actions'}: ${displayText}`);
+                const actionsLabel = i18n.sessionActions || i18n.tabActions || 'Session actions';
+                menuBtn.setAttribute('aria-label', `${actionsLabel}: ${displayText}`);
             }
         }
 
         if (isStacked) {
             trigger.dataset.workspaceGroupSelect = group.groupId;
-            const stackedText = formatCountText(i18n.stackedPagesCount || ':count pages', group.frames.length);
+            const stackedText = formatCountText(i18n.stackedPagesCount || ':count pages in session', group.frames.length);
             trigger.setAttribute('aria-label', `${displayText} (${stackedText})`);
             trigger.title = statusNotes.length ? `${displayText} — ${stackedText} (${statusNotes.join(' · ')})` : `${displayText} — ${stackedText}`;
         } else {
-            trigger.dataset.workspaceTabSelect = frame.frameId;
+            trigger.dataset.workspaceSessionSelect = frame.frameId;
             const dupSuffix = group.duplicateTotal > 1 && frame.role === 'parent' ? ` #${group.duplicateIndex}` : '';
             if (dupSuffix) {
                 trigger.setAttribute('aria-label', `${displayText} (${group.duplicateIndex})`);
@@ -1532,54 +1935,38 @@ export function bootWorkspaceShell() {
 
     const buildTabPillNode = ({ frame, group, showClose, isActive, isStacked, displayText }) => {
         const wrapper = document.createElement('div');
-        wrapper.className = 'workspace-tab';
-        if (isStacked) wrapper.classList.add('workspace-tab--stacked');
-        else if (group.frames.length > 1) wrapper.classList.add(frame.role === 'parent' ? 'workspace-tab--parent' : 'workspace-tab--child');
+        wrapper.className = 'workspace-session';
+        if (isStacked) wrapper.classList.add('workspace-session--stacked');
+        else if (group.frames.length > 1) wrapper.classList.add(frame.role === 'parent' ? 'workspace-session--parent' : 'workspace-session--child');
 
         wrapper.setAttribute('role', 'presentation');
-        wrapper.dataset.workspaceTab = isStacked ? group.groupId : frame.frameId;
+        wrapper.dataset.workspaceSession = isStacked ? group.groupId : frame.frameId;
         wrapper.dataset.workspaceGroupTarget = group.groupId;
         wrapper.dataset.pinned = 'false';
 
         const trigger = document.createElement('button');
         trigger.type = 'button';
         trigger.setAttribute('role', 'tab');
-        trigger.id = `workspace-tab-${isStacked ? group.groupId : frame.frameId}`;
-        trigger.className = 'workspace-tab__trigger ui-focus-ring';
+        trigger.id = `workspace-session-${isStacked ? group.groupId : frame.frameId}`;
+        trigger.className = 'workspace-session__trigger ui-focus-ring';
 
         syncTabPillState(wrapper, trigger, { frame, group, isActive, isStacked, displayText });
 
         const dot = document.createElement('span');
-        dot.className = 'workspace-tab__status-dot';
+        dot.className = 'workspace-session__status-dot';
         dot.setAttribute('aria-hidden', 'true');
         trigger.appendChild(dot);
 
-        if (isStacked) {
-            const stackIcon = document.createElement('span');
-            stackIcon.className = 'workspace-tab__icon';
-            stackIcon.setAttribute('aria-hidden', 'true');
-            const layersSvg = cloneTemplateIcon('layers');
-            if (layersSvg) stackIcon.appendChild(layersSvg);
-            trigger.appendChild(stackIcon);
-        }
-
         const labelEl = document.createElement('span');
-        labelEl.className = 'workspace-tab__label';
+        labelEl.className = 'workspace-session__label';
         labelEl.textContent = displayText;
         trigger.appendChild(labelEl);
 
         if ((isStacked || group.frames.length === 1 || frame.role === 'parent') && group.duplicateTotal > 1) {
             const dupEl = document.createElement('span');
-            dupEl.className = 'workspace-tab__dup-index';
+            dupEl.className = 'workspace-session__dup-index';
             dupEl.textContent = `#${group.duplicateIndex}`;
             trigger.appendChild(dupEl);
-        }
-
-        if (isStacked) {
-            const countBadge = document.createElement('span');
-            countBadge.className = 'workspace-tab__stack-count';
-            countBadge.textContent = String(group.frames.length);
-            trigger.appendChild(countBadge);
         }
 
         wrapper.appendChild(trigger);
@@ -1593,22 +1980,52 @@ export function bootWorkspaceShell() {
         return wrapper;
     };
 
+    const restorePanelInteractiveState = (panel) => {
+        if (!panel) return;
+        panel.classList.remove('is-leaving');
+        panel.style.removeProperty('--workspace-leave-opacity');
+        panel.inert = false;
+        panel.removeAttribute('aria-hidden');
+    };
+
+    const activatePanelSurface = (panel) => {
+        if (!panel) return;
+        leavingPanelCleanups.get(panel)?.(false);
+        restorePanelInteractiveState(panel);
+        panel.classList.remove('is-staging');
+        panel.classList.add('is-active');
+        panel.hidden = false;
+    };
+
     const markPanelLeaving = (panel) => {
         if (!panel) return;
         const existingCleanup = leavingPanelCleanups.get(panel);
         if (existingCleanup) existingCleanup(false);
+
+        const startOpacity = Number.parseFloat(window.getComputedStyle?.(panel)?.opacity);
+        if (Number.isFinite(startOpacity) && startOpacity > 0 && startOpacity < 1) {
+            panel.style.setProperty('--workspace-leave-opacity', String(startOpacity));
+        } else {
+            panel.style.removeProperty('--workspace-leave-opacity');
+        }
 
         let done = false;
         let timerId = 0;
         const finish = (shouldHide = true) => {
             if (done) return;
             done = true;
+            panel.removeEventListener('animationend', onAnimationEnd);
             panel.removeEventListener('transitionend', onTransitionEnd);
             if (timerId) window.clearTimeout(timerId);
             leavingPanelCleanups.delete(panel);
-            panel.classList.remove('is-leaving');
+            restorePanelInteractiveState(panel);
             if (shouldHide && !panel.classList.contains('is-active') && !panel.classList.contains('is-staging')) {
                 panel.hidden = true;
+            }
+        };
+        const onAnimationEnd = (event) => {
+            if (event.target === panel && event.animationName === 'workspace-panel-leave') {
+                finish(true);
             }
         };
         const onTransitionEnd = (event) => {
@@ -1620,7 +2037,10 @@ export function bootWorkspaceShell() {
         leavingPanelCleanups.set(panel, finish);
         panel.classList.remove('is-active');
         panel.classList.add('is-leaving');
+        panel.inert = true;
+        panel.setAttribute('aria-hidden', 'true');
         panel.hidden = false;
+        panel.addEventListener('animationend', onAnimationEnd);
         panel.addEventListener('transitionend', onTransitionEnd);
         const pageFadeMs = Number.isFinite(Number(config.pageFadeMs)) && Number(config.pageFadeMs) > 0
             ? Number(config.pageFadeMs)
@@ -1682,10 +2102,7 @@ export function bootWorkspaceShell() {
         }
         if (shortcutsPanel) {
             if (isShortcuts) {
-                leavingPanelCleanups.get(shortcutsPanel)?.(false);
-                shortcutsPanel.classList.remove('is-leaving');
-                shortcutsPanel.hidden = false;
-                shortcutsPanel.classList.add('is-active');
+                activatePanelSurface(shortcutsPanel);
             } else {
                 const isLeaving = leavingPanelCleanups.has(shortcutsPanel);
                 shortcutsPanel.classList.remove('is-active');
@@ -1694,7 +2111,7 @@ export function bootWorkspaceShell() {
         }
 
         // Preserve focus if the focused trigger stays present across state updates
-        const previouslyFocusedId = document.activeElement?.closest?.('[data-workspace-tabbar], [data-workspace-tablist]')
+        const previouslyFocusedId = document.activeElement?.closest?.('[data-workspace-sessionbar], [data-workspace-sessionlist]')
             ? document.activeElement.id
             : null;
 
@@ -1709,7 +2126,7 @@ export function bootWorkspaceShell() {
             }
         });
 
-        // Reconcile group DOM nodes in two passes so adaptive water-filling tab cap settles before transitions measure target geometry
+        // Reconcile group DOM nodes cleanly before transitions measure target geometry
         let anchorNode = null;
         const pendingMorphs = [];
 
@@ -1721,9 +2138,9 @@ export function bootWorkspaceShell() {
                 groupEl.setAttribute('role', 'presentation');
                 groupEl.dataset.workspaceGroup = group.groupId;
                 groupEl.dataset.pinned = 'false';
-                groupEl.className = 'workspace-tab-group';
+                groupEl.className = 'workspace-session-group';
             }
-            groupEl.classList.add('workspace-tab-group');
+            groupEl.classList.add('workspace-session-group');
             groupEl.dataset.workspaceModule = group.moduleKey;
 
             const expectedLayoutSig = group.isCollapsedStack
@@ -1741,8 +2158,8 @@ export function bootWorkspaceShell() {
                 const livePrevWidth = isNewGroupEl
                     ? 0
                     : roundPx(groupEl.getBoundingClientRect?.().width || 0);
-                const previousPills = Array.from(groupEl.querySelectorAll(':scope > .workspace-tab:not(.workspace-tab--ghost)'));
-                const previousPillIds = new Set(previousPills.map((p) => p.dataset.workspaceTab));
+                const previousPills = Array.from(groupEl.querySelectorAll(':scope > .workspace-session:not(.workspace-session--ghost)'));
+                const previousPillIds = new Set(previousPills.map((p) => p.dataset.workspaceSession));
                 const nextFrameIds = new Set(group.frames.map((f) => f.frameId));
                 const wasCollapsedStack = prevLayoutSig.startsWith('stack:');
                 const prevPill0Width = previousPills[0] ? roundPx(previousPills[0].getBoundingClientRect?.().width || 0) : 0;
@@ -1773,14 +2190,14 @@ export function bootWorkspaceShell() {
                         tailEl = createCollapseTail(previousPills.slice(1));
                     } else {
                         previousPills.forEach((oldPill, prevIdx) => {
-                            const oldFrameId = oldPill.dataset.workspaceTab;
+                            const oldFrameId = oldPill.dataset.workspaceSession;
                             if (oldFrameId && !nextFrameIds.has(oldFrameId)) {
                                 const gw = roundPx(oldPill.getBoundingClientRect?.().width || 0);
                                 if (gw > 0) {
                                     const gClone = oldPill.cloneNode(true);
-                                    gClone.querySelectorAll('.workspace-tab__morph-overlay').forEach((n) => n.remove());
+                                    gClone.querySelectorAll('.workspace-session__morph-overlay').forEach((n) => n.remove());
                                     sanitizeGhostElement(gClone);
-                                    gClone.className = 'workspace-tab workspace-tab--ghost is-closing';
+                                    gClone.className = 'workspace-session workspace-session--ghost is-closing';
                                     gClone._startWidth = gw;
                                     gClone._targetIndex = prevIdx;
                                     childGhosts.push(gClone);
@@ -1867,7 +2284,7 @@ export function bootWorkspaceShell() {
 
                 if (groupEl.dataset.renderSig !== expectedRenderSig) {
                     groupEl.dataset.renderSig = expectedRenderSig;
-                    const livePills = Array.from(groupEl.querySelectorAll(':scope > .workspace-tab:not(.workspace-tab--ghost)'));
+                    const livePills = Array.from(groupEl.querySelectorAll(':scope > .workspace-session:not(.workspace-session--ghost)'));
                     if (group.isCollapsedStack && livePills[0]) {
                         const parent = group.frames[0];
                         const trigger = livePills[0].querySelector('[role="tab"]');
@@ -1906,11 +2323,7 @@ export function bootWorkspaceShell() {
                     const isPanelActive = frame.frameId === activeFrameId;
                     const isPanelStaging = Boolean(frame.staged) && !isPanelActive;
                     if (isPanelActive) {
-                        leavingPanelCleanups.get(panel)?.(false);
-                        panel.classList.remove('is-leaving');
-                        panel.classList.add('is-active');
-                        panel.classList.remove('is-staging');
-                        panel.hidden = false;
+                        activatePanelSurface(panel);
                     } else {
                         const isLeaving = leavingPanelCleanups.has(panel);
                         panel.classList.remove('is-active');
@@ -1974,10 +2387,10 @@ export function bootWorkspaceShell() {
         }
 
         const activeBtn = tablistEl.querySelector('[role="tab"][aria-selected="true"]');
-        const scrollTarget = activeBtn?.closest('.workspace-tab-group.is-expanded')
-            || activeBtn?.closest('.workspace-tab')
+        const scrollTarget = activeBtn?.closest('.workspace-session-group.is-expanded')
+            || activeBtn?.closest('.workspace-session')
             || activeBtn;
-        const activeGroupEl = scrollTarget?.closest?.('.workspace-tab-group');
+        const activeGroupEl = scrollTarget?.closest?.('.workspace-session-group');
         if (!activeGroupEl?.classList?.contains('is-entering') && !activeGroupEl?.classList?.contains('is-morphing')) {
             scrollTarget?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
         }
@@ -2095,17 +2508,10 @@ export function bootWorkspaceShell() {
         }
 
         if (navQueue.has(frameId)) {
-            const outcome = navQueue.complete(frameId);
+            navQueue.complete(frameId);
             syncTriggerPendingAttributes();
-            store.commitStagedFrame(frameId, { activate: outcome.activate });
-            if (outcome.activate) {
-                notifyActiveSurface(outcome.entry?.historyMode || 'push');
-            } else {
-                syncTabDom();
-                const readyMsg = String(i18n.readyAnnouncement || ':label is ready').replace(':label', title);
-                announceLiveStatus(readyMsg);
-            }
         } else {
+            store.commitStagedFrame(frameId, { activate: false });
             const activeFrame = store.activeFrame();
             if (activeFrame && activeFrame.frameId === frameId) {
                 const topbarTitle = formatTopbarTitle(activeFrame, ctx.group);
@@ -2210,7 +2616,7 @@ export function bootWorkspaceShell() {
         panel.className = frame.staged ? 'workspace-panel is-staging' : 'workspace-panel';
         panel.id = `workspace-panel-${frame.frameId}`;
         panel.setAttribute('role', 'tabpanel');
-        panel.setAttribute('aria-labelledby', `workspace-tab-${frame.frameId}`);
+        panel.setAttribute('aria-labelledby', `workspace-session-${frame.frameId}`);
         panel.setAttribute('aria-busy', 'true');
         panel.dataset.workspacePanel = frame.frameId;
 
@@ -2318,11 +2724,11 @@ export function bootWorkspaceShell() {
             label: tabLabel,
             url: resolvedUrl,
             stageOnly: true,
-            showTabWhileStaged: true,
+            showSessionWhileStaged: false,
         });
 
         if (result.blocked) {
-            window.AdasiToast?.warning?.(i18n.evictionBlocked || 'All open tabs have unsaved changes.');
+            window.AdasiToast?.warning?.(i18n.evictionBlocked || 'All open sessions have unsaved changes.');
             return;
         }
 
@@ -2374,11 +2780,11 @@ export function bootWorkspaceShell() {
             label: resolvedLabel,
             url: resolvedUrl,
             stageOnly: true,
-            showTabWhileStaged: true,
+            showSessionWhileStaged: false,
         });
 
         if (result.blocked) {
-            window.AdasiToast?.warning?.(i18n.evictionBlocked || 'All open tabs have unsaved changes.');
+            window.AdasiToast?.warning?.(i18n.evictionBlocked || 'All open sessions have unsaved changes.');
             return;
         }
 
@@ -2469,7 +2875,7 @@ export function bootWorkspaceShell() {
         notifyActiveSurface(historyMode);
 
         if (focusTrigger) {
-            tablistEl.querySelector(`#workspace-tab-${CSS.escape(res.frame.frameId)}`)?.focus?.();
+            tablistEl.querySelector(`#workspace-session-${CSS.escape(res.frame.frameId)}`)?.focus?.();
         }
     };
 
@@ -2514,15 +2920,15 @@ export function bootWorkspaceShell() {
         notifyActiveSurface(historyMode);
 
         if (focusTrigger) {
-            tablistEl.querySelector(`#workspace-tab-${CSS.escape(res.frame.frameId)}`)?.focus?.();
+            tablistEl.querySelector(`#workspace-session-${CSS.escape(res.frame.frameId)}`)?.focus?.();
         }
     };
 
     const confirmDirtyClose = async (dirtyFrames) => {
         if (!dirtyFrames || dirtyFrames.length === 0) return true;
         const message = dirtyFrames.length === 1
-            ? (i18n.closeDirtyConfirm || 'This tab has unsaved changes. Close it anyway?')
-            : (i18n.confirmCloseDirtyBulk || 'Some closing tabs have unsaved changes. Close them anyway?');
+            ? (i18n.closeDirtyConfirm || 'This session has unsaved changes. Close it anyway?')
+            : (i18n.confirmCloseDirtyBulk || 'Some closing sessions have unsaved changes. Close them anyway?');
 
         if (window.AdasiAlert?.confirm) {
             const res = await window.AdasiAlert.confirm({
@@ -2603,7 +3009,7 @@ export function bootWorkspaceShell() {
         navQueue.clearAutoFocus();
         const res = store.duplicateGroup(groupId);
         if (res.blocked) {
-            window.AdasiToast?.warning?.(i18n.evictionBlocked || 'All open tabs have unsaved changes.');
+            window.AdasiToast?.warning?.(i18n.evictionBlocked || 'All open sessions have unsaved changes.');
             return;
         }
         if (res.frame) {
@@ -2620,7 +3026,7 @@ export function bootWorkspaceShell() {
         if (frame.isDirty && window.AdasiAlert?.confirm) {
             const res = await window.AdasiAlert.confirm({
                 title: i18n.unsavedBadge || 'Unsaved changes',
-                text: i18n.closeDirtyConfirm || 'This tab has unsaved changes. Refresh anyway?',
+                text: i18n.closeDirtyConfirm || 'This session has unsaved changes. Refresh anyway?',
                 confirmVariant: 'danger',
             });
             if (!res?.isConfirmed) return;
@@ -2654,6 +3060,27 @@ export function bootWorkspaceShell() {
         });
     };
 
+    let hoverMenuCloseTimer = 0;
+    let tabMenuOpenedByHover = false;
+
+    const clearHoverMenuCloseTimer = () => {
+        if (hoverMenuCloseTimer) {
+            window.clearTimeout(hoverMenuCloseTimer);
+            hoverMenuCloseTimer = 0;
+        }
+    };
+
+    const scheduleHoverMenuClose = () => {
+        clearHoverMenuCloseTimer();
+        if (!tabMenuOpenedByHover || !tabMenuEl || tabMenuEl.hidden) return;
+        hoverMenuCloseTimer = window.setTimeout(() => {
+            hoverMenuCloseTimer = 0;
+            if (tabMenuOpenedByHover) {
+                closeTabMenu({ restoreFocus: false });
+            }
+        }, 160);
+    };
+
     const finalizeTabMenuClose = () => {
         if (!tabMenuEl) return;
         if (tabMenuCloseTimer) {
@@ -2666,6 +3093,8 @@ export function bootWorkspaceShell() {
     };
 
     const closeTabMenu = ({ restoreFocus = false, immediate = false } = {}) => {
+        clearHoverMenuCloseTimer();
+        tabMenuOpenedByHover = false;
         if (!tabMenuEl || tabMenuEl.hidden) return;
         if (tabMenuCloseTimer) {
             window.clearTimeout(tabMenuCloseTimer);
@@ -2708,7 +3137,7 @@ export function bootWorkspaceShell() {
         dismissEmbedOverlays(excludeEmbedWindow);
     };
 
-    const positionAndShowTabMenu = (anchorEl, clientX = null, clientY = null) => {
+    const positionAndShowTabMenu = (anchorEl, clientX = null, clientY = null, { focusFirst = true } = {}) => {
         if (!tabMenuEl) return;
         if (tabMenuCloseTimer) {
             window.clearTimeout(tabMenuCloseTimer);
@@ -2726,7 +3155,40 @@ export function bootWorkspaceShell() {
         const clampedY = Math.max(8, Math.min(rawY, window.innerHeight - menuRect.height - 8));
         tabMenuEl.style.left = `${clampedX}px`;
         tabMenuEl.style.top = `${clampedY}px`;
-        tabMenuEl.querySelector('[role="menuitem"]')?.focus();
+        if (focusFirst) {
+            tabMenuEl.querySelector('[role="menuitem"]')?.focus();
+        }
+    };
+
+    const openGroupPagesMenu = ({ groupId = null, anchorEl = null, focusMenu = false, openedByHover = false }) => {
+        if (!tabMenuEl) return;
+        const group = store.getGroup(groupId);
+        if (!group || group.frames.length === 0) return;
+
+        dismissFloatingOverlays({ restoreFocus: false, immediate: true });
+        tabMenuOpenedByHover = openedByHover;
+        lastMenuOpener = anchorEl || document.activeElement;
+        if (anchorEl?.dataset?.workspaceGroupMenu) {
+            anchorEl.setAttribute('aria-expanded', 'true');
+        }
+
+        const heading = document.createElement('div');
+        heading.className = 'workspace-session-menu__heading';
+        heading.textContent = group.baseLabel;
+        tabMenuEl.appendChild(heading);
+
+        for (const subFrame of group.frames) {
+            const isCurr = store.activeFrame()?.frameId === subFrame.frameId;
+            tabMenuEl.appendChild(createMenuButtonItem({
+                label: subFrame.title,
+                badgeText: subFrame.hibernated ? (i18n.hibernatedBadge || 'Hibernated') : (isCurr ? '●' : ''),
+                iconName: subFrame.role === 'parent' ? 'layers' : 'chevron-right',
+                current: isCurr,
+                onSelect: () => activateFrame(subFrame.frameId, { focusTrigger: true }),
+            }));
+        }
+
+        positionAndShowTabMenu(anchorEl, null, null, { focusFirst: focusMenu });
     };
 
     const openWorkspaceSwitcherMenu = (anchorEl) => {
@@ -2739,8 +3201,8 @@ export function bootWorkspaceShell() {
         if (anchorEl) anchorEl.setAttribute('aria-expanded', 'true');
 
         const heading = document.createElement('div');
-        heading.className = 'workspace-tab-menu__heading';
-        heading.textContent = i18n.openWorkspaces || 'Open workspaces';
+        heading.className = 'workspace-session-menu__heading';
+        heading.textContent = i18n.openSessions || i18n.openWorkspaces || 'Open sessions';
         tabMenuEl.appendChild(heading);
 
         for (const group of displayList) {
@@ -2760,12 +3222,12 @@ export function bootWorkspaceShell() {
         }
 
         const divider = document.createElement('div');
-        divider.className = 'workspace-tab-menu__divider';
+        divider.className = 'workspace-session-menu__divider';
         divider.setAttribute('role', 'separator');
         tabMenuEl.appendChild(divider);
 
         tabMenuEl.appendChild(createMenuButtonItem({
-            label: i18n.closeAll || 'Close all tabs',
+            label: i18n.closeAll || 'Close all sessions',
             iconName: 'x',
             danger: true,
             onSelect: () => requestBulkClose('all'),
@@ -2777,26 +3239,26 @@ export function bootWorkspaceShell() {
     const createMenuButtonItem = ({ label, badgeText = '', iconName = null, danger = false, current = false, onSelect }) => {
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = 'workspace-tab-menu__item ui-focus-ring';
+        btn.className = 'workspace-session-menu__item ui-focus-ring';
         if (danger) btn.classList.add('is-danger');
         if (current) btn.classList.add('is-current');
         btn.setAttribute('role', 'menuitem');
 
         const main = document.createElement('span');
-        main.className = 'workspace-tab-menu__item-main';
+        main.className = 'workspace-session-menu__item-main';
         if (iconName) {
             const icon = cloneTemplateIcon(iconName);
             if (icon) main.appendChild(icon);
         }
         const textSpan = document.createElement('span');
-        textSpan.className = 'workspace-tab-menu__item-label';
+        textSpan.className = 'workspace-session-menu__item-label';
         textSpan.textContent = label;
         main.appendChild(textSpan);
         btn.appendChild(main);
 
         if (badgeText) {
             const badge = document.createElement('span');
-            badge.className = 'workspace-tab-menu__item-badge';
+            badge.className = 'workspace-session-menu__item-badge';
             badge.textContent = badgeText;
             btn.appendChild(badge);
         }
@@ -2825,7 +3287,7 @@ export function bootWorkspaceShell() {
         if (isShortcutsTarget) {
             if (groups.length > 0) {
                 tabMenuEl.appendChild(createMenuButtonItem({
-                    label: i18n.closeAll || 'Close all tabs',
+                    label: i18n.closeAll || 'Close all sessions',
                     iconName: 'x',
                     danger: true,
                     onSelect: () => requestBulkClose('all'),
@@ -2838,58 +3300,61 @@ export function bootWorkspaceShell() {
                 || store.getFrame(group.activeFrameId)
                 || group.frames[0];
 
-            if (group.frames.length > 1) {
-                const heading = document.createElement('div');
-                heading.className = 'workspace-tab-menu__heading';
-                heading.textContent = group.baseLabel;
-                tabMenuEl.appendChild(heading);
-
-                for (const subFrame of group.frames) {
-                    const isCurr = store.activeFrame()?.frameId === subFrame.frameId;
-                    tabMenuEl.appendChild(createMenuButtonItem({
-                        label: subFrame.title,
-                        badgeText: subFrame.hibernated ? (i18n.hibernatedBadge || 'Hibernated') : (isCurr ? '●' : ''),
-                        iconName: subFrame.role === 'parent' ? 'layers' : 'chevron-right',
-                        current: isCurr,
-                        onSelect: () => activateFrame(subFrame.frameId, { focusTrigger: true }),
-                    }));
-                }
-
-                const div1 = document.createElement('div');
-                div1.className = 'workspace-tab-menu__divider';
-                div1.setAttribute('role', 'separator');
-                tabMenuEl.appendChild(div1);
-            }
-
             if (targetFrame) {
                 tabMenuEl.appendChild(createMenuButtonItem({
-                    label: i18n.refreshTab || 'Refresh tab',
+                    label: i18n.refreshSession || i18n.refreshTab || 'Refresh session',
                     iconName: 'refresh-cw',
                     onSelect: () => requestRefreshFrame(targetFrame.frameId),
                 }));
             }
 
             tabMenuEl.appendChild(createMenuButtonItem({
-                label: i18n.duplicateTab || 'Duplicate workspace',
+                label: i18n.duplicateSession || i18n.duplicateTab || 'Duplicate session',
                 iconName: 'copy',
                 onSelect: () => requestDuplicateGroup(group.groupId),
             }));
 
+            const targetBookmarkUrl = targetFrame ? canonicalizeBookmarkUrl(targetFrame.url) : '';
+            if (targetBookmarkUrl) {
+                const isBookmarked = isBookmarkedUrl(targetBookmarkUrl);
+                tabMenuEl.appendChild(createMenuButtonItem({
+                    label: isBookmarked ? (i18n.removeBookmark || 'Remove bookmark') : (i18n.addBookmark || 'Bookmark session'),
+                    iconName: 'bookmark',
+                    current: isBookmarked,
+                    onSelect: () => toggleBookmarkEntry({
+                        url: targetBookmarkUrl,
+                        label: formatTopbarTitle(targetFrame, group) || targetFrame.title,
+                        moduleKey: group.moduleKey,
+                    }),
+                }));
+            }
+
+            const favCatalogEntry = findCatalogEntryForGroup(group);
+            if (favCatalogEntry?.normalizedPath) {
+                const isFav = isFavoritePath(favCatalogEntry.normalizedPath);
+                tabMenuEl.appendChild(createMenuButtonItem({
+                    label: isFav ? (i18n.removeFavorite || 'Remove from Favorites') : (i18n.addFavorite || 'Add to Favorites'),
+                    iconName: 'star',
+                    current: isFav,
+                    onSelect: () => toggleFavoritePath(favCatalogEntry.normalizedPath),
+                }));
+            }
+
             const div2 = document.createElement('div');
-            div2.className = 'workspace-tab-menu__divider';
+            div2.className = 'workspace-session-menu__divider';
             div2.setAttribute('role', 'separator');
             tabMenuEl.appendChild(div2);
 
             if (targetFrame && targetFrame.role === 'child') {
                 tabMenuEl.appendChild(createMenuButtonItem({
-                    label: i18n.closeTab || 'Close tab',
+                    label: i18n.closeSession || i18n.closeTab || 'Close session',
                     iconName: 'x',
                     onSelect: () => requestCloseFrame(targetFrame.frameId),
                 }));
             }
 
             tabMenuEl.appendChild(createMenuButtonItem({
-                label: group.frames.length > 1 ? (i18n.closeGroup || 'Close workspace group') : (i18n.closeTab || 'Close tab'),
+                label: group.frames.length > 1 ? (i18n.closeGroup || 'Close session group') : (i18n.closeSession || i18n.closeTab || 'Close session'),
                 iconName: 'x',
                 danger: group.frames.length > 1,
                 onSelect: () => requestCloseGroup(group.groupId),
@@ -2898,18 +3363,18 @@ export function bootWorkspaceShell() {
             const groupIndex = groups.findIndex((g) => g.groupId === group.groupId);
             if (groups.length > 1) {
                 tabMenuEl.appendChild(createMenuButtonItem({
-                    label: i18n.closeOthers || 'Close other tabs',
+                    label: i18n.closeOthers || 'Close other sessions',
                     onSelect: () => requestBulkClose('others', group.groupId),
                 }));
             }
             if (groupIndex !== -1 && groupIndex < groups.length - 1) {
                 tabMenuEl.appendChild(createMenuButtonItem({
-                    label: i18n.closeRight || 'Close tabs to the right',
+                    label: i18n.closeRight || 'Close sessions to the right',
                     onSelect: () => requestBulkClose('right', group.groupId),
                 }));
             }
             tabMenuEl.appendChild(createMenuButtonItem({
-                label: i18n.closeAll || 'Close all tabs',
+                label: i18n.closeAll || 'Close all sessions',
                 danger: true,
                 onSelect: () => requestBulkClose('all'),
             }));
@@ -2920,9 +3385,9 @@ export function bootWorkspaceShell() {
 
     // Hydrate SSR initial group & iframe seamlessly without double reload
     const ssrGroupEl = tablistEl.querySelector('[data-workspace-group="initial"]');
-    const ssrTabEl = tablistEl.querySelector('[data-workspace-tab="initial"]');
-    const ssrTriggerEl = tablistEl.querySelector('[data-workspace-tab-select="initial"]');
-    const ssrCloseEl = tablistEl.querySelector('[data-workspace-tab-close="initial"]');
+    const ssrTabEl = tablistEl.querySelector('[data-workspace-session="initial"]');
+    const ssrTriggerEl = tablistEl.querySelector('[data-workspace-session-select="initial"]');
+    const ssrCloseEl = tablistEl.querySelector('[data-workspace-session-close="initial"]');
     const ssrPanelEl = framesEl.querySelector('[data-workspace-panel="initial"]');
     const ssrFrameEl = framesEl.querySelector('[data-workspace-frame="initial"]');
 
@@ -2930,8 +3395,8 @@ export function bootWorkspaceShell() {
         ssrGroupEl?.remove();
         ssrPanelEl?.remove();
         store.activateShortcuts();
-        notifyActiveSurface('replace');
         initialReadyResolve?.();
+        notifyActiveSurface('replace');
     } else {
         const canonicalInitialLabel = menuPathTitles.get(normalizedPath(initialTab.url, origin)) || initialTab.label;
         const seeded = store.seedInitial({
@@ -2945,19 +3410,19 @@ export function bootWorkspaceShell() {
             recordModuleUse(initialTab.url);
             if (ssrGroupEl) ssrGroupEl.dataset.workspaceGroup = seeded.group.groupId;
             if (ssrTabEl) {
-                ssrTabEl.dataset.workspaceTab = seeded.frame.frameId;
+                ssrTabEl.dataset.workspaceSession = seeded.frame.frameId;
                 ssrTabEl.dataset.workspaceGroupTarget = seeded.group.groupId;
             }
             if (ssrTriggerEl) {
-                ssrTriggerEl.id = `workspace-tab-${seeded.frame.frameId}`;
-                ssrTriggerEl.dataset.workspaceTabSelect = seeded.frame.frameId;
+                ssrTriggerEl.id = `workspace-session-${seeded.frame.frameId}`;
+                ssrTriggerEl.dataset.workspaceSessionSelect = seeded.frame.frameId;
                 ssrTriggerEl.setAttribute('aria-controls', `workspace-panel-${seeded.frame.frameId}`);
             }
-            if (ssrCloseEl) ssrCloseEl.dataset.workspaceTabClose = seeded.frame.frameId;
+            if (ssrCloseEl) ssrCloseEl.dataset.workspaceSessionClose = seeded.frame.frameId;
             if (ssrPanelEl) {
                 ssrPanelEl.id = `workspace-panel-${seeded.frame.frameId}`;
                 ssrPanelEl.dataset.workspacePanel = seeded.frame.frameId;
-                ssrPanelEl.setAttribute('aria-labelledby', `workspace-tab-${seeded.frame.frameId}`);
+                ssrPanelEl.setAttribute('aria-labelledby', `workspace-session-${seeded.frame.frameId}`);
             }
             if (ssrFrameEl) {
                 ssrFrameEl.name = `workspace-frame-${seeded.frame.frameId}`;
@@ -2975,7 +3440,7 @@ export function bootWorkspaceShell() {
         notifyActiveSurface('replace');
     }
 
-    // Tab Strip clicks, middle-click close, context menu, and roving keyboard navigation
+    // Session Strip clicks, middle-click close, context menu, and roving keyboard navigation
     const tabStripEventsEl = tabbarEl || tablistEl;
 
     tabStripEventsEl.addEventListener('click', (event) => {
@@ -2983,18 +3448,18 @@ export function bootWorkspaceShell() {
         if (menuBtn) {
             event.preventDefault();
             const gid = menuBtn.dataset.workspaceGroupMenu;
-            if (tabMenuEl && !tabMenuEl.hidden && lastMenuOpener === menuBtn) {
+            if (tabMenuEl && !tabMenuEl.hidden && lastMenuOpener === menuBtn && !tabMenuOpenedByHover) {
                 closeTabMenu({ restoreFocus: true });
             } else {
-                openTabMenu({ groupId: gid, anchorEl: menuBtn });
+                openGroupPagesMenu({ groupId: gid, anchorEl: menuBtn, focusMenu: true, openedByHover: false });
             }
             return;
         }
 
-        const closeBtn = event.target.closest('[data-workspace-tab-close]');
+        const closeBtn = event.target.closest('[data-workspace-session-close]');
         if (closeBtn) {
             event.preventDefault();
-            const fid = closeBtn.dataset.workspaceTabClose;
+            const fid = closeBtn.dataset.workspaceSessionClose;
             if (fid) requestCloseFrame(fid);
             return;
         }
@@ -3010,36 +3475,69 @@ export function bootWorkspaceShell() {
             return;
         }
 
-        const selectBtn = event.target.closest('[data-workspace-tab-select]');
+        const selectBtn = event.target.closest('[data-workspace-session-select]');
         if (selectBtn) {
-            activateFrame(selectBtn.dataset.workspaceTabSelect, { triggerEl: selectBtn });
+            activateFrame(selectBtn.dataset.workspaceSessionSelect, { triggerEl: selectBtn });
         }
+    });
+
+    tabStripEventsEl.addEventListener('mouseover', (event) => {
+        const menuBtn = event.target.closest('[data-workspace-group-menu]');
+        if (!menuBtn || menuBtn.contains(event.relatedTarget)) return;
+        clearHoverMenuCloseTimer();
+        const gid = menuBtn.dataset.workspaceGroupMenu;
+        if (tabMenuEl && !tabMenuEl.hidden && lastMenuOpener === menuBtn) {
+            return;
+        }
+        openGroupPagesMenu({ groupId: gid, anchorEl: menuBtn, focusMenu: false, openedByHover: true });
+    });
+
+    tabStripEventsEl.addEventListener('mouseout', (event) => {
+        const menuBtn = event.target.closest('[data-workspace-group-menu]');
+        if (!menuBtn || menuBtn.contains(event.relatedTarget)) return;
+        if (tabMenuEl && (event.relatedTarget === tabMenuEl || tabMenuEl.contains(event.relatedTarget))) {
+            clearHoverMenuCloseTimer();
+            return;
+        }
+        scheduleHoverMenuClose();
+    });
+
+    tabMenuEl?.addEventListener('mouseenter', () => {
+        clearHoverMenuCloseTimer();
+    });
+
+    tabMenuEl?.addEventListener('mouseleave', (event) => {
+        if (lastMenuOpener && (event.relatedTarget === lastMenuOpener || lastMenuOpener.contains?.(event.relatedTarget))) {
+            clearHoverMenuCloseTimer();
+            return;
+        }
+        scheduleHoverMenuClose();
     });
 
     tabStripEventsEl.addEventListener('auxclick', (event) => {
         if (event.button !== 1) return;
-        const tabEl = event.target.closest('[data-workspace-tab]');
-        if (!tabEl || tabEl.dataset.workspaceTab === SHORTCUTS_KEY) return;
+        const tabEl = event.target.closest('[data-workspace-session]');
+        if (!tabEl || tabEl.dataset.workspaceSession === SHORTCUTS_KEY) return;
         event.preventDefault();
         const gid = tabEl.dataset.workspaceGroupTarget;
-        if (tabEl.classList.contains('workspace-tab--stacked') && gid) {
+        if (tabEl.classList.contains('workspace-session--stacked') && gid) {
             requestCloseGroup(gid);
         } else {
-            requestCloseFrame(tabEl.dataset.workspaceTab);
+            requestCloseFrame(tabEl.dataset.workspaceSession);
         }
     });
 
     tabStripEventsEl.addEventListener('contextmenu', (event) => {
-        const tabEl = event.target.closest('[data-workspace-tab]');
+        const tabEl = event.target.closest('[data-workspace-session]');
         if (!tabEl) return;
         event.preventDefault();
-        const tabId = tabEl.dataset.workspaceTab;
+        const tabId = tabEl.dataset.workspaceSession;
         if (tabId === SHORTCUTS_KEY) {
             openTabMenu({ groupId: SHORTCUTS_KEY, anchorEl: tabEl, clientX: event.clientX, clientY: event.clientY });
             return;
         }
         const gid = tabEl.dataset.workspaceGroupTarget;
-        const fid = tabEl.classList.contains('workspace-tab--stacked') ? null : tabId;
+        const fid = tabEl.classList.contains('workspace-session--stacked') ? null : tabId;
         openTabMenu({ groupId: gid, frameId: fid, anchorEl: tabEl, clientX: event.clientX, clientY: event.clientY });
     });
 
@@ -3049,15 +3547,15 @@ export function bootWorkspaceShell() {
 
         if ((event.shiftKey && event.key === 'F10') || event.key === 'ContextMenu') {
             event.preventDefault();
-            const tabEl = triggerBtn.closest('[data-workspace-tab]');
+            const tabEl = triggerBtn.closest('[data-workspace-session]');
             if (!tabEl) return;
-            const tabId = tabEl.dataset.workspaceTab;
+            const tabId = tabEl.dataset.workspaceSession;
             if (tabId === SHORTCUTS_KEY) {
                 openTabMenu({ groupId: SHORTCUTS_KEY, anchorEl: triggerBtn });
                 return;
             }
             const gid = tabEl.dataset.workspaceGroupTarget;
-            const fid = tabEl.classList.contains('workspace-tab--stacked') ? null : tabId;
+            const fid = tabEl.classList.contains('workspace-session--stacked') ? null : tabId;
             openTabMenu({ groupId: gid, frameId: fid, anchorEl: triggerBtn });
             return;
         }
@@ -3074,13 +3572,13 @@ export function bootWorkspaceShell() {
         else if (event.key === 'Home') targetIdx = 0;
         else if (event.key === 'End') targetIdx = tabs.length - 1;
         else if (event.key === 'Delete' || event.key === 'Backspace') {
-            const tabEl = triggerBtn.closest('[data-workspace-tab]');
-            if (tabEl && tabEl.dataset.workspaceTab !== SHORTCUTS_KEY) {
+            const tabEl = triggerBtn.closest('[data-workspace-session]');
+            if (tabEl && tabEl.dataset.workspaceSession !== SHORTCUTS_KEY) {
                 event.preventDefault();
-                if (tabEl.classList.contains('workspace-tab--stacked')) {
+                if (tabEl.classList.contains('workspace-session--stacked')) {
                     requestCloseGroup(tabEl.dataset.workspaceGroupTarget);
                 } else {
-                    requestCloseFrame(tabEl.dataset.workspaceTab);
+                    requestCloseFrame(tabEl.dataset.workspaceSession);
                 }
             }
             return;
@@ -3093,8 +3591,8 @@ export function bootWorkspaceShell() {
                 activateShortcuts({ focusTrigger: true });
             } else if (nextBtn.hasAttribute('data-workspace-group-select')) {
                 activateGroup(nextBtn.dataset.workspaceGroupSelect, { focusTrigger: true });
-            } else if (nextBtn.hasAttribute('data-workspace-tab-select')) {
-                activateFrame(nextBtn.dataset.workspaceTabSelect, { focusTrigger: true });
+            } else if (nextBtn.hasAttribute('data-workspace-session-select')) {
+                activateFrame(nextBtn.dataset.workspaceSessionSelect, { focusTrigger: true });
             }
         }
     });
@@ -3155,35 +3653,178 @@ export function bootWorkspaceShell() {
         } catch {}
     });
 
-    // Shortcuts search panel filtering, keyboard jump, & clear controls
-    shortcutsSearchEl?.addEventListener('input', renderShortcuts);
-    shortcutsSearchEl?.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape' && shortcutsSearchEl.value) {
-            event.preventDefault();
-            shortcutsSearchEl.value = '';
-            renderShortcuts();
-        } else if (event.key === 'ArrowDown') {
-            const firstItem = shortcutsPanel?.querySelector('.workspace-shortcuts__item');
-            if (firstItem) {
-                event.preventDefault();
-                firstItem.focus();
+    // Seed initial active module once into Frequently Used when usage history does not exist yet
+    try {
+        if (window.localStorage?.getItem(usageStorageKey) === null && initialTab?.url) {
+            const initialNp = normalizedPath(initialTab.url, origin);
+            if (catalog.some((item) => item.normalizedPath === initialNp)) {
+                recordModuleUse(initialTab.url);
             }
         }
-    });
-    shortcutsClearEl?.addEventListener('click', () => {
-        if (shortcutsSearchEl) {
-            shortcutsSearchEl.value = '';
-            shortcutsSearchEl.focus();
+    } catch {}
+
+    // Shortcuts 3-pane bottom-docked minimize/restore & cursor-tracking dual vertical splitters
+    applyShortcutsLayout(shortcutsLayout);
+    renderShortcuts();
+
+    const syncSplitterGripY = (splitterEl, clientY) => {
+        if (!splitterEl || !Number.isFinite(clientY)) return;
+        const rect = splitterEl.getBoundingClientRect();
+        if (!rect.height) return;
+        const gripHalf = 22;
+        const clampedY = rect.height > gripHalf * 2
+            ? Math.min(rect.height - gripHalf, Math.max(gripHalf, clientY - rect.top))
+            : rect.height / 2;
+        splitterEl.style.setProperty('--splitter-grip-y', `${Math.round(clampedY)}px`);
+    };
+
+    const setPaneMinimized = (paneKey, shouldMinimize, { focusTarget = 'auto' } = {}) => {
+        shortcutsLayout.minimized[paneKey] = shouldMinimize;
+        const nextOrder = (shortcutsLayout.minimizedOrder || []).filter((key) => key !== paneKey);
+        if (shouldMinimize) {
+            nextOrder.push(paneKey);
         }
-        renderShortcuts();
-    });
-    shortcutsEmptyClearEl?.addEventListener('click', () => {
-        if (shortcutsSearchEl) {
-            shortcutsSearchEl.value = '';
-            shortcutsSearchEl.focus();
+        shortcutsLayout.minimizedOrder = nextOrder;
+        applyShortcutsLayout(shortcutsLayout);
+        writeJsonStorage(shortcutsLayoutStorageKey, shortcutsLayout);
+
+        if (focusTarget === 'dock' || (focusTarget === 'auto' && shouldMinimize)) {
+            const restoreBtn = shortcutsRestoreEls[paneKey];
+            if (restoreBtn && !restoreBtn.hidden) {
+                restoreBtn.focus();
+            }
+        } else if (focusTarget === 'pane' || (focusTarget === 'auto' && !shouldMinimize)) {
+            const toggleBtn = shortcutsPaneToggleEls[paneKey];
+            if (toggleBtn && shortcutsPaneEls[paneKey] && !shortcutsPaneEls[paneKey].classList.contains('is-minimized')) {
+                toggleBtn.focus();
+            }
         }
-        renderShortcuts();
-    });
+    };
+
+    for (const paneKey of SHORTCUTS_PANE_KEYS) {
+        const toggleBtn = shortcutsPaneToggleEls[paneKey];
+        toggleBtn?.addEventListener('click', () => {
+            setPaneMinimized(paneKey, !shortcutsLayout.minimized[paneKey], { focusTarget: 'auto' });
+        });
+
+        const restoreBtn = shortcutsRestoreEls[paneKey];
+        restoreBtn?.addEventListener('click', () => {
+            setPaneMinimized(paneKey, false, { focusTarget: 'pane' });
+        });
+    }
+
+    for (const splitterKey of shortcutsSplitterKeys) {
+        const splitterEl = shortcutsSplitterEls[splitterKey];
+        if (!splitterEl || !shortcutsBoardEl) continue;
+
+        let dragState = null;
+
+        const endSplitterDrag = (event) => {
+            if (!dragState) return;
+            dragState = null;
+            splitterEl.classList.remove('is-dragging');
+            shortcutsBoardEl.classList.remove('is-resizing');
+            document.body?.classList?.remove('is-resizing-shortcuts');
+            if (event?.pointerId !== undefined) {
+                try { splitterEl.releasePointerCapture?.(event.pointerId); } catch {}
+            }
+            writeJsonStorage(shortcutsLayoutStorageKey, shortcutsLayout);
+        };
+
+        splitterEl.addEventListener('pointerenter', (event) => {
+            syncSplitterGripY(splitterEl, event.clientY);
+        });
+
+        splitterEl.addEventListener('pointerdown', (event) => {
+            if (event.button !== 0 || splitterEl.getAttribute('aria-disabled') === 'true') return;
+            const boardWidthPx = getBoardWidthPx();
+            if (boardWidthPx <= 0) return;
+
+            event.preventDefault();
+            syncSplitterGripY(splitterEl, event.clientY);
+            applyShortcutsLayout(shortcutsLayout);
+            dragState = {
+                startClientX: event.clientX,
+                startWeights: { ...shortcutsLayout.weights },
+                boardWidthPx,
+            };
+            splitterEl.classList.add('is-dragging');
+            shortcutsBoardEl.classList.add('is-resizing');
+            document.body?.classList?.add('is-resizing-shortcuts');
+            try { splitterEl.setPointerCapture?.(event.pointerId); } catch {}
+        });
+
+        splitterEl.addEventListener('pointermove', (event) => {
+            syncSplitterGripY(splitterEl, event.clientY);
+            if (!dragState) return;
+            const deltaPx = event.clientX - dragState.startClientX;
+            const res = resizeShortcutsPairByDelta({
+                weights: dragState.startWeights,
+                minimized: shortcutsLayout.minimized,
+                splitterKey,
+                deltaPx,
+                boardWidthPx: dragState.boardWidthPx,
+            });
+            if (res.pair) {
+                shortcutsLayout.weights = res.weights;
+                applyShortcutsLayout(shortcutsLayout);
+            }
+        });
+
+        splitterEl.addEventListener('pointerup', endSplitterDrag);
+        splitterEl.addEventListener('pointercancel', endSplitterDrag);
+
+        splitterEl.addEventListener('dblclick', () => {
+            if (splitterEl.getAttribute('aria-disabled') === 'true') return;
+            const pair = resolveShortcutsSplitterPair(splitterKey, shortcutsLayout.minimized);
+            if (!pair) return;
+            const [leftKey, rightKey] = pair;
+            const pairWeightSum = Number(shortcutsLayout.weights[leftKey] || 0)
+                + Number(shortcutsLayout.weights[rightKey] || 0);
+            const defaultSum = DEFAULT_SHORTCUTS_WEIGHTS[leftKey] + DEFAULT_SHORTCUTS_WEIGHTS[rightKey];
+            const nextLeft = pairWeightSum * (DEFAULT_SHORTCUTS_WEIGHTS[leftKey] / defaultSum);
+            shortcutsLayout.weights[leftKey] = nextLeft;
+            shortcutsLayout.weights[rightKey] = pairWeightSum - nextLeft;
+            applyShortcutsLayout(shortcutsLayout);
+            writeJsonStorage(shortcutsLayoutStorageKey, shortcutsLayout);
+        });
+
+        splitterEl.addEventListener('keydown', (event) => {
+            if (splitterEl.getAttribute('aria-disabled') === 'true') return;
+            const boardWidthPx = getBoardWidthPx() || 1000;
+            let deltaPx = null;
+            if (event.key === 'ArrowLeft') deltaPx = -SHORTCUTS_KEYBOARD_STEP_PX;
+            else if (event.key === 'ArrowRight') deltaPx = SHORTCUTS_KEYBOARD_STEP_PX;
+            else if (event.key === 'Home') deltaPx = -boardWidthPx;
+            else if (event.key === 'End') deltaPx = boardWidthPx;
+            if (deltaPx === null) return;
+
+            event.preventDefault();
+            const res = resizeShortcutsPairByDelta({
+                weights: shortcutsLayout.weights,
+                minimized: shortcutsLayout.minimized,
+                splitterKey,
+                deltaPx,
+                boardWidthPx,
+            });
+            if (res.changed) {
+                shortcutsLayout.weights = res.weights;
+                applyShortcutsLayout(shortcutsLayout);
+                writeJsonStorage(shortcutsLayoutStorageKey, shortcutsLayout);
+            }
+        });
+    }
+
+    if (shortcutsBoardEl) {
+        if (typeof window.ResizeObserver === 'function') {
+            const shortcutsRo = new window.ResizeObserver(() => {
+                applyShortcutsLayout(shortcutsLayout);
+            });
+            shortcutsRo.observe(shortcutsBoardEl);
+        } else {
+            window.addEventListener('resize', () => applyShortcutsLayout(shortcutsLayout));
+        }
+    }
 
     scrollPrevBtn?.addEventListener('click', () => scrollTabStrip(-1));
     scrollNextBtn?.addEventListener('click', () => scrollTabStrip(1));
@@ -3197,13 +3838,13 @@ export function bootWorkspaceShell() {
 
     tablistEl.addEventListener('scroll', () => updateTabOverflowState(), { passive: true });
     tablistEl.addEventListener('transitionend', (event) => {
-        if (event.target?.classList?.contains?.('workspace-tab__close') && event.propertyName === 'width') {
-            const tab = event.target.closest('.workspace-tab');
+        if (event.target?.classList?.contains?.('workspace-session__close') && event.propertyName === 'width') {
+            const tab = event.target.closest('.workspace-session');
             if (tab?.matches?.(':hover, :has(:focus-visible)')) {
                 tab.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
             }
             updateTabOverflowState();
-        } else if (event.target?.classList?.contains?.('workspace-tab') && event.propertyName === 'max-width') {
+        } else if (event.target?.classList?.contains?.('workspace-session') && event.propertyName === 'max-width') {
             updateTabOverflowState({ fromSettle: !resizeSettleTimer });
         }
     });
@@ -3370,7 +4011,7 @@ export function bootWorkspaceShell() {
     };
 
     const forceRebuildAllTabs = () => {
-        const scLabelEl = shortcutsSelectBtn?.querySelector?.('.workspace-tab__label');
+        const scLabelEl = shortcutsSelectBtn?.querySelector?.('.workspace-session__label');
         if (scLabelEl && i18n.shortcuts) {
             scLabelEl.textContent = i18n.shortcuts;
         }
@@ -3378,9 +4019,9 @@ export function bootWorkspaceShell() {
             delete el.dataset.renderSig;
             delete el.dataset.layoutSig;
         });
-        tablistEl.querySelectorAll('.workspace-tab').forEach((pill) => {
+        tablistEl.querySelectorAll('.workspace-session').forEach((pill) => {
             delete pill.dataset.naturalWidth;
-            pill.style.removeProperty('--workspace-tab-natural-width');
+            pill.style.removeProperty('--workspace-session-natural-width');
         });
         notifyActiveSurface('replace');
     };
@@ -3409,6 +4050,8 @@ export function bootWorkspaceShell() {
 
         syncNavigationCatalogMetadata(nextConfig || config);
         applyTranslatedMetadataToGroups();
+        applyShortcutsLayout(shortcutsLayout);
+        renderShortcuts();
         closeTabMenu();
         forceRebuildAllTabs();
 
@@ -3476,7 +4119,7 @@ export function bootWorkspaceShell() {
         openUrl(url, options = {}) {
             openNewWorkspace({ url, ...options });
         },
-        handleEmbedLinkClick(frameWin, absUrl, linkLabel = '') {
+        handleEmbedLinkClick(frameWin, absUrl, linkLabel = '', options = {}) {
             const sourceFrameId = frameIdForWindow(frameWin);
             if (!sourceFrameId) return 'in-place';
             const ctx = store.getFrameContext(sourceFrameId);
@@ -3511,6 +4154,9 @@ export function bootWorkspaceShell() {
                 return 'handled';
             }
             if (action === 'in-place') {
+                return 'in-place';
+            }
+            if (options?.detailSwitch && action === 'join-child') {
                 return 'in-place';
             }
             if (action === 'focus-parent' && parentFrame) {

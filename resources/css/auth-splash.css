@@ -1,7 +1,7 @@
 .auth-splash {
     --auth-splash-css-ready: 1;
     --splash-bg: #fff;
-    --splash-fade: 650ms;
+    --splash-fade: 500ms;
     position: fixed;
     inset: 0;
     z-index: 9999;
@@ -14,7 +14,7 @@
     font-family: var(--ui-font-sans, "Segoe UI", Arial, sans-serif);
     transition-property: opacity, visibility;
     transition-duration: var(--splash-fade);
-    transition-timing-function: ease;
+    transition-timing-function: ease-out;
 }
 .auth-splash, .auth-splash *, .auth-splash *::before, .auth-splash *::after { box-sizing: border-box; }
 .auth-splash [hidden], .auth-splash[hidden] { display: none !important; }

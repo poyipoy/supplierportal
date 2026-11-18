@@ -10,18 +10,28 @@ import {
 import {
     appendEmbedParam,
     canonicalizeUrl,
+    clampOpenPaneWeights,
     classifyInternalNavigation,
+    computeOpenPaneWidthPx,
     computeWaterFillTabCap,
+    DEFAULT_SHORTCUTS_WEIGHTS,
     isDownloadOrBinaryUrl,
     isNonMutatingPostUrl,
     isSameOriginUrl,
     isTopLevelOnlyUrl,
+    MIN_SHORTCUTS_PANE_WIDTH_PX,
+    normalizeShortcutsLayout,
+    resizeShortcutsPairByDelta,
     resolveModuleKey,
+    resolveShortcutsSplitterPair,
+    resolveTransitionSettleMs,
+    resolveVisibleShortcutsSplitters,
     safeWebUrl,
     SHORTCUTS_KEY,
+    SHORTCUTS_SPLITTER_WIDTH_PX,
     stripEmbedParam,
     WorkspaceNavQueue,
-    WorkspaceTabStore,
+    WorkspaceSessionStore,
 } from '../../resources/js/workspace-shell-core.js';
 
 const ORIGIN = 'http://adasi_portal_supplier.test';
@@ -296,10 +306,10 @@ test('classifyInternalNavigation separates in-place query updates, joined child 
     );
 });
 
-test('WorkspaceTabStore allows multiple instances of the same menu, disambiguates labels, and falls back to Shortcuts when all closed', () => {
+test('WorkspaceSessionStore allows multiple instances of the same menu, disambiguates labels, and falls back to Shortcuts when all closed', () => {
     let now = 1000;
-    const store = new WorkspaceTabStore({
-        maxTabs: 12,
+    const store = new WorkspaceSessionStore({
+        maxSessions: 12,
         maxLiveFrames: 6,
         staleAfterMs: 120_000,
         now: () => now,
@@ -359,10 +369,10 @@ test('WorkspaceTabStore allows multiple instances of the same menu, disambiguate
     assert.deepEqual(store.activeTarget(), { type: SHORTCUTS_KEY });
 });
 
-test('WorkspaceTabStore joins Parent + multi-Child frames, auto-collapses when switching away, and re-expands on focus', () => {
+test('WorkspaceSessionStore joins Parent + multi-Child frames, auto-collapses when switching away, and re-expands on focus', () => {
     let now = 2000;
-    const store = new WorkspaceTabStore({
-        maxTabs: 12,
+    const store = new WorkspaceSessionStore({
+        maxSessions: 12,
         maxLiveFrames: 6,
         now: () => now,
         catalog: SAMPLE_CATALOG,
@@ -438,10 +448,10 @@ test('WorkspaceTabStore joins Parent + multi-Child frames, auto-collapses when s
     assert.equal(store.activeGroup()?.moduleKey, 'shipments');
 });
 
-test('WorkspaceTabStore hibernates LRU clean inactive frames beyond maxLiveFrames while protecting dirty and active frames', () => {
+test('WorkspaceSessionStore hibernates LRU clean inactive frames beyond maxLiveFrames while protecting dirty and active frames', () => {
     let now = 5000;
-    const store = new WorkspaceTabStore({
-        maxTabs: 12,
+    const store = new WorkspaceSessionStore({
+        maxSessions: 12,
         maxLiveFrames: 4,
         staleAfterMs: 120_000,
         now: () => now,
@@ -477,10 +487,10 @@ test('WorkspaceTabStore hibernates LRU clean inactive frames beyond maxLiveFrame
     assert.equal(store.liveFrameCount(), 4);
 });
 
-test('WorkspaceTabStore blocks opening past maxTabs only if all eviction candidates are dirty', () => {
+test('WorkspaceSessionStore blocks opening past maxSessions only if all eviction candidates are dirty', () => {
     let now = 9000;
-    const store = new WorkspaceTabStore({
-        maxTabs: 3,
+    const store = new WorkspaceSessionStore({
+        maxSessions: 3,
         maxLiveFrames: 3,
         now: () => now,
         catalog: SAMPLE_CATALOG,
@@ -503,10 +513,10 @@ test('WorkspaceTabStore blocks opening past maxTabs only if all eviction candida
     assert.equal(store.dirtyFramesForClose('all').length, 3);
 });
 
-test('WorkspaceTabStore tracks stale invalidation on mutations and TTL without auto-reloading dirty frames', () => {
+test('WorkspaceSessionStore tracks stale invalidation on mutations and TTL without auto-reloading dirty frames', () => {
     let now = 10_000;
-    const store = new WorkspaceTabStore({
-        maxTabs: 12,
+    const store = new WorkspaceSessionStore({
+        maxSessions: 12,
         maxLiveFrames: 6,
         staleAfterMs: 120_000,
         now: () => now,
@@ -537,72 +547,183 @@ test('WorkspaceTabStore tracks stale invalidation on mutations and TTL without a
     assert.equal(store.getFrame(d.frame.frameId).stale, true);
 });
 
-test('workspace-shell.css enforces hover/focus-visible close icon and smooth non-bouncy tab & group motion', () => {
+test('workspace-shell.css enforces connected card-tabs (non-ghost), hover/focus-visible close icon, stage loader, and smooth session motion', () => {
     const testDir = dirname(fileURLToPath(import.meta.url));
     const repoRoot = resolve(testDir, '../..');
     const css = readFileSync(resolve(repoRoot, 'resources/css/workspace-shell.css'), 'utf8');
+    const appCss = readFileSync(resolve(repoRoot, 'resources/css/app.css'), 'utf8');
 
     assert.equal(css.includes('--ui-motion-workspace: var(--ui-motion-sidebar, 280ms);'), true);
-    assert.equal(css.includes('--workspace-tab-min-width: 7rem;'), true);
-    assert.equal(css.includes('--workspace-tab-stacked-min-width: 8.5rem;'), true);
-    assert.equal(css.includes('--workspace-tab-cap: var(--workspace-tab-max-width);'), true);
-    assert.equal(css.includes('--ui-motion-workspace-expand: 320ms;'), true);
-    assert.equal(css.includes('--ui-motion-workspace-collapse: 260ms;'), true);
+    assert.equal(css.includes('--workspace-session-min-width: 7.25rem;'), true);
+    assert.equal(css.includes('--workspace-session-stacked-min-width: 8.75rem;'), true);
+    assert.equal(css.includes('--workspace-session-cap: var(--workspace-session-max-width);'), true);
+    assert.equal(css.includes('--ui-motion-workspace-expand: 400ms;'), true);
+    assert.equal(css.includes('--ui-motion-workspace-collapse: 340ms;'), true);
     assert.equal(css.includes('--ui-easing-workspace:'), true);
-    assert.equal(css.includes('.workspace-tab-group.is-entering'), true);
-    assert.equal(css.includes('.workspace-tab-group.is-morphing'), true);
-    assert.equal(css.includes('.workspace-tab-group.is-expanding-group'), true);
-    assert.equal(css.includes('.workspace-tab-group.is-collapsing-group'), true);
-    assert.equal(css.includes('.workspace-tab.is-morph-pill'), true);
-    assert.equal(css.includes('.workspace-tab__morph-overlay'), true);
-    assert.equal(css.includes('.workspace-tab-group__lip-ghost'), true);
-    assert.equal(css.includes('.workspace-tab-group__collapse-tail'), true);
-    assert.equal(css.includes('.workspace-tab-group--ghost.is-closing'), true);
-    assert.equal(css.includes('.workspace-tab--ghost.is-closing'), true);
-    assert.equal(css.includes('.workspace-tab.is-revealing'), true);
+    assert.equal(css.includes('.workspace-session-group.is-entering'), true);
+    assert.equal(css.includes('.workspace-session-group.is-morphing'), true);
+    assert.equal(css.includes('.workspace-session-group.is-expanding-group'), true);
+    assert.equal(css.includes('.workspace-session-group.is-collapsing-group'), true);
+    assert.equal(css.includes('.workspace-session.is-morph-pill'), true);
+    assert.equal(css.includes('.workspace-session__morph-overlay'), true);
+    assert.equal(css.includes('.workspace-session-group__collapse-tail'), true);
+    assert.equal(css.includes('.workspace-session-group--ghost.is-closing'), true);
+    assert.equal(css.includes('.workspace-session--ghost.is-closing'), true);
+    assert.equal(css.includes('.workspace-session.is-revealing'), true);
     assert.equal(css.includes('workspace-tab-enter'), false, 'Legacy vertical tab bounce keyframe must stay removed');
     assert.equal(css.includes('workspace-pill-enter'), false, 'Legacy pill slide keyframe must stay removed');
     assert.equal(css.includes('translateY(-1px)'), false, 'Stack pseudo-tab hover lift bounce must stay removed');
-    assert.equal(css.includes('scale(0.9'), false, 'Scale press bounce on tabbar controls must stay removed');
+    assert.equal(css.includes('scale(0.9'), false, 'Scale press bounce on sessionbar controls must stay removed');
     assert.equal(css.includes('scaleX(0.35)'), false, 'ScaleX underline micro-pop must stay removed');
     assert.equal(css.includes('transition: all'), false, 'Never use transition: all on workspace controls');
-    assert.equal(css.includes('.workspace-tab:hover > .workspace-tab__close'), true);
-    assert.equal(css.includes('.workspace-tab:has(:focus-visible) > .workspace-tab__close'), true);
-    assert.equal(css.includes('.workspace-tab:not(.workspace-tab--shortcuts):not(.workspace-tab--stacked)'), true);
-    assert.equal(css.includes('var(--workspace-tab-natural-width'), true);
+    assert.equal(css.includes('.workspace-session:hover > .workspace-session__close'), true);
+    assert.equal(css.includes('.workspace-session:has(:focus-visible) > .workspace-session__close'), true);
+    assert.equal(css.includes('.workspace-session:not(.workspace-session--shortcuts):not(.workspace-session--stacked)'), true);
+    assert.equal(css.includes('var(--workspace-session-natural-width'), true);
     assert.equal(css.includes('@media (hover: none)'), true);
     assert.equal(css.includes('transition: none !important'), true);
-    const groupRuleMatch = css.match(/\.workspace-tab-group\s*\{[^}]*\}/);
-    assert.ok(groupRuleMatch && !groupRuleMatch[0].includes('max-width: 100%'), '.workspace-tab-group must not clamp expanded width via max-width: 100%');
-    const coarseMatch = css.match(/@media\s*\(hover:\s*none\)\s*\{[\s\S]*?\n\}/);
-    assert.ok(coarseMatch && coarseMatch[0].includes(':has(:focus-visible) > .workspace-tab__close'), '@media (hover: none) must keep keyboard :focus-visible close targets visible');
-    assert.equal(css.includes('.workspace-tab-group--shortcuts'), true);
-    const shortcutsRuleMatch = css.match(/\.workspace-tab--shortcuts,\s*[\s\S]*?\{[^}]*\}/);
-    assert.ok(shortcutsRuleMatch && shortcutsRuleMatch[0].includes('border: 0;'), 'Shortcuts tab must have no top/left/right box border, leaving only underline');
 
-    const tabbarBlade = readFileSync(resolve(repoRoot, 'resources/views/partials/workspace-tab-bar.blade.php'), 'utf8');
+    // Connected card-tabs non-ghost contract for workspace sessions + borderless bottom-underline contract for Shortcuts
+    const sessionRuleMatch = css.match(/^\.workspace-session\s*\{[^}]*\}/m);
+    assert.ok(sessionRuleMatch && !sessionRuleMatch[0].includes('background: transparent'), 'Workspace session card-tabs must not use ghost transparent background');
+    assert.ok(sessionRuleMatch && !sessionRuleMatch[0].includes('border: 1px solid transparent'), 'Workspace session card-tabs must not use ghost transparent border');
+    const shortcutsBorderlessMatch = css.match(/\.workspace-session--shortcuts,\s*[\s\S]*?\.workspace-session--shortcuts\.is-active\s*\{[^}]*\}/);
     assert.ok(
-        tabbarBlade.indexOf('id="workspace-tab-group-shortcuts"') < tabbarBlade.indexOf('data-workspace-tablist'),
-        'Shortcuts must sit fixed before the scrollable tablist',
+        shortcutsBorderlessMatch
+            && shortcutsBorderlessMatch[0].includes('border: 0;')
+            && shortcutsBorderlessMatch[0].includes('background: transparent;'),
+        'Shortcuts must stay borderless with transparent background across idle, hover, and active states',
     );
-    assert.equal(tabbarBlade.includes('aria-owns="workspace-tab-group-shortcuts"'), true);
-    assert.equal(tabbarBlade.includes('data-workspace-live-region'), true);
+    const activeIndicatorMatch = css.match(/\.workspace-session::after\s*\{[^}]*\}/);
+    assert.ok(
+        activeIndicatorMatch
+            && activeIndicatorMatch[0].includes('bottom: 0;')
+            && activeIndicatorMatch[0].includes('left: 0.75rem;')
+            && activeIndicatorMatch[0].includes('right: 0.75rem;')
+            && !activeIndicatorMatch[0].includes('left: 0;')
+            && !activeIndicatorMatch[0].includes('right: 0;')
+            && !activeIndicatorMatch[0].includes('top: 0;'),
+        'Workspace sessions and Shortcuts must use an inset bottom underline indicator instead of a full-width or top line',
+    );
+    assert.equal(css.includes('.workspace-sessionbar__sidebar-toggle'), true);
+    assert.equal(css.includes('--ui-session-radius: 8px;'), true, 'Workspace session cards must expose 8px corner radius token');
+    assert.ok(sessionRuleMatch && sessionRuleMatch[0].includes('var(--ui-session-radius, 8px)'), 'Workspace session card-tabs must use 8px top corner radius');
+    assert.equal(css.includes('.workspace-sessionbar::after'), true, 'Sessionbar must provide continuous baseline under connected card-tabs');
+
+    // Stage-scoped slow loader contract & prev/next record-nav design contract
+    assert.equal(appCss.includes('.adasi-loader-overlay--stage'), true);
+    assert.equal(appCss.includes('.ui-record-nav__counter'), true);
+
+    const groupRuleMatch = css.match(/\.workspace-session-group\s*\{[^}]*\}/);
+    assert.ok(groupRuleMatch && !groupRuleMatch[0].includes('max-width: 100%'), '.workspace-session-group must not clamp expanded width via max-width: 100%');
+    const coarseMatch = css.match(/@media\s*\(hover:\s*none\)\s*\{[\s\S]*?\n\}/);
+    assert.ok(coarseMatch && coarseMatch[0].includes(':has(:focus-visible) > .workspace-session__close'), '@media (hover: none) must keep keyboard :focus-visible close targets visible');
+    assert.equal(css.includes('.workspace-session-group--shortcuts'), true);
+
+    const sessionBarBlade = readFileSync(resolve(repoRoot, 'resources/views/partials/workspace-session-bar.blade.php'), 'utf8');
+    assert.ok(
+        sessionBarBlade.indexOf('data-workspace-sidebar-toggle') !== -1
+            && sessionBarBlade.indexOf('data-workspace-sidebar-toggle') < sessionBarBlade.indexOf('id="workspace-session-group-shortcuts"'),
+        'Sidebar toggle button must sit directly beside Shortcuts on the left of the sessionbar',
+    );
+    assert.ok(
+        sessionBarBlade.indexOf('id="workspace-session-group-shortcuts"') < sessionBarBlade.indexOf('data-workspace-sessionlist'),
+        'Shortcuts must sit fixed before the scrollable sessionlist',
+    );
+    assert.equal(sessionBarBlade.includes('aria-owns="workspace-session-group-shortcuts"'), true);
+    assert.equal(sessionBarBlade.includes('data-workspace-live-region'), true);
     assert.equal(css.includes('.workspace-panel.is-leaving'), true);
-    assert.equal(css.includes('.workspace-tab[data-queued="true"]'), true);
-    assert.equal(css.includes('.workspace-tab-menu.is-closing'), true);
+    assert.equal(css.includes('.workspace-session[data-queued="true"]'), true);
+    assert.equal(css.includes('.workspace-session-menu.is-closing'), true);
 
     const enNav = readFileSync(resolve(repoRoot, 'lang/en/navigation.php'), 'utf8');
     const idNav = readFileSync(resolve(repoRoot, 'lang/id/navigation.php'), 'utf8');
-    for (const key of ['status_queued', 'queued_announcement', 'ready_announcement']) {
+    for (const key of [
+        'sessions_label',
+        'refresh_session',
+        'close_session',
+        'status_queued',
+        'queued_announcement',
+        'ready_announcement',
+        'favorites',
+        'bookmarks',
+        'add_favorite',
+        'remove_favorite',
+        'add_bookmark',
+        'remove_bookmark',
+        'remove_frequent',
+        'minimize_pane',
+        'expand_pane',
+        'minimized_panels',
+        'resize_shortcuts_panes',
+        'resize_pane_pair',
+    ]) {
         assert.equal(enNav.includes(`'${key}'`), true, `Missing ${key} in lang/en/navigation.php`);
         assert.equal(idNav.includes(`'${key}'`), true, `Missing ${key} in lang/id/navigation.php`);
     }
+
+    // Infor LN-style flat 3-pane Shortcuts workspace contracts with dual splitters & anti-overlap rules
+    const shellBlade = readFileSync(resolve(repoRoot, 'resources/views/layouts/workspace-shell.blade.php'), 'utf8');
+    assert.equal(shellBlade.includes('data-shortcuts-board'), true);
+    assert.equal(shellBlade.includes('workspace-shortcuts-board__left'), false, 'Sub-wrapper __left must remain removed to avoid flex spillover overlap');
+    assert.equal(shellBlade.includes('data-shortcuts-pane='), true);
+    assert.equal(shellBlade.includes('data-shortcuts-pane-toggle='), true);
+    assert.equal(shellBlade.includes('data-shortcuts-empty='), false, 'Empty shortcuts panels must stay blank without placeholder text');
+    for (const pane of ['favorites', 'bookmarks', 'frequent']) {
+        assert.equal(shellBlade.includes(`'${pane}'`), true, `Missing pane config '${pane}' in workspace-shell.blade.php`);
+    }
+    assert.equal(shellBlade.includes('favorites-bookmarks'), true);
+    assert.equal(shellBlade.includes('bookmarks-frequent'), true);
+    assert.equal(shellBlade.includes('data-shortcuts-splitter'), true);
+    assert.equal(shellBlade.includes('role="separator"'), true);
+    assert.equal(sessionBarBlade.includes('data-workspace-icon="star"'), true);
+    assert.equal(sessionBarBlade.includes('data-workspace-icon="bookmark"'), true);
+    assert.equal(css.includes('.workspace-shortcuts-board__left'), false, 'Legacy __left CSS must stay removed');
+    const shortcutsPaneMatch = css.match(/^\.workspace-shortcuts-pane\s*\{[^}]*\}/m);
+    assert.ok(
+        shortcutsPaneMatch
+            && shortcutsPaneMatch[0].includes('min-width: 0;')
+            && shortcutsPaneMatch[0].includes('overflow: hidden;'),
+        'Open shortcuts panes must use min-width: 0 and overflow: hidden so narrow flex tracks never overlap',
+    );
+    assert.equal(shellBlade.includes('data-shortcuts-dock'), true);
+    assert.equal(shellBlade.includes('data-shortcuts-pane-restore='), true);
+    assert.equal(css.includes('writing-mode: vertical-rl;'), false, 'Minimized shortcuts panes must dock at bottom instead of vertical rails');
+    const minimizedPaneMatch = css.match(/\.workspace-shortcuts-pane\.is-minimized\s*\{[^}]*\}/);
+    assert.ok(minimizedPaneMatch && minimizedPaneMatch[0].includes('display: none;'), 'Minimized shortcuts panes must leave horizontal flex layout');
+    const paneHoverMatch = css.match(/\.workspace-shortcuts-pane:hover,\s*\.workspace-shortcuts-pane:focus-within\s*\{[^}]*\}/);
+    assert.ok(
+        paneHoverMatch
+            && paneHoverMatch[0].includes('var(--md-outline-strong)')
+            && paneHoverMatch[0].includes('var(--ui-shadow-2)'),
+        'Hovered or focused shortcuts pane must elevate border and shadow',
+    );
+    assert.equal(css.includes('.workspace-shortcuts-dock'), true);
+    assert.equal(css.includes('.workspace-shortcuts-dock__item'), true);
+    const splitterLineMatch = css.match(/\.workspace-shortcuts-splitter__line\s*\{[^}]*\}/);
+    assert.ok(splitterLineMatch && splitterLineMatch[0].includes('opacity: 0;'), 'Shortcuts splitter vertical line must stay hidden until hover or drag');
+    const splitterGripMatch = css.match(/\.workspace-shortcuts-splitter__grip\s*\{[^}]*\}/);
+    assert.ok(
+        splitterGripMatch
+            && splitterGripMatch[0].includes('opacity: 0;')
+            && splitterGripMatch[0].includes('top: var(--splitter-grip-y, 50%);')
+            && splitterGripMatch[0].includes('background: var(--md-primary);'),
+        'Shortcuts splitter grip must render cursor-tracking primary blue pill hidden at rest',
+    );
+    const shortcutItemMainMatch = css.match(/\.workspace-shortcuts__item-main\s*\{[^}]*\}/);
+    assert.ok(
+        shortcutItemMainMatch
+            && shortcutItemMainMatch[0].includes('flex: 1 1 auto;')
+            && shortcutItemMainMatch[0].includes('overflow: hidden;'),
+        'Shortcut item main track must clamp overflow so narrow rows never collide with open badges',
+    );
+    assert.equal(css.includes('@container shortcuts-body (max-width: 11.5rem)'), true);
 });
 
-test('WorkspaceTabStore stageOnly keeps current tab active until committed and cleans up on discard', () => {
+test('WorkspaceSessionStore stageOnly keeps current session active until committed and cleans up on discard', () => {
     let now = 20_000;
-    const store = new WorkspaceTabStore({
-        maxTabs: 12,
+    const store = new WorkspaceSessionStore({
+        maxSessions: 12,
         maxLiveFrames: 4,
         staleAfterMs: 120_000,
         now: () => now,
@@ -702,6 +823,7 @@ function createFakeTimerHarness() {
     return {
         now: () => nowMs,
         timers: {
+            now: () => nowMs,
             setTimeout(fn, ms) {
                 const id = ++seq;
                 tasks.set(id, { fn, at: nowMs + Math.max(0, Number(ms) || 0) });
@@ -740,10 +862,10 @@ function createFakeTimerHarness() {
     };
 }
 
-test('WorkspaceTabStore showTabWhileStaged queues tabs visibly in click order while keeping active panel undisturbed', () => {
+test('WorkspaceSessionStore hides staged sessions until render completes while still protecting queued capacity', () => {
     let now = 30_000;
-    const store = new WorkspaceTabStore({
-        maxTabs: 5,
+    const store = new WorkspaceSessionStore({
+        maxSessions: 5,
         maxLiveFrames: 3,
         staleAfterMs: 120_000,
         now: () => now,
@@ -763,7 +885,7 @@ test('WorkspaceTabStore showTabWhileStaged queues tabs visibly in click order wh
         label: 'Purchase Order',
         url: `${ORIGIN}${PREFIX}/purchasing/purchase-orders`,
         stageOnly: true,
-        showTabWhileStaged: true,
+        showSessionWhileStaged: false,
     });
     now += 10;
     const po2 = store.openWorkspace({
@@ -771,7 +893,7 @@ test('WorkspaceTabStore showTabWhileStaged queues tabs visibly in click order wh
         label: 'Purchase Order',
         url: `${ORIGIN}${PREFIX}/purchasing/purchase-orders`,
         stageOnly: true,
-        showTabWhileStaged: true,
+        showSessionWhileStaged: false,
     });
     now += 10;
     const ship = store.openWorkspace({
@@ -779,7 +901,7 @@ test('WorkspaceTabStore showTabWhileStaged queues tabs visibly in click order wh
         label: 'Shipments & Logistics',
         url: `${ORIGIN}${PREFIX}/purchasing/shipments`,
         stageOnly: true,
-        showTabWhileStaged: true,
+        showSessionWhileStaged: false,
     });
     now += 10;
     const pr = store.openWorkspace({
@@ -787,49 +909,59 @@ test('WorkspaceTabStore showTabWhileStaged queues tabs visibly in click order wh
         label: 'Purchase Requisition',
         url: `${ORIGIN}${PREFIX}/purchasing/requisitions`,
         stageOnly: true,
-        showTabWhileStaged: true,
+        showSessionWhileStaged: false,
     });
 
+    // While rendering on server, Dashboard stays active and staged sessions are omitted from the session strip
     assert.equal(store.activeFrame().frameId, dash.frame.frameId);
-    const groups = store.displayGroups();
-    assert.deepEqual(
-        groups.map((g) => g.groupId),
-        [dash.group.groupId, po1.group.groupId, po2.group.groupId, ship.group.groupId, pr.group.groupId],
-    );
-    assert.equal(groups[1].duplicateIndex, 1);
-    assert.equal(groups[2].duplicateIndex, 2);
-    assert.equal(groups[1].queued, true);
+    assert.deepEqual(store.displayGroups().map((g) => g.groupId), [dash.group.groupId]);
+    assert.equal(store.totalFrames(), 5);
 
-    // Next open hits maxTabs=5 while all non-active tabs are actively queued -> blocks instead of cannibalizing queued slots
+    // Next open hits maxSessions=5 while all non-active frames are staged -> blocks instead of evicting staged items
     const overflow = store.openWorkspace({
         moduleKey: 'claims',
         label: 'Material Claims',
         url: `${ORIGIN}${PREFIX}/purchasing/claims`,
         stageOnly: true,
-        showTabWhileStaged: true,
+        showSessionWhileStaged: false,
     });
     assert.equal(overflow.blocked, true);
 
-    // Background completion does not steal active focus from Dashboard
+    // Committing each finished render reveals its session in the bar simultaneously
     now += 200;
-    const bgCommit = store.commitStagedFrame(po1.frame.frameId, { activate: false });
-    assert.equal(bgCommit.ok, true);
-    assert.equal(bgCommit.activated, false);
-    assert.equal(store.activeFrame().frameId, dash.frame.frameId);
-    assert.equal(store.getFrame(po1.frame.frameId).staged, false);
-    assert.equal(store.getFrame(po1.frame.frameId).queued, false);
+    const commit1 = store.commitStagedFrame(po1.frame.frameId, { activate: true });
+    assert.equal(commit1.ok, true);
+    assert.equal(commit1.activated, true);
+    assert.equal(store.activeFrame().frameId, po1.frame.frameId);
+    assert.deepEqual(store.displayGroups().map((g) => g.groupId), [dash.group.groupId, po1.group.groupId]);
 
-    // Final target completion activates cleanly
-    now += 200;
-    const finalCommit = store.commitStagedFrame(pr.frame.frameId, { activate: true });
-    assert.equal(finalCommit.ok, true);
-    assert.equal(finalCommit.activated, true);
-    assert.equal(store.activeFrame().frameId, pr.frame.frameId);
+    now += 220;
+    const commit2 = store.commitStagedFrame(po2.frame.frameId, { activate: true });
+    assert.equal(commit2.ok, true);
+    assert.equal(store.activeFrame().frameId, po2.frame.frameId);
+    const groupsAfter2 = store.displayGroups();
+    assert.equal(groupsAfter2[1].duplicateIndex, 1);
+    assert.equal(groupsAfter2[2].duplicateIndex, 2);
+
+    // Child stagedNew hides child pill until ready while keeping parent visible
+    now += 100;
+    const child = store.openChildFrame({
+        sourceFrameId: po2.frame.frameId,
+        label: 'PO-001',
+        url: `${ORIGIN}${PREFIX}/purchasing/purchase-orders/PO001`,
+        stageOnly: true,
+        showSessionWhileStaged: false,
+    });
+    assert.equal(child.created, true);
+    assert.equal(store.displayGroups().find((g) => g.groupId === po2.group.groupId).frames.length, 1);
+    store.commitStagedFrame(child.frame.frameId, { activate: true });
+    assert.equal(store.displayGroups().find((g) => g.groupId === po2.group.groupId).frames.length, 2);
 });
 
-test('WorkspaceNavQueue runs bounded parallel FIFO (max 2), allows duplicate clicks in order, and manages 2.5s loader', () => {
+test('WorkspaceNavQueue steps sequentially in strict FIFO click order with 220ms cadence and manages stage slow loader', () => {
     const harness = createFakeTimerHarness();
     const started = [];
+    const committed = [];
     const timeouts = [];
     const dataTimeouts = [];
     let loaderShownCount = 0;
@@ -838,10 +970,12 @@ test('WorkspaceNavQueue runs bounded parallel FIFO (max 2), allows duplicate cli
     const queue = new WorkspaceNavQueue({
         maxConcurrent: 2,
         slowThresholdMs: 2500,
+        stepIntervalMs: 220,
         slotTimeoutMs: 15000,
         dataReadyTimeoutMs: 12000,
         timers: harness.timers,
         onStartSlot: (entry) => started.push(entry.frameId),
+        onCommitReady: (entry, outcome) => committed.push({ frameId: entry.frameId, activate: outcome.activate, at: harness.now() }),
         onSlowThreshold: () => { loaderShownCount += 1; },
         onHideLoader: () => { loaderHiddenCount += 1; },
         onSlotTimeout: (entry) => timeouts.push(entry.frameId),
@@ -858,43 +992,59 @@ test('WorkspaceNavQueue runs bounded parallel FIFO (max 2), allows duplicate cli
     assert.deepEqual(started, ['po1', 'po2']);
     assert.equal(queue.activeCount(), 2);
     assert.equal(queue.queuedCount(), 2);
-    assert.equal(queue.autoFocusFrameId(), 'pr');
+    assert.deepEqual(queue.commitOrder(), ['po1', 'po2', 'ship', 'pr']);
     assert.equal(queue.isTriggerPending(poAnchor), true);
 
-    // Out-of-order completion: po2 finishes HTML without waiting for DataTables
+    // Out-of-order completion: po2 finishes BEFORE po1 -> frees slot for ship, but holds po2 behind po1 in FIFO commit order!
     harness.advanceBy(800);
     const resPo2 = queue.complete('po2');
     assert.equal(resPo2.handled, true);
-    assert.equal(resPo2.activate, false);
+    assert.equal(resPo2.deferred, true);
+    assert.deepEqual(committed, [], 'po2 must wait for older po1 before appearing');
     assert.deepEqual(started, ['po1', 'po2', 'ship']);
     assert.equal(queue.isTriggerPending(poAnchor), true);
 
-    // po1 finishes HTML and enters waiting-data (DataTables AJAX still running) -> still holds slot 1!
+    // po1 finishes HTML and enters waiting-data (DataTables AJAX still running)
     harness.advanceBy(200);
     assert.equal(queue.markDocumentLoaded('po1', { awaitingData: true }), true);
     assert.equal(queue.activeCount(), 2);
     assert.equal(queue.queuedCount(), 1);
 
-    // Crosses shared 2500ms total-wait threshold (800 + 200 + 1600 = 2600ms) -> AdasiLoader appears
+    // Crosses 2500ms threshold -> stage loader appears
     harness.advanceBy(1600);
     assert.equal(loaderShownCount, 1);
     assert.equal(queue.isLoaderShown(), true);
 
-    // po1 DataTables finishes -> frees slot for pr, trigger becomes idle
+    // po1 completes at t=2600ms -> hides loader, reveals & activates po1 IMMEDIATELY; schedules 220ms step timer before po2!
     const resPo1 = queue.complete('po1');
-    assert.equal(resPo1.activate, false);
-    assert.equal(queue.isTriggerPending(poAnchor), false);
-    assert.deepEqual(started, ['po1', 'po2', 'ship', 'pr']);
-    assert.equal(queue.isLoaderShown(), true);
-
-    // Shipments completes silently, pr (latest target) completes and hides AdasiLoader immediately
-    const resShip = queue.complete('ship');
-    assert.equal(resShip.activate, false);
-    const resPr = queue.complete('pr');
-    assert.equal(resPr.activate, true);
+    assert.equal(resPo1.activate, true);
     assert.equal(loaderHiddenCount, 1);
     assert.equal(queue.isLoaderShown(), false);
-    assert.equal(queue.autoFocusFrameId(), null);
+    assert.deepEqual(started, ['po1', 'po2', 'ship', 'pr']);
+    assert.deepEqual(committed, [{ frameId: 'po1', activate: true, at: 2600 }]);
+
+    // After 219ms po2 is still stepping; at +220ms (t=2820ms) po2 steps in and activates cleanly
+    harness.advanceBy(219);
+    assert.equal(committed.length, 1);
+    harness.advanceBy(1);
+    assert.deepEqual(committed, [
+        { frameId: 'po1', activate: true, at: 2600 },
+        { frameId: 'po2', activate: true, at: 2820 },
+    ]);
+
+    // Ship finishes at 2900ms (80ms after po2) -> waits remaining 140ms, then activates at 3040ms; pr waits 220ms after ship -> 3260ms
+    harness.advanceBy(80);
+    queue.complete('ship');
+    queue.complete('pr');
+    assert.equal(committed.length, 2);
+    harness.advanceBy(140);
+    assert.equal(committed.at(-1).frameId, 'ship');
+    assert.equal(committed.at(-1).activate, true);
+    harness.advanceBy(220);
+    assert.equal(committed.at(-1).frameId, 'pr');
+    assert.equal(committed.at(-1).activate, true);
+    assert.equal(queue.pendingCommitsCount(), 0);
+    assert.equal(queue.isTriggerPending(poAnchor), false);
 
     // Manual prioritize & clearAutoFocus behavior
     queue.enqueue({ frameId: 'm1', groupId: 'gm1', label: 'M1' });
@@ -902,22 +1052,43 @@ test('WorkspaceNavQueue runs bounded parallel FIFO (max 2), allows duplicate cli
     queue.enqueue({ frameId: 'm3', groupId: 'gm3', label: 'M3' });
     queue.enqueue({ frameId: 'm4', groupId: 'gm4', label: 'M4' });
     assert.equal(queue.prioritize('m3'), true);
-    assert.equal(queue.autoFocusFrameId(), 'm3');
+    assert.equal(queue.commitOrder()[0], 'm3');
     queue.complete('m1');
     assert.equal(started.at(-1), 'm3', 'Prioritized item dequeues before older queued m4');
 
-    // Manual click to an already-ready tab clears auto-focus and hides loader right away
+    // Slow loader after 2500ms -> manual tab click calls clearAutoFocus -> hides loader & prevents stealing focus later
     harness.advanceBy(2600);
     assert.equal(loaderShownCount, 2);
     queue.clearAutoFocus();
     assert.equal(loaderHiddenCount, 2);
-    assert.equal(queue.complete('m3').activate, false);
+    const prevCommitLen = committed.length;
+    queue.complete('m3');
+    assert.equal(committed.length, prevCommitLen + 1);
+    assert.equal(committed.at(-1).activate, false, 'Cleared autoFocus keeps new session ready in bar without stealing user focus');
     assert.deepEqual(timeouts, []);
 
-    // Verify 12s dataReadyTimeout fires on stalled waiting-data entry
+    // Verify 12s dataReadyTimeout fires cleanly on stalled waiting-data entry
     queue.markDocumentLoaded('m2', { awaitingData: true });
     harness.advanceBy(12100);
     assert.deepEqual(dataTimeouts, ['m2']);
+
+    // Verify cancelling/failing stalled head immediately unblocks ready entry behind it
+    const failCommitted = [];
+    const failQueue = new WorkspaceNavQueue({
+        maxConcurrent: 2,
+        slowThresholdMs: 2500,
+        stepIntervalMs: 220,
+        timers: harness.timers,
+        onCommitReady: (entry) => failCommitted.push(entry.frameId),
+    });
+    failQueue.enqueue({ frameId: 'x1', groupId: 'gx1', label: 'X1' });
+    failQueue.enqueue({ frameId: 'x2', groupId: 'gx2', label: 'X2' });
+    harness.advanceBy(300);
+    failQueue.complete('x2');
+    assert.deepEqual(failCommitted, [], 'x2 waits behind stalled x1');
+    failQueue.cancel('x1', 'closed');
+    harness.advanceBy(300);
+    assert.deepEqual(failCommitted, ['x2'], 'Cancelling stalled head unblocks queued follower');
 });
 
 test('createEmbedReadinessController waits for serverSide DataTables draw.dt and boot GET fetches before signaling ready', async () => {
@@ -984,4 +1155,202 @@ test('createEmbedReadinessController waits for serverSide DataTables draw.dt and
     errCtrl.onTableProcessing(brokenTable, false);
     errHarness.advanceBy(30);
     assert.equal(errCtrl.isReady, true);
+});
+
+test('workspace-shell.css group morph uses dedicated easing, asymmetric 400/340ms tokens, and entering groups follow the expand duration', () => {
+    const testDir = dirname(fileURLToPath(import.meta.url));
+    const css = readFileSync(resolve(testDir, '../../resources/css/workspace-shell.css'), 'utf8');
+
+    assert.equal(css.includes('--ui-easing-workspace-morph: cubic-bezier(0.4, 0, 0.2, 1);'), true);
+    assert.equal(css.includes('--ui-motion-workspace-reveal: 240ms;'), true);
+    assert.equal(css.includes('--ui-motion-workspace-reveal-delay: 110ms;'), true);
+    assert.match(
+        css,
+        /\.workspace-session-group\.is-entering,\s*\.workspace-session-group\.is-expanding-group\s*\{\s*--workspace-group-motion-duration:\s*var\(--ui-motion-workspace-expand/,
+    );
+
+    const groupRule = css.match(/\.workspace-session-group\.is-entering,\s*\.workspace-session-group\.is-morphing,\s*\.workspace-session-group--ghost\.is-closing\s*\{[^}]*\}/);
+    assert.ok(groupRule, 'group morph rule must exist');
+    assert.equal(groupRule[0].includes('var(--ui-easing-workspace)'), false, 'group width morph must not use the front-loaded hover easing');
+    assert.equal(groupRule[0].includes('var(--ui-easing-workspace-morph)'), true);
+});
+
+test('resolveTransitionSettleMs derives the settle timer from computed transition durations and delays', () => {
+    assert.equal(resolveTransitionSettleMs('0.4s', '0s'), 480);
+    assert.equal(resolveTransitionSettleMs('0.4s, 240ms', '0s, 110ms'), 480);
+    assert.equal(resolveTransitionSettleMs('0.24s, 0.4s', '0.11s, 0s', { bufferMs: 0 }), 400);
+    assert.equal(resolveTransitionSettleMs('0.1s', '0s', { floorMs: 420 }), 420);
+    assert.equal(resolveTransitionSettleMs('', '', { floorMs: 420 }), 420);
+    assert.equal(resolveTransitionSettleMs(undefined, undefined, { floorMs: 300 }), 300);
+    assert.equal(resolveTransitionSettleMs('garbage', '-1s', { floorMs: 0, bufferMs: 0 }), 0);
+});
+
+test('normalizeShortcutsLayout safely migrates legacy splitRatio payload, preserves sliver weights, and deduplicates minimizedOrder', () => {
+    const legacy = normalizeShortcutsLayout({
+        splitRatio: 24,
+        minimized: { favorites: false, bookmarks: true, frequent: false },
+    });
+    assert.deepEqual(legacy.minimized, { favorites: false, bookmarks: true, frequent: false });
+    assert.deepEqual(legacy.minimizedOrder, ['bookmarks']);
+    assert.deepEqual(legacy.weights, DEFAULT_SHORTCUTS_WEIGHTS);
+
+    const ordered = normalizeShortcutsLayout({
+        weights: { favorites: 0.25, bookmarks: 50, frequent: 49.75 },
+        minimized: { favorites: false, bookmarks: true, frequent: true },
+        minimizedOrder: ['frequent', 'favorites', 'frequent', 'unknown', 'bookmarks'],
+    });
+    assert.deepEqual(ordered.minimizedOrder, ['frequent', 'bookmarks']);
+    assert.ok(ordered.weights.favorites >= 0.01 && ordered.weights.favorites < 1);
+});
+
+test('resolveVisibleShortcutsSplitters and resolveShortcutsSplitterPair expose only active horizontal dividers', () => {
+    assert.deepEqual(resolveVisibleShortcutsSplitters({}), ['favorites-bookmarks', 'bookmarks-frequent']);
+    assert.deepEqual(resolveVisibleShortcutsSplitters({ favorites: true }), ['bookmarks-frequent']);
+    assert.deepEqual(resolveVisibleShortcutsSplitters({ bookmarks: true }), ['favorites-bookmarks']);
+    assert.deepEqual(resolveVisibleShortcutsSplitters({ frequent: true }), ['favorites-bookmarks']);
+    assert.deepEqual(resolveVisibleShortcutsSplitters({ bookmarks: true, frequent: true }), []);
+
+    assert.deepEqual(resolveShortcutsSplitterPair('favorites-bookmarks', {}), ['favorites', 'bookmarks']);
+    assert.deepEqual(resolveShortcutsSplitterPair('bookmarks-frequent', {}), ['bookmarks', 'frequent']);
+    assert.equal(resolveShortcutsSplitterPair('favorites-bookmarks', { favorites: true }), null);
+    assert.deepEqual(resolveShortcutsSplitterPair('bookmarks-frequent', { favorites: true }), ['bookmarks', 'frequent']);
+    assert.deepEqual(resolveShortcutsSplitterPair('favorites-bookmarks', { bookmarks: true }), ['favorites', 'frequent']);
+    assert.equal(resolveShortcutsSplitterPair('bookmarks-frequent', { bookmarks: true }), null);
+    assert.deepEqual(resolveShortcutsSplitterPair('favorites-bookmarks', { frequent: true }), ['favorites', 'bookmarks']);
+    assert.equal(resolveShortcutsSplitterPair('bookmarks-frequent', { frequent: true }), null);
+    assert.equal(resolveShortcutsSplitterPair('favorites-bookmarks', { bookmarks: true, frequent: true }), null);
+    assert.equal(resolveShortcutsSplitterPair('bookmarks-frequent', { bookmarks: true, frequent: true }), null);
+});
+
+test('resizeShortcutsPairByDelta isolates width changes to the adjacent pair, enforces 1-3px sliver minimum, and removes minimized panes from flex width', () => {
+    assert.ok(MIN_SHORTCUTS_PANE_WIDTH_PX >= 1 && MIN_SHORTCUTS_PANE_WIDTH_PX <= 3);
+    const boardWidthPx = 1000;
+    const minimized = { favorites: false, bookmarks: false, frequent: false };
+    const startSnap = computeOpenPaneWidthPx(DEFAULT_SHORTCUTS_WEIGHTS, minimized, boardWidthPx);
+
+    // 1. Resize between Favorites & Bookmarks -> Frequently Used must not shift
+    const resize1 = resizeShortcutsPairByDelta({
+        weights: DEFAULT_SHORTCUTS_WEIGHTS,
+        minimized,
+        splitterKey: 'favorites-bookmarks',
+        deltaPx: 90,
+        boardWidthPx,
+    });
+    assert.equal(resize1.changed, true);
+    const snap1 = computeOpenPaneWidthPx(resize1.weights, minimized, boardWidthPx);
+    assert.ok(Math.abs(snap1.widthsPx.frequent - startSnap.widthsPx.frequent) < 0.001, 'Frequently Used width must stay untouched');
+    assert.ok(Math.abs((snap1.widthsPx.favorites - startSnap.widthsPx.favorites) - 90) < 0.01);
+
+    // 2. Extreme drag on Bookmarks <-> Frequently Used clamps at 2px sliver floor and leaves Favorites untouched
+    const resizeExtreme = resizeShortcutsPairByDelta({
+        weights: resize1.weights,
+        minimized,
+        splitterKey: 'bookmarks-frequent',
+        deltaPx: -800,
+        boardWidthPx,
+    });
+    const snap2 = computeOpenPaneWidthPx(resizeExtreme.weights, minimized, boardWidthPx);
+    assert.ok(Math.abs(snap2.widthsPx.favorites - snap1.widthsPx.favorites) < 0.001, 'Favorites width must stay untouched when dragging bookmarks-frequent');
+    assert.ok(snap2.widthsPx.bookmarks >= MIN_SHORTCUTS_PANE_WIDTH_PX - 0.01, 'Bookmarks must respect 2px minimum floor');
+    assert.ok(snap2.widthsPx.bookmarks <= 3, 'Extreme drag must allow squeezing pane down to 1-3 px sliver');
+    assert.ok(snap2.widthsPx.frequent >= MIN_SHORTCUTS_PANE_WIDTH_PX - 0.01, 'Frequently Used must respect 2px minimum floor');
+    const totalUsed = snap2.widthsPx.favorites + snap2.widthsPx.bookmarks + snap2.widthsPx.frequent + (2 * SHORTCUTS_SPLITTER_WIDTH_PX);
+    assert.ok(Math.abs(totalUsed - boardWidthPx) < 0.01, 'Total pane + splitter widths must equal boardWidthPx with zero overlap');
+
+    // 3. Minimized bookmarks dock leaves 0px horizontal reservation and only 1 visible splitter
+    const minBookmarks = { favorites: false, bookmarks: true, frequent: false };
+    const bridged = resizeShortcutsPairByDelta({
+        weights: DEFAULT_SHORTCUTS_WEIGHTS,
+        minimized: minBookmarks,
+        splitterKey: 'favorites-bookmarks',
+        deltaPx: 120,
+        boardWidthPx,
+    });
+    const snapBridged = computeOpenPaneWidthPx(bridged.weights, minBookmarks, boardWidthPx);
+    assert.equal(snapBridged.widthsPx.bookmarks, 0);
+    assert.ok(Math.abs(
+        (snapBridged.widthsPx.favorites + snapBridged.widthsPx.frequent + SHORTCUTS_SPLITTER_WIDTH_PX)
+        - boardWidthPx,
+    ) < 0.01);
+
+    // 4. Shrinking board width from 1400px -> 760px clamps sub-2px weights back to at least 2px per open pane
+    const clampedWeights = clampOpenPaneWeights({
+        weights: { favorites: 0.05, bookmarks: 99, frequent: 0.95 },
+        minimized,
+        boardWidthPx: 760,
+    });
+    const snapNarrow = computeOpenPaneWidthPx(clampedWeights, minimized, 760);
+    assert.ok(snapNarrow.widthsPx.favorites >= MIN_SHORTCUTS_PANE_WIDTH_PX - 0.01);
+    assert.ok(snapNarrow.widthsPx.bookmarks >= MIN_SHORTCUTS_PANE_WIDTH_PX - 0.01);
+    assert.ok(snapNarrow.widthsPx.frequent >= MIN_SHORTCUTS_PANE_WIDTH_PX - 0.01);
+});
+
+test('workspace-shell.js clears stage loading indicator when initialReadyResolve runs or booting on #shortcuts', () => {
+    const testDir = dirname(fileURLToPath(import.meta.url));
+    const shellJs = readFileSync(resolve(testDir, '../../resources/js/workspace-shell.js'), 'utf8');
+
+    const resolveBlock = shellJs.match(/initialReadyResolve\s*=\s*\(\)\s*=>\s*\{[\s\S]*?\n\s*\};/);
+    assert.ok(resolveBlock, 'initialReadyResolve handler must exist');
+    assert.equal(
+        resolveBlock[0].includes('syncStageControls()'),
+        true,
+        'initialReadyResolve must re-sync stage controls so .is-loading clears even when no iframe finalize runs',
+    );
+
+    const shortcutsBoot = shellJs.match(/if\s*\(window\.location\.hash\s*===\s*`#\$\{SHORTCUTS_KEY\}`\)\s*\{[\s\S]*?\n\s*\}\s*else\s*\{/);
+    assert.ok(shortcutsBoot, '#shortcuts boot branch must exist');
+    const resolveIdx = shortcutsBoot[0].indexOf('initialReadyResolve');
+    const notifyIdx = shortcutsBoot[0].indexOf('notifyActiveSurface');
+    assert.ok(resolveIdx !== -1 && notifyIdx !== -1 && resolveIdx < notifyIdx, '#shortcuts boot must resolve initialReady before notifyActiveSurface');
+});
+
+test('workspace-shell.js wires bottom-dock minimize/restore, narrow sliver class, and cursor-tracking splitter grip', () => {
+    const testDir = dirname(fileURLToPath(import.meta.url));
+    const shellJs = readFileSync(resolve(testDir, '../../resources/js/workspace-shell.js'), 'utf8');
+
+    assert.equal(shellJs.includes('[data-shortcuts-dock]'), true);
+    assert.equal(shellJs.includes('data-shortcuts-pane-restore='), true);
+    assert.equal(shellJs.includes("paneEl.classList.toggle('is-sliver', isSliver)"), true);
+    assert.equal(shellJs.includes("'--splitter-grip-y'"), true);
+    assert.equal(shellJs.includes("splitterEl.addEventListener('pointerenter'"), true);
+    assert.equal(shellJs.includes('resolveVisibleShortcutsSplitters(shortcutsLayout.minimized)'), true);
+});
+
+test('workspace and page transitions run ease-in enter and ease-out exit simultaneously over page fade duration', () => {
+    const testDir = dirname(fileURLToPath(import.meta.url));
+    const shellCss = readFileSync(resolve(testDir, '../../resources/css/workspace-shell.css'), 'utf8');
+    const appCss = readFileSync(resolve(testDir, '../../resources/css/app.css'), 'utf8');
+    const shellJs = readFileSync(resolve(testDir, '../../resources/js/workspace-shell.js'), 'utf8');
+
+    assert.equal(appCss.includes('--ui-easing-enter: ease-in;'), true);
+    assert.equal(appCss.includes('--ui-easing-exit: ease-out;'), true);
+
+    const pageFadeRule = appCss.match(/\.ui-page-fade\s*\{[\s\S]*?\}/);
+    assert.ok(pageFadeRule, '.ui-page-fade rule must exist');
+    assert.equal(pageFadeRule[0].includes('var(--ui-easing-enter, ease-in)'), true);
+
+    const stageRule = shellCss.match(/\.content-area\.workspace-stage\s*\{[\s\S]*?\}/);
+    assert.ok(stageRule, '.content-area.workspace-stage rule must exist');
+    assert.equal(stageRule[0].includes('background: var(--md-surface);'), true);
+
+    const activePanelRule = shellCss.match(/\.workspace-panel\.is-active\s*\{[\s\S]*?\}/);
+    assert.ok(activePanelRule, '.workspace-panel.is-active rule must exist');
+    assert.equal(activePanelRule[0].includes('var(--ui-page-fade-duration, 500ms)'), true);
+    assert.equal(activePanelRule[0].includes('var(--ui-easing-enter, ease-in)'), true);
+
+    const leavingPanelRule = shellCss.match(/\.workspace-panel\.is-leaving\s*\{[\s\S]*?\}/);
+    assert.ok(leavingPanelRule, '.workspace-panel.is-leaving rule must exist');
+    assert.equal(leavingPanelRule[0].includes('animation: workspace-panel-leave var(--ui-page-fade-duration, 500ms) var(--ui-easing-exit, ease-out) both;'), true);
+
+    const leaveKeyframes = shellCss.match(/@keyframes workspace-panel-leave\s*\{[\s\S]*?\n\}/);
+    assert.ok(leaveKeyframes, '@keyframes workspace-panel-leave must exist');
+    assert.equal(leaveKeyframes[0].includes('opacity: var(--workspace-leave-opacity, 1);'), true);
+    assert.equal(leaveKeyframes[0].includes('opacity: 0;'), true);
+
+    assert.equal(shellJs.includes("event.animationName === 'workspace-panel-leave'"), true);
+    assert.equal(shellJs.includes("panel.style.removeProperty('--workspace-leave-opacity')"), true);
+    assert.equal(shellJs.includes("panel.setAttribute('aria-hidden', 'true');"), true);
+    assert.equal(shellJs.includes("panel.removeAttribute('aria-hidden');"), true);
+    assert.equal(shellJs.includes('panel.inert = true;'), true);
+    assert.equal(shellJs.includes('panel.inert = false;'), true);
 });

@@ -319,16 +319,16 @@ test('pending GIF delays 2000ms minimum until load fires before fallback timeout
     assert.equal(e.queue.size, 0);
 });
 
-test('slow GIF past mediaFallbackMs swaps to static PNG and anchors 2000ms minimum at timeout', () => {
+test('slow GIF past mediaFallbackMs keeps GIF playing and anchors 2000ms minimum at timeout', () => {
     const e = environment({ mode: 'native-login', parsed: true, minVisible: '2000', mediaComplete: false, mediaFallbackMs: '500' });
     e.advance(499);
     assert.equal(e.media.getAttribute('src'), GIF_SRC);
     assert.equal(e.window.AdasiAuthSplash.state, 'WAITING');
     e.advance(1); // t = 500ms
-    assert.equal(e.media.getAttribute('src'), FALLBACK_SRC);
+    assert.equal(e.media.getAttribute('src'), GIF_SRC);
     assert.equal(e.window.AdasiAuthSplash.state, 'WAITING');
     e.advance(100);
-    e.mediaLoad(384); // Late fallback load must not restart the 2000ms minimum.
+    e.mediaLoad(384); // Late load completion must not restart the 2000ms minimum.
     e.advance(1899);
     assert.equal(e.window.AdasiAuthSplash.state, 'WAITING');
     e.advance(1); // t = 2500ms
@@ -705,51 +705,7 @@ for (const late of [false, true]) test('actual app bridge acknowledges after DOM
     assert.equal(e.window.AdasiAuthSplash.renderReady, true);
 });
 
-test('activateClientPostLoginSplash records client_start in sessionStorage and mounts client overlay', () => {
-    const store = new Map();
-    const epoch = 1_700_000_000_000;
-    const storage = {
-        getItem: key => store.get(key) ?? null,
-        setItem: (key, value) => store.set(key, String(value)),
-        removeItem: key => store.delete(key),
-    };
-    const MockDate = class extends Date {
-        static now() { return epoch; }
-    };
-    const sub = environment({ mode: 'core', minVisible: '600' });
-    sub.document.createElement = tag => sub.node(tag);
-    sub.document.body.dataset = { splashGif: GIF_SRC, splashWordmark: FALLBACK_SRC };
-    sub.window.sessionStorage = storage;
-    sub.window.Date = MockDate;
-    sub.overlay.remove();
-    sub.window.AdasiAuthSplash.activateClientPostLoginSplash('/admin/dashboard');
-    assert.equal(store.get('adasi.auth_splash.client_start'), String(epoch));
-    const mounted = sub.root.querySelector('[data-auth-splash]');
-    assert.ok(mounted);
-    assert.equal(mounted.className, 'auth-splash adasi-client-splash');
-    assert.equal(mounted.getAttribute('data-splash-reason'), 'post-login');
-});
-
-test('releaseWhenReady subtracts sessionStorage client_start elapsed time before booting', () => {
-    const store = new Map();
-    const fakeNow = 1_700_000_000_000;
-    const storage = {
-        getItem: key => store.get(key) ?? null,
-        setItem: (key, value) => store.set(key, String(value)),
-        removeItem: key => store.delete(key),
-    };
-    store.set('adasi.auth_splash.client_start', String(fakeNow - 400));
-    let now = 0;
-    let seq = 0;
-    const queue = new Map();
-    const FakeDate = class extends Date { static now() { return fakeNow; } };
-    const e = environment({ mode: 'core', minVisible: '600' });
-    // Patch a clean vm context via helper-style direct check using real Date offset
-    const e2Source = source;
-    const preWaitStore = new Map([['adasi.auth_splash.client_start', String(Date.now() - 420)]]);
-    assert.ok(e2Source.includes('adasi.auth_splash.client_start'));
-    assert.ok(e2Source.includes('data-auth-splash-wait'));
-    // Using a live vm context that has sessionStorage populated BEFORE boot
+test('extended hardTimeout up to 60000ms is honored and syncs --splash-fade from fadeMs', () => {
     const target = () => ({
         listeners: new Map(),
         addEventListener(type, cb) { if (!this.listeners.has(type)) this.listeners.set(type, new Set()); this.listeners.get(type).add(cb); },
@@ -759,8 +715,11 @@ test('releaseWhenReady subtracts sessionStorage client_start elapsed time before
     const doc = Object.assign(target(), { readyState: 'loading', hidden: false });
     const makeEl = (tag, attrs = {}) => {
         const cls = new Set((attrs.class || '').split(' ').filter(Boolean));
+        const styleVars = {};
         const el = Object.assign(target(), {
-            tagName: tag.toUpperCase(), attributes: { ...attrs }, children: [], dataset: {}, style: { setProperty() {} }, hidden: false, disabled: false, isConnected: true,
+            tagName: tag.toUpperCase(), attributes: { ...attrs }, children: [], dataset: {},
+            style: { setProperty(k, v) { styleVars[k] = v; }, getPropertyValue(k) { return styleVars[k] ?? ''; } },
+            hidden: false, disabled: false, isConnected: true,
             getAttribute(k) { return this.attributes[k] ?? null; },
             hasAttribute(k) { return k in this.attributes; },
             setAttribute(k, v) { this.attributes[k] = String(v); },
@@ -781,7 +740,7 @@ test('releaseWhenReady subtracts sessionStorage client_start elapsed time before
     doc.documentElement = makeEl('html');
     doc.querySelector = s => root.matches(s) ? root : root.querySelector(s);
     doc.querySelectorAll = s => root.querySelectorAll(s);
-    doc.currentScript = { dataset: { hardTimeout: '8000', minVisibleMs: '600', mediaFallbackMs: '500', slowAfter: '2000', cleanupMs: '600', layout: 'app', readiness: 'core' } };
+    doc.currentScript = { dataset: { hardTimeout: '60000', minVisibleMs: '600', mediaFallbackMs: '500', slowAfter: '2000', fadeMs: '500', cleanupMs: '600', layout: 'app', readiness: 'core' } };
     const overlay = root.appendChild(makeEl('div', { 'data-auth-splash': '', class: 'auth-splash' }));
     overlay.dataset = { splashReason: 'post-login' };
     overlay.appendChild(makeEl('div', { class: 'auth-splash__panel', tabindex: '-1' }));
@@ -791,9 +750,12 @@ test('releaseWhenReady subtracts sessionStorage client_start elapsed time before
     media.complete = true; media.naturalWidth = 384; media.naturalHeight = 153; media.currentSrc = GIF_SRC;
     root.appendChild(makeEl('main', { id: 'main-content' }));
     const sentinel = root.appendChild(makeEl('template', { 'data-auth-splash-layout-ready': 'app' })); sentinel.dataset.readiness = 'core';
+
+    let now = 0;
+    let seq = 0;
+    const queue = new Map();
     const win = Object.assign(target(), {
-        document: doc, Date: FakeDate, Element: Object, HTMLElement: Object,
-        sessionStorage: storage,
+        document: doc, Element: Object, HTMLElement: Object,
         setTimeout: (cb, d = 0) => { const id = ++seq; queue.set(id, { cb, at: now + d }); return id; },
         clearTimeout: id => queue.delete(id),
         requestAnimationFrame: cb => win.setTimeout(cb, 16),
@@ -806,9 +768,9 @@ test('releaseWhenReady subtracts sessionStorage client_start elapsed time before
     });
     const ctx = vm.createContext({ window: win, document: doc, console, performance: win.performance, MutationObserver: win.MutationObserver, CustomEvent: win.CustomEvent, HTMLElement: win.HTMLElement });
     vm.runInContext(source, ctx);
-    doc.readyState = 'interactive';
-    doc.dispatchEvent({ type: 'DOMContentLoaded' });
-    win.AdasiAuthSplash.markCoreReady();
+
+    assert.equal(overlay.style.getPropertyValue('--splash-fade'), '500ms');
+
     const advance = ms => {
         const end = now + ms;
         for (;;) {
@@ -818,13 +780,33 @@ test('releaseWhenReady subtracts sessionStorage client_start elapsed time before
         }
         now = end;
     };
-    advance(32); // renderReady reached -> 400ms pre-elapsed + 32ms = 432ms < 600ms
-    assert.equal(win.AdasiAuthSplash.state, 'WAITING');
-    assert.equal(doc.documentElement.getAttribute('data-auth-splash-wait'), '1');
-    advance(167); // total 599ms
-    assert.equal(win.AdasiAuthSplash.state, 'WAITING');
-    advance(1); // total 600ms (with only 200ms after boot instead of full 600ms!)
-    assert.equal(win.AdasiAuthSplash.state, 'RELEASED');
-    assert.equal(store.has('adasi.auth_splash.client_start'), false);
+
+    advance(15000);
+    assert.equal(win.AdasiAuthSplash.state, 'WAITING', 'splash must survive 15s slow preparation when hardTimeout is 60s');
+    doc.readyState = 'interactive';
+    doc.dispatchEvent({ type: 'DOMContentLoaded' });
+    win.AdasiAuthSplash.markCoreReady();
+    advance(32);
+    assert.equal(win.AdasiAuthSplash.state, 'RELEASED', 'splash releases cleanly when core readiness completes after slow load');
     assert.equal(doc.documentElement.getAttribute('data-auth-splash-wait'), null);
+});
+
+test('programmatic focusin during RELEASED does not cut fade early while pointerdown removes immediately', () => {
+    const e = environment();
+    e.parsed(); e.domReady(); e.coreReady(); e.advance(32);
+    assert.equal(e.window.AdasiAuthSplash.state, 'RELEASED');
+    e.document.dispatchEvent({ type: 'focusin', target: e.email });
+    assert.equal(e.window.AdasiAuthSplash.state, 'RELEASED', 'programmatic focusin must allow the ease-out fade to finish');
+    e.document.dispatchEvent({ type: 'pointerdown', target: e.email });
+    assert.equal(e.window.AdasiAuthSplash.state, 'REMOVED');
+});
+
+test('auth-splash.css exits with ease-out and disables transition under reduced motion', () => {
+    const cssPath = new URL('../../resources/css/auth-splash.css', import.meta.url);
+    const css = readFileSync(cssPath, 'utf8');
+    const splashRule = css.match(/\.auth-splash\s*\{[\s\S]*?\}/);
+    assert.ok(splashRule, '.auth-splash rule must exist');
+    assert.equal(splashRule[0].includes('transition-timing-function: ease-out;'), true);
+    assert.equal(css.includes('@media (prefers-reduced-motion: reduce)'), true);
+    assert.equal(css.includes('.auth-splash { transition: none; }'), true);
 });

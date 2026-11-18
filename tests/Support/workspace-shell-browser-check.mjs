@@ -198,7 +198,7 @@ async function until(expression, timeout = 15000, pollMs = 50) {
         if (await evaluate(expression)) return;
         await sleep(pollMs);
     }
-    const diag = await evaluate(`({href:location.href,ready:document.readyState,tabs:Array.from(document.querySelectorAll("[data-workspace-tab]")).map(t=>t.dataset.workspaceTab),frames:Array.from(document.querySelectorAll("[data-workspace-frame]")).map(f=>{try{return{key:f.dataset.workspaceFrame,src:f.src,ready:f.contentDocument?.readyState,docHref:f.contentWindow?.location?.href,title:f.contentDocument?.title};}catch(e){return{key:f.dataset.workspaceFrame,src:f.src,err:String(e)};}})})`).catch(() => ({}));
+    const diag = await evaluate(`({href:location.href,ready:document.readyState,tabs:Array.from(document.querySelectorAll("[data-workspace-session]")).map(t=>t.dataset.workspaceSession),frames:Array.from(document.querySelectorAll("[data-workspace-frame]")).map(f=>{try{return{key:f.dataset.workspaceFrame,src:f.src,ready:f.contentDocument?.readyState,docHref:f.contentWindow?.location?.href,title:f.contentDocument?.title};}catch(e){return{key:f.dataset.workspaceFrame,src:f.src,err:String(e)};}})})`).catch(() => ({}));
     throw new Error(`Condition timed out: ${expression}; diag=${JSON.stringify(diag)}`);
 }
 
@@ -354,7 +354,7 @@ try {
         document.querySelector('form[method="POST"]').submit();
     })()`);
 
-    await until('Boolean(document.querySelector("html[data-workspace-shell]") && document.querySelector("[data-workspace-tab]") && window.AdasiAuthSplash?.ready)', 25000);
+    await until('Boolean(document.querySelector("html[data-workspace-shell]") && document.querySelector("[data-workspace-session]") && window.AdasiAuthSplash?.ready)', 25000);
     await until('!window.AdasiAuthSplash || window.AdasiAuthSplash.state === "REMOVED"', 25000);
     await until('document.querySelector("[data-workspace-frame]")?.contentDocument?.readyState === "complete"', 25000);
 
@@ -398,7 +398,7 @@ try {
                     return { id: p.dataset.workspacePanel, hidden: p.hidden, ariaBusy: p.getAttribute('aria-busy'), src: f?.src, ready, href, hasMain, loaderActive, jqActive };
                 });
                 const prGrp = document.querySelector('[data-workspace-module="requisitions"]')?.outerHTML?.slice(0, 300);
-                return { panels, activeGroup: document.querySelector('.workspace-tab-group.is-active')?.dataset.workspaceGroup, activeTab: document.querySelector('.workspace-tab.is-active')?.dataset.workspaceTab, prGrp };
+                return { panels, activeGroup: document.querySelector('.workspace-session-group.is-active')?.dataset.workspaceGroup, activeTab: document.querySelector('.workspace-session.is-active')?.dataset.workspaceSession, prGrp };
             })()`).catch(() => ({}));
             throw new Error(`${err.message}; activePanels=${JSON.stringify(extra)}`);
         }
@@ -407,7 +407,7 @@ try {
     const waitGroupActive = async (groupSelectorExpr) => {
         await until(`(() => {
             const g = ${groupSelectorExpr};
-            const activeTab = g?.querySelector('[data-workspace-tab].is-active');
+            const activeTab = g?.querySelector('[data-workspace-session].is-active');
             return Boolean(g?.classList.contains('is-active') && activeTab && activeTab.dataset.loading !== 'true' && activeTab.dataset.queued !== 'true');
         })()`, 20000);
         await waitFrameSettled('.workspace-panel.is-active iframe');
@@ -415,27 +415,27 @@ try {
 
     const initialState = await evaluate(`(() => {
         const html = document.documentElement;
-        const shortcutsTab = document.querySelector('[data-workspace-tab="shortcuts"]');
-        const activeTab = document.querySelector('.workspace-tab.is-active');
+        const shortcutsTab = document.querySelector('[data-workspace-session="shortcuts"]');
+        const activeTab = document.querySelector('.workspace-session.is-active');
         const activeFrame = document.querySelector('.workspace-panel.is-active iframe');
         const refreshRect = document.querySelector('[data-workspace-refresh]')?.getBoundingClientRect();
         const brandRect = document.querySelector('.sidebar-brand')?.getBoundingClientRect();
         const topbarRect = document.querySelector('.top-navbar')?.getBoundingClientRect();
         const sidebarControlRect = document.querySelector('.sidebar-control')?.getBoundingClientRect();
-        const tabbarRect = document.querySelector('[data-workspace-tabbar]')?.getBoundingClientRect();
+        const tabbarRect = document.querySelector('[data-workspace-sessionbar]')?.getBoundingClientRect();
         const userTriggerRect = document.querySelector('.topbar-user-trigger')?.getBoundingClientRect();
         const langPillRect = document.querySelector('.top-navbar .lang-pill-btn')?.getBoundingClientRect();
         const iconBtnRect = document.querySelector('.top-navbar .topbar-icon-btn')?.getBoundingClientRect();
         return {
             isShell: html.dataset.workspaceShell === 'true',
-            tabCount: document.querySelectorAll('[data-workspace-tab]').length,
+            tabCount: document.querySelectorAll('[data-workspace-session]').length,
             shortcutsPinned: shortcutsTab?.dataset.pinned === 'true',
-            shortcutsHasClose: Boolean(shortcutsTab?.querySelector('[data-workspace-tab-close]')),
-            activeModule: document.querySelector('.workspace-tab-group.is-active')?.dataset.workspaceModule,
-            initialHasClose: Boolean(activeTab?.querySelector('[data-workspace-tab-close]')),
+            shortcutsHasClose: Boolean(shortcutsTab?.querySelector('[data-workspace-session-close]')),
+            activeModule: document.querySelector('.workspace-session-group.is-active')?.dataset.workspaceModule,
+            initialHasClose: Boolean(activeTab?.querySelector('[data-workspace-session-close]')),
             embedAttrInFrame: activeFrame?.contentDocument?.documentElement?.dataset.workspaceEmbed,
             embedTopbarHeight: activeFrame?.contentWindow?.getComputedStyle(activeFrame.contentDocument.documentElement).getPropertyValue('--topbar-height')?.trim(),
-            initialTabLabel: activeTab?.querySelector('.workspace-tab__label')?.textContent?.trim(),
+            initialTabLabel: activeTab?.querySelector('.workspace-session__label')?.textContent?.trim(),
             duplicateSidebarInFrame: Boolean(activeFrame?.contentDocument?.querySelector('#sidebar')),
             topOverflowX: document.documentElement.scrollWidth > window.innerWidth,
             refreshBtnSize: refreshRect ? [refreshRect.width, refreshRect.height] : null,
@@ -481,13 +481,13 @@ try {
 
     const prGroupIds = await evaluate(`Array.from(document.querySelectorAll('[data-workspace-group][data-workspace-module="requisitions"]')).map(el => el.dataset.workspaceGroup)`);
     assert.equal(prGroupIds.length, 3, 'Clicking Requisitions 3x must open 3 independent workspace groups');
-    const dupBadges = await evaluate(`Array.from(document.querySelectorAll('[data-workspace-group][data-workspace-module="requisitions"] .workspace-tab__dup-index')).map(el => el.textContent.trim())`);
+    const dupBadges = await evaluate(`Array.from(document.querySelectorAll('[data-workspace-group][data-workspace-module="requisitions"] .workspace-session__dup-index')).map(el => el.textContent.trim())`);
     assert.deepEqual(dupBadges, ['#1', '#2', '#3']);
-    const prTabLabels = await evaluate(`Array.from(document.querySelectorAll('[data-workspace-group][data-workspace-module="requisitions"] .workspace-tab__label')).map(el => el.textContent.trim())`);
+    const prTabLabels = await evaluate(`Array.from(document.querySelectorAll('[data-workspace-group][data-workspace-module="requisitions"] .workspace-session__label')).map(el => el.textContent.trim())`);
     assert.deepEqual(prTabLabels, ['Purchase Requisition', 'Purchase Requisition', 'Purchase Requisition'], 'Requisitions tabs must retain exact sidebar menu name');
 
     // Switch back to PR instance #1 and seed DOM marker to verify 0ms keep-alive preservation
-    await evaluate(`document.querySelector('[data-workspace-group="${prGroupIds[0]}"] [data-workspace-tab-select]')?.click()`);
+    await evaluate(`document.querySelector('[data-workspace-group="${prGroupIds[0]}"] [data-workspace-session-select]')?.click()`);
     await waitGroupActive(`document.querySelector('[data-workspace-group="${prGroupIds[0]}"]')`);
     const seededMarker = await evaluate(`(() => {
         const frame = document.querySelector('.workspace-panel.is-active iframe');
@@ -505,21 +505,21 @@ try {
         const frameDoc = document.querySelector('.workspace-panel.is-active iframe')?.contentDocument;
         frameDoc?.querySelector('a[href*="requisitions/create"]')?.click();
     })()`);
-    await until(`document.querySelectorAll('[data-workspace-group="${prGroupIds[0]}"] [data-workspace-tab]').length === 2`);
+    await until(`document.querySelectorAll('[data-workspace-group="${prGroupIds[0]}"] [data-workspace-session]').length === 2`);
     await until(`(() => {
-        const tabs = document.querySelectorAll('[data-workspace-group="${prGroupIds[0]}"] [data-workspace-tab]');
+        const tabs = document.querySelectorAll('[data-workspace-group="${prGroupIds[0]}"] [data-workspace-session]');
         return Boolean(tabs[1]?.classList.contains('is-active') && tabs[1].dataset.loading !== 'true' && tabs[1].dataset.queued !== 'true');
     })()`, 20000);
     await waitFrameSettled('.workspace-panel.is-active iframe');
 
     const expandedPrState = await evaluate(`(() => {
         const grp = document.querySelector('[data-workspace-group="${prGroupIds[0]}"]');
-        const tabs = Array.from(grp?.querySelectorAll('[data-workspace-tab]') || []);
+        const tabs = Array.from(grp?.querySelectorAll('[data-workspace-session]') || []);
         return {
             isExpanded: grp?.classList.contains('is-expanded'),
             subTabCount: tabs.length,
-            parentHasClose: Boolean(tabs[0]?.querySelector('[data-workspace-tab-close]')),
-            childHasClose: Boolean(tabs[1]?.querySelector('[data-workspace-tab-close]')),
+            parentHasClose: Boolean(tabs[0]?.querySelector('[data-workspace-session-close]')),
+            childHasClose: Boolean(tabs[1]?.querySelector('[data-workspace-session-close]')),
             childActive: tabs[1]?.classList.contains('is-active'),
             parentInputStillAlive: document.querySelector('[data-workspace-frame="${seededMarker}"]')?.contentDocument?.querySelector('[data-ws-marker="pr-1"]')?.value || null,
         };
@@ -537,9 +537,9 @@ try {
     await waitGroupActive(`document.querySelector('[data-workspace-group][data-workspace-module="import-suppliers"]')`);
     const supGroupId = await evaluate(`document.querySelector('[data-workspace-group][data-workspace-module="import-suppliers"]')?.dataset.workspaceGroup`);
     await evaluate(`document.querySelector('.workspace-panel.is-active iframe')?.contentDocument?.querySelector('a[href*="import-suppliers/create"]')?.click()`);
-    await until(`document.querySelectorAll('[data-workspace-group="${supGroupId}"] [data-workspace-tab]').length === 2`);
+    await until(`document.querySelectorAll('[data-workspace-group="${supGroupId}"] [data-workspace-session]').length === 2`);
     await until(`(() => {
-        const tabs = document.querySelectorAll('[data-workspace-group="${supGroupId}"] [data-workspace-tab]');
+        const tabs = document.querySelectorAll('[data-workspace-group="${supGroupId}"] [data-workspace-session]');
         return Boolean(tabs[1]?.classList.contains('is-active') && tabs[1].dataset.loading !== 'true' && tabs[1].dataset.queued !== 'true');
     })()`, 20000);
     await waitFrameSettled('.workspace-panel.is-active iframe');
@@ -551,10 +551,10 @@ try {
         const supReturnUrl = new URL(supChildHref).searchParams.get('return_url') || '';
         return {
             prCollapsedStack: prGrp?.classList.contains('is-collapsed-stack'),
-            prStackBadge: prGrp?.querySelector('.workspace-tab__stack-count')?.textContent?.trim(),
-            prHasLayersIcon: Boolean(prGrp?.querySelector('.workspace-tab__icon svg')),
+            prStackBadge: prGrp?.querySelector('.workspace-session__stack-count')?.textContent?.trim(),
+            prHasLayersIcon: Boolean(prGrp?.querySelector('.workspace-session__icon svg')),
             supExpanded: supGrp?.classList.contains('is-expanded'),
-            supLabels: Array.from(supGrp?.querySelectorAll('.workspace-tab__label') || []).map(el => el.textContent.trim()),
+            supLabels: Array.from(supGrp?.querySelectorAll('.workspace-session__label') || []).map(el => el.textContent.trim()),
             topbarTitle: document.querySelector('.top-navbar .topbar-page-title')?.textContent?.trim(),
             supReturnClean: !supReturnUrl.includes('_embed='),
             switcherVisible: !document.querySelector('[data-workspace-switcher]')?.hidden,
@@ -575,19 +575,19 @@ try {
 
     // Verify Open Workspaces switcher button opens all-workspaces popover cleanly and closes on Escape
     await evaluate(`document.querySelector('[data-workspace-switcher]')?.click()`);
-    await until('!document.querySelector("[data-workspace-tab-menu]")?.hidden');
-    const switcherCount = await evaluate(`document.querySelectorAll('[data-workspace-tab-menu] [role="menuitem"]').length`);
+    await until('!document.querySelector("[data-workspace-session-menu]")?.hidden');
+    const switcherCount = await evaluate(`document.querySelectorAll('[data-workspace-session-menu] [role="menuitem"]').length`);
     assert.ok(switcherCount >= 6, 'Workspace switcher must list open workspace groups');
-    await evaluate(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); document.querySelector('[data-workspace-tab-menu]')?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));`);
-    await until('document.querySelector("[data-workspace-tab-menu]")?.hidden');
+    await evaluate(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); document.querySelector('[data-workspace-session-menu]')?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));`);
+    await until('document.querySelector("[data-workspace-session-menu]")?.hidden');
 
     // Click collapsed stacked PR group caret menu & jump straight back to PR Parent
     await evaluate(`document.querySelector('[data-workspace-group="${prGroupIds[0]}"] [data-workspace-group-menu]')?.click()`);
-    await until('!document.querySelector("[data-workspace-tab-menu]")?.hidden');
-    const menuItemsCount = await evaluate(`document.querySelectorAll('[data-workspace-tab-menu] [role="menuitem"]').length`);
+    await until('!document.querySelector("[data-workspace-session-menu]")?.hidden');
+    const menuItemsCount = await evaluate(`document.querySelectorAll('[data-workspace-session-menu] [role="menuitem"]').length`);
     assert.ok(menuItemsCount >= 6, 'Stack menu must list sub-frames + Duplicate + Close actions');
 
-    await evaluate(`document.querySelector('[data-workspace-tab-menu] [role="menuitem"]')?.click()`);
+    await evaluate(`document.querySelector('[data-workspace-session-menu] [role="menuitem"]')?.click()`);
     await waitGroupActive(`document.querySelector('[data-workspace-group="${prGroupIds[0]}"]')`);
     const backToPrParent = await evaluate(`(() => {
         const prGrp = document.querySelector('[data-workspace-group="${prGroupIds[0]}"]');
@@ -604,8 +604,8 @@ try {
                 href: f.contentWindow?.location?.href,
                 hasMarker: Boolean(f.contentDocument?.querySelector('[data-ws-marker="pr-1"]')),
             })),
-            tabsDiag: Array.from(document.querySelectorAll('[data-workspace-tab]')).map(t => ({
-                id: t.dataset.workspaceTab,
+            tabsDiag: Array.from(document.querySelectorAll('[data-workspace-session]')).map(t => ({
+                id: t.dataset.workspaceSession,
                 stale: t.dataset.stale,
                 dirty: t.dataset.dirty,
                 hibernated: t.dataset.hibernated,
@@ -624,10 +624,10 @@ try {
 
     // Capture uncompressed single-tab width on prGroupIds[1] (Purchase Requisition #2), plus verify resize settle hides scroll buttons cleanly
     const fewTabsBaseCap = await evaluate(`(() => {
-        const list = document.querySelector('[data-workspace-tablist]');
-        const prTab = document.querySelector('[data-workspace-group="${prGroupIds[1]}"] .workspace-tab');
+        const list = document.querySelector('[data-workspace-sessionlist]');
+        const prTab = document.querySelector('[data-workspace-group="${prGroupIds[1]}"] .workspace-session');
         return {
-            cap: list?.style.getPropertyValue('--workspace-tab-cap') || '',
+            cap: list?.style.getPropertyValue('--workspace-session-cap') || '',
             prWidth: Math.round(prTab?.getBoundingClientRect().width || 0),
         };
     })()`);
@@ -642,21 +642,21 @@ try {
     });
     await sleep(460);
     const narrowedState = await evaluate(`(() => {
-        const list = document.querySelector('[data-workspace-tablist]');
-        const groups = Array.from(list?.querySelectorAll('[data-workspace-group]:not(.workspace-tab-group--ghost)') || [])
+        const list = document.querySelector('[data-workspace-sessionlist]');
+        const groups = Array.from(list?.querySelectorAll('[data-workspace-group]:not(.workspace-session-group--ghost)') || [])
             .map(g => ({
                 mod: g.dataset.workspaceModule,
                 w: Math.round(g.getBoundingClientRect().width * 100) / 100,
-                pills: Array.from(g.querySelectorAll('.workspace-tab')).map(p => ({
+                pills: Array.from(g.querySelectorAll('.workspace-session')).map(p => ({
                     w: Math.round(p.getBoundingClientRect().width * 100) / 100,
                     nw: p.dataset.naturalWidth || '',
                     maxW: getComputedStyle(p).maxWidth,
-                    text: p.querySelector('.workspace-tab__label')?.textContent?.trim(),
+                    text: p.querySelector('.workspace-session__label')?.textContent?.trim(),
                 })),
             }));
         return {
             capRequiresScroll: list?.dataset.capRequiresScroll,
-            appliedCap: list?.style.getPropertyValue('--workspace-tab-cap') || '',
+            appliedCap: list?.style.getPropertyValue('--workspace-session-cap') || '',
             scrollWidth: list?.scrollWidth || 0,
             clientWidth: list?.clientWidth || 0,
             prevHidden: Boolean(document.querySelector('[data-workspace-scroll="prev"]')?.hidden),
@@ -680,7 +680,7 @@ try {
         const f = document.querySelector('[data-workspace-frame="${seededMarker}"]');
         f?.contentWindow?.AdasiUnsaved?.markDirty?.();
     })()`);
-    await until(`document.querySelector('[data-workspace-tab="${seededMarker}"]')?.dataset.dirty === "true"`);
+    await until(`document.querySelector('[data-workspace-session="${seededMarker}"]')?.dataset.dirty === "true"`);
 
     for (const seg of ['quotations', 'purchase-orders', 'shipments', 'reports']) {
         const beforeSegCount = await evaluate(`document.querySelectorAll('[data-workspace-group][data-workspace-module="${seg}"]').length`);
@@ -689,7 +689,7 @@ try {
         await waitGroupActive(`document.querySelectorAll('[data-workspace-group][data-workspace-module="${seg}"]')[${beforeSegCount}]`);
     }
 
-    await until(`Math.round(document.querySelector('[data-workspace-group="${prGroupIds[1]}"] .workspace-tab')?.getBoundingClientRect().width || 0) === 112`);
+    await until(`Math.round(document.querySelector('[data-workspace-group="${prGroupIds[1]}"] .workspace-session')?.getBoundingClientRect().width || 0) === 112`);
 
     const hoverMove = async (x, y) => {
         await command('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y, button: 'none' });
@@ -701,9 +701,9 @@ try {
     };
 
     const compressedHoverCheck = await evaluate(`(() => {
-        const t2 = document.querySelector('[data-workspace-group="${prGroupIds[1]}"] .workspace-tab');
+        const t2 = document.querySelector('[data-workspace-group="${prGroupIds[1]}"] .workspace-session');
         t2?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
-        const t3 = document.querySelector('[data-workspace-group="${prGroupIds[2]}"] .workspace-tab');
+        const t3 = document.querySelector('[data-workspace-group="${prGroupIds[2]}"] .workspace-session');
         const r2 = t2?.getBoundingClientRect();
         const r3 = t3?.getBoundingClientRect();
         return {
@@ -715,8 +715,8 @@ try {
     await hoverMove(compressedHoverCheck.x, compressedHoverCheck.y);
     await sleep(320);
     const compressedHoverAfter = await evaluate(`(() => {
-        const closeBtn = document.querySelector('[data-workspace-group="${prGroupIds[1]}"] [data-workspace-tab-close]');
-        const t3 = document.querySelector('[data-workspace-group="${prGroupIds[2]}"] .workspace-tab');
+        const closeBtn = document.querySelector('[data-workspace-group="${prGroupIds[1]}"] [data-workspace-session-close]');
+        const t3 = document.querySelector('[data-workspace-group="${prGroupIds[2]}"] .workspace-session');
         return {
             closeW: Math.round(closeBtn?.getBoundingClientRect().width || 0),
             t3LeftAfter: Math.round(t3?.getBoundingClientRect().left || 0),
@@ -727,7 +727,7 @@ try {
 
     // Click the compressed 112px tab (both hibernated and live) and verify it NEVER flashes full label width (>112px) on click or during transition frames
     const clickSampleImmediate = await evaluate(`(() => {
-        const t2 = document.querySelector('[data-workspace-group="${prGroupIds[1]}"] .workspace-tab');
+        const t2 = document.querySelector('[data-workspace-group="${prGroupIds[1]}"] .workspace-session');
         const btn = t2?.querySelector('button[role="tab"]');
         const beforeW = Math.round(t2?.getBoundingClientRect().width || 0);
         btn?.click();
@@ -735,9 +735,9 @@ try {
         return { beforeW, immediateW };
     })()`);
     await sleep(45);
-    const clickSampleMid = await evaluate(`Math.round(document.querySelector('[data-workspace-group="${prGroupIds[1]}"] .workspace-tab')?.getBoundingClientRect().width || 0)`);
+    const clickSampleMid = await evaluate(`Math.round(document.querySelector('[data-workspace-group="${prGroupIds[1]}"] .workspace-session')?.getBoundingClientRect().width || 0)`);
     await waitGroupActive(`document.querySelector('[data-workspace-group="${prGroupIds[1]}"]')`);
-    const clickSampleSettled = await evaluate(`Math.round(document.querySelector('[data-workspace-group="${prGroupIds[1]}"] .workspace-tab')?.getBoundingClientRect().width || 0)`);
+    const clickSampleSettled = await evaluate(`Math.round(document.querySelector('[data-workspace-group="${prGroupIds[1]}"] .workspace-session')?.getBoundingClientRect().width || 0)`);
     assert.equal(clickSampleImmediate.beforeW, 112);
     assert.equal(clickSampleImmediate.immediateW, 112, `Clicked compressed tab must not flash full label width immediately after click (got ${clickSampleImmediate.immediateW})`);
     assert.equal(clickSampleMid, 112, `Clicked compressed tab must stay at 112px mid-frame without shrinking animation from full width (got ${clickSampleMid})`);
@@ -745,9 +745,9 @@ try {
 
     // Switch back to the last opened tab and verify live compressed tab click also stays locked at 112px
     const liveClickSample = await evaluate(`(() => {
-        const groups = Array.from(document.querySelectorAll('[data-workspace-tablist] [data-workspace-group]:not(.workspace-tab-group--ghost)'));
+        const groups = Array.from(document.querySelectorAll('[data-workspace-sessionlist] [data-workspace-group]:not(.workspace-session-group--ghost)'));
         const lastGrp = groups[groups.length - 1];
-        const lastTab = lastGrp?.querySelector('.workspace-tab');
+        const lastTab = lastGrp?.querySelector('.workspace-session');
         const btn = lastTab?.querySelector('button[role="tab"]');
         const beforeW = Math.round(lastTab?.getBoundingClientRect().width || 0);
         btn?.click();
@@ -762,18 +762,18 @@ try {
     const hibernationState = await evaluate(`(() => {
         const mountedFrames = document.querySelectorAll('iframe[data-workspace-frame]').length;
         const openGroups = document.querySelectorAll('[data-workspace-group]:not([data-workspace-group="shortcuts"])').length;
-        const hibernatedTabs = document.querySelectorAll('[data-workspace-tab][data-hibernated="true"]').length;
-        const dirtyPrTab = document.querySelector('[data-workspace-group="${prGroupIds[0]}"] [data-workspace-tab="${prGroupIds[0]}"], [data-workspace-tab="${seededMarker}"]');
-        const tablist = document.querySelector('[data-workspace-tablist]');
+        const hibernatedTabs = document.querySelectorAll('[data-workspace-session][data-hibernated="true"]').length;
+        const dirtyPrTab = document.querySelector('[data-workspace-group="${prGroupIds[0]}"] [data-workspace-session="${prGroupIds[0]}"], [data-workspace-session="${seededMarker}"]');
+        const tablist = document.querySelector('[data-workspace-sessionlist]');
         const shortcutsGroup = document.querySelector('[data-workspace-group="shortcuts"]');
         const shortcutsLeftBefore = Math.round(shortcutsGroup?.getBoundingClientRect().left || 0);
         if (tablist) tablist.scrollLeft = Math.max(0, tablist.scrollWidth - tablist.clientWidth);
         const shortcutsLeftAfter = Math.round(shortcutsGroup?.getBoundingClientRect().left || 0);
-        const compressedPrTab = document.querySelector('[data-workspace-group="${prGroupIds[1]}"] .workspace-tab');
+        const compressedPrTab = document.querySelector('[data-workspace-group="${prGroupIds[1]}"] .workspace-session');
         const compressedPrWidth = Math.round(compressedPrTab?.getBoundingClientRect().width || 0);
-        const stackedSupTab = document.querySelector('[data-workspace-group="${supGroupId}"] .workspace-tab--stacked');
+        const stackedSupTab = document.querySelector('[data-workspace-group="${supGroupId}"] .workspace-session--stacked');
         const stackedSupWidth = Math.round(stackedSupTab?.getBoundingClientRect().width || 0);
-        const allTabWidths = Array.from(tablist?.querySelectorAll('.workspace-tab:not(.workspace-tab--ghost)') || [])
+        const allTabWidths = Array.from(tablist?.querySelectorAll('.workspace-session:not(.workspace-session--ghost)') || [])
             .map(el => Math.round(el.getBoundingClientRect().width));
         return {
             mountedFrames,
@@ -782,7 +782,7 @@ try {
             dirtyPrStillLive: dirtyPrTab?.dataset.dirty === 'true' && dirtyPrTab?.dataset.hibernated === 'false' && Boolean(document.querySelector('iframe[data-workspace-frame="${seededMarker}"]')),
             shortcutsFixedOutsideTablist: Boolean(shortcutsGroup && tablist && !tablist.contains(shortcutsGroup)),
             shortcutsLeftUnchangedOnScroll: shortcutsLeftBefore > 0 && shortcutsLeftBefore === shortcutsLeftAfter && (tablist?.scrollLeft || 0) > 0,
-            appliedCap: tablist?.style.getPropertyValue('--workspace-tab-cap') || '',
+            appliedCap: tablist?.style.getPropertyValue('--workspace-session-cap') || '',
             compressedPrWidth,
             fewTabsPrWidth: ${fewTabsBaseCap.prWidth},
             stackedSupWidth,
@@ -840,12 +840,12 @@ try {
 
     // Ensure expanded Child tab of prGroupIds[0] (which has a close button) is active and scrolled into view
     await evaluate(`(() => {
-        const childTrigger = document.querySelectorAll('[data-workspace-group="${prGroupIds[0]}"] .workspace-tab')[1]?.querySelector('button[role="tab"]');
+        const childTrigger = document.querySelectorAll('[data-workspace-group="${prGroupIds[0]}"] .workspace-session')[1]?.querySelector('button[role="tab"]');
         childTrigger?.click();
         childTrigger?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
     })()`);
     await until(`(() => {
-        const childTab = document.querySelectorAll('[data-workspace-group="${prGroupIds[0]}"] .workspace-tab')[1];
+        const childTab = document.querySelectorAll('[data-workspace-group="${prGroupIds[0]}"] .workspace-session')[1];
         return Boolean(childTab?.classList.contains('is-active') && childTab.dataset.loading !== 'true' && childTab.dataset.queued !== 'true');
     })()`, 20000);
     await waitFrameSettled('.workspace-panel.is-active iframe');
@@ -857,13 +857,13 @@ try {
     const restCloseState = await evaluate(`(() => {
         const grp = document.querySelector('[data-workspace-group="${prGroupIds[0]}"]');
         grp?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
-        const activeTab = document.querySelector('.workspace-tab.is-active');
-        const activeClose = activeTab?.querySelector('[data-workspace-tab-close]');
+        const activeTab = document.querySelector('.workspace-session.is-active');
+        const activeClose = activeTab?.querySelector('[data-workspace-session-close]');
         const activeCloseCs = activeClose ? getComputedStyle(activeClose) : null;
-        const inactiveSingle = Array.from(document.querySelectorAll('.workspace-tab:not(.is-active):not(.workspace-tab--stacked)'))
-            .find((el) => el.querySelector('[data-workspace-tab-close]'));
-        const inactiveClose = inactiveSingle?.querySelector('[data-workspace-tab-close]');
-        const tabs = Array.from(grp?.querySelectorAll('.workspace-tab') || []);
+        const inactiveSingle = Array.from(document.querySelectorAll('.workspace-session:not(.is-active):not(.workspace-session--stacked)'))
+            .find((el) => el.querySelector('[data-workspace-session-close]'));
+        const inactiveClose = inactiveSingle?.querySelector('[data-workspace-session-close]');
+        const tabs = Array.from(grp?.querySelectorAll('.workspace-session') || []);
         const parentRect = tabs[0]?.getBoundingClientRect();
         const childRect = tabs[1]?.getBoundingClientRect();
         return {
@@ -885,7 +885,7 @@ try {
     await sleep(340);
     const parentHoverChildClose = await evaluate(`(() => {
         const grp = document.querySelector('[data-workspace-group="${prGroupIds[0]}"]');
-        const close = grp?.querySelectorAll('.workspace-tab')[1]?.querySelector('[data-workspace-tab-close]');
+        const close = grp?.querySelectorAll('.workspace-session')[1]?.querySelector('[data-workspace-session-close]');
         return { w: close ? Math.round(close.getBoundingClientRect().width) : null, op: close ? getComputedStyle(close).opacity : null };
     })()`);
     assert.equal(parentHoverChildClose.w, 0, 'Hovering joined Parent must NOT reveal Child close button');
@@ -896,10 +896,10 @@ try {
     await sleep(340);
     const childHoverState = await evaluate(`(() => {
         const grp = document.querySelector('[data-workspace-group="${prGroupIds[0]}"]');
-        const close = grp?.querySelectorAll('.workspace-tab')[1]?.querySelector('[data-workspace-tab-close]');
+        const close = grp?.querySelectorAll('.workspace-session')[1]?.querySelector('[data-workspace-session-close]');
         const rect = close?.getBoundingClientRect();
         const cs = close ? getComputedStyle(close) : null;
-        const otherClose = Array.from(document.querySelectorAll('[data-workspace-tab-close]')).find((c) => c !== close);
+        const otherClose = Array.from(document.querySelectorAll('[data-workspace-session-close]')).find((c) => c !== close);
         return {
             w: rect ? Math.round(rect.width) : 0,
             h: rect ? Math.round(rect.height) : 0,
@@ -919,7 +919,7 @@ try {
     await sleep(340);
     const afterMouseClickHide = await evaluate(`(() => {
         const grp = document.querySelector('[data-workspace-group="${prGroupIds[0]}"]');
-        const close = grp?.querySelectorAll('.workspace-tab')[1]?.querySelector('[data-workspace-tab-close]');
+        const close = grp?.querySelectorAll('.workspace-session')[1]?.querySelector('[data-workspace-session-close]');
         return { w: close ? Math.round(close.getBoundingClientRect().width) : null, op: close ? getComputedStyle(close).opacity : null };
     })()`);
     assert.equal(afterMouseClickHide.w, 0, 'Close x must hide again once pointer leaves after mouse click');
@@ -961,19 +961,19 @@ try {
         return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null;
     })()`);
     await mouseClickAt(switcherPt.x, switcherPt.y);
-    await until('!document.querySelector("[data-workspace-tab-menu]")?.hidden');
+    await until('!document.querySelector("[data-workspace-session-menu]")?.hidden');
     const neutralHeaderPt = await evaluate(`(() => {
         const r = document.querySelector('.topbar-page-title')?.getBoundingClientRect();
         return r ? { x: r.left + 8, y: r.top + r.height / 2 } : { x: 400, y: 20 };
     })()`);
     await mouseClickAt(neutralHeaderPt.x, neutralHeaderPt.y);
-    await until('document.querySelector("[data-workspace-tab-menu]")?.hidden');
+    await until('document.querySelector("[data-workspace-session-menu]")?.hidden');
     await recordFinding('5c_outside_click_dismissal_across_iframe_and_shell', { stagePoint, neutralHeaderPt });
 
     // Switch back to PR #1 index tab (which holds live DataTable + seeded input) & test full EN <-> ID language switch
-    await evaluate(`document.querySelector('[data-workspace-group="${prGroupIds[0]}"] [data-workspace-tab="${seededMarker}"] button')?.click()`);
+    await evaluate(`document.querySelector('[data-workspace-group="${prGroupIds[0]}"] [data-workspace-session="${seededMarker}"] button')?.click()`);
     await until(`(() => {
-        const tab = document.querySelector('[data-workspace-group="${prGroupIds[0]}"] [data-workspace-tab="${seededMarker}"]');
+        const tab = document.querySelector('[data-workspace-group="${prGroupIds[0]}"] [data-workspace-session="${seededMarker}"]');
         return Boolean(tab?.classList.contains('is-active') && tab.dataset.loading !== 'true' && tab.dataset.queued !== 'true');
     })()`, 20000);
     await waitFrameSettled('.workspace-panel.is-active iframe');
@@ -995,8 +995,8 @@ try {
         const f = document.querySelector('[data-workspace-frame="${seededMarker}"]');
         const freqTitle = document.querySelector('.workspace-shortcuts__title')?.textContent?.trim();
         const refreshLabel = document.querySelector('[data-workspace-refresh]')?.getAttribute('aria-label')?.trim();
-        const prLbl = document.querySelector('[data-workspace-group="${prGroupIds[0]}"] [data-workspace-tab="${seededMarker}"] .workspace-tab__label')?.textContent?.trim();
-        const childLbl = document.querySelectorAll('[data-workspace-group="${prGroupIds[0]}"] .workspace-tab__label')[1]?.textContent?.trim();
+        const prLbl = document.querySelector('[data-workspace-group="${prGroupIds[0]}"] [data-workspace-session="${seededMarker}"] .workspace-session__label')?.textContent?.trim();
+        const childLbl = document.querySelectorAll('[data-workspace-group="${prGroupIds[0]}"] .workspace-session__label')[1]?.textContent?.trim();
         return document.documentElement.lang === 'id'
             && freqTitle === 'Sering Digunakan'
             && refreshLabel === 'Muat ulang tab'
@@ -1011,9 +1011,9 @@ try {
         const freqTitle = document.querySelector('.workspace-shortcuts__title')?.textContent?.trim();
         const allModulesTitle = document.querySelector('.workspace-shortcuts__section-title')?.textContent?.trim();
         const refreshLabel = document.querySelector('[data-workspace-refresh]')?.getAttribute('aria-label')?.trim();
-        const prParentLabels = ${JSON.stringify(prGroupIds)}.map((gid) => document.querySelector('[data-workspace-group="' + gid + '"] .workspace-tab__label')?.textContent?.trim());
-        const prChildLabel = document.querySelectorAll('[data-workspace-group="${prGroupIds[0]}"] .workspace-tab__label')[1]?.textContent?.trim() || null;
-        const supLabel = document.querySelector('[data-workspace-group="${supGroupId}"] .workspace-tab__label')?.textContent?.trim();
+        const prParentLabels = ${JSON.stringify(prGroupIds)}.map((gid) => document.querySelector('[data-workspace-group="' + gid + '"] .workspace-session__label')?.textContent?.trim());
+        const prChildLabel = document.querySelectorAll('[data-workspace-group="${prGroupIds[0]}"] .workspace-session__label')[1]?.textContent?.trim() || null;
+        const supLabel = document.querySelector('[data-workspace-group="${supGroupId}"] .workspace-session__label')?.textContent?.trim();
         const topbarTitle = document.querySelector('.top-navbar .topbar-page-title')?.textContent?.trim();
         const frameHeaders = Array.from(f?.contentDocument?.querySelectorAll('.dataTables_wrapper thead th, #main-content table thead th') || []).map(th => th.textContent.trim());
         const preservedInput = f?.contentDocument?.querySelector('[data-ws-marker="pr-1"]')?.value || null;
@@ -1051,7 +1051,7 @@ try {
     await until(`(() => {
         const f = document.querySelector('[data-workspace-frame="${seededMarker}"]');
         const freqTitle = document.querySelector('.workspace-shortcuts__title')?.textContent?.trim();
-        const prLbl = document.querySelector('[data-workspace-group="${prGroupIds[0]}"] [data-workspace-tab="${seededMarker}"] .workspace-tab__label')?.textContent?.trim();
+        const prLbl = document.querySelector('[data-workspace-group="${prGroupIds[0]}"] [data-workspace-session="${seededMarker}"] .workspace-session__label')?.textContent?.trim();
         return document.documentElement.lang === 'en'
             && freqTitle === 'Frequently Used'
             && prLbl === 'Purchase Requisition'
@@ -1060,7 +1060,7 @@ try {
     await sleep(200);
     await recordFinding('5d_workspace_locale_switch_id_and_en_in_place', { idTranslatedState });
 
-    // Smooth asymmetric accordion group morph (320ms expand / 260ms collapse + synchronized parent/child width & phased text fade)
+    // Smooth asymmetric accordion group morph (400ms expand / 340ms collapse + synchronized parent/child width & phased text fade)
     // First expand stacked [Import Suppliers (2)] -> [Import Suppliers | Register Import Supplier] (pronounced widen without divider jump)
     const supStackBefore = await evaluate(`(() => {
         const grp = document.querySelector('[data-workspace-group="${supGroupId}"]');
@@ -1071,15 +1071,15 @@ try {
     await until(`document.querySelector('[data-workspace-group="${supGroupId}"]')?.classList.contains('is-active')`, 20000, 15);
     const expandStart = await evaluate(`(() => {
         const grp = document.querySelector('[data-workspace-group="${supGroupId}"]');
-        const pills = Array.from(grp?.querySelectorAll(':scope > .workspace-tab:not(.workspace-tab--ghost)') || []);
+        const pills = Array.from(grp?.querySelectorAll(':scope > .workspace-session:not(.workspace-session--ghost)') || []);
         const cs = grp ? getComputedStyle(grp) : null;
         return {
             isMorphing: Boolean(grp?.classList.contains('is-morphing')),
             isExpandingGroup: Boolean(grp?.classList.contains('is-expanding-group')),
             isExpanded: Boolean(grp?.classList.contains('is-expanded')),
             pill0Morph: Boolean(pills[0]?.classList.contains('is-morph-pill')),
-            hasLipGhostAriaHidden: grp?.querySelector('.workspace-tab-group__lip-ghost')?.getAttribute('aria-hidden') === 'true',
-            hasMorphOverlayAriaHidden: pills[0]?.querySelector('.workspace-tab__morph-overlay')?.getAttribute('aria-hidden') === 'true',
+            hasLipGhostAriaHidden: grp?.querySelector('.workspace-session-group__lip-ghost')?.getAttribute('aria-hidden') === 'true',
+            hasMorphOverlayAriaHidden: pills[0]?.querySelector('.workspace-session__morph-overlay')?.getAttribute('aria-hidden') === 'true',
             childRevealing: Boolean(pills[1]?.classList.contains('is-revealing')),
             transitionDuration: cs?.transitionDuration || '',
         };
@@ -1091,11 +1091,11 @@ try {
     assert.equal(expandStart.hasLipGhostAriaHidden, true, 'Inert stack lip ghost must fade smoothly under aria-hidden');
     assert.equal(expandStart.hasMorphOverlayAriaHidden, true, 'Inert pill morph overlay must crossfade under aria-hidden');
     assert.equal(expandStart.childRevealing, true, 'Child pill must accordion-unfold smoothly on group expand');
-    assert.ok(expandStart.transitionDuration.includes('0.32s'), `Expected 320ms group expand duration, got ${expandStart.transitionDuration}`);
+    assert.ok(expandStart.transitionDuration.includes('0.4s'), `Expected 400ms group expand duration, got ${expandStart.transitionDuration}`);
     await sleep(95);
     const supMidExpand = await evaluate(`(() => {
         const grp = document.querySelector('[data-workspace-group="${supGroupId}"]');
-        const pills = Array.from(grp?.querySelectorAll(':scope > .workspace-tab:not(.workspace-tab--ghost)') || []);
+        const pills = Array.from(grp?.querySelectorAll(':scope > .workspace-session:not(.workspace-session--ghost)') || []);
         return {
             groupW: Math.round(grp?.getBoundingClientRect()?.width || 0),
             childW: Math.round(pills[1]?.getBoundingClientRect()?.width || 0),
@@ -1106,11 +1106,11 @@ try {
     await waitFrameSettled('.workspace-panel.is-active iframe');
     const supExpandedMetrics = await evaluate(`(() => {
         const grp = document.querySelector('[data-workspace-group="${supGroupId}"]');
-        const pills = Array.from(grp?.querySelectorAll(':scope > .workspace-tab:not(.workspace-tab--ghost)') || []);
+        const pills = Array.from(grp?.querySelectorAll(':scope > .workspace-session:not(.workspace-session--ghost)') || []);
         return {
             groupW: Math.round(grp?.getBoundingClientRect()?.width || 0),
             childW: Math.round(pills[1]?.getBoundingClientRect()?.width || 0),
-            leftoverTransients: document.querySelectorAll('[data-workspace-group="${supGroupId}"] .workspace-tab__morph-overlay, [data-workspace-group="${supGroupId}"] .workspace-tab-group__lip-ghost').length,
+            leftoverTransients: document.querySelectorAll('[data-workspace-group="${supGroupId}"] .workspace-session__morph-overlay, [data-workspace-group="${supGroupId}"] .workspace-session-group__lip-ghost').length,
         };
     })()`);
     const supExpandedW = supExpandedMetrics.groupW;
@@ -1124,11 +1124,11 @@ try {
     );
     assert.equal(supExpandedMetrics.leftoverTransients, 0, 'Morph transients must clean up after expand settles');
 
-    // Open Claims -> tests BOTH new tab calm lengthen AND expanded supGroupId smooth 260ms accordion collapse once active
+    // Open Claims -> tests BOTH new tab calm lengthen AND expanded supGroupId smooth 340ms accordion collapse once active
     await evaluate(`document.querySelector('#sidebar a.sidebar-link[href*="claims"]')?.click()`);
     const enterStart = await evaluate(`(() => {
         const claimsGrp = Array.from(document.querySelectorAll('[data-workspace-group][data-workspace-module="claims"]')).pop();
-        const claimsTab = claimsGrp?.querySelector('.workspace-tab');
+        const claimsTab = claimsGrp?.querySelector('.workspace-session');
         const csGrp = claimsGrp ? getComputedStyle(claimsGrp) : null;
         const csTab = claimsTab ? getComputedStyle(claimsTab) : null;
         return {
@@ -1140,7 +1140,7 @@ try {
     })()`);
     assert.equal(enterStart.hasEntering, true, 'New workspace group must enter with measured-width .is-entering');
     assert.ok(enterStart.transitionProp.includes('width'), `Expected width transition, got ${enterStart.transitionProp}`);
-    assert.ok(enterStart.transitionDuration.includes('0.28s'), `Expected calm 280ms enter transition duration, got ${enterStart.transitionDuration}`);
+    assert.ok(enterStart.transitionDuration.includes('0.4s'), `Expected calm 400ms enter transition duration, got ${enterStart.transitionDuration}`);
     assert.equal(enterStart.animName, 'none', 'No bounce/keyframe transform animation allowed on entering tabs');
 
     await sleep(85);
@@ -1149,7 +1149,7 @@ try {
     await until(`Array.from(document.querySelectorAll('[data-workspace-group][data-workspace-module="claims"]')).pop()?.classList.contains('is-active')`, 20000, 15);
     const collapseStart = await evaluate(`(() => {
         const supGrp = document.querySelector('[data-workspace-group="${supGroupId}"]');
-        const supTail = supGrp?.querySelector('.workspace-tab-group__collapse-tail');
+        const supTail = supGrp?.querySelector('.workspace-session-group__collapse-tail');
         return {
             supIsMorphingOnCollapse: Boolean(supGrp?.classList.contains('is-morphing')),
             supIsCollapsingGroup: Boolean(supGrp?.classList.contains('is-collapsing-group')),
@@ -1162,7 +1162,7 @@ try {
     Object.assign(enterStart, collapseStart);
     assert.equal(collapseStart.supIsMorphingOnCollapse, true, 'Collapsing expanded group to stack must morph container width smoothly');
     assert.equal(collapseStart.supIsCollapsingGroup, true);
-    assert.ok(collapseStart.supCollapseDuration.includes('0.26s'), `Expected 260ms group collapse duration, got ${collapseStart.supCollapseDuration}`);
+    assert.ok(collapseStart.supCollapseDuration.includes('0.34s'), `Expected 340ms group collapse duration, got ${collapseStart.supCollapseDuration}`);
     assert.equal(collapseStart.supHasCollapseTail, true, 'Collapsing group must keep inert fold tail inside container');
     assert.equal(collapseStart.supCollapsedTailAriaHidden, 'true');
     assert.ok(collapseStart.supTailWidthTransition.includes('width'), 'Collapse tail must fold its own width inward synchronously');
@@ -1196,9 +1196,9 @@ try {
         `Workspace group collapse must shrink smoothly (expanded=${supExpandedW}, mid=${midEnterAndCollapse.supMidW}, stack=${settledWidths.supStackAfterW})`,
     );
 
-    // Hover active Claims tab to reveal close x (260ms), then close -> smooth ghost collapse with negative flex gap compensation
+    // Hover active Claims tab to reveal close x (180ms), then close -> smooth ghost collapse with negative flex gap compensation
     const claimsHoverPt = await evaluate(`(() => {
-        const tab = Array.from(document.querySelectorAll('[data-workspace-module="claims"] .workspace-tab')).pop();
+        const tab = Array.from(document.querySelectorAll('[data-workspace-module="claims"] .workspace-session')).pop();
         tab?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
         const r = tab?.getBoundingClientRect();
         return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null;
@@ -1206,14 +1206,14 @@ try {
     await hoverMove(claimsHoverPt.x, claimsHoverPt.y);
     await sleep(340);
     const closeBtnPt = await evaluate(`(() => {
-        const close = document.querySelector('[data-workspace-module="claims"] [data-workspace-tab-close]');
+        const close = document.querySelector('[data-workspace-module="claims"] [data-workspace-session-close]');
         const r = close?.getBoundingClientRect();
         return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2, w: Math.round(r.width) } : null;
     })()`);
     assert.ok(closeBtnPt && closeBtnPt.w >= 24);
     await mouseClickAt(closeBtnPt.x, closeBtnPt.y);
     const ghostObserved = await evaluate(`(() => {
-        const ghost = document.querySelector('.workspace-tab-group--ghost.is-closing');
+        const ghost = document.querySelector('.workspace-session-group--ghost.is-closing');
         const cs = ghost ? getComputedStyle(ghost) : null;
         const activeClaims = document.querySelectorAll('[data-workspace-module="claims"]').length;
         return {
@@ -1229,9 +1229,9 @@ try {
     assert.equal(ghostObserved.ghostAriaHidden, 'true');
     assert.equal(ghostObserved.ghostCollapsing, true);
     assert.ok(parseFloat(ghostObserved.inlineMarginRight) < 0, `Closing ghost must compensate flex gap cleanly (got ${ghostObserved.inlineMarginRight})`);
-    assert.ok(ghostObserved.transitionDuration.includes('0.26s'), `Expected 260ms ghost collapse duration, got ${ghostObserved.transitionDuration}`);
+    assert.ok(ghostObserved.transitionDuration.includes('0.34s'), `Expected 340ms ghost collapse duration, got ${ghostObserved.transitionDuration}`);
     assert.equal(ghostObserved.liveClaimsCount, 0, 'Closed workspace group must be removed immediately from ARIA tablist');
-    await until('document.querySelectorAll(".workspace-tab-group--ghost, .workspace-tab--ghost").length === 0');
+    await until('document.querySelectorAll(".workspace-session-group--ghost, .workspace-session--ghost").length === 0');
 
     // Close a NON-LAST middle group (prGroupIds[1]) and verify its closing ghost stays in place between left & right siblings
     const midCloseObserved = await evaluate(`(() => {
@@ -1239,8 +1239,8 @@ try {
         const g2 = document.querySelector('[data-workspace-group="${prGroupIds[1]}"]');
         const g3 = document.querySelector('[data-workspace-group="${prGroupIds[2]}"]');
         if (!g1 || !g2 || !g3) return null;
-        g2.querySelector('[data-workspace-tab-close]')?.click();
-        const ghost = document.querySelector('.workspace-tab-group--ghost.is-closing');
+        g2.querySelector('[data-workspace-session-close]')?.click();
+        const ghost = document.querySelector('.workspace-session-group--ghost.is-closing');
         return {
             ghostStaysBetweenSiblings: Boolean(ghost && ghost.previousElementSibling === g1 && ghost.nextElementSibling === g3),
             g2Removed: !document.querySelector('[data-workspace-group="${prGroupIds[1]}"]'),
@@ -1249,7 +1249,7 @@ try {
     assert.ok(midCloseObserved, 'Middle duplicate PR groups must exist for non-last close verification');
     assert.equal(midCloseObserved.ghostStaysBetweenSiblings, true, 'Closing non-last group ghost must remain in-place ahead of right-hand siblings');
     assert.equal(midCloseObserved.g2Removed, true);
-    await until('document.querySelectorAll(".workspace-tab-group--ghost, .workspace-tab--ghost").length === 0');
+    await until('document.querySelectorAll(".workspace-session-group--ghost, .workspace-session--ghost").length === 0');
 
     // Verify prefers-reduced-motion: reduce bypasses transitions immediately
     await command('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
@@ -1260,8 +1260,8 @@ try {
     })`);
     assert.equal(reducedEnter.hasEntering, false, 'prefers-reduced-motion must bypass .is-entering');
     assert.equal(reducedEnter.count, 1);
-    await evaluate(`document.querySelector('[data-workspace-module="claims"] [data-workspace-tab-close]')?.click()`);
-    const reducedCloseGhosts = await evaluate('document.querySelectorAll(".workspace-tab-group--ghost, .workspace-tab--ghost").length');
+    await evaluate(`document.querySelector('[data-workspace-module="claims"] [data-workspace-session-close]')?.click()`);
+    const reducedCloseGhosts = await evaluate('document.querySelectorAll(".workspace-session-group--ghost, .workspace-session--ghost").length');
     assert.equal(reducedCloseGhosts, 0, 'prefers-reduced-motion must bypass closing ghost');
     await command('Emulation.setEmulatedMedia', { features: [] });
     await hoverMove(12, 450);
@@ -1269,14 +1269,14 @@ try {
     await recordFinding('5e_smooth_non_bouncy_tab_and_group_motion', { supStackBefore, supMidExpandW, supExpandedW, enterStart, midEnterAndCollapse, settledWidths, ghostObserved });
 
     // 6. Close All Tabs -> Fallback to Shortcuts ("Frequently Used") + Search + F5 Persistence + Launch
-    const firstNonShortcutTrigger = '[data-workspace-group]:not([data-workspace-group="shortcuts"]) [data-workspace-tab]';
+    const firstNonShortcutTrigger = '[data-workspace-group]:not([data-workspace-group="shortcuts"]) [data-workspace-session]';
     await evaluate(`(() => {
         const el = document.querySelector(${JSON.stringify(firstNonShortcutTrigger)});
         el?.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 220, clientY: 96 }));
     })()`);
-    await until('!document.querySelector("[data-workspace-tab-menu]")?.hidden');
+    await until('!document.querySelector("[data-workspace-session-menu]")?.hidden');
     await evaluate(`(() => {
-        const items = Array.from(document.querySelectorAll('[data-workspace-tab-menu] [role="menuitem"]'));
+        const items = Array.from(document.querySelectorAll('[data-workspace-session-menu] [role="menuitem"]'));
         items[items.length - 1]?.click();
     })()`);
 
@@ -1287,7 +1287,7 @@ try {
     await command('Page.reload');
     await until(`performance.timeOrigin !== ${JSON.stringify(prevOrigin)} && Boolean(document.querySelector("html[data-workspace-shell]"))`);
     await until('!document.querySelector("[data-workspace-panel=\\"shortcuts\\"]")?.hidden && document.querySelectorAll("[data-workspace-group]").length === 1');
-    await until('getComputedStyle(document.querySelector("[data-workspace-tab=\\"shortcuts\\"]"), "::after").opacity === "1"');
+    await until('getComputedStyle(document.querySelector("[data-workspace-session=\\"shortcuts\\"]"), "::after").opacity === "1"');
 
     await evaluate(`(() => {
         const input = document.querySelector('[data-shortcuts-search]');
@@ -1295,7 +1295,7 @@ try {
         input.dispatchEvent(new Event('input', { bubbles: true }));
     })()`);
     const shortcutSearchState = await evaluate(`(() => {
-        const scTab = document.querySelector('[data-workspace-tab="shortcuts"]');
+        const scTab = document.querySelector('[data-workspace-session="shortcuts"]');
         const scStyle = scTab ? getComputedStyle(scTab) : null;
         const scAfter = scTab ? getComputedStyle(scTab, '::after') : null;
         return {
@@ -1332,10 +1332,10 @@ try {
         reqLink?.click();
         quoLink?.click();
         poLink?.click();
-        const groups = Array.from(document.querySelectorAll('[data-workspace-tablist] [data-workspace-group]:not([data-workspace-group="shortcuts"]):not(.workspace-tab-group--ghost)'));
+        const groups = Array.from(document.querySelectorAll('[data-workspace-sessionlist] [data-workspace-group]:not([data-workspace-group="shortcuts"]):not(.workspace-session-group--ghost)'));
         const tail3 = groups.slice(-3);
         const tabStates = tail3.map((g) => {
-            const tab = g.querySelector('[data-workspace-tab]');
+            const tab = g.querySelector('[data-workspace-session]');
             return {
                 groupId: g.dataset.workspaceGroup,
                 moduleKey: g.dataset.workspaceModule,
@@ -1394,7 +1394,7 @@ try {
     await sleep(200);
     const mobileMetrics = await evaluate(`(() => {
         const refreshRect = document.querySelector('[data-workspace-refresh]')?.getBoundingClientRect();
-        const closeRect = document.querySelector('[data-workspace-tab-close]')?.getBoundingClientRect();
+        const closeRect = document.querySelector('[data-workspace-session-close]')?.getBoundingClientRect();
         const topbarRect = document.querySelector('.top-navbar')?.getBoundingClientRect();
         const mobileToggleRect = document.querySelector('.sidebar-toggle--mobile')?.getBoundingClientRect();
         const userTriggerRect = document.querySelector('.topbar-user-trigger')?.getBoundingClientRect();
@@ -1404,7 +1404,7 @@ try {
         return {
             topOverflowX: document.documentElement.scrollWidth > window.innerWidth,
             frameOverflowX: activeFrame?.contentDocument ? activeFrame.contentDocument.documentElement.scrollWidth > activeFrame.contentWindow.innerWidth : false,
-            tabbarOverflowY: (document.querySelector('[data-workspace-tabbar]')?.getBoundingClientRect().height || 0) > 68,
+            tabbarOverflowY: (document.querySelector('[data-workspace-sessionbar]')?.getBoundingClientRect().height || 0) > 68,
             refreshSize: refreshRect ? [Math.round(refreshRect.width), Math.round(refreshRect.height)] : null,
             closeSize: closeRect ? [Math.round(closeRect.width), Math.round(closeRect.height)] : null,
             mobileTopbarHeight: topbarRect ? Math.round(topbarRect.height) : 0,

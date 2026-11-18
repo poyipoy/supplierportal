@@ -49,12 +49,20 @@ class WorkspaceShellSecurityTest extends TestCase
             ->assertHeader('X-Frame-Options', 'DENY')
             ->assertSee('data-workspace-shell', false)
             ->assertSee('role="tablist"', false)
-            ->assertSee('data-workspace-tab="shortcuts"', false)
+            ->assertSee('data-workspace-session="shortcuts"', false)
             ->assertSee('workspace-panel-shortcuts', false)
-            ->assertSee('data-workspace-tab-close="initial"', false)
+            ->assertSee('data-shortcuts-pane="favorites"', false)
+            ->assertSee('data-shortcuts-pane="bookmarks"', false)
+            ->assertSee('data-shortcuts-pane="frequent"', false)
+            ->assertSee('data-shortcuts-splitter="favorites-bookmarks"', false)
+            ->assertSee('data-shortcuts-splitter="bookmarks-frequent"', false)
+            ->assertSee('data-shortcuts-dock', false)
+            ->assertSee('data-shortcuts-pane-restore="favorites"', false)
+            ->assertSee('data-workspace-session-close="initial"', false)
             ->assertSee('_embed=1', false);
 
         $shellConfig = $this->extractWorkspaceConfig($shellResponse->getContent());
+        $this->assertSame(20, $shellConfig['maxSessions']);
         $this->assertSame(20, $shellConfig['maxTabs']);
         $this->assertSame(12, $shellConfig['maxLiveFrames']);
         $this->assertStringContainsString("frame-ancestors 'none'", (string) $shellResponse->headers->get('Content-Security-Policy'));
@@ -233,12 +241,14 @@ class WorkspaceShellSecurityTest extends TestCase
 
         $config = $this->extractWorkspaceConfig($response->getContent());
 
+        $this->assertSame('shortcuts', $config['shortcutsSession']['key']);
+        $this->assertTrue($config['shortcutsSession']['pinned']);
+        $this->assertFalse($config['shortcutsSession']['closable']);
+        $this->assertFalse($config['initialSession']['pinned']);
+        $this->assertTrue($config['initialSession']['closable']);
+        $this->assertSame(__('navigation.dashboard'), $config['initialSession']['label']);
         $this->assertSame('shortcuts', $config['shortcutsTab']['key']);
-        $this->assertTrue($config['shortcutsTab']['pinned']);
-        $this->assertFalse($config['shortcutsTab']['closable']);
-        $this->assertFalse($config['initialTab']['pinned']);
-        $this->assertTrue($config['initialTab']['closable']);
-        $this->assertSame(__('navigation.dashboard'), $config['initialTab']['label']);
+        $this->assertSame(20, $config['maxSessions']);
         $this->assertSame(20, $config['maxTabs']);
         $this->assertSame(12, $config['maxLiveFrames']);
         $this->assertIsArray($config['indexPaths']);
@@ -253,7 +263,7 @@ class WorkspaceShellSecurityTest extends TestCase
         $prShellResponse = $this->actingAs($purchasing)->get(route('purchasing.requisitions.index'));
         $prShellResponse->assertOk();
         $prConfig = $this->extractWorkspaceConfig($prShellResponse->getContent());
-        $this->assertSame(__('navigation.requisition'), $prConfig['initialTab']['label']);
+        $this->assertSame(__('navigation.requisition'), $prConfig['initialSession']['label']);
 
         // Security, create, and admin edit paths must never be misclassified as index views.
         foreach ($config['indexPaths'] as $indexPath) {

@@ -140,8 +140,9 @@
         </div>
     @endif
 
-    <button type="submit" class="ui-focus-ring ui-motion tw:mt-1 tw:flex tw:h-11 tw:w-full tw:items-center tw:justify-center tw:gap-2 tw:rounded-ui-sm tw:border-0 tw:bg-primary tw:text-ui-sm tw:font-semibold tw:text-primary-foreground tw:hover:brightness-95 tw:active:brightness-90">
-        {{ __('auth.login.sign_in') }}
+    <button type="submit" data-login-submit-btn aria-label="{{ __('auth.login.sign_in') }}" class="ui-focus-ring ui-motion tw:mt-1 tw:flex tw:h-11 tw:w-full tw:items-center tw:justify-center tw:gap-2 tw:rounded-ui-sm tw:border-0 tw:bg-primary tw:text-ui-sm tw:font-semibold tw:text-primary-foreground tw:hover:brightness-95 tw:active:brightness-90">
+        <span class="ui-spinner" data-login-submit-spinner hidden aria-hidden="true"></span>
+        <span data-login-submit-label>{{ __('auth.login.sign_in') }}</span>
     </button>
 </form>
 

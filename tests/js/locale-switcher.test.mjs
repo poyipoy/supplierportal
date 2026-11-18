@@ -460,34 +460,34 @@ test('morphDomTree updates live DataTables wrapper thead headers from SSR table 
     assert.equal(liveTh.textContent, 'Nomor PO');
 });
 
-test('syncLocaleInPlace morphs .workspace-tabbar chrome while leaving data-locale-ignore tablist intact', async () => {
+test('syncLocaleInPlace morphs .workspace-sessionbar chrome while leaving data-locale-ignore sessionlist intact', async () => {
     const shortcutsText = makeElement('span', {
-        classes: ['workspace-tab__label'],
+        classes: ['workspace-session__label'],
         children: [makeTextNode('Shortcuts')],
     });
     const liveDynamicTabText = makeElement('span', {
-        classes: ['workspace-tab__label'],
+        classes: ['workspace-session__label'],
         children: [makeTextNode('DYNAMIC-KEEP')],
     });
     const liveTablist = makeElement('div', {
-        attrs: { 'data-workspace-tablist': '', 'data-locale-ignore': '' },
+        attrs: { 'data-workspace-sessionlist': '', 'data-locale-ignore': '' },
         children: [liveDynamicTabText],
     });
     const liveTabbar = makeElement('div', {
-        classes: ['workspace-tabbar'],
+        classes: ['workspace-sessionbar'],
         children: [shortcutsText, liveTablist],
     });
 
     const serverShortcutsText = makeElement('span', {
-        classes: ['workspace-tab__label'],
+        classes: ['workspace-session__label'],
         children: [makeTextNode('Pintasan')],
     });
     const serverEmptyTablist = makeElement('div', {
-        attrs: { 'data-workspace-tablist': '', 'data-locale-ignore': '' },
-        children: [makeElement('span', { classes: ['workspace-tab__label'], children: [makeTextNode('SHOULD-IGNORE')] })],
+        attrs: { 'data-workspace-sessionlist': '', 'data-locale-ignore': '' },
+        children: [makeElement('span', { classes: ['workspace-session__label'], children: [makeTextNode('SHOULD-IGNORE')] })],
     });
     const serverTabbar = makeElement('div', {
-        classes: ['workspace-tabbar'],
+        classes: ['workspace-sessionbar'],
         children: [serverShortcutsText, serverEmptyTablist],
     });
 
@@ -495,7 +495,7 @@ test('syncLocaleInPlace morphs .workspace-tabbar chrome while leaving data-local
     const doc = Object.assign(new EventTarget(), {
         documentElement: { lang: 'en' },
         title: 'Dashboard - ADASI',
-        querySelector: (sel) => (sel === '.workspace-tabbar' ? liveTabbar : null),
+        querySelector: (sel) => (sel === '.workspace-sessionbar' ? liveTabbar : null),
         querySelectorAll: () => [],
     });
     const win = Object.assign(new EventTarget(), {
@@ -509,7 +509,7 @@ test('syncLocaleInPlace morphs .workspace-tabbar chrome while leaving data-local
             parseFromString() {
                 return {
                     title: 'Dasbor - ADASI',
-                    querySelector: (sel) => (sel === '.workspace-tabbar' ? serverTabbar : null),
+                    querySelector: (sel) => (sel === '.workspace-sessionbar' ? serverTabbar : null),
                 };
             }
         },

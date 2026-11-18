@@ -541,6 +541,51 @@ test('createLoaderController honors custom showDelay from runtime UI config', ()
     loader.hide(token, true);
 });
 
+test('createDomView mounts loader inside workspace stage only and keeps sidebar/topbar interactive in workspace shell', () => {
+    const base = fakeDocument();
+    const sidebar = { inert: false };
+    const topbar = { inert: false };
+    const framesHost = {
+        inert: false,
+        attributes: {},
+        setAttribute(name, value) { this.attributes[name] = String(value); },
+        getAttribute(name) { return this.attributes[name] ?? null; },
+        removeAttribute(name) { delete this.attributes[name]; },
+    };
+    const stageChildren = [];
+    const stage = {
+        children: stageChildren,
+        appendChild(child) { stageChildren.push(child); child.parentElement = stage; return child; },
+        querySelector(sel) { return sel === '[data-workspace-frames]' ? framesHost : null; },
+    };
+    const doc = {
+        ...base,
+        documentElement: { hasAttribute: (name) => name === 'data-workspace-shell' },
+        activeElement: { id: 'sidebar-link', closest: () => null },
+        querySelector: (sel) => (sel === '[data-workspace-stage]' ? stage : null),
+        querySelectorAll: (sel) => (sel.includes('#sidebar') ? [sidebar, topbar] : []),
+    };
+
+    const view = createDomView(doc, (k) => k);
+    view.bind(() => {});
+    view.mount();
+
+    assert.equal(base.body.children.length, 0, 'outer shell loader must not mount on body');
+    assert.equal(stageChildren.length, 1, 'loader must mount inside [data-workspace-stage]');
+    assert.equal(stageChildren[0].className.includes('adasi-loader-overlay--stage'), true);
+
+    view.activate();
+    assert.equal(sidebar.inert, false, 'sidebar must remain interactive while iframe stage loads');
+    assert.equal(topbar.inert, false, 'top navbar must remain interactive while iframe stage loads');
+    assert.equal(framesHost.inert, true, 'only [data-workspace-frames] is marked inert inside stage');
+    assert.equal(framesHost.attributes['aria-busy'], 'true');
+    assert.equal(base.body.attributes['aria-busy'], undefined);
+
+    view.deactivate();
+    assert.equal(framesHost.inert, false);
+    assert.equal(framesHost.attributes['aria-busy'], undefined);
+});
+
 /** Just enough DOM for createDomView: nodes are plain objects, unknown queries return an inert stub. */
 function fakeDocument() {
     const node = (tag) => ({

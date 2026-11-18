@@ -20,65 +20,126 @@
     </div>
 
     <div class="workspace-stage__frames" data-workspace-frames>
-        {{-- Permanent native Shortcuts & Frequently Used fallback panel --}}
+        {{-- Permanent native Infor LN-style 3-pane Shortcuts panel with dual vertical splitters --}}
+        @php
+            $shortcutsPanes = [
+                [
+                    'key' => 'favorites',
+                    'title' => __('navigation.workspace_shell.favorites'),
+                    'defaultWeight' => 32,
+                    'splitterAfter' => 'favorites-bookmarks',
+                    'nextKey' => 'bookmarks',
+                    'nextTitle' => __('navigation.workspace_shell.bookmarks'),
+                ],
+                [
+                    'key' => 'bookmarks',
+                    'title' => __('navigation.workspace_shell.bookmarks'),
+                    'defaultWeight' => 32,
+                    'splitterAfter' => 'bookmarks-frequent',
+                    'nextKey' => 'frequent',
+                    'nextTitle' => __('navigation.workspace_shell.frequently_used'),
+                ],
+                [
+                    'key' => 'frequent',
+                    'title' => __('navigation.workspace_shell.frequently_used'),
+                    'defaultWeight' => 36,
+                    'splitterAfter' => null,
+                    'nextKey' => null,
+                    'nextTitle' => null,
+                ],
+            ];
+        @endphp
         <section
             class="workspace-panel workspace-shortcuts-panel"
             id="workspace-panel-shortcuts"
             role="tabpanel"
-            aria-labelledby="workspace-tab-shortcuts"
+            aria-labelledby="workspace-session-shortcuts"
             hidden
             data-workspace-panel="shortcuts"
         >
-            <div class="workspace-shortcuts__container">
-                <header class="workspace-shortcuts__header">
-                    <div class="workspace-shortcuts__title-group">
-                        <h1 class="workspace-shortcuts__title">{{ __('navigation.workspace_shell.frequently_used') }}</h1>
-                    </div>
-                    <div class="workspace-shortcuts__search-wrap">
-                        <label for="workspaceShortcutsSearch" class="visually-hidden">
-                            {{ __('navigation.workspace_shell.search_shortcuts') }}
-                        </label>
-                        <span class="workspace-shortcuts__search-icon" aria-hidden="true">
-                            <x-ui.icon name="search" size="xs" />
+            <div class="workspace-shortcuts-board" data-shortcuts-board>
+                @foreach($shortcutsPanes as $pane)
+                    @php($minimizeLabel = __('navigation.workspace_shell.minimize_pane', ['pane' => $pane['title']]))
+                    <section
+                        class="workspace-shortcuts-pane"
+                        id="workspace-shortcuts-pane-{{ $pane['key'] }}"
+                        aria-labelledby="workspace-shortcuts-title-{{ $pane['key'] }}"
+                        data-shortcuts-pane="{{ $pane['key'] }}"
+                        style="--shortcuts-pane-weight: {{ $pane['defaultWeight'] }};"
+                    >
+                        <header class="workspace-shortcuts-pane__header">
+                            <h2 class="workspace-shortcuts-pane__title" id="workspace-shortcuts-title-{{ $pane['key'] }}">
+                                {{ $pane['title'] }}
+                            </h2>
+                            <button
+                                type="button"
+                                class="workspace-shortcuts-pane__toggle ui-focus-ring"
+                                aria-expanded="true"
+                                aria-controls="workspace-shortcuts-body-{{ $pane['key'] }}"
+                                aria-label="{{ $minimizeLabel }}"
+                                title="{{ $minimizeLabel }}"
+                                data-shortcuts-pane-toggle="{{ $pane['key'] }}"
+                            >
+                                <span class="workspace-shortcuts-pane__toggle-icon" aria-hidden="true">
+                                    <x-ui.icon name="minimize-2" size="xs" />
+                                </span>
+                            </button>
+                        </header>
+                        <div class="workspace-shortcuts-pane__body" id="workspace-shortcuts-body-{{ $pane['key'] }}">
+                            <ul
+                                class="workspace-shortcuts__list"
+                                data-shortcuts-{{ $pane['key'] }}
+                                data-locale-ignore
+                            ></ul>
+                        </div>
+                    </section>
+
+                    @if($pane['splitterAfter'])
+                        @php($resizePairLabel = __('navigation.workspace_shell.resize_pane_pair', ['left' => $pane['title'], 'right' => $pane['nextTitle']]))
+                        <div
+                            class="workspace-shortcuts-splitter ui-focus-ring"
+                            role="separator"
+                            aria-orientation="vertical"
+                            tabindex="0"
+                            aria-controls="workspace-shortcuts-pane-{{ $pane['key'] }} workspace-shortcuts-pane-{{ $pane['nextKey'] }}"
+                            aria-valuemin="1"
+                            aria-valuemax="99"
+                            aria-valuenow="50"
+                            aria-label="{{ $resizePairLabel }}"
+                            title="{{ $resizePairLabel }}"
+                            data-shortcuts-splitter="{{ $pane['splitterAfter'] }}"
+                        >
+                            <span class="workspace-shortcuts-splitter__line" aria-hidden="true">
+                                <span class="workspace-shortcuts-splitter__grip"></span>
+                            </span>
+                        </div>
+                    @endif
+                @endforeach
+            </div>
+
+            <div
+                class="workspace-shortcuts-dock"
+                role="toolbar"
+                aria-label="{{ __('navigation.workspace_shell.minimized_panels') }}"
+                hidden
+                data-shortcuts-dock
+            >
+                @foreach($shortcutsPanes as $pane)
+                    @php($expandLabel = __('navigation.workspace_shell.expand_pane', ['pane' => $pane['title']]))
+                    <button
+                        type="button"
+                        class="workspace-shortcuts-dock__item ui-focus-ring"
+                        hidden
+                        aria-label="{{ $expandLabel }}"
+                        title="{{ $expandLabel }}"
+                        data-shortcuts-pane-restore="{{ $pane['key'] }}"
+                    >
+                        <span class="workspace-shortcuts-dock__icon" aria-hidden="true">
+                            <x-ui.icon name="maximize-2" size="xs" />
                         </span>
-                        <input
-                            id="workspaceShortcutsSearch"
-                            type="search"
-                            class="form-control form-control-sm workspace-shortcuts__search"
-                            placeholder="{{ __('navigation.workspace_shell.search_shortcuts') }}"
-                            autocomplete="off"
-                            data-shortcuts-search
-                        >
-                        <button
-                            type="button"
-                            class="workspace-shortcuts__clear ui-focus-ring"
-                            hidden
-                            aria-label="{{ __('navigation.workspace_shell.clear_search') }}"
-                            title="{{ __('navigation.workspace_shell.clear_search') }}"
-                            data-shortcuts-clear
-                        >
-                            <x-ui.icon name="x" size="xs" />
-                        </button>
-                    </div>
-                </header>
-
-                <div class="workspace-shortcuts__body">
-                    <div class="workspace-shortcuts__section" data-shortcuts-frequent-section>
-                        <ul class="workspace-shortcuts__list" data-shortcuts-frequent data-locale-ignore></ul>
-                    </div>
-
-                    <div class="workspace-shortcuts__section" data-shortcuts-catalog-section>
-                        <h2 class="workspace-shortcuts__section-title">{{ __('navigation.workspace_shell.all_modules') }}</h2>
-                        <div class="workspace-shortcuts__groups" data-shortcuts-catalog data-locale-ignore></div>
-                    </div>
-
-                    <div class="workspace-shortcuts__empty" hidden data-shortcuts-empty>
-                        <p class="workspace-shortcuts__empty-text">{{ __('navigation.workspace_shell.no_shortcuts_match') }}</p>
-                        <button type="button" class="btn btn-sm btn-outline-secondary" data-shortcuts-empty-clear>
-                            {{ __('navigation.workspace_shell.clear_search') }}
-                        </button>
-                    </div>
-                </div>
+                        <span class="workspace-shortcuts-dock__label">{{ $pane['title'] }}</span>
+                    </button>
+                @endforeach
             </div>
         </section>
 
@@ -87,7 +148,7 @@
             class="workspace-panel is-active"
             id="workspace-panel-initial"
             role="tabpanel"
-            aria-labelledby="workspace-tab-initial"
+            aria-labelledby="workspace-session-initial"
             aria-busy="true"
             data-workspace-panel="initial"
         >

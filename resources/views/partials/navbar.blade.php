@@ -5,7 +5,7 @@
             icon="panel-left"
             :label="__('navigation.toggle_sidebar')"
             size="lg"
-            class="sidebar-toggle sidebar-toggle--mobile tw:text-on-surface-variant"
+            :class="'sidebar-toggle sidebar-toggle--mobile tw:text-on-surface-variant'.(!($isWorkspaceShell ?? false) ? ' sidebar-toggle--desktop-fallback' : '')"
             x-on:click="$dispatch('ui-sidebar-toggle', { trigger: $el })"
             x-bind:aria-label="sidebarToggleLabel"
             x-bind:title="sidebarToggleLabel"

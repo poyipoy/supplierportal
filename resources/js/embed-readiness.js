@@ -58,7 +58,7 @@ export function isTrackableBootGetRequest({ url, method = 'GET', origin = 'http:
 
 export function createEmbedReadinessController({
     origin = 'http://localhost',
-    maxDataWaitMs = 12000,
+    maxDataWaitMs = 60000,
     timers = defaultTimers(),
     scanActiveTables = null,
     onReady = null,

@@ -85,14 +85,16 @@ class RecordWindowNavigationTest extends TestCase
             ->assertSee('data-record-nav="next"', false)
             ->assertSee(route('purchasing.purchase-orders.show', $prev, false), false)
             ->assertSee(route('purchasing.purchase-orders.show', $next, false), false)
-            ->assertSee('2 / 3', false);
+            ->assertSee('data-record-nav-position="2/3"', false)
+            ->assertSee('<span class="ui-record-nav__pos">2</span>', false)
+            ->assertSee('<span class="ui-record-nav__total">3</span>', false);
 
         // Boundary record renders the missing direction as a disabled control, not a link.
         // (The layout keyboard handler also mentions the data-record-nav selector, so assert on the disabled marker.)
         $firstShow = $this->actingAs($this->purchasing)
             ->get(route('purchasing.purchase-orders.show', $prev));
         $firstShow->assertOk()
-            ->assertSee('1 / 3', false)
+            ->assertSee('data-record-nav-position="1/3"', false)
             ->assertSee('data-record-nav-disabled="prev"', false)
             ->assertDontSee('data-record-nav-disabled="next"', false)
             ->assertSee(route('purchasing.purchase-orders.show', $middle, false), false);
@@ -197,7 +199,7 @@ class RecordWindowNavigationTest extends TestCase
             ->get(route('finance.local-procurement.show', $localPos[0]))
             ->assertOk()
             ->assertSee('data-record-nav-bar', false)
-            ->assertSee('1 / 2', false)
+            ->assertSee('data-record-nav-position="1/2"', false)
             ->assertSee('data-record-nav="next"', false);
     }
 

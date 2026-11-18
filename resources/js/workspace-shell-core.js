@@ -1,12 +1,30 @@
 export const EMBED_QUERY_PARAM = '_embed';
 export const SHORTCUTS_KEY = 'shortcuts';
-export const DEFAULT_MAX_TABS = 12;
+export const DEFAULT_MAX_SESSIONS = 12;
+export const DEFAULT_MAX_TABS = DEFAULT_MAX_SESSIONS;
 export const DEFAULT_MAX_LIVE_FRAMES = 6;
 export const DEFAULT_STALE_AFTER_MS = 120_000;
+export const DEFAULT_STEP_INTERVAL_MS = 220;
 
 const DOWNLOAD_BINARY_SUFFIX_RE = /(\/exports\/[^/]+\/download|\/shared\/pdf\/|\/attachments\/|\/export-presets(?:\/|$)|\/export\/|\/receipt\/print$|import-template)/i;
 const TOP_LEVEL_SUFFIX_RE = /(\/login|\/logout|\/confirm-password|\/forgot-password|\/two-factor-challenge|\/oauth\/|\/sso\/|\/profile\/security|\/profile\/two-factor|\/supplier-context|\/admin\/users\/create|\/admin\/users\/[^/]+\/edit|\/finance\/vendor-master\/[^/]+\/payment-term|\/verify-receipt\/|\/supplier\/register|\/supplier\/registration|\/locale\/|\/exports\/[^/]+\/download|\/shared\/pdf\/|\/attachments\/|\/export-presets(?:\/|$)|\/export\/|\/receipt\/print$|\/print$)/i;
 const NON_MUTATING_POST_SUFFIX_RE = /(\/material-calculations\/(?:totals|preview)|\/import-preview|\/import\/(?:po|gr)\/preview|\/export-form|\/revalidate)$/i;
+
+export function resolveTransitionSettleMs(durations, delays, { floorMs = 0, bufferMs = 80 } = {}) {
+    const toMs = (raw) => {
+        const text = String(raw ?? '').trim();
+        const value = parseFloat(text);
+        if (!Number.isFinite(value) || value < 0) return 0;
+        return text.endsWith('ms') ? value : value * 1000;
+    };
+    const durationList = String(durations ?? '').split(',').map(toMs);
+    const delayList = String(delays ?? '').split(',').map(toMs);
+    const longest = durationList.reduce(
+        (max, duration, index) => Math.max(max, duration + delayList[index % delayList.length]),
+        0,
+    );
+    return Math.max(floorMs, Math.round(longest + bufferMs));
+}
 
 function normalizePathname(rawUrl, origin = 'http://localhost') {
     try {
@@ -249,17 +267,20 @@ export function classifyInternalNavigation({
     return 'join-child';
 }
 
-export class WorkspaceTabStore {
+export class WorkspaceSessionStore {
     constructor({
-        maxTabs = DEFAULT_MAX_TABS,
+        maxSessions = null,
+        maxTabs = DEFAULT_MAX_SESSIONS,
         maxLiveFrames = DEFAULT_MAX_LIVE_FRAMES,
         staleAfterMs = DEFAULT_STALE_AFTER_MS,
         now = () => Date.now(),
         catalog = [],
         indexPaths = [],
     } = {}) {
+        const resolvedMax = Number(maxSessions ?? maxTabs) || DEFAULT_MAX_SESSIONS;
         this.shortcutsKey = SHORTCUTS_KEY;
-        this.maxTabs = Math.max(2, Number(maxTabs) || DEFAULT_MAX_TABS);
+        this.maxSessions = Math.max(2, resolvedMax);
+        this.maxTabs = this.maxSessions;
         this.maxLiveFrames = Math.max(2, Number(maxLiveFrames) || DEFAULT_MAX_LIVE_FRAMES);
         this.staleAfterMs = Math.max(1000, Number(staleAfterMs) || DEFAULT_STALE_AFTER_MS);
         this.now = now;
@@ -366,7 +387,7 @@ export class WorkspaceTabStore {
             .filter((group) => (
                 group.groupId !== protectedGroupId
                 && !(this._activeTarget.type === 'frame' && this._activeTarget.groupId === group.groupId)
-                && !group.frames.some((frame) => frame.isDirty || frame.staged || frame.queued || frame.loading)
+                && !group.frames.some((frame) => frame.isDirty || frame.staged || frame.stagedNew || frame.queued || frame.loading)
             ))
             .sort((a, b) => a.lastAccessedAt - b.lastAccessedAt);
 
@@ -385,6 +406,7 @@ export class WorkspaceTabStore {
                     frame.role === 'child'
                     && !frame.isDirty
                     && !frame.staged
+                    && !frame.stagedNew
                     && !frame.queued
                     && !frame.loading
                     && !(this._activeTarget.type === 'frame' && this._activeTarget.frameId === frame.frameId)
@@ -455,14 +477,25 @@ export class WorkspaceTabStore {
         });
     }
 
-    openWorkspace({ moduleKey, label, url, icon = '', insertAfterGroupId = null, activate = true, stageOnly = false, showTabWhileStaged = false }) {
+    openWorkspace({
+        moduleKey,
+        label,
+        url,
+        icon = '',
+        insertAfterGroupId = null,
+        activate = true,
+        stageOnly = false,
+        showSessionWhileStaged = null,
+        showTabWhileStaged = false,
+    }) {
         const cleanUrl = canonicalizeUrl(url);
         const resolvedKey = moduleKey || resolveModuleKey(cleanUrl, this.catalog);
         const timestamp = this.now();
+        const showWhileStaged = Boolean(showSessionWhileStaged ?? showTabWhileStaged);
 
         const closedGroupIds = [];
         const closedFrameIds = [];
-        while (this.totalFrames() >= this.maxTabs) {
+        while (this.totalFrames() >= this.maxSessions) {
             const evicted = this._evictOldestCleanSlotForCapacity();
             if (!evicted) {
                 return {
@@ -487,8 +520,8 @@ export class WorkspaceTabStore {
             url: cleanUrl,
             timestamp,
             staged: stageOnly,
-            stagedNew: stageOnly && !showTabWhileStaged,
-            queued: Boolean(stageOnly && showTabWhileStaged),
+            stagedNew: Boolean(stageOnly && !showWhileStaged),
+            queued: Boolean(stageOnly && showWhileStaged),
         });
 
         const group = {
@@ -546,13 +579,29 @@ export class WorkspaceTabStore {
         });
     }
 
-    openChildFrame({ groupId = null, sourceFrameId = null, label, url, moduleKey = null, stageOnly = false, showTabWhileStaged = false }) {
+    openChildFrame({
+        groupId = null,
+        sourceFrameId = null,
+        label,
+        url,
+        moduleKey = null,
+        stageOnly = false,
+        showSessionWhileStaged = null,
+        showTabWhileStaged = false,
+    }) {
+        const showWhileStaged = showSessionWhileStaged ?? showTabWhileStaged;
         const targetGroup = groupId
             ? this.getGroup(groupId)
             : (sourceFrameId ? this.getFrameContext(sourceFrameId)?.group : this.activeGroup());
 
         if (!targetGroup) {
-            return this.openWorkspace({ moduleKey, label, url, stageOnly, showTabWhileStaged });
+            return this.openWorkspace({
+                moduleKey,
+                label,
+                url,
+                stageOnly,
+                showSessionWhileStaged: Boolean(showWhileStaged),
+            });
         }
 
         const cleanUrl = canonicalizeUrl(url);
@@ -579,7 +628,7 @@ export class WorkspaceTabStore {
 
         const closedGroupIds = [];
         const closedFrameIds = [];
-        while (this.totalFrames() >= this.maxTabs) {
+        while (this.totalFrames() >= this.maxSessions) {
             const evicted = this._evictOldestCleanSlotForCapacity(targetGroup.groupId);
             if (!evicted) {
                 return {
@@ -607,8 +656,8 @@ export class WorkspaceTabStore {
             url: cleanUrl,
             timestamp,
             staged: stageOnly,
-            stagedNew: stageOnly && !showTabWhileStaged,
-            queued: Boolean(stageOnly && showTabWhileStaged),
+            stagedNew: Boolean(stageOnly && !showWhileStaged),
+            queued: Boolean(stageOnly && showWhileStaged),
         });
 
         targetGroup.frames.push(child);
@@ -1076,6 +1125,8 @@ export class WorkspaceTabStore {
     }
 }
 
+export const WorkspaceTabStore = WorkspaceSessionStore;
+
 /**
  * Water-filling dynamic pill cap (Infor/Chrome tab shrinking): trims widest tabs first
  * so open tabs fit cleanly inside the tablist budget down to per-pill minimum floors
@@ -1163,25 +1214,28 @@ function defaultQueueTimers() {
     return {
         setTimeout: (fn, ms) => (hasWin ? window.setTimeout(fn, ms) : globalThis.setTimeout(fn, ms)),
         clearTimeout: (id) => (hasWin ? window.clearTimeout(id) : globalThis.clearTimeout(id)),
+        now: () => (typeof performance !== 'undefined' && typeof performance.now === 'function' ? performance.now() : Date.now()),
     };
 }
 
 /**
- * Bounded-concurrency FIFO navigation queue for workspace tabs and staged embeds.
+ * Bounded-concurrency FIFO navigation queue for workspace sessions and staged embeds.
  *
  * Preserves click order while capping concurrent active loads (HTML + initial data)
- * to protect backend session/DB capacity, sharing a unified total-wait threshold for
- * AdasiLoader until the latest user-targeted destination finishes rendering.
+ * to protect backend session/DB capacity, committing and stepping through ready
+ * workspaces sequentially in strict FIFO click order (~220ms step dwell).
  */
 export class WorkspaceNavQueue {
     constructor({
         maxConcurrent = 2,
         slowThresholdMs = 2500,
+        stepIntervalMs = DEFAULT_STEP_INTERVAL_MS,
         slotTimeoutMs = 15000,
         dataReadyTimeoutMs = 12000,
         queueWaitTimeoutMs = 45000,
         timers = defaultQueueTimers(),
         onStartSlot = null,
+        onCommitReady = null,
         onSlowThreshold = null,
         onHideLoader = null,
         onSlotTimeout = null,
@@ -1190,11 +1244,14 @@ export class WorkspaceNavQueue {
     } = {}) {
         this.maxConcurrent = Math.max(1, Number(maxConcurrent) || 2);
         this.slowThresholdMs = Math.max(0, Number(slowThresholdMs) >= 0 ? Number(slowThresholdMs) : 2500);
+        this.stepIntervalMs = Math.max(0, Number(stepIntervalMs) >= 0 ? Number(stepIntervalMs) : DEFAULT_STEP_INTERVAL_MS);
+        this._stepIntervalMs = this.stepIntervalMs;
         this.slotTimeoutMs = Math.max(0, Number(slotTimeoutMs) || 0);
         this.dataReadyTimeoutMs = Math.max(0, Number(dataReadyTimeoutMs) || 0);
         this.queueWaitTimeoutMs = Math.max(0, Number(queueWaitTimeoutMs) || 0);
         this.timers = timers;
         this.onStartSlot = onStartSlot;
+        this.onCommitReady = onCommitReady;
         this.onSlowThreshold = onSlowThreshold;
         this.onHideLoader = onHideLoader;
         this.onSlotTimeout = onSlotTimeout;
@@ -1202,15 +1259,35 @@ export class WorkspaceNavQueue {
         this.onQueueChange = onQueueChange;
 
         this._entries = [];
+        this._commitOrder = [];
         this._byFrameId = new Map();
         this._autoFocusFrameId = null;
         this._slowTimerId = 0;
+        this._stepTimerId = 0;
+        this._lastCommitAt = null;
         this._loaderShown = false;
         this._prioritySeq = 0;
     }
 
+    _now() {
+        if (typeof this.timers?.now === 'function') {
+            return Number(this.timers.now()) || 0;
+        }
+        return typeof performance !== 'undefined' && typeof performance.now === 'function'
+            ? performance.now()
+            : Date.now();
+    }
+
     size() {
         return this._entries.length;
+    }
+
+    pendingCommitsCount() {
+        return this._commitOrder.length;
+    }
+
+    commitOrder() {
+        return this._commitOrder.map((entry) => entry.frameId);
     }
 
     has(frameId) {
@@ -1267,6 +1344,7 @@ export class WorkspaceNavQueue {
                 total: this._entries.length,
                 active: this.activeCount(),
                 queued: this.queuedCount(),
+                pendingCommits: this._commitOrder.length,
                 autoFocusFrameId: this._autoFocusFrameId,
                 loaderShown: this._loaderShown,
             });
@@ -1297,6 +1375,29 @@ export class WorkspaceNavQueue {
         }
     }
 
+    _removeFromCommitOrder(frameId) {
+        const idx = this._commitOrder.findIndex((entry) => entry.frameId === frameId);
+        if (idx !== -1) {
+            return this._commitOrder.splice(idx, 1)[0];
+        }
+        return null;
+    }
+
+    _hasPendingUnreadyAutoFocus() {
+        return this._commitOrder.some((entry) => entry.autoFocus && !entry.readyToCommit);
+    }
+
+    _syncAutoFocusTarget() {
+        let lastAutoFocus = null;
+        for (const entry of this._commitOrder) {
+            if (entry.autoFocus) {
+                lastAutoFocus = entry.frameId;
+            }
+        }
+        this._autoFocusFrameId = lastAutoFocus;
+        this._ensureSlowTimer();
+    }
+
     _clearWaitPresentation() {
         if (this._slowTimerId) {
             this.timers.clearTimeout(this._slowTimerId);
@@ -1311,7 +1412,7 @@ export class WorkspaceNavQueue {
     }
 
     _ensureSlowTimer() {
-        if (!this._autoFocusFrameId) {
+        if (!this._hasPendingUnreadyAutoFocus()) {
             this._clearWaitPresentation();
             return;
         }
@@ -1319,7 +1420,7 @@ export class WorkspaceNavQueue {
 
         this._slowTimerId = this.timers.setTimeout(() => {
             this._slowTimerId = 0;
-            if (!this._autoFocusFrameId) return;
+            if (!this._hasPendingUnreadyAutoFocus()) return;
             this._loaderShown = true;
             try {
                 this.onSlowThreshold?.(this._autoFocusFrameId);
@@ -1328,15 +1429,46 @@ export class WorkspaceNavQueue {
         }, this.slowThresholdMs);
     }
 
-    _reassignOrClearAutoFocusAfterRemoval(removedFrameId) {
-        if (this._autoFocusFrameId !== removedFrameId) return;
-        const fallback = this._entries.length > 0 ? this._entries[this._entries.length - 1] : null;
-        if (fallback) {
-            this._autoFocusFrameId = fallback.frameId;
-            return;
+    _drainReadyCommits(triggerFrameId = null) {
+        let triggerResult = null;
+        if (this._stepTimerId) {
+            this._syncAutoFocusTarget();
+            return { triggerResult };
         }
-        this._autoFocusFrameId = null;
-        this._clearWaitPresentation();
+
+        while (this._commitOrder.length > 0 && this._commitOrder[0].readyToCommit) {
+            const head = this._commitOrder[0];
+            const elapsed = this._lastCommitAt !== null ? (this._now() - this._lastCommitAt) : Infinity;
+
+            if (this._lastCommitAt !== null && this._stepIntervalMs > 0 && elapsed < this._stepIntervalMs) {
+                const delay = Math.max(1, Math.ceil(this._stepIntervalMs - elapsed));
+                this._stepTimerId = this.timers.setTimeout(() => {
+                    this._stepTimerId = 0;
+                    this._drainReadyCommits();
+                    this._notifyChange();
+                }, delay);
+                break;
+            }
+
+            this._commitOrder.shift();
+            const shouldActivate = Boolean(head.autoFocus);
+            if (shouldActivate) {
+                // Hide stage loader when a workspace actually finishes rendering onto the stage.
+                this._clearWaitPresentation();
+            }
+            this._lastCommitAt = this._now();
+
+            if (head.frameId === triggerFrameId) {
+                triggerResult = { committedNow: true, activate: shouldActivate };
+            }
+
+            try {
+                this.onCommitReady?.(head, { activate: shouldActivate });
+            } catch {}
+        }
+
+        this._syncAutoFocusTarget();
+        return { triggerResult };
     }
 
     _nextQueuedEntry() {
@@ -1393,8 +1525,8 @@ export class WorkspaceNavQueue {
         const existing = this._byFrameId.get(frameId);
         if (existing) {
             if (autoFocus) {
-                this._autoFocusFrameId = frameId;
-                this._ensureSlowTimer();
+                existing.autoFocus = true;
+                this._syncAutoFocusTarget();
             }
             this._pump();
             this._notifyChange();
@@ -1411,6 +1543,8 @@ export class WorkspaceNavQueue {
             historyMode,
             triggerEl,
             wasHibernated: Boolean(wasHibernated),
+            autoFocus: Boolean(autoFocus),
+            readyToCommit: false,
             status: 'queued',
             priorityOrder: 0,
             slotTimerId: 0,
@@ -1419,6 +1553,7 @@ export class WorkspaceNavQueue {
         };
 
         this._entries.push(entry);
+        this._commitOrder.push(entry);
         this._byFrameId.set(frameId, entry);
 
         if (this.queueWaitTimeoutMs > 0) {
@@ -1430,25 +1565,27 @@ export class WorkspaceNavQueue {
             }, this.queueWaitTimeoutMs);
         }
 
-        if (autoFocus) {
-            this._autoFocusFrameId = frameId;
-            this._ensureSlowTimer();
-        }
-
+        this._syncAutoFocusTarget();
         this._pump();
         this._notifyChange();
         return entry;
     }
 
     prioritize(frameId) {
-        const entry = this._byFrameId.get(frameId);
+        const entry = this._byFrameId.get(frameId)
+            || this._commitOrder.find((item) => item.frameId === frameId);
         if (!entry) return false;
-        this._autoFocusFrameId = frameId;
-        this._ensureSlowTimer();
+
+        entry.autoFocus = true;
+        this._removeFromCommitOrder(frameId);
+        this._commitOrder.unshift(entry);
+        this._syncAutoFocusTarget();
 
         if (entry.status === 'queued') {
             entry.priorityOrder = ++this._prioritySeq;
             this._pump();
+        } else if (entry.readyToCommit) {
+            this._drainReadyCommits();
         }
         this._notifyChange();
         return true;
@@ -1491,26 +1628,37 @@ export class WorkspaceNavQueue {
     complete(frameId) {
         const entry = this._byFrameId.get(frameId);
         if (!entry || entry.status === 'ready' || entry.status === 'cancelled' || entry.status === 'failed') {
-            return { handled: false, activate: false, entry: null };
+            return { handled: false, activate: false, deferred: false, entry: null };
         }
 
         this._clearEntryTimers(entry);
         entry.status = 'ready';
+        entry.readyToCommit = true;
         this._removeEntry(entry);
 
-        const activate = this._autoFocusFrameId === frameId;
-        if (activate) {
-            this._autoFocusFrameId = null;
-            this._clearWaitPresentation();
-        }
-
         this._pump();
+        const { triggerResult } = this._drainReadyCommits(frameId);
+        const committedNow = Boolean(triggerResult?.committedNow);
+        const activate = committedNow ? Boolean(triggerResult?.activate) : false;
+
         this._notifyChange();
-        return { handled: true, activate, entry };
+        return {
+            handled: true,
+            activate,
+            deferred: !committedNow,
+            entry,
+        };
     }
 
     clearAutoFocus() {
-        if (!this._autoFocusFrameId && !this._loaderShown && !this._slowTimerId) {
+        let changed = Boolean(this._autoFocusFrameId || this._loaderShown || this._slowTimerId);
+        for (const entry of this._commitOrder) {
+            if (entry.autoFocus) {
+                entry.autoFocus = false;
+                changed = true;
+            }
+        }
+        if (!changed) {
             return;
         }
         this._autoFocusFrameId = null;
@@ -1519,35 +1667,232 @@ export class WorkspaceNavQueue {
     }
 
     cancel(frameId, reason = 'cancelled') {
-        const entry = this._byFrameId.get(frameId);
+        const entry = this._byFrameId.get(frameId) || this._removeFromCommitOrder(frameId);
         if (!entry) return null;
 
         this._clearEntryTimers(entry);
         entry.status = 'cancelled';
         entry.cancelReason = reason;
         this._removeEntry(entry);
-        this._reassignOrClearAutoFocusAfterRemoval(frameId);
+        this._removeFromCommitOrder(frameId);
 
         this._pump();
+        this._drainReadyCommits();
         this._notifyChange();
         return entry;
     }
 
     fail(frameId, reason = 'timeout') {
-        const entry = this._byFrameId.get(frameId);
+        const entry = this._byFrameId.get(frameId) || this._removeFromCommitOrder(frameId);
         if (!entry) return null;
 
         this._clearEntryTimers(entry);
         entry.status = 'failed';
         entry.failReason = reason;
         this._removeEntry(entry);
-        this._reassignOrClearAutoFocusAfterRemoval(frameId);
+        this._removeFromCommitOrder(frameId);
 
         this._pump();
         try {
             this.onSlotTimeout?.(entry, reason);
         } catch {}
+        this._drainReadyCommits();
         this._notifyChange();
         return entry;
     }
+}
+
+export const SHORTCUTS_PANE_KEYS = Object.freeze(['favorites', 'bookmarks', 'frequent']);
+
+export const DEFAULT_SHORTCUTS_WEIGHTS = Object.freeze({
+    favorites: 32,
+    bookmarks: 32,
+    frequent: 36,
+});
+
+export const MIN_SHORTCUTS_PANE_WIDTH_PX = 1;
+export const SHORTCUTS_SPLITTER_WIDTH_PX = 16;
+
+export function normalizeShortcutsLayout(rawLayout) {
+    const rawMin = rawLayout && typeof rawLayout.minimized === 'object' && rawLayout.minimized
+        ? rawLayout.minimized
+        : {};
+    const minimized = {
+        favorites: Boolean(rawMin.favorites),
+        bookmarks: Boolean(rawMin.bookmarks),
+        frequent: Boolean(rawMin.frequent),
+    };
+
+    const rawOrder = Array.isArray(rawLayout?.minimizedOrder) ? rawLayout.minimizedOrder : [];
+    const minimizedOrder = [];
+    for (const k of rawOrder) {
+        if (SHORTCUTS_PANE_KEYS.includes(k) && minimized[k] && !minimizedOrder.includes(k)) {
+            minimizedOrder.push(k);
+        }
+    }
+    for (const k of SHORTCUTS_PANE_KEYS) {
+        if (minimized[k] && !minimizedOrder.includes(k)) {
+            minimizedOrder.push(k);
+        }
+    }
+
+    const rawWeights = rawLayout && typeof rawLayout.weights === 'object' && rawLayout.weights
+        ? rawLayout.weights
+        : null;
+    const validWeights = rawWeights
+        && SHORTCUTS_PANE_KEYS.every((k) => Number.isFinite(Number(rawWeights[k])) && Number(rawWeights[k]) > 0);
+
+    const source = validWeights
+        ? {
+            favorites: Number(rawWeights.favorites),
+            bookmarks: Number(rawWeights.bookmarks),
+            frequent: Number(rawWeights.frequent),
+        }
+        : { ...DEFAULT_SHORTCUTS_WEIGHTS };
+
+    const total = SHORTCUTS_PANE_KEYS.reduce((acc, k) => acc + source[k], 0) || 100;
+    const weights = {
+        favorites: Math.max(0.01, (source.favorites / total) * 100),
+        bookmarks: Math.max(0.01, (source.bookmarks / total) * 100),
+        frequent: Math.max(0.01, (source.frequent / total) * 100),
+    };
+
+    return { weights, minimized, minimizedOrder };
+}
+
+export function resolveVisibleShortcutsSplitters(minimized = {}) {
+    const min = minimized && typeof minimized === 'object' ? minimized : {};
+    const openCount = SHORTCUTS_PANE_KEYS.filter((k) => !min[k]).length;
+    if (openCount <= 1) return [];
+    if (openCount === 3) return ['favorites-bookmarks', 'bookmarks-frequent'];
+    if (min.favorites) return ['bookmarks-frequent'];
+    return ['favorites-bookmarks'];
+}
+
+export function resolveShortcutsSplitterPair(splitterKey, minimized = {}) {
+    const visible = resolveVisibleShortcutsSplitters(minimized);
+    if (!visible.includes(splitterKey)) return null;
+    const min = minimized && typeof minimized === 'object' ? minimized : {};
+    if (splitterKey === 'favorites-bookmarks') {
+        if (min.favorites) return null;
+        if (!min.bookmarks) return ['favorites', 'bookmarks'];
+        if (!min.frequent) return ['favorites', 'frequent'];
+        return null;
+    }
+    if (splitterKey === 'bookmarks-frequent') {
+        if (min.frequent) return null;
+        if (!min.bookmarks) return ['bookmarks', 'frequent'];
+        if (!min.favorites) return ['favorites', 'frequent'];
+        return null;
+    }
+    return null;
+}
+
+export function computeOpenPaneWidthPx(weights, minimized = {}, boardWidthPx = 1000) {
+    const min = minimized && typeof minimized === 'object' ? minimized : {};
+    const openKeys = SHORTCUTS_PANE_KEYS.filter((k) => !min[k]);
+    const visibleSplitters = resolveVisibleShortcutsSplitters(min);
+    const openTotalPx = Math.max(
+        0,
+        Number(boardWidthPx || 0) - (visibleSplitters.length * SHORTCUTS_SPLITTER_WIDTH_PX),
+    );
+    const openWeightSum = openKeys.reduce((acc, k) => acc + Math.max(0.001, Number(weights?.[k] || 0)), 0);
+    const widthsPx = {};
+
+    for (const k of SHORTCUTS_PANE_KEYS) {
+        if (min[k]) {
+            widthsPx[k] = 0;
+        } else {
+            widthsPx[k] = openWeightSum > 0
+                ? openTotalPx * (Math.max(0.001, Number(weights?.[k] || 0)) / openWeightSum)
+                : 0;
+        }
+    }
+
+    return { openKeys, openTotalPx, openWeightSum, widthsPx };
+}
+
+export function clampOpenPaneWeights({
+    weights,
+    minimized = {},
+    boardWidthPx = 1000,
+    minPaneWidthPx = MIN_SHORTCUTS_PANE_WIDTH_PX,
+}) {
+    const snapshot = computeOpenPaneWidthPx(weights, minimized, boardWidthPx);
+    const { openKeys, openTotalPx, openWeightSum, widthsPx } = snapshot;
+    if (openKeys.length <= 1 || openTotalPx <= 0 || openWeightSum <= 0) {
+        return { ...weights };
+    }
+
+    const effectiveMin = Math.min(minPaneWidthPx, openTotalPx / openKeys.length);
+    const under = openKeys.filter((k) => widthsPx[k] < effectiveMin - 0.01);
+    if (under.length === 0) {
+        return { ...weights };
+    }
+
+    const nextWidths = { ...widthsPx };
+    let deficit = 0;
+    for (const k of under) {
+        deficit += effectiveMin - nextWidths[k];
+        nextWidths[k] = effectiveMin;
+    }
+
+    const overKeys = openKeys.filter((k) => nextWidths[k] > effectiveMin + 0.01);
+    const surplus = overKeys.reduce((acc, k) => acc + (nextWidths[k] - effectiveMin), 0);
+    if (surplus > 0) {
+        const takeRatio = Math.min(1, deficit / surplus);
+        for (const k of overKeys) {
+            nextWidths[k] -= (nextWidths[k] - effectiveMin) * takeRatio;
+        }
+    }
+
+    const nextWeights = { ...weights };
+    for (const k of openKeys) {
+        nextWeights[k] = openWeightSum * (nextWidths[k] / openTotalPx);
+    }
+    return nextWeights;
+}
+
+export function resizeShortcutsPairByDelta({
+    weights,
+    minimized = {},
+    splitterKey,
+    deltaPx = 0,
+    boardWidthPx = 1000,
+    minPaneWidthPx = MIN_SHORTCUTS_PANE_WIDTH_PX,
+}) {
+    const pair = resolveShortcutsSplitterPair(splitterKey, minimized);
+    if (!pair || !Number.isFinite(Number(boardWidthPx)) || Number(boardWidthPx) <= 0) {
+        return { changed: false, pair: null, weights: { ...weights }, leftPct: 50, minPct: 20 };
+    }
+
+    const [leftKey, rightKey] = pair;
+    const snapshot = computeOpenPaneWidthPx(weights, minimized, boardWidthPx);
+    const leftWidth0 = snapshot.widthsPx[leftKey];
+    const rightWidth0 = snapshot.widthsPx[rightKey];
+    const pairTotalPx = leftWidth0 + rightWidth0;
+    if (pairTotalPx <= 0) {
+        return { changed: false, pair, weights: { ...weights }, leftPct: 50, minPct: 20 };
+    }
+
+    const pairWeightSum = Math.max(0.002, Number(weights[leftKey] || 0) + Number(weights[rightKey] || 0));
+    const effectiveMin = Math.min(minPaneWidthPx, pairTotalPx / 2);
+    const rawLeft = leftWidth0 + Number(deltaPx || 0);
+    const nextLeftPx = Math.min(pairTotalPx - effectiveMin, Math.max(effectiveMin, rawLeft));
+    const nextRightPx = pairTotalPx - nextLeftPx;
+
+    const nextLeftWeight = pairWeightSum * (nextLeftPx / pairTotalPx);
+    const nextRightWeight = pairWeightSum - nextLeftWeight;
+
+    return {
+        changed: Math.abs(nextLeftPx - leftWidth0) > 0.01,
+        pair,
+        weights: {
+            ...weights,
+            [leftKey]: nextLeftWeight,
+            [rightKey]: nextRightWeight,
+        },
+        leftPct: (nextLeftPx / pairTotalPx) * 100,
+        minPct: (effectiveMin / pairTotalPx) * 100,
+    };
 }

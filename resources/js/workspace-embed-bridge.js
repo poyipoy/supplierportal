@@ -186,7 +186,8 @@ export function bootWorkspaceEmbedBridge() {
             || '';
 
         if (typeof shell.handleEmbedLinkClick === 'function') {
-            const outcome = shell.handleEmbedLinkClick(window, absUrl, linkLabel);
+            const clickOptions = anchor.dataset.workspaceDetailSwitch === 'true' ? { detailSwitch: true } : {};
+            const outcome = shell.handleEmbedLinkClick(window, absUrl, linkLabel, clickOptions);
             if (outcome === 'handled') {
                 event.preventDefault();
                 return;

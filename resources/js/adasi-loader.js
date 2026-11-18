@@ -116,21 +116,29 @@ export function createLoaderController({ view, timers, showDelay = SHOW_DELAY })
     };
 }
 
-/** DOM view: full-screen overlay, inert page shell, focus handling. */
+/** DOM view: full-screen overlay (or stage-scoped overlay in workspace shell), inert target shell, focus handling. */
 export function createDomView(doc = document, translate = t) {
     let overlay = null;
     let text = null;
     let dismiss = null;
     let previousFocus = null;
     let inerted = [];
+    let busyHost = null;
     let previousBusy = null;
     let wantsActive = false;
     let wantsSlow = false;
     let presented = false;
 
+    const resolveStageContainer = () => (
+        doc.documentElement?.hasAttribute?.('data-workspace-shell')
+            ? (doc.querySelector?.('[data-workspace-stage]') ?? null)
+            : null
+    );
+
     const build = (onDismiss) => {
+        const stage = resolveStageContainer();
         overlay = doc.createElement('div');
-        overlay.className = 'adasi-loader-overlay';
+        overlay.className = stage ? 'adasi-loader-overlay adasi-loader-overlay--stage' : 'adasi-loader-overlay';
         overlay.id = 'adasiLoader';
         overlay.setAttribute('role', 'status');
         overlay.setAttribute('aria-live', 'polite');
@@ -142,7 +150,7 @@ export function createDomView(doc = document, translate = t) {
         text = overlay.querySelector('.adasi-loader-text');
         dismiss = overlay.querySelector('.adasi-loader-dismiss');
         dismiss.addEventListener('click', onDismiss);
-        doc.body.appendChild(overlay);
+        (stage || doc.body).appendChild(overlay);
     };
 
     const view = {
@@ -155,7 +163,13 @@ export function createDomView(doc = document, translate = t) {
          * once the element exists. Built lazily, the logo waited for the server whenever the loader was shown.
          */
         mount() {
-            if (!overlay && doc.body) build(() => this.onDismiss?.());
+            const stage = resolveStageContainer();
+            if (!overlay && (stage || doc.body)) {
+                build(() => this.onDismiss?.());
+            } else if (overlay && stage && overlay.parentElement !== stage) {
+                overlay.classList.add('adasi-loader-overlay--stage');
+                stage.appendChild(overlay);
+            }
         },
         activate() {
             wantsActive = true;
@@ -168,12 +182,24 @@ export function createDomView(doc = document, translate = t) {
             text.textContent = translate('js.loader.loading');
             dismiss.hidden = true;
             previousFocus = doc.activeElement;
-            inerted = Array.from(doc.querySelectorAll(INERT_SELECTOR), (node) => ({ node, wasInert: node.inert }));
+            const stage = resolveStageContainer();
+            if (stage) {
+                const framesHost = stage.querySelector?.('[data-workspace-frames]') ?? null;
+                busyHost = framesHost || stage;
+                const targets = framesHost ? [framesHost] : Array.from(doc.querySelectorAll('#main-content'));
+                inerted = targets.map((node) => ({ node, wasInert: node.inert }));
+            } else {
+                busyHost = doc.body;
+                inerted = Array.from(doc.querySelectorAll(INERT_SELECTOR), (node) => ({ node, wasInert: node.inert }));
+            }
             inerted.forEach(({ node }) => { node.inert = true; });
-            previousBusy = doc.body.getAttribute?.('aria-busy') ?? null;
-            doc.body.setAttribute('aria-busy', 'true');
+            previousBusy = busyHost?.getAttribute?.('aria-busy') ?? null;
+            busyHost?.setAttribute?.('aria-busy', 'true');
             overlay.classList.add('active');
-            overlay.querySelector('.adasi-loader-card').focus({ preventScroll: true });
+            const focusInsideStage = !stage || Boolean(previousFocus?.closest?.('[data-workspace-frames]'));
+            if (focusInsideStage) {
+                overlay.querySelector('.adasi-loader-card').focus({ preventScroll: true });
+            }
             if (wantsSlow) this.showSlow();
         },
         reconcile() {
@@ -185,7 +211,13 @@ export function createDomView(doc = document, translate = t) {
             text.textContent = translate('js.loader.slow');
             dismiss.textContent = translate('js.loader.dismiss');
             dismiss.hidden = false;
-            dismiss.focus({ preventScroll: true });
+            const stage = resolveStageContainer();
+            const focusInsideStage = !stage
+                || Boolean(overlay.contains?.(doc.activeElement))
+                || Boolean(doc.activeElement?.closest?.('[data-workspace-frames]'));
+            if (focusInsideStage) {
+                dismiss.focus({ preventScroll: true });
+            }
         },
         deactivate() {
             wantsActive = false;
@@ -195,12 +227,16 @@ export function createDomView(doc = document, translate = t) {
             overlay.classList.remove('active');
             inerted.forEach(({ node, wasInert }) => { node.inert = wasInert; });
             inerted = [];
-            if (previousBusy === null) doc.body.removeAttribute('aria-busy');
-            else doc.body.setAttribute('aria-busy', previousBusy);
+            const host = busyHost || doc.body;
+            busyHost = null;
+            if (previousBusy === null) host?.removeAttribute?.('aria-busy');
+            else host?.setAttribute?.('aria-busy', previousBusy);
             previousBusy = null;
             const target = previousFocus;
             previousFocus = null;
-            if (target && target.isConnected && typeof target.focus === 'function') {
+            const stage = resolveStageContainer();
+            const shouldRestoreFocus = !stage || Boolean(overlay.contains?.(doc.activeElement));
+            if (shouldRestoreFocus && target && target.isConnected && typeof target.focus === 'function') {
                 target.focus({ preventScroll: true });
             }
         },

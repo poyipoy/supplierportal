@@ -351,7 +351,7 @@
         @endif
 
         @if($isWorkspaceShell ?? false)
-            @include('partials.workspace-tab-bar')
+            @include('partials.workspace-session-bar')
 
             {{-- Workspace Iframe Stage --}}
             <main class="content-area workspace-stage" id="main-content" data-workspace-stage tabindex="-1">

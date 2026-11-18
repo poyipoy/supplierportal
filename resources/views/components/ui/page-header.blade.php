@@ -12,7 +12,9 @@
     $navPosition = is_array($recordNav) ? ($recordNav['position'] ?? null) : null;
     $navTotal = is_array($recordNav) ? (int) ($recordNav['total'] ?? 0) : 0;
     $hasRecordNav = is_array($recordNav) && ($prevUrl !== null || $nextUrl !== null || ($navTotal > 1 && $navPosition !== null));
-    $navBtnBase = 'ui-motion ui-focus-ring tw:inline-flex tw:min-h-9 tw:min-w-9 tw:pointer-coarse:min-h-11 tw:pointer-coarse:min-w-11 tw:items-center tw:justify-center tw:gap-1 tw:px-2.5 tw:text-ui-xs tw:font-semibold tw:no-underline';
+    $posLabel = ($navPosition !== null && $navTotal > 0)
+        ? __('navigation.record_nav.position', ['position' => $navPosition, 'total' => $navTotal])
+        : '';
 @endphp
 
 <header {{ $attributes->class(['ui-page-header tw:flex tw:flex-col tw:gap-3 tw:shell:flex-row tw:shell:items-start tw:shell:justify-between']) }}>
@@ -50,61 +52,66 @@
     @if($hasRecordNav || isset($actions))
         <div class="tw:flex tw:shrink-0 tw:flex-wrap tw:items-center tw:gap-2 tw:shell:pt-0.5">
             @if($hasRecordNav)
-                <nav aria-label="{{ __('navigation.record_nav.label') }}" class="tw:inline-flex tw:items-center tw:overflow-hidden tw:rounded-ui-sm tw:border tw:border-outline-strong tw:bg-surface tw:divide-x tw:divide-outline-variant" data-record-nav-bar>
+                <nav aria-label="{{ __('navigation.record_nav.label') }}" class="ui-record-nav" data-record-nav-bar>
                     @if($prevUrl)
                         <a
                             href="{{ $prevUrl }}"
-                            class="{{ $navBtnBase }} tw:text-on-surface tw:hover:bg-surface-container"
+                            class="ui-record-nav__btn ui-record-nav__btn--prev ui-focus-ring"
                             data-record-nav="prev"
+                            data-workspace-detail-switch="true"
                             title="{{ __('navigation.record_nav.previous_hint') }}"
                             aria-label="{{ __('navigation.record_nav.previous_hint') }}"
                         >
                             <x-ui.icon name="chevron-left" size="xs" aria-hidden="true" />
-                            <span class="tw:hidden tw:sm:inline">{{ __('navigation.record_nav.previous') }}</span>
+                            <span class="ui-record-nav__label">{{ __('navigation.record_nav.previous') }}</span>
                         </a>
                     @else
                         <button
                             type="button"
-                            class="{{ $navBtnBase }} tw:cursor-not-allowed tw:border-0 tw:bg-surface-container tw:text-on-surface-variant"
+                            class="ui-record-nav__btn ui-record-nav__btn--prev"
                             disabled
                             data-record-nav-disabled="prev"
+                            title="{{ __('navigation.record_nav.previous') }}"
                             aria-label="{{ __('navigation.record_nav.previous') }}"
                         >
                             <x-ui.icon name="chevron-left" size="xs" aria-hidden="true" />
-                            <span class="tw:hidden tw:sm:inline">{{ __('navigation.record_nav.previous') }}</span>
+                            <span class="ui-record-nav__label">{{ __('navigation.record_nav.previous') }}</span>
                         </button>
                     @endif
 
                     @if($navPosition !== null && $navTotal > 0)
                         <span
-                            class="ui-tabular-nums tw:inline-flex tw:min-h-9 tw:items-center tw:bg-surface-low tw:px-2.5 tw:text-ui-xs tw:font-medium tw:text-on-surface-variant"
-                            aria-label="{{ __('navigation.record_nav.position', ['position' => $navPosition, 'total' => $navTotal]) }}"
-                            data-record-nav-position
+                            class="ui-record-nav__counter ui-tabular-nums"
+                            title="{{ $posLabel }}"
+                            aria-label="{{ $posLabel }}"
+                            data-record-nav-position="{{ $navPosition }}/{{ $navTotal }}"
                         >
-                            {{ $navPosition }} / {{ $navTotal }}
+                            <span class="ui-record-nav__pos">{{ $navPosition }}</span><span class="ui-record-nav__sep" aria-hidden="true">/</span><span class="ui-record-nav__total">{{ $navTotal }}</span>
                         </span>
                     @endif
 
                     @if($nextUrl)
                         <a
                             href="{{ $nextUrl }}"
-                            class="{{ $navBtnBase }} tw:text-on-surface tw:hover:bg-surface-container"
+                            class="ui-record-nav__btn ui-record-nav__btn--next ui-focus-ring"
                             data-record-nav="next"
+                            data-workspace-detail-switch="true"
                             title="{{ __('navigation.record_nav.next_hint') }}"
                             aria-label="{{ __('navigation.record_nav.next_hint') }}"
                         >
-                            <span class="tw:hidden tw:sm:inline">{{ __('navigation.record_nav.next') }}</span>
+                            <span class="ui-record-nav__label">{{ __('navigation.record_nav.next') }}</span>
                             <x-ui.icon name="chevron-right" size="xs" aria-hidden="true" />
                         </a>
                     @else
                         <button
                             type="button"
-                            class="{{ $navBtnBase }} tw:cursor-not-allowed tw:border-0 tw:bg-surface-container tw:text-on-surface-variant"
+                            class="ui-record-nav__btn ui-record-nav__btn--next"
                             disabled
                             data-record-nav-disabled="next"
+                            title="{{ __('navigation.record_nav.next') }}"
                             aria-label="{{ __('navigation.record_nav.next') }}"
                         >
-                            <span class="tw:hidden tw:sm:inline">{{ __('navigation.record_nav.next') }}</span>
+                            <span class="ui-record-nav__label">{{ __('navigation.record_nav.next') }}</span>
                             <x-ui.icon name="chevron-right" size="xs" aria-hidden="true" />
                         </button>
                     @endif
