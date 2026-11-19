@@ -53,6 +53,8 @@ class QuotationDirectPoGenerationTest extends TestCase
             ->post(route('purchasing.quotations.generate-po', $quotation), [
                 'estimated_arrival' => $estimatedArrival,
                 'notes' => 'Direct quotation approval',
+                'port_of_discharge' => 'TANJUNG_PRIOK',
+                'confirm_port_of_discharge' => '1',
             ]);
 
         $po = PurchaseOrder::sole();
@@ -81,7 +83,10 @@ class QuotationDirectPoGenerationTest extends TestCase
         $quotation = $this->createQuotation($pr, Quotation::STATUS_ACCEPTED);
 
         $response = $this->actingAs($this->purchasing)
-            ->post(route('purchasing.quotations.generate-po', $quotation));
+            ->post(route('purchasing.quotations.generate-po', $quotation), [
+                'port_of_discharge' => 'TANJUNG_PRIOK',
+                'confirm_port_of_discharge' => '1',
+            ]);
 
         $po = PurchaseOrder::sole();
 
@@ -96,7 +101,10 @@ class QuotationDirectPoGenerationTest extends TestCase
         $quotation = $this->createQuotation($pr, Quotation::STATUS_SUBMITTED, [true], now()->subDay());
 
         $response = $this->actingAs($this->purchasing)
-            ->post(route('purchasing.quotations.generate-po', $quotation));
+            ->post(route('purchasing.quotations.generate-po', $quotation), [
+                'port_of_discharge' => 'TANJUNG_PRIOK',
+                'confirm_port_of_discharge' => '1',
+            ]);
 
         $response->assertRedirect()->assertSessionHas('error');
         $this->assertDatabaseCount('purchase_orders', 0);
@@ -111,7 +119,10 @@ class QuotationDirectPoGenerationTest extends TestCase
         $quotation = $this->createQuotation($pr, Quotation::STATUS_SUBMITTED);
 
         $response = $this->actingAs($this->purchasing)
-            ->post(route('purchasing.quotations.generate-po', $quotation));
+            ->post(route('purchasing.quotations.generate-po', $quotation), [
+                'port_of_discharge' => 'TANJUNG_PRIOK',
+                'confirm_port_of_discharge' => '1',
+            ]);
 
         $response->assertRedirect()->assertSessionHas('error');
         $this->assertDatabaseCount('purchase_orders', 0);
@@ -127,7 +138,10 @@ class QuotationDirectPoGenerationTest extends TestCase
         $unavailableItem = $quotation->items->firstWhere('is_available', false);
 
         $response = $this->actingAs($this->purchasing)
-            ->post(route('purchasing.quotations.generate-po', $quotation));
+            ->post(route('purchasing.quotations.generate-po', $quotation), [
+                'port_of_discharge' => 'TANJUNG_PRIOK',
+                'confirm_port_of_discharge' => '1',
+            ]);
 
         $po = PurchaseOrder::sole();
 
@@ -179,7 +193,10 @@ class QuotationDirectPoGenerationTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->purchasing)
-            ->post(route('purchasing.quotations.generate-po', $currentQuotation));
+            ->post(route('purchasing.quotations.generate-po', $currentQuotation), [
+                'port_of_discharge' => 'TANJUNG_PRIOK',
+                'confirm_port_of_discharge' => '1',
+            ]);
 
         $newPo = PurchaseOrder::where('id', '<>', $existingPo->id)->sole();
 
@@ -206,7 +223,10 @@ class QuotationDirectPoGenerationTest extends TestCase
         $this->app->instance(PurchaseOrderGenerationService::class, $poService);
 
         $response = $this->actingAs($this->purchasing)
-            ->post(route('purchasing.quotations.generate-po', $quotation));
+            ->post(route('purchasing.quotations.generate-po', $quotation), [
+                'port_of_discharge' => 'TANJUNG_PRIOK',
+                'confirm_port_of_discharge' => '1',
+            ]);
 
         $response->assertRedirect()->assertSessionHas('error', 'Forced PO generation failure.');
         $this->assertDatabaseCount('purchase_orders', 0);
@@ -241,11 +261,38 @@ class QuotationDirectPoGenerationTest extends TestCase
             ->post(route('purchasing.quotations.generate-po', $quotation), [
                 'estimated_arrival' => 'not-a-date',
                 'notes' => str_repeat('x', 1001),
+                'port_of_discharge' => 'INVALID_PORT',
             ]);
 
-        $response->assertSessionHasErrors(['estimated_arrival', 'notes']);
+        $response->assertSessionHasErrors(['estimated_arrival', 'notes', 'port_of_discharge', 'confirm_port_of_discharge']);
         $this->assertDatabaseCount('purchase_orders', 0);
         $this->assertDatabaseCount('pr_item_awards', 0);
+    }
+
+    public function test_direct_generation_requires_port_confirmation_and_allows_overriding_pr_port(): void
+    {
+        $pr = $this->createRequisition();
+        $pr->forceFill(['port_of_discharge' => 'TANJUNG_PRIOK', 'incoterm' => 'CIF'])->save();
+        $quotation = $this->createQuotation($pr, Quotation::STATUS_SUBMITTED);
+
+        $this->actingAs($this->purchasing)
+            ->post(route('purchasing.quotations.generate-po', $quotation), [
+                'port_of_discharge' => 'TANJUNG_PERAK',
+            ])
+            ->assertSessionHasErrors('confirm_port_of_discharge');
+
+        $this->assertDatabaseCount('purchase_orders', 0);
+
+        $this->actingAs($this->purchasing)
+            ->post(route('purchasing.quotations.generate-po', $quotation), [
+                'port_of_discharge' => 'TANJUNG_PERAK',
+                'confirm_port_of_discharge' => '1',
+            ])
+            ->assertRedirect();
+
+        $po = PurchaseOrder::sole();
+        $this->assertSame('TANJUNG_PERAK', $po->port_of_discharge);
+        $this->assertSame('CIF', $po->incoterm);
     }
 
     public function test_direct_generation_route_rejects_plain_numeric_quotation_id(): void
@@ -275,6 +322,8 @@ class QuotationDirectPoGenerationTest extends TestCase
             ->assertSee('Open Inter-Supplier Comparison')
             ->assertSee('Included in PO')
             ->assertSee('Unavailable - skipped')
+            ->assertSee('id="directPoPortOfDischarge"', false)
+            ->assertSee('id="directConfirmPortOfDischarge"', false)
             ->assertSee(route('purchasing.quotations.generate-po', $quotation), false);
     }
 

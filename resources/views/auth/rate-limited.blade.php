@@ -1,5 +1,6 @@
 @extends('layouts.auth')
 
+@section('plain-layout', true)
 @section('title', __('auth.feedback.wait_title'))
 @section('meta')<meta name="robots" content="noindex, nofollow">@endsection
 

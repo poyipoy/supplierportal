@@ -114,6 +114,7 @@
                     <th scope="col">{{ __('shipments.copy.shipment_date') }}</th>
                     <th scope="col">{{ __('shipments.copy.est_arrival') }}</th>
                     <th scope="col">{{ __('shipments.copy.actual_arrival') }}</th>
+                    <th scope="col">{{ __('shipments.copy.missing_documents') }}</th>
                     <th scope="col" class="text-center">{{ __('shipments.copy.status') }}</th>
                     <th scope="col" class="text-end" style="width: 80px;">{{ __('shipments.copy.action') }}</th>
                 </tr>
@@ -153,6 +154,7 @@
                                 <span class="tw:text-on-surface-variant">-</span>
                             @endif
                         </td>
+                        <td>{!! \App\Support\StatusHelper::shipmentMissingDocumentsHtml($shp) !!}</td>
                         <td class="text-center">
                             {!! \App\Support\StatusHelper::badge(\App\Support\StatusHelper::shipmentBadge($shp->status), \App\Support\StatusHelper::shipmentLabel($shp->status)) !!}
                         </td>
@@ -162,7 +164,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="11" class="text-center py-4 tw:text-on-surface-variant">{{ __('shipments.copy.no_shipments_matching_filter_criteria') }}</td>
+                        <td colspan="12" class="text-center py-4 tw:text-on-surface-variant">{{ __('shipments.copy.no_shipments_matching_filter_criteria') }}</td>
                     </tr>
                 @endforelse
             </tbody>
@@ -197,6 +199,7 @@
                 { data: 'shipment_date_display', name: 'shipment_date', className: 'tw:text-on-surface-variant' },
                 { data: 'estimated_arrival', name: 'estimated_arrival_date', className: 'tw:text-on-surface-variant' },
                 { data: 'actual_arrival', name: 'actual_arrival_date', className: 'tw:text-on-surface-variant' },
+                { data: 'missing_documents', name: 'missing_documents', orderable: false, searchable: false },
                 { data: 'status_badge', name: 'status', className: 'text-center' },
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
             ],

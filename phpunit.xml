@@ -43,6 +43,8 @@
             <exclude>tests/Feature/NotificationLocaleTest.php</exclude>
             <exclude>tests/Feature/Procurement/MasterDataDeletionDurabilityTest.php</exclude>
             <exclude>tests/Feature/Procurement/OrderedQuantityShipmentConcurrencyTest.php</exclude>
+            <exclude>tests/Feature/Procurement/PreshipmentGoodsLocationConcurrencyTest.php</exclude>
+            <exclude>tests/Feature/Procurement/PreshipmentMigrationTest.php</exclude>
             <exclude>tests/Feature/Procurement/ReferencePriceConcurrencyTest.php</exclude>
             <exclude>tests/Feature/Procurement/ShipmentSubmissionConcurrencyTest.php</exclude>
             <exclude>tests/Feature/SupplierRegistration/SupplierRegistrationSubmissionRaceTest.php</exclude>
@@ -80,6 +82,8 @@
             <file>tests/Feature/NotificationLocaleTest.php</file>
             <file>tests/Feature/Procurement/MasterDataDeletionDurabilityTest.php</file>
             <file>tests/Feature/Procurement/OrderedQuantityShipmentConcurrencyTest.php</file>
+            <file>tests/Feature/Procurement/PreshipmentGoodsLocationConcurrencyTest.php</file>
+            <file>tests/Feature/Procurement/PreshipmentMigrationTest.php</file>
             <file>tests/Feature/Procurement/ReferencePriceConcurrencyTest.php</file>
             <file>tests/Feature/Procurement/ShipmentSubmissionConcurrencyTest.php</file>
             <file>tests/Feature/SupplierRegistration/SupplierRegistrationSubmissionRaceTest.php</file>
@@ -125,6 +129,11 @@
         <!-- Ready to Ship gate: shipment suites build awards without supplier
              progress rows, so only ShipmentReadyToShipGuardTest turns it on. -->
         <env name="PROCUREMENT_REQUIRE_READY_TO_SHIP" value="false"/>
+        <env name="PROCUREMENT_REQUIRE_PO_ACK" value="false"/>
+        <env name="PROCUREMENT_REQUIRE_SALES_CONTRACT" value="false"/>
+        <env name="PROCUREMENT_SHIPMENT_INVOICE_REQUIRED" value="false"/>
+        <env name="PROCUREMENT_REQUIRE_PSI" value="false"/>
+        <env name="PROCUREMENT_PO_DOCUMENTS_READ_ONLY" value="false"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
         <env name="DB_CONNECTION" value="mysql"/>

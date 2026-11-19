@@ -4,7 +4,7 @@
 @section('page-title', __('local_procurement.list.detail_short'))
 
 @section('content')
-<div class="tw:grid tw:gap-6 tw:pb-16">
+<div class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:min-w-0 tw:gap-6 tw:pb-16">
     <x-ui.page-header
         :title="$purchaseOrder->po_number"
         :description="__('local_procurement.review.po_document', ['date' => $regionalFormatter->date($purchaseOrder->po_date, 'human') ?? '-', 'amount' => $regionalFormatter->money($purchaseOrder->total_amount)])"

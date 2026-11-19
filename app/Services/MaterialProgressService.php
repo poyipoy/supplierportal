@@ -33,9 +33,10 @@ class MaterialProgressService
         $latestUpdate = $award->latestProgressUpdate;
         $hasManualUpdate = $latestUpdate !== null;
 
-        $status = $hasManualUpdate
+        // E3: Default initial progress status when PO is created is Order Confirmed
+        $status = ($hasManualUpdate && $latestUpdate->status !== PoItemProgressUpdate::STATUS_AWAITING_CONFIRMATION)
             ? $latestUpdate->status
-            : PoItemProgressUpdate::STATUS_AWAITING_CONFIRMATION;
+            : PoItemProgressUpdate::STATUS_ORDER_CONFIRMED;
 
         $supplierControlledQty = (int) ($fulfillment['remaining_qty'] ?? 0);
         $orderedQty = (int) ($fulfillment['ordered_qty'] ?? 0);
@@ -86,9 +87,10 @@ class MaterialProgressService
         $latestUpdate = $award->latestProgressUpdate;
         $hasManualUpdate = $latestUpdate !== null;
 
-        $status = $hasManualUpdate
+        // E3: Default initial progress status when PO is created is Order Confirmed
+        $status = ($hasManualUpdate && $latestUpdate->status !== PoItemProgressUpdate::STATUS_AWAITING_CONFIRMATION)
             ? $latestUpdate->status
-            : PoItemProgressUpdate::STATUS_AWAITING_CONFIRMATION;
+            : PoItemProgressUpdate::STATUS_ORDER_CONFIRMED;
 
         $orderedQty = (int) ($fulfillment['ordered_qty'] ?? 0);
         $acceptedQty = (int) ($fulfillment['accepted_qty'] ?? 0);
@@ -169,7 +171,7 @@ class MaterialProgressService
         }
 
         $newStatus = $data['status'] ?? null;
-        if (! in_array($newStatus, PoItemProgressUpdate::STATUSES, true)) {
+        if (! in_array($newStatus, PoItemProgressUpdate::SUPPLIER_UPDATABLE_STATUSES, true)) {
             throw ValidationException::withMessages([
                 'status' => __('purchasing.copy.the_selected_material_progress_status_is_invalid'),
             ]);
@@ -204,7 +206,9 @@ class MaterialProgressService
 
             // Resolve previous status
             $latestUpdate = $lockedAward->progressUpdates()->orderByDesc('id')->first();
-            $previousStatus = $latestUpdate?->status ?? PoItemProgressUpdate::STATUS_AWAITING_CONFIRMATION;
+            $previousStatus = ($latestUpdate && $latestUpdate->status !== PoItemProgressUpdate::STATUS_AWAITING_CONFIRMATION)
+                ? $latestUpdate->status
+                : PoItemProgressUpdate::STATUS_ORDER_CONFIRMED;
 
             // Check backward transition
             if ($this->isBackwardTransition($previousStatus, $newStatus)) {
@@ -226,41 +230,233 @@ class MaterialProgressService
             ]);
 
             // Notify purchasing team (NotificationService defers until afterCommit)
-            $purchasingUsers = User::where('role', 'purchasing')->where('is_active', true)->get();
-            $materialName = $lockedAward->prItem?->material_name ?? __('purchasing.copy.material');
-            $fromLabel = StatusHelper::materialProgressLabel($previousStatus);
-            $toLabel = StatusHelper::materialProgressLabel($newStatus);
-            $supplierName = $user->name;
-
-            $this->notifications->send(
-                $purchasingUsers,
-                'po_item_progress.updated',
-                "po_item_progress.updated:{$update->id}",
-                'purchasing.copy.supplier_material_progress_updated',
-                'purchasing.notify.material_progress_body',
-                route('purchasing.purchase-orders.show', $lockedPo, absolute: false).'#material-progress',
-                'clock text-primary',
-                [
-                    'category' => NotificationCategory::OTHER,
-                    'po_id' => $lockedPo->id,
-                    'award_id' => $lockedAward->id,
-                    'progress_update_id' => $update->id,
-                ],
-                [
-                    'supplier' => $supplierName,
-                    'material' => $lockedAward->prItem?->material_name ?? '-',
-                    'po' => $lockedPo->po_number,
-                    'qty' => $supplierControlledQty,
-                    'ready' => $update->estimated_ready_date ? '@date:'.$update->estimated_ready_date->toDateString() : __('purchasing.copy.not_specified'),
-                ],
-                [
-                    'from' => 'status.material_progress.'.$previousStatus,
-                    'to' => 'status.material_progress.'.$newStatus,
-                ],
+            $this->notifyPurchasingSingleUpdate(
+                $lockedPo,
+                $lockedAward,
+                $update,
+                $user,
+                $previousStatus,
+                $newStatus,
+                $supplierControlledQty,
             );
 
             return $update;
         });
+    }
+
+    /**
+     * Record progress updates for multiple awarded items on a PO atomically.
+     *
+     * @return Collection<int, PoItemProgressUpdate>
+     *
+     * @throws ValidationException
+     */
+    public function bulkUpdateProgress(PurchaseOrder $po, User $user, array $data): Collection
+    {
+        if ($user->role !== 'supplier' || (int) $user->id !== (int) $po->supplier_id) {
+            abort(403, __('purchasing.copy.unauthorized_only_the_assigned_supplier_can_update_material_progress'));
+        }
+
+        $newStatus = $data['status'] ?? null;
+        if (! in_array($newStatus, PoItemProgressUpdate::SUPPLIER_UPDATABLE_STATUSES, true)) {
+            throw ValidationException::withMessages([
+                'status' => __('purchasing.copy.the_selected_material_progress_status_is_invalid'),
+            ]);
+        }
+
+        $awardIds = collect($data['award_ids'] ?? [])
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn (int $id) => $id > 0)
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
+
+        if ($awardIds === []) {
+            throw ValidationException::withMessages([
+                'award_ids' => __('supplier.copy.select_at_least_one_item'),
+            ]);
+        }
+
+        return DB::transaction(function () use ($po, $user, $data, $newStatus, $awardIds): Collection {
+            $lockedPo = PurchaseOrder::where('id', $po->id)->lockForUpdate()->firstOrFail();
+
+            if (in_array($lockedPo->status, ['completed', 'cancelled'], true)) {
+                throw ValidationException::withMessages([
+                    'status' => __('purchasing.copy.material_progress_locked_po', [
+                        'status' => StatusHelper::poLabel($lockedPo->status),
+                    ]),
+                ]);
+            }
+
+            $lockedAwards = PrItemAward::with('prItem')
+                ->whereIn('id', $awardIds)
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('id');
+
+            if ($lockedAwards->count() !== count($awardIds)) {
+                abort(403, __('purchasing.copy.award_does_not_belong_to_the_requested_purchase_order'));
+            }
+
+            foreach ($lockedAwards as $lockedAward) {
+                if ((int) $lockedAward->supplier_id !== (int) $user->id) {
+                    abort(403, __('purchasing.copy.unauthorized_only_the_assigned_supplier_can_update_material_progress'));
+                }
+                if ((int) $lockedAward->purchase_order_id !== (int) $lockedPo->id) {
+                    abort(403, __('purchasing.copy.award_does_not_belong_to_locked_purchase_order'));
+                }
+            }
+
+            $fulfillmentByItem = $lockedPo->fulfillmentProjection()['items'];
+            $hasExplicitDate = ! empty($data['estimated_ready_date']);
+            $note = trim((string) ($data['note'] ?? ''));
+
+            $pendingItems = [];
+            $hasBackward = false;
+
+            foreach ($awardIds as $awardId) {
+                $lockedAward = $lockedAwards->get($awardId);
+                $supplierControlledQty = (int) ($fulfillmentByItem[$lockedAward->quotation_item_id]['remaining_qty'] ?? 0);
+
+                if ($supplierControlledQty <= 0) {
+                    throw ValidationException::withMessages([
+                        'award_ids' => __('purchasing.copy.cannot_update_material_progress_when_supplier_controlled_quantity_is_zero'),
+                    ]);
+                }
+
+                $latestUpdate = $lockedAward->progressUpdates()->orderByDesc('id')->first();
+                $previousStatus = ($latestUpdate && $latestUpdate->status !== PoItemProgressUpdate::STATUS_AWAITING_CONFIRMATION)
+                    ? $latestUpdate->status
+                    : PoItemProgressUpdate::STATUS_ORDER_CONFIRMED;
+
+                if ($this->isBackwardTransition($previousStatus, $newStatus)) {
+                    $hasBackward = true;
+                }
+
+                $pendingItems[] = [
+                    'award' => $lockedAward,
+                    'qty' => $supplierControlledQty,
+                    'latest_update' => $latestUpdate,
+                    'previous_status' => $previousStatus,
+                ];
+            }
+
+            if ($hasBackward && $note === '') {
+                throw ValidationException::withMessages([
+                    'note' => __('purchasing.copy.a_progress_note_or_reason_is_required_when_moving_material_progress_backward'),
+                ]);
+            }
+
+            $updates = new Collection;
+            foreach ($pendingItems as $entry) {
+                $estimatedReadyDate = $hasExplicitDate
+                    ? $data['estimated_ready_date']
+                    : $entry['latest_update']?->estimated_ready_date?->toDateString();
+
+                $updates->push(PoItemProgressUpdate::create([
+                    'pr_item_award_id' => $entry['award']->id,
+                    'status' => $newStatus,
+                    'supplier_controlled_qty_snapshot' => $entry['qty'],
+                    'estimated_ready_date' => $estimatedReadyDate,
+                    'note' => $note !== '' ? $note : null,
+                    'updated_by' => $user->id,
+                ]));
+            }
+
+            if ($updates->count() === 1) {
+                $first = $pendingItems[0];
+                $this->notifyPurchasingSingleUpdate(
+                    $lockedPo,
+                    $first['award'],
+                    $updates->first(),
+                    $user,
+                    $first['previous_status'],
+                    $newStatus,
+                    $first['qty'],
+                );
+            } else {
+                $this->notifyPurchasingBulkUpdate($lockedPo, $updates, $user, $newStatus);
+            }
+
+            return $updates;
+        });
+    }
+
+    private function notifyPurchasingSingleUpdate(
+        PurchaseOrder $lockedPo,
+        PrItemAward $lockedAward,
+        PoItemProgressUpdate $update,
+        User $user,
+        string $previousStatus,
+        string $newStatus,
+        int $supplierControlledQty,
+    ): void {
+        $purchasingUsers = User::where('role', 'purchasing')->where('is_active', true)->get();
+
+        $this->notifications->send(
+            $purchasingUsers,
+            'po_item_progress.updated',
+            "po_item_progress.updated:{$update->id}",
+            'purchasing.copy.supplier_material_progress_updated',
+            'purchasing.notify.material_progress_body',
+            route('purchasing.purchase-orders.show', $lockedPo, absolute: false).'#material-progress',
+            'clock text-primary',
+            [
+                'category' => NotificationCategory::OTHER,
+                'po_id' => $lockedPo->id,
+                'award_id' => $lockedAward->id,
+                'progress_update_id' => $update->id,
+            ],
+            [
+                'supplier' => $user->name,
+                'material' => $lockedAward->prItem?->material_name ?? '-',
+                'po' => $lockedPo->po_number,
+                'qty' => $supplierControlledQty,
+                'ready' => $update->estimated_ready_date ? '@date:'.$update->estimated_ready_date->toDateString() : __('purchasing.copy.not_specified'),
+            ],
+            [
+                'from' => 'status.material_progress.'.$previousStatus,
+                'to' => 'status.material_progress.'.$newStatus,
+            ],
+        );
+    }
+
+    /**
+     * @param  Collection<int, PoItemProgressUpdate>  $updates
+     */
+    private function notifyPurchasingBulkUpdate(
+        PurchaseOrder $lockedPo,
+        Collection $updates,
+        User $user,
+        string $newStatus,
+    ): void {
+        $purchasingUsers = User::where('role', 'purchasing')->where('is_active', true)->get();
+        $firstId = $updates->first()?->id ?? 0;
+
+        $this->notifications->send(
+            $purchasingUsers,
+            'po_item_progress.bulk_updated',
+            "po_item_progress.bulk_updated:{$lockedPo->id}:{$firstId}:{$updates->count()}",
+            'purchasing.copy.supplier_material_progress_updated',
+            'purchasing.notify.material_progress_bulk_body',
+            route('purchasing.purchase-orders.show', $lockedPo, absolute: false).'#material-progress',
+            'clock text-primary',
+            [
+                'category' => NotificationCategory::OTHER,
+                'po_id' => $lockedPo->id,
+                'progress_update_ids' => $updates->pluck('id')->all(),
+            ],
+            [
+                'supplier' => $user->name,
+                'count' => $updates->count(),
+                'po' => $lockedPo->po_number,
+            ],
+            [
+                'to' => 'status.material_progress.'.$newStatus,
+            ],
+        );
     }
 
     /**

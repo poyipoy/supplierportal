@@ -6,6 +6,7 @@
 export function searchableSelect(config = {}) {
     return {
         open: false,
+        openUpwards: false,
         search: '',
         selectedValue: String(config.selectedValue ?? ''),
         options: Array.isArray(config.options) ? config.options : [],
@@ -183,7 +184,19 @@ export function searchableSelect(config = {}) {
             if (this.open) {
                 this.search = '';
                 this.highlightedIndex = -1;
+                const triggerRect = this.$refs?.triggerButton?.getBoundingClientRect?.();
+                const dialogBody = this.$refs?.triggerButton?.closest?.('[role="dialog"] .tw\\:overflow-y-auto, [role="dialog"]');
+                const boundsBottom = dialogBody?.getBoundingClientRect?.().bottom ?? globalThis.innerHeight ?? 800;
+                const boundsTop = dialogBody?.getBoundingClientRect?.().top ?? 0;
+                if (triggerRect) {
+                    const spaceBelow = boundsBottom - triggerRect.bottom;
+                    const spaceAbove = triggerRect.top - boundsTop;
+                    this.openUpwards = spaceBelow < 240 && spaceAbove > spaceBelow;
+                } else {
+                    this.openUpwards = false;
+                }
                 this.$nextTick?.(() => {
+                    this.$refs?.popover?.scrollIntoView?.({ block: 'nearest' });
                     this.$refs?.searchInput?.focus();
                 });
             }
@@ -199,7 +212,7 @@ export function searchableSelect(config = {}) {
             }
         },
 
-        syncNativeSelect(val) {
+        syncNativeSelect(val, dispatchChange = true) {
             const selectEl = this.$refs?.nativeSelect;
             if (selectEl) {
                 if ((this.allowCustom || this.remoteSearch) && val) {
@@ -214,7 +227,9 @@ export function searchableSelect(config = {}) {
                 if (selectEl.value !== val) {
                     selectEl.value = val;
                 }
-                selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+                if (dispatchChange) {
+                    selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+                }
             }
         },
 

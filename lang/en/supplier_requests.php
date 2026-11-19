@@ -6,7 +6,7 @@ return [
     'description' => 'Read-only overview of purchase requisitions you can quote on or have quoted on.',
     'list_title' => 'Purchase requisitions',
     'list_description' => 'Search by PR number, or filter by period and your quotation status.',
-    'search' => 'PR number',
+    'search' => 'Purchase Requisition',
     'period' => 'Period',
     'all_periods' => 'All periods',
     'columns' => [

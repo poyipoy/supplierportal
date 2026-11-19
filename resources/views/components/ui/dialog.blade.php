@@ -24,17 +24,24 @@
     x-data="{
         open: @js($show),
         closeOnBackdrop: @js($closeOnBackdrop),
+        actionsHidden: false,
         returnFocus: null,
         focusables() {
             return [...this.$refs.panel.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]):not([type=hidden]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex=\'-1\'])')];
         },
         openDialog() {
             this.returnFocus = document.activeElement;
+            this.actionsHidden = false;
             this.open = true;
             this.$nextTick(() => (this.focusables()[0] || this.$refs.panel).focus());
         },
-        closeDialog() {
+        closeDialog(dispatchCloseEvent = true) {
+            if (!this.open) return;
             this.open = false;
+            this.actionsHidden = false;
+            if (dispatchCloseEvent) {
+                window.dispatchEvent(new CustomEvent('close-ui-dialog', { detail: { name: '{{ $name }}', fromDialog: true } }));
+            }
             this.$nextTick(() => this.returnFocus?.focus?.());
         },
         trapFocus(event) {
@@ -48,7 +55,8 @@
     }"
     x-init="$watch('open', value => document.body.classList.toggle('ui-dialog-open', value))"
     x-on:open-ui-dialog.window="if ($event.detail === '{{ $name }}' || $event.detail?.name === '{{ $name }}') openDialog()"
-    x-on:close-ui-dialog.window="if ($event.detail === '{{ $name }}' || $event.detail?.name === '{{ $name }}') closeDialog()"
+    x-on:close-ui-dialog.window="if (($event.detail === '{{ $name }}' || $event.detail?.name === '{{ $name }}') && !$event.detail?.fromDialog) closeDialog(false)"
+    x-on:ui-dialog-actions.window="if ($event.detail?.name === '{{ $name }}') actionsHidden = Boolean($event.detail?.hidden)"
     x-on:keydown.escape.window="if (open) closeDialog()"
     x-show="open"
     x-cloak
@@ -87,7 +95,7 @@
                 </header>
             @endif
             <div class="tw:max-h-[min(70vh,42rem)] tw:overflow-y-auto tw:p-5">{{ $slot }}</div>
-            @isset($actions)<footer class="tw:flex tw:flex-col-reverse tw:gap-2 tw:border-t tw:border-outline-variant tw:p-4 tw:sm:flex-row tw:sm:justify-end">{{ $actions }}</footer>@endisset
+            @isset($actions)<footer x-show="!actionsHidden" class="tw:flex tw:flex-col-reverse tw:gap-2 tw:border-t tw:border-outline-variant tw:p-4 tw:sm:flex-row tw:sm:justify-end">{{ $actions }}</footer>@endisset
         </section>
     </div>
 </div>

@@ -2,12 +2,14 @@
 
 namespace App\Services;
 
+use App\Enums\PoSalesContractStatus;
 use App\Enums\PurchaseRequisitionStatus;
 use App\Enums\QuotationStatus;
 use App\Exceptions\PoGenerationDisabledException;
 use App\Models\AwardReferencePriceSnapshot;
 use App\Models\ExchangeRate;
 use App\Models\PoDocument;
+use App\Models\PoItemProgressUpdate;
 use App\Models\PrItem;
 use App\Models\PrItemAward;
 use App\Models\PrItemAwardEvent;
@@ -205,6 +207,11 @@ class PurchaseOrderGenerationService
                     $supplierAwards->pluck('pr_id')->unique()->sort()->values(),
                     $lockedRequisitions
                 );
+                // D2: Allow Purchasing to confirm/override destination port at PO generation
+                $confirmedPort = $options['supplier_ports'][$supplierId] ?? ($options['port_of_discharge'] ?? null);
+                if (is_string($confirmedPort) && in_array($confirmedPort, LogisticsTerms::ports(), true)) {
+                    $portOfDischarge = $confirmedPort;
+                }
 
                 // Resolve snapshot exchange rate
                 $exchangeRateId = $supplierAwards->first()?->quotation?->exchange_rate_id;
@@ -239,6 +246,7 @@ class PurchaseOrderGenerationService
                     'exchange_rate_id' => $exchangeRateId,
                     'po_number' => PurchaseOrder::generatePoNumber(),
                     'status' => 'active',
+                    'sales_contract_status' => PoSalesContractStatus::PENDING_SUPPLIER->value,
                     'created_by' => $creator->id,
                     'estimated_arrival' => $estimatedArrival,
                     'notes' => $notes,
@@ -268,6 +276,19 @@ class PurchaseOrderGenerationService
                     foreach ($supplierAwards as $award) {
                         $this->freezeOrderedValues($award, $po, $creator);
                     }
+                }
+
+                // 4b-ii. E3: Automatically record initial Material Progress as "Order Confirmed"
+                foreach ($supplierAwards as $award) {
+                    $initialOrderedQty = (int) ($award->ordered_qty ?? $award->quotationItem?->fulfillment_quantity ?? $award->prItem?->quantity_value ?? 1);
+                    PoItemProgressUpdate::create([
+                        'pr_item_award_id' => $award->id,
+                        'status' => PoItemProgressUpdate::STATUS_ORDER_CONFIRMED,
+                        'supplier_controlled_qty_snapshot' => max(1, $initialOrderedQty),
+                        'estimated_ready_date' => $award->quotation?->estimated_delivery,
+                        'note' => null,
+                        'updated_by' => $creator->id,
+                    ]);
                 }
 
                 // 4c. M06B (§12.2, I-19, I-22): one immutable reference-price

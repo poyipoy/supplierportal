@@ -1,5 +1,6 @@
 @extends('layouts.auth')
 
+@section('plain-layout', true)
 @section('title', '429 - '.__('auth.rate_limit.heading').' | ADASI Supplier Portal')
 @section('meta')<meta name="robots" content="noindex, nofollow">@endsection
 

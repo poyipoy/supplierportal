@@ -6,10 +6,12 @@ use App\Exports\PurchaseOrderDetailExport;
 use App\Exports\PurchaseOrdersExport;
 use App\Exports\QuotationDetailExport;
 use App\Exports\QuotationsExport;
+use App\Exports\ShipmentsExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Export\AdvancedExportRequest;
 use App\Http\Requests\Export\Filters\PurchaseOrderExportFilters;
 use App\Http\Requests\Export\Filters\QuotationExportFilters;
+use App\Http\Requests\Export\Filters\ShipmentExportFilters;
 use App\Models\ExportJob;
 use App\Models\PurchaseOrder;
 use App\Models\Quotation;
@@ -105,6 +107,32 @@ class ExportController extends Controller
             PurchaseOrderDetailExport::class,
             [(int) $purchaseOrder->getKey(), (int) auth()->id()],
             'detail_po_'.$purchaseOrder->getKey().'_'.now()->format('Ymd_His').'.xlsx', // biz-time:ignore instant filename
+        );
+
+        return $this->dispatchResponse($request, $exportJob);
+    }
+
+    public function shipments(AdvancedExportRequest $request)
+    {
+        $filters = ShipmentExportFilters::validated($request, supplier: true);
+
+        if ($request->isMethod('get')) {
+            return ExportConfirmation::make($request, __('exports.job_labels.supplier_shipment_summary'));
+        }
+
+        $exportJob = ExportDispatcher::dispatch(
+            __('exports.job_labels.supplier_shipment_summary'),
+            ShipmentsExport::class,
+            [
+                (int) auth()->id(),
+                $filters['status'] ?? null,
+                $filters['search'] ?? null,
+                $filters['start_date'] ?? null,
+                $filters['end_date'] ?? null,
+                ...($request->input('options') !== null ? [$filters['shipment_number'] ?? null] : []),
+            ],
+            'summary_shipments_supplier_'.now()->format('Ymd_His').'.xlsx', // biz-time:ignore instant filename
+            $request->exportOptions('supplier.shipments'),
         );
 
         return $this->dispatchResponse($request, $exportJob);

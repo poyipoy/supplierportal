@@ -75,9 +75,11 @@
         // Component-owned state (presets/autosave) is authoritative for its form.
         if ([...dirtySources.values()].some((source) => source.form === form)) return false;
 
-        // Ignore forms inside closed Bootstrap modals or hidden containers
+        // Ignore forms inside closed Bootstrap modals, closed UI dialogs, or hidden containers
         const modal = form.closest?.('.modal');
         if (modal && !modal.classList?.contains?.('show')) return false;
+        const uiDialogWrapper = form.closest?.('[role="dialog"]')?.closest?.('[x-show]');
+        if (uiDialogWrapper && uiDialogWrapper.style?.display === 'none') return false;
         if (form.closest?.('[hidden]')) return false;
 
         // Skip auth/session/credential action forms

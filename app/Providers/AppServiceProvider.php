@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Listeners\ApplyNotificationPreferences;
 use App\Models\MaterialReferencePrice;
 use App\Models\Passport\Client;
+use App\Models\ReferencePriceRule;
 use App\Models\SupplierAudit;
 use App\Models\User;
 use App\Notifications\SystemNotification;
@@ -16,7 +17,10 @@ use App\Services\NotificationPreferenceService;
 use App\Services\NotificationSummaryService;
 use App\Services\Pricing\AnnualExchangeRateResolver;
 use App\Services\Pricing\ExchangeRateResolver;
+use App\Services\Pricing\HistoricalReferencePriceService;
+use App\Services\Pricing\ReferencePriceBenchmarkResolver;
 use App\Services\Pricing\ReferencePriceResolver;
+use App\Services\Pricing\ReferencePriceRuleResolver;
 use App\Services\QuickAccessService;
 use App\Services\RegionalDisplayFormatter;
 use App\Services\SupplierAudit\SupplierAuditInvoiceGate;
@@ -88,6 +92,9 @@ class AppServiceProvider extends ServiceProvider
         $this->app->scoped(ExchangeRateResolver::class);
         $this->app->scoped(AnnualExchangeRateResolver::class);
         $this->app->scoped(ReferencePriceResolver::class);
+        $this->app->scoped(ReferencePriceRuleResolver::class);
+        $this->app->scoped(HistoricalReferencePriceService::class);
+        $this->app->scoped(ReferencePriceBenchmarkResolver::class);
         $this->app->scoped(CspNonce::class);
         $this->app->scoped(MaintenanceResolver::class, fn (): MaintenanceResolver => new MaintenanceResolver);
 
@@ -188,14 +195,33 @@ class AppServiceProvider extends ServiceProvider
             User::resetSupplierScopeMemos();
             app()->forgetInstance(MaintenanceResolver::class);
             app()->forgetInstance(ReferencePriceResolver::class);
+            app()->forgetInstance(ReferencePriceRuleResolver::class);
+            app()->forgetInstance(HistoricalReferencePriceService::class);
+            app()->forgetInstance(ReferencePriceBenchmarkResolver::class);
         });
         Event::listen(JobProcessing::class, function (): void {
             User::resetSupplierScopeMemos();
             app()->forgetInstance(MaintenanceResolver::class);
             app()->forgetInstance(ReferencePriceResolver::class);
+            app()->forgetInstance(ReferencePriceRuleResolver::class);
+            app()->forgetInstance(HistoricalReferencePriceService::class);
+            app()->forgetInstance(ReferencePriceBenchmarkResolver::class);
         });
         MaterialReferencePrice::saved(fn () => app()->forgetInstance(ReferencePriceResolver::class));
         MaterialReferencePrice::deleted(fn () => app()->forgetInstance(ReferencePriceResolver::class));
+        $resetRuleBenchmarks = static function (): void {
+            if (app()->resolved(ReferencePriceRuleResolver::class)) {
+                app(ReferencePriceRuleResolver::class)->reset();
+            }
+            if (app()->resolved(HistoricalReferencePriceService::class)) {
+                app(HistoricalReferencePriceService::class)->clearMemo();
+            }
+            app()->forgetInstance(ReferencePriceRuleResolver::class);
+            app()->forgetInstance(HistoricalReferencePriceService::class);
+            app()->forgetInstance(ReferencePriceBenchmarkResolver::class);
+        };
+        ReferencePriceRule::saved($resetRuleBenchmarks);
+        ReferencePriceRule::deleted($resetRuleBenchmarks);
 
         // Enforce safety: testing environment (--env=testing or APP_ENV=testing) MUST NEVER touch adasi_portal
         if ($this->app->environment('testing') || (isset($_SERVER['argv']) && in_array('--env=testing', $_SERVER['argv'], true))) {
@@ -225,7 +251,10 @@ class AppServiceProvider extends ServiceProvider
 
         View::composer([
             'purchasing.shipments.index', 'supplier.shipments.index',
+            'supplier.goods-locations.index',
             'purchasing.quotations.index', 'local-invoices.table',
+            'purchasing.outstanding-materials.index', 'supplier.outstanding-materials.index',
+            'shared.outstanding-materials._table',
         ], function ($view): void {
             $view->with('regionalFormatter', app(RegionalDisplayFormatter::class));
         });
@@ -285,7 +314,7 @@ class AppServiceProvider extends ServiceProvider
             'purchasing.comparison._inter_supplier_content', 'purchasing.comparison._vs_best_content',
             'purchasing.drp._paid_table_content', 'purchasing.drp.ga', 'purchasing.drp.paid', 'purchasing.drp.show', 'purchasing.drp.supplier',
             'purchasing.local-vendors.index', 'purchasing.local-vendors.show', 'purchasing.pr.show',
-            'purchasing.reference-prices.index',
+            'purchasing.reference-prices.index', 'purchasing.reference-prices._content',
             'qc.inspections.create', 'qc.inspections.show',
             'supplier.announcements.index', 'supplier.announcements.show', 'supplier.claims.show',
         ], function ($view): void {

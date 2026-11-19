@@ -46,6 +46,8 @@
             <label for="comparisonPrSearch" class="form-label small fw-bold">{{ __('purchasing.copy.purchase_requisition') }}</label>
             <div class="position-relative">
                 <input type="hidden" name="pr_id" id="comparisonPrId" value="{{ $selectedPrOption['id'] ?? '' }}">
+                <input type="hidden" name="benchmark_year" id="comparisonBenchmarkYearInput" value="{{ $benchmarkYear ?? '' }}">
+                <input type="hidden" name="benchmark_month" id="comparisonBenchmarkMonthInput" value="{{ $benchmarkMonth ?? '' }}">
                 <div class="input-group input-group-sm">
                     <span class="input-group-text tw:bg-surface"><x-ui.icon name="search" /></span>
                     <input type="text"
@@ -83,7 +85,12 @@
         $supplierTotals = [];
         $supplierWins = [];
         foreach($comparison['suppliers'] as $sup) {
-            $supplierTotals[$sup['quotation_id']] = ['name' => $sup['name'], 'total' => 0];
+            $supplierTotals[$sup['quotation_id']] = [
+                'name' => $sup['name'],
+                'total' => 0,
+                'total_price_per_kg_idr' => 0,
+                'quoted_items_count' => 0,
+            ];
             $supplierWins[$sup['quotation_id']] = 0;
         }
 
@@ -101,6 +108,8 @@
                 $p = $row['prices'][$sup['quotation_id']] ?? null;
                 if($p && $p['is_available'] && $p['price_idr']) {
                     $supplierTotals[$sup['quotation_id']]['total'] += $p['offer_amount_idr'] ?? 0;
+                    $supplierTotals[$sup['quotation_id']]['total_price_per_kg_idr'] += (float) $p['price_idr'];
+                    $supplierTotals[$sup['quotation_id']]['quoted_items_count']++;
                     if($minIdr && $p['price_idr'] <= $minIdr) {
                         $supplierWins[$sup['quotation_id']]++;
                     }
@@ -109,12 +118,18 @@
         }
         unset($row);
 
-        $validTotals = array_filter($supplierTotals, fn($v) => $v['total'] > 0);
+        // B1, B2, B4: Best Total is determined by the lowest Total Price/kg (IDR), NOT Estimated Total.
+        $validTotals = array_filter(
+            $supplierTotals,
+            fn($v) => $v['total_price_per_kg_idr'] > 0 && $v['quoted_items_count'] > 0
+        );
         $recommendedSupId = null;
         if(count($validTotals) > 0) {
-            $minTotal = min(array_column($validTotals, 'total'));
-            foreach($validTotals as $qid => $data) {
-                if($data['total'] == $minTotal) {
+            $maxQuotedCount = max(array_column($validTotals, 'quoted_items_count'));
+            $topCoverageTotals = array_filter($validTotals, fn($v) => $v['quoted_items_count'] === $maxQuotedCount);
+            $minPricePerKgTotal = min(array_column($topCoverageTotals, 'total_price_per_kg_idr'));
+            foreach($topCoverageTotals as $qid => $data) {
+                if(abs($data['total_price_per_kg_idr'] - $minPricePerKgTotal) < 0.01) {
                     $recommendedSupId = $qid;
                     break;
                 }
@@ -132,6 +147,7 @@
                 <thead class="table-light">
                     <tr>
                         <th scope="col">{{ __('purchasing.copy.supplier') }}</th>
+                        <th scope="col" class="text-end">{{ __('purchasing.copy.total_price_per_kg_idr') }}</th>
                         <th scope="col" class="text-end">{{ __('purchasing.copy.estimated_total') }}</th>
                         <th scope="col" class="text-center">{{ __('purchasing.copy.lowest_price_items') }}</th>
                         <th scope="col">{{ __('purchasing.copy.position') }}</th>
@@ -139,9 +155,12 @@
                 </thead>
                 <tbody>
                     @foreach($validTotals as $qid => $data)
-                        <tr>
+                        <tr class="{{ $recommendedSupId === $qid ? 'ui-best-price-row' : '' }}">
                             <td class="fw-semibold tw:text-on-surface">{{ $data['name'] }}</td>
-                            <td class="text-end fw-bold ui-tabular-nums {{ $recommendedSupId === $qid ? 'text-success' : 'text-primary' }}">
+                            <td class="text-end fw-bold ui-tabular-nums {{ $recommendedSupId === $qid ? 'ui-best-price-cell' : 'text-primary' }}">
+                                Rp {{ isset($regionalFormatter) ? $regionalFormatter->groupedDecimal($data['total_price_per_kg_idr'], 2, 'indonesian') : \App\Support\NumberFormat::grouped($data['total_price_per_kg_idr']) }}
+                            </td>
+                            <td class="text-end fw-semibold ui-tabular-nums tw:text-on-surface">
                                 Rp {{ isset($regionalFormatter) ? $regionalFormatter->groupedDecimal($data['total'], 2, 'indonesian') : \App\Support\NumberFormat::grouped($data['total']) }}
                             </td>
                             <td class="text-center ui-tabular-nums">{{ $supplierWins[$qid] }}</td>
@@ -183,7 +202,8 @@
             </div>
         </x-slot:actions>
         {{-- The aria-label carries the lowest-offer summary (set by the chart script); the matrix below lists every price. --}}
-        <x-ui.chart id="comparisonChart" :label="__('purchasing.copy.supplier_quotation_price_comparison')" :fallback="__('purchasing.copy.supplier_quotation_price_comparison_chart')" :auto-summary="false" plot-class="tw:h-80" />
+        <x-ui.chart id="comparisonChart" :label="__('purchasing.copy.supplier_quotation_price_comparison')" :fallback="__('purchasing.copy.supplier_quotation_price_comparison_chart')" :auto-summary="false" plot-class="tw:h-80" :scrollable="true" />
+        <div id="comparisonChartLegend" class="tw:mt-3 tw:flex tw:flex-wrap tw:items-stretch tw:justify-center tw:gap-2.5" role="list" aria-label="{{ __('purchasing.copy.supplier_quotation_price_comparison') }}"></div>
 
     </x-ui.card>
 
@@ -286,7 +306,7 @@
                                             {{ $formatPrice($p['price_per_kg'], 4) }}
                                             <div class="tw:text-on-surface-variant tw:text-ui-xs tw:mt-0.5" data-offered-dimensions>{{ $p['dimension_display'] }}</div>
                                         </td>
-                                        <td class="text-end fw-bold {{ ($p['price_idr'] && $minIdr && $p['price_idr'] <= $minIdr) ? 'text-success bg-success bg-opacity-10' : '' }}">
+                                        <td class="text-end fw-bold {{ ($p['price_idr'] && $minIdr && $p['price_idr'] <= $minIdr) ? 'ui-best-price-cell' : '' }}">
                                             Rp {{ $formatPrice($p['price_idr']) }}
                                             @if($p['price_idr'] && $minIdr && $p['price_idr'] <= $minIdr)
                                                 <x-ui.icon name="circle-check" class="ms-1" />
@@ -360,7 +380,7 @@
         </x-ui.data-table>
 
         {{-- Mission 07: benchmark indicators per PR item --}}
-        <div class="tw:mt-4">@include('purchasing.comparison._price_indicators', ['matrix' => $comparison['matrix'], 'currency' => $currency])</div>
+        <div class="tw:mt-4">@include('purchasing.comparison._price_indicators', ['matrix' => $comparison['matrix'], 'currency' => $currency, 'benchmarkYear' => $benchmarkYear ?? null, 'benchmarkMonth' => $benchmarkMonth ?? null])</div>
 
         @if($hasActionableAwardSelections)
             {{-- Existing PO assignments remain visible while unassigned items stay actionable. --}}
@@ -380,23 +400,53 @@
 
             {{-- Offer Selection & PO Grouping Preview Card --}}
             <x-ui.card :title="__('purchasing.copy.offer_selection_po_grouping_preview')" class="tw:mt-4">
-                <div class="tw:grid tw:gap-4 tw:md:grid-cols-2">
-                    <div>
-                        <div class="fw-bold tw:text-ui-sm tw:text-on-surface tw:mb-2">
-                            <x-ui.icon name="check-check" size="sm" class="me-1 text-primary" />
-                            {{ __('purchasing.copy.selected_line_item_offers') }}
+                <div class="tw:grid tw:gap-4 tw:lg:grid-cols-2">
+                    <div class="tw:flex tw:min-w-0 tw:flex-col tw:gap-2">
+                        <div class="tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-2">
+                            <div class="tw:flex tw:items-center tw:gap-1.5 fw-bold tw:text-ui-sm tw:text-on-surface">
+                                <x-ui.icon name="check-check" size="sm" class="text-primary" />
+                                <span>{{ __('purchasing.copy.selected_line_item_offers') }}</span>
+                                <span id="awardPreviewCountBadge" class="ui-status-chip ui-status-chip--neutral tw:hidden" aria-live="polite"></span>
+                            </div>
+                            <div class="tw:w-full tw:sm:w-52">
+                                <label for="awardPreviewSearch" class="visually-hidden">{{ __('purchasing.copy.filter_selected_offers_label') }}</label>
+                                <input
+                                    type="search"
+                                    id="awardPreviewSearch"
+                                    class="form-control form-control-sm"
+                                    placeholder="{{ __('purchasing.copy.filter_selected_offers') }}"
+                                    autocomplete="off"
+                                    disabled
+                                >
+                            </div>
                         </div>
-                        <div id="awardPreviewItems" class="tw:border tw:border-outline-variant tw:rounded-sm tw:p-3 tw:bg-surface tw:text-ui-xs">
-                            <span class="tw:text-on-surface-variant">{{ __('purchasing.copy.select_offers_in_the_table_above_to_preview_selection_and_supplier_po_groups') }}</span>
+                        <div
+                            id="awardPreviewItems"
+                            role="region"
+                            tabindex="0"
+                            aria-label="{{ __('purchasing.copy.selected_line_item_offers') }}"
+                            class="ui-focus-ring tw:max-h-72 tw:overflow-y-auto tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:text-ui-xs"
+                        >
+                            <div class="tw:p-3 tw:text-on-surface-variant">{{ __('purchasing.copy.select_offers_in_the_table_above_to_preview_selection_and_supplier_po_groups') }}</div>
                         </div>
                     </div>
-                    <div>
-                        <div class="fw-bold tw:text-ui-sm tw:text-on-surface tw:mb-2">
-                            <x-ui.icon name="building" size="sm" class="me-1 text-primary" />
-                            {{ __('purchasing.copy.resulting_po_grouping_preview_1_po_per_selected_supplier') }}
+
+                    <div class="tw:flex tw:min-w-0 tw:flex-col tw:gap-2">
+                        <div class="tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-2 tw:min-h-[1.9375rem]">
+                            <div class="tw:flex tw:items-center tw:gap-1.5 fw-bold tw:text-ui-sm tw:text-on-surface">
+                                <x-ui.icon name="building" size="sm" class="text-primary" />
+                                <span>{{ __('purchasing.copy.resulting_po_grouping_preview_1_po_per_selected_supplier') }}</span>
+                                <span id="supplierGroupCountBadge" class="ui-status-chip ui-status-chip--info tw:hidden" aria-live="polite"></span>
+                            </div>
                         </div>
-                        <div id="supplierGroupPreview" class="tw:border tw:border-outline-variant tw:rounded-sm tw:p-3 tw:bg-surface-container tw:text-ui-xs">
-                            <span class="tw:text-on-surface-variant">{{ __('purchasing.copy.1_po_will_be_created_per_selected_supplier_group_upon_confirmation') }}</span>
+                        <div
+                            id="supplierGroupPreview"
+                            role="region"
+                            tabindex="0"
+                            aria-label="{{ __('purchasing.copy.resulting_po_grouping_preview_1_po_per_selected_supplier') }}"
+                            class="ui-focus-ring tw:max-h-72 tw:overflow-y-auto tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container tw:p-2.5 tw:text-ui-xs"
+                        >
+                            <div class="tw:p-0.5 tw:text-on-surface-variant">{{ __('purchasing.copy.1_po_will_be_created_per_selected_supplier_group_upon_confirmation') }}</div>
                         </div>
                     </div>
                 </div>
@@ -419,8 +469,46 @@
                         </div>
                     </div>
                     <div>
-                        <label for="poNotes" class="form-label small fw-semibold">{{ __('purchasing.copy.po_notes_remarks') }}</label>
+                        <label for="poNotes" class="form-label small fw-semibold tw:text-on-surface">{{ __('purchasing.copy.po_notes_remarks') }}</label>
                         <input type="text" name="notes" id="poNotes" class="form-control form-control-sm" placeholder="{{ __('purchasing.copy.optional_notes_for_generated_po_s') }}">
+                    </div>
+                </div>
+
+                {{-- D2: Destination Port (Port of Discharge) re-confirmation before PO generation --}}
+                @php
+                    $defaultPort = old('port_of_discharge', $selectedPr?->port_of_discharge ?? \App\Support\Procurement\LogisticsTerms::ports()[0] ?? 'TANJUNG_PRIOK');
+                @endphp
+                <div class="tw:mt-3 tw:p-3 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-low">
+                    <div class="tw:grid tw:gap-3 tw:sm:grid-cols-2 tw:items-start">
+                        <div>
+                            <label for="poPortOfDischarge" class="form-label small fw-semibold tw:text-on-surface">
+                                {{ __('purchasing.copy.confirm_port_of_discharge_label') }} <span class="text-danger">*</span>
+                            </label>
+                            <select name="port_of_discharge" id="poPortOfDischarge" class="form-select form-select-sm @error('port_of_discharge') is-invalid @enderror">
+                                @foreach(\App\Support\Procurement\LogisticsTerms::ports() as $portCode)
+                                    <option value="{{ $portCode }}" {{ $defaultPort === $portCode ? 'selected' : '' }}>
+                                        {{ \App\Support\Procurement\LogisticsTerms::portLabel($portCode) }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('port_of_discharge')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="tw:sm:pt-6">
+                            <div class="form-check tw:mb-0">
+                                <input
+                                    type="checkbox"
+                                    name="confirm_port_of_discharge"
+                                    id="confirmPortOfDischarge"
+                                    value="1"
+                                    class="form-check-input @error('confirm_port_of_discharge') is-invalid @enderror"
+                                    {{ old('confirm_port_of_discharge') ? 'checked' : '' }}
+                                >
+                                <label for="confirmPortOfDischarge" class="form-check-label tw:text-ui-xs fw-semibold tw:text-on-surface tw:cursor-pointer">
+                                    {{ __('purchasing.copy.confirm_port_of_discharge_checkbox') }}
+                                </label>
+                                @error('confirm_port_of_discharge')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -428,18 +516,23 @@
                     <x-ui.alert tone="warning" class="tw:mt-3">{{ __('procurement.po_generation.disabled_notice') }}</x-ui.alert>
                 @endunless
 
-                <x-slot:actions>
-                    <div class="tw:flex tw:flex-wrap tw:gap-2">
-                        <x-ui.button type="submit" name="action" value="save" variant="outline" size="sm">
-                            <x-slot:leading><x-ui.icon name="save" size="sm" /></x-slot:leading>
-                            {{ __('purchasing.copy.save_selected_offers') }}
-                        </x-ui.button>
-                        <x-ui.button type="submit" name="action" value="generate_pos" variant="primary" size="sm" id="btnGeneratePos" :disabled="! $poGenerationEnabled">
-                            <x-slot:leading><x-ui.icon name="receipt" size="sm" /></x-slot:leading>
-                            {{ __('purchasing.audit_ui.confirm_generation') }}
-                        </x-ui.button>
+                <x-slot:footer>
+                    <div class="tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-3">
+                        <div id="awardPreviewFooterSummary" class="tw:text-ui-xs tw:text-on-surface-variant fw-semibold" aria-live="polite">
+                            {{ __('purchasing.copy.selected_offers_summary_empty') }}
+                        </div>
+                        <div class="tw:flex tw:flex-wrap tw:gap-2">
+                            <x-ui.button type="submit" name="action" value="save" variant="outline" size="sm">
+                                <x-slot:leading><x-ui.icon name="save" size="sm" /></x-slot:leading>
+                                {{ __('purchasing.copy.save_selected_offers') }}
+                            </x-ui.button>
+                            <x-ui.button type="submit" name="action" value="generate_pos" variant="primary" size="sm" id="btnGeneratePos" :disabled="! $poGenerationEnabled">
+                                <x-slot:leading><x-ui.icon name="receipt" size="sm" /></x-slot:leading>
+                                {{ __('purchasing.audit_ui.confirm_generation') }}
+                            </x-ui.button>
+                        </div>
                     </div>
-                </x-slot:actions>
+                </x-slot:footer>
             </x-ui.card>
         @elseif($allItemsAssignedToPurchaseOrder)
             <x-ui.card :title="__('purchasing.copy.purchase_order_s_already_generated')" class="tw:mt-4">

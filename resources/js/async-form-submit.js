@@ -58,8 +58,16 @@ export function findFieldForErrorKey(form, key) {
 
     for (const name of errorKeyToFieldNames(key)) {
         const escaped = globalThis.CSS?.escape ? CSS.escape(name) : name.replace(/["\\]/g, '\\$&');
-        const field = form.querySelector(`[name="${escaped}"]`);
-        if (field) return field;
+        const selector = `[name="${escaped}"]`;
+        if (typeof form.querySelectorAll === 'function') {
+            const matches = [...form.querySelectorAll(selector)];
+            const visibleMatch = matches.find((el) => el.type !== 'hidden');
+            if (visibleMatch) return visibleMatch;
+            if (matches[0]) return matches[0];
+        } else {
+            const field = form.querySelector(selector);
+            if (field) return field;
+        }
     }
 
     return null;
@@ -72,14 +80,16 @@ function revealField(form, key, element) {
 function focusField(element) {
     if (!element) return;
 
-    // Wait for wizards to switch step (x-show) before scrolling/focusing.
+    // Wait for wizards / dialogs to finish opening before scrolling/focusing.
     window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
-        const target = element.type === 'file' || element.type === 'hidden'
-            ? (element.closest('[x-data]') || element.parentElement || element)
-            : element;
-        target.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
-        if (element.type !== 'hidden' && typeof element.focus === 'function') {
-            element.focus({ preventScroll: true });
+        const comboboxTrigger = element.closest?.('[x-data^="searchableSelect"]')?.querySelector?.('[role="combobox"]');
+        const focusTarget = comboboxTrigger || element;
+        const scrollTarget = focusTarget.type === 'file' || focusTarget.type === 'hidden'
+            ? (focusTarget.closest?.('[x-data]') || focusTarget.parentElement || focusTarget)
+            : focusTarget;
+        scrollTarget.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+        if (focusTarget.type !== 'hidden' && typeof focusTarget.focus === 'function') {
+            focusTarget.focus({ preventScroll: true });
         }
     }));
 }
@@ -129,9 +139,10 @@ function renderInlineError(field, message) {
     field.setAttribute('aria-invalid', 'true');
     field.setAttribute('data-async-invalid', '');
 
-    const anchor = field.closest('fieldset')
-        || field.closest('[data-async-error-anchor]')
-        || (field.parentElement?.classList.contains('tw:relative') ? field.parentElement : field);
+    const anchor = field.closest?.('[data-async-error-anchor]')
+        || field.closest?.('[x-data^="searchableSelect"]')
+        || field.closest?.('fieldset')
+        || (field.parentElement?.classList?.contains?.('tw:relative') ? field.parentElement : field);
 
     const note = document.createElement('p');
     if (field.id) {
@@ -236,18 +247,28 @@ export function handleValidationErrors(form, errors, message = '') {
     }
 
     const first = items[0];
+    const firstField = first ? findFieldForErrorKey(form, first.key) : null;
     if (first) {
-        revealField(form, first.key, findFieldForErrorKey(form, first.key));
+        revealField(form, first.key, firstField);
     }
 
-    if (summary) {
-        window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
+    const firstDialog = firstField?.closest?.('[role="dialog"]') || null;
+    window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
+        const dialogVisible = Boolean(firstDialog && firstDialog.offsetParent !== null);
+        if (dialogVisible && firstField) {
+            const comboboxTrigger = firstField.closest?.('[x-data^="searchableSelect"]')?.querySelector?.('[role="combobox"]');
+            const target = comboboxTrigger || firstField;
+            target.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+            if (target.type !== 'hidden' && typeof target.focus === 'function') {
+                target.focus({ preventScroll: true });
+            }
+        } else if (summary) {
             summary.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
             summary.focus({ preventScroll: true });
-        }));
-    } else if (first) {
-        focusField(findFieldForErrorKey(form, first.key));
-    }
+        } else if (firstField) {
+            focusField(firstField);
+        }
+    }));
 }
 
 export async function submitAsync(form, submitter = null) {
@@ -297,8 +318,15 @@ export async function submitAsync(form, submitter = null) {
         }
         const target = data.redirect || (response.redirected ? response.url : null);
         if (target && isSameOriginUrl(target, window.location.origin)) {
-            form.dispatchEvent(new CustomEvent('adasi:form-success', { detail: { redirect: target } }));
-            window.location.assign(target);
+            const successEvent = new CustomEvent('adasi:form-success', {
+                bubbles: true,
+                cancelable: true,
+                detail: { redirect: target },
+            });
+            form.dispatchEvent(successEvent);
+            if (!successEvent.defaultPrevented) {
+                window.location.assign(target);
+            }
             return;
         }
         notify('error', t('js.async_form.failed'));

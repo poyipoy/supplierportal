@@ -94,7 +94,6 @@
                 :max-size-mb="5"
                 accept=".pdf,.jpg,.jpeg,.png"
                 :allowed-extensions="['pdf', 'jpg', 'jpeg', 'png']"
-                required
             />
             <div>
                 <x-ui.button type="submit" size="sm">

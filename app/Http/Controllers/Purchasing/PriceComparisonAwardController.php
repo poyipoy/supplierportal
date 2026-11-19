@@ -11,10 +11,12 @@ use App\Models\Quotation;
 use App\Models\QuotationItem;
 use App\Services\PrItemAwardService;
 use App\Services\PurchaseOrderGenerationService;
+use App\Support\Procurement\LogisticsTerms;
 use App\Support\Procurement\OrderSelectionInput;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class PriceComparisonAwardController extends Controller
@@ -29,6 +31,8 @@ class PriceComparisonAwardController extends Controller
         PrItemAwardService $awardService,
         PurchaseOrderGenerationService $poService
     ) {
+        $requiresPortConfirmation = $request->input('action') === 'generate_pos';
+
         $request->validate([
             'pr_id' => 'required',
             'awards' => 'required|array|min:1',
@@ -36,6 +40,8 @@ class PriceComparisonAwardController extends Controller
             'action' => 'nullable|string|in:save,generate_pos',
             'notes' => 'nullable|string',
             'estimated_arrival' => 'nullable|date',
+            'port_of_discharge' => [$requiresPortConfirmation ? 'required' : 'nullable', Rule::in(LogisticsTerms::ports())],
+            'confirm_port_of_discharge' => $requiresPortConfirmation ? 'accepted' : 'nullable',
             'order_qty' => 'nullable|array',
             'accept_spec' => 'nullable|array',
         ]);
@@ -123,6 +129,7 @@ class PriceComparisonAwardController extends Controller
                     return $poService->generateFromAwards($awards, auth()->user(), [
                         'estimated_arrival' => $request->input('estimated_arrival'),
                         'notes' => $request->input('notes'),
+                        'port_of_discharge' => $request->input('port_of_discharge'),
                     ]);
                 });
 

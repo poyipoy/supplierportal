@@ -2,17 +2,17 @@
 
 return [
     'logistics' => [
-        'port_of_discharge' => 'Pelabuhan Bongkar',
+        'port_of_discharge' => 'Pelabuhan Tujuan',
         'incoterm' => 'Incoterms',
         'not_set' => 'Belum diisi',
         'select_port' => 'Pilih pelabuhan',
         'select_incoterm' => 'Pilih Incoterms',
         'required_on_submit_hint' => 'Opsional untuk draf; wajib saat diajukan.',
-        'port_required_on_submit' => 'Pilih Pelabuhan Bongkar sebelum mengajukan permintaan.',
+        'port_required_on_submit' => 'Pilih Pelabuhan Tujuan sebelum mengajukan permintaan.',
         'incoterm_required_on_submit' => 'Pilih Incoterms sebelum mengajukan permintaan.',
-        'port_invalid' => 'Pilih Pelabuhan Bongkar dari daftar.',
+        'port_invalid' => 'Pilih Pelabuhan Tujuan dari daftar.',
         'incoterm_invalid' => 'Pilih Incoterms dari daftar.',
-        'mixed_consolidation' => 'Item terpilih tidak dapat digabung dalam satu Pesanan Pembelian karena permintaannya memiliki Pelabuhan Bongkar atau Incoterms yang berbeda: :details. Buat Pesanan Pembelian terpisah untuk setiap kombinasi.',
+        'mixed_consolidation' => 'Item terpilih tidak dapat digabung dalam satu Pesanan Pembelian karena permintaannya memiliki Pelabuhan Tujuan atau Incoterms yang berbeda: :details. Buat Pesanan Pembelian terpisah untuk setiap kombinasi.',
         'mixed_selection_warning' => 'Item yang dicentang berasal dari permintaan dengan Port of Discharge atau Incoterms berbeda. Satu Purchase Order membutuhkan syarat logistik yang sama.',
         'section_title' => 'Ketentuan Logistik',
     ],

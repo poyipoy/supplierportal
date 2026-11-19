@@ -3,6 +3,9 @@
 @php
     $isEditing = isset($shipment) && $shipment;
     $notReadyCount = $notReadyCount ?? 0;
+    $preshipment = $preshipment ?? ['values' => [], 'reused' => false];
+    $invoiceRequired = \App\Support\Procurement\ProcurementFeatures::requireCommercialInvoiceForShipment();
+    $psiHasErrors = collect($errors->keys())->contains(fn ($key) => str_starts_with((string) $key, 'preshipment'));
 @endphp
 @section('title', ($isEditing ? __('shipments.copy.edit_shipment') : __('shipments.copy.create_new_shipment')) . ' - ADASI Portal')
 @section('page-title', $isEditing ? __('shipments.copy.edit_shipment') : __('shipments.copy.create_shipment'))
@@ -71,15 +74,18 @@
             />
         </x-ui.card>
     @else
-        <form method="POST" action="{{ $isEditing ? route('supplier.shipments.update', $shipment) : route('supplier.shipments.store') }}" id="shipmentCreateForm">
+        <form method="POST" action="{{ $isEditing ? route('supplier.shipments.update', $shipment) : route('supplier.shipments.store') }}" id="shipmentCreateForm" enctype="multipart/form-data" data-async-submit class="tw:grid tw:gap-4">
             @csrf
             @if($isEditing) @method('PUT') @endif
             <input type="hidden" name="action" id="shipmentFormAction" value="draft">
-            @if(\App\Support\Procurement\ProcurementFeatures::shipmentMtcEnabled())
-                <x-ui.alert tone="info" class="tw:mb-3">{{ __('shipments.mtc.create_hint') }}</x-ui.alert>
+            {{-- E5: Commercial Invoice is the first delivery requirement; MTC follows it. --}}
+            @if($invoiceRequired)
+                <x-ui.alert tone="warning">{{ __('shipments.copy.commercial_invoice_required_body') }}</x-ui.alert>
+            @elseif(\App\Support\Procurement\ProcurementFeatures::shipmentMtcEnabled())
+                <x-ui.alert tone="info">{{ __('shipments.mtc.create_hint') }}</x-ui.alert>
             @endif
             @if($notReadyCount > 0)
-                <x-ui.alert tone="warning" class="tw:mb-3">
+                <x-ui.alert tone="warning">
                     {{ trans_choice('shipments.audit_ui.not_ready_hidden', $notReadyCount, ['count' => $notReadyCount]) }}
                     <a href="{{ route('supplier.purchase-orders.index') }}" class="tw:font-semibold">{{ __('shipments.audit_ui.not_ready_link') }}</a>
                 </x-ui.alert>
@@ -122,6 +128,119 @@
                         >
                         @error('notes')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
+
+                    <div>
+                        <label for="shipmentInvoiceNumber" class="form-label tw:text-ui-xs fw-semibold">
+                            {{ __('shipments.copy.invoice_number') }} <span class="text-danger" aria-hidden="true">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            name="invoice_number"
+                            id="shipmentInvoiceNumber"
+                            class="form-control form-control-sm @error('invoice_number') is-invalid @enderror"
+                            value="{{ old('invoice_number', $shipment?->invoice_number) }}"
+                            placeholder="{{ __('shipments.copy.invoice_number_placeholder') }}"
+                            maxlength="100"
+                            required
+                            aria-describedby="shipmentInvoiceNumberHelp"
+                        >
+                        <div id="shipmentInvoiceNumberHelp" class="form-text tw:text-ui-xs">{{ __('shipments.copy.invoice_number_help') }}</div>
+                        @error('invoice_number')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+
+                    <div>
+                        <label for="shipmentSupplierReference" class="form-label tw:text-ui-xs fw-semibold">
+                            {{ __('shipments.copy.supplier_reference') }}
+                        </label>
+                        <input
+                            type="text"
+                            name="supplier_reference"
+                            id="shipmentSupplierReference"
+                            class="form-control form-control-sm @error('supplier_reference') is-invalid @enderror"
+                            value="{{ old('supplier_reference', $shipment?->supplier_reference) }}"
+                            placeholder="{{ __('shipments.copy.supplier_reference_placeholder') }}"
+                            maxlength="120"
+                            aria-describedby="shipmentSupplierReferenceHelp"
+                        >
+                        <div id="shipmentSupplierReferenceHelp" class="form-text tw:text-ui-xs">{{ __('shipments.copy.supplier_reference_help') }}</div>
+                        @error('supplier_reference')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+
+                    <div>
+                        <label for="shipmentCommercialInvoiceFile" class="form-label tw:text-ui-xs fw-semibold">
+                            {{ __('shipments.copy.commercial_invoice') }}
+                        </label>
+                        <input
+                            type="file"
+                            name="commercial_invoice_file"
+                            id="shipmentCommercialInvoiceFile"
+                            class="form-control form-control-sm @error('commercial_invoice_file') is-invalid @enderror"
+                            accept=".pdf,.jpg,.jpeg,.png,.xlsx,.doc,.docx"
+                        >
+                        <div class="form-text tw:text-ui-xs">{{ __('shipments.copy.commercial_invoice_required_before_submit') }}</div>
+                        @error('commercial_invoice_file')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                </div>
+            </x-ui.card>
+
+            {{-- E9: Pre-Shipment Inspection (reused from the supplier's last shipment) --}}
+            @php
+                $psiValues = $preshipment['values'] ?? [];
+                $psiSummaryVal = fn (string $key) => trim((string) old('preshipment.'.$key, $psiValues[$key] ?? ''));
+                $psiSameAsExporter = filter_var(old('preshipment.same_as_exporter', $preshipment['same_as_exporter'] ?? false), FILTER_VALIDATE_BOOLEAN);
+                $psiIsComplete = $psiSummaryVal('exporter_name') !== ''
+                    && $psiSummaryVal('exporter_address') !== ''
+                    && $psiSummaryVal('exporter_city') !== ''
+                    && $psiSummaryVal('exporter_country') !== ''
+                    && $psiSummaryVal('exporter_port_of_loading') !== ''
+                    && (
+                        $psiSameAsExporter
+                        || (
+                            $psiSummaryVal('supplier_name') !== ''
+                            && $psiSummaryVal('supplier_address') !== ''
+                            && $psiSummaryVal('supplier_city') !== ''
+                            && $psiSummaryVal('supplier_country') !== ''
+                        )
+                    );
+                $psiStatusTone = $psiHasErrors ? 'error' : ($psiIsComplete ? 'success' : 'warning');
+                $psiStatusLabel = $psiHasErrors
+                    ? __('shipments.preshipment.status_attention')
+                    : ($psiIsComplete ? __('shipments.preshipment.status_ready') : __('shipments.preshipment.status_incomplete'));
+            @endphp
+            <x-ui.card :title="__('shipments.preshipment.title')" :description="__('shipments.preshipment.description')" id="shipmentPreshipment">
+                <div class="tw:flex tw:flex-wrap tw:items-start tw:justify-between tw:gap-3" id="psiSummary" aria-live="polite">
+                    <div class="tw:grid tw:gap-2 tw:flex-1 tw:min-w-0">
+                        <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-2">
+                            <span data-psi-status-badge class="ui-status-chip ui-status-chip--{{ $psiStatusTone }}">{{ $psiStatusLabel }}</span>
+                            <span
+                                data-psi-mirror-badge
+                                class="ui-status-chip ui-status-chip--info"
+                                @unless($psiSameAsExporter) hidden @endunless
+                            >{{ __('shipments.preshipment.same_as_exporter_badge') }}</span>
+                        </div>
+                        <dl class="tw:m-0 tw:grid tw:gap-x-6 tw:gap-y-2 tw:text-ui-xs tw:sm:grid-cols-2">
+                            <div>
+                                <dt class="tw:text-on-surface-variant tw:font-semibold">{{ __('shipments.preshipment.exporter_title') }}</dt>
+                                <dd class="tw:m-0 tw:text-on-surface tw:font-medium" data-psi-summary="exporter_name">{{ $psiSummaryVal('exporter_name') ?: __('shipments.preshipment.summary_empty') }}</dd>
+                                <dd class="tw:m-0 tw:text-on-surface-variant">
+                                    <span>{{ __('shipments.preshipment.port_of_loading') }}:</span>
+                                    <span data-psi-summary="exporter_port_of_loading">{{ $psiSummaryVal('exporter_port_of_loading') ?: __('shipments.preshipment.summary_empty') }}</span>
+                                </dd>
+                            </div>
+                            <div>
+                                <dt class="tw:text-on-surface-variant tw:font-semibold">{{ __('shipments.preshipment.supplier_title') }}</dt>
+                                <dd class="tw:m-0 tw:text-on-surface tw:font-medium" data-psi-summary="supplier_name">{{ $psiSummaryVal('supplier_name') ?: __('shipments.preshipment.summary_empty') }}</dd>
+                                <dd class="tw:m-0 tw:text-on-surface-variant">
+                                    <span>{{ __('shipments.preshipment.city') }}:</span>
+                                    <span data-psi-summary="supplier_city">{{ $psiSummaryVal('supplier_city') ?: __('shipments.preshipment.summary_empty') }}</span>
+                                </dd>
+                            </div>
+                        </dl>
+                    </div>
+                    <x-ui.button type="button" variant="outline" size="sm" x-data @click="$dispatch('open-ui-dialog', 'shipment-psi-form')" class="tw:min-h-[44px] tw:sm:min-h-0">
+                        <x-slot:leading><x-ui.icon name="pencil" size="sm" /></x-slot:leading>
+                        <span>{{ __('shipments.preshipment.fill_psi') }}</span>
+                    </x-ui.button>
                 </div>
             </x-ui.card>
 
@@ -156,7 +275,7 @@
             </div>
 
             {{-- 3. PO-Grouped Allocation Cards --}}
-            <div class="tw:grid tw:gap-4 mt-2" id="poGroupsContainer">
+            <div class="tw:grid tw:gap-4" id="poGroupsContainer">
                 @foreach($groupedByPo as $poId => $itemsInPo)
                     @php
                         $firstItem = $itemsInPo->first();
@@ -316,6 +435,29 @@
                     @endunless
                 </div>
             </div>
+
+            <x-ui.dialog
+                name="shipment-psi-form"
+                :title="__('shipments.preshipment.title')"
+                :description="__('shipments.preshipment.description')"
+                max-width="4xl"
+                :show="$psiHasErrors"
+                id="shipmentPsiDialog"
+                x-on:psi:panel-mode.window="if ($event.detail?.idPrefix === 'dialog_psi') $dispatch('ui-dialog-actions', { name: 'shipment-psi-form', hidden: $event.detail.mode === 'manage' })"
+            >
+                <div id="shipmentPsiFields">
+                    @include('supplier.shipments._preshipment_form', [
+                        'preshipment' => $preshipment,
+                        'embedded' => true,
+                        'idPrefix' => 'dialog_psi',
+                    ])
+                </div>
+                <x-slot:actions>
+                    <x-ui.button type="button" variant="primary" size="sm" x-data @click="$dispatch('close-ui-dialog', 'shipment-psi-form')">
+                        {{ __('shipments.preshipment.done') }}
+                    </x-ui.button>
+                </x-slot:actions>
+            </x-ui.dialog>
         </form>
     @endif
 </div>
@@ -496,15 +638,108 @@ document.addEventListener('DOMContentLoaded', () => {
     const createForm = document.getElementById('shipmentCreateForm');
     const btnSaveDraft = document.getElementById('btnSaveDraft');
 
-    btnSaveDraft?.addEventListener('click', () => {
+    // PSI lives in its own dialog: keep the summary card in sync, avoid hidden-modal
+    // constraint-validation hangs, and open the dialog on validation failures.
+    const psiEmptyText = @js(__('shipments.preshipment.summary_empty'));
+    const psiReadyLabel = @js(__('shipments.preshipment.status_ready'));
+    const psiIncompleteLabel = @js(__('shipments.preshipment.status_incomplete'));
+    const psiAttentionLabel = @js(__('shipments.preshipment.status_attention'));
+    const psiFieldVal = (key) => (createForm?.querySelector(`[name="preshipment[${key}]"]`)?.value || '').trim();
+    const isSameAsExporter = () => Boolean(createForm?.querySelector('[type="checkbox"][name="preshipment[same_as_exporter]"]')?.checked);
+    const isPsiComplete = () => {
+        const exporterOk = ['exporter_name', 'exporter_address', 'exporter_city', 'exporter_country', 'exporter_port_of_loading']
+            .every((key) => psiFieldVal(key) !== '');
+        if (!exporterOk) return false;
+        if (isSameAsExporter()) return true;
+
+        return ['supplier_name', 'supplier_address', 'supplier_city', 'supplier_country']
+            .every((key) => psiFieldVal(key) !== '');
+    };
+    const refreshPsiSummary = (hasAttention = false) => {
+        const same = isSameAsExporter();
+        document.querySelectorAll('[data-psi-summary]').forEach((node) => {
+            const key = node.dataset.psiSummary;
+            const resolvedKey = same && key.startsWith('supplier_')
+                ? `exporter_${key.slice('supplier_'.length)}`
+                : key;
+            node.textContent = psiFieldVal(resolvedKey) || psiEmptyText;
+        });
+
+        const mirrorBadge = document.querySelector('[data-psi-mirror-badge]');
+        if (mirrorBadge) {
+            mirrorBadge.hidden = !same;
+        }
+
+        const badge = document.querySelector('[data-psi-status-badge]');
+        if (badge) {
+            badge.classList.remove('ui-status-chip--success', 'ui-status-chip--warning', 'ui-status-chip--error');
+            if (hasAttention) {
+                badge.classList.add('ui-status-chip--error');
+                badge.textContent = psiAttentionLabel;
+            } else if (isPsiComplete()) {
+                badge.classList.add('ui-status-chip--success');
+                badge.textContent = psiReadyLabel;
+            } else {
+                badge.classList.add('ui-status-chip--warning');
+                badge.textContent = psiIncompleteLabel;
+            }
+        }
+    };
+    const revealInvalidPsiControl = () => {
+        const invalidInPsi = [...(createForm?.querySelectorAll('#shipmentPsiDialog :invalid') || [])][0];
+        if (!invalidInPsi) return false;
+        window.dispatchEvent(new CustomEvent('open-ui-dialog', { detail: 'shipment-psi-form' }));
+        window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
+            const focusTarget = invalidInPsi.closest?.('[x-data^="searchableSelect"]')?.querySelector?.('[role="combobox"]') || invalidInPsi;
+            focusTarget.focus?.();
+            invalidInPsi.reportValidity?.();
+        }));
+        return true;
+    };
+    window.addEventListener('close-ui-dialog', (event) => {
+        const detail = event?.detail;
+        if (!detail || detail === 'shipment-psi-form' || detail?.name === 'shipment-psi-form') {
+            refreshPsiSummary(false);
+        }
+    });
+    createForm?.addEventListener('input', (event) => {
+        if (event.target?.name?.startsWith?.('preshipment[')) {
+            refreshPsiSummary(false);
+        }
+    });
+    createForm?.addEventListener('change', (event) => {
+        if (event.target?.name?.startsWith?.('preshipment[')) {
+            refreshPsiSummary(false);
+        }
+    });
+    createForm?.addEventListener('adasi:form-errors', (event) => {
+        const errors = event.detail?.errors || {};
+        const hasPsiErrors = Object.keys(errors).some((k) => k === 'preshipment' || k.startsWith('preshipment.'));
+        refreshPsiSummary(hasPsiErrors);
+    });
+    createForm?.addEventListener('adasi:reveal-field', (event) => {
+        if (event.detail?.element?.closest?.('#shipmentPsiDialog')) {
+            window.dispatchEvent(new CustomEvent('open-ui-dialog', { detail: 'shipment-psi-form' }));
+        }
+    });
+    refreshPsiSummary(@js($psiHasErrors));
+
+    btnSaveDraft?.addEventListener('click', (e) => {
         const actionInput = document.getElementById('shipmentFormAction');
         if (actionInput) {
             actionInput.value = 'draft';
+        }
+        if (revealInvalidPsiControl()) {
+            e.preventDefault();
         }
     });
 
     submitShipmentBtn?.addEventListener('click', (e) => {
         e.preventDefault();
+
+        if (revealInvalidPsiControl()) {
+            return;
+        }
 
         if (createForm && !createForm.checkValidity()) {
             createForm.reportValidity();
@@ -544,6 +779,43 @@ document.addEventListener('DOMContentLoaded', () => {
         const title = @js(__('shipments.confirmations.submit.title'));
         const text = @js(__('shipments.confirmations.submit.body'));
 
+        // E5: a new shipment without a Commercial Invoice file cannot be submitted directly.
+        const invoiceFileInput = document.getElementById('shipmentCommercialInvoiceFile');
+        const hasSelectedInvoiceFile = Boolean(invoiceFileInput && invoiceFileInput.files && invoiceFileInput.files.length > 0);
+        if (@js($invoiceRequired) && !hasSelectedInvoiceFile) {
+            const invoiceTitle = @js(__('shipments.copy.commercial_invoice_required_title'));
+            const invoiceText = @js(__('shipments.copy.commercial_invoice_required_body'));
+            const saveDraft = () => {
+                const actionInput = document.getElementById('shipmentFormAction');
+                if (actionInput) {
+                    actionInput.value = 'draft';
+                }
+                window.AdasiButton?.startLoading(submitShipmentBtn);
+                if (typeof createForm.requestSubmit === 'function') {
+                    createForm.requestSubmit();
+                } else {
+                    createForm.submit();
+                }
+            };
+
+            if (window.AdasiAlert) {
+                window.AdasiAlert.confirm({
+                    title: invoiceTitle,
+                    text: invoiceText,
+                    confirmText: @js(__('shipments.copy.save_as_draft')),
+                    cancelText: @js(__('shipments.copy.cancel')),
+                    confirmTone: 'primary'
+                }).then(result => {
+                    if (result.isConfirmed) {
+                        saveDraft();
+                    }
+                });
+            } else if (confirm(`${invoiceTitle}\n\n${invoiceText}`)) {
+                saveDraft();
+            }
+            return;
+        }
+
         const doSubmit = () => {
             let actionInput = document.getElementById('shipmentFormAction');
             if (!actionInput) {
@@ -556,7 +828,11 @@ document.addEventListener('DOMContentLoaded', () => {
             actionInput.value = 'submit';
 
             window.AdasiButton?.startLoading(submitShipmentBtn);
-            createForm.submit();
+            if (typeof createForm.requestSubmit === 'function') {
+                createForm.requestSubmit();
+            } else {
+                createForm.submit();
+            }
         };
 
         if (window.AdasiAlert) {

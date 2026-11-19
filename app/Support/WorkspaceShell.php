@@ -87,6 +87,7 @@ class WorkspaceShell
         '*.records',
         '*.history',
         '*.satellite',
+        'supplier.goods-locations.options',
     ];
 
     public static function enabled(): bool
@@ -107,6 +108,11 @@ class WorkspaceShell
     public static function maxLiveFrames(): int
     {
         return max(2, min(12, (int) config('ui.workspace_shell.max_live_frames', 18)));
+    }
+
+    public static function maxPinnedSessions(): int
+    {
+        return max(1, min(8, intdiv(self::maxSessions(), 2)));
     }
 
     public static function staleAfterSeconds(): int
@@ -333,6 +339,7 @@ class WorkspaceShell
                 'requisitions' => 'requisitions',
                 'quotations' => 'quotations',
                 'comparison' => 'comparison',
+                'goods-locations' => 'shipments',
                 'shipments' => 'shipments',
                 'periods' => 'periods',
                 'claims' => 'claims',
@@ -419,6 +426,7 @@ class WorkspaceShell
             'local-supplier.supplier-audits.index' => __('navigation.supplier_audit'),
             'local-supplier.information' => __('navigation.announcements'),
             'purchasing.dashboard' => __('navigation.dashboard'),
+            'purchasing.outstanding-materials.index' => __('navigation.outstanding_materials'),
             'purchasing.periods.index' => __('navigation.period_management'),
             'purchasing.requisitions.index' => __('navigation.requisition'),
             'purchasing.import-suppliers.index' => __('navigation.import_suppliers'),
@@ -447,10 +455,12 @@ class WorkspaceShell
             'qc.dashboard' => __('navigation.dashboard'),
             'qc.inspections.index' => __('navigation.qc_inspection'),
             'supplier.dashboard' => __('navigation.dashboard'),
+            'supplier.outstanding-materials.index' => __('navigation.outstanding_materials'),
             'supplier.quotations.index' => __('navigation.quotation_period'),
             'supplier.requests.index' => __('navigation.purchasing_requests'),
             'supplier.purchase-orders.index' => __('navigation.purchase_order'),
             'supplier.shipments.index' => __('navigation.shipments_deliveries_short'),
+            'supplier.goods-locations.index' => __('shipments.preshipment.locations_title'),
             'supplier.conversations.index' => __('common.chat.title'),
             'supplier.claims.index' => __('navigation.material_claim'),
             'supplier.price-history.index' => __('navigation.price_history'),
@@ -710,6 +720,7 @@ class WorkspaceShell
                 'maxSessions' => self::maxSessions(),
                 'maxTabs' => self::maxSessions(),
                 'maxLiveFrames' => self::maxLiveFrames(),
+                'maxPinnedSessions' => self::maxPinnedSessions(),
                 'staleAfterMs' => self::staleAfterSeconds() * 1000,
                 'slowLoaderThresholdMs' => max(0, (int) config('ui.navigation.slow_loader_threshold_ms', 2500)),
                 'pageFadeMs' => max(0, (int) config('ui.navigation.page_fade_ms', 500)),
@@ -807,6 +818,20 @@ class WorkspaceShell
                     'statusQueued' => __('navigation.workspace_shell.status_queued'),
                     'queuedAnnouncement' => __('navigation.workspace_shell.queued_announcement'),
                     'readyAnnouncement' => __('navigation.workspace_shell.ready_announcement'),
+                    'pinSession' => __('navigation.workspace_shell.pin_session'),
+                    'unpinSession' => __('navigation.workspace_shell.unpin_session'),
+                    'pinnedBadge' => __('navigation.workspace_shell.pinned_badge'),
+                    'maxPinnedReached' => __('navigation.workspace_shell.max_pinned_reached'),
+                    'pinnedCloseProtected' => __('navigation.workspace_shell.pinned_close_protected'),
+                    'moveSessionLeft' => __('navigation.workspace_shell.move_session_left'),
+                    'moveSessionRight' => __('navigation.workspace_shell.move_session_right'),
+                    'movedAnnouncement' => __('navigation.workspace_shell.moved_announcement'),
+                    'pinnedAnnouncement' => __('navigation.workspace_shell.pinned_announcement'),
+                    'unpinnedAnnouncement' => __('navigation.workspace_shell.unpinned_announcement'),
+                    'reopenClosedSession' => __('navigation.workspace_shell.reopen_closed_session'),
+                    'recentlyClosed' => __('navigation.workspace_shell.recently_closed'),
+                    'clearRecentlyClosed' => __('navigation.workspace_shell.clear_recently_closed'),
+                    'reopenedAnnouncement' => __('navigation.workspace_shell.reopened_announcement'),
                 ],
             ],
         ];

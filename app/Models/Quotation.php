@@ -7,6 +7,7 @@ use App\Enums\QuotationStatus;
 use App\Support\BusinessTime;
 use App\Support\StatusHelper;
 use App\Traits\HasHashids;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -92,16 +93,38 @@ class Quotation extends Model
     public function isReferencedByAwardOrPurchaseOrder(): bool
     {
         return $this->purchaseOrders()->withTrashed()->exists()
-            || PrItemAward::query()
-                ->where('quotation_id', $this->id)
-                ->orWhereIn('quotation_item_id', $this->items()->select('id'))
-                ->exists();
+            || $this->referencingAwardsQuery()->exists();
     }
 
     public function canRequestRevision(): bool
     {
         return in_array($this->status, [self::STATUS_SUBMITTED, self::STATUS_ALL_UNAVAILABLE], true)
             && ! $this->isReferencedByAwardOrPurchaseOrder();
+    }
+
+    /**
+     * An expired quotation that only has un-PO'd item awards cannot be turned
+     * into a PO until the supplier extends validity; allow Purchasing to
+     * request a revision by releasing those un-PO'd awards.
+     */
+    public function canRequestValidityUpdateForExpiredAward(): bool
+    {
+        return $this->status === self::STATUS_SUBMITTED
+            && $this->isExpired()
+            && ! $this->purchaseOrders()->withTrashed()->exists()
+            && $this->referencingAwardsQuery()->whereNull('purchase_order_id')->exists()
+            && ! $this->referencingAwardsQuery()->whereNotNull('purchase_order_id')->exists();
+    }
+
+    /**
+     * @return Builder<PrItemAward>
+     */
+    public function referencingAwardsQuery(): Builder
+    {
+        return PrItemAward::query()->where(function ($query): void {
+            $query->where('quotation_id', $this->id)
+                ->orWhereIn('quotation_item_id', $this->items()->select('id'));
+        });
     }
 
     public function isDraft(): bool

@@ -70,6 +70,12 @@ return [
     'scopes' => [
         'import' => 'Pengadaan Material (Impor)',
         'local' => 'Supplier Lokal',
+        'staff' => 'Staf Internal & Master',
+    ],
+    'scope_help' => [
+        'import' => 'Memblokir halaman Import Supplier dan Pengadaan untuk setiap area yang dipilih.',
+        'local' => 'Memblokir halaman Local Supplier, Keuangan, Akuntansi, dan Pengadaan untuk setiap area yang dipilih.',
+        'staff' => 'Hanya memblokir alur kerja staf internal dan master data. Supplier tidak terdampak.',
     ],
     'modules' => [
         'import' => [
@@ -90,6 +96,20 @@ return [
             'vendor_profile' => 'Profil Vendor',
             'supplier_audit' => 'Supplier Audit',
             'adasi_information' => 'Informasi ADASI',
+        ],
+        'staff' => [
+            'qc_inspections' => 'Inspeksi QC',
+            'drp' => 'DRP (Supplier, GA & Lunas)',
+            'payment_vouchers' => 'Voucher Bayar & Penyelesaian',
+            'overpayments_forecast' => 'Lebih Bayar Supplier & Proyeksi',
+            'ga_claims' => 'Klaim GA',
+            'ga_employees' => 'Master Data Karyawan',
+            'materials' => 'Material dan Kode HS',
+            'reference_prices' => 'Harga Referensi',
+            'exchange_rates' => 'Kurs',
+            'purchasing_reports' => 'Laporan Pengadaan',
+            'supplier_registrations' => 'Tinjauan Pendaftaran Supplier',
+            'export_history' => 'Riwayat Ekspor (Keuangan & Akuntansi)',
         ],
     ],
     'fields' => [
@@ -115,7 +135,7 @@ return [
         'section_type' => 'Jenis',
         'section_type_description' => 'Pemeliharaan Global mengalahkan semua modul, termasuk modul yang ditahan data lain.',
         'section_modules' => 'Modul',
-        'section_modules_description' => 'Semua modul yang dipilih memakai pemberitahuan dan jendela waktu yang sama. Modul memblokir halaman supplier dan halaman staf pada area yang sama; area staf tanpa modul (pembayaran, QC, GA) hanya diblokir Pemeliharaan Global.',
+        'section_modules_description' => 'Semua modul yang dipilih memakai pemberitahuan dan jendela waktu yang sama. Modul Impor dan Supplier Lokal memblokir halaman supplier dan staf pada area tersebut; modul Staf Internal & Master hanya memblokir halaman staf. Dasbor portal, profil, dan notifikasi hanya diblokir Pemeliharaan Global.',
         'section_notice' => 'Pemberitahuan untuk pengguna',
         'section_notice_description' => 'Pengguna melihat persis judul, deskripsi, waktu mulai, dan estimasi selesai ini.',
         'section_window' => 'Jendela waktu',

@@ -94,6 +94,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
         $response = $this->actingAs($this->supplierA)->post(route('supplier.shipments.store'), [
             'shipment_date' => now()->toDateString(),
             'estimated_arrival_date' => now()->addDays(14)->toDateString(),
+            'invoice_number' => 'INV-TEST-001',
             'notes' => 'Form payload with unselected rows',
             'action' => 'draft',
             'items' => [
@@ -625,6 +626,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
             ->put(route('supplier.shipments.update', $shipment), [
                 'shipment_date' => now()->addDay()->toDateString(),
                 'estimated_arrival_date' => now()->addDays(8)->toDateString(),
+                'invoice_number' => 'INV-TEST-UPD',
                 'notes' => 'Updated draft',
                 'items' => [[
                     'purchase_order_id' => $po->id,
@@ -682,6 +684,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
             ->put(route('supplier.shipments.update', $shipment), [
                 'shipment_date' => now()->toDateString(),
                 'estimated_arrival_date' => now()->addDays(7)->toDateString(),
+                'invoice_number' => 'INV-TEST-ILLEGAL',
                 'notes' => 'Illegal update',
                 'items' => [[
                     'purchase_order_id' => $po->id,
@@ -723,6 +726,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
         $response = $this->actingAs($this->supplierA)->post(route('supplier.shipments.store'), [
             'shipment_date' => now()->toDateString(),
             'estimated_arrival_date' => now()->addDays(7)->toDateString(),
+            'invoice_number' => 'INV-TEST-QTY',
             'action' => 'submit',
             'mtc_files' => [NativeFileFixtures::upload('mtc.pdf')],
             'items' => [[
@@ -840,6 +844,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
         $response = $this->actingAs($this->supplierA)->post(route('supplier.shipments.store'), [
             'shipment_date' => now()->toDateString(),
             'estimated_arrival_date' => now()->addDays(7)->toDateString(),
+            'invoice_number' => 'INV-TEST-QTY',
             'action' => 'submit',
             'mtc_files' => [NativeFileFixtures::upload('mtc.pdf')],
             'items' => [[
@@ -1053,6 +1058,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
         $qItem = $po->awards->first()->quotationItem;
         // Legacy POs predate Mission 06B and carry no reference snapshots.
         DB::table('award_reference_price_snapshots')->where('purchase_order_id', $po->id)->delete();
+        DB::table('po_item_progress_updates')->whereIn('pr_item_award_id', $po->awards()->pluck('id'))->delete();
         $po->awards()->delete();
         $this->assertFalse($po->awards()->exists());
         $shipment = $this->shipmentService->createDraft($this->supplierA);
@@ -1403,6 +1409,7 @@ class ShipmentAndPartialDeliveryTest extends TestCase
 
         // Legacy POs predate Mission 06B and carry no reference snapshots.
         DB::table('award_reference_price_snapshots')->where('purchase_order_id', $po->id)->delete();
+        DB::table('po_item_progress_updates')->whereIn('pr_item_award_id', $po->awards()->pluck('id'))->delete();
         $po->awards()->delete();
         $po->unsetRelation('awards');
 

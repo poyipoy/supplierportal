@@ -11,6 +11,7 @@ use App\Models\MaterialClaim;
 use App\Models\PurchaseOrder;
 use App\Models\QcInspection;
 use App\Models\Quotation;
+use App\Models\Shipment;
 use App\Models\User;
 use App\Services\MaterialProgressService;
 use App\Services\NotificationService;
@@ -86,6 +87,13 @@ class PurchaseOrderController extends Controller
         PurchaseOrderExportFilters::apply($query, $filters);
         // PUR-08: is_overdue reads this flag instead of querying per row.
         $query->withExists('shipmentItems as has_shipment_items');
+        // E7: Distinguish Active POs with vs without an active/arrived shipment.
+        $query->withExists([
+            'shipmentItems as has_active_shipments' => fn ($q) => $q->whereHas(
+                'shipment',
+                fn ($s) => $s->whereIn('status', [Shipment::STATUS_SUBMITTED, Shipment::STATUS_ARRIVED])
+            ),
+        ]);
 
         if ($request->ajax()) {
             $payload = DataTables::eloquent($query)
@@ -124,9 +132,10 @@ class PurchaseOrderController extends Controller
                     ? '— ('.__('purchasing.copy.exchange_rate_unavailable').')'
                     : 'Rp '.$regionalFormatter->number(number_format((float) $po->resolved_total_idr, 0, ',', '.'), 'indonesian'))
                 ->addColumn('status_badge', function ($po) {
-                    return StatusHelper::badge(
-                        StatusHelper::poBadge($po->status, $po->is_overdue),
-                        StatusHelper::poLabel($po->status, $po->is_overdue)
+                    return StatusHelper::poStatusChip(
+                        $po->status,
+                        $po->is_overdue,
+                        $po->has_active_shipments
                     );
                 })
                 ->addColumn('estimated_date', function ($po) use ($regionalFormatter) {
@@ -265,6 +274,8 @@ class PurchaseOrderController extends Controller
             'shipmentItems.shipment.items.purchaseOrder:id,po_number',
             'shipmentItems.shipment.mtcAttachments',
             'referencePriceSnapshots.award.prItem',
+            'supplierSalesContractAttachment',
+            'purchasingSalesContractAttachment',
         ])->findOrFail($id);
 
         // Collect rates per quotation for display
@@ -448,5 +459,61 @@ class PurchaseOrderController extends Controller
 
         return redirect()->route('purchasing.purchase-orders.show', $updatedPo)
             ->with('success', $message);
+    }
+
+    public function uploadSignedSalesContract(Request $request, $id, PoAcknowledgementService $acknowledgementService)
+    {
+        $po = PurchaseOrder::findOrFail($id);
+
+        $validated = $request->validate([
+            'signed_sales_contract_file' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,doc,docx', 'max:10240'],
+            'sales_contract_notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        try {
+            $updatedPo = $acknowledgementService->uploadPurchasingSignedSalesContract(
+                $po,
+                $request->file('signed_sales_contract_file'),
+                $request->user(),
+                $validated['sales_contract_notes'] ?? null
+            );
+        } catch (BusinessRuleArgumentException|BusinessRuleException|\InvalidArgumentException $e) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $e->getMessage()], 422);
+            }
+
+            return back()->withInput()->with('error', $e->getMessage());
+        }
+
+        if ($request->expectsJson()) {
+            $request->session()->flash('success', __('purchasing.copy.sales_contract_status_purchasing_signed'));
+
+            return response()->json(['redirect' => route('purchasing.purchase-orders.show', $updatedPo)]);
+        }
+
+        return redirect()->route('purchasing.purchase-orders.show', $updatedPo)
+            ->with('success', __('purchasing.copy.sales_contract_status_purchasing_signed'));
+    }
+
+    public function requestSalesContractRevision(Request $request, $id, PoAcknowledgementService $acknowledgementService)
+    {
+        $po = PurchaseOrder::findOrFail($id);
+
+        $validated = $request->validate([
+            'sales_contract_notes' => ['required', 'string', 'max:2000'],
+        ]);
+
+        try {
+            $updatedPo = $acknowledgementService->requestSalesContractRevision(
+                $po,
+                $request->user(),
+                $validated['sales_contract_notes']
+            );
+        } catch (BusinessRuleArgumentException|BusinessRuleException|\InvalidArgumentException $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
+
+        return redirect()->route('purchasing.purchase-orders.show', $updatedPo)
+            ->with('success', __('purchasing.copy.sales_contract_status_revision_requested'));
     }
 }

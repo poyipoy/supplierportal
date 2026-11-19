@@ -103,7 +103,7 @@ class ShipmentSubmissionConcurrencyTest extends TestCase
         fwrite(STDERR, sprintf("[7+5 mtc=%s] %s\n", $mtc ? 'on' : 'off', implode(' | ', $rounds)));
     }
 
-    public function test_enabled_switch_refuses_the_concurrent_submission_without_validated_mtc(): void
+    public function test_enabled_switch_allows_concurrent_submissions_with_and_without_mtc_when_quantity_fits(): void
     {
         $this->useSwitch(true);
         [$po, $line] = $this->orderedTwelve();
@@ -112,12 +112,12 @@ class ShipmentSubmissionConcurrencyTest extends TestCase
 
         $outcomes = $this->race([['submit', $withMtc->id], ['submit', $withoutMtc->id]], true, sort: false);
 
-        $this->assertSame(['submitted', 'refused:MtcRequiredException'], $outcomes);
-        $this->assertSame(Shipment::STATUS_DRAFT, $withoutMtc->fresh()->status);
-        $this->assertSame(7, $this->submittedQty($po));
+        $this->assertSame(['submitted', 'submitted'], $outcomes);
+        $this->assertSame(Shipment::STATUS_SUBMITTED, $withoutMtc->fresh()->status);
+        $this->assertSame(12, $this->submittedQty($po));
     }
 
-    public function test_concurrent_mtc_removal_and_submission_never_submit_without_validated_mtc(): void
+    public function test_concurrent_mtc_removal_and_submission_respects_submitted_append_only_rule(): void
     {
         $this->useSwitch(true);
         $seen = [];
@@ -133,13 +133,15 @@ class ShipmentSubmissionConcurrencyTest extends TestCase
             $seen[] = implode('+', $outcomes);
             $draft->refresh();
 
-            if ($draft->status === Shipment::STATUS_SUBMITTED) {
-                $this->assertSame(['submitted', 'refused:InvalidArgumentException'], $outcomes);
-                $this->assertSame(1, $this->validatedMtc($draft), 'I-9: a submitted shipment keeps its validated MTC');
-            } else {
-                $this->assertSame(['refused:MtcRequiredException', 'removed'], $outcomes);
+            $this->assertSame(Shipment::STATUS_SUBMITTED, $draft->status);
+            $this->assertSame(7, $this->submittedQty($po));
+
+            if ($outcomes[1] === 'removed') {
+                $this->assertSame(['submitted', 'removed'], $outcomes);
                 $this->assertSame(0, $this->validatedMtc($draft));
-                $this->assertSame(0, $this->submittedQty($po));
+            } else {
+                $this->assertSame(['submitted', 'refused:InvalidArgumentException'], $outcomes);
+                $this->assertSame(1, $this->validatedMtc($draft), 'A submitted shipment refuses MTC deletion');
             }
         }
         fwrite(STDERR, '[submit vs remove-mtc] '.implode(' | ', $seen)."\n");

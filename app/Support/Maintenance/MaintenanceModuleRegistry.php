@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\ConversationMessageController;
 use App\Http\Controllers\PortalLegacyPathController;
 use App\Models\Attachment;
+use App\Models\LocalGoodsReceipt;
 use App\Models\LocalPurchaseOrder;
 use App\Models\MaterialClaim;
 use App\Models\Message;
@@ -37,7 +38,9 @@ final class MaintenanceModuleRegistry
 
     public const SCOPE_LOCAL = 'local';
 
-    /** Module key => core scope, in sidebar order. */
+    public const SCOPE_STAFF = 'staff';
+
+    /** Module key => UI group (matches the key prefix), in display order. */
     public const MODULES = [
         'import.quotations' => self::SCOPE_IMPORT,
         'import.purchase_requests' => self::SCOPE_IMPORT,
@@ -54,6 +57,18 @@ final class MaintenanceModuleRegistry
         'local.vendor_profile' => self::SCOPE_LOCAL,
         'local.supplier_audit' => self::SCOPE_LOCAL,
         'local.adasi_information' => self::SCOPE_LOCAL,
+        'staff.qc_inspections' => self::SCOPE_STAFF,
+        'staff.drp' => self::SCOPE_STAFF,
+        'staff.payment_vouchers' => self::SCOPE_STAFF,
+        'staff.overpayments_forecast' => self::SCOPE_STAFF,
+        'staff.ga_claims' => self::SCOPE_STAFF,
+        'staff.ga_employees' => self::SCOPE_STAFF,
+        'staff.materials' => self::SCOPE_STAFF,
+        'staff.reference_prices' => self::SCOPE_STAFF,
+        'staff.exchange_rates' => self::SCOPE_STAFF,
+        'staff.purchasing_reports' => self::SCOPE_STAFF,
+        'staff.supplier_registrations' => self::SCOPE_STAFF,
+        'staff.export_history' => self::SCOPE_STAFF,
     ];
 
     /**
@@ -70,15 +85,40 @@ final class MaintenanceModuleRegistry
     ];
 
     /**
+     * Internal staff roles covered by each staff.* module. Suppliers never match
+     * these modules, even when accessing shared endpoints like exports or attachments.
+     *
+     * @var array<string, list<string>>
+     */
+    private const STAFF_MODULE_ROLES = [
+        'staff.qc_inspections' => ['qc', 'purchasing'],
+        'staff.drp' => ['finance', 'purchasing'],
+        'staff.payment_vouchers' => ['finance', 'purchasing'],
+        'staff.overpayments_forecast' => ['finance', 'accounting'],
+        'staff.ga_claims' => ['ga', 'finance'],
+        'staff.ga_employees' => ['ga'],
+        'staff.materials' => ['purchasing'],
+        'staff.reference_prices' => ['purchasing'],
+        'staff.exchange_rates' => ['purchasing'],
+        'staff.purchasing_reports' => ['purchasing'],
+        'staff.supplier_registrations' => ['purchasing', 'finance'],
+        'staff.export_history' => ['finance', 'accounting'],
+    ];
+
+    /**
      * Routes whose owner differs from their URL prefix. An export dispatch needs
      * both its list module and the export pipeline, so either one blocks it.
      */
     private const EXACT_ROUTES = [
         'local-supplier.purchase-orders.search' => ['local.invoices'],
+        'purchasing.material-masters.search' => ['import.purchase_requests'],
+        'purchasing.material-calculations.preview' => ['import.purchase_requests'],
+        'purchasing.material-calculations.totals' => ['import.purchase_requests'],
         'supplier.export.quotations' => ['import.quotations', 'import.export_history'],
         'supplier.export.quotations.detail' => ['import.quotations', 'import.export_history'],
         'supplier.export.purchase-orders' => ['import.purchase_orders', 'import.export_history'],
         'supplier.export.purchase-orders.detail' => ['import.purchase_orders', 'import.export_history'],
+        'supplier.export.shipments' => ['import.shipments', 'import.export_history'],
         'supplier.price-history.export' => ['import.price_history', 'import.export_history'],
         'purchasing.export.requisitions' => ['import.purchase_requests', 'import.export_history'],
         'purchasing.export.requisitions.detail' => ['import.purchase_requests', 'import.export_history'],
@@ -88,8 +128,15 @@ final class MaintenanceModuleRegistry
         'purchasing.export.purchase-orders.detail' => ['import.purchase_orders', 'import.export_history'],
         'purchasing.export.shipments' => ['import.shipments', 'import.export_history'],
         'purchasing.export.supplier-audits.detail' => ['local.supplier_audit'],
+        'qc.export.inspections' => ['staff.qc_inspections', 'import.export_history'],
+        'finance.master-invoices.export' => ['local.invoices', 'staff.export_history'],
+        'accounting.reports.export' => ['local.invoices', 'staff.export_history'],
         'shared.pdf.purchase-order' => ['import.purchase_orders'],
+        'shared.pdf.qc-inspection' => ['staff.qc_inspections'],
         'local-supplier.information' => ['local.adasi_information'],
+        'purchasing.kurs.update' => ['staff.exchange_rates'],
+        'purchasing.vouchers.print' => ['staff.payment_vouchers'],
+        'finance.forecast' => ['staff.overpayments_forecast'],
     ];
 
     /** First match wins, so a specific pattern must come before a broader one. */
@@ -98,13 +145,15 @@ final class MaintenanceModuleRegistry
         'supplier.quotations.*' => 'import.quotations',
         'supplier.requests.*' => 'import.purchase_requests',
         'supplier.purchase-orders.*' => 'import.purchase_orders',
+        'supplier.outstanding-materials.*' => 'import.purchase_orders',
         'supplier.shipments.*' => 'import.shipments',
+        'supplier.goods-locations.*' => 'import.shipments',
         'supplier.conversations.*' => 'import.chat',
         'conversations.*' => 'import.chat',
         'supplier.claims.*' => 'import.material_claims',
         'supplier.price-history.*' => 'import.price_history',
-        'exports.*' => 'import.export_history',
-        'export-presets.*' => 'import.export_history',
+        'exports.*' => ['import.export_history', 'staff.export_history'],
+        'export-presets.*' => ['import.export_history', 'staff.export_history'],
         'supplier.announcements.*' => 'import.adasi_information',
         'supplier.company-profile.*' => 'import.company_profile',
         'local-supplier.invoices.*' => 'local.invoices',
@@ -114,7 +163,7 @@ final class MaintenanceModuleRegistry
         'supplier-master-documents.*' => 'local.vendor_profile',
         'local-supplier.supplier-audits.*' => 'local.supplier_audit',
 
-        // Staff side of the same business areas.
+        // Staff side of supplier-facing business areas.
         'purchasing.requisitions.*' => 'import.purchase_requests',
         'purchasing.pr-items.*' => 'import.purchase_requests',
         'purchasing.periods.*' => 'import.purchase_requests',
@@ -123,6 +172,7 @@ final class MaintenanceModuleRegistry
         'purchasing.comparison.vs-best*' => 'import.price_history',
         'purchasing.comparison.*' => 'import.quotations',
         'purchasing.purchase-orders.*' => 'import.purchase_orders',
+        'purchasing.outstanding-materials.*' => 'import.purchase_orders',
         'purchasing.po-documents.*' => 'import.purchase_orders',
         'purchasing.shipments.*' => 'import.shipments',
         'purchasing.claims.*' => 'import.material_claims',
@@ -142,6 +192,28 @@ final class MaintenanceModuleRegistry
         'purchasing.local-procurement.*' => 'local.purchase_orders',
         'purchasing.local-pos.*' => 'local.purchase_orders',
         'finance.local-procurement.*' => 'local.purchase_orders',
+
+        // Internal staff & master data modules.
+        'qc.inspections.*' => 'staff.qc_inspections',
+        'purchasing.drp.*' => 'staff.drp',
+        'finance.drp.*' => 'staff.drp',
+        'finance.vouchers.*' => 'staff.payment_vouchers',
+        'finance.settlements.*' => 'staff.payment_vouchers',
+        'finance.payment-vouchers.*' => 'staff.payment_vouchers',
+        'purchasing.payment-vouchers.*' => 'staff.payment_vouchers',
+        'finance.overpayments.*' => 'staff.overpayments_forecast',
+        'finance.ga-claims.*' => 'staff.ga_claims',
+        'ga.claims.*' => 'staff.ga_claims',
+        'ga-claim-documents.*' => 'staff.ga_claims',
+        'ga.employees.*' => 'staff.ga_employees',
+        'purchasing.master-data.material-hs-code.*' => 'staff.materials',
+        'purchasing.master-data.material-masters.*' => 'staff.materials',
+        'purchasing.master-data.hs-code-rules.*' => 'staff.materials',
+        'purchasing.master-data.master-data-quality.*' => 'staff.materials',
+        'purchasing.master-data.reference-prices.*' => 'staff.reference_prices',
+        'purchasing.master-data.exchange-rates.*' => 'staff.exchange_rates',
+        'purchasing.reports.*' => 'staff.purchasing_reports',
+        'supplier-registrations.*' => 'staff.supplier_registrations',
     ];
 
     /** Unnamed routes are classified by controller. */
@@ -158,9 +230,10 @@ final class MaintenanceModuleRegistry
         Shipment::class => 'import.shipments',
         ShipmentDocument::class => 'import.shipments',
         MaterialClaim::class => 'import.material_claims',
-        QcInspection::class => 'import.material_claims',
+        QcInspection::class => 'staff.qc_inspections',
         LocalPurchaseOrder::class => 'local.purchase_orders',
-        SupplierOverpaymentRefund::class => 'local.invoices',
+        LocalGoodsReceipt::class => 'local.purchase_orders',
+        SupplierOverpaymentRefund::class => 'staff.overpayments_forecast',
         SupplierAudit::class => 'local.supplier_audit',
     ];
 
@@ -187,14 +260,12 @@ final class MaintenanceModuleRegistry
     ];
 
     /**
-     * Staff areas with no module of their own (payments, QC, GA, master data,
-     * registration review). Global Maintenance blocks them; modules never do. Keep
-     * this after every module pattern so new routes under a module prefix follow
-     * their module first.
+     * Staff areas with no module of their own (role dashboards). Global Maintenance
+     * blocks them; modules never do. Keep this after every module pattern so new
+     * routes under a module prefix follow their module first.
      */
     private const STAFF_PORTAL_ROUTES = [
         'purchasing.*', 'qc.*', 'finance.*', 'ga.*', 'accounting.*',
-        'supplier-registrations.*', 'ga-claim-documents.*', 'shared.pdf.*',
     ];
 
     public function keys(): array
@@ -225,7 +296,7 @@ final class MaintenanceModuleRegistry
     /** @return array<string, list<string>> scope => module keys */
     public function grouped(): array
     {
-        $groups = [self::SCOPE_IMPORT => [], self::SCOPE_LOCAL => []];
+        $groups = [self::SCOPE_IMPORT => [], self::SCOPE_LOCAL => [], self::SCOPE_STAFF => []];
         foreach (self::MODULES as $key => $scope) {
             $groups[$scope][] = $key;
         }
@@ -250,6 +321,34 @@ final class MaintenanceModuleRegistry
         }
 
         return self::ROLE_SCOPES[$user->role] ?? [];
+    }
+
+    public function appliesTo(string $moduleKey, User $user): bool
+    {
+        if ($user->isAdmin()) {
+            return false;
+        }
+
+        $scope = $this->scopeOf($moduleKey);
+        if ($scope === self::SCOPE_STAFF) {
+            return ! $user->isSupplier()
+                && in_array($user->role, self::STAFF_MODULE_ROLES[$moduleKey] ?? [], true);
+        }
+
+        return $scope !== null && in_array($scope, $this->scopesFor($user), true);
+    }
+
+    /** @return list<string> */
+    public function applicableModules(RouteClassification $classification, User $user): array
+    {
+        if ($classification->kind !== RouteClassification::MODULE) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            $classification->modules,
+            fn (string $key): bool => $this->appliesTo($key, $user),
+        ));
     }
 
     public function classify(Request $request): RouteClassification
@@ -287,9 +386,9 @@ final class MaintenanceModuleRegistry
         }
 
         if ($name !== '') {
-            foreach (self::ROUTE_PATTERNS as $pattern => $module) {
+            foreach (self::ROUTE_PATTERNS as $pattern => $modules) {
                 if (Str::is($pattern, $name)) {
-                    return RouteClassification::modules([$module]);
+                    return RouteClassification::modules(is_array($modules) ? $modules : [$modules]);
                 }
             }
         }

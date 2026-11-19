@@ -6,6 +6,7 @@ use App\Support\Security\CspNonce;
 use App\Support\ServerTabsResponse;
 use App\Support\WorkspaceShell;
 use Closure;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as LaravelResponse;
@@ -83,6 +84,17 @@ class WrapWorkspaceShell
             $targetUrl = $response->getTargetUrl();
             if (WorkspaceShell::isEligibleRedirectTarget($request, $targetUrl)) {
                 $response->setTargetUrl(WorkspaceShell::appendEmbedParam($targetUrl));
+            }
+
+            return $response;
+        }
+
+        if ($response instanceof JsonResponse && WorkspaceShell::originatedFromEmbed($request)) {
+            $data = $response->getData(true);
+            $targetUrl = is_array($data) ? ($data['redirect'] ?? null) : null;
+            if (is_string($targetUrl) && WorkspaceShell::isEligibleRedirectTarget($request, $targetUrl)) {
+                $data['redirect'] = WorkspaceShell::appendEmbedParam($targetUrl);
+                $response->setData($data);
             }
 
             return $response;

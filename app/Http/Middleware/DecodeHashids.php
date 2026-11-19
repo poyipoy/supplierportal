@@ -63,6 +63,7 @@ class DecodeHashids
         'claim',         // Route::resource('claims')       → MaterialClaim (purchasing resource)
         'user',          // Route::resource('users')        → User (admin)
         'shipment',      // Route::resource('shipments')    → Shipment
+        'goodsLocation', // Supplier goods locations (implicit binding)
         'attempt',       // Supplier registration attempt
         'hash',          // Context Smart Panel entity hashid (/context-panel/{entityType}/{hash})
     ];

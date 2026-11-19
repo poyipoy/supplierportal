@@ -182,31 +182,118 @@
 
     {{-- TAB 2: HISTORICAL BENCHMARK --}}
     @elseif($activeTab === 'benchmark' || $activeTab === 'historical')
-        <x-ui.card>
-            <div class="tw:flex tw:items-center tw:gap-3 tw:mb-4">
-                <div class="tw:w-10 tw:h-10 tw:rounded-full tw:bg-primary/10 tw:text-primary tw:flex tw:items-center tw:justify-center">
-                    <x-ui.icon name="trending-up" size="md" />
-                </div>
-                <div>
-                    <h3 class="tw:text-ui-base tw:font-bold tw:m-0">{{ __($rp.'.historical.title') }}</h3>
-                    <p class="tw:text-ui-xs tw:text-on-surface-variant tw:m-0">{{ __($rp.'.historical.description') }}</p>
-                </div>
-                <div class="tw:ms-auto">
-                    <x-ui.status-chip tone="info" size="md">
-                        <x-ui.icon name="globe" size="xs" class="tw:inline tw:mr-1" />
-                        {{ __($rp.'.historical.company_wide_badge') }}
-                    </x-ui.status-chip>
-                </div>
-            </div>
+        @php
+            $historicalItems = $historicalLines ?? collect();
+            $poStatusFilter = $poStatusFilter ?? ($filters['po_status'] ?? 'completed');
+            $targetCurrency = $targetCurrency ?? ($filters['currency'] ?? 'IDR');
+        @endphp
+        <x-ui.toolbar aria-label="{{ __($rp.'.historical.title') }}" class="tw:mb-4">
+            <x-slot:filters>
+                <form method="GET" action="{{ route($prefix.'.index') }}" class="tw:flex tw:flex-wrap tw:items-end tw:gap-2" data-server-tabs-form role="search">
+                    <input type="hidden" name="tab" value="benchmark">
+                    <x-ui.input name="search" id="historicalRefSearch" :label="__($rp.'.material_code')" :value="$filters['search'] ?? ''" :placeholder="__($rp.'.search_placeholder')" />
+                    <x-ui.select name="shape" id="historicalRefShapeFilter" :label="__($rp.'.shape')">
+                        <option value="">{{ __($rp.'.all_shapes') }}</option>
+                        @foreach($shapes as $shape)<option value="{{ $shape }}" @selected(($filters['shape'] ?? '') === $shape)>{{ $shape }}</option>@endforeach
+                    </x-ui.select>
+                    <x-ui.select name="po_status" id="historicalRefPoStatusFilter" :label="__('purchasing.copy.status')">
+                        <option value="completed" @selected($poStatusFilter === 'completed')>{{ __('purchasing.copy.completed') }}</option>
+                        <option value="all" @selected($poStatusFilter === 'all')>{{ __('common.filters.all') }}</option>
+                        <option value="active" @selected($poStatusFilter === 'active')>{{ __('purchasing.copy.active') }}</option>
+                        <option value="waiting_qc" @selected($poStatusFilter === 'waiting_qc')>{{ __('purchasing.copy.waiting_qc') }}</option>
+                    </x-ui.select>
+                    <x-ui.select name="currency" id="historicalRefCurrencyFilter" :label="__($rp.'.currency')">
+                        @foreach($currencies as $currency)<option value="{{ $currency }}" @selected($targetCurrency === $currency)>{{ $currency }}</option>@endforeach
+                    </x-ui.select>
+                    <div class="tw:flex tw:gap-1.5">
+                        <x-ui.button type="submit" variant="secondary" size="sm">{{ __($rp.'.filter') }}</x-ui.button>
+                        <x-ui.button :href="route($prefix.'.index', ['tab' => 'benchmark'])" variant="ghost" size="sm" data-server-tab data-tab-name="benchmark">{{ __($rp.'.reset') }}</x-ui.button>
+                    </div>
+                </form>
+            </x-slot:filters>
+        </x-ui.toolbar>
 
-            <div class="tw:p-6 tw:text-center tw:rounded-lg tw:bg-surface-variant/30 tw:border tw:border-dashed tw:border-outline-variant">
-                <x-ui.icon name="bar-chart-3" size="lg" class="tw:mx-auto tw:text-on-surface-variant tw:mb-2" />
-                <p class="tw:text-ui-sm tw:font-medium tw:text-on-surface tw:m-0">{{ __($rp.'.historical.no_data') }}</p>
-                <p class="tw:text-ui-xs tw:text-on-surface-variant tw:m-0 tw:mt-1">
-                    Historical calculation service is integrated for automatic benchmark resolution.
-                </p>
-            </div>
-        </x-ui.card>
+        <x-ui.data-table :title="__($rp.'.historical.title')" :description="__($rp.'.historical.description')" sticky>
+            <x-slot:actions>
+                <x-ui.status-chip tone="info" size="md">
+                    <x-ui.icon name="globe" size="xs" class="tw:inline tw:mr-1" />
+                    {{ __($rp.'.historical.company_wide_badge') }}
+                </x-ui.status-chip>
+            </x-slot:actions>
+
+            <table class="table table-hover align-middle mb-0 tw:text-ui-xs" aria-label="{{ __($rp.'.historical.title') }}">
+                <thead>
+                    <tr>
+                        <th scope="col">{{ __('purchasing.copy.po_number') }}</th>
+                        <th scope="col">{{ __('purchasing.copy.material') }}</th>
+                        <th scope="col">{{ __('purchasing.copy.dimensions') }}</th>
+                        <th scope="col">{{ __($rp.'.rules.category_name') }}</th>
+                        <th scope="col">{{ __('purchasing.copy.supplier') }}</th>
+                        <th scope="col" class="text-end">{{ __('purchasing.copy.price_kg') }}</th>
+                        <th scope="col" class="text-end">{{ __('purchasing.comparison_analytics.average_per_kg', ['currency' => $targetCurrency]) }}</th>
+                        <th scope="col">{{ __('purchasing.copy.po_date') }}</th>
+                        <th scope="col">{{ __('purchasing.copy.status') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($historicalItems as $hRow)
+                        <tr>
+                            <td class="fw-bold tw:text-on-surface ui-tabular-nums">
+                                <a href="{{ route('purchasing.purchase-orders.show', \App\Support\HashidCodec::encode((int) $hRow['po_id'])) }}" class="text-primary text-decoration-none tw:hover:underline">
+                                    {{ $hRow['po_number'] }}
+                                </a>
+                            </td>
+                            <td>
+                                <span class="fw-semibold tw:text-on-surface">{{ $hRow['material_name'] }}</span>
+                                @if(!empty($hRow['shape']))
+                                    <span class="ui-status-chip ui-status-chip--neutral tw:ms-1">{{ $hRow['shape'] }}</span>
+                                @endif
+                            </td>
+                            <td class="ui-tabular-nums tw:font-medium">{{ $hRow['dimension_display'] ?? '-' }}</td>
+                            <td>
+                                <span class="ui-status-chip {{ ($hRow['range_classification'] ?? '-') !== '-' ? 'ui-status-chip--info' : 'ui-status-chip--neutral' }}">
+                                    {{ $hRow['range_classification'] ?? '-' }}
+                                </span>
+                            </td>
+                            <td>{{ $hRow['supplier'] ?? '-' }}</td>
+                            <td class="text-end ui-tabular-nums">
+                                {{ $regionalFormatter->groupedDecimal((float) $hRow['price_per_kg'], 4) }}
+                                <span class="tw:text-on-surface-variant">{{ $hRow['currency'] }}</span>
+                            </td>
+                            <td class="text-end fw-bold text-primary ui-tabular-nums">
+                                @if($hRow['converted_price_per_kg'] !== null)
+                                    {{ $targetCurrency }} {{ $regionalFormatter->groupedDecimal((float) $hRow['converted_price_per_kg'], 4) }}
+                                @else
+                                    <span class="tw:text-on-surface-variant">-</span>
+                                @endif
+                            </td>
+                            <td class="ui-tabular-nums">
+                                {{ !empty($hRow['po_created_at']) ? $regionalFormatter->timestamp(\Carbon\Carbon::parse($hRow['po_created_at'], 'UTC'), 'date') : '-' }}
+                            </td>
+                            <td>
+                                @if(!empty($hRow['po_status']))
+                                    <x-status-badge type="po" :status="$hRow['po_status']" />
+                                @else
+                                    -
+                                @endif
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="9" class="text-center py-4 tw:text-on-surface-variant">
+                                {{ __($rp.'.historical.no_data') }}
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+
+            @if($historicalItems instanceof \Illuminate\Contracts\Pagination\Paginator && $historicalItems->hasPages())
+                <x-slot:footer>
+                    {{ $historicalItems->links() }}
+                </x-slot:footer>
+            @endif
+        </x-ui.data-table>
 
     {{-- TAB 3: LEGACY ARCHIVE --}}
     @elseif($activeTab === 'legacy')

@@ -155,17 +155,73 @@ class StaffMaintenanceAccessTest extends TestCase
     {
         $this->activeMaintenance($this->actor, app(MaintenanceModuleRegistry::class)->keys(), ['title' => 'Every module']);
 
+        $this->actingAs($this->staff('purchasing'))->get(route('purchasing.dashboard'))->assertOk();
         $this->actingAs($this->staff('qc'))->get(route('qc.dashboard'))->assertOk();
+        $this->actingAs($this->staff('finance'))->get(route('finance.dashboard'))->assertOk();
+        $this->actingAs($this->staff('accounting'))->get(route('accounting.dashboard'))->assertOk();
         $this->actingAs($this->staff('ga'))->get(route('ga.dashboard'))->assertOk();
-        $this->actingAs($this->staff('finance'))->get(route('finance.drp.supplier'))->assertOk();
-        $this->actingAs($this->staff('purchasing'))->get(route('purchasing.drp.supplier'))->assertOk();
 
         $this->activeMaintenance($this->actor);
 
+        $this->actingAs($this->staff('purchasing'))->get(route('purchasing.dashboard'))->assertStatus(503);
         $this->actingAs($this->staff('qc'))->get(route('qc.dashboard'))->assertStatus(503);
+        $this->actingAs($this->staff('finance'))->get(route('finance.dashboard'))->assertStatus(503);
+        $this->actingAs($this->staff('accounting'))->get(route('accounting.dashboard'))->assertStatus(503);
         $this->actingAs($this->staff('ga'))->get(route('ga.dashboard'))->assertStatus(503);
-        $this->actingAs($this->staff('finance'))->get(route('finance.drp.supplier'))->assertStatus(503);
-        $this->actingAs($this->staff('purchasing'))->get(route('purchasing.drp.supplier'))->assertStatus(503);
+    }
+
+    public function test_internal_staff_and_master_modules_block_only_their_respective_workflows(): void
+    {
+        $this->activeMaintenance($this->actor, [
+            'staff.qc_inspections',
+            'staff.drp',
+            'staff.payment_vouchers',
+            'staff.overpayments_forecast',
+            'staff.ga_claims',
+            'staff.ga_employees',
+            'staff.materials',
+            'staff.reference_prices',
+            'staff.exchange_rates',
+            'staff.purchasing_reports',
+            'staff.supplier_registrations',
+            'staff.export_history',
+        ], ['title' => 'Internal ops upgrade']);
+
+        $purchasing = $this->staff('purchasing');
+        $qc = $this->staff('qc');
+        $finance = $this->staff('finance');
+        $accounting = $this->staff('accounting');
+        $ga = $this->staff('ga');
+
+        $this->actingAs($qc)->get(route('qc.inspections.index'))->assertStatus(503);
+        $this->actingAs($purchasing)->get(route('shared.pdf.qc-inspection', ['id' => HashidCodec::encode(999999)]))->assertStatus(503);
+        $this->actingAs($finance)->get(route('finance.drp.supplier'))->assertStatus(503);
+        $this->actingAs($purchasing)->get(route('purchasing.drp.supplier'))->assertStatus(503);
+        $this->actingAs($finance)->get(route('finance.payment-vouchers.index'))->assertStatus(503);
+        $this->actingAs($purchasing)->get(route('purchasing.payment-vouchers.index'))->assertStatus(503);
+        $this->actingAs($finance)->get(route('finance.overpayments.index'))->assertStatus(503);
+        $this->actingAs($finance)->get(route('finance.forecast'))->assertStatus(503);
+        $this->actingAs($ga)->get(route('ga.claims.index'))->assertStatus(503);
+        $this->actingAs($finance)->get(route('finance.ga-claims.index'))->assertStatus(503);
+        $this->actingAs($ga)->get(route('ga.employees.index'))->assertStatus(503);
+        $this->actingAs($purchasing)->get(route('purchasing.master-data.material-hs-code.index'))->assertStatus(503);
+        $this->actingAs($purchasing)->get(route('purchasing.master-data.reference-prices.index'))->assertStatus(503);
+        $this->actingAs($purchasing)->get(route('purchasing.master-data.exchange-rates.index'))->assertStatus(503);
+        $this->actingAs($purchasing)->get(route('purchasing.reports.index'))->assertStatus(503);
+        $this->actingAs($purchasing)->get(route('supplier-registrations.index'))->assertStatus(503);
+        $this->actingAs($finance)->get(route('supplier-registrations.index'))->assertStatus(503);
+
+        // staff.export_history blocks Finance & Accounting only, while Purchasing & QC stay open on exports.*
+        $this->actingAs($finance)->get(route('exports.index'))->assertStatus(503);
+        $this->actingAs($accounting)->get(route('exports.index'))->assertStatus(503);
+        $this->actingAs($purchasing)->get(route('exports.index'))->assertOk();
+        $this->actingAs($qc)->get(route('exports.index'))->assertOk();
+
+        // staff.materials does not break Purchase Requisition material search helper.
+        $this->actingAs($purchasing)->get(route('purchasing.material-masters.search', ['q' => 'S45C']))->assertOk();
+        // Supplier-facing modules remain open while only staff.* modules are active.
+        $this->actingAs($purchasing)->get(route('purchasing.purchase-orders.index'))->assertOk();
+        $this->actingAs($finance)->get(route('finance.invoices.index'))->assertOk();
     }
 
     public function test_drafts_and_released_maintenance_never_block_staff(): void

@@ -20,6 +20,10 @@ config([
     'database.connections.mysql.url' => null,
     'cache.default' => 'array',
     'procurement.shipment_mtc_enabled' => $mtcEnabled === 'true',
+    'procurement.require_po_acknowledgement_before_shipment' => false,
+    'procurement.require_sales_contract_before_shipment' => false,
+    'procurement.require_commercial_invoice_for_shipment' => false,
+    'procurement.require_preshipment_for_shipment' => false,
 ]);
 DB::purge('mysql');
 if (DB::connection()->getDatabaseName() !== 'adasi_portal_test') {

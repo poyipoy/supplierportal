@@ -224,6 +224,29 @@ export function bootWorkspaceEmbedBridge() {
         }
     });
 
+    // Keep async-form-submit JSON redirects embedded (or break out for top-level-only targets).
+    document.addEventListener('adasi:form-success', (event) => {
+        const rawTarget = event?.detail?.redirect;
+        if (typeof rawTarget !== 'string' || !rawTarget) return;
+
+        const absUrl = toAbsoluteUrl(rawTarget);
+        if (!isSameOriginUrl(absUrl, origin)) return;
+
+        if (isTopLevelOnlyUrl(absUrl, origin, prefix)) {
+            event.preventDefault();
+            shell.breakoutToTop(absUrl);
+            return;
+        }
+
+        if (!isDownloadOrBinaryUrl(absUrl, origin)) {
+            const embeddedUrl = appendEmbedParam(absUrl, origin);
+            if (embeddedUrl !== absUrl) {
+                event.preventDefault();
+                window.location.assign(embeddedUrl);
+            }
+        }
+    });
+
     // Propagate dirty form transitions cleanly to parent tab pill.
     window.addEventListener('adasi:dirty-change', (event) => {
         shell.notifyDirty(window, Boolean(event?.detail?.dirty));

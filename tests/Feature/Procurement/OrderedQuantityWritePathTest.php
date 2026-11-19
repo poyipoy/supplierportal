@@ -118,6 +118,8 @@ class OrderedQuantityWritePathTest extends TestCase
             'comparison' => $this->actingAs($this->purchasing)->post(route('purchasing.comparison.save-awards'), $this->comparisonPayload($pr, $quotation, 'generate_pos', $qty)),
             'direct' => $this->actingAs($this->purchasing)->post(route('purchasing.quotations.generate-po', $quotation), array_filter([
                 'estimated_arrival' => now()->addDays(14)->toDateString(),
+                'port_of_discharge' => 'TANJUNG_PRIOK',
+                'confirm_port_of_discharge' => '1',
                 'order_qty' => $qty === 'missing' ? null : [$prItemId => $qty],
             ], fn ($value) => $value !== null)),
             'consolidation' => $this->consolidate($pr, $quotation, $qty),
@@ -149,6 +151,8 @@ class OrderedQuantityWritePathTest extends TestCase
                 'comparison' => $this->actingAs($this->purchasing)->post(route('purchasing.comparison.save-awards'), $this->comparisonPayload($pr, $quotation, 'generate_pos', 15)),
                 'direct' => $this->actingAs($this->purchasing)->post(route('purchasing.quotations.generate-po', $quotation), [
                     'estimated_arrival' => now()->addDays(14)->toDateString(),
+                    'port_of_discharge' => 'TANJUNG_PRIOK',
+                    'confirm_port_of_discharge' => '1',
                     'order_qty' => [$prItemId => 15],
                 ]),
                 'consolidation' => $this->consolidate($pr, $quotation, 15),
@@ -244,7 +248,11 @@ class OrderedQuantityWritePathTest extends TestCase
         config(['procurement.ordered_quantity_write_enabled' => false, 'procurement.allow_offer_surplus' => false]);
         foreach ([
             fn () => $this->actingAs($this->purchasing)->post(route('purchasing.comparison.save-awards'), $this->comparisonPayload($pr, $quotation, 'generate_pos', null)),
-            fn () => $this->actingAs($this->purchasing)->post(route('purchasing.quotations.generate-po', $quotation), ['estimated_arrival' => now()->addDays(14)->toDateString()]),
+            fn () => $this->actingAs($this->purchasing)->post(route('purchasing.quotations.generate-po', $quotation), [
+                'estimated_arrival' => now()->addDays(14)->toDateString(),
+                'port_of_discharge' => 'TANJUNG_PRIOK',
+                'confirm_port_of_discharge' => '1',
+            ]),
             fn () => $this->consolidate($pr, $quotation, null, existing: $award),
         ] as $attempt) {
             $attempt();
@@ -325,6 +333,10 @@ class OrderedQuantityWritePathTest extends TestCase
             'action' => $action,
             'estimated_arrival' => now()->addDays(14)->toDateString(),
         ];
+        if ($action === 'generate_pos') {
+            $payload['port_of_discharge'] = 'TANJUNG_PRIOK';
+            $payload['confirm_port_of_discharge'] = '1';
+        }
         if ($qty !== null && $qty !== 'missing') {
             $payload['order_qty'] = [$pr->items[0]->id => $qty];
         }
@@ -338,6 +350,8 @@ class OrderedQuantityWritePathTest extends TestCase
         $payload = [
             'award_ids' => [$award->id],
             'estimated_arrival' => now()->addDays(14)->toDateString(),
+            'port_of_discharge' => 'TANJUNG_PRIOK',
+            'confirm_port_of_discharge' => '1',
         ];
         if ($qty !== null && $qty !== 'missing') {
             $payload['order_qty'] = [$pr->items[0]->id => $qty];

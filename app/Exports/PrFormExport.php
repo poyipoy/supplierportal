@@ -9,11 +9,13 @@ use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use Maatwebsite\Excel\Concerns\WithCustomValueBinder;
 use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Cell\Cell;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\Cell\DefaultValueBinder;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class PrFormExport extends DefaultValueBinder implements FromArray, ShouldAutoSize, WithColumnFormatting, WithCustomValueBinder, WithHeadings
+class PrFormExport extends DefaultValueBinder implements FromArray, ShouldAutoSize, WithColumnFormatting, WithCustomValueBinder, WithHeadings, WithStyles
 {
     public const HEADINGS = [
         'material_name',
@@ -69,6 +71,13 @@ class PrFormExport extends DefaultValueBinder implements FromArray, ShouldAutoSi
     public function headings(): array
     {
         return self::HEADINGS;
+    }
+
+    public function styles(Worksheet $sheet): array
+    {
+        PrImportTemplateExport::applyPrMaterialHeaderStyles($sheet);
+
+        return [];
     }
 
     public function columnFormats(): array

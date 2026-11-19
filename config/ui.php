@@ -21,6 +21,11 @@ return [
         'stale_after_seconds' => (int) env('WORKSPACE_SHELL_STALE_AFTER_SECONDS', 180),
     ],
 
+    'environment_tag' => [
+        'enabled' => (bool) env('UI_ENVIRONMENT_TAG_ENABLED', false),
+        'label' => env('UI_ENVIRONMENT_TAG_LABEL'),
+    ],
+
     'navigation' => [
         'slow_loader_threshold_ms' => (int) env('UI_SLOW_LOADER_THRESHOLD_MS', 2300),
         'page_fade_ms' => (int) env('UI_PAGE_FADE_MS', 500),

@@ -12,9 +12,11 @@ use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use Maatwebsite\Excel\Concerns\WithCustomValueBinder;
 use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Cell\Cell;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\Cell\DefaultValueBinder;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 /**
  * GEN-03 Mode 1 (Gate 1 §3-F): the entered, unsaved quotation form in the
@@ -22,13 +24,20 @@ use PhpOffice\PhpSpreadsheet\Cell\DefaultValueBinder;
  * and requested dimension come from the database, never the request. Writes
  * nothing; the controller downloads it directly.
  */
-class QuotationFormExport extends DefaultValueBinder implements FromArray, ShouldAutoSize, WithColumnFormatting, WithCustomValueBinder, WithHeadings
+class QuotationFormExport extends DefaultValueBinder implements FromArray, ShouldAutoSize, WithColumnFormatting, WithCustomValueBinder, WithHeadings, WithStyles
 {
     /** @param array<int, array<string, mixed>> $items validated by ExportQuotationFormRequest */
     public function __construct(
         private readonly PurchaseRequisition $requisition,
         private readonly array $items,
     ) {}
+
+    public function styles(Worksheet $sheet): array
+    {
+        QuotationImportTemplateExport::applyQuotationTemplateHeaderStyles($sheet);
+
+        return [];
+    }
 
     public function array(): array
     {

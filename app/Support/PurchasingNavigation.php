@@ -14,6 +14,7 @@ class PurchasingNavigation
 
     public const LIST_ROUTES = [
         'purchasing.dashboard',
+        'purchasing.outstanding-materials.index',
         'purchasing.periods.index',
         'purchasing.requisitions.index',
         'purchasing.quotations.index',

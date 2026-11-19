@@ -81,6 +81,7 @@ test('monospace stays only where characters must remain distinguishable', () => 
         ['resources/views/auth/supplier-register-success.blade.php', 2],
         ['resources/views/auth/supplier-registration-access.blade.php', 2],
         ['resources/views/admin/auth-audit-logs/index.blade.php', 1],
+        ['resources/views/purchasing/pr/_material_shape_script.blade.php', 1],
     ]);
     const files = (directory) => readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
         const filename = path.join(directory, entry.name);

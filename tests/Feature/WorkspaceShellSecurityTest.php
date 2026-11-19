@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\PaymentVoucher;
 use App\Models\SupplierScope;
 use App\Models\User;
 use App\Support\HashidCodec;
@@ -65,6 +66,13 @@ class WorkspaceShellSecurityTest extends TestCase
         $this->assertSame(20, $shellConfig['maxSessions']);
         $this->assertSame(20, $shellConfig['maxTabs']);
         $this->assertSame(12, $shellConfig['maxLiveFrames']);
+        $this->assertSame(8, $shellConfig['maxPinnedSessions']);
+        $this->assertArrayHasKey('pinSession', $shellConfig['i18n']);
+        $this->assertArrayHasKey('unpinSession', $shellConfig['i18n']);
+        $this->assertArrayHasKey('moveSessionLeft', $shellConfig['i18n']);
+        $this->assertArrayHasKey('moveSessionRight', $shellConfig['i18n']);
+        $this->assertArrayHasKey('reopenClosedSession', $shellConfig['i18n']);
+        $this->assertArrayHasKey('recentlyClosed', $shellConfig['i18n']);
         $this->assertStringContainsString("frame-ancestors 'none'", (string) $shellResponse->headers->get('Content-Security-Policy'));
 
         $embedResponse = $this->actingAs($user)->get(route('purchasing.shipments.index', ['search' => 'SHP', '_embed' => 1]));
@@ -439,6 +447,34 @@ class WorkspaceShellSecurityTest extends TestCase
         $overLimit = array_map(static fn (int $i): string => HashidCodec::encode($i + 1000), range(1, 120));
         PurchasingNavigation::rememberRecordWindow('purchasing.purchase-orders.index', $overLimit);
         $this->assertCount(100, session('purchasing.record_windows.purchasing.purchase-orders.index'));
+    }
+
+    public function test_embedded_async_json_redirect_preserves_embed_param_for_eligible_target(): void
+    {
+        config()->set('ui.workspace_shell.enabled', true);
+
+        $purchasing = User::factory()->create(['role' => 'purchasing']);
+
+        $response = $this->actingAs($purchasing)
+            ->from(route('purchasing.payment-vouchers.create', ['_embed' => 1]))
+            ->postJson(route('purchasing.payment-vouchers.store'), [
+                'payee_type' => PaymentVoucher::PAYEE_MANUAL,
+                'payee_name' => 'PT Ekspedisi Test',
+                'payment_method' => PaymentVoucher::METHOD_KAS,
+                'voucher_date' => '2026-11-19',
+                'description' => 'Pembayaran uji embed redirect',
+                'dpp_amount' => '500000.00',
+            ]);
+
+        $response->assertOk();
+        $redirect = (string) $response->json('redirect');
+        $this->assertStringContainsString('_embed=1', $redirect);
+
+        $this->actingAs($purchasing)
+            ->get($redirect)
+            ->assertOk()
+            ->assertHeader('X-Frame-Options', 'SAMEORIGIN')
+            ->assertSee('data-workspace-embed="true"', false);
     }
 
     /**

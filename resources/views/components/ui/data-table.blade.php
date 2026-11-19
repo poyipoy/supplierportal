@@ -16,13 +16,13 @@
         <header class="ui-data-table__header tw:grid tw:border-b tw:border-outline-variant tw:bg-surface-container ">
             <div class="tw:flex tw:flex-col tw:gap-2.5 tw:shell:flex-row tw:shell:items-center tw:shell:justify-between">
                 <div class="tw:min-w-0">
-                    @if($title)<h2 class="tw:m-0 tw:text-sm tw:font-bold tw:text-on-surface">{{ $title }}</h2>@endif
+                    @if($title)<h2 class="tw:m-0 tw:text-base tw:font-bold tw:text-on-surface">{{ $title }}</h2>@endif
                     @if($description)<p class="tw:m-0 tw:mt-0.5 tw:text-ui-xs tw:text-on-surface-variant">{{ $description }}</p>@endif
                 </div>
                 @if(isset($toolbar))
-                    <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-2">{{ $toolbar }}</div>
+                    <div class="tw:flex tw:shrink-0 tw:flex-wrap tw:items-center tw:gap-2 tw:shell:justify-end">{{ $toolbar }}</div>
                 @elseif(isset($actions))
-                    <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-2">{{ $actions }}</div>
+                    <div class="tw:flex tw:shrink-0 tw:flex-wrap tw:items-center tw:gap-2 tw:shell:justify-end">{{ $actions }}</div>
                 @endif
             </div>
             @isset($filters)<div class="tw:flex tw:flex-col tw:gap-2.5 tw:shell:flex-row tw:shell:flex-wrap tw:shell:items-end">{{ $filters }}</div>@endisset
@@ -30,8 +30,21 @@
     @endif
 
     @if($loading)
-        <div class="tw:grid tw:gap-2 tw:p-4" role="status" aria-label="{{ __('common.states.loading') }}">
-            @for($row = 0; $row < 5; $row++)<x-ui.skeleton class="tw:h-10 tw:w-full" />@endfor
+        <div class="ui-data-table__skeleton" role="status" aria-label="{{ __('common.states.loading') }}">
+            <div class="tw:grid tw:grid-cols-12 tw:gap-3 tw:px-4 tw:py-2.5 tw:bg-surface-container-low tw:border-b tw:border-outline-variant">
+                <x-ui.skeleton class="tw:col-span-3 tw:h-3.5" />
+                <x-ui.skeleton class="tw:col-span-4 tw:h-3.5" />
+                <x-ui.skeleton class="tw:col-span-3 tw:h-3.5" />
+                <x-ui.skeleton class="tw:col-span-2 tw:h-3.5" />
+            </div>
+            @foreach([['tw:w-4/5', 'tw:w-11/12', 'tw:w-3/4', 'tw:w-2/3'], ['tw:w-3/4', 'tw:w-4/5', 'tw:w-2/3', 'tw:w-3/4'], ['tw:w-11/12', 'tw:w-3/4', 'tw:w-4/5', 'tw:w-1/2'], ['tw:w-2/3', 'tw:w-11/12', 'tw:w-3/4', 'tw:w-2/3'], ['tw:w-4/5', 'tw:w-2/3', 'tw:w-11/12', 'tw:w-3/4']] as $widths)
+                <div class="tw:grid tw:grid-cols-12 tw:items-center tw:gap-3 tw:px-4 tw:py-3 tw:border-b tw:border-outline-variant tw:last:border-b-0">
+                    <div class="tw:col-span-3"><x-ui.skeleton class="tw:h-3.5 {{ $widths[0] }}" /></div>
+                    <div class="tw:col-span-4"><x-ui.skeleton class="tw:h-3.5 {{ $widths[1] }}" /></div>
+                    <div class="tw:col-span-3"><x-ui.skeleton class="tw:h-3.5 {{ $widths[2] }}" /></div>
+                    <div class="tw:col-span-2"><x-ui.skeleton class="tw:h-3.5 {{ $widths[3] }}" /></div>
+                </div>
+            @endforeach
         </div>
     @elseif($error)
         <div class="tw:p-4"><x-ui.alert tone="error" :title="__('common.states.load_failed')">{{ $error }}</x-ui.alert></div>

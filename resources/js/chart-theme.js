@@ -591,9 +591,23 @@ export function attachChartA11y(chart) {
     canvas.setAttribute('data-adasi-chart-focusable', '');
 
     const state = { position: -1 };
+    const ensureAnchorVisible = (anchor) => {
+        const scrollEl = canvas.closest?.('[data-adasi-chart-scroll]');
+        if (!scrollEl || !anchor || !Number.isFinite(anchor.x)) return;
+        const viewWidth = scrollEl.clientWidth || 0;
+        if (!viewWidth || scrollEl.scrollWidth <= viewWidth) return;
+        const margin = 64;
+        const currentLeft = scrollEl.scrollLeft || 0;
+        if (anchor.x - margin < currentLeft) {
+            scrollEl.scrollLeft = Math.max(0, anchor.x - margin);
+        } else if (anchor.x + margin > currentLeft + viewWidth) {
+            scrollEl.scrollLeft = Math.max(0, anchor.x + margin - viewWidth);
+        }
+    };
     const activate = (stop) => {
         const elements = stopElements(chart, stop);
         const anchor = chart.getDatasetMeta(elements[0].datasetIndex)?.data?.[elements[0].index];
+        ensureAnchorVisible(anchor);
         chart.setActiveElements(elements);
         chart.tooltip?.setActiveElements?.(elements, { x: anchor?.x ?? 0, y: anchor?.y ?? 0 });
         chart.update('none');
@@ -716,9 +730,51 @@ export function refreshChartTheme(ChartInstance = window.Chart) {
             };
         }
 
+        if (chart?.config?.type === 'bar' && chart.canvas?.closest?.('[data-adasi-chart-scroll]')) {
+            fitChartScrollWidth(chart.canvas, {
+                categories: chart.data?.labels?.length || 0,
+                series: chart.data?.datasets?.length || 0,
+            });
+        }
         chart.update('none');
         writeSummary(chart);
     });
+}
+
+/**
+ * Expand a scrollable chart's inner plot width when category count exceeds `threshold`,
+ * keeping bars legible and enabling horizontal scroll without squeezing labels.
+ */
+export function fitChartScrollWidth(canvas, {
+    categories = 0,
+    series = 1,
+    threshold = 8,
+    minCategoryWidth = 96,
+    perSeriesWidth = 30,
+    padding = 36,
+} = {}) {
+    const plotEl = canvas?.closest?.('[data-adasi-chart-plot]');
+    const scrollEl = canvas?.closest?.('[data-adasi-chart-scroll]');
+    if (!plotEl || !scrollEl) return 0;
+
+    if (!Number.isFinite(categories) || categories <= threshold) {
+        plotEl.style.minWidth = '';
+        scrollEl.scrollLeft = 0;
+        return 0;
+    }
+
+    const perCategory = Math.max(minCategoryWidth, Math.max(1, series) * perSeriesWidth + padding);
+    const targetWidth = Math.round(categories * perCategory);
+    const containerWidth = scrollEl.clientWidth || 0;
+
+    if (containerWidth > 0 && targetWidth <= containerWidth) {
+        plotEl.style.minWidth = '';
+        scrollEl.scrollLeft = 0;
+        return 0;
+    }
+
+    plotEl.style.minWidth = `${targetWidth}px`;
+    return targetWidth;
 }
 
 // Attach to window object for global availability
@@ -741,6 +797,7 @@ const AdasiChart = {
     describe: describeChart,
     applyDefaults: applyGlobalChartDefaults,
     refreshTheme: refreshChartTheme,
+    fitScrollWidth: fitChartScrollWidth,
     reducedMotion: prefersReducedMotion,
 };
 

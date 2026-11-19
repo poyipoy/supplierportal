@@ -2,15 +2,17 @@
 
 namespace App\Http\Controllers\Supplier;
 
-use App\Exceptions\MtcRequiredException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Supplier\BatchUploadShipmentDocumentsRequest;
 use App\Http\Requests\Supplier\StoreSupplierShipmentRequest;
+use App\Http\Requests\Supplier\UpdateShipmentPreshipmentRequest;
 use App\Http\Requests\Supplier\UpdateSupplierShipmentRequest;
 use App\Models\Attachment;
 use App\Models\PurchaseOrder;
 use App\Models\Shipment;
 use App\Models\ShipmentDocument;
+use App\Models\SupplierPreshipmentProfile;
+use App\Services\Procurement\PreshipmentInspectionService;
 use App\Services\RegionalDisplayFormatter;
 use App\Services\ShipmentService;
 use App\Support\NumberFormat;
@@ -30,8 +32,11 @@ class SupplierShipmentController extends Controller
     ];
 
     public function __construct(
-        protected ShipmentService $shipmentService
-    ) {}
+        protected ShipmentService $shipmentService,
+        protected ?PreshipmentInspectionService $preshipmentService = null,
+    ) {
+        $this->preshipmentService ??= app(PreshipmentInspectionService::class);
+    }
 
     /**
      * Display a listing of shipments for the authenticated supplier.
@@ -44,6 +49,7 @@ class SupplierShipmentController extends Controller
         $query = Shipment::query()
             ->where('supplier_id', $supplierId)
             ->with(['items.purchaseOrder', 'documents.latestAttachment'])
+            ->withCount('mtcAttachments')
             ->latest('shipment_date');
 
         if ($request->filled('status')) {
@@ -61,6 +67,8 @@ class SupplierShipmentController extends Controller
         if ($search = trim((string) $request->input('search.value', $request->input('search')))) {
             $query->where(function ($q) use ($search) {
                 $q->where('shipment_number', 'like', "%{$search}%")
+                    ->orWhere('supplier_reference', 'like', "%{$search}%")
+                    ->orWhere('invoice_number', 'like', "%{$search}%")
                     ->orWhere('notes', 'like', "%{$search}%")
                     ->orWhereHas('items.purchaseOrder', fn ($po) => $po->where('po_number', 'like', "%{$search}%"));
             });
@@ -81,6 +89,7 @@ class SupplierShipmentController extends Controller
 
                     return $pos->map(fn ($po) => '<span class="ui-status-chip ui-status-chip--neutral me-1">'.e($po->po_number).'</span>')->implode('');
                 })
+                ->addColumn('supplier_reference_display', fn ($shp) => e($shp->supplier_reference ?: '-'))
                 ->addColumn('items_count', fn ($shp) => '<span class="ui-tabular-nums">'.e($regionalFormatter->number((string) $shp->items->count(), 'plain')).'</span>')
                 ->addColumn('total_qty', function ($shp) use ($regionalFormatter) {
                     $total = (int) $shp->items->sum('shipped_qty');
@@ -102,6 +111,7 @@ class SupplierShipmentController extends Controller
                 ->addColumn('shipment_date', fn ($shp) => $shp->shipment_date ? '<span class="ui-tabular-nums">'.e($shp->shipment_date->format('d M Y')).'</span>' : '-')
                 ->addColumn('shipment_date_display', fn ($shp) => $shp->shipment_date ? '<span class="ui-tabular-nums">'.e($regionalFormatter->date($shp->shipment_date, 'human')).'</span>' : '-')
                 ->addColumn('estimated_arrival', fn ($shp) => $shp->estimated_arrival_date ? '<span class="ui-tabular-nums">'.e($regionalFormatter->date($shp->estimated_arrival_date, 'human')).'</span>' : '-')
+                ->addColumn('missing_documents', fn ($shp) => StatusHelper::shipmentMissingDocumentsHtml($shp))
                 ->addColumn('status_badge', function ($shp) {
                     return StatusHelper::badge(
                         StatusHelper::shipmentBadge($shp->status),
@@ -115,9 +125,12 @@ class SupplierShipmentController extends Controller
                     $secondaryActions = [];
 
                     if ($isOwner && $shp->status === 'draft') {
+                        $invoiceDoc = $shp->documents->firstWhere('doc_type', ShipmentDocument::DOC_TYPE_INVOICE);
+                        $invoiceMissing = ProcurementFeatures::requireCommercialInvoiceForShipment()
+                            && ($invoiceDoc === null || $invoiceDoc->latestAttachment === null);
                         $primaryAction = '<form action="'.route('supplier.shipments.submit', $shp).'" method="POST" class="draft-submit-form tw:m-0">'
                             .csrf_field()
-                            .'<button type="button" class="ui-data-action ui-data-action--primary ui-focus-ring btn-submit-draft" aria-label="'.e(__('purchasing.action_names.submit_draft', ['name' => $shp->shipment_number])).'">'
+                            .'<button type="button" class="ui-data-action ui-data-action--primary ui-focus-ring btn-submit-draft" data-invoice-missing="'.($invoiceMissing ? '1' : '0').'" aria-label="'.e(__('purchasing.action_names.submit_draft', ['name' => $shp->shipment_number])).'">'
                             .__('shipments.copy.submit')
                             .'</button></form>';
                         $secondaryActions[] = '<li><a href="'.$viewUrl.'" class="dropdown-item">'.e(__('shipments.copy.view_details')).'</a></li>';
@@ -132,10 +145,10 @@ class SupplierShipmentController extends Controller
                     }
 
                     return '<div class="d-inline-flex align-items-center justify-content-end gap-1">'.$primaryAction
-                        .'<div class="dropdown"><button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="'.e(__('purchasing.action_names.more_actions_for', ['name' => $shp->shipment_number])).'">'.e(__('shipments.copy.more')).'</button>'
+                        .'<div class="dropdown"><button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-bs-toggle="dropdown" data-bs-popper-config=\'{"strategy":"fixed"}\' aria-expanded="false" aria-label="'.e(__('purchasing.action_names.more_actions_for', ['name' => $shp->shipment_number])).'">'.e(__('shipments.copy.more')).'</button>'
                         .'<ul class="dropdown-menu dropdown-menu-end">'.implode('', $secondaryActions).'</ul></div></div>';
                 })
-                ->rawColumns(['shipment_number_display', 'po_references', 'items_count', 'total_qty', 'actual_weight', 'total_weight', 'shipment_date', 'shipment_date_display', 'estimated_arrival', 'status_badge', 'action'])
+                ->rawColumns(['shipment_number_display', 'po_references', 'supplier_reference_display', 'items_count', 'total_qty', 'actual_weight', 'total_weight', 'shipment_date', 'shipment_date_display', 'estimated_arrival', 'missing_documents', 'status_badge', 'action'])
                 ->toJson();
         }
 
@@ -169,8 +182,10 @@ class SupplierShipmentController extends Controller
         // count lets the view say why they are missing. ShipmentService enforces the same rule.
         $notReadyCount = 0;
         $readyGate = ProcurementFeatures::requireReadyToShipForShipment();
+        $salesContractGate = ProcurementFeatures::requireSalesContractBeforeShipment();
 
         foreach ($purchaseOrders as $po) {
+            $salesContractBlocked = $salesContractGate && $po->requiresSalesContractHandshake() && (! $po->hasSignedSalesContract() || ! $po->isAcknowledged());
             // Determine items from awards (or fallback to quotation items for legacy POs)
             $items = $po->awards->isNotEmpty()
                 ? $po->awards->map(fn ($a) => $a->quotationItem)->filter()
@@ -182,7 +197,7 @@ class SupplierShipmentController extends Controller
 
                 if (($status['remaining_qty'] ?? $status['remaining']) > 0) {
                     $award = $awardsByItem->get($item->id);
-                    if ($readyGate && $award && ! $award->isReadyToShip()) {
+                    if ($salesContractBlocked || ($readyGate && $award && ! $award->isReadyToShip())) {
                         $notReadyCount++;
 
                         continue;
@@ -206,8 +221,9 @@ class SupplierShipmentController extends Controller
         $preselectedPoId = $request->query('po_id');
 
         $shipment = null;
+        $preshipment = $this->preshipmentPrefill(null);
 
-        return view('supplier.shipments.create', compact('purchaseOrders', 'poItems', 'preselectedPoId', 'shipment', 'notReadyCount'));
+        return view('supplier.shipments.create', compact('purchaseOrders', 'poItems', 'preselectedPoId', 'shipment', 'notReadyCount', 'preshipment'));
     }
 
     /**
@@ -215,7 +231,7 @@ class SupplierShipmentController extends Controller
      */
     public function edit($id)
     {
-        $shipment = Shipment::with('items')->findOrFail($id);
+        $shipment = Shipment::with(['items', 'preshipmentInspection'])->findOrFail($id);
         Gate::authorize('view', $shipment);
         if ($shipment->status !== Shipment::STATUS_DRAFT) {
             return redirect()->route('supplier.shipments.show', $shipment)
@@ -238,8 +254,10 @@ class SupplierShipmentController extends Controller
         $poItems = collect();
         $notReadyCount = 0;
         $readyGate = ProcurementFeatures::requireReadyToShipForShipment();
+        $salesContractGate = ProcurementFeatures::requireSalesContractBeforeShipment();
 
         foreach ($purchaseOrders as $po) {
+            $salesContractBlocked = $salesContractGate && $po->requiresSalesContractHandshake() && (! $po->hasSignedSalesContract() || ! $po->isAcknowledged());
             $items = $po->awards->isNotEmpty()
                 ? $po->awards->map(fn ($award) => $award->quotationItem)->filter()
                 : $po->allQuotationItems()->filter(fn ($item) => $item->isAvailable());
@@ -251,7 +269,7 @@ class SupplierShipmentController extends Controller
 
                 if (($status['remaining_qty'] ?? $status['remaining']) > 0 || $current) {
                     $award = $awardsByItem->get($item->id);
-                    $notReady = $readyGate && $award && ! $award->isReadyToShip();
+                    $notReady = $salesContractBlocked || ($readyGate && $award && ! $award->isReadyToShip());
 
                     // A line already in this draft stays visible (flagged) so the draft remains
                     // editable; saving or submitting it is refused until it is Ready to Ship again.
@@ -281,8 +299,9 @@ class SupplierShipmentController extends Controller
         }
 
         $preselectedPoId = null;
+        $preshipment = $this->preshipmentPrefill($shipment);
 
-        return view('supplier.shipments.create', compact('purchaseOrders', 'poItems', 'preselectedPoId', 'shipment', 'notReadyCount'));
+        return view('supplier.shipments.create', compact('purchaseOrders', 'poItems', 'preselectedPoId', 'shipment', 'notReadyCount', 'preshipment'));
     }
 
     /**
@@ -295,35 +314,53 @@ class SupplierShipmentController extends Controller
         $request->validate(StoreSupplierShipmentRequest::MTC_RULES);
 
         try {
-            $shipment = $this->shipmentService->createDraft(auth()->user(), [
-                'shipment_date' => $request->input('shipment_date'),
-                'estimated_arrival_date' => $request->input('estimated_arrival_date'),
-                'notes' => $request->input('notes'),
-                'items' => $request->input('items'),
-            ]);
-            $this->attachFormMtc($request, $shipment);
+            $submit = $request->input('action') === 'submit';
+            $mtcFiles = $request->file('mtc_files');
+            $result = $this->shipmentService->createShipmentFromForm(
+                auth()->user(),
+                $this->shipmentFormData($request),
+                $submit,
+                $request->file('commercial_invoice_file'),
+                is_array($mtcFiles) ? $mtcFiles : [],
+            );
+            $shipment = $result['shipment'];
 
-            if ($request->input('action') === 'submit') {
-                $shipment = $this->shipmentService->submitShipment($shipment, [
-                    'items' => $request->input('items'),
-                    'shipment_date' => $request->input('shipment_date'),
-                    'estimated_arrival_date' => $request->input('estimated_arrival_date'),
-                    'notes' => $request->input('notes'),
-                ]);
-
-                return redirect()->route('supplier.shipments.show', $shipment)
-                    ->with('success', __('shipments.feedback.submitted', ['shipment' => $shipment->shipment_number]));
+            if ($result['commercial_invoice_required']) {
+                return $this->shipmentFormResponse(
+                    $request,
+                    route('supplier.shipments.show', $shipment),
+                    (string) $result['commercial_invoice_message'],
+                    'error'
+                );
             }
 
-            return redirect()->route('supplier.shipments.show', $shipment)
-                ->with('success', __('shipments.feedback.created', ['shipment' => $shipment->shipment_number]));
-        } catch (MtcRequiredException $e) {
-            // The draft exists: continue on its page to attach MTC (no duplicate drafts on retry).
-            return redirect()->route('supplier.shipments.show', $shipment)->with('error', $e->getMessage());
+            if ($submit) {
+                return $this->shipmentFormResponse(
+                    $request,
+                    route('supplier.shipments.show', $shipment),
+                    __('shipments.feedback.submitted', ['shipment' => $shipment->shipment_number])
+                );
+            }
+
+            return $this->shipmentFormResponse(
+                $request,
+                route('supplier.shipments.show', $shipment),
+                __('shipments.feedback.created', ['shipment' => $shipment->shipment_number])
+            );
         } catch (\InvalidArgumentException|\DomainException $e) {
+            if ($request->expectsJson()) {
+                throw ValidationException::withMessages(['shipment' => $e->getMessage()]);
+            }
+
             return back()->withInput()->with('error', $e->getMessage());
         } catch (\Throwable $e) {
             report($e);
+
+            if ($request->expectsJson()) {
+                throw ValidationException::withMessages([
+                    'shipment' => __('shipments.copy.an_unexpected_error_occurred_while_saving_the_shipment_please_try_again'),
+                ]);
+            }
 
             return back()->withInput()->with('error', __('shipments.copy.an_unexpected_error_occurred_while_saving_the_shipment_please_try_again'));
         }
@@ -341,22 +378,58 @@ class SupplierShipmentController extends Controller
         $request->validate(UpdateSupplierShipmentRequest::MTC_RULES);
 
         try {
-            $shipment = $this->shipmentService->updateDraft($shipment, auth()->user(), [
-                'shipment_date' => $request->input('shipment_date'),
-                'estimated_arrival_date' => $request->input('estimated_arrival_date'),
-                'notes' => $request->input('notes'),
-                'items' => $request->input('items'),
-            ]);
+            $shipment = $this->shipmentService->updateDraft($shipment, auth()->user(), $this->shipmentFormData($request));
+            $this->attachFormCommercialInvoice($request, $shipment);
             $this->attachFormMtc($request, $shipment);
 
-            return redirect()->route('supplier.shipments.show', $shipment)
-                ->with('success', __('shipments.feedback.updated', ['shipment' => $shipment->shipment_number]));
+            return $this->shipmentFormResponse(
+                $request,
+                route('supplier.shipments.show', $shipment),
+                __('shipments.feedback.updated', ['shipment' => $shipment->shipment_number])
+            );
         } catch (\InvalidArgumentException|\DomainException $exception) {
+            if ($request->expectsJson()) {
+                throw ValidationException::withMessages(['shipment' => $exception->getMessage()]);
+            }
+
             return back()->withInput()->with('error', $exception->getMessage());
         } catch (\Throwable $exception) {
             report($exception);
 
+            if ($request->expectsJson()) {
+                throw ValidationException::withMessages([
+                    'shipment' => __('shipments.copy.an_unexpected_error_occurred_while_updating_the_shipment_please_try_again'),
+                ]);
+            }
+
             return back()->withInput()->with('error', __('shipments.copy.an_unexpected_error_occurred_while_updating_the_shipment_please_try_again'));
+        }
+    }
+
+    /**
+     * Update Pre-Shipment Inspection details directly on a Draft or Submitted shipment.
+     */
+    public function updatePreshipment(UpdateShipmentPreshipmentRequest $request, $id)
+    {
+        $shipment = Shipment::findOrFail($id);
+        Gate::authorize('updatePreshipment', $shipment);
+
+        $preshipmentInput = $this->extractPreshipmentPayload($request);
+
+        try {
+            $this->shipmentService->updatePreshipment($shipment, $request->user(), $preshipmentInput);
+
+            return $this->shipmentFormResponse(
+                $request,
+                route('supplier.shipments.show', $shipment),
+                __('shipments.preshipment.updated')
+            );
+        } catch (\InvalidArgumentException|\DomainException $exception) {
+            if ($request->expectsJson()) {
+                throw ValidationException::withMessages(['preshipment' => $exception->getMessage()]);
+            }
+
+            return back()->withInput()->with('error', $exception->getMessage());
         }
     }
 
@@ -371,6 +444,8 @@ class SupplierShipmentController extends Controller
                 'items.purchaseOrder',
                 'items.quotationItem.prItem',
                 'documents.latestAttachment',
+                'documents.attachments',
+                'preshipmentInspection',
                 'qcInspections.items',
                 'mtcAttachments.fileInspection',
                 'mtcAttachments.uploader',
@@ -379,7 +454,11 @@ class SupplierShipmentController extends Controller
 
         Gate::authorize('view', $shipment);
 
-        return view('supplier.shipments.show', compact('shipment'));
+        $preshipment = in_array($shipment->status, [Shipment::STATUS_DRAFT, Shipment::STATUS_SUBMITTED], true)
+            ? $this->preshipmentPrefill($shipment)
+            : null;
+
+        return view('supplier.shipments.show', compact('shipment', 'preshipment'));
     }
 
     /**
@@ -472,6 +551,89 @@ class SupplierShipmentController extends Controller
         if (is_array($files) && $files !== []) {
             $this->shipmentService->uploadMtc($shipment, $files, auth()->user());
         }
+    }
+
+    /** E5: Commercial Invoice file chosen on the create/edit form is stored before any in-request submit. */
+    private function attachFormCommercialInvoice(Request $request, Shipment $shipment): void
+    {
+        $file = $request->file('commercial_invoice_file');
+        if ($file === null) {
+            return;
+        }
+
+        $invoiceDoc = $shipment->documents()
+            ->where('doc_type', ShipmentDocument::DOC_TYPE_INVOICE)
+            ->first();
+
+        if ($invoiceDoc !== null) {
+            $this->shipmentService->uploadDocument(
+                $invoiceDoc,
+                $file,
+                auth()->user(),
+                $request->input('invoice_number')
+            );
+        }
+    }
+
+    /**
+     * Validated create/edit payload for ShipmentService (E6, E9, E11 included).
+     *
+     * @return array<string, mixed>
+     */
+    private function shipmentFormData(Request $request): array
+    {
+        return [
+            'shipment_date' => $request->input('shipment_date'),
+            'estimated_arrival_date' => $request->input('estimated_arrival_date'),
+            ...($request->has('invoice_number') ? ['invoice_number' => $request->input('invoice_number')] : []),
+            'supplier_reference' => $request->input('supplier_reference'),
+            'notes' => $request->input('notes'),
+            'items' => $request->input('items'),
+            'preshipment' => $this->extractPreshipmentPayload($request),
+        ];
+    }
+
+    /**
+     * Allow-list PSI fields and master-save control flags to prevent mass assignment.
+     *
+     * @return array<string, mixed>
+     */
+    private function extractPreshipmentPayload(Request $request): array
+    {
+        $allowedKeys = [
+            ...SupplierPreshipmentProfile::FIELDS,
+            'same_as_exporter',
+            'goods_location',
+            'save_exporter_default',
+            'location_action',
+            'set_location_default',
+        ];
+
+        return array_intersect_key(
+            (array) $request->input('preshipment', []),
+            array_flip($allowedKeys)
+        );
+    }
+
+    /**
+     * E9/PSI: values, saved locations, countries, and port suggestions scoped to auth supplier.
+     *
+     * @return array<string, mixed>
+     */
+    private function preshipmentPrefill(?Shipment $shipment): array
+    {
+        return $this->preshipmentService->prefillFor(auth()->user(), $shipment);
+    }
+
+    private function shipmentFormResponse(Request $request, string $redirectUrl, string $message, string $flashKey = 'success')
+    {
+        if ($request->expectsJson()) {
+            $request->session()->flash($flashKey, $message);
+
+            return response()->json(['redirect' => $redirectUrl]);
+        }
+
+        return redirect()->to($redirectUrl)->with($flashKey, $message);
     }
 
     private function mtcResponse(Request $request, Shipment $shipment, string $message)

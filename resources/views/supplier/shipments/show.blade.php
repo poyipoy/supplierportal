@@ -54,6 +54,10 @@
         $isArrived = $shipment->status === 'arrived';
         $isSubmitted = $shipment->status === 'submitted';
         $isDraft = $shipment->status === 'draft';
+        $invoiceDoc = $shipment->documents->firstWhere('doc_type', 'invoice');
+        $invoiceMissing = $isDraft
+            && \App\Support\Procurement\ProcurementFeatures::requireCommercialInvoiceForShipment()
+            && ($invoiceDoc === null || $invoiceDoc->latestAttachment === null);
     @endphp
 
     <x-ui.page-header
@@ -239,6 +243,17 @@
                 <span class="fw-semibold">{{ __('shipments.copy.logistics_notes') }}</span> {{ $shipment->notes }}
             </div>
         @endif
+
+        <dl class="mt-3 tw:grid tw:gap-3 tw:sm:grid-cols-2 tw:text-ui-xs tw:m-0">
+            <div>
+                <dt class="tw:text-on-surface-variant fw-semibold">{{ __('shipments.copy.invoice_number') }}</dt>
+                <dd class="tw:m-0 fw-semibold tw:text-on-surface">{{ $shipment->invoice_number ?: '-' }}</dd>
+            </div>
+            <div>
+                <dt class="tw:text-on-surface-variant fw-semibold">{{ __('shipments.copy.supplier_reference') }}</dt>
+                <dd class="tw:m-0 fw-semibold tw:text-on-surface">{{ $shipment->supplier_reference ?: '-' }}</dd>
+            </div>
+        </dl>
     </x-ui.card>
 
     {{-- 4. Shipped Line Items Table --}}
@@ -348,6 +363,8 @@
                             @else
                                 <span class="tw:text-on-surface-variant fst-italic">{{ __('shipments.copy.no_file_uploaded') }}</span>
                             @endif
+
+                            @include('shipments._document_revision', ['doc' => $doc])
                         </div>
                     </div>
 
@@ -389,18 +406,104 @@
     @if(\App\Support\Procurement\ProcurementFeatures::shipmentMtcEnabled() || $shipment->mtcAttachments->isNotEmpty())
         @include('shipments._mtc_section', ['shipment' => $shipment, 'manageable' => true])
     @endif
+
+    @php
+        $canEditPsi = in_array($shipment->status, [\App\Models\Shipment::STATUS_DRAFT, \App\Models\Shipment::STATUS_SUBMITTED], true);
+        $psiHasErrors = collect($errors->keys())->contains(fn ($key) => str_starts_with((string) $key, 'preshipment'));
+    @endphp
+    @include('shipments._preshipment_detail', [
+        'shipment' => $shipment,
+        'canEdit' => $canEditPsi,
+        'editDialogName' => 'edit-shipment-psi',
+    ])
+
+    @if($canEditPsi && ! empty($preshipment))
+        <x-ui.dialog
+            name="edit-shipment-psi"
+            :title="__('shipments.preshipment.edit_psi')"
+            :description="__('shipments.preshipment.description')"
+            max-width="4xl"
+            :show="$psiHasErrors"
+            x-on:psi:panel-mode.window="if ($event.detail?.idPrefix === 'dialog_psi') $dispatch('ui-dialog-actions', { name: 'edit-shipment-psi', hidden: $event.detail.mode === 'manage' })"
+        >
+            <form
+                method="POST"
+                action="{{ route('supplier.shipments.preshipment.update', $shipment) }}"
+                id="shipmentPsiUpdateForm"
+                data-async-submit
+                data-async-files-hint="false"
+                novalidate
+            >
+                @csrf
+                @method('PUT')
+                <div data-async-error-summary hidden></div>
+                @include('supplier.shipments._preshipment_form', [
+                    'preshipment' => $preshipment,
+                    'allowMasterControls' => $isDraft,
+                    'isPostSubmit' => $isSubmitted,
+                    'requireCompleteFields' => $isSubmitted,
+                    'embedded' => true,
+                    'idPrefix' => 'dialog_psi',
+                ])
+            </form>
+            <x-slot:actions>
+                <x-ui.button type="button" variant="outline" size="sm" @click="closeDialog()">
+                    {{ __('shipments.copy.cancel') }}
+                </x-ui.button>
+                <x-ui.button type="submit" form="shipmentPsiUpdateForm" variant="primary" size="sm">
+                    <x-slot:leading><x-ui.icon name="save" size="sm" /></x-slot:leading>
+                    {{ __('shipments.preshipment.save_psi') }}
+                </x-ui.button>
+            </x-slot:actions>
+        </x-ui.dialog>
+    @endif
 </div>
 @endsection
 
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+    const psiUpdateForm = document.getElementById('shipmentPsiUpdateForm');
+    window.addEventListener('close-ui-dialog', (event) => {
+        const detail = event?.detail;
+        if (detail !== 'edit-shipment-psi' && detail?.name !== 'edit-shipment-psi') return;
+        if (!psiUpdateForm || psiUpdateForm.dataset.asyncSubmitting === 'true') return;
+
+        psiUpdateForm.reset();
+        psiUpdateForm.querySelectorAll('[data-async-error], .invalid-feedback').forEach((el) => el.remove());
+        psiUpdateForm.querySelectorAll('.is-invalid, [data-async-invalid]').forEach((el) => {
+            el.classList.remove('is-invalid');
+            el.removeAttribute('aria-invalid');
+            el.removeAttribute('data-async-invalid');
+        });
+        const summary = psiUpdateForm.querySelector('[data-async-error-summary]');
+        if (summary) {
+            summary.hidden = true;
+            summary.replaceChildren();
+        }
+        window.dispatchEvent(new CustomEvent('adasi:reset-psi-state', { detail: { idPrefix: 'dialog_psi' } }));
+        window.AdasiUnsaved?.resetSnapshot?.(psiUpdateForm);
+    });
     // Submit Confirmation via AdasiAlert
     const submitBtn = document.getElementById('btnConfirmSubmit');
     const submitForm = document.getElementById('submitShipmentForm');
     submitBtn?.addEventListener('click', () => {
         const title = @js(__('shipments.confirmations.submit.title'));
         const text = @js(__('shipments.confirmations.submit.body'));
+
+        // E5: warn before the server refuses a submit without the Commercial Invoice file.
+        if (@js($invoiceMissing)) {
+            const invoiceTitle = @js(__('shipments.copy.commercial_invoice_required_title'));
+            const invoiceText = @js(__('shipments.copy.commercial_invoice_required_before_submit'));
+            if (window.AdasiAlert) {
+                window.AdasiAlert.warning({ title: invoiceTitle, text: invoiceText }).then(() => {
+                    document.querySelector('.supplier-doc-card[data-doc-type="invoice"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                });
+            } else {
+                alert(`${invoiceTitle}\n\n${invoiceText}`);
+            }
+            return;
+        }
 
         if (window.AdasiAlert) {
             window.AdasiAlert.confirm({

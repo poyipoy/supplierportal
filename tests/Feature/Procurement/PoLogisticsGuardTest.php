@@ -95,6 +95,8 @@ class PoLogisticsGuardTest extends TestCase
             ->post(route('purchasing.purchase-orders.consolidate-awards.store'), [
                 'award_ids' => [$a1->id, $a2->id],
                 'estimated_arrival' => now()->addDays(14)->toDateString(),
+                'port_of_discharge' => 'TANJUNG_PRIOK',
+                'confirm_port_of_discharge' => '1',
             ])
             ->assertRedirect()
             ->assertSessionHasErrors('award_ids');
@@ -111,6 +113,8 @@ class PoLogisticsGuardTest extends TestCase
                 'pr_id' => $pr->getRouteKey(),
                 'awards' => [$pr->items[0]->id => $quotation->items[0]->id],
                 'action' => 'generate_pos',
+                'port_of_discharge' => 'TANJUNG_PERAK',
+                'confirm_port_of_discharge' => '1',
             ])
             ->assertRedirect();
         $this->assertSame(['TANJUNG_PERAK', 'FOB'], [PurchaseOrder::sole()->port_of_discharge, PurchaseOrder::sole()->incoterm]);
@@ -118,7 +122,10 @@ class PoLogisticsGuardTest extends TestCase
         $pr2 = $this->requisitionWith('TANJUNG_PRIOK', 'CFR');
         $quotation2 = $this->createQuotation($pr2);
         $this->actingAs($this->purchasing)
-            ->post(route('purchasing.quotations.generate-po', $quotation2))
+            ->post(route('purchasing.quotations.generate-po', $quotation2), [
+                'port_of_discharge' => 'TANJUNG_PRIOK',
+                'confirm_port_of_discharge' => '1',
+            ])
             ->assertRedirect();
         $po2 = PurchaseOrder::query()->latest('id')->first();
         $this->assertSame(['TANJUNG_PRIOK', 'CFR'], [$po2->port_of_discharge, $po2->incoterm]);

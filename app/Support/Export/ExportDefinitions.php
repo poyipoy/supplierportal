@@ -19,6 +19,7 @@ final class ExportDefinitions
         'supplier.quotations' => QuotationDefinition::class,
         'purchasing.pr' => RequisitionDefinition::class,
         'purchasing.shipments' => ShipmentDefinition::class,
+        'supplier.shipments' => ShipmentDefinition::class,
         'purchasing.po' => PurchaseOrderDefinition::class,
         'supplier.po' => PurchaseOrderDefinition::class,
         'supplier.price-history' => PriceHistoryDefinition::class,

@@ -43,6 +43,16 @@ class PoItemProgressUpdate extends Model
         self::STATUS_READY_TO_SHIP,
     ];
 
+    /**
+     * E3: Supplier manual progress updates may only choose between
+     * Prepare Material, On Production, and Ready to Ship.
+     */
+    public const SUPPLIER_UPDATABLE_STATUSES = [
+        self::STATUS_MATERIAL_PREPARATION,
+        self::STATUS_ON_PRODUCTION,
+        self::STATUS_READY_TO_SHIP,
+    ];
+
     public const STAGE_RANKS = [
         self::STATUS_AWAITING_CONFIRMATION => 10,
         self::STATUS_ORDER_CONFIRMED => 20,

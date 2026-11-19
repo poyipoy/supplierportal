@@ -3,8 +3,20 @@
 namespace Database\Seeders;
 
 use App\Models\ExchangeRate;
+use App\Models\MaterialClaim;
+use App\Models\MaterialMaster;
+use App\Models\Message;
 use App\Models\PrItem;
+use App\Models\PrItemAward;
+use App\Models\PurchaseOrder;
+use App\Models\PurchaseRequisition;
+use App\Models\QcInspection;
+use App\Models\Quotation;
+use App\Models\ReferencePriceRule;
+use App\Models\Shipment;
+use App\Models\ShipmentDocument;
 use App\Models\User;
+use App\Services\Materials\MaterialCodeNormalizer;
 use App\Support\BusinessTime;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Seeder;
@@ -61,21 +73,21 @@ class QuotationHistoryDemoSeeder extends Seeder
         'P20' => ['Flat', 2.90, [[25, 900, 2300], [60, 610, 2300], [405, 610, 4000]]],
         'NAK80' => ['Flat', 7.00, [[40, 500, 2000], [60, 500, 2000]]],
         'SKD61' => ['Flat', 4.80, [[80, 400, 2000], [120, 400, 2000]]],
-        'SUS304' => ['Flat', 4.40, [[12, 1219, 2438], [16, 1219, 2438], [20, 1219, 2438]]],
+        'SUS 304' => ['Flat', 4.40, [[12, 1219, 2438], [16, 1219, 2438], [20, 1219, 2438]]],
         'SS400' => ['Flat', 1.15, [[12, 1500, 6000], [16, 1500, 6000], [25, 1500, 6000]]],
         'S50C' => ['Flat', 1.60, [[20, 600, 3000], [35, 600, 3000]]],
         'S45C' => ['Round', 2.20, [[25, 2300], [40, 6000], [60, 6000]]],
         'SCM440' => ['Round', 2.60, [[50, 6000], [80, 6000]]],
         'SUJ2' => ['Round', 3.10, [[30, 4000], [45, 4000]]],
-        'H13' => ['Round', 5.00, [[100, 3000]]],
-        'STKM13A' => ['Hollow', 2.90, [[80, 50, 3000], [80, 60, 3000], [114, 90, 3000]]],
-        'SCM415' => ['Hollow', 3.30, [[60, 40, 3000]]],
+        'DHA1' => ['Round', 5.00, [[100, 3000]]],
+        'ST52' => ['Hollow', 2.90, [[80, 50, 3000], [80, 60, 3000], [114, 90, 3000]]],
+        'ST60' => ['Hollow', 3.30, [[60, 40, 3000]]],
     ];
 
     /** Sizes that only appear on the open PRs: no supplier has quoted this key dimension before. */
     private const NEW_VARIANTS = [
         'SKD11' => [[80, 400, 2000]],
-        'SUS304' => [[25, 1219, 2438]],
+        'SUS 304' => [[25, 1219, 2438]],
         'S45C' => [[90, 6000]],
         'NAK80' => [[25, 500, 2000]],
     ];
@@ -97,12 +109,26 @@ class QuotationHistoryDemoSeeder extends Seeder
     /** @var array<string, float> variant key => fixed price factor */
     private array $variantFactor = [];
 
+    /** @var array<string, ?int> catalog material code => material_masters.id */
+    private array $materialIds = [];
+
     private int $poSequence = 0;
 
     public function run(): void
     {
         if (app()->isProduction()) {
             throw new RuntimeException('QuotationHistoryDemoSeeder must not run in production.');
+        }
+
+        if (! User::query()->where('role', 'purchasing')->exists()) {
+            throw new RuntimeException('No purchasing user found; seed the base accounts first.');
+        }
+
+        if (in_array(null, $this->resolveCatalogMaterialIds(), true)) {
+            $this->call(MaterialHsCodeMasterSeeder::class);
+        }
+        if (! ReferencePriceRule::query()->exists()) {
+            $this->call(ReferencePriceRulesInitialSeeder::class);
         }
 
         mt_srand(self::SEED);
@@ -222,6 +248,7 @@ class QuotationHistoryDemoSeeder extends Seeder
             $quantity = mt_rand(2, 12);
             $id = DB::table('pr_items')->insertGetId([
                 'pr_id' => $prId,
+                'material_master_id' => $this->materialIds[$variant['material']] ?? null,
                 'hs_code' => $variant['shape'] === 'Hollow' ? '7304.51.00' : '7228.30.00',
                 'material_name' => $variant['material'],
                 'quantity' => $quantity,
@@ -491,6 +518,35 @@ class QuotationHistoryDemoSeeder extends Seeder
         return round($mm3 * 7.85 / 1_000_000, 2);
     }
 
+    /**
+     * Map every catalog material code to its MaterialMaster ID using exact
+     * normalization first, then space/punctuation-stripped fallback.
+     *
+     * @return array<string, ?int>
+     */
+    private function resolveCatalogMaterialIds(): array
+    {
+        $normalizer = app(MaterialCodeNormalizer::class);
+        $masters = MaterialMaster::query()->get(['id', 'material_code', 'normalized_code']);
+        $byNormalized = [];
+        $byCompact = [];
+        foreach ($masters as $master) {
+            $norm = $normalizer->normalize($master->normalized_code ?: $master->material_code);
+            $byNormalized[$norm] = (int) $master->id;
+            $byCompact[str_replace([' ', '-', '_'], '', $norm)] = (int) $master->id;
+        }
+
+        $ids = [];
+        foreach (array_keys(self::CATALOG) as $code) {
+            $norm = $normalizer->normalize($code);
+            $ids[$code] = $byNormalized[$norm]
+                ?? $byCompact[str_replace([' ', '-', '_'], '', $norm)]
+                ?? null;
+        }
+
+        return $ids;
+    }
+
     // ─── Actors and cleanup ──────────────────────────────────────────────────
 
     private function prepareActors(): void
@@ -503,6 +559,8 @@ class QuotationHistoryDemoSeeder extends Seeder
             $rate = ExchangeRate::query()->where('currency', $currency)->orderByDesc('valid_from')->orderByDesc('id')->first();
             $this->rates[$currency] = ['id' => $rate?->id, 'rate' => $rate === null ? null : (float) $rate->rate_to_idr];
         }
+
+        $this->materialIds = $this->resolveCatalogMaterialIds();
 
         foreach ([2025, 2026] as $year) {
             $this->periods[$year] = DB::table('periods')->insertGetId([
@@ -534,23 +592,228 @@ class QuotationHistoryDemoSeeder extends Seeder
 
     private function cleanPreviousDemoData(): void
     {
-        $prIds = DB::table('purchase_requisitions')->where('pr_number', 'like', self::PR_PREFIX.'%')->pluck('id');
-        $poIds = DB::table('purchase_orders')->where('po_number', 'like', self::PO_PREFIX.'%')->pluck('id');
-        $quotationIds = DB::table('quotations')->whereIn('pr_id', $prIds)->pluck('id');
-        $userIds = DB::table('users')->where('email', 'like', '%'.self::EMAIL_DOMAIN)->pluck('id');
+        $prIds = DB::table('purchase_requisitions')->where('pr_number', 'like', self::PR_PREFIX.'%')->pluck('id')->all();
+        $userIds = DB::table('users')->where('email', 'like', '%'.self::EMAIL_DOMAIN)->pluck('id')->all();
 
-        DB::table('pr_item_awards')->whereIn('pr_id', $prIds)->delete();
-        DB::table('po_quotations')->whereIn('po_id', $poIds)->delete();
-        DB::table('po_documents')->whereIn('po_id', $poIds)->delete();
-        DB::table('purchase_orders')->whereIn('id', $poIds)->delete();
-        DB::table('quotation_items')->whereIn('quotation_id', $quotationIds)->delete();
-        DB::table('quotations')->whereIn('id', $quotationIds)->delete();
-        DB::table('pr_items')->whereIn('pr_id', $prIds)->delete();
-        DB::table('purchase_requisition_suppliers')->whereIn('pr_id', $prIds)->delete();
-        DB::table('purchase_requisitions')->whereIn('id', $prIds)->delete();
+        $quotationIds = $this->pluckIdsWhere('quotations', [
+            'pr_id' => $prIds,
+            'supplier_id' => $userIds,
+        ]);
+        $prItemIds = $this->pluckIdsWhere('pr_items', ['pr_id' => $prIds]);
+        $quotationItemIds = $this->pluckIdsWhere('quotation_items', [
+            'quotation_id' => $quotationIds,
+            'pr_item_id' => $prItemIds,
+        ]);
+
+        $poIds = $this->mergeIds(
+            DB::table('purchase_orders')->where('po_number', 'like', self::PO_PREFIX.'%')->pluck('id')->all(),
+            $this->pluckIdsWhere('purchase_orders', ['supplier_id' => $userIds]),
+            $this->pluckIdsWhere('pr_item_awards', ['pr_id' => $prIds], 'purchase_order_id'),
+            $this->pluckIdsWhere('po_quotations', ['quotation_id' => $quotationIds], 'po_id'),
+        );
+
+        $awardIds = $this->pluckIdsWhere('pr_item_awards', [
+            'pr_id' => $prIds,
+            'purchase_order_id' => $poIds,
+            'quotation_id' => $quotationIds,
+            'quotation_item_id' => $quotationItemIds,
+            'pr_item_id' => $prItemIds,
+            'supplier_id' => $userIds,
+        ]);
+
+        $shipmentIds = $this->mergeIds(
+            $this->pluckIdsWhere('shipment_items', [
+                'purchase_order_id' => $poIds,
+                'pr_item_award_id' => $awardIds,
+                'quotation_item_id' => $quotationItemIds,
+            ], 'shipment_id'),
+            $this->pluckIdsWhere('shipments', ['supplier_id' => $userIds]),
+        );
+        $shipmentDocumentIds = $this->pluckIdsWhere('shipment_documents', ['shipment_id' => $shipmentIds]);
+        $shipmentItemIds = $this->pluckIdsWhere('shipment_items', [
+            'shipment_id' => $shipmentIds,
+            'purchase_order_id' => $poIds,
+            'pr_item_award_id' => $awardIds,
+            'quotation_item_id' => $quotationItemIds,
+        ]);
+
+        $qcInspectionIds = $this->pluckIdsWhere('qc_inspections', [
+            'po_id' => $poIds,
+            'shipment_id' => $shipmentIds,
+            'inspected_by' => $userIds,
+        ]);
+        $claimIds = $this->pluckIdsWhere('material_claims', [
+            'po_id' => $poIds,
+            'inspection_id' => $qcInspectionIds,
+            'supplier_id' => $userIds,
+            'submitted_by' => $userIds,
+        ]);
+
+        $conversationIds = $this->pluckIdsByDirectOrMorph(
+            'conversations',
+            ['purchasing_user_id' => $userIds, 'supplier_user_id' => $userIds],
+            'conversable_type',
+            'conversable_id',
+            [
+                PurchaseRequisition::class => $prIds,
+                PurchaseOrder::class => $poIds,
+                Quotation::class => $quotationIds,
+            ],
+        );
+        $messageIds = $this->pluckIdsWhere('messages', [
+            'conversation_id' => $conversationIds,
+            'sender_id' => $userIds,
+        ]);
+
+        // Delete child and polymorphic records in leaf-to-parent order to satisfy NO ACTION / RESTRICT FKs.
+        $attachmentIds = $this->pluckIdsByDirectOrMorph(
+            'attachments',
+            ['uploaded_by' => $userIds],
+            'attachable_type',
+            'attachable_id',
+            [
+                Shipment::class => $shipmentIds,
+                ShipmentDocument::class => $shipmentDocumentIds,
+                Message::class => $messageIds,
+                MaterialClaim::class => $claimIds,
+                QcInspection::class => $qcInspectionIds,
+                PurchaseOrder::class => $poIds,
+                PurchaseRequisition::class => $prIds,
+                Quotation::class => $quotationIds,
+                PrItemAward::class => $awardIds,
+            ],
+        );
+        $this->deleteWhereAny('attachments', ['id' => $attachmentIds]);
+
+        $this->deleteWhereAny('messages', ['id' => $messageIds]);
+        $this->deleteWhereAny('conversations', ['id' => $conversationIds]);
+
+        $this->deleteWhereAny('claim_attachments', ['claim_id' => $claimIds, 'uploaded_by' => $userIds]);
+        $this->deleteWhereAny('material_claims', ['id' => $claimIds]);
+
+        $this->deleteWhereAny('qc_items', [
+            'inspection_id' => $qcInspectionIds,
+            'pr_item_id' => $prItemIds,
+            'shipment_item_id' => $shipmentItemIds,
+        ]);
+        $this->deleteWhereAny('qc_inspections', ['id' => $qcInspectionIds]);
+
+        $this->deleteWhereAny('shipment_items', ['id' => $shipmentItemIds]);
+        $this->deleteWhereAny('shipment_documents', ['id' => $shipmentDocumentIds]);
+        $this->deleteWhereAny('shipment_preshipment_inspections', ['shipment_id' => $shipmentIds]);
+        $this->deleteWhereAny('shipments', ['id' => $shipmentIds]);
+
+        $this->deleteWhereAny('po_item_progress_updates', ['pr_item_award_id' => $awardIds]);
+        $this->deleteWhereAny('pr_item_award_events', [
+            'pr_item_award_id' => $awardIds,
+            'pr_id' => $prIds,
+            'purchase_order_id' => $poIds,
+            'quotation_item_id' => $quotationItemIds,
+            'pr_item_id' => $prItemIds,
+        ]);
+        $this->deleteWhereAny('award_reference_price_snapshots', [
+            'pr_item_award_id' => $awardIds,
+            'purchase_order_id' => $poIds,
+        ]);
+
+        $this->deleteWhereAny('pr_item_awards', ['id' => $awardIds]);
+        $this->deleteWhereAny('po_quotations', ['po_id' => $poIds, 'quotation_id' => $quotationIds]);
+        $this->deleteWhereAny('po_documents', ['po_id' => $poIds]);
+        $this->deleteWhereAny('purchase_orders', ['id' => $poIds]);
+
+        $this->deleteWhereAny('quotation_items', ['id' => $quotationItemIds]);
+        $this->deleteWhereAny('quotations', ['id' => $quotationIds]);
+        $this->deleteWhereAny('pr_items', ['id' => $prItemIds]);
+        $this->deleteWhereAny('pr_supplier_invitation_events', ['pr_id' => $prIds, 'supplier_id' => $userIds]);
+        $this->deleteWhereAny('purchase_requisition_suppliers', ['pr_id' => $prIds, 'supplier_id' => $userIds]);
+        $this->deleteWhereAny('purchase_requisitions', ['id' => $prIds]);
+
         DB::table('periods')->where('name', 'like', self::PERIOD_PREFIX.'%')->orWhere('name', 'DEMO Quotation History')->delete();
-        DB::table('supplier_scopes')->whereIn('supplier_id', $userIds)->delete();
-        DB::table('suppliers')->whereIn('user_id', $userIds)->delete();
-        DB::table('users')->whereIn('id', $userIds)->delete();
+        $this->deleteWhereAny('supplier_scopes', ['supplier_id' => $userIds]);
+        $this->deleteWhereAny('suppliers', ['user_id' => $userIds]);
+        $this->deleteWhereAny('users', ['id' => $userIds]);
+    }
+
+    /** @param array<string, array<int, int|string>> $criteria */
+    private function pluckIdsWhere(string $table, array $criteria, string $column = 'id'): array
+    {
+        $filtered = array_filter($criteria, fn (array $ids): bool => $ids !== []);
+        if ($filtered === []) {
+            return [];
+        }
+
+        return DB::table($table)
+            ->where(function ($query) use ($filtered): void {
+                foreach ($filtered as $col => $ids) {
+                    $query->orWhereIn($col, $ids);
+                }
+            })
+            ->whereNotNull($column)
+            ->pluck($column)
+            ->map(fn ($id): int => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  array<string, array<int, int|string>>  $directCriteria
+     * @param  array<string, array<int, int|string>>  $morphMap
+     */
+    private function pluckIdsByDirectOrMorph(
+        string $table,
+        array $directCriteria,
+        string $typeColumn,
+        string $idColumn,
+        array $morphMap,
+    ): array {
+        $direct = array_filter($directCriteria, fn (array $ids): bool => $ids !== []);
+        $morph = array_filter($morphMap, fn (array $ids): bool => $ids !== []);
+        if ($direct === [] && $morph === []) {
+            return [];
+        }
+
+        return DB::table($table)
+            ->where(function ($query) use ($direct, $morph, $typeColumn, $idColumn): void {
+                foreach ($direct as $col => $ids) {
+                    $query->orWhereIn($col, $ids);
+                }
+                foreach ($morph as $morphClass => $ids) {
+                    $query->orWhere(function ($sub) use ($typeColumn, $idColumn, $morphClass, $ids): void {
+                        $sub->where($typeColumn, $morphClass)->whereIn($idColumn, $ids);
+                    });
+                }
+            })
+            ->pluck('id')
+            ->map(fn ($id): int => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /** @param array<string, array<int, int|string>> $criteria */
+    private function deleteWhereAny(string $table, array $criteria): void
+    {
+        $filtered = array_filter($criteria, fn (array $ids): bool => $ids !== []);
+        if ($filtered === []) {
+            return;
+        }
+
+        DB::table($table)
+            ->where(function ($query) use ($filtered): void {
+                foreach ($filtered as $col => $ids) {
+                    $query->orWhereIn($col, $ids);
+                }
+            })
+            ->delete();
+    }
+
+    /** @param array<int, int|string> ...$groups */
+    private function mergeIds(array ...$groups): array
+    {
+        return array_values(array_unique(array_filter(
+            array_map('intval', array_merge(...$groups)),
+            fn (int $id): bool => $id > 0,
+        )));
     }
 }

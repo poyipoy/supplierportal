@@ -7,7 +7,6 @@ use App\Models\User;
 use App\Services\Maintenance\MaintenanceResolver;
 use App\Support\BusinessTime;
 use App\Support\Maintenance\MaintenanceModuleRegistry;
-use App\Support\Maintenance\RouteClassification;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -42,13 +41,7 @@ class EnforceMaintenance
             return $next($request);
         }
 
-        $scopes = $this->registry->scopesFor($user);
-        $moduleKeys = $classification->kind === RouteClassification::MODULE
-            ? array_values(array_filter(
-                $classification->modules,
-                fn (string $key): bool => in_array((string) $this->registry->scopeOf($key), $scopes, true),
-            ))
-            : [];
+        $moduleKeys = $this->registry->applicableModules($classification, $user);
 
         $global = $resolver->globalRecords();
         if ($global->isNotEmpty()) {

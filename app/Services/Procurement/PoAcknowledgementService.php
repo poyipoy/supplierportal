@@ -3,15 +3,21 @@
 namespace App\Services\Procurement;
 
 use App\Enums\PoAcknowledgementStatus;
+use App\Enums\PoSalesContractStatus;
 use App\Exceptions\BusinessRuleArgumentException;
 use App\Exceptions\BusinessRuleException;
+use App\Models\FileInspection;
 use App\Models\PurchaseOrder;
 use App\Models\User;
+use App\Services\FileSecurity\FileInspectionService;
 use App\Services\NotificationService;
 use App\Support\BusinessTime;
 use App\Support\NotificationCategory;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
+use Throwable;
 
 class PoAcknowledgementService
 {
@@ -36,6 +42,10 @@ class PoAcknowledgementService
                 ->firstOrFail();
 
             Gate::forUser($actor)->authorize('acknowledge', $locked);
+
+            if (! $locked->hasSignedSalesContract()) {
+                throw new BusinessRuleException(__('purchasing.po_ack.errors.sales_contract_required'));
+            }
 
             if (! $locked->canAcknowledge()) {
                 throw new BusinessRuleException(__('purchasing.po_ack.errors.cannot_acknowledge'));
@@ -178,6 +188,219 @@ class PoAcknowledgementService
                 [
                     'po' => $updatedPo->po_number,
                 ],
+            );
+        }
+
+        return $updatedPo;
+    }
+
+    /**
+     * E1 (Step 1): Supplier uploads the Sales Contract document before PO acknowledgement.
+     */
+    public function uploadSupplierSalesContract(
+        PurchaseOrder $po,
+        UploadedFile $file,
+        User $actor,
+        ?string $notes = null
+    ): PurchaseOrder {
+        Gate::forUser($actor)->authorize('uploadSupplierSalesContract', $po);
+
+        $path = 'attachments/'.now()->format('Y/m').'/'.$file->hashName(); // biz-time:ignore storage path
+        $stored = app(FileInspectionService::class)->storeUpload($file, 'shipment', $path, 'sales_contract_file');
+
+        try {
+            $updatedPo = DB::transaction(function () use ($po, $actor, $stored, $notes): PurchaseOrder {
+                /** @var PurchaseOrder $locked */
+                $locked = PurchaseOrder::query()->whereKey($po->id)->lockForUpdate()->firstOrFail();
+                Gate::forUser($actor)->authorize('uploadSupplierSalesContract', $locked);
+
+                if (! in_array((string) $locked->status, ['active', 'overdue'], true)) {
+                    throw new BusinessRuleException(__('purchasing.po_ack.errors.cannot_acknowledge'));
+                }
+
+                // A countersigned contract is final: a later upload would silently reopen the gate.
+                if ($locked->salesContractStatusEnum() === PoSalesContractStatus::PURCHASING_SIGNED) {
+                    throw new BusinessRuleException(__('purchasing.po_ack.errors.sales_contract_already_signed'));
+                }
+
+                $attachment = $locked->attachments()->create([
+                    'file_path' => $stored['file_path'],
+                    'file_name' => $stored['file_name'],
+                    'file_type' => $stored['file_type'],
+                    'file_inspection_id' => $stored['file_inspection_id'],
+                    'uploaded_by' => $actor->id,
+                ]);
+
+                $locked->update([
+                    'sales_contract_status' => PoSalesContractStatus::SUPPLIER_UPLOADED->value,
+                    'supplier_sales_contract_attachment_id' => $attachment->id,
+                    'supplier_sales_contract_uploaded_at' => BusinessTime::now(),
+                    'sales_contract_notes' => $notes !== null && trim($notes) !== '' ? trim($notes) : $locked->sales_contract_notes,
+                ]);
+
+                return $locked->fresh(['supplier', 'supplierSalesContractAttachment']);
+            });
+        } catch (Throwable $e) {
+            Storage::disk('private')->delete($path);
+            FileInspection::whereKey($stored['file_inspection_id'])->update([
+                'status' => 'ERROR',
+                'error_code' => 'publication_failed',
+            ]);
+
+            throw $e;
+        }
+
+        $purchasingUsers = User::query()->where('role', 'purchasing')->where('is_active', true)->get();
+        $this->notifications->send(
+            $purchasingUsers,
+            'po.sales_contract_uploaded',
+            'po.sales_contract_uploaded:'.$updatedPo->id.':'.BusinessTime::now()->timestamp,
+            'purchasing.copy.sales_contract_title',
+            'purchasing.notify.sales_contract_uploaded_body',
+            route('purchasing.purchase-orders.show', $updatedPo, absolute: false),
+            'file-text text-primary',
+            [
+                'category' => NotificationCategory::DOCUMENT,
+                'po_id' => $updatedPo->id,
+                'po_number' => $updatedPo->po_number,
+            ],
+            ['po' => $updatedPo->po_number],
+        );
+
+        return $updatedPo;
+    }
+
+    /**
+     * D4 (Step 2a): Purchasing uploads the countersigned Sales Contract (unlocks Supplier Acknowledgement & Shipment).
+     */
+    public function uploadPurchasingSignedSalesContract(
+        PurchaseOrder $po,
+        UploadedFile $file,
+        User $actor,
+        ?string $notes = null
+    ): PurchaseOrder {
+        Gate::forUser($actor)->authorize('reviewSalesContract', $po);
+
+        $path = 'attachments/'.now()->format('Y/m').'/'.$file->hashName(); // biz-time:ignore storage path
+        $stored = app(FileInspectionService::class)->storeUpload($file, 'shipment', $path, 'signed_sales_contract_file');
+
+        try {
+            $updatedPo = DB::transaction(function () use ($po, $actor, $stored, $notes): PurchaseOrder {
+                /** @var PurchaseOrder $locked */
+                $locked = PurchaseOrder::query()->whereKey($po->id)->lockForUpdate()->firstOrFail();
+                Gate::forUser($actor)->authorize('reviewSalesContract', $locked);
+
+                if (! in_array((string) $locked->status, ['active', 'overdue'], true)) {
+                    throw new BusinessRuleException(__('purchasing.po_ack.errors.cannot_acknowledge'));
+                }
+
+                if ($locked->supplier_sales_contract_attachment_id === null) {
+                    throw new BusinessRuleException(__('purchasing.copy.sales_contract_status_pending_supplier'));
+                }
+
+                $attachment = $locked->attachments()->create([
+                    'file_path' => $stored['file_path'],
+                    'file_name' => $stored['file_name'],
+                    'file_type' => $stored['file_type'],
+                    'file_inspection_id' => $stored['file_inspection_id'],
+                    'uploaded_by' => $actor->id,
+                ]);
+
+                $locked->update([
+                    'sales_contract_status' => PoSalesContractStatus::PURCHASING_SIGNED->value,
+                    'purchasing_sales_contract_attachment_id' => $attachment->id,
+                    'purchasing_sales_contract_uploaded_at' => BusinessTime::now(),
+                    'purchasing_sales_contract_uploaded_by' => $actor->id,
+                    'sales_contract_notes' => $notes !== null && trim($notes) !== '' ? trim($notes) : $locked->sales_contract_notes,
+                ]);
+
+                return $locked->fresh(['supplier', 'purchasingSalesContractAttachment']);
+            });
+        } catch (Throwable $e) {
+            Storage::disk('private')->delete($path);
+            FileInspection::whereKey($stored['file_inspection_id'])->update([
+                'status' => 'ERROR',
+                'error_code' => 'publication_failed',
+            ]);
+
+            throw $e;
+        }
+
+        if ($updatedPo->supplier) {
+            $this->notifications->send(
+                [$updatedPo->supplier],
+                'po.sales_contract_signed',
+                'po.sales_contract_signed:'.$updatedPo->id.':'.BusinessTime::now()->timestamp,
+                'purchasing.copy.sales_contract_status_purchasing_signed',
+                'purchasing.notify.sales_contract_signed_body',
+                route('supplier.purchase-orders.show', $updatedPo, absolute: false),
+                'file-check text-success',
+                [
+                    'category' => NotificationCategory::DOCUMENT,
+                    'po_id' => $updatedPo->id,
+                    'po_number' => $updatedPo->po_number,
+                ],
+                ['po' => $updatedPo->po_number],
+            );
+        }
+
+        return $updatedPo;
+    }
+
+    /**
+     * D4 (Step 2b): Purchasing requests revision of the Supplier's Sales Contract.
+     */
+    public function requestSalesContractRevision(
+        PurchaseOrder $po,
+        User $actor,
+        string $reason
+    ): PurchaseOrder {
+        Gate::forUser($actor)->authorize('reviewSalesContract', $po);
+        $trimmedReason = trim($reason);
+        if ($trimmedReason === '') {
+            throw new BusinessRuleArgumentException(__('purchasing.po_ack.errors.notes_required_for_change'));
+        }
+
+        $updatedPo = DB::transaction(function () use ($po, $actor, $trimmedReason): PurchaseOrder {
+            /** @var PurchaseOrder $locked */
+            $locked = PurchaseOrder::query()->whereKey($po->id)->lockForUpdate()->firstOrFail();
+            Gate::forUser($actor)->authorize('reviewSalesContract', $locked);
+
+            if (! in_array((string) $locked->status, ['active', 'overdue'], true)) {
+                throw new BusinessRuleException(__('purchasing.po_ack.errors.cannot_acknowledge'));
+            }
+
+            if ($locked->salesContractStatusEnum() === PoSalesContractStatus::PURCHASING_SIGNED) {
+                throw new BusinessRuleException(__('purchasing.po_ack.errors.sales_contract_already_signed'));
+            }
+
+            if ($locked->supplier_sales_contract_attachment_id === null) {
+                throw new BusinessRuleException(__('purchasing.copy.sales_contract_status_pending_supplier'));
+            }
+
+            $locked->update([
+                'sales_contract_status' => PoSalesContractStatus::REVISION_REQUESTED->value,
+                'sales_contract_notes' => $trimmedReason,
+            ]);
+
+            return $locked->fresh(['supplier']);
+        });
+
+        if ($updatedPo->supplier) {
+            $this->notifications->send(
+                [$updatedPo->supplier],
+                'po.sales_contract_revision_requested',
+                'po.sales_contract_revision_requested:'.$updatedPo->id.':'.BusinessTime::now()->timestamp,
+                'purchasing.copy.sales_contract_status_revision_requested',
+                'purchasing.notify.sales_contract_revision_requested_body',
+                route('supplier.purchase-orders.show', $updatedPo, absolute: false),
+                'alert-triangle text-warning',
+                [
+                    'category' => NotificationCategory::DOCUMENT,
+                    'po_id' => $updatedPo->id,
+                    'po_number' => $updatedPo->po_number,
+                ],
+                ['po' => $updatedPo->po_number],
             );
         }
 

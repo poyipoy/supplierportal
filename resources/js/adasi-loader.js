@@ -143,9 +143,16 @@ export function createDomView(doc = document, translate = t) {
         overlay.setAttribute('role', 'status');
         overlay.setAttribute('aria-live', 'polite');
         overlay.innerHTML = '<div class="adasi-loader-card" tabindex="-1">'
-            + '<div class="adasi-loader-ring"><div class="adasi-loader-logo"></div></div>'
+            + '<div class="adasi-loader-ring" aria-hidden="true">'
+            + '<svg class="adasi-loader-svg" viewBox="0 0 64 64" width="64" height="64" focusable="false" aria-hidden="true">'
+            + '<circle class="adasi-loader-track" cx="32" cy="32" r="29"></circle>'
+            + '<circle class="adasi-loader-arc adasi-loader-arc--secondary" cx="32" cy="32" r="23.5"></circle>'
+            + '<circle class="adasi-loader-arc adasi-loader-arc--primary" cx="32" cy="32" r="29"></circle>'
+            + '</svg>'
+            + '<div class="adasi-loader-medallion"><div class="adasi-loader-logo"></div></div>'
+            + '</div>'
             + '<span class="adasi-loader-text"></span>'
-            + '<button type="button" class="btn btn-outline-secondary btn-sm adasi-loader-dismiss" hidden></button>'
+            + '<button type="button" class="btn btn-outline-secondary btn-sm adasi-loader-dismiss ui-focus-ring" hidden></button>'
             + '</div>';
         text = overlay.querySelector('.adasi-loader-text');
         dismiss = overlay.querySelector('.adasi-loader-dismiss');
@@ -248,11 +255,51 @@ export function createDomView(doc = document, translate = t) {
         view.reconcile();
     });
 
+    // Escape is a keyboard way out only once the slow-state Close button is offered;
+    // a normal load cannot be cancelled by a stray key press.
+    doc.addEventListener?.('keydown', (event) => {
+        if (event.key !== 'Escape' || !presented || !dismiss || dismiss.hidden) return;
+        event.preventDefault?.();
+        view.onDismiss?.();
+    });
+
     return view;
 }
 
-function setTableBusy(wrapper, busy) {
+export function setTableBusy(wrapper, busy, translate = t) {
     if (!wrapper) return;
+    const doc = wrapper.ownerDocument || (typeof document !== 'undefined' ? document : null);
+
+    let bar = wrapper.querySelector?.(':scope > .ui-dt-loading-bar') ?? wrapper.querySelector?.('.ui-dt-loading-bar') ?? null;
+    let pill = wrapper.querySelector?.(':scope > .ui-dt-loading-pill') ?? wrapper.querySelector?.('.ui-dt-loading-pill') ?? null;
+
+    if (busy && doc) {
+        if (!bar) {
+            bar = doc.createElement('div');
+            bar.className = 'ui-dt-loading-bar';
+            bar.setAttribute('aria-hidden', 'true');
+            bar.innerHTML = '<span class="ui-dt-loading-bar__fill"></span>';
+            wrapper.appendChild(bar);
+        }
+        if (!pill) {
+            pill = doc.createElement('div');
+            pill.className = 'ui-dt-loading-pill';
+            pill.setAttribute('role', 'status');
+            pill.setAttribute('aria-live', 'polite');
+            pill.innerHTML = '<svg class="ui-dt-loading-pill__spinner" viewBox="0 0 20 20" width="16" height="16" focusable="false" aria-hidden="true">'
+                + '<circle class="ui-dt-loading-pill__track" cx="10" cy="10" r="8"></circle>'
+                + '<circle class="ui-dt-loading-pill__arc" cx="10" cy="10" r="8"></circle>'
+                + '</svg>'
+                + '<span class="ui-dt-loading-pill__text"></span>';
+            wrapper.appendChild(pill);
+        }
+    }
+
+    const labelEl = pill?.querySelector?.('.ui-dt-loading-pill__text') ?? null;
+    if (labelEl) {
+        labelEl.textContent = busy ? translate('js.loader.loading') : '';
+    }
+
     wrapper.classList.toggle('is-loading', busy);
     if (busy) {
         wrapper.setAttribute('aria-busy', 'true');

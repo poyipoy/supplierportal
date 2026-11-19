@@ -56,12 +56,17 @@ class ShipmentDocument extends Model
         'status',
         'document_number',
         'notes',
+        'revision_count',
+        'last_revised_at',
+        'revision_note',
     ];
 
     protected function casts(): array
     {
         return [
             'status' => CustomsDocumentStatusCast::class,
+            'revision_count' => 'integer',
+            'last_revised_at' => 'datetime',
         ];
     }
 

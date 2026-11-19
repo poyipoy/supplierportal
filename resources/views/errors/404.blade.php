@@ -1,5 +1,6 @@
 @extends('layouts.auth')
 
+@section('plain-layout', true)
 @section('title', '404 - '.__('common.review.not_found_title').' | ADASI Supplier Portal')
 @section('meta')<meta name="robots" content="noindex, nofollow">@endsection
 

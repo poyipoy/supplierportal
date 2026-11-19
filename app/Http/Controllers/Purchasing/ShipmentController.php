@@ -35,7 +35,10 @@ class ShipmentController extends Controller
     {
         Gate::authorize('viewAny', Shipment::class);
         $filters = ShipmentExportFilters::validated($request);
-        $query = Shipment::query()->with(['supplier', 'items.purchaseOrder', 'documents.latestAttachment'])->latest('shipment_date');
+        $query = Shipment::query()
+            ->with(['supplier', 'items.purchaseOrder', 'documents.latestAttachment'])
+            ->withCount('mtcAttachments')
+            ->latest('shipment_date');
         ShipmentExportFilters::apply($query, $filters);
 
         if ($request->ajax()) {
@@ -83,6 +86,7 @@ class ShipmentController extends Controller
 
                     return '<span class="tw:text-on-surface-variant">-</span>';
                 })
+                ->addColumn('missing_documents', fn ($shp) => StatusHelper::shipmentMissingDocumentsHtml($shp))
                 ->addColumn('status_badge', function ($shp) {
                     return StatusHelper::badge(
                         StatusHelper::shipmentBadge($shp->status),
@@ -94,7 +98,7 @@ class ShipmentController extends Controller
 
                     return '<a href="'.e($url).'" class="ui-data-action ui-data-action--primary">'.e(__('shipments.copy.details')).'</a>';
                 })
-                ->rawColumns(['shipment_number_display', 'consolidated_pos', 'items_count', 'total_qty', 'actual_weight', 'total_weight', 'shipment_date', 'shipment_date_display', 'estimated_arrival', 'actual_arrival', 'status_badge', 'action'])
+                ->rawColumns(['shipment_number_display', 'consolidated_pos', 'items_count', 'total_qty', 'actual_weight', 'total_weight', 'shipment_date', 'shipment_date_display', 'estimated_arrival', 'actual_arrival', 'missing_documents', 'status_badge', 'action'])
                 ->toArray();
 
             PurchasingNavigation::rememberRecordWindowFromDataTable('purchasing.shipments.index', $payload, $request);
@@ -139,6 +143,8 @@ class ShipmentController extends Controller
                 'items.purchaseOrder.creator',
                 'items.quotationItem.prItem.purchaseRequisition',
                 'documents.latestAttachment',
+                'documents.attachments',
+                'preshipmentInspection',
                 'mtcAttachments.fileInspection',
                 'mtcAttachments.uploader',
                 'qcInspections.inspector',

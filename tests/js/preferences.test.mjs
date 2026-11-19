@@ -565,7 +565,7 @@ test('shellStyle defaults to classic, supports slate live preview, rejects inval
     assert.equal(state.root.dataset.shell, 'slate');
 });
 
-test('dark slate shell tokens meet WCAG 2.2 AA contrast without halation glare across topbar, sidebar, role badges, and all five accents', async () => {
+test('dark slate shell tokens meet WCAG 2.2 AA contrast without halation glare across topbar, sidebar, role badges, env tags, dark mode, and all five accents', async () => {
     const css = await readFile(new URL('../../resources/css/app.css', import.meta.url), 'utf8');
     const body = selector => {
         const index = css.indexOf(selector + ' {');
@@ -573,44 +573,83 @@ test('dark slate shell tokens meet WCAG 2.2 AA contrast without halation glare a
         return css.slice(index, css.indexOf('}', index));
     };
     const value = (text, token) => text.match(new RegExp(token + ':\\s*(#[0-9a-fA-F]{6})'))?.[1];
+    const hexToRgb = hex => [1, 3, 5].map(index => parseInt(hex.slice(index, index + 2), 16));
+    const blend = (fg, bg, alpha) => {
+        const a = hexToRgb(fg);
+        const b = hexToRgb(bg);
+        return '#' + a.map((c, i) => Math.round(c * alpha + b[i] * (1 - alpha)).toString(16).padStart(2, '0')).join('');
+    };
     const luminance = hex => {
         assert.ok(hex, 'shell token has an explicit hex value');
-        return [1, 3, 5].map(index => parseInt(hex.slice(index, index + 2), 16) / 255)
+        return hexToRgb(hex)
+            .map(c => c / 255)
             .map(c => c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4)
             .reduce((sum, c, i) => sum + c * [0.2126, 0.7152, 0.0722][i], 0);
     };
     const ratio = (a, b) => (Math.max(luminance(a), luminance(b)) + 0.05) / (Math.min(luminance(a), luminance(b)) + 0.05);
 
     const slate = body(':root[data-shell="slate"]');
-    const topbarBg = value(slate, '--ui-shell-topbar-bg');
-    const sidebarBg = value(slate, '--ui-shell-sidebar-bg');
-    const sidebarActiveBg = value(slate, '--ui-shell-sidebar-active-bg');
+    const darkSlate = body(':root[data-theme="dark"][data-shell="slate"]');
+    const resolve = (block, token) => value(block, token) || value(slate, token);
 
-    const topbarPrimaryRatio = ratio(value(slate, '--ui-shell-topbar-fg'), topbarBg);
-    const sidebarPrimaryRatio = ratio(value(slate, '--ui-shell-sidebar-fg'), sidebarBg);
-    const sidebarActiveRatio = ratio(value(slate, '--ui-shell-sidebar-active-fg'), sidebarActiveBg);
+    for (const [modeName, block] of [['light+slate', slate], ['dark+slate', darkSlate]]) {
+        const topbarBg = resolve(block, '--ui-shell-topbar-bg');
+        const topbarCtrlBg = resolve(block, '--ui-shell-topbar-control-bg');
+        const topbarPillActiveBg = resolve(block, '--ui-shell-topbar-pill-active-bg');
+        const sidebarBg = resolve(block, '--ui-shell-sidebar-bg');
+        const sidebarCtrlBg = resolve(block, '--ui-shell-sidebar-control-bg');
+        const sidebarActiveBg = resolve(block, '--ui-shell-sidebar-active-bg');
 
-    assert.ok(topbarPrimaryRatio >= 4.5 && topbarPrimaryRatio < 14.5, 'topbar primary text stays AA compliant without harsh halation');
-    assert.ok(ratio(value(slate, '--ui-shell-topbar-fg-muted'), topbarBg) >= 4.5, 'topbar muted text >= 4.5:1');
-    assert.ok(ratio(value(slate, '--ui-shell-topbar-control-border'), topbarBg) >= 3.0, 'topbar control border >= 3:1');
-    assert.ok(ratio(value(slate, '--ui-shell-topbar-pill-active-fg'), value(slate, '--ui-shell-topbar-pill-active-bg')) >= 4.5, 'active lang pill >= 4.5:1');
-    assert.ok(ratio(value(slate, '--ui-shell-topbar-avatar-fg'), value(slate, '--ui-shell-topbar-avatar-bg')) >= 4.5, 'topbar avatar >= 4.5:1');
+        const topbarFg = resolve(block, '--ui-shell-topbar-fg');
+        const topbarMuted = resolve(block, '--ui-shell-topbar-fg-muted');
+        const sidebarFg = resolve(block, '--ui-shell-sidebar-fg');
+        const sidebarMuted = resolve(block, '--ui-shell-sidebar-fg-muted');
+        const sidebarActiveFg = resolve(block, '--ui-shell-sidebar-active-fg');
 
-    assert.ok(sidebarPrimaryRatio >= 4.5 && sidebarPrimaryRatio < 14.5, 'sidebar item text stays AA compliant without harsh halation');
-    assert.ok(ratio(value(slate, '--ui-shell-sidebar-fg-muted'), sidebarBg) >= 4.5, 'sidebar headings & disabled >= 4.5:1');
-    assert.ok(sidebarActiveRatio >= 4.5 && sidebarActiveRatio < 14.5, 'sidebar active text stays AA compliant without harsh halation');
-    assert.ok(ratio(value(slate, '--ui-shell-sidebar-control-border'), sidebarBg) >= 3.0, 'sidebar control border >= 3:1');
+        assert.notEqual(topbarFg, topbarMuted, `${modeName} topbar muted text must be distinct from primary text`);
+        assert.notEqual(sidebarFg, sidebarMuted, `${modeName} sidebar muted text must be distinct from primary text`);
 
-    assert.ok(ratio(value(slate, '--ui-shell-role-default-fg'), value(slate, '--ui-shell-role-default-bg')) >= 4.5, 'default role badge >= 4.5:1');
-    assert.ok(ratio(value(slate, '--ui-shell-role-purchasing-fg'), value(slate, '--ui-shell-role-purchasing-bg')) >= 4.5, 'purchasing role badge >= 4.5:1');
-    assert.ok(ratio(value(slate, '--ui-shell-role-qc-fg'), value(slate, '--ui-shell-role-qc-bg')) >= 4.5, 'qc role badge >= 4.5:1');
+        const topbarPrimaryRatio = ratio(topbarFg, topbarBg);
+        const sidebarPrimaryRatio = ratio(sidebarFg, sidebarBg);
+        const sidebarActiveRatio = ratio(sidebarActiveFg, sidebarActiveBg);
 
-    assert.ok(ratio(value(slate, '--ui-shell-accent'), sidebarActiveBg) >= 4.5, 'brand shell accent on active bg >= 4.5:1');
-    assert.ok(ratio(value(slate, '--ui-shell-focus'), topbarBg) >= 3.0, 'brand shell focus ring >= 3:1');
+        assert.ok(topbarPrimaryRatio >= 9.0 && topbarPrimaryRatio < 18.0, `${modeName} topbar primary text stays AA compliant without harsh pure-black halation`);
+        assert.ok(ratio(topbarMuted, topbarBg) >= 4.5, `${modeName} topbar muted text >= 4.5:1`);
+        assert.ok(ratio(topbarMuted, topbarCtrlBg) >= 4.5, `${modeName} topbar muted text on control bg >= 4.5:1`);
+        assert.ok(ratio(resolve(block, '--ui-shell-topbar-control-border'), topbarBg) >= 3.0, `${modeName} topbar control border >= 3:1`);
+        assert.ok(ratio(resolve(block, '--ui-shell-topbar-control-border'), topbarPillActiveBg) >= 3.0, `${modeName} topbar control border on active pill >= 3:1`);
+        assert.ok(ratio(resolve(block, '--ui-shell-topbar-pill-active-fg'), topbarPillActiveBg) >= 4.5, `${modeName} active lang pill >= 4.5:1`);
+        assert.ok(ratio(resolve(block, '--ui-shell-topbar-avatar-fg'), resolve(block, '--ui-shell-topbar-avatar-bg')) >= 4.5, `${modeName} topbar avatar >= 4.5:1`);
 
-    for (const accent of ['slate', 'indigo', 'teal', 'violet']) {
-        const accentBlock = body(`:root[data-shell="slate"][data-accent="${accent}"]`);
-        assert.ok(ratio(value(accentBlock, '--ui-shell-accent'), sidebarActiveBg) >= 4.5, `${accent} shell accent >= 4.5:1`);
-        assert.ok(ratio(value(accentBlock, '--ui-shell-focus'), topbarBg) >= 3.0, `${accent} shell focus >= 3:1`);
+        assert.ok(sidebarPrimaryRatio >= 9.0 && sidebarPrimaryRatio < 18.0, `${modeName} sidebar item text stays AA compliant without harsh pure-black halation`);
+        assert.ok(ratio(sidebarMuted, sidebarBg) >= 4.5, `${modeName} sidebar headings & disabled >= 4.5:1`);
+        assert.ok(ratio(sidebarMuted, sidebarCtrlBg) >= 4.5, `${modeName} sidebar search placeholder on control bg >= 4.5:1`);
+        assert.ok(sidebarActiveRatio >= 9.0 && sidebarActiveRatio < 18.0, `${modeName} sidebar active text stays AA compliant without harsh pure-black halation`);
+        assert.ok(ratio(resolve(block, '--ui-shell-sidebar-control-border'), sidebarBg) >= 3.0, `${modeName} sidebar control border >= 3:1`);
+        assert.ok(ratio(resolve(block, '--ui-shell-sidebar-control-border'), sidebarCtrlBg) >= 3.0, `${modeName} sidebar control border on control bg >= 3:1`);
+
+        for (const role of ['default', 'purchasing', 'qc']) {
+            assert.ok(ratio(resolve(block, `--ui-shell-role-${role}-fg`), resolve(block, `--ui-shell-role-${role}-bg`)) >= 4.5, `${modeName} ${role} role badge >= 4.5:1`);
+            assert.ok(ratio(resolve(block, `--ui-shell-role-${role}-border`), topbarBg) >= 3.0, `${modeName} ${role} role badge border >= 3:1`);
+        }
+
+        for (const tone of ['neutral', 'info', 'warning']) {
+            assert.ok(ratio(resolve(block, `--ui-shell-env-${tone}-fg`), resolve(block, `--ui-shell-env-${tone}-bg`)) >= 4.5, `${modeName} env ${tone} tag text >= 4.5:1`);
+            assert.ok(ratio(resolve(block, `--ui-shell-env-${tone}-border`), topbarBg) >= 3.0, `${modeName} env ${tone} tag border >= 3:1`);
+        }
+
+        const brandAccent = value(slate, '--ui-shell-accent');
+        const brandFocus = value(slate, '--ui-shell-focus');
+        assert.ok(ratio(brandAccent, sidebarActiveBg) >= 4.5, `${modeName} brand shell accent on active bg >= 4.5:1`);
+        assert.ok(ratio(brandAccent, blend(brandAccent, sidebarActiveBg, 0.16)) >= 4.5, `${modeName} brand portal switcher icon badge >= 4.5:1`);
+        assert.ok(ratio(brandFocus, topbarBg) >= 3.0, `${modeName} brand shell focus ring >= 3:1`);
+
+        for (const accent of ['slate', 'indigo', 'teal', 'violet']) {
+            const accentBlock = body(`:root[data-shell="slate"][data-accent="${accent}"]`);
+            const accentColor = value(accentBlock, '--ui-shell-accent');
+            assert.ok(ratio(accentColor, sidebarActiveBg) >= 4.5, `${modeName} ${accent} shell accent >= 4.5:1`);
+            assert.ok(ratio(accentColor, blend(accentColor, sidebarActiveBg, 0.16)) >= 4.5, `${modeName} ${accent} portal switcher icon badge >= 4.5:1`);
+            assert.ok(ratio(value(accentBlock, '--ui-shell-focus'), topbarBg) >= 3.0, `${modeName} ${accent} shell focus >= 3:1`);
+        }
     }
 });

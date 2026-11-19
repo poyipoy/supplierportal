@@ -14,11 +14,14 @@ use App\Models\ReferencePriceImport;
 use App\Models\ReferencePriceRule;
 use App\Services\FileSecurity\FileInspectionService;
 use App\Services\Pricing\MaterialReferencePriceService;
+use App\Services\Pricing\PurchaseHistoryPriceService;
 use App\Services\Pricing\ReferencePriceRuleImportService;
+use App\Support\Pricing\EvaluationContext;
 use App\Support\ServerTabsResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
@@ -46,14 +49,39 @@ class MaterialReferencePriceController extends Controller
             ->orderBy('dimension_min')
             ->get();
 
-        // Legacy Archive data
+        // Legacy Archive & Historical Benchmark filters
         $filters = $request->validate([
             'search' => ['nullable', 'string', 'max:100'],
             'shape' => ['nullable', Rule::in([PrItem::SHAPE_FLAT, PrItem::SHAPE_ROUND, PrItem::SHAPE_HOLLOW])],
             'currency' => ['nullable', Rule::in(ExchangeRate::CURRENCIES)],
             'status' => ['nullable', Rule::in(['active', 'void', 'all'])],
+            'po_status' => ['nullable', Rule::in(['completed', 'active', 'waiting_qc', 'overdue', 'all'])],
+            'history_page' => ['nullable', 'integer', 'min:1'],
         ]);
         $status = $filters['status'] ?? MaterialReferencePrice::STATUS_ACTIVE;
+        $poStatusFilter = $filters['po_status'] ?? 'completed';
+        $targetCurrency = $filters['currency'] ?? ExchangeRate::CURRENCY_IDR;
+        $historyPage = max(1, (int) ($filters['history_page'] ?? 1));
+        $historyPerPage = 25;
+
+        $historyService = app(PurchaseHistoryPriceService::class);
+        $historyResult = $historyService->lines([
+            'search' => $filters['search'] ?? null,
+            'shape' => $filters['shape'] ?? null,
+            'po_status' => $poStatusFilter,
+        ], $targetCurrency, EvaluationContext::current(), $historyPage, $historyPerPage);
+
+        $historicalLines = new LengthAwarePaginator(
+            $historyResult['rows'],
+            $historyResult['total'],
+            $historyPerPage,
+            $historyPage,
+            [
+                'path' => $request->url(),
+                'pageName' => 'history_page',
+                'query' => array_merge($request->query(), ['tab' => 'benchmark']),
+            ]
+        );
 
         $legacyPrices = MaterialReferencePrice::query()
             ->with(['materialMaster:id,material_code', 'creator:id,name', 'voider:id,name'])
@@ -84,7 +112,10 @@ class MaterialReferencePriceController extends Controller
             'rules' => $rules,
             'prices' => $legacyPrices,
             'legacyPrices' => $legacyPrices,
-            'filters' => [...$filters, 'status' => $status],
+            'historicalLines' => $historicalLines,
+            'poStatusFilter' => $poStatusFilter,
+            'targetCurrency' => $targetCurrency,
+            'filters' => [...$filters, 'status' => $status, 'po_status' => $poStatusFilter],
             'shapes' => [PrItem::SHAPE_FLAT, PrItem::SHAPE_ROUND, PrItem::SHAPE_HOLLOW],
             'currencies' => ExchangeRate::CURRENCIES,
             'materialOptions' => $materialOptions,

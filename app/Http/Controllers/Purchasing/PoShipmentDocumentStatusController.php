@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Purchasing\UpdatePoShipmentDocumentStatusRequest;
 use App\Models\PurchaseOrder;
 use App\Services\PoShipmentDocumentStatusService;
+use App\Support\Procurement\ProcurementFeatures;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -18,6 +19,10 @@ class PoShipmentDocumentStatusController extends Controller
         string $doc_type,
         PoShipmentDocumentStatusService $service,
     ): JsonResponse {
+        if (ProcurementFeatures::poDocumentStatusReadOnly()) {
+            abort(403, __('documents.sync.po_read_only_use_shipment'));
+        }
+
         $po = PurchaseOrder::findOrFail($id);
 
         try {
@@ -41,6 +46,10 @@ class PoShipmentDocumentStatusController extends Controller
         $id,
         PoShipmentDocumentStatusService $service,
     ): JsonResponse {
+        if (ProcurementFeatures::poDocumentStatusReadOnly()) {
+            abort(403, __('documents.sync.po_read_only_use_shipment'));
+        }
+
         $po = PurchaseOrder::findOrFail($id);
 
         $validated = $request->validate([

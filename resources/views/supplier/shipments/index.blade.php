@@ -27,10 +27,23 @@
         :description="__('shipments.copy.create_and_manage_physical_consignments_consolidate_deliveries_across_multiple_pos_and_track_shippin')"
     >
         <x-slot:actions>
-            <x-ui.button :href="route('supplier.shipments.create')" variant="primary" size="sm">
-                <x-slot:leading><x-ui.icon name="plus" size="sm" /></x-slot:leading>
-                <span>{{ __('shipments.copy.new_shipment') }}</span>
-            </x-ui.button>
+            <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-2">
+                <x-export.advanced-modal
+                    export-key="supplier.shipments"
+                    :action="route('supplier.export.shipments')"
+                    :filter-selectors="['search'=>'#filter_search','status'=>'#filter_status','start_date'=>'#supplierShipmentDateFrom','end_date'=>'#supplierShipmentDateTo']"
+                    table="#supplierShipmentTable"
+                    trigger-id="exportSupplierShipmentsBtn"
+                />
+                <x-ui.button :href="route('supplier.goods-locations.index')" variant="outline" size="sm">
+                    <x-slot:leading><x-ui.icon name="map-pin" size="sm" /></x-slot:leading>
+                    <span>{{ __('shipments.preshipment.manage_locations') }}</span>
+                </x-ui.button>
+                <x-ui.button :href="route('supplier.shipments.create')" variant="primary" size="sm">
+                    <x-slot:leading><x-ui.icon name="plus" size="sm" /></x-slot:leading>
+                    <span>{{ __('shipments.copy.new_shipment') }}</span>
+                </x-ui.button>
+            </div>
         </x-slot:actions>
     </x-ui.page-header>
 
@@ -93,19 +106,21 @@
     </x-ui.toolbar>
 
     {{-- 3. Balanced Data Table --}}
-    <x-ui.data-table density="compact">
+    <x-ui.data-table density="compact" :sticky="true" :scroll-label="__('shipments.copy.my_shipments_deliveries')">
         <table class="table table-hover align-middle mb-0 tw:text-ui-sm w-100" id="supplierShipmentTable">
             <thead class="table-light">
                 <tr>
                     <th scope="col">{{ __('shipments.copy.shipment_no') }}</th>
                     <th scope="col">{{ __('shipments.copy.po_references') }}</th>
+                    <th scope="col">{{ __('shipments.copy.supplier_reference') }}</th>
                     <th scope="col" class="text-center">{{ __('shipments.copy.items') }}</th>
                     <th scope="col" class="text-center">{{ __('shipments.copy.total_qty') }}</th>
                     <th scope="col" class="text-center">{{ __('shipments.copy.actual_weight') }}</th>
                     <th scope="col">{{ __('shipments.copy.shipment_date') }}</th>
                     <th scope="col">{{ __('shipments.copy.est_arrival') }}</th>
+                    <th scope="col">{{ __('shipments.copy.missing_documents') }}</th>
                     <th scope="col" class="text-center">{{ __('shipments.copy.status') }}</th>
-                    <th scope="col" class="text-end" style="width: 140px;">{{ __('shipments.copy.action') }}</th>
+                    <th scope="col" class="text-end ui-sticky-col-right" style="width: 140px;">{{ __('shipments.copy.action') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -115,6 +130,9 @@
                         $totalQty = (int) $shp->items->sum('shipped_qty');
                         $totalKg = (float) $shp->items->sum('actual_weight_kg');
                         $isOwner = (int) $shp->supplier_id === (int) auth()->id();
+                        $invoiceDoc = $shp->documents->firstWhere('doc_type', \App\Models\ShipmentDocument::DOC_TYPE_INVOICE);
+                        $invoiceMissing = \App\Support\Procurement\ProcurementFeatures::requireCommercialInvoiceForShipment()
+                            && ($invoiceDoc === null || $invoiceDoc->latestAttachment === null);
                     @endphp
                     <tr>
                         <td class="fw-bold tw:text-on-surface">
@@ -131,25 +149,27 @@
                                 @endforeach
                             @endif
                         </td>
+                        <td class="tw:text-on-surface-variant">{{ $shp->supplier_reference ?: '-' }}</td>
                         <td class="text-center ui-tabular-nums">{{ $regionalFormatter->number((string) $shp->items->count(), 'plain') }}</td>
                         <td class="text-center fw-bold text-primary ui-tabular-nums">{{ $regionalFormatter->number(number_format($totalQty), 'international') }} pcs</td>
                         <td class="text-center ui-tabular-nums tw:text-on-surface-variant">{{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($totalKg), 'decimal') }} Kg</td>
                         <td class="tw:text-on-surface-variant ui-tabular-nums">{{ $shp->shipment_date ? $regionalFormatter->date($shp->shipment_date, 'human') : '-' }}</td>
                         <td class="tw:text-on-surface-variant ui-tabular-nums">{{ $shp->estimated_arrival_date ? $regionalFormatter->date($shp->estimated_arrival_date, 'human') : '-' }}</td>
+                        <td>{!! \App\Support\StatusHelper::shipmentMissingDocumentsHtml($shp) !!}</td>
                         <td class="text-center">
                             {!! \App\Support\StatusHelper::badge(\App\Support\StatusHelper::shipmentBadge($shp->status), \App\Support\StatusHelper::shipmentLabel($shp->status)) !!}
                         </td>
-                        <td class="text-end">
+                        <td class="text-end ui-sticky-col-right">
                             @if($isOwner && $shp->status === 'draft')
                                 <div class="d-inline-flex align-items-center justify-content-end gap-1">
                                     <form action="{{ route('supplier.shipments.submit', $shp) }}" method="POST" class="draft-submit-form tw:m-0">
                                         @csrf
-                                        <button type="button" class="ui-data-action ui-data-action--primary ui-focus-ring btn-submit-draft" aria-label="{{ __('shipments.a11y.submit_draft', ['shipment' => $shp->shipment_number]) }}">
+                                        <button type="button" class="ui-data-action ui-data-action--primary ui-focus-ring btn-submit-draft" data-invoice-missing="{{ $invoiceMissing ? '1' : '0' }}" aria-label="{{ __('shipments.a11y.submit_draft', ['shipment' => $shp->shipment_number]) }}">
                                             {{ __('shipments.copy.submit') }}
                                         </button>
                                     </form>
                                     <div class="dropdown">
-                                        <button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="{{ __('shipments.a11y.more_actions', ['shipment' => $shp->shipment_number]) }}">
+                                        <button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-bs-toggle="dropdown" data-bs-popper-config='{"strategy":"fixed"}' aria-expanded="false" aria-label="{{ __('shipments.a11y.more_actions', ['shipment' => $shp->shipment_number]) }}">
                                             {{ __('shipments.copy.more') }}
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end">
@@ -175,7 +195,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="9" class="text-center py-4 tw:text-on-surface-variant">{{ __('shipments.js.empty_supplier_shipments', ['action' => __('shipments.copy.new_shipment')]) }}</td>
+                        <td colspan="11" class="text-center py-4 tw:text-on-surface-variant">{{ __('shipments.js.empty_supplier_shipments', ['action' => __('shipments.copy.new_shipment')]) }}</td>
                     </tr>
                 @endforelse
             </tbody>
@@ -202,13 +222,15 @@
             columns: [
                 { data: 'shipment_number_display', name: 'shipment_number', className: 'fw-bold tw:text-on-surface' },
                 { data: 'po_references', name: 'po_references', orderable: false },
+                { data: 'supplier_reference_display', name: 'supplier_reference' },
                 { data: 'items_count', name: 'items_count', className: 'text-center', orderable: false, searchable: false },
                 { data: 'total_qty', name: 'total_qty', className: 'text-center', orderable: false, searchable: false },
                 { data: 'actual_weight', name: 'actual_weight', className: 'text-center', orderable: false, searchable: false },
                 { data: 'shipment_date_display', name: 'shipment_date', className: 'tw:text-on-surface-variant' },
                 { data: 'estimated_arrival', name: 'estimated_arrival_date', className: 'tw:text-on-surface-variant' },
+                { data: 'missing_documents', name: 'missing_documents', orderable: false, searchable: false },
                 { data: 'status_badge', name: 'status', className: 'text-center' },
-                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
+                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end ui-sticky-col-right' }
             ],
 
             order: []
@@ -334,6 +356,16 @@
         let draftSubmitConfirmationOpen = false;
         $(document).on('click', '.btn-submit-draft', function() {
             const $button = $(this);
+            if ($button.attr('data-invoice-missing') === '1') {
+                const invoiceTitle = @js(__('shipments.copy.commercial_invoice_required_title'));
+                const invoiceText = @js(__('shipments.copy.commercial_invoice_required_before_submit'));
+                if (window.AdasiAlert) {
+                    AdasiAlert.warning({ title: invoiceTitle, text: invoiceText });
+                } else {
+                    alert(`${invoiceTitle}\n\n${invoiceText}`);
+                }
+                return;
+            }
             if (draftSubmitConfirmationOpen || $button.data('submitting')) {
                 return;
             }

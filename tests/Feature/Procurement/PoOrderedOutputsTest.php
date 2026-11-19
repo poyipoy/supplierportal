@@ -5,6 +5,8 @@ namespace Tests\Feature\Procurement;
 use App\Exports\Advanced\Definitions\PurchaseOrderDefinition;
 use App\Exports\PurchaseOrderDetailExport;
 use App\Models\PurchaseOrder;
+use App\Services\PrItemAwardService;
+use App\Services\PurchaseOrderGenerationService;
 use App\Support\PurchaseOrderPdf;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -96,6 +98,18 @@ class PoOrderedOutputsTest extends TestCase
         $pr->forceFill(['port_of_discharge' => $port, 'incoterm' => $incoterm])->save();
         $quotation = $this->createQuotation($pr, [['available_qty' => 15, 'offered_weight_per_unit' => 3.2]]);
 
+        if ($port === null) {
+            $award = app(PrItemAwardService::class)
+                ->awardItem($pr->items[0], $quotation->items[0], $this->purchasing);
+            $award->forceFill(['ordered_qty' => 12])->save();
+
+            return app(PurchaseOrderGenerationService::class)
+                ->generateFromAwards([$award->id], $this->purchasing, [
+                    'estimated_arrival' => now()->addDays(14)->toDateString(),
+                ])
+                ->sole();
+        }
+
         $this->actingAs($this->purchasing)
             ->post(route('purchasing.comparison.save-awards'), [
                 'pr_id' => $pr->getRouteKey(),
@@ -103,6 +117,8 @@ class PoOrderedOutputsTest extends TestCase
                 'order_qty' => [$pr->items[0]->id => 12],
                 'action' => 'generate_pos',
                 'estimated_arrival' => now()->addDays(14)->toDateString(),
+                'port_of_discharge' => $port,
+                'confirm_port_of_discharge' => '1',
             ])
             ->assertSessionHasNoErrors();
 

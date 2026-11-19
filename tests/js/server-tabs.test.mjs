@@ -830,3 +830,83 @@ test('MMT row click, Enter/Space delegation, error retry, and clearMmtSelection 
         restoreNetwork();
     }
 });
+
+test('sanitizeServerFragment preserves valid HTML application/json scripts, strips unsafe attributes, escapes angle brackets, and drops foreign-content or executable scripts', async () => {
+    const calls = stubNetwork();
+    const realDOMParser = globalThis.DOMParser;
+
+    function makeNode(tag, attrs = {}, text = '', namespaceURI = 'http://www.w3.org/1999/xhtml', inForeign = false) {
+        const attrMap = new Map(Object.entries(attrs));
+        const node = {
+            tagName: tag.toUpperCase(),
+            namespaceURI,
+            textContent: text,
+            removed: false,
+            get attributes() {
+                return Array.from(attrMap.entries()).map(([name, value]) => ({ name, value }));
+            },
+            getAttribute: (name) => attrMap.get(name) ?? null,
+            removeAttribute: (name) => attrMap.delete(name),
+            closest: (sel) => (inForeign && sel.includes('svg') ? {} : null),
+            remove() { this.removed = true; },
+            serialize() {
+                if (this.removed) return '';
+                const a = Array.from(attrMap.entries()).map(([k, v]) => `${k}="${v}"`).join(' ');
+                return `<${tag}${a ? ' ' + a : ''}>${this.textContent}</${tag}>`;
+            },
+        };
+        return node;
+    }
+
+    globalThis.DOMParser = class {
+        parseFromString() {
+            const validJsonScript = makeNode(
+                'script',
+                { id: 'interSupplierChartPayload', type: 'application/json', 'data-json-config': '1', onload: 'evil()', onerror: 'evil2()' },
+                '{"label":"</script><img src=x onerror=alert(1)>","total":500}'
+            );
+            const invalidJsonScript = makeNode('script', { type: 'application/json' }, '{not-valid-json');
+            const executableScript = makeNode('script', { type: 'text/javascript' }, 'evilExec()');
+            const svgForeignJsonScript = makeNode(
+                'script',
+                { type: 'application/json' },
+                '{"x":"</script><img src=x onerror=evilSvg()>"}',
+                'http://www.w3.org/2000/svg',
+                true
+            );
+            const allScripts = [validJsonScript, invalidJsonScript, executableScript, svgForeignJsonScript];
+
+            return {
+                querySelectorAll: (sel) => {
+                    if (sel.startsWith('script')) return allScripts.filter((n) => !n.removed);
+                    return [];
+                },
+                body: {
+                    querySelectorAll: () => [],
+                    get innerHTML() {
+                        return '<div>chart</div>' + allScripts.map((n) => n.serialize()).join('');
+                    },
+                },
+            };
+        }
+    };
+
+    try {
+        const page = setup({ cacheTtlMs: 0 });
+        page.click(makeTabLink('/page?tab=chart', 'chart'));
+        calls[0].respond({ html: '<div>raw</div>', tab: 'chart', url: '/page?tab=chart' });
+        await settle();
+
+        const html = page.content.innerHTML;
+        assert.equal(html.includes('id="interSupplierChartPayload"'), true, 'valid JSON config script is preserved');
+        assert.equal(html.includes('onload='), false, 'event handler attributes on JSON script are stripped');
+        assert.equal(html.includes('onerror="evil2()"'), false, 'onerror attribute on JSON script is stripped');
+        assert.equal(html.includes('</script><img'), false, 'raw angle brackets inside JSON textContent are escaped to \\u003c');
+        assert.equal(html.includes('\\u003c/script\\u003e'), true, 'closing script sequence is safely unicode-escaped');
+        assert.equal(html.includes('evilExec()'), false, 'executable script is removed');
+        assert.equal(html.includes('evilSvg()'), false, 'SVG foreign JSON script is removed');
+    } finally {
+        if (realDOMParser) globalThis.DOMParser = realDOMParser; else delete globalThis.DOMParser;
+        restoreNetwork();
+    }
+});

@@ -28,7 +28,7 @@ final class ProcurementFeatures
     }
 
     /**
-     * Mission 05 switch: shipment-level MTC (required to submit) and the
+     * Mission 05 switch: shipment-level MTC (optional) and the
      * retirement of new quotation MTC uploads, enabled or disabled together.
      */
     public static function shipmentMtcEnabled(): bool
@@ -49,6 +49,26 @@ final class ProcurementFeatures
     public static function requirePoAcknowledgementBeforeShipment(): bool
     {
         return (bool) config('procurement.require_po_acknowledgement_before_shipment', false);
+    }
+
+    public static function requireSalesContractBeforeShipment(): bool
+    {
+        return (bool) config('procurement.require_sales_contract_before_shipment', true);
+    }
+
+    public static function requireCommercialInvoiceForShipment(): bool
+    {
+        return (bool) config('procurement.require_commercial_invoice_for_shipment', true);
+    }
+
+    public static function requirePreshipmentForShipment(): bool
+    {
+        return (bool) config('procurement.require_preshipment_for_shipment', true);
+    }
+
+    public static function poDocumentStatusReadOnly(): bool
+    {
+        return (bool) config('procurement.po_document_status_read_only', true);
     }
 
     /**

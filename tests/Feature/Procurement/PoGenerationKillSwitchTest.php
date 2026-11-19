@@ -70,6 +70,8 @@ class PoGenerationKillSwitchTest extends TestCase
                 'pr_id' => $pr->getRouteKey(),
                 'awards' => [$pr->items[0]->id => $quotation->items[0]->id],
                 'action' => 'generate_pos',
+                'port_of_discharge' => 'TANJUNG_PRIOK',
+                'confirm_port_of_discharge' => '1',
             ])
             ->assertRedirect()
             ->assertSessionHas('error', __('procurement.po_generation.disabled'));
@@ -110,7 +112,10 @@ class PoGenerationKillSwitchTest extends TestCase
         config(['procurement.po_generation_enabled' => false]);
 
         $this->actingAs($this->purchasing)
-            ->post(route('purchasing.quotations.generate-po', $quotation))
+            ->post(route('purchasing.quotations.generate-po', $quotation), [
+                'port_of_discharge' => 'TANJUNG_PRIOK',
+                'confirm_port_of_discharge' => '1',
+            ])
             ->assertRedirect()
             ->assertSessionHas('error', __('procurement.po_generation.disabled'));
 
@@ -136,6 +141,8 @@ class PoGenerationKillSwitchTest extends TestCase
             ->post(route('purchasing.purchase-orders.consolidate-awards.store'), [
                 'award_ids' => $awards->pluck('id')->all(),
                 'estimated_arrival' => now()->addDays(14)->toDateString(),
+                'port_of_discharge' => 'TANJUNG_PRIOK',
+                'confirm_port_of_discharge' => '1',
             ])
             ->assertRedirect()
             ->assertSessionHasErrors(['award_ids' => __('procurement.po_generation.disabled')]);

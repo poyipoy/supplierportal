@@ -45,6 +45,7 @@ class AdminMaintenanceManagementTest extends TestCase
             ->assertOk()
             ->assertSee(__('maintenance.scopes.import'))
             ->assertSee(__('maintenance.scopes.local'))
+            ->assertSee(__('maintenance.scopes.staff'))
             ->assertSee('name="modules[]"', false)
             ->assertSee('value="schedule"', false);
 
@@ -294,8 +295,12 @@ class AdminMaintenanceManagementTest extends TestCase
             ->assertDontSee('type="time"', false)
             ->assertSee('data-maintenance-module-group="import"', false)
             ->assertSee('data-maintenance-module-group="local"', false)
+            ->assertSee('data-maintenance-module-group="staff"', false)
+            ->assertSee(__('maintenance.scope_help.staff'))
             ->assertSee(__('maintenance.form.selected_count', ['count' => 0, 'total' => 10]))
-            ->assertSee('for="maintenanceModule-import-quotations"', false);
+            ->assertSee(__('maintenance.form.selected_count', ['count' => 0, 'total' => 12]))
+            ->assertSee('for="maintenanceModule-import-quotations"', false)
+            ->assertSee('for="maintenanceModule-staff-qc_inspections"', false);
         $this->assertStringNotContainsString('class="form-check ', $response->getContent());
     }
 

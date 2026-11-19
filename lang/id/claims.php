@@ -37,7 +37,7 @@ return [
         'material_claim_details' => 'Detail Klaim Material',
         'material_claims' => 'Klaim Material',
         'pending' => 'Menunggu',
-        'po_number' => 'Nomor PO',
+        'po_number' => 'Purchase Order',
         'po_status' => 'Status PO',
         'problem_description' => 'Deskripsi Masalah',
         'purchasing' => 'Pengadaan',

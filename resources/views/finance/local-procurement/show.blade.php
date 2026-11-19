@@ -12,7 +12,7 @@
 @endphp
 
 @section('content')
-<div class="tw:grid tw:gap-6 tw:pb-16">
+<div class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:min-w-0 tw:gap-6 tw:pb-16">
     {{-- Header --}}
     <x-ui.page-header
         :title="'PO ' . $purchaseOrder->po_number"

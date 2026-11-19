@@ -34,7 +34,7 @@
         @endif
 
         <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-2.5">
-            <h1 class="tw:m-0 tw:text-lg tw:shell:text-xl tw:font-bold tw:tracking-tight tw:text-on-surface">{{ $title }}</h1>
+            <h1 class="tw:m-0 tw:text-xl tw:shell:text-2xl tw:font-bold tw:tracking-tight tw:text-on-surface">{{ $title }}</h1>
             @isset($status)
                 <div class="tw:inline-flex tw:items-center">{{ $status }}</div>
             @endisset

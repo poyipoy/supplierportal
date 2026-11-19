@@ -410,4 +410,14 @@ BLADE);
             $messagesMulti['invoice.*.max']
         );
     }
+
+    public function test_data_table_loading_state_renders_structured_skeleton(): void
+    {
+        $html = Blade::render('<x-ui.data-table :loading="true" title="Purchase Orders" />');
+
+        $this->assertStringContainsString('ui-data-table__skeleton', $html);
+        $this->assertStringContainsString('role="status"', $html);
+        $this->assertStringContainsString('ui-skeleton', $html);
+        $this->assertNoCompilerLeakage($html);
+    }
 }

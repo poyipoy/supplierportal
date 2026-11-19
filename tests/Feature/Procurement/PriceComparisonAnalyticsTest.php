@@ -62,7 +62,7 @@ class PriceComparisonAnalyticsTest extends TestCase
             ->assertOk()
             ->assertSee('data-price-indicators', false)
             ->assertSee('IDR 32,000')   // best current offer: USD 2 x 16,000, grouped per user preference
-            ->assertSee('USD 2 · ', false) // the original value stays visible
+            ->assertSee('USD 2', false) // the original value stays visible
             ->assertSee('data-rate-unavailable="JPY"', false)
             ->assertSee(__('purchasing.comparison_analytics.unavailable_note', ['currencies' => 'JPY']));
 

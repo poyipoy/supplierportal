@@ -5,6 +5,7 @@ namespace App\Http\Requests\Purchasing;
 use App\Models\ShipmentDocument;
 use App\Services\PoShipmentDocumentStatusService;
 use App\Support\HashidCodec;
+use App\Support\Procurement\ProcurementFeatures;
 use Closure;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -13,7 +14,9 @@ class UpdatePoShipmentDocumentStatusRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user() !== null && $this->user()->role === 'purchasing';
+        return ! ProcurementFeatures::poDocumentStatusReadOnly()
+            && $this->user() !== null
+            && $this->user()->role === 'purchasing';
     }
 
     /**

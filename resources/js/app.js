@@ -15,6 +15,7 @@ import { bootEmbedReadiness } from './embed-readiness';
 import './asset-protection';
 import './server-tabs';
 import './smart-panel';
+import { navigateInWorkspaceOrTop } from './workspace-navigation';
 import { adasiFileUploadComponent } from './file-upload';
 import { searchableSelect } from './searchable-select';
 
@@ -37,6 +38,8 @@ const pageComponents = [
         .then((module) => Alpine.data('supplierAuditForm', module.supplierAuditForm))],
     ['[x-data^="paymentVoucherForm"]', () => import('./payment-voucher-form')
         .then((module) => Alpine.data('paymentVoucherForm', module.paymentVoucherForm))],
+    ['[x-data^="psiForm"]', () => import('./psi-form')
+        .then((module) => Alpine.data('psiForm', module.psiForm))],
 ].filter(([selector]) => hasMarker(selector)).map(([, load]) => load());
 
 // Calendars initialize asynchronously (the engine itself is lazy), so this module loads on demand.
@@ -312,20 +315,38 @@ const updateToast = (id, rawChanges = {}) => {
     return true;
 };
 
+let workspaceShellBootPromise = null;
+
+const ensureWorkspaceShell = () => {
+    if (window.AdasiWorkspaceShell) {
+        return Promise.resolve(window.AdasiWorkspaceShell);
+    }
+    if (document.documentElement.dataset.workspaceShell !== 'true') {
+        return Promise.resolve(null);
+    }
+    if (!workspaceShellBootPromise) {
+        workspaceShellBootPromise = import('./workspace-shell')
+            .then((module) => module.bootWorkspaceShell())
+            .catch(() => null);
+    }
+    return workspaceShellBootPromise;
+};
+
+window.AdasiNavigateUrl = (url) => navigateInWorkspaceOrTop(url, {
+    win: window,
+    ensureShell: ensureWorkspaceShell,
+});
+
 const runToastAction = (id, action) => {
     if (!action || action.disabled) return;
     try {
         if (action.onClick) {
             action.onClick({ id, dismiss: () => dismissToast(id, 'action') });
         } else if (action.url) {
-            const target = new URL(action.url, window.location.href);
-            if (['http:', 'https:'].includes(target.protocol)) {
-                if (window.AdasiWorkspaceShell && target.origin === window.location.origin) {
-                    window.AdasiWorkspaceShell.openUrl(target.href);
-                } else {
-                    window.location.assign(target.href);
-                }
-            }
+            void navigateInWorkspaceOrTop(action.url, {
+                win: window,
+                ensureShell: ensureWorkspaceShell,
+            });
         }
     } finally {
         if (action.dismiss) dismissToast(id, 'action');
@@ -877,8 +898,7 @@ if (document.readyState === 'loading') {
 // Optional imports and network requests do not gate core readiness.
 const acknowledgeAuthSplashCore = () => {
     if (document.documentElement.dataset.workspaceShell === 'true') {
-        import('./workspace-shell')
-            .then((module) => module.bootWorkspaceShell())
+        ensureWorkspaceShell()
             .then((shell) => shell?.whenInitialFrameReady?.())
             .catch(() => null)
             .finally(() => {

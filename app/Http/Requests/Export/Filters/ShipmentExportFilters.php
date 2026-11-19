@@ -11,9 +11,12 @@ use Illuminate\Validation\ValidationException;
 
 final class ShipmentExportFilters
 {
-    public static function validated(Request $request): array
+    public static function validated(Request $request, bool $supplier = false): array
     {
         $data = $request->all();
+        if ($supplier) {
+            unset($data['supplier_id']);
+        }
         if (is_array($data['search'] ?? null)) {
             $data['search'] = $data['search']['value'] ?? null;
         }
@@ -56,14 +59,25 @@ final class ShipmentExportFilters
             $query->where('shipment_number', 'like', '%'.trim($filters['shipment_number']).'%');
         }
         if ($search = trim((string) ($filters['search'] ?? ''))) {
-            $query->where(fn ($q) => $q->where('shipment_number', 'like', '%'.$search.'%')->orWhere('notes', 'like', '%'.$search.'%')->orWhereHas('supplier', fn ($q) => $q->where('name', 'like', '%'.$search.'%'))->orWhereHas('items.purchaseOrder', fn ($q) => $q->where('po_number', 'like', '%'.$search.'%'))->orWhereHas('items.quotationItem.prItem', fn ($q) => $q->where('material_name', 'like', '%'.$search.'%')));
+            $query->where(fn ($q) => $q->where('shipment_number', 'like', '%'.$search.'%')
+                ->orWhere('supplier_reference', 'like', '%'.$search.'%')
+                ->orWhere('invoice_number', 'like', '%'.$search.'%')
+                ->orWhere('notes', 'like', '%'.$search.'%')
+                ->orWhereHas('supplier', fn ($q) => $q->where('name', 'like', '%'.$search.'%'))
+                ->orWhereHas('items.purchaseOrder', fn ($q) => $q->where('po_number', 'like', '%'.$search.'%'))
+                ->orWhereHas('items.quotationItem.prItem', fn ($q) => $q->where('material_name', 'like', '%'.$search.'%')));
         }
     }
 
-    public static function schema(): array
+    public static function schema(bool $supplier = false): array
     {
+        $schema = [];
+        if (! $supplier) {
+            $schema[] = ['name' => 'supplier_id', 'type' => 'supplier'];
+        }
+
         return [
-            ['name' => 'supplier_id', 'type' => 'supplier'],
+            ...$schema,
             ['name' => 'status', 'type' => 'select', 'domain' => 'shipment', 'options' => ['draft', 'submitted', 'arrived', 'cancelled']],
             [
                 'name' => 'search',

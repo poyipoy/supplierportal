@@ -55,7 +55,7 @@ return [
     'material_progress' => [
         'awaiting_confirmation' => 'Menunggu Konfirmasi',
         'order_confirmed' => 'Pesanan Dikonfirmasi',
-        'material_preparation' => 'Persiapan Material',
+        'material_preparation' => 'Siapkan Material',
         'on_production' => 'Dalam Produksi',
         'ready_to_ship' => 'Siap Dikirim',
         'arrived' => 'Telah Tiba',

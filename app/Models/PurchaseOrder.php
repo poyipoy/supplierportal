@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Casts\PurchaseOrderStatusCast;
 use App\Enums\PoAcknowledgementStatus;
+use App\Enums\PoSalesContractStatus;
 use App\Enums\PurchaseOrderStatus;
 use App\Services\Procurement\PurchaseOrderDeliveryMetricsService;
 use App\Support\BusinessTime;
@@ -48,6 +49,13 @@ class PurchaseOrder extends Model
         'actual_arrival',
         'notes',
         'acknowledgement_notes',
+        'sales_contract_status',
+        'supplier_sales_contract_attachment_id',
+        'supplier_sales_contract_uploaded_at',
+        'purchasing_sales_contract_attachment_id',
+        'purchasing_sales_contract_uploaded_at',
+        'purchasing_sales_contract_uploaded_by',
+        'sales_contract_notes',
         'port_of_discharge',
         'incoterm',
     ];
@@ -58,6 +66,8 @@ class PurchaseOrder extends Model
             'status' => PurchaseOrderStatusCast::class,
             'acknowledgement_status' => PoAcknowledgementStatus::class,
             'acknowledged_at' => 'datetime',
+            'supplier_sales_contract_uploaded_at' => 'datetime',
+            'purchasing_sales_contract_uploaded_at' => 'datetime',
             'estimated_arrival' => 'date',
             'supplier_promised_date' => 'date',
             'actual_arrival' => 'date',
@@ -74,6 +84,25 @@ class PurchaseOrder extends Model
         return PoAcknowledgementStatus::tryFromOrDefault($this->acknowledgement_status);
     }
 
+    public function salesContractStatusEnum(): ?PoSalesContractStatus
+    {
+        return PoSalesContractStatus::tryFromOrNull($this->sales_contract_status);
+    }
+
+    public function requiresSalesContractHandshake(): bool
+    {
+        return $this->salesContractStatusEnum() !== null;
+    }
+
+    public function hasSignedSalesContract(): bool
+    {
+        if (! $this->requiresSalesContractHandshake()) {
+            return true;
+        }
+
+        return $this->salesContractStatusEnum() === PoSalesContractStatus::PURCHASING_SIGNED;
+    }
+
     public function isAcknowledged(): bool
     {
         return $this->acknowledgementStatusEnum()->isAcknowledged();
@@ -82,7 +111,23 @@ class PurchaseOrder extends Model
     public function canAcknowledge(): bool
     {
         return in_array((string) $this->status, ['active', 'overdue'], true)
-            && $this->acknowledgementStatusEnum() === PoAcknowledgementStatus::PENDING;
+            && $this->acknowledgementStatusEnum() === PoAcknowledgementStatus::PENDING
+            && $this->hasSignedSalesContract();
+    }
+
+    public function supplierSalesContractAttachment(): BelongsTo
+    {
+        return $this->belongsTo(Attachment::class, 'supplier_sales_contract_attachment_id');
+    }
+
+    public function purchasingSalesContractAttachment(): BelongsTo
+    {
+        return $this->belongsTo(Attachment::class, 'purchasing_sales_contract_attachment_id');
+    }
+
+    public function purchasingSalesContractUploader(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'purchasing_sales_contract_uploaded_by');
     }
 
     public function acknowledgedBy(): BelongsTo
@@ -426,6 +471,26 @@ class PurchaseOrder extends Model
     public function shipments(): Collection
     {
         return $this->shipmentItems->map(fn ($item) => $item->shipment)->filter()->unique('id')->values();
+    }
+
+    /**
+     * Determine whether this PO has active or arrived shipments.
+     */
+    public function hasActiveShipments(): bool
+    {
+        if (array_key_exists('has_active_shipments', $this->attributes)) {
+            return (bool) $this->attributes['has_active_shipments'];
+        }
+
+        if ($this->relationLoaded('shipmentItems')) {
+            return $this->shipmentItems->contains(
+                fn ($item) => in_array($item->shipment?->status, [Shipment::STATUS_SUBMITTED, Shipment::STATUS_ARRIVED], true)
+            );
+        }
+
+        return $this->shipmentItems()
+            ->whereHas('shipment', fn ($query) => $query->whereIn('status', [Shipment::STATUS_SUBMITTED, Shipment::STATUS_ARRIVED]))
+            ->exists();
     }
 
     /**

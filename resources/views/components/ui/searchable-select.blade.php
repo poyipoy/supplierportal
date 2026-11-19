@@ -72,7 +72,8 @@
     x-on:adasi:dismiss-overlays.window="if (open) close(false)"
     @keydown.escape.stop="close(true)"
     @focusout="if ($event.relatedTarget && !$el.contains($event.relatedTarget)) close(false)"
-    x-on:set-select-value.window="if ($event.detail?.name === '{{ $name }}' || $event.detail?.id === '{{ $resolvedId }}') { selectedValue = String($event.detail.value ?? ''); syncNativeSelect(selectedValue); }"
+    x-on:set-select-value.window="if ($event.detail?.name === '{{ $name }}' || $event.detail?.id === '{{ $resolvedId }}') { const nextVal = String($event.detail.value ?? ''); selectedValue = nextVal; syncNativeSelect(nextVal, !$event.detail?.silent); }"
+    x-on:set-select-disabled.window="if ($event.detail?.name === '{{ $name }}' || $event.detail?.id === '{{ $resolvedId }}') { isDisabled = Boolean($event.detail.disabled); if (isDisabled) close(false); }"
 >
     @if($label)
         {{-- The native select is visually hidden; clicking the label moves focus to the combobox trigger. --}}
@@ -88,7 +89,7 @@
         name="{{ $name }}"
         x-ref="nativeSelect"
         @required($required)
-        @disabled($disabled)
+        :disabled="isDisabled"
         @if($describedBy) aria-describedby="{{ $describedBy }}" @endif
         @if($message) aria-invalid="true" @endif
         x-on:invalid.capture="open = true; $nextTick(() => $refs.searchInput?.focus())"
@@ -104,7 +105,8 @@
         @endforeach
     </select>
 
-    {{-- Trigger Button --}}
+    {{-- Trigger Button + Popover Anchor --}}
+    <div class="tw:relative tw:min-w-0">
     <div class="tw:relative tw:flex tw:items-center tw:min-w-0">
         <button
             type="button"
@@ -116,19 +118,19 @@
             @click="toggle()"
             @keydown.arrow-down.prevent="toggle()"
             @keydown.enter.prevent="toggle()"
-            @disabled($disabled)
+            :disabled="isDisabled"
             role="combobox"
             aria-haspopup="listbox"
             :aria-expanded="open"
             :aria-controls="'{{ $resolvedId }}-listbox'"
-            class="ui-motion tw:flex tw:min-h-[var(--ui-control-height-md)] tw:w-full tw:min-w-0 tw:items-center tw:justify-between tw:gap-2 tw:rounded-ui-sm tw:border tw:bg-surface tw:px-3 tw:py-2 tw:text-start tw:text-ui-sm tw:text-on-surface tw:shadow-none ui-focus-ring tw:disabled:cursor-not-allowed tw:disabled:bg-surface-container tw:disabled:opacity-50"
+            class="ui-motion tw:flex tw:min-h-[var(--ui-control-height-md)] tw:w-full tw:min-w-0 tw:items-center tw:justify-between tw:gap-2 tw:rounded-ui-sm tw:border tw:bg-surface tw:px-3 tw:py-2 tw:text-start tw:text-ui-sm tw:text-on-surface tw:shadow-none ui-focus-ring tw:disabled:cursor-not-allowed tw:disabled:bg-surface-container tw:disabled:opacity-75"
             :class="{
                 'tw:border-error': {{ $message ? 'true' : 'false' }} || hasAsyncError,
                 'tw:border-outline-strong': !({{ $message ? 'true' : 'false' }} || hasAsyncError) && !open,
                 'tw:border-primary tw:ring-2 tw:ring-primary/20': open
             }"
         >
-            <div class="tw:flex-1 tw:min-w-0 tw:truncate" :class="selectedOption && !@js((bool) $disabled) ? 'tw:pe-8' : ''">
+            <div class="tw:flex-1 tw:min-w-0 tw:truncate" :class="selectedOption && !isDisabled ? 'tw:pe-8' : ''">
                 <template x-if="selectedOption">
                     @if($showSub)
                         <div class="tw:flex tw:flex-col tw:gap-0.5 tw:min-w-0">
@@ -154,7 +156,7 @@
             />
         </button>
 
-        <template x-if="selectedOption && !{{ $disabled ? 'true' : 'false' }}">
+        <template x-if="selectedOption && !isDisabled">
             <button
                 type="button"
                 @click.stop="clear(); $nextTick(() => $refs.triggerButton?.focus())"
@@ -170,6 +172,7 @@
     {{-- Dropdown Menu Popover --}}
     <div
         id="{{ $resolvedId }}-popover"
+        x-ref="popover"
         x-show="open"
         x-cloak
         x-transition:enter="ui-motion tw:transition tw:ease-out tw:duration-150"
@@ -178,11 +181,12 @@
         x-transition:leave="ui-motion tw:transition tw:ease-in tw:duration-100"
         x-transition:leave-start="tw:opacity-100 tw:translate-y-0"
         x-transition:leave-end="tw:opacity-0 tw:translate-y-1"
-        class="tw:absolute tw:top-full tw:left-0 tw:right-0 tw:mt-1.5 tw:z-dropdown tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:shadow-ui-2 tw:overflow-hidden"
-        style="background-color: var(--ui-menu-bg);"
+        :class="openUpwards ? 'tw:bottom-full tw:mb-1.5' : 'tw:top-full tw:mt-1.5'"
+        class="tw:absolute tw:left-0 tw:right-0 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:shadow-ui-2 tw:overflow-hidden"
+        style="background-color: var(--ui-menu-bg); z-index: calc(var(--ui-z-modal) + 10);"
     >
         {{-- Search Input in Popover --}}
-        <div class="tw:p-2 tw:border-b tw:border-outline-variant/60 tw:bg-surface-container-lowest">
+        <div class="tw:p-2 tw:border-b tw:border-outline-variant/60 tw:bg-surface-container-low">
             <label for="{{ $resolvedId }}-search" class="tw:sr-only">{{ $searchPlaceholder }}</label>
             <div style="position: relative; display: flex; align-items: center; width: 100%;">
                 <span aria-hidden="true" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; pointer-events: none; display: flex; align-items: center; justify-content: center; z-index: 2;" class="tw:text-on-surface-variant">
@@ -298,6 +302,7 @@
                 <p class="tw:text-ui-xs tw:m-0">{{ $emptyMessage }}</p>
             </div>
         </div>
+    </div>
     </div>
 
     @if($helper)<p id="{{ $helperId }}" class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ $helper }}</p>@endif

@@ -70,6 +70,7 @@ use App\Http\Controllers\Purchasing\MaterialCalculationController;
 use App\Http\Controllers\Purchasing\MaterialClaimController;
 use App\Http\Controllers\Purchasing\MaterialMasterSearchController;
 use App\Http\Controllers\Purchasing\MaterialReferencePriceController;
+use App\Http\Controllers\Purchasing\OutstandingMaterialController as PurchasingOutstandingMaterialController;
 use App\Http\Controllers\Purchasing\PaymentVoucherController as PurchasingPaymentVoucherController;
 use App\Http\Controllers\Purchasing\PdfController;
 use App\Http\Controllers\Purchasing\PeriodController;
@@ -94,6 +95,8 @@ use App\Http\Controllers\Qc\QcInspectionController;
 use App\Http\Controllers\ReceiptVerificationController;
 use App\Http\Controllers\Supplier\ClaimController;
 use App\Http\Controllers\Supplier\ExportController as SupplierExportController;
+use App\Http\Controllers\Supplier\GoodsLocationController;
+use App\Http\Controllers\Supplier\OutstandingMaterialController as SupplierOutstandingMaterialController;
 use App\Http\Controllers\Supplier\PurchasingRequestController;
 use App\Http\Controllers\Supplier\QuotationController;
 use App\Http\Controllers\Supplier\SupplierCompanyProfileController;
@@ -576,6 +579,7 @@ Route::prefix(PortalPath::prefix())->group(function () {
 
     Route::middleware(['auth', 'role:purchasing', 'purchasing.navigation'])->prefix('purchasing')->name('purchasing.')->group(function () {
         Route::get('/dashboard', [PurchasingController::class, 'dashboard'])->name('dashboard');
+        Route::get('/outstanding-materials', [PurchasingOutstandingMaterialController::class, 'index'])->name('outstanding-materials.index');
         Route::post('/kurs/update', [PurchasingController::class, 'updateKurs'])->name('kurs.update');
         // Manajemen Periode
         Route::resource('periods', PeriodController::class)->only(['index', 'store', 'update']);
@@ -614,6 +618,8 @@ Route::prefix(PortalPath::prefix())->group(function () {
         Route::get('/purchase-orders/{id}/satellite', [PurchaseOrderController::class, 'satellite'])->name('purchase-orders.satellite');
         Route::get('/purchase-orders/{id}', [PurchaseOrderController::class, 'show'])->name('purchase-orders.show');
         Route::post('/purchase-orders/{id}/respond-promise-change', [PurchaseOrderController::class, 'respondPromiseChange'])->middleware('throttle:30,1')->name('purchase-orders.respond-promise-change');
+        Route::post('/purchase-orders/{id}/sales-contract/signed', [PurchaseOrderController::class, 'uploadSignedSalesContract'])->middleware('throttle:30,1')->name('purchase-orders.sales-contract.sign');
+        Route::post('/purchase-orders/{id}/sales-contract/revision', [PurchaseOrderController::class, 'requestSalesContractRevision'])->middleware('throttle:30,1')->name('purchase-orders.sales-contract.revision');
         Route::get('/purchase-orders/{po_id}/items/{award_id}/progress/history', [PoItemProgressController::class, 'history'])->name('purchase-orders.item-progress.history');
         Route::post('/purchase-orders/{id}/confirm-arrival', [PurchaseOrderController::class, 'confirmArrival'])->name('purchase-orders.confirm-arrival');
         Route::put('/purchase-orders/{id}/documents/shipments/batch-update', [PoShipmentDocumentStatusController::class, 'batchUpdateMultiType'])
@@ -773,10 +779,12 @@ Route::prefix(PortalPath::prefix())->group(function () {
     */
     Route::middleware(['auth', 'role:supplier', 'supplier.scope:import'])->prefix('supplier')->name('supplier.')->group(function () {
         Route::get('/dashboard', [SupplierController::class, 'dashboard'])->name('dashboard');
+        Route::get('/outstanding-materials', [SupplierOutstandingMaterialController::class, 'index'])->name('outstanding-materials.index');
         Route::match(['get', 'post'], '/export/quotations', [SupplierExportController::class, 'quotations'])->name('export.quotations');
         Route::match(['get', 'post'], '/export/quotations/{quotation}', [SupplierExportController::class, 'quotationDetail'])->name('export.quotations.detail');
         Route::match(['get', 'post'], '/export/purchase-orders', [SupplierExportController::class, 'purchaseOrders'])->name('export.purchase-orders');
         Route::match(['get', 'post'], '/export/purchase-orders/{purchaseOrder}', [SupplierExportController::class, 'purchaseOrderDetail'])->name('export.purchase-orders.detail');
+        Route::match(['get', 'post'], '/export/shipments', [SupplierExportController::class, 'shipments'])->name('export.shipments');
         Route::get('/quotations/period/{period_id}', [QuotationController::class, 'period'])->name('quotations.period');
         Route::get('/quotations/{pr_id}/import-template', [QuotationController::class, 'importTemplate'])->name('quotations.import-template');
         Route::post('/quotations/{pr_id}/import-preview', [QuotationController::class, 'importPreview'])
@@ -793,18 +801,34 @@ Route::prefix(PortalPath::prefix())->group(function () {
         Route::get('/purchase-orders', [SupplierPurchaseOrderController::class, 'index'])->name('purchase-orders.index');
         Route::get('/purchase-orders/{id}', [SupplierPurchaseOrderController::class, 'show'])->name('purchase-orders.show');
         Route::post('/purchase-orders/{id}/acknowledge', [SupplierPurchaseOrderController::class, 'acknowledge'])->middleware('throttle:30,1')->name('purchase-orders.acknowledge');
+        Route::post('/purchase-orders/{id}/sales-contract', [SupplierPurchaseOrderController::class, 'uploadSalesContract'])->middleware('throttle:30,1')->name('purchase-orders.sales-contract.store');
+        Route::post('/purchase-orders/{po_id}/items/progress/bulk', [App\Http\Controllers\Supplier\PoItemProgressController::class, 'bulkUpdate'])->name('purchase-orders.item-progress.bulk-update');
         Route::post('/purchase-orders/{po_id}/items/{award_id}/progress', [App\Http\Controllers\Supplier\PoItemProgressController::class, 'update'])->name('purchase-orders.item-progress.update');
         Route::get('/purchase-orders/{po_id}/items/{award_id}/progress/history', [App\Http\Controllers\Supplier\PoItemProgressController::class, 'history'])->name('purchase-orders.item-progress.history');
         // Shipments
         Route::resource('shipments', SupplierShipmentController::class)
             ->only(['index', 'create', 'store', 'show', 'edit', 'update']);
+        Route::put('/shipments/{id}/preshipment', [SupplierShipmentController::class, 'updatePreshipment'])
+            ->middleware('throttle:30,1')
+            ->name('shipments.preshipment.update');
         Route::post('/shipments/{id}/submit', [SupplierShipmentController::class, 'submit'])->name('shipments.submit');
         Route::post('/shipments/{id}/cancel', [SupplierShipmentController::class, 'cancel'])->name('shipments.cancel');
         Route::post('/shipments/{id}/documents/batch', [SupplierShipmentController::class, 'uploadDocumentsBatch'])->name('shipments.documents.batch-upload');
         Route::post('/shipments/{id}/documents/{document_id}', [SupplierShipmentController::class, 'uploadDocument'])->name('shipments.documents.upload');
-        // Mission 05 (Q6B): shipment MTC. Status allow-lists live in ShipmentService.
+        // Mission 05 (Q6B): shipment MTC (optional). Status allow-lists live in ShipmentService.
         Route::post('/shipments/{id}/mtc', [SupplierShipmentController::class, 'storeMtc'])->name('shipments.mtc.store');
         Route::delete('/shipments/{id}/mtc/{attachment}', [SupplierShipmentController::class, 'destroyMtc'])->name('shipments.mtc.destroy');
+        // Pre-Shipment Inspection: supplier-owned Goods Locations master
+        Route::get('/goods-locations/options', [GoodsLocationController::class, 'options'])
+            ->middleware('throttle:60,1')
+            ->name('goods-locations.options');
+        Route::resource('goods-locations', GoodsLocationController::class)
+            ->only(['index', 'store', 'update', 'destroy'])
+            ->parameters(['goods-locations' => 'goodsLocation'])
+            ->middlewareFor(['store', 'update', 'destroy'], 'throttle:30,1');
+        Route::post('/goods-locations/{goodsLocation}/default', [GoodsLocationController::class, 'setDefault'])
+            ->middleware('throttle:30,1')
+            ->name('goods-locations.default');
         Route::get('/claims', [ClaimController::class, 'index'])->name('claims.index');
         Route::get('/claims/{id}', [ClaimController::class, 'show'])->name('claims.show');
         Route::post('/claims/{id}/respond', [ClaimController::class, 'respond'])->name('claims.respond');

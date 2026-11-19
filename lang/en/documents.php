@@ -140,7 +140,7 @@ return [
         'processing' => 'Processing',
         'status_document_successfully_updated' => 'Status document successfully updated.',
         'verified' => 'Verified',
-        'pr_no' => 'PR No.',
+        'pr_no' => 'Purchase Requisition',
         'combined_prs' => '{1} :count PR consolidated|[2,*] :count PRs consolidated',
         'total' => 'Total',
     ],
@@ -198,6 +198,8 @@ return [
         'result_rejected' => 'Refused',
         'result_not_applied' => 'Not applied',
         'update_failed' => 'Failed to update selected shipment documents.',
+        'po_read_only_use_shipment' => 'Document status updates are read-only in Purchase Orders. Open the Shipment detail page to update document statuses.',
+        'open_shipment_to_update' => 'Manage in Shipment',
         'reasons' => [
             'not_linked' => 'Shipment is not linked to this purchase order.',
             'invalid_shipment_status' => 'Only submitted or arrived shipments can be updated.',

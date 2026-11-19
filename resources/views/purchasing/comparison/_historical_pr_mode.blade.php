@@ -58,7 +58,7 @@
         </div>
         <p class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant" id="historicalPrChartBasis" aria-live="polite"></p>
         {{-- The script rewrites the aria-label with the plotted count and basis; the history table below lists every quote. --}}
-        <x-ui.chart id="historicalPrChart" :label="__('purchasing.quotation_history.chart_title')" :auto-summary="false" plot-class="tw:h-72">
+        <x-ui.chart id="historicalPrChart" :label="__('purchasing.quotation_history.chart_title')" :auto-summary="false" plot-class="tw:h-72" :scrollable="true">
             {{-- Sits inside the plot box, centered, when nothing can be plotted; the script sets the message per chart mode. --}}
             <x-slot:overlay>
                 <x-ui.empty-state id="historicalPrChartEmpty" role="status" icon="chart-line"

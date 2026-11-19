@@ -104,13 +104,23 @@
         btn.classList.remove('is-loading');
     }
 
+    function getFormButtons(form, selector = 'button, input[type="submit"], input[type="button"]') {
+        const inside = [...form.querySelectorAll(selector)];
+        if (!form.id) return inside;
+
+        const escapedId = globalThis.CSS?.escape ? CSS.escape(form.id) : form.id.replace(/["\\]/g, '\\$&');
+        const external = [...document.querySelectorAll(`[form="${escapedId}"]`)].filter((el) => el.matches?.(selector));
+
+        return [...new Set([...inside, ...external])];
+    }
+
     /**
      * Disable sibling submit/action buttons in the same form without adding spinners
      * @param {HTMLFormElement} form
      * @param {HTMLElement} activeButton
      */
     function disableSiblingButtons(form, activeButton) {
-        const buttons = form.querySelectorAll('button, input[type="submit"], input[type="button"]');
+        const buttons = getFormButtons(form);
         buttons.forEach((btn) => {
             if (btn !== activeButton && !btn.disabled) {
                 btn.dataset.wasDisabledBySubmitGuard = 'true';
@@ -125,7 +135,7 @@
      * @param {HTMLFormElement} form
      */
     function enableSiblingButtons(form) {
-        const buttons = form.querySelectorAll('[data-was-disabled-by-submit-guard="true"]');
+        const buttons = getFormButtons(form, '[data-was-disabled-by-submit-guard="true"]');
         buttons.forEach((btn) => {
             delete btn.dataset.wasDisabledBySubmitGuard;
             btn.disabled = false;
@@ -151,16 +161,16 @@
         // Re-enable siblings
         enableSiblingButtons(form);
 
-        // Also ensure all buttons in the form are re-enabled
-        const allButtons = form.querySelectorAll('button, input[type="submit"], input[type="button"]');
+        // Also ensure all buttons in or attached to the form are re-enabled
+        const allButtons = getFormButtons(form);
         allButtons.forEach((btn) => {
             btn.disabled = false;
             btn.removeAttribute('aria-disabled');
             delete btn.dataset.wasDisabledBySubmitGuard;
         });
 
-        // Stop loading on any spinning buttons
-        const loadingButtons = form.querySelectorAll('[data-loading-active="true"], .is-loading');
+        // Stop loading on any spinning buttons (including external modal action buttons)
+        const loadingButtons = getFormButtons(form, '[data-loading-active="true"], .is-loading');
         loadingButtons.forEach((btn) => stopLoading(btn));
 
         // Remove mirrored submitter input

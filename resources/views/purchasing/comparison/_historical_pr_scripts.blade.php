@@ -344,6 +344,9 @@
             if (canvas) {
                 canvas.hidden = built.empty;
                 canvas.setAttribute('aria-label', i18n.chartSummary.replace(':material', state.label || '').replace(':count', String(built.plotted)).replace(':basis', basis));
+                if (built.empty || built.config?.type !== 'bar') {
+                    window.AdasiChart?.fitScrollWidth?.(canvas, { categories: 0 });
+                }
             }
             if (!built.empty && canvas && typeof Chart !== 'undefined') {
                 // Keyboard readout in the declared basis; quotation points are read by their real date.
@@ -354,6 +357,12 @@
                     format: (value) => format(value, basisCurrency) + '/kg',
                     ...(state.mode === 'quote_trend' ? { formatLabel: (x) => formatDate(x) } : {}),
                 };
+                if (built.config?.type === 'bar') {
+                    window.AdasiChart?.fitScrollWidth?.(canvas, {
+                        categories: built.config.data?.labels?.length || 0,
+                        series: built.config.data?.datasets?.length || 0,
+                    });
+                }
                 window._activeComparisonChart = new Chart(canvas, built.config);
             }
         }

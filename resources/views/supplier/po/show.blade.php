@@ -4,7 +4,7 @@
 @section('page-title', __('supplier.copy.purchase_order_details'))
 
 @section('content')
-<div class="tw:grid tw:gap-4">
+<div class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:min-w-0 tw:gap-4">
     {{-- Breadcrumb & Compact Page Header --}}
     <x-ui.breadcrumb :items="[
         __('purchasing.breadcrumbs.dashboard') => route('supplier.dashboard'),
@@ -18,7 +18,7 @@
         :description="__('supplier.copy.review_commercial_parameters_ordered_material_lines_customs_documentation_progress_and_quality_claim')"
     >
         <x-slot:actions>
-            <x-status-badge type="po" :status="$po->status" :is-overdue="$po->is_overdue" />
+            <x-status-badge type="po" :status="$po->status" :is-overdue="$po->is_overdue" :has-active-shipments="$po->hasActiveShipments()" />
             <x-ui.button
                 type="button"
                 variant="outline"
@@ -97,6 +97,9 @@
         </div>
     </div>
 
+    {{-- D4/E1: Sales Contract handshake (upload first; acknowledgement and shipments unlock after Purchasing countersigns) --}}
+    @include('partials.po-sales-contract-panel', ['po' => $po, 'viewer' => 'supplier'])
+
     {{-- PO Acknowledgement & Promise Date Handshake Card (A1) --}}
     <x-ui.card
         :title="__('purchasing.po_ack.card_title')"
@@ -140,11 +143,14 @@
     </x-ui.card>
 
     {{-- Main Content & Sidebar --}}
-    <div class="tw:grid tw:items-start tw:gap-4 tw:xl:grid-cols-[minmax(0,2fr)_minmax(19rem,1fr)]">
+    <div class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:items-start tw:gap-4 tw:xl:grid-cols-[minmax(0,1fr)_16rem]">
         {{-- Main Column: Materials Table --}}
         <div class="tw:grid tw:min-w-0 tw:gap-4">
             {{-- Supplier Material Progress Section --}}
             @if(isset($itemProjections) && $itemProjections->isNotEmpty())
+                @php
+                    $updatableProjectionCount = $itemProjections->where('can_update', true)->count();
+                @endphp
                 <x-ui.data-table
                     :title="__('supplier.copy.supplier_material_progress')"
                     :description="__('supplier.copy.update_operational_manufacturing_and_preparation_status_per_awarded_item_before_shipment_dispatch')"
@@ -152,16 +158,41 @@
                 >
                     <x-slot:actions>
                         @if(isset($poSummary))
-                            <span class="ui-status-chip ui-status-chip--info">
+                            <span class="ui-status-chip ui-status-chip--info tw:whitespace-nowrap">
                                 {{ $poSummary['text'] }}
                             </span>
                         @endif
+                        @if($updatableProjectionCount > 0)
+                            <x-ui.button
+                                type="button"
+                                variant="primary"
+                                size="sm"
+                                id="btnBulkUpdateProgress"
+                                disabled
+                                data-bs-toggle="modal"
+                                data-bs-target="#bulkUpdateProgressModal"
+                            >
+                                <x-ui.icon name="list-checks" size="sm" />
+                                <span>{{ __('supplier.copy.update_selected') }} (<span id="bulkUpdateSelectedCount">0</span>)</span>
+                            </x-ui.button>
+                        @endif
                     </x-slot:actions>
 
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0 tw:text-ui-xs w-100">
+                    <table class="table table-hover align-middle mb-0 tw:text-ui-xs w-100">
                             <thead class="table-light text-center">
                                 <tr>
+                                    @if($updatableProjectionCount > 0)
+                                        <th scope="col" class="text-center" style="width: 44px;">
+                                            <label class="tw:inline-flex tw:min-w-[28px] tw:min-h-[28px] tw:items-center tw:justify-content-center tw:cursor-pointer mb-0">
+                                                <input
+                                                    type="checkbox"
+                                                    class="form-check-input m-0 ui-focus-ring"
+                                                    id="bulkProgressSelectAll"
+                                                    aria-label="{{ __('supplier.copy.select_all_updatable_items') }}"
+                                                >
+                                            </label>
+                                        </th>
+                                    @endif
                                     <th scope="col" style="width: 35px;">{{ __('supplier.copy.no') }}</th>
                                     <th scope="col" class="text-start">{{ __('supplier.copy.material') }}</th>
                                     <th scope="col">{{ __('supplier.copy.ordered') }}</th>
@@ -172,12 +203,30 @@
                                     <th scope="col">{{ __('supplier.copy.original_ready_date') }}</th>
                                     <th scope="col">{{ __('supplier.copy.current_estimated_ready') }}</th>
                                     <th scope="col">{{ __('supplier.copy.last_update') }}</th>
-                                    <th scope="col" class="text-end">{{ __('supplier.copy.actions') }}</th>
+                                    <th scope="col" class="text-end ui-sticky-col-right">{{ __('supplier.copy.actions') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach($itemProjections as $idx => $p)
                                     <tr>
+                                        @if($updatableProjectionCount > 0)
+                                            <td class="text-center">
+                                                @if($p['can_update'])
+                                                    <label class="tw:inline-flex tw:min-w-[28px] tw:min-h-[28px] tw:items-center tw:justify-content-center tw:cursor-pointer mb-0">
+                                                        <input
+                                                            type="checkbox"
+                                                            class="form-check-input m-0 ui-focus-ring bulk-progress-checkbox"
+                                                            value="{{ $p['award_id'] }}"
+                                                            data-material-name="{{ $p['material_name'] }}"
+                                                            data-current-rank="{{ \App\Models\PoItemProgressUpdate::STAGE_RANKS[$p['manual_progress_status']] ?? 10 }}"
+                                                            aria-label="{{ __('supplier.copy.select_item_for_progress_update', ['material' => $p['material_name']]) }}"
+                                                        >
+                                                    </label>
+                                                @else
+                                                    <span class="tw:text-on-surface-variant" aria-hidden="true">—</span>
+                                                @endif
+                                            </td>
+                                        @endif
                                         <td class="text-center tw:text-on-surface-variant ui-tabular-nums">{{ $idx + 1 }}</td>
                                         <td class="text-start">
                                             <div class="fw-bold tw:text-on-surface">{{ $p['material_name'] }}</div>
@@ -212,7 +261,7 @@
                                                 <span class="text-muted">{{ __('supplier.copy.no_updates') }}</span>
                                             @endif
                                         </td>
-                                        <td class="text-end">
+                                        <td class="text-end ui-sticky-col-right">
                                             <div class="d-inline-flex gap-1 justify-content-end">
                                                 @if($p['can_update'])
                                                     <button type="button"
@@ -239,7 +288,6 @@
                                 @endforeach
                             </tbody>
                         </table>
-                    </div>
                 </x-ui.data-table>
             @endif
 
@@ -257,8 +305,8 @@
                             <th scope="col">{{ __('supplier.copy.qty') }}</th>
                             <th scope="col" class="text-end">{{ __('supplier.copy.weight_unit') }}</th>
                             <th scope="col" class="text-end">{{ __('supplier.copy.total_weight') }}</th>
-                            <th scope="col" class="text-end">{{ __('supplier.copy.price_kg') }}</th>
-                            <th scope="col" class="text-end">{{ __('supplier.copy.amount') }}</th>
+                            <th scope="col" class="text-end">{{ __('supplier.copy.price_kg_c55926') }} ({{ $po->currency }})</th>
+                            <th scope="col" class="text-end">{{ __('supplier.copy.amount_plain') }} ({{ $po->currency }})</th>
                             <th scope="col" class="text-end">{{ __('supplier.copy.amount_idr') }}</th>
                         </tr>
                     </thead>
@@ -360,7 +408,7 @@
         </div>
 
         {{-- Sidebar Column: Details & Claim Notice --}}
-        <aside class="tw:grid tw:gap-4">
+        <aside class="tw:grid tw:min-w-0 tw:gap-4" aria-label="{{ __('purchasing.copy.po_operations_and_timeline') }}">
             @php
                 $pendingClaim = $po->materialClaims->where('status', 'pending')->sortByDesc('created_at')->first();
                 $latestClaim = $po->materialClaims->sortByDesc('created_at')->first();
@@ -458,11 +506,11 @@
                                 <div class="tw:mt-2.5 tw:pt-2.5 tw:border-t tw:border-outline-variant/60 tw:grid tw:gap-1.5">
                                     @foreach($uploadedShipmentDocs as $sDoc)
                                         <div class="tw:flex tw:items-center tw:justify-between tw:gap-2 tw:bg-surface-container-low tw:px-2.5 tw:py-1.5 tw:rounded-md tw:border tw:border-outline-variant/70">
-                                            <a href="{{ route('supplier.shipments.show', $sDoc['shipment']) }}" class="text-primary fw-semibold text-decoration-none d-inline-flex align-items-center gap-1.5 text-truncate tw:hover:underline" title="{{ __('common.final_review.open_shipment', ['number' => $sDoc['shipment_number']]) }}">
+                                            <a href="{{ route('supplier.shipments.show', $sDoc['shipment']) }}" class="text-primary fw-semibold text-decoration-none d-inline-flex align-items-center gap-1.5 text-truncate tw:min-w-0 tw:hover:underline" title="{{ __('common.final_review.open_shipment', ['number' => $sDoc['shipment_number']]) }}">
                                                 <x-ui.icon name="truck" size="sm" class="flex-shrink-0" />
                                                 <span class="text-truncate">{{ $sDoc['shipment_number'] }}</span>
                                             </a>
-                                            <a href="{{ route('attachments.show', $sDoc['attachment']) }}" target="_blank" class="btn btn-xs btn-outline-primary py-0.5 px-2 tw:text-ui-xs d-inline-flex align-items-center gap-1 flex-shrink-0 rounded" title="{{ __('common.actions.view') }} {{ $sDoc['attachment']->file_name }}">
+                                            <a href="{{ route('attachments.show', $sDoc['attachment']) }}" target="_blank" class="btn btn-xs btn-outline-primary py-0.5 px-2 tw:min-h-[28px] tw:text-ui-xs d-inline-flex align-items-center gap-1 flex-shrink-0 rounded" title="{{ __('common.actions.view') }} {{ $sDoc['attachment']->file_name }}">
                                                 <x-ui.icon name="file-text" size="sm" />
                                                 <span>{{ __('supplier.copy.view') }}</span>
                                             </a>
@@ -502,8 +550,10 @@
                                 <div class="mb-3">
                                     <label class="form-label small fw-semibold">{{ __('supplier.copy.progress_status') }} <span class="text-danger">*</span></label>
                                     <select name="status" class="form-select form-select-sm progress-status-select" data-current-rank="{{ \App\Models\PoItemProgressUpdate::STAGE_RANKS[$p['manual_progress_status']] ?? 10 }}" required>
-                                        <option value="awaiting_confirmation" {{ $p['manual_progress_status'] === 'awaiting_confirmation' ? 'selected' : '' }}>{{ __('supplier.copy.awaiting_confirmation') }}</option>
-                                        <option value="order_confirmed" {{ $p['manual_progress_status'] === 'order_confirmed' ? 'selected' : '' }}>{{ __('supplier.copy.order_confirmed') }}</option>
+                                        {{-- E3: the stage before production is automatic ("Order Confirmed" when the PO is created, incl. legacy awaiting_confirmation rows). --}}
+                                        @unless(in_array($p['manual_progress_status'], \App\Models\PoItemProgressUpdate::SUPPLIER_UPDATABLE_STATUSES, true))
+                                            <option value="" selected disabled>{{ __('supplier.copy.order_confirmed') }}</option>
+                                        @endunless
                                         <option value="material_preparation" {{ $p['manual_progress_status'] === 'material_preparation' ? 'selected' : '' }}>{{ __('supplier.copy.material_preparation') }}</option>
                                         <option value="on_production" {{ $p['manual_progress_status'] === 'on_production' ? 'selected' : '' }}>{{ __('supplier.copy.on_production') }}</option>
                                         <option value="ready_to_ship" {{ $p['manual_progress_status'] === 'ready_to_ship' ? 'selected' : '' }}>{{ __('supplier.copy.ready_to_ship') }}</option>
@@ -541,6 +591,74 @@
             </div>
         @endif
     @endforeach
+@endif
+
+@if(isset($itemProjections) && $itemProjections->where('can_update', true)->isNotEmpty())
+    {{-- Bulk Progress Update Modal --}}
+    <div class="modal fade" id="bulkUpdateProgressModal" tabindex="-1" aria-labelledby="bulkUpdateProgressModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="POST" action="{{ route('supplier.purchase-orders.item-progress.bulk-update', ['po_id' => $po]) }}" id="bulkProgressUpdateForm">
+                    @csrf
+                    <div id="bulkUpdateAwardInputs"></div>
+                    <div class="modal-header">
+                        <h5 class="modal-title tw:text-ui-base fw-bold" id="bulkUpdateProgressModalLabel">
+                            {{ __('supplier.copy.bulk_update_material_progress') }}
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('supplier.copy.close') }}"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-info py-2 px-3 tw:text-ui-xs mb-3" role="status" aria-live="polite">
+                            <div class="d-flex align-items-start gap-2">
+                                <x-ui.icon name="info" size="sm" class="tw:mt-0.5 tw:shrink-0" />
+                                <div>
+                                    <div id="bulkUpdateSummaryText" class="fw-semibold"></div>
+                                    <ul id="bulkUpdateSelectedList" class="mb-0 mt-1 ps-3"></ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="bulkProgressStatus" class="form-label small fw-semibold">
+                                {{ __('supplier.copy.progress_status') }} <span class="text-danger" aria-hidden="true">*</span>
+                            </label>
+                            <select name="status" id="bulkProgressStatus" class="form-select form-select-sm" required>
+                                <option value="" selected disabled>{{ __('supplier.copy.select_progress_status') }}</option>
+                                <option value="material_preparation">{{ __('supplier.copy.material_preparation') }}</option>
+                                <option value="on_production">{{ __('supplier.copy.on_production') }}</option>
+                                <option value="ready_to_ship">{{ __('supplier.copy.ready_to_ship') }}</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <x-ui.date-picker
+                                name="estimated_ready_date"
+                                id="bulk_estimated_ready_date"
+                                :label="__('supplier.copy.current_estimated_ready_date')"
+                                value=""
+                                :helper="__('supplier.copy.leave_blank_to_keep_existing_estimated_ready_date')"
+                            />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="bulkProgressNote" class="form-label small fw-semibold">
+                                {{ __('supplier.copy.progress_note_reason') }} <span id="bulkBackwardRequiredMarker" class="text-danger d-none" aria-hidden="true">*</span>
+                            </label>
+                            <textarea name="note" id="bulkProgressNote" class="form-control form-control-sm" rows="3" placeholder="{{ __('supplier.copy.provide_details_about_current_stage_or_operational_updates') }}"></textarea>
+                            <div id="bulkBackwardNotice" class="alert alert-warning py-1.5 px-2.5 tw:text-ui-xs mt-1.5 d-none" role="status" aria-live="polite">
+                                <x-ui.icon name="triangle-alert" size="sm" class="me-1 text-warning" />
+                                <span>{{ __('supplier.copy.backward_bulk_progress_notice') }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{{ __('supplier.copy.cancel') }}</button>
+                        <button type="submit" class="btn btn-primary btn-sm" id="bulkProgressSubmitBtn">{{ __('supplier.copy.save_progress_update') }}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 @endif
 
 {{-- Shared Progress History Modal --}}
@@ -598,6 +716,113 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+
+    const bulkSelectAll = document.getElementById('bulkProgressSelectAll');
+    const bulkCheckboxes = Array.from(document.querySelectorAll('.bulk-progress-checkbox'));
+    const bulkTriggerBtn = document.getElementById('btnBulkUpdateProgress');
+    const bulkSelectedCountEl = document.getElementById('bulkUpdateSelectedCount');
+    const bulkModalEl = document.getElementById('bulkUpdateProgressModal');
+    const bulkAwardInputsEl = document.getElementById('bulkUpdateAwardInputs');
+    const bulkSummaryTextEl = document.getElementById('bulkUpdateSummaryText');
+    const bulkSelectedListEl = document.getElementById('bulkUpdateSelectedList');
+    const bulkStatusSelect = document.getElementById('bulkProgressStatus');
+    const bulkNoteInput = document.getElementById('bulkProgressNote');
+    const bulkBackwardNotice = document.getElementById('bulkBackwardNotice');
+    const bulkBackwardMarker = document.getElementById('bulkBackwardRequiredMarker');
+    const bulkSummaryTemplate = @json(__('supplier.copy.bulk_update_applies_to_items'));
+
+    function getCheckedBulkItems() {
+        return bulkCheckboxes.filter(cb => cb.checked);
+    }
+
+    function syncBulkBackwardState() {
+        if (!bulkStatusSelect) return;
+        const selectedStatus = bulkStatusSelect.value;
+        const checked = getCheckedBulkItems();
+        if (!selectedStatus || checked.length === 0) {
+            bulkBackwardNotice?.classList.add('d-none');
+            bulkBackwardMarker?.classList.add('d-none');
+            bulkNoteInput?.removeAttribute('required');
+            return;
+        }
+
+        const newRank = STAGE_RANKS[selectedStatus] || 10;
+        const isAnyBackward = checked.some(cb => (parseInt(cb.dataset.currentRank, 10) || 10) > newRank);
+
+        if (isAnyBackward) {
+            bulkBackwardNotice?.classList.remove('d-none');
+            bulkBackwardMarker?.classList.remove('d-none');
+            bulkNoteInput?.setAttribute('required', 'required');
+        } else {
+            bulkBackwardNotice?.classList.add('d-none');
+            bulkBackwardMarker?.classList.add('d-none');
+            bulkNoteInput?.removeAttribute('required');
+        }
+    }
+
+    function syncBulkSelectionState() {
+        const checked = getCheckedBulkItems();
+        const count = checked.length;
+
+        if (bulkSelectedCountEl) {
+            bulkSelectedCountEl.textContent = String(count);
+        }
+        if (bulkTriggerBtn) {
+            bulkTriggerBtn.disabled = count === 0;
+        }
+        if (bulkSelectAll && bulkCheckboxes.length > 0) {
+            bulkSelectAll.checked = count === bulkCheckboxes.length;
+            bulkSelectAll.indeterminate = count > 0 && count < bulkCheckboxes.length;
+        }
+
+        if (bulkAwardInputsEl) {
+            bulkAwardInputsEl.replaceChildren(...checked.map(cb => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'award_ids[]';
+                input.value = cb.value;
+                return input;
+            }));
+        }
+
+        if (bulkSummaryTextEl) {
+            bulkSummaryTextEl.textContent = bulkSummaryTemplate.replace(':count', String(count));
+        }
+
+        if (bulkSelectedListEl) {
+            bulkSelectedListEl.replaceChildren(...checked.map(cb => {
+                const li = document.createElement('li');
+                li.textContent = cb.dataset.materialName || '';
+                return li;
+            }));
+        }
+
+        syncBulkBackwardState();
+    }
+
+    if (bulkSelectAll) {
+        bulkSelectAll.addEventListener('change', function() {
+            const shouldCheck = this.checked;
+            bulkCheckboxes.forEach(cb => {
+                cb.checked = shouldCheck;
+            });
+            syncBulkSelectionState();
+        });
+    }
+
+    bulkCheckboxes.forEach(cb => {
+        cb.addEventListener('change', syncBulkSelectionState);
+    });
+
+    if (bulkStatusSelect) {
+        bulkStatusSelect.addEventListener('change', syncBulkBackwardState);
+    }
+
+    if (bulkModalEl) {
+        bulkModalEl.addEventListener('show.bs.modal', syncBulkSelectionState);
+    }
+
+    syncBulkSelectionState();
 
     function renderProgressHistoryRows(history) {
         const allowedTones = ['success', 'info', 'warning', 'neutral'];

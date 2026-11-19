@@ -326,6 +326,8 @@ class NotificationDeliveryTest extends TestCase
             'awards' => [$item->id => $quotationItem->id],
             'action' => 'generate_pos',
             'estimated_arrival' => now()->addMonth()->toDateString(),
+            'port_of_discharge' => 'TANJUNG_PRIOK',
+            'confirm_port_of_discharge' => '1',
         ])->assertRedirect()->assertSessionHasNoErrors();
 
         $po = PurchaseOrder::firstOrFail();

@@ -4,9 +4,11 @@ namespace App\Services\Pricing;
 
 use App\Models\ExchangeRate;
 use App\Models\MaterialReferencePrice;
+use App\Models\ReferencePriceRule;
 use App\Support\BusinessTime;
 use App\Support\Money;
 use App\Support\Pricing\EvaluationContext;
+use Carbon\Carbon;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -112,9 +114,11 @@ class PurchaseHistoryPriceService
             ->leftJoin('suppliers as supplier_profile', 'supplier_profile.user_id', '=', 'supplier.id')
             ->leftJoin('purchase_requisitions as pr', 'pr.id', '=', 'pi.pr_id')
             ->select([
-                'qi.id as quotation_item_id', 'po.id as po_id', 'po.po_number', 'po.created_at as po_created_at',
-                'q.currency', 'pr.id as pr_id', 'pr.pr_number', 'pi.material_name',
+                'qi.id as quotation_item_id', 'po.id as po_id', 'po.po_number', 'po.status as po_status', 'po.created_at as po_created_at',
+                'q.currency', 'pr.id as pr_id', 'pr.pr_number', 'pi.material_name', 'pi.shape',
             ])
+            ->selectRaw('COALESCE(qi.available_thickness, pi.thickness) as effective_thickness')
+            ->selectRaw('COALESCE(qi.available_d_outer, pi.d_outer) as effective_d_outer')
             // PUR-03: company name, login name as fallback.
             ->selectRaw("COALESCE(NULLIF(TRIM(supplier_profile.company_name), ''), supplier.name) as supplier_name")
             ->selectRaw(self::PRICE.' as price_per_kg')
@@ -124,9 +128,15 @@ class PurchaseHistoryPriceService
             ->limit($perPage + ($offset - $start))
             ->get();
 
+        $activeRules = ReferencePriceRule::query()
+            ->active()
+            ->orderBy('sort_order')
+            ->orderBy('dimension_min')
+            ->get();
+
         $previous = null;
-        $mapped = $rows->map(function ($row) use ($currency, $context, $annualRates, &$previous): array {
-            $line = $this->mapLine($row, $currency, $context, $annualRates);
+        $mapped = $rows->map(function ($row) use ($currency, $context, $annualRates, $activeRules, &$previous): array {
+            $line = $this->mapLine($row, $currency, $context, $annualRates, $activeRules);
             $current = $line['converted_price_per_kg'];
             $line['change_pct'] = $previous !== null && $current !== null && bccomp($previous, '0', self::SCALE) > 0
                 ? (float) Money::normalize(bcmul(bcdiv(bcsub($current, $previous, self::WORK), $previous, self::WORK), '100', self::WORK), 2)
@@ -145,24 +155,39 @@ class PurchaseHistoryPriceService
     }
 
     /**
+     * @param  iterable<int, ReferencePriceRule>|null  $activeRules
      * @return array<string, mixed>
      */
-    private function mapLine(object $row, string $currency, EvaluationContext $context, bool $annualRates = false): array
+    private function mapLine(object $row, string $currency, EvaluationContext $context, bool $annualRates = false, ?iterable $activeRules = null): array
     {
         $price = Money::normalize((string) $row->price_per_kg, self::SCALE);
         $kg = Money::normalize((string) $row->kg, self::SCALE);
         $year = $annualRates ? app(AnnualExchangeRateResolver::class)->year($row->po_created_at) : null;
         $converted = $this->convert($price, $row->currency, $currency, $context, $year);
+        $classification = ReferencePriceRule::resolveDimensionClassification(
+            $row->shape ?? null,
+            $row->effective_thickness ?? null,
+            $row->effective_d_outer ?? null,
+            $activeRules
+        );
 
         return [
             'quotation_item_id' => (int) $row->quotation_item_id,
             'po_id' => (int) $row->po_id,
             'po_number' => $row->po_number,
+            'po_status' => $row->po_status ?? null,
             'po_created_at' => $row->po_created_at,
             'currency' => $row->currency,
             'supplier' => $row->supplier_name,
             'pr_id' => $row->pr_id === null ? null : (int) $row->pr_id,
             'pr_number' => $row->pr_number,
+            'material_name' => $row->material_name ?? '-',
+            'shape' => $classification['shape'] ?? ($row->shape ?? null),
+            'key_dimension' => $classification['key_dimension'],
+            'dimension_display' => $classification['dimension_display'],
+            'range_classification' => $classification['range_classification'],
+            'category_key' => $classification['category_key'],
+            'category_name' => $classification['category_name'],
             'price_per_kg' => $price,
             'kg' => $kg,
             'converted_price_per_kg' => $converted === null ? null : Money::normalize($converted, self::SCALE),
@@ -252,8 +277,39 @@ class PurchaseHistoryPriceService
         if (! empty($filter['supplier_id'])) {
             $query->where('po.supplier_id', (int) $filter['supplier_id']);
         }
+        if (! empty($filter['po_status']) && $filter['po_status'] !== 'all') {
+            $query->where('po.status', (string) $filter['po_status']);
+        }
+        if (! empty($filter['search'])) {
+            $term = '%'.trim((string) $filter['search']).'%';
+            $query->where(function ($searchQuery) use ($term): void {
+                $searchQuery->where('pi.material_name', 'like', $term)
+                    ->orWhere('po.po_number', 'like', $term);
+            });
+        }
         if (! empty($filter['date_from'])) {
             $query->where('po.created_at', '>=', BusinessTime::toStorage($filter['date_from']));
+        }
+        $month = (! empty($filter['month']) && is_numeric($filter['month']) && (int) $filter['month'] >= 1 && (int) $filter['month'] <= 12)
+            ? (int) $filter['month']
+            : null;
+        if (! empty($filter['year']) && is_numeric($filter['year'])) {
+            $year = (int) $filter['year'];
+            $tz = BusinessTime::tz();
+            $start = $month !== null
+                ? Carbon::create($year, $month, 1, 0, 0, 0, $tz)->startOfMonth()
+                : Carbon::create($year, 1, 1, 0, 0, 0, $tz)->startOfYear();
+            $end = $month !== null
+                ? Carbon::create($year, $month, 1, 0, 0, 0, $tz)->endOfMonth()
+                : Carbon::create($year, 12, 31, 23, 59, 59, $tz)->endOfYear();
+
+            $query->whereBetween('po.created_at', [
+                BusinessTime::toStorage($start),
+                BusinessTime::toStorage($end),
+            ]);
+        } elseif ($month !== null) {
+            $offset = (int) BusinessTime::now()->getOffset();
+            $query->whereRaw("MONTH(DATE_ADD(po.created_at, INTERVAL {$offset} SECOND)) = ?", [$month]);
         }
 
         return $query;

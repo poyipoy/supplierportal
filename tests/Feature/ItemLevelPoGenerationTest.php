@@ -326,6 +326,7 @@ class ItemLevelPoGenerationTest extends TestCase
             ->assertOk()->assertSee($pr1->pr_number)->assertSee($pr2->pr_number);
         $this->post(route('purchasing.purchase-orders.consolidate-awards.store'), [
             'award_ids' => [$a1->id, $a2->id], 'estimated_arrival' => now()->addDays(14)->toDateString(),
+            'port_of_discharge' => 'TANJUNG_PRIOK', 'confirm_port_of_discharge' => '1',
         ])->assertRedirect()->assertSessionHas('success');
         $po = PurchaseOrder::sole();
         $this->assertSame($this->supplierA->id, $po->supplier_id);
@@ -344,7 +345,12 @@ class ItemLevelPoGenerationTest extends TestCase
         $q2 = $this->createSubmittedQuotation($pr2, $this->supplierB, 2.0);
         $a1 = $this->awardService->awardItem($pr1->items[0], $q1->items[0], $this->purchasing);
         $a2 = $this->awardService->awardItem($pr2->items[0], $q2->items[0], $this->purchasing);
-        $payload = ['award_ids' => [$a1->id, $a2->id], 'estimated_arrival' => now()->addDays(14)->toDateString()];
+        $payload = [
+            'award_ids' => [$a1->id, $a2->id],
+            'estimated_arrival' => now()->addDays(14)->toDateString(),
+            'port_of_discharge' => 'TANJUNG_PRIOK',
+            'confirm_port_of_discharge' => '1',
+        ];
         $this->actingAs($this->supplierA)->get(route('purchasing.purchase-orders.consolidate-awards'))->assertForbidden();
         $this->post(route('purchasing.purchase-orders.consolidate-awards.store'), $payload)->assertForbidden();
         $this->actingAs($this->purchasing)->post(route('purchasing.purchase-orders.consolidate-awards.store'), $payload)
@@ -363,7 +369,12 @@ class ItemLevelPoGenerationTest extends TestCase
         $q2 = $this->createSubmittedQuotation($pr2, $this->supplierA, 2.0);
         $a1 = $this->awardService->awardItem($pr1->items[0], $q1->items[0], $this->purchasing);
         $a2 = $this->awardService->awardItem($pr2->items[0], $q2->items[0], $this->purchasing);
-        $payload = ['award_ids' => [$a1->id, $a2->id], 'estimated_arrival' => now()->addDays(14)->toDateString()];
+        $payload = [
+            'award_ids' => [$a1->id, $a2->id],
+            'estimated_arrival' => now()->addDays(14)->toDateString(),
+            'port_of_discharge' => 'TANJUNG_PRIOK',
+            'confirm_port_of_discharge' => '1',
+        ];
         $q2->update(['currency' => 'JPY']);
         $this->actingAs($this->purchasing)->post(route('purchasing.purchase-orders.consolidate-awards.store'), $payload)
             ->assertRedirect()->assertSessionHasErrors('award_ids');
@@ -397,6 +408,7 @@ class ItemLevelPoGenerationTest extends TestCase
             fn () => $this->awardService->awardBatch($pr, [$pr->items[0]->id => $quotation->items[0]->id], $this->purchasing),
             fn () => $this->actingAs($this->purchasing)->post(route('purchasing.comparison.save-awards'), [
                 'pr_id' => $pr->hash, 'awards' => [$pr->items[0]->id => $quotation->items[0]->id], 'action' => 'generate_pos',
+                'port_of_discharge' => 'TANJUNG_PRIOK', 'confirm_port_of_discharge' => '1',
             ])->assertRedirect()->assertSessionHas('success'),
         ];
         foreach ($operations as $operation) {

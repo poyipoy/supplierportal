@@ -230,6 +230,7 @@
             @elseif($activePortalScope === \App\Support\PortalContext::SCOPE_IMPORT)
                 <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 8;">{{ __('navigation.overview') }}</span></div>
                 <x-ui.sidebar-item :href="\App\Support\PageRegistry::url('supplier.dashboard')" icon="gauge" :active="request()->routeIs('supplier.dashboard')" :label="__('navigation.dashboard')">{{ __('navigation.dashboard') }}</x-ui.sidebar-item>
+                <x-ui.sidebar-item :href="\App\Support\PageRegistry::url('supplier.outstanding-materials.index')" icon="package-search" :active="request()->routeIs('supplier.outstanding-materials.*')" :label="__('navigation.outstanding_materials')">{{ __('navigation.outstanding_materials') }}</x-ui.sidebar-item>
 
                 <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 8;">{{ __('navigation.business') }}</span></div>
                 <x-ui.sidebar-item :href="\App\Support\PageRegistry::url('supplier.quotations.index')" icon="calendar-days" :active="request()->routeIs('supplier.quotations.*')" :label="__('navigation.quotation_period')">{{ __('navigation.quotation_period') }}</x-ui.sidebar-item>
@@ -291,6 +292,7 @@
         @elseif($role === 'purchasing')
             <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 8;">{{ __('navigation.overview') }}</span></div>
             <x-ui.sidebar-item :href="\App\Support\PageRegistry::url('purchasing.dashboard', \App\Support\PurchasingNavigation::listUrl('purchasing.dashboard'))" icon="gauge" :active="request()->routeIs('purchasing.dashboard')" :label="__('navigation.dashboard')">{{ __('navigation.dashboard') }}</x-ui.sidebar-item>
+            <x-ui.sidebar-item :href="\App\Support\PageRegistry::url('purchasing.outstanding-materials.index', \App\Support\PurchasingNavigation::listUrl('purchasing.outstanding-materials.index'))" icon="package-search" :active="request()->routeIs('purchasing.outstanding-materials.*')" :label="__('navigation.outstanding_materials')">{{ __('navigation.outstanding_materials') }}</x-ui.sidebar-item>
 
             <div class="sidebar-heading"><span class="sidebar-heading-label sidebar-type-text" style="--sidebar-type-steps: 11;">{{ __('navigation.procurement') }}</span></div>
             <x-ui.sidebar-item :href="\App\Support\PageRegistry::url('purchasing.periods.index', \App\Support\PurchasingNavigation::listUrl('purchasing.periods.index'))" icon="calendar-days" :active="request()->routeIs('purchasing.periods.*')" :label="__('navigation.period_management')">{{ __('navigation.period_management') }}</x-ui.sidebar-item>

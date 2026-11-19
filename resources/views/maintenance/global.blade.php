@@ -1,5 +1,6 @@
 @extends('layouts.auth')
 
+@section('plain-layout', true)
 @section('title', __('maintenance.notice.page_title'))
 @section('meta')<meta name="robots" content="noindex, nofollow">@endsection
 {{-- Marks the brand panel heading as a paragraph so this page owns the only h1. --}}

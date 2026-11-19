@@ -140,6 +140,12 @@
             @php
                 $awardedCount = $quotation->items->filter(fn ($i) => $i->award && $i->award->purchase_order_id)->count();
                 $isPartial = $awardedCount > 0 && $awardedCount < $quotation->items->count();
+                $relatedPos = $quotation->items
+                    ->map(fn ($i) => $i->award?->purchaseOrder)
+                    ->filter()
+                    ->merge($quotation->purchaseOrders)
+                    ->unique('id')
+                    ->values();
             @endphp
             @if($isPartial)
                 <x-ui.alert tone="warning" :title="__('supplier.copy.partial_award')">
@@ -147,6 +153,17 @@
                 </x-ui.alert>
             @else
                 <x-ui.alert tone="success" :title="__('supplier.copy.quotation_selected')">{{ __('supplier.copy.an_official_po_will_be_issued_through_the_procurement_workflow') }}</x-ui.alert>
+            @endif
+            @if($relatedPos->isNotEmpty())
+                <div class="d-flex flex-wrap tw:gap-2">
+                    @foreach($relatedPos as $po)
+                        <x-ui.button :href="route('supplier.purchase-orders.show', $po)" variant="outline" size="sm">
+                            <x-ui.icon name="receipt" size="sm" />
+                            <span>{{ __('supplier.copy.view_purchase_order', ['po' => $po->po_number]) }}</span>
+                            <x-ui.icon name="arrow-up-right" size="sm" />
+                        </x-ui.button>
+                    @endforeach
+                </div>
             @endif
         @else
             <x-ui.alert tone="info" :title="__('supplier.copy.commercial_evaluation_pending')">{{ __('supplier.copy.your_quotation_has_been_recorded_and_is_waiting_for_evaluation_by_purchasing') }}</x-ui.alert>

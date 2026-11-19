@@ -31,12 +31,14 @@
             <x-ui.alert tone="warning" class="tw:mb-3">{{ __('procurement.po_generation.disabled_notice') }}</x-ui.alert>
         @endunless
         @error('award_ids')<div class="alert alert-danger">{{ $message }}</div>@enderror
-        @php($orderQtyEnabled = \App\Support\Procurement\ProcurementFeatures::orderedQuantityWriteEnabled())
+        @php
+            $orderQtyEnabled = \App\Support\Procurement\ProcurementFeatures::orderedQuantityWriteEnabled();
+        @endphp
         {{-- Q1 pre-warning only; the server guard is authoritative. --}}
         <x-ui.alert id="mixedLogisticsWarning" tone="warning" class="tw:mb-3 d-none" role="status">{{ __('procurement.logistics.mixed_selection_warning') }}</x-ui.alert>
         <div class="table-responsive">
             <table class="table table-hover align-middle">
-                <thead><tr><th>{{ __('purchasing.copy.select') }}</th><th>PR</th><th>{{ __('purchasing.copy.material') }}</th><th>{{ __('purchasing.copy.supplier') }}</th><th>{{ __('purchasing.copy.quotation') }}</th><th>{{ __('purchasing.copy.currency') }}</th><th class="text-end">{{ __('purchasing.copy.weight') }}</th><th class="text-end">{{ __('purchasing.copy.amount') }}</th><th>{{ __('procurement.logistics.port_of_discharge') }}</th><th>{{ __('procurement.logistics.incoterm') }}</th>@if($orderQtyEnabled)<th style="min-width: 11rem;">{{ __('procurement.ordered_quantity.order_qty') }}</th>@endif</tr></thead>
+                <thead><tr><th>{{ __('purchasing.copy.select') }}</th><th>{{ __('purchasing.copy.pr_no') }}</th><th>{{ __('purchasing.copy.material') }}</th><th>{{ __('purchasing.copy.supplier') }}</th><th>{{ __('purchasing.copy.quotation') }}</th><th>{{ __('purchasing.copy.currency') }}</th><th class="text-end">{{ __('purchasing.copy.weight') }}</th><th class="text-end">{{ __('purchasing.copy.amount') }}</th><th>{{ __('procurement.logistics.port_of_discharge') }}</th><th>{{ __('procurement.logistics.incoterm') }}</th>@if($orderQtyEnabled)<th style="min-width: 11rem;">{{ __('procurement.ordered_quantity.order_qty') }}</th>@endif</tr></thead>
                 <tbody>
                     @forelse($awards as $award)
                         <tr>
@@ -87,6 +89,40 @@
         <div class="mb-3">
             <label for="consolidationNotes" class="form-label">{{ __('purchasing.copy.notes') }}</label>
             <textarea id="consolidationNotes" name="notes" class="form-control" maxlength="5000">{{ old('notes') }}</textarea>
+        </div>
+        @php
+            $firstAwardPort = $awards->first()?->purchaseRequisition?->port_of_discharge;
+            $defaultConsolidationPort = old('port_of_discharge', $firstAwardPort ?: (\App\Support\Procurement\LogisticsTerms::ports()[0] ?? 'TANJUNG_PRIOK'));
+        @endphp
+        <div class="mb-3 p-3 border rounded tw:bg-surface-container-low">
+            <div class="mb-2" style="max-width: 360px">
+                <label for="consolidationPortOfDischarge" class="form-label fw-semibold">
+                    {{ __('purchasing.copy.confirm_port_of_discharge_label') }} <span class="text-danger">*</span>
+                </label>
+                <select name="port_of_discharge" id="consolidationPortOfDischarge" class="form-select form-select-sm @error('port_of_discharge') is-invalid @enderror" required>
+                    @foreach(\App\Support\Procurement\LogisticsTerms::ports() as $portCode)
+                        <option value="{{ $portCode }}" {{ $defaultConsolidationPort === $portCode ? 'selected' : '' }}>
+                            {{ \App\Support\Procurement\LogisticsTerms::portLabel($portCode) }}
+                        </option>
+                    @endforeach
+                </select>
+                @error('port_of_discharge')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            </div>
+            <div class="form-check">
+                <input
+                    type="checkbox"
+                    name="confirm_port_of_discharge"
+                    id="consolidationConfirmPort"
+                    value="1"
+                    class="form-check-input @error('confirm_port_of_discharge') is-invalid @enderror"
+                    {{ old('confirm_port_of_discharge') ? 'checked' : '' }}
+                    required
+                >
+                <label for="consolidationConfirmPort" class="form-check-label tw:text-ui-xs fw-semibold">
+                    {{ __('purchasing.copy.confirm_port_of_discharge_checkbox') }}
+                </label>
+                @error('confirm_port_of_discharge')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+            </div>
         </div>
         <x-ui.button id="createConsolidatedPo" type="submit" data-no-auto-spinner :disabled="! $poGenerationEnabled"><span id="consolidationSpinner" class="ui-spinner" hidden aria-hidden="true"></span>{{ __('purchasing.copy.create_consolidated_po') }}</x-ui.button>
     </form>

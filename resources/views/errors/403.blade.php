@@ -1,5 +1,6 @@
 @extends('layouts.auth')
 
+@section('plain-layout', true)
 @section('title', '403 - '.__('common.review.forbidden_title').' | ADASI Supplier Portal')
 @section('meta')<meta name="robots" content="noindex, nofollow">@endsection
 

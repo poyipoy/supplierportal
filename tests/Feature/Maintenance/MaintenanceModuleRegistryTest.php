@@ -3,6 +3,7 @@
 namespace Tests\Feature\Maintenance;
 
 use App\Models\Attachment;
+use App\Models\LocalGoodsReceipt;
 use App\Models\LocalPurchaseOrder;
 use App\Models\Message;
 use App\Models\QcInspection;
@@ -53,12 +54,13 @@ class MaintenanceModuleRegistryTest extends TestCase
             'supplier.purchase-orders.item-progress.update' => ['import.purchase_orders'],
             'shared.pdf.purchase-order' => ['import.purchase_orders'],
             'supplier.shipments.mtc.store' => ['import.shipments'],
+            'supplier.goods-locations.options' => ['import.shipments'],
             'supplier.conversations.show' => ['import.chat'],
             'conversations.messages.store' => ['import.chat'],
             'supplier.claims.respond' => ['import.material_claims'],
             'supplier.price-history.historical' => ['import.price_history'],
-            'exports.download' => ['import.export_history'],
-            'export-presets.store' => ['import.export_history'],
+            'exports.download' => ['import.export_history', 'staff.export_history'],
+            'export-presets.store' => ['import.export_history', 'staff.export_history'],
             'supplier.announcements.show' => ['import.adasi_information'],
             'supplier.company-profile.contact-requests.store' => ['import.company_profile'],
             'supplier.export.quotations' => ['import.quotations', 'import.export_history'],
@@ -83,6 +85,9 @@ class MaintenanceModuleRegistryTest extends TestCase
             'purchasing.requisitions.index' => ['import.purchase_requests'],
             'purchasing.pr-items.store' => ['import.purchase_requests'],
             'purchasing.periods.index' => ['import.purchase_requests'],
+            'purchasing.material-masters.search' => ['import.purchase_requests'],
+            'purchasing.material-calculations.preview' => ['import.purchase_requests'],
+            'purchasing.material-calculations.totals' => ['import.purchase_requests'],
             'purchasing.export.requisitions' => ['import.purchase_requests', 'import.export_history'],
             'purchasing.quotations.accept' => ['import.quotations'],
             'purchasing.export.quotations.detail' => ['import.quotations', 'import.export_history'],
@@ -106,23 +111,46 @@ class MaintenanceModuleRegistryTest extends TestCase
             'finance.vendor-master.index' => ['local.vendor_profile'],
             'finance.vendor-change-requests.approve' => ['local.vendor_profile'],
             'finance.invoices.verify-section-a' => ['local.invoices'],
-            'finance.master-invoices.export' => ['local.invoices'],
+            'finance.master-invoices.export' => ['local.invoices', 'staff.export_history'],
             'finance.local-procurement.goods-receipts.store' => ['local.purchase_orders'],
             'accounting.invoices.index' => ['local.invoices'],
             'accounting.payment-schedule' => ['local.invoices'],
             'accounting.physical-verification' => ['local.invoices'],
-            'accounting.reports.export' => ['local.invoices'],
+            'accounting.reports.export' => ['local.invoices', 'staff.export_history'],
+            'qc.inspections.index' => ['staff.qc_inspections'],
+            'qc.inspections.show' => ['staff.qc_inspections'],
+            'qc.export.inspections' => ['staff.qc_inspections', 'import.export_history'],
+            'shared.pdf.qc-inspection' => ['staff.qc_inspections'],
+            'finance.drp.supplier' => ['staff.drp'],
+            'purchasing.drp.supplier' => ['staff.drp'],
+            'finance.vouchers.show' => ['staff.payment_vouchers'],
+            'finance.settlements.primary' => ['staff.payment_vouchers'],
+            'finance.payment-vouchers.index' => ['staff.payment_vouchers'],
+            'purchasing.payment-vouchers.index' => ['staff.payment_vouchers'],
+            'purchasing.vouchers.print' => ['staff.payment_vouchers'],
+            'finance.overpayments.index' => ['staff.overpayments_forecast'],
+            'finance.forecast' => ['staff.overpayments_forecast'],
+            'ga.claims.index' => ['staff.ga_claims'],
+            'finance.ga-claims.index' => ['staff.ga_claims'],
+            'ga-claim-documents.show' => ['staff.ga_claims'],
+            'ga.employees.index' => ['staff.ga_employees'],
+            'purchasing.master-data.material-hs-code.index' => ['staff.materials'],
+            'purchasing.master-data.reference-prices.index' => ['staff.reference_prices'],
+            'purchasing.master-data.exchange-rates.index' => ['staff.exchange_rates'],
+            'purchasing.kurs.update' => ['staff.exchange_rates'],
+            'purchasing.reports.index' => ['staff.purchasing_reports'],
+            'supplier-registrations.index' => ['staff.supplier_registrations'],
         ]);
     }
 
     public function test_staff_areas_without_a_module_are_blocked_by_global_maintenance_only(): void
     {
         foreach ([
-            'purchasing.dashboard', 'purchasing.drp.supplier', 'purchasing.reports.index', 'purchasing.master-data.exchange-rates.index',
-            'finance.dashboard', 'finance.drp.supplier', 'finance.vouchers.show', 'finance.settlements.primary', 'finance.overpayments.index',
-            'finance.ga-claims.index', 'ga.dashboard', 'ga.claims.index', 'ga-claim-documents.show',
-            'qc.dashboard', 'qc.inspections.show', 'accounting.dashboard',
-            'supplier-registrations.index', 'shared.pdf.qc-inspection',
+            'purchasing.dashboard',
+            'finance.dashboard',
+            'ga.dashboard',
+            'qc.dashboard',
+            'accounting.dashboard',
         ] as $name) {
             $this->assertSame(RouteClassification::PORTAL, $this->registry->classifyRoute(Route::getRoutes()->getByName($name))->kind, $name);
         }
@@ -155,9 +183,10 @@ class MaintenanceModuleRegistryTest extends TestCase
         $route = Route::getRoutes()->getByName('attachments.show');
         $cases = [
             Message::class => 'import.chat',
-            QcInspection::class => 'import.material_claims',
+            QcInspection::class => 'staff.qc_inspections',
             LocalPurchaseOrder::class => 'local.purchase_orders',
-            SupplierOverpaymentRefund::class => 'local.invoices',
+            LocalGoodsReceipt::class => 'local.purchase_orders',
+            SupplierOverpaymentRefund::class => 'staff.overpayments_forecast',
             SupplierAudit::class => 'local.supplier_audit',
         ];
 
@@ -184,18 +213,51 @@ class MaintenanceModuleRegistryTest extends TestCase
 
     public function test_module_keys_are_scoped_and_labelled_in_both_locales(): void
     {
-        $this->assertCount(15, $this->registry->keys());
+        $this->assertCount(27, $this->registry->keys());
         $this->assertCount(10, $this->registry->grouped()[MaintenanceModuleRegistry::SCOPE_IMPORT]);
         $this->assertCount(5, $this->registry->grouped()[MaintenanceModuleRegistry::SCOPE_LOCAL]);
-        $this->assertNotContains('import.reference_prices', $this->registry->keys());
+        $this->assertCount(12, $this->registry->grouped()[MaintenanceModuleRegistry::SCOPE_STAFF]);
+
+        foreach (array_keys($this->registry->grouped()) as $scope) {
+            foreach (['en', 'id'] as $locale) {
+                $this->assertTrue(Lang::has('maintenance.scopes.'.$scope, $locale, false), "scope {$scope} [{$locale}]");
+                $this->assertTrue(Lang::has('maintenance.scope_help.'.$scope, $locale, false), "scope_help {$scope} [{$locale}]");
+            }
+        }
 
         foreach ($this->registry->keys() as $key) {
-            $this->assertMatchesRegularExpression('/\A(import|local)\.[a-z_]+\z/', $key);
+            $this->assertMatchesRegularExpression('/\A(import|local|staff)\.[a-z_]+\z/', $key);
             $this->assertSame(explode('.', $key)[0], $this->registry->scopeOf($key));
             foreach (['en', 'id'] as $locale) {
                 $this->assertTrue(Lang::has('maintenance.modules.'.$key, $locale, false), "{$key} [{$locale}]");
             }
         }
+    }
+
+    public function test_staff_modules_apply_only_to_their_owning_staff_roles(): void
+    {
+        $purchasing = (new User)->forceFill(['role' => 'purchasing']);
+        $qc = (new User)->forceFill(['role' => 'qc']);
+        $finance = (new User)->forceFill(['role' => 'finance']);
+        $accounting = (new User)->forceFill(['role' => 'accounting']);
+        $ga = (new User)->forceFill(['role' => 'ga']);
+        $supplier = (new User)->forceFill(['role' => 'supplier']);
+
+        $this->assertTrue($this->registry->appliesTo('staff.qc_inspections', $qc));
+        $this->assertTrue($this->registry->appliesTo('staff.qc_inspections', $purchasing));
+        $this->assertFalse($this->registry->appliesTo('staff.qc_inspections', $finance));
+        $this->assertFalse($this->registry->appliesTo('staff.qc_inspections', $supplier));
+
+        $this->assertTrue($this->registry->appliesTo('staff.export_history', $finance));
+        $this->assertTrue($this->registry->appliesTo('staff.export_history', $accounting));
+        $this->assertFalse($this->registry->appliesTo('staff.export_history', $purchasing));
+        $this->assertFalse($this->registry->appliesTo('staff.export_history', $qc));
+        $this->assertFalse($this->registry->appliesTo('staff.export_history', $supplier));
+
+        $this->assertTrue($this->registry->appliesTo('staff.ga_claims', $ga));
+        $this->assertTrue($this->registry->appliesTo('staff.ga_claims', $finance));
+        $this->assertFalse($this->registry->appliesTo('staff.ga_employees', $finance));
+        $this->assertTrue($this->registry->appliesTo('staff.ga_employees', $ga));
     }
 
     /** @param array<string, list<string>> $expectations route name => module keys */

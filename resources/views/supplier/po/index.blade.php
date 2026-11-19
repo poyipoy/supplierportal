@@ -36,6 +36,7 @@
                     <th scope="col">{{ __('supplier.copy.remark') }}</th>
                     <th scope="col" class="text-end">{{ __('supplier.copy.total_amount_idr') }}</th>
                     <th scope="col" class="text-center">{{ __('supplier.copy.status') }}</th>
+                    <th scope="col">{{ __('supplier.copy.outstanding_status_breakdown') }}</th>
                     <th scope="col">{{ __('supplier.copy.estimated_arrival') }}</th>
                     <th scope="col" class="text-end" style="width: 110px;">{{ __('supplier.copy.action') }}</th>
                 </tr>
@@ -64,6 +65,7 @@
                 { data: 'remark_display', name: 'remark_display', orderable: false, className: 'tw:text-on-surface-variant tw:text-ui-xs' },
                 { data: 'total_idr', name: 'total_idr', className: 'text-end fw-bold text-primary ui-tabular-nums', orderable: false, searchable: false },
                 { data: 'status_badge', name: 'status', className: 'text-center' },
+                { data: 'outstanding_breakdown', name: 'outstanding_breakdown', orderable: false, searchable: false },
                 { data: 'estimated_date', name: 'estimated_arrival', className: 'ui-tabular-nums tw:text-on-surface-variant' },
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
             ],

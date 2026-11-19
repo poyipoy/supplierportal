@@ -6,6 +6,7 @@ use App\Models\PrItem;
 use App\Models\QuotationItem;
 use App\Models\ReferencePriceRule;
 use App\Support\Money;
+use Illuminate\Support\Collection;
 
 class ReferencePriceRuleResolver
 {
@@ -14,6 +15,22 @@ class ReferencePriceRuleResolver
         PrItem::SHAPE_ROUND => 'd_outer',
         PrItem::SHAPE_HOLLOW => 'd_outer',
     ];
+
+    /** @var Collection<int, ReferencePriceRule>|null */
+    private ?Collection $rules = null;
+
+    public function preload(): void
+    {
+        $this->rules ??= ReferencePriceRule::query()
+            ->orderBy('sort_order')
+            ->orderBy('dimension_min')
+            ->get();
+    }
+
+    public function reset(): void
+    {
+        $this->rules = null;
+    }
 
     public function resolve(
         ?string $shape,
@@ -48,10 +65,8 @@ class ReferencePriceRuleResolver
         $rawFormatted = Money::normalize((string) $dimension, 4);
         $rounded = self::ceilDimension($dimension);
 
-        $rules = ReferencePriceRule::query()
-            ->orderBy('sort_order')
-            ->orderBy('dimension_min')
-            ->get();
+        $this->preload();
+        $rules = $this->rules;
 
         if ($rules->isEmpty()) {
             return new ReferencePriceRuleResult(

@@ -60,12 +60,12 @@
                 </ul>
                 <p class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ __('maintenance.form.completed_locked') }}</p>
             @else
-                <div class="tw:grid tw:gap-6">
+                <div class="tw:grid tw:gap-5">
                     @foreach($registry->grouped() as $scope => $moduleKeys)
                         @php $groupId = 'maintenanceModules-'.$scope; @endphp
                         <fieldset
-                            class="tw:m-0 tw:min-w-0 tw:border-0 tw:p-0"
-                            aria-describedby="{{ $groupId }}-count"
+                            @class(['tw:m-0 tw:min-w-0 tw:border-0 tw:p-0', 'tw:border-t tw:border-outline-variant tw:pt-5' => ! $loop->first])
+                            aria-describedby="{{ $groupId }}-help {{ $groupId }}-count"
                             data-maintenance-module-group="{{ $scope }}"
                             x-data="{
                                 count: 0,
@@ -84,7 +84,7 @@
                             x-on:change="sync()"
                         >
                             <legend class="tw:sr-only">{{ $registry->scopeLabel($scope) }}</legend>
-                            <div class="tw:mb-2 tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-x-4 tw:gap-y-1">
+                            <div class="tw:mb-1 tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-x-4 tw:gap-y-1">
                                 <div class="tw:flex tw:flex-wrap tw:items-baseline tw:gap-x-3">
                                     <span class="tw:text-ui-sm tw:font-semibold tw:text-on-surface" aria-hidden="true">{{ $registry->scopeLabel($scope) }}</span>
                                     <span id="{{ $groupId }}-count" class="tw:text-ui-xs tw:text-on-surface-variant ui-tabular-nums" aria-live="polite"
@@ -95,6 +95,7 @@
                                     :aria-label="__('maintenance.form.select_all_in', ['group' => $registry->scopeLabel($scope)])"
                                     x-bind:aria-label="count < total ? labels.selectAllIn : labels.clearAllIn">{{ __('maintenance.form.select_all') }}</x-ui.button>
                             </div>
+                            <p id="{{ $groupId }}-help" class="tw:m-0 tw:mb-3 tw:text-ui-xs tw:text-on-surface-variant">{{ __('maintenance.scope_help.'.$scope) }}</p>
                             <div class="tw:grid tw:gap-2 tw:sm:grid-cols-2 tw:xl:grid-cols-3">
                                 @foreach($moduleKeys as $moduleKey)
                                     @php $checkboxId = 'maintenanceModule-'.str_replace('.', '-', $moduleKey); @endphp

@@ -349,7 +349,7 @@ class QuotationController extends Controller
      */
     public function show($id)
     {
-        $quotation = Quotation::with(['items.prItem', 'items.attachments', 'items.award.purchaseOrder', 'purchaseRequisition.period', 'exchange_rate'])
+        $quotation = Quotation::with(['items.prItem', 'items.attachments', 'items.award.purchaseOrder', 'purchaseOrders', 'purchaseRequisition.period', 'exchange_rate'])
             ->findOrFail($id);
 
         Gate::authorize('view', $quotation);

@@ -66,7 +66,7 @@ class TranslationContentTest extends TestCase
         $this->assertSame('Kode HS', __('common.fields.hs_code', [], 'id'));
         $this->assertSame('Bentuk', __('purchasing.copy.shape', [], 'id'));
         $this->assertSame('Perkiraan Kedatangan', __('purchasing.copy.estimated_arrival', [], 'id'));
-        $this->assertSame('Nomor PR', __('purchasing.copy.pr_no', [], 'id'));
+        $this->assertSame('Purchase Requisition', __('purchasing.copy.pr_no', [], 'id'));
         $this->assertNotSame(__('finance.dashboard.title', [], 'en'), __('finance.dashboard.title', [], 'id'));
     }
 

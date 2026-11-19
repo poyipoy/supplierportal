@@ -15,7 +15,7 @@ return [
     'validation.digit_progress' => ':count/:max digits',
 
     'tables.loading' => 'Loading data...',
-    'loader.loading' => 'Loading...',
+    'loader.loading' => 'Loading',
     'loader.slow' => 'Processing is taking longer. You can wait or dismiss this message.',
     'loader.dismiss' => 'Close',
     'toast.completed' => 'Operation completed',

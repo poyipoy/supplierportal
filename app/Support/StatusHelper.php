@@ -22,6 +22,7 @@ use App\Enums\SupplierBankAccountStatus;
 use App\Enums\SupplierChangeRequestStatus;
 use App\Enums\SupplierRegistrationAttemptStatus;
 use App\Models\Quotation;
+use App\Models\Shipment;
 use DateTimeInterface;
 use Illuminate\Support\Carbon;
 
@@ -395,7 +396,7 @@ class StatusHelper
     /**
      * PO badge - automatically returns 'bg-danger' when $isOverdue is true.
      */
-    public static function poBadge(string|PurchaseOrderStatus $status, bool $isOverdue = false): string
+    public static function poBadge(string|PurchaseOrderStatus $status, bool $isOverdue = false, ?bool $hasActiveShipments = null): string
     {
         if ($isOverdue) {
             return 'bg-danger';
@@ -403,16 +404,28 @@ class StatusHelper
 
         $val = $status instanceof PurchaseOrderStatus ? $status->value : $status;
 
+        if ($val === 'active' && $hasActiveShipments !== null) {
+            return $hasActiveShipments ? 'bg-info' : 'bg-warning text-dark';
+        }
+
         return self::$poBadges[$val] ?? 'bg-secondary';
     }
 
     /**
      * PO label - automatically returns 'Overdue' when $isOverdue is true.
      */
-    public static function poLabel(string|PurchaseOrderStatus $status, bool $isOverdue = false): string
+    public static function poLabel(string|PurchaseOrderStatus $status, bool $isOverdue = false, ?bool $hasActiveShipments = null): string
     {
         if ($isOverdue) {
             return self::label('po', 'overdue');
+        }
+
+        $val = $status instanceof PurchaseOrderStatus ? $status->value : $status;
+
+        if ($val === 'active' && $hasActiveShipments !== null) {
+            return $hasActiveShipments
+                ? __('purchasing.copy.active_has_shipment')
+                : __('purchasing.copy.active_no_shipment');
         }
 
         if ($status instanceof PurchaseOrderStatus) {
@@ -711,9 +724,27 @@ class StatusHelper
         return self::toneFromBadge(self::quotationBadge($status));
     }
 
-    public static function poTone(string|PurchaseOrderStatus $status, bool $isOverdue = false): string
+    public static function poTone(string|PurchaseOrderStatus $status, bool $isOverdue = false, ?bool $hasActiveShipments = null): string
     {
-        return self::toneFromBadge(self::poBadge($status, $isOverdue));
+        if ($isOverdue) {
+            return 'error';
+        }
+
+        $val = $status instanceof PurchaseOrderStatus ? $status->value : $status;
+
+        if ($val === 'active' && $hasActiveShipments !== null) {
+            return $hasActiveShipments ? 'info' : 'warning';
+        }
+
+        return self::toneFromBadge(self::poBadge($status, $isOverdue, $hasActiveShipments));
+    }
+
+    public static function poStatusChip(string|PurchaseOrderStatus $status, bool $isOverdue = false, ?bool $hasActiveShipments = null): string
+    {
+        $tone = self::poTone($status, $isOverdue, $hasActiveShipments);
+        $label = self::poLabel($status, $isOverdue, $hasActiveShipments);
+
+        return '<span class="ui-status-chip ui-status-chip--'.$tone.'">'.e($label).'</span>';
     }
 
     public static function claimTone(string|MaterialClaimStatus $status): string
@@ -849,6 +880,36 @@ class StatusHelper
             : '';
 
         return '<span class="ui-status-chip ui-status-chip--'.$tone.'"'.$tooltip.'>'.$escapedLabel.'</span>';
+    }
+
+    /**
+     * D5 & E11: Compact status chip + missing document list (and revision badge if any)
+     * for shipment index tables across Purchasing and Supplier portals.
+     */
+    public static function shipmentMissingDocumentsHtml(Shipment $shipment): string
+    {
+        $summary = $shipment->missingDocumentsSummary();
+        $parts = [];
+
+        if ($summary['is_complete']) {
+            $parts[] = '<span class="ui-status-chip ui-status-chip--success">'.e(__('shipments.copy.all_documents_complete')).'</span>';
+        } else {
+            $progressText = __('shipments.copy.documents_progress', [
+                'uploaded' => $summary['uploaded_count'],
+                'total' => $summary['total_count'],
+            ]);
+            $missingText = implode(', ', $summary['missing_labels']);
+            $parts[] = '<span class="ui-status-chip ui-status-chip--warning">'.e($progressText).'</span>'
+                .'<div class="tw:text-ui-xs tw:text-on-surface-variant tw:mt-0.5">'.e($missingText).'</div>';
+        }
+
+        if (($summary['revised_count'] ?? 0) > 0) {
+            $parts[] = '<span class="ui-status-chip ui-status-chip--info tw:mt-0.5">'
+                .e(__('shipments.copy.revised_badge', ['count' => $summary['revised_count']]))
+                .'</span>';
+        }
+
+        return '<div class="tw:flex tw:flex-col tw:items-start tw:gap-0.5">'.implode('', $parts).'</div>';
     }
 
     private static function semanticTone(string $badgeClass): string

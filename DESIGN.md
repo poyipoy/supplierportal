@@ -92,7 +92,7 @@ Diaktifkan lewat `:root[data-theme="dark"]` (preferensi user `light | dark | sys
 
 Preferensi `accent`: `brand` (ADASI Blue, default), `slate`, `indigo`, `teal`, `violet` (`config/user_preferences.php`). Preset **hanya** mengganti keluarga `--md-primary*`, `--ui-primary-text`, focus, dan link. **Token status dan seri chart tetap di palet brand.** Preset baru wajib punya pasangan light + dark dan adapter `.btn-primary` / `.btn-outline-primary`.
 
-Preferensi `shell_style`: `classic` (default, sidebar & topbar mengikuti surface tema) atau `slate` (Dark Slate: `:root[data-shell="slate"]` memberi topbar `#232B38` dan sidebar `#2A3444` bernada steel-slate lembut melalui token `--ui-shell-*` yang terisolasi dari `.dropdown-menu` mengambang, memakai teks off-white anti-halation, dan diselaraskan dengan kelima accent preset serta dark mode).
+Preferensi `shell_style`: `classic` (default, sidebar & topbar mengikuti surface tema) atau `slate` (Dark Slate: `:root[data-shell="slate"]` memberi topbar `#15191F` dan sidebar `#1E2229` bernada charcoal-graphite ala Infor LN di Light Mode serta `#111419` / `#161A20` di Dark Mode melalui token `--ui-shell-*` yang terisolasi dari `.dropdown-menu` mengambang, memakai teks off-white anti-halation dengan tier muted terpisah, menyelaraskan `.ui-environment-tag` dan `.sidebar-nav-tooltip`, menjaga `.workspace-sessionbar` mengikuti surface tema area kerja, dan diselaraskan dengan kelima accent preset).
 
 ### 3.5 Density
 
@@ -186,7 +186,7 @@ Komponen kalender sengaja merender native `type="date"` sebagai dasar progressiv
 
 ### 6.1 Shell
 
-- Sidebar berlebar tetap 256px (`data-shell="classic"` mengikuti surface tema sebagai default; `data-shell="slate"` memakai palet steel-slate lembut dengan token `--ui-shell-*`), bisa diciutkan menjadi icon rail 64px (`html[data-sidebar-collapsed]`). Item aktif ditandai halus (bar indikator + warna primary/aksen), tanpa blok warna besar.
+- Sidebar berlebar tetap 256px (`data-shell="classic"` mengikuti surface tema sebagai default; `data-shell="slate"` memakai palet charcoal-graphite ala Infor LN dengan token `--ui-shell-*`), bisa diciutkan menjadi icon rail 64px (`html[data-sidebar-collapsed]`). Item aktif ditandai halus (bar indikator + warna primary/aksen), tanpa blok warna besar.
 - Topbar setinggi 44px di desktop (52px di bawah 992px). Konten full-width adaptif dengan padding dari token density, memakai kelas `.ui-page-fade` pada `#main-content` (`layouts/app.blade.php`) dan `.auth-card` (`layouts/auth.blade.php`).
 - Di bawah 993px, sidebar menjadi drawer.
 - Setiap layout yang memuat `resources/js/app.js` wajib `@include('partials.loader-logo')` sebelum `@vite`.

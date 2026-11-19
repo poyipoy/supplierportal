@@ -174,6 +174,23 @@
             }
         }, true);
 
+        // Prevent mouse wheel / trackpad scroll from mutating focused number inputs
+        // while keeping page and modal scrolling unobstructed (passive + blur).
+        document.addEventListener('wheel', (e) => {
+            const target = e.target;
+            if (
+                target
+                && target.tagName === 'INPUT'
+                && target.type === 'number'
+                && !target.readOnly
+                && !target.disabled
+                && document.activeElement === target
+                && typeof target.blur === 'function'
+            ) {
+                target.blur();
+            }
+        }, { capture: true, passive: true });
+
         window.addEventListener('scroll', () => {
             if (activeInput && activeBadge && activeBadge.classList.contains('is-visible')) {
                 positionBadge(activeInput, activeBadge);

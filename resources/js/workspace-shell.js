@@ -5,6 +5,8 @@ import {
     classifyInternalNavigation,
     computeOpenPaneWidthPx,
     computeWaterFillTabCap,
+    DEFAULT_MAX_PINNED_SESSIONS,
+    DEFAULT_MAX_RECENTLY_CLOSED,
     DEFAULT_SHORTCUTS_WEIGHTS,
     isSameOriginUrl,
     isTopLevelOnlyUrl,
@@ -16,6 +18,8 @@ import {
     resolveTransitionSettleMs,
     resolveVisibleShortcutsSplitters,
     safeWebUrl,
+    sanitizePersistedPinnedList,
+    sanitizeRecentlyClosedList,
     SHORTCUTS_KEY,
     SHORTCUTS_PANE_KEYS,
     stripEmbedParam,
@@ -1106,6 +1110,8 @@ export function bootWorkspaceShell() {
     const favoritesStorageKey = `adasi:workspace:favorites:${scopedStorageSuffix}`;
     const bookmarksStorageKey = `adasi:workspace:bookmarks:${scopedStorageSuffix}`;
     const shortcutsLayoutStorageKey = `adasi:workspace:shortcuts-layout:${scopedStorageSuffix}`;
+    const pinnedStorageKey = `adasi:workspace:pinned:${scopedStorageSuffix}`;
+    const recentlyClosedStorageKey = `adasi:workspace:recently-closed:${scopedStorageSuffix}`;
     const SHORTCUTS_KEYBOARD_STEP_PX = 24;
 
     const readJsonStorage = (key, fallbackValue) => {
@@ -1389,6 +1395,7 @@ export function bootWorkspaceShell() {
     const store = new WorkspaceSessionStore({
         maxSessions: config.maxSessions ?? config.maxTabs,
         maxLiveFrames: config.maxLiveFrames,
+        maxPinnedSessions: config.maxPinnedSessions ?? DEFAULT_MAX_PINNED_SESSIONS,
         staleAfterMs: config.staleAfterMs,
         catalog,
         indexPaths,
@@ -1412,12 +1419,163 @@ export function bootWorkspaceShell() {
     const attachedReadinessPromises = new WeakSet();
     const leavingPanelCleanups = new WeakMap();
 
+    const attachedShortcutDocs = new WeakSet();
+    const handleGlobalWorkspaceShortcut = (event) => {
+        if (!event.altKey || !event.shiftKey || event.ctrlKey || event.metaKey) return;
+        if (event.code !== 'KeyT' && String(event.key || '').toLowerCase() !== 't') return;
+        if (readRecentlyClosedList().length === 0) return;
+        event.preventDefault();
+        reopenRecentlyClosed();
+    };
+    const attachGlobalShortcutListener = (targetDoc) => {
+        if (!targetDoc || attachedShortcutDocs.has(targetDoc)) return;
+        attachedShortcutDocs.add(targetDoc);
+        try {
+            targetDoc.addEventListener('keydown', handleGlobalWorkspaceShortcut);
+        } catch {}
+    };
+    attachGlobalShortcutListener(document);
+
     const announceLiveStatus = (text) => {
         if (!liveRegionEl || !text) return;
         liveRegionEl.textContent = '';
         window.requestAnimationFrame?.(() => {
             if (liveRegionEl) liveRegionEl.textContent = text;
         });
+    };
+
+    const fillI18n = (template, values) => Object.entries(values).reduce(
+        (text, [key, value]) => text.split(`:${key}`).join(String(value)),
+        String(template || ''),
+    );
+
+    const storedSessionOptions = { origin, pathPrefix };
+
+    const readPinnedList = () => sanitizePersistedPinnedList(readJsonStorage(pinnedStorageKey, []), {
+        ...storedSessionOptions,
+        maxPinned: store.maxPinnedSessions,
+    });
+
+    const persistPinnedGroups = () => {
+        const entries = store.groups()
+            .filter((group) => group.pinned)
+            .map((group) => {
+                const parent = group.frames.find((frame) => frame.role === 'parent') || group.frames[0];
+                return {
+                    url: parent?.url || '',
+                    label: group.baseLabel || parent?.title || '',
+                    moduleKey: group.moduleKey,
+                    icon: group.icon || '',
+                };
+            });
+        writeJsonStorage(pinnedStorageKey, sanitizePersistedPinnedList(entries, {
+            ...storedSessionOptions,
+            maxPinned: store.maxPinnedSessions,
+        }));
+    };
+
+    const readRecentlyClosedFromStorage = () => sanitizeRecentlyClosedList(readJsonStorage(recentlyClosedStorageKey, []), {
+        ...storedSessionOptions,
+        maxEntries: DEFAULT_MAX_RECENTLY_CLOSED,
+    });
+
+    let recentlyClosedCache = readRecentlyClosedFromStorage();
+    const readRecentlyClosedList = () => recentlyClosedCache.slice();
+
+    const writeRecentlyClosedList = (list) => {
+        recentlyClosedCache = sanitizeRecentlyClosedList(list, {
+            ...storedSessionOptions,
+            maxEntries: DEFAULT_MAX_RECENTLY_CLOSED,
+        });
+        writeJsonStorage(recentlyClosedStorageKey, recentlyClosedCache);
+    };
+
+    window.addEventListener('storage', (event) => {
+        if (event.key === recentlyClosedStorageKey) {
+            recentlyClosedCache = readRecentlyClosedFromStorage();
+            syncTabDom();
+        }
+    });
+
+    const recordRecentlyClosed = (snapshots = []) => {
+        const incoming = (Array.isArray(snapshots) ? snapshots : [])
+            .filter((snapshot) => snapshot && snapshot.role !== 'child' && snapshot.url);
+        if (incoming.length === 0) return;
+        writeRecentlyClosedList([...incoming, ...recentlyClosedCache]);
+    };
+
+    const clearRecentlyClosedList = () => {
+        writeRecentlyClosedList([]);
+        syncTabDom();
+    };
+
+    const reopenRecentlyClosed = (targetUrl = null) => {
+        const list = readRecentlyClosedList();
+        const idx = targetUrl ? list.findIndex((entry) => entry.url === targetUrl) : 0;
+        const entry = idx >= 0 ? list[idx] : null;
+        if (!entry) return false;
+
+        const opened = openNewWorkspace({ moduleKey: entry.moduleKey, label: entry.label, url: entry.url });
+        if (!opened) return false;
+
+        list.splice(idx, 1);
+        writeRecentlyClosedList(list);
+        announceLiveStatus(fillI18n(i18n.reopenedAnnouncement || 'Reopened :label', { label: entry.label }));
+        syncTabDom();
+        return true;
+    };
+
+    const groupDisplayInfo = (groupId) => store.displayGroups().find((group) => group.groupId === groupId) || null;
+
+    const focusGroupTrigger = (groupId) => {
+        const groupEl = tablistEl.querySelector(`[data-workspace-group="${CSS.escape(groupId)}"]`);
+        const trigger = groupEl?.querySelector('[role="tab"][aria-selected="true"]') || groupEl?.querySelector('[role="tab"]');
+        trigger?.focus?.();
+        trigger?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+    };
+
+    const requestTogglePinGroup = (groupId, { refocus = false } = {}) => {
+        const label = groupDisplayInfo(groupId)?.displayLabel || store.getGroup(groupId)?.baseLabel || '';
+        const res = store.togglePinGroup(groupId);
+        if (res.blocked) {
+            const message = fillI18n(
+                i18n.maxPinnedReached || 'Maximum of :max pinned sessions reached. Unpin a session first.',
+                { max: store.maxPinnedSessions },
+            );
+            window.AdasiToast?.warning?.(message);
+            announceLiveStatus(message);
+            return;
+        }
+        if (!res.changed) return;
+
+        persistPinnedGroups();
+        syncTabDom();
+        if (refocus) focusGroupTrigger(groupId);
+        announceLiveStatus(fillI18n(
+            res.pinned ? (i18n.pinnedAnnouncement || 'Pinned :label') : (i18n.unpinnedAnnouncement || 'Unpinned :label'),
+            { label },
+        ));
+    };
+
+    const announceGroupPosition = (groupId) => {
+        const info = groupDisplayInfo(groupId);
+        if (!info) return;
+        announceLiveStatus(fillI18n(i18n.movedAnnouncement || 'Moved :label to position :position of :total', {
+            label: info.displayLabel,
+            position: info.zoneIndex + 1,
+            total: info.zoneTotal,
+        }));
+    };
+
+    const requestMoveGroupByOffset = (groupId, delta, { refocus = true } = {}) => {
+        const res = store.moveGroupByOffset(groupId, delta);
+        if (!res.moved) return false;
+
+        if (res.pinned) persistPinnedGroups();
+        syncTabDom();
+        if (refocus) focusGroupTrigger(groupId);
+        announceGroupPosition(groupId);
+        return true;
     };
 
     const syncTriggerPendingAttributes = () => {
@@ -1877,7 +2035,10 @@ export function bootWorkspaceShell() {
             ? group.frames.some((f) => Boolean(f.loading) && !f.queued)
             : (Boolean(frame.loading) && !Boolean(frame.queued));
 
+        const isPinnedParent = Boolean(group.pinned && (isStacked || frame.role === 'parent'));
+
         wrapper.classList.toggle('is-active', Boolean(isActive));
+        wrapper.dataset.pinned = isPinnedParent ? 'true' : 'false';
         wrapper.dataset.dirty = isDirty ? 'true' : 'false';
         wrapper.dataset.stale = isStale ? 'true' : 'false';
         wrapper.dataset.hibernated = isHibernated ? 'true' : 'false';
@@ -1892,6 +2053,7 @@ export function bootWorkspaceShell() {
         const hasStatusDot = Boolean(isDirty || isStale || isHibernated || isQueued || isLoading);
         wrapper.dataset.hasStatusDot = hasStatusDot ? 'true' : 'false';
         const statusNotes = [];
+        if (isPinnedParent) statusNotes.push(i18n.pinnedBadge || 'Pinned');
         if (isDirty) statusNotes.push(i18n.statusUnsaved || i18n.unsavedBadge || 'Unsaved changes');
         else if (isStale) statusNotes.push(i18n.statusStale || i18n.staleBadge || 'Refresh needed');
         else if (isLoading) statusNotes.push(i18n.loadingModule || 'Loading module...');
@@ -1916,16 +2078,17 @@ export function bootWorkspaceShell() {
             }
         }
 
+        const pinnedSuffix = isPinnedParent ? `, ${i18n.pinnedBadge || 'Pinned'}` : '';
         if (isStacked) {
             trigger.dataset.workspaceGroupSelect = group.groupId;
             const stackedText = formatCountText(i18n.stackedPagesCount || ':count pages in session', group.frames.length);
-            trigger.setAttribute('aria-label', `${displayText} (${stackedText})`);
+            trigger.setAttribute('aria-label', `${displayText} (${stackedText})${pinnedSuffix}`);
             trigger.title = statusNotes.length ? `${displayText} — ${stackedText} (${statusNotes.join(' · ')})` : `${displayText} — ${stackedText}`;
         } else {
             trigger.dataset.workspaceSessionSelect = frame.frameId;
             const dupSuffix = group.duplicateTotal > 1 && frame.role === 'parent' ? ` #${group.duplicateIndex}` : '';
-            if (dupSuffix) {
-                trigger.setAttribute('aria-label', `${displayText} (${group.duplicateIndex})`);
+            if (dupSuffix || pinnedSuffix) {
+                trigger.setAttribute('aria-label', `${displayText}${dupSuffix ? ` (${group.duplicateIndex})` : ''}${pinnedSuffix}`);
             } else {
                 trigger.removeAttribute('aria-label');
             }
@@ -1939,10 +2102,12 @@ export function bootWorkspaceShell() {
         if (isStacked) wrapper.classList.add('workspace-session--stacked');
         else if (group.frames.length > 1) wrapper.classList.add(frame.role === 'parent' ? 'workspace-session--parent' : 'workspace-session--child');
 
+        const isPinnedParent = Boolean(group.pinned && (isStacked || frame.role === 'parent'));
+
         wrapper.setAttribute('role', 'presentation');
         wrapper.dataset.workspaceSession = isStacked ? group.groupId : frame.frameId;
         wrapper.dataset.workspaceGroupTarget = group.groupId;
-        wrapper.dataset.pinned = 'false';
+        wrapper.dataset.pinned = isPinnedParent ? 'true' : 'false';
 
         const trigger = document.createElement('button');
         trigger.type = 'button';
@@ -1951,6 +2116,15 @@ export function bootWorkspaceShell() {
         trigger.className = 'workspace-session__trigger ui-focus-ring';
 
         syncTabPillState(wrapper, trigger, { frame, group, isActive, isStacked, displayText });
+
+        if (isPinnedParent) {
+            const pinEl = document.createElement('span');
+            pinEl.className = 'workspace-session__pin-icon';
+            pinEl.setAttribute('aria-hidden', 'true');
+            const pinIcon = cloneTemplateIcon('pin');
+            if (pinIcon) pinEl.appendChild(pinIcon);
+            trigger.appendChild(pinEl);
+        }
 
         const dot = document.createElement('span');
         dot.className = 'workspace-session__status-dot';
@@ -2129,6 +2303,10 @@ export function bootWorkspaceShell() {
         // Reconcile group DOM nodes cleanly before transitions measure target geometry
         let anchorNode = null;
         const pendingMorphs = [];
+        const lastPinnedIdx = displayList.reduce((last, entry, idx) => (entry.pinned ? idx : last), -1);
+        const lastPinnedGroupId = lastPinnedIdx !== -1 && lastPinnedIdx < displayList.length - 1
+            ? displayList[lastPinnedIdx].groupId
+            : null;
 
         for (const group of displayList) {
             let groupEl = tablistEl.querySelector(`[data-workspace-group="${CSS.escape(group.groupId)}"]`);
@@ -2142,10 +2320,13 @@ export function bootWorkspaceShell() {
             }
             groupEl.classList.add('workspace-session-group');
             groupEl.dataset.workspaceModule = group.moduleKey;
+            groupEl.dataset.pinned = group.pinned ? 'true' : 'false';
+            groupEl.classList.toggle('is-last-pinned', group.groupId === lastPinnedGroupId);
 
+            const pinSig = group.pinned ? 'p1' : 'p0';
             const expectedLayoutSig = group.isCollapsedStack
-                ? `stack:${group.groupId}:${group.frames.length}:${group.duplicateTotal > 1 ? group.duplicateIndex : 0}`
-                : `open:${group.frames.map((f) => `${f.frameId}:${f.role}`).join('|')}:${group.duplicateTotal > 1 ? group.duplicateIndex : 0}`;
+                ? `stack:${group.groupId}:${group.frames.length}:${group.duplicateTotal > 1 ? group.duplicateIndex : 0}:${pinSig}`
+                : `open:${group.frames.map((f) => `${f.frameId}:${f.role}`).join('|')}:${group.duplicateTotal > 1 ? group.duplicateIndex : 0}:${pinSig}`;
 
             const expectedRenderSig = group.isCollapsedStack
                 ? `${expectedLayoutSig}:${group.displayLabel}:${group.dirty}:${group.stale}:${group.hibernated}:${Boolean(group.queued)}:${group.frames.some((f) => Boolean(f.loading) && !f.queued)}`
@@ -2232,10 +2413,11 @@ export function bootWorkspaceShell() {
                     for (const frame of group.frames) {
                         const isFrameActive = frame.frameId === activeFrameId;
                         const isMultiParent = group.frames.length > 1 && frame.role === 'parent';
+                        const isPinnedParent = Boolean(group.pinned && frame.role === 'parent');
                         const pill = buildTabPillNode({
                             frame,
                             group,
-                            showClose: !isMultiParent,
+                            showClose: !isMultiParent && !isPinnedParent,
                             isActive: isFrameActive,
                             isStacked: false,
                             displayText: frame.title,
@@ -2375,7 +2557,7 @@ export function bootWorkspaceShell() {
         }
 
         if (switcherBtn) {
-            switcherBtn.hidden = displayList.length < 2;
+            switcherBtn.hidden = displayList.length < 2 && readRecentlyClosedList().length === 0;
             if (switcherCountEl) switcherCountEl.textContent = String(displayList.length);
         }
 
@@ -2502,6 +2684,9 @@ export function bootWorkspaceShell() {
         const title = resolveCanonicalFrameTitle(ctx, cleanUrl, liveDoc?.title || ctx.frame.title);
         store.markLoaded(frameId, { url: cleanUrl, label: title });
         if (iframe && title) iframe.title = title;
+        if (ctx.group.pinned && ctx.frame.role === 'parent') {
+            persistPinnedGroups();
+        }
 
         if (liveWin && liveDoc) {
             syncLocaleIfNeeded(frameId, iframe, liveWin, liveDoc);
@@ -2589,6 +2774,7 @@ export function bootWorkspaceShell() {
         iframe.title = title;
 
         syncLocaleIfNeeded(frameId, iframe, frameWin, frameDoc);
+        attachGlobalShortcutListener(frameDoc);
 
         const readiness = frameWin.AdasiEmbedReadiness;
         if (readiness && !readiness.isReady) {
@@ -2706,11 +2892,11 @@ export function bootWorkspaceShell() {
         const resolvedUrl = target.url || stripEmbedParam(url, origin);
         if (!resolvedUrl || !isSameOriginUrl(resolvedUrl, origin)) {
             openSafeExternal(url);
-            return;
+            return false;
         }
         if (isTopLevelOnlyUrl(resolvedUrl, origin, pathPrefix)) {
             breakoutToTop(resolvedUrl);
-            return;
+            return false;
         }
 
         const canonicalKey = `workspace:${canonicalizeUrl(resolvedUrl, origin)}`;
@@ -2729,7 +2915,7 @@ export function bootWorkspaceShell() {
 
         if (result.blocked) {
             window.AdasiToast?.warning?.(i18n.evictionBlocked || 'All open sessions have unsaved changes.');
-            return;
+            return false;
         }
 
         recordModuleUse(resolvedUrl);
@@ -2756,10 +2942,11 @@ export function bootWorkspaceShell() {
                 .replace(':label', tabLabel)
                 .replace(':count', String(navQueue.size()));
             announceLiveStatus(queuedMsg);
-            return;
+            return true;
         }
         ensureFrameMounted(result.frame);
         notifyActiveSurface(historyMode);
+        return true;
     };
 
     const openChildInGroup = (groupId, sourceFrameId, url, label = '', triggerEl = null) => {
@@ -2950,8 +3137,19 @@ export function bootWorkspaceShell() {
         syncTriggerPendingAttributes();
     };
 
+    const notifyPinnedCloseProtected = () => {
+        const message = i18n.pinnedCloseProtected || 'Pinned session is protected. Unpin it first to close.';
+        window.AdasiToast?.info?.(message);
+        announceLiveStatus(message);
+    };
+
     const handlePostCloseResult = (closeResult) => {
+        if (closeResult?.blockedByPin) {
+            notifyPinnedCloseProtected();
+            return;
+        }
         cancelQueuedFrames(closeResult?.closedFrameIds || []);
+        recordRecentlyClosed(closeResult?.closedSnapshots || []);
         const { nextTarget, wasHibernated, shouldRefresh } = closeResult;
         if (!nextTarget || nextTarget.type === SHORTCUTS_KEY) {
             notifyActiveSurface('push');
@@ -2983,7 +3181,7 @@ export function bootWorkspaceShell() {
 
         if (dirtyFrames.length > 0 && !(await confirmDirtyClose(dirtyFrames))) return;
         const res = store.closeFrame(frameId);
-        if (res.closed) handlePostCloseResult(res);
+        if (res.closed || res.blockedByPin) handlePostCloseResult(res);
     };
 
     const requestCloseGroup = async (groupId) => {
@@ -2992,7 +3190,7 @@ export function bootWorkspaceShell() {
         const dirtyFrames = store.dirtyFramesForClose('group', groupId);
         if (dirtyFrames.length > 0 && !(await confirmDirtyClose(dirtyFrames))) return;
         const res = store.closeGroup(groupId);
-        if (res.closed) handlePostCloseResult(res);
+        if (res.closed || res.blockedByPin) handlePostCloseResult(res);
     };
 
     const requestBulkClose = async (scope, anchorGroupId = null) => {
@@ -3194,44 +3392,77 @@ export function bootWorkspaceShell() {
     const openWorkspaceSwitcherMenu = (anchorEl) => {
         if (!tabMenuEl) return;
         const displayList = store.displayGroups();
-        if (displayList.length === 0) return;
+        const recentlyClosed = readRecentlyClosedList();
+        if (displayList.length === 0 && recentlyClosed.length === 0) return;
 
         dismissFloatingOverlays({ restoreFocus: false, immediate: true });
         lastMenuOpener = anchorEl || document.activeElement;
         if (anchorEl) anchorEl.setAttribute('aria-expanded', 'true');
 
-        const heading = document.createElement('div');
-        heading.className = 'workspace-session-menu__heading';
-        heading.textContent = i18n.openSessions || i18n.openWorkspaces || 'Open sessions';
-        tabMenuEl.appendChild(heading);
+        if (displayList.length > 0) {
+            const heading = document.createElement('div');
+            heading.className = 'workspace-session-menu__heading';
+            heading.textContent = i18n.openSessions || i18n.openWorkspaces || 'Open sessions';
+            tabMenuEl.appendChild(heading);
 
-        for (const group of displayList) {
-            const label = group.duplicateTotal > 1 ? `${group.displayLabel} #${group.duplicateIndex}` : group.displayLabel;
-            const badgeParts = [];
-            if (group.frames.length > 1) badgeParts.push(String(group.frames.length));
-            if (group.dirty) badgeParts.push('•');
-            else if (group.hibernated) badgeParts.push(i18n.hibernatedBadge || 'Hibernated');
+            for (const group of displayList) {
+                const label = group.duplicateTotal > 1 ? `${group.displayLabel} #${group.duplicateIndex}` : group.displayLabel;
+                const badgeParts = [];
+                if (group.frames.length > 1) badgeParts.push(String(group.frames.length));
+                if (group.dirty) badgeParts.push('•');
+                else if (group.hibernated) badgeParts.push(i18n.hibernatedBadge || 'Hibernated');
+
+                tabMenuEl.appendChild(createMenuButtonItem({
+                    label,
+                    badgeText: badgeParts.join(' '),
+                    iconName: group.pinned ? 'pin' : (group.frames.length > 1 ? 'layers' : 'chevron-right'),
+                    current: group.isActive,
+                    onSelect: () => activateGroup(group.groupId, { focusTrigger: true }),
+                }));
+            }
+        }
+
+        if (recentlyClosed.length > 0) {
+            if (displayList.length > 0) {
+                const recentDivider = document.createElement('div');
+                recentDivider.className = 'workspace-session-menu__divider';
+                recentDivider.setAttribute('role', 'separator');
+                tabMenuEl.appendChild(recentDivider);
+            }
+
+            const recentHeading = document.createElement('div');
+            recentHeading.className = 'workspace-session-menu__heading';
+            recentHeading.textContent = i18n.recentlyClosed || 'Recently closed';
+            tabMenuEl.appendChild(recentHeading);
+
+            for (const entry of recentlyClosed.slice(0, 8)) {
+                tabMenuEl.appendChild(createMenuButtonItem({
+                    label: entry.label,
+                    iconName: 'rotate-ccw',
+                    onSelect: () => reopenRecentlyClosed(entry.url),
+                }));
+            }
 
             tabMenuEl.appendChild(createMenuButtonItem({
-                label,
-                badgeText: badgeParts.join(' '),
-                iconName: group.frames.length > 1 ? 'layers' : 'chevron-right',
-                current: group.isActive,
-                onSelect: () => activateGroup(group.groupId, { focusTrigger: true }),
+                label: i18n.clearRecentlyClosed || 'Clear recently closed',
+                iconName: 'trash-2',
+                onSelect: () => clearRecentlyClosedList(),
             }));
         }
 
-        const divider = document.createElement('div');
-        divider.className = 'workspace-session-menu__divider';
-        divider.setAttribute('role', 'separator');
-        tabMenuEl.appendChild(divider);
+        if (displayList.some((group) => !group.pinned)) {
+            const divider = document.createElement('div');
+            divider.className = 'workspace-session-menu__divider';
+            divider.setAttribute('role', 'separator');
+            tabMenuEl.appendChild(divider);
 
-        tabMenuEl.appendChild(createMenuButtonItem({
-            label: i18n.closeAll || 'Close all sessions',
-            iconName: 'x',
-            danger: true,
-            onSelect: () => requestBulkClose('all'),
-        }));
+            tabMenuEl.appendChild(createMenuButtonItem({
+                label: i18n.closeAll || 'Close all sessions',
+                iconName: 'x',
+                danger: true,
+                onSelect: () => requestBulkClose('all'),
+            }));
+        }
 
         positionAndShowTabMenu(anchorEl);
     };
@@ -3284,21 +3515,40 @@ export function bootWorkspaceShell() {
             anchorEl.setAttribute('aria-expanded', 'true');
         }
 
+        const recentlyClosed = readRecentlyClosedList();
+        const hasUnpinnedGroups = groups.some((g) => !g.pinned);
+
         if (isShortcutsTarget) {
-            if (groups.length > 0) {
+            let added = false;
+            if (recentlyClosed.length > 0) {
+                tabMenuEl.appendChild(createMenuButtonItem({
+                    label: i18n.reopenClosedSession || 'Reopen closed session',
+                    iconName: 'rotate-ccw',
+                    onSelect: () => reopenRecentlyClosed(),
+                }));
+                added = true;
+            }
+            if (hasUnpinnedGroups) {
+                if (added) {
+                    const div = document.createElement('div');
+                    div.className = 'workspace-session-menu__divider';
+                    div.setAttribute('role', 'separator');
+                    tabMenuEl.appendChild(div);
+                }
                 tabMenuEl.appendChild(createMenuButtonItem({
                     label: i18n.closeAll || 'Close all sessions',
                     iconName: 'x',
                     danger: true,
                     onSelect: () => requestBulkClose('all'),
                 }));
-            } else {
-                return;
+                added = true;
             }
+            if (!added) return;
         } else {
             const targetFrame = (frameId ? store.getFrame(frameId) : null)
                 || store.getFrame(group.activeFrameId)
                 || group.frames[0];
+            const moveBounds = store.canMoveGroup(group.groupId);
 
             if (targetFrame) {
                 tabMenuEl.appendChild(createMenuButtonItem({
@@ -3309,10 +3559,40 @@ export function bootWorkspaceShell() {
             }
 
             tabMenuEl.appendChild(createMenuButtonItem({
+                label: group.pinned ? (i18n.unpinSession || 'Unpin session') : (i18n.pinSession || 'Pin session'),
+                iconName: group.pinned ? 'pin-off' : 'pin',
+                current: Boolean(group.pinned),
+                onSelect: () => requestTogglePinGroup(group.groupId, { refocus: true }),
+            }));
+
+            if (moveBounds.canMoveLeft) {
+                tabMenuEl.appendChild(createMenuButtonItem({
+                    label: i18n.moveSessionLeft || 'Move session left',
+                    iconName: 'arrow-left',
+                    onSelect: () => requestMoveGroupByOffset(group.groupId, -1, { refocus: true }),
+                }));
+            }
+            if (moveBounds.canMoveRight) {
+                tabMenuEl.appendChild(createMenuButtonItem({
+                    label: i18n.moveSessionRight || 'Move session right',
+                    iconName: 'arrow-right',
+                    onSelect: () => requestMoveGroupByOffset(group.groupId, 1, { refocus: true }),
+                }));
+            }
+
+            tabMenuEl.appendChild(createMenuButtonItem({
                 label: i18n.duplicateSession || i18n.duplicateTab || 'Duplicate session',
                 iconName: 'copy',
                 onSelect: () => requestDuplicateGroup(group.groupId),
             }));
+
+            if (recentlyClosed.length > 0) {
+                tabMenuEl.appendChild(createMenuButtonItem({
+                    label: i18n.reopenClosedSession || 'Reopen closed session',
+                    iconName: 'rotate-ccw',
+                    onSelect: () => reopenRecentlyClosed(),
+                }));
+            }
 
             const targetBookmarkUrl = targetFrame ? canonicalizeBookmarkUrl(targetFrame.url) : '';
             if (targetBookmarkUrl) {
@@ -3340,12 +3620,20 @@ export function bootWorkspaceShell() {
                 }));
             }
 
-            const div2 = document.createElement('div');
-            div2.className = 'workspace-session-menu__divider';
-            div2.setAttribute('role', 'separator');
-            tabMenuEl.appendChild(div2);
+            const groupIndex = groups.findIndex((g) => g.groupId === group.groupId);
+            const hasClosableChild = Boolean(targetFrame && targetFrame.role === 'child');
+            const hasClosableSelf = !group.pinned;
+            const hasClosableOthers = groups.some((g) => !g.pinned && g.groupId !== group.groupId);
+            const hasClosableRight = groupIndex !== -1 && groups.slice(groupIndex + 1).some((g) => !g.pinned);
 
-            if (targetFrame && targetFrame.role === 'child') {
+            if (hasClosableChild || hasClosableSelf || hasClosableOthers || hasClosableRight || hasUnpinnedGroups) {
+                const div2 = document.createElement('div');
+                div2.className = 'workspace-session-menu__divider';
+                div2.setAttribute('role', 'separator');
+                tabMenuEl.appendChild(div2);
+            }
+
+            if (hasClosableChild) {
                 tabMenuEl.appendChild(createMenuButtonItem({
                     label: i18n.closeSession || i18n.closeTab || 'Close session',
                     iconName: 'x',
@@ -3353,37 +3641,40 @@ export function bootWorkspaceShell() {
                 }));
             }
 
-            tabMenuEl.appendChild(createMenuButtonItem({
-                label: group.frames.length > 1 ? (i18n.closeGroup || 'Close session group') : (i18n.closeSession || i18n.closeTab || 'Close session'),
-                iconName: 'x',
-                danger: group.frames.length > 1,
-                onSelect: () => requestCloseGroup(group.groupId),
-            }));
+            if (hasClosableSelf) {
+                tabMenuEl.appendChild(createMenuButtonItem({
+                    label: group.frames.length > 1 ? (i18n.closeGroup || 'Close session group') : (i18n.closeSession || i18n.closeTab || 'Close session'),
+                    iconName: 'x',
+                    danger: group.frames.length > 1,
+                    onSelect: () => requestCloseGroup(group.groupId),
+                }));
+            }
 
-            const groupIndex = groups.findIndex((g) => g.groupId === group.groupId);
-            if (groups.length > 1) {
+            if (hasClosableOthers) {
                 tabMenuEl.appendChild(createMenuButtonItem({
                     label: i18n.closeOthers || 'Close other sessions',
                     onSelect: () => requestBulkClose('others', group.groupId),
                 }));
             }
-            if (groupIndex !== -1 && groupIndex < groups.length - 1) {
+            if (hasClosableRight) {
                 tabMenuEl.appendChild(createMenuButtonItem({
                     label: i18n.closeRight || 'Close sessions to the right',
                     onSelect: () => requestBulkClose('right', group.groupId),
                 }));
             }
-            tabMenuEl.appendChild(createMenuButtonItem({
-                label: i18n.closeAll || 'Close all sessions',
-                danger: true,
-                onSelect: () => requestBulkClose('all'),
-            }));
+            if (hasUnpinnedGroups) {
+                tabMenuEl.appendChild(createMenuButtonItem({
+                    label: i18n.closeAll || 'Close all sessions',
+                    danger: true,
+                    onSelect: () => requestBulkClose('all'),
+                }));
+            }
         }
 
         positionAndShowTabMenu(anchorEl, clientX, clientY);
     };
 
-    // Hydrate SSR initial group & iframe seamlessly without double reload
+    // Hydrate persisted pinned sessions (hibernated) + SSR initial group & iframe seamlessly without double reload
     const ssrGroupEl = tablistEl.querySelector('[data-workspace-group="initial"]');
     const ssrTabEl = tablistEl.querySelector('[data-workspace-session="initial"]');
     const ssrTriggerEl = tablistEl.querySelector('[data-workspace-session-select="initial"]');
@@ -3391,27 +3682,65 @@ export function bootWorkspaceShell() {
     const ssrPanelEl = framesEl.querySelector('[data-workspace-panel="initial"]');
     const ssrFrameEl = framesEl.querySelector('[data-workspace-frame="initial"]');
 
+    const persistedPinnedEntries = readPinnedList();
+    const seedHibernatedEntry = (entry) => {
+        const entryLabel = menuPathTitles.get(normalizedPath(entry.url, origin)) || entry.label;
+        store.seedHibernatedPinned({
+            moduleKey: entry.moduleKey,
+            label: entryLabel,
+            url: entry.url,
+            icon: entry.icon || '',
+        });
+    };
+
     if (window.location.hash === `#${SHORTCUTS_KEY}`) {
         ssrGroupEl?.remove();
         ssrPanelEl?.remove();
+        for (const entry of persistedPinnedEntries) {
+            seedHibernatedEntry(entry);
+        }
         store.activateShortcuts();
         initialReadyResolve?.();
         notifyActiveSurface('replace');
     } else {
+        const canonicalInitialUrl = canonicalizeUrl(initialTab.url, origin);
         const canonicalInitialLabel = menuPathTitles.get(normalizedPath(initialTab.url, origin)) || initialTab.label;
+        const matchedPinIdx = persistedPinnedEntries.findIndex((entry) => entry.url === canonicalInitialUrl);
+
+        if (matchedPinIdx !== -1) {
+            for (let i = 0; i < matchedPinIdx; i += 1) {
+                seedHibernatedEntry(persistedPinnedEntries[i]);
+            }
+        } else {
+            for (const entry of persistedPinnedEntries) {
+                seedHibernatedEntry(entry);
+            }
+        }
+
         const seeded = store.seedInitial({
             moduleKey: initialTab.key,
             label: canonicalInitialLabel,
             url: initialTab.url,
+            pinned: matchedPinIdx !== -1,
         });
+
+        if (matchedPinIdx !== -1) {
+            for (let i = matchedPinIdx + 1; i < persistedPinnedEntries.length; i += 1) {
+                seedHibernatedEntry(persistedPinnedEntries[i]);
+            }
+        }
 
         if (seeded.group && seeded.frame) {
             initialFrameId = seeded.frame.frameId;
             recordModuleUse(initialTab.url);
-            if (ssrGroupEl) ssrGroupEl.dataset.workspaceGroup = seeded.group.groupId;
+            if (ssrGroupEl) {
+                ssrGroupEl.dataset.workspaceGroup = seeded.group.groupId;
+                ssrGroupEl.dataset.pinned = seeded.group.pinned ? 'true' : 'false';
+            }
             if (ssrTabEl) {
                 ssrTabEl.dataset.workspaceSession = seeded.frame.frameId;
                 ssrTabEl.dataset.workspaceGroupTarget = seeded.group.groupId;
+                ssrTabEl.dataset.pinned = seeded.group.pinned ? 'true' : 'false';
             }
             if (ssrTriggerEl) {
                 ssrTriggerEl.id = `workspace-session-${seeded.frame.frameId}`;
@@ -3440,10 +3769,245 @@ export function bootWorkspaceShell() {
         notifyActiveSurface('replace');
     }
 
-    // Session Strip clicks, middle-click close, context menu, and roving keyboard navigation
+    // Session Strip clicks, drag-and-drop reorder, middle-click close, context menu, and roving keyboard navigation
     const tabStripEventsEl = tabbarEl || tablistEl;
+    let suppressTabClickUntil = 0;
+
+    // Pointer Events drag-and-drop reorder (strictly partitioned by pinned vs unpinned zone)
+    let tabDragState = null;
+
+    const stopTabDragAutoScroll = () => {
+        if (tabDragState?.autoScrollRaf) {
+            window.cancelAnimationFrame?.(tabDragState.autoScrollRaf);
+            tabDragState.autoScrollRaf = 0;
+        }
+    };
+
+    const animateFlipShift = (el, deltaX) => {
+        if (!el || !deltaX || prefersReducedMotion()) return;
+        el.classList.remove('is-reorder-shifting');
+        el.style.transform = `translate3d(${roundPx(deltaX)}px, 0, 0)`;
+        void el.offsetWidth;
+        el.classList.add('is-reorder-shifting');
+        el.style.transform = '';
+        const clear = () => {
+            el.classList.remove('is-reorder-shifting');
+            el.removeEventListener('transitionend', clear);
+        };
+        el.addEventListener('transitionend', clear);
+        window.setTimeout?.(clear, 220);
+    };
+
+    const queryZoneGroupEls = (pinned) => Array.from(
+        tablistEl.querySelectorAll(`:scope > [data-workspace-group][data-pinned="${pinned ? 'true' : 'false'}"]:not(.workspace-session-group--ghost)`),
+    );
+
+    const evaluateTabDragSwaps = () => {
+        if (!tabDragState?.active) return;
+        const { groupEl, groupId, pinned } = tabDragState;
+        const zoneEls = queryZoneGroupEls(pinned);
+        const currentIdx = zoneEls.indexOf(groupEl);
+        if (currentIdx === -1) return;
+
+        const draggedRect = groupEl.getBoundingClientRect();
+        const draggedCenterX = draggedRect.left + draggedRect.width / 2;
+
+        if (currentIdx > 0) {
+            const leftEl = zoneEls[currentIdx - 1];
+            const leftRect = leftEl.getBoundingClientRect();
+            if (draggedCenterX < leftRect.left + leftRect.width / 2) {
+                const res = store.moveGroupByOffset(groupId, -1);
+                if (res.moved) {
+                    const draggedBefore = draggedRect.left;
+                    leftEl.before(groupEl);
+                    const leftAfter = leftEl.getBoundingClientRect();
+                    const draggedAfter = groupEl.getBoundingClientRect();
+                    tabDragState.anchorClientX += draggedAfter.left - draggedBefore;
+                    tabDragState.moved = true;
+                    animateFlipShift(leftEl, leftRect.left - leftAfter.left);
+                    groupEl.style.transform = `translate3d(${roundPx(tabDragState.lastClientX - tabDragState.anchorClientX)}px, 0, 0)`;
+                }
+                return;
+            }
+        }
+
+        if (currentIdx < zoneEls.length - 1) {
+            const rightEl = zoneEls[currentIdx + 1];
+            const rightRect = rightEl.getBoundingClientRect();
+            if (draggedCenterX > rightRect.left + rightRect.width / 2) {
+                const res = store.moveGroupByOffset(groupId, 1);
+                if (res.moved) {
+                    const draggedBefore = draggedRect.left;
+                    rightEl.after(groupEl);
+                    const rightAfter = rightEl.getBoundingClientRect();
+                    const draggedAfter = groupEl.getBoundingClientRect();
+                    tabDragState.anchorClientX += draggedAfter.left - draggedBefore;
+                    tabDragState.moved = true;
+                    animateFlipShift(rightEl, rightRect.left - rightAfter.left);
+                    groupEl.style.transform = `translate3d(${roundPx(tabDragState.lastClientX - tabDragState.anchorClientX)}px, 0, 0)`;
+                }
+            }
+        }
+    };
+
+    const runTabDragAutoScroll = () => {
+        if (!tabDragState?.active || !viewportEl) return;
+        const maxScroll = viewportEl.scrollWidth - viewportEl.clientWidth;
+        if (maxScroll <= 0) {
+            tabDragState.autoScrollRaf = 0;
+            return;
+        }
+        const vpRect = viewportEl.getBoundingClientRect();
+        const edgeZone = 36;
+        let step = 0;
+        if (tabDragState.lastClientX < vpRect.left + edgeZone) {
+            step = -Math.ceil(((vpRect.left + edgeZone - tabDragState.lastClientX) / edgeZone) * 10);
+        } else if (tabDragState.lastClientX > vpRect.right - edgeZone) {
+            step = Math.ceil(((tabDragState.lastClientX - (vpRect.right - edgeZone)) / edgeZone) * 10);
+        }
+        if (step !== 0) {
+            const prevScroll = viewportEl.scrollLeft;
+            viewportEl.scrollLeft = Math.max(0, Math.min(maxScroll, prevScroll + step));
+            const appliedDelta = viewportEl.scrollLeft - prevScroll;
+            if (appliedDelta !== 0) {
+                tabDragState.anchorClientX -= appliedDelta;
+                tabDragState.groupEl.style.transform = `translate3d(${roundPx(tabDragState.lastClientX - tabDragState.anchorClientX)}px, 0, 0)`;
+                evaluateTabDragSwaps();
+                tabDragState.autoScrollRaf = window.requestAnimationFrame?.(runTabDragAutoScroll) || 0;
+                return;
+            }
+        }
+        tabDragState.autoScrollRaf = 0;
+    };
+
+    const activateTabDrag = () => {
+        if (!tabDragState || tabDragState.active) return;
+        tabDragState.active = true;
+        tabDragState.anchorClientX = tabDragState.lastClientX;
+        closeTabMenu({ immediate: true });
+        tabDragState.groupEl.classList.add('is-dragging');
+        tablistEl.dataset.draggingZone = tabDragState.pinned ? 'pinned' : 'unpinned';
+        try {
+            tabDragState.groupEl.setPointerCapture?.(tabDragState.pointerId);
+        } catch {}
+    };
+
+    const finishTabDrag = (event = null) => {
+        if (!tabDragState) return;
+        const state = tabDragState;
+        tabDragState = null;
+        if (state.touchTimer) window.clearTimeout?.(state.touchTimer);
+        if (state.autoScrollRaf) window.cancelAnimationFrame?.(state.autoScrollRaf);
+
+        if (state.active) {
+            suppressTabClickUntil = (typeof performance !== 'undefined' ? performance.now() : Date.now()) + 180;
+            state.groupEl.classList.remove('is-dragging');
+            state.groupEl.style.transform = '';
+            delete tablistEl.dataset.draggingZone;
+            if (event?.pointerId !== undefined) {
+                try { state.groupEl.releasePointerCapture?.(event.pointerId); } catch {}
+            }
+            if (state.moved) {
+                if (state.pinned) persistPinnedGroups();
+                syncTabDom();
+                announceGroupPosition(state.groupId);
+            }
+        }
+    };
+
+    tablistEl.addEventListener('pointerdown', (event) => {
+        if (event.pointerType !== 'touch' && event.button !== 0) return;
+        if (event.target.closest('[data-workspace-session-close], [data-workspace-group-menu]')) return;
+        const groupEl = event.target.closest('[data-workspace-group]');
+        if (!groupEl || groupEl.classList.contains('workspace-session-group--ghost')) return;
+        const groupId = groupEl.dataset.workspaceGroup;
+        if (!groupId || groupId === SHORTCUTS_KEY) return;
+        const bounds = store.canMoveGroup(groupId);
+        if (bounds.zoneTotal <= 1) return;
+
+        tabDragState = {
+            groupId,
+            groupEl,
+            pinned: bounds.pinned,
+            pointerId: event.pointerId,
+            pointerType: event.pointerType,
+            startClientX: event.clientX,
+            startClientY: event.clientY,
+            anchorClientX: event.clientX,
+            lastClientX: event.clientX,
+            active: false,
+            moved: false,
+            touchTimer: 0,
+            autoScrollRaf: 0,
+        };
+
+        if (event.pointerType === 'touch') {
+            tabDragState.touchTimer = window.setTimeout?.(() => {
+                activateTabDrag();
+            }, 180) || 0;
+        }
+    });
+
+    tablistEl.addEventListener('pointermove', (event) => {
+        if (!tabDragState || event.pointerId !== tabDragState.pointerId) return;
+        tabDragState.lastClientX = event.clientX;
+        const dx = event.clientX - tabDragState.startClientX;
+        const dy = event.clientY - tabDragState.startClientY;
+
+        if (!tabDragState.active) {
+            if (tabDragState.pointerType === 'touch') {
+                if (Math.hypot(dx, dy) > 8) {
+                    finishTabDrag();
+                }
+                return;
+            }
+            if (Math.abs(dy) > Math.abs(dx) * 1.5 && Math.abs(dy) > 8) {
+                finishTabDrag();
+                return;
+            }
+            if (Math.abs(dx) < 6) return;
+            activateTabDrag();
+        }
+
+        event.preventDefault();
+        tabDragState.groupEl.style.transform = `translate3d(${roundPx(event.clientX - tabDragState.anchorClientX)}px, 0, 0)`;
+        evaluateTabDragSwaps();
+
+        if (!tabDragState.autoScrollRaf && viewportEl && viewportEl.scrollWidth > viewportEl.clientWidth) {
+            const vpRect = viewportEl.getBoundingClientRect();
+            if (event.clientX < vpRect.left + 36 || event.clientX > vpRect.right - 36) {
+                tabDragState.autoScrollRaf = window.requestAnimationFrame?.(runTabDragAutoScroll) || 0;
+            }
+        }
+    });
+
+    tablistEl.addEventListener('touchmove', (event) => {
+        if (tabDragState?.active) event.preventDefault();
+    }, { passive: false });
+
+    tablistEl.addEventListener('pointerup', (event) => {
+        if (tabDragState && event.pointerId === tabDragState.pointerId) {
+            finishTabDrag(event);
+        }
+    });
+
+    tablistEl.addEventListener('pointercancel', (event) => {
+        if (tabDragState && event.pointerId === tabDragState.pointerId) {
+            finishTabDrag(event);
+        }
+    });
+
+    tablistEl.addEventListener('lostpointercapture', () => {
+        if (tabDragState?.active) finishTabDrag();
+    });
 
     tabStripEventsEl.addEventListener('click', (event) => {
+        const nowMs = typeof performance !== 'undefined' ? performance.now() : Date.now();
+        if (nowMs < suppressTabClickUntil) {
+            event.preventDefault();
+            event.stopPropagation();
+            return;
+        }
         const menuBtn = event.target.closest('[data-workspace-group-menu]');
         if (menuBtn) {
             event.preventDefault();
@@ -3561,6 +4125,28 @@ export function bootWorkspaceShell() {
         }
 
         if (!triggerBtn.matches('[role="tab"]')) return;
+
+        if (event.altKey && event.shiftKey && !event.ctrlKey && !event.metaKey) {
+            const tabEl = triggerBtn.closest('[data-workspace-session]');
+            const gid = tabEl?.dataset?.workspaceGroupTarget;
+            if (tabEl && tabEl.dataset.workspaceSession !== SHORTCUTS_KEY && gid) {
+                if (event.key === 'ArrowLeft') {
+                    event.preventDefault();
+                    requestMoveGroupByOffset(gid, -1, { refocus: true });
+                    return;
+                }
+                if (event.key === 'ArrowRight') {
+                    event.preventDefault();
+                    requestMoveGroupByOffset(gid, 1, { refocus: true });
+                    return;
+                }
+                if (event.code === 'KeyP' || event.key.toLowerCase() === 'p') {
+                    event.preventDefault();
+                    requestTogglePinGroup(gid, { refocus: true });
+                    return;
+                }
+            }
+        }
 
         const tabs = Array.from(tabStripEventsEl.querySelectorAll('[role="tab"]'));
         const idx = tabs.indexOf(triggerBtn);

@@ -119,7 +119,7 @@ class PriceComparisonCharacterizationTest extends TestCase
         $this->assertSame(self::AWARD_RADIO_DATA_ATTRIBUTES, $attributes);
     }
 
-    private const AWARD_FORM_INPUTS = ['_token', 'action', 'awards[{id}]', 'estimated_arrival', 'notes', 'pr_id'];
+    private const AWARD_FORM_INPUTS = ['_token', 'action', 'awards[{id}]', 'confirm_port_of_discharge', 'estimated_arrival', 'notes', 'port_of_discharge', 'pr_id'];
 
     private const AWARD_RADIO_DATA_ATTRIBUTES = ['data-pr-item-id', 'data-pr-item-name', 'data-price', 'data-price-display', 'data-supplier-estimated-ready', 'data-supplier-id', 'data-supplier-name'];
 

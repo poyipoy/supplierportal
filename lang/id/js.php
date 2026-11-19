@@ -15,7 +15,7 @@ return [
     'validation.digit_progress' => ':count/:max digit',
 
     'tables.loading' => 'Memuat data...',
-    'loader.loading' => 'Memuat...',
+    'loader.loading' => 'Memuat',
     'loader.slow' => 'Proses lebih lama. Bisa menunggu atau menutup pesan ini.',
     'loader.dismiss' => 'Tutup',
     'toast.completed' => 'Operasi selesai',

@@ -177,22 +177,22 @@ class PoItemMaterialProgressTest extends TestCase
     }
 
     /**
-     * P-01: Default state awaiting_confirmation when no history exists.
+     * P-01: Default state is order_confirmed when PO is generated (initial row seeded automatically).
      */
-    public function test_p01_default_state_awaiting_confirmation_when_no_history_exists(): void
+    public function test_p01_default_state_order_confirmed_when_po_created(): void
     {
         $po = $this->createPoWithItems($this->supplierA, [[20.0, 20]]);
         $award = $po->awards->first();
 
         $current = $this->progressService->currentForAward($award);
-        $this->assertSame(PoItemProgressUpdate::STAGE_AWAITING_CONFIRMATION, $current['status']);
-        $this->assertTrue($current['is_fallback']);
-        $this->assertNull($current['update']);
+        $this->assertSame(PoItemProgressUpdate::STAGE_ORDER_CONFIRMED, $current['status']);
+        $this->assertFalse($current['is_fallback']);
+        $this->assertNotNull($current['update']);
 
         $projection = $this->progressService->projectionForAward($award);
-        $this->assertSame(PoItemProgressUpdate::STAGE_AWAITING_CONFIRMATION, $projection['manual_progress_status']);
-        $this->assertSame('Awaiting Confirmation', $projection['manual_progress_label']);
-        $this->assertFalse($projection['has_manual_update']);
+        $this->assertSame(PoItemProgressUpdate::STAGE_ORDER_CONFIRMED, $projection['manual_progress_status']);
+        $this->assertSame('Order Confirmed', $projection['manual_progress_label']);
+        $this->assertTrue($projection['has_manual_update']);
         $this->assertSame(20, $projection['supplier_controlled_qty']);
         $this->assertSame(20, $projection['ordered_qty']);
         $this->assertTrue($projection['can_update']);
@@ -207,13 +207,13 @@ class PoItemMaterialProgressTest extends TestCase
         $award1 = $po->awards[0];
         $award2 = $po->awards[1];
 
-        // Update award 1 to order_confirmed
+        // Update award 1 to material_preparation
         $response = $this->actingAs($this->supplierA)->post(
             route('supplier.purchase-orders.item-progress.update', ['po_id' => $po, 'award_id' => $award1]),
             [
-                'status' => PoItemProgressUpdate::STAGE_ORDER_CONFIRMED,
+                'status' => PoItemProgressUpdate::STAGE_MATERIAL_PREPARATION,
                 'estimated_ready_date' => now()->addDays(10)->toDateString(),
-                'note' => 'Confirmed item 1',
+                'note' => 'Prepared item 1',
             ]
         );
         $response->assertRedirect()->assertSessionHasNoErrors();
@@ -221,12 +221,12 @@ class PoItemMaterialProgressTest extends TestCase
         $proj1 = $this->progressService->projectionForAward($award1);
         $proj2 = $this->progressService->projectionForAward($award2);
 
-        $this->assertSame(PoItemProgressUpdate::STAGE_ORDER_CONFIRMED, $proj1['manual_progress_status']);
+        $this->assertSame(PoItemProgressUpdate::STAGE_MATERIAL_PREPARATION, $proj1['manual_progress_status']);
         $this->assertTrue($proj1['has_manual_update']);
 
-        // Award 2 must remain in default awaiting_confirmation
-        $this->assertSame(PoItemProgressUpdate::STAGE_AWAITING_CONFIRMATION, $proj2['manual_progress_status']);
-        $this->assertFalse($proj2['has_manual_update']);
+        // Award 2 must remain in automatic initial order_confirmed
+        $this->assertSame(PoItemProgressUpdate::STAGE_ORDER_CONFIRMED, $proj2['manual_progress_status']);
+        $this->assertTrue($proj2['has_manual_update']);
     }
 
     /**
@@ -344,7 +344,7 @@ class PoItemMaterialProgressTest extends TestCase
         $response->assertRedirect()->assertSessionHasNoErrors();
 
         $history = $this->progressService->historyForAward($award);
-        $this->assertCount(2, $history);
+        $this->assertCount(3, $history);
         $this->assertSame($date2, $history->first()->estimated_ready_date->toDateString());
     }
 
@@ -356,10 +356,6 @@ class PoItemMaterialProgressTest extends TestCase
         $po = $this->createPoWithItems($this->supplierA, [[20.0, 20]]);
         $award = $po->awards->first();
 
-        $this->progressService->updateProgress($po, $award, $this->supplierA, [
-            'status' => PoItemProgressUpdate::STAGE_ORDER_CONFIRMED,
-            'note' => 'Step 1',
-        ]);
         $this->progressService->updateProgress($po, $award, $this->supplierA, [
             'status' => PoItemProgressUpdate::STAGE_MATERIAL_PREPARATION,
             'note' => 'Step 2',
@@ -563,9 +559,9 @@ class PoItemMaterialProgressTest extends TestCase
         $this->assertSame(StatusHelper::materialProgressLabel('arrived'), $arrived['progress_label']);
         $this->assertSame('success', $arrived['progress_tone']);
 
-        // Derived only: the manual stage is still Ready to Ship and no row was written.
+        // Derived only: the manual stage is still Ready to Ship and no extra row was written (initial Order Confirmed + Ready to Ship = 2).
         $this->assertSame(PoItemProgressUpdate::STATUS_READY_TO_SHIP, $arrived['manual_progress_status']);
-        $this->assertSame(1, $award->progressUpdates()->count());
+        $this->assertSame(2, $award->progressUpdates()->count());
     }
 
     /**
@@ -595,7 +591,7 @@ class PoItemMaterialProgressTest extends TestCase
         $award = $po->awards->first();
 
         $this->assertSame(
-            PoItemProgressUpdate::STATUS_AWAITING_CONFIRMATION,
+            PoItemProgressUpdate::STAGE_ORDER_CONFIRMED,
             $this->progressService->projectionForAward($award)['progress_status'],
         );
     }
@@ -644,7 +640,7 @@ class PoItemMaterialProgressTest extends TestCase
             ->post("/supplier/purchase-orders/{$po->hash}/items/{$award->hash}/progress", ['status' => 'arrived'])
             ->assertSessionHasErrors('status');
 
-        $this->assertSame(0, $award->progressUpdates()->count());
+        $this->assertSame(1, $award->progressUpdates()->count());
     }
 
     /**
@@ -883,9 +879,9 @@ class PoItemMaterialProgressTest extends TestCase
         $response = $this->actingAs($this->supplierA)->post(
             route('supplier.purchase-orders.item-progress.update', ['po_id' => $po, 'award_id' => $award]),
             [
-                'status' => PoItemProgressUpdate::STAGE_ORDER_CONFIRMED,
+                'status' => PoItemProgressUpdate::STAGE_MATERIAL_PREPARATION,
                 'estimated_ready_date' => now()->addDays(10)->toDateString(),
-                'note' => 'Order verified and confirmed.',
+                'note' => 'Preparation started.',
             ]
         );
         $response->assertRedirect()->assertSessionHasNoErrors();
@@ -933,8 +929,8 @@ class PoItemMaterialProgressTest extends TestCase
         $award = $po->awards->first();
 
         $this->progressService->updateProgress($po, $award, $this->supplierA, [
-            'status' => PoItemProgressUpdate::STAGE_ORDER_CONFIRMED,
-            'note' => 'Confirmed',
+            'status' => PoItemProgressUpdate::STAGE_MATERIAL_PREPARATION,
+            'note' => 'Preparing material',
         ]);
 
         // Supplier A can view history
@@ -943,8 +939,8 @@ class PoItemMaterialProgressTest extends TestCase
         );
         $respSupplier->assertOk()
             ->assertJsonPath('success', true)
-            ->assertJsonCount(1, 'history')
-            ->assertJsonPath('projection.manual_progress_status', PoItemProgressUpdate::STAGE_ORDER_CONFIRMED);
+            ->assertJsonCount(2, 'history')
+            ->assertJsonPath('projection.manual_progress_status', PoItemProgressUpdate::STAGE_MATERIAL_PREPARATION);
 
         // Purchasing can view read-only history
         $respPurchasing = $this->actingAs($this->purchasing)->getJson(
@@ -952,7 +948,7 @@ class PoItemMaterialProgressTest extends TestCase
         );
         $respPurchasing->assertOk()
             ->assertJsonPath('success', true)
-            ->assertJsonCount(1, 'history');
+            ->assertJsonCount(2, 'history');
 
         // Supplier B cannot view Supplier A's history
         $respSupplierB = $this->actingAs($this->supplierB)->getJson(
@@ -1112,10 +1108,7 @@ class PoItemMaterialProgressTest extends TestCase
         $award1 = $po->awards[0];
         $award2 = $po->awards[1];
 
-        // Item 1 -> Order Confirmed
-        $this->progressService->updateProgress($po, $award1, $this->supplierA, [
-            'status' => PoItemProgressUpdate::STAGE_ORDER_CONFIRMED,
-        ]);
+        // Item 1 remains at automatic initial Order Confirmed
 
         // Item 2 -> Ready to Ship
         $this->progressService->updateProgress($po, $award2, $this->supplierA, [
@@ -1162,7 +1155,7 @@ class PoItemMaterialProgressTest extends TestCase
         // Submit form to the hashed URL rendered in the view
         $postResponse = $this->actingAs($this->supplierA)
             ->post($hashedAction, [
-                'status' => PoItemProgressUpdate::STAGE_ORDER_CONFIRMED,
+                'status' => PoItemProgressUpdate::STAGE_MATERIAL_PREPARATION,
             ]);
 
         $postResponse->assertSessionHasNoErrors();
@@ -1230,5 +1223,148 @@ class PoItemMaterialProgressTest extends TestCase
         $relation = $award->latestProgressUpdate();
 
         $this->assertSame('pr_item_award_id', $relation->getForeignKeyName());
+    }
+
+    public function test_bulk_update_updates_multiple_items_preserves_dates_when_blank_and_sends_single_notification(): void
+    {
+        $po = $this->createPoWithItems($this->supplierA, [[20.0, 20], [30.0, 30]]);
+        [$award1, $award2] = $po->awards->values()->all();
+
+        $date1 = now()->addDays(10)->toDateString();
+        $award2InitialDate = $award2->latestProgressUpdate?->estimated_ready_date?->toDateString();
+        $this->progressService->updateProgress($po, $award1, $this->supplierA, [
+            'status' => PoItemProgressUpdate::STAGE_MATERIAL_PREPARATION,
+            'estimated_ready_date' => $date1,
+        ]);
+
+        $initialNotifCount = $this->purchasing->notifications()->count();
+
+        $response = $this->actingAs($this->supplierA)->post(
+            route('supplier.purchase-orders.item-progress.bulk-update', ['po_id' => $po]),
+            [
+                'award_ids' => [$award1->id, $award2->id],
+                'status' => PoItemProgressUpdate::STAGE_ON_PRODUCTION,
+                'estimated_ready_date' => '',
+                'note' => 'Batch production started',
+            ]
+        );
+
+        $response->assertRedirect()->assertSessionHas('success');
+
+        $latest1 = $award1->fresh()->latestProgressUpdate;
+        $latest2 = $award2->fresh()->latestProgressUpdate;
+        $this->assertSame(PoItemProgressUpdate::STAGE_ON_PRODUCTION, $latest1->status);
+        $this->assertSame(PoItemProgressUpdate::STAGE_ON_PRODUCTION, $latest2->status);
+        $this->assertSame($date1, $latest1->estimated_ready_date?->toDateString());
+        $this->assertSame($award2InitialDate, $latest2->estimated_ready_date?->toDateString());
+
+        $this->assertSame($initialNotifCount + 1, $this->purchasing->notifications()->count());
+        $notif = $this->purchasing->notifications()->latest()->first();
+        $this->assertSame('po_item_progress.bulk_updated', $notif->data['event']);
+        $this->assertSame($po->id, $notif->data['po_id']);
+    }
+
+    public function test_bulk_update_overwrites_estimated_ready_date_when_supplied(): void
+    {
+        $po = $this->createPoWithItems($this->supplierA, [[20.0, 20], [30.0, 30]]);
+        [$award1, $award2] = $po->awards->values()->all();
+        $newDate = now()->addDays(21)->toDateString();
+
+        $this->actingAs($this->supplierA)->post(
+            route('supplier.purchase-orders.item-progress.bulk-update', ['po_id' => $po]),
+            [
+                'award_ids' => [$award1->id, $award2->id],
+                'status' => PoItemProgressUpdate::STAGE_READY_TO_SHIP,
+                'estimated_ready_date' => $newDate,
+            ]
+        )->assertRedirect()->assertSessionHas('success');
+
+        $this->assertSame($newDate, $award1->fresh()->latestProgressUpdate->estimated_ready_date?->toDateString());
+        $this->assertSame($newDate, $award2->fresh()->latestProgressUpdate->estimated_ready_date?->toDateString());
+    }
+
+    public function test_bulk_update_is_atomic_when_any_selected_item_moves_backward_without_note(): void
+    {
+        $po = $this->createPoWithItems($this->supplierA, [[20.0, 20], [30.0, 30]]);
+        [$award1, $award2] = $po->awards->values()->all();
+
+        // Award 1 is at Ready to Ship (rank 50); Award 2 is still at Order Confirmed (rank 20)
+        $this->progressService->updateProgress($po, $award1, $this->supplierA, [
+            'status' => PoItemProgressUpdate::STAGE_READY_TO_SHIP,
+        ]);
+        $initialNotifCount = $this->purchasing->notifications()->count();
+
+        // Moving both to On Production (rank 40) moves Award 1 backward -> note required for whole batch
+        $this->actingAs($this->supplierA)->post(
+            route('supplier.purchase-orders.item-progress.bulk-update', ['po_id' => $po]),
+            [
+                'award_ids' => [$award1->id, $award2->id],
+                'status' => PoItemProgressUpdate::STAGE_ON_PRODUCTION,
+                'note' => '',
+            ]
+        )->assertSessionHasErrors('note');
+
+        $this->assertSame(PoItemProgressUpdate::STAGE_READY_TO_SHIP, $award1->fresh()->latestProgressUpdate->status);
+        $this->assertSame(PoItemProgressUpdate::STAGE_ORDER_CONFIRMED, $award2->fresh()->latestProgressUpdate->status);
+        $this->assertSame(1, $award2->progressUpdates()->count());
+        $this->assertSame($initialNotifCount, $this->purchasing->notifications()->count());
+
+        // With note -> succeeds atomically
+        $this->actingAs($this->supplierA)->post(
+            route('supplier.purchase-orders.item-progress.bulk-update', ['po_id' => $po]),
+            [
+                'award_ids' => [$award1->id, $award2->id],
+                'status' => PoItemProgressUpdate::STAGE_ON_PRODUCTION,
+                'note' => 'Rework required on item 1',
+            ]
+        )->assertRedirect()->assertSessionHas('success');
+
+        $this->assertSame(PoItemProgressUpdate::STAGE_ON_PRODUCTION, $award1->fresh()->latestProgressUpdate->status);
+        $this->assertSame(PoItemProgressUpdate::STAGE_ON_PRODUCTION, $award2->fresh()->latestProgressUpdate->status);
+    }
+
+    public function test_bulk_update_guards_ownership_and_renders_bulk_controls_on_supplier_po_view(): void
+    {
+        $poA = $this->createPoWithItems($this->supplierA, [[20.0, 20], [30.0, 30]]);
+        $poB = $this->createPoWithItems($this->supplierB, [[15.0, 15]]);
+        [$awardA1] = $poA->awards->values()->all();
+        $awardB1 = $poB->awards->first();
+
+        // Supplier B cannot update Supplier A's PO
+        $this->actingAs($this->supplierB)->post(
+            route('supplier.purchase-orders.item-progress.bulk-update', ['po_id' => $poA]),
+            [
+                'award_ids' => [$awardA1->id],
+                'status' => PoItemProgressUpdate::STAGE_MATERIAL_PREPARATION,
+            ]
+        )->assertForbidden();
+
+        // Supplier A cannot mix Supplier B's award into PO A bulk update
+        $this->actingAs($this->supplierA)->post(
+            route('supplier.purchase-orders.item-progress.bulk-update', ['po_id' => $poA]),
+            [
+                'award_ids' => [$awardA1->id, $awardB1->id],
+                'status' => PoItemProgressUpdate::STAGE_MATERIAL_PREPARATION,
+            ]
+        )->assertForbidden();
+
+        // Purchasing cannot mutate via supplier bulk endpoint
+        $this->actingAs($this->purchasing)->post(
+            route('supplier.purchase-orders.item-progress.bulk-update', ['po_id' => $poA]),
+            [
+                'award_ids' => [$awardA1->id],
+                'status' => PoItemProgressUpdate::STAGE_MATERIAL_PREPARATION,
+            ]
+        )->assertForbidden();
+
+        // Supplier view renders hashed bulk action & selection controls
+        $html = $this->actingAs($this->supplierA)
+            ->get(route('supplier.purchase-orders.show', $poA))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString("/supplier/purchase-orders/{$poA->hash}/items/progress/bulk", $html);
+        $this->assertStringContainsString('id="bulkProgressSelectAll"', $html);
+        $this->assertStringContainsString('id="btnBulkUpdateProgress"', $html);
     }
 }

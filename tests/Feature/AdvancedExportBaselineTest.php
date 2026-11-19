@@ -129,19 +129,19 @@ class AdvancedExportBaselineTest extends TestCase
     {
         // Literal expectations intentionally do not call translation/model helpers.
         $en = [
-            'po' => ['PO Number', 'PR Number', 'Supplier', 'Material', 'Currency', 'Total Amount', 'Total IDR', 'Est. Arrival', 'Remark', 'Status'],
-            'quotation' => ['PR Number', 'Period', 'Supplier', 'Currency', 'Material', 'HS Code', 'Requested Quantity', 'Requested Dimensions', 'Offered Quantity', 'Offered Dimensions', 'Price per Kg', 'Amount', 'Exchange Rate', 'Total IDR', 'Item Notes', 'Status', 'Submitted At (WIB)', 'Availability', 'Offered Length', 'Offer Weight/Unit', 'Offer Weight Source', 'Offer Total Weight', 'Requested Amount', 'Offer Amount'],
-            'pr' => ['PR Number', 'Period', 'Material Name', 'Specification', 'Qty', 'Weight/Unit', 'Total Weight', 'PR Total KG', 'Remark', 'Status', 'Date Created (WIB)'],
-            'shipment' => ['Shipment Number', 'Supplier', 'Consolidated POs', 'Items Count', 'Total Qty', 'Actual Weight (Kg)', 'Shipment Date', 'Est. Arrival Date', 'Actual Arrival Date', 'Status', 'Notes / Remarks'],
-            'inspection' => ['PO Number', 'Supplier', 'Material', 'Requested Specification', 'Actual Dimensions', 'Item Status', 'Inspection Status', 'Inspection Date (WIB)'],
+            'po' => ['Purchase Order', 'Purchase Requisition', 'Supplier', 'Material', 'Currency', 'Total Amount', 'Total IDR', 'Estimated Arrival', 'Remark', 'Status'],
+            'quotation' => ['Purchase Requisition', 'Period', 'Supplier', 'Currency', 'Material', 'HS Code', 'Requested Quantity', 'Requested Dimensions', 'Offered Quantity', 'Offered Dimensions', 'Price per Kg', 'Amount', 'Exchange Rate', 'Total IDR', 'Item Notes', 'Status', 'Submitted At (WIB)', 'Availability', 'Offered Length', 'Offer Weight/Unit', 'Offer Weight Source', 'Offer Total Weight', 'Requested Amount', 'Offer Amount'],
+            'pr' => ['Purchase Requisition', 'Period', 'Material Name', 'Specification', 'Qty', 'Weight/Unit', 'Total Weight', 'PR Total KG', 'Remark', 'Status', 'Date Created (WIB)'],
+            'shipment' => ['Shipment Number', 'Supplier', 'Consolidated POs', 'Items Count', 'Total Qty', 'Actual Weight (Kg)', 'Shipment Date', 'Estimated Arrival Date', 'Actual Arrival Date', 'Status', 'Notes / Remarks'],
+            'inspection' => ['Purchase Order', 'Supplier', 'Material', 'Requested Specification', 'Actual Dimensions', 'Item Status', 'Inspection Status', 'Inspection Date (WIB)'],
             'invoice' => ['Submission', 'Receipt', 'Invoice', 'Tax Invoice Number', 'PO Reference', 'Supplier', 'Currency', 'Invoice Amount', 'PPN', 'Status', 'Submitted (WIB)', 'Approved (WIB)', 'Payment Term Days', 'Due Date', 'Scheduled Payment', 'Completed (WIB)'],
         ];
         $id = [
-            'po' => ['Nomor PO', 'Nomor PR', 'Supplier', 'Material', 'Mata Uang', 'Total Nilai', 'Total IDR', 'Est. Kedatangan', 'Catatan', 'Status'],
-            'quotation' => ['Nomor PR', 'Periode', 'Supplier', 'Mata Uang', 'Material', 'Kode HS', 'Jumlah Permintaan', 'Dimensi Permintaan', 'Jumlah Penawaran', 'Dimensi Penawaran', 'Harga per Kg', 'Nilai', 'Kurs', 'Total IDR', 'Catatan Item', 'Status', 'Diajukan Pada (WIB)', 'Ketersediaan', 'Panjang Penawaran', 'Berat Penawaran/Unit', 'Sumber Berat Penawaran', 'Total Berat Penawaran', 'Nilai Permintaan', 'Nilai Penawaran'],
-            'pr' => ['Nomor PR', 'Periode', 'Nama Material', 'Spesifikasi', 'Jumlah', 'Berat/Unit', 'Total Berat', 'Total KG PR', 'Catatan', 'Status', 'Tanggal Dibuat (WIB)'],
-            'shipment' => ['Nomor Pengiriman', 'Supplier', 'PO Terkonsolidasi', 'Jumlah Item', 'Total Jumlah', 'Berat Aktual (Kg)', 'Tanggal Pengiriman', 'Est. Tanggal Kedatangan', 'Tanggal Kedatangan Aktual', 'Status', 'Catatan'],
-            'inspection' => ['Nomor PO', 'Supplier', 'Material', 'Spesifikasi Permintaan', 'Dimensi Aktual', 'Status Item', 'Status Inspeksi', 'Tanggal Inspeksi (WIB)'],
+            'po' => ['Purchase Order', 'Purchase Requisition', 'Supplier', 'Material', 'Mata Uang', 'Total Nilai', 'Total IDR', 'Perkiraan Kedatangan', 'Catatan', 'Status'],
+            'quotation' => ['Purchase Requisition', 'Periode', 'Supplier', 'Mata Uang', 'Material', 'Kode HS', 'Jumlah Permintaan', 'Dimensi Permintaan', 'Jumlah Penawaran', 'Dimensi Penawaran', 'Harga per Kg', 'Nilai', 'Kurs', 'Total IDR', 'Catatan Item', 'Status', 'Diajukan Pada (WIB)', 'Ketersediaan', 'Panjang Penawaran', 'Berat Penawaran/Unit', 'Sumber Berat Penawaran', 'Total Berat Penawaran', 'Nilai Permintaan', 'Nilai Penawaran'],
+            'pr' => ['Purchase Requisition', 'Periode', 'Nama Material', 'Spesifikasi', 'Jumlah', 'Berat/Unit', 'Total Berat', 'Total KG PR', 'Catatan', 'Status', 'Tanggal Dibuat (WIB)'],
+            'shipment' => ['Nomor Pengiriman', 'Supplier', 'PO Terkonsolidasi', 'Jumlah Item', 'Total Jumlah', 'Berat Aktual (Kg)', 'Tanggal Pengiriman', 'Perkiraan Tanggal Kedatangan', 'Tanggal Kedatangan Aktual', 'Status', 'Catatan'],
+            'inspection' => ['Purchase Order', 'Supplier', 'Material', 'Spesifikasi Permintaan', 'Dimensi Aktual', 'Status Item', 'Status Inspeksi', 'Tanggal Inspeksi (WIB)'],
             'invoice' => ['Pengajuan', 'Tanda Terima', 'Invoice', 'Nomor Faktur Pajak', 'Referensi PO', 'Supplier', 'Mata Uang', 'Nilai Invoice', 'PPN', 'Status', 'Diajukan (WIB)', 'Disetujui (WIB)', 'Termin Pembayaran (Hari)', 'Jatuh Tempo', 'Jadwal Pembayaran', 'Selesai (WIB)'],
         ];
 

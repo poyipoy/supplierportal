@@ -367,7 +367,7 @@ class ReferencePriceRuleImportService
      */
     public function commit(ReferencePriceImport $import, array $candidateRules, User $actor): Collection
     {
-        return DB::transaction(function () use ($import, $candidateRules, $actor) {
+        $committed = DB::transaction(function () use ($import, $candidateRules, $actor) {
             // Validate no overlaps
             $overlapErrors = $this->validateRuleIntervals($candidateRules);
             if (! empty($overlapErrors)) {
@@ -403,5 +403,15 @@ class ReferencePriceRuleImportService
 
             return ReferencePriceRule::query()->orderBy('sort_order')->orderBy('dimension_min')->get();
         });
+
+        // Bulk delete above bypasses Eloquent model events, so flush any cached rule/benchmark state explicitly.
+        if (app()->resolved(ReferencePriceRuleResolver::class)) {
+            app(ReferencePriceRuleResolver::class)->reset();
+        }
+        if (app()->resolved(HistoricalReferencePriceService::class)) {
+            app(HistoricalReferencePriceService::class)->clearMemo();
+        }
+
+        return $committed;
     }
 }

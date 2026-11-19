@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
@@ -42,6 +43,8 @@ class Shipment extends Model
 
     protected $fillable = [
         'shipment_number',
+        'invoice_number',
+        'supplier_reference',
         'supplier_id',
         'status',
         'shipment_date',
@@ -107,6 +110,80 @@ class Shipment extends Model
     public function mtcAttachments(): MorphMany
     {
         return $this->attachments()->orderBy('id');
+    }
+
+    public function preshipmentInspection(): HasOne
+    {
+        return $this->hasOne(ShipmentPreshipmentInspection::class, 'shipment_id');
+    }
+
+    /**
+     * D5 & E11: Compute missing mandatory shipping documents (Commercial Invoice,
+     * Packing List, Bill of Lading, Form E) for dashboard/list views without extra
+     * queries when documents.latestAttachment is loaded. MTC is optional and
+     * reported separately via mtc_count so it never marks a shipment incomplete.
+     *
+     * @return array{
+     *     missing_labels: list<string>,
+     *     missing_types: list<string>,
+     *     uploaded_count: int,
+     *     total_count: int,
+     *     is_complete: bool,
+     *     revised_count: int,
+     *     mtc_count: int
+     * }
+     */
+    public function missingDocumentsSummary(): array
+    {
+        $docLabels = [
+            ShipmentDocument::DOC_TYPE_INVOICE => __('shipments.copy.commercial_invoice'),
+            ShipmentDocument::DOC_TYPE_PACKING_LIST => __('shipments.copy.packing_list'),
+            ShipmentDocument::DOC_TYPE_BL => __('shipments.copy.bill_of_lading_bl'),
+            ShipmentDocument::DOC_TYPE_FORM_E => 'Form E / COO',
+        ];
+
+        $docsByType = $this->relationLoaded('documents')
+            ? $this->documents->keyBy('doc_type')
+            : $this->documents()->with('latestAttachment')->get()->keyBy('doc_type');
+
+        $missingLabels = [];
+        $missingTypes = [];
+        $uploadedCount = 0;
+        $revisedCount = 0;
+
+        foreach ($docLabels as $type => $label) {
+            /** @var ShipmentDocument|null $doc */
+            $doc = $docsByType->get($type);
+            $hasFile = $doc !== null && (
+                ($doc->relationLoaded('latestAttachment') ? $doc->latestAttachment !== null : $doc->latestAttachment()->exists())
+                || in_array($doc->status, ['received', 'verified', 'issued', 'processing', 'done'], true)
+            );
+            if ($hasFile) {
+                $uploadedCount++;
+            } else {
+                $missingLabels[] = $label;
+                $missingTypes[] = $type;
+            }
+            if ($doc !== null && (int) ($doc->revision_count ?? 0) > 0) {
+                $revisedCount += (int) $doc->revision_count;
+            }
+        }
+
+        $mtcCount = array_key_exists('mtc_attachments_count', $this->attributes)
+            ? (int) $this->attributes['mtc_attachments_count']
+            : ($this->relationLoaded('mtcAttachments') ? $this->mtcAttachments->count() : $this->mtcAttachments()->count());
+
+        $totalCount = 4;
+
+        return [
+            'missing_labels' => $missingLabels,
+            'missing_types' => $missingTypes,
+            'uploaded_count' => $uploadedCount,
+            'total_count' => $totalCount,
+            'is_complete' => $missingLabels === [],
+            'revised_count' => $revisedCount,
+            'mtc_count' => $mtcCount,
+        ];
     }
 
     // ─── Helpers ───

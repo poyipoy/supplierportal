@@ -138,6 +138,7 @@ class WorkspaceShellRouteClassificationTest extends TestCase
             'supplier.price-history.export',
             'supplier.price-history.materials',
             'supplier.purchase-orders.item-progress.history',
+            'supplier.goods-locations.options',
         ];
 
         foreach ($nonShellDirectRoutes as $name) {
@@ -160,6 +161,7 @@ class WorkspaceShellRouteClassificationTest extends TestCase
             'purchasing.comparison.historical',
             'supplier.dashboard',
             'supplier.requests.index',
+            'supplier.goods-locations.index',
             'supplier.price-history.historical',
             'local-supplier.dashboard',
             'local-supplier.invoices.index',
@@ -206,5 +208,13 @@ class WorkspaceShellRouteClassificationTest extends TestCase
             'https://example.test/v2/ADSI_PROD/purchasing/shipments',
             WorkspaceShell::stripEmbedParam('https://example.test/v2/ADSI_PROD/purchasing/shipments?_embed=1')
         );
+    }
+
+    public function test_goods_locations_index_maps_to_shipments_module_and_menu_label(): void
+    {
+        $route = RouteFacade::getRoutes()->getByName('supplier.goods-locations.index');
+        $this->assertNotNull($route);
+        $this->assertSame('shipments', WorkspaceShell::moduleKeyForRoute($route));
+        $this->assertSame(__('shipments.preshipment.locations_title'), WorkspaceShell::menuLabelForRoute($route));
     }
 }

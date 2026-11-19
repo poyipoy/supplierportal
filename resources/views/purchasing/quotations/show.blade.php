@@ -18,6 +18,15 @@
             \App\Support\PurchasingNavigation::RETURN_URL_KEY => \App\Support\PurchasingNavigation::backUrl('purchasing.quotations.index'),
         ]);
     $validityMeta = \App\Support\StatusHelper::quotationValidityMeta($quotation->validity_period, $quotation->status);
+    $defaultDirectPort = old(
+        'port_of_discharge',
+        $quotation->purchaseRequisition?->port_of_discharge
+            ?? (\App\Support\Procurement\LogisticsTerms::ports()[0] ?? 'TANJUNG_PRIOK')
+    );
+    $reopenGeneratePoModal = $canCreatePo && (
+        $errors->hasAny(['estimated_arrival', 'notes', 'port_of_discharge', 'confirm_port_of_discharge'])
+        || collect($errors->keys())->contains(fn ($key) => str_starts_with($key, 'order_qty.') || str_starts_with($key, 'accept_spec.'))
+    );
 @endphp
 
 <div class="tw:grid tw:gap-4">
@@ -263,7 +272,7 @@
                             <input type="hidden" name="return_url" value="{{ request('return_url') }}">
                             <x-ui.alert tone="warning" :title="__('purchasing.copy.validity_update_required')" class="tw:mb-2">{{ __('purchasing.copy.request_the_supplier_to_extend_the_expired_offer') }}</x-ui.alert>
                             <div class="mb-2">
-                                <textarea name="revision_note" id="revisionNote" class="form-control form-control-sm" rows="2" maxlength="1000" placeholder="{{ __('purchasing.copy.please_update_validity_date_and_re_confirm_pricing') }}"></textarea>
+                                <textarea name="revision_note" id="revisionNote" class="form-control form-control-sm" rows="2" maxlength="1000" required placeholder="{{ __('purchasing.copy.please_update_validity_date_and_re_confirm_pricing') }}"></textarea>
                             </div>
                             <x-ui.button type="submit" variant="outline" size="sm" class="tw:w-full">
                                 <x-slot:leading><x-ui.icon name="rotate-ccw" /></x-slot:leading>
@@ -271,6 +280,9 @@
                             </x-ui.button>
                         </form>
                     @else
+                        @if($reviewLocked)
+                            <x-ui.alert tone="info" class="tw:mb-2.5">{{ __('notifications.conversation.quotation_in_use') }}</x-ui.alert>
+                        @endif
                         <x-ui.button variant="danger" size="sm" class="tw:mb-2.5 tw:w-full" disabled>
                             <x-slot:leading><x-ui.icon name="lock" /></x-slot:leading>
                             {{ __('purchasing.copy.quotation_expired') }}
@@ -309,7 +321,7 @@
     <div class="modal fade" id="generatePoModal" tabindex="-1" aria-labelledby="generatePoModalTitle" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
             <div class="modal-content">
-                <form action="{{ route('purchasing.quotations.generate-po', $quotation) }}" method="POST" id="generatePoForm">
+                <form action="{{ route('purchasing.quotations.generate-po', $quotation) }}" method="POST" id="generatePoForm" class="d-flex flex-column tw:flex-1 tw:min-h-0 tw:overflow-hidden">
                     @csrf
                     <div class="modal-header">
                         <div>
@@ -321,7 +333,7 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('purchasing.copy.close') }}"></button>
                     </div>
 
-                    <div class="modal-body tw:grid tw:gap-4">
+                    <div class="modal-body tw:space-y-4">
                         <div class="tw:grid tw:gap-2 tw:sm:grid-cols-2 tw:lg:grid-cols-4">
                             <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-low tw:p-2.5">
                                 <div class="tw:text-ui-xs tw:font-semibold tw:uppercase tw:text-on-surface-variant">{{ __('purchasing.copy.pr_number') }}</div>
@@ -447,6 +459,50 @@
                                 >{{ old('notes') }}</textarea>
                             </div>
                         </div>
+
+                        <div class="tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-low tw:p-3">
+                            <div class="tw:grid tw:gap-3 tw:md:grid-cols-2 tw:items-start">
+                                <div>
+                                    <label for="directPoPortOfDischarge" class="form-label small fw-semibold tw:text-on-surface">
+                                        {{ __('purchasing.copy.confirm_port_of_discharge_label') }} <span class="text-danger">*</span>
+                                    </label>
+                                    <select
+                                        name="port_of_discharge"
+                                        id="directPoPortOfDischarge"
+                                        class="form-select form-select-sm @error('port_of_discharge') is-invalid @enderror"
+                                        required
+                                    >
+                                        @foreach(\App\Support\Procurement\LogisticsTerms::ports() as $portCode)
+                                            <option value="{{ $portCode }}" @selected($defaultDirectPort === $portCode)>
+                                                {{ \App\Support\Procurement\LogisticsTerms::portLabel($portCode) }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('port_of_discharge')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <div class="tw:md:pt-6">
+                                    <div class="form-check tw:mb-0">
+                                        <input
+                                            type="checkbox"
+                                            name="confirm_port_of_discharge"
+                                            id="directConfirmPortOfDischarge"
+                                            value="1"
+                                            class="form-check-input @error('confirm_port_of_discharge') is-invalid @enderror"
+                                            required
+                                            @checked(old('confirm_port_of_discharge'))
+                                        >
+                                        <label for="directConfirmPortOfDischarge" class="form-check-label tw:text-ui-xs fw-semibold tw:text-on-surface tw:cursor-pointer">
+                                            {{ __('purchasing.copy.confirm_port_of_discharge_checkbox') }}
+                                        </label>
+                                        @error('confirm_port_of_discharge')
+                                            <div class="invalid-feedback d-block">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="modal-footer tw:bg-surface-low">
@@ -497,6 +553,13 @@
             if (spinner) spinner.hidden = false;
             if (label) label.textContent = @json(__('purchasing.copy.generating_po'));
         });
+
+        @if($reopenGeneratePoModal)
+            const generatePoModalEl = document.getElementById('generatePoModal');
+            if (generatePoModalEl && window.bootstrap?.Modal) {
+                window.bootstrap.Modal.getOrCreateInstance(generatePoModalEl).show();
+            }
+        @endif
     });
 </script>
 @endpush

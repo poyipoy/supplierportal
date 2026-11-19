@@ -10,10 +10,13 @@ use App\Models\PrItemAward;
 use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
 use App\Models\QuotationItem;
+use App\Services\Pricing\HistoricalReferencePriceService;
 use App\Services\Pricing\PurchaseHistoryPriceService;
-use App\Services\Pricing\ReferencePriceResolver;
+use App\Services\Pricing\ReferencePriceBenchmarkResolver;
+use App\Services\Pricing\ReferencePriceRuleResolver;
 use App\Services\PrItemAwardService;
 use App\Services\RegionalDisplayFormatter;
+use App\Support\BusinessTime;
 use App\Support\Money;
 use App\Support\Pricing\EvaluationContext;
 use App\Support\PurchasingNavigation;
@@ -112,6 +115,20 @@ class InterSupplierComparisonController extends Controller
             ];
         })->values();
 
+        $maxValidYear = (int) BusinessTime::now()->year + 1;
+        $benchmarkYear = $request->filled('benchmark_year') && is_numeric($request->query('benchmark_year'))
+            ? (int) $request->query('benchmark_year')
+            : null;
+        if ($benchmarkYear !== null && ($benchmarkYear < 2000 || $benchmarkYear > $maxValidYear)) {
+            $benchmarkYear = null;
+        }
+        $benchmarkMonth = $request->filled('benchmark_month') && is_numeric($request->query('benchmark_month'))
+            ? (int) $request->query('benchmark_month')
+            : null;
+        if ($benchmarkMonth !== null && ($benchmarkMonth < 1 || $benchmarkMonth > 12)) {
+            $benchmarkMonth = null;
+        }
+
         if ($request->filled('pr_id')) {
             $selectedPr = $this->resolveHashedQueryModel(PurchaseRequisition::class, $request->query('pr_id'));
             $selectedPr->loadMissing([
@@ -151,9 +168,8 @@ class InterSupplierComparisonController extends Controller
                 ]);
 
                 $this->historySummaryMemo = [];
-                app(ReferencePriceResolver::class)->preload(
-                    $comparisonItems->pluck('material_master_id')->filter()->unique()->all()
-                );
+                app(HistoricalReferencePriceService::class)->clearMemo();
+                app(ReferencePriceRuleResolver::class)->preload();
 
                 $matrix = [];
                 foreach ($comparisonItems as $item) {
@@ -168,11 +184,12 @@ class InterSupplierComparisonController extends Controller
                     foreach ($quotations as $quotation) {
                         $quotationItem = $quotation->items->where('pr_item_id', $item->id)->first();
                         $rate = $quotation->exchange_rate;
+                        $rateToIdr = $rate ? (float) $rate->rate_to_idr : (strtoupper((string) $quotation->currency) === 'IDR' ? 1.0 : null);
                         $pricePerKg = $quotationItem?->price_per_kg === null
                             ? null
                             : (float) $quotationItem->price_per_kg;
-                        $priceIdr = ($pricePerKg !== null && $rate)
-                            ? $pricePerKg * (float) $rate->rate_to_idr
+                        $priceIdr = ($pricePerKg !== null && $rateToIdr !== null)
+                            ? $pricePerKg * $rateToIdr
                             : null;
 
                         $requestedAmount = $quotationItem && $quotationItem->prItem
@@ -180,8 +197,8 @@ class InterSupplierComparisonController extends Controller
                             : ($quotationItem ? (float) $quotationItem->amount : null);
                         $offerAmount = $quotationItem?->resolved_amount;
                         $isAvailable = $quotationItem?->is_available ?? false;
-                        $offerAmountIdr = $quotationItem && $isAvailable && $rate
-                            ? $offerAmount * (float) $rate->rate_to_idr
+                        $offerAmountIdr = $quotationItem && $isAvailable && $rateToIdr !== null
+                            ? $offerAmount * $rateToIdr
                             : null;
 
                         $isAwarded = $award && (int) $award->quotation_item_id === (int) $quotationItem?->id;
@@ -222,7 +239,7 @@ class InterSupplierComparisonController extends Controller
                         ];
                     }
 
-                    $row['indicators'] = $this->itemIndicators($item, $quotations, $currency, $context);
+                    $row['indicators'] = $this->itemIndicators($item, $quotations, $currency, $context, $benchmarkYear, $benchmarkMonth);
                     $matrix[] = $row;
                 }
 
@@ -261,6 +278,8 @@ class InterSupplierComparisonController extends Controller
 
                 foreach ($quotations as $quotation) {
                     $data = [];
+                    $totalPricePerKgIdr = 0.0;
+                    $quotedCount = 0;
 
                     foreach ($comparisonItems as $item) {
                         $quotationItem = $quotation->items->where('pr_item_id', $item->id)->first();
@@ -268,13 +287,42 @@ class InterSupplierComparisonController extends Controller
                             ? app(PurchaseHistoryPriceService::class)->convert((string) $quotationItem->price_per_kg, $quotation->currency, $currency, $context)
                             : null;
                         $data[] = $converted === null ? null : (float) Money::normalize($converted, 4);
+
+                        $rate = $quotation->exchange_rate;
+                        $rateToIdr = $rate ? (float) $rate->rate_to_idr : (strtoupper((string) $quotation->currency) === 'IDR' ? 1.0 : null);
+                        if ($quotationItem && $quotationItem->is_available && $quotationItem->price_per_kg !== null && $rateToIdr !== null) {
+                            $totalPricePerKgIdr += (float) $quotationItem->price_per_kg * $rateToIdr;
+                            $quotedCount++;
+                        }
                     }
 
                     $chartDatasets[] = [
+                        'quotation_id' => $quotation->id,
                         'label' => self::supplierDisplayName($quotation->supplier),
                         'data' => $data,
+                        'total_price_per_kg_idr' => $quotedCount > 0 ? round($totalPricePerKgIdr, 2) : null,
+                        'quoted_items_count' => $quotedCount,
                     ];
                 }
+
+                // Mark is_best_total on the dataset with the lowest total_price_per_kg_idr (among highest coverage)
+                $validChartDatasets = array_filter($chartDatasets, fn (array $ds) => ($ds['total_price_per_kg_idr'] ?? 0) > 0 && ($ds['quoted_items_count'] ?? 0) > 0);
+                $bestQuotationId = null;
+                if ($validChartDatasets !== []) {
+                    $maxQuoted = max(array_column($validChartDatasets, 'quoted_items_count'));
+                    $topDatasets = array_filter($validChartDatasets, fn (array $ds) => $ds['quoted_items_count'] === $maxQuoted);
+                    $minTotalPerKg = min(array_column($topDatasets, 'total_price_per_kg_idr'));
+                    foreach ($topDatasets as $ds) {
+                        if (abs($ds['total_price_per_kg_idr'] - $minTotalPerKg) < 0.01) {
+                            $bestQuotationId = $ds['quotation_id'];
+                            break;
+                        }
+                    }
+                }
+                foreach ($chartDatasets as &$ds) {
+                    $ds['is_best_total'] = $bestQuotationId !== null && $ds['quotation_id'] === $bestQuotationId;
+                }
+                unset($ds);
 
                 $chartData = [
                     'labels' => $chartLabels,
@@ -304,6 +352,8 @@ class InterSupplierComparisonController extends Controller
             'assignedPurchaseOrderCount',
             'hasActionableAwardSelections',
             'allItemsAssignedToPurchaseOrder',
+            'benchmarkYear',
+            'benchmarkMonth',
         ) + [
             'currency' => $currency,
             'evaluation' => $this->evaluationMeta($currency, $context),
@@ -328,7 +378,7 @@ class InterSupplierComparisonController extends Controller
         if ($fields === [] || ($offer !== null && ! $offer->isAvailable())) {
             return '–';
         }
-        $labels = ['thickness' => 'T', 'width' => 'W', 'd_outer' => $item->shape === PrItem::SHAPE_HOLLOW ? 'OD' : 'D', 'd_inner' => 'ID', 'length' => 'L'];
+        $labels = ['thickness' => '', 'width' => '', 'd_outer' => 'Ø', 'd_inner' => 'Ø', 'length' => ''];
         $format = fn ($value) => $value === null || $value === '' ? '–'
             : $this->regionalFormatter->number(PrItem::formatDimensionValue($value), 'decimal');
         $parts = [];
@@ -343,7 +393,7 @@ class InterSupplierComparisonController extends Controller
         return implode(' × ', $parts).' mm';
     }
 
-    public function itemIndicators(PrItem $item, Collection $quotations, string $currency, EvaluationContext $context): array
+    public function itemIndicators(PrItem $item, Collection $quotations, string $currency, EvaluationContext $context, ?int $benchmarkYear = null, ?int $benchmarkMonth = null): array
     {
         $history = app(PurchaseHistoryPriceService::class);
         $best = null;
@@ -384,6 +434,8 @@ class InterSupplierComparisonController extends Controller
             $key,
             $currency,
             $context->dateString(),
+            $benchmarkYear,
+            $benchmarkMonth,
         ], JSON_THROW_ON_ERROR);
         $summary = $this->historySummaryMemo[$memoKey] ??= $history->summarize([
             'material_master_id' => $item->material_master_id,
@@ -391,9 +443,17 @@ class InterSupplierComparisonController extends Controller
             'shape' => $item->shape,
             'key_min' => $key,
             'key_max' => $key,
+            'year' => $benchmarkYear,
+            'month' => $benchmarkMonth,
         ], $currency, $context)['total'];
 
-        $reference = $best ? app(ReferencePriceResolver::class)->resolve($best['line'], $context, $currency) : null;
+        $benchmark = app(ReferencePriceBenchmarkResolver::class)->resolve(
+            prItem: $item,
+            quotationItem: null,
+            targetCurrency: $currency,
+            benchmarkYear: $benchmarkYear,
+        );
+        $mainRef = $benchmark->main;
         if ($best !== null) {
             unset($best['raw'], $best['line']);
         }
@@ -401,12 +461,23 @@ class InterSupplierComparisonController extends Controller
         return [
             'best_current' => $best,
             'history' => $summary,
-            'reference' => $reference === null ? null : [
-                'matched' => $reference->isMatched(),
-                'converted' => $reference->convertedReferencePricePerKg,
-                'original' => $reference->reference === null ? null : Money::normalize((string) $reference->reference->price_per_kg, 4),
-                'original_currency' => $reference->reference?->currency,
-                'reason' => $reference->reasonCode,
+            'reference' => [
+                'matched' => $mainRef->isMatched(),
+                'converted' => $mainRef->weightedAveragePricePerKg,
+                'original' => null,
+                'original_currency' => null,
+                'reason' => $mainRef->reasonCode,
+                'category_key' => $mainRef->categoryKey,
+                'category_name' => $mainRef->rule?->category_name,
+                'benchmark_year' => $mainRef->benchmarkYear,
+                'po_count' => $mainRef->poCount,
+                'line_count' => $mainRef->lineCount,
+                'total_kg' => $mainRef->totalKg,
+                'excluded' => [
+                    'lines' => $mainRef->excludedLineCount,
+                    'kg' => $mainRef->excludedTotalKg,
+                    'currencies' => $mainRef->excludedCurrencies,
+                ],
             ],
             'unavailable_currencies' => array_values(array_unique([...$unavailable, ...$summary['excluded']['currencies']])),
         ];

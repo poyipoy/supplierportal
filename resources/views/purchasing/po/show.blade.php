@@ -28,6 +28,8 @@
         position: sticky;
         top: var(--topbar-height, 56px);
         z-index: 1010;
+        min-width: 0;
+        max-width: 100%;
         background-color: var(--md-surface);
         border: 1px solid var(--md-outline-variant);
         border-radius: var(--md-shape-sm, 8px);
@@ -56,6 +58,9 @@
     }
 
     .po-nav-pills .nav-link {
+        display: inline-flex;
+        align-items: center;
+        min-height: 2.25rem;
         font-size: var(--ui-font-size-sm);
         font-weight: 600;
         padding: 0.4rem 0.95rem;
@@ -64,6 +69,11 @@
         transition: all 0.15s ease;
         white-space: nowrap;
         text-decoration: none;
+    }
+
+    .po-nav-pills .nav-link:focus-visible {
+        outline: 2px solid var(--md-primary);
+        outline-offset: 2px;
     }
 
     .po-nav-pills .nav-link:hover:not(.active) {
@@ -150,7 +160,7 @@
 @endpush
 
 @section('content')
-<div class="tw:grid tw:gap-4">
+<div class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:min-w-0 tw:gap-4">
     {{-- Breadcrumb & Compact Page Header --}}
     <x-ui.breadcrumb :items="[
         __('purchasing.breadcrumbs.dashboard') => route('purchasing.dashboard'),
@@ -165,7 +175,7 @@
         :record-nav="$recordNav ?? null"
     >
         <x-slot:actions>
-            <x-status-badge type="po" :status="$po->status" :is-overdue="$po->is_overdue" size="lg" />
+            <x-status-badge type="po" :status="$po->status" :is-overdue="$po->is_overdue" :has-active-shipments="$po->hasActiveShipments()" size="lg" />
             <x-ui.button
                 type="button"
                 variant="outline"
@@ -233,6 +243,9 @@
             </div>
         </div>
     </div>
+
+    {{-- D4/E1: Sales Contract handshake (Purchasing signed copy gates supplier acknowledgement and shipments) --}}
+    @include('partials.po-sales-contract-panel', ['po' => $po, 'viewer' => 'purchasing'])
 
     {{-- Supplier PO Acknowledgement & Promise Date Handshake Status (A1) --}}
     <x-ui.card
@@ -309,7 +322,7 @@
         </ul>
     </nav>
 
-    <div class="tw:grid tw:items-start tw:gap-4 tw:lg:grid-cols-[minmax(0,2fr)_minmax(19rem,1fr)]">
+    <div class="tw:grid tw:grid-cols-[minmax(0,1fr)] tw:items-start tw:gap-4 tw:xl:grid-cols-[minmax(0,1fr)_16rem]">
         {{-- Main Column --}}
         <div class="tw:grid tw:min-w-0 tw:gap-4">
             {{-- Order Info Card --}}
@@ -494,8 +507,7 @@
                         @endif
                     </x-slot:actions>
 
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0 tw:text-ui-xs w-100">
+                    <table class="table table-hover align-middle mb-0 tw:text-ui-xs w-100">
                             <thead class="table-light text-center">
                                 <tr>
                                     <th scope="col" style="width: 35px;">{{ __('purchasing.copy.no') }}</th>
@@ -510,7 +522,7 @@
                                     <th scope="col">{{ __('purchasing.copy.original_ready_date') }}</th>
                                     <th scope="col">{{ __('purchasing.copy.current_estimated_ready') }}</th>
                                     <th scope="col">{{ __('purchasing.copy.last_supplier_update') }}</th>
-                                    <th scope="col" class="text-end">{{ __('purchasing.copy.history') }}</th>
+                                    <th scope="col" class="text-end ui-sticky-col-right">{{ __('purchasing.copy.history') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -556,7 +568,7 @@
                                                 <span class="text-muted">{{ __('purchasing.copy.no_updates') }}</span>
                                             @endif
                                         </td>
-                                        <td class="text-end">
+                                        <td class="text-end ui-sticky-col-right">
                                             <button type="button"
                                                     class="btn btn-outline-secondary btn-sm px-2 py-1 tw:text-ui-xs btn-view-purchasing-history"
                                                     data-award-id="{{ $p['award_id'] }}"
@@ -569,7 +581,6 @@
                                 @endforeach
                             </tbody>
                         </table>
-                    </div>
                 </x-ui.data-table>
             @endif
 
@@ -655,10 +666,11 @@
                         $customsSummary = $customsSummary ?? $po->customsDocumentationSummary();
                         $customsProgress = $customsProgress ?? $po->customsDocumentationProgress();
                         $usesShipmentWorkflow = (bool) ($customsProgress['uses_shipment_workflow'] ?? false);
+                        $poDocsReadOnly = \App\Support\Procurement\ProcurementFeatures::poDocumentStatusReadOnly();
                         $docProgressTone = str_contains($docProgress['class'], 'success') ? 'success' : (str_contains($docProgress['class'], 'danger') ? 'error' : 'warning');
                     @endphp
                     <div class="tw:flex tw:items-center tw:gap-2">
-                        @if($usesShipmentWorkflow)
+                        @if($usesShipmentWorkflow && ! $poDocsReadOnly)
                             <x-ui.button type="button" variant="outline" size="sm" id="btnOpenBatchPoDocDialog">
                                 <x-ui.icon name="layers" size="sm" class="me-1" />
                                 <span>{{ __('purchasing.copy.batch_update_po_docs') }}</span>
@@ -669,6 +681,12 @@
                         </span>
                     </div>
                 </x-slot:actions>
+
+                @if($poDocsReadOnly)
+                    <x-ui.alert tone="info" class="tw:mb-3" id="poDocsReadOnlyBanner">
+                        {{ __('documents.sync.po_read_only_use_shipment') }}
+                    </x-ui.alert>
+                @endif
 
                 {{-- Progress Bar --}}
                 <div class="progress mb-3" style="height: 6px;">
@@ -691,7 +709,7 @@
                     </x-ui.alert>
                 </template>
 
-                <div class="tw:grid tw:gap-3 tw:sm:grid-cols-2 tw:xl:grid-cols-4">
+                <div class="tw:grid tw:gap-3 tw:sm:grid-cols-2 tw:2xl:grid-cols-4">
                     @php
                         $docConfig = [
                             'invoice' => ['label' => __('purchasing.copy.invoice_document'), 'icon' => 'receipt', 'statuses' => ['pending' => __('purchasing.copy.not_available'), 'received' => __('purchasing.copy.accepted'), 'verified' => __('purchasing.copy.verified')]],
@@ -736,7 +754,7 @@
                             $evidenceGapCount = (int) ($progressItem['evidence_gap_count'] ?? 0);
                             $isWaitingForShipment = $usesShipmentWorkflow && $activeShipmentCount === 0;
                         @endphp
-                        <div class="po-doc-card tw:h-full tw:rounded-xl tw:border tw:border-outline-variant/80 tw:bg-surface tw:p-3.5 tw-shadow-2xs tw:flex tw:flex-col tw:justify-between tw:transition-colors tw:hover:border-primary/40 hover:tw-shadow-xs tw:min-w-0 tw:overflow-hidden" id="doc-card-{{ $docKey }}">
+                        <div class="po-doc-card tw:h-full tw:rounded-xl tw:border tw:border-outline-variant/80 tw:bg-surface tw:p-3.5 tw-shadow-2xs tw:flex tw:flex-col tw:justify-between tw:transition-colors tw:hover:border-primary/40 hover:tw-shadow-xs tw:min-w-0" id="doc-card-{{ $docKey }}">
                             {{-- Zone 1: Document Header (Centered & Uniform) --}}
                             <div class="tw:flex tw:flex-col tw:items-center tw:text-center">
                                 <div class="tw:w-10 tw:h-10 tw:rounded-full tw:flex tw:items-center tw:justify-center tw:mb-2 {{ $iconClasses }}">
@@ -771,7 +789,7 @@
                                         {{ __('documents.sync.legacy_manual_status') }}
                                     </span>
                                 @endif
-                                <div class="tw:text-on-surface-variant tw:text-ui-xs tw:h-5 tw:flex tw:items-center tw:justify-center" id="doc-date-{{ $docKey }}">
+                                <div class="tw:text-on-surface-variant tw:text-ui-xs tw:min-h-5 tw:flex tw:items-center tw:justify-center" id="doc-date-{{ $docKey }}">
                                     @if($effectiveStatus !== 'pending' && $doc->updated_at)
                                         <span>{{ $regionalFormatter->timestamp($doc->updated_at, 'datetime_comma') }}</span>
                                     @else
@@ -814,7 +832,22 @@
 
                             {{-- Zone 3: Footer Action --}}
                             <div class="tw:pt-1 tw:mt-auto tw:w-full tw:min-w-0">
-                                @if($usesShipmentWorkflow)
+                                @if($poDocsReadOnly)
+                                    @php
+                                        $firstLinkedShipment = $shipmentDocs->first()['shipment'] ?? null;
+                                    @endphp
+                                    @if($firstLinkedShipment)
+                                        <x-ui.button :href="route('purchasing.shipments.show', $firstLinkedShipment)" variant="outline" size="sm" class="tw:w-full">
+                                            <x-ui.icon name="external-link" size="sm" class="me-1 flex-shrink-0" />
+                                            <span class="tw:truncate">{{ __('documents.sync.open_shipment_to_update') }}</span>
+                                        </x-ui.button>
+                                    @else
+                                        <x-ui.button :href="route('purchasing.shipments.index')" variant="ghost" size="sm" class="tw:w-full">
+                                            <x-ui.icon name="truck" size="sm" class="me-1 flex-shrink-0" />
+                                            <span class="tw:truncate">{{ __('documents.sync.open_shipment_to_update') }}</span>
+                                        </x-ui.button>
+                                    @endif
+                                @elseif($usesShipmentWorkflow)
                                     @if($isWaitingForShipment)
                                         <x-ui.button type="button" variant="outline" size="sm" class="tw:w-full" disabled aria-disabled="true" data-doc-type="{{ $doc->doc_type }}" title="{{ __('documents.sync.waiting_for_shipment') }}">
                                             <x-ui.icon name="square-pen" size="sm" class="me-1 flex-shrink-0" />
@@ -851,6 +884,8 @@
                     @endforeach
                 </div>
             </x-ui.card>
+
+            @include('procurement._reference_snapshot_panel', ['po' => $po])
         </div>
 
         {{-- Sidebar Column --}}
@@ -871,8 +906,6 @@
             </x-ui.card>
 
             @include('shipments._po_mtc_list', ['po' => $po])
-
-            @include('procurement._reference_snapshot_panel', ['po' => $po])
 
             {{-- Material Claim Alert (if status claim_needed) --}}
             @if($po->status === 'claim_needed')

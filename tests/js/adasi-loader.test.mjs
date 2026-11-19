@@ -1,5 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
     MIN_VISIBLE,
     NAV_RELEASE,
@@ -11,6 +14,7 @@ import {
     isFullPageNavigation,
     isPdfDownloadLink,
     downloadFileWithLoader,
+    setTableBusy,
 } from '../../resources/js/adasi-loader.js';
 
 function fakeTimers() {
@@ -584,6 +588,132 @@ test('createDomView mounts loader inside workspace stage only and keeps sidebar/
     view.deactivate();
     assert.equal(framesHost.inert, false);
     assert.equal(framesHost.attributes['aria-busy'], undefined);
+});
+
+test('createDomView renders precision dual-arc SVG medallion with aria-hidden and ui-focus-ring dismiss button', () => {
+    const doc = fakeDocument();
+    const view = createDomView(doc, (k) => k);
+    view.bind(() => {});
+    view.mount();
+
+    const overlay = doc.body.children[0];
+    assert.equal(overlay.innerHTML.includes('class="adasi-loader-ring" aria-hidden="true"'), true);
+    assert.equal(overlay.innerHTML.includes('class="adasi-loader-svg"'), true);
+    assert.equal(overlay.innerHTML.includes('adasi-loader-arc--primary'), true);
+    assert.equal(overlay.innerHTML.includes('adasi-loader-arc--secondary'), true);
+    assert.equal(overlay.innerHTML.includes('adasi-loader-medallion'), true);
+    assert.equal(overlay.innerHTML.includes('adasi-loader-logo'), true);
+    assert.equal(overlay.innerHTML.includes('adasi-loader-dismiss ui-focus-ring'), true);
+});
+
+test('Escape dismisses the loader only when the slow-state close button is visible', () => {
+    const keydownHandlers = [];
+    const doc = fakeDocument();
+    doc.addEventListener = (name, fn) => {
+        if (name === 'keydown') keydownHandlers.push(fn);
+    };
+
+    const dismissButton = {
+        hidden: true,
+        textContent: '',
+        addEventListener() {},
+        focus() {},
+    };
+    const origCreateElement = doc.createElement;
+    doc.createElement = (tag) => {
+        const el = origCreateElement(tag);
+        el.querySelector = (sel) => (sel === '.adasi-loader-dismiss' ? dismissButton : origCreateElement('stub'));
+        return el;
+    };
+
+    let dismissed = 0;
+    const view = createDomView(doc, (k) => k);
+    view.bind(() => { dismissed += 1; });
+
+    view.activate();
+    assert.equal(dismissButton.hidden, true);
+
+    // Normal loading: Escape must be ignored.
+    let prevented = false;
+    keydownHandlers.forEach((fn) => fn({ key: 'Escape', preventDefault() { prevented = true; } }));
+    assert.equal(dismissed, 0);
+    assert.equal(prevented, false);
+
+    // Slow loading: Close button is shown -> Escape dismisses cleanly.
+    view.showSlow();
+    assert.equal(dismissButton.hidden, false);
+    keydownHandlers.forEach((fn) => fn({ key: 'Escape', preventDefault() { prevented = true; } }));
+    assert.equal(dismissed, 1);
+    assert.equal(prevented, true);
+});
+
+test('app.css enforces dual-arc SVG loader tokens, pause-when-hidden, dark elevation, high contrast, and reduced-motion', () => {
+    const testDir = dirname(fileURLToPath(import.meta.url));
+    const css = readFileSync(resolve(testDir, '../../resources/css/app.css'), 'utf8');
+
+    assert.equal(css.includes('.adasi-loader-arc--primary'), true);
+    assert.equal(css.includes('.adasi-loader-arc--secondary'), true);
+    assert.equal(css.includes('animation-play-state: paused;'), true);
+    assert.equal(css.includes('animation-play-state: running;'), true);
+    assert.equal(css.includes(':root[data-theme="dark"] .adasi-loader-card'), true);
+    assert.equal(css.includes('background: var(--ui-dialog-bg);'), true);
+    assert.equal(css.includes(':root[data-theme="dark"] .adasi-loader-medallion'), true);
+
+    const textRule = css.match(/\.adasi-loader-text\s*\{[^}]*\}/);
+    assert.ok(textRule && textRule[0].includes('color: var(--md-on-surface);'), '.adasi-loader-text must use high-contrast --md-on-surface');
+
+    const reducedMotion = css.match(/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{[\s\S]*?\.adasi-loader-arc--primary[\s\S]*?\n\}/);
+    assert.ok(reducedMotion && reducedMotion[0].includes('animation: none;'), 'reduced motion must halt SVG loader animations');
+    assert.equal(css.includes('.ui-dt-loading-bar'), true);
+    assert.equal(css.includes('.ui-dt-loading-pill'), true);
+    assert.equal(css.includes(':root[data-theme="dark"] .ui-dt-loading-pill'), true);
+    assert.equal(css.includes('180ms'), true, 'table loading pill must apply anti-flicker enter delay');
+});
+
+test('setTableBusy mounts clipped progress bar and status pill once and toggles aria-busy cleanly', () => {
+    const doc = fakeDocument();
+    const labelNode = { textContent: '' };
+    const origCreate = doc.createElement;
+    doc.createElement = (tag) => {
+        const el = origCreate(tag);
+        el.querySelector = (sel) => (sel === '.ui-dt-loading-pill__text' ? labelNode : null);
+        return el;
+    };
+
+    const wrapper = {
+        ownerDocument: doc,
+        children: [],
+        attributes: {},
+        classList: {
+            names: new Set(),
+            toggle(name, force) {
+                if (force) this.names.add(name);
+                else this.names.delete(name);
+            },
+            contains(name) { return this.names.has(name); },
+        },
+        setAttribute(k, v) { this.attributes[k] = String(v); },
+        removeAttribute(k) { delete this.attributes[k]; },
+        appendChild(child) { this.children.push(child); return child; },
+        querySelector(sel) {
+            if (sel.includes('.ui-dt-loading-bar')) return this.children.find((c) => c.className === 'ui-dt-loading-bar') ?? null;
+            if (sel.includes('.ui-dt-loading-pill')) return this.children.find((c) => c.className === 'ui-dt-loading-pill') ?? null;
+            return null;
+        },
+    };
+
+    setTableBusy(wrapper, true, () => 'Loading');
+    setTableBusy(wrapper, true, () => 'Loading');
+
+    assert.equal(wrapper.children.length, 2, 'bar and pill are mounted once');
+    assert.equal(wrapper.classList.contains('is-loading'), true);
+    assert.equal(wrapper.attributes['aria-busy'], 'true');
+    assert.equal(labelNode.textContent, 'Loading');
+
+    setTableBusy(wrapper, false, () => 'Loading');
+    assert.equal(wrapper.classList.contains('is-loading'), false);
+    assert.equal(wrapper.attributes['aria-busy'], undefined);
+    assert.equal(labelNode.textContent, '');
 });
 
 /** Just enough DOM for createDomView: nodes are plain objects, unknown queries return an inert stub. */

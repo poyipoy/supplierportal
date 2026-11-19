@@ -5,6 +5,8 @@ export const DEFAULT_MAX_TABS = DEFAULT_MAX_SESSIONS;
 export const DEFAULT_MAX_LIVE_FRAMES = 6;
 export const DEFAULT_STALE_AFTER_MS = 120_000;
 export const DEFAULT_STEP_INTERVAL_MS = 220;
+export const DEFAULT_MAX_PINNED_SESSIONS = 8;
+export const DEFAULT_MAX_RECENTLY_CLOSED = 10;
 
 const DOWNLOAD_BINARY_SUFFIX_RE = /(\/exports\/[^/]+\/download|\/shared\/pdf\/|\/attachments\/|\/export-presets(?:\/|$)|\/export\/|\/receipt\/print$|import-template)/i;
 const TOP_LEVEL_SUFFIX_RE = /(\/login|\/logout|\/confirm-password|\/forgot-password|\/two-factor-challenge|\/oauth\/|\/sso\/|\/profile\/security|\/profile\/two-factor|\/supplier-context|\/admin\/users\/create|\/admin\/users\/[^/]+\/edit|\/finance\/vendor-master\/[^/]+\/payment-term|\/verify-receipt\/|\/supplier\/register|\/supplier\/registration|\/locale\/|\/exports\/[^/]+\/download|\/shared\/pdf\/|\/attachments\/|\/export-presets(?:\/|$)|\/export\/|\/receipt\/print$|\/print$)/i;
@@ -112,6 +114,62 @@ export function isTopLevelOnlyUrl(rawUrl, origin = 'http://localhost', pathPrefi
     }
 
     return TOP_LEVEL_SUFFIX_RE.test(normalizedPath) || parsed.searchParams.has('signature');
+}
+
+const SENSITIVE_STORED_QUERY_KEYS = ['signature', 'token'];
+
+function isStorableSessionUrl(rawUrl, origin, pathPrefix) {
+    if (typeof rawUrl !== 'string' || !isSameOriginUrl(rawUrl, origin)) return false;
+    if (isTopLevelOnlyUrl(rawUrl, origin, pathPrefix) || isDownloadOrBinaryUrl(rawUrl, origin)) return false;
+    try {
+        const parsed = new URL(rawUrl, origin);
+        return !SENSITIVE_STORED_QUERY_KEYS.some((key) => parsed.searchParams.has(key));
+    } catch {
+        return false;
+    }
+}
+
+function normalizeStoredSessionEntry(item, origin, pathPrefix) {
+    if (!item || typeof item !== 'object' || !isStorableSessionUrl(item.url, origin, pathPrefix)) return null;
+    return {
+        url: canonicalizeUrl(item.url, origin),
+        label: String(item.label || '').trim() || 'ADASI Portal',
+        moduleKey: String(item.moduleKey || '').trim() || null,
+        icon: String(item.icon || '').trim(),
+    };
+}
+
+function sanitizeStoredSessionList(rawList, { origin, pathPrefix, limit }) {
+    if (!Array.isArray(rawList)) return [];
+    const seen = new Set();
+    const result = [];
+    for (const item of rawList) {
+        const entry = normalizeStoredSessionEntry(item, origin, pathPrefix);
+        if (!entry || seen.has(entry.url)) continue;
+        seen.add(entry.url);
+        result.push({ ...entry, closedAt: Number(item.closedAt) || 0 });
+        if (result.length >= limit) break;
+    }
+    return result;
+}
+
+export function sanitizePersistedPinnedList(rawList, {
+    origin = 'http://localhost',
+    pathPrefix = '',
+    maxPinned = DEFAULT_MAX_PINNED_SESSIONS,
+} = {}) {
+    const limit = Math.max(1, Number(maxPinned) || DEFAULT_MAX_PINNED_SESSIONS);
+    return sanitizeStoredSessionList(rawList, { origin, pathPrefix, limit })
+        .map(({ url, label, moduleKey, icon }) => ({ url, label, moduleKey, icon }));
+}
+
+export function sanitizeRecentlyClosedList(rawList, {
+    origin = 'http://localhost',
+    pathPrefix = '',
+    maxEntries = DEFAULT_MAX_RECENTLY_CLOSED,
+} = {}) {
+    const limit = Math.max(1, Number(maxEntries) || DEFAULT_MAX_RECENTLY_CLOSED);
+    return sanitizeStoredSessionList(rawList, { origin, pathPrefix, limit });
 }
 
 export function resolveModuleKey(rawUrl, catalog = [], origin = 'http://localhost') {
@@ -272,6 +330,7 @@ export class WorkspaceSessionStore {
         maxSessions = null,
         maxTabs = DEFAULT_MAX_SESSIONS,
         maxLiveFrames = DEFAULT_MAX_LIVE_FRAMES,
+        maxPinnedSessions = DEFAULT_MAX_PINNED_SESSIONS,
         staleAfterMs = DEFAULT_STALE_AFTER_MS,
         now = () => Date.now(),
         catalog = [],
@@ -281,6 +340,10 @@ export class WorkspaceSessionStore {
         this.shortcutsKey = SHORTCUTS_KEY;
         this.maxSessions = Math.max(2, resolvedMax);
         this.maxTabs = this.maxSessions;
+        this.maxPinnedSessions = Math.max(
+            1,
+            Math.min(Number(maxPinnedSessions) || DEFAULT_MAX_PINNED_SESSIONS, Math.floor(this.maxSessions / 2)),
+        );
         this.maxLiveFrames = Math.max(2, Number(maxLiveFrames) || DEFAULT_MAX_LIVE_FRAMES);
         this.staleAfterMs = Math.max(1000, Number(staleAfterMs) || DEFAULT_STALE_AFTER_MS);
         this.now = now;
@@ -343,6 +406,44 @@ export class WorkspaceSessionStore {
         return this._groups.reduce((sum, group) => sum + group.frames.length, 0);
     }
 
+    pinnedGroupsCount() {
+        return this._groups.filter((group) => Boolean(group.pinned)).length;
+    }
+
+    unpinnedGroupsCount() {
+        return this._groups.length - this.pinnedGroupsCount();
+    }
+
+    _partitionBoundaryIndex() {
+        const firstUnpinned = this._groups.findIndex((group) => !group.pinned);
+        return firstUnpinned === -1 ? this._groups.length : firstUnpinned;
+    }
+
+    _snapshotClosedGroup(group) {
+        const parent = group.frames.find((frame) => frame.role === 'parent') || group.frames[0];
+        return {
+            groupId: group.groupId,
+            moduleKey: group.moduleKey,
+            label: group.baseLabel || parent?.title || group.moduleKey,
+            url: parent?.url || '',
+            icon: group.icon || '',
+            role: 'parent',
+            closedAt: this.now(),
+        };
+    }
+
+    _snapshotClosedFrame(frame, group) {
+        return {
+            groupId: group.groupId,
+            moduleKey: group.moduleKey,
+            label: frame.title || group.baseLabel || group.moduleKey,
+            url: frame.url,
+            icon: group.icon || '',
+            role: frame.role,
+            closedAt: this.now(),
+        };
+    }
+
     liveFrameCount() {
         return this._groups.reduce(
             (sum, group) => sum + group.frames.filter((frame) => !frame.hibernated).length,
@@ -386,6 +487,7 @@ export class WorkspaceSessionStore {
         const cleanInactiveGroups = this._groups
             .filter((group) => (
                 group.groupId !== protectedGroupId
+                && !group.pinned
                 && !(this._activeTarget.type === 'frame' && this._activeTarget.groupId === group.groupId)
                 && !group.frames.some((frame) => frame.isDirty || frame.staged || frame.stagedNew || frame.queued || frame.loading)
             ))
@@ -411,13 +513,16 @@ export class WorkspaceSessionStore {
                     && !frame.loading
                     && !(this._activeTarget.type === 'frame' && this._activeTarget.frameId === frame.frameId)
                 ) {
-                    cleanChildren.push(frame);
+                    cleanChildren.push({ frame, isPinnedGroup: Boolean(group.pinned) });
                 }
             }
         }
-        cleanChildren.sort((a, b) => a.lastAccessedAt - b.lastAccessedAt);
+        cleanChildren.sort((a, b) => {
+            if (a.isPinnedGroup !== b.isPinnedGroup) return a.isPinnedGroup ? 1 : -1;
+            return a.frame.lastAccessedAt - b.frame.lastAccessedAt;
+        });
         if (cleanChildren.length > 0) {
-            const victimFrame = cleanChildren[0];
+            const victimFrame = cleanChildren[0].frame;
             const ctx = this.getFrameContext(victimFrame.frameId);
             if (ctx) {
                 ctx.group.frames.splice(ctx.index, 1);
@@ -441,17 +546,21 @@ export class WorkspaceSessionStore {
             const candidates = [];
             for (const group of this._groups) {
                 const isInactiveGroup = group.groupId !== activeGroupId;
+                const isPinnedGroup = Boolean(group.pinned);
                 for (const frame of group.frames) {
                     if (frame.hibernated || frame.isDirty || frame.staged || frame.queued || frame.frameId === activeFrameId) {
                         continue;
                     }
-                    candidates.push({ frame, isInactiveGroup });
+                    candidates.push({ frame, isInactiveGroup, isPinnedGroup });
                 }
             }
 
             if (candidates.length === 0) break;
 
             candidates.sort((a, b) => {
+                if (a.isPinnedGroup !== b.isPinnedGroup) {
+                    return a.isPinnedGroup ? 1 : -1;
+                }
                 if (a.isInactiveGroup !== b.isInactiveGroup) {
                     return a.isInactiveGroup ? -1 : 1;
                 }
@@ -467,14 +576,181 @@ export class WorkspaceSessionStore {
         return hibernatedFrameIds;
     }
 
-    seedInitial({ moduleKey, label, url, icon = '', activate = true }) {
+    seedInitial({ moduleKey, label, url, icon = '', activate = true, pinned = false }) {
         return this.openWorkspace({
             moduleKey,
             label,
             url,
             icon,
             activate,
+            pinned,
         });
+    }
+
+    seedHibernatedPinned({ moduleKey = null, label, url, icon = '' }) {
+        if (this.pinnedGroupsCount() >= this.maxPinnedSessions || this.totalFrames() >= this.maxSessions) {
+            return { group: null, frame: null, blocked: true };
+        }
+
+        const cleanUrl = canonicalizeUrl(url);
+        const resolvedKey = moduleKey || resolveModuleKey(cleanUrl, this.catalog);
+        const timestamp = this.now();
+        const groupId = this._nextGroupId();
+        const frame = this._createFrame({
+            groupId,
+            role: 'parent',
+            title: label || resolvedKey,
+            url: cleanUrl,
+            timestamp,
+        });
+        frame.hibernated = true;
+        frame.loading = false;
+
+        const group = {
+            groupId,
+            moduleKey: resolvedKey,
+            baseLabel: label || resolvedKey,
+            icon: icon || '',
+            pinned: true,
+            activeFrameId: frame.frameId,
+            lastAccessedAt: timestamp,
+            frames: [frame],
+        };
+        this._groups.splice(this._partitionBoundaryIndex(), 0, group);
+
+        return { group, frame, blocked: false };
+    }
+
+    _zoneBounds(groupId) {
+        const index = this._groups.findIndex((group) => group.groupId === groupId);
+        if (index === -1) return null;
+        const group = this._groups[index];
+        const boundary = this._partitionBoundaryIndex();
+        const pinned = Boolean(group.pinned);
+        const zoneStart = pinned ? 0 : boundary;
+        const zoneEnd = pinned ? boundary - 1 : this._groups.length - 1;
+        return {
+            index,
+            pinned,
+            zoneStart,
+            zoneEnd,
+            zoneIndex: index - zoneStart,
+            zoneTotal: zoneEnd - zoneStart + 1,
+        };
+    }
+
+    _isGroupVisible(group) {
+        return Boolean(group) && group.frames.some((frame) => !frame.stagedNew);
+    }
+
+    _hasVisibleGroupBetween(fromIndex, toIndex) {
+        for (let i = fromIndex; i <= toIndex; i += 1) {
+            if (this._isGroupVisible(this._groups[i])) return true;
+        }
+        return false;
+    }
+
+    canMoveGroup(groupId) {
+        const bounds = this._zoneBounds(groupId);
+        if (!bounds) {
+            return { canMoveLeft: false, canMoveRight: false, index: -1, zoneStart: 0, zoneEnd: 0, zoneIndex: 0, zoneTotal: 0, pinned: false };
+        }
+        return {
+            ...bounds,
+            canMoveLeft: this._hasVisibleGroupBetween(bounds.zoneStart, bounds.index - 1),
+            canMoveRight: this._hasVisibleGroupBetween(bounds.index + 1, bounds.zoneEnd),
+        };
+    }
+
+    moveGroup(groupId, targetIndex) {
+        const bounds = this._zoneBounds(groupId);
+        if (!bounds) {
+            return { moved: false, fromIndex: -1, toIndex: -1, zoneIndex: 0, zoneTotal: 0, pinned: false };
+        }
+        const requested = Math.trunc(Number(targetIndex));
+        const clamped = Math.min(bounds.zoneEnd, Math.max(bounds.zoneStart, Number.isFinite(requested) ? requested : bounds.index));
+        if (clamped !== bounds.index) {
+            const [group] = this._groups.splice(bounds.index, 1);
+            this._groups.splice(clamped, 0, group);
+        }
+        return {
+            moved: clamped !== bounds.index,
+            fromIndex: bounds.index,
+            toIndex: clamped,
+            zoneIndex: clamped - bounds.zoneStart,
+            zoneTotal: bounds.zoneTotal,
+            pinned: bounds.pinned,
+        };
+    }
+
+    moveGroupByOffset(groupId, delta) {
+        const bounds = this._zoneBounds(groupId);
+        if (!bounds) return this.moveGroup(groupId, -1);
+
+        const direction = Number(delta) < 0 ? -1 : 1;
+        let remaining = Math.abs(Math.trunc(Number(delta) || 0));
+        let target = bounds.index;
+        while (remaining > 0) {
+            let next = target + direction;
+            while (next >= bounds.zoneStart && next <= bounds.zoneEnd && !this._isGroupVisible(this._groups[next])) {
+                next += direction;
+            }
+            if (next < bounds.zoneStart || next > bounds.zoneEnd) break;
+            target = next;
+            remaining -= 1;
+        }
+        return this.moveGroup(groupId, target);
+    }
+
+    pinGroup(groupId) {
+        const index = this._groups.findIndex((group) => group.groupId === groupId);
+        if (index === -1) return { changed: false, pinned: false, blocked: false, reason: 'not_found' };
+        const group = this._groups[index];
+        if (group.pinned) return { changed: false, pinned: true, blocked: false, reason: 'already_pinned' };
+        if (this.pinnedGroupsCount() >= this.maxPinnedSessions) {
+            return { changed: false, pinned: false, blocked: true, reason: 'max_pinned_reached' };
+        }
+
+        this._groups.splice(index, 1);
+        group.pinned = true;
+        this._groups.splice(this._partitionBoundaryIndex(), 0, group);
+
+        return {
+            changed: true,
+            pinned: true,
+            blocked: false,
+            groupId,
+            index: this._groups.indexOf(group),
+            zoneIndex: this.pinnedGroupsCount() - 1,
+            zoneTotal: this.pinnedGroupsCount(),
+        };
+    }
+
+    unpinGroup(groupId) {
+        const index = this._groups.findIndex((group) => group.groupId === groupId);
+        if (index === -1 || !this._groups[index].pinned) {
+            return { changed: false, pinned: false, blocked: false, reason: 'not_pinned' };
+        }
+        const group = this._groups[index];
+
+        this._groups.splice(index, 1);
+        group.pinned = false;
+        this._groups.splice(this._partitionBoundaryIndex(), 0, group);
+
+        return {
+            changed: true,
+            pinned: false,
+            blocked: false,
+            groupId,
+            index: this._groups.indexOf(group),
+            zoneIndex: 0,
+            zoneTotal: this.unpinnedGroupsCount(),
+        };
+    }
+
+    togglePinGroup(groupId) {
+        const group = this.getGroup(groupId);
+        return group?.pinned ? this.unpinGroup(groupId) : this.pinGroup(groupId);
     }
 
     openWorkspace({
@@ -487,6 +763,7 @@ export class WorkspaceSessionStore {
         stageOnly = false,
         showSessionWhileStaged = null,
         showTabWhileStaged = false,
+        pinned = false,
     }) {
         const cleanUrl = canonicalizeUrl(url);
         const resolvedKey = moduleKey || resolveModuleKey(cleanUrl, this.catalog);
@@ -524,26 +801,29 @@ export class WorkspaceSessionStore {
             queued: Boolean(stageOnly && showWhileStaged),
         });
 
+        const isPinned = Boolean(pinned) && !stageOnly && this.pinnedGroupsCount() < this.maxPinnedSessions;
         const group = {
             groupId,
             moduleKey: resolvedKey,
             baseLabel: label || resolvedKey,
             icon: icon || '',
+            pinned: isPinned,
             activeFrameId: frame.frameId,
             lastAccessedAt: timestamp,
             frames: [frame],
         };
 
-        if (insertAfterGroupId) {
-            const idx = this._groups.findIndex((item) => item.groupId === insertAfterGroupId);
-            if (idx !== -1) {
-                this._groups.splice(idx + 1, 0, group);
-            } else {
-                this._groups.push(group);
-            }
-        } else {
-            this._groups.push(group);
+        const boundary = this._partitionBoundaryIndex();
+        const anchorIdx = insertAfterGroupId
+            ? this._groups.findIndex((item) => item.groupId === insertAfterGroupId)
+            : -1;
+        let insertAt = this._groups.length;
+        if (anchorIdx !== -1) {
+            insertAt = anchorIdx + 1;
         }
+        // Keep the pinned zone contiguous: pinned groups never land after unpinned ones, and unpinned groups never land inside the pinned zone.
+        insertAt = isPinned ? Math.min(insertAt, boundary) : Math.max(insertAt, boundary);
+        this._groups.splice(insertAt, 0, group);
 
         if (activate && !stageOnly) {
             this._activeTarget = { type: 'frame', groupId: group.groupId, frameId: frame.frameId };
@@ -870,16 +1150,17 @@ export class WorkspaceSessionStore {
         };
     }
 
-    closeFrame(frameId) {
+    closeFrame(frameId, { force = false } = {}) {
         const ctx = this.getFrameContext(frameId);
-        if (!ctx) return { closed: false, closedFrameIds: [], nextTarget: this.activeTarget(), hibernatedFrameIds: [] };
+        if (!ctx) return { closed: false, closedFrameIds: [], closedSnapshots: [], nextTarget: this.activeTarget(), hibernatedFrameIds: [] };
 
         const { group, frame, index } = ctx;
         if (frame.role === 'parent') {
-            return this.closeGroup(group.groupId);
+            return this.closeGroup(group.groupId, { force });
         }
 
         const wasActive = this._activeTarget.type === 'frame' && this._activeTarget.frameId === frameId;
+        const closedSnapshots = [this._snapshotClosedFrame(frame, group)];
         group.frames.splice(index, 1);
 
         const nextSibling = group.frames[Math.max(0, index - 1)] || group.frames[0] || null;
@@ -892,6 +1173,7 @@ export class WorkspaceSessionStore {
             return {
                 closed: true,
                 closedFrameIds: [frameId],
+                closedSnapshots,
                 nextTarget: this.activeTarget(),
                 wasHibernated: activation.wasHibernated,
                 shouldRefresh: activation.shouldRefresh,
@@ -902,6 +1184,7 @@ export class WorkspaceSessionStore {
         return {
             closed: true,
             closedFrameIds: [frameId],
+            closedSnapshots,
             nextTarget: this.activeTarget(),
             wasHibernated: false,
             shouldRefresh: false,
@@ -909,20 +1192,33 @@ export class WorkspaceSessionStore {
         };
     }
 
-    closeGroup(groupId) {
+    closeGroup(groupId, { force = false } = {}) {
         const idx = this._groups.findIndex((group) => group.groupId === groupId);
         if (idx === -1) {
-            return { closed: false, closedFrameIds: [], nextTarget: this.activeTarget(), hibernatedFrameIds: [] };
+            return { closed: false, closedFrameIds: [], closedSnapshots: [], nextTarget: this.activeTarget(), hibernatedFrameIds: [] };
+        }
+
+        if (this._groups[idx].pinned && !force) {
+            return {
+                closed: false,
+                blockedByPin: true,
+                closedFrameIds: [],
+                closedSnapshots: [],
+                nextTarget: this.activeTarget(),
+                hibernatedFrameIds: [],
+            };
         }
 
         const [removed] = this._groups.splice(idx, 1);
         const closedFrameIds = removed.frames.map((frame) => frame.frameId);
+        const closedSnapshots = [this._snapshotClosedGroup(removed)];
         const wasActive = this._activeTarget.type === 'frame' && this._activeTarget.groupId === groupId;
 
         if (!wasActive) {
             return {
                 closed: true,
                 closedFrameIds,
+                closedSnapshots,
                 nextTarget: this.activeTarget(),
                 wasHibernated: false,
                 shouldRefresh: false,
@@ -934,6 +1230,7 @@ export class WorkspaceSessionStore {
         return {
             closed: true,
             closedFrameIds,
+            closedSnapshots,
             nextTarget,
             wasHibernated: Boolean(nextTarget.wasHibernated),
             shouldRefresh: Boolean(nextTarget.shouldRefresh),
@@ -944,15 +1241,15 @@ export class WorkspaceSessionStore {
     dirtyFramesForClose(scope, anchorId = null) {
         let candidateGroups = [];
         if (scope === 'all') {
-            candidateGroups = this._groups;
+            candidateGroups = this._groups.filter((g) => !g.pinned);
         } else if (scope === 'others') {
-            candidateGroups = this._groups.filter((g) => g.groupId !== anchorId);
+            candidateGroups = this._groups.filter((g) => !g.pinned && g.groupId !== anchorId);
         } else if (scope === 'right') {
             const idx = this._groups.findIndex((g) => g.groupId === anchorId);
-            candidateGroups = idx === -1 ? [] : this._groups.slice(idx + 1);
+            candidateGroups = idx === -1 ? [] : this._groups.slice(idx + 1).filter((g) => !g.pinned);
         } else if (scope === 'group') {
             const g = this.getGroup(anchorId);
-            candidateGroups = g ? [g] : [];
+            candidateGroups = g && !g.pinned ? [g] : [];
         } else if (scope === 'frame') {
             const frame = this.getFrame(anchorId);
             return frame && frame.isDirty ? [frame] : [];
@@ -964,18 +1261,19 @@ export class WorkspaceSessionStore {
     closeOtherGroups(keepGroupId) {
         const keep = this.getGroup(keepGroupId);
         if (!keep) {
-            return { closedFrameIds: [], nextTarget: this.activeTarget(), hibernatedFrameIds: [] };
+            return { closedFrameIds: [], closedSnapshots: [], nextTarget: this.activeTarget(), hibernatedFrameIds: [] };
         }
 
-        const closedFrameIds = this._groups
-            .filter((group) => group.groupId !== keepGroupId)
-            .flatMap((group) => group.frames.map((frame) => frame.frameId));
+        const removed = this._groups.filter((group) => !group.pinned && group.groupId !== keepGroupId);
+        const closedFrameIds = removed.flatMap((group) => group.frames.map((frame) => frame.frameId));
+        const closedSnapshots = removed.map((group) => this._snapshotClosedGroup(group));
 
-        this._groups = [keep];
+        this._groups = this._groups.filter((group) => group.pinned || group.groupId === keepGroupId);
         const activation = this.activateGroup(keepGroupId);
 
         return {
             closedFrameIds,
+            closedSnapshots,
             nextTarget: this.activeTarget(),
             wasHibernated: activation.wasHibernated,
             shouldRefresh: activation.shouldRefresh,
@@ -986,11 +1284,14 @@ export class WorkspaceSessionStore {
     closeGroupsToRight(anchorGroupId) {
         const idx = this._groups.findIndex((group) => group.groupId === anchorGroupId);
         if (idx === -1) {
-            return { closedFrameIds: [], nextTarget: this.activeTarget(), hibernatedFrameIds: [] };
+            return { closedFrameIds: [], closedSnapshots: [], nextTarget: this.activeTarget(), hibernatedFrameIds: [] };
         }
 
-        const removed = this._groups.splice(idx + 1);
+        const removed = this._groups.slice(idx + 1).filter((group) => !group.pinned);
+        const removedIds = new Set(removed.map((group) => group.groupId));
+        this._groups = this._groups.filter((group) => !removedIds.has(group.groupId));
         const closedFrameIds = removed.flatMap((group) => group.frames.map((frame) => frame.frameId));
+        const closedSnapshots = removed.map((group) => this._snapshotClosedGroup(group));
 
         if (
             this._activeTarget.type === 'frame'
@@ -999,6 +1300,7 @@ export class WorkspaceSessionStore {
             const activation = this.activateGroup(anchorGroupId);
             return {
                 closedFrameIds,
+                closedSnapshots,
                 nextTarget: this.activeTarget(),
                 wasHibernated: activation.wasHibernated,
                 shouldRefresh: activation.shouldRefresh,
@@ -1008,6 +1310,7 @@ export class WorkspaceSessionStore {
 
         return {
             closedFrameIds,
+            closedSnapshots,
             nextTarget: this.activeTarget(),
             wasHibernated: false,
             shouldRefresh: false,
@@ -1016,11 +1319,29 @@ export class WorkspaceSessionStore {
     }
 
     closeAllGroups() {
-        const closedFrameIds = this._groups.flatMap((group) => group.frames.map((frame) => frame.frameId));
-        this._groups = [];
-        this._activeTarget = { type: SHORTCUTS_KEY };
+        const removed = this._groups.filter((group) => !group.pinned);
+        const closedFrameIds = removed.flatMap((group) => group.frames.map((frame) => frame.frameId));
+        const closedSnapshots = removed.map((group) => this._snapshotClosedGroup(group));
+        this._groups = this._groups.filter((group) => group.pinned);
+
+        const activeGroupLost = this._activeTarget.type === 'frame' && !this.getGroup(this._activeTarget.groupId);
+        if (this._groups.length === 0) {
+            this._activeTarget = { type: SHORTCUTS_KEY };
+        } else if (activeGroupLost) {
+            const nextTarget = this._resolveNextTargetAfterGroupRemoval(this._groups.length - 1);
+            return {
+                closedFrameIds,
+                closedSnapshots,
+                nextTarget,
+                wasHibernated: Boolean(nextTarget.wasHibernated),
+                shouldRefresh: Boolean(nextTarget.shouldRefresh),
+                hibernatedFrameIds: nextTarget.hibernatedFrameIds || [],
+            };
+        }
+
         return {
             closedFrameIds,
+            closedSnapshots,
             nextTarget: this.activeTarget(),
             hibernatedFrameIds: [],
         };
@@ -1075,6 +1396,11 @@ export class WorkspaceSessionStore {
 
     displayGroups() {
         const visibleGroups = this._groups.filter((group) => group.frames.some((frame) => !frame.stagedNew));
+        const zoneTotals = { pinned: 0, unpinned: 0 };
+        for (const group of visibleGroups) {
+            zoneTotals[group.pinned ? 'pinned' : 'unpinned'] += 1;
+        }
+        const zoneSeen = { pinned: 0, unpinned: 0 };
         const totalsByTitle = new Map();
         for (const group of visibleGroups) {
             const visibleFrames = group.frames.filter((frame) => !frame.stagedNew);
@@ -1101,6 +1427,9 @@ export class WorkspaceSessionStore {
             const isCollapsedStack = !isActive && visibleFrames.length > 1;
             const hasDirty = visibleFrames.some((frame) => frame.isDirty);
             const hasStale = visibleFrames.some((frame) => frame.stale);
+            const zoneKey = group.pinned ? 'pinned' : 'unpinned';
+            const zoneIndex = zoneSeen[zoneKey];
+            zoneSeen[zoneKey] += 1;
 
             return {
                 groupId: group.groupId,
@@ -1108,6 +1437,11 @@ export class WorkspaceSessionStore {
                 baseLabel: group.baseLabel,
                 displayLabel: rawTitle,
                 icon: group.icon,
+                pinned: Boolean(group.pinned),
+                canMoveLeft: zoneIndex > 0,
+                canMoveRight: zoneIndex < zoneTotals[zoneKey] - 1,
+                zoneIndex,
+                zoneTotal: zoneTotals[zoneKey],
                 duplicateIndex: nextSeen,
                 duplicateTotal,
                 isActive,

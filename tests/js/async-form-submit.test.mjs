@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { errorKeyToFieldNames, flattenErrors, handleValidationErrors, isSameOriginUrl, submitAsync } from '../../resources/js/async-form-submit.js';
+import { errorKeyToFieldNames, findFieldForErrorKey, flattenErrors, handleValidationErrors, isSameOriginUrl, submitAsync } from '../../resources/js/async-form-submit.js';
 
 test('Laravel error keys map to the input names used by the forms', () => {
     assert.deepEqual(errorKeyToFieldNames('email'), ['email', 'email[]']);
@@ -148,4 +148,67 @@ test('non-upload validation keeps a useful summary and associates the field with
     } finally {
         Object.assign(globalThis, previous);
     }
+});
+
+test('adasi:form-success bubbles and skips default assign when prevented by embed bridge', async () => {
+    const prior = Object.fromEntries(['window', 'document', 'fetch', 'FormData', 'CustomEvent'].map((key) => [key, globalThis[key]]));
+    let assignedUrl = null;
+    let capturedEvent = null;
+    const form = {
+        action: 'http://portal.test/purchasing/payment-vouchers',
+        dataset: {},
+        getAttribute: (name) => (name === 'action' ? 'http://portal.test/purchasing/payment-vouchers' : 'POST'),
+        setAttribute() {}, removeAttribute() {},
+        querySelectorAll: () => [],
+        querySelector: () => null,
+        dispatchEvent: (event) => {
+            capturedEvent = event;
+            if (event.type === 'adasi:form-success') {
+                event.defaultPrevented = true;
+            }
+        },
+    };
+    try {
+        globalThis.window = {
+            location: { origin: 'http://portal.test', assign: (url) => { assignedUrl = url; } },
+            requestAnimationFrame: (callback) => callback(),
+            AdasiI18n: { t: (key) => key },
+            AdasiLoader: { show: () => 1, hide() {} },
+            AdasiButton: { resetForm() {} },
+        };
+        globalThis.document = { createElement: () => ({ setAttribute() {}, append() {}, replaceChildren() {} }), querySelector: () => null };
+        globalThis.FormData = class { append() {} };
+        globalThis.CustomEvent = class {
+            constructor(type, options) {
+                this.type = type;
+                this.bubbles = Boolean(options?.bubbles);
+                this.cancelable = Boolean(options?.cancelable);
+                this.detail = options?.detail;
+                this.defaultPrevented = false;
+            }
+        };
+        globalThis.fetch = async () => ({
+            ok: true,
+            redirected: false,
+            json: async () => ({ redirect: 'http://portal.test/purchasing/payment-vouchers/abc123' }),
+        });
+        await submitAsync(form);
+        assert.equal(capturedEvent?.type, 'adasi:form-success');
+        assert.equal(capturedEvent?.bubbles, true);
+        assert.equal(capturedEvent?.cancelable, true);
+        assert.equal(assignedUrl, null);
+    } finally {
+        Object.assign(globalThis, prior);
+    }
+});
+
+test('findFieldForErrorKey skips hidden fallback inputs when a visible field shares the name', () => {
+    const hidden = { type: 'hidden', name: 'preshipment[same_as_exporter]' };
+    const checkbox = { type: 'checkbox', name: 'preshipment[same_as_exporter]' };
+    const form = {
+        querySelectorAll: () => [hidden, checkbox],
+        querySelector: () => hidden,
+    };
+
+    assert.equal(findFieldForErrorKey(form, 'preshipment.same_as_exporter'), checkbox);
 });

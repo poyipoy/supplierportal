@@ -33,6 +33,7 @@
         }
         @media (min-width: 1024px) {
             .auth-shell { grid-template-columns: 1fr 1fr; }
+            .auth-shell.auth-shell--plain { grid-template-columns: 1fr; }
         }
 
         /* ── Industrial Image Panel ── */
@@ -381,63 +382,74 @@
         </style>
     @endif
 </head>
+@php
+    $isPlainLayout = \Illuminate\Support\Facades\View::hasSection('plain-layout') || isset($exception);
+@endphp
 <body class="tw:m-0 tw:min-h-screen tw:bg-surface tw:font-sans tw:text-on-surface tw:antialiased" @if(config('ui.auth_splash.enabled', true)) data-splash-gif="{{ asset('assets/images/logo-adasi.gif') }}" data-splash-wordmark="{{ asset('assets/images/logo-adasi-wordmark.png') }}" @endif>
     <x-ui.auth-splash :error="isset($exception)" />
-    <main class="auth-shell" @yield('shell-attributes')>
-        @hasSection('brand-panel')
-            @yield('brand-panel')
-        @else
-            {{-- Left Column: Industrial Image Panel --}}
-            <aside class="auth-brand-panel" aria-label="{{ __('navigation.brand_info') }}">
-                <div class="auth-brand-panel__image">
-                    <img src="{{ asset('assets/images/adasi-login-bg.jpg') }}" alt="" loading="eager" draggable="false">
-                    <div class="auth-brand-panel__overlay"></div>
-                </div>
+    <main class="auth-shell {{ $isPlainLayout ? 'auth-shell--plain' : '' }}" @yield('shell-attributes')>
+        @if(! $isPlainLayout)
+            @hasSection('brand-panel')
+                @yield('brand-panel')
+            @else
+                {{-- Left Column: Industrial Image Panel --}}
+                <aside class="auth-brand-panel" aria-label="{{ __('navigation.brand_info') }}">
+                    <div class="auth-brand-panel__image">
+                        <img src="{{ asset('assets/images/adasi-login-bg.jpg') }}" alt="" loading="eager" draggable="false">
+                        <div class="auth-brand-panel__overlay"></div>
+                    </div>
 
-                <div class="auth-brand-panel__content">
-                    <div class="auth-brand-logo">
-                        <img src="{{ asset('assets/images/logo-adasi.png') }}" alt="{{ __('common.review.logo') }}" draggable="false">
-                        <div>
-                            <span class="auth-brand-logo__text">ASTRA DAIDO STEEL INDONESIA</span>
-                            <span class="auth-brand-logo__sub">{{ __('common.review.supplier_portal') }}</span>
+                    <div class="auth-brand-panel__content">
+                        <div class="auth-brand-logo">
+                            <img src="{{ asset('assets/images/logo-adasi.png') }}" alt="{{ __('common.review.logo') }}" draggable="false">
+                            <div>
+                                <span class="auth-brand-logo__text">ASTRA DAIDO STEEL INDONESIA</span>
+                                <span class="auth-brand-logo__sub">{{ __('common.review.supplier_portal') }}</span>
+                            </div>
+                        </div>
+
+                        <div class="auth-brand-headline">
+                            @hasSection('page-heading')
+                            <p class="auth-brand-title">{{ __('navigation.brand_heading') }}</p>
+                            @else
+                            <h1>{{ __('navigation.brand_heading') }}</h1>
+                            @endif
+                            <p>{{ __('navigation.brand_description') }}</p>
+                        </div>
+
+                        <div class="auth-brand-footer">
+                            PT. Astra Daido Steel Indonesia
                         </div>
                     </div>
-
-                    <div class="auth-brand-headline">
-                        @hasSection('page-heading')
-                        <p class="auth-brand-title">{{ __('navigation.brand_heading') }}</p>
-                        @else
-                        <h1>{{ __('navigation.brand_heading') }}</h1>
-                        @endif
-                        <p>{{ __('navigation.brand_description') }}</p>
-                    </div>
-
-                    <div class="auth-brand-footer">
-                        PT. Astra Daido Steel Indonesia
-                    </div>
-                </div>
-            </aside>
+                </aside>
+            @endif
         @endif
 
         {{-- Right Column: Authentication Form --}}
         <section class="auth-form-panel">
             <div class="auth-form-surface">
-                <a href="{{ route('login') }}" class="auth-mobile-brand">
-                    <img src="{{ asset('assets/images/logo-adasi.png') }}" alt="" draggable="false">
-                    <span>
-                        <span class="auth-mobile-brand__name">ADASI</span>
-                        <span class="auth-mobile-brand__sub">{{ __('common.review.supplier_portal') }}</span>
-                    </span>
-                </a>
+                @if(! $isPlainLayout)
+                    <a href="{{ route('login') }}" class="auth-mobile-brand">
+                        <img src="{{ asset('assets/images/logo-adasi.png') }}" alt="" draggable="false">
+                        <span>
+                            <span class="auth-mobile-brand__name">ADASI</span>
+                            <span class="auth-mobile-brand__sub">{{ __('common.review.supplier_portal') }}</span>
+                        </span>
+                    </a>
+
+                    <x-ui.environment-tag placement="auth" class="tw:self-center" />
+                @endif
 
                 <div class="auth-card ui-page-fade">
                     @include('partials.alerts')
                     @yield('content')
                 </div>
 
-                <div class="auth-footer-copy">
-                    &copy; {{ now()->year }} PT. Astra Daido Steel Indonesia
-                </div>
+                @if(! $isPlainLayout)
+                    <div class="auth-footer-copy">
+                        &copy; {{ now()->year }} PT. Astra Daido Steel Indonesia
+                    </div>
+                @endif
             </div>
         </section>
     </main>

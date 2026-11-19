@@ -37,7 +37,7 @@ return [
         'material_claim_details' => 'Material Claim Details',
         'material_claims' => 'Material Claims',
         'pending' => 'Pending',
-        'po_number' => 'PO Number',
+        'po_number' => 'Purchase Order',
         'po_status' => 'PO Status',
         'problem_description' => 'Problem Description',
         'purchasing' => 'Purchasing',

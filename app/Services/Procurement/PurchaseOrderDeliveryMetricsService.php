@@ -266,13 +266,21 @@ class PurchaseOrderDeliveryMetricsService
      */
     public function fulfillmentProjection(PurchaseOrder $po): array
     {
-        $byItem = $po->shipmentItems()
-            ->whereHas('shipment', fn ($shipmentQuery) => $shipmentQuery
-                ->whereIn('status', [Shipment::STATUS_SUBMITTED, Shipment::STATUS_ARRIVED]))
-            ->with(['shipment', 'qcItems.inspection.materialClaims'])
-            ->orderBy('id')
-            ->get()
-            ->groupBy('quotation_item_id');
+        if ($po->relationLoaded('shipmentItems')) {
+            $byItem = $po->shipmentItems
+                ->filter(fn ($item) => $item->shipment instanceof Shipment
+                    && in_array($item->shipment->status, [Shipment::STATUS_SUBMITTED, Shipment::STATUS_ARRIVED], true))
+                ->sortBy('id')
+                ->groupBy('quotation_item_id');
+        } else {
+            $byItem = $po->shipmentItems()
+                ->whereHas('shipment', fn ($shipmentQuery) => $shipmentQuery
+                    ->whereIn('status', [Shipment::STATUS_SUBMITTED, Shipment::STATUS_ARRIVED]))
+                ->with(['shipment', 'qcItems.inspection.materialClaims'])
+                ->orderBy('id')
+                ->get()
+                ->groupBy('quotation_item_id');
+        }
 
         $items = [];
         foreach ($po->orderedLines() as $line) {

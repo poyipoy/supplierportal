@@ -70,25 +70,24 @@ class AttachmentPolicy
         if ($user->role === 'qc') {
             return in_array($type, [
                 QcInspection::class,
-                PurchaseOrder::class,
                 MaterialClaim::class,
-            ]);
+            ], true);
         }
 
         // ── Supplier ── hanya data milik sendiri
         if ($user->role === 'supplier') {
             return match ($type) {
-                Quotation::class => $attachable->supplier_id === $user->id,
+                Quotation::class => (int) $attachable->supplier_id === (int) $user->id,
 
                 QuotationItem::class => $attachable->quotation
-                    && $attachable->quotation->supplier_id === $user->id,
+                    && (int) $attachable->quotation->supplier_id === (int) $user->id,
 
-                PurchaseOrder::class => $attachable->supplier_id === $user->id,
+                PurchaseOrder::class => (int) $attachable->supplier_id === (int) $user->id,
 
                 QcInspection::class => $attachable->purchaseOrder
-                    && $attachable->purchaseOrder->supplier_id === $user->id,
+                    && (int) $attachable->purchaseOrder->supplier_id === (int) $user->id,
 
-                MaterialClaim::class => $attachable->supplier_id === $user->id,
+                MaterialClaim::class => (int) $attachable->supplier_id === (int) $user->id,
 
                 ShipmentDocument::class => $attachable->shipment
                     && (int) $attachable->shipment->supplier_id === (int) $user->id,

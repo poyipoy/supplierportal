@@ -44,8 +44,8 @@ class ComparisonDimensionsTest extends TestCase
         $original = $quote->items->map(fn ($item) => $item->getAttributes())->all();
         $response = $this->actingAs($this->purchasing)->get(route('purchasing.comparison.inter-supplier', ['pr_id' => $pr]))->assertOk();
         $matrix = $response->viewData('comparison')['matrix'];
-        $expectedPr = ['T30 × W300 × L2000 mm', 'D60 × L6000 mm', 'OD60 × ID40 × L6000 mm'];
-        $expectedOffer = ['T28 × W290 × L1800 mm', 'D65 × L5000 mm', 'OD70 × ID50 × L3000–6000 mm'];
+        $expectedPr = ['30 × 300 × 2000 mm', 'Ø60 × 6000 mm', 'Ø60 × Ø40 × 6000 mm'];
+        $expectedOffer = ['28 × 290 × 1800 mm', 'Ø65 × 5000 mm', 'Ø70 × Ø50 × 3000–6000 mm'];
         $xpath = $this->xpath($response->getContent());
         $rows = $xpath->query('//table[contains(@class,"comparison-matrix-table")]//tr[@data-comparison-row]');
         $this->assertCount(3, $rows);
@@ -72,11 +72,11 @@ class ComparisonDimensionsTest extends TestCase
         $quote->items[0]->forceFill(['available_thickness' => 27, 'available_width' => null, 'available_length' => null])->save();
         $response = $this->actingAs($this->purchasing)->get(route('purchasing.comparison.inter-supplier', ['pr_id' => $pr]))->assertOk();
         $row = $response->viewData('comparison')['matrix'][0];
-        $this->assertSame('T2 × W100 × L200 mm', $row['dimension_display']);
-        $this->assertSame('T27 × W– × L– mm', $row['prices'][$quote->id]['dimension_display']);
+        $this->assertSame('2 × 100 × 200 mm', $row['dimension_display']);
+        $this->assertSame('27 × – × – mm', $row['prices'][$quote->id]['dimension_display']);
         $quote->items[0]->forceFill(['available_thickness' => null])->save();
         $response = $this->get(route('purchasing.comparison.inter-supplier', ['pr_id' => $pr]))->assertOk();
-        $this->assertSame('T– × W– × L– mm', $response->viewData('comparison')['matrix'][0]['prices'][$quote->id]['dimension_display']);
+        $this->assertSame('– × – × – mm', $response->viewData('comparison')['matrix'][0]['prices'][$quote->id]['dimension_display']);
     }
 
     public function test_unavailable_and_missing_quotes_keep_their_supplier_cell_span(): void
@@ -112,8 +112,8 @@ class ComparisonDimensionsTest extends TestCase
     public static function numberFormats(): array
     {
         return [
-            'indonesian' => ['indonesian', 'T2,5 × W100 × L200 mm', 'T3,75 × W– × L80,5–90,75 mm'],
-            'international' => ['international', 'T2.5 × W100 × L200 mm', 'T3.75 × W– × L80.5–90.75 mm'],
+            'indonesian' => ['indonesian', '2,5 × 100 × 200 mm', '3,75 × – × 80,5–90,75 mm'],
+            'international' => ['international', '2.5 × 100 × 200 mm', '3.75 × – × 80.5–90.75 mm'],
         ];
     }
 

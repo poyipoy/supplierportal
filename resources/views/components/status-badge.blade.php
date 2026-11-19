@@ -2,6 +2,7 @@
     'type',       // pr, quotation, po, claim, qc, doc
     'status',
     'isOverdue' => false,
+    'hasActiveShipments' => null,
     'size' => 'sm', // sm or lg
 ])
 
@@ -11,7 +12,7 @@
     $badgeClass = match($type) {
         'pr'        => StatusHelper::prBadge($status),
         'quotation' => StatusHelper::quotationBadge($status),
-        'po'        => StatusHelper::poBadge($status, $isOverdue),
+        'po'        => StatusHelper::poBadge($status, $isOverdue, $hasActiveShipments),
         'claim'     => StatusHelper::claimBadge($status),
         'qc'        => StatusHelper::qcBadge($status),
         'doc'       => StatusHelper::docBadge($status),
@@ -21,7 +22,7 @@
     $label = match($type) {
         'pr'            => StatusHelper::prLabel($status),
         'quotation'     => StatusHelper::quotationLabel($status),
-        'po'            => StatusHelper::poLabel($status, $isOverdue),
+        'po'            => StatusHelper::poLabel($status, $isOverdue, $hasActiveShipments),
         'claim'         => StatusHelper::claimLabel($status),
         'qc'            => StatusHelper::qcLabel($status),
         'doc'           => StatusHelper::docLabel($status),
@@ -34,6 +35,7 @@
     };
 
     $tone = match($type) {
+        'po'            => StatusHelper::poTone($status, $isOverdue, $hasActiveShipments),
         'shipment'      => StatusHelper::shipmentTone($status),
         'local_invoice' => StatusHelper::localInvoiceTone($status),
         'finance'       => StatusHelper::localFinanceTone($status),

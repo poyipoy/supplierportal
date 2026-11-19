@@ -164,17 +164,7 @@
                         interaction: { mode: 'index', intersect: false },
                         plugins: {
                             legend: {
-                                position: 'top',
-                                align: 'start',
-                                labels: {
-                                    usePointStyle: true,
-                                    pointStyle: 'rectRounded',
-                                    boxWidth: 10,
-                                    boxHeight: 10,
-                                    padding: 14,
-                                    font: { size: 12, weight: '500' },
-                                    color: colors.onSurfaceVariant,
-                                },
+                                display: false,
                             },
                             tooltip: theme && theme.tooltip ? theme.tooltip(tooltip) : tooltip,
                         },
@@ -545,11 +535,79 @@
                 };
 
                 window._activeComparisonChart?.destroy();
+                window.AdasiChart?.fitScrollWidth?.(chartCanvas, {
+                    categories: data.labels?.length || 0,
+                    series: data.datasets?.length || 0,
+                });
                 window._activeComparisonChart = new Chart(chartCanvas, built.config);
                 chartCanvas.setAttribute('aria-label', [chartI18n.title, chartLib.summary(data, chartI18n, formatPrice)].filter(Boolean).join('. '));
                 scaleButtons.forEach((button) => {
                     button.setAttribute('aria-pressed', button.dataset.comparisonChartScale === chartState.mode ? 'true' : 'false');
                 });
+
+                // B3: Render supplier legend items with Total Price/kg (IDR) below each supplier icon
+                const legendContainer = document.getElementById('comparisonChartLegend');
+                if (legendContainer) {
+                    legendContainer.innerHTML = '';
+                    const rawDatasets = comparisonChartData.datasets || [];
+                    rawDatasets.forEach((rawDs, dsIdx) => {
+                        const listItem = document.createElement('div');
+                        listItem.setAttribute('role', 'listitem');
+                        listItem.className = 'tw:flex';
+
+                        const itemBtn = document.createElement('button');
+                        itemBtn.type = 'button';
+                        itemBtn.setAttribute('aria-pressed', 'true');
+                        const isBest = Boolean(rawDs.is_best_total);
+                        itemBtn.className = 'ui-focus-ring tw:flex tw:flex-col tw:items-start tw:gap-1 tw:rounded-ui-sm tw:border tw:px-3 tw:py-2 tw:text-left tw:transition-colors '
+                            + (isBest ? 'ui-best-price-cell tw:border-success' : 'tw:border-outline-variant tw:bg-surface-container-low tw:hover:bg-surface-container');
+
+                        const topRow = document.createElement('div');
+                        topRow.className = 'tw:flex tw:items-center tw:gap-2';
+
+                        const swatch = document.createElement('span');
+                        swatch.className = 'tw:inline-block tw:h-3 tw:w-3 tw:shrink-0 tw:rounded-xs';
+                        swatch.style.backgroundColor = palette[dsIdx % palette.length] || colors.primary;
+
+                        const nameEl = document.createElement('span');
+                        nameEl.className = 'tw:text-ui-xs tw:font-bold' + (isBest ? '' : ' tw:text-on-surface');
+                        nameEl.textContent = rawDs.label || ('Supplier ' + (dsIdx + 1));
+
+                        topRow.appendChild(swatch);
+                        topRow.appendChild(nameEl);
+
+                        if (isBest) {
+                            const bestChip = document.createElement('span');
+                            bestChip.className = 'ui-status-chip ui-status-chip--success tw:ms-1';
+                            bestChip.textContent = @json(__('purchasing.copy.best_total'));
+                            topRow.appendChild(bestChip);
+                        }
+
+                        const bottomRow = document.createElement('div');
+                        bottomRow.className = 'ui-tabular-nums tw:text-ui-xs tw:font-semibold' + (isBest ? '' : ' tw:text-on-surface-variant');
+                        const totalPerKg = rawDs.total_price_per_kg_idr;
+                        bottomRow.textContent = totalPerKg != null && totalPerKg > 0
+                            ? (@json(__('purchasing.copy.total_price_per_kg_idr')) + ': ' + window.formatAnalyticMoney(totalPerKg, 'IDR'))
+                            : '-';
+
+                        itemBtn.appendChild(topRow);
+                        itemBtn.appendChild(bottomRow);
+
+                        itemBtn.addEventListener('click', () => {
+                            const chartInstance = window._activeComparisonChart;
+                            if (!chartInstance) return;
+                            const visible = chartInstance.isDatasetVisible(dsIdx);
+                            const nextVisible = !visible;
+                            chartInstance.setDatasetVisibility(dsIdx, nextVisible);
+                            chartInstance.update();
+                            itemBtn.setAttribute('aria-pressed', nextVisible ? 'true' : 'false');
+                            itemBtn.style.opacity = nextVisible ? '1' : '0.45';
+                        });
+
+                        listItem.appendChild(itemBtn);
+                        legendContainer.appendChild(listItem);
+                    });
+                }
             };
 
             // Bar colors are resolved at build time, so a theme/accent switch rebuilds the chart.
@@ -576,6 +634,18 @@
             });
 
             renderComparisonChart();
+
+            window._comparisonChartResizeObserver?.disconnect();
+            if ('ResizeObserver' in window && chartCanvas.parentElement) {
+                window._comparisonChartResizeObserver = new ResizeObserver((entries) => {
+                    for (const entry of entries) {
+                        if (entry.contentRect.width > 0 && entry.contentRect.height > 0 && window._activeComparisonChart) {
+                            window._activeComparisonChart.resize();
+                        }
+                    }
+                });
+                window._comparisonChartResizeObserver.observe(chartCanvas.parentElement);
+            }
 
             const materialFilter = document.getElementById('comparisonMaterialFilter');
             if (materialFilter) {
@@ -618,64 +688,224 @@
             }
         }
 
+        // B5: Price Benchmark Year & Month filter controls
+        const benchmarkYearSelect = document.getElementById('benchmarkYearSelect');
+        const benchmarkMonthSelect = document.getElementById('benchmarkMonthSelect');
+        const benchmarkResetBtn = document.getElementById('benchmarkPeriodResetBtn');
+        const benchmarkYearInput = document.getElementById('comparisonBenchmarkYearInput');
+        const benchmarkMonthInput = document.getElementById('comparisonBenchmarkMonthInput');
+
+        const submitBenchmarkPeriodFilter = () => {
+            if (benchmarkYearInput && benchmarkYearSelect) {
+                benchmarkYearInput.value = benchmarkYearSelect.value;
+            }
+            if (benchmarkMonthInput && benchmarkMonthSelect) {
+                benchmarkMonthInput.value = benchmarkMonthSelect.value;
+            }
+            comparisonFilterForm.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+        };
+
+        benchmarkYearSelect?.addEventListener('change', submitBenchmarkPeriodFilter);
+        benchmarkMonthSelect?.addEventListener('change', submitBenchmarkPeriodFilter);
+        benchmarkResetBtn?.addEventListener('click', () => {
+            if (benchmarkYearSelect) benchmarkYearSelect.value = '';
+            if (benchmarkMonthSelect) benchmarkMonthSelect.value = '';
+            submitBenchmarkPeriodFilter();
+        });
+
         // Award previews & PO grouping
+        const expandedSupplierGroups = new Set();
+        const previewI18n = {
+            emptyOffers: @json(__('purchasing.copy.no_items_selected_yet_select_supplier_offers_above')),
+            emptyGroups: @json(__('purchasing.copy.1_po_will_be_created_per_selected_supplier_group_upon_confirmation')),
+            noMatches: @json(__('purchasing.copy.no_matching_selected_offers')),
+            colMaterial: @json(__('purchasing.copy.material')),
+            colSupplier: @json(__('purchasing.copy.supplier')),
+            colPrice: @json(__('purchasing.copy.price_kg_idr')),
+            showLess: @json(__('purchasing.copy.show_less_materials')),
+            moreTemplate: @json(__('purchasing.copy.more_materials_count')),
+            summaryTemplate: @json(__('purchasing.copy.selected_offers_summary')),
+            summaryEmpty: @json(__('purchasing.copy.selected_offers_summary_empty')),
+        };
+        const MAX_COLLAPSED_GROUP_ITEMS = 5;
+
+        const applyPreviewSearchFilter = () => {
+            const searchInput = document.getElementById('awardPreviewSearch');
+            const previewContainer = document.getElementById('awardPreviewItems');
+            if (!searchInput || !previewContainer) return;
+
+            const query = searchInput.value.trim().toLowerCase();
+            const rows = previewContainer.querySelectorAll('tbody tr[data-preview-row]');
+            if (rows.length === 0) return;
+
+            let visibleCount = 0;
+            rows.forEach(row => {
+                const haystack = row.dataset.searchText || '';
+                const matched = query === '' || haystack.includes(query);
+                row.hidden = !matched;
+                if (matched) visibleCount++;
+            });
+
+            const emptyFilterRow = previewContainer.querySelector('[data-preview-empty-filter]');
+            if (emptyFilterRow) {
+                emptyFilterRow.hidden = visibleCount > 0;
+            }
+        };
+
         const updateAwardPreviews = () => {
             const radios = document.querySelectorAll('.award-radio:checked');
             const previewContainer = document.getElementById('awardPreviewItems');
             const groupContainer = document.getElementById('supplierGroupPreview');
+            const searchInput = document.getElementById('awardPreviewSearch');
+            const countBadge = document.getElementById('awardPreviewCountBadge');
+            const groupCountBadge = document.getElementById('supplierGroupCountBadge');
+            const footerSummary = document.getElementById('awardPreviewFooterSummary');
 
             if (!previewContainer || !groupContainer) return;
 
             const textElement = (tag, className, text) => {
                 const element = document.createElement(tag);
-                element.className = className;
+                if (className) element.className = className;
                 element.textContent = text;
                 return element;
             };
 
             if (radios.length === 0) {
-                previewContainer.replaceChildren(textElement('span', 'tw:text-on-surface-variant', @json(__('purchasing.copy.no_items_selected_yet_select_supplier_offers_above'))));
-                groupContainer.replaceChildren(textElement('span', 'tw:text-on-surface-variant', @json(__('purchasing.copy.1_po_will_be_created_per_selected_supplier_group_upon_confirmation'))));
+                if (searchInput) {
+                    searchInput.value = '';
+                    searchInput.disabled = true;
+                }
+                if (countBadge) countBadge.classList.add('tw:hidden');
+                if (groupCountBadge) groupCountBadge.classList.add('tw:hidden');
+                if (footerSummary) footerSummary.textContent = previewI18n.summaryEmpty;
+
+                previewContainer.replaceChildren(textElement('div', 'tw:p-3 tw:text-on-surface-variant', previewI18n.emptyOffers));
+                groupContainer.replaceChildren(textElement('div', 'tw:p-0.5 tw:text-on-surface-variant', previewI18n.emptyGroups));
                 return;
             }
 
-            const itemsList = textElement('ul', 'tw:list-disc tw:ps-4 tw:space-y-1', '');
+            if (searchInput) {
+                searchInput.disabled = false;
+            }
+
+            const itemsList = textElement('table', 'table table-sm table-hover align-middle mb-0 tw:text-ui-xs', '');
+            const thead = textElement('thead', 'table-light tw:sticky tw:top-0 tw:z-1', '');
+            const headRow = document.createElement('tr');
+            const thNum = textElement('th', 'text-end tw:w-8', '#');
+            thNum.scope = 'col';
+            const thMaterial = textElement('th', '', previewI18n.colMaterial);
+            thMaterial.scope = 'col';
+            const thSupplier = textElement('th', '', previewI18n.colSupplier);
+            thSupplier.scope = 'col';
+            const thPrice = textElement('th', 'text-end text-nowrap', previewI18n.colPrice);
+            thPrice.scope = 'col';
+            headRow.append(thNum, thMaterial, thSupplier, thPrice);
+            thead.append(headRow);
+
+            const tbody = document.createElement('tbody');
             const supplierMap = new Map();
 
-            radios.forEach(radio => {
-                const itemName = radio.dataset.prItemName;
-                const supplierName = radio.dataset.supplierName;
-                const supplierId = radio.dataset.supplierId;
-                const price = radio.dataset.priceDisplay;
+            radios.forEach((radio, index) => {
+                const itemName = radio.dataset.prItemName || '';
+                const supplierName = radio.dataset.supplierName || '';
+                const supplierId = radio.dataset.supplierId || '';
+                const price = radio.dataset.priceDisplay || '';
 
-                const item = document.createElement('li');
-                item.append(
-                    textElement('strong', '', itemName),
-                    document.createTextNode(' → '),
-                    textElement('span', 'text-primary fw-semibold', supplierName),
-                    document.createTextNode(` (${price})`),
-                );
-                itemsList.append(item);
+                const tr = document.createElement('tr');
+                tr.dataset.previewRow = '1';
+                tr.dataset.searchText = `${itemName} ${supplierName}`.toLowerCase();
+
+                const tdNum = textElement('td', 'text-end tw:text-on-surface-variant ui-tabular-nums', String(index + 1));
+                const tdMaterial = textElement('td', 'fw-semibold tw:text-on-surface', itemName);
+                const tdSupplier = textElement('td', 'text-primary fw-semibold', supplierName);
+                const tdPrice = textElement('td', 'text-end ui-tabular-nums text-nowrap tw:text-on-surface', price);
+                tr.append(tdNum, tdMaterial, tdSupplier, tdPrice);
+                tbody.append(tr);
 
                 if (!supplierMap.has(supplierId)) {
-                    supplierMap.set(supplierId, { name: supplierName, items: [] });
+                    supplierMap.set(supplierId, { id: supplierId, name: supplierName, items: [] });
                 }
                 supplierMap.get(supplierId).items.push(itemName);
             });
+
+            const emptyFilterRow = document.createElement('tr');
+            emptyFilterRow.dataset.previewEmptyFilter = '1';
+            emptyFilterRow.hidden = true;
+            const emptyFilterCell = textElement('td', 'text-center tw:py-4 tw:text-on-surface-variant', previewI18n.noMatches);
+            emptyFilterCell.colSpan = 4;
+            emptyFilterRow.append(emptyFilterCell);
+            tbody.append(emptyFilterRow);
+
+            itemsList.append(thead, tbody);
             previewContainer.replaceChildren(itemsList);
+            applyPreviewSearchFilter();
 
             const groups = textElement('div', 'tw:space-y-2', '');
             let poCount = 0;
             for (const supplier of supplierMap.values()) {
                 poCount++;
-                const group = textElement('div', 'tw:p-2 tw:rounded-sm tw:bg-surface tw:border tw:border-outline-variant', '');
-                group.append(
-                    textElement('div', 'fw-bold tw:text-ui-xs text-primary', `PO #${poCount} • ${supplier.name}`),
-                    textElement('div', 'tw:text-on-surface-variant tw:text-ui-xs', `${window.AdasiI18n.choice('purchasing.js.item_count', supplier.items.length, { count: supplier.items.length })}: ${supplier.items.join(', ')}`),
+                const group = textElement('div', 'tw:p-2.5 tw:rounded-ui-sm tw:bg-surface tw:border tw:border-outline-variant', '');
+
+                const header = textElement('div', 'tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-2 tw:mb-2', '');
+                const title = textElement('div', 'fw-bold tw:text-ui-xs text-primary', `PO #${poCount} · ${supplier.name}`);
+                const itemCountChip = textElement(
+                    'span',
+                    'ui-status-chip ui-status-chip--neutral',
+                    window.AdasiI18n.choice('purchasing.js.item_count', supplier.items.length, { count: supplier.items.length })
                 );
+                header.append(title, itemCountChip);
+
+                const chipsWrap = textElement('div', 'tw:flex tw:flex-wrap tw:gap-1', '');
+                const hasOverflow = supplier.items.length > MAX_COLLAPSED_GROUP_ITEMS;
+                const isExpanded = expandedSupplierGroups.has(supplier.id);
+                const visibleItems = hasOverflow && !isExpanded
+                    ? supplier.items.slice(0, MAX_COLLAPSED_GROUP_ITEMS)
+                    : supplier.items;
+
+                visibleItems.forEach(itemName => {
+                    chipsWrap.append(
+                        textElement('span', 'tw:inline-flex tw:items-center tw:rounded-ui-xs tw:border tw:border-outline-variant tw:bg-surface-low tw:px-1.5 tw:py-0.5 tw:text-ui-xs tw:text-on-surface', itemName)
+                    );
+                });
+
+                group.append(header, chipsWrap);
+
+                if (hasOverflow) {
+                    const toggleBtn = document.createElement('button');
+                    toggleBtn.type = 'button';
+                    toggleBtn.className = 'btn btn-link btn-sm p-0 tw:mt-1.5 tw:text-ui-xs tw:font-semibold text-decoration-none';
+                    toggleBtn.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
+                    toggleBtn.textContent = isExpanded
+                        ? previewI18n.showLess
+                        : previewI18n.moreTemplate.replace(':count', String(supplier.items.length - MAX_COLLAPSED_GROUP_ITEMS));
+                    toggleBtn.addEventListener('click', () => {
+                        if (expandedSupplierGroups.has(supplier.id)) {
+                            expandedSupplierGroups.delete(supplier.id);
+                        } else {
+                            expandedSupplierGroups.add(supplier.id);
+                        }
+                        updateAwardPreviews();
+                    });
+                    group.append(toggleBtn);
+                }
+
                 groups.append(group);
             }
             groupContainer.replaceChildren(groups);
+
+            if (countBadge) {
+                countBadge.textContent = window.AdasiI18n.choice('purchasing.js.item_count', radios.length, { count: radios.length });
+                countBadge.classList.remove('tw:hidden');
+            }
+            if (groupCountBadge) {
+                groupCountBadge.textContent = window.AdasiI18n.choice('purchasing.js.purchase_order_count', poCount, { count: poCount });
+                groupCountBadge.classList.remove('tw:hidden');
+            }
+            if (footerSummary) {
+                footerSummary.textContent = previewI18n.summaryTemplate
+                    .replace(':items', String(radios.length))
+                    .replace(':pos', String(poCount));
+            }
 
             const arrivalInput = document.getElementById('poEstimatedArrival');
             const warningEl = document.getElementById('targetArrivalWarning');
@@ -693,6 +923,11 @@
                 warningEl.classList.toggle('d-none', !isEarlier);
             }
         };
+
+        const awardPreviewSearchInput = document.getElementById('awardPreviewSearch');
+        if (awardPreviewSearchInput) {
+            awardPreviewSearchInput.addEventListener('input', applyPreviewSearchFilter);
+        }
 
         // M04-W: only the chosen offer's Order Qty / acceptance controls are
         // active; disabled inputs are not submitted, so one value per PR item.
@@ -1172,6 +1407,9 @@
             head.innerHTML = `
                 <tr>
                     <th scope="col" class="ui-sticky-col">${window.AdasiI18n.t('purchasing.js.pr_number')}</th>
+                    <th scope="col">${escapeOptionText(@json(__('purchasing.copy.material')))}</th>
+                    <th scope="col">${escapeOptionText(@json(__('purchasing.copy.dimensions')))}</th>
+                    <th scope="col">${escapeOptionText(@json(__('materials.reference_prices.rules.category_name')))}</th>
                     <th scope="col">${window.AdasiI18n.t('purchasing.js.supplier')}</th>
                     <th scope="col">${window.AdasiI18n.t('purchasing.js.price_kg')}</th>
                     <th scope="col">${window.AdasiI18n.t('purchasing.js.converted_total')} (${escapeOptionText(historicalCurrency)})</th>
@@ -1186,6 +1424,9 @@
                             ? `<a href="${escapeOptionText(row.pr_url)}" class="text-primary text-decoration-none tw:hover:underline">${escapeOptionText(row.pr_number || '-')} →</a>`
                             : escapeOptionText(row.pr_number || '-')}
                     </td>
+                    <td class="text-center fw-semibold">${escapeOptionText(row.material_name || payload.materialName || '-')}</td>
+                    <td class="text-center ui-tabular-nums">${escapeOptionText(row.dimension_display || '-')}</td>
+                    <td class="text-center"><span class="ui-status-chip ui-status-chip--neutral">${escapeOptionText(row.range_classification || '-')}</span></td>
                     <td class="text-center">${escapeOptionText(row.supplier || '-')}</td>
                     <td class="text-end ui-tabular-nums">${formatMaxDecimals(row.price_per_kg, 4)} <span class="ui-status-chip ui-status-chip--neutral tw:ms-1">${escapeOptionText(row.currency)}</span><div class="tw:text-ui-xs tw:text-on-surface-variant">${escapeOptionText(row.annual_price_display || '')}</div></td>
                     <td class="text-end text-primary fw-bold ui-tabular-nums">${formatRupiah(row.total_idr)}</td>

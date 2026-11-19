@@ -63,7 +63,7 @@
                 data-workspace-shortcuts-select
             >
                 <span class="workspace-session__icon" aria-hidden="true">
-                    <x-ui.icon name="bookmark" size="xs" />
+                    <x-ui.icon name="link-2" size="xs" />
                 </span>
                 <span class="workspace-session__label">{{ $shortcutsSession['label'] }}</span>
             </button>
@@ -226,6 +226,24 @@
     </template>
     <template data-workspace-icon="bookmark">
         <x-ui.icon name="bookmark" size="xs" />
+    </template>
+    <template data-workspace-icon="pin">
+        <x-ui.icon name="pin" size="xs" />
+    </template>
+    <template data-workspace-icon="pin-off">
+        <x-ui.icon name="pin-off" size="xs" />
+    </template>
+    <template data-workspace-icon="rotate-ccw">
+        <x-ui.icon name="rotate-ccw" size="xs" />
+    </template>
+    <template data-workspace-icon="arrow-left">
+        <x-ui.icon name="arrow-left" size="xs" />
+    </template>
+    <template data-workspace-icon="arrow-right">
+        <x-ui.icon name="arrow-right" size="xs" />
+    </template>
+    <template data-workspace-icon="trash-2">
+        <x-ui.icon name="trash-2" size="xs" />
     </template>
 
     <span

@@ -10,8 +10,9 @@ export function bootPoDocumentUploads(root = document) {
         let statusUrl;
         let retryUrl;
         let inFlight = false;
+        const doc = typeof document !== 'undefined' ? document : null;
         const isHiddenContext = () => {
-            if (document.hidden) return true;
+            if (doc?.hidden) return true;
             try {
                 return Boolean(window.frameElement?.closest?.('[data-workspace-panel]')?.hidden);
             } catch {
@@ -94,7 +95,7 @@ export function bootPoDocumentUploads(root = document) {
                 render(await response.json());
             } catch { announce(form.dataset.offline); } finally { retry.disabled = false; }
         });
-        document.addEventListener('visibilitychange', () => {
+        doc?.addEventListener?.('visibilitychange', () => {
             if (!isHiddenContext() && statusUrl && !inFlight) {
                 clearTimeout(timer);
                 timer = setTimeout(poll, 250);

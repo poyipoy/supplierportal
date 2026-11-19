@@ -208,7 +208,7 @@
         </x-slot:orders>
 
         <x-slot:updates>
-        <aside class="tw:grid tw:gap-4">
+        <aside class="tw:grid tw:gap-4 tw:text-ui-xs">
             {{-- ADASI Announcements Card --}}
             <x-ui.card :title="__('supplier.copy.adasi_announcements')" padding="none">
                 <div class="list-group list-group-flush">

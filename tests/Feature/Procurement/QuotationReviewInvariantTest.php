@@ -182,6 +182,53 @@ class QuotationReviewInvariantTest extends TestCase
         $this->assertSame(1, $this->reconcileMetric('unassigned_award_on_ineligible_quotation_count'));
     }
 
+    public function test_purchasing_page_can_request_revision_for_expired_quotation_with_unordered_award(): void
+    {
+        [$pr, $quotation, $award] = $this->awardedQuotation();
+        $quotation->forceFill(['validity_period' => now()->subDay()->toDateString()])->save();
+
+        $this->actingAs($this->purchasing)
+            ->get(route('purchasing.quotations.show', $quotation))
+            ->assertOk()
+            ->assertSee(route('purchasing.quotations.request-revision', $quotation), false)
+            ->assertSee(__('purchasing.copy.request_validity_update'));
+
+        $this->actingAs($this->purchasing)
+            ->post(route('purchasing.quotations.request-revision', $quotation), ['revision_note' => 'Please extend validity.'])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertSame(Quotation::STATUS_REVISION_REQUESTED, $quotation->fresh()->status);
+        $this->assertDatabaseMissing('pr_item_awards', ['id' => $award->id]);
+        $this->assertDatabaseHas('pr_item_award_events', [
+            'pr_id' => $pr->id,
+            'pr_item_id' => $award->pr_item_id,
+            'event' => 'award_released_for_revision',
+        ]);
+        $this->assertTrue($quotation->fresh()->canBeRevisedBySupplier());
+    }
+
+    public function test_purchasing_page_cannot_request_revision_for_expired_quotation_once_po_exists(): void
+    {
+        [, $quotation, $award] = $this->awardedQuotation();
+        app(PurchaseOrderGenerationService::class)->generateFromAwards([$award->id], $this->purchasing);
+        $quotation->refresh()->forceFill([
+            'status' => Quotation::STATUS_SUBMITTED,
+            'validity_period' => now()->subDay()->toDateString(),
+        ])->save();
+
+        $this->actingAs($this->purchasing)
+            ->get(route('purchasing.quotations.show', $quotation))
+            ->assertOk()
+            ->assertSee(__('notifications.conversation.quotation_in_use'))
+            ->assertDontSee(route('purchasing.quotations.request-revision', $quotation), false);
+
+        $this->actingAs($this->purchasing)
+            ->post(route('purchasing.quotations.request-revision', $quotation), ['revision_note' => 'Please extend validity.'])
+            ->assertRedirect()
+            ->assertSessionHas('error', __('notifications.conversation.quotation_in_use'));
+    }
+
     /**
      * @return array{0: PurchaseRequisition, 1: Quotation, 2: PrItemAward}
      */

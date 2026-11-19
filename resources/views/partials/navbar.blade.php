@@ -5,7 +5,7 @@
             icon="panel-left"
             :label="__('navigation.toggle_sidebar')"
             size="lg"
-            :class="'sidebar-toggle sidebar-toggle--mobile tw:text-on-surface-variant'.(!($isWorkspaceShell ?? false) ? ' sidebar-toggle--desktop-fallback' : '')"
+            :class="'sidebar-toggle sidebar-toggle--mobile tw:text-on-surface'.(!($isWorkspaceShell ?? false) ? ' sidebar-toggle--desktop-fallback' : '')"
             x-on:click="$dispatch('ui-sidebar-toggle', { trigger: $el })"
             x-bind:aria-label="sidebarToggleLabel"
             x-bind:title="sidebarToggleLabel"
@@ -29,6 +29,8 @@
 
     {{-- Right: Global Utility + Activity Alerts + User Identity --}}
     <div class="d-flex align-items-center tw:gap-1.5 tw:sm:gap-2">
+        <x-ui.environment-tag placement="navbar" />
+
         {{-- 1. Global System Utility: Language Switcher (Desktop only in topbar; mobile accessed via sidebar drawer / user menu) --}}
         <form action="{{ route('locale.switch') }}" method="POST" data-locale-switcher data-managed-submit data-track-unsaved="false" class="lang-toggle-track tw:inline-flex tw:items-center tw:gap-0.5 tw:p-0.5 tw:rounded-ui-sm tw:bg-surface-container tw:border tw:border-outline tw:m-0 d-none d-lg-inline-flex" role="group" aria-label="{{ __('customization.language.label') }}">
             @csrf
@@ -334,10 +336,84 @@
                         return;
                     }
 
-                    item.classList.remove('tw:bg-primary-container');
+                    item.classList.remove('tw:bg-primary-container', 'bg-light');
                     item.dataset.notificationUnread = '0';
                     item.querySelectorAll('[data-notification-new-badge]').forEach((badge) => badge.remove());
                 });
+            }
+
+            function markSingleNotificationRead(notificationId) {
+                if (!notificationId) {
+                    return;
+                }
+
+                const selector = `[data-notification-item][data-notification-id="${CSS.escape(String(notificationId))}"]`;
+                document.querySelectorAll(selector).forEach((item) => {
+                    item.classList.remove('tw:bg-primary-container', 'bg-light');
+                    item.dataset.notificationUnread = '0';
+                    item.querySelectorAll('[data-notification-new-badge]').forEach((badge) => badge.remove());
+                });
+            }
+
+            function syncNotificationReadState(data, notificationId = null) {
+                if (notificationId) {
+                    markSingleNotificationRead(notificationId);
+                }
+
+                const summaryContainer = document.querySelector('[data-notification-summary-container]');
+                if (summaryContainer?.dataset.notificationSummaryState === 'loading') {
+                    summaryContainer.dataset.notificationSummaryDirty = 'true';
+                }
+
+                if (data && typeof data.count !== 'undefined') {
+                    updateNotificationUnreadBadge(Number(data.count || 0));
+                }
+
+                if (data?.category_counts) {
+                    updateNotificationCategoryBadges(data.category_counts);
+                }
+            }
+
+            function closeNotificationDropdown(item) {
+                const dropdown = item?.closest?.('[data-notification-dropdown]');
+                const toggle = dropdown?.querySelector?.('[data-bs-toggle="dropdown"]');
+
+                if (toggle && window.bootstrap?.Dropdown) {
+                    window.bootstrap.Dropdown.getOrCreateInstance(toggle).hide();
+                } else {
+                    window.AdasiDismissDropdowns?.();
+                }
+            }
+
+            async function openNotificationTarget(rawUrl) {
+                if (!rawUrl) {
+                    return { navigated: false, inShell: false };
+                }
+
+                if (typeof window.AdasiNavigateUrl === 'function') {
+                    return window.AdasiNavigateUrl(rawUrl);
+                }
+
+                try {
+                    const target = new URL(rawUrl, window.location.href);
+                    if (!['http:', 'https:'].includes(target.protocol)) {
+                        return { navigated: false, inShell: false };
+                    }
+
+                    if (
+                        window.AdasiWorkspaceShell
+                        && typeof window.AdasiWorkspaceShell.openUrl === 'function'
+                        && target.origin === window.location.origin
+                    ) {
+                        window.AdasiWorkspaceShell.openUrl(target.href);
+                        return { navigated: true, inShell: true };
+                    }
+
+                    window.location.href = target.href;
+                    return { navigated: true, inShell: false };
+                } catch {
+                    return { navigated: false, inShell: false };
+                }
             }
 
             document.addEventListener('shown.bs.tab', function (event) {
@@ -432,7 +508,7 @@
                 }
             });
 
-            // Notification item click: POST mark-as-read, then redirect
+            // Notification item click: POST mark-as-read, then open target in workspace shell or navigate
             document.addEventListener('click', async function (event) {
                 const item = event.target.closest('[data-notification-read-url]');
                 if (!item) {
@@ -454,6 +530,8 @@
                 item.dataset.processing = 'true';
                 item.style.opacity = '0.6';
 
+                let shouldResetItem = true;
+
                 try {
                     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
                     const response = await fetch(readUrl, {
@@ -466,20 +544,37 @@
                         },
                     });
 
+                    window.AdasiSessionSync?.handlePollResponse?.(response);
+
                     if (response.ok) {
                         const data = await response.json();
+                        syncNotificationReadState(data, item.dataset.notificationId || null);
+
                         if (data.redirect) {
-                            window.location.href = data.redirect;
+                            const navResult = await openNotificationTarget(data.redirect);
+                            if (navResult?.inShell) {
+                                closeNotificationDropdown(item);
+                            } else {
+                                shouldResetItem = false;
+                            }
                             return;
                         }
                     }
 
-                    // Fallback: reload current page
-                    window.location.reload();
+                    // Fallback: reload only when not inside the multi-workspace shell
+                    const inWorkspaceShell = Boolean(window.AdasiWorkspaceShell)
+                        || document.documentElement.dataset.workspaceShell === 'true';
+                    if (!inWorkspaceShell) {
+                        shouldResetItem = false;
+                        window.location.reload();
+                    }
                 } catch (error) {
                     console.error('Failed to mark notification:', error);
-                    item.dataset.processing = 'false';
-                    item.style.opacity = '1';
+                } finally {
+                    if (shouldResetItem) {
+                        item.dataset.processing = 'false';
+                        item.style.opacity = '';
+                    }
                 }
             });
         </script>

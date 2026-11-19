@@ -55,7 +55,7 @@ return [
     'material_progress' => [
         'awaiting_confirmation' => 'Awaiting Confirmation',
         'order_confirmed' => 'Order Confirmed',
-        'material_preparation' => 'Material Preparation',
+        'material_preparation' => 'Prepare Material',
         'on_production' => 'On Production',
         'ready_to_ship' => 'Ready to Ship',
         'arrived' => 'Arrived',

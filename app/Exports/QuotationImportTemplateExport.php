@@ -7,8 +7,11 @@ use App\Support\SpreadsheetCellSanitizer;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\WithStyles;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class QuotationImportTemplateExport implements FromCollection, ShouldAutoSize, WithHeadings
+class QuotationImportTemplateExport implements FromCollection, ShouldAutoSize, WithHeadings, WithStyles
 {
     /**
      * GEN-02: the quotation form's editable order (Qty, dimensions in FIXED_DIMENSION_ORDER,
@@ -52,5 +55,37 @@ class QuotationImportTemplateExport implements FromCollection, ShouldAutoSize, W
     public function headings(): array
     {
         return self::CANONICAL_HEADINGS;
+    }
+
+    public function styles(Worksheet $sheet): array
+    {
+        self::applyQuotationTemplateHeaderStyles($sheet);
+
+        return [];
+    }
+
+    public static function applyQuotationTemplateHeaderStyles(Worksheet $sheet): void
+    {
+        // System/Required columns: pr_item_id (A), material_name (B), requested_dimension (C), available_qty (I), price_per_kg (K), availability (M)
+        foreach (['A1', 'B1', 'C1', 'I1', 'K1', 'M1'] as $cell) {
+            $sheet->getStyle($cell)->applyFromArray([
+                'font' => ['bold' => true, 'color' => ['rgb' => '78350F']],
+                'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => PrImportTemplateExport::REQUIRED_HEADER_FILL]],
+            ]);
+        }
+
+        // Conditional dimension & weight columns: D1..H1, J1
+        foreach (['D1', 'E1', 'F1', 'G1', 'H1', 'J1'] as $cell) {
+            $sheet->getStyle($cell)->applyFromArray([
+                'font' => ['bold' => true, 'color' => ['rgb' => '92400E']],
+                'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => PrImportTemplateExport::CONDITIONAL_HEADER_FILL]],
+            ]);
+        }
+
+        // Optional notes column: L1
+        $sheet->getStyle('L1')->applyFromArray([
+            'font' => ['bold' => true, 'color' => ['rgb' => '334155']],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => PrImportTemplateExport::OPTIONAL_HEADER_FILL]],
+        ]);
     }
 }

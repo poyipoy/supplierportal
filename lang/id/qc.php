@@ -64,7 +64,7 @@ return [
         'overall_inspection_status_ng_defective' => 'Status Inspeksi Keseluruhan: NG (Cacat)',
         'overall_inspection_status_ok' => 'Status Inspeksi Keseluruhan: OK',
         'period' => 'Periode',
-        'po_number' => 'Nomor PO',
+        'po_number' => 'Purchase Order',
         'qc_inspections' => 'Inspeksi QC',
         'quality_control' => 'Pengendalian Mutu',
         'quality_control_dashboard' => 'Dashboard Pengendalian Mutu',

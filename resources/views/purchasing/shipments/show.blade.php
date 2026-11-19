@@ -222,6 +222,17 @@
                 <strong>{{ __('shipments.copy.logistics_notes') }}</strong> {{ $shipment->notes }}
             </div>
         @endif
+
+        <dl class="mt-3 tw:grid tw:gap-3 tw:sm:grid-cols-2 tw:text-ui-xs tw:m-0">
+            <div>
+                <dt class="tw:text-on-surface-variant fw-semibold">{{ __('shipments.copy.invoice_number') }}</dt>
+                <dd class="tw:m-0 fw-semibold tw:text-on-surface">{{ $shipment->invoice_number ?: '-' }}</dd>
+            </div>
+            <div>
+                <dt class="tw:text-on-surface-variant fw-semibold">{{ __('shipments.copy.supplier_reference') }}</dt>
+                <dd class="tw:m-0 fw-semibold tw:text-on-surface">{{ $shipment->supplier_reference ?: '-' }}</dd>
+            </div>
+        </dl>
     </x-ui.card>
 
     {{-- 4. Shared Shipping Documents Hub --}}
@@ -287,6 +298,8 @@
                             @else
                                 <span class="tw:text-on-surface-variant fst-italic">{{ __('shipments.copy.no_file_uploaded_yet') }}</span>
                             @endif
+
+                            @include('shipments._document_revision', ['doc' => $doc])
                         </div>
                     </div>
 
@@ -449,6 +462,8 @@
     @if(\App\Support\Procurement\ProcurementFeatures::shipmentMtcEnabled() || $shipment->mtcAttachments->isNotEmpty())
         @include('shipments._mtc_section', ['shipment' => $shipment, 'manageable' => false])
     @endif
+
+    @include('shipments._preshipment_detail', ['shipment' => $shipment])
 </div>
 
 {{-- Confirm Arrival Modal --}}

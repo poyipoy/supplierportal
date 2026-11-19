@@ -176,7 +176,9 @@ class ManualPaymentVoucherPdfTest extends TestCase
         ] as $name) {
             $route = Route::getRoutes()->getByName($name);
             $this->assertNotNull($route, $name);
-            $this->assertSame(RouteClassification::PORTAL, $registry->classifyRoute($route)->kind, $name);
+            $classification = $registry->classifyRoute($route);
+            $this->assertSame(RouteClassification::MODULE, $classification->kind, $name);
+            $this->assertSame(['staff.payment_vouchers'], $classification->modules, $name);
         }
     }
 }

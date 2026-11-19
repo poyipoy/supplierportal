@@ -8,6 +8,7 @@ use App\Models\PoDocument;
 use App\Services\NotificationService;
 use App\Support\BusinessTime;
 use App\Support\NotificationCategory;
+use App\Support\Procurement\ProcurementFeatures;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -20,6 +21,10 @@ class PoDocumentController extends Controller
      */
     public function update(Request $request, $id)
     {
+        if (ProcurementFeatures::poDocumentStatusReadOnly()) {
+            abort(403, __('documents.sync.po_read_only_use_shipment'));
+        }
+
         $request->validate([
             'status' => ['required', 'string', Rule::in(PoDocument::STATUSES)],
         ]);

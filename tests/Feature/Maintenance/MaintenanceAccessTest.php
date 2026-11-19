@@ -217,6 +217,20 @@ class MaintenanceAccessTest extends TestCase
         $this->get(route('supplier.register'))->assertOk();
     }
 
+    public function test_internal_staff_modules_never_block_dual_scope_suppliers(): void
+    {
+        $this->activeMaintenance($this->actor, [
+            'staff.qc_inspections',
+            'staff.overpayments_forecast',
+            'staff.export_history',
+        ]);
+        $supplier = $this->supplier(['import', 'local']);
+
+        $this->actingAs($supplier)->get(route('exports.index'))->assertOk();
+        $this->actingAs($supplier)->get(route('supplier.claims.index'))->assertOk();
+        $this->actingAs($supplier)->get(route('local-supplier.invoices.index'))->assertOk();
+    }
+
     private function attachment(string $type, User $uploader): Attachment
     {
         return Attachment::create([

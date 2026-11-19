@@ -245,7 +245,7 @@ return [
             'excluded_notice' => 'Excluded :lines line(s) (:kg KG) due to missing annual exchange rates.',
             'view_source_lines' => 'View Source PO Lines',
             'source_drilldown' => 'Historical Source Drilldown',
-            'po_number' => 'PO Number',
+            'po_number' => 'Purchase Order',
             'po_date' => 'PO Date',
             'supplier' => 'Supplier',
             'source_price' => 'Source Price / KG',

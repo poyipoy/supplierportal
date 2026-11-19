@@ -673,6 +673,15 @@ html[data-workspace-shell="true"] .top-navbar {
 
 .workspace-session--shortcuts {
     color: var(--md-on-surface-variant);
+    font-weight: 700;
+}
+
+.workspace-session--shortcuts .workspace-session__icon .ui-icon {
+    transform: rotate(-45deg);
+}
+
+.workspace-session--shortcuts .workspace-session__label {
+    font-weight: 700;
 }
 
 .workspace-session-group--shortcuts .workspace-session--shortcuts:hover {
@@ -681,7 +690,7 @@ html[data-workspace-shell="true"] .top-navbar {
 
 .workspace-session-group--shortcuts .workspace-session--shortcuts.is-active {
     color: var(--md-on-surface);
-    font-weight: 600;
+    font-weight: 700;
     z-index: 3;
 }
 
@@ -1801,5 +1810,75 @@ body.is-resizing-shortcuts {
     .workspace-stage__progress-bar {
         width: 100%;
         transform: none;
+    }
+}
+
+/* Pinned sessions, drag reorder, and environment tag */
+.workspace-session__pin-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    color: var(--md-on-surface-variant);
+    transition: color var(--ui-motion-fast) var(--ui-easing-standard);
+}
+
+.workspace-session__pin-icon .ui-icon {
+    transform: rotate(45deg);
+}
+
+.workspace-session.is-active .workspace-session__pin-icon {
+    color: var(--md-primary);
+}
+
+.workspace-session[data-pinned="true"] > .workspace-session__trigger {
+    padding-right: 0.75rem;
+}
+
+.workspace-session-group.is-last-pinned {
+    position: relative;
+    margin-right: 0.25rem;
+}
+
+.workspace-session-group.is-last-pinned::after {
+    content: "";
+    position: absolute;
+    top: 0.5rem;
+    right: -0.25rem;
+    bottom: 0.5rem;
+    width: 1px;
+    background: var(--md-outline);
+    pointer-events: none;
+}
+
+.workspace-session-group.is-dragging {
+    z-index: 12;
+    box-shadow: var(--ui-shadow-2);
+    cursor: grabbing;
+    user-select: none;
+    touch-action: none;
+    opacity: 0.96;
+}
+
+.workspace-session-group.is-reorder-shifting {
+    transition: transform 160ms var(--ui-easing-workspace);
+}
+
+@media (forced-colors: active) {
+    .ui-environment-tag {
+        border: 1px solid CanvasText;
+        forced-color-adjust: none;
+        background: Canvas;
+        color: CanvasText;
+    }
+
+    .workspace-session-group.is-last-pinned::after {
+        background: CanvasText;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .workspace-session-group.is-reorder-shifting {
+        transition: none;
     }
 }

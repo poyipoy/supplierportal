@@ -72,6 +72,8 @@ class PriceComparisonItemAwardTest extends TestCase
                     $pr->items[1]->id => $qA->items->firstWhere('pr_item_id', $pr->items[1]->id)->id,
                 ],
                 'action' => 'generate_pos',
+                'port_of_discharge' => 'TANJUNG_PRIOK',
+                'confirm_port_of_discharge' => '1',
             ])
             ->assertRedirect();
 
@@ -101,6 +103,8 @@ class PriceComparisonItemAwardTest extends TestCase
                     $pr->items[0]->id => $qA->items->firstWhere('pr_item_id', $pr->items[0]->id)->id,
                 ],
                 'action' => 'generate_pos',
+                'port_of_discharge' => 'TANJUNG_PRIOK',
+                'confirm_port_of_discharge' => '1',
             ])
             ->assertRedirect();
 
@@ -214,6 +218,8 @@ class PriceComparisonItemAwardTest extends TestCase
                 'action' => 'generate_pos',
                 'estimated_arrival' => now()->addDays(14)->toDateString(),
                 'notes' => 'Generated from inter-supplier comparison awards',
+                'port_of_discharge' => 'TANJUNG_PRIOK',
+                'confirm_port_of_discharge' => '1',
             ]);
 
         $response->assertRedirect();
@@ -290,6 +296,8 @@ class PriceComparisonItemAwardTest extends TestCase
                     $item->id => $quotation->items->first()->id,
                 ],
                 'action' => 'generate_pos',
+                'port_of_discharge' => 'TANJUNG_PRIOK',
+                'confirm_port_of_discharge' => '1',
             ]);
 
         $response->assertRedirect()->assertSessionHas('error');
@@ -312,6 +320,8 @@ class PriceComparisonItemAwardTest extends TestCase
                     $item->id => $quotation->items->first()->id,
                 ],
                 'action' => 'generate_pos',
+                'port_of_discharge' => 'TANJUNG_PRIOK',
+                'confirm_port_of_discharge' => '1',
             ]);
 
         $response->assertRedirect()->assertSessionHas('error');

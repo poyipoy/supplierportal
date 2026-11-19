@@ -8,6 +8,7 @@ use App\Models\PrItemAward;
 use App\Models\Quotation;
 use App\Models\User;
 use App\Services\PurchaseOrderGenerationService;
+use App\Support\Procurement\LogisticsTerms;
 use App\Support\Procurement\OrderSelectionInput;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -60,6 +61,8 @@ class AwardConsolidationController extends Controller
             'award_ids.*' => 'required|integer|distinct|exists:pr_item_awards,id',
             'estimated_arrival' => 'required|date',
             'notes' => 'nullable|string|max:5000',
+            'port_of_discharge' => ['required', Rule::in(LogisticsTerms::ports())],
+            'confirm_port_of_discharge' => 'accepted',
             // M04-W: values are validated per line by the generation service.
             'order_qty' => 'nullable|array',
             'accept_spec' => 'nullable|array',
@@ -72,6 +75,7 @@ class AwardConsolidationController extends Controller
                 'require_single_supplier' => true,
                 'estimated_arrival' => $validated['estimated_arrival'],
                 'notes' => $validated['notes'] ?? null,
+                'port_of_discharge' => $validated['port_of_discharge'] ?? null,
                 'selections' => OrderSelectionInput::fromRequest($request),
             ]);
         } catch (InvalidArgumentException $exception) {

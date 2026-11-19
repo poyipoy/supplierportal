@@ -173,11 +173,10 @@ class ShipmentReadyToShipGuardTest extends TestCase
         $draft = $this->shipments->createDraft($this->supplierA);
         $payload = ['items' => [$this->line($po, $award, 5)]];
 
-        // No progress row means awaiting confirmation, which is not ready.
+        // Newly generated POs start at order_confirmed automatically, which is not ready.
         $this->assertRefused(fn () => $this->submitWithMtc($draft, $payload));
 
         foreach ([
-            PoItemProgressUpdate::STATUS_ORDER_CONFIRMED,
             PoItemProgressUpdate::STATUS_MATERIAL_PREPARATION,
             PoItemProgressUpdate::STATUS_ON_PRODUCTION,
         ] as $stage) {
@@ -308,6 +307,7 @@ class ShipmentReadyToShipGuardTest extends TestCase
             ->put(route('supplier.shipments.update', $draft), [
                 'shipment_date' => now()->addDay()->toDateString(),
                 'estimated_arrival_date' => now()->addDays(8)->toDateString(),
+                'invoice_number' => 'INV-RTS-001',
                 'items' => [$this->line($po, $award, 5)],
             ])
             ->assertSessionHas('error');
@@ -325,6 +325,7 @@ class ShipmentReadyToShipGuardTest extends TestCase
                 'action' => 'submit',
                 'shipment_date' => now()->toDateString(),
                 'estimated_arrival_date' => now()->addDays(7)->toDateString(),
+                'invoice_number' => 'INV-RTS-002',
                 'items' => [$this->line($po, $award, 5)],
             ])
             ->assertSessionHas('error');

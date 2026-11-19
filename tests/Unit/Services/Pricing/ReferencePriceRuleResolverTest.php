@@ -111,4 +111,17 @@ class ReferencePriceRuleResolverTest extends TestCase
         $this->assertFalse($result->isMatched());
         $this->assertSame('rule_inactive', $result->reasonCode);
     }
+
+    public function test_cached_rules_invalidate_after_rule_update(): void
+    {
+        $before = $this->resolver->resolve(PrItem::SHAPE_FLAT, 10.0);
+        $this->assertTrue($before->isMatched());
+
+        $rule = ReferencePriceRule::where('category_key', '1-15')->firstOrFail();
+        $rule->update(['status' => ReferencePriceRule::STATUS_INACTIVE]);
+
+        $after = $this->resolver->resolve(PrItem::SHAPE_FLAT, 10.0);
+        $this->assertFalse($after->isMatched());
+        $this->assertSame('rule_inactive', $after->reasonCode);
+    }
 }

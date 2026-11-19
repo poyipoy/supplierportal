@@ -6,7 +6,7 @@ return [
     'description' => 'Ringkasan baca-saja permintaan pembelian yang dapat atau sudah Anda tawarkan.',
     'list_title' => 'Daftar permintaan pembelian',
     'list_description' => 'Cari nomor PR, atau filter berdasarkan periode dan status penawaran Anda.',
-    'search' => 'Nomor PR',
+    'search' => 'Purchase Requisition',
     'period' => 'Periode',
     'all_periods' => 'Semua periode',
     'columns' => [

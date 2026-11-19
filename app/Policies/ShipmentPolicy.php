@@ -93,6 +93,15 @@ class ShipmentPolicy
         return $user->role === 'supplier' && (int) $user->id === (int) $shipment->supplier_id;
     }
 
+    /**
+     * PSI updates: supplier owner only. Allowed shipment statuses (draft,
+     * submitted; arrived/cancelled refused) are enforced under row lock in ShipmentService.
+     */
+    public function updatePreshipment(User $user, Shipment $shipment): bool
+    {
+        return $user->role === 'supplier' && (int) $user->id === (int) $shipment->supplier_id;
+    }
+
     public function reviewDocument(User $user, Shipment $shipment): bool
     {
         return in_array($user->role, ['purchasing', 'admin'], true);

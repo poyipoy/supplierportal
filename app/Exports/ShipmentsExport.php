@@ -69,6 +69,10 @@ class ShipmentsExport implements AcceptsExportOptions, FromQuery, HasLocalePrefe
             $query->where('shipment_date', '<=', Carbon::parse($this->endDate)->endOfDay());
         }
 
+        if ($shipmentNumber = trim((string) $this->shipmentNumber)) {
+            $query->where('shipment_number', 'like', "%{$shipmentNumber}%");
+        }
+
         if ($search = trim((string) $this->search)) {
             $query->where(function (Builder $q) use ($search) {
                 $q->where('shipment_number', 'like', "%{$search}%")

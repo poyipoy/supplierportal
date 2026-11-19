@@ -65,7 +65,7 @@ return [
         'overall_inspection_status_ng_defective' => 'Overall Inspection Status: NG (Defective)',
         'overall_inspection_status_ok' => 'Overall Inspection Status: OK',
         'period' => 'Period',
-        'po_number' => 'PO Number',
+        'po_number' => 'Purchase Order',
         'qc_inspections' => 'QC Inspections',
         'quality_control' => 'Quality Control',
         'quality_control_dashboard' => 'Quality Control Dashboard',

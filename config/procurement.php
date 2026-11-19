@@ -32,8 +32,8 @@ return [
     // ordered_quantity_write_enabled.
     'allow_offer_surplus' => (bool) env('PROCUREMENT_ALLOW_OFFER_SURPLUS', false),
 
-    // Mission 05 atomic MTC switch (Q6B): MTC per shipment, required before
-    // submit, and new quotation MTC uploads retired. false = pre-R3 behaviour.
+    // Mission 05 atomic MTC switch (Q6B): MTC per shipment (optional) and the
+    // retirement of new quotation MTC uploads. false = pre-R3 behaviour.
     'shipment_mtc_enabled' => (bool) env('PROCUREMENT_SHIPMENT_MTC_ENABLED', true),
 
     // Ready to Ship gate (3 Nov 2026): shipment drafts and submits only accept
@@ -48,4 +48,19 @@ return [
     ],
 
     'require_po_acknowledgement_before_shipment' => (bool) env('PROCUREMENT_REQUIRE_PO_ACK', false),
+
+    // D4/E1: POs that carry the sales contract handshake (generated after the
+    // 19 Nov 2026 release) need a Purchasing-signed sales contract and a
+    // supplier acknowledgement before any shipment line can reference them.
+    // Legacy POs (sales_contract_status NULL) are never affected.
+    'require_sales_contract_before_shipment' => (bool) env('PROCUREMENT_REQUIRE_SALES_CONTRACT', true),
+
+    // E5: Commercial Invoice required before submitting shipment delivery.
+    'require_commercial_invoice_for_shipment' => (bool) env('PROCUREMENT_SHIPMENT_INVOICE_REQUIRED', true),
+
+    // PSI: complete Pre-Shipment Inspection snapshot required before submitting shipment delivery.
+    'require_preshipment_for_shipment' => (bool) env('PROCUREMENT_REQUIRE_PSI', true),
+
+    // D3: Document status updates happen only in Shipment menu; PO menu is read-only.
+    'po_document_status_read_only' => (bool) env('PROCUREMENT_PO_DOCUMENTS_READ_ONLY', true),
 ];

@@ -173,7 +173,7 @@
 
         <x-slot:analytics>
 {{-- 3. Analytics & Quick Reference --}}
-    <div class="tw:grid tw:gap-5 tw:lg:grid-cols-[minmax(0,2fr)_minmax(19rem,1fr)]">
+    <div class="ui-detail-split-grid tw:grid tw:items-start tw:gap-5 tw:lg:grid-cols-[minmax(0,1fr)_16rem]">
         {{-- PR Monthly Inflow Chart --}}
         <x-ui.card
             :title="__('purchasing.copy.purchase_requisitions_trend')"

@@ -39,24 +39,44 @@ class ShipmentMtcTest extends TestCase
         $this->po = $this->purchaseOrder();
     }
 
-    public function test_draft_saves_without_mtc_but_every_submit_path_is_blocked(): void
+    public function test_draft_and_every_submit_path_succeed_without_mtc_because_mtc_is_optional(): void
     {
-        // Service path.
-        $draft = $this->draft();
-        $this->assertRefused(fn () => app(ShipmentService::class)->submitShipment($draft), __('shipments.mtc.required_to_submit'));
-        $this->assertSame(Shipment::STATUS_DRAFT, $draft->fresh()->status);
+        // Service path succeeds without MTC.
+        $draftService = $this->draft();
+        $summary = $draftService->missingDocumentsSummary();
+        $this->assertSame(4, $summary['total_count']);
+        $this->assertSame(0, $summary['mtc_count']);
+        $this->assertNotContains('mtc', $summary['missing_types']);
 
-        // Quick submit route.
+        // Draft show page marks Add MTC as Optional (never Required) and omits HTML required on #shipmentMtcFiles.
+        $showHtml = $this->actingAs($this->supplier)
+            ->get(route('supplier.shipments.show', $draftService->getRouteKey()))
+            ->assertOk()
+            ->getContent();
+        $mtcSectionPos = strpos($showHtml, 'id="shipmentMtc"');
+        $this->assertNotFalse($mtcSectionPos);
+        $mtcSectionHtml = substr($showHtml, $mtcSectionPos, 5000);
+        $this->assertStringContainsString(__('shipments.mtc.add'), $mtcSectionHtml);
+        $this->assertStringContainsString(__('common.fields.optional'), $mtcSectionHtml);
+        $this->assertStringNotContainsString(__('common.upload.required'), $mtcSectionHtml);
+
+        $submittedService = app(ShipmentService::class)->submitShipment($draftService);
+        $this->assertSame(Shipment::STATUS_SUBMITTED, $submittedService->status);
+
+        // Quick submit route succeeds without MTC.
+        $draftRoute = $this->draft();
         $this->actingAs($this->supplier)
-            ->post(route('supplier.shipments.submit', $draft->getRouteKey()))
-            ->assertSessionHas('error', __('shipments.mtc.required_to_submit'));
-        $this->assertSame(Shipment::STATUS_DRAFT, $draft->fresh()->status);
+            ->post(route('supplier.shipments.submit', $draftRoute->getRouteKey()))
+            ->assertRedirect()
+            ->assertSessionMissing('error');
+        $this->assertSame(Shipment::STATUS_SUBMITTED, $draftRoute->fresh()->status);
 
-        // Create-and-submit form path: the draft is kept, submission refused.
+        // Create-and-submit form path succeeds without MTC.
         $this->actingAs($this->supplier)
             ->post(route('supplier.shipments.store'), [...$this->formPayload(), 'action' => 'submit'])
-            ->assertSessionHas('error', __('shipments.mtc.required_to_submit'));
-        $this->assertSame(0, Shipment::where('status', Shipment::STATUS_SUBMITTED)->count());
+            ->assertRedirect()
+            ->assertSessionMissing('error');
+        $this->assertSame(3, Shipment::where('status', Shipment::STATUS_SUBMITTED)->count());
     }
 
     public function test_two_validated_mtc_files_allow_submission_and_owner_and_purchasing_can_download(): void
@@ -123,22 +143,24 @@ class ShipmentMtcTest extends TestCase
             ->assertSessionHasErrors('mtc');
     }
 
-    public function test_removing_the_last_mtc_then_submitting_never_yields_a_submitted_shipment_without_mtc(): void
+    public function test_removing_the_last_mtc_in_draft_still_allows_submission(): void
     {
         $draft = $this->draftWithMtc();
         $only = $draft->mtcAttachments()->sole();
         app(ShipmentService::class)->removeMtc($draft, $only, $this->supplier);
 
-        $this->assertRefused(fn () => app(ShipmentService::class)->submitShipment($draft), __('shipments.mtc.required_to_submit'));
-        $this->assertSame(Shipment::STATUS_DRAFT, $draft->fresh()->status);
+        $submitted = app(ShipmentService::class)->submitShipment($draft);
+        $this->assertSame(Shipment::STATUS_SUBMITTED, $submitted->status);
+        $this->assertCount(0, $submitted->fresh()->mtcAttachments);
     }
 
-    public function test_an_unvalidated_attachment_does_not_count(): void
+    public function test_unvalidated_mtc_attachment_does_not_block_optional_submission(): void
     {
         $draft = $this->draftWithMtc();
         FileInspection::whereKey($draft->mtcAttachments()->sole()->file_inspection_id)->update(['status' => 'ERROR']);
 
-        $this->assertRefused(fn () => app(ShipmentService::class)->submitShipment($draft), __('shipments.mtc.required_to_submit'));
+        $submitted = app(ShipmentService::class)->submitShipment($draft);
+        $this->assertSame(Shipment::STATUS_SUBMITTED, $submitted->status);
     }
 
     public function test_other_suppliers_and_purchasing_cannot_change_mtc_and_ids_are_scoped_to_the_shipment(): void
@@ -294,6 +316,7 @@ class ShipmentMtcTest extends TestCase
         return [
             'shipment_date' => now()->toDateString(),
             'estimated_arrival_date' => now()->addDays(10)->toDateString(),
+            'invoice_number' => 'INV-MTC-001',
             'items' => $this->items(),
         ];
     }

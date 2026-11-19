@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Export\Filters\PurchaseOrderExportFilters;
 use App\Models\MaterialClaim;
 use App\Models\PurchaseOrder;
+use App\Models\Shipment;
 use App\Services\MaterialProgressService;
 use App\Services\Procurement\PoAcknowledgementService;
 use App\Services\RegionalDisplayFormatter;
@@ -40,9 +41,14 @@ class SupplierPurchaseOrderController extends Controller
             ])
             ->withResolvedTotalIdr()
             ->with([
-                'quotations:id,pr_id',
+                'awards.quotationItem',
+                'quotations:id,pr_id,currency,exchange_rate_id',
+                'quotations.items.prItem',
+                'quotations.exchange_rate',
                 'quotations.purchaseRequisition:id,period_id,pr_number',
                 'quotations.purchaseRequisition.period:id,name,month,year',
+                'shipmentItems.shipment',
+                'shipmentItems.qcItems.inspection.materialClaims',
             ])
             ->selectSub(
                 MaterialClaim::query()
@@ -69,6 +75,13 @@ class SupplierPurchaseOrderController extends Controller
         PurchaseOrderExportFilters::apply($query, $filters);
         // PUR-08: is_overdue reads this flag instead of querying per row.
         $query->withExists('shipmentItems as has_shipment_items');
+        // E7: Distinguish Active POs with vs without an active/arrived shipment.
+        $query->withExists([
+            'shipmentItems as has_active_shipments' => fn ($q) => $q->whereHas(
+                'shipment',
+                fn ($s) => $s->whereIn('status', [Shipment::STATUS_SUBMITTED, Shipment::STATUS_ARRIVED])
+            ),
+        ]);
 
         if ($request->ajax()) {
             return DataTables::eloquent($query)
@@ -98,24 +111,28 @@ class SupplierPurchaseOrderController extends Controller
                     ? '— ('.__('purchasing.copy.exchange_rate_unavailable').')'
                     : 'Rp '.$regionalFormatter->number(number_format((float) $po->resolved_total_idr, 0, ',', '.'), 'indonesian'))
                 ->addColumn('status_badge', function ($po) {
-                    $tone = match (true) {
-                        $po->is_overdue => 'error',
-                        $po->status === 'active' => 'info',
-                        $po->status === 'waiting_qc' => 'warning',
-                        $po->status === 'claim_needed' => 'error',
-                        $po->status === 'completed' => 'success',
-                        default => 'neutral'
-                    };
-                    $statusLabel = match (true) {
-                        $po->is_overdue => __('supplier.copy.overdue'),
-                        $po->status === 'active' => __('supplier.copy.active'),
-                        $po->status === 'waiting_qc' => __('supplier.copy.waiting_qc'),
-                        $po->status === 'claim_needed' => __('supplier.copy.claim_needed'),
-                        $po->status === 'completed' => __('supplier.copy.completed'),
-                        default => StatusHelper::poLabel($po->status, $po->is_overdue),
-                    };
+                    return StatusHelper::poStatusChip(
+                        $po->status,
+                        $po->is_overdue,
+                        $po->has_active_shipments
+                    );
+                })
+                ->addColumn('outstanding_breakdown', function ($po) {
+                    $items = collect($po->fulfillmentProjection()['items'] ?? []);
+                    $activeQty = (int) $items->sum(fn ($item) => (int) ($item['remaining_qty'] ?? 0) + (int) ($item['in_transit_qty'] ?? 0));
+                    $waitingQcQty = (int) $items->sum(fn ($item) => (int) ($item['waiting_qc_qty'] ?? 0));
 
-                    return '<span class="ui-status-chip ui-status-chip--'.$tone.'">'.e($statusLabel).'</span>';
+                    $activeChip = '<span class="ui-status-chip ui-status-chip--info">'
+                        .e(__('supplier.copy.outstanding_active_pcs', ['qty' => number_format($activeQty)]))
+                        .'</span>';
+                    $waitingTone = $waitingQcQty > 0 ? 'warning' : 'neutral';
+                    $waitingChip = '<span class="ui-status-chip ui-status-chip--'.$waitingTone.'">'
+                        .e(__('supplier.copy.outstanding_waiting_qc_pcs', ['qty' => number_format($waitingQcQty)]))
+                        .'</span>';
+
+                    return '<div class="tw:inline-flex tw:flex-wrap tw:items-center tw:gap-1 ui-tabular-nums" title="'.e(__('supplier.copy.outstanding_breakdown_tooltip')).'">'
+                        .$activeChip.$waitingChip
+                        .'</div>';
                 })
                 ->addColumn('estimated_date', fn ($po) => $po->estimated_arrival ? $regionalFormatter->date($po->estimated_arrival, 'human') : '-')
                 ->addColumn('action', function ($po) {
@@ -139,7 +156,7 @@ class SupplierPurchaseOrderController extends Controller
                 ->filterColumn('remark_display', function ($query, $keyword) {
                     $query->where('notes', 'like', '%'.$keyword.'%');
                 })
-                ->rawColumns(['status_badge', 'remark_display', 'action'])
+                ->rawColumns(['status_badge', 'outstanding_breakdown', 'remark_display', 'action'])
                 ->ignoreSelectsInCountQuery()
                 ->only([
                     'po_number_display',
@@ -148,6 +165,7 @@ class SupplierPurchaseOrderController extends Controller
                     'remark_display',
                     'total_idr',
                     'status_badge',
+                    'outstanding_breakdown',
                     'estimated_date',
                     'action',
                 ])
@@ -176,10 +194,12 @@ class SupplierPurchaseOrderController extends Controller
             'awards.quotation',
             'awards.quotationItem',
             'shipmentItems.shipment.documents.latestAttachment',
+            'supplierSalesContractAttachment',
+            'purchasingSalesContractAttachment',
         ])->findOrFail($id);
 
         // STRICT: only allow if this PO belongs to the logged-in supplier
-        if ($po->supplier_id !== $supplierId) {
+        if ((int) $po->supplier_id !== (int) $supplierId) {
             abort(403, __('supplier.copy.you_do_not_have_access_to_this_purchase_order_03db80'));
         }
 
@@ -219,5 +239,39 @@ class SupplierPurchaseOrderController extends Controller
 
         return redirect()->route('supplier.purchase-orders.show', $updatedPo)
             ->with('success', $message);
+    }
+
+    public function uploadSalesContract(Request $request, $id, PoAcknowledgementService $acknowledgementService)
+    {
+        $po = PurchaseOrder::where('supplier_id', auth()->id())->findOrFail($id);
+
+        $validated = $request->validate([
+            'sales_contract_file' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,doc,docx', 'max:10240'],
+            'sales_contract_notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        try {
+            $updatedPo = $acknowledgementService->uploadSupplierSalesContract(
+                $po,
+                $request->file('sales_contract_file'),
+                $request->user(),
+                $validated['sales_contract_notes'] ?? null
+            );
+        } catch (BusinessRuleArgumentException|BusinessRuleException|\InvalidArgumentException $e) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $e->getMessage()], 422);
+            }
+
+            return back()->withInput()->with('error', $e->getMessage());
+        }
+
+        if ($request->expectsJson()) {
+            $request->session()->flash('success', __('purchasing.copy.sales_contract_status_supplier_uploaded'));
+
+            return response()->json(['redirect' => route('supplier.purchase-orders.show', $updatedPo)]);
+        }
+
+        return redirect()->route('supplier.purchase-orders.show', $updatedPo)
+            ->with('success', __('purchasing.copy.sales_contract_status_supplier_uploaded'));
     }
 }

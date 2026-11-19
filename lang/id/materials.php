@@ -245,7 +245,7 @@ return [
             'excluded_notice' => 'Mengecualikan :lines baris (:kg KG) karena kurs tahunan tidak tersedia.',
             'view_source_lines' => 'Lihat Baris PO Sumber',
             'source_drilldown' => 'Rincian PO Sumber Historis',
-            'po_number' => 'Nomor PO',
+            'po_number' => 'Purchase Order',
             'po_date' => 'Tanggal PO',
             'supplier' => 'Supplier',
             'source_price' => 'Harga Sumber / KG',

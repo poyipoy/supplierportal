@@ -8,9 +8,9 @@
                 <ul class="list-unstyled tw:m-0 tw:mt-1 tw:grid tw:gap-1 tw:text-ui-xs">
                     @foreach($shipment->mtcAttachments as $file)
                         <li>
-                            <a href="{{ route('attachments.show', $file) }}" target="_blank" rel="noopener" class="d-inline-flex align-items-center gap-1 text-decoration-none">
-                                <x-ui.icon name="file-text" size="sm" />
-                                <span class="text-truncate" style="max-width: 20rem;" title="{{ $file->file_name }}">{{ $file->file_name }}</span>
+                            <a href="{{ route('attachments.show', $file) }}" target="_blank" rel="noopener" class="d-inline-flex align-items-center gap-1 text-decoration-none tw:max-w-full tw:min-w-0">
+                                <x-ui.icon name="file-text" size="sm" class="tw:shrink-0" />
+                                <span class="text-truncate" title="{{ $file->file_name }}">{{ $file->file_name }}</span>
                             </a>
                         </li>
                     @endforeach

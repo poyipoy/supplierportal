@@ -36,4 +36,16 @@ class PurchaseOrderPolicy
     {
         return $user->is_active && ($user->isPurchasing() || $user->isAdmin());
     }
+
+    public function uploadSupplierSalesContract(User $user, PurchaseOrder $purchaseOrder): bool
+    {
+        return $user->is_active
+            && $user->isImportEligible()
+            && (int) $purchaseOrder->supplier_id === (int) $user->id;
+    }
+
+    public function reviewSalesContract(User $user, PurchaseOrder $purchaseOrder): bool
+    {
+        return $user->is_active && ($user->isPurchasing() || $user->isAdmin());
+    }
 }

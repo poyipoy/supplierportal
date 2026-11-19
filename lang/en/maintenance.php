@@ -70,6 +70,12 @@ return [
     'scopes' => [
         'import' => 'Material Procurement (Import)',
         'local' => 'Local Supplier',
+        'staff' => 'Internal Staff & Master',
+    ],
+    'scope_help' => [
+        'import' => 'Blocks Import Supplier and Purchasing pages for each selected area.',
+        'local' => 'Blocks Local Supplier, Finance, Accounting, and Purchasing pages for each selected area.',
+        'staff' => 'Blocks internal staff workflows and master data pages only. Suppliers are not affected.',
     ],
     'modules' => [
         'import' => [
@@ -90,6 +96,20 @@ return [
             'vendor_profile' => 'Vendor Profile',
             'supplier_audit' => 'Supplier Audit',
             'adasi_information' => 'ADASI Information',
+        ],
+        'staff' => [
+            'qc_inspections' => 'QC Inspection',
+            'drp' => 'DRP (Supplier, GA & Paid)',
+            'payment_vouchers' => 'Payment Vouchers & Settlements',
+            'overpayments_forecast' => 'Supplier Overpayments & Forecast',
+            'ga_claims' => 'GA Claims',
+            'ga_employees' => 'Employee Master',
+            'materials' => 'Materials and HS Code',
+            'reference_prices' => 'Reference Prices',
+            'exchange_rates' => 'Exchange Rates',
+            'purchasing_reports' => 'Purchasing Reports',
+            'supplier_registrations' => 'Supplier Registrations Review',
+            'export_history' => 'Export History (Finance & Accounting)',
         ],
     ],
     'fields' => [
@@ -115,7 +135,7 @@ return [
         'section_type' => 'Type',
         'section_type_description' => 'Global Maintenance overrides every module, including modules held by other records.',
         'section_modules' => 'Modules',
-        'section_modules_description' => 'All selected modules share this notice and window. A module blocks both the supplier and the staff pages of that area; staff areas without a module (payments, QC, GA) are blocked by Global Maintenance only.',
+        'section_modules_description' => 'All selected modules share this notice and window. Import and Local Supplier modules block both supplier and staff pages of that area; Internal Staff & Master modules block staff pages only. Portal dashboards, profile, and notifications are blocked by Global Maintenance only.',
         'section_notice' => 'User notice',
         'section_notice_description' => 'Users see exactly this title, description, start and estimated end.',
         'section_window' => 'Window',

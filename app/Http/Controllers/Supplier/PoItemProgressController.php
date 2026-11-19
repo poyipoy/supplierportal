@@ -8,6 +8,7 @@ use App\Models\PrItemAward;
 use App\Models\PurchaseOrder;
 use App\Services\MaterialProgressService;
 use App\Services\RegionalDisplayFormatter;
+use App\Support\BusinessTime;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -55,6 +56,35 @@ class PoItemProgressController extends Controller
     }
 
     /**
+     * Bulk update material progress for multiple awarded items on a PO.
+     */
+    public function bulkUpdate(Request $request, int $po_id): JsonResponse|RedirectResponse
+    {
+        $po = PurchaseOrder::findOrFail($po_id);
+
+        $validated = $request->validate([
+            'award_ids' => ['required', 'array', 'min:1', 'max:1000'],
+            'award_ids.*' => ['required', 'integer', 'distinct', 'exists:pr_item_awards,id'],
+            'status' => ['required', 'string', 'in:'.implode(',', PoItemProgressUpdate::SUPPLIER_UPDATABLE_STATUSES)],
+            'estimated_ready_date' => ['nullable', 'date'],
+            'note' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $updates = $this->progressService->bulkUpdateProgress($po, $request->user(), $validated);
+        $message = __('supplier.copy.bulk_material_progress_updated_successfully', ['count' => $updates->count()]);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'count' => $updates->count(),
+            ]);
+        }
+
+        return redirect()->back()->with('success', $message);
+    }
+
+    /**
      * Get progress history for an awarded item.
      */
     public function history(Request $request, int $po_id, int $award_id, RegionalDisplayFormatter $regionalFormatter): JsonResponse
@@ -89,7 +119,7 @@ class PoItemProgressController extends Controller
                 'estimated_ready_date' => $item->estimated_ready_date?->format('d M Y'),
                 'note' => $item->note,
                 'updated_by' => $item->updatedByUser?->name ?? __('supplier.copy.supplier_user'),
-                'created_at' => $item->created_at ? \App\Support\BusinessTime::format($item->created_at, 'd M Y H:i') : null,
+                'created_at' => $item->created_at ? BusinessTime::format($item->created_at, 'd M Y H:i') : null,
                 'created_at_display' => $item->created_at ? $regionalFormatter->timestamp($item->created_at, 'datetime') : null,
                 'estimated_ready_date_display' => $item->estimated_ready_date ? $regionalFormatter->date($item->estimated_ready_date, 'human') : null,
             ]),

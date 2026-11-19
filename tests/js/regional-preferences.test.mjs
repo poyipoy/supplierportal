@@ -88,7 +88,7 @@ test('formatting never writes regional state to LocalStorage or changes raw data
     state.preferences.displayNumber(row.period_amount.toLocaleString('id-ID'),'indonesian');
     assert.equal(JSON.stringify(row),snapshot);
     assert.equal(JSON.stringify(Array.from(state.store)),before);
-    assert.equal(Array.from(state.store.keys()).filter(key=>!key.startsWith('adasi.sidebar.')).length,0);
+    assert.equal(Array.from(state.store.keys()).filter(key=>!key.startsWith('adasi.sidebar.')&&!key.startsWith('adasi.quick_flow.')).length,0);
 });
 
 for (const sample of dateCases) {

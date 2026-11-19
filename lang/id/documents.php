@@ -140,7 +140,7 @@ return [
         'processing' => 'Memproses',
         'status_document_successfully_updated' => 'Status dokumen berhasil diperbarui.',
         'verified' => 'Diverifikasi',
-        'pr_no' => 'Nomor PR',
+        'pr_no' => 'Purchase Requisition',
         'combined_prs' => '{1} :count PR digabung|[2,*] :count PR digabung',
         'total' => 'Total',
     ],
@@ -198,6 +198,8 @@ return [
         'result_rejected' => 'Ditolak',
         'result_not_applied' => 'Tidak diterapkan',
         'update_failed' => 'Gagal memperbarui dokumen pengiriman terpilih.',
+        'po_read_only_use_shipment' => 'Perubahan status dokumen bersifat baca-saja (read-only) di menu Purchase Orders. Buka halaman detail Shipment untuk memperbarui status dokumen.',
+        'open_shipment_to_update' => 'Kelola di Shipment',
         'reasons' => [
             'not_linked' => 'Pengiriman tidak tertaut dengan purchase order ini.',
             'invalid_shipment_status' => 'Hanya pengiriman berstatus dikirim atau tiba yang dapat diperbarui.',

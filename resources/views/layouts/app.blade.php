@@ -1019,26 +1019,67 @@
                     )
                     : null;
 
-                const markReadAndRedirect = async (readUrl) => {
+                const navigateNotificationTarget = async (rawUrl) => {
+                    if (!rawUrl) return { navigated: false, inShell: false };
+
+                    if (typeof window.AdasiNavigateUrl === 'function') {
+                        return window.AdasiNavigateUrl(rawUrl);
+                    }
+
+                    try {
+                        const target = new URL(rawUrl, window.location.href);
+                        if (!['http:', 'https:'].includes(target.protocol)) {
+                            return { navigated: false, inShell: false };
+                        }
+
+                        if (
+                            window.AdasiWorkspaceShell
+                            && typeof window.AdasiWorkspaceShell.openUrl === 'function'
+                            && target.origin === window.location.origin
+                        ) {
+                            window.AdasiWorkspaceShell.openUrl(target.href);
+                            return { navigated: true, inShell: true };
+                        }
+
+                        window.location.href = target.href;
+                        return { navigated: true, inShell: false };
+                    } catch {
+                        return { navigated: false, inShell: false };
+                    }
+                };
+
+                const markReadAndRedirect = async (readUrl, notificationId = null) => {
                     if (!readUrl) return;
 
                     try {
+                        const activeCsrfToken =
+                            document.querySelector('meta[name="csrf-token"]')?.content || csrfToken;
                         const response = await fetch(readUrl, {
                             method: 'POST',
                             headers: {
                                 'Accept': 'application/json',
                                 'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': csrfToken,
+                                'X-CSRF-TOKEN': activeCsrfToken,
                                 'X-Requested-With': 'XMLHttpRequest',
                             },
                         });
+
+                        window.AdasiSessionSync?.handlePollResponse?.(response);
 
                         const data = response.ok
                             ? await response.json()
                             : null;
 
-                        if (data?.redirect) {
-                            window.location.href = data.redirect;
+                        if (!data) return;
+
+                        if (typeof window.syncNotificationReadState === 'function') {
+                            window.syncNotificationReadState(data, notificationId);
+                        } else if (typeof updateBadges === 'function') {
+                            updateBadges();
+                        }
+
+                        if (data.redirect) {
+                            await navigateNotificationTarget(data.redirect);
                         }
                     } catch (error) {
                         // Polling remains the fallback delivery path.
@@ -1249,7 +1290,8 @@
                                 variant: 'primary',
                                 onClick: () =>
                                     markReadAndRedirect(
-                                        readUrl
+                                        readUrl,
+                                        notification.id
                                     ),
                             },
                         ],

@@ -300,7 +300,32 @@ function sanitizeServerFragment(rawHtml) {
     const wrappedHtml = isTableChild ? `<table>${rawHtml}</table>` : rawHtml;
     const doc = new DOMParser().parseFromString(wrappedHtml, 'text/html');
 
-    doc.querySelectorAll('script, object, embed, base, meta[http-equiv]').forEach((node) => node.remove());
+    doc.querySelectorAll('script, object, embed, base, meta[http-equiv]').forEach((node) => {
+        if (
+            node.tagName.toLowerCase() === 'script'
+            && String(node.getAttribute('type') || '').toLowerCase() === 'application/json'
+            && (!node.namespaceURI || node.namespaceURI === 'http://www.w3.org/1999/xhtml')
+            && !node.closest?.('svg, math')
+        ) {
+            try {
+                const parsed = JSON.parse(node.textContent || '{}');
+                node.textContent = JSON.stringify(parsed)
+                    .replace(/</g, '\\u003c')
+                    .replace(/>/g, '\\u003e')
+                    .replace(/&/g, '\\u0026');
+                for (const attr of Array.from(node.attributes)) {
+                    const attrName = attr.name.toLowerCase();
+                    if (attrName !== 'id' && attrName !== 'type' && attrName !== 'data-json-config') {
+                        node.removeAttribute(attr.name);
+                    }
+                }
+                return;
+            } catch {
+                // Invalid JSON payload in script tag: remove it.
+            }
+        }
+        node.remove();
+    });
 
     const root = isTableChild ? doc.body.querySelector('table') : doc.body;
     if (!root) {

@@ -9,6 +9,7 @@ use App\Models\Conversation;
 use App\Models\ExchangeRate;
 use App\Models\PrItem;
 use App\Models\PrItemAward;
+use App\Models\PrItemAwardEvent;
 use App\Models\PurchaseRequisition;
 use App\Models\Quotation;
 use App\Models\QuotationItem;
@@ -20,6 +21,7 @@ use App\Services\Procurement\QuotationStateEngine;
 use App\Services\PurchaseOrderGenerationService;
 use App\Support\NotificationCategory;
 use App\Support\Pricing\EvaluationContext;
+use App\Support\Procurement\LogisticsTerms;
 use App\Support\Procurement\OrderSelectionInput;
 use App\Support\Procurement\ProcurementFeatures;
 use App\Support\PurchasingNavigation;
@@ -27,6 +29,7 @@ use App\Support\StatusHelper;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
@@ -134,7 +137,7 @@ class QuotationListController extends Controller
 
         // Review controls follow the same rule the review actions enforce.
         $reviewLocked = $quotation->isReferencedByAwardOrPurchaseOrder();
-        $canRequestRevision = $quotation->canRequestRevision()
+        $canRequestRevision = ($quotation->canRequestRevision() || $quotation->canRequestValidityUpdateForExpiredAward())
             && $quotation->purchaseRequisition->status !== 'completed';
         $chatAvailable = in_array($quotation->status, ['submitted', 'revision_requested', 'accepted', 'all_unavailable'], true);
         $supplierDisplayName = $quotation->supplier->supplier->company_name
@@ -185,9 +188,13 @@ class QuotationListController extends Controller
         $validated = $request->validate([
             'estimated_arrival' => 'nullable|date',
             'notes' => 'nullable|string|max:1000',
+            'port_of_discharge' => ['required', Rule::in(LogisticsTerms::ports())],
+            'confirm_port_of_discharge' => 'accepted',
             // M04-W: values are validated per line by PrItemAwardService.
             'order_qty' => 'nullable|array',
             'accept_spec' => 'nullable|array',
+        ], [
+            'confirm_port_of_discharge.accepted' => __('purchasing.copy.confirm_port_of_discharge_required'),
         ]);
         $orderSelections = OrderSelectionInput::fromRequest($request);
 
@@ -268,6 +275,7 @@ class QuotationListController extends Controller
                 $purchaseOrders = $poService->generateFromAwards($awards, $request->user(), [
                     'estimated_arrival' => $validated['estimated_arrival'] ?? null,
                     'notes' => $validated['notes'] ?? null,
+                    'port_of_discharge' => $validated['port_of_discharge'],
                 ]);
 
                 if ($purchaseOrders->count() !== 1) {
@@ -403,12 +411,17 @@ class QuotationListController extends Controller
             $quotation = DB::transaction(function () use ($id, $revisionNote) {
                 $quotation = $this->lockQuotationForReview($id);
                 $quotation->load(['supplier.supplier', 'purchaseRequisition', 'purchaseOrders', 'items']);
-                $this->assertNotReferencedByAwardOrPurchaseOrder($quotation);
-
                 if ($quotation->purchaseRequisition->status === 'completed') {
                     throw new InvalidArgumentException(__('purchasing.copy.the_pr_is_completed_a_quotation_revision_cannot_be_requested'));
                 }
-                if (! $quotation->canRequestRevision()) {
+
+                if ($quotation->isReferencedByAwardOrPurchaseOrder()) {
+                    if (! $quotation->canRequestValidityUpdateForExpiredAward()) {
+                        throw new InvalidArgumentException(__('notifications.conversation.quotation_in_use'));
+                    }
+
+                    $this->releaseUnorderedAwardsForExpiredRevision($quotation);
+                } elseif (! $quotation->canRequestRevision()) {
                     throw new InvalidArgumentException(__('purchasing.copy.a_revision_can_only_be_requested_for_submitted_or_unavailable_quotations_that_have_not_been_used_to'));
                 }
 
@@ -488,6 +501,33 @@ class QuotationListController extends Controller
     {
         if ($quotation->isReferencedByAwardOrPurchaseOrder()) {
             throw new InvalidArgumentException(__('notifications.conversation.quotation_in_use'));
+        }
+    }
+
+    private function releaseUnorderedAwardsForExpiredRevision(Quotation $quotation): void
+    {
+        $awards = $quotation->referencingAwardsQuery()
+            ->whereNull('purchase_order_id')
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+
+        foreach ($awards as $award) {
+            PrItemAwardEvent::create([
+                'pr_item_award_id' => $award->id,
+                'pr_id' => $award->pr_id,
+                'pr_item_id' => $award->pr_item_id,
+                'quotation_item_id' => $award->quotation_item_id,
+                'purchase_order_id' => null,
+                'event' => 'award_released_for_revision',
+                'payload' => [
+                    'quotation_id' => $quotation->id,
+                    'reason' => 'expired_quotation_revision_requested',
+                ],
+                'actor_id' => auth()->id(),
+            ]);
+
+            $award->delete();
         }
     }
 

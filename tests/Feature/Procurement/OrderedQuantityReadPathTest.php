@@ -148,13 +148,18 @@ class OrderedQuantityReadPathTest extends TestCase
     {
         [$pr, $quotation] = $this->requisitionAndQuotation(10, 15);
         $this->actingAs($this->purchasing)
-            ->post(route('purchasing.quotations.generate-po', $quotation))
+            ->post(route('purchasing.quotations.generate-po', $quotation), [
+                'port_of_discharge' => 'TANJUNG_PRIOK',
+                'confirm_port_of_discharge' => '1',
+            ])
             ->assertSessionHas('error', fn (string $error) => str_contains($error, __('procurement.ordered_quantity.selection_required')));
         $this->actingAs($this->purchasing)
             ->post(route('purchasing.comparison.save-awards'), [
                 'pr_id' => $pr->getRouteKey(),
                 'awards' => [$pr->items[0]->id => $quotation->items[0]->id],
                 'action' => 'generate_pos',
+                'port_of_discharge' => 'TANJUNG_PRIOK',
+                'confirm_port_of_discharge' => '1',
             ])
             ->assertSessionHas('error', fn (string $error) => str_contains($error, __('procurement.ordered_quantity.selection_required')));
 

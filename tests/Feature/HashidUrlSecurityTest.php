@@ -379,6 +379,8 @@ class HashidUrlSecurityTest extends TestCase
                 'awards' => [$poItem->pr_item_id => $poItem->id],
                 'action' => 'generate_pos',
                 'estimated_arrival' => now()->addMonth()->toDateString(),
+                'port_of_discharge' => 'TANJUNG_PRIOK',
+                'confirm_port_of_discharge' => '1',
             ]);
         $createdPo = PurchaseOrder::whereHas('quotations', fn ($query) => $query->whereKey($poQuotation->id))->sole();
         $poResponse->assertRedirect(route('purchasing.purchase-orders.show', $createdPo));

@@ -14,6 +14,8 @@ import {
     classifyInternalNavigation,
     computeOpenPaneWidthPx,
     computeWaterFillTabCap,
+    DEFAULT_MAX_PINNED_SESSIONS,
+    DEFAULT_MAX_RECENTLY_CLOSED,
     DEFAULT_SHORTCUTS_WEIGHTS,
     isDownloadOrBinaryUrl,
     isNonMutatingPostUrl,
@@ -27,6 +29,8 @@ import {
     resolveTransitionSettleMs,
     resolveVisibleShortcutsSplitters,
     safeWebUrl,
+    sanitizePersistedPinnedList,
+    sanitizeRecentlyClosedList,
     SHORTCUTS_KEY,
     SHORTCUTS_SPLITTER_WIDTH_PX,
     stripEmbedParam,
@@ -1353,4 +1357,244 @@ test('workspace and page transitions run ease-in enter and ease-out exit simulta
     assert.equal(shellJs.includes("panel.removeAttribute('aria-hidden');"), true);
     assert.equal(shellJs.includes('panel.inert = true;'), true);
     assert.equal(shellJs.includes('panel.inert = false;'), true);
+});
+
+test('WorkspaceSessionStore enforces pinned/unpinned zone partitioning, maxPinnedSessions cap, and duplicate placement', () => {
+    let clock = 1000;
+    const store = new WorkspaceSessionStore({
+        maxSessions: 12,
+        maxPinnedSessions: 2,
+        now: () => (clock += 100),
+        catalog: SAMPLE_CATALOG,
+        indexPaths: SAMPLE_INDEX_PATHS,
+    });
+
+    const a = store.openWorkspace({ moduleKey: 'dashboard', label: 'Dashboard', url: `${ORIGIN}${PREFIX}/purchasing/dashboard` });
+    const b = store.openWorkspace({ moduleKey: 'quotations', label: 'Quotation', url: `${ORIGIN}${PREFIX}/purchasing/quotations` });
+    const c = store.openWorkspace({ moduleKey: 'shipments', label: 'Shipments', url: `${ORIGIN}${PREFIX}/purchasing/shipments` });
+
+    // Pin c -> moves to index 0 (end of pinned zone)
+    const pinC = store.pinGroup(c.group.groupId);
+    assert.equal(pinC.changed, true);
+    assert.equal(pinC.pinned, true);
+    assert.deepEqual(store.groups().map((g) => g.groupId), [c.group.groupId, a.group.groupId, b.group.groupId]);
+
+    // Pin b -> moves to index 1 (end of pinned zone, right after c)
+    const pinB = store.pinGroup(b.group.groupId);
+    assert.equal(pinB.changed, true);
+    assert.deepEqual(store.groups().map((g) => g.groupId), [c.group.groupId, b.group.groupId, a.group.groupId]);
+
+    // Pinning a exceeds maxPinnedSessions=2
+    const pinA = store.pinGroup(a.group.groupId);
+    assert.equal(pinA.changed, false);
+    assert.equal(pinA.blocked, true);
+    assert.equal(pinA.reason, 'max_pinned_reached');
+
+    // Duplicating a pinned group creates an unpinned copy at the start of the unpinned zone (index 2)
+    const dup = store.duplicateGroup(c.group.groupId);
+    assert.equal(dup.group.pinned, false);
+    assert.deepEqual(store.groups().map((g) => g.groupId), [c.group.groupId, b.group.groupId, dup.group.groupId, a.group.groupId]);
+
+    // Unpinning c moves it to the start of the unpinned zone (right after b)
+    const unpinC = store.unpinGroup(c.group.groupId);
+    assert.equal(unpinC.changed, true);
+    assert.equal(unpinC.pinned, false);
+    assert.deepEqual(store.groups().map((g) => g.groupId), [b.group.groupId, c.group.groupId, dup.group.groupId, a.group.groupId]);
+});
+
+test('WorkspaceSessionStore protects pinned groups from close, bulk close, and capacity eviction while allowing child close', () => {
+    let clock = 2000;
+    const store = new WorkspaceSessionStore({
+        maxSessions: 4,
+        maxPinnedSessions: 2,
+        now: () => (clock += 100),
+        catalog: SAMPLE_CATALOG,
+        indexPaths: SAMPLE_INDEX_PATHS,
+    });
+
+    const p1 = store.openWorkspace({ moduleKey: 'purchase-orders', label: 'Purchase Order', url: `${ORIGIN}${PREFIX}/purchasing/purchase-orders` });
+    store.markLoaded(p1.frame.frameId);
+    store.pinGroup(p1.group.groupId);
+
+    // Open child frame inside pinned group
+    const child = store.openChildFrame({
+        groupId: p1.group.groupId,
+        sourceFrameId: p1.frame.frameId,
+        label: 'PO-001',
+        url: `${ORIGIN}${PREFIX}/purchasing/purchase-orders/1`,
+    });
+    store.markLoaded(child.frame.frameId);
+
+    // Direct close of pinned parent / group is blocked unless force: true
+    const blockedParent = store.closeFrame(p1.frame.frameId);
+    assert.equal(blockedParent.closed, false);
+    assert.equal(blockedParent.blockedByPin, true);
+
+    const blockedGroup = store.closeGroup(p1.group.groupId);
+    assert.equal(blockedGroup.closed, false);
+    assert.equal(blockedGroup.blockedByPin, true);
+
+    // Closing child frame inside pinned group succeeds and returns closedSnapshots
+    const closedChild = store.closeFrame(child.frame.frameId);
+    assert.equal(closedChild.closed, true);
+    assert.equal(closedChild.closedSnapshots.length, 1);
+    assert.equal(closedChild.closedSnapshots[0].role, 'child');
+    assert.equal(store.getGroup(p1.group.groupId).frames.length, 1);
+
+    // Open unpinned sessions to fill capacity (maxSessions=4)
+    const u1 = store.openWorkspace({ moduleKey: 'quotations', label: 'Quotation', url: `${ORIGIN}${PREFIX}/purchasing/quotations` });
+    store.markLoaded(u1.frame.frameId);
+    const u2 = store.openWorkspace({ moduleKey: 'shipments', label: 'Shipments', url: `${ORIGIN}${PREFIX}/purchasing/shipments` });
+    store.markLoaded(u2.frame.frameId);
+    const u3 = store.openWorkspace({ moduleKey: 'claims', label: 'Claims', url: `${ORIGIN}${PREFIX}/purchasing/claims` });
+    store.markLoaded(u3.frame.frameId);
+
+    // Opening one more evicts oldest unpinned (u1), NEVER pinned p1 even though p1 is older
+    const u4 = store.openWorkspace({ moduleKey: 'reports', label: 'Reports', url: `${ORIGIN}${PREFIX}/purchasing/reports` });
+    assert.equal(u4.blocked, false);
+    assert.ok(store.getGroup(p1.group.groupId), 'pinned group must survive capacity eviction');
+    assert.equal(store.getGroup(u1.group.groupId), null, 'oldest clean unpinned group must be evicted');
+
+    // closeGroupsToRight from u2 skips pinned groups and returns closedSnapshots for u3, u4
+    const rightRes = store.closeGroupsToRight(u2.group.groupId);
+    assert.equal(rightRes.closedSnapshots.length, 2);
+    assert.ok(store.getGroup(p1.group.groupId));
+    assert.ok(store.getGroup(u2.group.groupId));
+
+    // closeAllGroups preserves pinned group p1 and activates it
+    const allRes = store.closeAllGroups();
+    assert.equal(allRes.closedSnapshots.length, 1);
+    assert.equal(allRes.closedSnapshots[0].url, `${ORIGIN}${PREFIX}/purchasing/shipments`);
+    assert.deepEqual(store.groups().map((g) => g.groupId), [p1.group.groupId]);
+    assert.equal(store.activeTarget().groupId, p1.group.groupId);
+});
+
+test('WorkspaceSessionStore clamps moveGroup and moveGroupByOffset strictly within pinned and unpinned zones', () => {
+    const store = new WorkspaceSessionStore({
+        maxSessions: 10,
+        maxPinnedSessions: 4,
+        catalog: SAMPLE_CATALOG,
+        indexPaths: SAMPLE_INDEX_PATHS,
+    });
+
+    const g1 = store.openWorkspace({ moduleKey: 'dashboard', label: 'Dashboard', url: `${ORIGIN}${PREFIX}/purchasing/dashboard` }).group;
+    const g2 = store.openWorkspace({ moduleKey: 'quotations', label: 'Quotation', url: `${ORIGIN}${PREFIX}/purchasing/quotations` }).group;
+    const g3 = store.openWorkspace({ moduleKey: 'shipments', label: 'Shipments', url: `${ORIGIN}${PREFIX}/purchasing/shipments` }).group;
+    const g4 = store.openWorkspace({ moduleKey: 'reports', label: 'Reports', url: `${ORIGIN}${PREFIX}/purchasing/reports` }).group;
+
+    store.pinGroup(g1.groupId);
+    store.pinGroup(g2.groupId);
+    // Order: [g1(P), g2(P), g3(U), g4(U)]
+
+    // Moving g1 right stays inside pinned zone
+    assert.equal(store.moveGroupByOffset(g1.groupId, 1).moved, true);
+    assert.deepEqual(store.groups().map((g) => g.groupId), [g2.groupId, g1.groupId, g3.groupId, g4.groupId]);
+
+    // Attempting to move g1 further right into unpinned zone is clamped (no-op)
+    assert.equal(store.moveGroup(g1.groupId, 3).moved, false);
+    assert.deepEqual(store.groups().map((g) => g.groupId), [g2.groupId, g1.groupId, g3.groupId, g4.groupId]);
+
+    // Attempting to move unpinned g3 left into pinned zone is clamped (no-op)
+    assert.equal(store.moveGroup(g3.groupId, 0).moved, false);
+
+    // Moving unpinned g4 left swaps with g3 inside unpinned zone
+    const moveU = store.moveGroupByOffset(g4.groupId, -1);
+    assert.equal(moveU.moved, true);
+    assert.equal(moveU.zoneIndex, 0);
+    assert.equal(moveU.zoneTotal, 2);
+    assert.deepEqual(store.groups().map((g) => g.groupId), [g2.groupId, g1.groupId, g4.groupId, g3.groupId]);
+
+    const display = store.displayGroups();
+    assert.equal(display[0].canMoveLeft, false);
+    assert.equal(display[0].canMoveRight, true);
+    assert.equal(display[1].canMoveLeft, true);
+    assert.equal(display[1].canMoveRight, false);
+    assert.equal(display[2].canMoveLeft, false);
+    assert.equal(display[2].canMoveRight, true);
+});
+
+test('WorkspaceSessionStore seedHibernatedPinned restores pinned tabs hibernated without changing active target', () => {
+    const store = new WorkspaceSessionStore({
+        maxSessions: 10,
+        maxPinnedSessions: 4,
+        catalog: SAMPLE_CATALOG,
+        indexPaths: SAMPLE_INDEX_PATHS,
+    });
+
+    const restored = store.seedHibernatedPinned({
+        moduleKey: 'shipments',
+        label: 'Shipments',
+        url: `${ORIGIN}${PREFIX}/purchasing/shipments`,
+    });
+    assert.equal(restored.blocked, false);
+    assert.equal(restored.group.pinned, true);
+    assert.equal(restored.frame.hibernated, true);
+    assert.equal(restored.frame.loading, false);
+    assert.equal(store.isShortcutsActive(), true);
+
+    const initial = store.seedInitial({
+        moduleKey: 'dashboard',
+        label: 'Dashboard',
+        url: `${ORIGIN}${PREFIX}/purchasing/dashboard`,
+        pinned: false,
+    });
+    assert.deepEqual(store.groups().map((g) => g.groupId), [restored.group.groupId, initial.group.groupId]);
+    assert.equal(store.activeTarget().groupId, initial.group.groupId);
+});
+
+test('sanitizePersistedPinnedList and sanitizeRecentlyClosedList enforce same-origin, security allowlist, deduplication, and caps', () => {
+    const raw = [
+        { url: `${ORIGIN}${PREFIX}/purchasing/shipments?_embed=1`, label: 'Shipments', moduleKey: 'shipments', closedAt: 100 },
+        { url: `${ORIGIN}${PREFIX}/purchasing/shipments`, label: 'Shipments Dup', moduleKey: 'shipments', closedAt: 200 },
+        { url: 'https://evil.example.com/phish', label: 'Evil', moduleKey: 'evil', closedAt: 300 },
+        { url: 'javascript:alert(1)', label: 'XSS', moduleKey: 'xss', closedAt: 400 },
+        { url: `${ORIGIN}${PREFIX}/login`, label: 'Login', moduleKey: 'login', closedAt: 500 },
+        { url: `${ORIGIN}${PREFIX}/profile/security`, label: 'Security', moduleKey: 'security', closedAt: 600 },
+        { url: `${ORIGIN}${PREFIX}/exports/abc/download`, label: 'Download', moduleKey: 'exports', closedAt: 700 },
+        { url: `${ORIGIN}${PREFIX}/purchasing/quotations?signature=secret`, label: 'Signed', moduleKey: 'quotations', closedAt: 800 },
+        { url: `${ORIGIN}${PREFIX}/purchasing/quotations`, label: 'Quotations', moduleKey: 'quotations', closedAt: 900 },
+    ];
+
+    const pinned = sanitizePersistedPinnedList(raw, { origin: ORIGIN, pathPrefix: PREFIX, maxPinned: DEFAULT_MAX_PINNED_SESSIONS });
+    assert.equal(pinned.length, 2);
+    assert.deepEqual(pinned.map((item) => item.url), [
+        `${ORIGIN}${PREFIX}/purchasing/shipments`,
+        `${ORIGIN}${PREFIX}/purchasing/quotations`,
+    ]);
+
+    const recent = sanitizeRecentlyClosedList(raw, { origin: ORIGIN, pathPrefix: PREFIX, maxEntries: DEFAULT_MAX_RECENTLY_CLOSED });
+    assert.equal(recent.length, 2);
+    assert.deepEqual(recent.map((item) => item.url), [
+        `${ORIGIN}${PREFIX}/purchasing/shipments`,
+        `${ORIGIN}${PREFIX}/purchasing/quotations`,
+    ]);
+
+    const many = Array.from({ length: 15 }, (_, idx) => ({
+        url: `${ORIGIN}${PREFIX}/purchasing/purchase-orders/${idx + 1}`,
+        label: `PO ${idx + 1}`,
+        moduleKey: 'purchase-orders',
+        closedAt: idx + 1,
+    }));
+    assert.equal(sanitizePersistedPinnedList(many, { origin: ORIGIN, pathPrefix: PREFIX }).length, DEFAULT_MAX_PINNED_SESSIONS);
+    assert.equal(sanitizeRecentlyClosedList(many, { origin: ORIGIN, pathPrefix: PREFIX }).length, DEFAULT_MAX_RECENTLY_CLOSED);
+});
+
+test('workspace-shell.js wires pinned tabs, drag-and-drop reorder, recently closed recovery, and WCAG 2.5.7 keyboard controls', () => {
+    const testDir = dirname(fileURLToPath(import.meta.url));
+    const shellJs = readFileSync(resolve(testDir, '../../resources/js/workspace-shell.js'), 'utf8');
+    const shellCss = readFileSync(resolve(testDir, '../../resources/css/workspace-shell.css'), 'utf8');
+
+    assert.equal(shellJs.includes('adasi:workspace:pinned:'), true);
+    assert.equal(shellJs.includes('adasi:workspace:recently-closed:'), true);
+    assert.equal(shellJs.includes('requestTogglePinGroup'), true);
+    assert.equal(shellJs.includes('requestMoveGroupByOffset'), true);
+    assert.equal(shellJs.includes('reopenRecentlyClosed'), true);
+    assert.equal(shellJs.includes("tablistEl.addEventListener('pointerdown'"), true);
+    assert.equal(shellJs.includes("event.key === 'ArrowLeft'"), true);
+    assert.equal(shellJs.includes("event.key === 'ArrowRight'"), true);
+    assert.equal(shellJs.includes("event.code === 'KeyP'"), true);
+    assert.equal(shellJs.includes("event.code !== 'KeyT'"), true);
+    assert.equal(shellCss.includes('.workspace-session-group.is-dragging'), true);
+    assert.equal(shellCss.includes('.workspace-session-group.is-last-pinned::after'), true);
+    assert.equal(shellCss.includes('.ui-environment-tag'), true);
 });
