@@ -186,32 +186,126 @@
             $historicalItems = $historicalLines ?? collect();
             $poStatusFilter = $poStatusFilter ?? ($filters['po_status'] ?? 'completed');
             $targetCurrency = $targetCurrency ?? ($filters['currency'] ?? 'IDR');
+            $benchmarkResetUrl = route($prefix.'.index', ['tab' => 'benchmark']);
+            $benchmarkRemoveUrl = static function (array $dropKeys) use ($prefix): string {
+                $query = array_merge(request()->query(), ['tab' => 'benchmark']);
+                foreach ($dropKeys as $key) {
+                    unset($query[$key]);
+                }
+
+                return route($prefix.'.index', $query);
+            };
+            $benchmarkLinkAttrs = ['data-server-tab' => '', 'data-tab-name' => 'benchmark'];
+            $benchmarkPoStatusLabels = [
+                'completed' => __('purchasing.copy.completed'),
+                'all' => __('common.filters.all'),
+                'active' => __('purchasing.copy.active'),
+                'waiting_qc' => __('purchasing.copy.waiting_qc'),
+            ];
+
+            $benchmarkChips = [];
+            if (! empty($filters['search'])) {
+                $benchmarkChips[] = [
+                    'key' => 'search',
+                    'label' => __($rp.'.material_code'),
+                    'value' => (string) $filters['search'],
+                    'removeUrl' => $benchmarkRemoveUrl(['search']),
+                    'removeAttrs' => $benchmarkLinkAttrs,
+                ];
+            }
+            if (! empty($filters['shape'])) {
+                $benchmarkChips[] = [
+                    'key' => 'shape',
+                    'label' => __($rp.'.shape'),
+                    'value' => (string) $filters['shape'],
+                    'removeUrl' => $benchmarkRemoveUrl(['shape']),
+                    'removeAttrs' => $benchmarkLinkAttrs,
+                ];
+            }
+            if ($poStatusFilter !== 'completed') {
+                $benchmarkChips[] = [
+                    'key' => 'po_status',
+                    'label' => __('purchasing.copy.status'),
+                    'value' => $benchmarkPoStatusLabels[$poStatusFilter] ?? (string) $poStatusFilter,
+                    'removeUrl' => $benchmarkRemoveUrl(['po_status']),
+                    'removeAttrs' => $benchmarkLinkAttrs,
+                ];
+            }
+            if ($targetCurrency !== 'IDR') {
+                $benchmarkChips[] = [
+                    'key' => 'currency',
+                    'label' => __($rp.'.currency'),
+                    'value' => (string) $targetCurrency,
+                    'removeUrl' => $benchmarkRemoveUrl(['currency']),
+                    'removeAttrs' => $benchmarkLinkAttrs,
+                ];
+            }
         @endphp
-        <x-ui.toolbar aria-label="{{ __($rp.'.historical.title') }}" class="tw:mb-4">
+
+        <x-ui.filter-bar
+            id="benchmarkRefFilterForm"
+            :action="route($prefix.'.index')"
+            :server-tabs="true"
+            :aria-label="__($rp.'.historical.title')"
+            :has-active-filters="count($benchmarkChips) > 0"
+            :reset-url="$benchmarkResetUrl"
+            :reset-label="__($rp.'.reset')"
+            :reset-attrs="$benchmarkLinkAttrs"
+            :submit-label="__($rp.'.filter')"
+            class="tw:mb-4"
+        >
+            <x-slot:hidden>
+                <input type="hidden" name="tab" value="benchmark">
+            </x-slot:hidden>
+
+            <x-slot:search>
+                <label for="historicalRefSearch" class="tw:sr-only">{{ __($rp.'.material_code') }}</label>
+                <x-ui.icon name="search" size="sm" class="ui-filter-bar__search-icon" aria-hidden="true" />
+                <input
+                    type="search"
+                    name="search"
+                    id="historicalRefSearch"
+                    value="{{ $filters['search'] ?? '' }}"
+                    placeholder="{{ __($rp.'.search_placeholder') }}"
+                    class="form-control form-control-sm ui-filter-bar__search-input"
+                    autocomplete="off"
+                >
+            </x-slot:search>
+
             <x-slot:filters>
-                <form method="GET" action="{{ route($prefix.'.index') }}" class="tw:flex tw:flex-wrap tw:items-end tw:gap-2" data-server-tabs-form role="search">
-                    <input type="hidden" name="tab" value="benchmark">
-                    <x-ui.input name="search" id="historicalRefSearch" :label="__($rp.'.material_code')" :value="$filters['search'] ?? ''" :placeholder="__($rp.'.search_placeholder')" />
-                    <x-ui.select name="shape" id="historicalRefShapeFilter" :label="__($rp.'.shape')">
-                        <option value="">{{ __($rp.'.all_shapes') }}</option>
-                        @foreach($shapes as $shape)<option value="{{ $shape }}" @selected(($filters['shape'] ?? '') === $shape)>{{ $shape }}</option>@endforeach
-                    </x-ui.select>
-                    <x-ui.select name="po_status" id="historicalRefPoStatusFilter" :label="__('purchasing.copy.status')">
-                        <option value="completed" @selected($poStatusFilter === 'completed')>{{ __('purchasing.copy.completed') }}</option>
-                        <option value="all" @selected($poStatusFilter === 'all')>{{ __('common.filters.all') }}</option>
-                        <option value="active" @selected($poStatusFilter === 'active')>{{ __('purchasing.copy.active') }}</option>
-                        <option value="waiting_qc" @selected($poStatusFilter === 'waiting_qc')>{{ __('purchasing.copy.waiting_qc') }}</option>
-                    </x-ui.select>
-                    <x-ui.select name="currency" id="historicalRefCurrencyFilter" :label="__($rp.'.currency')">
-                        @foreach($currencies as $currency)<option value="{{ $currency }}" @selected($targetCurrency === $currency)>{{ $currency }}</option>@endforeach
-                    </x-ui.select>
-                    <div class="tw:flex tw:gap-1.5">
-                        <x-ui.button type="submit" variant="secondary" size="sm">{{ __($rp.'.filter') }}</x-ui.button>
-                        <x-ui.button :href="route($prefix.'.index', ['tab' => 'benchmark'])" variant="ghost" size="sm" data-server-tab data-tab-name="benchmark">{{ __($rp.'.reset') }}</x-ui.button>
-                    </div>
-                </form>
+                <label for="historicalRefShapeFilter" class="tw:sr-only">{{ __($rp.'.shape') }}</label>
+                <select name="shape" id="historicalRefShapeFilter" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-40">
+                    <option value="">{{ __($rp.'.all_shapes') }}</option>
+                    @foreach($shapes as $shape)
+                        <option value="{{ $shape }}" @selected(($filters['shape'] ?? '') === $shape)>{{ $shape }}</option>
+                    @endforeach
+                </select>
+
+                <label for="historicalRefPoStatusFilter" class="tw:sr-only">{{ __('purchasing.copy.status') }}</label>
+                <select name="po_status" id="historicalRefPoStatusFilter" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-44">
+                    <option value="completed" @selected($poStatusFilter === 'completed')>{{ __('purchasing.copy.completed') }}</option>
+                    <option value="all" @selected($poStatusFilter === 'all')>{{ __('common.filters.all') }}</option>
+                    <option value="active" @selected($poStatusFilter === 'active')>{{ __('purchasing.copy.active') }}</option>
+                    <option value="waiting_qc" @selected($poStatusFilter === 'waiting_qc')>{{ __('purchasing.copy.waiting_qc') }}</option>
+                </select>
+
+                <label for="historicalRefCurrencyFilter" class="tw:sr-only">{{ __($rp.'.currency') }}</label>
+                <select name="currency" id="historicalRefCurrencyFilter" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-32">
+                    @foreach($currencies as $currency)
+                        <option value="{{ $currency }}" @selected($targetCurrency === $currency)>{{ $currency }}</option>
+                    @endforeach
+                </select>
             </x-slot:filters>
-        </x-ui.toolbar>
+
+            <x-slot:chips>
+                <x-ui.filter-chips
+                    :items="$benchmarkChips"
+                    :clear-url="$benchmarkResetUrl"
+                    :clear-attrs="$benchmarkLinkAttrs"
+                    :server-tabs="true"
+                />
+            </x-slot:chips>
+        </x-ui.filter-bar>
 
         <x-ui.data-table :title="__($rp.'.historical.title')" :description="__($rp.'.historical.description')" sticky>
             <x-slot:actions>
@@ -302,29 +396,127 @@
             <p class="tw:text-ui-xs tw:text-on-surface-variant tw:m-0">{{ __($rp.'.legacy.notice') }}</p>
         </div>
 
-        <x-ui.toolbar aria-label="{{ __($rp.'.legacy.title') }}" class="tw:mb-4">
+        @php
+            $legacyStatus = $filters['status'] ?? 'active';
+            $legacyResetUrl = route($prefix.'.index', ['tab' => 'legacy']);
+            $legacyRemoveUrl = static function (array $dropKeys) use ($prefix): string {
+                $query = array_merge(request()->query(), ['tab' => 'legacy']);
+                foreach ($dropKeys as $key) {
+                    unset($query[$key]);
+                }
+
+                return route($prefix.'.index', $query);
+            };
+            $legacyLinkAttrs = ['data-server-tab' => '', 'data-tab-name' => 'legacy'];
+            $legacyStatusLabels = [
+                'active' => __($rp.'.status_active'),
+                'void' => __($rp.'.status_void'),
+                'all' => __($rp.'.status_all'),
+            ];
+
+            $legacyChips = [];
+            if (! empty($filters['search'])) {
+                $legacyChips[] = [
+                    'key' => 'search',
+                    'label' => __($rp.'.material_code'),
+                    'value' => (string) $filters['search'],
+                    'removeUrl' => $legacyRemoveUrl(['search']),
+                    'removeAttrs' => $legacyLinkAttrs,
+                ];
+            }
+            if (! empty($filters['shape'])) {
+                $legacyChips[] = [
+                    'key' => 'shape',
+                    'label' => __($rp.'.shape'),
+                    'value' => (string) $filters['shape'],
+                    'removeUrl' => $legacyRemoveUrl(['shape']),
+                    'removeAttrs' => $legacyLinkAttrs,
+                ];
+            }
+            if (! empty($filters['currency'])) {
+                $legacyChips[] = [
+                    'key' => 'currency',
+                    'label' => __($rp.'.currency'),
+                    'value' => (string) $filters['currency'],
+                    'removeUrl' => $legacyRemoveUrl(['currency']),
+                    'removeAttrs' => $legacyLinkAttrs,
+                ];
+            }
+            if ($legacyStatus !== 'active') {
+                $legacyChips[] = [
+                    'key' => 'status',
+                    'label' => __($rp.'.status'),
+                    'value' => $legacyStatusLabels[$legacyStatus] ?? (string) $legacyStatus,
+                    'removeUrl' => $legacyRemoveUrl(['status']),
+                    'removeAttrs' => $legacyLinkAttrs,
+                ];
+            }
+        @endphp
+
+        <x-ui.filter-bar
+            id="legacyRefFilterForm"
+            :action="route($prefix.'.index')"
+            :server-tabs="true"
+            :aria-label="__($rp.'.legacy.title')"
+            :has-active-filters="count($legacyChips) > 0"
+            :reset-url="$legacyResetUrl"
+            :reset-label="__($rp.'.reset')"
+            :reset-attrs="$legacyLinkAttrs"
+            :submit-label="__($rp.'.filter')"
+            class="tw:mb-4"
+        >
+            <x-slot:hidden>
+                <input type="hidden" name="tab" value="legacy">
+            </x-slot:hidden>
+
+            <x-slot:search>
+                <label for="referencePriceSearch" class="tw:sr-only">{{ __($rp.'.material_code') }}</label>
+                <x-ui.icon name="search" size="sm" class="ui-filter-bar__search-icon" aria-hidden="true" />
+                <input
+                    type="search"
+                    name="search"
+                    id="referencePriceSearch"
+                    value="{{ $filters['search'] ?? '' }}"
+                    placeholder="{{ __($rp.'.search_placeholder') }}"
+                    class="form-control form-control-sm ui-filter-bar__search-input"
+                    autocomplete="off"
+                >
+            </x-slot:search>
+
             <x-slot:filters>
-                <form method="GET" action="{{ route($prefix.'.index') }}" class="tw:flex tw:flex-wrap tw:items-end tw:gap-2" data-server-tabs-form role="search">
-                    <input type="hidden" name="tab" value="legacy">
-                    <x-ui.input name="search" id="referencePriceSearch" :label="__($rp.'.material_code')" :value="$filters['search'] ?? ''" :placeholder="__($rp.'.search_placeholder')" />
-                    <x-ui.select name="shape" id="referencePriceShapeFilter" :label="__($rp.'.shape')">
-                        <option value="">{{ __($rp.'.all_shapes') }}</option>
-                        @foreach($shapes as $shape)<option value="{{ $shape }}" @selected(($filters['shape'] ?? '') === $shape)>{{ $shape }}</option>@endforeach
-                    </x-ui.select>
-                    <x-ui.select name="currency" id="referencePriceCurrencyFilter" :label="__($rp.'.currency')">
-                        <option value="">{{ __($rp.'.all_currencies') }}</option>
-                        @foreach($currencies as $currency)<option value="{{ $currency }}" @selected(($filters['currency'] ?? '') === $currency)>{{ $currency }}</option>@endforeach
-                    </x-ui.select>
-                    <x-ui.select name="status" id="referencePriceStatusFilter" :label="__($rp.'.status')">
-                        <option value="active" @selected($filters['status'] === 'active')>{{ __($rp.'.status_active') }}</option>
-                        <option value="void" @selected($filters['status'] === 'void')>{{ __($rp.'.status_void') }}</option>
-                        <option value="all" @selected($filters['status'] === 'all')>{{ __($rp.'.status_all') }}</option>
-                    </x-ui.select>
-                    <x-ui.button type="submit" variant="primary" size="sm">{{ __($rp.'.filter') }}</x-ui.button>
-                    <x-ui.button :href="route($prefix.'.index', ['tab' => 'legacy'])" variant="outline" size="sm">{{ __($rp.'.reset') }}</x-ui.button>
-                </form>
+                <label for="referencePriceShapeFilter" class="tw:sr-only">{{ __($rp.'.shape') }}</label>
+                <select name="shape" id="referencePriceShapeFilter" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-40">
+                    <option value="">{{ __($rp.'.all_shapes') }}</option>
+                    @foreach($shapes as $shape)
+                        <option value="{{ $shape }}" @selected(($filters['shape'] ?? '') === $shape)>{{ $shape }}</option>
+                    @endforeach
+                </select>
+
+                <label for="referencePriceCurrencyFilter" class="tw:sr-only">{{ __($rp.'.currency') }}</label>
+                <select name="currency" id="referencePriceCurrencyFilter" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-36">
+                    <option value="">{{ __($rp.'.all_currencies') }}</option>
+                    @foreach($currencies as $currency)
+                        <option value="{{ $currency }}" @selected(($filters['currency'] ?? '') === $currency)>{{ $currency }}</option>
+                    @endforeach
+                </select>
+
+                <label for="referencePriceStatusFilter" class="tw:sr-only">{{ __($rp.'.status') }}</label>
+                <select name="status" id="referencePriceStatusFilter" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-40">
+                    <option value="active" @selected($legacyStatus === 'active')>{{ __($rp.'.status_active') }}</option>
+                    <option value="void" @selected($legacyStatus === 'void')>{{ __($rp.'.status_void') }}</option>
+                    <option value="all" @selected($legacyStatus === 'all')>{{ __($rp.'.status_all') }}</option>
+                </select>
             </x-slot:filters>
-        </x-ui.toolbar>
+
+            <x-slot:chips>
+                <x-ui.filter-chips
+                    :items="$legacyChips"
+                    :clear-url="$legacyResetUrl"
+                    :clear-attrs="$legacyLinkAttrs"
+                    :server-tabs="true"
+                />
+            </x-slot:chips>
+        </x-ui.filter-bar>
 
         <x-ui.data-table density="compact" sticky :scroll-label="__($rp.'.legacy.title')">
             <table class="table table-hover align-middle mb-0 tw:text-ui-sm w-100" data-reference-prices>

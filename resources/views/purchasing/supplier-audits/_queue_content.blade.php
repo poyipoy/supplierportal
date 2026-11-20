@@ -1,26 +1,63 @@
 {{-- Area yang diganti server tabs: filter + tabel + paginasi + empty state untuk satu antrean. --}}
 @php
     $baseQuery = array_filter(['period' => $filters['period'] ?? null, 'supplier' => $filters['supplier'] ?? null]);
+    $auditResetUrl = route('purchasing.supplier-audits.index', ['queue' => $queue]);
+    $auditChips = [];
+    if (! empty($filters['period'])) {
+        $auditChips[] = [
+            'key' => 'period',
+            'label' => __('supplier_audit.fields.period'),
+            'value' => $periodOptions[$filters['period']] ?? (string) $filters['period'],
+            'removeUrl' => route('purchasing.supplier-audits.index', array_filter(['queue' => $queue, 'supplier' => $filters['supplier'] ?? null])),
+        ];
+    }
+    if (! empty($filters['supplier'])) {
+        $auditChips[] = [
+            'key' => 'supplier',
+            'label' => __('supplier_audit.fields.supplier'),
+            'value' => $supplierOptions[$filters['supplier']] ?? (string) $filters['supplier'],
+            'removeUrl' => route('purchasing.supplier-audits.index', array_filter(['queue' => $queue, 'period' => $filters['period'] ?? null])),
+        ];
+    }
 @endphp
 <x-ui.data-table :empty="$audits->isEmpty()">
     <x-slot:filters>
-        <form method="GET" action="{{ route('purchasing.supplier-audits.index') }}" class="tw:flex tw:w-full tw:flex-col tw:gap-2.5 tw:shell:flex-row tw:shell:flex-wrap tw:shell:items-end" role="search" data-server-tabs-form>
-            <input type="hidden" name="queue" value="{{ $queue }}">
-            <x-ui.select name="period" id="supplierAuditPeriodFilter" :label="__('supplier_audit.fields.period')" :placeholder="__('supplier_audit.filters.period_all')" :options="$periodOptions" :value="$filters['period'] ?? null" class="tw:min-w-44" />
-            <x-ui.select name="supplier" id="supplierAuditSupplierFilter" :label="__('supplier_audit.fields.supplier')" :placeholder="__('supplier_audit.filters.supplier_all')" :options="$supplierOptions" :value="$filters['supplier'] ?? null" class="tw:min-w-56" />
-            <div class="tw:flex tw:gap-2">
-                <x-ui.button type="submit" variant="outline" size="sm">
-                    <x-ui.icon name="filter" size="sm" />
-                    <span>{{ __('supplier_audit.actions.filter') }}</span>
-                </x-ui.button>
-                @if($baseQuery)
-                    <x-ui.button :href="route('purchasing.supplier-audits.index', ['queue' => $queue])" variant="ghost" size="sm">
-                        <x-ui.icon name="rotate-ccw" size="sm" />
-                        <span>{{ __('supplier_audit.actions.reset') }}</span>
-                    </x-ui.button>
-                @endif
-            </div>
-        </form>
+        <x-ui.filter-bar
+            id="supplierAuditFilterForm"
+            :action="route('purchasing.supplier-audits.index')"
+            variant="embedded"
+            :server-tabs="true"
+            :has-active-filters="(bool) $baseQuery"
+            :reset-url="$auditResetUrl"
+            :reset-label="__('supplier_audit.actions.reset')"
+            :submit-label="__('supplier_audit.actions.filter')"
+        >
+            <x-slot:hidden>
+                <input type="hidden" name="queue" value="{{ $queue }}">
+            </x-slot:hidden>
+
+            <x-slot:filters>
+                <label for="supplierAuditPeriodFilter" class="tw:sr-only">{{ __('supplier_audit.fields.period') }}</label>
+                <select name="period" id="supplierAuditPeriodFilter" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-44">
+                    <option value="">{{ __('supplier_audit.filters.period_all') }}</option>
+                    @foreach($periodOptions as $periodValue => $periodLabel)
+                        <option value="{{ $periodValue }}" @selected((string) ($filters['period'] ?? '') === (string) $periodValue)>{{ $periodLabel }}</option>
+                    @endforeach
+                </select>
+
+                <label for="supplierAuditSupplierFilter" class="tw:sr-only">{{ __('supplier_audit.fields.supplier') }}</label>
+                <select name="supplier" id="supplierAuditSupplierFilter" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-56">
+                    <option value="">{{ __('supplier_audit.filters.supplier_all') }}</option>
+                    @foreach($supplierOptions as $supplierValue => $supplierLabel)
+                        <option value="{{ $supplierValue }}" @selected((string) ($filters['supplier'] ?? '') === (string) $supplierValue)>{{ $supplierLabel }}</option>
+                    @endforeach
+                </select>
+            </x-slot:filters>
+
+            <x-slot:chips>
+                <x-ui.filter-chips :items="$auditChips" :clear-url="$auditResetUrl" :server-tabs="true" />
+            </x-slot:chips>
+        </x-ui.filter-bar>
     </x-slot:filters>
 
     <x-slot:emptyState>

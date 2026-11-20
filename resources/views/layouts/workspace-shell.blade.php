@@ -5,6 +5,7 @@
 
 @php
     $isWorkspaceShell = true;
+    $isShortcutsInitial = ($initialMode ?? 'frame') === 'shortcuts' || empty($initialEmbedUrl);
 @endphp
 
 @section('content')
@@ -14,7 +15,7 @@
         role="progressbar"
         aria-label="{{ __('navigation.workspace_shell.loading_module') }}"
         aria-valuetext="{{ __('navigation.workspace_shell.loading_module') }}"
-        aria-hidden="false"
+        aria-hidden="{{ $isShortcutsInitial ? 'true' : 'false' }}"
     >
         <span class="workspace-stage__progress-bar"></span>
     </div>
@@ -50,11 +51,11 @@
             ];
         @endphp
         <section
-            class="workspace-panel workspace-shortcuts-panel"
+            class="workspace-panel workspace-shortcuts-panel {{ $isShortcutsInitial ? 'is-active' : '' }}"
             id="workspace-panel-shortcuts"
             role="tabpanel"
             aria-labelledby="workspace-session-shortcuts"
-            hidden
+            @unless($isShortcutsInitial) hidden @endunless
             data-workspace-panel="shortcuts"
         >
             <div class="workspace-shortcuts-board" data-shortcuts-board>
@@ -143,24 +144,26 @@
             </div>
         </section>
 
-        {{-- Initial SSR active keep-alive iframe panel --}}
-        <div
-            class="workspace-panel is-active"
-            id="workspace-panel-initial"
-            role="tabpanel"
-            aria-labelledby="workspace-session-initial"
-            aria-busy="true"
-            data-workspace-panel="initial"
-        >
-            <iframe
-                class="workspace-frame"
-                name="workspace-frame-initial"
-                src="{{ $initialEmbedUrl }}"
-                title="{{ $initialTitle ?? 'ADASI Portal' }}"
-                loading="eager"
-                referrerpolicy="same-origin"
-                data-workspace-frame="initial"
-            ></iframe>
-        </div>
+        @if(! $isShortcutsInitial && ! empty($initialEmbedUrl))
+            {{-- Initial SSR active keep-alive iframe panel --}}
+            <div
+                class="workspace-panel is-active"
+                id="workspace-panel-initial"
+                role="tabpanel"
+                aria-labelledby="workspace-session-initial"
+                aria-busy="true"
+                data-workspace-panel="initial"
+            >
+                <iframe
+                    class="workspace-frame"
+                    name="workspace-frame-initial"
+                    src="{{ $initialEmbedUrl }}"
+                    title="{{ $initialTitle ?? 'ADASI Portal' }}"
+                    loading="eager"
+                    referrerpolicy="same-origin"
+                    data-workspace-frame="initial"
+                ></iframe>
+            </div>
+        @endif
     </div>
 @endsection

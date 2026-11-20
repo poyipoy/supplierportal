@@ -5,7 +5,9 @@
         'pinned' => true,
         'closable' => false,
     ];
-    $initialSession = $workspaceConfig['initialSession'] ?? $workspaceConfig['initialTab'] ?? [
+    $rawInitialSession = $workspaceConfig['initialSession'] ?? $workspaceConfig['initialTab'] ?? null;
+    $isShortcutsInitial = ($initialMode ?? 'frame') === 'shortcuts' || empty($rawInitialSession);
+    $initialSession = is_array($rawInitialSession) ? $rawInitialSession : [
         'key' => $initialModuleKey ?? 'dashboard',
         'label' => $initialTitle ?? 'Dashboard',
         'url' => $initialCleanUrl ?? request()->fullUrl(),
@@ -37,7 +39,7 @@
     {{-- Permanent fixed Shortcuts fallback session --}}
     <div
         id="workspace-session-group-shortcuts"
-        class="workspace-session-group workspace-session-group--shortcuts"
+        class="workspace-session-group workspace-session-group--shortcuts {{ $isShortcutsInitial ? 'is-active' : '' }}"
         role="presentation"
         data-workspace-group="shortcuts"
         data-workspace-module="shortcuts"
@@ -45,7 +47,7 @@
         data-locale-ignore
     >
         <div
-            class="workspace-session workspace-session--shortcuts"
+            class="workspace-session workspace-session--shortcuts {{ $isShortcutsInitial ? 'is-active' : '' }}"
             role="presentation"
             data-workspace-session="shortcuts"
             data-dirty="false"
@@ -57,9 +59,9 @@
                 role="tab"
                 id="workspace-session-shortcuts"
                 class="workspace-session__trigger ui-focus-ring"
-                aria-selected="false"
+                aria-selected="{{ $isShortcutsInitial ? 'true' : 'false' }}"
                 aria-controls="workspace-panel-shortcuts"
-                tabindex="-1"
+                tabindex="{{ $isShortcutsInitial ? '0' : '-1' }}"
                 data-workspace-shortcuts-select
             >
                 <span class="workspace-session__icon" aria-hidden="true">
@@ -90,50 +92,52 @@
             data-workspace-sessionlist
             data-locale-ignore
         >
-        {{-- Initial SSR active workspace session group --}}
-        <div
-            class="workspace-session-group is-active"
-            role="presentation"
-            data-workspace-group="initial"
-            data-workspace-module="{{ $initialSession['key'] }}"
-            data-pinned="false"
-        >
+        @if(! $isShortcutsInitial)
+            {{-- Initial SSR active workspace session group --}}
             <div
-                class="workspace-session is-active"
+                class="workspace-session-group is-active"
                 role="presentation"
-                data-workspace-session="initial"
-                data-dirty="false"
-                data-stale="false"
-                data-hibernated="false"
-                data-queued="false"
-                data-loading="false"
+                data-workspace-group="initial"
+                data-workspace-module="{{ $initialSession['key'] }}"
                 data-pinned="false"
             >
-                <button
-                    type="button"
-                    role="tab"
-                    id="workspace-session-initial"
-                    class="workspace-session__trigger ui-focus-ring"
-                    aria-selected="true"
-                    aria-controls="workspace-panel-initial"
-                    tabindex="0"
-                    data-workspace-session-select="initial"
+                <div
+                    class="workspace-session is-active"
+                    role="presentation"
+                    data-workspace-session="initial"
+                    data-dirty="false"
+                    data-stale="false"
+                    data-hibernated="false"
+                    data-queued="false"
+                    data-loading="false"
+                    data-pinned="false"
                 >
-                    <span class="workspace-session__status-dot" aria-hidden="true"></span>
-                    <span class="workspace-session__label">{{ $initialSession['label'] }}</span>
-                </button>
+                    <button
+                        type="button"
+                        role="tab"
+                        id="workspace-session-initial"
+                        class="workspace-session__trigger ui-focus-ring"
+                        aria-selected="true"
+                        aria-controls="workspace-panel-initial"
+                        tabindex="0"
+                        data-workspace-session-select="initial"
+                    >
+                        <span class="workspace-session__status-dot" aria-hidden="true"></span>
+                        <span class="workspace-session__label">{{ $initialSession['label'] }}</span>
+                    </button>
 
-                <button
-                    type="button"
-                    class="workspace-session__close ui-focus-ring"
-                    aria-label="{{ __('navigation.workspace_shell.close_session') }}: {{ $initialSession['label'] }}"
-                    title="{{ __('navigation.workspace_shell.close_session') }}"
-                    data-workspace-session-close="initial"
-                >
-                    <x-ui.icon name="x" size="xs" />
-                </button>
+                    <button
+                        type="button"
+                        class="workspace-session__close ui-focus-ring"
+                        aria-label="{{ __('navigation.workspace_shell.close_session') }}: {{ $initialSession['label'] }}"
+                        title="{{ __('navigation.workspace_shell.close_session') }}"
+                        data-workspace-session-close="initial"
+                    >
+                        <x-ui.icon name="x" size="xs" />
+                    </button>
+                </div>
             </div>
-        </div>
+        @endif
         </div>
     </div>
 
@@ -177,6 +181,7 @@
         <button
             type="button"
             class="workspace-sessionbar__refresh ui-focus-ring"
+            @if($isShortcutsInitial) disabled @endif
             aria-label="{{ __('navigation.workspace_shell.refresh_session') }}"
             title="{{ __('navigation.workspace_shell.refresh_session') }}"
             data-workspace-refresh

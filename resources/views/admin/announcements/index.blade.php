@@ -8,11 +8,38 @@
         <x-slot:actions><x-ui.button :href="route('admin.announcements.create')" size="sm"><x-ui.icon name="plus" /> {{ __('admin.copy.create_announcement') }}</x-ui.button></x-slot:actions>
     </x-ui.page-header>
 
-    <x-ui.toolbar aria-label="{{ __('admin.copy.announcement_table_controls') }}">
-        <x-slot:search><x-ui.input name="announcement_search" id="announcementSearch" type="search" :placeholder="__('admin.copy.filter_titles_on_this_page')" aria-label="{{ __('admin.copy.filter_announcement_titles_on_this_page') }}" autocomplete="off" /></x-slot:search>
-        <x-slot:filters><label class="tw:grid tw:gap-1 tw:text-ui-xs tw:font-medium" for="announcementStatusFilter">{{ __('admin.copy.publication_status') }}<select id="announcementStatusFilter" class="form-select form-select-sm tw:min-w-40"><option value="">{{ __('admin.copy.all_statuses') }}</option><option value="published">{{ __('admin.copy.published') }}</option><option value="draft">{{ __('admin.copy.draft') }}</option></select></label></x-slot:filters>
-        <x-slot:actions><x-ui.button type="button" variant="ghost" size="sm" id="resetAnnouncementFilters"><x-ui.icon name="rotate-ccw" /> {{ __('admin.copy.reset') }}</x-ui.button></x-slot:actions>
-    </x-ui.toolbar>
+    <x-ui.filter-bar
+        id="announcementsFilterBar"
+        mode="live"
+        :aria-label="__('admin.copy.announcement_table_controls')"
+        reset-id="resetAnnouncementFilters"
+        :reset-label="__('admin.copy.reset')"
+    >
+        <x-slot:search>
+            <label for="announcementSearch" class="tw:sr-only">{{ __('admin.copy.filter_announcement_titles_on_this_page') }}</label>
+            <x-ui.icon name="search" size="sm" class="ui-filter-bar__search-icon" aria-hidden="true" />
+            <input
+                name="announcement_search"
+                id="announcementSearch"
+                type="search"
+                placeholder="{{ __('admin.copy.filter_titles_on_this_page') }}"
+                aria-label="{{ __('admin.copy.filter_announcement_titles_on_this_page') }}"
+                autocomplete="off"
+                class="form-control form-control-sm ui-filter-bar__search-input"
+            />
+        </x-slot:search>
+        <x-slot:filters>
+            <label for="announcementStatusFilter" class="tw:sr-only">{{ __('admin.copy.publication_status') }}</label>
+            <select id="announcementStatusFilter" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-44">
+                <option value="">{{ __('admin.copy.all_statuses') }}</option>
+                <option value="published">{{ __('admin.copy.published') }}</option>
+                <option value="draft">{{ __('admin.copy.draft') }}</option>
+            </select>
+        </x-slot:filters>
+        <x-slot:chips>
+            <x-ui.filter-chips id="announcementFilterChips" />
+        </x-slot:chips>
+    </x-ui.filter-bar>
 
     <x-ui.data-table :title="__('admin.copy.announcement_register')" :description="__('admin.page.announcement_count', ['count' => $announcements->total()])">
         <div class="ui-data-table__scroll tw:overflow-x-auto">
@@ -70,9 +97,14 @@ document.addEventListener('DOMContentLoaded', function () {
         rows.forEach((row) => { const matches = (!term || row.dataset.title.includes(term)) && (!state || row.dataset.status === state); row.classList.toggle('d-none', !matches); if (matches) visible += 1; });
         empty?.classList.toggle('d-none', visible !== 0 || rows.length === 0);
     }
-    search.addEventListener('input', filterRows);
-    status.addEventListener('change', filterRows);
-    document.getElementById('resetAnnouncementFilters').addEventListener('click', function () { search.value = ''; status.value = ''; filterRows(); });
+    window.AdasiFilterBar.bindLive('#announcementsFilterBar', {
+        debounceMs: 150,
+        fields: [
+            { key: 'search', label: @json(__('local_invoice.actions.search')), selector: '#announcementSearch', type: 'search' },
+            { key: 'status', label: @json(__('admin.copy.publication_status')), selector: '#announcementStatusFilter', type: 'select' },
+        ],
+        onFilterChange: filterRows,
+    });
     document.querySelectorAll('.btn-delete-announcement').forEach((button) => button.addEventListener('click', function () {
         const form = this.closest('form');
         AdasiAlert.confirmDanger({ title: @json(__('admin.copy.delete_this_announcement')), text: @json(__('admin.copy.the_announcement_will_be_permanently_removed_from_the_portal')), confirmText: @json(__('admin.copy.delete_announcement')), cancelText: @json(__('admin.copy.cancel')) }).then((result) => {

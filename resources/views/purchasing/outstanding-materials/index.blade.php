@@ -16,54 +16,92 @@
         :description="__('purchasing.outstanding_materials.subtitle')"
     />
 
-    <x-ui.toolbar :sticky="true">
-        <form method="GET" action="{{ route('purchasing.outstanding-materials.index') }}" class="d-flex flex-wrap align-items-center gap-2 w-100" id="outstandingFilterForm">
-            <div class="input-group input-group-sm" style="max-width: 320px;">
-                <span class="input-group-text tw:bg-surface border-end-0 tw:text-on-surface-variant">
-                    <x-ui.icon name="search" size="sm" />
-                </span>
-                <input
-                    type="text"
-                    name="search"
-                    class="form-control border-start-0 ps-0"
-                    value="{{ $filters['search'] ?? '' }}"
-                    placeholder="{{ __('purchasing.outstanding_materials.search_placeholder') }}"
-                    aria-label="{{ __('purchasing.outstanding_materials.search_placeholder') }}"
-                >
-            </div>
+    @php
+        $outstandingResetUrl = route('purchasing.outstanding-materials.index');
+        $outstandingRemoveUrl = static function (array $dropKeys) use ($outstandingResetUrl): string {
+            $query = request()->query();
+            foreach ($dropKeys as $key) {
+                unset($query[$key]);
+            }
 
-            <div style="min-width: 170px;">
-                <select name="status" class="form-select form-select-sm" aria-label="{{ __('purchasing.outstanding_materials.col_status') }}">
-                    <option value="">{{ __('purchasing.outstanding_materials.all_statuses') }}</option>
-                    @foreach($statusOptions as $key => $label)
-                        <option value="{{ $key }}" @selected(($filters['status'] ?? '') === $key)>{{ $label }}</option>
-                    @endforeach
-                </select>
-            </div>
+            return $query === [] ? $outstandingResetUrl : $outstandingResetUrl.'?'.http_build_query($query);
+        };
 
-            <div style="min-width: 200px;">
-                <select name="supplier_id" class="form-select form-select-sm" aria-label="{{ __('purchasing.outstanding_materials.col_supplier') }}">
-                    <option value="">{{ __('purchasing.outstanding_materials.all_suppliers') }}</option>
-                    @foreach($suppliers as $supplier)
-                        <option value="{{ $supplier->getRouteKey() }}" @selected((string) ($filters['supplier_id'] ?? '') === (string) $supplier->getRouteKey())>
-                            {{ $supplier->name }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
+        $outstandingChips = [];
+        if (! empty($filters['search'])) {
+            $outstandingChips[] = [
+                'key' => 'search',
+                'label' => __('purchasing.copy.search'),
+                'value' => (string) $filters['search'],
+                'removeUrl' => $outstandingRemoveUrl(['search']),
+            ];
+        }
+        if (! empty($filters['status'])) {
+            $outstandingChips[] = [
+                'key' => 'status',
+                'label' => __('purchasing.outstanding_materials.col_status'),
+                'value' => $statusOptions[$filters['status']] ?? (string) $filters['status'],
+                'removeUrl' => $outstandingRemoveUrl(['status']),
+            ];
+        }
+        if (! empty($filters['supplier_id'])) {
+            $selectedOutSupplier = $suppliers->first(fn ($s) => (string) $s->getRouteKey() === (string) $filters['supplier_id']);
+            $outstandingChips[] = [
+                'key' => 'supplier_id',
+                'label' => __('purchasing.outstanding_materials.col_supplier'),
+                'value' => $selectedOutSupplier ? $selectedOutSupplier->name : (string) $filters['supplier_id'],
+                'removeUrl' => $outstandingRemoveUrl(['supplier_id']),
+            ];
+        }
+    @endphp
 
-            <x-ui.button type="submit" size="sm" variant="primary">
-                <span>{{ __('purchasing.outstanding_materials.filter_button') }}</span>
-            </x-ui.button>
+    <x-ui.filter-bar
+        id="outstandingFilterForm"
+        :action="$outstandingResetUrl"
+        :sticky="true"
+        :has-active-filters="count($outstandingChips) > 0"
+        :reset-url="$outstandingResetUrl"
+        :reset-label="__('purchasing.outstanding_materials.reset_button')"
+        :submit-label="__('purchasing.outstanding_materials.filter_button')"
+    >
+        <x-slot:search>
+            <label for="outstandingSearchInput" class="tw:sr-only">{{ __('purchasing.outstanding_materials.search_placeholder') }}</label>
+            <x-ui.icon name="search" size="sm" class="ui-filter-bar__search-icon" aria-hidden="true" />
+            <input
+                id="outstandingSearchInput"
+                type="search"
+                name="search"
+                class="form-control form-control-sm ui-filter-bar__search-input"
+                value="{{ $filters['search'] ?? '' }}"
+                placeholder="{{ __('purchasing.outstanding_materials.search_placeholder') }}"
+                aria-label="{{ __('purchasing.outstanding_materials.search_placeholder') }}"
+            >
+        </x-slot:search>
 
-            @if(! empty($filters['search']) || ! empty($filters['status']) || ! empty($filters['supplier_id']))
-                <x-ui.button :href="route('purchasing.outstanding-materials.index')" size="sm" variant="ghost">
-                    <x-ui.icon name="rotate-ccw" size="sm" />
-                    <span>{{ __('purchasing.outstanding_materials.reset_button') }}</span>
-                </x-ui.button>
-            @endif
-        </form>
-    </x-ui.toolbar>
+        <x-slot:filters>
+            <label for="outstandingStatusFilter" class="tw:sr-only">{{ __('purchasing.outstanding_materials.col_status') }}</label>
+            <select id="outstandingStatusFilter" name="status" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-44" aria-label="{{ __('purchasing.outstanding_materials.col_status') }}">
+                <option value="">{{ __('purchasing.outstanding_materials.all_statuses') }}</option>
+                @foreach($statusOptions as $key => $label)
+                    <option value="{{ $key }}" @selected(($filters['status'] ?? '') === $key)>{{ $label }}</option>
+                @endforeach
+            </select>
+
+            <label for="outstandingSupplierFilter" class="tw:sr-only">{{ __('purchasing.outstanding_materials.col_supplier') }}</label>
+            <select id="outstandingSupplierFilter" name="supplier_id" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-52" aria-label="{{ __('purchasing.outstanding_materials.col_supplier') }}">
+                <option value="">{{ __('purchasing.outstanding_materials.all_suppliers') }}</option>
+                @foreach($suppliers as $supplier)
+                    <option value="{{ $supplier->getRouteKey() }}" @selected((string) ($filters['supplier_id'] ?? '') === (string) $supplier->getRouteKey())>
+                        {{ $supplier->name }}
+                    </option>
+                @endforeach
+            </select>
+        </x-slot:filters>
+
+        <x-slot:chips>
+            <x-ui.filter-chips :items="$outstandingChips" :clear-url="$outstandingResetUrl" />
+        </x-slot:chips>
+    </x-ui.filter-bar>
 
     @include('shared.outstanding-materials._table', [
         'rows' => $rows,

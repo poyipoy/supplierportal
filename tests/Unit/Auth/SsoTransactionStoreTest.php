@@ -275,6 +275,10 @@ class SsoTransactionStoreTest extends TestCase
             'relative page' => ['/profile', '/profile'],
             'relative query' => ['/profile/customization?tab=layout&filter=a%2Fb', '/profile/customization?tab=layout&filter=a%2Fb'],
             'same origin absolute' => ['http://localhost/profile/customization?tab=layout', '/profile/customization?tab=layout'],
+            'infor context url' => [
+                'http://localhost/v2/ADASI_PRD/934f47ee-06a4-4f2d-a619-e7cf35e9d91b?favoriteContext=c2N2MnsiZGVzY3JpcHRpb24iOiJQdXJjaGFzZSBPcmRlciIsImFwcGxpY2F0aW9uIjoiZXJwIiwidHlwZSI6InNlc3Npb24iLCJhY3Rpb24iOiJwdXJvcmRzMDAwbTAwMCIsInBhdGgiOm51bGwsImFyZ3VtZW50Ijoic3RhdHVzPWFjdGl2ZSJ9&LogicalId=lid%3A%2F%2Fadasi.portal.purchasing',
+                '/v2/ADASI_PRD/934f47ee-06a4-4f2d-a619-e7cf35e9d91b?favoriteContext=c2N2MnsiZGVzY3JpcHRpb24iOiJQdXJjaGFzZSBPcmRlciIsImFwcGxpY2F0aW9uIjoiZXJwIiwidHlwZSI6InNlc3Npb24iLCJhY3Rpb24iOiJwdXJvcmRzMDAwbTAwMCIsInBhdGgiOm51bGwsImFyZ3VtZW50Ijoic3RhdHVzPWFjdGl2ZSJ9&LogicalId=lid%3A%2F%2Fadasi.portal.purchasing',
+            ],
         ];
     }
 

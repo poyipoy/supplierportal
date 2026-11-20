@@ -28,39 +28,72 @@
         </div>
     @endif
 
-    {{-- Filter Card --}}
-    <x-ui.card>
-        <form method="GET" action="{{ route('ga.employees.index') }}" class="tw:flex tw:flex-col tw:sm:flex-row tw:sm:items-center tw:gap-3">
-            <div class="tw:flex-1">
-                <input
-                    type="text"
-                    name="search"
-                    class="form-control form-control-sm"
-                    placeholder="{{ __('ga.filters.employee_search') }}"
-                    value="{{ request('search') }}"
-                >
-            </div>
-            <div class="tw:w-40">
-                <label for="employee-status-filter" class="visually-hidden">{{ __('ga.labels.employee_status') }}</label>
-                <select id="employee-status-filter" name="status" class="form-select form-select-sm">
-                    <option value="">{{ __('local_invoice.labels.all_statuses') }}</option>
-                    <option value="active" @selected(request('status') === 'active')>{{ __('local_invoice.labels.active') }}</option>
-                    <option value="inactive" @selected(request('status') === 'inactive')>{{ __('common.labels_review.inactive') }}</option>
-                </select>
-            </div>
-            <div class="tw:flex tw:gap-2">
-                <x-ui.button type="submit" variant="primary" size="sm">
-                    <x-ui.icon name="search" size="sm" />
-                    <span>{{ __('local_invoice.actions.search') }}</span>
-                </x-ui.button>
-                @if(request()->hasAny(['search', 'status']))
-                    <x-ui.button :href="route('ga.employees.index')" variant="ghost" size="sm">
-                        <span>{{ __('common.actions.reset') }}</span>
-                    </x-ui.button>
-                @endif
-            </div>
-        </form>
-    </x-ui.card>
+    {{-- Filter Bar --}}
+    @php
+        $gaEmployeesResetUrl = route('ga.employees.index');
+        $gaEmployeesRemoveUrl = static function (array $dropKeys) use ($gaEmployeesResetUrl): string {
+            $query = request()->query();
+            foreach ($dropKeys as $key) {
+                unset($query[$key]);
+            }
+
+            return $query === [] ? $gaEmployeesResetUrl : $gaEmployeesResetUrl.'?'.http_build_query($query);
+        };
+
+        $gaEmployeesChips = [];
+        if (request()->filled('search')) {
+            $gaEmployeesChips[] = [
+                'key' => 'search',
+                'label' => __('local_invoice.actions.search'),
+                'value' => (string) request('search'),
+                'removeUrl' => $gaEmployeesRemoveUrl(['search']),
+            ];
+        }
+        if (request()->filled('status')) {
+            $gaEmployeesChips[] = [
+                'key' => 'status',
+                'label' => __('ga.labels.employee_status'),
+                'value' => request('status') === 'active' ? __('local_invoice.labels.active') : __('common.labels_review.inactive'),
+                'removeUrl' => $gaEmployeesRemoveUrl(['status']),
+            ];
+        }
+    @endphp
+
+    <x-ui.filter-bar
+        id="gaEmployeesFilterForm"
+        :action="$gaEmployeesResetUrl"
+        :has-active-filters="count($gaEmployeesChips) > 0"
+        :reset-url="$gaEmployeesResetUrl"
+        :reset-label="__('common.actions.reset')"
+        :submit-label="__('local_invoice.actions.search')"
+    >
+        <x-slot:search>
+            <label for="ga-employee-search" class="tw:sr-only">{{ __('local_invoice.actions.search') }}</label>
+            <x-ui.icon name="search" size="sm" class="ui-filter-bar__search-icon" aria-hidden="true" />
+            <input
+                type="search"
+                id="ga-employee-search"
+                name="search"
+                class="form-control form-control-sm ui-filter-bar__search-input"
+                placeholder="{{ __('ga.filters.employee_search') }}"
+                value="{{ request('search') }}"
+                autocomplete="off"
+            >
+        </x-slot:search>
+
+        <x-slot:filters>
+            <label for="employee-status-filter" class="tw:sr-only">{{ __('ga.labels.employee_status') }}</label>
+            <select id="employee-status-filter" name="status" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-44">
+                <option value="">{{ __('local_invoice.labels.all_statuses') }}</option>
+                <option value="active" @selected(request('status') === 'active')>{{ __('local_invoice.labels.active') }}</option>
+                <option value="inactive" @selected(request('status') === 'inactive')>{{ __('common.labels_review.inactive') }}</option>
+            </select>
+        </x-slot:filters>
+
+        <x-slot:chips>
+            <x-ui.filter-chips :items="$gaEmployeesChips" :clear-url="$gaEmployeesResetUrl" />
+        </x-slot:chips>
+    </x-ui.filter-bar>
 
     {{-- Data Table --}}
     <x-ui.data-table

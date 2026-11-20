@@ -66,8 +66,8 @@
 
         <form method="GET" action="{{ route('supplier.price-history.historical') }}" class="row g-3 align-items-end" id="historicalFilterForm">
             <div class="col-md-6 col-lg-4">
-                <label class="form-label small fw-semibold tw:text-on-surface mb-1" for="historicalMaterialSelect">{{ __('supplier.copy.select_material_specification') }}</label>
-                <select name="material_name" class="form-select form-select-sm" id="historicalMaterialSelect" required>
+                <label class="form-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="historicalMaterialSelect">{{ __('supplier.copy.select_material_specification') }}</label>
+                <select name="material_name" class="form-select form-select-sm tw:min-h-[var(--ui-control-height-sm)] ui-focus-ring" id="historicalMaterialSelect" required>
                     <option value="">{{ __('supplier.copy.choose_material') }}</option>
                     @foreach($materials as $material)
                         <option value="{{ $material['name'] }}" data-shape="{{ $material['shape'] ?? '' }}" {{ $selectedMaterialName === $material['name'] ? 'selected' : '' }}>{{ $material['name'] }}</option>
@@ -75,16 +75,16 @@
                 </select>
             </div>
             <div class="col-md-3 col-lg-3">
-                <label class="form-label small fw-semibold tw:text-on-surface mb-1" for="historicalRangeSelect">{{ __('supplier.copy.time_horizon') }}</label>
-                <select name="range" class="form-select form-select-sm" id="historicalRangeSelect">
+                <label class="form-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="historicalRangeSelect">{{ __('supplier.copy.time_horizon') }}</label>
+                <select name="range" class="form-select form-select-sm tw:min-h-[var(--ui-control-height-sm)] ui-focus-ring" id="historicalRangeSelect">
                     @foreach($rangeOptions as $value => $label)
                         <option value="{{ $value }}" {{ $range === $value ? 'selected' : '' }}>{{ $label }}</option>
                     @endforeach
                 </select>
             </div>
             <div class="col-md-3 col-lg-2">
-                <label class="form-label small fw-semibold tw:text-on-surface mb-1" for="historicalCurrencySelect">{{ __('supplier.copy.currency') }}</label>
-                <select name="currency" class="form-select form-select-sm" id="historicalCurrencySelect" {{ $currencyOptions->isEmpty() ? 'disabled' : 'required' }}>
+                <label class="form-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="historicalCurrencySelect">{{ __('supplier.copy.currency') }}</label>
+                <select name="currency" class="form-select form-select-sm tw:min-h-[var(--ui-control-height-sm)] ui-focus-ring" id="historicalCurrencySelect" {{ $currencyOptions->isEmpty() ? 'disabled' : 'required' }}>
                     @if($currencyOptions->isEmpty())
                         <option value="">{{ __('supplier.copy.select_material_first') }}</option>
                     @else
@@ -95,7 +95,7 @@
                 </select>
             </div>
             <div class="col-md-12 col-lg-3">
-                <label class="form-label small fw-semibold tw:text-on-surface mb-1">{{ __('supplier.copy.aggregation_interval') }}</label>
+                <label class="form-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface">{{ __('supplier.copy.aggregation_interval') }}</label>
                 <div class="btn-group btn-group-sm w-100" role="group">
                     <input type="radio" class="btn-check" name="period_view" id="periodViewMonthly" value="monthly" {{ $periodView === 'monthly' ? 'checked' : '' }}>
                     <label class="btn btn-outline-primary" for="periodViewMonthly">{{ __('supplier.copy.monthly') }}</label>
@@ -106,7 +106,7 @@
             </div>
 
             <div class="col-12 mt-2 mb-0">
-                <a href="#dimensionFilters" data-bs-toggle="collapse" class="text-decoration-none small fw-semibold d-inline-flex align-items-center gap-1 tw:text-on-surface-variant tw:hover:text-primary">
+                <a href="#dimensionFilters" data-bs-toggle="collapse" class="ui-focus-ring tw:rounded-ui-xs text-decoration-none small fw-semibold d-inline-flex align-items-center gap-1 tw:text-on-surface-variant tw:hover:text-primary">
                             <x-ui.icon name="sliders-horizontal" size="sm" />
                     <span>{{ __('supplier.copy.filter_by_target_dimensions_optional') }}</span>
                             <x-ui.icon name="chevron-down" size="sm" />
@@ -114,26 +114,26 @@
             </div>
 
             <div class="collapse col-12 {{ request()->hasAny(['thickness', 'd_inner', 'd_outer', 'width', 'length']) ? 'show' : '' }}" id="dimensionFilters">
-                <div class="row g-2 p-3 tw:bg-surface-low border rounded mt-1">
+                <div class="row g-2 tw:mt-1 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container-low tw:p-3">
                     <div class="col-6 col-md-2 dimension-field" data-dim="thickness">
-                        <label class="form-label tw:text-ui-xs tw:text-on-surface-variant fw-semibold tw:uppercase" for="supplier-history-thickness">{{ __('supplier.copy.thickness_mm') }}</label>
-                        <input type="number" step="0.01" name="thickness" id="supplier-history-thickness" class="form-control form-control-sm historical-filter-input" value="{{ request('thickness') }}">
+                        <label class="form-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant" for="supplier-history-thickness">{{ __('supplier.copy.thickness_mm') }}</label>
+                        <input type="number" step="0.01" name="thickness" id="supplier-history-thickness" class="form-control form-control-sm tw:min-h-[var(--ui-control-height-sm)] ui-focus-ring historical-filter-input" value="{{ request('thickness') }}">
                     </div>
                     <div class="col-6 col-md-2 dimension-field" data-dim="d_inner">
-                        <label class="form-label tw:text-ui-xs tw:text-on-surface-variant fw-semibold tw:uppercase" for="supplier-history-d-inner">{{ __('supplier.copy.d_inner_mm') }}</label>
-                        <input type="number" step="0.01" name="d_inner" id="supplier-history-d-inner" class="form-control form-control-sm historical-filter-input" value="{{ request('d_inner') }}">
+                        <label class="form-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant" for="supplier-history-d-inner">{{ __('supplier.copy.d_inner_mm') }}</label>
+                        <input type="number" step="0.01" name="d_inner" id="supplier-history-d-inner" class="form-control form-control-sm tw:min-h-[var(--ui-control-height-sm)] ui-focus-ring historical-filter-input" value="{{ request('d_inner') }}">
                     </div>
                     <div class="col-6 col-md-2 dimension-field" data-dim="d_outer">
-                        <label class="form-label tw:text-ui-xs tw:text-on-surface-variant fw-semibold tw:uppercase" for="supplier-history-d-outer">{{ __('supplier.copy.d_outer_mm') }}</label>
-                        <input type="number" step="0.01" name="d_outer" id="supplier-history-d-outer" class="form-control form-control-sm historical-filter-input" value="{{ request('d_outer') }}">
+                        <label class="form-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant" for="supplier-history-d-outer">{{ __('supplier.copy.d_outer_mm') }}</label>
+                        <input type="number" step="0.01" name="d_outer" id="supplier-history-d-outer" class="form-control form-control-sm tw:min-h-[var(--ui-control-height-sm)] ui-focus-ring historical-filter-input" value="{{ request('d_outer') }}">
                     </div>
                     <div class="col-6 col-md-2 dimension-field" data-dim="width">
-                        <label class="form-label tw:text-ui-xs tw:text-on-surface-variant fw-semibold tw:uppercase" for="supplier-history-width">{{ __('supplier.copy.width_mm') }}</label>
-                        <input type="number" step="0.01" name="width" id="supplier-history-width" class="form-control form-control-sm historical-filter-input" value="{{ request('width') }}">
+                        <label class="form-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant" for="supplier-history-width">{{ __('supplier.copy.width_mm') }}</label>
+                        <input type="number" step="0.01" name="width" id="supplier-history-width" class="form-control form-control-sm tw:min-h-[var(--ui-control-height-sm)] ui-focus-ring historical-filter-input" value="{{ request('width') }}">
                     </div>
                     <div class="col-6 col-md-2 dimension-field" data-dim="length">
-                        <label class="form-label tw:text-ui-xs tw:text-on-surface-variant fw-semibold tw:uppercase" for="supplier-history-length">{{ __('supplier.copy.length_mm') }}</label>
-                        <input type="number" step="0.01" name="length" id="supplier-history-length" class="form-control form-control-sm historical-filter-input" value="{{ request('length') }}">
+                        <label class="form-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant" for="supplier-history-length">{{ __('supplier.copy.length_mm') }}</label>
+                        <input type="number" step="0.01" name="length" id="supplier-history-length" class="form-control form-control-sm tw:min-h-[var(--ui-control-height-sm)] ui-focus-ring historical-filter-input" value="{{ request('length') }}">
                     </div>
                     <div class="col-12 col-md-2 d-flex align-items-end">
                         <x-ui.button type="submit" size="sm" class="tw:w-full">

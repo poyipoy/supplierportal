@@ -10,30 +10,116 @@
         :eyebrow="__('finance.labels.finance_ap')"
     />
 
-    <x-ui.card :title="__('finance.refund_surface.filter_title')">
-        <form method="GET" class="tw:grid tw:gap-3 tw:md:grid-cols-2 tw:lg:grid-cols-5 tw:lg:items-end">
+    @php
+        $opResetUrl = route('finance.overpayments.index');
+        $opRemoveUrl = static function (array $dropKeys) use ($opResetUrl): string {
+            $query = request()->query();
+            foreach ($dropKeys as $key) {
+                unset($query[$key]);
+            }
+
+            return $query === [] ? $opResetUrl : $opResetUrl.'?'.http_build_query($query);
+        };
+
+        $opAdvancedCount = collect([
+            request()->filled('supplier_id'),
+            request()->filled('date_from') || request()->filled('date_to'),
+        ])->filter()->count();
+
+        $opActiveChips = [];
+        if (request()->filled('q')) {
+            $opActiveChips[] = [
+                'key' => 'q',
+                'label' => __('finance.refund_ui.search_label'),
+                'value' => (string) request('q'),
+                'removeUrl' => $opRemoveUrl(['q']),
+            ];
+        }
+        if (request()->filled('status')) {
+            $opStatusVal = request('status') === 'OPEN'
+                ? __('status.finance.open')
+                : (request('status') === 'SETTLED' ? __('status.finance.settled') : (string) request('status'));
+            $opActiveChips[] = [
+                'key' => 'status',
+                'label' => __('local_invoice.labels.status'),
+                'value' => $opStatusVal,
+                'removeUrl' => $opRemoveUrl(['status']),
+            ];
+        }
+        if (request()->filled('supplier_id')) {
+            $selectedOpSupplier = $suppliers->firstWhere('hash', request('supplier_id'));
+            $opSupplierLabel = $selectedOpSupplier
+                ? ($selectedOpSupplier->supplier?->company_name ?: $selectedOpSupplier->name)
+                : (string) request('supplier_id');
+            $opActiveChips[] = [
+                'key' => 'supplier_id',
+                'label' => __('local_invoice.labels.supplier'),
+                'value' => $opSupplierLabel,
+                'removeUrl' => $opRemoveUrl(['supplier_id']),
+            ];
+        }
+        if (request()->filled('date_from') || request()->filled('date_to')) {
+            $opDateVal = request()->filled('date_from') && request()->filled('date_to')
+                ? request('date_from').' - '.request('date_to')
+                : (string) (request('date_from') ?: request('date_to'));
+            $opActiveChips[] = [
+                'key' => 'date_range',
+                'label' => __('local_invoice.labels.date'),
+                'value' => $opDateVal,
+                'removeUrl' => $opRemoveUrl(['date_from', 'date_to']),
+            ];
+        }
+    @endphp
+
+    <x-ui.filter-bar
+        id="overpaymentFilterForm"
+        :action="$opResetUrl"
+        :aria-label="__('finance.refund_surface.filter_title')"
+        advanced-id="overpaymentMoreFilters"
+        :advanced-count="$opAdvancedCount"
+        :advanced-open="$opAdvancedCount > 0"
+        :has-active-filters="count($opActiveChips) > 0"
+        :reset-url="$opResetUrl"
+        :reset-label="__('common.actions.reset')"
+        :submit-label="__('local_invoice.actions.apply_filters')"
+    >
+        <x-slot:search>
+            <label for="overpayment-q" class="tw:sr-only">{{ __('finance.refund_ui.search_label') }}</label>
+            <x-ui.icon name="search" size="sm" class="ui-filter-bar__search-icon" aria-hidden="true" />
+            <input
+                id="overpayment-q"
+                type="search"
+                name="q"
+                value="{{ request('q') }}"
+                class="form-control form-control-sm ui-filter-bar__search-input"
+                placeholder="{{ __('finance.refund_surface.search') }}"
+                maxlength="100"
+                autocomplete="off"
+            >
+        </x-slot:search>
+
+        <x-slot:filters>
+            <label for="overpayment-status" class="tw:sr-only">{{ __('local_invoice.labels.status') }}</label>
+            <select id="overpayment-status" name="status" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-44">
+                <option value="">{{ __('local_invoice.labels.all_statuses') }}</option>
+                <option value="OPEN" @selected(request('status') === 'OPEN')>{{ __('status.finance.open') }}</option>
+                <option value="SETTLED" @selected(request('status') === 'SETTLED')>{{ __('status.finance.settled') }}</option>
+            </select>
+        </x-slot:filters>
+
+        <x-slot:advanced>
             <div>
-                <label for="overpayment-q" class="form-label tw:text-ui-xs tw:font-semibold">{{ __('finance.refund_ui.search_label') }}</label>
-                <input id="overpayment-q" name="q" value="{{ request('q') }}" class="form-control form-control-sm" placeholder="{{ __('finance.refund_surface.search') }}" maxlength="100">
-            </div>
-            <div>
-                <label for="overpayment-supplier" class="form-label tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.labels.supplier') }}</label>
-                <select id="overpayment-supplier" name="supplier_id" class="form-select form-select-sm">
+                <label for="overpayment-supplier" class="tw:block tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1.5">{{ __('local_invoice.labels.supplier') }}</label>
+                <select id="overpayment-supplier" name="supplier_id" class="form-select form-select-sm tw:w-full">
                     <option value="">{{ __('local_invoice.labels.all_suppliers') }}</option>
                     @foreach($suppliers as $supplier)
                         <option value="{{ $supplier->hash }}" @selected((string) request('supplier_id') === (string) $supplier->hash)>{{ $supplier->supplier?->company_name ?: $supplier->name }}</option>
                     @endforeach
                 </select>
             </div>
+
             <div>
-                <label for="overpayment-status" class="form-label tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.labels.status') }}</label>
-                <select id="overpayment-status" name="status" class="form-select form-select-sm">
-                    <option value="">{{ __('local_invoice.labels.all_statuses') }}</option>
-                    <option value="OPEN" @selected(request('status') === 'OPEN')>{{ __('status.finance.open') }}</option>
-                    <option value="SETTLED" @selected(request('status') === 'SETTLED')>{{ __('status.finance.settled') }}</option>
-                </select>
-            </div>
-            <div class="tw:lg:col-span-2">
+                <label class="tw:block tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1.5">{{ __('local_invoice.labels.date') }}</label>
                 <x-ui.date-range-picker
                     id="overpayment-date-range"
                     start-name="date_from"
@@ -45,12 +131,12 @@
                     :compact="true"
                 />
             </div>
-            <div class="tw:md:col-span-2 tw:lg:col-span-5 tw:flex tw:flex-wrap tw:items-center tw:gap-2">
-                <x-ui.button type="submit" size="sm">{{ __('local_invoice.actions.apply_filters') }}</x-ui.button>
-                <x-ui.button :href="route('finance.overpayments.index')" variant="ghost" size="sm">{{ __('common.actions.reset') }}</x-ui.button>
-            </div>
-        </form>
-    </x-ui.card>
+        </x-slot:advanced>
+
+        <x-slot:chips>
+            <x-ui.filter-chips :items="$opActiveChips" :clear-url="$opResetUrl" />
+        </x-slot:chips>
+    </x-ui.filter-bar>
 
     <x-ui.data-table :title="__('finance.refund.receivable')">
         <div class="table-responsive">

@@ -59,27 +59,27 @@
         {{-- Tab 2: Inspection History --}}
         <div class="tab-pane fade" id="history" role="tabpanel" aria-labelledby="history-tab" tabindex="0">
             <div class="tw:grid tw:gap-3">
-                {{-- Filter Toolbar --}}
-                <x-ui.toolbar>
-                    <div class="row g-2 align-items-end tw:w-full">
-                        <div class="col-12 col-md-4 col-lg-3">
-                            <label for="historyStatusFilter" class="form-label small fw-semibold tw:text-on-surface mb-1">
-                                {{ __('qc.copy.inspection_outcome_status') }}
-                            </label>
-                            <select id="historyStatusFilter" class="form-select form-select-sm">
-                                <option value="">{{ __('qc.copy.all_statuses_ok_ng') }}</option>
-                                <option value="ok" @selected(request('status') === 'ok')>{{ __('qc.copy.ok_status_label') }}</option>
-                                <option value="ng" @selected(request('status') === 'ng')>{{ __('qc.copy.ng_status_label') }}</option>
-                            </select>
-                        </div>
-                        <div class="col-12 col-md-auto">
-                            <x-ui.button type="button" variant="outline" size="sm" id="resetHistoryStatusFilter">
-                                <x-ui.icon name="rotate-ccw" size="sm" />
-                                <span>{{ __('qc.copy.reset_filter') }}</span>
-                            </x-ui.button>
-                        </div>
-                    </div>
-                </x-ui.toolbar>
+                {{-- Filter Bar --}}
+                <x-ui.filter-bar
+                    id="qcHistoryFilterBar"
+                    mode="live"
+                    variant="embedded"
+                    reset-id="resetHistoryStatusFilter"
+                    :reset-label="__('qc.copy.reset_filter')"
+                >
+                    <x-slot:filters>
+                        <label for="historyStatusFilter" class="tw:sr-only">{{ __('qc.copy.inspection_outcome_status') }}</label>
+                        <select id="historyStatusFilter" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-56">
+                            <option value="">{{ __('qc.copy.all_statuses_ok_ng') }}</option>
+                            <option value="ok" @selected(request('status') === 'ok')>{{ __('qc.copy.ok_status_label') }}</option>
+                            <option value="ng" @selected(request('status') === 'ng')>{{ __('qc.copy.ng_status_label') }}</option>
+                        </select>
+                    </x-slot:filters>
+
+                    <x-slot:chips>
+                        <x-ui.filter-chips id="historyFilterChips" />
+                    </x-slot:chips>
+                </x-ui.filter-bar>
 
                 <x-ui.data-table>
                     <table class="table table-hover align-middle mb-0 tw:text-ui-sm w-100" id="historyTable">
@@ -178,10 +178,11 @@
             }
         };
 
-        $('#historyStatusFilter').on('change', updateInspectionFilterState);
-        $('#resetHistoryStatusFilter').on('click', function() {
-            $('#historyStatusFilter').val('');
-            updateInspectionFilterState();
+        window.AdasiFilterBar.bindLive('#qcHistoryFilterBar', {
+            fields: [
+                { key: 'status', label: @json(__('qc.copy.status')), selector: '#historyStatusFilter', type: 'select' },
+            ],
+            onFilterChange: updateInspectionFilterState,
         });
 
         @if(request('status'))

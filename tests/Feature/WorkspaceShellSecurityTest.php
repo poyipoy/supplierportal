@@ -477,6 +477,41 @@ class WorkspaceShellSecurityTest extends TestCase
             ->assertSee('data-workspace-embed="true"', false);
     }
 
+    public function test_workspace_lookup_maps_exclude_unauthorized_role_and_supplier_scope_routes(): void
+    {
+        config()->set('ui.workspace_shell.enabled', true);
+        config()->set('portal_urls.page_registry.enabled', true);
+
+        $supplier = User::factory()->create(['role' => 'supplier']);
+        $supplierResponse = $this->actingAs($supplier)->get(route('supplier.dashboard'));
+        $supplierResponse->assertOk();
+        $supplierConfig = $this->extractWorkspaceConfig($supplierResponse->getContent());
+
+        $supplierUrls = array_column($supplierConfig['uuidMap'], 'url');
+        $supplierPaths = array_keys($supplierConfig['pathMap']);
+
+        $this->assertContains(route('supplier.purchase-orders.index'), $supplierUrls);
+        $this->assertContains(route('exports.index'), $supplierUrls);
+        $this->assertNotContains(route('admin.users.index'), $supplierUrls);
+        $this->assertNotContains(route('finance.invoices.index'), $supplierUrls);
+        $this->assertNotContains(route('purchasing.purchase-orders.index'), $supplierUrls);
+        $this->assertNotContains(route('local-supplier.invoices.index'), $supplierUrls);
+        $this->assertNotContains('/admin/users', $supplierPaths);
+
+        $supplier->supplierScopes()->firstOrCreate(['scope' => 'local']);
+        $supplier->forgetSupplierScopes();
+
+        $localContextResponse = $this->actingAs($supplier)
+            ->withSession(['supplier_context' => 'local'])
+            ->get(route('local-supplier.dashboard'));
+        $localContextResponse->assertOk();
+        $localConfig = $this->extractWorkspaceConfig($localContextResponse->getContent());
+        $localUrls = array_column($localConfig['uuidMap'], 'url');
+
+        $this->assertContains(route('local-supplier.invoices.index'), $localUrls);
+        $this->assertNotContains(route('supplier.purchase-orders.index'), $localUrls);
+    }
+
     /**
      * @return array<string, mixed>
      */

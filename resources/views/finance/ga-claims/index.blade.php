@@ -28,51 +28,99 @@
         </div>
     @endif
 
-    {{-- Filter Card --}}
-    <x-ui.card>
-        <form method="GET" action="{{ route('finance.ga-claims.index') }}" class="tw:flex tw:flex-col tw:sm:flex-row tw:sm:items-center tw:gap-3">
-            <div class="tw:flex-1">
-                <input
-                    type="text"
-                    name="search"
-                    class="form-control form-control-sm"
-                    placeholder="{{ __('ga.filters.claim_search') }}"
-                    value="{{ request('search') }}"
-                >
-            </div>
-            <div class="tw:w-44">
-                <select name="status" class="form-select form-select-sm">
-                    <option value="">{{ __('local_invoice.labels.all_statuses') }}</option>
-                    <option value="SUBMITTED" @selected(request('status') === 'SUBMITTED')>{{ __('local_invoice.labels.submitted') }}</option>
-                    <option value="BASIC_VERIFIED" @selected(request('status') === 'BASIC_VERIFIED')>{{ \App\Support\StatusHelper::gaClaimLabel('BASIC_VERIFIED') }}</option>
-                    <option value="NEED_REVISION" @selected(request('status') === 'NEED_REVISION')>{{ \App\Support\StatusHelper::gaClaimLabel('NEED_REVISION') }}</option>
-                    <option value="READY_TO_PAY" @selected(request('status') === 'READY_TO_PAY')>{{ \App\Support\StatusHelper::gaClaimLabel('READY_TO_PAY') }}</option>
-                    <option value="PAID" @selected(request('status') === 'PAID')>{{ __('local_invoice.labels.paid') }}</option>
-                </select>
-            </div>
-            <div class="tw:w-48">
-                <select name="employee_id" class="form-select form-select-sm">
-                    <option value="">{{ __('ga.filters.all_employees') }}</option>
-                    @foreach($employees as $emp)
-                        <option value="{{ $emp->id }}" @selected(request('employee_id') == $emp->id)>
-                            {{ $emp->name }} ({{ $emp->department }})
-                        </option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="tw:flex tw:gap-2">
-                <x-ui.button type="submit" variant="primary" size="sm">
-                    <x-ui.icon name="search" size="sm" />
-                    <span>{{ __('common.labels_review.filter') }}</span>
-                </x-ui.button>
-                @if(request()->hasAny(['search', 'status', 'employee_id']))
-                    <x-ui.button :href="route('finance.ga-claims.index')" variant="ghost" size="sm">
-                        <span>{{ __('common.actions.reset') }}</span>
-                    </x-ui.button>
-                @endif
-            </div>
-        </form>
-    </x-ui.card>
+    {{-- Filter Bar --}}
+    @php
+        $gaClaimsResetUrl = route('finance.ga-claims.index');
+        $gaClaimsRemoveUrl = static function (array $dropKeys) use ($gaClaimsResetUrl): string {
+            $query = request()->query();
+            foreach ($dropKeys as $key) {
+                unset($query[$key]);
+            }
+
+            return $query === [] ? $gaClaimsResetUrl : $gaClaimsResetUrl.'?'.http_build_query($query);
+        };
+
+        $gaClaimsChips = [];
+        if (request()->filled('search')) {
+            $gaClaimsChips[] = [
+                'key' => 'search',
+                'label' => __('local_invoice.actions.search'),
+                'value' => (string) request('search'),
+                'removeUrl' => $gaClaimsRemoveUrl(['search']),
+            ];
+        }
+        if (request()->filled('status')) {
+            $gaClaimStatusVal = match (request('status')) {
+                'SUBMITTED' => __('local_invoice.labels.submitted'),
+                'PAID' => __('local_invoice.labels.paid'),
+                default => \App\Support\StatusHelper::gaClaimLabel((string) request('status')),
+            };
+            $gaClaimsChips[] = [
+                'key' => 'status',
+                'label' => __('local_invoice.labels.status'),
+                'value' => $gaClaimStatusVal,
+                'removeUrl' => $gaClaimsRemoveUrl(['status']),
+            ];
+        }
+        if (request()->filled('employee_id')) {
+            $selectedGaEmployee = collect($employees)->firstWhere('id', (int) request('employee_id'));
+            $gaClaimsChips[] = [
+                'key' => 'employee_id',
+                'label' => __('ga.labels.employee_name'),
+                'value' => $selectedGaEmployee ? ($selectedGaEmployee->name.' ('.$selectedGaEmployee->department.')') : (string) request('employee_id'),
+                'removeUrl' => $gaClaimsRemoveUrl(['employee_id']),
+            ];
+        }
+    @endphp
+
+    <x-ui.filter-bar
+        id="gaClaimsFilterForm"
+        :action="$gaClaimsResetUrl"
+        :has-active-filters="count($gaClaimsChips) > 0"
+        :reset-url="$gaClaimsResetUrl"
+        :reset-label="__('common.actions.reset')"
+        :submit-label="__('common.labels_review.filter')"
+    >
+        <x-slot:search>
+            <label for="ga-claim-search" class="tw:sr-only">{{ __('local_invoice.actions.search') }}</label>
+            <x-ui.icon name="search" size="sm" class="ui-filter-bar__search-icon" aria-hidden="true" />
+            <input
+                type="search"
+                id="ga-claim-search"
+                name="search"
+                class="form-control form-control-sm ui-filter-bar__search-input"
+                placeholder="{{ __('ga.filters.claim_search') }}"
+                value="{{ request('search') }}"
+                autocomplete="off"
+            >
+        </x-slot:search>
+
+        <x-slot:filters>
+            <label for="ga-claim-status" class="tw:sr-only">{{ __('local_invoice.labels.status') }}</label>
+            <select id="ga-claim-status" name="status" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-44">
+                <option value="">{{ __('local_invoice.labels.all_statuses') }}</option>
+                <option value="SUBMITTED" @selected(request('status') === 'SUBMITTED')>{{ __('local_invoice.labels.submitted') }}</option>
+                <option value="BASIC_VERIFIED" @selected(request('status') === 'BASIC_VERIFIED')>{{ \App\Support\StatusHelper::gaClaimLabel('BASIC_VERIFIED') }}</option>
+                <option value="NEED_REVISION" @selected(request('status') === 'NEED_REVISION')>{{ \App\Support\StatusHelper::gaClaimLabel('NEED_REVISION') }}</option>
+                <option value="READY_TO_PAY" @selected(request('status') === 'READY_TO_PAY')>{{ \App\Support\StatusHelper::gaClaimLabel('READY_TO_PAY') }}</option>
+                <option value="PAID" @selected(request('status') === 'PAID')>{{ __('local_invoice.labels.paid') }}</option>
+            </select>
+
+            <label for="ga-claim-employee" class="tw:sr-only">{{ __('ga.labels.employee_name') }}</label>
+            <select id="ga-claim-employee" name="employee_id" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-52">
+                <option value="">{{ __('ga.filters.all_employees') }}</option>
+                @foreach($employees as $emp)
+                    <option value="{{ $emp->id }}" @selected(request('employee_id') == $emp->id)>
+                        {{ $emp->name }} ({{ $emp->department }})
+                    </option>
+                @endforeach
+            </select>
+        </x-slot:filters>
+
+        <x-slot:chips>
+            <x-ui.filter-chips :items="$gaClaimsChips" :clear-url="$gaClaimsResetUrl" />
+        </x-slot:chips>
+    </x-ui.filter-bar>
 
     {{-- Data Table --}}
     <x-ui.data-table

@@ -24,34 +24,76 @@
                     <h3 class="tw:m-0 tw:text-ui-sm tw:font-semibold">{{ __('admin.copy.material_register') }}</h3>
                     <p class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ __('admin.copy.searchable_operational_codes_and_their_calculation_and_hs_mapping_attributes') }}</p>
                 </div>
-                <x-ui.toolbar aria-label="{{ __('admin.copy.material_master_controls') }}">
+                <x-ui.filter-bar
+                    id="materialsFilterBar"
+                    mode="live"
+                    :aria-label="__('admin.copy.material_master_controls')"
+                    advanced-id="materialMoreFilters"
+                    :advanced-label="__('admin.copy.more_filters')"
+                    reset-id="resetMaterialFilters"
+                    :reset-label="__('admin.copy.reset')"
+                    class="tw:mb-4"
+                >
                     <x-slot:search>
-                        <x-ui.input name="material_search" id="materialSearch" type="search" :placeholder="__('admin.copy.search_material_code_or_category')" aria-label="{{ __('admin.copy.search_materials') }}" autocomplete="off" />
+                        <label for="materialSearch" class="tw:sr-only">{{ __('admin.copy.search_materials') }}</label>
+                        <x-ui.icon name="search" size="sm" class="ui-filter-bar__search-icon" aria-hidden="true" />
+                        <input
+                            name="material_search"
+                            id="materialSearch"
+                            type="search"
+                            placeholder="{{ __('admin.copy.search_material_code_or_category') }}"
+                            aria-label="{{ __('admin.copy.search_materials') }}"
+                            autocomplete="off"
+                            class="form-control form-control-sm ui-filter-bar__search-input"
+                        />
                     </x-slot:search>
                     <x-slot:filters>
-                        <label class="tw:grid tw:gap-1 tw:text-ui-xs tw:font-medium" for="materialStatusFilter">{{ __('admin.copy.status') }}
-                            <select id="materialStatusFilter" class="form-select form-select-sm tw:min-w-36"><option value="">{{ __('admin.copy.all_statuses') }}</option><option value="active">{{ __('admin.copy.active') }}</option><option value="inactive">{{ __('admin.copy.inactive') }}</option></select>
-                        </label>
-                        <x-ui.button variant="outline" size="sm" class="tw:self-end" type="button" data-bs-toggle="collapse" data-bs-target="#materialMoreFilters" aria-expanded="false" aria-controls="materialMoreFilters"><x-ui.icon name="sliders-horizontal" /> {{ __('admin.copy.more_filters') }}</x-ui.button>
+                        <label for="materialStatusFilter" class="tw:sr-only">{{ __('admin.copy.status') }}</label>
+                        <select id="materialStatusFilter" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-44">
+                            <option value="">{{ __('admin.copy.all_statuses') }}</option>
+                            <option value="active">{{ __('admin.copy.active') }}</option>
+                            <option value="inactive">{{ __('admin.copy.inactive') }}</option>
+                        </select>
                     </x-slot:filters>
+                    <x-slot:advanced>
+                        <div>
+                            <label for="materialCategoryFilter" class="tw:block tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1.5">{{ __('admin.copy.hs_category') }}</label>
+                            <select id="materialCategoryFilter" class="form-select form-select-sm tw:w-full">
+                                <option value="">{{ __('admin.copy.all_hs_categories') }}</option>
+                                @foreach($hsCategories as $category)
+                                    <option value="{{ $category }}">{{ \App\Models\MaterialMaster::hsCategoryLabel($category) }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label for="materialDensityFilter" class="tw:block tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1.5">{{ __('admin.copy.density_profile') }}</label>
+                            <select id="materialDensityFilter" class="form-select form-select-sm tw:w-full">
+                                <option value="">{{ __('admin.copy.all_density_profiles') }}</option>
+                                @foreach($densityProfiles as $density)
+                                    <option value="{{ $density }}">{{ \App\Models\MaterialMaster::densityProfileLabel($density) }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label for="materialManufacturerFilter" class="tw:block tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1.5">{{ __('admin.copy.manufacturer_scope') }}</label>
+                            <select id="materialManufacturerFilter" class="form-select form-select-sm tw:w-full">
+                                <option value="">{{ __('admin.copy.all_manufacturer_scopes') }}</option>
+                                @foreach($manufacturerScopes as $scope)
+                                    <option value="{{ $scope }}">{{ \App\Models\MaterialMaster::manufacturerScopeLabel($scope) }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </x-slot:advanced>
                     <x-slot:actions>
-                        <x-ui.button type="button" variant="ghost" size="sm" id="resetMaterialFilters"><x-ui.icon name="rotate-ccw" /> {{ __('admin.copy.reset') }}</x-ui.button>
-                        <x-ui.button type="button" size="sm" id="btnAddMaterial"><x-ui.icon name="plus" /> {{ __('admin.copy.add_material') }}</x-ui.button>
+                        <x-ui.button type="button" size="sm" id="btnAddMaterial">
+                            <x-ui.icon name="plus" size="sm" />
+                            <span>{{ __('admin.copy.add_material') }}</span>
+                        </x-ui.button>
                     </x-slot:actions>
-                </x-ui.toolbar>
-                <div class="collapse" id="materialMoreFilters">
-                    <div class="tw:mb-4 tw:grid tw:gap-3 tw:border tw:border-outline tw:bg-surface-container tw:p-4 tw:md:grid-cols-3">
-                        <label class="tw:grid tw:gap-1 tw:text-ui-xs tw:font-medium" for="materialCategoryFilter">{{ __('admin.copy.hs_category') }}
-                            <select id="materialCategoryFilter" class="form-select form-select-sm"><option value="">{{ __('admin.copy.all_hs_categories') }}</option>@foreach($hsCategories as $category)<option value="{{ $category }}">{{ \App\Models\MaterialMaster::hsCategoryLabel($category) }}</option>@endforeach</select>
-                        </label>
-                        <label class="tw:grid tw:gap-1 tw:text-ui-xs tw:font-medium" for="materialDensityFilter">{{ __('admin.copy.density_profile') }}
-                            <select id="materialDensityFilter" class="form-select form-select-sm"><option value="">{{ __('admin.copy.all_density_profiles') }}</option>@foreach($densityProfiles as $density)<option value="{{ $density }}">{{ \App\Models\MaterialMaster::densityProfileLabel($density) }}</option>@endforeach</select>
-                        </label>
-                        <label class="tw:grid tw:gap-1 tw:text-ui-xs tw:font-medium" for="materialManufacturerFilter">{{ __('admin.copy.manufacturer_scope') }}
-                            <select id="materialManufacturerFilter" class="form-select form-select-sm"><option value="">{{ __('admin.copy.all_manufacturer_scopes') }}</option>@foreach($manufacturerScopes as $scope)<option value="{{ $scope }}">{{ \App\Models\MaterialMaster::manufacturerScopeLabel($scope) }}</option>@endforeach</select>
-                        </label>
-                    </div>
-                </div>
+                    <x-slot:chips>
+                        <x-ui.filter-chips id="materialFilterChips" />
+                    </x-slot:chips>
+                </x-ui.filter-bar>
                 <div class="ui-data-table__scroll tw:overflow-x-auto">
                     <table id="materialsTable" class="table table-hover align-middle w-100 tw:m-0 tw:text-ui-sm">
                         <thead class="table-light"><tr><th scope="col" class="text-center">{{ __('admin.copy.no') }}</th><th scope="col">{{ __('admin.copy.material_code') }}</th><th scope="col">{{ __('admin.copy.raw_category') }}</th><th scope="col">{{ __('admin.copy.hs_category') }}</th><th scope="col">{{ __('admin.copy.density') }}</th><th scope="col">{{ __('admin.copy.manufacturer') }}</th><th scope="col">{{ __('admin.copy.status') }}</th><th scope="col">{{ __('admin.copy.source') }}</th><th scope="col">{{ __('admin.copy.updated') }}</th><th scope="col" class="text-end">{{ __('admin.copy.actions') }}</th></tr></thead>
@@ -64,31 +106,68 @@
                     <h3 class="tw:m-0 tw:text-ui-sm tw:font-semibold">{{ __('admin.copy.hs_code_rule_register') }}</h3>
                     <p class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ __('admin.copy.prioritized_dimensional_rules_used_by_the_deterministic_hs_code_mapping_workflow') }}</p>
                 </div>
-                <x-ui.toolbar aria-label="{{ __('admin.copy.hs_code_rule_controls') }}">
+                <x-ui.filter-bar
+                    id="rulesFilterBar"
+                    mode="live"
+                    :aria-label="__('admin.copy.hs_code_rule_controls')"
+                    advanced-id="ruleMoreFilters"
+                    :advanced-label="__('admin.copy.more_filters')"
+                    reset-id="resetRuleFilters"
+                    :reset-label="__('admin.copy.reset')"
+                    class="tw:mb-4"
+                >
                     <x-slot:search>
-                        <x-ui.input name="rule_search" id="ruleSearch" type="search" :placeholder="__('admin.copy.search_hs_code_or_category')" aria-label="{{ __('admin.copy.search_hs_code_rules') }}" autocomplete="off" />
+                        <label for="ruleSearch" class="tw:sr-only">{{ __('admin.copy.search_hs_code_rules') }}</label>
+                        <x-ui.icon name="search" size="sm" class="ui-filter-bar__search-icon" aria-hidden="true" />
+                        <input
+                            name="rule_search"
+                            id="ruleSearch"
+                            type="search"
+                            placeholder="{{ __('admin.copy.search_hs_code_or_category') }}"
+                            aria-label="{{ __('admin.copy.search_hs_code_rules') }}"
+                            autocomplete="off"
+                            class="form-control form-control-sm ui-filter-bar__search-input"
+                        />
                     </x-slot:search>
                     <x-slot:filters>
-                        <label class="tw:grid tw:gap-1 tw:text-ui-xs tw:font-medium" for="ruleStatusFilter">{{ __('admin.copy.status') }}
-                            <select id="ruleStatusFilter" class="form-select form-select-sm tw:min-w-36"><option value="">{{ __('admin.copy.all_statuses') }}</option><option value="active">{{ __('admin.copy.active') }}</option><option value="inactive">{{ __('admin.copy.inactive') }}</option><option value="conflict">{{ __('admin.copy.conflict') }}</option></select>
-                        </label>
-                        <x-ui.button variant="outline" size="sm" class="tw:self-end" type="button" data-bs-toggle="collapse" data-bs-target="#ruleMoreFilters" aria-expanded="false" aria-controls="ruleMoreFilters"><x-ui.icon name="sliders-horizontal" /> {{ __('admin.copy.more_filters') }}</x-ui.button>
+                        <label for="ruleStatusFilter" class="tw:sr-only">{{ __('admin.copy.status') }}</label>
+                        <select id="ruleStatusFilter" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-44">
+                            <option value="">{{ __('admin.copy.all_statuses') }}</option>
+                            <option value="active">{{ __('admin.copy.active') }}</option>
+                            <option value="inactive">{{ __('admin.copy.inactive') }}</option>
+                            <option value="conflict">{{ __('admin.copy.conflict') }}</option>
+                        </select>
                     </x-slot:filters>
+                    <x-slot:advanced>
+                        <div>
+                            <label for="ruleCategoryFilter" class="tw:block tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1.5">{{ __('admin.copy.category') }}</label>
+                            <select id="ruleCategoryFilter" class="form-select form-select-sm tw:w-full">
+                                <option value="">{{ __('admin.copy.all_categories') }}</option>
+                                @foreach($hsCategories as $category)
+                                    <option value="{{ $category }}">{{ \App\Models\MaterialMaster::hsCategoryLabel($category) }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label for="ruleShapeFilter" class="tw:block tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1.5">{{ __('admin.copy.shape') }}</label>
+                            <select id="ruleShapeFilter" class="form-select form-select-sm tw:w-full">
+                                <option value="">{{ __('admin.copy.all_shapes') }}</option>
+                                @foreach($shapes as $shape)
+                                    <option value="{{ $shape }}">{{ \App\Models\PrItem::shapeLabel($shape) }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </x-slot:advanced>
                     <x-slot:actions>
-                        <x-ui.button type="button" variant="ghost" size="sm" id="resetRuleFilters"><x-ui.icon name="rotate-ccw" /> {{ __('admin.copy.reset') }}</x-ui.button>
-                        <x-ui.button type="button" size="sm" id="btnAddRule"><x-ui.icon name="plus" /> {{ __('admin.copy.add_rule') }}</x-ui.button>
+                        <x-ui.button type="button" size="sm" id="btnAddRule">
+                            <x-ui.icon name="plus" size="sm" />
+                            <span>{{ __('admin.copy.add_rule') }}</span>
+                        </x-ui.button>
                     </x-slot:actions>
-                </x-ui.toolbar>
-                <div class="collapse" id="ruleMoreFilters">
-                    <div class="tw:mb-4 tw:grid tw:gap-3 tw:border tw:border-outline tw:bg-surface-container tw:p-4 tw:md:grid-cols-2">
-                        <label class="tw:grid tw:gap-1 tw:text-ui-xs tw:font-medium" for="ruleCategoryFilter">{{ __('admin.copy.category') }}
-                            <select id="ruleCategoryFilter" class="form-select form-select-sm"><option value="">{{ __('admin.copy.all_categories') }}</option>@foreach($hsCategories as $category)<option value="{{ $category }}">{{ \App\Models\MaterialMaster::hsCategoryLabel($category) }}</option>@endforeach</select>
-                        </label>
-                        <label class="tw:grid tw:gap-1 tw:text-ui-xs tw:font-medium" for="ruleShapeFilter">{{ __('admin.copy.shape') }}
-                            <select id="ruleShapeFilter" class="form-select form-select-sm"><option value="">{{ __('admin.copy.all_shapes') }}</option>@foreach($shapes as $shape)<option value="{{ $shape }}">{{ \App\Models\PrItem::shapeLabel($shape) }}</option>@endforeach</select>
-                        </label>
-                    </div>
-                </div>
+                    <x-slot:chips>
+                        <x-ui.filter-chips id="ruleFilterChips" />
+                    </x-slot:chips>
+                </x-ui.filter-bar>
                 <div class="ui-data-table__scroll tw:overflow-x-auto">
                     <table id="rulesTable" class="table table-hover align-middle w-100 tw:m-0 tw:text-ui-sm">
                         <thead class="table-light"><tr><th scope="col" class="text-center">{{ __('admin.copy.no') }}</th><th scope="col">HS Code</th><th scope="col">{{ __('admin.copy.category') }}</th><th scope="col">{{ __('admin.copy.shape') }}</th><th scope="col">{{ __('admin.copy.dimension_conditions') }}</th><th scope="col" class="text-center">{{ __('admin.copy.priority') }}</th><th scope="col">{{ __('admin.copy.status') }}</th><th scope="col">{{ __('admin.copy.source') }}</th><th scope="col">{{ __('admin.copy.updated') }}</th><th scope="col" class="text-end">{{ __('admin.copy.actions') }}</th></tr></thead>

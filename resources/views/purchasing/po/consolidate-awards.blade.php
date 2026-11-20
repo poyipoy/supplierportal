@@ -9,22 +9,89 @@
             <x-ui.button :href="route('purchasing.purchase-orders.index')" variant="outline">{{ __('purchasing.copy.purchase_orders') }}</x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>
-    <form method="GET" class="d-flex flex-wrap gap-2">
-        <input name="search" class="form-control" style="max-width: 260px" value="{{ request('search') }}" placeholder="{{ __('purchasing.copy.search_pr_or_material') }}" aria-label="{{ __('purchasing.copy.search_pr_or_material') }}">
-        <select name="supplier_id" class="form-select" style="max-width: 240px" aria-label="{{ __('purchasing.copy.supplier') }}">
-            <option value="">{{ __('purchasing.copy.all_suppliers') }}</option>
-            @foreach($suppliers as $supplier)
-                <option value="{{ $supplier->hash }}" @selected(request('supplier_id') === $supplier->hash)>{{ $supplier->name }}</option>
-            @endforeach
-        </select>
-        <select name="currency" class="form-select" style="max-width: 140px" aria-label="{{ __('purchasing.copy.currency') }}">
-            <option value="">{{ __('purchasing.copy.all_currencies') }}</option>
-            @foreach(\App\Models\ExchangeRate::CURRENCIES as $currency)
-                <option value="{{ $currency }}" @selected(request('currency') === $currency)>{{ \App\Models\ExchangeRate::currencyLabel($currency) }}</option>
-            @endforeach
-        </select>
-        <x-ui.button type="submit" variant="outline">{{ __('purchasing.copy.filter') }}</x-ui.button>
-    </form>
+    @php
+        $consolidateResetUrl = route('purchasing.purchase-orders.consolidate-awards');
+        $consolidateRemoveUrl = static function (array $dropKeys) use ($consolidateResetUrl): string {
+            $query = request()->query();
+            foreach ($dropKeys as $key) {
+                unset($query[$key]);
+            }
+
+            return $query === [] ? $consolidateResetUrl : $consolidateResetUrl.'?'.http_build_query($query);
+        };
+
+        $consolidateChips = [];
+        if (request()->filled('search')) {
+            $consolidateChips[] = [
+                'key' => 'search',
+                'label' => __('purchasing.copy.search'),
+                'value' => (string) request('search'),
+                'removeUrl' => $consolidateRemoveUrl(['search']),
+            ];
+        }
+        if (request()->filled('supplier_id')) {
+            $selectedConsSupplier = $suppliers->firstWhere('hash', request('supplier_id'));
+            $consolidateChips[] = [
+                'key' => 'supplier_id',
+                'label' => __('purchasing.copy.supplier'),
+                'value' => $selectedConsSupplier ? $selectedConsSupplier->name : (string) request('supplier_id'),
+                'removeUrl' => $consolidateRemoveUrl(['supplier_id']),
+            ];
+        }
+        if (request()->filled('currency')) {
+            $consolidateChips[] = [
+                'key' => 'currency',
+                'label' => __('purchasing.copy.currency'),
+                'value' => \App\Models\ExchangeRate::currencyLabel((string) request('currency')),
+                'removeUrl' => $consolidateRemoveUrl(['currency']),
+            ];
+        }
+    @endphp
+
+    <x-ui.filter-bar
+        id="consolidateAwardsFilterForm"
+        :action="$consolidateResetUrl"
+        :has-active-filters="count($consolidateChips) > 0"
+        :reset-url="$consolidateResetUrl"
+        :reset-label="__('purchasing.copy.reset')"
+        :submit-label="__('purchasing.copy.filter')"
+    >
+        <x-slot:search>
+            <label for="consolidateSearchInput" class="tw:sr-only">{{ __('purchasing.copy.search_pr_or_material') }}</label>
+            <x-ui.icon name="search" size="sm" class="ui-filter-bar__search-icon" aria-hidden="true" />
+            <input
+                id="consolidateSearchInput"
+                type="search"
+                name="search"
+                class="form-control form-control-sm ui-filter-bar__search-input"
+                value="{{ request('search') }}"
+                placeholder="{{ __('purchasing.copy.search_pr_or_material') }}"
+                aria-label="{{ __('purchasing.copy.search_pr_or_material') }}"
+            >
+        </x-slot:search>
+
+        <x-slot:filters>
+            <label for="consolidateSupplierFilter" class="tw:sr-only">{{ __('purchasing.copy.supplier') }}</label>
+            <select id="consolidateSupplierFilter" name="supplier_id" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-56" aria-label="{{ __('purchasing.copy.supplier') }}">
+                <option value="">{{ __('purchasing.copy.all_suppliers') }}</option>
+                @foreach($suppliers as $supplier)
+                    <option value="{{ $supplier->hash }}" @selected(request('supplier_id') === $supplier->hash)>{{ $supplier->name }}</option>
+                @endforeach
+            </select>
+
+            <label for="consolidateCurrencyFilter" class="tw:sr-only">{{ __('purchasing.copy.currency') }}</label>
+            <select id="consolidateCurrencyFilter" name="currency" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-36" aria-label="{{ __('purchasing.copy.currency') }}">
+                <option value="">{{ __('purchasing.copy.all_currencies') }}</option>
+                @foreach(\App\Models\ExchangeRate::CURRENCIES as $currency)
+                    <option value="{{ $currency }}" @selected(request('currency') === $currency)>{{ \App\Models\ExchangeRate::currencyLabel($currency) }}</option>
+                @endforeach
+            </select>
+        </x-slot:filters>
+
+        <x-slot:chips>
+            <x-ui.filter-chips :items="$consolidateChips" :clear-url="$consolidateResetUrl" />
+        </x-slot:chips>
+    </x-ui.filter-bar>
     <form id="awardConsolidationForm" method="POST" action="{{ route('purchasing.purchase-orders.consolidate-awards.store') }}">
         @csrf
         @unless($poGenerationEnabled)

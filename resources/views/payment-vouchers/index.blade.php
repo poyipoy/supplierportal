@@ -23,93 +23,152 @@
     </x-ui.page-header>
 
     @php
-        $hasActiveFilters = collect($filters)->filter()->isNotEmpty();
+        $pvResetUrl = route($routePrefix.'.index');
+        $pvBuildRemoveUrl = static function (array $dropKeys) use ($pvResetUrl): string {
+            $query = request()->query();
+            foreach ($dropKeys as $key) {
+                unset($query[$key]);
+            }
+
+            return $query === [] ? $pvResetUrl : $pvResetUrl.'?'.http_build_query($query);
+        };
+
+        $pvAdvancedCount = collect([
+            ! empty($filters['payment_method']),
+            ! empty($filters['payee_type']),
+            ! empty($filters['date_from']) || ! empty($filters['date_to']),
+        ])->filter()->count();
+
+        $pvActiveChips = [];
+        if (! empty($filters['q'])) {
+            $pvActiveChips[] = [
+                'key' => 'q',
+                'label' => __('payment_voucher.filters.search'),
+                'value' => (string) $filters['q'],
+                'removeUrl' => $pvBuildRemoveUrl(['q']),
+            ];
+        }
+        if (! empty($filters['status'])) {
+            $pvActiveChips[] = [
+                'key' => 'status',
+                'label' => __('payment_voucher.filters.status'),
+                'value' => StatusHelper::localFinanceLabel((string) $filters['status']),
+                'removeUrl' => $pvBuildRemoveUrl(['status']),
+            ];
+        }
+        if (! empty($filters['department'])) {
+            $pvActiveChips[] = [
+                'key' => 'department',
+                'label' => __('payment_voucher.filters.department'),
+                'value' => PaymentVoucher::departmentLabel((string) $filters['department']),
+                'removeUrl' => $pvBuildRemoveUrl(['department']),
+            ];
+        }
+        if (! empty($filters['payment_method'])) {
+            $pvMethodLabel = $filters['payment_method'] === PaymentVoucher::METHOD_BANK
+                ? __('payment_voucher.methods.bank')
+                : __('payment_voucher.methods.kas');
+            $pvActiveChips[] = [
+                'key' => 'payment_method',
+                'label' => __('payment_voucher.filters.method'),
+                'value' => $pvMethodLabel,
+                'removeUrl' => $pvBuildRemoveUrl(['payment_method']),
+            ];
+        }
+        if (! empty($filters['payee_type'])) {
+            $pvActiveChips[] = [
+                'key' => 'payee_type',
+                'label' => __('payment_voucher.filters.payee_type'),
+                'value' => PaymentVoucher::payeeTypeLabel((string) $filters['payee_type']),
+                'removeUrl' => $pvBuildRemoveUrl(['payee_type']),
+            ];
+        }
+        if (! empty($filters['date_from']) || ! empty($filters['date_to'])) {
+            $pvDateValue = ! empty($filters['date_from']) && ! empty($filters['date_to'])
+                ? $filters['date_from'].' - '.$filters['date_to']
+                : (string) ($filters['date_from'] ?: $filters['date_to']);
+            $pvActiveChips[] = [
+                'key' => 'date_range',
+                'label' => __('payment_voucher.filters.date_range'),
+                'value' => $pvDateValue,
+                'removeUrl' => $pvBuildRemoveUrl(['date_from', 'date_to']),
+            ];
+        }
+        $hasActiveFilters = count($pvActiveChips) > 0;
     @endphp
 
-    <form
-        method="GET"
-        action="{{ route($routePrefix.'.index') }}"
-        role="search"
-        aria-label="{{ __('payment_voucher.title') }}"
-        class="tw:m-0 tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface-container tw:p-4 tw:grid tw:gap-3.5"
+    @if(isset($errors) && $errors->any())
+        <x-ui.alert tone="error">
+            {{ $errors->first() }}
+        </x-ui.alert>
+    @endif
+
+    <x-ui.filter-bar
+        id="pvFilterForm"
+        :action="$pvResetUrl"
+        :aria-label="__('payment_voucher.title')"
+        advanced-id="pvMoreFilters"
+        :advanced-count="$pvAdvancedCount"
+        :advanced-open="$pvAdvancedCount > 0"
+        :has-active-filters="$hasActiveFilters"
+        :reset-url="$pvResetUrl"
+        :reset-label="__('payment_voucher.actions.reset_filters')"
+        :submit-label="__('payment_voucher.actions.apply_filters')"
     >
-        @if(isset($errors) && $errors->any())
-            <x-ui.alert tone="error">
-                {{ $errors->first() }}
-            </x-ui.alert>
-        @endif
+        <x-slot:search>
+            <label for="pv-filter-q" class="tw:sr-only">{{ __('payment_voucher.filters.search') }}</label>
+            <x-ui.icon name="search" size="sm" class="ui-filter-bar__search-icon" aria-hidden="true" />
+            <input
+                id="pv-filter-q"
+                type="search"
+                name="q"
+                value="{{ $filters['q'] ?? '' }}"
+                placeholder="{{ __('payment_voucher.filters.search_placeholder') }}"
+                maxlength="120"
+                autocomplete="off"
+                class="form-control form-control-sm ui-filter-bar__search-input"
+            >
+        </x-slot:search>
 
-        <div class="tw:grid tw:grid-cols-1 tw:sm:grid-cols-2 tw:lg:grid-cols-6 tw:xl:grid-cols-12 tw:gap-3.5 tw:items-end">
-            {{-- Row 1: Search, Department, Status --}}
-            <div class="tw:grid tw:gap-1.5 tw:min-w-0 tw:sm:col-span-2 tw:lg:col-span-4 tw:xl:col-span-6">
-                <label for="pv-filter-q" class="tw:block tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">
-                    {{ __('payment_voucher.filters.search') }}
-                </label>
-                <div class="tw:relative tw:min-w-0">
-                    <input
-                        id="pv-filter-q"
-                        type="search"
-                        name="q"
-                        value="{{ $filters['q'] ?? '' }}"
-                        placeholder="{{ __('payment_voucher.filters.search_placeholder') }}"
-                        maxlength="120"
-                        autocomplete="off"
-                        class="form-control ui-focus-ring tw:min-h-[var(--ui-control-height-md)] tw:w-full tw:rounded-ui-sm tw:border tw:border-outline-strong tw:bg-surface tw:ps-10 tw:pe-3 tw:text-ui-sm tw:text-on-surface tw:placeholder:text-on-surface-variant"
-                    >
-                    <x-ui.icon
-                        name="search"
-                        size="sm"
-                        class="tw:pointer-events-none tw:z-10 tw:text-on-surface-variant tw:absolute tw:start-3 tw:top-1/2 tw:-translate-y-1/2"
-                        aria-hidden="true"
-                    />
-                </div>
-            </div>
+        <x-slot:filters>
+            <label for="pv-filter-status" class="tw:sr-only">{{ __('payment_voucher.filters.status') }}</label>
+            <select
+                id="pv-filter-status"
+                name="status"
+                class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-auto tw:sm:min-w-[160px]"
+            >
+                <option value="">{{ __('payment_voucher.filters.all_statuses') }}</option>
+                @foreach(PaymentVoucher::STATUSES as $status)
+                    <option value="{{ $status }}" @selected(($filters['status'] ?? '') === $status)>
+                        {{ StatusHelper::localFinanceLabel($status) }}
+                    </option>
+                @endforeach
+            </select>
 
-            <div class="tw:grid tw:gap-1.5 tw:min-w-0 tw:lg:col-span-2 tw:xl:col-span-3">
-                <label for="pv-filter-dept" class="tw:block tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">
-                    {{ __('payment_voucher.filters.department') }}
-                </label>
-                <select
-                    id="pv-filter-dept"
-                    name="department"
-                    class="form-select ui-focus-ring tw:min-h-[var(--ui-control-height-md)] tw:w-full tw:rounded-ui-sm tw:border tw:border-outline-strong tw:bg-surface tw:text-ui-sm tw:text-on-surface"
-                >
-                    <option value="">{{ __('payment_voucher.filters.all_departments') }}</option>
-                    @foreach(PaymentVoucher::DEPARTMENTS as $dept)
-                        <option value="{{ $dept }}" @selected(($filters['department'] ?? '') === $dept)>
-                            {{ PaymentVoucher::departmentLabel($dept) }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
+            <label for="pv-filter-dept" class="tw:sr-only">{{ __('payment_voucher.filters.department') }}</label>
+            <select
+                id="pv-filter-dept"
+                name="department"
+                class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-auto tw:sm:min-w-[160px]"
+            >
+                <option value="">{{ __('payment_voucher.filters.all_departments') }}</option>
+                @foreach(PaymentVoucher::DEPARTMENTS as $dept)
+                    <option value="{{ $dept }}" @selected(($filters['department'] ?? '') === $dept)>
+                        {{ PaymentVoucher::departmentLabel($dept) }}
+                    </option>
+                @endforeach
+            </select>
+        </x-slot:filters>
 
-            <div class="tw:grid tw:gap-1.5 tw:min-w-0 tw:lg:col-span-2 tw:xl:col-span-3">
-                <label for="pv-filter-status" class="tw:block tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">
-                    {{ __('payment_voucher.filters.status') }}
-                </label>
-                <select
-                    id="pv-filter-status"
-                    name="status"
-                    class="form-select ui-focus-ring tw:min-h-[var(--ui-control-height-md)] tw:w-full tw:rounded-ui-sm tw:border tw:border-outline-strong tw:bg-surface tw:text-ui-sm tw:text-on-surface"
-                >
-                    <option value="">{{ __('payment_voucher.filters.all_statuses') }}</option>
-                    @foreach(PaymentVoucher::STATUSES as $status)
-                        <option value="{{ $status }}" @selected(($filters['status'] ?? '') === $status)>
-                            {{ StatusHelper::localFinanceLabel($status) }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
-
-            {{-- Row 2: Method, Payee Source, Date Range, Actions --}}
-            <div class="tw:grid tw:gap-1.5 tw:min-w-0 tw:lg:col-span-2 tw:xl:col-span-2">
-                <label for="pv-filter-method" class="tw:block tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">
+        <x-slot:advanced>
+            <div>
+                <label for="pv-filter-method" class="tw:block tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1.5">
                     {{ __('payment_voucher.filters.method') }}
                 </label>
                 <select
                     id="pv-filter-method"
                     name="payment_method"
-                    class="form-select ui-focus-ring tw:min-h-[var(--ui-control-height-md)] tw:w-full tw:rounded-ui-sm tw:border tw:border-outline-strong tw:bg-surface tw:text-ui-sm tw:text-on-surface"
+                    class="form-select form-select-sm tw:w-full"
                 >
                     <option value="">{{ __('payment_voucher.filters.all_methods') }}</option>
                     <option value="{{ PaymentVoucher::METHOD_BANK }}" @selected(($filters['payment_method'] ?? '') === PaymentVoucher::METHOD_BANK)>
@@ -121,14 +180,14 @@
                 </select>
             </div>
 
-            <div class="tw:grid tw:gap-1.5 tw:min-w-0 tw:lg:col-span-2 tw:xl:col-span-3">
-                <label for="pv-filter-payee" class="tw:block tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">
+            <div>
+                <label for="pv-filter-payee" class="tw:block tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1.5">
                     {{ __('payment_voucher.filters.payee_type') }}
                 </label>
                 <select
                     id="pv-filter-payee"
                     name="payee_type"
-                    class="form-select ui-focus-ring tw:min-h-[var(--ui-control-height-md)] tw:w-full tw:rounded-ui-sm tw:border tw:border-outline-strong tw:bg-surface tw:text-ui-sm tw:text-on-surface"
+                    class="form-select form-select-sm tw:w-full"
                 >
                     <option value="">{{ __('payment_voucher.filters.all_payee_types') }}</option>
                     @foreach(PaymentVoucher::PAYEE_TYPES as $payeeType)
@@ -139,10 +198,10 @@
                 </select>
             </div>
 
-            <div class="tw:grid tw:gap-1.5 tw:min-w-0 tw:sm:col-span-2 tw:lg:col-span-4 tw:xl:col-span-4">
-                <span class="tw:block tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant" aria-hidden="true">
+            <div>
+                <label class="tw:block tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1.5">
                     {{ __('payment_voucher.filters.date_range') }}
-                </span>
+                </label>
                 <x-ui.date-range-picker
                     id="pv-filter-date-range"
                     startName="date_from"
@@ -153,21 +212,12 @@
                     class="tw:w-full"
                 />
             </div>
+        </x-slot:advanced>
 
-            <div class="tw:flex tw:flex-wrap tw:items-center tw:justify-end tw:gap-2 tw:min-w-0 tw:sm:col-span-2 tw:lg:col-span-2 tw:xl:col-span-3">
-                @if($hasActiveFilters)
-                    <x-ui.button :href="route($routePrefix.'.index')" size="md" variant="ghost">
-                        <x-slot:leading><x-ui.icon name="rotate-ccw" size="sm" /></x-slot:leading>
-                        {{ __('payment_voucher.actions.reset_filters') }}
-                    </x-ui.button>
-                @endif
-                <x-ui.button type="submit" size="md" variant="primary" class="tw:w-full tw:sm:w-auto">
-                    <x-slot:leading><x-ui.icon name="filter" size="sm" /></x-slot:leading>
-                    {{ __('payment_voucher.actions.apply_filters') }}
-                </x-ui.button>
-            </div>
-        </div>
-    </form>
+        <x-slot:chips>
+            <x-ui.filter-chips :items="$pvActiveChips" :clear-url="$pvResetUrl" />
+        </x-slot:chips>
+    </x-ui.filter-bar>
 
     <x-ui.data-table
         :title="__('payment_voucher.list.table_title')"

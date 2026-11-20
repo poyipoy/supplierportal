@@ -1,22 +1,52 @@
 {{-- Swapped by server tabs: search + table + pagination + empty state for one queue. --}}
+@php
+    $importResetUrl = route('purchasing.import-suppliers.index', ['contact' => $queue]);
+    $importChips = [];
+    if ($search !== '') {
+        $importChips[] = [
+            'key' => 'q',
+            'label' => __('supplier_contact.directory.search_label'),
+            'value' => (string) $search,
+            'removeUrl' => $importResetUrl,
+        ];
+    }
+@endphp
+
 <x-ui.data-table :empty="$suppliers->isEmpty()">
     <x-slot:filters>
-        <form method="GET" action="{{ route('purchasing.import-suppliers.index') }}" class="tw:flex tw:w-full tw:flex-col tw:gap-2.5 tw:shell:flex-row tw:shell:flex-wrap tw:shell:items-end" role="search" data-server-tabs-form>
-            <input type="hidden" name="contact" value="{{ $queue }}">
-            <x-ui.input name="q" id="importSupplierSearch" type="search" :label="__('supplier_contact.directory.search_label')" :value="$search" :placeholder="__('supplier_contact.placeholders.search')" maxlength="100" class="tw:min-w-64" />
-            <div class="tw:flex tw:gap-2">
-                <x-ui.button type="submit" variant="outline" size="sm">
-                    <x-ui.icon name="search" size="sm" />
-                    <span>{{ __('supplier_contact.directory.search') }}</span>
-                </x-ui.button>
-                @if($search !== '')
-                    <x-ui.button :href="route('purchasing.import-suppliers.index', ['contact' => $queue])" variant="ghost" size="sm">
-                        <x-ui.icon name="rotate-ccw" size="sm" />
-                        <span>{{ __('supplier_contact.directory.reset') }}</span>
-                    </x-ui.button>
-                @endif
-            </div>
-        </form>
+        <x-ui.filter-bar
+            id="importSupplierFilterForm"
+            :action="route('purchasing.import-suppliers.index')"
+            variant="embedded"
+            :server-tabs="true"
+            :has-active-filters="$search !== ''"
+            :reset-url="$importResetUrl"
+            :reset-label="__('supplier_contact.directory.reset')"
+            :submit-label="__('supplier_contact.directory.search')"
+        >
+            <x-slot:hidden>
+                <input type="hidden" name="contact" value="{{ $queue }}">
+            </x-slot:hidden>
+
+            <x-slot:search>
+                <label for="importSupplierSearch" class="tw:sr-only">{{ __('supplier_contact.directory.search_label') }}</label>
+                <x-ui.icon name="search" size="sm" class="ui-filter-bar__search-icon" aria-hidden="true" />
+                <input
+                    id="importSupplierSearch"
+                    name="q"
+                    type="search"
+                    value="{{ $search }}"
+                    placeholder="{{ __('supplier_contact.placeholders.search') }}"
+                    maxlength="100"
+                    autocomplete="off"
+                    class="form-control form-control-sm ui-filter-bar__search-input"
+                />
+            </x-slot:search>
+
+            <x-slot:chips>
+                <x-ui.filter-chips :items="$importChips" :clear-url="$importResetUrl" :server-tabs="true" />
+            </x-slot:chips>
+        </x-ui.filter-bar>
     </x-slot:filters>
 
     <x-slot:emptyState>

@@ -8,7 +8,7 @@
         @include('partials.i18n-bootstrap')
         <meta name="robots" content="noindex, nofollow">
 
-        <title>{{ config('app.name', 'Laravel') }}</title>
+        <title>ADASI Supplier Portal</title>
 
         <!-- Favicon -->
         <link rel="icon" href="{{ asset('assets/images/logo-adasi.png') }}" type="image/png">

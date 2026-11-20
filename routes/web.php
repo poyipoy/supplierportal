@@ -113,6 +113,7 @@ use App\Models\PurchaseRequisition;
 use App\Models\ShipmentDocument;
 use App\Support\PortalContext;
 use App\Support\PortalPath;
+use App\Support\WorkspaceShell;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -409,10 +410,15 @@ Route::prefix(PortalPath::prefix())->group(function () {
     */
     Route::middleware('auth')->group(function () {
         Route::get('/dashboard', function () {
-            return match (auth()->user()->role) {
+            $user = auth()->user();
+            if ($shortcutsHome = WorkspaceShell::shortcutsHomeUrl($user)) {
+                return redirect()->to($shortcutsHome);
+            }
+
+            return match ($user->role) {
                 'admin' => redirect()->route('admin.dashboard'),
                 'purchasing' => redirect()->route('purchasing.dashboard'),
-                'supplier', 'accounting', 'finance' => redirect(PortalContext::dashboard(auth()->user())),
+                'supplier', 'accounting', 'finance' => redirect(PortalContext::dashboard($user)),
                 'ga' => redirect()->route('ga.dashboard'),
                 'qc' => redirect()->route('qc.dashboard'),
                 default => redirect()->route('login'),

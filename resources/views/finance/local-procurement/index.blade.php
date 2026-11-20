@@ -70,76 +70,133 @@
     </div>
 
     {{-- Filter Toolbar --}}
-    <form method="GET" action="{{ route($routePrefix.'.index') }}" id="localPoFilterForm" class="tw:m-0">
-        <x-ui.toolbar class="tw:flex-col tw:sm:flex-row" aria-label="{{ __('local_procurement.register.filters') }}">
-            <x-slot:search>
-                <div class="tw:relative tw:w-full">
-                    <input
-                        type="search"
-                        name="q"
-                        id="local-po-search"
-                        value="{{ request('q') }}"
-                        placeholder="{{ __('local_procurement.filters.po_search') }}"
-                        class="form-control form-control-sm tw:text-ui-xs"
-                        maxlength="100"
-                        autocomplete="off"
-                    >
-                </div>
-            </x-slot:search>
+    @php
+        $localPoResetUrl = route($routePrefix.'.index');
+        $localPoRemoveUrl = static function (array $dropKeys) use ($localPoResetUrl): string {
+            $query = request()->query();
+            foreach ($dropKeys as $key) {
+                unset($query[$key]);
+            }
 
-            <x-slot:filters>
-                <div class="tw:flex tw:w-full tw:max-w-full tw:flex-wrap tw:items-center tw:gap-2.5">
-                    <div class="tw:w-full tw:sm:w-48">
-                        <label for="po-supplier" class="visually-hidden">{{ __('local_invoice.labels.supplier') }}</label>
-                        <select id="po-supplier" name="supplier_id" class="form-select form-select-sm tw:text-ui-xs">
-                            <option value="">{{ __('local_invoice.labels.all_suppliers') }}</option>
-                            @foreach($suppliers as $supplier)
-                                <option value="{{ $supplier->hash }}" @selected((string) request('supplier_id') === (string) $supplier->hash)>
-                                    {{ $supplier->supplier?->company_name ?: $supplier->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
+            return $query === [] ? $localPoResetUrl : $localPoResetUrl.'?'.http_build_query($query);
+        };
 
-                    <div class="tw:w-full tw:sm:w-36">
-                        <label for="po-status" class="visually-hidden">{{ __('local_procurement.labels.po_status') }}</label>
-                        <select id="po-status" name="status" class="form-select form-select-sm tw:text-ui-xs">
-                            <option value="">{{ __('local_invoice.labels.all_statuses') }}</option>
-                            @foreach(['OPEN', 'CLOSED', 'CANCELLED'] as $status)
-                                <option value="{{ $status }}" @selected(request('status') === $status)>{{ \App\Support\StatusHelper::localFinanceLabel($status) }}</option>
-                            @endforeach
-                        </select>
-                    </div>
+        $localPoAdvancedCount = collect([
+            request()->filled('supplier_id'),
+            request()->filled('date_from') || request()->filled('date_to'),
+        ])->filter()->count();
 
-                    <div class="tw:w-full tw:sm:w-64">
-                        <x-ui.date-range-picker
-                            id="local-po-date-range"
-                            start-name="date_from"
-                            end-name="date_to"
-                            :start-label="__('local_invoice.labels.from_date')"
-                            :end-label="__('local_invoice.labels.to_date')"
-                            :start-value="request('date_from')"
-                            :end-value="request('date_to')"
-                            :compact="true"
-                        />
-                    </div>
-                </div>
-            </x-slot:filters>
+        $localPoActiveChips = [];
+        if (request()->filled('q')) {
+            $localPoActiveChips[] = [
+                'key' => 'q',
+                'label' => __('local_invoice.actions.search'),
+                'value' => (string) request('q'),
+                'removeUrl' => $localPoRemoveUrl(['q']),
+            ];
+        }
+        if (request()->filled('status')) {
+            $localPoActiveChips[] = [
+                'key' => 'status',
+                'label' => __('local_procurement.labels.po_status'),
+                'value' => \App\Support\StatusHelper::localFinanceLabel((string) request('status')),
+                'removeUrl' => $localPoRemoveUrl(['status']),
+            ];
+        }
+        if (request()->filled('supplier_id')) {
+            $selectedLocalPoSupplier = $suppliers->firstWhere('hash', request('supplier_id'));
+            $localPoSupplierName = $selectedLocalPoSupplier
+                ? ($selectedLocalPoSupplier->supplier?->company_name ?: $selectedLocalPoSupplier->name)
+                : (string) request('supplier_id');
+            $localPoActiveChips[] = [
+                'key' => 'supplier_id',
+                'label' => __('local_invoice.labels.supplier'),
+                'value' => $localPoSupplierName,
+                'removeUrl' => $localPoRemoveUrl(['supplier_id']),
+            ];
+        }
+        if (request()->filled('date_from') || request()->filled('date_to')) {
+            $localPoDateVal = request()->filled('date_from') && request()->filled('date_to')
+                ? request('date_from').' - '.request('date_to')
+                : (string) (request('date_from') ?: request('date_to'));
+            $localPoActiveChips[] = [
+                'key' => 'date_range',
+                'label' => __('local_invoice.labels.date'),
+                'value' => $localPoDateVal,
+                'removeUrl' => $localPoRemoveUrl(['date_from', 'date_to']),
+            ];
+        }
+    @endphp
 
-            <x-slot:actions>
-                <x-ui.button type="submit" size="sm" variant="primary">
-                    <x-ui.icon name="filter" size="sm" />
-                    <span>{{ __('common.labels_review.filter') }}</span>
-                </x-ui.button>
-                @if(request()->hasAny(['q', 'supplier_id', 'status', 'date_from', 'date_to']))
-                    <x-ui.button :href="route($routePrefix.'.index')" size="sm" variant="ghost">
-                        <x-ui.icon name="rotate-ccw" size="sm" />
-                        <span>{{ __('common.actions.reset') }}</span>
-                    </x-ui.button>
-                @endif
-            </x-slot:actions>
-        </x-ui.toolbar>
-    </form>
+    <x-ui.filter-bar
+        id="localPoFilterForm"
+        :action="$localPoResetUrl"
+        :aria-label="__('local_procurement.register.filters')"
+        advanced-id="localPoMoreFilters"
+        :advanced-count="$localPoAdvancedCount"
+        :advanced-open="$localPoAdvancedCount > 0"
+        :has-active-filters="count($localPoActiveChips) > 0"
+        :reset-url="$localPoResetUrl"
+        :reset-label="__('common.actions.reset')"
+        :submit-label="__('common.labels_review.filter')"
+    >
+        <x-slot:search>
+            <label for="local-po-search" class="tw:sr-only">{{ __('local_invoice.actions.search') }}</label>
+            <x-ui.icon name="search" size="sm" class="ui-filter-bar__search-icon" aria-hidden="true" />
+            <input
+                type="search"
+                name="q"
+                id="local-po-search"
+                value="{{ request('q') }}"
+                placeholder="{{ __('local_procurement.filters.po_search') }}"
+                class="form-control form-control-sm ui-filter-bar__search-input"
+                maxlength="100"
+                autocomplete="off"
+            >
+        </x-slot:search>
+
+        <x-slot:filters>
+            <label for="po-status" class="tw:sr-only">{{ __('local_procurement.labels.po_status') }}</label>
+            <select id="po-status" name="status" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-40">
+                <option value="">{{ __('local_invoice.labels.all_statuses') }}</option>
+                @foreach(['OPEN', 'CLOSED', 'CANCELLED'] as $status)
+                    <option value="{{ $status }}" @selected(request('status') === $status)>{{ \App\Support\StatusHelper::localFinanceLabel($status) }}</option>
+                @endforeach
+            </select>
+        </x-slot:filters>
+
+        <x-slot:advanced>
+            <div>
+                <label for="po-supplier" class="tw:block tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1.5">{{ __('local_invoice.labels.supplier') }}</label>
+                <select id="po-supplier" name="supplier_id" class="form-select form-select-sm tw:w-full">
+                    <option value="">{{ __('local_invoice.labels.all_suppliers') }}</option>
+                    @foreach($suppliers as $supplier)
+                        <option value="{{ $supplier->hash }}" @selected((string) request('supplier_id') === (string) $supplier->hash)>
+                            {{ $supplier->supplier?->company_name ?: $supplier->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div>
+                <label class="tw:block tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1.5">{{ __('local_invoice.labels.date') }}</label>
+                <x-ui.date-range-picker
+                    id="local-po-date-range"
+                    start-name="date_from"
+                    end-name="date_to"
+                    :start-label="__('local_invoice.labels.from_date')"
+                    :end-label="__('local_invoice.labels.to_date')"
+                    :start-value="request('date_from')"
+                    :end-value="request('date_to')"
+                    :compact="true"
+                />
+            </div>
+        </x-slot:advanced>
+
+        <x-slot:chips>
+            <x-ui.filter-chips :items="$localPoActiveChips" :clear-url="$localPoResetUrl" />
+        </x-slot:chips>
+    </x-ui.filter-bar>
 
     {{-- Multi Main Table Workspace (Master + Satellite Preview) --}}
     <x-ui.mmt-workspace

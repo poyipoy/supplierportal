@@ -61,6 +61,15 @@ window.AdasiCalendar = Object.freeze({
     closeActive: () => {},
 });
 
+const FILTER_BAR_SELECTOR = '[data-adasi-filter-bar]';
+let filterBarModule = null;
+const loadFilterBar = () => (filterBarModule ??= import('./filter-bar'));
+window.AdasiFilterBar = Object.freeze({
+    bindLive: (container, options = {}) => loadFilterBar().then((module) => module.bindLive(container, options)),
+    sync: (container) => (filterBarModule ? filterBarModule.then((module) => module.sync(container)) : Promise.resolve()),
+    reset: (container) => (filterBarModule ? filterBarModule.then((module) => module.reset(container)) : Promise.resolve()),
+});
+
 const embedReadiness = bootEmbedReadiness(window);
 
 // A failed chunk only leaves its own component unregistered; the shell and toasts still start.
@@ -775,6 +784,7 @@ const bootImports = () => {
     if (hasMarker('#prFormTotals')) import('./pr-totals-sync');
     if (hasMarker('[data-po-document-upload]')) import('./po-document-upload').then(module => module.bootPoDocumentUploads());
     if (hasMarker('[data-adasi-time-picker]')) import('./time-picker').then(module => module.bootTimePickers(document));
+    if (hasMarker(FILTER_BAR_SELECTOR)) loadFilterBar();
 };
 
 const setLoginButtonLoading = (submitBtn, isLoading) => {

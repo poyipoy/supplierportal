@@ -55,6 +55,10 @@ class PriceComparisonServerTabsTest extends TestCase
         $response->assertJsonStructure(['html', 'tab', 'url']);
         $this->assertSame('inter-supplier', $response->json('tab'));
         $this->assertStringContainsString('interSupplierFilterForm', $response->json('html'));
+        $this->assertStringContainsString('id="comparisonPrSearch"', $response->json('html'));
+        $this->assertStringContainsString('aria-describedby="comparisonPrHelp"', $response->json('html'));
+        $this->assertStringContainsString('tw:pointer-events-none tw:absolute tw:start-3', $response->json('html'));
+        $this->assertStringContainsString('tw:md:grid-cols-[minmax(0,1fr)_auto] tw:md:items-center', $response->json('html'));
         $this->assertStringContainsString('id="interSupplierConfig"', $response->json('html'));
     }
 

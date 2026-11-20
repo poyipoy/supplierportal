@@ -6,7 +6,7 @@ const read = (path) => readFileSync(new URL(`../../${path}`, import.meta.url), '
 const app = read('resources/js/app.js');
 
 test('page-specific modules are not part of the entry bundle', () => {
-    for (const module of ['calendar', 'advanced-export', 'dashboard-editor', 'customization-form', 'notification-preferences', 'supplier-audit-form', 'psi-form', 'regional-sample', 'exchange-rates', 'time-picker']) {
+    for (const module of ['calendar', 'filter-bar', 'advanced-export', 'dashboard-editor', 'customization-form', 'notification-preferences', 'supplier-audit-form', 'psi-form', 'regional-sample', 'exchange-rates', 'time-picker']) {
         assert.doesNotMatch(app, new RegExp(`^import[^\\n]*'\\./${module}(\\.js)?'`, 'm'), `${module} must stay a dynamic import`);
         assert.match(app, new RegExp(`import\\('\\./${module}'\\)`), `${module} must still be loaded where its markup is present`);
     }
@@ -31,6 +31,7 @@ test('each marker selector matches the markup that needs the module', () => {
         ['[data-dashboard-audience] [data-editor-config]', 'resources/views/components/ui/dashboard-layout.blade.php', 'data-editor-config'],
         ['[data-exchange-rates-workspace]', 'resources/views/admin/exchange-rates/index.blade.php', 'data-exchange-rates-workspace'],
         ["'[data-adasi-date-picker], [data-adasi-date-range]'", 'resources/views/components/ui/date-picker.blade.php', 'data-adasi-date-picker'],
+        ["'[data-adasi-filter-bar]'", 'resources/views/components/ui/filter-bar.blade.php', 'data-adasi-filter-bar'],
     ];
     for (const [selector, view, markup] of markers) {
         assert.ok(app.includes(selector), `app.js gates on ${selector}`);
@@ -54,4 +55,9 @@ test('the calendar stand-in keeps the AdasiCalendar contract until calendar.js r
     assert.match(app, /window\.AdasiCalendar = Object\.freeze\(\{[\s\S]*initialize:[\s\S]*reset:[\s\S]*closeActive:/);
     assert.match(read('resources/js/calendar.js'), /window\.AdasiCalendar = Object\.freeze\(\{\s*initialize: initializeAdasiCalendars,\s*reset: resetAdasiCalendar,\s*closeActive: closeActiveCalendar,/);
     assert.ok(app.indexOf('window.AdasiCalendar.initialize(document)') > app.indexOf('Alpine.start();'), 'calendars boot after Alpine renders');
+});
+
+test('the filter-bar stand-in keeps the AdasiFilterBar contract until filter-bar.js replaces it', () => {
+    assert.match(app, /window\.AdasiFilterBar = Object\.freeze\(\{[\s\S]*bindLive:[\s\S]*sync:[\s\S]*reset:/);
+    assert.match(read('resources/js/filter-bar.js'), /window\.AdasiFilterBar = Object\.freeze\(\{\s*bindLive,\s*sync,\s*reset,\s*\}\);/);
 });

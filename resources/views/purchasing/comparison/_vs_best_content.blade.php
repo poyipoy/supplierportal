@@ -11,9 +11,9 @@
 {{-- Filter Toolbar --}}
 <x-ui.toolbar>
     <x-slot:filters>
-        <form method="GET" action="{{ route('purchasing.comparison.vs-best') }}" class="d-flex flex-wrap align-items-center gap-2 w-100" id="vsBestFilterForm" data-server-tabs-form>
+        <form method="GET" action="{{ route('purchasing.comparison.vs-best') }}" class="tw:flex tw:flex-wrap tw:items-end tw:gap-2 tw:w-full" id="vsBestFilterForm" data-server-tabs-form>
             <input type="hidden" name="currency" value="{{ $currency }}">
-            <div style="min-width: 250px;">
+            <div class="tw:w-full tw:sm:w-auto tw:min-w-[250px]">
                 <x-ui.date-range-picker
                     id="vsBestMonthRange"
                     granularity="month"
@@ -29,9 +29,9 @@
                 />
             </div>
             {{-- PUR-05: material filter applied through AJAX; the date form still submits normally. --}}
-            <div style="min-width: 220px;">
+            <div class="tw:w-full tw:sm:w-auto tw:min-w-[220px]">
                 <label class="form-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="vsBestMaterialSelect">{{ __('purchasing.comparison_analytics.material_filter') }}</label>
-                <select id="vsBestMaterialSelect" class="form-select form-select-sm">
+                <select id="vsBestMaterialSelect" class="form-select form-select-sm tw:min-h-[var(--ui-control-height-sm)]">
                     <option value="" data-shape="">{{ __('purchasing.copy.all_material') }}</option>
                     @foreach($vsBestMaterials as $option)
                         <option value="{{ $option['name'] }}" data-shape="{{ $option['shape'] ?? '' }}" @selected($selectedVsBestMaterial && $selectedVsBestMaterial['name'] === $option['name'] && $selectedVsBestMaterial['shape'] === $option['shape'])>{{ $option['label'] }}</option>
@@ -39,11 +39,11 @@
                 </select>
             </div>
             <x-ui.button type="submit" variant="primary" size="sm" data-calendar-native-submit>
-                <x-ui.icon name="filter" />
+                <x-ui.icon name="filter" size="sm" />
                 <span>{{ __('purchasing.copy.apply') }}</span>
             </x-ui.button>
             <x-ui.button :href="route('purchasing.comparison.vs-best', array_filter(['pr_id' => request()->query('pr_id'), 'currency' => request()->query('currency')], 'is_string'))" variant="ghost" size="sm" data-server-tab data-tab-name="vs-best">
-                <x-ui.icon name="rotate-ccw" />
+                <x-ui.icon name="rotate-ccw" size="sm" />
                 <span>{{ __('purchasing.copy.reset') }}</span>
             </x-ui.button>
         </form>

@@ -124,31 +124,48 @@
         </x-ui.alert>
     @endif
 
+    @php
+        $goodsLocResetUrl = route('supplier.goods-locations.index');
+        $goodsLocChips = [];
+        if ($search !== '') {
+            $goodsLocChips[] = [
+                'key' => 'search',
+                'label' => __('shipments.copy.search'),
+                'value' => (string) $search,
+                'removeUrl' => $goodsLocResetUrl,
+            ];
+        }
+    @endphp
+
     <x-ui.data-table :title="__('shipments.preshipment.locations_title')">
-        <x-slot:toolbar>
-            <form method="GET" action="{{ route('supplier.goods-locations.index') }}" class="tw:flex tw:flex-wrap tw:items-center tw:gap-2">
-                <div class="input-group input-group-sm" style="max-width: 22rem;">
-                    <label for="goodsLocationsSearch" class="visually-hidden">{{ __('shipments.copy.search') }}</label>
+        <x-slot:filters>
+            <x-ui.filter-bar
+                id="goodsLocationsFilterForm"
+                :action="$goodsLocResetUrl"
+                variant="embedded"
+                :has-active-filters="$search !== ''"
+                :reset-url="$goodsLocResetUrl"
+                :reset-label="__('shipments.copy.reset')"
+                :submit-label="__('shipments.copy.search')"
+            >
+                <x-slot:search>
+                    <label for="goodsLocationsSearch" class="tw:sr-only">{{ __('shipments.copy.search') }}</label>
+                    <x-ui.icon name="search" size="sm" class="ui-filter-bar__search-icon" aria-hidden="true" />
                     <input
                         type="search"
                         id="goodsLocationsSearch"
                         name="search"
                         value="{{ $search }}"
-                        class="form-control form-control-sm"
+                        class="form-control form-control-sm ui-filter-bar__search-input"
                         placeholder="{{ __('shipments.preshipment.locations_search_placeholder') }}"
                     >
-                    <button type="submit" class="btn btn-outline-secondary btn-sm">
-                        <x-ui.icon name="search" size="sm" />
-                        <span class="visually-hidden">{{ __('shipments.copy.search') }}</span>
-                    </button>
-                </div>
-                @if($search !== '')
-                    <x-ui.button :href="route('supplier.goods-locations.index')" variant="ghost" size="sm">
-                        {{ __('shipments.copy.reset') }}
-                    </x-ui.button>
-                @endif
-            </form>
-        </x-slot:toolbar>
+                </x-slot:search>
+
+                <x-slot:chips>
+                    <x-ui.filter-chips :items="$goodsLocChips" :clear-url="$goodsLocResetUrl" />
+                </x-slot:chips>
+            </x-ui.filter-bar>
+        </x-slot:filters>
 
         @if($locations->isEmpty())
             @if($search !== '')

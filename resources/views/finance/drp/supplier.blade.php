@@ -26,15 +26,101 @@
         :title="__('finance.drp.create_supplier')"
         :description="__('common.final_review.ready_invoice_help')"
     >
-        <form method="GET" action="{{ route('finance.drp.supplier') }}" class="tw:mb-4 tw:flex tw:flex-wrap tw:items-end tw:gap-3">
-            <input type="hidden" name="sort" value="{{ $candidateSort }}">
-            <input type="hidden" name="direction" value="{{ $candidateDirection }}">
-            <div><label for="candidate_supplier" class="form-label tw:text-ui-xs">{{ __('finance.drp_surface.supplier_filter') }}</label><select id="candidate_supplier" name="supplier_id" class="form-select form-select-sm"><option value="">{{ __('finance.drp_surface.local_suppliers') }}</option>@foreach(($suppliers ?? []) as $supplier)<option value="{{ $supplier->hash }}" @selected($supplierFilter?->id === $supplier->id)>{{ $supplier->supplier?->company_name ?: $supplier->name }}</option>@endforeach</select></div>
-            <x-ui.date-range-picker id="candidate-due-range" start-name="due_date_from" end-name="due_date_to" :start-label="__('finance.candidates.due_from')" :end-label="__('finance.candidates.due_to')" :start-value="request('due_date_from')" :end-value="request('due_date_to')" :compact="true" />
-            <x-ui.date-range-picker id="candidate-verification-range" start-name="verification_date_from" end-name="verification_date_to" :start-label="__('finance.candidates.verification_from')" :end-label="__('finance.candidates.verification_to')" :start-value="request('verification_date_from')" :end-value="request('verification_date_to')" :compact="true" />
-            <x-ui.button type="submit" size="sm" variant="outline">{{ __('common.labels_review.filter') }}</x-ui.button>
-            <x-ui.button :href="route('finance.drp.supplier')" size="sm" variant="ghost">{{ __('finance.candidates.reset') }}</x-ui.button>
-        </form>
+        @php
+            $drpSupplierBaseUrl = route('finance.drp.supplier');
+            $drpSupplierResetUrl = $candidateSort || $candidateDirection
+                ? $drpSupplierBaseUrl.'?'.http_build_query(array_filter(['sort' => $candidateSort, 'direction' => $candidateDirection]))
+                : $drpSupplierBaseUrl;
+            $drpSupplierRemoveUrl = static function (array $dropKeys) use ($drpSupplierBaseUrl): string {
+                $query = request()->query();
+                foreach ($dropKeys as $key) {
+                    unset($query[$key]);
+                }
+
+                return $query === [] ? $drpSupplierBaseUrl : $drpSupplierBaseUrl.'?'.http_build_query($query);
+            };
+
+            $drpSupplierAdvancedCount = collect([
+                request()->filled('due_date_from') || request()->filled('due_date_to'),
+                request()->filled('verification_date_from') || request()->filled('verification_date_to'),
+            ])->filter()->count();
+
+            $drpSupplierChips = [];
+            if ($supplierFilter) {
+                $drpSupplierChips[] = [
+                    'key' => 'supplier_id',
+                    'label' => __('finance.drp_surface.supplier_filter'),
+                    'value' => $supplierFilter->supplier?->company_name ?: $supplierFilter->name,
+                    'removeUrl' => $drpSupplierRemoveUrl(['supplier_id']),
+                ];
+            }
+            if (request()->filled('due_date_from') || request()->filled('due_date_to')) {
+                $dueRangeVal = request()->filled('due_date_from') && request()->filled('due_date_to')
+                    ? request('due_date_from').' - '.request('due_date_to')
+                    : (string) (request('due_date_from') ?: request('due_date_to'));
+                $drpSupplierChips[] = [
+                    'key' => 'due_date_range',
+                    'label' => __('local_invoice.filters.due_range'),
+                    'value' => $dueRangeVal,
+                    'removeUrl' => $drpSupplierRemoveUrl(['due_date_from', 'due_date_to']),
+                ];
+            }
+            if (request()->filled('verification_date_from') || request()->filled('verification_date_to')) {
+                $verRangeVal = request()->filled('verification_date_from') && request()->filled('verification_date_to')
+                    ? request('verification_date_from').' - '.request('verification_date_to')
+                    : (string) (request('verification_date_from') ?: request('verification_date_to'));
+                $drpSupplierChips[] = [
+                    'key' => 'verification_date_range',
+                    'label' => __('local_invoice.labels.date'),
+                    'value' => $verRangeVal,
+                    'removeUrl' => $drpSupplierRemoveUrl(['verification_date_from', 'verification_date_to']),
+                ];
+            }
+        @endphp
+
+        <x-ui.filter-bar
+            id="drpSupplierCandidateFilterForm"
+            :action="$drpSupplierBaseUrl"
+            variant="embedded"
+            advanced-id="drpSupplierMoreFilters"
+            :advanced-count="$drpSupplierAdvancedCount"
+            :advanced-open="$drpSupplierAdvancedCount > 0"
+            :has-active-filters="count($drpSupplierChips) > 0"
+            :reset-url="$drpSupplierBaseUrl"
+            :reset-label="__('finance.candidates.reset')"
+            :submit-label="__('common.labels_review.filter')"
+            class="tw:mb-4"
+        >
+            <x-slot:hidden>
+                <input type="hidden" name="sort" value="{{ $candidateSort }}">
+                <input type="hidden" name="direction" value="{{ $candidateDirection }}">
+            </x-slot:hidden>
+
+            <x-slot:filters>
+                <label for="candidate_supplier" class="tw:sr-only">{{ __('finance.drp_surface.supplier_filter') }}</label>
+                <select id="candidate_supplier" name="supplier_id" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-56">
+                    <option value="">{{ __('finance.drp_surface.local_suppliers') }}</option>
+                    @foreach(($suppliers ?? []) as $supplier)
+                        <option value="{{ $supplier->hash }}" @selected($supplierFilter?->id === $supplier->id)>{{ $supplier->supplier?->company_name ?: $supplier->name }}</option>
+                    @endforeach
+                </select>
+            </x-slot:filters>
+
+            <x-slot:advanced>
+                <div>
+                    <label class="tw:block tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1.5">{{ __('local_invoice.filters.due_range') }}</label>
+                    <x-ui.date-range-picker id="candidate-due-range" start-name="due_date_from" end-name="due_date_to" :start-label="__('finance.candidates.due_from')" :end-label="__('finance.candidates.due_to')" :start-value="request('due_date_from')" :end-value="request('due_date_to')" :compact="true" />
+                </div>
+                <div>
+                    <label class="tw:block tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1.5">{{ __('local_invoice.labels.date') }}</label>
+                    <x-ui.date-range-picker id="candidate-verification-range" start-name="verification_date_from" end-name="verification_date_to" :start-label="__('finance.candidates.verification_from')" :end-label="__('finance.candidates.verification_to')" :start-value="request('verification_date_from')" :end-value="request('verification_date_to')" :compact="true" />
+                </div>
+            </x-slot:advanced>
+
+            <x-slot:chips>
+                <x-ui.filter-chips :items="$drpSupplierChips" :clear-url="$drpSupplierResetUrl" />
+            </x-slot:chips>
+        </x-ui.filter-bar>
         <form method="POST" action="{{ route('finance.drp.supplier.create') }}">
             @csrf
             <div class="tw:space-y-4">

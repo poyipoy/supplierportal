@@ -36,7 +36,7 @@
         <input type="hidden" name="currency" value="{{ $currency }}">
         <div class="tw:xl:col-span-3">
             <label class="form-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="historicalSupplierSelect">{{ __('purchasing.copy.supplier') }}</label>
-            <select name="supplier_id" class="form-select form-select-sm" id="historicalSupplierSelect">
+            <select name="supplier_id" class="form-select form-select-sm tw:min-h-[var(--ui-control-height-sm)]" id="historicalSupplierSelect">
                 <option value="">{{ __('purchasing.comparison_analytics.all_suppliers') }}</option>
                 @foreach($suppliers as $supplier)
                     <option value="{{ $supplier->getRouteKey() }}" {{ $selectedSupplierId === $supplier->getRouteKey() ? 'selected' : '' }}>{{ trim((string) $supplier->supplier?->company_name) ?: $supplier->name }}</option>
@@ -54,7 +54,7 @@
         <div class="tw:xl:col-span-3">
             <label class="form-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="historicalMaterialSelect">{{ __('purchasing.copy.material') }}</label>
             {{-- PUR-07: one option per (material, shape); the hidden input carries the shape. --}}
-            <select name="material_name" class="form-select form-select-sm" id="historicalMaterialSelect" required>
+            <select name="material_name" class="form-select form-select-sm tw:min-h-[var(--ui-control-height-sm)]" id="historicalMaterialSelect" required>
                 <option value="">{{ __('purchasing.copy.select_material') }}</option>
                 @foreach($materials as $material)
                     <option value="{{ $material['name'] }}" data-shape="{{ $material['shape'] ?? '' }}" data-key-options='@json($material['key_options'])' @selected($selectedMaterialName === $material['name'] && ($selectedShape ?? null) === $material['shape'])>{{ $material['label'] }}</option>
@@ -64,7 +64,7 @@
         </div>
         <div class="tw:md:col-span-1 tw:xl:col-span-2">
             <label class="form-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="historicalShapeFilter">{{ __('purchasing.copy.shape') }}</label>
-            <select id="historicalShapeFilter" class="form-select form-select-sm" aria-controls="historicalMaterialSelect"
+            <select id="historicalShapeFilter" class="form-select form-select-sm tw:min-h-[var(--ui-control-height-sm)]" aria-controls="historicalMaterialSelect"
                     data-label-all="{{ __('purchasing.comparison_analytics.all_shapes') }}"
                     data-label-flat="{{ __('materials.shape.flat') }}"
                     data-label-round="{{ __('materials.shape.round') }}"
@@ -77,7 +77,7 @@
         </div>
         <div class="tw:xl:col-span-2">
             <label class="form-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface" for="historicalRangeSelect">{{ __('purchasing.copy.time_period') }}</label>
-            <select name="range" class="form-select form-select-sm" id="historicalRangeSelect">
+            <select name="range" class="form-select form-select-sm tw:min-h-[var(--ui-control-height-sm)]" id="historicalRangeSelect">
                 @foreach($rangeOptions as $value => $label)
                     <option value="{{ $value }}" {{ $range === $value ? 'selected' : '' }}>{{ $label }}</option>
                 @endforeach
@@ -114,7 +114,7 @@
                 {{-- PUR-07: recorded values write into key_min/key_max; this control is never submitted. --}}
                 <div>
                     <label class="form-label tw:mb-1 tw:text-ui-xs tw:text-on-surface-variant" for="historicalKeyOption">{{ __($pca.'.key_options') }}</label>
-                    <select id="historicalKeyOption" class="form-select form-select-sm"
+                    <select id="historicalKeyOption" class="form-select form-select-sm tw:min-h-[var(--ui-control-height-sm)]"
                             data-label-all="{{ __($pca.'.key_option_all') }}"
                             data-label-custom="{{ __($pca.'.key_option_custom') }}"
                             data-label-none="{{ __($pca.'.key_option_none') }}"
@@ -134,11 +134,11 @@
                 </div>
                 <div>
                     <label class="form-label tw:mb-1 tw:text-ui-xs tw:text-on-surface-variant" for="historicalKeyMin">{{ __('purchasing.comparison_analytics.key_from') }}</label>
-                    <input type="number" step="0.0001" min="0" name="key_min" id="historicalKeyMin" class="form-control form-control-sm historical-filter-input" value="{{ $keyDimension['min'] }}">
+                    <input type="number" step="0.0001" min="0" name="key_min" id="historicalKeyMin" class="form-control form-control-sm tw:min-h-[var(--ui-control-height-sm)] historical-filter-input" value="{{ $keyDimension['min'] }}">
                 </div>
                 <div>
                     <label class="form-label tw:mb-1 tw:text-ui-xs tw:text-on-surface-variant" for="historicalKeyMax">{{ __('purchasing.comparison_analytics.key_to') }}</label>
-                    <input type="number" step="0.0001" min="0" name="key_max" id="historicalKeyMax" class="form-control form-control-sm historical-filter-input" value="{{ $keyDimension['max'] }}">
+                    <input type="number" step="0.0001" min="0" name="key_max" id="historicalKeyMax" class="form-control form-control-sm tw:min-h-[var(--ui-control-height-sm)] historical-filter-input" value="{{ $keyDimension['max'] }}">
                 </div>
                 <p class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ __('purchasing.comparison_analytics.key_hint') }}</p>
             </div>
@@ -147,7 +147,7 @@
         {{-- Second row, after the filters it applies: the first row's 12 columns are full. --}}
         <div class="tw:flex tw:md:col-span-2 tw:xl:col-span-2 tw:xl:col-start-11">
             <x-ui.button type="submit" size="sm" class="tw:w-full tw:justify-center">
-                <x-slot:leading><x-ui.icon name="search" /></x-slot:leading>
+                <x-slot:leading><x-ui.icon name="search" size="sm" /></x-slot:leading>
                 {{ __('purchasing.copy.apply_filters') }}
             </x-ui.button>
         </div>

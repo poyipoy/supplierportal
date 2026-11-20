@@ -41,40 +41,45 @@
 </style>
 
 <x-ui.toolbar class="tw:mb-0">
-    <form method="GET" action="{{ route('purchasing.comparison.inter-supplier') }}" class="tw:grid tw:w-full tw:gap-4 tw:md:grid-cols-[minmax(0,1fr)_auto] tw:md:items-end" id="interSupplierFilterForm" data-server-tabs-form>
-        <div>
-            <label for="comparisonPrSearch" class="form-label small fw-bold">{{ __('purchasing.copy.purchase_requisition') }}</label>
+    <form method="GET" action="{{ route('purchasing.comparison.inter-supplier') }}" class="tw:w-full" id="interSupplierFilterForm" data-server-tabs-form>
+        <label for="comparisonPrSearch" class="form-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface">{{ __('purchasing.copy.purchase_requisition') }}</label>
+        <div class="tw:grid tw:gap-3 tw:md:grid-cols-[minmax(0,1fr)_auto] tw:md:items-center">
             <div class="position-relative">
                 <input type="hidden" name="pr_id" id="comparisonPrId" value="{{ $selectedPrOption['id'] ?? '' }}">
                 <input type="hidden" name="benchmark_year" id="comparisonBenchmarkYearInput" value="{{ $benchmarkYear ?? '' }}">
                 <input type="hidden" name="benchmark_month" id="comparisonBenchmarkMonthInput" value="{{ $benchmarkMonth ?? '' }}">
-                <div class="input-group input-group-sm">
-                    <span class="input-group-text tw:bg-surface"><x-ui.icon name="search" /></span>
+                <div class="tw:relative tw:flex tw:items-center">
+                    <span class="tw:pointer-events-none tw:absolute tw:start-3 tw:top-1/2 tw:-translate-y-1/2 tw:inline-flex tw:items-center tw:text-on-surface-variant" aria-hidden="true">
+                        <x-ui.icon name="search" size="sm" />
+                    </span>
                     <input type="text"
-                            class="form-control"
-                            id="comparisonPrSearch"
-                            value="{{ $selectedPrOption['label'] ?? '' }}"
-                            placeholder="{{ __('purchasing.copy.type_a_pr_number_or_period') }}"
-                            autocomplete="off">
-                    <x-ui.icon-button
-                        icon="x"
-                        :label="__('purchasing.copy.clear_pr_selection')"
-                        size="sm"
-                        id="comparisonPrClear"
-                        class="tw:rounded-none {{ $selectedPrOption ? '' : 'd-none' }}"
-                    />
+                           class="form-control form-control-sm tw:min-h-[var(--ui-control-height-sm)] tw:ps-9 tw:pe-10 ui-focus-ring"
+                           id="comparisonPrSearch"
+                           value="{{ $selectedPrOption['label'] ?? '' }}"
+                           placeholder="{{ __('purchasing.copy.type_a_pr_number_or_period') }}"
+                           aria-describedby="comparisonPrHelp"
+                           autocomplete="off">
+                    <span class="tw:pointer-events-none tw:absolute tw:end-1 tw:top-1/2 tw:-translate-y-1/2 tw:inline-flex tw:items-center">
+                        <x-ui.icon-button
+                            icon="x"
+                            :label="__('purchasing.copy.clear_pr_selection')"
+                            size="sm"
+                            id="comparisonPrClear"
+                            class="tw:pointer-events-auto {{ $selectedPrOption ? '' : 'd-none' }}"
+                        />
+                    </span>
                 </div>
-                <div class="list-group position-absolute w-100 shadow-sm d-none tw:z-[1050] tw:max-h-[260px] tw:overflow-y-auto"
+                <div class="list-group position-absolute w-100 tw:shadow-ui-2 d-none tw:z-drawer tw:max-h-[260px] tw:overflow-y-auto"
                      id="comparisonPrSuggestions"></div>
             </div>
-            <div class="form-text">{{ __('purchasing.copy.type_to_display_pr_options_then_select_one_option') }}</div>
+            <div>
+                <x-ui.button type="submit" size="sm" class="tw:w-full tw:md:w-auto">
+                    <x-slot:leading><x-ui.icon name="search" size="sm" /></x-slot:leading>
+                    {{ __('purchasing.copy.compare') }}
+                </x-ui.button>
+            </div>
         </div>
-        <div>
-            <x-ui.button type="submit" size="sm" class="tw:w-full tw:md:w-auto">
-                <x-slot:leading><x-ui.icon name="search" /></x-slot:leading>
-                {{ __('purchasing.copy.compare') }}
-            </x-ui.button>
-        </div>
+        <div id="comparisonPrHelp" class="form-text tw:mt-1">{{ __('purchasing.copy.type_to_display_pr_options_then_select_one_option') }}</div>
     </form>
 </x-ui.toolbar>
 

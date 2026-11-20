@@ -22,6 +22,7 @@ use App\Http\Middleware\SupplierScopeMiddleware;
 use App\Http\Middleware\WrapWorkspaceShell;
 use App\Support\PortalContext;
 use App\Support\RateLimitResponse;
+use App\Support\WorkspaceShell;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -116,6 +117,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->redirectUsersTo(function () {
             if (auth()->check()) {
+                if ($shortcutsHome = WorkspaceShell::shortcutsHomeUrl(auth()->user())) {
+                    return $shortcutsHome;
+                }
+
                 return match (auth()->user()->role) {
                     'admin' => route('admin.dashboard', absolute: false),
                     'purchasing' => route('purchasing.dashboard', absolute: false),

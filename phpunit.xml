@@ -107,6 +107,7 @@
         <env name="PORTAL_LONG_HASHIDS_ENABLED" value="false" force="true"/>
         <env name="PORTAL_PATH_PREFIX_ENABLED" value="false" force="true"/>
         <env name="PORTAL_PAGE_REGISTRY_ENABLED" value="false" force="true"/>
+        <env name="PORTAL_CONTEXT_URLS_ENABLED" value="false" force="true"/>
         <env name="AUTH_SPLASH_ENABLED" value="false" force="true"/>
         <env name="WORKSPACE_SHELL_ENABLED" value="false" force="true"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>

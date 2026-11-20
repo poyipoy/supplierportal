@@ -25,18 +25,64 @@
     </x-slot:toolbar>
 
     @if($annualManagement)
+        @php
+            $annualResetUrl = route($masterRoutePrefix.'.exchange-rates.index', ['tab' => 'annual']);
+            $annualChips = [];
+            if (request()->filled('annual_year') && is_scalar(request('annual_year'))) {
+                $annualChips[] = [
+                    'key' => 'annual_year',
+                    'label' => __('annual_rates.filter_year'),
+                    'value' => (string) request('annual_year'),
+                    'removeUrl' => $annualEditing ? null : $annualResetUrl,
+                    'removeAttrs' => ['data-exchange-rates-link' => ''],
+                ];
+            }
+        @endphp
+
         <x-slot:filters>
-            <form method="GET" action="{{ route($masterRoutePrefix.'.exchange-rates.index') }}" class="tw:flex tw:flex-wrap tw:items-end tw:gap-2" data-track-unsaved="false" data-server-tabs-form>
-                <input type="hidden" name="tab" value="annual">
-                <label for="annual-year-filter" class="tw:grid tw:gap-1 tw:text-ui-xs tw:font-medium">
-                    {{ __('annual_rates.filter_year') }}
-                    <input id="annual-year-filter" name="annual_year" type="text" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" value="{{ is_scalar(request('annual_year')) ? request('annual_year') : '' }}" class="form-control form-control-sm ui-tabular-nums tw:w-28" @disabled($annualEditing)>
-                </label>
-                <x-ui.button type="submit" variant="outline" size="sm" :disabled="$annualEditing">{{ __('admin.copy.apply_filter') }}</x-ui.button>
-                @if(request()->filled('annual_year'))
-                    <x-ui.button :href="route($masterRoutePrefix.'.exchange-rates.index', ['tab' => 'annual'])" data-exchange-rates-link variant="ghost" size="sm" :disabled="$annualEditing">{{ __('admin.copy.clear') }}</x-ui.button>
-                @endif
-            </form>
+            <x-ui.filter-bar
+                id="annualMatrixFilterForm"
+                :action="route($masterRoutePrefix.'.exchange-rates.index')"
+                variant="embedded"
+                :server-tabs="true"
+                data-track-unsaved="false"
+                :has-active-filters="count($annualChips) > 0"
+                :reset-url="$annualResetUrl"
+                :reset-label="__('admin.copy.clear')"
+                :reset-disabled="$annualEditing"
+                :reset-attrs="['data-exchange-rates-link' => '']"
+                :submit-label="__('admin.copy.apply_filter')"
+                :submit-disabled="$annualEditing"
+            >
+                <x-slot:hidden>
+                    <input type="hidden" name="tab" value="annual">
+                </x-slot:hidden>
+
+                <x-slot:filters>
+                    <label for="annual-year-filter" class="tw:sr-only">{{ __('annual_rates.filter_year') }}</label>
+                    <input
+                        id="annual-year-filter"
+                        name="annual_year"
+                        type="text"
+                        inputmode="numeric"
+                        pattern="[0-9]{4}"
+                        maxlength="4"
+                        value="{{ is_scalar(request('annual_year')) ? request('annual_year') : '' }}"
+                        placeholder="{{ __('annual_rates.filter_year') }}"
+                        class="form-control form-control-sm ui-tabular-nums tw:w-32"
+                        @disabled($annualEditing)
+                    >
+                </x-slot:filters>
+
+                <x-slot:chips>
+                    <x-ui.filter-chips
+                        :items="$annualChips"
+                        :clear-url="$annualEditing ? null : $annualResetUrl"
+                        :clear-attrs="['data-exchange-rates-link' => '']"
+                        :server-tabs="true"
+                    />
+                </x-slot:chips>
+            </x-ui.filter-bar>
             @if($errors->getBag('annualFilters')->any())
                 <x-ui.field-error :messages="$errors->getBag('annualFilters')->all()" />
             @endif

@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Services\NotificationService;
 use App\Support\NotificationDomain;
 use App\Support\PortalContext;
+use App\Support\WorkspaceShell;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -107,6 +108,16 @@ class CompleteLoginService
     {
         $redirectUrl = TwoFactorService::safeIntendedUrl($request, $intended, route('dashboard', absolute: false));
 
+        $dashboardPath = rtrim((string) parse_url(route('dashboard', absolute: false), PHP_URL_PATH), '/');
+        $redirectPath = rtrim((string) parse_url($redirectUrl, PHP_URL_PATH), '/');
+
+        if ($redirectPath === $dashboardPath && ! $user->must_change_password) {
+            $shortcutsHome = WorkspaceShell::shortcutsHomeUrl($user, absolute: false);
+            if ($shortcutsHome !== null) {
+                return $shortcutsHome;
+            }
+        }
+
         if (! $request->hasHeader('X-Auth-Splash-Client')) {
             return $redirectUrl;
         }
@@ -114,9 +125,6 @@ class CompleteLoginService
         if ($user->must_change_password) {
             return route('profile.security', absolute: false);
         }
-
-        $dashboardPath = rtrim((string) parse_url(route('dashboard', absolute: false), PHP_URL_PATH), '/');
-        $redirectPath = rtrim((string) parse_url($redirectUrl, PHP_URL_PATH), '/');
 
         if ($redirectPath !== $dashboardPath) {
             return $redirectUrl;

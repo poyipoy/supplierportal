@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Support\PortalContext;
+use App\Support\WorkspaceShell;
 use Illuminate\Http\Request;
 
 class SupplierContextController extends Controller
@@ -23,6 +24,7 @@ class SupplierContextController extends Controller
 
         PortalContext::switchTo($request, $data['context']);
 
-        return redirect(PortalContext::dashboard($request->user()));
+        return redirect(WorkspaceShell::shortcutsHomeUrl($request->user(), absolute: false)
+            ?? PortalContext::dashboard($request->user()));
     }
 }

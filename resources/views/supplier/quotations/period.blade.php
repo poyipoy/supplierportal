@@ -33,14 +33,27 @@
         :description="__('supplier.copy.filter_by_pr_number_or_your_quotation_status')"
     >
         <x-slot:filters>
-            <div class="row g-2 align-items-end">
-                <div class="col-md-5 col-lg-4">
-                    <label class="form-label small fw-semibold tw:text-on-surface mb-1" for="filter_pr_number">{{ __('supplier.copy.pr_number') }}</label>
-                    <input type="text" id="filter_pr_number" class="form-control form-control-sm" placeholder="{{ __('supplier.copy.e_g_req_05_2026_001') }}">
-                </div>
-                <div class="col-md-4 col-lg-3">
-                    <label class="form-label small fw-semibold tw:text-on-surface mb-1" for="filter_status">{{ __('supplier.copy.my_quotation_status') }}</label>
-                    <select id="filter_status" class="form-select form-select-sm">
+            <x-ui.filter-bar
+                id="supplierPeriodFilterBar"
+                mode="live"
+                variant="embedded"
+                reset-id="resetFilter"
+                :reset-label="__('supplier.copy.reset_filters')"
+            >
+                <x-slot:search>
+                    <label for="filter_pr_number" class="tw:sr-only">{{ __('supplier.copy.pr_number') }}</label>
+                    <x-ui.icon name="search" size="sm" class="ui-filter-bar__search-icon" aria-hidden="true" />
+                    <input
+                        type="search"
+                        id="filter_pr_number"
+                        class="form-control form-control-sm ui-filter-bar__search-input"
+                        placeholder="{{ __('supplier.copy.e_g_req_05_2026_001') }}"
+                    >
+                </x-slot:search>
+
+                <x-slot:filters>
+                    <label for="filter_status" class="tw:sr-only">{{ __('supplier.copy.my_quotation_status') }}</label>
+                    <select id="filter_status" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-52">
                         <option value="">{{ __('supplier.copy.all_statuses') }}</option>
                         <option value="unresponded">{{ __('supplier.copy.awaiting_quotation') }}</option>
                         <option value="draft">{{ __('supplier.copy.draft') }}</option>
@@ -49,14 +62,12 @@
                         <option value="accepted">{{ __('supplier.copy.accepted') }}</option>
                         <option value="rejected">{{ __('supplier.copy.rejected') }}</option>
                     </select>
-                </div>
-                <div class="col-md-3 col-lg-2 d-flex tw:gap-1.5">
-                    <x-ui.button type="button" size="sm" class="tw:flex-1" id="applyFilter">
-                        <x-ui.icon name="search" size="sm" class="me-1" />{{ __('supplier.copy.filter') }}
-                    </x-ui.button>
-                    <x-ui.icon-button icon="rotate-ccw" :label="__('supplier.copy.reset_filters')" variant="outline" size="sm" id="resetFilter" />
-                </div>
-            </div>
+                </x-slot:filters>
+
+                <x-slot:chips>
+                    <x-ui.filter-chips id="filterChips" />
+                </x-slot:chips>
+            </x-ui.filter-bar>
         </x-slot:filters>
 
         <table class="table table-hover align-middle mb-0 tw:text-ui-xs w-100" id="prTable">
@@ -103,15 +114,12 @@
         });
 
 
-        $('#filter_status').on('change', function() { table.ajax.reload(); });
-        $('#applyFilter').on('click', function() { table.ajax.reload(); });
-        $('#filter_pr_number').on('keypress', function(e) {
-            if (e.which === 13) table.ajax.reload();
-        });
-        $('#resetFilter').on('click', function() {
-            $('#filter_pr_number').val('');
-            $('#filter_status').val('');
-            table.ajax.reload();
+        window.AdasiFilterBar.bindLive('#supplierPeriodFilterBar', {
+            fields: [
+                { key: 'pr_number', label: @json(__('supplier.copy.pr_number')), selector: '#filter_pr_number', type: 'search' },
+                { key: 'status', label: @json(__('supplier.copy.my_quotation_status')), selector: '#filter_status', type: 'select' },
+            ],
+            onFilterChange: () => table.ajax.reload(),
         });
     });
 </script>

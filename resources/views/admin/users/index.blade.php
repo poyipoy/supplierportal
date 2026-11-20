@@ -18,26 +18,54 @@
         </x-slot:actions>
     </x-ui.page-header>
 
-    <x-ui.toolbar aria-label="{{ __('admin.copy.user_table_controls') }}">
+    <x-ui.filter-bar
+        id="usersFilterBar"
+        mode="live"
+        :aria-label="__('admin.copy.user_table_controls')"
+        advanced-id="userMoreFilters"
+        :advanced-label="__('admin.copy.more_filters')"
+        reset-id="resetUserFilters"
+        :reset-label="__('admin.copy.reset')"
+    >
         <x-slot:search>
-            <x-ui.input name="user_search" id="userSearch" type="search" :placeholder="__('admin.copy.search_name_or_email')" aria-label="{{ __('admin.copy.search_users') }}" autocomplete="off" />
+            <label for="userSearch" class="tw:sr-only">{{ __('admin.copy.search_users') }}</label>
+            <x-ui.icon name="search" size="sm" class="ui-filter-bar__search-icon" aria-hidden="true" />
+            <input
+                name="user_search"
+                id="userSearch"
+                type="search"
+                placeholder="{{ __('admin.copy.search_name_or_email') }}"
+                aria-label="{{ __('admin.copy.search_users') }}"
+                autocomplete="off"
+                class="form-control form-control-sm ui-filter-bar__search-input"
+            />
         </x-slot:search>
         <x-slot:filters>
-            <label class="tw:grid tw:gap-1 tw:text-ui-xs tw:font-medium" for="userRoleFilter">{{ __('admin.copy.role') }}
-                <select id="userRoleFilter" class="form-select form-select-sm tw:min-w-36"><option value="">{{ __('admin.copy.all_roles') }}</option><option value="admin">{{ __('admin.copy.admin') }}</option><option value="purchasing">{{ __('admin.copy.purchasing') }}</option><option value="supplier">{{ __('admin.copy.supplier') }}</option><option value="qc">QC</option><option value="finance">{{ __('admin.copy.finance') }}</option><option value="ga">{{ __('admin.copy.general_affairs') }}</option></select>
-            </label>
-            <x-ui.button variant="outline" size="sm" class="tw:self-end" type="button" data-bs-toggle="collapse" data-bs-target="#userMoreFilters" aria-expanded="false" aria-controls="userMoreFilters"><x-ui.icon name="sliders-horizontal" /> {{ __('admin.copy.more_filters') }}</x-ui.button>
+            <label for="userRoleFilter" class="tw:sr-only">{{ __('admin.copy.role') }}</label>
+            <select id="userRoleFilter" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-44">
+                <option value="">{{ __('admin.copy.all_roles') }}</option>
+                <option value="admin">{{ __('admin.copy.admin') }}</option>
+                <option value="purchasing">{{ __('admin.copy.purchasing') }}</option>
+                <option value="supplier">{{ __('admin.copy.supplier') }}</option>
+                <option value="qc">QC</option>
+                <option value="finance">{{ __('admin.copy.finance') }}</option>
+                <option value="ga">{{ __('admin.copy.general_affairs') }}</option>
+            </select>
         </x-slot:filters>
-        <x-slot:actions><x-ui.button type="button" variant="ghost" size="sm" id="resetUserFilters"><x-ui.icon name="rotate-ccw" /> {{ __('admin.copy.reset') }}</x-ui.button></x-slot:actions>
-    </x-ui.toolbar>
-
-    <div class="collapse" id="userMoreFilters">
-        <div class="tw:mb-4 tw:border tw:border-outline tw:bg-surface-container tw:p-4">
-            <label class="tw:grid tw:max-w-xs tw:gap-1 tw:text-ui-xs tw:font-medium" for="userStatusFilter">{{ __('admin.copy.account_status') }}
-                <select id="userStatusFilter" class="form-select form-select-sm"><option value="">{{ __('admin.copy.all_statuses') }}</option><option value="1">{{ __('admin.copy.active') }}</option><option value="0">{{ __('admin.copy.inactive') }}</option></select>
-            </label>
-        </div>
-    </div>
+        <x-slot:advanced>
+            <div>
+                <label for="userStatusFilter" class="tw:block tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1.5">{{ __('admin.copy.account_status') }}</label>
+                <select id="userStatusFilter" class="form-select form-select-sm tw:w-full">
+                    <option value="">{{ __('admin.copy.all_statuses') }}</option>
+                    <option value="1">{{ __('admin.copy.active') }}</option>
+                    <option value="0">{{ __('admin.copy.inactive') }}</option>
+                </select>
+            </div>
+        </x-slot:advanced>
+        <x-slot:chips>
+            <x-ui.filter-chips id="usersFilterChips" />
+        </x-slot:chips>
+    </x-ui.filter-bar>
 
     <x-ui.data-table
         :title="__('admin.copy.user_directory')"
@@ -86,17 +114,20 @@
             order: []
         });
 
-        let searchTimer;
-        $('#userSearch').on('input', function () {
-            clearTimeout(searchTimer);
-            const value = this.value;
-            searchTimer = setTimeout(() => table.search(value).draw(), 250);
-        });
-        $('#userRoleFilter').on('change', function () { table.column(3).search(this.value).draw(); });
-        $('#userStatusFilter').on('change', function () { table.column(4).search(this.value).draw(); });
-        $('#resetUserFilters').on('click', function () {
-            $('#userSearch, #userRoleFilter, #userStatusFilter').val('');
-            table.search('').columns().search('').draw();
+        window.AdasiFilterBar.bindLive('#usersFilterBar', {
+            debounceMs: 250,
+            fields: [
+                { key: 'search', label: @json(__('local_invoice.actions.search')), selector: '#userSearch', type: 'search' },
+                { key: 'role', label: @json(__('admin.copy.role')), selector: '#userRoleFilter', type: 'select' },
+                { key: 'status', label: @json(__('admin.copy.account_status')), selector: '#userStatusFilter', type: 'select', advanced: true },
+            ],
+            onFilterChange: () => {
+                table
+                    .search($('#userSearch').val() || '')
+                    .column(3).search($('#userRoleFilter').val() || '')
+                    .column(4).search($('#userStatusFilter').val() || '')
+                    .draw();
+            },
         });
 
         // ADASI Alert delete confirmation (delegated for dynamic rows)

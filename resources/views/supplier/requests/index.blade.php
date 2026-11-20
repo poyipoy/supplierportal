@@ -33,37 +33,94 @@
         :empty="$requisitions->isEmpty()"
     >
         <x-slot:filters>
-            <form method="GET" action="{{ route('supplier.requests.index') }}" class="row g-2 align-items-end w-100" id="supplierRequestFilterForm">
-                <div class="col-md-4 col-lg-3">
-                    <label class="form-label small fw-semibold tw:text-on-surface mb-1" for="filter_request_search">{{ __('supplier_requests.search') }}</label>
-                    <input type="text" id="filter_request_search" name="search" maxlength="100" class="form-control form-control-sm" value="{{ $filters['search'] ?? '' }}" placeholder="{{ __('supplier.copy.e_g_req_05_2026_001') }}">
-                </div>
-                <div class="col-md-4 col-lg-3">
-                    <label class="form-label small fw-semibold tw:text-on-surface mb-1" for="filter_request_period">{{ __('supplier_requests.period') }}</label>
-                    <select id="filter_request_period" name="period_id" class="form-select form-select-sm">
+            @php
+                $supplierReqResetUrl = route('supplier.requests.index');
+                $supplierReqRemoveUrl = static function (array $dropKeys) use ($supplierReqResetUrl): string {
+                    $query = request()->query();
+                    foreach ($dropKeys as $key) {
+                        unset($query[$key]);
+                    }
+
+                    return $query === [] ? $supplierReqResetUrl : $supplierReqResetUrl.'?'.http_build_query($query);
+                };
+
+                $supplierReqChips = [];
+                if (! empty($filters['search'])) {
+                    $supplierReqChips[] = [
+                        'key' => 'search',
+                        'label' => __('supplier_requests.search'),
+                        'value' => (string) $filters['search'],
+                        'removeUrl' => $supplierReqRemoveUrl(['search']),
+                    ];
+                }
+                if (! empty($filters['period_id'])) {
+                    $selectedReqPeriod = $periods->firstWhere('id', (int) $filters['period_id']);
+                    $supplierReqChips[] = [
+                        'key' => 'period_id',
+                        'label' => __('supplier_requests.period'),
+                        'value' => $selectedReqPeriod ? $selectedReqPeriod->display_label : (string) $filters['period_id'],
+                        'removeUrl' => $supplierReqRemoveUrl(['period_id']),
+                    ];
+                }
+                if (! empty($filters['status'])) {
+                    $supplierReqStatusVal = $filters['status'] === 'unresponded'
+                        ? __('supplier.copy.awaiting_quotation')
+                        : \App\Support\StatusHelper::quotationLabel((string) $filters['status']);
+                    $supplierReqChips[] = [
+                        'key' => 'status',
+                        'label' => __('supplier.copy.my_quotation_status'),
+                        'value' => $supplierReqStatusVal,
+                        'removeUrl' => $supplierReqRemoveUrl(['status']),
+                    ];
+                }
+            @endphp
+
+            <x-ui.filter-bar
+                id="supplierRequestFilterForm"
+                :action="$supplierReqResetUrl"
+                variant="embedded"
+                :has-active-filters="count($supplierReqChips) > 0"
+                :reset-url="$supplierReqResetUrl"
+                :reset-label="__('supplier.copy.reset_filters')"
+                :submit-label="__('supplier.copy.filter')"
+            >
+                <x-slot:search>
+                    <label for="filter_request_search" class="tw:sr-only">{{ __('supplier_requests.search') }}</label>
+                    <x-ui.icon name="search" size="sm" class="ui-filter-bar__search-icon" aria-hidden="true" />
+                    <input
+                        type="search"
+                        id="filter_request_search"
+                        name="search"
+                        maxlength="100"
+                        class="form-control form-control-sm ui-filter-bar__search-input"
+                        value="{{ $filters['search'] ?? '' }}"
+                        placeholder="{{ __('supplier.copy.e_g_req_05_2026_001') }}"
+                    >
+                </x-slot:search>
+
+                <x-slot:filters>
+                    <label for="filter_request_period" class="tw:sr-only">{{ __('supplier_requests.period') }}</label>
+                    <select id="filter_request_period" name="period_id" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-48">
                         <option value="">{{ __('supplier_requests.all_periods') }}</option>
                         @foreach($periods as $period)
                             <option value="{{ $period->id }}" @selected((string) ($filters['period_id'] ?? '') === (string) $period->id)>{{ $period->display_label }}</option>
                         @endforeach
                     </select>
-                </div>
-                <div class="col-md-4 col-lg-3">
-                    <label class="form-label small fw-semibold tw:text-on-surface mb-1" for="filter_request_status">{{ __('supplier.copy.my_quotation_status') }}</label>
-                    <select id="filter_request_status" name="status" class="form-select form-select-sm">
+
+                    <label for="filter_request_status" class="tw:sr-only">{{ __('supplier.copy.my_quotation_status') }}</label>
+                    <select id="filter_request_status" name="status" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-48">
                         <option value="">{{ __('supplier.copy.all_statuses') }}</option>
                         <option value="unresponded" @selected(($filters['status'] ?? '') === 'unresponded')>{{ __('supplier.copy.awaiting_quotation') }}</option>
                         @foreach(['draft', 'revision_requested', 'submitted', 'accepted', 'rejected', 'all_unavailable'] as $status)
                             <option value="{{ $status }}" @selected(($filters['status'] ?? '') === $status)>{{ \App\Support\StatusHelper::quotationLabel($status) }}</option>
                         @endforeach
                     </select>
-                </div>
-                <div class="col-md-12 col-lg-3 d-flex tw:gap-1.5">
-                    <x-ui.button type="submit" size="sm" class="tw:flex-1">
-                        <x-ui.icon name="search" size="sm" class="me-1" />{{ __('supplier.copy.filter') }}
-                    </x-ui.button>
-                    <x-ui.icon-button icon="rotate-ccw" :label="__('supplier.copy.reset_filters')" variant="outline" size="sm" :href="route('supplier.requests.index')" />
-                </div>
-            </form>
+                </x-slot:filters>
+
+                <x-slot:chips>
+                    <x-ui.filter-chips :items="$supplierReqChips" :clear-url="$supplierReqResetUrl" />
+                </x-slot:chips>
+            </x-ui.filter-bar>
         </x-slot:filters>
 
         <x-slot:emptyState>

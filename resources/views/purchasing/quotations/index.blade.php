@@ -18,83 +18,164 @@
             </x-slot:actions>
         </x-ui.page-header>
 
-        {{-- 2. Operational Toolbar --}}
-        <x-ui.toolbar :sticky="true">
+        {{-- 2. Operational Filter Bar --}}
+        @php
+            $quotationResetUrl = route('purchasing.quotations.index');
+            $quotationRemoveUrl = static function (array $dropKeys) use ($quotationResetUrl): string {
+                $query = request()->query();
+                foreach ($dropKeys as $key) {
+                    unset($query[$key]);
+                }
+
+                return $query === [] ? $quotationResetUrl : $quotationResetUrl.'?'.http_build_query($query);
+            };
+
+            $quotationAdvCount = collect([
+                request()->filled('supplier_id'),
+                request()->filled('currency'),
+            ])->filter()->count();
+
+            $quotationStatusLabels = [
+                'submitted' => __('purchasing.copy.submitted'),
+                'all_unavailable' => __('purchasing.copy.all_unavailable'),
+                'revision_requested' => __('purchasing.copy.needs_revision'),
+                'accepted' => __('purchasing.copy.accepted'),
+                'rejected' => __('purchasing.copy.rejected'),
+            ];
+
+            $quotationChips = [];
+            if (request()->filled('pr_number')) {
+                $quotationChips[] = [
+                    'key' => 'pr_number',
+                    'label' => __('purchasing.copy.pr_no'),
+                    'value' => (string) request('pr_number'),
+                    'removeUrl' => $quotationRemoveUrl(['pr_number']),
+                ];
+            }
+            if (request()->filled('status')) {
+                $quotationChips[] = [
+                    'key' => 'status',
+                    'label' => __('purchasing.copy.status'),
+                    'value' => $quotationStatusLabels[request('status')] ?? (string) request('status'),
+                    'removeUrl' => $quotationRemoveUrl(['status']),
+                ];
+            }
+            if (request()->filled('date_from') || request()->filled('date_to')) {
+                $quotationDateVal = request()->filled('date_from') && request()->filled('date_to')
+                    ? request('date_from').' - '.request('date_to')
+                    : (string) (request('date_from') ?: request('date_to'));
+                $quotationChips[] = [
+                    'key' => 'date_range',
+                    'label' => __('purchasing.copy.period'),
+                    'value' => $quotationDateVal,
+                    'removeUrl' => $quotationRemoveUrl(['date_from', 'date_to']),
+                ];
+            }
+            if (request()->filled('supplier_id')) {
+                $selectedQuotationSupplier = $suppliers->first(fn ($s) => (string) $s->getRouteKey() === (string) request('supplier_id'));
+                $quotationChips[] = [
+                    'key' => 'supplier_id',
+                    'label' => __('purchasing.copy.supplier'),
+                    'value' => $selectedQuotationSupplier ? $selectedQuotationSupplier->name : (string) request('supplier_id'),
+                    'removeUrl' => $quotationRemoveUrl(['supplier_id']),
+                ];
+            }
+            if (request()->filled('currency')) {
+                $quotationChips[] = [
+                    'key' => 'currency',
+                    'label' => __('purchasing.copy.currency'),
+                    'value' => \App\Models\ExchangeRate::currencyLabel((string) request('currency')),
+                    'removeUrl' => $quotationRemoveUrl(['currency']),
+                ];
+            }
+        @endphp
+
+        <x-ui.filter-bar
+            id="quotationFilterForm"
+            :action="$quotationResetUrl"
+            :sticky="true"
+            advanced-id="quotationMoreFilters"
+            :advanced-count="$quotationAdvCount"
+            :advanced-open="$quotationAdvCount > 0"
+            :has-active-filters="count($quotationChips) > 0"
+            :reset-url="$quotationResetUrl"
+            :reset-label="__('purchasing.copy.reset')"
+            :submit-label="__('purchasing.copy.apply_filters_926161')"
+            :submit-attrs="['data-calendar-native-submit' => '']"
+            class="quotation-filter"
+            data-managed-submit
+        >
+            <x-slot:search>
+                <label for="quotationPrSearch" class="tw:sr-only">{{ __('purchasing.copy.filter_by_pr_number') }}</label>
+                <x-ui.icon name="search" size="sm" class="ui-filter-bar__search-icon" aria-hidden="true" />
+                <input
+                    id="quotationPrSearch"
+                    type="text"
+                    name="pr_number"
+                    class="form-control form-control-sm ui-filter-bar__search-input"
+                    value="{{ request('pr_number') }}"
+                    placeholder="{{ __('purchasing.copy.pr_number_req') }}"
+                    aria-label="{{ __('purchasing.copy.filter_by_pr_number') }}"
+                />
+            </x-slot:search>
+
             <x-slot:filters>
-                <form method="GET" action="{{ route('purchasing.quotations.index') }}"
-                    class="quotation-filter d-flex flex-wrap align-items-center gap-2 w-100" id="quotationFilterForm" data-managed-submit>
+                <label for="quotationStatusFilter" class="tw:sr-only">{{ __('purchasing.copy.filter_by_status') }}</label>
+                <select id="quotationStatusFilter" name="status" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-44" aria-label="{{ __('purchasing.copy.filter_by_status') }}">
+                    <option value="">{{ __('purchasing.copy.all_statuses') }}</option>
+                    <option value="submitted" {{ request('status') == 'submitted' ? 'selected' : '' }}>{{ __('purchasing.copy.submitted') }}</option>
+                    <option value="all_unavailable" {{ request('status') == 'all_unavailable' ? 'selected' : '' }}>{{ __('purchasing.copy.all_unavailable') }}</option>
+                    <option value="revision_requested" {{ request('status') == 'revision_requested' ? 'selected' : '' }}>{{ __('purchasing.copy.needs_revision') }}</option>
+                    <option value="accepted" {{ request('status') == 'accepted' ? 'selected' : '' }}>{{ __('purchasing.copy.accepted') }}</option>
+                    <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>{{ __('purchasing.copy.rejected') }}</option>
+                </select>
 
-                    <div style="min-width: 170px; max-width: 210px;" class="flex-grow-1">
-                        <input
-                            type="text"
-                            name="pr_number"
-                            class="form-control form-control-sm"
-                            value="{{ request('pr_number') }}"
-                            placeholder="{{ __('purchasing.copy.pr_number_req') }}"
-                            aria-label="{{ __('purchasing.copy.filter_by_pr_number') }}"
-                        />
-                    </div>
-
-                    <div style="min-width: 250px;">
-                        <x-ui.date-range-picker
-                            id="quotationDateRangeControl"
-                            granularity="month"
-                            start-name="date_from"
-                            start-id="quotationDateFrom"
-                            :start-label="__('purchasing.copy.from')"
-                            :start-value="request('date_from')"
-                            end-name="date_to"
-                            end-id="quotationDateTo"
-                            :end-label="__('purchasing.copy.to')"
-                            :end-value="request('date_to')"
-                            error-id="quotationDateError"
-                            compact
-                        />
-                    </div>
-
-                    <x-ui.button type="submit" variant="primary" size="sm" data-calendar-native-submit>
-                        <x-ui.icon name="filter" />
-                        <span>{{ __('purchasing.copy.apply_filters_926161') }}</span>
-                    </x-ui.button>
-
-                    <div style="min-width: 160px;">
-                        <select name="supplier_id" class="form-select form-select-sm" aria-label="{{ __('purchasing.copy.filter_by_supplier') }}">
-                            <option value="">{{ __('purchasing.copy.all_suppliers_3a7a53') }}</option>
-                            @foreach($suppliers as $supplier)
-                                <option value="{{ $supplier->getRouteKey() }}" {{ request('supplier_id') === $supplier->getRouteKey() ? 'selected' : '' }}>
-                                    {{ $supplier->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <div style="min-width: 130px;">
-                        <select name="status" class="form-select form-select-sm" aria-label="{{ __('purchasing.copy.filter_by_status') }}">
-                            <option value="">{{ __('purchasing.copy.all_statuses') }}</option>
-                            <option value="submitted" {{ request('status') == 'submitted' ? 'selected' : '' }}>{{ __('purchasing.copy.submitted') }}</option>
-                            <option value="all_unavailable" {{ request('status') == 'all_unavailable' ? 'selected' : '' }}>{{ __('purchasing.copy.all_unavailable') }}</option>
-                            <option value="revision_requested" {{ request('status') == 'revision_requested' ? 'selected' : '' }}>{{ __('purchasing.copy.needs_revision') }}</option>
-                            <option value="accepted" {{ request('status') == 'accepted' ? 'selected' : '' }}>{{ __('purchasing.copy.accepted') }}</option>
-                            <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>{{ __('purchasing.copy.rejected') }}</option>
-                        </select>
-                    </div>
-
-                    <div style="min-width: 90px;">
-                        <select name="currency" class="form-select form-select-sm" aria-label="{{ __('purchasing.copy.filter_by_currency') }}">
-                            <option value="">{{ __('purchasing.copy.all_curr') }}</option>
-                            @foreach(\App\Models\ExchangeRate::CURRENCIES as $currency)
-                                <option value="{{ $currency }}" {{ request('currency') == $currency ? 'selected' : '' }}>{{ \App\Models\ExchangeRate::currencyLabel($currency) }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <x-ui.button :href="route('purchasing.quotations.index')" variant="ghost" size="sm">
-                        <x-ui.icon name="rotate-ccw" />
-                        <span>{{ __('purchasing.copy.reset') }}</span>
-                    </x-ui.button>
-                </form>
+                <div class="tw:w-full tw:min-w-0 tw:sm:w-64">
+                    <x-ui.date-range-picker
+                        id="quotationDateRangeControl"
+                        granularity="month"
+                        start-name="date_from"
+                        start-id="quotationDateFrom"
+                        :start-label="__('purchasing.copy.from')"
+                        :start-value="request('date_from')"
+                        end-name="date_to"
+                        end-id="quotationDateTo"
+                        :end-label="__('purchasing.copy.to')"
+                        :end-value="request('date_to')"
+                        error-id="quotationDateError"
+                        compact
+                    />
+                </div>
             </x-slot:filters>
-        </x-ui.toolbar>
+
+            <x-slot:advanced>
+                <div>
+                    <label for="quotationSupplierFilter" class="tw:block tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1.5">{{ __('purchasing.copy.supplier') }}</label>
+                    <select id="quotationSupplierFilter" name="supplier_id" class="form-select form-select-sm tw:w-full" aria-label="{{ __('purchasing.copy.filter_by_supplier') }}">
+                        <option value="">{{ __('purchasing.copy.all_suppliers_3a7a53') }}</option>
+                        @foreach($suppliers as $supplier)
+                            <option value="{{ $supplier->getRouteKey() }}" {{ request('supplier_id') === $supplier->getRouteKey() ? 'selected' : '' }}>
+                                {{ $supplier->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div>
+                    <label for="quotationCurrencyFilter" class="tw:block tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1.5">{{ __('purchasing.copy.currency') }}</label>
+                    <select id="quotationCurrencyFilter" name="currency" class="form-select form-select-sm tw:w-full" aria-label="{{ __('purchasing.copy.filter_by_currency') }}">
+                        <option value="">{{ __('purchasing.copy.all_curr') }}</option>
+                        @foreach(\App\Models\ExchangeRate::CURRENCIES as $currency)
+                            <option value="{{ $currency }}" {{ request('currency') == $currency ? 'selected' : '' }}>{{ \App\Models\ExchangeRate::currencyLabel($currency) }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            </x-slot:advanced>
+
+            <x-slot:chips>
+                <x-ui.filter-chips id="quotationFilterChips" :items="$quotationChips" :clear-url="$quotationResetUrl" />
+            </x-slot:chips>
+        </x-ui.filter-bar>
 
         {{-- 3. Balanced Data Table --}}
         <x-ui.data-table density="compact">
@@ -247,7 +328,7 @@
             };
 
             const replaceFromResponse = (documentFragment) => {
-                ['quotationCountBadge', 'quotationTableContainer', 'quotationPaginationContainer'].forEach((id) => {
+                ['quotationCountBadge', 'quotationFilterChips', 'quotationTableContainer', 'quotationPaginationContainer'].forEach((id) => {
                     const current = document.getElementById(id);
                     const incoming = documentFragment.getElementById(id);
                     if (current && incoming) {

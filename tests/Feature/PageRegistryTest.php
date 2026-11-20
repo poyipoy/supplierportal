@@ -92,12 +92,22 @@ class PageRegistryTest extends TestCase
         $target = PageRegistry::url('finance.invoices.index');
         $this->get($target)->assertRedirect(route('login'));
         $user = User::factory()->create(['role' => 'qc']);
-        $destination = $this->actingAs($user)->get($target)->assertStatus(302)->headers->get('Location');
-        $this->get($destination)->assertForbidden();
+        $this->actingAs($user)
+            ->get($target)
+            ->assertNotFound()
+            ->assertHeaderMissing('Location');
+        $this->actingAs($user)
+            ->get(route('finance.invoices.index'))
+            ->assertForbidden();
 
         $supplier = User::factory()->create();
-        $this->actingAs($supplier)->get(PageRegistry::url('local-supplier.invoices.index'))->assertStatus(302);
-        $this->get(route('local-supplier.invoices.index'))->assertForbidden();
+        $this->actingAs($supplier)
+            ->get(PageRegistry::url('local-supplier.invoices.index'))
+            ->assertNotFound()
+            ->assertHeaderMissing('Location');
+        $this->actingAs($supplier)
+            ->get(route('local-supplier.invoices.index'))
+            ->assertForbidden();
         $this->get(route('portal.page', '12345678-1234-4123-8123-123456789abc'))->assertNotFound();
         $this->get('/v2/ADASI_PRD/invalid-uuid')->assertNotFound();
     }
@@ -110,5 +120,35 @@ class PageRegistryTest extends TestCase
             ->assertSee('href="'.PageRegistry::url('purchasing.purchase-orders.index').'"', false);
         $items = app(QuickAccessService::class)->availableFor($user);
         $this->assertSame(PageRegistry::url('purchasing.purchase-orders.index'), $items['purchasing.orders']['url']);
+    }
+
+    public function test_context_url_carries_remembered_purchasing_filters_and_renders_shell_directly(): void
+    {
+        $this->reloadPortalRoutes([
+            'portal_urls.context_urls.enabled' => true,
+            'portal_urls.prefix.enabled' => true,
+            'portal_urls.prefix.value' => 'v2/ADASI_PRD',
+            'ui.workspace_shell.enabled' => true,
+        ]);
+
+        $purchasing = User::factory()->create(['role' => 'purchasing']);
+
+        $this->actingAs($purchasing)
+            ->get(route('purchasing.shipments.index', ['search' => 'SHP-01', 'status' => 'submitted']))
+            ->assertOk();
+
+        $remembered = PurchasingNavigation::listUrl('purchasing.shipments.index');
+        $contextUrl = PageRegistry::url('purchasing.shipments.index', $remembered);
+
+        $this->assertStringContainsString('/v2/ADASI_PRD/'.config('portal_urls.context_urls.app_uuid').'?favoriteContext=', $contextUrl);
+        $this->assertStringContainsString('LogicalId=lid%3A%2F%2Fadasi.portal.purchasing', $contextUrl);
+
+        $shellResponse = $this->actingAs($purchasing)->get($contextUrl);
+        $shellResponse->assertOk()
+            ->assertHeader('X-Frame-Options', 'DENY')
+            ->assertSee('data-workspace-shell="true"', false)
+            ->assertSee('_embed=1', false)
+            ->assertSee('search=SHP-01', false)
+            ->assertSee('status=submitted', false);
     }
 }

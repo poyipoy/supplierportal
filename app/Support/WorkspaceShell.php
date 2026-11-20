@@ -254,9 +254,12 @@ class WorkspaceShell
         return $fragment !== null && $fragment !== '' ? $rebuilt.'#'.$fragment : $rebuilt;
     }
 
-    public static function stripEmbedParam(string $url): string
+    /**
+     * @param  list<string>  $extraKeys
+     */
+    public static function stripEmbedParam(string $url, array $extraKeys = []): string
     {
-        if ($url === '' || ! str_contains($url, self::EMBED_QUERY_PARAM)) {
+        if ($url === '' || ! str_contains($url, '?')) {
             return $url;
         }
 
@@ -269,6 +272,9 @@ class WorkspaceShell
 
         parse_str($queryPart, $params);
         unset($params[self::EMBED_QUERY_PARAM]);
+        foreach ($extraKeys as $extraKey) {
+            unset($params[$extraKey]);
+        }
 
         $rebuilt = $params === []
             ? $pathPart
@@ -381,7 +387,7 @@ class WorkspaceShell
      *
      * @return array<string, string>
      */
-    private static function menuRouteLabelMap(): array
+    public static function menuRouteLabelMap(): array
     {
         return [
             'dashboard' => __('navigation.dashboard'),
@@ -491,14 +497,35 @@ class WorkspaceShell
      *
      * @return array{uuidMap: array<string, array{key: string, url: string}>, pathMap: array<string, array{key: string, url: string}>, menuPathTitles: array<string, string>}
      */
-    public static function moduleLookupMaps(): array
+    public static function moduleLookupMaps(?User $user = null, ?string $activeScopeOverride = null): array
     {
+        $user ??= auth()->user();
+        if (! $user instanceof User) {
+            return [
+                'uuidMap' => [],
+                'pathMap' => [],
+                'menuPathTitles' => [],
+            ];
+        }
+
+        $activeScope = $user->isSupplier()
+            ? ($activeScopeOverride ?? PortalContext::current($user) ?? '__none__')
+            : null;
+        $scopeGrants = $user->isSupplier() ? implode(',', $user->supplierScopeValues()) : '';
         $locale = app()->getLocale();
         $rawPrefix = trim(PortalPath::prefix(), '/');
         $hostKey = app()->runningInConsole() && ! app()->runningUnitTests()
             ? 'cli'
             : (string) request()->getSchemeAndHttpHost();
-        $memoKey = $locale.'|'.$rawPrefix.'|'.$hostKey;
+        $memoKey = implode('|', [
+            $locale,
+            $rawPrefix,
+            $hostKey,
+            (string) ($user->role ?? ''),
+            (string) ($activeScope ?? ''),
+            $scopeGrants,
+            $user->is_active ? '1' : '0',
+        ]);
 
         if (isset(self::$moduleMapsCache[$memoKey])) {
             return self::$moduleMapsCache[$memoKey];
@@ -514,6 +541,9 @@ class WorkspaceShell
         if (is_array($registry)) {
             foreach ($registry as $uuid => $routeName) {
                 if (! is_string($uuid) || ! is_string($routeName)) {
+                    continue;
+                }
+                if (! PortalSessionAuthorizer::canAccess($user, $routeName, $activeScope)) {
                     continue;
                 }
 
@@ -536,6 +566,10 @@ class WorkspaceShell
         }
 
         foreach ($routeLabels as $routeName => $label) {
+            if (! PortalSessionAuthorizer::canAccess($user, $routeName, $activeScope)) {
+                continue;
+            }
+
             try {
                 $targetUrl = route($routeName);
             } catch (\Throwable) {
@@ -580,7 +614,7 @@ class WorkspaceShell
         }
 
         $sessionId = $request->hasSession() ? (string) $request->session()->getId() : '';
-        $cleanUrl = self::stripEmbedParam($request->fullUrl());
+        $cleanUrl = self::stripEmbedParam($request->fullUrl(), ['favoriteContext', 'LogicalId']);
         $fingerprint = implode('|', [
             (string) $user->getKey(),
             (string) ($user->role ?? ''),
@@ -663,15 +697,149 @@ class WorkspaceShell
      */
     public static function shellViewData(Request $request, string $innerHtml, ?Route $route = null): array
     {
-        $cleanUrl = self::stripEmbedParam($request->fullUrl());
-        $embedUrl = self::appendEmbedParam($cleanUrl);
+        $internalCleanUrl = self::stripEmbedParam($request->fullUrl());
+        $embedUrl = self::appendEmbedParam($internalCleanUrl);
         $moduleKey = self::moduleKeyForRoute($route, $request->path());
         $menuTitle = self::menuLabelForRoute($route);
         $title = $menuTitle ?? self::extractPageTitle($innerHtml);
+        $outerCleanUrl = self::projectOuterDisplayUrl($internalCleanUrl, $request->user()) ?? $internalCleanUrl;
+
+        return self::buildShellViewData(
+            $request,
+            $outerCleanUrl,
+            $internalCleanUrl,
+            $embedUrl,
+            $moduleKey,
+            $title,
+            null
+        );
+    }
+
+    /**
+     * Resolve the direct Infor-style Shortcuts home URL after login when both flags are active.
+     */
+    public static function shortcutsHomeUrl(?User $user = null, bool $absolute = false): ?string
+    {
+        if (! config('portal_urls.context_urls.enabled', false) || ! self::enabled()) {
+            return null;
+        }
+
+        if (! $user instanceof User) {
+            return null;
+        }
+
+        if ($user->isSupplier() && PortalContext::resolve($user) === null) {
+            return route('supplier-context.index', absolute: $absolute);
+        }
+
+        $appUuid = strtolower((string) config('portal_urls.context_urls.app_uuid', ''));
+        if ($appUuid === '' || ! RouteFacade::has('portal.page')) {
+            return null;
+        }
+
+        return route('portal.page', ['pageUuid' => $appUuid], absolute: $absolute);
+    }
+
+    /**
+     * Build outer workspace shell view data starting directly on the Shortcuts home panel.
+     *
+     * @return array<string, mixed>
+     */
+    public static function shellViewDataForShortcuts(Request $request): array
+    {
+        $user = $request->user();
+        $shortcutsUrl = self::shortcutsHomeUrl($user, absolute: true) ?? $request->url();
+
+        return self::buildShellViewData(
+            $request,
+            $shortcutsUrl,
+            $shortcutsUrl,
+            null,
+            'shortcuts',
+            __('navigation.workspace_shell.shortcuts'),
+            null,
+            'shortcuts'
+        );
+    }
+
+    /**
+     * Build outer workspace shell view data from a pre-authorized decoded context payload.
+     *
+     * @param  array<string, mixed>  $resolved
+     * @return array<string, mixed>
+     */
+    public static function shellViewDataForResolved(Request $request, array $resolved): array
+    {
+        $moduleKey = self::moduleKeyForRouteName((string) $resolved['routeName'], (string) $resolved['internalPath']);
+        $title = is_string($resolved['menuTitle'] ?? null) && trim($resolved['menuTitle']) !== ''
+            ? $resolved['menuTitle']
+            : 'ADASI Portal';
+
+        return self::buildShellViewData(
+            $request,
+            (string) $resolved['canonicalContextUrl'],
+            (string) $resolved['internalUrl'],
+            (string) $resolved['internalEmbedUrl'],
+            $moduleKey,
+            $title,
+            $resolved['requiredSupplierScope'] ?? null
+        );
+    }
+
+    /**
+     * Role- and scope-filtered context URL configuration exported to the shell JS controller (SEC-01).
+     *
+     * @return array{enabled: bool, appUuid: string, pathPrefix: string, logicalIdPrefix: string, shortcutsUrl: null|string, sessionMap: list<array<string, mixed>>}
+     */
+    public static function contextLinksConfig(?User $user = null, ?string $activeScope = null): array
+    {
+        $enabled = (bool) config('portal_urls.context_urls.enabled', false);
+        $rawPrefix = trim(PortalPath::prefix(), '/');
+        $appUuid = strtolower((string) config('portal_urls.context_urls.app_uuid', '934f47ee-06a4-4f2d-a619-e7cf35e9d91b'));
+
+        return [
+            'enabled' => $enabled,
+            'appUuid' => $appUuid,
+            'pathPrefix' => $rawPrefix !== '' ? '/'.$rawPrefix : '',
+            'logicalIdPrefix' => (string) config('portal_urls.context_urls.logical_id_prefix', 'lid://adasi.portal.'),
+            'shortcutsUrl' => $enabled && $appUuid !== '' && RouteFacade::has('portal.page')
+                ? route('portal.page', ['pageUuid' => $appUuid], absolute: true)
+                : null,
+            'sessionMap' => $enabled && $user instanceof User
+                ? PortalContextCodec::sessionIndex($user, $activeScope)
+                : [],
+        ];
+    }
+
+    private static function projectOuterDisplayUrl(string $internalUrl, ?User $user): ?string
+    {
+        if (! config('portal_urls.context_urls.enabled', false) || ! $user instanceof User) {
+            return null;
+        }
+
+        return PortalContextCodec::project($internalUrl, $user);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function buildShellViewData(
+        Request $request,
+        string $outerCleanUrl,
+        string $internalCleanUrl,
+        ?string $embedUrl,
+        string $moduleKey,
+        string $title,
+        ?string $activeScopeOverride,
+        string $initialMode = 'frame'
+    ): array {
         $user = $request->user();
         $rawPrefix = trim(PortalPath::prefix(), '/');
         $pathPrefix = $rawPrefix !== '' ? '/'.$rawPrefix : '';
-        $maps = self::moduleLookupMaps();
+        $activeScope = $user instanceof User && $user->isSupplier()
+            ? ($activeScopeOverride ?? PortalContext::current($user) ?? '__none__')
+            : null;
+        $maps = self::moduleLookupMaps($user, $activeScope);
         $indexPaths = self::staticIndexPaths($maps['pathMap']);
 
         $quickAccessPaths = [];
@@ -683,10 +851,13 @@ class WorkspaceShell
                 $selected = $quickAccess->selectedFor(
                     $user,
                     $preferences['quick_access'] ?? [],
-                    $quickAccess->contextFor($user),
+                    $activeScopeOverride ?? $quickAccess->contextFor($user),
                 );
                 foreach ($selected as $item) {
-                    $itemPath = rtrim((string) parse_url((string) ($item['url'] ?? ''), PHP_URL_PATH), '/');
+                    $resolvedItemUrl = ! empty($item['route']) && RouteFacade::has($item['route'])
+                        ? route($item['route'], [], false)
+                        : (string) ($item['url'] ?? '');
+                    $itemPath = rtrim((string) parse_url($resolvedItemUrl, PHP_URL_PATH), '/');
                     if ($itemPath !== '') {
                         $quickAccessPaths[] = $itemPath;
                     }
@@ -707,16 +878,32 @@ class WorkspaceShell
             }
         : route('login');
 
+        $isShortcutsInitial = $initialMode === 'shortcuts';
+        $initialSession = $isShortcutsInitial ? null : [
+            'key' => $moduleKey,
+            'label' => $title,
+            'url' => $internalCleanUrl,
+            'displayUrl' => $outerCleanUrl,
+            'embedUrl' => $embedUrl,
+            'pinned' => false,
+            'closable' => true,
+        ];
+
+        $contextLinks = self::contextLinksConfig($user, $activeScope);
+
         return [
             'isWorkspaceShell' => true,
-            'initialCleanUrl' => $cleanUrl,
-            'initialEmbedUrl' => $embedUrl,
+            'initialMode' => $initialMode,
+            'initialCleanUrl' => $outerCleanUrl,
+            'initialEmbedUrl' => $isShortcutsInitial ? null : $embedUrl,
             'initialModuleKey' => $moduleKey,
             'initialTitle' => $title,
-            'isInitialDashboard' => $moduleKey === 'dashboard',
+            'isInitialDashboard' => ! $isShortcutsInitial && $moduleKey === 'dashboard',
             'dashboardUrl' => $dashboardUrl,
             'workspaceConfig' => [
                 'enabled' => true,
+                'initialMode' => $initialMode,
+                'shortcutsUrl' => $contextLinks['shortcutsUrl'],
                 'maxSessions' => self::maxSessions(),
                 'maxTabs' => self::maxSessions(),
                 'maxLiveFrames' => self::maxLiveFrames(),
@@ -727,11 +914,12 @@ class WorkspaceShell
                 'embedParam' => self::EMBED_QUERY_PARAM,
                 'pathPrefix' => $pathPrefix,
                 'userId' => $user?->getKey(),
-                'portalScope' => PortalContext::current() ?? 'import',
+                'portalScope' => $activeScopeOverride ?? PortalContext::current($user) ?? 'import',
                 'dashboardUrl' => $dashboardUrl,
                 'uuidMap' => $maps['uuidMap'],
                 'pathMap' => $maps['pathMap'],
                 'menuPathTitles' => $maps['menuPathTitles'],
+                'contextLinks' => $contextLinks,
                 'indexPaths' => $indexPaths,
                 'quickAccessPaths' => $quickAccessPaths,
                 'shortcutsSession' => [
@@ -746,22 +934,8 @@ class WorkspaceShell
                     'pinned' => true,
                     'closable' => false,
                 ],
-                'initialSession' => [
-                    'key' => $moduleKey,
-                    'label' => $title,
-                    'url' => $cleanUrl,
-                    'embedUrl' => $embedUrl,
-                    'pinned' => false,
-                    'closable' => true,
-                ],
-                'initialTab' => [
-                    'key' => $moduleKey,
-                    'label' => $title,
-                    'url' => $cleanUrl,
-                    'embedUrl' => $embedUrl,
-                    'pinned' => false,
-                    'closable' => true,
-                ],
+                'initialSession' => $initialSession,
+                'initialTab' => $initialSession,
                 'i18n' => [
                     'sessionsLabel' => __('navigation.workspace_shell.sessions_label'),
                     'tabsLabel' => __('navigation.workspace_shell.sessions_label'),

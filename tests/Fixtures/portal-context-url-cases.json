@@ -1,0 +1,227 @@
+{
+  "appUuid": "934f47ee-06a4-4f2d-a619-e7cf35e9d91b",
+  "logicalIdPrefix": "lid://adasi.portal.",
+  "validCases": [
+    {
+      "id": "po_show",
+      "prefix": "v2/ADASI_PRD",
+      "origin": "https://portal.adasi.test",
+      "internalUrl": "https://portal.adasi.test/v2/ADASI_PRD/purchasing/purchase-orders/gwpZa2E78jMEB3zbrvNnYXP5?tab=items&_embed=1&return_url=%2Fv2%2FADASI_PRD%2Fpurchasing%2Fpurchase-orders",
+      "action": "purords410m000",
+      "route": "purchasing.purchase-orders.show",
+      "pathTemplate": "/v2/ADASI_PRD/purchasing/purchase-orders/{id}",
+      "params": ["id"],
+      "queryAllowlist": ["tab"],
+      "hashedKeys": ["id"],
+      "logicalId": "lid://adasi.portal.purchasing",
+      "description": "Purchase Order Details",
+      "expectedArgument": "id=gwpZa2E78jMEB3zbrvNnYXP5&tab=items",
+      "expectedFavoriteContext": "c2N2MnsiZGVzY3JpcHRpb24iOiJQdXJjaGFzZSBPcmRlciBEZXRhaWxzIiwiYXBwbGljYXRpb24iOiJlcnAiLCJ0eXBlIjoic2Vzc2lvbiIsImFjdGlvbiI6InB1cm9yZHM0MTBtMDAwIiwicGF0aCI6bnVsbCwiYXJndW1lbnQiOiJpZD1nd3BaYTJFNzhqTUVCM3picnZObllYUDUmdGFiPWl0ZW1zIn0=",
+      "expectedContextUrl": "https://portal.adasi.test/v2/ADASI_PRD/934f47ee-06a4-4f2d-a619-e7cf35e9d91b?favoriteContext=c2N2MnsiZGVzY3JpcHRpb24iOiJQdXJjaGFzZSBPcmRlciBEZXRhaWxzIiwiYXBwbGljYXRpb24iOiJlcnAiLCJ0eXBlIjoic2Vzc2lvbiIsImFjdGlvbiI6InB1cm9yZHM0MTBtMDAwIiwicGF0aCI6bnVsbCwiYXJndW1lbnQiOiJpZD1nd3BaYTJFNzhqTUVCM3picnZObllYUDUmdGFiPWl0ZW1zIn0%3D&LogicalId=lid%3A%2F%2Fadasi.portal.purchasing",
+      "expectedResolvedInternalUrl": "https://portal.adasi.test/v2/ADASI_PRD/purchasing/purchase-orders/gwpZa2E78jMEB3zbrvNnYXP5?tab=items"
+    },
+    {
+      "id": "hist_cmp",
+      "prefix": "v2/ADASI_PRD",
+      "origin": "https://portal.adasi.test",
+      "internalUrl": "https://portal.adasi.test/v2/ADASI_PRD/purchasing/comparison/historical?shape=Round+Bar&pr_id=8jMEB3zb&material_name=Alloy+6061+%28T6%29+%27A%27&currency=USD",
+      "action": "purcmphs00m000",
+      "route": "purchasing.comparison.historical",
+      "pathTemplate": "/v2/ADASI_PRD/purchasing/comparison/historical",
+      "params": [],
+      "queryAllowlist": ["currency", "pr_id", "pr_item", "supplier_id", "supplier", "view", "period_view", "range", "shape", "material_name", "chart", "history", "clear_pr"],
+      "hashedKeys": ["pr_id", "pr_item", "supplier_id", "supplier"],
+      "logicalId": "lid://adasi.portal.purchasing",
+      "description": "Price Comparison",
+      "expectedArgument": "currency=USD&material_name=Alloy%206061%20%28T6%29%20%27A%27&pr_id=8jMEB3zb&shape=Round%20Bar",
+      "expectedFavoriteContext": "c2N2MnsiZGVzY3JpcHRpb24iOiJQcmljZSBDb21wYXJpc29uIiwiYXBwbGljYXRpb24iOiJlcnAiLCJ0eXBlIjoic2Vzc2lvbiIsImFjdGlvbiI6InB1cmNtcGhzMDBtMDAwIiwicGF0aCI6bnVsbCwiYXJndW1lbnQiOiJjdXJyZW5jeT1VU0QmbWF0ZXJpYWxfbmFtZT1BbGxveSUyMDYwNjElMjAlMjhUNiUyOSUyMCUyN0ElMjcmcHJfaWQ9OGpNRUIzemImc2hhcGU9Um91bmQlMjBCYXIifQ==",
+      "expectedContextUrl": "https://portal.adasi.test/v2/ADASI_PRD/934f47ee-06a4-4f2d-a619-e7cf35e9d91b?favoriteContext=c2N2MnsiZGVzY3JpcHRpb24iOiJQcmljZSBDb21wYXJpc29uIiwiYXBwbGljYXRpb24iOiJlcnAiLCJ0eXBlIjoic2Vzc2lvbiIsImFjdGlvbiI6InB1cmNtcGhzMDBtMDAwIiwicGF0aCI6bnVsbCwiYXJndW1lbnQiOiJjdXJyZW5jeT1VU0QmbWF0ZXJpYWxfbmFtZT1BbGxveSUyMDYwNjElMjAlMjhUNiUyOSUyMCUyN0ElMjcmcHJfaWQ9OGpNRUIzemImc2hhcGU9Um91bmQlMjBCYXIifQ%3D%3D&LogicalId=lid%3A%2F%2Fadasi.portal.purchasing",
+      "expectedResolvedInternalUrl": "https://portal.adasi.test/v2/ADASI_PRD/purchasing/comparison/historical?currency=USD&material_name=Alloy%206061%20%28T6%29%20%27A%27&pr_id=8jMEB3zb&shape=Round%20Bar"
+    },
+    {
+      "id": "po_idx_utf8",
+      "prefix": "v2/ADASI_PRD",
+      "origin": "https://portal.adasi.test",
+      "internalUrl": "https://portal.adasi.test/v2/ADASI_PRD/purchasing/purchase-orders?status=active&search=Baja+S45C+%E2%80%94+Batch+%231&supplier_id=YLDd21B4gVe9O36xR0PazXWQ&page=2&email=leak@evil.test",
+      "action": "purords000m000",
+      "route": "purchasing.purchase-orders.index",
+      "pathTemplate": "/v2/ADASI_PRD/purchasing/purchase-orders",
+      "params": [],
+      "queryAllowlist": ["page", "supplier_id", "start_date", "end_date", "po_number", "status", "search"],
+      "hashedKeys": ["supplier_id"],
+      "logicalId": "lid://adasi.portal.purchasing",
+      "description": "Purchase Order",
+      "expectedArgument": "page=2&search=Baja%20S45C%20%E2%80%94%20Batch%20%231&status=active&supplier_id=YLDd21B4gVe9O36xR0PazXWQ",
+      "expectedFavoriteContext": "c2N2MnsiZGVzY3JpcHRpb24iOiJQdXJjaGFzZSBPcmRlciIsImFwcGxpY2F0aW9uIjoiZXJwIiwidHlwZSI6InNlc3Npb24iLCJhY3Rpb24iOiJwdXJvcmRzMDAwbTAwMCIsInBhdGgiOm51bGwsImFyZ3VtZW50IjoicGFnZT0yJnNlYXJjaD1CYWphJTIwUzQ1QyUyMCVFMiU4MCU5NCUyMEJhdGNoJTIwJTIzMSZzdGF0dXM9YWN0aXZlJnN1cHBsaWVyX2lkPVlMRGQyMUI0Z1ZlOU8zNnhSMFBhelhXUSJ9",
+      "expectedContextUrl": "https://portal.adasi.test/v2/ADASI_PRD/934f47ee-06a4-4f2d-a619-e7cf35e9d91b?favoriteContext=c2N2MnsiZGVzY3JpcHRpb24iOiJQdXJjaGFzZSBPcmRlciIsImFwcGxpY2F0aW9uIjoiZXJwIiwidHlwZSI6InNlc3Npb24iLCJhY3Rpb24iOiJwdXJvcmRzMDAwbTAwMCIsInBhdGgiOm51bGwsImFyZ3VtZW50IjoicGFnZT0yJnNlYXJjaD1CYWphJTIwUzQ1QyUyMCVFMiU4MCU5NCUyMEJhdGNoJTIwJTIzMSZzdGF0dXM9YWN0aXZlJnN1cHBsaWVyX2lkPVlMRGQyMUI0Z1ZlOU8zNnhSMFBhelhXUSJ9&LogicalId=lid%3A%2F%2Fadasi.portal.purchasing",
+      "expectedResolvedInternalUrl": "https://portal.adasi.test/v2/ADASI_PRD/purchasing/purchase-orders?page=2&search=Baja%20S45C%20%E2%80%94%20Batch%20%231&status=active&supplier_id=YLDd21B4gVe9O36xR0PazXWQ"
+    },
+    {
+      "id": "shp_idx",
+      "prefix": "v2/ADASI_PRD",
+      "origin": "https://portal.adasi.test",
+      "internalUrl": "https://portal.adasi.test/v2/ADASI_PRD/purchasing/shipments?search=SHP&status=submitted&_embed=1",
+      "action": "purshps000m000",
+      "route": "purchasing.shipments.index",
+      "pathTemplate": "/v2/ADASI_PRD/purchasing/shipments",
+      "params": [],
+      "queryAllowlist": ["page", "supplier_id", "status", "search", "shipment_number", "start_date", "end_date", "date_from", "date_to"],
+      "hashedKeys": ["supplier_id"],
+      "logicalId": "lid://adasi.portal.purchasing",
+      "description": "Shipments & Logistics",
+      "expectedArgument": "search=SHP&status=submitted",
+      "expectedFavoriteContext": "c2N2MnsiZGVzY3JpcHRpb24iOiJTaGlwbWVudHMgJiBMb2dpc3RpY3MiLCJhcHBsaWNhdGlvbiI6ImVycCIsInR5cGUiOiJzZXNzaW9uIiwiYWN0aW9uIjoicHVyc2hwczAwMG0wMDAiLCJwYXRoIjpudWxsLCJhcmd1bWVudCI6InNlYXJjaD1TSFAmc3RhdHVzPXN1Ym1pdHRlZCJ9",
+      "expectedContextUrl": "https://portal.adasi.test/v2/ADASI_PRD/934f47ee-06a4-4f2d-a619-e7cf35e9d91b?favoriteContext=c2N2MnsiZGVzY3JpcHRpb24iOiJTaGlwbWVudHMgJiBMb2dpc3RpY3MiLCJhcHBsaWNhdGlvbiI6ImVycCIsInR5cGUiOiJzZXNzaW9uIiwiYWN0aW9uIjoicHVyc2hwczAwMG0wMDAiLCJwYXRoIjpudWxsLCJhcmd1bWVudCI6InNlYXJjaD1TSFAmc3RhdHVzPXN1Ym1pdHRlZCJ9&LogicalId=lid%3A%2F%2Fadasi.portal.purchasing",
+      "expectedResolvedInternalUrl": "https://portal.adasi.test/v2/ADASI_PRD/purchasing/shipments?search=SHP&status=submitted"
+    },
+    {
+      "id": "pr_create_static",
+      "prefix": "v2/ADASI_PRD",
+      "origin": "https://portal.adasi.test",
+      "internalUrl": "https://portal.adasi.test/v2/ADASI_PRD/purchasing/requisitions/create",
+      "action": "purreqs100m000",
+      "route": "purchasing.requisitions.create",
+      "pathTemplate": "/v2/ADASI_PRD/purchasing/requisitions/create",
+      "params": [],
+      "queryAllowlist": [],
+      "hashedKeys": [],
+      "logicalId": "lid://adasi.portal.purchasing",
+      "description": "Create Purchase Requisition",
+      "expectedArgument": "",
+      "expectedFavoriteContext": "c2N2MnsiZGVzY3JpcHRpb24iOiJDcmVhdGUgUHVyY2hhc2UgUmVxdWlzaXRpb24iLCJhcHBsaWNhdGlvbiI6ImVycCIsInR5cGUiOiJzZXNzaW9uIiwiYWN0aW9uIjoicHVycmVxczEwMG0wMDAiLCJwYXRoIjpudWxsLCJhcmd1bWVudCI6IiJ9",
+      "expectedContextUrl": "https://portal.adasi.test/v2/ADASI_PRD/934f47ee-06a4-4f2d-a619-e7cf35e9d91b?favoriteContext=c2N2MnsiZGVzY3JpcHRpb24iOiJDcmVhdGUgUHVyY2hhc2UgUmVxdWlzaXRpb24iLCJhcHBsaWNhdGlvbiI6ImVycCIsInR5cGUiOiJzZXNzaW9uIiwiYWN0aW9uIjoicHVycmVxczEwMG0wMDAiLCJwYXRoIjpudWxsLCJhcmd1bWVudCI6IiJ9&LogicalId=lid%3A%2F%2Fadasi.portal.purchasing",
+      "expectedResolvedInternalUrl": "https://portal.adasi.test/v2/ADASI_PRD/purchasing/requisitions/create"
+    },
+    {
+      "id": "sup_period_plain",
+      "prefix": "v2/ADASI_PRD",
+      "origin": "https://portal.adasi.test",
+      "internalUrl": "https://portal.adasi.test/v2/ADASI_PRD/supplier/quotations/period/12",
+      "action": "supqprd000m000",
+      "route": "supplier.quotations.period",
+      "pathTemplate": "/v2/ADASI_PRD/supplier/quotations/period/{period_id}",
+      "params": ["period_id"],
+      "queryAllowlist": [],
+      "hashedKeys": [],
+      "logicalId": "lid://adasi.portal.supplier",
+      "description": "Quotation Period",
+      "expectedArgument": "period_id=12",
+      "expectedFavoriteContext": "c2N2MnsiZGVzY3JpcHRpb24iOiJRdW90YXRpb24gUGVyaW9kIiwiYXBwbGljYXRpb24iOiJlcnAiLCJ0eXBlIjoic2Vzc2lvbiIsImFjdGlvbiI6InN1cHFwcmQwMDBtMDAwIiwicGF0aCI6bnVsbCwiYXJndW1lbnQiOiJwZXJpb2RfaWQ9MTIifQ==",
+      "expectedContextUrl": "https://portal.adasi.test/v2/ADASI_PRD/934f47ee-06a4-4f2d-a619-e7cf35e9d91b?favoriteContext=c2N2MnsiZGVzY3JpcHRpb24iOiJRdW90YXRpb24gUGVyaW9kIiwiYXBwbGljYXRpb24iOiJlcnAiLCJ0eXBlIjoic2Vzc2lvbiIsImFjdGlvbiI6InN1cHFwcmQwMDBtMDAwIiwicGF0aCI6bnVsbCwiYXJndW1lbnQiOiJwZXJpb2RfaWQ9MTIifQ%3D%3D&LogicalId=lid%3A%2F%2Fadasi.portal.supplier",
+      "expectedResolvedInternalUrl": "https://portal.adasi.test/v2/ADASI_PRD/supplier/quotations/period/12"
+    },
+    {
+      "id": "lsp_inv_noprefix",
+      "prefix": "",
+      "origin": "https://portal.adasi.test",
+      "internalUrl": "https://portal.adasi.test/local-supplier/invoices/D8J7lXr5x2qRVq1vYkgyGRQK",
+      "action": "lspinv4100m000",
+      "route": "local-supplier.invoices.show",
+      "pathTemplate": "/local-supplier/invoices/{invoice}",
+      "params": ["invoice"],
+      "queryAllowlist": [],
+      "hashedKeys": ["invoice"],
+      "logicalId": "lid://adasi.portal.local_supplier",
+      "description": "Local Invoice Details",
+      "expectedArgument": "invoice=D8J7lXr5x2qRVq1vYkgyGRQK",
+      "expectedFavoriteContext": "c2N2MnsiZGVzY3JpcHRpb24iOiJMb2NhbCBJbnZvaWNlIERldGFpbHMiLCJhcHBsaWNhdGlvbiI6ImVycCIsInR5cGUiOiJzZXNzaW9uIiwiYWN0aW9uIjoibHNwaW52NDEwMG0wMDAiLCJwYXRoIjpudWxsLCJhcmd1bWVudCI6Imludm9pY2U9RDhKN2xYcjV4MnFSVnExdllrZ3lHUlFLIn0=",
+      "expectedContextUrl": "https://portal.adasi.test/934f47ee-06a4-4f2d-a619-e7cf35e9d91b?favoriteContext=c2N2MnsiZGVzY3JpcHRpb24iOiJMb2NhbCBJbnZvaWNlIERldGFpbHMiLCJhcHBsaWNhdGlvbiI6ImVycCIsInR5cGUiOiJzZXNzaW9uIiwiYWN0aW9uIjoibHNwaW52NDEwMG0wMDAiLCJwYXRoIjpudWxsLCJhcmd1bWVudCI6Imludm9pY2U9RDhKN2xYcjV4MnFSVnExdllrZ3lHUlFLIn0%3D&LogicalId=lid%3A%2F%2Fadasi.portal.local_supplier",
+      "expectedResolvedInternalUrl": "https://portal.adasi.test/local-supplier/invoices/D8J7lXr5x2qRVq1vYkgyGRQK"
+    },
+    {
+      "id": "pur_dash_empty",
+      "prefix": "v2/ADASI_PRD",
+      "origin": "https://portal.adasi.test",
+      "internalUrl": "https://portal.adasi.test/v2/ADASI_PRD/purchasing/dashboard",
+      "action": "purdash000m000",
+      "route": "purchasing.dashboard",
+      "pathTemplate": "/v2/ADASI_PRD/purchasing/dashboard",
+      "params": [],
+      "queryAllowlist": ["month"],
+      "hashedKeys": [],
+      "logicalId": "lid://adasi.portal.purchasing",
+      "description": "Dashboard",
+      "expectedArgument": "",
+      "expectedFavoriteContext": "c2N2MnsiZGVzY3JpcHRpb24iOiJEYXNoYm9hcmQiLCJhcHBsaWNhdGlvbiI6ImVycCIsInR5cGUiOiJzZXNzaW9uIiwiYWN0aW9uIjoicHVyZGFzaDAwMG0wMDAiLCJwYXRoIjpudWxsLCJhcmd1bWVudCI6IiJ9",
+      "expectedContextUrl": "https://portal.adasi.test/v2/ADASI_PRD/934f47ee-06a4-4f2d-a619-e7cf35e9d91b?favoriteContext=c2N2MnsiZGVzY3JpcHRpb24iOiJEYXNoYm9hcmQiLCJhcHBsaWNhdGlvbiI6ImVycCIsInR5cGUiOiJzZXNzaW9uIiwiYWN0aW9uIjoicHVyZGFzaDAwMG0wMDAiLCJwYXRoIjpudWxsLCJhcmd1bWVudCI6IiJ9&LogicalId=lid%3A%2F%2Fadasi.portal.purchasing",
+      "expectedResolvedInternalUrl": "https://portal.adasi.test/v2/ADASI_PRD/purchasing/dashboard"
+    }
+  ],
+  "invalidPayloads": [
+    {
+      "id": "sec03_path_protocol_relative",
+      "payload": {"description": "Open", "application": "erp", "type": "session", "action": "purdash000m000", "path": "//evil.test", "argument": ""},
+      "logicalId": "lid://adasi.portal.purchasing"
+    },
+    {
+      "id": "sec03_path_non_empty",
+      "payload": {"description": "Open", "application": "erp", "type": "session", "action": "purdash000m000", "path": "/admin/users", "argument": ""},
+      "logicalId": "lid://adasi.portal.purchasing"
+    },
+    {
+      "id": "sec03_unknown_action",
+      "payload": {"description": "Logout", "application": "erp", "type": "session", "action": "logout", "path": null, "argument": ""},
+      "logicalId": "lid://adasi.portal.purchasing"
+    },
+    {
+      "id": "sec04_raw_numeric_route_id",
+      "payload": {"description": "PO", "application": "erp", "type": "session", "action": "purords410m000", "path": null, "argument": "id=123"},
+      "logicalId": "lid://adasi.portal.purchasing"
+    },
+    {
+      "id": "sec04_raw_numeric_query_hash",
+      "payload": {"description": "PO", "application": "erp", "type": "session", "action": "purords000m000", "path": null, "argument": "supplier_id=123"},
+      "logicalId": "lid://adasi.portal.purchasing"
+    },
+    {
+      "id": "sec04_plain_int_zero",
+      "payload": {"description": "Period", "application": "erp", "type": "session", "action": "supqprd000m000", "path": null, "argument": "period_id=0"},
+      "logicalId": "lid://adasi.portal.supplier"
+    },
+    {
+      "id": "sec04_mismatched_logical_id",
+      "payload": {"description": "PO", "application": "erp", "type": "session", "action": "purords000m000", "path": null, "argument": ""},
+      "logicalId": "lid://adasi.portal.local_supplier"
+    },
+    {
+      "id": "sec04_malformed_logical_id",
+      "payload": {"description": "PO", "application": "erp", "type": "session", "action": "purords000m000", "path": null, "argument": ""},
+      "logicalId": "javascript:alert(1)"
+    },
+    {
+      "id": "sec06_json_depth_exceeded",
+      "payload": {"description": "Deep", "application": "erp", "type": "session", "action": "purdash000m000", "path": null, "argument": {"a": {"b": {"c": {"d": 1}}}}},
+      "logicalId": "lid://adasi.portal.purchasing"
+    },
+    {
+      "id": "sec06_too_many_query_params",
+      "payload": {"description": "Cmp", "application": "erp", "type": "session", "action": "purcmphs00m000", "path": null, "argument": "chart=c&clear_pr=1&currency=USD&history=1&material_name=Al&period_view=all&pr_id=8jMEB3zb&pr_item=gVe9O36x&range=1y&shape=Bar&supplier=x2qRVq1v&supplier_id=gVe9O36x&view=chart"},
+      "logicalId": "lid://adasi.portal.purchasing"
+    },
+    {
+      "id": "sec08_disallowed_query_email",
+      "payload": {"description": "Users", "application": "erp", "type": "session", "action": "admuser000m000", "path": null, "argument": "email=admin@example.com"},
+      "logicalId": "lid://adasi.portal.admin"
+    },
+    {
+      "id": "sec08_disallowed_query_embed",
+      "payload": {"description": "PO", "application": "erp", "type": "session", "action": "purords000m000", "path": null, "argument": "_embed=1"},
+      "logicalId": "lid://adasi.portal.purchasing"
+    },
+    {
+      "id": "sec08_disallowed_query_return_url",
+      "payload": {"description": "PO", "application": "erp", "type": "session", "action": "purords000m000", "path": null, "argument": "return_url=%2Fadmin"},
+      "logicalId": "lid://adasi.portal.purchasing"
+    },
+    {
+      "id": "sec08_duplicate_argument_key",
+      "payload": {"description": "PO", "application": "erp", "type": "session", "action": "purords000m000", "path": null, "argument": "status=active&status=draft"},
+      "logicalId": "lid://adasi.portal.purchasing"
+    },
+    {
+      "id": "sec08_array_key_syntax",
+      "payload": {"description": "PO", "application": "erp", "type": "session", "action": "purords000m000", "path": null, "argument": "status%5B%5D=active"},
+      "logicalId": "lid://adasi.portal.purchasing"
+    }
+  ]
+}

@@ -77,28 +77,27 @@ $(function () {
         order: []
     });
 
-    $('#materialStatusFilter, #materialCategoryFilter, #materialDensityFilter, #materialManufacturerFilter').on('change', () => materialsTable.ajax.reload());
-    $('#ruleStatusFilter, #ruleCategoryFilter, #ruleShapeFilter').on('change', () => rulesTable.ajax.reload());
+    window.AdasiFilterBar.bindLive('#materialsFilterBar', {
+        debounceMs: 250,
+        fields: [
+            { key: 'search', label: @json(__('local_invoice.actions.search')), selector: '#materialSearch', type: 'search' },
+            { key: 'status', label: @json(__('admin.copy.status')), selector: '#materialStatusFilter', type: 'select' },
+            { key: 'category', label: @json(__('admin.copy.hs_category')), selector: '#materialCategoryFilter', type: 'select', advanced: true },
+            { key: 'density', label: @json(__('admin.copy.density_profile')), selector: '#materialDensityFilter', type: 'select', advanced: true },
+            { key: 'manufacturer', label: @json(__('admin.copy.manufacturer_scope')), selector: '#materialManufacturerFilter', type: 'select', advanced: true },
+        ],
+        onFilterChange: () => materialsTable.search($('#materialSearch').val() || '').ajax.reload(),
+    });
 
-    let materialSearchTimer;
-    $('#materialSearch').on('input', function () {
-        clearTimeout(materialSearchTimer);
-        const value = this.value;
-        materialSearchTimer = setTimeout(() => materialsTable.search(value).draw(), 250);
-    });
-    let ruleSearchTimer;
-    $('#ruleSearch').on('input', function () {
-        clearTimeout(ruleSearchTimer);
-        const value = this.value;
-        ruleSearchTimer = setTimeout(() => rulesTable.search(value).draw(), 250);
-    });
-    $('#resetMaterialFilters').on('click', function () {
-        $('#materialSearch, #materialStatusFilter, #materialCategoryFilter, #materialDensityFilter, #materialManufacturerFilter').val('');
-        materialsTable.search('').ajax.reload();
-    });
-    $('#resetRuleFilters').on('click', function () {
-        $('#ruleSearch, #ruleStatusFilter, #ruleCategoryFilter, #ruleShapeFilter').val('');
-        rulesTable.search('').ajax.reload();
+    window.AdasiFilterBar.bindLive('#rulesFilterBar', {
+        debounceMs: 250,
+        fields: [
+            { key: 'search', label: @json(__('local_invoice.actions.search')), selector: '#ruleSearch', type: 'search' },
+            { key: 'status', label: @json(__('admin.copy.status')), selector: '#ruleStatusFilter', type: 'select' },
+            { key: 'category', label: @json(__('admin.copy.category')), selector: '#ruleCategoryFilter', type: 'select', advanced: true },
+            { key: 'shape', label: @json(__('admin.copy.shape')), selector: '#ruleShapeFilter', type: 'select', advanced: true },
+        ],
+        onFilterChange: () => rulesTable.search($('#ruleSearch').val() || '').ajax.reload(),
     });
 
     function setMethod($input, method) {

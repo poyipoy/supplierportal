@@ -15,7 +15,7 @@
     @endif
     <meta name="robots" content="noindex, nofollow">
     @yield('meta')
-    <title>@yield('title', __('auth.login.title'))</title>
+    <title>{{ request()->routeIs('login') ? 'ADASI Supplier Portal - Sign In' : 'ADASI Supplier Portal' }}</title>
 
     <link rel="icon" href="{{ asset('assets/images/logo-adasi.png') }}" type="image/png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous" rel="stylesheet">

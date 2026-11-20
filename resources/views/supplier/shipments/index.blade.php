@@ -4,15 +4,6 @@
 @section('title', __('shipments.copy.shipments_deliveries_adasi_portal'))
 @section('page-title', __('shipments.titles.deliveries', []))
 
-@push('styles')
-<style>
-    .shipment-filter-reset--active {
-        background: var(--md-error-container) !important;
-        color: var(--md-on-error-container) !important;
-    }
-</style>
-@endpush
-
 @section('content')
 <div class="tw:grid tw:gap-4">
     {{-- 1. Breadcrumb & Compact Page Header --}}
@@ -47,63 +38,58 @@
         </x-slot:actions>
     </x-ui.page-header>
 
-    {{-- 2. Operational Toolbar / Filters --}}
-    <x-ui.toolbar :sticky="true">
+    {{-- 2. Operational Filter Bar --}}
+    <x-ui.filter-bar
+        id="supplierShipmentsFilterBar"
+        mode="live"
+        :sticky="true"
+        reset-id="resetFilter"
+        :reset-label="__('shipments.copy.reset')"
+    >
         <x-slot:search>
-            <div class="input-group input-group-sm">
-                <span class="input-group-text tw:bg-surface border-end-0 tw:text-on-surface-variant">
-                    <x-ui.icon name="search" size="sm" />
-                </span>
-                <input
-                    type="text"
-                    id="filter_search"
-                    class="form-control border-start-0 ps-0"
-                    placeholder="{{ __('shipments.copy.search_shipment_number_or_po') }}"
-                    autocomplete="off"
-                    aria-label="{{ __('shipments.copy.search_shipment_history') }}"
-                    value="{{ request('search') }}"
-                >
-                <x-ui.button type="button" size="sm" id="searchShipmentBtn" aria-label="{{ __('shipments.copy.search_shipments') }}">
-                    {{ __('shipments.copy.search') }}
-                </x-ui.button>
-            </div>
+            <label for="filter_search" class="tw:sr-only">{{ __('shipments.copy.search_shipment_history') }}</label>
+            <x-ui.icon name="search" size="sm" class="ui-filter-bar__search-icon" aria-hidden="true" />
+            <input
+                type="search"
+                id="filter_search"
+                class="form-control form-control-sm ui-filter-bar__search-input"
+                placeholder="{{ __('shipments.copy.search_shipment_number_or_po') }}"
+                autocomplete="off"
+                aria-label="{{ __('shipments.copy.search_shipment_history') }}"
+                value="{{ request('search') }}"
+            >
         </x-slot:search>
 
         <x-slot:filters>
-            <div class="d-flex flex-wrap align-items-center gap-2">
-                <div style="min-width: 170px;">
-                    <select id="filter_status" class="form-select form-select-sm" aria-label="{{ __('shipments.copy.filter_by_status') }}">
-                        <option value="">{{ __('shipments.copy.all_statuses') }}</option>
-                        <option value="draft" @selected(request('status') === 'draft')>{{ __('shipments.copy.draft') }}</option>
-                        <option value="submitted" @selected(request('status') === 'submitted')>{{ __('shipments.copy.in_transit') }}</option>
-                        <option value="arrived" @selected(request('status') === 'arrived')>{{ __('shipments.copy.arrived_at_plant') }}</option>
-                        <option value="cancelled" @selected(request('status') === 'cancelled')>{{ __('shipments.copy.cancelled') }}</option>
-                    </select>
-                </div>
+            <label for="filter_status" class="tw:sr-only">{{ __('shipments.copy.filter_by_status') }}</label>
+            <select id="filter_status" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-44" aria-label="{{ __('shipments.copy.filter_by_status') }}">
+                <option value="">{{ __('shipments.copy.all_statuses') }}</option>
+                <option value="draft" @selected(request('status') === 'draft')>{{ __('shipments.copy.draft') }}</option>
+                <option value="submitted" @selected(request('status') === 'submitted')>{{ __('shipments.copy.in_transit') }}</option>
+                <option value="arrived" @selected(request('status') === 'arrived')>{{ __('shipments.copy.arrived_at_plant') }}</option>
+                <option value="cancelled" @selected(request('status') === 'cancelled')>{{ __('shipments.copy.cancelled') }}</option>
+            </select>
 
-                <div style="min-width: 220px;">
-                    <x-ui.date-range-picker
-                        id="supplierShipmentDateRange"
-                        start-name="date_from"
-                        start-id="supplierShipmentDateFrom"
-                        :start-label="__('shipments.copy.from')"
-                        start-value="{{ request('date_from') }}"
-                        end-name="date_to"
-                        end-id="supplierShipmentDateTo"
-                        :end-label="__('shipments.copy.to')"
-                        end-value="{{ request('date_to') }}"
-                        compact
-                    />
-                </div>
-
-                <x-ui.button type="button" variant="ghost" size="sm" id="resetFilter" class="shipment-filter-reset">
-                    <x-ui.icon name="rotate-ccw" />
-                    <span>{{ __('shipments.copy.reset') }}</span>
-                </x-ui.button>
+            <div class="tw:w-full tw:min-w-0 tw:sm:w-64">
+                <x-ui.date-range-picker
+                    id="supplierShipmentDateRange"
+                    start-name="date_from"
+                    start-id="supplierShipmentDateFrom"
+                    :start-label="__('shipments.copy.from')"
+                    start-value="{{ request('date_from') }}"
+                    end-name="date_to"
+                    end-id="supplierShipmentDateTo"
+                    :end-label="__('shipments.copy.to')"
+                    end-value="{{ request('date_to') }}"
+                    compact
+                />
             </div>
-            <div id="filterChips" class="d-none flex-wrap tw:gap-1.5 align-items-center ms-2" aria-live="polite"></div>
         </x-slot:filters>
-    </x-ui.toolbar>
+
+        <x-slot:chips>
+            <x-ui.filter-chips id="filterChips" />
+        </x-slot:chips>
+    </x-ui.filter-bar>
 
     {{-- 3. Balanced Data Table --}}
     <x-ui.data-table density="compact" :sticky="true" :scroll-label="__('shipments.copy.my_shipments_deliveries')">
@@ -236,102 +222,14 @@
             order: []
         });
 
-        $('#filter_status').on('change', function () {
-            updateFilterChips();
-            table.draw();
+        window.AdasiFilterBar.bindLive('#supplierShipmentsFilterBar', {
+            fields: [
+                { key: 'search', label: @json(__('shipments.copy.search')), selector: '#filter_search', type: 'search' },
+                { key: 'status', label: @json(__('shipments.copy.status')), selector: '#filter_status', type: 'select' },
+                { key: 'date_range', label: @json(__('shipments.copy.shipment_date')), type: 'date-range', picker: '#supplierShipmentDateRange', start: '#supplierShipmentDateFrom', end: '#supplierShipmentDateTo' },
+            ],
+            onFilterChange: () => table.draw(),
         });
-
-        document.getElementById('supplierShipmentDateRange')?.addEventListener('adasi:date-range-commit', function () {
-            updateFilterChips();
-            table.draw();
-        });
-
-        $('#searchShipmentBtn').on('click', function () {
-            updateFilterChips();
-            table.draw();
-        });
-
-        $('#filter_search').on('keyup', function (e) {
-            if (e.key === 'Enter') {
-                updateFilterChips();
-                table.draw();
-            }
-        });
-
-        $('#resetFilter').on('click', function () {
-            $('#filter_search').val('');
-            $('#filter_status').val('');
-            $('#supplierShipmentDateFrom').val('');
-            $('#supplierShipmentDateTo').val('');
-            document.getElementById('supplierShipmentDateRange')?.dispatchEvent(new CustomEvent('adasi:calendar-reset'));
-            updateFilterChips();
-            table.draw();
-        });
-
-        function updateFilterChips() {
-            const search = $('#filter_search').val().trim();
-            const statusText = $('#filter_status option:selected').val() ? $('#filter_status option:selected').text().trim() : null;
-            const dateFrom = $('#supplierShipmentDateFrom').val();
-            const dateTo = $('#supplierShipmentDateTo').val();
-
-            const createChip = (label, clearCallback) => {
-                const $chip = $('<span>', {
-                    class: 'ui-status-chip ui-status-chip--info'
-                });
-                const $remove = $('<button>', {
-                    type: 'button',
-                    class: 'ui-focus-ring tw:inline-flex tw:h-5 tw:w-5 tw:items-center tw:justify-center tw:rounded-ui-xs tw:border-0 tw:bg-transparent tw:p-0 tw:text-primary tw:hover:bg-primary/10',
-                    'aria-label': window.AdasiI18n.t('js.filters.remove', { label }),
-                    text: '×'
-                });
-
-                $remove.on('click', clearCallback);
-                $chip.append(document.createTextNode(label), $remove);
-
-                return $chip;
-            };
-
-            const chips = [];
-            if (search) {
-                chips.push(createChip(window.AdasiI18n.t('js.filters.search', { search }), () => {
-                    $('#filter_search').val('');
-                    updateFilterChips();
-                    table.draw();
-                }));
-            }
-            if (statusText) {
-                chips.push(createChip(@js(__('common.final_copy.status')) + ' ' + statusText, () => {
-                    $('#filter_status').val('');
-                    updateFilterChips();
-                    table.draw();
-                }));
-            }
-            if (dateFrom || dateTo) {
-                const label = (dateFrom && dateTo)
-                    ? window.AdasiI18n.t('js.filters.date_range', { from: dateFrom, to: dateTo })
-                    : (dateFrom ? window.AdasiI18n.t('js.filters.from', { date: dateFrom }) : window.AdasiI18n.t('js.filters.to', { date: dateTo }));
-                chips.push(createChip(label, () => {
-                    $('#supplierShipmentDateFrom').val('');
-                    $('#supplierShipmentDateTo').val('');
-                    document.getElementById('supplierShipmentDateRange')?.dispatchEvent(new CustomEvent('adasi:calendar-reset'));
-                    updateFilterChips();
-                    table.draw();
-                }));
-            }
-
-            const $container = $('#filterChips');
-            $container.empty();
-            if (chips.length > 0) {
-                chips.forEach(c => $container.append(c));
-                $container.removeClass('d-none').addClass('d-flex');
-                $('#resetFilter').addClass('shipment-filter-reset--active');
-            } else {
-                $container.removeClass('d-flex').addClass('d-none');
-                $('#resetFilter').removeClass('shipment-filter-reset--active');
-            }
-        }
-
-        updateFilterChips();
 
         // ADASI Alert cancel confirmation
         $(document).on('click', '.btn-cancel-shipment, .btn-delete', function() {

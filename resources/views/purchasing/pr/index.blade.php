@@ -4,15 +4,6 @@
 @section('title', __('purchasing.copy.material_requisition_list_adasi_portal'))
 @section('page-title', __('purchasing.copy.purchase_requisitions'))
 
-@push('styles')
-<style>
-    .pr-filter-reset--active {
-        background: var(--md-error-container) !important;
-        color: var(--md-on-error-container) !important;
-    }
-</style>
-@endpush
-
 @section('content')
 <div class="tw:grid tw:gap-4">
     {{-- 1. Compact Page Header --}}
@@ -30,38 +21,38 @@
         </x-slot:actions>
     </x-ui.page-header>
 
-    {{-- 2. Operational Toolbar --}}
-    <x-ui.toolbar :sticky="true">
+    {{-- 2. Operational Filter Bar --}}
+    <x-ui.filter-bar
+        id="prFilterBar"
+        mode="live"
+        :sticky="true"
+        reset-id="resetFilter"
+        :reset-label="__('purchasing.copy.reset')"
+    >
         <x-slot:filters>
-            <div class="d-flex flex-column flex-sm-row flex-wrap align-items-stretch align-items-sm-center gap-2 w-100">
-                <div class="tw:w-full tw:sm:w-auto tw:sm:min-w-[200px]">
-                    <select name="period_id" id="period_id" class="form-select form-select-sm" aria-label="{{ __('purchasing.copy.filter_by_period') }}">
-                        <option value="">{{ __('purchasing.copy.all_periods') }}</option>
-                        @foreach($periods as $period)
-                            <option value="{{ $period->id }}">{{ $period->display_label }}</option>
-                        @endforeach
-                    </select>
-                </div>
+            <label for="period_id" class="tw:sr-only">{{ __('purchasing.copy.filter_by_period') }}</label>
+            <select name="period_id" id="period_id" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-52" aria-label="{{ __('purchasing.copy.filter_by_period') }}">
+                <option value="">{{ __('purchasing.copy.all_periods') }}</option>
+                @foreach($periods as $period)
+                    <option value="{{ $period->id }}">{{ $period->display_label }}</option>
+                @endforeach
+            </select>
 
-                <div class="tw:w-full tw:sm:w-auto tw:sm:min-w-[150px]">
-                    <select name="status" id="status" class="form-select form-select-sm" aria-label="{{ __('purchasing.copy.filter_by_status') }}">
-                        <option value="">{{ __('purchasing.copy.all_statuses') }}</option>
-                        <option value="draft">{{ __('purchasing.copy.draft') }}</option>
-                        <option value="submitted">{{ __('purchasing.copy.submitted') }}</option>
-                        <option value="rejected">{{ __('purchasing.copy.rejected') }}</option>
-                        <option value="bidding">{{ __('purchasing.copy.bidding') }}</option>
-                        <option value="completed">{{ __('purchasing.copy.completed') }}</option>
-                    </select>
-                </div>
-
-                <x-ui.button variant="ghost" size="sm" id="resetFilter" class="pr-filter-reset tw:w-full tw:sm:w-auto tw:justify-center">
-                    <x-ui.icon name="rotate-ccw" />
-                    <span>{{ __('purchasing.copy.reset') }}</span>
-                </x-ui.button>
-            </div>
-            <div id="filterChips" class="d-none flex-wrap tw:gap-1.5 align-items-center ms-2" aria-live="polite"></div>
+            <label for="status" class="tw:sr-only">{{ __('purchasing.copy.filter_by_status') }}</label>
+            <select name="status" id="status" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-44" aria-label="{{ __('purchasing.copy.filter_by_status') }}">
+                <option value="">{{ __('purchasing.copy.all_statuses') }}</option>
+                <option value="draft">{{ __('purchasing.copy.draft') }}</option>
+                <option value="submitted">{{ __('purchasing.copy.submitted') }}</option>
+                <option value="rejected">{{ __('purchasing.copy.rejected') }}</option>
+                <option value="bidding">{{ __('purchasing.copy.bidding') }}</option>
+                <option value="completed">{{ __('purchasing.copy.completed') }}</option>
+            </select>
         </x-slot:filters>
-    </x-ui.toolbar>
+
+        <x-slot:chips>
+            <x-ui.filter-chips id="filterChips" />
+        </x-slot:chips>
+    </x-ui.filter-bar>
 
     {{-- 3. Balanced Data Table --}}
     <x-ui.data-table density="compact">
@@ -117,57 +108,13 @@
         });
 
 
-        function updateFilterChips() {
-            const periodText = $('#period_id option:selected').val() ? $('#period_id option:selected').text().trim() : null;
-            const statusText = $('#status option:selected').val() ? $('#status option:selected').text().trim() : null;
-
-            const createChip = (label, targetId) => {
-                const $chip = $('<span>', {
-                    class: 'ui-status-chip ui-status-chip--info'
-                });
-                const $remove = $('<button>', {
-                    type: 'button',
-                    class: 'ui-focus-ring tw:inline-flex tw:h-5 tw:w-5 tw:items-center tw:justify-center tw:rounded-ui-xs tw:border-0 tw:bg-transparent tw:p-0 tw:text-primary tw:hover:bg-primary/10',
-                    'aria-label': window.AdasiI18n.t('js.filters.remove', { label }),
-                    text: '×'
-                });
-
-                $remove.on('click', () => $(`#${targetId}`).val('').trigger('change'));
-                $chip.append(document.createTextNode(label), $remove);
-
-                return $chip;
-            };
-
-            const chips = [];
-            if (periodText) chips.push(createChip(window.AdasiI18n.t('js.filters.period', { period: periodText }), 'period_id'));
-            if (statusText) chips.push(createChip(@js(__('common.final_copy.status')) + ' ' + statusText, 'status'));
-
-            const $container = $('#filterChips');
-            const $resetBtn = $('#resetFilter');
-
-            if (chips.length > 0) {
-                $container.empty().append(chips).removeClass('d-none').addClass('d-flex');
-                $resetBtn.addClass('pr-filter-reset--active');
-            } else {
-                $container.empty().addClass('d-none').removeClass('d-flex');
-                $resetBtn.removeClass('pr-filter-reset--active');
-            }
-        }
-
-        // Filter handlers
-        $('#period_id, #status').on('change', function() {
-            updateFilterChips();
-            table.ajax.reload();
+        window.AdasiFilterBar.bindLive('#prFilterBar', {
+            fields: [
+                { key: 'period_id', label: @json(__('purchasing.copy.period')), selector: '#period_id', type: 'select' },
+                { key: 'status', label: @json(__('purchasing.copy.status')), selector: '#status', type: 'select' },
+            ],
+            onFilterChange: () => table.ajax.reload(),
         });
-
-        $('#resetFilter').on('click', function() {
-            $('#period_id').val('');
-            $('#status').val('');
-            updateFilterChips();
-            table.ajax.reload();
-        });
-
-        updateFilterChips();
 
         // ADASI Alert delete confirmation
         $(document).on('click', '.btn-delete', function() {

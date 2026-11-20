@@ -4,15 +4,6 @@
 @section('title', __('purchasing.copy.purchase_order_list_adasi_portal'))
 @section('page-title', __('purchasing.copy.purchase_orders'))
 
-@push('styles')
-<style>
-    .po-filter-reset--active {
-        background: var(--md-error-container) !important;
-        color: var(--md-on-error-container) !important;
-    }
-</style>
-@endpush
-
 @section('content')
 <div class="tw:grid tw:gap-4">
     {{-- 1. Compact Page Header --}}
@@ -28,58 +19,52 @@
         </x-slot:actions>
     </x-ui.page-header>
 
-    {{-- 2. Operational Toolbar --}}
-    <x-ui.toolbar :sticky="true">
+    {{-- 2. Operational Filter Bar --}}
+    <x-ui.filter-bar
+        id="poFilterBar"
+        mode="live"
+        :sticky="true"
+        reset-id="resetFilter"
+        :reset-label="__('purchasing.copy.reset')"
+    >
         <x-slot:search>
-            <div class="input-group input-group-sm">
-                <span class="input-group-text tw:bg-surface border-end-0 tw:text-on-surface-variant">
-                    <x-ui.icon name="search" size="sm" />
-                </span>
-                <input
-                    type="text"
-                    id="filter_po_number"
-                    class="form-control border-start-0 ps-0"
-                    placeholder="{{ __('purchasing.copy.e_g_po_05_2026_001_or_supplier_name') }}"
-                    autocomplete="off"
-                    aria-label="{{ __('purchasing.copy.search_purchase_order_number') }}"
-                >
-                <x-ui.button type="button" size="sm" id="searchPoBtn" aria-label="{{ __('purchasing.copy.search_po_number') }}">
-                    {{ __('purchasing.copy.search') }}
-                </x-ui.button>
-            </div>
+            <label for="filter_po_number" class="tw:sr-only">{{ __('purchasing.copy.search_purchase_order_number') }}</label>
+            <x-ui.icon name="search" size="sm" class="ui-filter-bar__search-icon" aria-hidden="true" />
+            <input
+                type="search"
+                id="filter_po_number"
+                class="form-control form-control-sm ui-filter-bar__search-input"
+                placeholder="{{ __('purchasing.copy.e_g_po_05_2026_001_or_supplier_name') }}"
+                autocomplete="off"
+                aria-label="{{ __('purchasing.copy.search_purchase_order_number') }}"
+            >
         </x-slot:search>
 
         <x-slot:filters>
-            <div class="d-flex flex-wrap align-items-center gap-2">
-                <div style="min-width: 150px;">
-                    <select id="filter_status" class="form-select form-select-sm" aria-label="{{ __('purchasing.copy.filter_by_status') }}">
-                        <option value="">{{ __('purchasing.copy.all_statuses') }}</option>
-                        <option value="active">{{ __('purchasing.copy.active') }}</option>
-                        <option value="waiting_qc">{{ __('purchasing.copy.waiting_qc') }}</option>
-                        <option value="claim_needed">{{ __('purchasing.copy.claim_needed') }}</option>
-                        <option value="overdue">{{ __('purchasing.copy.overdue') }}</option>
-                        <option value="completed">{{ __('purchasing.copy.completed') }}</option>
-                        <option value="cancelled">{{ __('purchasing.copy.cancelled') }}</option>
-                    </select>
-                </div>
+            <label for="filter_status" class="tw:sr-only">{{ __('purchasing.copy.filter_by_status') }}</label>
+            <select id="filter_status" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-44" aria-label="{{ __('purchasing.copy.filter_by_status') }}">
+                <option value="">{{ __('purchasing.copy.all_statuses') }}</option>
+                <option value="active">{{ __('purchasing.copy.active') }}</option>
+                <option value="waiting_qc">{{ __('purchasing.copy.waiting_qc') }}</option>
+                <option value="claim_needed">{{ __('purchasing.copy.claim_needed') }}</option>
+                <option value="overdue">{{ __('purchasing.copy.overdue') }}</option>
+                <option value="completed">{{ __('purchasing.copy.completed') }}</option>
+                <option value="cancelled">{{ __('purchasing.copy.cancelled') }}</option>
+            </select>
 
-                <div style="min-width: 180px;">
-                    <select id="filter_supplier" class="form-select form-select-sm" aria-label="{{ __('purchasing.copy.filter_by_supplier') }}">
-                        <option value="">{{ __('purchasing.copy.all_suppliers_3a7a53') }}</option>
-                        @foreach($suppliers as $supplier)
-                            <option value="{{ $supplier->getRouteKey() }}">{{ $supplier->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <x-ui.button type="button" variant="ghost" size="sm" id="resetFilter" class="po-filter-reset">
-                    <x-ui.icon name="rotate-ccw" />
-                    <span>{{ __('purchasing.copy.reset') }}</span>
-                </x-ui.button>
-            </div>
-            <div id="filterChips" class="d-none flex-wrap tw:gap-1.5 align-items-center ms-2" aria-live="polite"></div>
+            <label for="filter_supplier" class="tw:sr-only">{{ __('purchasing.copy.filter_by_supplier') }}</label>
+            <select id="filter_supplier" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-48" aria-label="{{ __('purchasing.copy.filter_by_supplier') }}">
+                <option value="">{{ __('purchasing.copy.all_suppliers_3a7a53') }}</option>
+                @foreach($suppliers as $supplier)
+                    <option value="{{ $supplier->getRouteKey() }}">{{ $supplier->name }}</option>
+                @endforeach
+            </select>
         </x-slot:filters>
-    </x-ui.toolbar>
+
+        <x-slot:chips>
+            <x-ui.filter-chips id="filterChips" />
+        </x-slot:chips>
+    </x-ui.filter-bar>
 
     {{-- 3. Multi Main Table Workspace (Master + Satellite Preview) --}}
     <x-ui.mmt-workspace
@@ -150,88 +135,15 @@
             window.AdasiServerTabs?.clearMmtSelection?.('#poMmtWorkspace');
         });
 
-        // Filter event listeners
-        $('#filter_status, #filter_supplier').on('change', function () {
-            updateFilterChips();
-            table.draw();
+        // Filter bar live bindings
+        window.AdasiFilterBar.bindLive('#poFilterBar', {
+            fields: [
+                { key: 'po_number', label: @json(__('purchasing.copy.po_number')), selector: '#filter_po_number', type: 'search' },
+                { key: 'status', label: @json(__('purchasing.copy.status')), selector: '#filter_status', type: 'select' },
+                { key: 'supplier_id', label: @json(__('purchasing.copy.supplier')), selector: '#filter_supplier', type: 'select' },
+            ],
+            onFilterChange: () => table.draw(),
         });
-
-        $('#searchPoBtn').on('click', function () {
-            updateFilterChips();
-            table.draw();
-        });
-
-        $('#filter_po_number').on('keyup', function (e) {
-            if (e.key === 'Enter') {
-                updateFilterChips();
-                table.draw();
-            }
-        });
-
-        $('#resetFilter').on('click', function () {
-            $('#filter_po_number').val('');
-            $('#filter_status').val('');
-            $('#filter_supplier').val('');
-            updateFilterChips();
-            table.draw();
-        });
-
-        function updateFilterChips() {
-            const poNumber = $('#filter_po_number').val().trim();
-            const statusText = $('#filter_status option:selected').val() ? $('#filter_status option:selected').text().trim() : null;
-            const supplierText = $('#filter_supplier option:selected').val() ? $('#filter_supplier option:selected').text().trim() : null;
-
-            const createChip = (label, clearCallback) => {
-                const $chip = $('<span>', {
-                    class: 'ui-status-chip ui-status-chip--info'
-                });
-                const $remove = $('<button>', {
-                    type: 'button',
-                    class: 'ui-focus-ring tw:inline-flex tw:h-5 tw:w-5 tw:items-center tw:justify-center tw:rounded-ui-xs tw:border-0 tw:bg-transparent tw:p-0 tw:text-primary tw:hover:bg-primary/10',
-                    'aria-label': window.AdasiI18n.t('js.filters.remove', { label }),
-                    text: '×'
-                });
-
-                $remove.on('click', clearCallback);
-                $chip.append(document.createTextNode(label), $remove);
-
-                return $chip;
-            };
-
-            const chips = [];
-            if (poNumber) {
-                chips.push(createChip(`PO: ${poNumber}`, () => {
-                    $('#filter_po_number').val('');
-                    updateFilterChips();
-                    table.draw();
-                }));
-            }
-            if (statusText) {
-                chips.push(createChip(@js(__('common.final_copy.status')) + ' ' + statusText, () => {
-                    $('#filter_status').val('');
-                    updateFilterChips();
-                    table.draw();
-                }));
-            }
-            if (supplierText) {
-                chips.push(createChip(window.AdasiI18n.t('js.filters.supplier', { supplier: supplierText }), () => {
-                    $('#filter_supplier').val('');
-                    updateFilterChips();
-                    table.draw();
-                }));
-            }
-
-            const $container = $('#filterChips');
-            const $resetBtn = $('#resetFilter');
-
-            if (chips.length > 0) {
-                $container.empty().append(chips).removeClass('d-none').addClass('d-flex');
-                $resetBtn.addClass('po-filter-reset--active');
-            } else {
-                $container.empty().addClass('d-none').removeClass('d-flex');
-                $resetBtn.removeClass('po-filter-reset--active');
-            }
-        }
 
     });
 </script>

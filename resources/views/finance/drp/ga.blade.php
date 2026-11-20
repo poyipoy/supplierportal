@@ -26,12 +26,75 @@
     </x-ui.alert>
 
     <x-ui.card :title="__('finance.candidates.create_ga')" :description="__('finance.candidates.ga_help')">
-        <form method="GET" action="{{ route('finance.drp.ga') }}" class="tw:flex tw:flex-wrap tw:items-end tw:gap-3 tw:mb-4">
-            <div><label for="ga-candidate-search" class="form-label">{{ __('finance.candidates.search_ga') }}</label><input id="ga-candidate-search" name="q" value="{{ request('q') }}" class="form-control form-control-sm" maxlength="100"></div>
-            <div><label for="ga-candidate-type" class="form-label">{{ __('ga.labels.claim_type') }}</label><select id="ga-candidate-type" name="claim_type" class="form-select form-select-sm"><option value="">{{ __('finance.candidates.all_types') }}</option>@foreach(\App\Models\GaClaim::CLAIM_TYPES as $type)<option value="{{ $type }}" @selected(request('claim_type') === $type)>{{ \App\Models\GaClaim::claimTypeLabel($type) }}</option>@endforeach</select></div>
-            <x-ui.button type="submit" variant="outline" size="sm">{{ __('common.labels_review.filter') }}</x-ui.button>
-            <x-ui.button :href="route('finance.drp.ga')" variant="ghost" size="sm">{{ __('finance.candidates.reset') }}</x-ui.button>
-        </form>
+        @php
+            $gaCandidateResetUrl = route('finance.drp.ga');
+            $gaCandidateRemoveUrl = static function (array $dropKeys) use ($gaCandidateResetUrl): string {
+                $query = request()->query();
+                foreach ($dropKeys as $key) {
+                    unset($query[$key]);
+                }
+
+                return $query === [] ? $gaCandidateResetUrl : $gaCandidateResetUrl.'?'.http_build_query($query);
+            };
+
+            $gaCandidateChips = [];
+            if (request()->filled('q')) {
+                $gaCandidateChips[] = [
+                    'key' => 'q',
+                    'label' => __('local_invoice.actions.search'),
+                    'value' => (string) request('q'),
+                    'removeUrl' => $gaCandidateRemoveUrl(['q']),
+                ];
+            }
+            if (request()->filled('claim_type')) {
+                $gaCandidateChips[] = [
+                    'key' => 'claim_type',
+                    'label' => __('ga.labels.claim_type'),
+                    'value' => \App\Models\GaClaim::claimTypeLabel((string) request('claim_type')),
+                    'removeUrl' => $gaCandidateRemoveUrl(['claim_type']),
+                ];
+            }
+        @endphp
+
+        <x-ui.filter-bar
+            id="drpGaCandidateFilterForm"
+            :action="$gaCandidateResetUrl"
+            variant="embedded"
+            :has-active-filters="count($gaCandidateChips) > 0"
+            :reset-url="$gaCandidateResetUrl"
+            :reset-label="__('finance.candidates.reset')"
+            :submit-label="__('common.labels_review.filter')"
+            class="tw:mb-4"
+        >
+            <x-slot:search>
+                <label for="ga-candidate-search" class="tw:sr-only">{{ __('local_invoice.actions.search') }}</label>
+                <x-ui.icon name="search" size="sm" class="ui-filter-bar__search-icon" aria-hidden="true" />
+                <input
+                    id="ga-candidate-search"
+                    type="search"
+                    name="q"
+                    value="{{ request('q') }}"
+                    placeholder="{{ __('finance.candidates.search_ga') }}"
+                    class="form-control form-control-sm ui-filter-bar__search-input"
+                    maxlength="100"
+                    autocomplete="off"
+                >
+            </x-slot:search>
+
+            <x-slot:filters>
+                <label for="ga-candidate-type" class="tw:sr-only">{{ __('ga.labels.claim_type') }}</label>
+                <select id="ga-candidate-type" name="claim_type" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-48">
+                    <option value="">{{ __('finance.candidates.all_types') }}</option>
+                    @foreach(\App\Models\GaClaim::CLAIM_TYPES as $type)
+                        <option value="{{ $type }}" @selected(request('claim_type') === $type)>{{ \App\Models\GaClaim::claimTypeLabel($type) }}</option>
+                    @endforeach
+                </select>
+            </x-slot:filters>
+
+            <x-slot:chips>
+                <x-ui.filter-chips :items="$gaCandidateChips" :clear-url="$gaCandidateResetUrl" />
+            </x-slot:chips>
+        </x-ui.filter-bar>
         <form method="POST" action="{{ route('finance.drp.ga.create') }}">
             @csrf
             <div class="table-responsive">

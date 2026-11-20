@@ -26,6 +26,12 @@ import {
     WorkspaceNavQueue,
     WorkspaceSessionStore,
 } from './workspace-shell-core.js';
+import {
+    buildHistoryProjection,
+    buildShortcutsHistoryProjection,
+    resolveContextUrl,
+    resolvePopstateNavigation,
+} from './portal-context-url.js';
 
 function cleanPageTitle(rawTitle, fallback = 'ADASI Portal') {
     if (!rawTitle || typeof rawTitle !== 'string') return fallback;
@@ -60,6 +66,7 @@ export function bootWorkspaceShell() {
     const indexPaths = Array.isArray(config.indexPaths) ? config.indexPaths : [];
     const quickAccessPaths = new Set((config.quickAccessPaths || []).map((p) => String(p).replace(/\/+$/, '') || '/'));
     const i18n = config.i18n || {};
+    let lastProjectedContextUrl = null;
 
     const breakoutToTop = (url) => {
         const safeHref = safeWebUrl(url, origin);
@@ -984,6 +991,16 @@ export function bootWorkspaceShell() {
         if (!rawHref) return { url: '', key: null };
         try {
             const parsed = new URL(rawHref, origin);
+            if (config.contextLinks?.enabled) {
+                const contextMatch = resolveContextUrl(parsed.toString(), origin, config.contextLinks);
+                if (contextMatch?.internalUrl) {
+                    const contextPath = normalizedPath(contextMatch.internalUrl, origin);
+                    return {
+                        url: contextMatch.internalUrl,
+                        key: matchPathKey(contextPath) || resolveModuleKey(contextMatch.internalUrl, indexPaths, origin),
+                    };
+                }
+            }
             const path = parsed.pathname.replace(/\/+$/, '') || '/';
             const mapped = uuidMap[path];
             if (mapped) {
@@ -1706,7 +1723,7 @@ export function bootWorkspaceShell() {
     const syncTopbarTitle = (label) => {
         const liveTitleEl = topbarTitleEl?.isConnected ? topbarTitleEl : document.querySelector('.top-navbar .topbar-page-title');
         if (liveTitleEl && label) liveTitleEl.textContent = label;
-        if (label) document.title = `${label} - ADASI Portal`;
+        document.title = 'ADASI Supplier Portal';
     };
 
     const syncSidebarHighlight = (activeUrl) => {
@@ -2586,39 +2603,53 @@ export function bootWorkspaceShell() {
 
     const syncHistory = (mode, url, frameId, groupId, label) => {
         if (!url || mode === 'skip') return;
-        const cleanUrl = stripEmbedParam(url, origin);
-        if (!cleanUrl || !isSameOriginUrl(cleanUrl, origin)) return;
-        const currentClean = window.location.href;
-        const state = {
-            workspaceShell: true,
-            shortcuts: false,
+        const cleanInternalUrl = stripEmbedParam(url, origin);
+        if (!cleanInternalUrl || !isSameOriginUrl(cleanInternalUrl, origin)) return;
+
+        const projection = buildHistoryProjection({
+            internalUrl: cleanInternalUrl,
+            origin,
+            contextLinks: config.contextLinks,
             frameId,
             groupId,
-            url: cleanUrl,
             title: label,
-        };
+        });
+        const displayUrl = projection.displayUrl;
+        if (!displayUrl || !isSameOriginUrl(displayUrl, origin)) return;
+        if (config.contextLinks?.enabled && displayUrl.includes('favoriteContext=')) {
+            lastProjectedContextUrl = displayUrl;
+        }
+        const currentHref = window.location.href;
 
-        if (mode === 'replace' || currentClean === cleanUrl) {
-            window.history.replaceState(state, '', cleanUrl);
+        if (mode === 'replace' || currentHref === displayUrl) {
+            window.history.replaceState(projection.state, '', displayUrl);
         } else {
-            window.history.pushState(state, '', cleanUrl);
+            window.history.pushState(projection.state, '', displayUrl);
         }
     };
 
     const syncShortcutsHistory = (mode = 'push') => {
         if (mode === 'skip') return;
         const dashBase = canonicalizeUrl(config.dashboardUrl || window.location.href, origin);
-        const target = `${dashBase.split('#')[0]}#${SHORTCUTS_KEY}`;
-        const state = {
-            workspaceShell: true,
-            shortcuts: true,
-            url: target,
+        const projection = buildShortcutsHistoryProjection({
+            lastContextUrl: lastProjectedContextUrl,
+            origin,
+            contextLinks: config.contextLinks,
+            dashboardUrl: dashBase,
+            shortcutsUrl: config.shortcutsUrl || config.contextLinks?.shortcutsUrl || '',
             title: i18n.shortcuts || 'Shortcuts',
-        };
-        if (mode === 'replace' || window.location.href === target) {
-            window.history.replaceState(state, '', target);
+        });
+        const target = projection.target;
+        if (!target || !isSameOriginUrl(target, origin)) return;
+
+        const alreadyShortcutsState = Boolean(window.history.state?.shortcuts);
+        if (
+            mode === 'replace'
+            || (window.location.href === target && (!config.contextLinks?.enabled || alreadyShortcutsState))
+        ) {
+            window.history.replaceState(projection.state, '', target);
         } else {
-            window.history.pushState(state, '', target);
+            window.history.pushState(projection.state, '', target);
         }
     };
 
@@ -3693,7 +3724,11 @@ export function bootWorkspaceShell() {
         });
     };
 
-    if (window.location.hash === `#${SHORTCUTS_KEY}`) {
+    if (
+        config.initialMode === 'shortcuts'
+        || !initialTab?.url
+        || window.location.hash === `#${SHORTCUTS_KEY}`
+    ) {
         ssrGroupEl?.remove();
         ssrPanelEl?.remove();
         for (const entry of persistedPinnedEntries) {
@@ -4524,27 +4559,37 @@ export function bootWorkspaceShell() {
     });
 
     window.addEventListener('popstate', (event) => {
-        if (event.state?.shortcuts || window.location.hash === `#${SHORTCUTS_KEY}`) {
+        const nav = resolvePopstateNavigation({
+            eventState: event.state,
+            currentHref: window.location.href,
+            hash: window.location.hash,
+            origin,
+            contextLinks: config.contextLinks,
+            menuPathTitles,
+            hasLiveFrame: (id) => Boolean(store.getFrame(id)),
+        });
+
+        if (nav.kind === 'shortcuts') {
             activateShortcuts({ historyMode: 'skip' });
             return;
         }
-
-        const stateFrameId = event.state?.frameId;
-        if (stateFrameId && store.getFrame(stateFrameId)) {
-            activateFrame(stateFrameId, { historyMode: 'skip' });
+        if (nav.kind === 'activate-frame') {
+            activateFrame(nav.frameId, { historyMode: 'skip' });
+            return;
+        }
+        if (nav.kind !== 'open-url') {
             return;
         }
 
-        const stateUrl = event.state?.url || window.location.href;
-        if (isTopLevelOnlyUrl(stateUrl, origin, pathPrefix)) {
-            breakoutToTop(stateUrl);
+        if (isTopLevelOnlyUrl(nav.url, origin, pathPrefix)) {
+            breakoutToTop(nav.url);
             return;
         }
 
         openNewWorkspace({
-            label: event.state?.title || '',
-            url: stateUrl,
-            historyMode: 'replace',
+            label: nav.label,
+            url: nav.url,
+            historyMode: nav.historyMode,
         });
     });
 
@@ -4627,6 +4672,7 @@ export function bootWorkspaceShell() {
             Object.assign(i18n, nextI18n);
             config.i18n = i18n;
             if (nextConfig.menuPathTitles) config.menuPathTitles = nextConfig.menuPathTitles;
+            if (nextConfig.contextLinks) config.contextLinks = nextConfig.contextLinks;
             if (nextConfig.quickAccessPaths) config.quickAccessPaths = nextConfig.quickAccessPaths;
             if (nextConfig.indexPaths) {
                 indexPaths.splice(0, indexPaths.length, ...nextConfig.indexPaths);

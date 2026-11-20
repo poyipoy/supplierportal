@@ -21,71 +21,111 @@
         </x-slot:actions>
     </x-ui.page-header>
 
-    {{-- Filter Toolbar --}}
-    <form method="GET" action="{{ route('local-supplier.purchase-orders.index') }}" id="supplierPoFilterForm" class="tw:m-0">
-        <x-ui.toolbar aria-label="{{ __('common.accessibility.po_filters') }}">
-            <x-slot:search>
-                <div class="tw:relative tw:w-full">
-                    <input
-                        type="search"
-                        name="q"
-                        id="supplier-po-search"
-                        value="{{ request('q') }}"
-                        placeholder="{{ __('local_procurement.filters.po_search') }}"
-                        class="form-control form-control-sm tw:text-ui-xs"
-                        maxlength="100"
-                        autocomplete="off"
-                    >
-                </div>
-            </x-slot:search>
+    {{-- Filter Bar --}}
+    @php
+        $supplierPoResetUrl = route('local-supplier.purchase-orders.index');
+        $supplierPoRemoveUrl = static function (array $dropKeys) use ($supplierPoResetUrl): string {
+            $query = request()->query();
+            foreach ($dropKeys as $key) {
+                unset($query[$key]);
+            }
 
-            <x-slot:filters>
-                <div class="tw:w-full tw:sm:w-44">
-                    <select
-                        name="status"
-                        id="supplier-po-status"
-                        class="form-select form-select-sm tw:text-ui-xs"
-                        onchange="this.form.submit()"
-                    >
-                        <option value="">{{ __('local_invoice.labels.all_statuses') }}</option>
-                        <option value="OPEN" {{ request('status') === 'OPEN' ? 'selected' : '' }}>{{ __('status.finance.open') }}</option>
-                        <option value="CLOSED" {{ request('status') === 'CLOSED' ? 'selected' : '' }}>{{ __('status.claim.closed') }}</option>
-                        <option value="CANCELLED" {{ request('status') === 'CANCELLED' ? 'selected' : '' }}>{{ __('local_invoice.labels.cancelled') }}</option>
-                    </select>
-                </div>
+            return $query === [] ? $supplierPoResetUrl : $supplierPoResetUrl.'?'.http_build_query($query);
+        };
 
-                <div class="tw:w-full tw:sm:w-40">
-                    <x-ui.date-picker
-                        name="date_from"
-                        id="supplier_po_date_from"
-                        value="{{ request('date_from') }}"
-                        :placeholder="__('local_invoice.labels.from_date')"
-                    />
-                </div>
+        $supplierPoChips = [];
+        if (request()->filled('q')) {
+            $supplierPoChips[] = [
+                'key' => 'q',
+                'label' => __('local_invoice.actions.search'),
+                'value' => (string) request('q'),
+                'removeUrl' => $supplierPoRemoveUrl(['q']),
+            ];
+        }
+        if (request()->filled('status')) {
+            $supplierPoStatusVal = match (request('status')) {
+                'OPEN' => __('status.finance.open'),
+                'CLOSED' => __('status.claim.closed'),
+                'CANCELLED' => __('local_invoice.labels.cancelled'),
+                default => (string) request('status'),
+            };
+            $supplierPoChips[] = [
+                'key' => 'status',
+                'label' => __('local_invoice.labels.status'),
+                'value' => $supplierPoStatusVal,
+                'removeUrl' => $supplierPoRemoveUrl(['status']),
+            ];
+        }
+        if (request()->filled('date_from') || request()->filled('date_to')) {
+            $supplierPoDateVal = request()->filled('date_from') && request()->filled('date_to')
+                ? request('date_from').' - '.request('date_to')
+                : (string) (request('date_from') ?: request('date_to'));
+            $supplierPoChips[] = [
+                'key' => 'date_range',
+                'label' => __('local_invoice.labels.date'),
+                'value' => $supplierPoDateVal,
+                'removeUrl' => $supplierPoRemoveUrl(['date_from', 'date_to']),
+            ];
+        }
+    @endphp
 
-                <div class="tw:w-full tw:sm:w-40">
-                    <x-ui.date-picker
-                        name="date_to"
-                        id="supplier_po_date_to"
-                        value="{{ request('date_to') }}"
-                        :placeholder="__('local_invoice.labels.to_date')"
-                    />
-                </div>
+    <x-ui.filter-bar
+        id="supplierPoFilterForm"
+        :action="$supplierPoResetUrl"
+        :aria-label="__('common.accessibility.po_filters')"
+        :has-active-filters="count($supplierPoChips) > 0"
+        :reset-url="$supplierPoResetUrl"
+        :reset-label="__('common.actions.reset')"
+        :submit-label="__('common.labels_review.filter')"
+    >
+        <x-slot:search>
+            <label for="supplier-po-search" class="tw:sr-only">{{ __('local_invoice.actions.search') }}</label>
+            <x-ui.icon name="search" size="sm" class="ui-filter-bar__search-icon" aria-hidden="true" />
+            <input
+                type="search"
+                name="q"
+                id="supplier-po-search"
+                value="{{ request('q') }}"
+                placeholder="{{ __('local_procurement.filters.po_search') }}"
+                class="form-control form-control-sm ui-filter-bar__search-input"
+                maxlength="100"
+                autocomplete="off"
+            >
+        </x-slot:search>
 
-                <x-ui.button type="submit" size="sm" variant="secondary">
-                    <x-ui.icon name="filter" size="sm" />
-                    <span>{{ __('common.labels_review.filter') }}</span>
-                </x-ui.button>
+        <x-slot:filters>
+            <label for="supplier-po-status" class="tw:sr-only">{{ __('local_invoice.labels.status') }}</label>
+            <select
+                name="status"
+                id="supplier-po-status"
+                class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-44"
+            >
+                <option value="">{{ __('local_invoice.labels.all_statuses') }}</option>
+                <option value="OPEN" {{ request('status') === 'OPEN' ? 'selected' : '' }}>{{ __('status.finance.open') }}</option>
+                <option value="CLOSED" {{ request('status') === 'CLOSED' ? 'selected' : '' }}>{{ __('status.claim.closed') }}</option>
+                <option value="CANCELLED" {{ request('status') === 'CANCELLED' ? 'selected' : '' }}>{{ __('local_invoice.labels.cancelled') }}</option>
+            </select>
 
-                @if(request()->hasAny(['q', 'status', 'date_from', 'date_to']))
-                    <x-ui.button :href="route('local-supplier.purchase-orders.index')" size="sm" variant="ghost">
-                        <x-ui.icon name="rotate-ccw" size="sm" />
-                        <span>{{ __('common.actions.reset') }}</span>
-                    </x-ui.button>
-                @endif
-            </x-slot:filters>
-        </x-ui.toolbar>
-    </form>
+            <div class="tw:w-full tw:min-w-0 tw:sm:w-64">
+                <x-ui.date-range-picker
+                    id="supplier-po-date-range"
+                    start-name="date_from"
+                    end-name="date_to"
+                    start-id="supplier_po_date_from"
+                    end-id="supplier_po_date_to"
+                    :start-label="__('local_invoice.labels.from_date')"
+                    :end-label="__('local_invoice.labels.to_date')"
+                    :start-value="request('date_from')"
+                    :end-value="request('date_to')"
+                    :compact="true"
+                />
+            </div>
+        </x-slot:filters>
+
+        <x-slot:chips>
+            <x-ui.filter-chips :items="$supplierPoChips" :clear-url="$supplierPoResetUrl" />
+        </x-slot:chips>
+    </x-ui.filter-bar>
 
     {{-- PO Data Table --}}
     <x-ui.data-table

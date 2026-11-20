@@ -110,75 +110,138 @@
     </div>
 
     {{-- Search & Filter Toolbar --}}
-    <form method="GET" action="{{ route('purchasing.drp.paid.index') }}" id="drpPaidFilterForm" class="tw:m-0 tw:w-full tw:min-w-0" data-server-tabs-form>
-        <input type="hidden" name="tab" value="{{ $tab }}">
+    @php
+        $drpPaidResetUrl = route('purchasing.drp.paid.index', ['tab' => $tab]);
+        $drpPaidRemoveUrl = static function (array $dropKeys) use ($tab): string {
+            $query = array_merge(request()->query(), ['tab' => $tab]);
+            foreach ($dropKeys as $key) {
+                unset($query[$key]);
+            }
 
-        <x-ui.toolbar aria-label="{{ __('common.accessibility.drp_filters') }}">
-            <x-slot:search>
-                <div class="tw:relative tw:w-full">
-                    <input
-                        type="search"
-                        name="q"
-                        id="drp-paid-search"
-                        value="{{ $q }}"
-                        placeholder="{{ __('finance.drp.filter_placeholder') }}"
-                        class="form-control form-control-sm tw:text-ui-xs"
-                        maxlength="100"
-                        autocomplete="off"
-                    >
-                </div>
-            </x-slot:search>
+            return route('purchasing.drp.paid.index', $query);
+        };
 
-            <x-slot:filters>
-                <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-2.5">
-                    <div class="tw:w-full tw:sm:w-36">
-                        <label for="drp-type" class="visually-hidden">{{ __('finance.drp.type') }}</label>
-                        <select id="drp-type" name="type" class="form-select form-select-sm tw:text-ui-xs">
-                            <option value="">{{ __('local_invoice.labels.all_types') }}</option>
-                            <option value="SUPPLIER" @selected($type === 'SUPPLIER')>{{ __('local_invoice.labels.supplier') }}</option>
-                            <option value="GA" @selected($type === 'GA')>{{ __('navigation.general_affairs') }}</option>
-                        </select>
-                    </div>
+        $hasDrpOverpaymentFilter = ! empty($overpaymentStatus) && $overpaymentStatus !== 'all';
+        $drpPaidAdvancedCount = collect([
+            $hasDrpOverpaymentFilter,
+            ! empty($dateFrom) || ! empty($dateTo),
+        ])->filter()->count();
 
-                    <div class="tw:w-full tw:sm:w-44">
-                        <label for="drp-overpayment-status" class="visually-hidden">{{ __('finance.drp_surface.overpayment_status') }}</label>
-                        <select id="drp-overpayment-status" name="overpayment_status" class="form-select form-select-sm tw:text-ui-xs">
-                            <option value="all" @selected(($overpaymentStatus ?? 'all') === 'all')>{{ __('finance.refund.all') }}</option>
-                            <option value="has_overpayment" @selected(($overpaymentStatus ?? '') === 'has_overpayment')>{{ __('local_invoice.labels.overpayment') }}</option>
-                            <option value="open" @selected(($overpaymentStatus ?? '') === 'open')>{{ __('finance.refund.open_status') }}</option>
-                            <option value="settled" @selected(($overpaymentStatus ?? '') === 'settled')>{{ __('finance.refund.completed_status') }}</option>
-                        </select>
-                    </div>
+        $drpPaidChips = [];
+        if (! empty($q)) {
+            $drpPaidChips[] = [
+                'key' => 'q',
+                'label' => __('local_invoice.actions.search'),
+                'value' => (string) $q,
+                'removeUrl' => $drpPaidRemoveUrl(['q']),
+            ];
+        }
+        if (! empty($type)) {
+            $drpPaidChips[] = [
+                'key' => 'type',
+                'label' => __('finance.drp.type'),
+                'value' => $type === 'SUPPLIER' ? __('local_invoice.labels.supplier') : __('navigation.general_affairs'),
+                'removeUrl' => $drpPaidRemoveUrl(['type']),
+            ];
+        }
+        if ($hasDrpOverpaymentFilter) {
+            $drpOpVal = match ($overpaymentStatus) {
+                'has_overpayment' => __('local_invoice.labels.overpayment'),
+                'open' => __('finance.refund.open_status'),
+                'settled' => __('finance.refund.completed_status'),
+                default => (string) $overpaymentStatus,
+            };
+            $drpPaidChips[] = [
+                'key' => 'overpayment_status',
+                'label' => __('finance.drp_surface.overpayment_status'),
+                'value' => $drpOpVal,
+                'removeUrl' => $drpPaidRemoveUrl(['overpayment_status']),
+            ];
+        }
+        if (! empty($dateFrom) || ! empty($dateTo)) {
+            $drpDateVal = ! empty($dateFrom) && ! empty($dateTo)
+                ? $dateFrom.' - '.$dateTo
+                : (string) ($dateFrom ?: $dateTo);
+            $drpPaidChips[] = [
+                'key' => 'date_range',
+                'label' => __('local_invoice.labels.date'),
+                'value' => $drpDateVal,
+                'removeUrl' => $drpPaidRemoveUrl(['date_from', 'date_to']),
+            ];
+        }
+    @endphp
 
-                    <div class="tw:w-full tw:sm:w-64 tw:max-w-full">
-                        <x-ui.date-range-picker
-                            id="paid-date-range"
-                            start-name="date_from"
-                            end-name="date_to"
-                            start-label="{{ __('finance.drp_surface.from_date') }}"
-                            end-label="{{ __('finance.drp_surface.to_date') }}"
-                            :start-value="$dateFrom"
-                            :end-value="$dateTo"
-                            :compact="true"
-                        />
-                    </div>
-                </div>
-            </x-slot:filters>
+    <x-ui.filter-bar
+        id="drpPaidFilterForm"
+        :action="route('purchasing.drp.paid.index')"
+        :server-tabs="true"
+        :aria-label="__('common.accessibility.drp_filters')"
+        advanced-id="drpPaidMoreFilters"
+        :advanced-count="$drpPaidAdvancedCount"
+        :advanced-open="$drpPaidAdvancedCount > 0"
+        :has-active-filters="count($drpPaidChips) > 0 || $tab !== 'unpaid'"
+        :reset-url="$drpPaidResetUrl"
+        :reset-label="__('common.actions.reset')"
+        :submit-label="__('common.labels_review.filter')"
+    >
+        <x-slot:hidden>
+            <input type="hidden" name="tab" value="{{ $tab }}">
+        </x-slot:hidden>
 
-            <x-slot:actions>
-                <x-ui.button type="submit" size="sm" variant="primary">
-                    <x-ui.icon name="filter" size="sm" />
-                    <span>{{ __('common.labels_review.filter') }}</span>
-                </x-ui.button>
-                @if($q || $type || $dateFrom || $dateTo || ($overpaymentStatus && $overpaymentStatus !== 'all') || $tab !== 'unpaid')
-                    <x-ui.button :href="route('purchasing.drp.paid.index', ['tab' => $tab])" size="sm" variant="ghost">
-                        <x-ui.icon name="rotate-ccw" size="sm" />
-                        <span>{{ __('common.actions.reset') }}</span>
-                    </x-ui.button>
-                @endif
-            </x-slot:actions>
-        </x-ui.toolbar>
-    </form>
+        <x-slot:search>
+            <label for="drp-paid-search" class="tw:sr-only">{{ __('local_invoice.actions.search') }}</label>
+            <x-ui.icon name="search" size="sm" class="ui-filter-bar__search-icon" aria-hidden="true" />
+            <input
+                type="search"
+                name="q"
+                id="drp-paid-search"
+                value="{{ $q }}"
+                placeholder="{{ __('finance.drp.filter_placeholder') }}"
+                class="form-control form-control-sm ui-filter-bar__search-input"
+                maxlength="100"
+                autocomplete="off"
+            >
+        </x-slot:search>
+
+        <x-slot:filters>
+            <label for="drp-type" class="tw:sr-only">{{ __('finance.drp.type') }}</label>
+            <select id="drp-type" name="type" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-40">
+                <option value="">{{ __('local_invoice.labels.all_types') }}</option>
+                <option value="SUPPLIER" @selected($type === 'SUPPLIER')>{{ __('local_invoice.labels.supplier') }}</option>
+                <option value="GA" @selected($type === 'GA')>{{ __('navigation.general_affairs') }}</option>
+            </select>
+        </x-slot:filters>
+
+        <x-slot:advanced>
+            <div>
+                <label for="drp-overpayment-status" class="tw:block tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1.5">{{ __('finance.drp_surface.overpayment_status') }}</label>
+                <select id="drp-overpayment-status" name="overpayment_status" class="form-select form-select-sm tw:w-full">
+                    <option value="all" @selected(($overpaymentStatus ?? 'all') === 'all')>{{ __('finance.refund.all') }}</option>
+                    <option value="has_overpayment" @selected(($overpaymentStatus ?? '') === 'has_overpayment')>{{ __('local_invoice.labels.overpayment') }}</option>
+                    <option value="open" @selected(($overpaymentStatus ?? '') === 'open')>{{ __('finance.refund.open_status') }}</option>
+                    <option value="settled" @selected(($overpaymentStatus ?? '') === 'settled')>{{ __('finance.refund.completed_status') }}</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="tw:block tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:mb-1.5">{{ __('local_invoice.labels.date') }}</label>
+                <x-ui.date-range-picker
+                    id="paid-date-range"
+                    start-name="date_from"
+                    end-name="date_to"
+                    start-label="{{ __('finance.drp_surface.from_date') }}"
+                    end-label="{{ __('finance.drp_surface.to_date') }}"
+                    :start-value="$dateFrom"
+                    :end-value="$dateTo"
+                    :compact="true"
+                />
+            </div>
+        </x-slot:advanced>
+
+        <x-slot:chips>
+            <x-ui.filter-chips :items="$drpPaidChips" :clear-url="$drpPaidResetUrl" :server-tabs="true" />
+        </x-slot:chips>
+    </x-ui.filter-bar>
 
     {{-- Data Table Section (AJAX-swappable container) --}}
     <div id="purchasingDrpPaidTableContent" class="tw:w-full tw:min-w-0 tw:max-w-full" data-server-tabs-content>

@@ -317,7 +317,7 @@ class TwoFactorService
     {
         $defaultUrl = $default ?? route('dashboard', absolute: false);
 
-        if ($intended === null || trim($intended) === '') {
+        if ($intended === null || trim($intended) === '' || strlen($intended) > 4096 || preg_match('/[\x00-\x1F\x7F]/', $intended) === 1) {
             return $defaultUrl;
         }
 

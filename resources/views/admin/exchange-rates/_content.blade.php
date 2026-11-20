@@ -15,18 +15,54 @@
         </dl>
     </section>
 
-    <x-ui.toolbar aria-label="{{ __('admin.copy.exchange_rate_filters') }}">
+    @php
+        $erEffectiveResetUrl = route($masterRoutePrefix.'.exchange-rates.index', ['tab' => 'effective']);
+        $erEffectiveChips = [];
+        if (request()->filled('currency')) {
+            $erEffectiveChips[] = [
+                'key' => 'currency',
+                'label' => __('admin.copy.currency'),
+                'value' => \App\Models\ExchangeRate::currencyLabel((string) request('currency')),
+                'removeUrl' => $erEffectiveResetUrl,
+                'removeAttrs' => ['data-exchange-rates-link' => ''],
+            ];
+        }
+    @endphp
+
+    <x-ui.filter-bar
+        id="exchangeRatesEffectiveFilterForm"
+        :action="route($masterRoutePrefix.'.exchange-rates.index')"
+        :server-tabs="true"
+        :aria-label="__('admin.copy.exchange_rate_filters')"
+        :has-active-filters="count($erEffectiveChips) > 0"
+        :reset-url="$erEffectiveResetUrl"
+        :reset-label="__('admin.copy.clear')"
+        :reset-attrs="['data-exchange-rates-link' => '']"
+        :submit-label="__('admin.copy.apply_filter')"
+    >
+        <x-slot:hidden>
+            <input type="hidden" name="tab" value="effective">
+        </x-slot:hidden>
+
         <x-slot:filters>
-            <form method="GET" action="{{ route($masterRoutePrefix.'.exchange-rates.index') }}" class="tw:flex tw:flex-wrap tw:items-end tw:gap-2" data-server-tabs-form>
-                <input type="hidden" name="tab" value="effective">
-                <label class="tw:grid tw:gap-1 tw:text-ui-xs tw:font-medium" for="currencyFilter">{{ __('admin.copy.currency') }}
-                    <select name="currency" id="currencyFilter" class="form-select form-select-sm tw:min-w-40"><option value="">{{ __('admin.copy.all_currencies') }}</option>@foreach(\App\Models\ExchangeRate::CURRENCIES as $currency)<option value="{{ $currency }}" @selected(request('currency') === $currency)>{{ \App\Models\ExchangeRate::currencyLabel($currency) }}</option>@endforeach</select>
-                </label>
-                <x-ui.button type="submit" variant="primary" size="sm">{{ __('admin.copy.apply_filter') }}</x-ui.button>
-                @if(request('currency'))<x-ui.button :href="route($masterRoutePrefix.'.exchange-rates.index', ['tab' => 'effective'])" data-exchange-rates-link variant="ghost" size="sm">{{ __('admin.copy.clear') }}</x-ui.button>@endif
-            </form>
+            <label for="currencyFilter" class="tw:sr-only">{{ __('admin.copy.currency') }}</label>
+            <select name="currency" id="currencyFilter" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-44">
+                <option value="">{{ __('admin.copy.all_currencies') }}</option>
+                @foreach(\App\Models\ExchangeRate::CURRENCIES as $currency)
+                    <option value="{{ $currency }}" @selected(request('currency') === $currency)>{{ \App\Models\ExchangeRate::currencyLabel($currency) }}</option>
+                @endforeach
+            </select>
         </x-slot:filters>
-    </x-ui.toolbar>
+
+        <x-slot:chips>
+            <x-ui.filter-chips
+                :items="$erEffectiveChips"
+                :clear-url="$erEffectiveResetUrl"
+                :clear-attrs="['data-exchange-rates-link' => '']"
+                :server-tabs="true"
+            />
+        </x-slot:chips>
+    </x-ui.filter-bar>
 
     <x-ui.data-table
         :title="__('admin.copy.effective_rate_history')"

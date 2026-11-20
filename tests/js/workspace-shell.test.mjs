@@ -8,6 +8,13 @@ import {
     isTrackableBootGetRequest,
 } from '../../resources/js/embed-readiness.js';
 import {
+    buildHistoryProjection,
+    buildShortcutsHistoryProjection,
+    encodeScv2Payload,
+    resolveContextUrl,
+    resolvePopstateNavigation,
+} from '../../resources/js/portal-context-url.js';
+import {
     appendEmbedParam,
     canonicalizeUrl,
     clampOpenPaneWeights,
@@ -1301,7 +1308,7 @@ test('workspace-shell.js clears stage loading indicator when initialReadyResolve
         'initialReadyResolve must re-sync stage controls so .is-loading clears even when no iframe finalize runs',
     );
 
-    const shortcutsBoot = shellJs.match(/if\s*\(window\.location\.hash\s*===\s*`#\$\{SHORTCUTS_KEY\}`\)\s*\{[\s\S]*?\n\s*\}\s*else\s*\{/);
+    const shortcutsBoot = shellJs.match(/if\s*\([\s\S]*?window\.location\.hash\s*===\s*`#\$\{SHORTCUTS_KEY\}`[\s\S]*?\)\s*\{[\s\S]*?\n\s*\}\s*else\s*\{/);
     assert.ok(shortcutsBoot, '#shortcuts boot branch must exist');
     const resolveIdx = shortcutsBoot[0].indexOf('initialReadyResolve');
     const notifyIdx = shortcutsBoot[0].indexOf('notifyActiveSurface');
@@ -1597,4 +1604,224 @@ test('workspace-shell.js wires pinned tabs, drag-and-drop reorder, recently clos
     assert.equal(shellCss.includes('.workspace-session-group.is-dragging'), true);
     assert.equal(shellCss.includes('.workspace-session-group.is-last-pinned::after'), true);
     assert.equal(shellCss.includes('.ui-environment-tag'), true);
+    assert.equal(shellJs.includes('buildHistoryProjection'), true);
+    assert.equal(shellJs.includes('buildShortcutsHistoryProjection'), true);
+    assert.equal(shellJs.includes('lastProjectedContextUrl'), true);
+    assert.equal(shellJs.includes('resolvePopstateNavigation'), true);
+    assert.equal(shellJs.includes('resolveContextUrl'), true);
+    assert.equal(shellJs.includes('nextConfig.contextLinks'), true);
+});
+
+test('workspace-shell history projection preserves internalUrl and popstate ignores untrusted context descriptions without pushState loops', () => {
+    const appUuid = '934f47ee-06a4-4f2d-a619-e7cf35e9d91b';
+    const contextLinks = {
+        enabled: true,
+        appUuid,
+        pathPrefix: 'v2/ADSI_PROD',
+        sessionMap: [
+            {
+                action: 'purords410m000',
+                route: 'purchasing.purchase-orders.show',
+                logicalId: 'lid://adasi.portal.purchasing',
+                pathTemplate: '/v2/ADSI_PROD/purchasing/purchase-orders/{id}',
+                params: ['id'],
+                queryAllowlist: ['tab'],
+                hashedKeys: ['id'],
+                description: 'Purchase Order Details',
+            },
+        ],
+    };
+
+    const internalUrl = `${ORIGIN}${PREFIX}/purchasing/purchase-orders/gwpZa2E78jMEB3zbrvNnYXP5?tab=items&return_url=%2Fv2%2FADSI_PROD%2Fpurchasing%2Fpurchase-orders`;
+    const projection = buildHistoryProjection({
+        internalUrl,
+        origin: ORIGIN,
+        contextLinks,
+        frameId: 'frame-1',
+        groupId: 'group-1',
+        title: 'Purchase Order Details',
+    });
+
+    assert.equal(projection.state.internalUrl, internalUrl);
+    assert.ok(projection.displayUrl.startsWith(`${ORIGIN}${PREFIX}/${appUuid}?favoriteContext=`));
+    assert.equal(resolveContextUrl(projection.displayUrl, ORIGIN, contextLinks)?.internalUrl, `${ORIGIN}${PREFIX}/purchasing/purchase-orders/gwpZa2E78jMEB3zbrvNnYXP5?tab=items`);
+
+    const disabledProjection = buildHistoryProjection({
+        internalUrl,
+        origin: ORIGIN,
+        contextLinks: { ...contextLinks, enabled: false },
+        frameId: 'frame-1',
+        groupId: 'group-1',
+        title: 'Purchase Order Details',
+    });
+    assert.equal(disabledProjection.displayUrl, internalUrl);
+
+    // Live frame popstate must focus without pushing or replacing history
+    const liveNav = resolvePopstateNavigation({
+        eventState: { frameId: 'frame-1', url: projection.displayUrl },
+        currentHref: projection.displayUrl,
+        hash: '',
+        origin: ORIGIN,
+        contextLinks,
+        menuPathTitles: new Map(),
+        hasLiveFrame: (id) => id === 'frame-1',
+    });
+    assert.deepEqual(liveNav, { kind: 'activate-frame', frameId: 'frame-1' });
+
+    // Cold-start/un-cached popstate with spoofed XSS description must ignore description and use replace mode (SEC-05)
+    const spoofedPayload = encodeScv2Payload('<img onerror=alert(1)>', 'purords410m000', 'id=gwpZa2E78jMEB3zbrvNnYXP5&tab=items');
+    const spoofedUrl = `${ORIGIN}${PREFIX}/${appUuid}?favoriteContext=${encodeURIComponent(spoofedPayload)}&LogicalId=${encodeURIComponent('lid://adasi.portal.purchasing')}`;
+    const menuPathTitles = new Map([[`${PREFIX}/purchasing/purchase-orders/gwpZa2E78jMEB3zbrvNnYXP5`, 'Official PO Title']]);
+
+    const coldNav = resolvePopstateNavigation({
+        eventState: null,
+        currentHref: spoofedUrl,
+        hash: '',
+        origin: ORIGIN,
+        contextLinks,
+        menuPathTitles,
+        hasLiveFrame: () => false,
+    });
+    assert.equal(coldNav.kind, 'open-url');
+    assert.equal(coldNav.historyMode, 'replace');
+    assert.equal(coldNav.label, 'Official PO Title');
+    assert.equal(coldNav.label.includes('<img'), false);
+    assert.equal(coldNav.url, `${ORIGIN}${PREFIX}/purchasing/purchase-orders/gwpZa2E78jMEB3zbrvNnYXP5?tab=items`);
+
+    // Malformed context URL at appUuid must never recurse into iframe loading
+    const invalidPop = resolvePopstateNavigation({
+        eventState: null,
+        currentHref: `${ORIGIN}${PREFIX}/${appUuid}?favoriteContext=tampered`,
+        hash: '',
+        origin: ORIGIN,
+        contextLinks,
+        menuPathTitles,
+        hasLiveFrame: () => false,
+    });
+    assert.deepEqual(invalidPop, { kind: 'ignore' });
+});
+
+test('shortcuts history stays at bare appUuid on fresh login and retains previous context URL after visiting pages', () => {
+    const appUuid = '934f47ee-06a4-4f2d-a619-e7cf35e9d91b';
+    const shortcutsUrl = `${ORIGIN}${PREFIX}/${appUuid}`;
+    const contextLinks = {
+        enabled: true,
+        appUuid,
+        pathPrefix: 'v2/ADSI_PROD',
+        shortcutsUrl,
+        sessionMap: [
+            {
+                action: 'purords000m000',
+                route: 'purchasing.purchase-orders.index',
+                logicalId: 'lid://adasi.portal.purchasing',
+                pathTemplate: '/v2/ADSI_PROD/purchasing/purchase-orders',
+                params: [],
+                queryAllowlist: ['status'],
+                hashedKeys: [],
+                description: 'Purchase Order',
+            },
+            {
+                action: 'purshps000m000',
+                route: 'purchasing.shipments.index',
+                logicalId: 'lid://adasi.portal.purchasing',
+                pathTemplate: '/v2/ADSI_PROD/purchasing/shipments',
+                params: [],
+                queryAllowlist: ['status'],
+                hashedKeys: [],
+                description: 'Shipments & Logistics',
+            },
+        ],
+    };
+
+    // 1. Fresh login on Shortcuts -> clean bare appUuid (no #shortcuts, no ?favoriteContext=)
+    const initialShortcuts = buildShortcutsHistoryProjection({
+        lastContextUrl: null,
+        origin: ORIGIN,
+        contextLinks,
+        dashboardUrl: `${ORIGIN}${PREFIX}/purchasing/dashboard`,
+        shortcutsUrl,
+        title: 'Shortcuts',
+    });
+    assert.equal(initialShortcuts.target, shortcutsUrl);
+    assert.equal(initialShortcuts.state.shortcuts, true);
+    assert.equal(initialShortcuts.state.lastContextUrl, null);
+
+    // Back/reload onto bare appUuid resolves cleanly to Shortcuts
+    assert.deepEqual(
+        resolvePopstateNavigation({
+            eventState: null,
+            currentHref: shortcutsUrl,
+            hash: '',
+            origin: ORIGIN,
+            contextLinks,
+            menuPathTitles: new Map(),
+            hasLiveFrame: () => false,
+        }),
+        { kind: 'shortcuts' }
+    );
+
+    // 2. Navigate from Shortcuts to Purchase Orders -> long context URL
+    const poProjection = buildHistoryProjection({
+        internalUrl: `${ORIGIN}${PREFIX}/purchasing/purchase-orders?status=active`,
+        origin: ORIGIN,
+        contextLinks,
+        frameId: 'frame-po',
+        groupId: 'group-po',
+        title: 'Purchase Order',
+    });
+    assert.ok(poProjection.displayUrl.includes('favoriteContext='));
+
+    // 3. Return to Shortcuts -> URL follows previous PO context URL (NOT dashboard#shortcuts)
+    const backToShortcuts = buildShortcutsHistoryProjection({
+        lastContextUrl: poProjection.displayUrl,
+        origin: ORIGIN,
+        contextLinks,
+        dashboardUrl: `${ORIGIN}${PREFIX}/purchasing/dashboard`,
+        shortcutsUrl,
+        title: 'Shortcuts',
+    });
+    assert.equal(backToShortcuts.target, poProjection.displayUrl);
+    assert.equal(backToShortcuts.state.shortcuts, true);
+    assert.equal(backToShortcuts.state.lastContextUrl, poProjection.displayUrl);
+
+    // 4. Open Shipments then return to Shortcuts -> URL now follows Shipments context URL
+    const shpProjection = buildHistoryProjection({
+        internalUrl: `${ORIGIN}${PREFIX}/purchasing/shipments?status=submitted`,
+        origin: ORIGIN,
+        contextLinks,
+        frameId: 'frame-shp',
+        groupId: 'group-shp',
+        title: 'Shipments & Logistics',
+    });
+    const backAfterShipments = buildShortcutsHistoryProjection({
+        lastContextUrl: shpProjection.displayUrl,
+        origin: ORIGIN,
+        contextLinks,
+        dashboardUrl: `${ORIGIN}${PREFIX}/purchasing/dashboard`,
+        shortcutsUrl,
+        title: 'Shortcuts',
+    });
+    assert.equal(backAfterShipments.target, shpProjection.displayUrl);
+
+    // 5. Cross-origin or forged lastContextUrl is rejected
+    const forgedShortcuts = buildShortcutsHistoryProjection({
+        lastContextUrl: 'https://evil.example/v2/ADSI_PROD/x?favoriteContext=abc',
+        origin: ORIGIN,
+        contextLinks,
+        dashboardUrl: `${ORIGIN}${PREFIX}/purchasing/dashboard`,
+        shortcutsUrl,
+        title: 'Shortcuts',
+    });
+    assert.equal(forgedShortcuts.target, shortcutsUrl);
+
+    // 6. When contextLinks disabled, legacy #shortcuts hash behavior stays preserved
+    const legacyShortcuts = buildShortcutsHistoryProjection({
+        lastContextUrl: poProjection.displayUrl,
+        origin: ORIGIN,
+        contextLinks: { ...contextLinks, enabled: false },
+        dashboardUrl: `${ORIGIN}${PREFIX}/purchasing/dashboard`,
+        shortcutsUrl,
+        title: 'Shortcuts',
+    });
+    assert.equal(legacyShortcuts.target, `${ORIGIN}${PREFIX}/purchasing/dashboard#shortcuts`);
 });

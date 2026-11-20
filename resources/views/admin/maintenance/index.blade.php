@@ -81,34 +81,109 @@
         </div>
     </section>
 
-    <form method="GET" action="{{ route('admin.maintenance.index') }}" role="search" aria-label="{{ __('maintenance.filters.controls') }}">
-        <x-ui.toolbar>
-            <x-slot:search>
-                <x-ui.input name="q" id="maintenanceSearch" type="search" :label="__('maintenance.filters.search')" :placeholder="__('maintenance.filters.search_placeholder')" :value="$filters['q'] ?? ''" maxlength="150" autocomplete="off" />
-            </x-slot:search>
-            <x-slot:filters>
-                <x-ui.select name="type" id="maintenanceTypeFilter" :label="__('maintenance.filters.type')" :placeholder="__('maintenance.filters.all_types')" :value="$filters['type'] ?? ''" class="tw:min-w-44"
-                    :options="collect(MaintenanceRecord::TYPES)->mapWithKeys(fn ($type) => [$type => __('maintenance.types.'.$type)])->all()" />
-                <x-ui.select name="status" id="maintenanceStatusFilter" :label="__('maintenance.filters.status')" :placeholder="__('maintenance.filters.all_statuses')" :value="$filters['status'] ?? ''" class="tw:min-w-44"
-                    :options="collect(MaintenanceRecord::DISPLAY_STATUSES)->mapWithKeys(fn ($status) => [$status => StatusHelper::maintenanceLabel($status)])->all()" />
-                <x-ui.select name="module" id="maintenanceModuleFilter" :label="__('maintenance.filters.module')" :placeholder="__('maintenance.filters.all_modules')" :value="$filters['module'] ?? ''" class="tw:min-w-52">
-                    @foreach($registry->grouped() as $scope => $moduleKeys)
-                        <optgroup label="{{ $registry->scopeLabel($scope) }}">
-                            @foreach($moduleKeys as $moduleKey)
-                                <option value="{{ $moduleKey }}" @selected(($filters['module'] ?? '') === $moduleKey)>{{ $registry->label($moduleKey) }}</option>
-                            @endforeach
-                        </optgroup>
-                    @endforeach
-                </x-ui.select>
-            </x-slot:filters>
-            <x-slot:actions>
-                <x-ui.button type="submit" variant="secondary" size="sm" class="tw:self-end"><x-ui.icon name="search" /> {{ __('maintenance.filters.apply') }}</x-ui.button>
-                @if($hasFilters)
-                    <x-ui.button :href="route('admin.maintenance.index')" variant="ghost" size="sm" class="tw:self-end"><x-ui.icon name="rotate-ccw" /> {{ __('maintenance.filters.reset') }}</x-ui.button>
-                @endif
-            </x-slot:actions>
-        </x-ui.toolbar>
-    </form>
+    @php
+        $maintenanceResetUrl = route('admin.maintenance.index');
+        $maintenanceRemoveUrl = static function (array $dropKeys) use ($maintenanceResetUrl): string {
+            $query = request()->query();
+            foreach ($dropKeys as $key) {
+                unset($query[$key]);
+            }
+
+            return $query === [] ? $maintenanceResetUrl : $maintenanceResetUrl.'?'.http_build_query($query);
+        };
+
+        $maintenanceChips = [];
+        if (! empty($filters['q'])) {
+            $maintenanceChips[] = [
+                'key' => 'q',
+                'label' => __('maintenance.filters.search'),
+                'value' => (string) $filters['q'],
+                'removeUrl' => $maintenanceRemoveUrl(['q']),
+            ];
+        }
+        if (! empty($filters['type'])) {
+            $maintenanceChips[] = [
+                'key' => 'type',
+                'label' => __('maintenance.filters.type'),
+                'value' => __('maintenance.types.'.$filters['type']),
+                'removeUrl' => $maintenanceRemoveUrl(['type']),
+            ];
+        }
+        if (! empty($filters['status'])) {
+            $maintenanceChips[] = [
+                'key' => 'status',
+                'label' => __('maintenance.filters.status'),
+                'value' => StatusHelper::maintenanceLabel($filters['status']),
+                'removeUrl' => $maintenanceRemoveUrl(['status']),
+            ];
+        }
+        if (! empty($filters['module'])) {
+            $maintenanceChips[] = [
+                'key' => 'module',
+                'label' => __('maintenance.filters.module'),
+                'value' => $registry->label($filters['module']),
+                'removeUrl' => $maintenanceRemoveUrl(['module']),
+            ];
+        }
+    @endphp
+
+    <x-ui.filter-bar
+        id="maintenanceFilterForm"
+        :action="$maintenanceResetUrl"
+        :aria-label="__('maintenance.filters.controls')"
+        :has-active-filters="$hasFilters || count($maintenanceChips) > 0"
+        :reset-url="$maintenanceResetUrl"
+        :reset-label="__('maintenance.filters.reset')"
+        :submit-label="__('maintenance.filters.apply')"
+    >
+        <x-slot:search>
+            <label for="maintenanceSearch" class="tw:sr-only">{{ __('maintenance.filters.search') }}</label>
+            <x-ui.icon name="search" size="sm" class="ui-filter-bar__search-icon" aria-hidden="true" />
+            <input
+                name="q"
+                id="maintenanceSearch"
+                type="search"
+                value="{{ $filters['q'] ?? '' }}"
+                placeholder="{{ __('maintenance.filters.search_placeholder') }}"
+                aria-label="{{ __('maintenance.filters.search') }}"
+                maxlength="150"
+                autocomplete="off"
+                class="form-control form-control-sm ui-filter-bar__search-input"
+            />
+        </x-slot:search>
+        <x-slot:filters>
+            <label for="maintenanceTypeFilter" class="tw:sr-only">{{ __('maintenance.filters.type') }}</label>
+            <select name="type" id="maintenanceTypeFilter" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-44" aria-label="{{ __('maintenance.filters.type') }}">
+                <option value="">{{ __('maintenance.filters.all_types') }}</option>
+                @foreach(MaintenanceRecord::TYPES as $type)
+                    <option value="{{ $type }}" @selected(($filters['type'] ?? '') === $type)>{{ __('maintenance.types.'.$type) }}</option>
+                @endforeach
+            </select>
+
+            <label for="maintenanceStatusFilter" class="tw:sr-only">{{ __('maintenance.filters.status') }}</label>
+            <select name="status" id="maintenanceStatusFilter" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-44" aria-label="{{ __('maintenance.filters.status') }}">
+                <option value="">{{ __('maintenance.filters.all_statuses') }}</option>
+                @foreach(MaintenanceRecord::DISPLAY_STATUSES as $status)
+                    <option value="{{ $status }}" @selected(($filters['status'] ?? '') === $status)>{{ StatusHelper::maintenanceLabel($status) }}</option>
+                @endforeach
+            </select>
+
+            <label for="maintenanceModuleFilter" class="tw:sr-only">{{ __('maintenance.filters.module') }}</label>
+            <select name="module" id="maintenanceModuleFilter" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-52" aria-label="{{ __('maintenance.filters.module') }}">
+                <option value="">{{ __('maintenance.filters.all_modules') }}</option>
+                @foreach($registry->grouped() as $scope => $moduleKeys)
+                    <optgroup label="{{ $registry->scopeLabel($scope) }}">
+                        @foreach($moduleKeys as $moduleKey)
+                            <option value="{{ $moduleKey }}" @selected(($filters['module'] ?? '') === $moduleKey)>{{ $registry->label($moduleKey) }}</option>
+                        @endforeach
+                    </optgroup>
+                @endforeach
+            </select>
+        </x-slot:filters>
+        <x-slot:chips>
+            <x-ui.filter-chips :items="$maintenanceChips" :clear-url="$maintenanceResetUrl" />
+        </x-slot:chips>
+    </x-ui.filter-bar>
 
     <x-ui.data-table :title="__('maintenance.table.title')" :description="trans_choice('maintenance.table.count', $records->total(), ['count' => $records->total()])">
         <div class="ui-data-table__scroll tw:overflow-x-auto">

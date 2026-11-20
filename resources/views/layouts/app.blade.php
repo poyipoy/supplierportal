@@ -273,7 +273,7 @@
             })();
         </script>
     @endauth
-    <title>@yield('title', 'ADASI Supplier Portal')</title>
+    <title>@if($isWorkspaceEmbed ?? false)@yield('title', 'ADASI Supplier Portal')@else{{ 'ADASI Supplier Portal' }}@endif</title>
 
     <!-- Favicon -->
     <link rel="icon" href="{{ asset('assets/images/logo-adasi.png') }}" type="image/png">

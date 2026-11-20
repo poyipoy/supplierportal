@@ -160,7 +160,9 @@ Pakai ulang sebelum membuat markup baru. Mengubah props atau markup di sini meng
 | `icon-button` | `icon` + `label` wajib. `variant` ghost (default) / outline / secondary / primary / danger (container merah, bukan fill penuh). `size` sm 32 / md 36 / lg 44px |
 | `status-chip` | `tone`: `neutral · info · success · warning · error` (alias `primary→info`, `danger→error`). Setiap tone punya ikon default sebagai **isyarat non-warna**. Tone dan label diambil dari `StatusHelper` |
 | `page-header` | `title`, `description`, `eyebrow`, `breadcrumbs`; slot `status`, `meta`, `actions`. Ringkas, tanpa hero |
-| `toolbar` | Slot `search`, `filters`, `actions`; `sticky` menempel di bawah topbar |
+| `filter-bar` | Komponen standar filter halaman daftar & antrean tertanam: `mode="submit\|live"`, `variant="default\|embedded"`, `sticky`, `serverTabs`, `advancedId`, `advancedCount`, `advancedOpen`, `hasActiveFilters`, `resetUrl`/`resetId`, `resetAttrs`/`submitAttrs`. Terdiri dari primary row (`search`, `filters`, tombol **Filter Lanjutan** dengan badge hitungan, aksi Terapkan/Reset terdeduplikasi), tray collapse `advanced` + `advancedFooter`, dan slot `chips`. Mode `live` memakai lazy chunk `resources/js/filter-bar.js` (`window.AdasiFilterBar.bindLive`) pada penanda `[data-adasi-filter-bar]` |
+| `filter-chips` | Deretan chip filter aktif yang dapat dihapus satu per satu atau lewat *Hapus semua*. Mendukung mode SSR (`items` + `clearUrl`, dengan `removeAttrs`/`clearAttrs` opsional & `:server-tabs`) dan mode live JS (`id`, `aria-live="polite"` tanpa JSX/innerHTML berisiko XSS) |
+| `toolbar` | Bar kompatibilitas mundur dan query bar analitik (`search`, `filters`, `actions`, `sticky`). Pertahankan agar halaman yang memakai pola khusus tidak putus; panel filter operasional standar memakai `x-ui.filter-bar` |
 | `data-table` | Shell tabel (bukan DataTables): header dengan title/toolbar/filters, state `loading` (skeleton), `error` (alert), `empty` (empty-state). `sticky` + `scrollLabel` untuk scroll terbatas dengan header lengket. Halaman DataTables wajib `@section('uses-datatables', true)` |
 | `card` | `variant` default/flat/tonal/elevated, `padding` none/sm/md. Pakai hanya bila pengelompokan bermakna. `elevated` bukan untuk konten statis |
 | `section` / `form-section` | Judul uppercase kecil + divider. `form-section` adalah blok bersection di dalam form |
@@ -194,7 +196,7 @@ Komponen kalender sengaja merender native `type="date"` sebagai dasar progressiv
 
 ### 6.2 Halaman daftar
 
-- Page header ringkas → toolbar (filter frekuensi tinggi terlihat, filter sekunder di balik **More filters**) → tabel.
+- Page header ringkas → `x-ui.filter-bar` + `x-ui.filter-chips` (maksimum 3 kontrol primer frekuensi tinggi di baris atas, filter sekunder di balik tray collapse **Filter Lanjutan**, chip aktif di bawah baris filter, tanpa tombol Reset ganda) → tabel. Panel dalam `x-ui.card` atau header `x-ui.data-table` memakai `variant="embedded"`.
 - **Tanpa dinding KPI** di atas tabel operasional.
 - Aksi utama baris terlihat; aksi sekunder di overflow/kebab menu.
 - Toolbar dan header tabel boleh sticky untuk daftar panjang.
@@ -314,7 +316,7 @@ Konsistensi lintas modul: radius, card, grammar page header, grammar filter, hie
 
 - Pertahankan atribut `data-bs-*`, dropdown, modal, offcanvas, DataTables, serta ID, class, dan relasi DOM yang dipakai jQuery/AJAX. Bila markup terikat JS, bangun ulang komposisi visual di sekitarnya.
 - Bootstrap, jQuery, SweetAlert2, dan Chart.js lewat CDN versi eksak + SRI. Vite membundel `resources/css/app.css` dan `resources/js/app.js`. Layout auth dan `partials/auth-splash-bootstrap.blade.php` menambahkan `<link rel="preload" as="image">` untuk `logo-adasi.gif` dan `logo-adasi-wordmark.png`.
-- Modul JS per halaman di-`import()` lazy berdasarkan penanda DOM (`calendar`, `advanced-export`, `dashboard-editor`, `customization-form`, `notification-preferences`, `supplier-audit-form`, `regional-sample`, `exchange-rates`, `time-picker`, `po-document-upload`, serta `workspace-shell` saat `data-workspace-shell="true"`); komponen Alpine halaman didaftarkan di `pageComponents` (`tests/js/app-lazy-modules.test.mjs`).
+- Modul JS per halaman di-`import()` lazy berdasarkan penanda DOM (`calendar`, `filter-bar` pada `[data-adasi-filter-bar]`, `advanced-export`, `dashboard-editor`, `customization-form`, `notification-preferences`, `supplier-audit-form`, `regional-sample`, `exchange-rates`, `time-picker`, `po-document-upload`, serta `workspace-shell` saat `data-workspace-shell="true"`); komponen Alpine halaman didaftarkan di `pageComponents` (`tests/js/app-lazy-modules.test.mjs`).
 - Rilis yang mengubah komponen Blade wajib `view:cache`, termasuk saat rollback.
 
 ---
@@ -324,7 +326,7 @@ Konsistensi lintas modul: radius, card, grammar page header, grammar filter, hie
 | Aspek | Penjaga |
 |---|---|
 | Ikon | `tests/Feature/UiIconComponentTest.php` |
-| Komponen | `RenderedComponentTest`, `CalendarComponentTest`, `tests/js/calendar.test.mjs` |
+| Komponen | `RenderedComponentTest`, `FilterBarComponentTest`, `CalendarComponentTest`, `tests/js/calendar.test.mjs`, `tests/js/filter-bar.test.mjs` |
 | Aset / loader / splash | `FrontendAssetLoadingTest`, `AuthSplashTest`, `tests/js/adasi-loader.test.mjs`, `tests/js/auth-splash.test.mjs`, `tests/js/tailwind-build.test.mjs`, `tests/js/app-lazy-modules.test.mjs` |
 | Workspace Shell | `WorkspaceShellSecurityTest`, `WorkspaceShellRouteClassificationTest`, `tests/js/workspace-shell.test.mjs` |
 | Dark mode, accent, preferensi | `tests/js/preferences.test.mjs`, `tests/js/customization-form.test.mjs` |

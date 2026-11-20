@@ -1,35 +1,56 @@
 {{-- Area yang diganti server tabs: pencarian + tabel percobaan registrasi untuk satu status. --}}
-{{-- SEARCH & CONTROLS --}}
-<form method="GET" action="{{ route('supplier-registrations.index') }}" class="tw:flex tw:items-center tw:gap-3" data-server-tabs-form>
-    <input type="hidden" name="status" value="{{ $statusFilter }}">
-    <div class="tw:relative tw:flex-1 tw:max-w-md">
-        <div class="tw:absolute tw:inset-y-0 tw:start-0 tw:flex tw:items-center tw:pl-3 tw:pointer-events-none tw:text-on-surface-variant">
-            <x-ui.icon name="search" size="sm" />
-        </div>
-        <input
-            type="search"
-            name="search"
-            value="{{ request('search') }}"
-            placeholder="{{ __('local_procurement.registration.search') }}"
-            class="ui-motion tw:h-10 tw:w-full tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:pl-10 tw:pr-3 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary"
-        >
-    </div>
-    <button type="submit" class="ui-focus-ring tw:inline-flex tw:items-center tw:gap-1.5 tw:h-10 tw:px-4 tw:rounded-ui-sm tw:bg-primary tw:text-primary-foreground tw:text-ui-sm tw:font-semibold tw:border-0 tw:hover:brightness-95">
-        {{ __('finance.drp_ui.filter') }}
-    </button>
-    @if (request('search'))
-        <a href="{{ route('supplier-registrations.index', ['status' => $statusFilter]) }}" class="ui-focus-ring tw:inline-flex tw:items-center tw:gap-1 tw:h-10 tw:px-3 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:text-ui-sm tw:text-on-surface tw:hover:bg-surface-container tw:no-underline">
-            <x-ui.icon name="x" size="xs" />
-            <span>{{ __('common.actions.clear') }}</span>
-        </a>
-    @endif
-</form>
+@php
+    $regResetUrl = route('supplier-registrations.index', ['status' => $statusFilter]);
+    $regSearch = (string) request('search', '');
+    $regChips = [];
+    if ($regSearch !== '') {
+        $regChips[] = [
+            'key' => 'search',
+            'label' => __('local_invoice.actions.search'),
+            'value' => $regSearch,
+            'removeUrl' => $regResetUrl,
+        ];
+    }
+@endphp
 
 {{-- REGISTRATION ATTEMPTS TABLE --}}
 <x-ui.data-table
     :title="__('local_procurement.registration.attempt_count', ['count' => $attempts->total()])"
     :description="__('local_procurement.registration.review_help')"
 >
+    <x-slot:filters>
+        <x-ui.filter-bar
+            id="registrationAttemptsFilterForm"
+            :action="route('supplier-registrations.index')"
+            variant="embedded"
+            :server-tabs="true"
+            :has-active-filters="$regSearch !== ''"
+            :reset-url="$regResetUrl"
+            :reset-label="__('common.actions.clear')"
+            :submit-label="__('finance.drp_ui.filter')"
+        >
+            <x-slot:hidden>
+                <input type="hidden" name="status" value="{{ $statusFilter }}">
+            </x-slot:hidden>
+
+            <x-slot:search>
+                <label for="registrationAttemptsSearch" class="tw:sr-only">{{ __('local_procurement.registration.search') }}</label>
+                <x-ui.icon name="search" size="sm" class="ui-filter-bar__search-icon" aria-hidden="true" />
+                <input
+                    id="registrationAttemptsSearch"
+                    type="search"
+                    name="search"
+                    value="{{ $regSearch }}"
+                    placeholder="{{ __('local_procurement.registration.search') }}"
+                    class="form-control form-control-sm ui-filter-bar__search-input"
+                >
+            </x-slot:search>
+
+            <x-slot:chips>
+                <x-ui.filter-chips :items="$regChips" :clear-url="$regResetUrl" :server-tabs="true" />
+            </x-slot:chips>
+        </x-ui.filter-bar>
+    </x-slot:filters>
     <div class="ui-data-table__scroll tw:overflow-x-auto">
         <table class="table table-hover align-middle w-100 tw:m-0 tw:text-ui-sm">
             <thead class="table-light">
