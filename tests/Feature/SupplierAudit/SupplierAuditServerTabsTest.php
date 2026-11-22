@@ -92,4 +92,21 @@ class SupplierAuditServerTabsTest extends SupplierAuditTestCase
             ->get(route('purchasing.supplier-audits.index', ['queue' => 'nonsense']))
             ->assertUnprocessable();
     }
+
+    public function test_queue_navigation_renders_segmented_pill_bar_with_icons_and_active_state(): void
+    {
+        $this->assign($this->supplier());
+
+        $response = $this->actingAs($this->purchasing)
+            ->get(route('purchasing.supplier-audits.index', ['queue' => 'waiting']))
+            ->assertOk();
+
+        $response->assertSee('tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface-container tw:p-1.5', false)
+            ->assertSee('tw:aria-[current=page]:bg-primary tw:aria-[current=page]:text-primary-foreground', false)
+            ->assertSee('ui-icon', false)
+            ->assertDontSee('tw:border-b tw:border-outline-variant tw:p-0', false);
+
+        $html = $response->getContent();
+        $this->assertMatchesRegularExpression('/aria-current="page"\s+data-queue-tab="waiting"/', $html);
+    }
 }

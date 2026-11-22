@@ -22,7 +22,7 @@
                         @endphp
                         <tr>
                             <td class="text-center ui-tabular-nums tw:text-on-surface-variant">{{ $idx + 1 }}</td>
-                            <td class="tw:font-semibold tw:text-on-surface">
+                            <td class="tw:font-semibold tw:text-on-surface ui-col-data-name">
                                 <div>{{ $item->prItem?->material_name ?? '-' }}</div>
                                 @if($item->prItem?->shape)
                                     <div class="tw:text-[11px] tw:font-normal tw:text-on-surface-variant">{{ $item->available_dimension_label }}</div>
@@ -54,13 +54,13 @@
                         <th scope="col">{{ __('shipments.copy.shipment_date') }}</th>
                         <th scope="col">{{ __('shipments.copy.target_actual_arrival') }}</th>
                         <th scope="col" class="text-center">{{ __('shipments.copy.status') }}</th>
-                        <th scope="col" class="text-end">{{ __('purchasing.copy.action') }}</th>
+                        <th scope="col" class="tw:text-right text-end">{{ __('common.table.action') }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($shipments as $shipment)
                         <tr>
-                            <td class="ui-tabular-nums tw:font-semibold tw:text-on-surface">{{ $shipment->shipment_number }}</td>
+                            <td class="ui-tabular-nums tw:font-semibold tw:text-on-surface ui-col-data-name">{{ $shipment->shipment_number }}</td>
                             <td class="ui-tabular-nums tw:text-on-surface-variant">
                                 {{ $shipment->shipment_date ? $regionalFormatter->date($shipment->shipment_date, 'human') : '—' }}
                             </td>
@@ -78,11 +78,11 @@
                                     {{ \App\Support\StatusHelper::shipmentLabel($shipment->status) }}
                                 </x-ui.status-chip>
                             </td>
-                            <td class="text-end">
-                                <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.shipments.show', $shipment)" size="sm" variant="outline">
-                                    <x-ui.icon name="eye" size="xs" />
-                                    <span>{{ __('shipments.copy.view_details') }}</span>
-                                </x-ui.button>
+                            <td class="tw:text-right text-end">
+                                <x-ui.row-action
+                                    :href="\App\Support\PurchasingNavigation::toRoute('purchasing.shipments.show', $shipment)"
+                                    :context="$shipment->shipment_number"
+                                />
                             </td>
                         </tr>
                     @endforeach
@@ -102,14 +102,14 @@
                         <th scope="col">{{ __('claims.copy.expected_resolution') }}</th>
                         <th scope="col">{{ __('claims.copy.response_deadline') }}</th>
                         <th scope="col" class="text-center">{{ __('claims.copy.status') }}</th>
-                        <th scope="col" class="text-end">{{ __('claims.copy.action') }}</th>
+                        <th scope="col" class="tw:text-right text-end">{{ __('common.table.action') }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($claims as $claim)
                         <tr>
                             <td class="ui-tabular-nums tw:font-semibold tw:text-on-surface">{{ $claim->claim_number }}</td>
-                            <td class="tw:text-on-surface">{{ \Illuminate\Support\Str::limit($claim->resolution_expected ?: $claim->description, 80) }}</td>
+                            <td class="tw:text-on-surface ui-col-data-name">{{ \Illuminate\Support\Str::limit($claim->resolution_expected ?: $claim->description, 80) }}</td>
                             <td class="ui-tabular-nums tw:text-on-surface-variant">
                                 {{ $claim->deadline ? $regionalFormatter->date($claim->deadline, 'human') : '—' }}
                             </td>
@@ -118,11 +118,11 @@
                                     {{ \App\Support\StatusHelper::claimLabel($claim->status) }}
                                 </x-ui.status-chip>
                             </td>
-                            <td class="text-end">
-                                <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.claims.show', $claim)" size="sm" variant="outline">
-                                    <x-ui.icon name="eye" size="xs" />
-                                    <span>{{ __('claims.copy.view_details') }}</span>
-                                </x-ui.button>
+                            <td class="tw:text-right text-end">
+                                <x-ui.row-action
+                                    :href="\App\Support\PurchasingNavigation::toRoute('purchasing.claims.show', $claim)"
+                                    :context="$claim->claim_number"
+                                />
                             </td>
                         </tr>
                     @endforeach

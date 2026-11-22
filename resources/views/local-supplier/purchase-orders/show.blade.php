@@ -11,6 +11,10 @@
         :eyebrow="__('local_procurement.list.detail_short')"
     >
         <x-slot:actions>
+            <x-ui.button :href="route('local-supplier.purchase-orders.index')" variant="outline" size="sm">
+                <x-ui.icon name="arrow-left" size="sm" />
+                <span>{{ __('local_invoice.form.back_list') }}</span>
+            </x-ui.button>
             <x-ui.button
                 type="button"
                 variant="outline"
@@ -22,10 +26,6 @@
             >
                 <x-ui.icon name="git-branch" size="sm" />
                 <span>{{ __('smart_panel.trigger') }}</span>
-            </x-ui.button>
-            <x-ui.button :href="route('local-supplier.purchase-orders.index')" variant="ghost" size="sm">
-                <x-ui.icon name="arrow-left" size="sm" />
-                <span>{{ __('local_invoice.form.back_list') }}</span>
             </x-ui.button>
 
             @if($purchaseOrder->latestPoDocument())
@@ -149,13 +149,13 @@
                             <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.labels.invoice_date') }}</th>
                             <th scope="col" class="tw:text-ui-xs tw:font-semibold text-end">{{ __('local_procurement.review.dpp') }}</th>
                             <th scope="col" class="tw:text-ui-xs tw:font-semibold text-center">{{ __('local_invoice.labels.status') }}</th>
-                            <th scope="col" class="tw:text-ui-xs tw:font-semibold text-end">{{ __('local_invoice.labels.actions') }}</th>
+                            <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-right text-end">{{ __('common.table.action') }}</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($purchaseOrder->invoices as $inv)
                             <tr>
-                                <td class="ui-tabular-nums tw:font-bold tw:text-on-surface">
+                                <td class="ui-tabular-nums tw:font-bold tw:text-on-surface ui-col-data-name">
                                     {{ $inv->invoice_number }}
                                 </td>
                                 <td>
@@ -171,11 +171,11 @@
                                         {{ \App\Support\StatusHelper::localInvoiceLabel($inv->status) }}
                                     </x-ui.status-chip>
                                 </td>
-                                <td class="text-end">
-                                    <x-ui.button :href="route('local-supplier.invoices.show', $inv)" size="sm" variant="outline">
-                                        <x-ui.icon name="eye" size="sm" />
-                                        <span>{{ __('local_invoice.actions.detail') }}</span>
-                                    </x-ui.button>
+                                <td class="tw:text-right text-end">
+                                    <x-ui.row-action
+                                        :href="route('local-supplier.invoices.show', $inv)"
+                                        :context="$inv->invoice_number"
+                                    />
                                 </td>
                             </tr>
                         @endforeach

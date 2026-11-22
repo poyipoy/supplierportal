@@ -161,7 +161,7 @@
                 <tbody>
                     @foreach($validTotals as $qid => $data)
                         <tr class="{{ $recommendedSupId === $qid ? 'ui-best-price-row' : '' }}">
-                            <td class="fw-semibold tw:text-on-surface">{{ $data['name'] }}</td>
+                            <td class="fw-semibold tw:text-on-surface ui-col-data-name">{{ $data['name'] }}</td>
                             <td class="text-end fw-bold ui-tabular-nums {{ $recommendedSupId === $qid ? 'ui-best-price-cell' : 'text-primary' }}">
                                 Rp {{ isset($regionalFormatter) ? $regionalFormatter->groupedDecimal($data['total_price_per_kg_idr'], 2, 'indonesian') : \App\Support\NumberFormat::grouped($data['total_price_per_kg_idr']) }}
                             </td>
@@ -285,7 +285,7 @@
                                 $minIdr = $idrPrices->count() > 0 ? $idrPrices->min() : null;
                             @endphp
                             <tr data-comparison-row data-material-id="{{ $row['item']->id }}" class="{{ ($row['spread_pct'] ?? 0) > 15 ? 'bg-warning bg-opacity-10' : '' }}">
-                                <td class="fw-medium ui-sticky-col ui-table-sticky-col comparison-material-col">
+                                <td class="fw-medium ui-sticky-col ui-table-sticky-col comparison-material-col ui-col-data-name">
                                     <div class="tw:font-semibold tw:text-on-surface">{{ $row['item']->material_name }}</div>
                                     <div class="tw:text-on-surface-variant tw:text-ui-xs tw:mt-0.5" data-requested-dimensions>{{ $row['dimension_display'] }}</div>
                                     @if(($row['spread_pct'] ?? 0) > 15)

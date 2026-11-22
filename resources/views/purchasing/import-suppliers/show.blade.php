@@ -24,7 +24,7 @@
 
     <x-ui.page-header :title="$companyName" :description="$vendor->email">
         <x-slot:actions>
-            <x-ui.button :href="\App\Support\PurchasingNavigation::listUrl('purchasing.import-suppliers.index')" variant="ghost" size="sm">
+            <x-ui.button :href="\App\Support\PurchasingNavigation::listUrl('purchasing.import-suppliers.index')" variant="outline" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>{{ __('supplier_contact.directory.back') }}</span>
             </x-ui.button>
@@ -62,7 +62,7 @@
                                 $changed = (string) $currentValue !== (string) $proposedValue;
                             @endphp
                             <tr>
-                                <th scope="row" class="tw:font-normal tw:text-on-surface-variant">{{ $label }}</th>
+                                <th scope="row" class="tw:font-normal tw:text-on-surface-variant ui-col-data-name">{{ $label }}</th>
                                 <td class="tw:break-all {{ $changed ? 'tw:text-on-surface-variant' : '' }}">{{ $currentValue ?: $notSet }}</td>
                                 <td class="tw:break-all">
                                     <span class="{{ $changed ? 'tw:font-semibold tw:text-on-surface' : '' }}">{{ $proposedValue ?: $notSet }}</span>

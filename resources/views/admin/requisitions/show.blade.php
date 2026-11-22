@@ -14,7 +14,7 @@
             <x-ui.status-chip tone="neutral" icon="lock">{{ __('admin.copy.read_only_admin_view') }}</x-ui.status-chip>
         </x-slot:meta>
         <x-slot:actions>
-            <x-ui.button :href="route('admin.dashboard')" variant="ghost" size="sm"><x-ui.icon name="arrow-left" /> {{ __('admin.copy.back_to_dashboard') }}</x-ui.button>
+            <x-ui.button :href="route('admin.dashboard')" variant="outline" size="sm"><x-ui.icon name="arrow-left" /> {{ __('admin.copy.back_to_dashboard') }}</x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>
 
@@ -67,7 +67,7 @@
                         <tr>
                             <td class="ui-tabular-nums text-center text-muted">{{ $index + 1 }}</td>
                             <td class="ui-tabular-nums text-center fw-semibold">{{ $item->hs_code ?: '-' }}</td>
-                            <td class="fw-semibold">{{ $item->material_name }}</td>
+                            <td class="fw-semibold ui-col-data-name">{{ $item->material_name }}</td>
                             <td class="text-center">
                                 @if($item->shape)
                                     <span class="tw:font-medium">{{ $item->shape }}</span>
@@ -79,7 +79,7 @@
                             <td class="ui-tabular-nums text-center fw-semibold">{{ number_format($item->quantity_value, 0) }}</td>
                             <td class="ui-tabular-nums text-end">{{ \App\Support\NumberFormat::maxDecimals($item->weight_needed) }}</td>
                             <td class="ui-tabular-nums text-end fw-semibold text-primary">{{ \App\Support\NumberFormat::maxDecimals($item->total_weight) }}</td>
-                            <td>{{ $item->remark ?: '-' }}</td>
+                            <td class="ui-col-data-name">{{ $item->remark ?: '-' }}</td>
                         </tr>
                     @empty
                         <tr><td colspan="8"><x-ui.empty-state icon="package" :title="__('admin.copy.no_material_records')" :description="__('admin.copy.this_requisition_has_no_requested_material_lines')" /></td></tr>

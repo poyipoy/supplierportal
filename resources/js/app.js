@@ -4,6 +4,7 @@ import { searchableFreeInput } from './searchable-free-input';
 import './password-assistance';
 import './unsaved-changes';
 import './session-sync';
+import { adasiSessionModal } from './session-expired-modal';
 import './number-input-helper';
 import './chart-theme';
 import './preferences';
@@ -23,6 +24,7 @@ window.Alpine = Alpine;
 Alpine.data('searchableSelect', searchableSelect);
 Alpine.data('searchableFreeInput', searchableFreeInput);
 Alpine.data('adasiFileUploadComponent', adasiFileUploadComponent);
+Alpine.data('adasiSessionModal', adasiSessionModal);
 
 // Page-specific modules load only where their markup is present. Module scripts run after parsing,
 // so the markers are already in the DOM here.

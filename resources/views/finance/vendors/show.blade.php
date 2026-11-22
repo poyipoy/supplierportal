@@ -10,7 +10,7 @@
         :eyebrow="__('finance.copy_review.vendor_v2')"
     >
         <x-slot:actions>
-            <x-ui.button :href="route('finance.vendor-master.index')" variant="ghost" size="sm">
+            <x-ui.button :href="route('finance.vendor-master.index')" variant="outline" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>{{ __('local_procurement.vendor_ui.back_master') }}</span>
             </x-ui.button>
@@ -107,9 +107,9 @@
                         <tbody>
                             @forelse($sup?->bankAccounts ?? [] as $b)
                                 <tr>
-                                    <td><strong class="tw:text-on-surface">{{ $b->bank_name }}</strong></td>
+                                    <td class="ui-col-data-name"><strong class="tw:text-on-surface">{{ $b->bank_name }}</strong></td>
                                     <td><span class="ui-tabular-nums">{{ $b->account_number }}</span></td>
-                                    <td>{{ $b->account_holder_name }}</td>
+                                    <td class="ui-col-data-name">{{ $b->account_holder_name }}</td>
                                     <td>
                                         <x-ui.status-chip :tone="\App\Support\StatusHelper::localFinanceTone($b->status)">
                                             {{ \App\Support\StatusHelper::localFinanceLabel($b->status) }}
@@ -173,7 +173,7 @@
                                 <strong class="tw:text-ui-xs tw:text-on-surface tw:block">{{ __('local_procurement.vendor_ui.document_types.'.strtolower($md->document_type)) }}</strong>
                                 <span class="tw:text-[11px] tw:text-on-surface-variant tw:block">{{ $md->original_filename }}</span>
                             </div>
-                            <a href="{{ route('supplier-master-documents.show', $md) }}" target="_blank" class="btn btn-xs btn-outline-primary">{{ __('local_invoice.actions.download') }}</a>
+                            <x-ui.button :href="route('supplier-master-documents.show', $md)" target="_blank" variant="outline-primary" size="sm">{{ __('local_invoice.actions.download') }}</x-ui.button>
                         </div>
                     @empty
                         <div class="tw:text-center tw:py-6 tw:text-ui-xs tw:text-on-surface-variant">

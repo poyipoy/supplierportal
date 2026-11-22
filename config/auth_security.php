@@ -108,6 +108,17 @@ return [
     ],
 
     'session' => [
+        // Real-activity idle timeout in minutes. Background polling endpoints do not
+        // advance this clock. When unset, falls back to session.lifetime, and is always
+        // clamped at runtime to <= min(session.lifetime, absolute_timeout_minutes).
+        'idle_timeout_minutes' => env('AUTH_IDLE_TIMEOUT') !== null && env('AUTH_IDLE_TIMEOUT') !== ''
+            ? (int) env('AUTH_IDLE_TIMEOUT')
+            : null,
+
+        // Minimum interval in seconds between client activity heartbeats while the user
+        // is actively interacting with the portal. Zero traffic is sent while idle.
+        'heartbeat_interval_seconds' => (int) env('AUTH_SESSION_HEARTBEAT_SECONDS', 120),
+
         'absolute_timeout_minutes' => (int) env('AUTH_ABSOLUTE_TIMEOUT', 480),
 
         // Maximum number of concurrent active sessions allowed per account

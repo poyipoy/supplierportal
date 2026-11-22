@@ -10,7 +10,7 @@
         :eyebrow="__('finance.drp_surface.purchasing_audience')"
     >
         <x-slot:actions>
-            <x-ui.button :href="\App\Support\PurchasingNavigation::backUrl($batch->batch_type === 'SUPPLIER' ? 'purchasing.drp.supplier' : 'purchasing.drp.ga')" variant="ghost" size="sm">
+            <x-ui.button :href="\App\Support\PurchasingNavigation::backUrl($batch->batch_type === 'SUPPLIER' ? 'purchasing.drp.supplier' : 'purchasing.drp.ga')" variant="outline" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>{{ __('common.labels_review.back_list') }}</span>
             </x-ui.button>
@@ -131,7 +131,7 @@
                                     <td>
                                         <strong class="ui-tabular-nums">{{ $item->item_reference }}</strong>
                                     </td>
-                                    <td>
+                                    <td class="ui-col-data-name">
                                         @if($batch->batch_type === 'SUPPLIER' && $item->payable)
                                             {{ __('finance.drp_ui.invoice_reference', ['invoice' => $item->payable->invoice_number, 'po' => $item->payable->po_number]) }}
                                         @elseif($batch->batch_type === 'GA' && $item->payable)

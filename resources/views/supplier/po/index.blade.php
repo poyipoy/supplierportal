@@ -38,7 +38,7 @@
                     <th scope="col" class="text-center">{{ __('supplier.copy.status') }}</th>
                     <th scope="col">{{ __('supplier.copy.outstanding_status_breakdown') }}</th>
                     <th scope="col">{{ __('supplier.copy.estimated_arrival') }}</th>
-                    <th scope="col" class="text-end" style="width: 110px;">{{ __('supplier.copy.action') }}</th>
+                    <th scope="col" class="tw:text-right text-end" style="width: 110px;">{{ __('common.table.action') }}</th>
                 </tr>
             </thead>
             <tbody></tbody>

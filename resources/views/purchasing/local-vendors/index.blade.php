@@ -10,7 +10,7 @@
         :eyebrow="__('finance.copy_review.purchasing')"
     >
         <x-slot:actions>
-            <x-ui.button :href="\App\Support\PurchasingNavigation::listUrl('purchasing.dashboard')" variant="ghost" size="sm">
+            <x-ui.button :href="\App\Support\PurchasingNavigation::listUrl('purchasing.dashboard')" variant="outline" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>{{ __('common.labels_review.dashboard') }}</span>
             </x-ui.button>
@@ -63,36 +63,39 @@
                                         </x-ui.button>
                                     </form>
                                 @elseif($canSelectDocToApprove)
-                                    <button
+                                    <x-ui.button
                                         type="button"
-                                        class="btn btn-primary btn-sm tw:inline-flex tw:items-center tw:gap-1.5"
+                                        variant="primary"
+                                        size="sm"
                                         data-bs-toggle="modal"
                                         data-bs-target="#approveReqModal-{{ $req->id }}"
                                     >
                                         <x-ui.icon name="check" size="sm" />
                                         <span>{{ __('local_procurement.vendor_ui.approve') }}</span>
-                                    </button>
+                                    </x-ui.button>
                                 @else
-                                    <button
+                                    <x-ui.button
                                         type="button"
-                                        class="btn btn-secondary btn-sm opacity-50"
+                                        variant="secondary"
+                                        size="sm"
                                         disabled
                                         title="{{ __('finance_controls.bank_document_missing_for_approval') }}"
                                     >
                                         <x-ui.icon name="check" size="sm" />
                                         <span>{{ __('local_procurement.vendor_ui.approve') }}</span>
-                                    </button>
+                                    </x-ui.button>
                                 @endif
 
-                                <button
+                                <x-ui.button
                                     type="button"
-                                    class="btn btn-outline-danger btn-sm"
+                                    variant="danger-outline"
+                                    size="sm"
                                     data-bs-toggle="modal"
                                     data-bs-target="#rejectReqModal-{{ $req->id }}"
                                 >
                                     <x-ui.icon name="x" size="sm" />
                                     <span>{{ __('local_procurement.vendor_ui.reject') }}</span>
-                                </button>
+                                </x-ui.button>
                             </div>
                         </div>
 
@@ -130,8 +133,8 @@
                                             </div>
                                         </div>
                                         <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{{ __('local_invoice.actions.cancel') }}</button>
-                                            <button type="submit" class="btn btn-primary btn-sm">{{ __('local_procurement.vendor_ui.approve') }}</button>
+                                            <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('local_invoice.actions.cancel') }}</x-ui.button>
+                                            <x-ui.button type="submit" variant="primary" size="sm">{{ __('local_procurement.vendor_ui.approve') }}</x-ui.button>
                                         </div>
                                     </div>
                                 </form>
@@ -156,8 +159,8 @@
                                         </div>
                                     </div>
                                     <div class="modal-footer">
-                                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{{ __('local_invoice.actions.cancel') }}</button>
-                                        <button type="submit" class="btn btn-danger btn-sm">{{ __('local_procurement.vendor_ui.reject_submit') }}</button>
+                                        <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('local_invoice.actions.cancel') }}</x-ui.button>
+                                        <x-ui.button type="submit" variant="danger" size="sm">{{ __('local_procurement.vendor_ui.reject_submit') }}</x-ui.button>
                                     </div>
                                 </div>
                             </form>
@@ -182,7 +185,7 @@
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('finance.copy_review.pkp_status') }}</th>
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('finance.copy_review.active_account') }}</th>
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('local_procurement.change_details.payment_term') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold text-end">{{ __('local_invoice.labels.actions') }}</th>
+                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-right text-end">{{ __('common.table.action') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -216,11 +219,11 @@
                             <td>
                                 <span class="tw:font-semibold tw:text-ui-xs">{{ trans_choice('local_invoice.table.term_days', $sup?->payment_term_days ?? 30) }}</span>
                             </td>
-                            <td class="text-end">
-                                <x-ui.button :href="route('purchasing.local-vendors.show', $vendorUser)" size="sm" variant="outline">
-                                    <x-ui.icon name="eye" size="sm" />
-                                    <span>{{ __('local_procurement.labels.master_detail') }}</span>
-                                </x-ui.button>
+                            <td class="tw:text-right text-end">
+                                <x-ui.row-action
+                                    :href="route('purchasing.local-vendors.show', $vendorUser)"
+                                    :context="$sup?->company_name ?: $vendorUser->name"
+                                />
                             </td>
                         </tr>
                     @empty

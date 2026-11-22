@@ -8,6 +8,7 @@ use App\Services\Pricing\VsBestPriceQueryService;
 use App\Services\RegionalDisplayFormatter;
 use App\Support\HashidCodec;
 use App\Support\Pricing\EvaluationContext;
+use App\Support\Ui\RowAction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -204,7 +205,9 @@ class VsBestPriceComparisonController extends Controller
                     $returnUrl
                 );
                 $html = '<div class="d-inline-flex align-items-center gap-1" role="group" aria-label="'.e(__('purchasing.copy.quotation_comparison_actions')).'">'
-                    .'<a href="'.e($currentQuotationUrl).'" class="ui-data-action ui-data-action--primary ui-focus-ring" aria-label="'.e(__('purchasing.copy.view_current_quotation')).'">'.e(__('purchasing.copy.current')).'</a>';
+                    .RowAction::link($currentQuotationUrl, __('purchasing.copy.current'), 'primary', null, [
+                        'aria-label' => __('purchasing.copy.current').' - '.__('purchasing.copy.view_current_quotation'),
+                    ]);
 
                 if ($row->best_quotation_id) {
                     $bestQuotationUrl = $this->routeWithReturn(
@@ -212,7 +215,9 @@ class VsBestPriceComparisonController extends Controller
                         HashidCodec::encode((int) $row->best_quotation_id),
                         $returnUrl
                     );
-                    $html .= '<a href="'.e($bestQuotationUrl).'" class="ui-data-action ui-data-action--success ui-focus-ring" aria-label="'.e(__('purchasing.copy.view_historical_best_quotation')).'">'.e(__('purchasing.copy.best')).'</a>';
+                    $html .= RowAction::link($bestQuotationUrl, __('purchasing.copy.best'), 'success', null, [
+                        'aria-label' => __('purchasing.copy.best').' - '.__('purchasing.copy.view_historical_best_quotation'),
+                    ]);
                 }
 
                 return $html.'</div>';

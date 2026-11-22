@@ -884,8 +884,8 @@
 
                         <x-ui.button
                             type="button"
-                            variant="ghost"
-                            class="tw:w-full tw:justify-center tw:text-on-surface-variant tw:hover:text-on-surface"
+                            variant="outline"
+                            class="tw:w-full tw:justify-center"
                             @click="goToStep(1)"
                         >
                             <x-ui.icon name="arrow-left" size="sm" />

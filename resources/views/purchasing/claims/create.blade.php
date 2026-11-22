@@ -17,7 +17,7 @@
         :description="__('claims.page.submission_help', ['po' => $inspection->purchaseOrder->po_number])"
     >
         <x-slot:actions>
-            <x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.claims.index')" variant="ghost" size="sm">
+            <x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.claims.index')" variant="outline" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>{{ __('claims.copy.back_to_claim_list') }}</span>
             </x-ui.button>

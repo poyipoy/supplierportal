@@ -335,9 +335,9 @@
 
                             {{-- Modal Footer --}}
                             <div class="modal-footer tw:border-t tw:border-outline-variant/60 tw:px-6 tw:py-3 tw:bg-surface-container-low/50">
-                                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
+                                <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">
                                     {{ __('local_invoice.actions.cancel') }}
-                                </button>
+                                </x-ui.button>
                                 <x-ui.button type="submit" variant="primary" size="sm">
                                     <x-ui.icon name="check-circle" size="sm" />
                                     <span>{{ __('finance.refund.save') }}</span>

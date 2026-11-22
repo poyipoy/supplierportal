@@ -68,7 +68,7 @@
                 <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('supplier_contact.directory.col_supplier') }}</th>
                 <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('supplier_contact.directory.col_contact') }}</th>
                 <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('supplier_contact.directory.col_status') }}</th>
-                <th scope="col" class="tw:text-ui-xs tw:font-semibold text-end"><span class="tw:sr-only">{{ __('supplier_contact.directory.col_action') }}</span></th>
+                <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-right text-end">{{ __('common.table.action') }}</th>
             </tr>
         </thead>
         <tbody>
@@ -99,11 +99,11 @@
                             <span class="tw:text-on-surface-variant">&ndash;</span>
                         @endif
                     </td>
-                    <td class="text-end">
-                        <x-ui.button :href="route('purchasing.import-suppliers.show', $vendorUser)" size="sm" :variant="$vendorUser->has_pending_contact ? 'primary' : 'outline'">
-                            <span>{{ __('supplier_contact.directory.open') }}</span>
-                            <span class="tw:sr-only">{{ $companyName }}</span>
-                        </x-ui.button>
+                    <td class="tw:text-right text-end">
+                        <x-ui.row-action
+                            :href="route('purchasing.import-suppliers.show', $vendorUser)"
+                            :context="$companyName"
+                        />
                     </td>
                 </tr>
             @endforeach

@@ -188,7 +188,7 @@
                                     @if($annualEditing && $annualEditYear === (int) $matrixYear)
                                         <div class="tw:flex tw:flex-wrap tw:justify-end tw:gap-2">
                                             <x-ui.button type="submit" size="sm"><x-ui.icon name="save" /> {{ __('annual_rates.save_short') }}</x-ui.button>
-                                            <x-ui.button :href="route($masterRoutePrefix.'.exchange-rates.index', $annualListQuery)" data-exchange-rates-link variant="ghost" size="sm">{{ __('admin.copy.cancel') }}</x-ui.button>
+                                            <x-ui.button :href="route($masterRoutePrefix.'.exchange-rates.index', $annualListQuery)" data-exchange-rates-link variant="outline" size="sm">{{ __('admin.copy.cancel') }}</x-ui.button>
                                         </div>
                                     @else
                                         <x-ui.button :href="route($masterRoutePrefix.'.exchange-rates.index', [...$annualListQuery, 'annual_edit_year' => $matrixYear]).'#annual-rate-USD-'.$matrixYear" data-exchange-rates-link :disabled="$annualEditing" :class="$annualEditing ? 'tw:opacity-50 tw:cursor-not-allowed' : ''" variant="outline" size="sm" :aria-label="__('annual_rates.edit_year', ['year' => $matrixYear])">{{ __('annual_rates.edit') }}</x-ui.button>

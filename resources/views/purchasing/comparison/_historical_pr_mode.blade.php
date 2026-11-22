@@ -99,7 +99,7 @@
                             $previous = $row['previous'];
                         @endphp
                         <tr data-history-row data-status="{{ $row['status'] }}">
-                            <th scope="row" class="ui-sticky-col tw:font-medium tw:text-on-surface">{{ $row['supplier']['name'] }}</th>
+                            <th scope="row" class="ui-sticky-col ui-col-data-name tw:font-medium tw:text-on-surface">{{ $row['supplier']['name'] }}</th>
                             <td>
                                 @if($row['status'] === 'ambiguous')
                                     <ul class="tw:m-0 tw:grid tw:list-none tw:gap-1 tw:p-0">
@@ -190,7 +190,7 @@
                                     <div class="tw:inline-flex tw:flex-wrap tw:items-center tw:justify-center tw:gap-1.5">
                                         @if($current)
                                             <a href="{{ $current['detail_url'] }}"
-                                               class="ui-data-action ui-data-action--primary ui-motion ui-focus-ring tw:gap-1.5 tw:bg-primary-container/20 tw:active:scale-[0.98]"
+                                               class="ui-data-action ui-data-action--primary ui-motion ui-focus-ring tw:gap-1.5 tw:active:scale-[0.98]"
                                                data-return-url
                                                title="{{ __('purchasing.quotation_history.view_detail_label', ['pr' => $current['pr_number'] ?? '-', 'supplier' => $row['supplier']['name']]) }}"
                                                aria-label="{{ __('purchasing.quotation_history.view_detail_label', ['pr' => $current['pr_number'] ?? '-', 'supplier' => $row['supplier']['name']]) }}">
@@ -200,7 +200,7 @@
                                         @endif
                                         @if($previous)
                                             <a href="{{ $previous['detail_url'] }}"
-                                               class="ui-data-action ui-motion ui-focus-ring tw:gap-1.5 tw:border-outline tw:bg-surface-container-low tw:text-on-surface-variant tw:hover:border-outline-strong tw:hover:bg-surface-container tw:hover:text-on-surface tw:active:scale-[0.98]"
+                                               class="ui-data-action ui-motion ui-focus-ring tw:gap-1.5 tw:active:scale-[0.98]"
                                                data-return-url
                                                title="{{ __('purchasing.quotation_history.view_detail_label', ['pr' => $previous['pr_number'] ?? '-', 'supplier' => $row['supplier']['name']]) }}"
                                                aria-label="{{ __('purchasing.quotation_history.view_detail_label', ['pr' => $previous['pr_number'] ?? '-', 'supplier' => $row['supplier']['name']]) }}">
@@ -210,7 +210,7 @@
                                         @endif
                                         @if($current && ($row['history_count'] ?? 0) > 0)
                                             <button type="button"
-                                                    class="ui-data-action ui-motion ui-focus-ring tw:gap-1.5 tw:border-primary/25 tw:bg-primary-container/60 tw:text-on-primary-container tw:hover:border-primary tw:hover:bg-primary tw:hover:text-primary-foreground tw:active:scale-[0.98]"
+                                                    class="ui-data-action ui-motion ui-focus-ring tw:gap-1.5 tw:border-primary-text tw:bg-primary-container tw:text-primary-container-foreground tw:hover:border-primary-text tw:hover:bg-primary tw:hover:text-primary-foreground tw:active:scale-[0.98]"
                                                     data-historical-drawer
                                                     aria-haspopup="dialog"
                                                     data-pr-item="{{ $row['pr_item_hash'] }}"

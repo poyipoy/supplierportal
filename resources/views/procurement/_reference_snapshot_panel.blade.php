@@ -33,7 +33,7 @@
                     @foreach($snapshots as $snapshot)
                         @php($matched = $snapshot->status === \App\Models\AwardReferencePriceSnapshot::STATUS_MATCHED)
                         <tr>
-                            <td>{{ $snapshot->award?->prItem?->material_name ?? '-' }}</td>
+                            <td class="ui-col-data-name">{{ $snapshot->award?->prItem?->material_name ?? '-' }}</td>
                             <td class="text-end ui-tabular-nums">{{ $snapshot->po_currency }} {{ $money($snapshot->offer_price_per_kg) }}</td>
                             <td class="text-end ui-tabular-nums">{{ $matched ? $snapshot->reference_currency.' '.$money($snapshot->reference_price_per_kg) : '—' }}</td>
                             <td class="text-end ui-tabular-nums">{{ $matched ? $snapshot->po_currency.' '.$money($snapshot->converted_reference_price_per_kg) : '—' }}</td>

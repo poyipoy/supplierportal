@@ -1825,3 +1825,18 @@ test('shortcuts history stays at bare appUuid on fresh login and retains previou
     });
     assert.equal(legacyShortcuts.target, `${ORIGIN}${PREFIX}/purchasing/dashboard#shortcuts`);
 });
+
+test('workspace-shell handles embedded login redirects via Session Ended modal and exposes getDirtyFrames', async () => {
+    const { readFile } = await import('node:fs/promises');
+    const source = await readFile(new URL('../../resources/js/workspace-shell.js', import.meta.url), 'utf8');
+
+    const loginCheckIdx = source.indexOf("frameDoc.querySelector('[data-auth-login-page]')");
+    const topLevelIdx = source.indexOf('if (isTopLevelOnlyUrl(frameHref, origin, pathPrefix))');
+    assert.ok(loginCheckIdx > 0 && topLevelIdx > 0, 'both checks exist in onFrameLoad');
+    assert.ok(
+        loginCheckIdx < topLevelIdx,
+        'login document detection in onFrameLoad must run before isTopLevelOnlyUrl so dirty tabs are not destroyed by breakoutToTop',
+    );
+    assert.match(source, /window\.AdasiSessionSync\?\.requestReconnect/);
+    assert.match(source, /getDirtyFrames\(\)\s*\{[\s\S]*frame\.isDirty/);
+});

@@ -96,7 +96,7 @@ export function bootLocalPoGrTable(root = document) {
         columns: [
             { data: 'DT_RowIndex', orderable: false, searchable: false, className: 'ui-tabular-nums' },
             { data: 'gr_number', name: 'gr_number' }, { data: 'gr_date', name: 'gr_date' },
-            { data: 'description', name: 'description', defaultContent: '—' },
+            { data: 'description', name: 'description', className: 'ui-col-data-name', defaultContent: '—' },
             { data: 'qty', name: 'qty', className: 'text-end ui-tabular-nums' },
             { data: 'uom', name: 'uom', defaultContent: '—' },
             { data: 'status_badge', name: 'status' },

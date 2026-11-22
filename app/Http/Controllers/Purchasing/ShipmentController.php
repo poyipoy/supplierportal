@@ -16,6 +16,7 @@ use App\Support\BusinessTime;
 use App\Support\NumberFormat;
 use App\Support\PurchasingNavigation;
 use App\Support\StatusHelper;
+use App\Support\Ui\RowAction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -43,6 +44,7 @@ class ShipmentController extends Controller
 
         if ($request->ajax()) {
             $payload = DataTables::eloquent($query)
+                ->filter(fn ($query) => null)
                 ->setRowId(fn (Shipment $shp): string => $shp->getRouteKey())
                 ->addColumn('shipment_number_display', function ($shp) {
                     $url = route('purchasing.shipments.show', $shp);
@@ -94,9 +96,7 @@ class ShipmentController extends Controller
                     );
                 })
                 ->addColumn('action', function ($shp) {
-                    $url = route('purchasing.shipments.show', $shp);
-
-                    return '<a href="'.e($url).'" class="ui-data-action ui-data-action--primary">'.e(__('shipments.copy.details')).'</a>';
+                    return RowAction::detail(route('purchasing.shipments.show', $shp), $shp->shipment_number);
                 })
                 ->rawColumns(['shipment_number_display', 'consolidated_pos', 'items_count', 'total_qty', 'actual_weight', 'total_weight', 'shipment_date', 'shipment_date_display', 'estimated_arrival', 'actual_arrival', 'missing_documents', 'status_badge', 'action'])
                 ->toArray();

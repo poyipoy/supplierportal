@@ -10,7 +10,7 @@ class EnforcePasswordChange
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (! $request->user()?->must_change_password || $request->routeIs('profile.security', 'password.update', 'logout', 'password.confirm', 'password.confirm.store', 'locale.*')) {
+        if (! $request->user()?->must_change_password || $request->routeIs('profile.security', 'password.update', 'logout', 'password.confirm', 'password.confirm.store', 'locale.*', 'session.status', 'session.heartbeat', 'session.reconnect')) {
             return $next($request);
         }
         if ($request->expectsJson()) {

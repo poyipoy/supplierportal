@@ -82,7 +82,7 @@
                         <th scope="col">{{ __('admin.copy.status') }}</th>
                         <th scope="col">MFA</th>
                         <th scope="col">{{ __('admin.copy.registered') }}</th>
-                        <th scope="col" class="text-end" style="width: 140px;">{{ __('admin.copy.actions') }}</th>
+                        <th scope="col" class="tw:text-right text-end" style="width: 140px;">{{ __('common.table.action') }}</th>
                     </tr>
                 </thead>
                 <tbody></tbody>

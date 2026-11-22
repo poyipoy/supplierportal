@@ -78,9 +78,31 @@ class SessionSecurityTest extends TestCase
         $this->actingAs($user)->get('/dashboard')
             ->assertRedirect(route('supplier.dashboard'))
             ->assertSessionHas('auth_session_version', 1)
-            ->assertSessionHas('auth_absolute_started_at');
+            ->assertSessionHas('auth_absolute_started_at')
+            ->assertSessionHas('auth_last_activity_at');
 
         $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_idle_timeout_is_clamped_to_session_lifetime_and_enforced_by_middleware(): void
+    {
+        config()->set('session.lifetime', 60);
+        config()->set('auth_security.session.idle_timeout_minutes', 25);
+        config()->set('auth_security.session.absolute_timeout_minutes', 480);
+
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->withSession([
+                'auth_session_version' => 1,
+                'auth_absolute_started_at' => now()->subMinutes(40)->timestamp,
+                'auth_last_activity_at' => now()->subMinutes(25)->timestamp,
+            ])
+            ->get('/dashboard')
+            ->assertRedirect(route('login'));
+
+        $this->assertGuest();
+        $this->assertDatabaseHas('auth_audit_logs', ['user_id' => $user->id, 'event' => 'session_timeout']);
     }
 
     public function test_logout_other_devices_rotates_version_but_preserves_current_session(): void

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Events\AuthSecurityEvent;
 use App\Http\Controllers\Controller;
 use App\Services\Auth\SessionInventoryService;
+use App\Services\Auth\SessionReconnectService;
 use App\Services\Auth\SessionRevocationService;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\RedirectResponse;
@@ -40,6 +41,7 @@ class RevokeSessionController extends Controller
 
         if ($deleted) {
             $revocation->revokeSessionRememberTokens($request->user(), [$sessionId], $request);
+            app(SessionReconnectService::class)->markSessionRevoked($sessionId);
             event(new AuthSecurityEvent('session_revoked', $request->user(), metadata: ['reason' => 'manual_single_session']));
         }
 

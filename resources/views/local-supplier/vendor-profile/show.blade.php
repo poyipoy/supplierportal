@@ -10,7 +10,7 @@
         :eyebrow="__('local_procurement.labels.vendor_partner')"
     >
         <x-slot:actions>
-            <x-ui.button :href="route('local-supplier.dashboard')" variant="ghost" size="sm">
+            <x-ui.button :href="route('local-supplier.dashboard')" variant="outline" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>{{ __('navigation.back_dashboard') }}</span>
             </x-ui.button>
@@ -102,9 +102,9 @@
                         <tbody>
                             @forelse($bankAccounts as $b)
                                 <tr>
-                                    <td><strong class="tw:text-on-surface">{{ $b->bank_name }}</strong></td>
+                                    <td class="ui-col-data-name"><strong class="tw:text-on-surface">{{ $b->bank_name }}</strong></td>
                                     <td><span class="ui-tabular-nums">{{ $b->account_number }}</span></td>
-                                    <td>{{ $b->account_holder_name }}</td>
+                                    <td class="ui-col-data-name">{{ $b->account_holder_name }}</td>
                                     <td>
                                         <x-ui.status-chip :tone="\App\Support\StatusHelper::localFinanceTone($b->status)">
                                             {{ \App\Support\StatusHelper::localFinanceLabel($b->status) }}
@@ -278,7 +278,7 @@
                             @forelse($changeRequests as $cr)
                                 <tr>
                                     <td class="tw:whitespace-nowrap">{{ $regionalFormatter->timestamp($cr->requested_at, 'datetime') ?: $regionalFormatter->timestamp($cr->created_at, 'datetime') }}</td>
-                                    <td><span>{{ match($cr->change_type) { 'profile' => __('local_procurement.vendor_ui.change_profile'), 'bank_account' => __('local_procurement.vendor_ui.change_bank'), default => ucwords(str_replace('_', ' ', $cr->change_type)) } }}</span></td>
+                                    <td class="ui-col-data-name"><span>{{ match($cr->change_type) { 'profile' => __('local_procurement.vendor_ui.change_profile'), 'bank_account' => __('local_procurement.vendor_ui.change_bank'), default => ucwords(str_replace('_', ' ', $cr->change_type)) } }}</span></td>
                                     <td>
                                         <x-ui.status-chip :tone="\App\Support\StatusHelper::localFinanceTone($cr->status)">
                                             {{ \App\Support\StatusHelper::localFinanceLabel($cr->status) }}
@@ -376,9 +376,9 @@
                                 <span class="tw:text-[11px] tw:text-on-surface-variant tw:truncate tw:block" title="{{ $doc->original_filename }}">{{ $doc->original_filename }}</span>
                                 <span class="tw:text-[10px] tw:text-on-surface-variant">{{ number_format($doc->file_size / 1024, 1) }} KB · {{ $regionalFormatter->date($doc->created_at) }}</span>
                             </div>
-                            <a href="{{ route('supplier-master-documents.show', $doc) }}" target="_blank" class="btn btn-xs btn-outline-primary tw:shrink-0">
+                            <x-ui.button :href="route('supplier-master-documents.show', $doc)" target="_blank" variant="outline-primary" size="sm" class="tw:shrink-0">
                                 {{ __('local_invoice.actions.download') }}
-                            </a>
+                            </x-ui.button>
                         </div>
                     @empty
                         <div class="tw:text-center tw:py-6 tw:text-ui-xs tw:text-on-surface-variant">

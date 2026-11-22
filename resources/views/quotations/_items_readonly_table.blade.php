@@ -102,7 +102,7 @@
             <tbody>
                 <tr class="is-requested-row">
                     <td rowspan="2" class="ui-sticky-col text-center ui-tabular-nums tw:text-on-surface-variant" style="--ui-sticky-col-left: 0;">{{ $index + 1 }}</td>
-                    <th scope="rowgroup" rowspan="2" class="ui-sticky-col text-start tw:font-normal" style="--ui-sticky-col-left: 2.5rem;">
+                    <th scope="rowgroup" rowspan="2" class="ui-sticky-col text-start tw:font-normal ui-col-data-name" style="--ui-sticky-col-left: 2.5rem;">
                         <div class="fw-bold tw:text-on-surface">{{ $prItem?->material_name ?? '-' }}</div>
                         @if($prItem?->shape)
                             <span class="ui-status-chip ui-status-chip--neutral tw:mt-0.5">{{ $prItem->shape }}</span>
@@ -120,7 +120,7 @@
                     @if($showRef)<td class="text-end tw:text-on-surface-variant">—</td>@endif
                     <td class="text-end ui-tabular-nums tw:text-on-surface-variant">{{ $item->is_available ? $fmtPrice($item->requested_amount) : '—' }}</td>
                     @if($showIdr)<td class="text-end tw:text-on-surface-variant">—</td>@endif
-                    <td class="text-start tw:text-on-surface-variant">{{ $prItem?->remark ?: '—' }}</td>
+                    <td class="text-start tw:text-on-surface-variant ui-col-data-name">{{ $prItem?->remark ?: '—' }}</td>
                     <td class="text-center tw:text-on-surface-variant">—</td>
                     @if($showMtc)<td rowspan="2" class="text-center">
                         @forelse($item->attachments as $attachment)
@@ -189,7 +189,7 @@
                             <span class="ui-status-chip ui-status-chip--error">{{ __('procurement.quotation.not_available') }}</span>
                         </td>
                     @endif
-                    <td class="text-start tw:text-on-surface-variant">{{ $item->notes ?: '—' }}</td>
+                    <td class="text-start tw:text-on-surface-variant ui-col-data-name">{{ $item->notes ?: '—' }}</td>
                     <td class="text-center">
                         @if($item->is_available)
                             <div class="d-flex flex-column align-items-center tw:gap-1">

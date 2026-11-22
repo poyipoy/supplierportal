@@ -51,6 +51,6 @@
                 @endforeach
             </select>
         </div>
-        <noscript><button type="submit" class="btn btn-sm btn-outline-primary">{{ __($pc.'.apply') }}</button></noscript>
+        <noscript><x-ui.button type="submit" variant="outline-primary" size="sm">{{ __($pc.'.apply') }}</x-ui.button></noscript>
     </form>
 </section>

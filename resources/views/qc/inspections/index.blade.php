@@ -47,7 +47,7 @@
                                 <th scope="col">{{ __('qc.copy.supplier_name') }}</th>
                                 <th scope="col">{{ __('qc.copy.date_material_arrived') }}</th>
                                 <th scope="col" class="text-center">{{ __('qc.copy.total_items') }}</th>
-                                <th scope="col" class="text-end" style="width: 140px;">{{ __('qc.copy.action') }}</th>
+                                <th scope="col" class="tw:text-right text-end" style="width: 140px;">{{ __('common.table.action') }}</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -90,7 +90,7 @@
                                 <th scope="col">{{ __('qc.copy.inspection_date') }}</th>
                                 <th scope="col" class="text-center">{{ __('qc.copy.status') }}</th>
                                 <th scope="col">{{ __('qc.copy.inspected_by') }}</th>
-                                <th scope="col" class="text-end" style="width: 110px;">{{ __('qc.copy.action') }}</th>
+                                <th scope="col" class="tw:text-right text-end" style="width: 110px;">{{ __('common.table.action') }}</th>
                             </tr>
                         </thead>
                         <tbody></tbody>

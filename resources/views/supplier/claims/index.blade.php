@@ -33,7 +33,7 @@
                     <th scope="col">{{ __('claims.copy.date_submitted') }}</th>
                     <th scope="col">{{ __('claims.copy.response_deadline') }}</th>
                     <th scope="col" class="text-center">{{ __('claims.copy.status') }}</th>
-                    <th scope="col" class="text-end" style="width: 120px;">{{ __('claims.copy.action') }}</th>
+                    <th scope="col" class="tw:text-right text-end" style="width: 120px;">{{ __('common.table.action') }}</th>
                 </tr>
             </thead>
             <tbody></tbody>

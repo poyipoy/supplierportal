@@ -6,6 +6,7 @@ use App\Events\AuthSecurityEvent;
 use App\Models\User;
 use App\Services\Auth\AuthAuditLogger;
 use App\Services\NotificationService;
+use App\Support\Auth\SessionLifecycle;
 use App\Support\NotificationDomain;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Lockout;
@@ -24,9 +25,19 @@ class LogAuthenticationEvent
 
     public function handleLogin(Login $event): void
     {
-        if ($event->remember && $event->user instanceof User && $event->user->hasTwoFactorAuthentication()
-            && ! request()->attributes->get('auth_security.login_completed')) {
+        $currentRequest = request();
+
+        if ($currentRequest->attributes->get('auth_security.suppress_login_audit')) {
             return;
+        }
+
+        if ($event->remember && ! $currentRequest->attributes->get('auth_security.login_completed')) {
+            if (($event->user instanceof User && $event->user->hasTwoFactorAuthentication())
+                || SessionLifecycle::isPassiveRequest($currentRequest)
+                || $currentRequest->routeIs('session.status')
+                || $currentRequest->expectsJson()) {
+                return;
+            }
         }
 
         $this->logger->write('login_success', $event->user, metadata: [

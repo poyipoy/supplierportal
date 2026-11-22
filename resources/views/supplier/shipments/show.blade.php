@@ -282,7 +282,7 @@
                                     {{ $item->purchaseOrder->po_number }}
                                 </a>
                             </td>
-                            <td class="fw-medium">
+                            <td class="fw-medium ui-col-data-name">
                                 {{ $item->quotationItem->prItem->material_name ?? __('shipments.copy.material') }}
                             </td>
                             <td class="text-end fw-bold text-primary ui-tabular-nums">
@@ -291,7 +291,7 @@
                             <td class="text-end ui-tabular-nums tw:text-on-surface-variant">
                                 {{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($item->actual_weight_kg), 'decimal') }} Kg
                             </td>
-                            <td class="tw:text-on-surface-variant">
+                            <td class="tw:text-on-surface-variant ui-col-data-name">
                                 {{ $item->notes ?: '-' }}
                             </td>
                         </tr>
@@ -389,9 +389,7 @@
                                     <x-ui.icon name="file-check" size="sm" class="text-primary flex-shrink-0" />
                                     <span class="staged-file-info tw:text-ui-xs tw:truncate text-primary fw-medium"></span>
                                 </div>
-                                <button type="button" class="btn btn-link btn-sm p-0 text-muted tw:hover:text-error btn-remove-staged" title="{{ __('shipments.copy.clear_all_staged') }}">
-                                    <x-ui.icon name="x" size="xs" />
-                                </button>
+                                <x-ui.icon-button type="button" icon="x" variant="ghost" size="xs" :label="__('shipments.copy.clear_all_staged')" class="btn-remove-staged" />
                             </div>
                             <div class="tw:text-on-surface-variant" style="font-size: 10px; margin-top: 3px;">
                                 {{ __('shipments.copy.max_10mb_pdf_image_excel_word') }}

@@ -56,7 +56,7 @@
         :description="__('shipments.copy.consolidate_and_allocate_deliveries_across_your_active_purchase_orders_you_may_ship_full_or_partial')"
     >
         <x-slot:actions>
-            <x-ui.button :href="route('supplier.shipments.index')" variant="ghost" size="sm">
+            <x-ui.button :href="route('supplier.shipments.index')" variant="outline" size="sm">
                 <x-slot:leading><x-ui.icon name="arrow-left" size="sm" /></x-slot:leading>
                 <span>{{ __('shipments.copy.back_to_shipments') }}</span>
             </x-ui.button>
@@ -297,13 +297,13 @@
                             </div>
 
                             <div class="d-flex align-items-center gap-2">
-                                <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2 tw:text-ui-xs po-select-all-btn">
+                                <x-ui.button type="button" variant="outline-primary" size="sm" class="po-select-all-btn">
                                     <x-ui.icon name="check-check" size="sm" />
                                     <span>{{ __('shipments.copy.select_all_in_po') }}</span>
-                                </button>
-                                <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2 tw:text-ui-xs po-clear-btn">
+                                </x-ui.button>
+                                <x-ui.button type="button" variant="outline" size="sm" class="po-clear-btn">
                                     <span>{{ __('shipments.copy.clear') }}</span>
-                                </button>
+                                </x-ui.button>
                             </div>
                         </div>
 

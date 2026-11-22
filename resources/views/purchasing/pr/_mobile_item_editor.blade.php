@@ -10,15 +10,16 @@
                 0
             </span>
         </div>
-        <button
+        <x-ui.button
             type="button"
-            class="btn btn-sm btn-outline-secondary tw:text-ui-xs tw:py-1 tw:px-2.5 tw:rounded-ui-xs"
+            variant="outline"
+            size="sm"
             id="btnTogglePrTableView"
             aria-expanded="false"
         >
             <x-ui.icon name="table" size="xs" class="me-1" />
             <span id="btnTogglePrTableLabel">Lihat Tabel Penuh</span>
-        </button>
+        </x-ui.button>
     </div>
 
     {{-- Cards List Container --}}

@@ -79,6 +79,21 @@
         :record-nav="$recordNav ?? null"
     >
         <x-slot:actions>
+            <x-status-badge type="pr" :status="$pr->status" size="lg" />
+            @if($pr->status === 'bidding')
+                <span
+                    class="ui-tabular-nums tw:inline-flex tw:items-center tw:rounded-ui-xs tw:border tw:border-primary tw:bg-primary-container tw:px-2.5 tw:py-1.5 tw:text-ui-xs tw:font-semibold tw:text-primary-container-foreground"
+                    title="{{ __('purchasing.a11y.quotation_count', ['count' => $submittedQuotationCount]) }}"
+                    aria-label="{{ __('purchasing.a11y.quotation_count', ['count' => $submittedQuotationCount]) }}"
+                >
+                    <x-ui.icon name="users" size="sm" class="me-1" />
+                    {{ trans_choice('purchasing.summary.quotations', $submittedQuotationCount, ['count' => $submittedQuotationCount]) }}
+                </span>
+            @endif
+            <x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.requisitions.index')" variant="outline" size="sm">
+                <x-ui.icon name="arrow-left" />
+                <span>{{ __('purchasing.copy.back_to_requisitions') }}</span>
+            </x-ui.button>
             <x-ui.button
                 type="button"
                 variant="outline"
@@ -95,21 +110,6 @@
                 <x-ui.icon name="file-spreadsheet" />
                 <span>{{ __('purchasing.copy.export_excel') }}</span>
             </x-ui.button>
-            <x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.requisitions.index')" variant="ghost" size="sm">
-                <x-ui.icon name="arrow-left" />
-                <span>{{ __('purchasing.copy.back_to_requisitions') }}</span>
-            </x-ui.button>
-            <x-status-badge type="pr" :status="$pr->status" size="lg" />
-            @if($pr->status === 'bidding')
-                <span
-                    class="ui-tabular-nums tw:inline-flex tw:items-center tw:rounded-ui-xs tw:border tw:border-primary tw:bg-primary-container tw:px-2.5 tw:py-1.5 tw:text-ui-xs tw:font-semibold tw:text-primary-container-foreground"
-                    title="{{ __('purchasing.a11y.quotation_count', ['count' => $submittedQuotationCount]) }}"
-                    aria-label="{{ __('purchasing.a11y.quotation_count', ['count' => $submittedQuotationCount]) }}"
-                >
-                    <x-ui.icon name="users" size="sm" class="me-1" />
-                    {{ trans_choice('purchasing.summary.quotations', $submittedQuotationCount, ['count' => $submittedQuotationCount]) }}
-                </span>
-            @endif
         </x-slot:actions>
     </x-ui.page-header>
 
@@ -236,14 +236,14 @@
                                 <td class="text-center">
                                     <span class="ui-status-chip {{ $hsStatusTone }}">{{ $hsStatusLabel }}</span>
                                 </td>
-                                <td class="text-start fw-bold tw:text-on-surface ui-sticky-col">{{ $item->material_name }}</td>
-                                <td class="text-start tw:text-on-surface-variant">{{ $item->grade_label ?? '-' }}</td>
+                                <td class="text-start fw-bold tw:text-on-surface ui-sticky-col ui-col-data-name">{{ $item->material_name }}</td>
+                                <td class="text-start tw:text-on-surface-variant ui-col-data-name">{{ $item->grade_label ?? '-' }}</td>
                                 <td class="text-center">{{ $item->shape ?: '-' }}</td>
                                 <td class="text-start tw:text-on-surface-variant">{{ $item->dimension_label }}</td>
                                 <td class="text-center fw-bold ui-tabular-nums">{{ number_format($item->quantity_value, 0) }}</td>
                                 <td class="text-end ui-tabular-nums tw:text-on-surface">{{ \App\Support\NumberFormat::maxDecimals($item->weight_needed) }}</td>
                                 <td class="text-end fw-bold text-primary ui-tabular-nums">{{ \App\Support\NumberFormat::maxDecimals($item->total_weight) }}</td>
-                                <td class="text-start tw:text-on-surface-variant">{{ $item->remark ?: '-' }}</td>
+                                <td class="text-start tw:text-on-surface-variant ui-col-data-name">{{ $item->remark ?: '-' }}</td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -286,7 +286,7 @@
                             <th scope="col">{{ __('common.labels_review.est_delivery') }}</th>
                             <th scope="col">{{ __('purchasing.copy.submitted') }}</th>
                             <th scope="col">{{ __('purchasing.copy.status') }}</th>
-                            <th scope="col" class="text-end" style="width: 140px;">{{ __('purchasing.copy.action') }}</th>
+                            <th scope="col" class="tw:text-right text-end" style="width: 140px;">{{ __('common.table.action') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -298,7 +298,7 @@
                                 $supplierName = $quotation->supplier->supplier->company_name ?? $quotation->supplier->name ?? '-';
                             @endphp
                             <tr class="{{ $isLowest ? 'pr-best-quotation' : '' }}">
-                                <td class="fw-bold tw:text-on-surface">{{ $supplierName }}</td>
+                                <td class="fw-bold tw:text-on-surface ui-col-data-name">{{ $supplierName }}</td>
                                 <td class="text-center"><span class="ui-status-chip ui-status-chip--neutral">{{ $quotation->currency }}</span></td>
                                 <td class="text-end ui-tabular-nums fw-semibold">{{ \App\Support\NumberFormat::maxDecimals($quotation->total_amount) }}</td>
                                 <td class="text-end fw-bold ui-tabular-nums">
@@ -314,13 +314,11 @@
                                 <td class="text-center ui-tabular-nums tw:text-on-surface-variant">{{ $quotation->estimated_delivery ? date('d M Y', strtotime($quotation->estimated_delivery)) : '-' }}</td>
                                 <td class="text-center ui-tabular-nums tw:text-on-surface-variant">{{ $quotation->submitted_at ? $regionalFormatter->timestamp($quotation->submitted_at, 'datetime_comma') : '-' }}</td>
                                 <td class="text-center"><x-status-badge type="quotation" :status="$quotation->status" /></td>
-                                <td class="text-end">
+                                <td class="tw:text-right text-end">
                                     <div class="d-inline-flex align-items-center tw:gap-1.5 justify-content-end">
-                                        <x-ui.icon-button
+                                        <x-ui.row-action
                                             :href="route('purchasing.quotations.show', [$quotation, \App\Support\PurchasingNavigation::RETURN_URL_KEY => request()->fullUrl()])"
-                                            icon="eye"
-                                            :label="__('purchasing.copy.view_quotation_details')"
-                                            size="sm"
+                                            :context="$supplierName"
                                         />
                                         @if($submittedQuotationCount >= 2)
                                             <x-ui.icon-button

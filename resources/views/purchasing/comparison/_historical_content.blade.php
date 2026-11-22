@@ -237,12 +237,12 @@
                                     {{ $row['pr_number'] ?? '-' }}
                                 @endif
                             </td>
-                            <td class="text-center fw-semibold">{{ $row['material_name'] ?? $selectedMaterialName ?? '-' }}</td>
+                            <td class="text-center fw-semibold ui-col-data-name">{{ $row['material_name'] ?? $selectedMaterialName ?? '-' }}</td>
                             <td class="text-center ui-tabular-nums">{{ $row['dimension_display'] ?? '-' }}</td>
                             <td class="text-center">
                                 <span class="ui-status-chip ui-status-chip--neutral">{{ $row['range_classification'] ?? '-' }}</span>
                             </td>
-                            <td class="text-center">{{ $row['supplier'] ?? '-' }}</td>
+                            <td class="text-center ui-col-data-name">{{ $row['supplier'] ?? '-' }}</td>
                             <td class="text-end ui-tabular-nums">
                                 {{ $formatPrice($row['price_per_kg'], 4) }}
                                 <span class="ui-status-chip ui-status-chip--neutral tw:ms-1">{{ $row['currency'] }}</span>

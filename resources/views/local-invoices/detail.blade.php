@@ -42,6 +42,11 @@
         </x-slot:meta>
 
         <x-slot:actions>
+            <x-ui.button :href="route($portal.'.invoices.index')" variant="outline" size="sm">
+                <x-ui.icon name="arrow-left" size="sm" />
+                <span>{{ __('common.actions.back') }}</span>
+            </x-ui.button>
+
             <x-ui.button
                 type="button"
                 variant="outline"
@@ -54,17 +59,8 @@
                 <x-ui.icon name="git-branch" size="sm" />
                 <span>{{ __('smart_panel.trigger') }}</span>
             </x-ui.button>
-            {{-- Quick action for Supplier on Revision --}}
-            @if(in_array($invoice->status, ['NEED_REVISION', 'CANCELLED'], true) && auth()->user()->isSupplier())
-                @can('resubmit', $invoice)
-                    <x-ui.button :href="route('local-supplier.invoices.revision', $invoice)" variant="primary">
-                        <x-ui.icon name="file-edit" size="sm" />
-                        <span>{{ $invoice->status === 'CANCELLED' ? __('local_invoice.recovery.action') : __('local_invoice.detail.resubmit') }}</span>
-                    </x-ui.button>
-                @endcan
-            @endif
 
-            <x-ui.button :href="route($portal.'.invoices.receipt', $invoice)" variant="outline">
+            <x-ui.button :href="route($portal.'.invoices.receipt', $invoice)" variant="outline" size="sm">
                 <x-ui.icon name="receipt" size="sm" />
                 <span>{{ __('local_invoice.detail.receipt') }}</span>
             </x-ui.button>
@@ -72,14 +68,19 @@
             @can('cancel', $invoice)
                 <form method="POST" action="{{ route('local-supplier.invoices.cancel', $invoice) }}" class="tw:inline" onsubmit="event.preventDefault(); window.AdasiAlert.confirmDanger({title: 'Batalkan Invoice?', text: 'Batalkan invoice ini dan lepaskan seluruh reservasi GR?', confirmText: 'Ya, Batalkan', cancelText: 'Batal'}).then(r => { if (r.isConfirmed) this.submit(); });">
                     @csrf
-                    <x-ui.button type="submit" variant="danger" size="sm"><x-ui.icon name="x-circle" size="sm" /> {{ __('local_invoice.detail.cancel') }}</x-ui.button>
+                    <x-ui.button type="submit" variant="danger-outline" size="sm"><x-ui.icon name="x-circle" size="sm" /> {{ __('local_invoice.detail.cancel') }}</x-ui.button>
                 </form>
             @endcan
 
-            <x-ui.button :href="route($portal.'.invoices.index')" variant="ghost">
-                <x-ui.icon name="arrow-left" size="sm" />
-                <span>{{ __('common.actions.back') }}</span>
-            </x-ui.button>
+            {{-- Quick action for Supplier on Revision --}}
+            @if(in_array($invoice->status, ['NEED_REVISION', 'CANCELLED'], true) && auth()->user()->isSupplier())
+                @can('resubmit', $invoice)
+                    <x-ui.button :href="route('local-supplier.invoices.revision', $invoice)" variant="primary" size="sm">
+                        <x-ui.icon name="file-edit" size="sm" />
+                        <span>{{ $invoice->status === 'CANCELLED' ? __('local_invoice.recovery.action') : __('local_invoice.detail.resubmit') }}</span>
+                    </x-ui.button>
+                @endcan
+            @endif
         </x-slot:actions>
     </x-ui.page-header>
 
@@ -485,7 +486,7 @@
                     </div>
                     <div class="table-responsive"><table class="table table-sm align-middle tw:m-0 tw:text-ui-xs"><thead><tr><th>{{ __('local_invoice.detail.gr_number') }}</th><th>{{ __('local_procurement.labels.gr_date') }}</th><th class="text-end">{{ __('common.fields.qty') }}</th><th scope="col">{{ __('local_procurement.labels.uom') }}</th><th>{{ __('local_invoice.labels.status') }}</th></tr></thead><tbody>
                         @forelse($invoice->goodsReceiptHistories->sortBy('id') as $history)
-                            <tr><td class="ui-tabular-nums">{{ $history->gr_number_snapshot }}</td><td>{{ $history->goodsReceipt?->gr_date ? $regionalFormatter->date($history->goodsReceipt->gr_date, 'human') : '—' }}</td><td class="text-end ui-tabular-nums">{{ $history->gr_qty_snapshot !== null ? rtrim(rtrim(number_format((float) $history->gr_qty_snapshot, 4, ',', '.'), '0'), ',') : ($history->goodsReceipt?->qty !== null ? rtrim(rtrim(number_format((float) $history->goodsReceipt->qty, 4, ',', '.'), '0'), ',') : '—') }}</td><td>{{ $history->gr_uom_snapshot ?? '—' }}</td><td><x-ui.status-chip :tone="$history->state === 'RELEASED' ? 'neutral' : ($history->state === 'CONSUMED' ? 'success' : 'warning')">{{ \App\Support\StatusHelper::localFinanceLabel($history->state) }}</x-ui.status-chip></td></tr>
+                            <tr><td class="ui-tabular-nums ui-col-data-name">{{ $history->gr_number_snapshot }}</td><td>{{ $history->goodsReceipt?->gr_date ? $regionalFormatter->date($history->goodsReceipt->gr_date, 'human') : '—' }}</td><td class="text-end ui-tabular-nums">{{ $history->gr_qty_snapshot !== null ? rtrim(rtrim(number_format((float) $history->gr_qty_snapshot, 4, ',', '.'), '0'), ',') : ($history->goodsReceipt?->qty !== null ? rtrim(rtrim(number_format((float) $history->goodsReceipt->qty, 4, ',', '.'), '0'), ',') : '—') }}</td><td>{{ $history->gr_uom_snapshot ?? '—' }}</td><td><x-ui.status-chip :tone="$history->state === 'RELEASED' ? 'neutral' : ($history->state === 'CONSUMED' ? 'success' : 'warning')">{{ \App\Support\StatusHelper::localFinanceLabel($history->state) }}</x-ui.status-chip></td></tr>
                         @empty
                             <tr><td colspan="5" class="tw:text-center tw:text-on-surface-variant">{{ __('local_procurement.empty.gr_history') }}</td></tr>
                         @endforelse
@@ -531,7 +532,7 @@
                                         <td class="text-end ui-tabular-nums tw:font-bold tw:text-success">
                                             Rp {{ $regionalFormatter->number(number_format((float) $transfer->amount, 0, ',', '.'), 'indonesian') }}
                                         </td>
-                                        <td class="tw:text-on-surface-variant">
+                                        <td class="tw:text-on-surface-variant ui-col-data-name">
                                             {{ $transfer->correction_reason ?: ($transfer->notes ?: '—') }}
                                         </td>
                                     </tr>

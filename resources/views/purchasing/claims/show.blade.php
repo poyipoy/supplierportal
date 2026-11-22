@@ -20,7 +20,7 @@
     >
         <x-slot:actions>
             <x-status-badge type="claim" :status="$claim->status" size="lg" />
-            <x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.claims.index')" variant="ghost" size="sm">
+            <x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.claims.index')" variant="outline" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>{{ __('claims.copy.back_to_claim_list') }}</span>
             </x-ui.button>
@@ -141,7 +141,7 @@
                     @endforeach
                 </ul>
                 <div class="tw:p-2.5 text-center border-top tw:bg-surface-low">
-                    <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('qc.inspections.show', $claim->inspection)" variant="ghost" size="sm">
+                    <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('qc.inspections.show', $claim->inspection)" variant="outline" size="sm">
                         <x-ui.icon name="external-link" size="sm" class="me-1" />
                         {{ __('claims.copy.view_full_qc_inspection_report') }}
                     </x-ui.button>

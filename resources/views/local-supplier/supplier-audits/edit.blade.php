@@ -61,7 +61,7 @@
             </span>
         </x-slot:meta>
         <x-slot:actions>
-            <x-ui.button :href="route('local-supplier.supplier-audits.index')" variant="ghost" size="sm">
+            <x-ui.button :href="route('local-supplier.supplier-audits.index')" variant="outline" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>{{ __('supplier_audit.actions.back_to_list') }}</span>
             </x-ui.button>
@@ -256,7 +256,7 @@
         <div class="tw:flex tw:w-full tw:flex-wrap tw:items-center tw:justify-between tw:gap-3">
             <div class="tw:flex tw:min-w-0 tw:items-center tw:gap-2 tw:text-ui-xs" role="status" aria-live="polite" data-autosave-status>
                 <span class="tw:truncate" :class="saveState === 'failed' || saveState === 'expired' ? 'tw:font-medium tw:text-error' : 'tw:text-on-surface-variant'" x-text="saveStatusText">{{ $config['savedLabel'] ? __('supplier_audit.autosave.saved', ['time' => $config['savedLabel']]) : __('supplier_audit.autosave.idle') }}</span>
-                <x-ui.button type="button" variant="ghost" size="sm" x-show="saveState === 'failed'" x-cloak x-on:click="retryNow()">{{ __('supplier_audit.autosave.retry') }}</x-ui.button>
+                <x-ui.button type="button" variant="outline" size="sm" x-show="saveState === 'failed'" x-cloak x-on:click="retryNow()">{{ __('supplier_audit.autosave.retry') }}</x-ui.button>
                 <x-ui.button type="button" variant="outline" size="sm" x-show="saveState === 'expired'" x-cloak x-on:click="window.location.reload()">{{ __('supplier_audit.autosave.reload') }}</x-ui.button>
             </div>
             <div class="tw:flex tw:items-center tw:gap-2">

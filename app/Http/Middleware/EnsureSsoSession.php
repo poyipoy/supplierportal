@@ -21,6 +21,7 @@ class EnsureSsoSession
             'profile.security', 'password.update', 'password.confirm', 'password.confirm.store',
             'password.request', 'locale.*', 'supplier.register', 'supplier.register.store', 'supplier.registration.*',
             'receipts.verify-supplier', 'receipts.verify-ga',
+            'session.status', 'session.reconnect',
         );
 
         // Preserve forced password change before authorizing the portal session.

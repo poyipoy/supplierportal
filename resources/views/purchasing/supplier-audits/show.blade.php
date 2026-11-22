@@ -33,7 +33,7 @@
             <span style="font-variant-numeric: tabular-nums;">{{ __('supplier_audit.fields.submitted_at') }}: <strong class="tw:text-on-surface">{{ $audit->submitted_at ? $regionalFormatter->timestamp($audit->submitted_at) : '—' }}</strong></span>
         </x-slot:meta>
         <x-slot:actions>
-            <x-ui.button :href="\App\Support\PurchasingNavigation::listUrl('purchasing.supplier-audits.index')" variant="ghost" size="sm">
+            <x-ui.button :href="\App\Support\PurchasingNavigation::listUrl('purchasing.supplier-audits.index')" variant="outline" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>{{ __('supplier_audit.actions.back_to_list') }}</span>
             </x-ui.button>
@@ -54,17 +54,17 @@
                 <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-1" x-data>
                     <span class="tw:me-1 tw:text-ui-xs tw:text-on-surface-variant">{{ __('supplier_audit.next_step.more') }}:</span>
                     @if($canRevise)
-                        <x-ui.button type="button" variant="ghost" size="sm" x-on:click="$dispatch('open-ui-dialog', 'supplier-audit-revision')">
+                        <x-ui.button type="button" variant="outline" size="sm" x-on:click="$dispatch('open-ui-dialog', 'supplier-audit-revision')">
                             <x-ui.icon name="rotate-ccw" size="sm" /><span>{{ __('supplier_audit.actions.request_revision') }}</span>
                         </x-ui.button>
                     @endif
                     @if($canDeadline)
-                        <x-ui.button type="button" variant="ghost" size="sm" x-on:click="$dispatch('open-ui-dialog', 'supplier-audit-deadline')">
+                        <x-ui.button type="button" variant="outline" size="sm" x-on:click="$dispatch('open-ui-dialog', 'supplier-audit-deadline')">
                             <x-ui.icon name="calendar-clock" size="sm" /><span>{{ __('supplier_audit.actions.change_deadline') }}</span>
                         </x-ui.button>
                     @endif
                     @if($canCancel)
-                        <x-ui.button type="button" variant="ghost" size="sm" class="tw:text-error" x-on:click="$dispatch('open-ui-dialog', 'supplier-audit-cancel')">
+                        <x-ui.button type="button" variant="danger-outline" size="sm" x-on:click="$dispatch('open-ui-dialog', 'supplier-audit-cancel')">
                             <x-ui.icon name="circle-x" size="sm" /><span>{{ __('supplier_audit.actions.cancel') }}</span>
                         </x-ui.button>
                     @endif
@@ -194,7 +194,7 @@
             <x-slot:actions>
                 <x-ui.button type="button" variant="outline" x-on:click="$dispatch('close-ui-dialog', 'supplier-audit-deadline')">{{ __('supplier_audit.actions.close') }}</x-ui.button>
                 @if($audit->due_date)
-                    <x-ui.button type="submit" form="supplierAuditDeadlineRemoveForm" variant="ghost">{{ __('supplier_audit.deadline.remove') }}</x-ui.button>
+                    <x-ui.button type="submit" form="supplierAuditDeadlineRemoveForm" variant="danger-outline">{{ __('supplier_audit.deadline.remove') }}</x-ui.button>
                 @endif
                 <x-ui.button type="submit" form="supplierAuditDeadlineForm" variant="primary">{{ __('supplier_audit.deadline.save') }}</x-ui.button>
             </x-slot:actions>

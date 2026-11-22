@@ -561,13 +561,15 @@
                     <span class="ui-tabular-nums tw:text-on-surface-variant" x-text="@js(__('common.select.gr_selected')).replace(':count', selectedValues.length)"></span>
                 </template>
             </div>
-            <button
+            <x-ui.button
                 type="button"
+                variant="primary"
+                size="sm"
                 @click="close(true)"
-                class="btn btn-sm btn-primary tw:shrink-0 tw:min-h-8 tw:py-1 tw:px-3 tw:text-ui-xs tw:font-medium ui-focus-ring"
+                class="tw:shrink-0"
             >
                 <x-ui.icon name="check" size="sm" class="tw:me-1" /> {{ __('common.review.done') }}
-            </button>
+            </x-ui.button>
         </div>
     </div>
 

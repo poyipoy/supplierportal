@@ -191,10 +191,10 @@
                 <div class="pr-remark-popover__hint">{{ __('purchasing.copy.specify_technical_specifications_certifications_or_tolerances') }}</div>
             </div>
             <div class="pr-remark-popover__footer">
-                <button type="button" class="btn btn-sm btn-outline-secondary pr-remark-btn-cancel" data-remark-cancel>{{ __('purchasing.copy.cancel') }}</button>
-                <button type="button" class="btn btn-sm btn-primary pr-remark-btn-save" data-remark-save>
+                <x-ui.button type="button" variant="ghost" size="sm" class="pr-remark-btn-cancel" data-remark-cancel>{{ __('purchasing.copy.cancel') }}</x-ui.button>
+                <x-ui.button type="button" variant="primary" size="sm" class="pr-remark-btn-save" data-remark-save>
                     <x-ui.icon name="check" size="sm" class="me-1" /> {{ __('purchasing.copy.save') }}
-                </button>
+                </x-ui.button>
             </div>
         </div>
     </td>

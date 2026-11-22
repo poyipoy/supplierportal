@@ -106,7 +106,7 @@
                 <span class="ui-status-chip ui-status-chip--neutral ui-tabular-nums">
                     {{ __('shipments.preshipment.locations_count', ['count' => $activeCount, 'max' => $maxLocations]) }}
                 </span>
-                <x-ui.button :href="route('supplier.shipments.index')" variant="ghost" size="sm">
+                <x-ui.button :href="route('supplier.shipments.index')" variant="outline" size="sm">
                     <x-slot:leading><x-ui.icon name="arrow-left" size="sm" /></x-slot:leading>
                     <span>{{ __('shipments.copy.back_to_shipments') }}</span>
                 </x-ui.button>

@@ -20,6 +20,11 @@
         :eyebrow="__('local_procurement.surface.local_audience')"
         :record-nav="$recordNav ?? null">
         <x-slot:actions>
+            <x-ui.button :href="route($routePrefix.'.index')" variant="outline" size="sm">
+                <x-ui.icon name="arrow-left" size="sm" />
+                <span>{{ __('local_invoice.form.back_list') }}</span>
+            </x-ui.button>
+
             <x-ui.button
                 type="button"
                 variant="outline"
@@ -31,11 +36,6 @@
                 <span>{{ __('smart_panel.trigger') }}</span>
             </x-ui.button>
 
-            <x-ui.button :href="route($routePrefix.'.index')" variant="ghost" size="sm">
-                <x-ui.icon name="arrow-left" size="sm" />
-                <span>{{ __('local_invoice.form.back_list') }}</span>
-            </x-ui.button>
-
             @if($purchaseOrder->latestPoDocument())
                 <x-ui.button :href="route('attachments.show', $purchaseOrder->latestPoDocument())" target="_blank" variant="outline" size="sm">
                     <x-ui.icon name="file-text" size="sm" />
@@ -44,29 +44,28 @@
             @endif
 
             @if($purchaseOrder->status === 'OPEN')
-                <x-ui.button type="button" size="sm" variant="primary" data-bs-toggle="modal" data-bs-target="#addGrModal">
-                    <x-ui.icon name="plus" size="sm" />
-                    <span>{{ __('local_procurement.actions.add_gr') }}</span>
-                </x-ui.button>
-
                 <x-ui.button :href="route($routePrefix.'.edit', $purchaseOrder)" variant="outline" size="sm">
                     <x-ui.icon name="file-pen" size="sm" />
                     <span>{{ __('local_procurement.actions.edit_po') }}</span>
                 </x-ui.button>
 
-                <button type="button" class="btn btn-sm btn-outline-secondary tw:inline-flex tw:items-center tw:gap-1.5" data-bs-toggle="modal" data-bs-target="#closePoModal">
+                <x-ui.button type="button" variant="outline" size="sm" data-bs-toggle="modal" data-bs-target="#closePoModal">
                     <x-ui.icon name="lock" size="sm" />
                     <span>{{ __('local_procurement.actions.close_po') }}</span>
-                </button>
+                </x-ui.button>
 
-                <button type="button" class="btn btn-sm btn-outline-danger tw:inline-flex tw:items-center tw:gap-1.5" data-bs-toggle="modal" data-bs-target="#cancelPoModal">
+                <x-ui.button type="button" variant="danger-outline" size="sm" data-bs-toggle="modal" data-bs-target="#cancelPoModal">
                     <x-ui.icon name="x-circle" size="sm" />
                     <span>{{ __('local_procurement.actions.cancel_po') }}</span>
-                </button>
-            @endif
-            @if($purchaseOrder->status === 'CANCELLED')
+                </x-ui.button>
+
+                <x-ui.button type="button" size="sm" variant="primary" data-bs-toggle="modal" data-bs-target="#addGrModal">
+                    <x-ui.icon name="plus" size="sm" />
+                    <span>{{ __('local_procurement.actions.add_gr') }}</span>
+                </x-ui.button>
+            @elseif($purchaseOrder->status === 'CANCELLED')
                 @can('restore', $purchaseOrder)
-                    <x-ui.button type="button" variant="primary" data-bs-toggle="modal" data-bs-target="#restorePoModal">{{ __('local_procurement.recovery.restore_po') }}</x-ui.button>
+                    <x-ui.button type="button" size="sm" variant="primary" data-bs-toggle="modal" data-bs-target="#restorePoModal">{{ __('local_procurement.recovery.restore_po') }}</x-ui.button>
                 @endcan
             @endif
         </x-slot:actions>
@@ -351,10 +350,10 @@
                     </div>
                     <div class="modal-footer">
                         <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('local_invoice.actions.cancel') }}</x-ui.button>
-                        <button type="submit" class="btn btn-sm btn-danger tw:inline-flex tw:items-center tw:gap-1">
+                        <x-ui.button type="submit" variant="danger" size="sm">
                             <x-ui.icon name="trash-2" size="sm" />
                             <span>{{ __('local_procurement.surface.cancel_po_yes') }}</span>
-                        </button>
+                        </x-ui.button>
                     </div>
                 </div>
             </form>

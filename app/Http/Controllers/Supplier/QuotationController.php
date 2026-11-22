@@ -20,6 +20,7 @@ use App\Services\Procurement\QuotationSubmissionService;
 use App\Support\BusinessTime;
 use App\Support\Procurement\ProcurementFeatures;
 use App\Support\SpreadsheetImportReader;
+use App\Support\Ui\RowAction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
@@ -172,10 +173,10 @@ class QuotationController extends Controller
                     $status = $quotation ? $quotation->status : 'unresponded';
 
                     $action = match ($status) {
-                        'unresponded' => '<a href="'.route('supplier.quotations.create', $pr).'" class="ui-data-action ui-data-action--primary ui-focus-ring">'.e(__('supplier.copy.create_quotation')).'</a>',
-                        'draft' => '<a href="'.route('supplier.quotations.create', $pr).'" class="ui-data-action ui-data-action--primary ui-focus-ring">'.e(__('supplier.copy.continue')).'</a>',
-                        'revision_requested' => '<a href="'.route('supplier.quotations.create', $pr).'" class="ui-data-action ui-data-action--warning ui-focus-ring">'.e(__('supplier.copy.revise_quotation')).'</a>',
-                        default => $quotation ? '<a href="'.route('supplier.quotations.show', $quotation).'" class="ui-data-action ui-data-action--primary ui-focus-ring">'.e(__('supplier.copy.view')).'</a>' : '-',
+                        'unresponded' => RowAction::link(route('supplier.quotations.create', $pr), __('supplier.copy.create_quotation'), 'primary', $pr->pr_number),
+                        'draft' => RowAction::link(route('supplier.quotations.create', $pr), __('supplier.copy.continue'), 'primary', $pr->pr_number),
+                        'revision_requested' => RowAction::link(route('supplier.quotations.create', $pr), __('supplier.copy.revise_quotation'), 'warning', $pr->pr_number),
+                        default => $quotation ? RowAction::detail(route('supplier.quotations.show', $quotation), $pr->pr_number) : '-',
                     };
 
                     return '<div class="d-inline-flex gap-1 justify-content-end flex-wrap">'.$action.'</div>';

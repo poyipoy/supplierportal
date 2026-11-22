@@ -8,6 +8,7 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Services\Auth\CompleteLoginService;
 use App\Services\Auth\LoginRateLimiter;
 use App\Services\Auth\RememberTokenService;
+use App\Services\Auth\SessionReconnectService;
 use App\Services\Auth\SessionRevocationService;
 use App\Services\Auth\TurnstileVerifier;
 use App\Services\Auth\TwoFactorService;
@@ -95,6 +96,7 @@ class AuthenticatedSessionController extends Controller
         Request $request,
         SessionRevocationService $revocation,
         RememberTokenService $rememberTokens,
+        SessionReconnectService $reconnect,
     ): RedirectResponse {
         $user = $request->user();
         $sessionId = $request->session()->getId();
@@ -110,6 +112,9 @@ class AuthenticatedSessionController extends Controller
         if ($user !== null && $sessionId !== '') {
             $rememberTokens->revokeForSessions($user, [$sessionId]);
         }
+
+        $reconnect->markSessionRevoked($sessionId);
+        $reconnect->forgetGrantCookie();
 
         Auth::guard('web')->logout();
 

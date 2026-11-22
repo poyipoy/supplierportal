@@ -69,7 +69,7 @@
                 <div class="modal-footer tw:bg-surface-container-lowest tw:border-t tw:border-outline-variant">
                     <p data-po-upload-status role="status" aria-live="polite" class="tw:text-ui-xs tw:mb-0"></p>
                     <progress data-po-upload-progress hidden max="100" aria-label="{{ __('po_documents.progress') }}"></progress>
-                    <button type="button" data-po-upload-retry hidden class="btn btn-sm btn-outline-primary">{{ __('po_documents.retry') }}</button>
+                    <x-ui.button type="button" variant="outline-primary" size="sm" data-po-upload-retry hidden>{{ __('po_documents.retry') }}</x-ui.button>
                     <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">
                         {{ __('local_invoice.actions.cancel') }}
                     </x-ui.button>

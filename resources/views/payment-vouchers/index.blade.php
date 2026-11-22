@@ -266,13 +266,18 @@
                             Rp {{ $regionalFormatter->money($voucher->net_amount, 2) }}
                         </span>
                         <div class="tw:flex tw:items-center tw:gap-1.5">
-                            <x-ui.button :href="route($routePrefix.'.print', $voucher)" target="_blank" size="sm" variant="outline">
-                                <x-slot:leading><x-ui.icon name="printer" size="sm" /></x-slot:leading>
-                                {{ __('payment_voucher.actions.print_pdf') }}
-                            </x-ui.button>
-                            <x-ui.button :href="route($routePrefix.'.show', $voucher)" size="sm" variant="secondary">
-                                {{ __('payment_voucher.actions.detail') }}
-                            </x-ui.button>
+                            <x-ui.row-action
+                                :href="route($routePrefix.'.print', $voucher)"
+                                target="_blank"
+                                tone="neutral"
+                                icon="printer"
+                                :label="__('payment_voucher.actions.print_pdf')"
+                                :context="$voucher->voucher_number"
+                            />
+                            <x-ui.row-action
+                                :href="route($routePrefix.'.show', $voucher)"
+                                :context="$voucher->voucher_number"
+                            />
                         </div>
                     </div>
                 </article>
@@ -289,7 +294,7 @@
                     <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('payment_voucher.labels.payment_method') }}</th>
                     <th scope="col" class="tw:text-ui-xs tw:font-semibold text-end">{{ __('payment_voucher.labels.net_amount') }}</th>
                     <th scope="col" class="tw:text-ui-xs tw:font-semibold text-center">{{ __('payment_voucher.labels.status') }}</th>
-                    <th scope="col" class="tw:text-ui-xs tw:font-semibold text-end">{{ __('payment_voucher.labels.actions') }}</th>
+                    <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-right text-end">{{ __('common.table.action') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -337,15 +342,21 @@
                                 {{ StatusHelper::localFinanceLabel($voucher->status) }}
                             </x-ui.status-chip>
                         </td>
-                        <td class="text-end">
+                        <td class="tw:text-right text-end">
                             <div class="tw:inline-flex tw:items-center tw:justify-end tw:gap-1.5">
-                                <x-ui.button :href="route($routePrefix.'.print', $voucher)" target="_blank" size="sm" variant="outline" :title="__('payment_voucher.actions.print_pdf')">
-                                    <x-slot:leading><x-ui.icon name="printer" size="sm" /></x-slot:leading>
-                                    {{ __('payment_voucher.actions.print_pdf') }}
-                                </x-ui.button>
-                                <x-ui.button :href="route($routePrefix.'.show', $voucher)" size="sm" variant="secondary">
-                                    {{ __('payment_voucher.actions.detail') }}
-                                </x-ui.button>
+                                <x-ui.row-action
+                                    :href="route($routePrefix.'.print', $voucher)"
+                                    target="_blank"
+                                    tone="neutral"
+                                    icon="printer"
+                                    :label="__('payment_voucher.actions.print_pdf')"
+                                    :context="$voucher->voucher_number"
+                                    :title="__('payment_voucher.actions.print_pdf')"
+                                />
+                                <x-ui.row-action
+                                    :href="route($routePrefix.'.show', $voucher)"
+                                    :context="$voucher->voucher_number"
+                                />
                             </div>
                         </td>
                     </tr>

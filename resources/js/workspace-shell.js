@@ -2771,6 +2771,20 @@ export function bootWorkspaceShell() {
         if (!isSameOriginUrl(frameHref, origin)) {
             return;
         }
+
+        // Handle an auth-login document inside an iframe BEFORE isTopLevelOnlyUrl so
+        // expired sessions open the ERP Session Ended modal instead of abruptly
+        // destroying unsaved tabs with breakoutToTop.
+        if (frameDoc.querySelector('[data-auth-login-page]')) {
+            navQueue.cancel(frameId, 'breakout');
+            if (typeof window.AdasiSessionSync?.requestReconnect === 'function') {
+                window.AdasiSessionSync.requestReconnect(false, { reason: 'session_ended' });
+            } else {
+                breakoutToTop(frameHref);
+            }
+            return;
+        }
+
         if (isTopLevelOnlyUrl(frameHref, origin, pathPrefix)) {
             navQueue.cancel(frameId, 'breakout');
             breakoutToTop(frameHref);
@@ -2784,12 +2798,6 @@ export function bootWorkspaceShell() {
             } else {
                 frameWin.location.replace(appendEmbedParam(frameHref, origin));
             }
-            return;
-        }
-
-        if (frameDoc.querySelector('[data-auth-login-page]')) {
-            navQueue.cancel(frameId, 'breakout');
-            breakoutToTop(frameHref);
             return;
         }
 
@@ -4821,6 +4829,21 @@ export function bootWorkspaceShell() {
             if (!frameId) return;
             store.setDirty(frameId, dirty);
             syncTabDom();
+        },
+        getDirtyFrames() {
+            const dirty = [];
+            for (const group of store.groups()) {
+                for (const frame of group.frames) {
+                    if (frame.isDirty) {
+                        dirty.push({
+                            frameId: frame.frameId,
+                            title: frame.title || group.baseLabel || 'ADASI Portal',
+                            url: frame.url,
+                        });
+                    }
+                }
+            }
+            return dirty;
         },
         notifyMutation(frameWin) {
             const frameId = frameIdForWindow(frameWin);

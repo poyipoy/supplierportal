@@ -106,7 +106,7 @@ Preferensi `density`: `spacious | comfortable (default) | balanced | compact | d
 | compact | 2rem | .375rem | 1rem |
 | dense | 1.75rem | .25rem | .75rem |
 
-Token lain: `page-block`, `stack-sm|md|lg`, `card-padding`, `metric-padding`, `panel-*`, `toolbar-*`, `form-gap`, `list-block`, `sidebar-*`, `modal-padding`. Komponen baru yang punya padding/gap berulang memakai `var(--ui-density-…, <default comfortable>)`, bukan angka tetap. Penjaga: `tests/js/density-contract.test.mjs`.
+Token lain: `table-head-block|min`, `table-action-min|block|inline`, `table-chip-min|block`, `page-block`, `stack-sm|md|lg`, `card-padding`, `metric-padding`, `panel-*`, `toolbar-*`, `form-gap`, `list-block`, `sidebar-min|block|heading-min`, `sessionbar-min`, `session-min`, `modal-padding`. Tabel editor matriks terlindungi (`.pr-items-table`, `.quotation-items-table`, `.qc-dimension-grid`, `.ui-export-designer-modal`) mereset token tabel dan aksi/chip ke geometri `comfortable`. Perubahan live preview dan penyimpanan di iframe Workspace Shell disinkronkan ke parent shell serta tab saudara melalui event `adasi:density-change`. Halaman Customization menyajikan 5 tombol stop bertingkat (`[data-density-stop]`) dengan penanda level tersimpan dan badge spesifikasi dimensi tabular (`[data-density-spec]`). Komponen baru yang punya padding/gap berulang memakai `var(--ui-density-…, <default comfortable>)`, bukan angka tetap. Penjaga: `tests/js/density-contract.test.mjs`.
 
 ### 3.6 Tipografi
 
@@ -156,8 +156,8 @@ Pakai ulang sebelum membuat markup baru. Mengubah props atau markup di sini meng
 
 | Komponen | Kontrak |
 |---|---|
-| `button` | `variant`: `primary` (satu per area aksi) · `secondary` · `outline` · `ghost` · `danger`. `size`: `sm` / `md`. `loading` = spinner + disabled. `href` merender `<a>`. Radius `ui-sm`, font semibold |
-| `icon-button` | `icon` + `label` wajib. `variant` ghost (default) / outline / secondary / primary / danger (container merah, bukan fill penuh). `size` sm 32 / md 36 / lg 44px |
+| `button` | `variant`: `primary` (maks. 1 per area aksi) · `secondary` · `outline` (fill `--md-surface`, border `--ui-input-border`) · `outline-primary` (aksi baris tabel / sekunder aksen berbasis `--ui-primary-text`) · `danger-outline` · `ghost` (hanya sesuai *Ghost Allow-List* di §11) · `danger`. `size`: `sm` / `md`. `loading` = spinner + disabled. `href` merender `<a>`. Radius `ui-sm`, font semibold |
+| `icon-button` | `icon` + `label` wajib. `variant` `ghost` (default) / `outline` / `outline-primary` / `secondary` / `secondary-outline` / `primary` / `danger` / `warning-outline` / `success-outline` / `danger-outline` berbasis token semantik `--md-*`/`--ui-*` (dilarang palet legacy `bg-white`/`slate-*`/`amber-*`/`emerald-*`/`red-*`). `size` xs 28 / sm 32 / md 36 / lg 44px |
 | `status-chip` | `tone`: `neutral · info · success · warning · error` (alias `primary→info`, `danger→error`). Setiap tone punya ikon default sebagai **isyarat non-warna**. Tone dan label diambil dari `StatusHelper` |
 | `page-header` | `title`, `description`, `eyebrow`, `breadcrumbs`; slot `status`, `meta`, `actions`. Ringkas, tanpa hero |
 | `filter-bar` | Komponen standar filter halaman daftar & antrean tertanam: `mode="submit\|live"`, `variant="default\|embedded"`, `sticky`, `serverTabs`, `advancedId`, `advancedCount`, `advancedOpen`, `hasActiveFilters`, `resetUrl`/`resetId`, `resetAttrs`/`submitAttrs`. Terdiri dari primary row (`search`, `filters`, tombol **Filter Lanjutan** dengan badge hitungan, aksi Terapkan/Reset terdeduplikasi), tray collapse `advanced` + `advancedFooter`, dan slot `chips`. Mode `live` memakai lazy chunk `resources/js/filter-bar.js` (`window.AdasiFilterBar.bindLive`) pada penanda `[data-adasi-filter-bar]` |
@@ -201,7 +201,8 @@ Komponen kalender sengaja merender native `type="date"` sebagai dasar progressiv
 - Aksi utama baris terlihat; aksi sekunder di overflow/kebab menu.
 - Toolbar dan header tabel boleh sticky untuk daftar panjang.
 - Volume tinggi memakai DataTables server-side; sisanya pagination server-rendered. Semua daftar wajib punya pencarian dan filter.
-- **Tabel DataTables selalu di dalam `x-ui.data-table`** (di setiap pane bila halaman bertab, dengan `x-ui.tab-list` di atasnya). Padding, ukuran font, footer, dan pager kontrol DataTables (`Show`, `Search`, `Showing`) hanya berlaku di dalam `.ui-data-table`; membungkus tabel dengan `.table-responsive` atau kartu sendiri membuat kontrolnya menempel di tepi kotak dan menumpuk bingkai.
+- **Tabel DataTables selalu di dalam `x-ui.data-table`** (di setiap pane bila halaman bertab, dengan `x-ui.tab-list` di atasnya). Padding, ukuran font, footer, dan pager kontrol DataTables (`Show`, `Search`, `Showing`) hanya berlaku di dalam `.ui-data-table`; membungkus tabel dengan `.table-responsive` atau kartu sendiri membuat kontrolnya menempel di tepi kotak dan menumpuk bingkai. Bila halaman DataTables sudah memakai `x-ui.filter-bar` dengan `<x-slot:search>`, DataTables wajib memakai `dom: 'rtip'` agar tidak memunculkan search bar ganda, menyalurkan pencarian via `table.search(...).draw()` atau parameter filter khusus tanpa menimpa `d.search`, serta menjaga controller memakai `->filter(fn ($query) => null)` bila pencarian ditangani manual.
+- **Pola shading tabel Hybrid (Index Full-Row vs Detail Per-Kolom `.ui-col-data-name`)**: Pada tabel daftar utama **Index / Queue / Dashboard** (tabel operasional tanpa `.ui-col-data-name`), baris genap (`tr:nth-of-type(even)`) memakai zebra striping penuh satu baris (`--ui-table-row-stripe-bg`: `#EDF2F7` Light / `#222D3D` Dark) dan baris ganjil tetap pada `--md-surface`. Pada tabel **Detail (`show`/`detail`/`_items`), panel MMT Satellite, dan Matriks Comparison**, striping tidak dibuat selang-seling per baris, melainkan berupa pita vertikal konsisten dari baris atas ke bawah khusus pada kolom **Nama Entitas / Deskripsi / Referensi Utama** yang diberi kelas `.ui-col-data-name` (`--ui-table-col-name-bg`: `#EDF2F7` Light / `#222D3D` Dark), sedangkan kolom kode, angka, tanggal, status, dan aksi tetap pada `--md-surface`. Sel sticky (`.ui-sticky-col`, `.ui-table-sticky-col`, `.ui-sticky-col-right`) mengikuti `var(--ui-table-cell-bg, var(--md-surface))`; hover baris penuh memakai `--ui-table-row-hover-bg` (`#E6ECF4` Light / `#283548` Dark) plus indikator kiri `--md-primary`. Matriks form input (`.pr-items-table`, `.quotation-items-table`, `.qc-dimension-grid`, `[data-annual-rates-matrix]`, `.ui-export-designer-modal`, `.table-borderless`, `.local-import-modal`) dan mode `@media print` mereset token shading ke `--md-surface`.
 
 ### 6.3 Form
 
@@ -310,6 +311,11 @@ Desktop adalah lingkungan utama; tablet dan mobile wajib bisa dipakai penuh.
 
 Konsistensi lintas modul: radius, card, grammar page header, grammar filter, hierarki tombol, gaya ikon, sistem spasi, dan perlakuan status-chip **sama di semua role**. Yang boleh berbeda hanya prioritas informasi, konten domain, kolom workflow, dashboard per role, dan state semantik.
 
+**Tata kelola tombol aksi & Ghost Allow-List:**
+- **Urutan tombol `<x-ui.page-header>` (`<x-slot:actions>`):** Navigasi (`recordNav` / `← Back`) → Utilitas (`Document Chain`, `Export`, `Print`, `Edit`) → Aksi destruktif (`danger-outline`) → maks. 1 `primary` di paling kanan.
+- **Baris tabel (`<td>` / DataTables):** aksi utama baris memakai `variant="outline-primary"` (`.ui-data-action--primary`), aksi utilitas netral memakai `outline` (`.ui-data-action`). Dilarang `ghost` di `<x-ui.page-header>` actions maupun `<td>` kolom Action.
+- **Ghost Allow-List (hanya 4 konteks yang diizinkan):** (1) `Cancel`/`Close`/`Dismiss` di samping `primary` pada Modal/Drawer/Popover/Form Action Bar; (2) `Reset`/`Clear Filters` pada Filter Toolbar/Chips (berikon `rotate-ccw`); (3) `<x-ui.icon-button variant="ghost">` kompak; (4) tautan aksi mikro di dalam card/popover padat (`View all`, `Clear`).
+
 ---
 
 ## 12. Kompatibilitas dan aset frontend
@@ -327,6 +333,7 @@ Konsistensi lintas modul: radius, card, grammar page header, grammar filter, hie
 |---|---|
 | Ikon | `tests/Feature/UiIconComponentTest.php` |
 | Komponen | `RenderedComponentTest`, `FilterBarComponentTest`, `CalendarComponentTest`, `tests/js/calendar.test.mjs`, `tests/js/filter-bar.test.mjs` |
+| Tata kelola tombol & kontras WCAG | `tests/js/button-governance.test.mjs`, `tests/js/text-contrast.test.mjs` |
 | Aset / loader / splash | `FrontendAssetLoadingTest`, `AuthSplashTest`, `tests/js/adasi-loader.test.mjs`, `tests/js/auth-splash.test.mjs`, `tests/js/tailwind-build.test.mjs`, `tests/js/app-lazy-modules.test.mjs` |
 | Workspace Shell | `WorkspaceShellSecurityTest`, `WorkspaceShellRouteClassificationTest`, `tests/js/workspace-shell.test.mjs` |
 | Dark mode, accent, preferensi | `tests/js/preferences.test.mjs`, `tests/js/customization-form.test.mjs` |

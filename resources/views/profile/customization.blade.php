@@ -69,6 +69,7 @@
         'locale' => $preferences['locale'],
         'copy' => [
             'densityValue' => __('customization.density_value'),
+            'densitySpec' => __('customization.density_spec', ['row' => ':row', 'cell' => ':cell']),
             'unsaved' => __('customization.unsaved_changes', ['count' => ':count']),
             'noChanges' => __('customization.no_unsaved_changes'),
             'sectionReset' => __('customization.reset_section_announcement'),
@@ -256,6 +257,14 @@
                                 @php
                                     $selectedDensity = $densityPreview ?? $preferences['density'];
                                     $densityPosition = array_search($selectedDensity, config('user_preferences.densities'), true) + 1;
+                                    $densitySpecs = [
+                                        'spacious' => ['row' => 44, 'cell' => 12],
+                                        'comfortable' => ['row' => 40, 'cell' => 10],
+                                        'balanced' => ['row' => 36, 'cell' => 8],
+                                        'compact' => ['row' => 32, 'cell' => 6],
+                                        'dense' => ['row' => 28, 'cell' => 4],
+                                    ];
+                                    $activeDensitySpec = $densitySpecs[$selectedDensity] ?? $densitySpecs['comfortable'];
                                 @endphp
                                 <select id="density" name="density" aria-labelledby="density-label" aria-describedby="density-help density-direction density-preview-help @error('density') density-error @enderror" aria-invalid="{{ $errors->has('density') ? 'true' : 'false' }}" class="ui-input tw:min-h-11 tw:w-full">
                                     @foreach(config('user_preferences.densities') as $value)
@@ -263,17 +272,36 @@
                                     @endforeach
                                 </select>
                                 <div class="ui-density-active tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container tw:px-3 tw:py-2">
-                                    <output for="density-range" aria-live="off" data-density-label>{{ __('customization.density_levels.'.$selectedDensity) }}</output>
+                                    <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-2">
+                                        <output for="density-range" aria-live="off" data-density-label>{{ __('customization.density_levels.'.$selectedDensity) }}</output>
+                                        <span class="ui-density-spec ui-tabular-nums" data-density-spec>{{ __('customization.density_spec', $activeDensitySpec) }}</span>
+                                    </div>
                                     <span class="ui-density-unsaved-slot tw:text-ui-xs tw:text-on-surface-variant"><span data-density-unsaved @if($selectedDensity === $preferences['density']) hidden @endif>{{ __('customization.density_unsaved') }}</span></span>
                                 </div>
                                 <input type="range" id="density-range" min="1" max="5" step="1" value="{{ $densityPosition }}" data-density-slider class="ui-density-range" aria-labelledby="density-label" aria-describedby="density-help density-direction density-preview-help @error('density') density-error @enderror" aria-valuetext="{{ __('customization.density_value', ['label' => __('customization.density_levels.'.$selectedDensity), 'position' => $densityPosition, 'count' => 5]) }}" aria-invalid="{{ $errors->has('density') ? 'true' : 'false' }}" hidden disabled>
                                 <div id="density-direction" class="ui-density-direction tw:text-ui-xs tw:text-on-surface-variant"><span>{{ __('customization.density_spacious_direction') }}</span><span>{{ __('customization.density_dense_direction') }}</span></div>
-                                <div class="ui-density-stops tw:text-ui-xs tw:text-on-surface-variant" aria-hidden="true">@foreach(config('user_preferences.densities') as $value)<span>{{ __('customization.density_levels.'.$value) }}</span>@endforeach</div>
+                                <div class="ui-density-stops" role="group" aria-labelledby="density-label">
+                                    @foreach(config('user_preferences.densities') as $value)
+                                        <button
+                                            type="button"
+                                            class="ui-density-stop ui-focus-ring"
+                                            data-density-stop="{{ $value }}"
+                                            data-density-position="{{ $loop->iteration }}"
+                                            data-active="{{ $selectedDensity === $value ? 'true' : 'false' }}"
+                                            data-saved="{{ $preferences['density'] === $value ? 'true' : 'false' }}"
+                                            aria-pressed="{{ $selectedDensity === $value ? 'true' : 'false' }}"
+                                            title="{{ $preferences['density'] === $value ? __('customization.density_levels.'.$value).' ('.__('customization.density_saved_marker').')' : __('customization.density_levels.'.$value) }}"
+                                        >
+                                            <span class="ui-density-stop__tick" aria-hidden="true"></span>
+                                            <span>{{ __('customization.density_levels.'.$value) }}</span>
+                                            <span class="ui-density-stop__saved-dot" aria-hidden="true"></span>
+                                        </button>
+                                    @endforeach
+                                </div>
                                 <p id="density-preview-help" class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ __('customization.density_preview_help') }}</p>
                                 @error('density')<p id="density-error" class="tw:m-0 tw:text-ui-xs tw:text-error">{{ $message }}</p>@enderror
                             </div>
                             <div class="ui-density-preview-frame tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container/60 tw:p-3" aria-hidden="true">
-                                <div class="ui-density-preview ui-density-preview__reserve">@include('profile.partials.density-preview')</div>
                                 <div class="ui-density-preview">@include('profile.partials.density-preview')</div>
                             </div>
                         </div>
@@ -290,7 +318,7 @@
                     </div>
                     <x-ui.button type="button" variant="ghost" size="sm" x-on:click="resetSection('region')">{{ __('customization.reset_section') }}</x-ui.button>
                 </header>
-                <div class="tw:grid tw:gap-5 tw:p-5">
+                <div class="ui-density-settings-body tw:grid tw:gap-5 tw:p-5">
                     <div class="tw:grid tw:grid-cols-1 tw:items-start tw:gap-5 tw:md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
                         <fieldset class="tw:grid tw:gap-2" aria-describedby="language-help @error('locale') language-error @enderror">
                             <legend class="tw:text-ui-sm tw:font-semibold">{{ __('customization.language.label') }}</legend>
@@ -395,7 +423,7 @@
                         </div>
                     @endif
                 </header>
-                <div class="tw:grid tw:gap-3 tw:p-5">
+                <div class="ui-density-settings-body tw:grid tw:gap-3 tw:p-5">
                     @if(count($dashboardRows))
                         <fieldset aria-describedby="dashboard-layout-help dashboard-layout-error">
                             <legend class="tw:sr-only">{{ __('customization.panels') }}</legend>

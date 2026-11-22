@@ -4,23 +4,28 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\Auth\SessionReconnectService;
 use App\Services\Auth\TwoFactorService;
+use App\Support\Auth\SessionLifecycle;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 /**
- * Answers the session-ended dialog: can this page keep working without signing in again?
+ * Answers the session-ended dialog and proactive expiry checks: is this session
+ * still alive?
  *
- * It never authenticates anyone itself. A live session (another tab signed in again, or only
- * the page's CSRF token went stale) and a valid remember-me cookie are resolved by the normal
- * web middleware before this runs; revocation, absolute timeout, deactivation and forced
- * password change still end or redirect the request there. Only same-origin script can read
- * the token, because no CORS headers are sent.
+ * It never authenticates anyone itself. Passive checks and JSON status queries
+ * never resurrect an expired session via Remember-Me (enforced upstream in
+ * EnforceAuthSessionSecurity). Only same-origin scripts can read the CSRF token
+ * because no CORS headers are sent and Cache-Control is no-store.
  */
 class SessionStatusController extends Controller
 {
-    public function __invoke(Request $request, TwoFactorService $twoFactor): JsonResponse
-    {
+    public function __invoke(
+        Request $request,
+        TwoFactorService $twoFactor,
+        SessionReconnectService $reconnect,
+    ): JsonResponse {
         $user = $request->user();
 
         if ($user instanceof User && $user->isAuthenticationEligible()) {
@@ -28,6 +33,7 @@ class SessionStatusController extends Controller
                 'authenticated' => true,
                 'user_id' => (int) $user->getKey(),
                 'csrf_token' => $request->session()->token(),
+                ...SessionLifecycle::remainingTimings($request),
             ]);
         }
 
@@ -36,14 +42,22 @@ class SessionStatusController extends Controller
 
         if ($user === null && isset($pending['user_id'], $pending['started_at'])
             && ((int) $pending['started_at'] + $lifetime) >= now()->timestamp) {
-            // The remember-me cookie already proved the account; only the code is missing.
-            // Return to the page the dialog was opened on, never to the request that staged it.
+            if (SessionLifecycle::isPassiveStatusCheck($request)) {
+                return response()->json([
+                    'authenticated' => false,
+                    'reason' => 'session_ended',
+                ], 401);
+            }
+
+            // A pending MFA code challenge is already in flight; return to the page
+            // the dialog was opened on, never to an external origin.
             $return = $request->query('return');
             $pending['intended'] = TwoFactorService::safeIntendedUrl(
                 $request,
                 is_string($return) ? $return : (string) ($pending['intended'] ?? ''),
             );
             $request->session()->put(TwoFactorService::PENDING_LOGIN_KEY, $pending);
+            SessionLifecycle::markSessionMutated($request);
 
             return response()->json([
                 'authenticated' => false,
@@ -51,6 +65,19 @@ class SessionStatusController extends Controller
             ], 401);
         }
 
-        return response()->json(['authenticated' => false], 401);
+        if ($request->cookies->has(SessionReconnectService::COOKIE_NAME)) {
+            $inspection = $reconnect->inspectGrant($request);
+
+            return response()->json([
+                'authenticated' => false,
+                'reconnectable' => $inspection['valid'],
+                'reason' => $inspection['reason'],
+            ], 401);
+        }
+
+        return response()->json([
+            'authenticated' => false,
+            'reason' => 'session_ended',
+        ], 401);
     }
 }

@@ -29,7 +29,7 @@
         :eyebrow="__('supplier_requests.eyebrow')"
     >
         <x-slot:actions>
-            <x-ui.button :href="route('supplier.requests.index')" variant="ghost" size="sm">
+            <x-ui.button :href="route('supplier.requests.index')" variant="outline" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>{{ __('supplier_requests.detail.back') }}</span>
             </x-ui.button>
@@ -105,7 +105,7 @@
                     @endphp
                     <tr>
                         <td class="text-center ui-tabular-nums tw:text-on-surface-variant">{{ $index + 1 }}</td>
-                        <td>
+                        <td class="ui-col-data-name">
                             <div class="fw-bold tw:text-on-surface">{{ $item->material_name }}</div>
                             <div class="tw:text-on-surface-variant tw:text-ui-xs tw:mt-0.5">{{ $item->hs_code ? 'HS '.$item->hs_code.' · ' : '' }}{{ $item->shape ?: '-' }}</div>
                         </td>
@@ -115,7 +115,7 @@
                         @endforeach
                         <td class="text-end ui-tabular-nums">{{ \App\Support\NumberFormat::maxDecimals($item->weight_needed) }}</td>
                         <td class="text-end ui-tabular-nums fw-semibold">{{ \App\Support\NumberFormat::maxDecimals($item->total_weight) }}</td>
-                        <td class="tw:text-on-surface-variant">{{ $item->remark ?: '—' }}</td>
+                        <td class="tw:text-on-surface-variant ui-col-data-name">{{ $item->remark ?: '—' }}</td>
                     </tr>
                 @endforeach
             </tbody>

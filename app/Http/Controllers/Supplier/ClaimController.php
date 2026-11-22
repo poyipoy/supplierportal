@@ -15,6 +15,7 @@ use App\Services\RegionalDisplayFormatter;
 use App\Support\BusinessTime;
 use App\Support\NotificationCategory;
 use App\Support\StatusHelper;
+use App\Support\Ui\RowAction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -52,9 +53,13 @@ class ClaimController extends Controller
                     );
                 })
                 ->addColumn('action', function ($c) {
-                    $label = $c->status === 'pending' ? __('claims.copy.give_response') : __('claims.copy.view_details');
+                    $url = route('supplier.claims.show', $c);
 
-                    return '<a href="'.route('supplier.claims.show', $c).'" class="ui-data-action ui-data-action--primary ui-focus-ring">'.$label.'</a>';
+                    if ($c->status === 'pending') {
+                        return RowAction::link($url, __('claims.copy.give_response'), 'primary', $c->claim_number);
+                    }
+
+                    return RowAction::detail($url, $c->claim_number);
                 })
                 ->rawColumns(['deadline_display', 'status_badge', 'action'])
                 ->make(true);

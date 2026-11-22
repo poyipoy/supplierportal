@@ -69,10 +69,10 @@
                 </x-ui.status-chip>
 
                 @if($isSubmitted)
-                    <button type="button" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1.5" data-bs-toggle="modal" data-bs-target="#confirmArrivalModal">
+                    <x-ui.button type="button" variant="primary" size="sm" data-bs-toggle="modal" data-bs-target="#confirmArrivalModal">
                         <x-ui.icon name="check-circle" size="sm" />
                         <span>{{ __('shipments.copy.confirm_physical_arrival') }}</span>
-                    </button>
+                    </x-ui.button>
                 @endif
             </div>
         </x-slot:actions>
@@ -381,10 +381,10 @@
                                     <span class="tw:text-on-surface-variant">-</span>
                                 @endif
                             </td>
-                            <td class="fw-semibold tw:text-on-surface">
+                            <td class="fw-semibold tw:text-on-surface ui-col-data-name">
                                 {{ $prItem->material_name ?? __('shipments.copy.material_item') }}
                             </td>
-                            <td class="tw:text-on-surface-variant">
+                            <td class="tw:text-on-surface-variant ui-col-data-name">
                                 {{ __('purchasing.copy.shape') }}: {{ $prItem->shape ?? '-' }}
                                 @if($prItem?->thickness) | T: {{ $prItem->thickness }}mm @endif
                                 @if($prItem?->width) | W: {{ $prItem->width }}mm @endif
@@ -397,7 +397,7 @@
                             <td class="text-end ui-tabular-nums tw:text-on-surface-variant">
                                 {{ $regionalFormatter->number(\App\Support\NumberFormat::maxDecimals($item->actual_weight_kg), 'decimal') }} Kg
                             </td>
-                            <td class="tw:text-on-surface-variant">
+                            <td class="tw:text-on-surface-variant ui-col-data-name">
                                 {{ $item->notes ?? '-' }}
                             </td>
                         </tr>
@@ -428,7 +428,7 @@
                                 <th scope="col">{{ __('shipments.copy.inspection_date') }}</th>
                                 <th scope="col">{{ __('shipments.copy.inspector') }}</th>
                                 <th scope="col" class="text-center">{{ __('shipments.copy.qc_result') }}</th>
-                                <th scope="col" class="text-end">{{ __('shipments.copy.action') }}</th>
+                                <th scope="col" class="tw:text-right text-end">{{ __('common.table.action') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -437,7 +437,7 @@
                                     <td class="ui-tabular-nums">
                                         {{ $insp->inspected_at ? $regionalFormatter->timestamp($insp->inspected_at, 'datetime_comma') : '-' }}
                                     </td>
-                                    <td class="fw-semibold">
+                                    <td class="fw-semibold ui-col-data-name">
                                         {{ $insp->inspector->name ?? '-' }}
                                     </td>
                                     <td class="text-center">
@@ -445,10 +445,11 @@
                                             {{ \App\Support\StatusHelper::qcLabel($insp->status) }}
                                         </x-ui.status-chip>
                                     </td>
-                                    <td class="text-end">
-                                        <x-ui.button :href="route('qc.inspections.show', $insp)" variant="outline" size="sm">
-                                            {{ __('shipments.copy.view_report') }}
-                                        </x-ui.button>
+                                    <td class="tw:text-right text-end">
+                                        <x-ui.row-action
+                                            :href="route('qc.inspections.show', $insp)"
+                                            :context="$insp->inspected_at ? $regionalFormatter->timestamp($insp->inspected_at, 'datetime_comma') : $shipment->shipment_number"
+                                        />
                                     </td>
                                 </tr>
                             @endforeach
@@ -493,8 +494,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{{ __('shipments.copy.cancel') }}</button>
-                    <button type="submit" class="btn btn-primary btn-sm">{{ __('shipments.copy.confirm_arrival_notify_qc') }}</button>
+                    <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('shipments.copy.cancel') }}</x-ui.button>
+                    <x-ui.button type="submit" variant="primary" size="sm">{{ __('shipments.copy.confirm_arrival_notify_qc') }}</x-ui.button>
                 </div>
             </form>
         </div>

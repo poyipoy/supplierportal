@@ -195,7 +195,7 @@
                                 {{ __('purchasing.copy.valid_until') }}
                                 <x-ui.icon name="info" class="ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="{{ __('purchasing.copy.expired_quotations_cannot_be_used_to_create_a_po_until_the_supplier_submits_a_revision') }}" />
                             </th>
-                            <th scope="col" class="text-end" style="width: 80px;">{{ __('purchasing.copy.action') }}</th>
+                            <th scope="col" class="tw:text-right text-end" style="min-width: 96px;">{{ __('common.table.action') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -229,15 +229,11 @@
                                         {!! \App\Support\StatusHelper::badgeWithTooltip($validityMeta['class'], $validityMeta['label'], $validityMeta['description']) !!}
                                     @endif
                                 </td>
-                                <td class="text-end">
-                                    <a
-                                        href="{{ \App\Support\PurchasingNavigation::toRoute('purchasing.quotations.show', $q) }}"
-                                        class="ui-data-action ui-data-action--primary ui-focus-ring"
-                                        aria-label="{{ __('purchasing.copy.view_quotation') }}"
-                                    >
-                                        <x-ui.icon name="eye" size="sm" />
-                                        <span class="d-none d-md-inline ms-1">{{ __('purchasing.copy.view') }}</span>
-                                    </a>
+                                <td class="tw:text-right text-end">
+                                    <x-ui.row-action
+                                        :href="\App\Support\PurchasingNavigation::toRoute('purchasing.quotations.show', $q)"
+                                        :context="$q->purchaseRequisition->pr_number ?? $q->supplier->name"
+                                    />
                                 </td>
                             </tr>
                         @empty

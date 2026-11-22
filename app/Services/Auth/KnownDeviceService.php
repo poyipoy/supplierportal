@@ -108,6 +108,7 @@ class KnownDeviceService
 
             if ($sessionIds !== []) {
                 app(SessionInventoryService::class)->revokeMany($user, $sessionIds);
+                app(SessionReconnectService::class)->markSessionsRevoked($sessionIds);
             }
 
             return true;

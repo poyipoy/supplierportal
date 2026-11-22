@@ -10,10 +10,6 @@
         :eyebrow="__('finance.labels.finance_ap')"
     >
         <x-slot:actions>
-            <x-ui.button :href="route('finance.invoices.index')" variant="primary">
-                <x-ui.icon name="list" size="sm" />
-                <span>{{ __('local_invoice.list.title') }}</span>
-            </x-ui.button>
             <x-ui.button :href="route('finance.drp.supplier')" variant="outline">
                 <x-ui.icon name="wallet" size="sm" />
                 <span>{{ __('navigation.drp_supplier') }}</span>
@@ -21,6 +17,10 @@
             <x-ui.button :href="route('finance.drp.ga')" variant="outline">
                 <x-ui.icon name="credit-card" size="sm" />
                 <span>DRP GA</span>
+            </x-ui.button>
+            <x-ui.button :href="route('finance.invoices.index')" variant="primary">
+                <x-ui.icon name="list" size="sm" />
+                <span>{{ __('local_invoice.list.title') }}</span>
             </x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>
@@ -292,7 +292,7 @@
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant text-end">{{ __('finance.drp.total_amount') }}</th>
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant text-end">{{ __('finance.drp.total_fee') }}</th>
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('local_invoice.labels.created_by') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant text-end">{{ __('local_invoice.labels.actions') }}</th>
+                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant tw:text-right text-end">{{ __('common.table.action') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -321,11 +321,11 @@
                             <td>
                                 <span class="tw:text-ui-xs">{{ $batch->creator?->name ?? __('common.final_copy.system') }}</span>
                             </td>
-                            <td class="text-end">
-                                <x-ui.button :href="route('finance.drp.show', $batch)" size="sm" variant="outline">
-                                    <x-ui.icon name="eye" size="sm" />
-                                    <span>{{ __('finance.drp.detail') }}</span>
-                                </x-ui.button>
+                            <td class="tw:text-right text-end">
+                                <x-ui.row-action
+                                    :href="route('finance.drp.show', $batch)"
+                                    :context="$batch->batch_number"
+                                />
                             </td>
                         </tr>
                     @empty
@@ -380,7 +380,7 @@
                             <th scope="col" class="text-end">{{ __('local_invoice.three_way_match.expected_gr_dpp') }}</th>
                             <th scope="col" class="text-end">{{ __('local_invoice.three_way_match.submitted_dpp') }}</th>
                             <th scope="col" class="text-end">{{ __('local_invoice.three_way_match.dpp_variance') }}</th>
-                            <th scope="col" class="text-end">{{ __('purchasing.copy.action') }}</th>
+                            <th scope="col" class="tw:text-right text-end">{{ __('common.table.action') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -394,11 +394,12 @@
                                     @php $dashVariance = (string) ($varInv->gr_dpp_variance_amount ?? '0.00'); @endphp
                                     {{ \App\Support\Money::compare($dashVariance, '0.00') < 0 ? '-' : '+' }}Rp {{ $regionalFormatter->money(ltrim($dashVariance, '+-')) }}
                                 </td>
-                                <td class="text-end">
-                                    <x-ui.button :href="route('finance.invoices.show', $varInv)" size="sm" variant="outline">
-                                        <span>{{ __('purchasing.copy.review') }}</span>
-                                        <x-ui.icon name="arrow-right" size="sm" />
-                                    </x-ui.button>
+                                <td class="tw:text-right text-end">
+                                    <x-ui.row-action
+                                        :href="route('finance.invoices.show', $varInv)"
+                                        :label="__('purchasing.copy.review')"
+                                        :context="$varInv->invoice_number"
+                                    />
                                 </td>
                             </tr>
                         @endforeach

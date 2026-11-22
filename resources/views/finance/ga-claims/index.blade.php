@@ -10,7 +10,7 @@
         :eyebrow="__('finance.labels.finance_ap')"
     >
         <x-slot:actions>
-            <x-ui.button :href="route('finance.dashboard')" variant="ghost" size="sm">
+            <x-ui.button :href="route('finance.dashboard')" variant="outline" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>{{ __('common.labels_review.dashboard') }}</span>
             </x-ui.button>
@@ -138,7 +138,7 @@
                         <th scope="col">{{ __('finance.ga.amount_rupiah') }}</th>
                         <th scope="col">{{ __('finance.drp.transfer_destination') }}</th>
                         <th scope="col">{{ __('local_invoice.labels.status') }}</th>
-                        <th scope="col" class="text-end">{{ __('local_invoice.labels.actions') }}</th>
+                        <th scope="col" class="tw:text-right text-end">{{ __('common.table.action') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -166,11 +166,11 @@
                                     {{ \App\Support\StatusHelper::gaClaimLabel($claim->status) }}
                                 </x-ui.status-chip>
                             </td>
-                            <td class="text-end">
-                                <x-ui.button :href="route('finance.ga-claims.show', $claim)" size="sm" variant="outline">
-                                    <x-ui.icon name="eye" size="sm" />
-                                    <span>{{ __('finance.labels.verification_short') }}</span>
-                                </x-ui.button>
+                            <td class="tw:text-right text-end">
+                                <x-ui.row-action
+                                    :href="route('finance.ga-claims.show', $claim)"
+                                    :context="$claim->claim_number"
+                                />
                             </td>
                         </tr>
                     @empty

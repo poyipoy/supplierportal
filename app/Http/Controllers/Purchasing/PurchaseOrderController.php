@@ -24,6 +24,7 @@ use App\Support\NotificationCategory;
 use App\Support\PurchasingNavigation;
 use App\Support\ServerTabsResponse;
 use App\Support\StatusHelper;
+use App\Support\Ui\RowAction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -156,12 +157,22 @@ class PurchaseOrderController extends Controller
                     $html = '<div class="d-inline-flex gap-1 justify-content-end flex-wrap">';
                     if ($po->status === 'claim_needed') {
                         if ($po->active_claim_id) {
-                            $html .= '<a href="'.PurchasingNavigation::toRoute('purchasing.claims.show', HashidCodec::encode((int) $po->active_claim_id)).'" class="ui-data-action ui-data-action--danger ui-focus-ring">Claim</a>';
+                            $html .= RowAction::link(
+                                PurchasingNavigation::toRoute('purchasing.claims.show', HashidCodec::encode((int) $po->active_claim_id)),
+                                'Claim',
+                                'danger',
+                                $po->po_number
+                            );
                         } elseif ($po->latest_ng_inspection_id) {
-                            $html .= '<a href="'.PurchasingNavigation::toRoute('purchasing.claims.create', HashidCodec::encode((int) $po->latest_ng_inspection_id)).'" class="ui-data-action ui-data-action--danger ui-focus-ring">Create Claim</a>';
+                            $html .= RowAction::link(
+                                PurchasingNavigation::toRoute('purchasing.claims.create', HashidCodec::encode((int) $po->latest_ng_inspection_id)),
+                                'Create Claim',
+                                'danger',
+                                $po->po_number
+                            );
                         }
                     }
-                    $html .= '<a href="'.PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $po).'" class="ui-data-action ui-data-action--primary ui-focus-ring">'.e(__('purchasing.copy.details')).'</a>';
+                    $html .= RowAction::detail(PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $po), $po->po_number);
                     $html .= '</div>';
 
                     return $html;

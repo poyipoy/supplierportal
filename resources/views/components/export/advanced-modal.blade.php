@@ -12,7 +12,7 @@
         <x-ui.button type="button" :id="$triggerId" variant="outline" size="sm" data-bs-toggle="modal" data-bs-target="#{{ $uid }}" data-export-open>
             <x-ui.icon name="file-spreadsheet" />{{ __('exports.advanced.title') }}
         </x-ui.button>
-        <x-ui.button type="button" variant="ghost" size="sm" data-export-quick>{{ __('exports.advanced.quick') }}</x-ui.button>
+        <x-ui.button type="button" variant="outline" size="sm" data-export-quick><x-ui.icon name="download" size="sm" />{{ __('exports.advanced.quick') }}</x-ui.button>
     </div>
     <div class="modal fade ui-export-designer-modal" id="{{ $uid }}" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="{{ $uid }}-title" aria-describedby="{{ $uid }}-help">
         <div class="modal-dialog modal-lg modal-dialog-scrollable">
@@ -89,10 +89,10 @@
                             <div class="ui-column-ribbon" role="group" aria-label="{{ __('exports.advanced.column_actions') }}">
                                 <x-ui.button type="button" size="sm" variant="outline" data-column-command="hide"><x-ui.icon name="eye-off" />{{ __('exports.advanced.hide') }}</x-ui.button>
                                 <x-ui.button type="button" size="sm" variant="outline" data-column-command="unhide" aria-controls="{{ $uid }}-unhide"><x-ui.icon name="eye" />{{ __('exports.advanced.unhide') }}</x-ui.button>
-                                <x-ui.button type="button" size="sm" variant="ghost" data-column-command="move-left"><x-ui.icon name="arrow-left" />{{ __('exports.advanced.left') }}</x-ui.button>
-                                <x-ui.button type="button" size="sm" variant="ghost" data-column-command="move-right"><x-ui.icon name="arrow-right" />{{ __('exports.advanced.right') }}</x-ui.button>
-                                <x-ui.button type="button" size="sm" variant="ghost" data-column-command="menu" aria-haspopup="menu" aria-controls="{{ $uid }}-menu"><x-ui.icon name="ellipsis" />{{ __('exports.advanced.column_menu') }}</x-ui.button>
-                                <x-ui.button type="button" size="sm" variant="ghost" data-column-command="reset" data-export-reset>{{ __('exports.advanced.reset') }}</x-ui.button>
+                                <x-ui.button type="button" size="sm" variant="outline" data-column-command="move-left"><x-ui.icon name="arrow-left" />{{ __('exports.advanced.left') }}</x-ui.button>
+                                <x-ui.button type="button" size="sm" variant="outline" data-column-command="move-right"><x-ui.icon name="arrow-right" />{{ __('exports.advanced.right') }}</x-ui.button>
+                                <x-ui.button type="button" size="sm" variant="outline" data-column-command="menu" aria-haspopup="menu" aria-controls="{{ $uid }}-menu"><x-ui.icon name="ellipsis" />{{ __('exports.advanced.column_menu') }}</x-ui.button>
+                                <x-ui.button type="button" size="sm" variant="ghost" data-column-command="reset" data-export-reset><x-ui.icon name="rotate-ccw" />{{ __('exports.advanced.reset') }}</x-ui.button>
                             </div>
                             <p id="{{ $uid }}-keyboard" class="ui-column-help">{{ __('exports.advanced.keyboard_hint') }}</p>
                             <div class="ui-column-summary"><span data-column-summary></span><span data-column-selected-label></span></div>
@@ -120,7 +120,7 @@
                             <label class="tw:text-ui-sm tw:mt-2 tw:inline-flex tw:items-center tw:gap-2"><input type="checkbox" data-export-default>{{ __('exports.advanced.make_default') }}</label>
                             <div class="tw:flex tw:flex-wrap tw:gap-2 tw:mt-2">
                                 <x-ui.button type="button" variant="outline" size="sm" data-export-save>{{ __('exports.advanced.save') }}</x-ui.button>
-                                <x-ui.button type="button" variant="ghost" size="sm" data-export-update>{{ __('exports.advanced.update') }}</x-ui.button>
+                                <x-ui.button type="button" variant="outline" size="sm" data-export-update>{{ __('exports.advanced.update') }}</x-ui.button>
                                 <x-ui.button type="button" variant="danger" size="sm" data-export-delete>{{ __('exports.advanced.delete') }}</x-ui.button>
                             </div>
                         </fieldset>

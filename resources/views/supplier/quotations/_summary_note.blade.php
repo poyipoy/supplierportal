@@ -11,7 +11,7 @@
     <dd class="tw:m-0 tw:mt-0.5 tw:text-ui-xs tw:text-on-surface">
         <div class="tw:whitespace-pre-line" @if($clamp) x-bind:class="{ 'tw:line-clamp-2': !open }" @endif>{{ $text }}</div>
         @if($clamp)
-            <button type="button" class="btn btn-link tw:p-0 tw:text-ui-xs" x-cloak x-on:click="open = !open" x-bind:aria-expanded="open.toString()"
+            <button type="button" class="ui-focus-ring tw:border-0 tw:bg-transparent tw:p-0 tw:text-ui-xs tw:font-semibold tw:text-primary-text tw:hover:underline tw:cursor-pointer" x-cloak x-on:click="open = !open" x-bind:aria-expanded="open.toString()"
                 x-text="open ? @js(__('supplier.copy.show_less')) : @js(__('supplier.copy.show_more'))">{{ __('supplier.copy.show_more') }}</button>
         @endif
     </dd>

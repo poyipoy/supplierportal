@@ -10,7 +10,7 @@
         :eyebrow="__('admin.copy.admin_users')"
     >
         <x-slot:actions>
-            <x-ui.button :href="route('admin.users.index')" variant="ghost" size="sm">
+            <x-ui.button :href="route('admin.users.index')" variant="outline" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" /> {{ __('admin.copy.back_to_user_list') }}
             </x-ui.button>
         </x-slot:actions>

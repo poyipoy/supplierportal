@@ -279,9 +279,10 @@ export function bootWorkspaceEmbedBridge() {
     }
 
     // Mirror theme/density/accent changes to parent & sibling iframes cleanly.
-    ['adasi:theme-change', 'adasi:accent-change', 'adasi:shell-change'].forEach((evtName) => {
+    ['adasi:theme-change', 'adasi:accent-change', 'adasi:shell-change', 'adasi:density-change'].forEach((evtName) => {
         window.addEventListener(evtName, () => shell.syncPreferencesFromEmbed(window));
     });
+    shell.syncPreferencesFromEmbed(window);
 
     // Sync ServerTabs or in-frame history updates to top shell URL cleanly.
     const rawPushState = window.history.pushState.bind(window.history);

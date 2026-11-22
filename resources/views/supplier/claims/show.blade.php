@@ -19,7 +19,7 @@
     >
         <x-slot:actions>
             <x-status-badge type="claim" :status="$claim->status" />
-            <x-ui.button :href="route('supplier.claims.index')" variant="ghost" size="sm">
+            <x-ui.button :href="route('supplier.claims.index')" variant="outline" size="sm">
                 <x-ui.icon name="arrow-left" />
                 <span>{{ __('claims.copy.back_to_claims') }}</span>
             </x-ui.button>

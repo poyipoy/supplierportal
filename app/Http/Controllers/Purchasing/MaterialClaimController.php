@@ -15,6 +15,7 @@ use App\Support\BusinessTime;
 use App\Support\NotificationCategory;
 use App\Support\PurchasingNavigation;
 use App\Support\StatusHelper;
+use App\Support\Ui\RowAction;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -65,7 +66,12 @@ class MaterialClaimController extends Controller
                 // The claim target is the latest NG inspection without any claim.
                 $target = $po->qcInspections->first(fn ($inspection) => $inspection->status === 'ng' && ! $inspection->has_any_claim);
                 if ($target) {
-                    return '<a href="'.PurchasingNavigation::toRoute('purchasing.claims.create', $target).'" class="ui-data-action ui-data-action--danger ui-focus-ring">Create Claim</a>';
+                    return RowAction::link(
+                        PurchasingNavigation::toRoute('purchasing.claims.create', $target),
+                        'Create Claim',
+                        'danger',
+                        $po->po_number
+                    );
                 }
 
                 return '-';
@@ -100,7 +106,7 @@ class MaterialClaimController extends Controller
                     StatusHelper::claimLabel($c->status)
                 );
             })
-            ->addColumn('action', fn ($c) => '<a href="'.PurchasingNavigation::toRoute('purchasing.claims.show', $c).'" class="ui-data-action ui-data-action--primary ui-focus-ring">'.e(__('claims.copy.details')).'</a>')
+            ->addColumn('action', fn ($c) => RowAction::detail(PurchasingNavigation::toRoute('purchasing.claims.show', $c), $c->claim_number))
             ->rawColumns(['deadline_display', 'status_badge', 'action'])
             ->toArray();
 

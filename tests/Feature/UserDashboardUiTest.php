@@ -18,6 +18,7 @@ class UserDashboardUiTest extends TestCase
         $response->assertSee('name="accent"', false)->assertSee('name="dashboard[hidden][]"', false);
         $response->assertSee('data-dashboard-move="up"', false)->assertSee('data-dashboard-move="down"', false);
         $response->assertSee('name="dashboard[order][]"', false)->assertSee('role="status"', false);
+        $response->assertSee('data-density-stop="spacious"', false)->assertSee('data-density-stop="dense"', false)->assertSee('data-density-spec', false);
     }
 
     public function test_validation_preserves_trusted_order_and_hidden_selection_without_rendering_forged_metadata(): void

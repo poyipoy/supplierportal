@@ -36,9 +36,18 @@
             <x-ui.status-chip :tone="StatusHelper::maintenanceTone($displayStatus)">{{ StatusHelper::maintenanceLabel($displayStatus) }}</x-ui.status-chip>
         </x-slot:status>
         <x-slot:actions>
-            <x-ui.button :href="route('admin.maintenance.index')" variant="ghost" size="sm"><x-ui.icon name="arrow-left" size="sm" /> {{ __('maintenance.page.back') }}</x-ui.button>
+            <x-ui.button :href="route('admin.maintenance.index')" variant="outline" size="sm"><x-ui.icon name="arrow-left" size="sm" /> {{ __('maintenance.page.back') }}</x-ui.button>
             @unless($isDeleted)
                 <x-ui.button :href="route('admin.maintenance.edit', $record)" variant="outline" size="sm"><x-ui.icon name="pencil-line" size="sm" /> {{ __('maintenance.actions.edit') }}</x-ui.button>
+                <form method="POST" action="{{ route('admin.maintenance.destroy', $record) }}" class="tw:m-0">
+                    @csrf
+                    @method('DELETE')
+                    <x-ui.button type="submit" variant="danger-outline" size="sm" data-maintenance-confirm data-confirm-danger="1"
+                        :data-confirm-title="__('maintenance.confirm.delete_title')"
+                        :data-confirm-text="__('maintenance.confirm.delete_text')"
+                        :data-confirm-label="__('maintenance.confirm.delete_confirm')"
+                        :data-confirm-cancel="__('maintenance.confirm.cancel')"><x-ui.icon name="trash-2" size="sm" /> {{ __('maintenance.actions.delete') }}</x-ui.button>
+                </form>
             @endunless
             @if($canActivate)
                 <form method="POST" action="{{ route('admin.maintenance.activate', $record) }}" class="tw:m-0">
@@ -49,8 +58,7 @@
                         :data-confirm-label="__('maintenance.confirm.activate_confirm')"
                         :data-confirm-cancel="__('maintenance.confirm.cancel')"><x-ui.icon name="play" size="sm" /> {{ __('maintenance.actions.activate_now') }}</x-ui.button>
                 </form>
-            @endif
-            @if($isEffective)
+            @elseif($isEffective)
                 <form method="POST" action="{{ route('admin.maintenance.deactivate', $record) }}" class="tw:m-0">
                     @csrf
                     <x-ui.button type="submit" size="sm" data-maintenance-confirm
@@ -60,17 +68,6 @@
                         :data-confirm-cancel="__('maintenance.confirm.cancel')"><x-ui.icon name="circle-stop" size="sm" /> {{ __('maintenance.actions.deactivate') }}</x-ui.button>
                 </form>
             @endif
-            @unless($isDeleted)
-                <form method="POST" action="{{ route('admin.maintenance.destroy', $record) }}" class="tw:m-0">
-                    @csrf
-                    @method('DELETE')
-                    <x-ui.button type="submit" variant="outline" size="sm" class="tw:text-error" data-maintenance-confirm data-confirm-danger="1"
-                        :data-confirm-title="__('maintenance.confirm.delete_title')"
-                        :data-confirm-text="__('maintenance.confirm.delete_text')"
-                        :data-confirm-label="__('maintenance.confirm.delete_confirm')"
-                        :data-confirm-cancel="__('maintenance.confirm.cancel')"><x-ui.icon name="trash-2" size="sm" /> {{ __('maintenance.actions.delete') }}</x-ui.button>
-                </form>
-            @endunless
         </x-slot:actions>
     </x-ui.page-header>
 
@@ -124,7 +121,7 @@
                                     $rowBlocking = $isEffective && $moduleRow->deactivated_at === null;
                                 @endphp
                                 <tr data-maintenance-module="{{ $moduleRow->module_key }}">
-                                    <td>
+                                    <td class="ui-col-data-name">
                                         <span class="tw:font-semibold tw:text-on-surface">{{ $registry->label($moduleRow->module_key) }}</span>
                                         <span class="tw:block tw:text-ui-xs tw:text-on-surface-variant">{{ $registry->scopeLabel((string) $registry->scopeOf($moduleRow->module_key)) }}</span>
                                     </td>

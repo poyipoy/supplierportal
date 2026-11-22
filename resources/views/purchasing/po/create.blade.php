@@ -17,7 +17,7 @@
         :description="__('purchasing.page.create_po_help', ['reference' => $quotation->purchaseRequisition->pr_number ?? __('purchasing.copy.quotation')])"
     >
         <x-slot:actions>
-            <x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.quotations.index')" variant="ghost" size="sm">
+            <x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.quotations.index')" variant="outline" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>{{ __('purchasing.copy.back_to_quotations') }}</span>
             </x-ui.button>

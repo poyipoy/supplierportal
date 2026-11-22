@@ -4,7 +4,7 @@
     'divider' => true,
 ])
 
-<section {{ $attributes->class(['tw:flex tw:flex-col tw:gap-3 tw:mb-6']) }}>
+<section {{ $attributes->class(['ui-section tw:flex tw:flex-col tw:gap-3 tw:mb-6']) }}>
     @if($title || $description || isset($actions))
         <header @class([
             'tw:flex tw:flex-col tw:gap-1 tw:shell:flex-row tw:shell:items-end tw:shell:justify-between',

@@ -29,7 +29,7 @@
                         <th scope="col">{{ __('purchasing.copy.year') }}</th>
                         <th scope="col" class="text-center">{{ __('purchasing.copy.status') }}</th>
                         <th scope="col">{{ __('purchasing.copy.created_by') }}</th>
-                        <th scope="col" class="text-end" style="width: 80px;">{{ __('purchasing.copy.action') }}</th>
+                        <th scope="col" class="tw:text-right text-end" style="width: 80px;">{{ __('common.table.action') }}</th>
                     </tr>
                 </thead>
                 <tbody></tbody>

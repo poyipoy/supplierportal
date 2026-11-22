@@ -106,7 +106,7 @@ html[data-workspace-shell="true"] .top-navbar {
     display: flex;
     align-items: stretch;
     gap: 0.5rem;
-    min-height: 2.625rem;
+    min-height: var(--ui-density-sessionbar-min, 2.625rem);
     padding: 0 0.875rem;
     background: var(--ui-sessionbar-bg);
     color: var(--md-on-surface);
@@ -704,7 +704,7 @@ html[data-workspace-shell="true"] .top-navbar {
     align-items: center;
     flex: 1 1 auto;
     gap: 0.4375rem;
-    min-height: 2.125rem;
+    min-height: var(--ui-density-session-min, 2.125rem);
     min-width: 0;
     padding: 0.25rem 0.875rem;
     border: 0;
@@ -1191,7 +1191,7 @@ html[data-auth-splash-wait="1"] .workspace-panel.is-active {
     height: 100%;
     overflow: hidden;
     background: var(--ui-workspace-bg, var(--md-surface-container-low));
-    padding: 0.75rem 1rem;
+    padding: var(--ui-density-panel-block, 0.75rem) var(--ui-density-panel-inline, 1rem);
     display: flex;
     flex-direction: column;
 }
@@ -1244,8 +1244,8 @@ html[data-auth-splash-wait="1"] .workspace-panel.is-active {
     align-items: center;
     justify-content: space-between;
     gap: 0.5rem;
-    min-height: 2.75rem;
-    padding: 0.625rem 0.75rem 0.625rem 1rem;
+    min-height: var(--ui-density-row-min, 2.5rem);
+    padding: var(--ui-density-table-cell-block, 0.625rem) var(--ui-density-table-cell-inline, 0.875rem);
     background: var(--md-surface-container-low);
     border-bottom: 1px solid var(--ui-surface-divider);
     flex: 0 0 auto;

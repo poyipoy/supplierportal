@@ -53,7 +53,7 @@
                     <th scope="col">{{ __('supplier.copy.latest_price_kg_range') }}</th>
                     <th scope="col">{{ __('supplier.copy.last_quoted_date') }}</th>
                     <th scope="col" class="text-center">{{ __('supplier.copy.latest_status') }}</th>
-                    <th scope="col" class="text-center" style="width: 120px;">{{ __('supplier.copy.action') }}</th>
+                    <th scope="col" class="tw:text-right text-end" style="width: 120px;">{{ __('common.table.action') }}</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -84,7 +84,7 @@
                     }
                 },
                 { data: 'latest_status_badge', name: 'latest_status_badge', orderable: false, searchable: false, className: 'text-center' },
-                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-center' }
+                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
             ],
             order: [[0, 'asc'], [1, 'asc']],
             });

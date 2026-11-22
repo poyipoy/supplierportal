@@ -519,12 +519,12 @@ test('requests still carrying the old token from inline scripts are sent with th
     assert.deepEqual(cross, { crossDomain: true, headers: { 'X-CSRF-TOKEN': 'old-token' }, data: '_token=old-token' });
 });
 
-test('a session that cannot be restored stays on the page with a warning toast or goes to the code challenge', async () => {
+test('a session that cannot be restored navigates to the current page for login or to a same-origin code challenge', async () => {
     const cases = [
-        [{ status: 401, body: { authenticated: false } }, null],
+        [{ status: 401, body: { authenticated: false } }, PAGE_URL],
         [{ status: 401, body: { authenticated: false, two_factor_url: `${ORIGIN}/two-factor-challenge` } }, `${ORIGIN}/two-factor-challenge`],
-        [{ status: 401, body: { authenticated: false, two_factor_url: 'https://evil.example.test/two-factor-challenge' } }, null],
-        [{ status: 403, body: { message: 'change password', redirect: `${ORIGIN}/profile/security` } }, null],
+        [{ status: 401, body: { authenticated: false, two_factor_url: 'https://evil.example.test/two-factor-challenge' } }, PAGE_URL],
+        [{ status: 403, body: { message: 'change password', redirect: `${ORIGIN}/profile/security` } }, PAGE_URL],
         [{ status: 200, body: { authenticated: true, user_id: 99, csrf_token: 'other-account' } }, PAGE_URL],
     ];
     for (const [reply, destination] of cases) {
@@ -532,39 +532,14 @@ test('a session that cannot be restored stays on the page with a warning toast o
         const f = fixture({ session: RESUMABLE, answers: [CONFIRMED], dom, fetchImpl: statusServer(reply).impl });
         f.api.handleActionResponse({ status: 401 });
         await flush();
-        assert.deepEqual(f.redirects, destination ? [destination] : [], JSON.stringify(reply));
+        assert.deepEqual(f.redirects, [destination], JSON.stringify(reply));
         assert.equal(dom.meta.getAttribute('content'), 'old-token', 'no token from another account or a failed check is applied');
-        if (!destination) {
-            assert.deepEqual(f.toasts, [{ type: 'warning', text: 'unauthenticated copy' }], JSON.stringify(reply));
-            assert.equal(f.api.isSessionExpired(), true, 'polling remains paused when staying unauthenticated');
-        } else {
-            assert.deepEqual(f.toasts, [], JSON.stringify(reply));
-        }
+        assert.deepEqual(f.toasts, [], JSON.stringify(reply));
+        assert.equal(f.disconnects(), 1);
     }
 });
 
-test('an unauthenticated session without custom copy falls back to js.session.expired_text', async () => {
-    const session = { ...RESUMABLE, copy: { restored: 'restored copy', failed: 'failed copy' } };
-    const unauth = statusServer({ status: 401, body: { authenticated: false } });
-    const f = fixture({ session, answers: [CONFIRMED], dom: tokenDom(), fetchImpl: unauth.impl });
-    f.api.handleActionResponse({ status: 401 });
-    await flush();
-    assert.deepEqual(f.redirects, []);
-    assert.deepEqual(f.toasts, [{ type: 'warning', text: 'js.session.expired_text' }]);
-    assert.equal(f.api.isSessionExpired(), true);
-});
-
-test('an unknown answer keeps the page and the dialog message so the user can retry', async () => {
-    for (const reply of [new TypeError('offline'), { status: 503, body: null }, { status: 429, body: { message: 'Too Many Attempts.' } }]) {
-        const f = fixture({ session: RESUMABLE, answers: [CONFIRMED], dom: tokenDom(), fetchImpl: statusServer(reply).impl });
-        f.api.handleActionResponse({ status: 419 });
-        await flush();
-        assert.deepEqual(f.redirects, []);
-        assert.deepEqual(f.validation, ['failed copy'], 'shown inside the dialog');
-    }
-});
-
-test('an alert that does not run the check (native fallback) still restores, stays with warning, or reports a failure as a toast', async () => {
+test('an alert that does not run the check (native fallback) still restores, redirects when unauthenticated, or reports a failure as a toast', async () => {
     const ok = statusServer({ status: 200, body: { authenticated: true, user_id: 41, csrf_token: 'new-token' } });
     const restored = fixture({ session: RESUMABLE, answers: [CONFIRMED], dom: tokenDom(), alertRunsPreConfirm: false, fetchImpl: ok.impl });
     restored.api.handleActionResponse({ status: 419 });
@@ -573,12 +548,11 @@ test('an alert that does not run the check (native fallback) still restores, sta
     assert.deepEqual(restored.toasts, [{ type: 'success', text: 'restored copy' }]);
 
     const unauth = statusServer({ status: 401, body: { authenticated: false } });
-    const stayed = fixture({ session: RESUMABLE, answers: [CONFIRMED], dom: tokenDom(), alertRunsPreConfirm: false, fetchImpl: unauth.impl });
-    stayed.api.handleActionResponse({ status: 419 });
+    const redirected = fixture({ session: RESUMABLE, answers: [CONFIRMED], dom: tokenDom(), alertRunsPreConfirm: false, fetchImpl: unauth.impl });
+    redirected.api.handleActionResponse({ status: 419 });
     await flush();
-    assert.deepEqual(stayed.redirects, []);
-    assert.deepEqual(stayed.toasts, [{ type: 'warning', text: 'unauthenticated copy' }]);
-    assert.equal(stayed.api.isSessionExpired(), true);
+    assert.deepEqual(redirected.redirects, [PAGE_URL]);
+    assert.deepEqual(redirected.toasts, []);
 
     const offline = fixture({ session: RESUMABLE, answers: [CONFIRMED], dom: tokenDom(), alertRunsPreConfirm: false, fetchImpl: statusServer(new TypeError('offline')).impl });
     offline.api.handleActionResponse({ status: 419 });
@@ -696,4 +670,424 @@ test('applyExternalToken updates CSRF tokens, Echo headers, retires stale tokens
     const headers = { 'X-CSRF-TOKEN': 'stale-token' };
     await child.win.fetch('/action', { method: 'POST', headers });
     assert.equal(headers['X-CSRF-TOKEN'], 'fresh-token');
+});
+
+test('an unknown answer keeps the page and the dialog message so the user can retry', async () => {
+    for (const reply of [new TypeError('offline'), { status: 503, body: null }, { status: 429, body: { message: 'Too Many Attempts.' } }]) {
+        const f = fixture({ session: RESUMABLE, answers: [CONFIRMED], dom: tokenDom(), fetchImpl: statusServer(reply).impl });
+        f.api.handleActionResponse({ status: 419 });
+        await flush();
+        assert.deepEqual(f.redirects, []);
+        assert.deepEqual(f.validation, ['failed copy'], 'shown inside the dialog');
+    }
+});
+
+test('proactive deadline timer verifies passively, opens native ERP modal with reason, and broadcasts expiry to sibling tabs', async (t) => {
+    let now = 10_000_000;
+    t.mock.method(Date, 'now', () => now);
+    const scheduled = [];
+    const modalOpens = [];
+    const server = statusServer({ status: 401, body: { authenticated: false, reason: 'idle_timeout' } });
+
+    const session = {
+        ...RESUMABLE,
+        heartbeatUrl: `${ORIGIN}/session/heartbeat`,
+        timing: {
+            idle_timeout_seconds: 60,
+            idle_remaining_seconds: 60,
+            absolute_timeout_seconds: 3600,
+            absolute_remaining_seconds: 3600,
+            heartbeat_interval_seconds: 30,
+        },
+    };
+    const f = fixture({ session, fetchImpl: server.impl, dom: tokenDom() });
+    f.api.destroy();
+
+    // Re-boot with controlled setTimeout and native AdasiSessionModal stub.
+    const win = new EventTarget();
+    const doc = Object.assign(new EventTarget(), {
+        documentElement: { dataset: {} },
+        visibilityState: 'visible',
+        querySelector: () => null,
+        querySelectorAll: () => [],
+    });
+    const sent = [];
+    Object.assign(win, {
+        Event,
+        AdasiSession: session,
+        AdasiLoginUrl: `${ORIGIN}/login`,
+        location: { href: PAGE_URL, origin: ORIGIN, assign: () => {} },
+        AdasiI18n: { t: (key) => key },
+        fetch: server.impl,
+        setTimeout: (fn, ms) => { const handle = { fn, ms, cleared: false }; scheduled.push(handle); return handle; },
+        clearTimeout: (handle) => { if (handle) handle.cleared = true; },
+        AdasiSessionModal: {
+            open: (options) => {
+                modalOpens.push(options);
+                return new Promise(() => {});
+            },
+        },
+        BroadcastChannel: class extends EventTarget {
+            postMessage(msg) { sent.push(msg); }
+        },
+    });
+
+    const api = bootSessionSync(win, doc);
+    assert.equal(scheduled.length, 1);
+    assert.equal(scheduled[0].ms, 61_500);
+
+    now += 61_500;
+    scheduled[0].fn();
+    await flush();
+
+    assert.equal(server.calls.length, 1);
+    assert.match(server.calls[0].url, /\/session\/status\?passive=1$/);
+    assert.equal(server.calls[0].init.headers['X-Adasi-Session-Check'], 'passive');
+    assert.equal(modalOpens.length, 1);
+    assert.equal(modalOpens[0].reason, 'idle_timeout');
+    assert.equal(modalOpens[0].isDirty, false);
+    assert.deepEqual(modalOpens[0].dirtyTabs, []);
+    assert.deepEqual(sent, [{ type: 'session-expired', userId: 41, reason: 'idle_timeout' }]);
+    api.destroy();
+});
+
+test('real activity in embedded iframe and top shell sends throttled heartbeat and slides idle timer', async (t) => {
+    let now = 20_000_000;
+    t.mock.method(Date, 'now', () => now);
+    const requests = [];
+    const fetchImpl = async (input, init) => {
+        requests.push({ url: String(input), init });
+        return {
+            status: 200,
+            ok: true,
+            url: String(input),
+            redirected: false,
+            json: async () => ({
+                ok: true,
+                idle_timeout_seconds: 120,
+                idle_remaining_seconds: 120,
+                absolute_timeout_seconds: 3600,
+                absolute_remaining_seconds: 3500,
+                heartbeat_interval_seconds: 30,
+            }),
+        };
+    };
+
+    const session = {
+        ...RESUMABLE,
+        heartbeatUrl: `${ORIGIN}/session/heartbeat`,
+        timing: {
+            idle_timeout_seconds: 120,
+            idle_remaining_seconds: 120,
+            absolute_timeout_seconds: 3600,
+            absolute_remaining_seconds: 3600,
+            heartbeat_interval_seconds: 30,
+        },
+    };
+    const top = fixture({ session, dom: tokenDom('live-csrf'), fetchImpl });
+    const child = fixture({ session, embed: true, parentWin: top.win, topWin: top.win });
+
+    // Early activity (< 30s) broadcasts activity without hitting heartbeat yet.
+    now += 10_000;
+    child.doc.dispatchEvent(new Event('keydown'));
+    await flush();
+    assert.equal(requests.length, 0);
+    assert.equal(top.sent.some((m) => m.type === 'activity' && m.userId === 41), true);
+
+    // After heartbeat interval (>= 30s), real activity triggers POST /session/heartbeat with CSRF token.
+    now += 25_000;
+    child.doc.dispatchEvent(new Event('pointerdown'));
+    await flush();
+    assert.equal(requests.length, 1);
+    assert.equal(requests[0].url, `${ORIGIN}/session/heartbeat`);
+    assert.equal(requests[0].init.method, 'POST');
+    assert.equal(requests[0].init.headers['X-CSRF-TOKEN'], 'live-csrf');
+
+    top.api.destroy();
+    child.api.destroy();
+});
+
+test('visibilitychange after passing deadline immediately checks server expiry without waiting for polling', async (t) => {
+    let now = 30_000_000;
+    t.mock.method(Date, 'now', () => now);
+    const server = statusServer({ status: 401, body: { authenticated: false, reason: 'idle_timeout' } });
+    const session = {
+        ...RESUMABLE,
+        heartbeatUrl: `${ORIGIN}/session/heartbeat`,
+        timing: {
+            idle_timeout_seconds: 60,
+            idle_remaining_seconds: 60,
+            absolute_timeout_seconds: 3600,
+            absolute_remaining_seconds: 3600,
+            heartbeat_interval_seconds: 30,
+        },
+    };
+    const f = fixture({ session, dom: tokenDom(), fetchImpl: server.impl, answers: [DECLINED] });
+    f.doc.visibilityState = 'hidden';
+    f.doc.dispatchEvent(new Event('visibilitychange'));
+
+    // Simulate laptop sleep past idle timeout.
+    now += 120_000;
+    f.doc.visibilityState = 'visible';
+    f.doc.dispatchEvent(new Event('visibilitychange'));
+    await flush();
+
+    assert.equal(server.calls.length, 1);
+    assert.match(server.calls[0].url, /\/session\/status\?passive=1$/);
+    assert.equal(f.prompts.length, 1);
+    f.api.destroy();
+});
+
+test('dirty workspace shell iframe tabs are forwarded to native modal and force-reconnect bypasses refusal cooldown', async (t) => {
+    let now = 40_000_000;
+    t.mock.method(Date, 'now', () => now);
+    const modalCalls = [];
+    const server = statusServer({ status: 200, body: { authenticated: true, user_id: 41, csrf_token: 'restored-csrf' } });
+    const dom = tokenDom('stale-csrf');
+    const iframeStub = { contentWindow: null };
+    const f = fixture({ session: RESUMABLE, dom, fetchImpl: server.impl, iframes: [iframeStub] });
+    const child = fixture({ session: RESUMABLE, dom: tokenDom('stale-csrf'), embed: true, parentWin: f.win, topWin: f.win });
+    iframeStub.contentWindow = child.win;
+
+    let closeCalls = 0;
+    f.win.AdasiWorkspaceShell = {
+        getDirtyFrames: () => [{ frameId: 'f-2', title: 'Create Purchase Requisition', url: `${ORIGIN}/purchasing/pr/create` }],
+    };
+    f.win.AdasiSessionModal = {
+        open: async (options) => {
+            modalCalls.push(options);
+            if (modalCalls.length === 1) {
+                return { isConfirmed: false, isDismissed: true, dismiss: 'cancel' };
+            }
+            const outcome = await options.onReconnect();
+            return { isConfirmed: true, isDismissed: false, value: outcome };
+        },
+        close: () => { closeCalls += 1; },
+    };
+
+    f.api.handlePollResponse({ status: 401 });
+    await flush();
+    assert.equal(modalCalls.length, 1);
+    assert.equal(modalCalls[0].isDirty, true);
+    assert.deepEqual(modalCalls[0].dirtyTabs, [{ frameId: 'f-2', title: 'Create Purchase Requisition' }]);
+    assert.equal(f.api.isSessionExpired(), true);
+
+    // Clicking "Sign In Again" on the reminder bar passes force: true and restores CSRF in top shell + child iframe.
+    await f.api.requestReconnect(false, { force: true, autoConfirm: true });
+    await flush();
+    assert.equal(modalCalls.length, 2);
+    assert.equal(dom.meta.getAttribute('content'), 'restored-csrf');
+    assert.equal(f.api.isSessionExpired(), false);
+    assert.ok(closeCalls >= 1);
+});
+
+test('login page rendered inside a same-origin iframe does not clear storage or broadcast signed-out', () => {
+    const parentWin = { location: { origin: ORIGIN } };
+    const f = fixture({
+        session: null,
+        login: { dataset: { sessionCrossTab: '1', sessionCleanup: '1' } },
+        initialStorage: [PENDING_EXPORT_STORAGE_KEY],
+        embed: true,
+        parentWin,
+        topWin: parentWin,
+    });
+    assert.deepEqual(f.sent, []);
+    assert.equal(f.values.has(PENDING_EXPORT_STORAGE_KEY), true);
+});
+
+test('adasiSessionModal enforces hard-lock on clean pages and adaptive reminder bar on dirty pages', async () => {
+    const { adasiSessionModal } = await import('../../resources/js/session-expired-modal.js');
+    const prevDocument = globalThis.document;
+    const prevWindow = globalThis.window;
+    const bodyClasses = new Set();
+    const focused = [];
+    const primaryBtn = { focus: () => focused.push('primary'), hidden: false };
+    const stayBtn = { focus: () => focused.push('stay'), hidden: false };
+    const reminderBtn = { focus: () => focused.push('reminder'), hidden: false };
+    const panel = {
+        focus: () => focused.push('panel'),
+        contains: (node) => node === primaryBtn || node === stayBtn,
+        querySelectorAll: () => [stayBtn, primaryBtn],
+    };
+
+    globalThis.document = {
+        activeElement: primaryBtn,
+        body: { classList: { toggle: (name, on) => (on ? bodyClasses.add(name) : bodyClasses.delete(name)) } },
+        contains: () => false,
+    };
+    globalThis.window = { AdasiSessionSync: { requestReconnect: () => {} } };
+
+    try {
+        const modal = adasiSessionModal({
+            reasonIdle: 'Idle timeout',
+            reasonAbsolute: 'Absolute timeout',
+            descriptionClean: 'Clean desc',
+            descriptionDirty: 'Dirty desc',
+            failed: 'Network error',
+        });
+        modal.$refs = { panel, reconnectButton: primaryBtn, reminderAction: reminderBtn };
+        modal.$watch = () => {};
+        modal.$nextTick = (cb) => cb();
+        modal.init();
+
+        // Clean page: Escape is blocked, dialog remains open.
+        const cleanPromise = modal.openModal({ reason: 'idle_timeout', isDirty: false, dirtyTabs: [] });
+        assert.equal(modal.open, true);
+        assert.equal(modal.reasonText, 'Idle timeout');
+        assert.equal(modal.descriptionText, 'Clean desc');
+        let escapedPrevented = false;
+        modal.handleEscape({ preventDefault: () => { escapedPrevented = true; }, stopPropagation: () => {} });
+        assert.equal(escapedPrevented, true);
+        assert.equal(modal.open, true, 'clean modal stays hard-locked on Escape');
+        modal.dismissToReminderBar();
+        assert.equal(modal.open, true, 'dismiss is a no-op when clean');
+
+        // Dirty page: failed reconnect keeps modal open with inline error, Escape dismisses to reminder bar.
+        const dirtyPromise = modal.openModal({
+            reason: 'absolute_timeout',
+            isDirty: true,
+            dirtyTabs: [{ frameId: 'f-1', title: 'Invoice Form' }],
+            onReconnect: async () => { throw new Error('Portal unreachable'); },
+        });
+        await cleanPromise;
+        assert.equal(modal.reasonText, 'Absolute timeout');
+        assert.equal(modal.descriptionText, 'Dirty desc');
+        await modal.triggerReconnect();
+        assert.equal(modal.open, true);
+        assert.equal(modal.busy, false);
+        assert.equal(modal.errorMessage, 'Portal unreachable');
+
+        modal.handleEscape({ preventDefault: () => {}, stopPropagation: () => {} });
+        const dirtyResult = await dirtyPromise;
+        assert.equal(dirtyResult.isDismissed, true);
+        assert.equal(modal.open, false);
+        assert.equal(modal.showReminderBar, true);
+
+        // Secondary "Sign In Again" button or non-reconnectable reason triggers login redirect.
+        const loginPromise = modal.openModal({
+            reason: 'absolute_timeout',
+            reconnectable: false,
+            isDirty: false,
+            onLoginRedirect: () => `${PAGE_URL}?reauth=1`,
+        });
+        assert.equal(modal.reconnectable, false);
+        modal.triggerPrimaryAction();
+        const loginResult = await loginPromise;
+        assert.equal(loginResult.isConfirmed, true);
+        assert.deepEqual(loginResult.value, { url: `${PAGE_URL}?reauth=1` });
+    } finally {
+        globalThis.document = prevDocument;
+        globalThis.window = prevWindow;
+    }
+});
+
+test('1-click server-side reconnect posts to reconnectUrl with X-Adasi-Reconnect header and restores in place without page reload', async () => {
+    const RECONNECT_URL = `${ORIGIN}/session/reconnect`;
+    const calls = [];
+    const fetchImpl = async (input, init) => {
+        calls.push({ url: String(input), init });
+        return {
+            status: 200,
+            ok: true,
+            url: RECONNECT_URL,
+            redirected: false,
+            json: async () => ({
+                ok: true,
+                authenticated: true,
+                user_id: 41,
+                csrf_token: 'reconnected-server-csrf',
+                idle_timeout_seconds: 3600,
+                idle_remaining_seconds: 3600,
+                absolute_timeout_seconds: 28800,
+                absolute_remaining_seconds: 25000,
+                heartbeat_interval_seconds: 120,
+            }),
+        };
+    };
+
+    const dom = tokenDom('expired-csrf');
+    const session = { ...RESUMABLE, reconnectUrl: RECONNECT_URL };
+    const f = fixture({ session, answers: [CONFIRMED], dom, fetchImpl });
+
+    f.api.handlePollResponse({ status: 401 });
+    await flush();
+
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].url, RECONNECT_URL);
+    assert.equal(calls[0].init.method, 'POST');
+    assert.equal(calls[0].init.headers['X-Adasi-Reconnect'], '1');
+    assert.equal(calls[0].init.headers['X-Requested-With'], 'XMLHttpRequest');
+    assert.deepEqual(f.redirects, [], 'reconnects in place with zero page reload');
+    assert.equal(dom.meta.getAttribute('content'), 'reconnected-server-csrf');
+    assert.equal(f.api.isSessionExpired(), false);
+    assert.deepEqual(f.toasts, [{ type: 'success', text: 'restored copy' }]);
+});
+
+test('clicking secondary Sign In Again button in native modal navigates to reauth URL to open login page', async () => {
+    const dom = tokenDom('expired-csrf');
+    const f = fixture({ session: RESUMABLE, dom });
+    f.win.AdasiSessionModal = {
+        open: async (options) => ({
+            isConfirmed: true,
+            isDismissed: false,
+            value: { url: options.onLoginRedirect() },
+        }),
+    };
+
+    f.api.handlePollResponse({ status: 401 });
+    await flush();
+
+    assert.deepEqual(f.redirects, [`${PAGE_URL}?reauth=1`]);
+    assert.equal(f.disconnects(), 1);
+});
+
+test('in-flight 401 fetch responses started before reconnect finishes are ignored and do not reopen the modal', async () => {
+    const RECONNECT_URL = `${ORIGIN}/session/reconnect`;
+    let resolveLatePoll;
+    const latePollPromise = new Promise((resolve) => {
+        resolveLatePoll = resolve;
+    });
+
+    const fetchImpl = (input) => {
+        const url = String(input);
+        if (url === `${ORIGIN}/late-action`) {
+            return latePollPromise;
+        }
+        if (url === RECONNECT_URL) {
+            return Promise.resolve({
+                status: 200,
+                ok: true,
+                url: RECONNECT_URL,
+                redirected: false,
+                json: async () => ({
+                    ok: true,
+                    authenticated: true,
+                    user_id: 41,
+                    csrf_token: 'epoch-2-csrf',
+                }),
+            });
+        }
+        return Promise.resolve({ status: 200, ok: true, url });
+    };
+
+    const dom = tokenDom('epoch-1-csrf');
+    const session = { ...RESUMABLE, reconnectUrl: RECONNECT_URL };
+    const f = fixture({ session, answers: [CONFIRMED], dom, fetchImpl });
+
+    // Start an in-flight request BEFORE the session is reconnected.
+    const inFlight = f.win.fetch(`${ORIGIN}/late-action`);
+
+    // Modal opens and user clicks Reconnect -> sessionEpoch advances.
+    f.api.handlePollResponse({ status: 401 });
+    await flush();
+    assert.equal(f.prompts.length, 1);
+    assert.equal(f.api.isSessionExpired(), false);
+    assert.equal(dom.meta.getAttribute('content'), 'epoch-2-csrf');
+
+    // Now the stale in-flight request resolves with 401 -> must NOT reopen the modal.
+    resolveLatePoll({ status: 401, ok: false, url: `${ORIGIN}/late-action` });
+    await inFlight;
+    await flush();
+    assert.equal(f.prompts.length, 1, 'stale pre-reconnect 401 must not reopen modal');
+    assert.equal(f.api.isSessionExpired(), false);
 });

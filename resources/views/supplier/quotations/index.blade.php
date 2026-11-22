@@ -35,7 +35,7 @@
                     <th scope="col" class="text-center">{{ __('supplier.copy.awaiting_quotation') }}</th>
                     <th scope="col" class="text-center">{{ __('supplier.copy.submitted_quotations') }}</th>
                     <th scope="col" class="text-center">{{ __('supplier.copy.rejected_quotations') }}</th>
-                    <th scope="col" class="tw:w-44 text-end pe-3">{{ __('supplier.copy.action') }}</th>
+                    <th scope="col" class="tw:w-44 tw:text-right text-end pe-3">{{ __('common.table.action') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -80,11 +80,11 @@
                                 <span class="tw:text-on-surface-variant">-</span>
                             @endif
                         </td>
-                        <td class="text-end pe-3">
-                            <x-ui.button :href="route('supplier.quotations.period', $period->id)" size="sm" variant="outline">
-                                <span>{{ __('supplier.copy.view_requisitions') }}</span>
-                                <x-ui.icon name="arrow-right" size="sm" />
-                            </x-ui.button>
+                        <td class="tw:text-right text-end pe-3">
+                            <x-ui.row-action
+                                :href="route('supplier.quotations.period', $period->id)"
+                                :context="$period->display_label"
+                            />
                         </td>
                     </tr>
                 @endforeach

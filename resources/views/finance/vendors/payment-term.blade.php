@@ -10,7 +10,7 @@
         :description="$company"
     >
         <x-slot:actions>
-            <x-ui.button :href="route('finance.vendor-master.show', $vendor)" variant="ghost" size="sm">
+            <x-ui.button :href="route('finance.vendor-master.show', $vendor)" variant="outline" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>{{ __('local_procurement.payment_term.back') }}</span>
             </x-ui.button>

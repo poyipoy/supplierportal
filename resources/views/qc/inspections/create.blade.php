@@ -46,7 +46,7 @@
         :description="__('qc.copy.verify_dimensions_weight_and_visual_appearance_against_purchase_specifications_mark_ok_or_ng_per_ite')"
     >
         <x-slot:actions>
-            <x-ui.button :href="route('qc.inspections.index')" variant="ghost" size="sm">
+            <x-ui.button :href="route('qc.inspections.index')" variant="outline" size="sm">
                 <x-ui.icon name="arrow-left" />
                 <span>{{ __('qc.copy.back_to_inspection_list') }}</span>
             </x-ui.button>

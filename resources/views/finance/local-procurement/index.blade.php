@@ -224,7 +224,7 @@
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold text-end">{{ __('local_procurement.register.gr_actual') }}</th>
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold text-center">{{ __('local_invoice.labels.status') }}</th>
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold text-center">{{ __('local_invoice.labels.source') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold text-end">{{ __('local_invoice.labels.actions') }}</th>
+                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-right text-end">{{ __('common.table.action') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -287,11 +287,11 @@
                                     {{ __('local_procurement.sources.'.strtolower($po->source ?: 'MANUAL')) }}
                                 </span>
                             </td>
-                            <td class="text-end">
-                                <x-ui.button :href="route($routePrefix.'.show', $po)" size="sm" variant="outline">
-                                    <x-ui.icon name="eye" size="sm" />
-                                    <span>{{ __('local_invoice.actions.detail') }}</span>
-                                </x-ui.button>
+                            <td class="tw:text-right text-end">
+                                <x-ui.row-action
+                                    :href="route($routePrefix.'.show', $po)"
+                                    :context="$po->po_number"
+                                />
                             </td>
                         </tr>
                     @empty

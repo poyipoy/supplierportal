@@ -11,6 +11,7 @@ use App\Services\Auth\PasswordHistoryService;
 use App\Services\Auth\RememberTokenService;
 use App\Services\NotificationService;
 use App\Support\BusinessTime;
+use App\Support\Ui\RowAction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -60,7 +61,9 @@ class UserController extends Controller
                 ->addColumn('created_date', fn ($user) => BusinessTime::format($user->created_at, 'd M Y', false))
                 ->addColumn('action', function ($user) {
                     $html = '<div class="d-inline-flex align-items-center gap-1">'
-                        .'<a href="'.route('admin.users.edit', $user).'" class="ui-data-action ui-data-action--primary ui-focus-ring" aria-label="'.e(__('purchasing.action_names.edit', ['name' => $user->name])).'">'.e(__('admin.copy.edit')).'</a>';
+                        .RowAction::link(route('admin.users.edit', $user), __('admin.copy.edit'), 'primary', $user->name, [
+                            'aria-label' => __('admin.copy.edit').' - '.__('purchasing.action_names.edit', ['name' => $user->name]),
+                        ]);
                     if ($user->id !== auth()->id()) {
                         $html .= '<div class="dropdown">'
                             .'<button type="button" class="ui-data-action ui-focus-ring dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="'.e(__('purchasing.action_names.more_actions_for', ['name' => $user->name])).'">'.e(__('admin.copy.more')).'</button>'

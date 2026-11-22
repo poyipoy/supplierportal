@@ -389,17 +389,17 @@ class TargetedAuthenticationCorrectnessTest extends TestCase
         return [['/profile/security'], ['/two-factor-challenge']];
     }
 
-    // Changed 6 Nov 2026 (session-ended dialog): a credentialed JSON request no longer just
-    // terminates; like the HTML path (A10) it rotates the cookie and stages a code-only challenge,
-    // so "Reconnect" needs no password. The JSON URL never becomes the post-MFA destination.
-    public function test_a11_recalled_mfa_json_is_refused_but_stages_the_code_challenge_and_non_mfa_recall_is_preserved(): void
+    // Enterprise ERP / OWASP policy: credentialed JSON requests never silently resurrect
+    // a session or stage an MFA challenge from a Remember-Me cookie; top-level HTML recall
+    // (A10 for MFA, /dashboard for non-MFA) remains preserved.
+    public function test_a11_recalled_mfa_json_is_refused_without_staging_challenge_and_html_recall_is_preserved(): void
     {
         $user = $this->mfaUser();
         $rememberToken = $user->remember_token;
-        $this->withCredentials()->withCookie(...$this->recaller($user))->getJson('/two-factor-challenge')->assertUnauthorized()
-            ->assertSessionHas(TwoFactorService::PENDING_LOGIN_KEY, fn (array $pending): bool => $pending['user_id'] === $user->id
-                && $pending['remember'] === true
-                && $pending['intended'] === route('dashboard', absolute: false));
+        $this->withCredentials()->withCookie(...$this->recaller($user))->getJson('/two-factor-challenge')
+            ->assertUnauthorized()
+            ->assertJson(['authenticated' => false, 'reason' => 'idle_timeout'])
+            ->assertSessionMissing(TwoFactorService::PENDING_LOGIN_KEY);
         $this->assertGuest();
         $this->assertNotSame($rememberToken, $user->fresh()->remember_token);
         $plain = User::factory()->create(['role' => 'admin']);

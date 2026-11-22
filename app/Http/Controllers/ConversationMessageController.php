@@ -264,10 +264,6 @@ class ConversationMessageController extends Controller
      */
     public function unreadCount()
     {
-        if (session()->isStarted()) {
-            session()->save();
-        }
-
         $userId = auth()->id();
         $count = Message::query()
             ->where('sender_id', '!=', $userId)

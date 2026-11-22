@@ -13,9 +13,9 @@
         :description="__('purchasing.copy.track_supplier_orders_reference_requisitions_arrival_targets_and_workflow_statuses')"
     >
         <x-slot:actions>
-            <x-ui.button :href="route('purchasing.purchase-orders.consolidate-awards')" size="sm">{{ __('purchasing.copy.consolidate_selected_items') }}</x-ui.button>
             <x-export.advanced-modal export-key="purchasing.po" :action="route('purchasing.export.purchase-orders')" :suppliers="$suppliers"
-                :filter-selectors="['po_number' => '#filter_po_number', 'status' => '#filter_status', 'supplier_id' => '#filter_supplier']" table="#poTable" trigger-id="exportPurchaseOrdersBtn" />
+                :filter-selectors="['search' => '#filter_po_number', 'status' => '#filter_status', 'supplier_id' => '#filter_supplier']" table="#poTable" trigger-id="exportPurchaseOrdersBtn" />
+            <x-ui.button :href="route('purchasing.purchase-orders.consolidate-awards')" size="sm">{{ __('purchasing.copy.consolidate_selected_items') }}</x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>
 
@@ -28,7 +28,7 @@
         :reset-label="__('purchasing.copy.reset')"
     >
         <x-slot:search>
-            <label for="filter_po_number" class="tw:sr-only">{{ __('purchasing.copy.search_purchase_order_number') }}</label>
+            <label for="filter_po_number" class="tw:sr-only">{{ __('purchasing.copy.search_po_supplier_or_pr') }}</label>
             <x-ui.icon name="search" size="sm" class="ui-filter-bar__search-icon" aria-hidden="true" />
             <input
                 type="search"
@@ -36,7 +36,8 @@
                 class="form-control form-control-sm ui-filter-bar__search-input"
                 placeholder="{{ __('purchasing.copy.e_g_po_05_2026_001_or_supplier_name') }}"
                 autocomplete="off"
-                aria-label="{{ __('purchasing.copy.search_purchase_order_number') }}"
+                aria-label="{{ __('purchasing.copy.search_po_supplier_or_pr') }}"
+                value="{{ request('search', request('po_number')) }}"
             >
         </x-slot:search>
 
@@ -44,19 +45,19 @@
             <label for="filter_status" class="tw:sr-only">{{ __('purchasing.copy.filter_by_status') }}</label>
             <select id="filter_status" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-44" aria-label="{{ __('purchasing.copy.filter_by_status') }}">
                 <option value="">{{ __('purchasing.copy.all_statuses') }}</option>
-                <option value="active">{{ __('purchasing.copy.active') }}</option>
-                <option value="waiting_qc">{{ __('purchasing.copy.waiting_qc') }}</option>
-                <option value="claim_needed">{{ __('purchasing.copy.claim_needed') }}</option>
-                <option value="overdue">{{ __('purchasing.copy.overdue') }}</option>
-                <option value="completed">{{ __('purchasing.copy.completed') }}</option>
-                <option value="cancelled">{{ __('purchasing.copy.cancelled') }}</option>
+                <option value="active" @selected(request('status') === 'active')>{{ __('purchasing.copy.active') }}</option>
+                <option value="waiting_qc" @selected(request('status') === 'waiting_qc')>{{ __('purchasing.copy.waiting_qc') }}</option>
+                <option value="claim_needed" @selected(request('status') === 'claim_needed')>{{ __('purchasing.copy.claim_needed') }}</option>
+                <option value="overdue" @selected(request('status') === 'overdue')>{{ __('purchasing.copy.overdue') }}</option>
+                <option value="completed" @selected(request('status') === 'completed')>{{ __('purchasing.copy.completed') }}</option>
+                <option value="cancelled" @selected(request('status') === 'cancelled')>{{ __('purchasing.copy.cancelled') }}</option>
             </select>
 
             <label for="filter_supplier" class="tw:sr-only">{{ __('purchasing.copy.filter_by_supplier') }}</label>
             <select id="filter_supplier" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-48" aria-label="{{ __('purchasing.copy.filter_by_supplier') }}">
                 <option value="">{{ __('purchasing.copy.all_suppliers_3a7a53') }}</option>
                 @foreach($suppliers as $supplier)
-                    <option value="{{ $supplier->getRouteKey() }}">{{ $supplier->name }}</option>
+                    <option value="{{ $supplier->getRouteKey() }}" @selected((string) request('supplier_id') === (string) $supplier->getRouteKey())>{{ $supplier->name }}</option>
                 @endforeach
             </select>
         </x-slot:filters>
@@ -88,7 +89,7 @@
                         <th scope="col" class="text-end">{{ __('purchasing.copy.total_idr') }}</th>
                         <th scope="col" class="text-center">{{ __('purchasing.copy.status') }}</th>
                         <th scope="col">{{ __('purchasing.copy.estimated_arrival') }}</th>
-                        <th scope="col" class="text-end" style="width: 80px;">{{ __('purchasing.copy.action') }}</th>
+                        <th scope="col" class="tw:text-right text-end" style="width: 96px;">{{ __('common.table.action') }}</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -104,11 +105,11 @@
         var table = $('#poTable').DataTable({
             processing: true,
             serverSide: true,
-            search: { search: new URL(window.location.href).searchParams.get('search') || '' },
+            dom: 'rtip',
+            search: { search: @json((string) request('search', request('po_number', ''))) },
             ajax: {
                 url: '{{ route("purchasing.purchase-orders.index") }}',
                 data: function (d) {
-                    d.po_number = $('#filter_po_number').val();
                     d.status = $('#filter_status').val();
                     d.supplier_id = $('#filter_supplier').val();
                     d.start_date = new URL(window.location.href).searchParams.get('start_date');
@@ -138,11 +139,11 @@
         // Filter bar live bindings
         window.AdasiFilterBar.bindLive('#poFilterBar', {
             fields: [
-                { key: 'po_number', label: @json(__('purchasing.copy.po_number')), selector: '#filter_po_number', type: 'search' },
+                { key: 'search', label: @json(__('purchasing.copy.search')), selector: '#filter_po_number', type: 'search' },
                 { key: 'status', label: @json(__('purchasing.copy.status')), selector: '#filter_status', type: 'select' },
                 { key: 'supplier_id', label: @json(__('purchasing.copy.supplier')), selector: '#filter_supplier', type: 'select' },
             ],
-            onFilterChange: () => table.draw(),
+            onFilterChange: () => table.search($('#filter_po_number').val() || '').draw(),
         });
 
     });

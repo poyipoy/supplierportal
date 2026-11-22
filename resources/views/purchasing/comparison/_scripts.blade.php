@@ -873,7 +873,7 @@
                 if (hasOverflow) {
                     const toggleBtn = document.createElement('button');
                     toggleBtn.type = 'button';
-                    toggleBtn.className = 'btn btn-link btn-sm p-0 tw:mt-1.5 tw:text-ui-xs tw:font-semibold text-decoration-none';
+                    toggleBtn.className = 'ui-focus-ring tw:border-0 tw:bg-transparent tw:p-0 tw:mt-1.5 tw:text-ui-xs tw:font-semibold tw:text-primary-text tw:hover:underline tw:cursor-pointer';
                     toggleBtn.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
                     toggleBtn.textContent = isExpanded
                         ? previewI18n.showLess
@@ -1424,10 +1424,10 @@
                             ? `<a href="${escapeOptionText(row.pr_url)}" class="text-primary text-decoration-none tw:hover:underline">${escapeOptionText(row.pr_number || '-')} →</a>`
                             : escapeOptionText(row.pr_number || '-')}
                     </td>
-                    <td class="text-center fw-semibold">${escapeOptionText(row.material_name || payload.materialName || '-')}</td>
+                    <td class="text-center fw-semibold ui-col-data-name">${escapeOptionText(row.material_name || payload.materialName || '-')}</td>
                     <td class="text-center ui-tabular-nums">${escapeOptionText(row.dimension_display || '-')}</td>
                     <td class="text-center"><span class="ui-status-chip ui-status-chip--neutral">${escapeOptionText(row.range_classification || '-')}</span></td>
-                    <td class="text-center">${escapeOptionText(row.supplier || '-')}</td>
+                    <td class="text-center ui-col-data-name">${escapeOptionText(row.supplier || '-')}</td>
                     <td class="text-end ui-tabular-nums">${formatMaxDecimals(row.price_per_kg, 4)} <span class="ui-status-chip ui-status-chip--neutral tw:ms-1">${escapeOptionText(row.currency)}</span><div class="tw:text-ui-xs tw:text-on-surface-variant">${escapeOptionText(row.annual_price_display || '')}</div></td>
                     <td class="text-end text-primary fw-bold ui-tabular-nums">${formatRupiah(row.total_idr)}</td>
                     <td class="text-center">${row.purchase_order_at_display ? escapeOptionText(row.purchase_order_at_display) : '<span class="ui-status-chip ui-status-chip--neutral">' + escapeOptionText(@json(__('purchasing.copy.draft'))) + '</span>'}</td>
@@ -1858,7 +1858,7 @@
                     }
                 },
                 columns: [
-                    { data: 'material_display', name: 'current_pr_items.material_name', className: 'text-start ui-sticky-col' },
+                    { data: 'material_display', name: 'current_pr_items.material_name', className: 'text-start ui-sticky-col ui-col-data-name' },
                     { data: 'current_price_display', name: 'current_price_idr', className: 'text-end', searchable: false },
                     { data: 'best_price_display', name: 'best_price_idr', className: 'text-end', searchable: false },
                     { data: 'diff_display', name: 'diff_idr_per_kg', className: 'text-center', searchable: false },

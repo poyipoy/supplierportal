@@ -13,8 +13,10 @@
     $variants = [
         'primary' => 'tw:border-transparent tw:bg-primary tw:text-primary-foreground tw:hover:brightness-95 tw:active:brightness-90',
         'secondary' => 'tw:border-outline-variant tw:bg-secondary-container tw:text-secondary-container-foreground tw:hover:brightness-95 tw:active:brightness-90',
-        'outline' => 'tw:border-outline tw:bg-transparent tw:text-on-surface tw:hover:bg-surface-container tw:active:bg-surface-high',
-        'ghost' => 'tw:border-transparent tw:bg-transparent tw:text-on-surface tw:hover:bg-surface-container tw:active:bg-surface-high',
+        'outline' => 'tw:border-outline-strong tw:bg-surface tw:text-on-surface tw:hover:bg-surface-container tw:active:bg-surface-high',
+        'outline-primary' => 'tw:border-primary-text tw:bg-surface tw:text-primary-text tw:hover:bg-primary-container tw:hover:text-primary-container-foreground tw:active:bg-primary-container tw:active:brightness-95',
+        'danger-outline' => 'tw:border-error tw:bg-surface tw:text-error tw:hover:bg-error-container tw:hover:text-error-container-foreground tw:active:bg-error-container tw:active:brightness-95',
+        'ghost' => 'tw:border-transparent tw:bg-transparent tw:text-on-surface-variant tw:hover:bg-surface-container tw:hover:text-on-surface tw:active:bg-surface-high',
         'danger' => 'tw:border-transparent tw:bg-error tw:text-error-foreground tw:hover:brightness-95 tw:active:brightness-90',
     ];
 

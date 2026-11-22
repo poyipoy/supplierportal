@@ -10,15 +10,16 @@
 
 @php
     $variants = [
-        'ghost' => 'tw:border-transparent tw:bg-transparent tw:text-on-surface-variant tw:hover:bg-surface-container tw:hover:text-on-surface',
-        'outline' => 'tw:border-outline tw:bg-transparent tw:text-on-surface tw:hover:bg-surface-container tw:hover:text-on-surface',
-        'secondary' => 'tw:border-outline-variant tw:bg-secondary-container tw:text-secondary-container-foreground tw:hover:brightness-95',
-        'secondary-outline' => 'tw:border-slate-300 tw:bg-white tw:text-slate-700 tw:hover:bg-slate-100 tw:hover:border-slate-400 tw:focus-visible:ring-2 tw:focus-visible:ring-slate-400 tw:shadow-2xs',
-        'primary' => 'tw:border-transparent tw:bg-primary tw:text-primary-foreground tw:hover:brightness-95',
-        'danger' => 'tw:border-transparent tw:bg-error-container tw:text-error-container-foreground tw:hover:brightness-95',
-        'warning-outline' => 'tw:border-amber-300 tw:bg-amber-50 tw:text-amber-800 tw:hover:bg-amber-100 tw:hover:border-amber-400 tw:focus-visible:ring-2 tw:focus-visible:ring-amber-500 tw:shadow-2xs',
-        'success-outline' => 'tw:border-emerald-300 tw:bg-emerald-50 tw:text-emerald-800 tw:hover:bg-emerald-100 tw:hover:border-emerald-400 tw:focus-visible:ring-2 tw:focus-visible:ring-emerald-500 tw:shadow-2xs',
-        'danger-outline' => 'tw:border-red-300 tw:bg-red-50 tw:text-red-700 tw:hover:bg-red-100 tw:hover:border-red-400 tw:focus-visible:ring-2 tw:focus-visible:ring-red-500 tw:shadow-2xs',
+        'ghost' => 'tw:border-transparent tw:bg-transparent tw:text-on-surface-variant tw:hover:bg-surface-container tw:hover:text-on-surface tw:active:bg-surface-high',
+        'outline' => 'tw:border-outline-strong tw:bg-surface tw:text-on-surface tw:hover:bg-surface-container tw:hover:text-on-surface tw:active:bg-surface-high',
+        'outline-primary' => 'tw:border-primary-text tw:bg-surface tw:text-primary-text tw:hover:bg-primary-container tw:hover:text-primary-container-foreground tw:active:bg-primary-container tw:active:brightness-95',
+        'secondary' => 'tw:border-outline-variant tw:bg-secondary-container tw:text-secondary-container-foreground tw:hover:brightness-95 tw:active:brightness-90',
+        'secondary-outline' => 'tw:border-outline-strong tw:bg-surface tw:text-on-surface tw:hover:bg-surface-container tw:hover:text-on-surface tw:active:bg-surface-high',
+        'primary' => 'tw:border-transparent tw:bg-primary tw:text-primary-foreground tw:hover:brightness-95 tw:active:brightness-90',
+        'danger' => 'tw:border-transparent tw:bg-error-container tw:text-error-container-foreground tw:hover:brightness-95 tw:active:brightness-90',
+        'warning-outline' => 'tw:border-warning-container-foreground tw:bg-surface tw:text-warning-container-foreground tw:hover:bg-warning-container tw:active:bg-warning-container tw:active:brightness-95',
+        'success-outline' => 'tw:border-success-container-foreground tw:bg-surface tw:text-success-container-foreground tw:hover:bg-success-container tw:active:bg-success-container tw:active:brightness-95',
+        'danger-outline' => 'tw:border-error tw:bg-surface tw:text-error tw:hover:bg-error-container tw:hover:text-error-container-foreground tw:active:bg-error-container tw:active:brightness-95',
     ];
 
     $sizes = [
@@ -29,7 +30,7 @@
     ];
 
     $classes = implode(' ', [
-        'ui-motion ui-focus-ring tw:relative tw:inline-flex tw:shrink-0 tw:items-center tw:justify-center tw:rounded-ui-sm tw:border tw:disabled:cursor-not-allowed tw:disabled:opacity-50',
+        'ui-icon-button ui-motion ui-focus-ring tw:relative tw:inline-flex tw:shrink-0 tw:items-center tw:justify-center tw:rounded-ui-sm tw:border tw:no-underline tw:disabled:cursor-not-allowed tw:disabled:opacity-50',
         $variants[$variant] ?? $variants['ghost'],
         $sizes[$size] ?? $sizes['md'],
     ]);

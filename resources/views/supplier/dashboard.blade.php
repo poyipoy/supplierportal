@@ -66,7 +66,7 @@
                             <th scope="col">{{ __('supplier.copy.period') }}</th>
                             <th scope="col" class="text-center">{{ __('supplier.copy.items') }}</th>
                             <th scope="col">{{ __('supplier.copy.date_issued') }}</th>
-                            <th scope="col" class="text-end" style="width: 140px;">{{ __('supplier.copy.action') }}</th>
+                            <th scope="col" class="tw:text-right text-end" style="width: 140px;">{{ __('common.table.action') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -139,7 +139,7 @@
                             <th scope="col">{{ __('supplier.copy.period') }}</th>
                             <th scope="col">{{ __('supplier.copy.status') }}</th>
                             <th scope="col">{{ __('supplier.copy.po_date') }}</th>
-                            <th scope="col" class="text-end" style="width: 130px;">{{ __('supplier.copy.action') }}</th>
+                            <th scope="col" class="tw:text-right text-end" style="width: 130px;">{{ __('common.table.action') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -153,14 +153,17 @@
                                 <td class="tw:text-on-surface-variant">{{ $po->quotations->map(fn($q) => optional(optional($q->purchaseRequisition)->period)->display_label)->filter()->first() ?? '-' }}</td>
                                 <td><x-status-badge type="po" :status="$po->status" :is-overdue="$po->is_overdue" /></td>
                                 <td class="tw:text-on-surface-variant ui-tabular-nums">{{ $regionalFormatter->timestamp($po->created_at, 'date') }}</td>
-                                <td class="text-end">
+                                <td class="tw:text-right text-end">
                                     <div class="d-inline-flex gap-1 justify-content-end align-items-center">
                                         @if($pendingClaim)
                                             <x-ui.icon-button :href="route('supplier.claims.show', $pendingClaim)" icon="reply" :label="__('supplier.copy.respond_to_ng_claim')" variant="danger" size="sm" />
                                         @elseif($latestClaim)
                                             <x-ui.icon-button :href="route('supplier.claims.show', $latestClaim)" icon="octagon-alert" :label="__('supplier.copy.view_claim')" variant="danger" size="sm" />
                                         @endif
-                                        <x-ui.icon-button :href="route('supplier.purchase-orders.show', $po)" icon="eye" :label="__('supplier.copy.view_po_details')" size="sm" />
+                                        <x-ui.row-action
+                                            :href="route('supplier.purchase-orders.show', $po)"
+                                            :context="$po->po_number"
+                                        />
                                     </div>
                                 </td>
                             </tr>
@@ -196,10 +199,11 @@
                                         <span>{{ __('supplier.copy.view_claim') }}</span>
                                     </x-ui.button>
                                 @endif
-                                <x-ui.button :href="route('supplier.purchase-orders.show', $po)" variant="outline" size="sm" class="tw:w-full tw:justify-center tw:min-h-11">
-                                    <x-ui.icon name="eye" size="sm" />
-                                    <span>{{ __('supplier.copy.view_po_details') }}</span>
-                                </x-ui.button>
+                                <x-ui.row-action
+                                    :href="route('supplier.purchase-orders.show', $po)"
+                                    :context="$po->po_number"
+                                    class="tw:w-full tw:min-h-11"
+                                />
                             </x-slot:actions>
                         </x-ui.mobile-card>
                     @endforeach

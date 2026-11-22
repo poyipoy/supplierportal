@@ -672,11 +672,11 @@ function renderMobileMaterialCards() {
                 ` : ''}
 
                 <div class="tw:flex tw:items-center tw:justify-end tw:gap-2 tw:pt-1">
-                    <button type="button" class="btn btn-sm btn-outline-secondary tw:py-1 tw:px-3 tw:text-ui-xs tw:rounded-ui-xs pr-mobile-edit-btn" data-row-index="${index}">
+                    <button type="button" class="ui-data-action ui-motion ui-focus-ring tw:py-1 tw:px-3 tw:text-ui-xs pr-mobile-edit-btn" data-row-index="${index}">
                         <svg class="tw:inline-block tw:align-middle me-1" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
                         Edit
                     </button>
-                    <button type="button" class="btn btn-sm btn-outline-danger tw:py-1 tw:px-2.5 tw:text-ui-xs tw:rounded-ui-xs pr-mobile-delete-btn" data-row-index="${index}">
+                    <button type="button" class="ui-data-action ui-data-action--danger ui-motion ui-focus-ring tw:py-1 tw:px-2.5 tw:text-ui-xs pr-mobile-delete-btn" data-row-index="${index}">
                         <svg class="tw:inline-block tw:align-middle me-1" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
                         Hapus
                     </button>

@@ -86,7 +86,7 @@ class PurchasingDrpReadOnlyTest extends TestCase
         $response->assertOk();
         $response->assertSee(__('finance.drp.general_affairs'));
         $response->assertSee('DRP-GA-TEST-01');
-        $response->assertSee(__('finance.drp.batch_detail'));
+        $response->assertSee(__('common.actions.details'));
     }
 
     public function test_purchasing_can_access_drp_paid_page_in_read_only_mode(): void

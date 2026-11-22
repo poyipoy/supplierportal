@@ -10,7 +10,7 @@
         :eyebrow="__('finance.copy_review.finance_ga')"
     >
         <x-slot:actions>
-            <x-ui.button :href="route('finance.ga-claims.index')" variant="ghost" size="sm">
+            <x-ui.button :href="route('finance.ga-claims.index')" variant="outline" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>{{ __('ga.detail.back') }}</span>
             </x-ui.button>
@@ -104,9 +104,9 @@
                                     <span class="tw:text-[11px] tw:text-on-surface-variant">{{ $doc->document_type === 'supporting' ? __('ga.claims.document_supporting') : $doc->document_type }} · {{ __('local_invoice.labels.revision') }} {{ $doc->revision_number }} · {{ number_format($doc->file_size / 1024, 1) }} KB</span>
                                 </div>
                             </div>
-                            <a href="{{ route('ga-claim-documents.show', $doc) }}" target="_blank" class="btn btn-sm btn-outline-primary tw:text-xs">
+                            <x-ui.button :href="route('ga-claim-documents.show', $doc)" target="_blank" variant="outline-primary" size="sm">
                                 {{ __('local_invoice.actions.download') }}
-                            </a>
+                            </x-ui.button>
                         </div>
                     @empty
                         <div class="tw:text-center tw:py-4 tw:text-ui-xs tw:text-on-surface-variant">
@@ -171,15 +171,17 @@
 
                         {{-- Request Revision Form --}}
                         <div>
-                            <button
+                            <x-ui.button
                                 type="button"
-                                class="btn btn-outline-danger btn-sm w-100"
+                                variant="danger-outline"
+                                size="sm"
+                                class="w-100"
                                 data-bs-toggle="collapse"
                                 data-bs-target="#revisionCollapse"
                             >
                                 <x-ui.icon name="alert-circle" size="sm" />
                                 <span>{{ __('ga.verification.request_revision') }}</span>
-                            </button>
+                            </x-ui.button>
 
                             <div class="collapse tw:mt-3" id="revisionCollapse">
                                 <form method="POST" action="{{ route('finance.ga-claims.verify', $claim) }}" class="tw:space-y-2">
@@ -187,9 +189,9 @@
                                     <input type="hidden" name="approve" value="0">
                                     <label class="form-label tw:text-ui-xs tw:font-semibold">{{ __('finance.labels.revision_required') }} <span class="text-danger">*</span></label>
                                     <textarea name="reason" rows="3" class="form-control form-control-sm" required placeholder="{{ __('ga.verification.reason_example') }}"></textarea>
-                                    <button type="submit" class="btn btn-danger btn-sm w-100">
+                                    <x-ui.button type="submit" variant="danger" size="sm" class="w-100">
                                         {{ __('ga.verification.send_revision') }}
-                                    </button>
+                                    </x-ui.button>
                                 </form>
                             </div>
                         </div>

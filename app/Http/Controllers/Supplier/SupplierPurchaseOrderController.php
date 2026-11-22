@@ -15,6 +15,7 @@ use App\Services\Procurement\PoAcknowledgementService;
 use App\Services\RegionalDisplayFormatter;
 use App\Support\HashidCodec;
 use App\Support\StatusHelper;
+use App\Support\Ui\RowAction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Yajra\DataTables\Facades\DataTables;
@@ -138,11 +139,21 @@ class SupplierPurchaseOrderController extends Controller
                 ->addColumn('action', function ($po) {
                     $html = '<div class="d-inline-flex gap-1 justify-content-end flex-wrap">';
                     if ($po->pending_claim_id) {
-                        $html .= '<a href="'.route('supplier.claims.show', HashidCodec::encode((int) $po->pending_claim_id)).'" class="ui-data-action ui-data-action--danger ui-focus-ring">Claim Response</a>';
+                        $html .= RowAction::link(
+                            route('supplier.claims.show', HashidCodec::encode((int) $po->pending_claim_id)),
+                            'Claim Response',
+                            'danger',
+                            $po->po_number
+                        );
                     } elseif ($po->latest_claim_id) {
-                        $html .= '<a href="'.route('supplier.claims.show', HashidCodec::encode((int) $po->latest_claim_id)).'" class="ui-data-action ui-data-action--danger ui-focus-ring">View Claim</a>';
+                        $html .= RowAction::link(
+                            route('supplier.claims.show', HashidCodec::encode((int) $po->latest_claim_id)),
+                            'View Claim',
+                            'danger',
+                            $po->po_number
+                        );
                     }
-                    $html .= '<a href="'.route('supplier.purchase-orders.show', $po).'" class="ui-data-action ui-data-action--primary ui-focus-ring">'.e(__('supplier.copy.details')).'</a>';
+                    $html .= RowAction::detail(route('supplier.purchase-orders.show', $po), $po->po_number);
                     $html .= '</div>';
 
                     return $html;

@@ -10,7 +10,7 @@
         :eyebrow="__('ga.dashboard.operational')"
     >
         <x-slot:actions>
-            <x-ui.button :href="route('ga.claims.index')" variant="ghost" size="sm">
+            <x-ui.button :href="route('ga.claims.index')" variant="outline" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>{{ __('ga.detail.back') }}</span>
             </x-ui.button>

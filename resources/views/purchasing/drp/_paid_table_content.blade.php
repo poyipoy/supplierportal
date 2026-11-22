@@ -14,7 +14,7 @@
                     <th scope="col" class="tw:text-ui-xs tw:font-semibold text-end tw:whitespace-nowrap">{{ __('common.final_copy.net_payment_rp') }}</th>
                     <th scope="col" class="tw:text-ui-xs tw:font-semibold text-center tw:whitespace-nowrap">{{ __('local_invoice.labels.status') }}</th>
                     <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:whitespace-nowrap">{{ __('local_invoice.labels.payment_info') }}</th>
-                    <th scope="col" class="tw:text-ui-xs tw:font-semibold text-end tw:whitespace-nowrap">{{ __('local_invoice.labels.actions') }}</th>
+                    <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-right text-end tw:whitespace-nowrap">{{ __('common.table.action') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -114,11 +114,11 @@
                                 <span class="tw:text-ui-xs tw:text-on-surface-variant tw:font-medium">-</span>
                             @endif
                         </td>
-                        <td class="text-end tw:whitespace-nowrap">
-                            <x-ui.button :href="route('purchasing.drp.show', $batch)" size="sm" variant="outline">
-                                <x-ui.icon name="eye" size="sm" />
-                                <span>{{ __('local_invoice.actions.detail') }}</span>
-                            </x-ui.button>
+                        <td class="tw:text-right text-end tw:whitespace-nowrap">
+                            <x-ui.row-action
+                                :href="route('purchasing.drp.show', $batch)"
+                                :context="$batch->batch_number"
+                            />
                         </td>
                     </tr>
                 @empty

@@ -42,13 +42,24 @@ function settingsFixture(overrides = {}, draft = {}) {
         setAttribute(name, value) { this.attributes[name] = value; },
     };
     const label = { textContent: '' };
+    const densitySpec = { textContent: '' };
     const densityUnsaved = { hidden: true };
     const status = { textContent: '' };
+    const stops = densityKeys.map((key, idx) => ({
+        dataset: { densityStop: key, densityPosition: String(idx + 1) },
+        attributes: {},
+        setAttribute(name, value) { this.attributes[name] = value; },
+        closest(selector) { return selector === '[data-density-stop]' ? this : null; },
+    }));
     const root = new EventTarget();
-    root.querySelectorAll = () => [];
+    root.querySelectorAll = (selector) => {
+        if (selector === '[data-density-stop]') return stops;
+        return [];
+    };
     root.querySelector = (selector) => {
         if (selector === '[data-density-slider]') return slider;
         if (selector === '[data-density-label]') return label;
+        if (selector === '[data-density-spec]') return densitySpec;
         if (selector === '[data-density-unsaved]') return densityUnsaved;
         if (selector === '[data-settings-status]') return status;
         if (selector.endsWith(':checked')) return null;
@@ -91,7 +102,7 @@ function settingsFixture(overrides = {}, draft = {}) {
         return event;
     };
     return {
-        form, fields, slider, label, densityUnsaved, status, browser, calls, effective, navigation, emit,
+        form, fields, slider, label, densitySpec, stops, densityUnsaved, status, browser, calls, effective, navigation, emit,
         cleanup() {
             form.destroy?.();
             globalThis.window = previousWindow;
@@ -99,6 +110,30 @@ function settingsFixture(overrides = {}, draft = {}) {
         },
     };
 }
+
+test('interactive density stop buttons select density directly, update dimension spec badge, and mark active and saved stops', () => {
+    const fixture = settingsFixture({ density: 'comfortable' });
+    const { form, fields, slider, label, densitySpec, stops, effective, emit } = fixture;
+    try {
+        form.init();
+        assert.equal(stops[1].dataset.active, 'true');
+        assert.equal(stops[1].dataset.saved, 'true');
+        assert.equal(stops[3].dataset.active, 'false');
+        assert.equal(stops[3].dataset.saved, 'false');
+        assert.match(densitySpec.textContent, /40px/);
+
+        emit(stops[3], 'click');
+        assert.equal(fields.density.value, 'compact');
+        assert.equal(effective.density, 'compact');
+        assert.equal(slider.value, '4');
+        assert.equal(label.textContent, 'Compact');
+        assert.match(densitySpec.textContent, /32px/);
+        assert.equal(stops[3].dataset.active, 'true');
+        assert.equal(stops[3].attributes['aria-pressed'], 'true');
+        assert.equal(stops[1].dataset.active, 'false');
+        assert.equal(stops[1].dataset.saved, 'true', 'saved marker stays on persisted level');
+    } finally { fixture.cleanup(); }
+});
 
 test('form range input projects one canonical draft and one preview per stop', () => {
     const fixture = settingsFixture();

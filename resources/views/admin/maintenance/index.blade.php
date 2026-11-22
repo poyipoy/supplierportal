@@ -194,7 +194,7 @@
                         <th scope="col">{{ __('maintenance.table.coverage') }}</th>
                         <th scope="col">{{ __('maintenance.table.window') }}</th>
                         <th scope="col">{{ __('maintenance.table.status') }}</th>
-                        <th scope="col" class="text-end">{{ __('maintenance.table.actions') }}</th>
+                        <th scope="col" class="tw:text-right text-end">{{ __('common.table.action') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -227,11 +227,19 @@
                                 <div><span class="tw:text-ui-xs tw:text-on-surface-variant">{{ __('maintenance.fields.estimated_end') }}</span> {{ $maintenanceRecord->estimated_end_at ? BusinessTime::format($maintenanceRecord->estimated_end_at) : __('maintenance.table.not_set') }}</div>
                             </td>
                             <td><x-ui.status-chip :tone="StatusHelper::maintenanceTone($displayStatus)">{{ StatusHelper::maintenanceLabel($displayStatus) }}</x-ui.status-chip></td>
-                            <td class="text-end text-nowrap">
+                            <td class="tw:text-right text-end text-nowrap">
                                 <div class="tw:inline-flex tw:items-center tw:gap-1">
-                                    <x-ui.button :href="route('admin.maintenance.show', $maintenanceRecord)" variant="outline" size="sm">{{ __('maintenance.table.view') }}</x-ui.button>
+                                    <x-ui.row-action
+                                        :href="route('admin.maintenance.show', $maintenanceRecord)"
+                                        :context="$maintenanceRecord->title"
+                                    />
                                     @unless($maintenanceRecord->trashed())
-                                        <x-ui.button :href="route('admin.maintenance.edit', $maintenanceRecord)" variant="ghost" size="sm">{{ __('maintenance.actions.edit') }}</x-ui.button>
+                                        <x-ui.row-action
+                                            :href="route('admin.maintenance.edit', $maintenanceRecord)"
+                                            tone="neutral"
+                                            :label="__('maintenance.actions.edit')"
+                                            :context="$maintenanceRecord->title"
+                                        />
                                     @endunless
                                 </div>
                             </td>

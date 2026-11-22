@@ -138,7 +138,7 @@ export function bootLocalProcurementImports(root = document) {
         const helper = document.createElement('p');
         helper.className = 'tw:m-0 tw:text-ui-xs tw:text-on-surface-variant tw:text-pretty';
         const retry = document.createElement('button');
-        retry.type = 'button'; retry.className = 'btn btn-outline-secondary btn-sm'; retry.hidden = true;
+        retry.type = 'button'; retry.className = 'ui-data-action ui-motion ui-focus-ring'; retry.hidden = true;
         retry.textContent = t('js.local_import.retry_status');
         retry.addEventListener('click', () => poll());
         const announcer = document.createElement('div');
@@ -154,7 +154,7 @@ export function bootLocalProcurementImports(root = document) {
         const cancel = document.createElement('button');
         const reload = document.createElement('button');
         const pageLabel = document.createElement('span');
-        [previous, next, cancel, reload].forEach(button => { button.type = 'button'; button.className = 'btn btn-outline-secondary btn-sm'; });
+        [previous, next, cancel, reload].forEach(button => { button.type = 'button'; button.className = 'ui-data-action ui-motion ui-focus-ring'; });
         previous.textContent = config.dataset.previous;
         next.textContent = config.dataset.next;
         cancel.textContent = config.dataset.cancel;

@@ -98,7 +98,7 @@
         :eyebrow="__('supplier_audit.title')"
     >
         <x-slot:actions>
-            <x-ui.button :href="\App\Support\PurchasingNavigation::listUrl('purchasing.supplier-audits.index')" variant="ghost" size="sm">
+            <x-ui.button :href="\App\Support\PurchasingNavigation::listUrl('purchasing.supplier-audits.index')" variant="outline" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>{{ __('supplier_audit.actions.back_to_list') }}</span>
             </x-ui.button>

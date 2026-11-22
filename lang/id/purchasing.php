@@ -369,6 +369,7 @@ return [
         'scope' => 'Cakupan',
         'search' => 'Cari',
         'search_po_number' => 'Cari nomor PO',
+        'search_po_supplier_or_pr' => 'Cari nomor PO, supplier, atau referensi PR',
         'search_pr_or_material' => 'Cari PR atau material',
         'search_purchase_order_number' => 'Cari nomor pesanan pembelian',
         'search_suppliers' => 'Cari supplier',

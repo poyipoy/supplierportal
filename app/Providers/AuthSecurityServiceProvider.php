@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Auth\DeviceAwareUserProvider;
 use App\Events\AuthSecurityEvent;
+use App\Http\Middleware\StartPortalSession;
 use App\Listeners\LogAuthenticationEvent;
 use App\Services\Auth\TwoFactorService;
 use App\Support\RateLimitResponse;
@@ -13,7 +14,10 @@ use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Auth\Events\OtherDeviceLogout;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Contracts\Cache\Factory as CacheFactory;
 use Illuminate\Http\Request;
+use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Session\SessionManager;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
@@ -22,6 +26,15 @@ use Illuminate\Validation\Rules\Password;
 
 class AuthSecurityServiceProvider extends ServiceProvider
 {
+    public function register(): void
+    {
+        $this->app->singleton(StartSession::class, function ($app) {
+            return new StartPortalSession($app->make(SessionManager::class), function () use ($app) {
+                return $app->make(CacheFactory::class);
+            });
+        });
+    }
+
     public function boot(): void
     {
         Auth::provider('device-eloquent', function ($app, array $config) {

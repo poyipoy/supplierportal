@@ -37,7 +37,7 @@
                 <tr>
                     <td>{{ $loop->iteration }}</td><td>{{ $gr->gr_number }}</td>
                     <td>{{ $regionalFormatter->date($gr->gr_date, 'human') ?? '—' }}</td>
-                    <td>{{ $gr->description }}</td><td>{{ \App\Models\LocalGoodsReceipt::formatQuantity($gr->qty) }}</td><td>{{ $gr->uom ?? '—' }}</td>
+                    <td class="ui-col-data-name">{{ $gr->description }}</td><td>{{ \App\Models\LocalGoodsReceipt::formatQuantity($gr->qty) }}</td><td>{{ $gr->uom ?? '—' }}</td>
                     <td>@include('finance.local-procurement._gr_status', ['status' => $gr->status])</td>
                     <td>
                         @php $invoiceRoute = $readOnly ? 'local-supplier.invoices.show' : ($routePrefix === 'purchasing.local-procurement' ? 'purchasing.local-invoices.show' : 'finance.invoices.show'); @endphp

@@ -23,7 +23,7 @@
                         @php $proposed = $item->proposed_data ?? []; @endphp
                         <tr>
                             <td class="ui-tabular-nums tw:whitespace-nowrap">{{ $regionalFormatter->timestamp($item->requested_at ?? $item->created_at, 'datetime') }}</td>
-                            <td>
+                            <td class="ui-col-data-name">
                                 <span class="tw:block tw:font-medium tw:text-on-surface tw:wrap-break-word">{{ $proposed['pic_name'] ?? '' }}</span>
                                 <span class="tw:block tw:text-ui-xs tw:text-on-surface-variant tw:break-all">{{ $proposed['pic_email'] ?? '' }}</span>
                                 <span class="tw:block tw:text-ui-xs tw:text-on-surface-variant">{{ $proposed['pic_phone'] ?? '' }}</span>
@@ -46,7 +46,7 @@
                                     <span class="tw:text-on-surface-variant">&ndash;</span>
                                 @endif
                             </td>
-                            <td class="tw:max-w-xs tw:wrap-break-word">{{ $item->review_notes ?: '–' }}</td>
+                            <td class="tw:max-w-xs tw:wrap-break-word ui-col-data-name">{{ $item->review_notes ?: '–' }}</td>
                         </tr>
                     @endforeach
                 </tbody>

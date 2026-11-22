@@ -62,7 +62,7 @@
                     <th scope="col">{{ __('local_procurement.registration.submitted_date', ['timezone' => \App\Support\BusinessTime::label()]) }}</th>
                     <th scope="col">{{ __('local_invoice.labels.status') }}</th>
                     <th scope="col">{{ __('local_procurement.registration.last_reviewer') }}</th>
-                    <th scope="col" class="text-end" style="width: 100px;">{{ __('local_invoice.labels.actions') }}</th>
+                    <th scope="col" class="tw:text-right text-end" style="width: 100px;">{{ __('common.table.action') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -101,13 +101,12 @@
                         <td>
                             <span class="tw:text-ui-xs text-muted">{{ $attempt->reviewer?->name ?? '-' }}</span>
                         </td>
-                        <td class="text-end">
-                            <a
-                                href="{{ route('supplier-registrations.show', $attempt->hash) }}"
-                                class="ui-data-action ui-data-action--primary ui-focus-ring tw:no-underline"
-                            >
-                                {{ __('common.labels_review.review') }}
-                            </a>
+                        <td class="tw:text-right text-end">
+                            <x-ui.row-action
+                                :href="route('supplier-registrations.show', $attempt->hash)"
+                                :label="__('common.labels_review.review')"
+                                :context="$ref !== '-' ? $ref : ($supplier?->company_name ?? $attempt->user->name)"
+                            />
                         </td>
                     </tr>
                 @empty

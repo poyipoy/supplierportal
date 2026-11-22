@@ -15,6 +15,7 @@ use App\Services\SupplierRegistrationService;
 use App\Support\BusinessTime;
 use App\Support\ServerTabsResponse;
 use App\Support\StatusHelper;
+use App\Support\Ui\RowAction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -73,7 +74,12 @@ class SupplierRegistrationReviewController extends Controller
                 ->addColumn('action', function ($attempt) {
                     $url = route('supplier-registrations.show', $attempt->hash);
 
-                    return '<a href="'.$url.'" class="ui-data-action ui-data-action--primary ui-focus-ring">'.e(__('local_procurement.registration.review')).'</a>';
+                    return RowAction::link(
+                        $url,
+                        __('local_procurement.registration.review'),
+                        'primary',
+                        $attempt->user->supplier?->company_name ?? $attempt->user->name
+                    );
                 })
                 ->rawColumns(['pic', 'status_badge', 'action'])
                 ->make(true);

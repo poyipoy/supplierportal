@@ -65,7 +65,7 @@
                     <th scope="col">{{ __('qc.copy.inspection_date') }}</th>
                     <th scope="col">{{ __('qc.copy.inspector') }}</th>
                     <th scope="col" class="text-center">{{ __('qc.copy.status') }}</th>
-                    <th scope="col" class="text-end" style="width: 110px;">{{ __('qc.copy.action') }}</th>
+                    <th scope="col" class="tw:text-right text-end" style="width: 110px;">{{ __('common.table.action') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -78,11 +78,11 @@
                         <td class="text-center">
                             <x-status-badge type="qc" :status="$insp->status" />
                         </td>
-                        <td class="text-end">
-                            <x-ui.button :href="route('qc.inspections.show', $insp)" variant="outline" size="sm">
-                                            <x-ui.icon name="eye" size="sm" />
-                                <span>{{ __('qc.copy.details') }}</span>
-                            </x-ui.button>
+                        <td class="tw:text-right text-end">
+                            <x-ui.row-action
+                                :href="route('qc.inspections.show', $insp)"
+                                :context="$insp->purchaseOrder->po_number ?? (string) $insp->id"
+                            />
                         </td>
                     </tr>
                 @endforeach

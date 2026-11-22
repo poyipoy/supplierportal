@@ -45,13 +45,13 @@
     >
         <x-slot:actions>
             <x-status-badge type="quotation" :status="$quotation->status" size="lg" />
+            <x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.quotations.index')" variant="outline" size="sm">
+                <x-ui.icon name="arrow-left" />
+                <span>{{ __('purchasing.copy.back_to_quotations') }}</span>
+            </x-ui.button>
             <x-ui.button :href="route('purchasing.export.quotations.detail', $quotation)" variant="outline" size="sm" data-async-export data-export-source-singular="{{ __('exports.sources.quotation') }}" data-export-source-plural="{{ __('exports.sources.quotations') }}" data-export-source-count="1" data-export-filtered="false" data-export-row-label="{{ __('purchasing.copy.quotation_item_rows') }}" data-export-row-explanation="{{ __('purchasing.copy.each_quotation_item_will_be_written_as_a_separate_excel_row') }}">
                 <x-ui.icon name="file-spreadsheet" />
                 <span>{{ __('purchasing.copy.export_excel') }}</span>
-            </x-ui.button>
-            <x-ui.button :href="\App\Support\PurchasingNavigation::backUrl('purchasing.quotations.index')" variant="ghost" size="sm">
-                <x-ui.icon name="arrow-left" />
-                <span>{{ __('purchasing.copy.back_to_quotations') }}</span>
             </x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>
@@ -374,7 +374,7 @@
                                     @foreach($directPoItems as $preview)
                                         @php($previewItem = $preview['item'])
                                         <tr @class(['table-light' => ! $preview['eligible']])>
-                                            <td class="fw-semibold">{{ $previewItem->prItem->material_name ?? '-' }}</td>
+                                            <td class="fw-semibold ui-col-data-name">{{ $previewItem->prItem->material_name ?? '-' }}</td>
                                             <td class="text-end ui-tabular-nums">{{ $previewItem->prItem?->quantity_value ?? '-' }}</td>
                                             @if($orderedQuantityWriteEnabled)
                                                 <td>

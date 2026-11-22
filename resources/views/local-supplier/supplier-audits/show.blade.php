@@ -17,7 +17,7 @@
             <span style="font-variant-numeric: tabular-nums;">{{ __('supplier_audit.labels.progress', $progress) }}</span>
         </x-slot:meta>
         <x-slot:actions>
-            <x-ui.button :href="route('local-supplier.supplier-audits.index')" variant="ghost" size="sm">
+            <x-ui.button :href="route('local-supplier.supplier-audits.index')" variant="outline" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>{{ __('supplier_audit.actions.back_to_list') }}</span>
             </x-ui.button>

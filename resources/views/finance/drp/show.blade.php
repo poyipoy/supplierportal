@@ -10,6 +10,10 @@
         :eyebrow="__('finance.drp_ui.engine')"
     >
         <x-slot:actions>
+            <x-ui.button :href="$batch->batch_type === 'SUPPLIER' ? route('finance.drp.supplier') : route('finance.drp.ga')" variant="outline" size="sm">
+                <x-ui.icon name="arrow-left" size="sm" />
+                <span>{{ __('local_invoice.form.back_list') }}</span>
+            </x-ui.button>
             <x-ui.button
                 type="button"
                 variant="outline"
@@ -21,10 +25,6 @@
             >
                 <x-ui.icon name="git-branch" size="sm" />
                 <span>{{ __('smart_panel.trigger') }}</span>
-            </x-ui.button>
-            <x-ui.button :href="$batch->batch_type === 'SUPPLIER' ? route('finance.drp.supplier') : route('finance.drp.ga')" variant="ghost" size="sm">
-                <x-ui.icon name="arrow-left" size="sm" />
-                <span>{{ __('local_invoice.form.back_list') }}</span>
             </x-ui.button>
             @if($batch->batch_type === \App\Models\PaymentBatch::TYPE_SUPPLIER && $batch->status !== \App\Models\PaymentBatch::STATUS_CANCELLED)
                 <x-ui.button
@@ -45,7 +45,7 @@
                 <x-ui.button
                     type="button"
                     id="btnExportTransferSingle"
-                    variant="primary"
+                    :variant="$batch->status === \App\Models\PaymentBatch::STATUS_DRAFT ? 'outline' : 'primary'"
                     size="sm"
                 >
                     <x-ui.icon name="file-spreadsheet" size="sm" />
@@ -53,15 +53,16 @@
                 </x-ui.button>
             @endif
             @if($batch->status === \App\Models\PaymentBatch::STATUS_DRAFT)
-                <button
+                <x-ui.button
                     type="button"
-                    class="btn btn-outline-danger btn-sm"
+                    variant="danger-outline"
+                    size="sm"
                     data-bs-toggle="modal"
                     data-bs-target="#cancelBatchModal"
                 >
                     <x-ui.icon name="x-circle" size="sm" />
                     <span>{{ __('finance.drp.cancel') }}</span>
-                </button>
+                </x-ui.button>
 
                 <form id="finalizeBatchForm" method="POST" action="{{ route('finance.drp.finalize', $batch) }}" class="tw:inline">
                     @csrf
@@ -187,30 +188,32 @@
                             <div class="tw:flex tw:items-center tw:gap-2">
                                 @if($batch->batch_type === \App\Models\PaymentBatch::TYPE_GA)
                                     {{-- Assign Voucher Button --}}
-                                    <button
+                                    <x-ui.button
                                         type="button"
-                                        class="btn btn-outline-secondary btn-sm"
+                                        variant="outline"
+                                        size="sm"
                                         data-bs-toggle="modal"
                                         data-bs-target="#voucherModal-{{ $group->id }}"
                                     >
                                         <x-ui.icon name="receipt" size="sm" />
                                         <span>{{ __('common.labels_review.voucher') }}</span>
-                                    </button>
+                                    </x-ui.button>
 
                                     {{-- Mark Paid Button (disabled — settlement centralized via DRP Paid) --}}
                                 @endif
 
                                 {{-- Fee Override (Draft only) --}}
                                 @if($batch->status === \App\Models\PaymentBatch::STATUS_DRAFT && $batch->batch_type === \App\Models\PaymentBatch::TYPE_SUPPLIER)
-                                    <button
+                                    <x-ui.button
                                         type="button"
-                                        class="btn btn-outline-warning btn-sm"
+                                        variant="outline"
+                                        size="sm"
                                         data-bs-toggle="modal"
                                         data-bs-target="#feeModal-{{ $group->id }}"
                                     >
                                         <x-ui.icon name="edit-3" size="sm" />
                                         <span>{{ __('finance.payment.review_fee') }}</span>
-                                    </button>
+                                    </x-ui.button>
                                 @endif
                             </div>
                         @endif
@@ -252,7 +255,7 @@
                                     <td class="tw:max-w-[20rem] tw:break-all">
                                         <strong class="ui-tabular-nums">{{ $item->item_reference }}</strong>
                                     </td>
-                                    <td>
+                                    <td class="ui-col-data-name">
                                         @if($batch->batch_type === 'SUPPLIER' && $item->payable)
                                             {{ __('finance.drp_ui.invoice_reference', ['invoice' => $item->payable->invoice_number, 'po' => $item->payable->po_number]) }}
                                         @elseif($batch->batch_type === 'GA' && $item->payable)
@@ -351,7 +354,7 @@
                                                 </form>
                                             @endif
                                         @elseif($batch->status === \App\Models\PaymentBatch::STATUS_DRAFT)
-                                            <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#removeItemModal-{{ $item->id }}">{{ __('common.actions.remove') }}</button>
+                                            <x-ui.button type="button" variant="danger-outline" size="sm" data-bs-toggle="modal" data-bs-target="#removeItemModal-{{ $item->id }}">{{ __('common.actions.remove') }}</x-ui.button>
                                         @endif
                                     </td>
                                 </tr>
@@ -382,8 +385,8 @@
                                             </div>
                                         </div>
                                         <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{{ __('local_invoice.actions.cancel') }}</button>
-                                            <button type="submit" class="btn btn-danger btn-sm">{{ __('finance.drp_ui.remove') }}</button>
+                                            <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('local_invoice.actions.cancel') }}</x-ui.button>
+                                            <x-ui.button type="submit" variant="danger" size="sm">{{ __('finance.drp_ui.remove') }}</x-ui.button>
                                         </div>
                                     </div>
                                 </form>
@@ -420,8 +423,8 @@
                                     </div>
                                 </div>
                                 <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{{ __('local_invoice.actions.close') }}</button>
-                                    <button type="submit" class="btn btn-primary btn-sm">{{ __('finance.voucher.save') }}</button>
+                                    <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('local_invoice.actions.close') }}</x-ui.button>
+                                    <x-ui.button type="submit" variant="primary" size="sm">{{ __('finance.voucher.save') }}</x-ui.button>
                                 </div>
                             </div>
                         </form>
@@ -453,8 +456,8 @@
                                         </div>
                                     </div>
                                     <div class="modal-footer">
-                                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{{ __('local_invoice.actions.cancel') }}</button>
-                                        <button type="submit" class="btn btn-warning btn-sm">{{ __('finance.payment.save_fee') }}</button>
+                                        <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('local_invoice.actions.cancel') }}</x-ui.button>
+                                        <x-ui.button type="submit" variant="primary" size="sm">{{ __('finance.payment.save_fee') }}</x-ui.button>
                                     </div>
                                 </div>
                             </form>
@@ -486,8 +489,8 @@
                             </div>
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{{ __('local_invoice.actions.cancel') }}</button>
-                            <button type="submit" class="btn btn-danger btn-sm">{{ __('finance.drp_ui.cancel_yes') }}</button>
+                            <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('local_invoice.actions.cancel') }}</x-ui.button>
+                            <x-ui.button type="submit" variant="danger" size="sm">{{ __('finance.drp_ui.cancel_yes') }}</x-ui.button>
                         </div>
                     </div>
                 </form>

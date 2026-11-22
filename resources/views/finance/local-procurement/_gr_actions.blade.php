@@ -6,7 +6,7 @@
     </x-ui.button>
     @if($gr->status === 'AVAILABLE')
         <x-ui.button type="button" size="sm" variant="outline" data-gr-edit>{{ __('common.final_copy.edit') }}</x-ui.button>
-        <x-ui.button type="button" size="sm" variant="ghost" class="tw:text-error!" data-gr-cancel>{{ __('local_invoice.actions.cancel') }}</x-ui.button>
+        <x-ui.button type="button" size="sm" variant="danger-outline" data-gr-cancel>{{ __('local_invoice.actions.cancel') }}</x-ui.button>
     @endif
 </div>
 @elseif($purchaseOrder->status === 'OPEN')

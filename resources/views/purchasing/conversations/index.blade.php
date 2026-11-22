@@ -68,7 +68,7 @@
                         </td>
                         <td class="text-end">
                             @php $unreadCount = $conv->unreadCountFor(auth()->id()); @endphp
-                            <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.conversations.show', $conv)" variant="outline" size="sm" class="tw:relative">
+                            <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.conversations.show', $conv)" variant="outline-primary" size="sm" class="tw:relative">
                                 <x-slot:leading><x-ui.icon name="message-square-text" /></x-slot:leading>
                                 {{ __('purchasing.audit_ui.open_chat') }}
                                 @if($unreadCount > 0)

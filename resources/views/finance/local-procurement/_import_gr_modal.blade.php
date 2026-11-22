@@ -142,7 +142,7 @@
                     </x-ui.button>
                 </form>
                 <x-ui.button type="button" variant="outline" class="local-import-recheck" id="btnRevalidateLocalGrImport" hidden>{{ __('local_procurement.large_import.revalidate') }}</x-ui.button>
-                <x-ui.button type="button" variant="ghost" id="btnReplaceLocalGrImport" hidden>{{ __('local_procurement.large_import.replace') }}</x-ui.button>
+                <x-ui.button type="button" variant="outline" size="sm" id="btnReplaceLocalGrImport" hidden>{{ __('local_procurement.large_import.replace') }}</x-ui.button>
             </div>
         </div>
     </div>

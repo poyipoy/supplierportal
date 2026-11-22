@@ -12,6 +12,7 @@ use App\Support\ExportConfirmation;
 use App\Support\ExportDispatcher;
 use App\Support\NumberFormat;
 use App\Support\SupplierPriceHistoryBuilder;
+use App\Support\Ui\RowAction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -284,7 +285,7 @@ class SupplierPriceHistoryController extends Controller
                     'currency' => $row->currency,
                 ]);
 
-                return '<a href="'.$url.'" class="ui-data-action ui-data-action--primary ui-focus-ring">'.e(__('supplier.copy.view_history')).'</a>';
+                return RowAction::detail($url, $row->material_name.' ('.$row->currency.')');
             })
             ->addColumn('price_info', function ($row) {
                 $latest = $row->latest_price ?? 0;

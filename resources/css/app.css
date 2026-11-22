@@ -239,7 +239,9 @@
         --ui-card-bg: var(--md-surface);
         --ui-card-border: var(--md-outline);
         --ui-table-header-bg: var(--md-surface-container);
-        --ui-table-row-hover-bg: var(--md-surface-container-low);
+        --ui-table-row-stripe-bg: #EDF2F7;
+        --ui-table-col-name-bg: #EDF2F7;
+        --ui-table-row-hover-bg: #E6ECF4;
         --ui-dialog-bg: var(--md-surface);
         --ui-menu-bg: var(--md-surface);
         --ui-dialog-scrim: rgba(var(--md-scrim-rgb), var(--md-scrim-opacity));
@@ -394,6 +396,9 @@
         --md-chart-ng: #FFB4AB;
         --ui-input-border: var(--md-outline-strong);
         --ui-input-focus: #8FB9EA;
+        --ui-table-row-stripe-bg: #222D3D;
+        --ui-table-col-name-bg: #222D3D;
+        --ui-table-row-hover-bg: #283548;
         --ui-calendar-range-bg: var(--md-primary-container);
         --ui-calendar-range-fg: var(--md-on-primary-container);
         --bs-primary-text-emphasis: var(--md-on-primary-container);
@@ -610,6 +615,9 @@
 :root[data-theme="dark"] .tw\:text-error {
         color: #FFB4AB !important;
     }
+:root[data-theme="dark"] :is(.ui-button, .ui-icon-button).tw\:hover\:text-error-container-foreground:hover {
+        color: var(--md-on-error-container) !important;
+    }
 :root[data-theme="dark"] .tw\:text-warning {
         color: #FFD28A !important;
     }
@@ -665,14 +673,6 @@
         --bs-modal-border-color: var(--md-outline);
         --bs-modal-header-border-color: var(--md-outline-variant);
         --bs-modal-footer-border-color: var(--md-outline-variant);
-    }
-:root[data-theme="dark"] .ui-data-action--primary {
-        border-color: var(--ui-primary-text);
-        color: var(--ui-primary-text);
-    }
-:root[data-theme="dark"] .ui-data-action--primary:hover {
-        background: var(--md-primary-container);
-        color: var(--md-on-primary-container);
     }
 :root[data-theme="dark"] .dropdown-menu {
         --bs-dropdown-bg: var(--ui-menu-bg);
@@ -1372,9 +1372,9 @@ html[data-sidebar-collapsed="true"]:not([data-sidebar-hover-peek="true"]) .sideb
         display: flex;
         font-size: var(--ui-font-size-xs);
         font-weight: 700;
-        height: 2.625rem;
+        height: var(--ui-density-sidebar-heading-min, 2.625rem);
         letter-spacing: 0.06em;
-        min-height: 2.625rem;
+        min-height: var(--ui-density-sidebar-heading-min, 2.625rem);
         overflow: hidden;
         padding: 0 1rem 0.375rem;
         position: relative;
@@ -2145,7 +2145,7 @@ html[data-sidebar-collapsed="true"] .sidebar .sidebar-toggle-icons .sidebar-togg
         background-color: var(--ui-input-bg);
         color: var(--ui-input-fg);
     }
-.ui-filter-bar .ui-date-range-picker--compact .ui-date-range-trigger {
+.ui-date-range-picker--compact .ui-date-range-trigger {
         min-height: var(--ui-control-height-sm);
     }
 .ui-filter-bar__badge {
@@ -2571,8 +2571,14 @@ html[data-sidebar-collapsed="true"] .sidebar .sidebar-toggle-icons .sidebar-togg
         flex: 0 0 auto;
         vertical-align: -.125em;
     }
-.ui-button {
+.ui-button,
+    .ui-icon-button {
+        cursor: pointer;
         text-decoration: none;
+    }
+.ui-button:is(:disabled, [aria-disabled="true"]),
+    .ui-icon-button:is(:disabled, [aria-disabled="true"]) {
+        cursor: not-allowed;
     }
 .ui-button.is-loading,
     .ui-button[aria-busy="true"] {
@@ -2677,7 +2683,7 @@ a.ui-record-nav__btn:active {
             padding-inline: 0.6875rem;
         }
 }
-@media (any-pointer: coarse), (max-width: 991.98px) {
+@media (pointer: coarse), (max-width: 991.98px) {
     .ui-record-nav,
     .ui-record-nav__btn,
     .ui-record-nav__counter {
@@ -2713,55 +2719,94 @@ a.ui-record-nav__btn:active {
 .ui-status-chip--error { background: var(--md-error-container); color: var(--md-on-error-container); }
 .ui-data-action {
         align-items: center;
-        background: transparent;
-        border: 1px solid var(--md-outline);
+        background-color: var(--md-surface);
+        border: 1px solid var(--md-outline-strong);
         border-radius: var(--md-shape-sm);
         color: var(--md-on-surface);
+        cursor: pointer;
         display: inline-flex;
         font-size: var(--ui-font-size-xs);
         font-weight: 600;
+        gap: var(--ui-space-1);
         justify-content: center;
+        line-height: 1.25;
         min-height: var(--ui-control-height-sm);
-        padding: var(--ui-space-1) var(--ui-space-2);
+        padding: var(--ui-space-1) var(--ui-space-3);
         text-decoration: none;
-        transition: background-color var(--ui-motion-fast) var(--ui-easing-standard), border-color var(--ui-motion-fast) var(--ui-easing-standard);
+        transition: background-color var(--ui-motion-fast) var(--ui-easing-standard), border-color var(--ui-motion-fast) var(--ui-easing-standard), color var(--ui-motion-fast) var(--ui-easing-standard);
         white-space: nowrap;
     }
 .ui-data-action:hover {
-        background: var(--md-surface-container);
+        background-color: var(--md-surface-container);
+        color: var(--md-on-surface);
+    }
+.ui-data-action:active {
+        background-color: var(--md-surface-container-high);
         color: var(--md-on-surface);
     }
 .ui-data-action--primary {
-        border-color: var(--md-primary);
-        color: var(--md-primary);
+        background-color: var(--md-surface);
+        border-color: var(--ui-primary-text);
+        color: var(--ui-primary-text);
     }
 .ui-data-action--primary:hover {
-        background: var(--md-primary-container);
+        background-color: var(--md-primary-container);
+        border-color: var(--ui-primary-text);
         color: var(--md-on-primary-container);
     }
+.ui-data-action--primary:active {
+        background-color: var(--md-primary-container);
+        border-color: var(--ui-primary-text);
+        color: var(--md-on-primary-container);
+        filter: brightness(0.96);
+    }
 .ui-data-action--danger {
+        background-color: var(--md-surface);
         border-color: var(--md-error);
         color: var(--md-error);
     }
 .ui-data-action--danger:hover {
-        background: var(--md-error-container);
+        background-color: var(--md-error-container);
+        border-color: var(--md-error);
         color: var(--md-on-error-container);
     }
-.ui-data-action--success {
-        border-color: var(--md-success);
-        color: var(--md-success);
+.ui-data-action--danger:active {
+        background-color: var(--md-error-container);
+        border-color: var(--md-error);
+        color: var(--md-on-error-container);
+        filter: brightness(0.96);
     }
-.ui-data-action--success:hover {
-        background: var(--md-success-container);
+.ui-data-action--success {
+        background-color: var(--md-surface);
+        border-color: var(--md-on-success-container);
         color: var(--md-on-success-container);
     }
+.ui-data-action--success:hover {
+        background-color: var(--md-success-container);
+        border-color: var(--md-on-success-container);
+        color: var(--md-on-success-container);
+    }
+.ui-data-action--success:active {
+        background-color: var(--md-success-container);
+        border-color: var(--md-on-success-container);
+        color: var(--md-on-success-container);
+        filter: brightness(0.96);
+    }
 .ui-data-action--warning {
-        border-color: var(--md-warning);
+        background-color: var(--md-surface);
+        border-color: var(--md-on-warning-container);
         color: var(--md-on-warning-container);
     }
 .ui-data-action--warning:hover {
-        background: var(--md-warning-container);
+        background-color: var(--md-warning-container);
+        border-color: var(--md-on-warning-container);
         color: var(--md-on-warning-container);
+    }
+.ui-data-action--warning:active {
+        background-color: var(--md-warning-container);
+        border-color: var(--md-on-warning-container);
+        color: var(--md-on-warning-container);
+        filter: brightness(0.96);
     }
 .ui-skeleton {
         background-image: linear-gradient(
@@ -3009,8 +3054,8 @@ canvas[data-adasi-chart-focusable]:focus-visible {
         text-transform: uppercase;
         font-size: var(--ui-font-size-sm);
         letter-spacing: 0.04em;
-        padding: 0.4375rem var(--ui-table-cell-inline, .75rem) !important;
-        height: 2.125rem;
+        padding: var(--ui-density-table-head-block, 0.4375rem) var(--ui-table-cell-inline, .75rem) !important;
+        height: var(--ui-density-table-head-min, 2.125rem);
         white-space: nowrap;
     }
 .table td {
@@ -3022,8 +3067,28 @@ canvas[data-adasi-chart-focusable]:focus-visible {
 .table-striped tbody tr:nth-of-type(odd) {
         background-color: var(--md-surface-container-low) !important;
     }
-.table-hover tbody tr:hover {
-        background-color: var(--ui-table-row-hover-bg) !important;
+:is(.pr-items-table, .quotation-items-table, .qc-dimension-grid, [data-annual-rates-matrix], .ui-export-designer-modal, .table-borderless, .local-import-modal) {
+        --ui-table-row-stripe-bg: var(--md-surface);
+        --ui-table-col-name-bg: var(--md-surface);
+    }
+/* Hybrid table shading:
+   1. Index / List tables (without .ui-col-data-name): pure full-row alternating zebra striping on even rows.
+   2. Detail / Satellite / Comparison tables (with .ui-col-data-name): consistent vertical column shading on .ui-col-data-name cells.
+   :where() keeps specificity low so row hover, selection, and utility overrides still win cleanly. */
+:where(.ui-data-table table, .table):where(:not(.ui-quotation-readonly):not(.table-striped):not(:has(.ui-col-data-name))) > tbody > tr:where(:not(:has(> td[colspan]:only-child)):not(:has(> td.dataTables_empty)):not(.bg-primary-subtle):not(.table-primary):not(.table-light)):nth-of-type(even) > :is(td, th) {
+        --ui-table-cell-bg: var(--ui-table-row-stripe-bg);
+        --bs-table-bg: var(--ui-table-cell-bg);
+        background-color: var(--ui-table-cell-bg);
+    }
+:where(.ui-data-table table, .table) > tbody > tr:where(:not(:has(> td[colspan]:only-child)):not(:has(> td.dataTables_empty)):not(.bg-primary-subtle):not(.table-primary):not(.table-light)) > :is(td, th).ui-col-data-name {
+        --ui-table-cell-bg: var(--ui-table-col-name-bg);
+        --bs-table-bg: var(--ui-table-cell-bg);
+        background-color: var(--ui-table-cell-bg);
+    }
+:is(.ui-data-table table, .table.table-hover):where(:not(.ui-quotation-readonly):not(.quotation-items-table)) > tbody > tr:where(:not(:has(> td[colspan]:only-child)):not(:has(> td.dataTables_empty)):not(.bg-primary-subtle):not(.table-primary)):hover > :is(td, th) {
+        --ui-table-cell-bg: var(--ui-table-row-hover-bg);
+        --bs-table-bg: var(--ui-table-cell-bg);
+        background-color: var(--ui-table-cell-bg);
     }
 .table-responsive {
         border-radius: var(--md-shape-md);
@@ -3036,6 +3101,7 @@ canvas[data-adasi-chart-focusable]:focus-visible {
         background: transparent;
     }
 .ui-data-table table {
+        margin-top: 0;
         margin-bottom: 0;
         width: 100%;
     }
@@ -3052,8 +3118,8 @@ canvas[data-adasi-chart-focusable]:focus-visible {
         font-size: var(--ui-font-size-sm);
         font-weight: 700;
         letter-spacing: .04em;
-        padding: 0.4375rem var(--ui-table-cell-inline, .75rem) !important;
-        height: 2.125rem;
+        padding: var(--ui-density-table-head-block, 0.4375rem) var(--ui-table-cell-inline, .75rem) !important;
+        height: var(--ui-density-table-head-min, 2.125rem);
         text-transform: uppercase;
         white-space: nowrap;
     }
@@ -3094,9 +3160,6 @@ canvas[data-adasi-chart-focusable]:focus-visible {
 .ui-detail-split-grid > aside table,
 [data-mmt-satellite] table {
         font-size: var(--ui-font-size-xs);
-    }
-.ui-data-table table tbody tr:hover > * {
-        background: var(--ui-table-row-hover-bg);
     }
 .ui-data-table table > :not(caption) > * > * {
         height: var(--ui-density-row-min, 2.5rem);
@@ -3214,8 +3277,10 @@ div.dataTables_wrapper div.dataTables_paginate ul.pagination {
         font-size: var(--ui-font-size-xs);
         font-variant-numeric: tabular-nums;
     }
-/* dataTables.bootstrap5.css gives table.dataTable a 6px !important margin; it would float the footer bar off the table. */
-.ui-data-table .dataTables_wrapper table.dataTable {
+/* dataTables.bootstrap5.css gives table.dataTable a 6px !important margin; it would push the header down and float the footer bar off the table. */
+.ui-data-table .dataTables_wrapper table.dataTable,
+.dataTables_wrapper table.dataTable {
+        margin-top: 0 !important;
         margin-bottom: 0 !important;
     }
 /* DataTables renders Previous/Next as plain text; draw the same chevrons the Laravel view uses. */
@@ -3287,7 +3352,7 @@ div.dataTables_wrapper div.dataTables_paginate ul.pagination {
         justify-content: center;
     }
 }
-@media (any-pointer: coarse) {
+@media (pointer: coarse) {
     .pagination .page-item .page-link {
         height: var(--ui-control-height-md);
         min-width: var(--ui-control-height-md);
@@ -3371,8 +3436,8 @@ html.js [data-calendar-native-submit] {
     }
 .ui-calendar-trigger--sm,
 .ui-calendar--sm .ui-calendar-trigger {
-        min-height: calc(1.5em + 0.5rem + 2px);
-        height: calc(1.5em + 0.5rem + 2px);
+        min-height: var(--ui-control-height-sm);
+        height: var(--ui-control-height-sm);
         padding-block: 0.25rem;
     }
 .ui-calendar-trigger:hover {
@@ -4423,6 +4488,45 @@ html.js [data-calendar-native-submit] {
             overflow: hidden;
         }
     }
+.ui-session-expired-bar {
+    background: var(--md-warning-container);
+    color: var(--md-on-warning-container);
+    border-bottom: 1px solid var(--md-outline);
+    position: sticky;
+    top: 0;
+    z-index: calc(var(--ui-z-sticky) - 5);
+}
+.ui-session-modal {
+    z-index: calc(var(--ui-z-toast) + 20);
+}
+.ui-session-modal__panel {
+    background: var(--ui-dialog-bg);
+    color: var(--md-on-surface);
+    border: 1px solid var(--md-outline);
+    box-shadow: var(--ui-shadow-2);
+}
+.ui-session-modal__icon {
+    background: var(--md-warning-container);
+    color: var(--md-on-warning-container);
+}
+.ui-session-modal__dirty {
+    background: var(--md-warning-container);
+    color: var(--md-on-warning-container);
+    border: 1px solid var(--md-outline-variant);
+}
+.ui-session-modal__error {
+    background: var(--md-error-container);
+    color: var(--md-on-error-container);
+    border: 1px solid var(--md-outline-variant);
+}
+.ui-session-modal__transition {
+    transition: opacity 150ms cubic-bezier(0.2, 0, 0, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+    .ui-session-modal__transition {
+        transition: none;
+    }
+}
 @import "tailwindcss/utilities.css" prefix(tw) source(none);
 .ui-tabular-nums {
         font-variant-numeric: tabular-nums;
@@ -4552,14 +4656,21 @@ tr[data-mmt-row-url] {
     cursor: pointer;
     transition: background-color 140ms ease;
 }
-tr[data-mmt-row-url]:hover {
-    background-color: var(--md-surface-container-low);
+tr[data-mmt-row-url]:hover > :is(td, th) {
+    --ui-table-cell-bg: var(--ui-table-row-hover-bg);
+    --bs-table-bg: var(--ui-table-cell-bg);
+    background-color: var(--ui-table-cell-bg);
 }
-tr[data-mmt-row-url].is-mmt-selected > td {
-    background-color: color-mix(in srgb, var(--md-primary) 7%, var(--md-surface));
+tr[data-mmt-row-url].is-mmt-selected > :is(td, th) {
+    --ui-table-cell-bg: color-mix(in srgb, var(--md-primary) 7%, var(--md-surface));
+    --bs-table-bg: var(--ui-table-cell-bg);
+    background-color: var(--ui-table-cell-bg);
 }
-tr[data-mmt-row-url].is-mmt-selected > td:first-child {
+tr[data-mmt-row-url].is-mmt-selected > :is(td, th):first-child {
     box-shadow: inset 3px 0 0 var(--md-primary);
+}
+@media (prefers-reduced-motion: reduce) {
+    tr[data-mmt-row-url] { transition: none; }
 }
 tr[data-mmt-row-url]:focus-visible {
     outline: 2px solid var(--md-primary);
@@ -4868,15 +4979,19 @@ table.dataTable thead > tr > :is(th, td):is(.sorting, .sorting_asc, .sorting_des
 /* ==========================================================================
    Table Row Hover Eye-Friendly Styling (Item 5)
    ========================================================================== */
-.table-hover tbody tr {
+:is(.ui-data-table table, .table.table-hover) > tbody > tr > :is(td, th) {
     transition: background-color 150ms ease;
 }
-.table-hover tbody tr:hover {
-    background-color: var(--ui-table-row-hover-bg, var(--md-surface-container-low)) !important;
-}
-.table-hover tbody tr:hover > td:first-child,
-.table-hover tbody tr:hover > th:first-child {
+:is(.ui-data-table table, .table.table-hover):not(.ui-quotation-readonly):not(.quotation-items-table) > tbody > tr:not(:has(> td[colspan]:only-child)):not(:has(> td.dataTables_empty)):not(.bg-primary-subtle):not(.table-primary):hover > :is(td:first-child, th:first-child) {
     box-shadow: inset 3px 0 0 var(--md-primary, #1F5FA6);
+}
+:is(.ui-data-table table, .table.table-hover):not(.ui-quotation-readonly):not(.quotation-items-table) > tbody > tr:not(:has(> td[colspan]:only-child)):not(:has(> td.dataTables_empty)):not(.bg-primary-subtle):not(.table-primary):hover > :is(td:first-child.ui-sticky-col, th:first-child.ui-sticky-col, td:first-child.ui-table-sticky-col) {
+    box-shadow: inset 3px 0 0 var(--md-primary, #1F5FA6), inset -1px 0 0 var(--md-outline-variant);
+}
+@media (prefers-reduced-motion: reduce) {
+    :is(.ui-data-table table, .table.table-hover) > tbody > tr > :is(td, th) {
+        transition: none;
+    }
 }
 /* Paired rows styling in quotation tables */
 .quotation-items-table tbody tr.quotation-requested-row:hover > td,
@@ -5658,7 +5773,7 @@ div.dataTables_wrapper div.dataTables_processing {
     position: sticky;
     left: var(--ui-sticky-col-left, 0);
     z-index: 1;
-    background-color: var(--md-surface);
+    background-color: var(--ui-table-cell-bg, var(--md-surface));
     box-shadow: inset -1px 0 0 var(--md-outline-variant);
 }
 .ui-table-sticky > table > :is(thead, tfoot) .ui-sticky-col {
@@ -5669,7 +5784,7 @@ div.dataTables_wrapper div.dataTables_processing {
 /* DataTables sets position: relative on sortable headers (for the sort icons); keep them sticky.
    A sticky cell is still the containing block for those absolutely positioned icons. */
 .ui-table-sticky.ui-data-table__scroll > table.dataTable > thead > tr > th { position: sticky; }
-.ui-quotation-readonly tr.is-offer-row > :is(td, th) { background-color: var(--md-surface-container-lowest, var(--md-surface)); }
+.ui-quotation-readonly tr.is-offer-row > :is(td, th):not(.ui-col-data-name) { background-color: var(--md-surface); }
 .ui-quotation-readonly tbody + tbody { border-top: 2px solid var(--md-outline-variant); }
 .ui-quotation-readonly thead th { white-space: nowrap; }
 .ui-quotation-readonly tbody th.ui-sticky-col { min-width: 12rem; max-width: 16rem; white-space: normal; }
@@ -5757,12 +5872,25 @@ div.dataTables_wrapper div.dataTables_processing {
 @container (min-width: 640px) {
     #customizationForm .ui-density-layout { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 }
-@media (any-pointer: coarse) {
-    #customizationForm .ui-segmented__option { min-height: 44px; }
+@media (pointer: coarse) {
+    #customizationForm :is(.ui-segmented__option, .ui-density-stop) { min-height: 44px; }
 }
 .ui-density-active { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem; min-height: 2.5rem; }
 .ui-density-unsaved-slot { min-height: 1.125rem; }
 .ui-density-active output { font-weight: 600; }
+.ui-density-spec {
+    display: inline-flex;
+    align-items: center;
+    padding: .1875rem .5rem;
+    border-radius: var(--md-shape-xs);
+    border: 1px solid var(--md-outline-variant);
+    background: var(--md-surface);
+    color: var(--md-on-surface-variant);
+    font-size: var(--ui-font-size-xs);
+    font-weight: 600;
+    line-height: 1.25;
+    white-space: nowrap;
+}
 .ui-density-range { display: block; width: 100%; min-width: 0; height: 44px; accent-color: var(--ui-input-focus); cursor: pointer; }
 .ui-density-range::-webkit-slider-thumb { width: 24px; height: 24px; }
 .ui-density-range::-moz-range-thumb { width: 24px; height: 24px; }
@@ -5776,26 +5904,77 @@ div.dataTables_wrapper div.dataTables_processing {
 #customizationForm .ui-action-bar .ui-button { min-height: 44px; }
 [data-density-slider][hidden], #density[hidden] { display: none !important; }
 .ui-density-direction { display: flex; justify-content: space-between; gap: .5rem; }
-.ui-density-stops { display: flex; justify-content: space-between; gap: .25rem; flex-wrap: wrap; }
+.ui-density-stops {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: .375rem;
+}
+.ui-density-stop {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: .25rem;
+    min-height: 2.25rem;
+    padding: .3125rem .25rem;
+    border: 1px solid var(--md-outline-variant);
+    border-radius: var(--md-shape-xs);
+    background: var(--md-surface);
+    color: var(--md-on-surface-variant);
+    font-size: var(--ui-font-size-xs);
+    font-weight: 500;
+    line-height: 1.15;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color var(--ui-motion-fast) var(--ui-easing-standard),
+        background-color var(--ui-motion-fast) var(--ui-easing-standard),
+        color var(--ui-motion-fast) var(--ui-easing-standard);
+}
+.ui-density-stop:hover:not(:disabled) {
+    border-color: var(--md-outline-strong);
+    background: var(--md-surface-container-low);
+    color: var(--md-on-surface);
+}
+.ui-density-stop[data-active="true"] {
+    border-color: var(--md-primary);
+    background: var(--md-primary-container);
+    color: var(--md-on-primary-container);
+    font-weight: 700;
+}
+.ui-density-stop__tick {
+    width: 2px;
+    height: 6px;
+    border-radius: var(--md-shape-full);
+    background: var(--md-outline-strong);
+}
+.ui-density-stop[data-active="true"] .ui-density-stop__tick {
+    background: var(--md-primary);
+}
+.ui-density-stop__saved-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: var(--md-shape-full);
+    background: transparent;
+}
+.ui-density-stop[data-saved="true"] .ui-density-stop__saved-dot {
+    background: var(--md-primary);
+}
 .ui-density-preview-frame { display: grid; min-width: 0; }
 .ui-density-preview { grid-area: 1 / 1; align-self: start; min-width: 0; display: grid; gap: var(--ui-density-stack-sm, 1rem); }
 .ui-density-preview .ui-toolbar { margin-bottom: 0; }
-.ui-density-preview__reserve {
-    visibility: hidden; pointer-events: none;
-    --ui-density-metric-padding: 1.25rem;
-    --ui-density-toolbar-block: 1.125rem;
-    --ui-density-toolbar-inline: 1.25rem;
-    --ui-density-toolbar-gap: 1rem;
-    --ui-density-stack-sm: 1.25rem;
-    --ui-table-cell-block: .75rem;
-    --ui-table-cell-inline: 1rem;
-    --ui-density-row-min: 2.75rem;
-}
 /* Interface density: screen-only semantic values. Protected geometry keeps its own defaults. */
 @media screen {
     :root[data-density="spacious"] {
         --ui-density-table-cell-block: 0.75rem;
         --ui-density-table-cell-inline: 1rem;
+        --ui-density-table-head-block: 0.5625rem;
+        --ui-density-table-head-min: 2.375rem;
+        --ui-density-table-action-min: 2.25rem;
+        --ui-density-table-action-block: 0.3125rem;
+        --ui-density-table-action-inline: 0.875rem;
+        --ui-density-table-chip-min: 1.625rem;
+        --ui-density-table-chip-block: 0.25rem;
         --ui-density-row-min: 2.75rem;
         --ui-density-page-block: 1.5rem;
         --ui-density-page-inline: 1.75rem;
@@ -5815,11 +5994,21 @@ div.dataTables_wrapper div.dataTables_processing {
         --ui-density-list-block: 1rem;
         --ui-density-sidebar-min: 2.75rem;
         --ui-density-sidebar-block: 0.625rem;
+        --ui-density-sidebar-heading-min: 2.75rem;
+        --ui-density-sessionbar-min: 2.75rem;
+        --ui-density-session-min: 2.25rem;
         --ui-density-modal-padding: 1.25rem;
     }
     :root[data-density="comfortable"] {
         --ui-density-table-cell-block: 0.625rem;
         --ui-density-table-cell-inline: 0.875rem;
+        --ui-density-table-head-block: 0.4375rem;
+        --ui-density-table-head-min: 2.125rem;
+        --ui-density-table-action-min: 2.125rem;
+        --ui-density-table-action-block: 0.25rem;
+        --ui-density-table-action-inline: 0.75rem;
+        --ui-density-table-chip-min: 1.5rem;
+        --ui-density-table-chip-block: 0.1875rem;
         --ui-density-row-min: 2.5rem;
         --ui-density-page-block: 1.25rem;
         --ui-density-page-inline: 1.5rem;
@@ -5839,11 +6028,21 @@ div.dataTables_wrapper div.dataTables_processing {
         --ui-density-list-block: 0.75rem;
         --ui-density-sidebar-min: 2.5rem;
         --ui-density-sidebar-block: 0.5rem;
+        --ui-density-sidebar-heading-min: 2.625rem;
+        --ui-density-sessionbar-min: 2.625rem;
+        --ui-density-session-min: 2.125rem;
         --ui-density-modal-padding: 1rem;
     }
     :root[data-density="balanced"] {
         --ui-density-table-cell-block: 0.5rem;
         --ui-density-table-cell-inline: 0.75rem;
+        --ui-density-table-head-block: 0.375rem;
+        --ui-density-table-head-min: 2rem;
+        --ui-density-table-action-min: 1.875rem;
+        --ui-density-table-action-block: 0.1875rem;
+        --ui-density-table-action-inline: 0.625rem;
+        --ui-density-table-chip-min: 1.375rem;
+        --ui-density-table-chip-block: 0.125rem;
         --ui-density-row-min: 2.25rem;
         --ui-density-page-block: 1rem;
         --ui-density-page-inline: 1.25rem;
@@ -5863,11 +6062,21 @@ div.dataTables_wrapper div.dataTables_processing {
         --ui-density-list-block: 0.625rem;
         --ui-density-sidebar-min: 2.375rem;
         --ui-density-sidebar-block: 0.375rem;
+        --ui-density-sidebar-heading-min: 2.375rem;
+        --ui-density-sessionbar-min: 2.4375rem;
+        --ui-density-session-min: 1.9375rem;
         --ui-density-modal-padding: 0.875rem;
     }
     :root[data-density="compact"] {
         --ui-density-table-cell-block: 0.375rem;
         --ui-density-table-cell-inline: 0.625rem;
+        --ui-density-table-head-block: 0.25rem;
+        --ui-density-table-head-min: 1.875rem;
+        --ui-density-table-action-min: 1.75rem;
+        --ui-density-table-action-block: 0.125rem;
+        --ui-density-table-action-inline: 0.5rem;
+        --ui-density-table-chip-min: 1.25rem;
+        --ui-density-table-chip-block: 0.0625rem;
         --ui-density-row-min: 2rem;
         --ui-density-page-block: 0.75rem;
         --ui-density-page-inline: 1rem;
@@ -5887,11 +6096,21 @@ div.dataTables_wrapper div.dataTables_processing {
         --ui-density-list-block: 0.5rem;
         --ui-density-sidebar-min: 2.25rem;
         --ui-density-sidebar-block: 0.25rem;
+        --ui-density-sidebar-heading-min: 2.125rem;
+        --ui-density-sessionbar-min: 2.25rem;
+        --ui-density-session-min: 1.8125rem;
         --ui-density-modal-padding: 0.75rem;
     }
     :root[data-density="dense"] {
         --ui-density-table-cell-block: 0.25rem;
         --ui-density-table-cell-inline: 0.5rem;
+        --ui-density-table-head-block: 0.1875rem;
+        --ui-density-table-head-min: 1.75rem;
+        --ui-density-table-action-min: 1.5rem;
+        --ui-density-table-action-block: 0.0625rem;
+        --ui-density-table-action-inline: 0.4375rem;
+        --ui-density-table-chip-min: 1.125rem;
+        --ui-density-table-chip-block: 0.0625rem;
         --ui-density-row-min: 1.75rem;
         --ui-density-page-block: 0.5rem;
         --ui-density-page-inline: 0.75rem;
@@ -5911,6 +6130,9 @@ div.dataTables_wrapper div.dataTables_processing {
         --ui-density-list-block: 0.375rem;
         --ui-density-sidebar-min: 2.125rem;
         --ui-density-sidebar-block: 0.125rem;
+        --ui-density-sidebar-heading-min: 1.875rem;
+        --ui-density-sessionbar-min: 2.125rem;
+        --ui-density-session-min: 1.6875rem;
         --ui-density-modal-padding: 0.625rem;
     }
 
@@ -5919,11 +6141,37 @@ div.dataTables_wrapper div.dataTables_processing {
         --ui-table-cell-inline: var(--ui-density-table-cell-inline, .875rem);
         padding: var(--ui-density-page-block, 1.25rem) var(--ui-density-page-inline, 1.5rem);
     }
+    .content-area :is(.form-control-sm, .form-select-sm, .btn-group-sm > .btn, .input-group-sm > :is(.form-control, .form-select, .btn)):not(:is(table, .table, .ui-export-designer-modal) *, [class*="tw:min-h-"]) {
+        min-height: var(--ui-control-height-sm);
+    }
+    .content-area .btn-group-sm > .btn:not(:is(table, .table, .ui-export-designer-modal) *, [class*="tw:min-h-"]) {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .content-area :is(.form-control, .form-select):not(textarea, select[multiple], select[size]:not([size="1"]), .form-control-sm, .form-select-sm, .form-control-lg, .form-select-lg, .form-control-color, .form-control-plaintext, [type="range"], .input-group-sm > *, :is(table, .table, .ui-export-designer-modal) *, [class*="tw:min-h-"]) {
+        min-height: var(--ui-control-height-md);
+    }
     /* Input matrices are functional editors, with measured legacy geometry. */
-    :is(.pr-items-table, .quotation-items-table, .qc-dimension-grid, .ui-export-designer-modal) {
+    :is(.pr-items-table, .quotation-items-table, .qc-dimension-grid, [data-annual-rates-matrix], .ui-export-designer-modal) {
         --ui-table-cell-block: .625rem;
         --ui-table-cell-inline: .875rem;
+        --ui-density-table-head-block: 0.4375rem;
+        --ui-density-table-head-min: 2.125rem;
+        --ui-density-table-action-min: 2.125rem;
+        --ui-density-table-action-block: 0.25rem;
+        --ui-density-table-action-inline: 0.75rem;
+        --ui-density-table-chip-min: 1.5rem;
+        --ui-density-table-chip-block: 0.1875rem;
         --ui-density-row-min: 2.5rem;
+    }
+    :is(.ui-data-table table, .table):not(.pr-items-table, .quotation-items-table, .qc-dimension-grid, [data-annual-rates-matrix]) tbody :is(td, th) :is(.ui-data-action, .ui-button:not([class*="tw:min-h-"])) {
+        min-height: var(--ui-density-table-action-min, var(--ui-control-height-sm));
+        padding: var(--ui-density-table-action-block, var(--ui-space-1)) var(--ui-density-table-action-inline, var(--ui-space-3));
+    }
+    :is(.ui-data-table table, .table):not(.pr-items-table, .quotation-items-table, .qc-dimension-grid, [data-annual-rates-matrix]) tbody :is(td, th) .ui-status-chip {
+        min-height: var(--ui-density-table-chip-min, 1.5rem);
+        padding-block: var(--ui-density-table-chip-block, .1875rem);
     }
     .sidebar-menu .sidebar-link {
         min-height: var(--ui-density-sidebar-min, 2.5rem);
@@ -5948,6 +6196,7 @@ div.dataTables_wrapper div.dataTables_processing {
     .ui-card__body--md, .ui-form-section__body { padding: var(--ui-density-card-padding, 1.25rem); }
     .ui-card__body--sm { padding: var(--ui-density-panel-block, .875rem); }
     .ui-metric-card { padding: var(--ui-density-metric-padding, 1rem); }
+    .ui-section { gap: var(--ui-density-stack-sm, .75rem); margin-bottom: var(--ui-density-stack-lg, 1.5rem); }
     .ui-form-section { gap: var(--ui-density-form-gap, 1rem); margin-bottom: var(--ui-density-stack-lg, 1.5rem); }
     .ui-form-section__header { padding: 1rem var(--ui-density-card-padding, 1.25rem); }
     .ui-form-section__body { gap: var(--ui-density-form-gap, 1rem); }
@@ -5965,24 +6214,39 @@ div.dataTables_wrapper div.dataTables_processing {
         --ui-table-cell-block: var(--ui-density-table-cell-block, .625rem);
         --ui-table-cell-inline: var(--ui-density-table-cell-inline, .875rem);
     }
-    .content-container > .tw\:grid.tw\:gap-4:not(.ui-account-shell) { gap: var(--ui-density-stack-sm, 1rem); }
-    .content-container > .tw\:grid.tw\:gap-5:not(.ui-account-shell) { gap: var(--ui-density-stack-md, 1.25rem); }
-    .content-container > .tw\:grid.tw\:gap-6:not(.ui-account-shell) { gap: var(--ui-density-stack-lg, 1.5rem); }
+    :is(.content-container, [data-server-tabs-container], [data-server-tabs-content], form:not(#customizationForm)) > .tw\:grid.tw\:gap-4:not(.ui-account-shell) { gap: var(--ui-density-stack-sm, 1rem); }
+    :is(.content-container, [data-server-tabs-container], [data-server-tabs-content], form:not(#customizationForm)) > .tw\:grid.tw\:gap-5:not(.ui-account-shell) { gap: var(--ui-density-stack-md, 1.25rem); }
+    :is(.content-container, [data-server-tabs-container], [data-server-tabs-content], form:not(#customizationForm)) > .tw\:grid.tw\:gap-6:not(.ui-account-shell) { gap: var(--ui-density-stack-lg, 1.5rem); }
     /* Control ancestors and action bars do not move while the user drags. */
     .content-area:has(#customizationForm) { padding: 1.25rem 1.5rem; }
     .ui-account-shell .ui-page-header { margin-bottom: 1.25rem; }
-    .ui-density-settings-body { padding: var(--ui-density-card-padding, 1.25rem); }
+    .ui-density-settings-body { padding: var(--ui-density-card-padding, 1.25rem); gap: var(--ui-density-form-gap, 1rem); }
     @media (max-width: 991.98px) {
         .content-area { padding: max(1rem, var(--ui-density-page-block)) max(1rem, var(--ui-density-page-inline)); }
         .content-area:has(#customizationForm) { padding: 1rem; }
         .ui-card__body--md, .ui-form-section__body { padding: var(--ui-density-metric-padding, 1rem); }
         .sidebar-menu .sidebar-link { min-height: 44px; }
     }
-    @media (any-pointer: coarse), (max-width: 991.98px) {
+    @media (pointer: coarse), (max-width: 991.98px) {
         .sidebar-menu .sidebar-link { min-height: 44px; }
-        .content-area:not(:has(.ui-account-shell)) :is(.ui-button, .ui-data-action),
+        .content-area:not(:has(.ui-account-shell)) :is(
+            .ui-button,
+            .ui-data-action,
+            .form-control-sm,
+            .form-select-sm,
+            .btn-group-sm > .btn,
+            .input-group-sm > :is(.form-control, .form-select, .btn),
+            :is(.form-control, .form-select):not(textarea, select[multiple], select[size]:not([size="1"]), .form-control-lg, .form-select-lg, .form-control-color, .form-control-plaintext, [type="range"]),
+            :is(input:not([type="checkbox"], [type="radio"], [type="hidden"], [type="range"]), select:not([multiple]))[class*="ui-control-height-md"],
+            .ui-searchable-free-input__input,
+            .ui-date-range-trigger,
+            .ui-calendar-trigger,
+            .ui-time-picker__input,
+            [role="combobox"][id$="-trigger"]
+        ):not(:is(table, .table, .ui-export-designer-modal) *),
         #customizationForm .ui-button,
         .ui-density-modal :is(.ui-button, .btn), .local-import-modal :is(.ui-button, .btn) { min-height: 44px; }
+        .content-area:not(:has(.ui-account-shell)) .ui-calendar-trigger:not(:is(table, .table, .ui-export-designer-modal) *) { height: auto; }
         .ui-density-modal .btn-close, .local-import-modal .btn-close { min-width: 44px; min-height: 44px; box-sizing: border-box; }
         .ui-form-section__body, .ui-density-form-grid { gap: max(.5rem, var(--ui-density-form-gap)); }
         .ui-toolbar, .ui-toolbar__left, .ui-toolbar__right,
@@ -5991,6 +6255,12 @@ div.dataTables_wrapper div.dataTables_processing {
 }
 /* These fallbacks preserve the same component spacing for print/no density root. */
 @media print {
+    :root,
+    :root[data-theme="dark"] {
+        --ui-table-row-stripe-bg: var(--md-surface);
+        --ui-table-col-name-bg: var(--md-surface);
+        --ui-table-row-hover-bg: var(--md-surface);
+    }
     .ui-density-form-stack > * + * { margin-top: 1rem; }
     .ui-form-section { gap: 1rem; margin-bottom: 1.5rem; }
     .ui-form-section__header { padding: 1rem 1.25rem; }
@@ -6008,8 +6278,8 @@ div.dataTables_wrapper div.dataTables_processing {
     position: sticky;
     left: 0;
     z-index: 2;
-    background-color: var(--color-surface);
-    box-shadow: inset -1px 0 0 var(--color-outline-variant);
+    background-color: var(--ui-table-cell-bg, var(--md-surface));
+    box-shadow: inset -1px 0 0 var(--md-outline-variant);
 }
 
 .quotation-sticky-material.ui-table-sticky-col {
@@ -6020,7 +6290,7 @@ div.dataTables_wrapper div.dataTables_processing {
     position: sticky;
     right: 0;
     z-index: 2;
-    background-color: var(--md-surface);
+    background-color: var(--ui-table-cell-bg, var(--md-surface));
     box-shadow: inset 1px 0 0 var(--md-outline-variant);
     white-space: nowrap;
 }

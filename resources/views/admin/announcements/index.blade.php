@@ -55,7 +55,7 @@
                             <td class="text-nowrap">{{ $ann->published_at ? $regionalFormatter->timestamp($ann->published_at, 'datetime_comma') : '-' }}</td>
                             <td class="text-end text-nowrap">
                                 <div class="tw:inline-flex tw:items-center tw:gap-1">
-                                    <x-ui.button :href="route('admin.announcements.edit', $ann->id)" variant="outline" size="sm">{{ __('admin.copy.edit') }}</x-ui.button>
+                                    <x-ui.button :href="route('admin.announcements.edit', $ann->id)" variant="outline-primary" size="sm">{{ __('admin.copy.edit') }}</x-ui.button>
                                     <div class="dropdown">
                                         <x-ui.button type="button" variant="outline" size="sm" class="dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="{{ __('admin.page.more_actions', ['title' => $ann->title]) }}">{{ __('admin.copy.more') }}</x-ui.button>
                                         <ul class="dropdown-menu dropdown-menu-end">

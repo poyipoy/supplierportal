@@ -10,7 +10,7 @@
         :eyebrow="__('ga.dashboard.operational')"
     >
         <x-slot:actions>
-            <x-ui.button :href="route('ga.dashboard')" variant="ghost" size="sm">
+            <x-ui.button :href="route('ga.dashboard')" variant="outline" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>{{ __('common.labels_review.dashboard') }}</span>
             </x-ui.button>
@@ -35,7 +35,7 @@
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.labels.date') }}</th>
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold text-end">{{ __('ga.labels.claim_amount') }}</th>
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.labels.status') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold text-end">{{ __('local_invoice.labels.actions') }}</th>
+                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-right text-end">{{ __('common.table.action') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -69,16 +69,16 @@
                                     {{ \App\Support\StatusHelper::gaClaimLabel($c->status) }}
                                 </x-ui.status-chip>
                             </td>
-                            <td class="text-end tw:whitespace-nowrap">
-                                <x-ui.button :href="route('ga.claims.show', $c)" size="sm" variant="outline">
-                                    <x-ui.icon name="eye" size="sm" />
-                                    <span>{{ __('local_invoice.actions.detail') }}</span>
-                                </x-ui.button>
-                                @if($c->receipt)
-                                    <a href="{{ route('ga.claims.receipt', $c) }}" target="_blank" class="btn btn-outline-secondary btn-sm" title="{{ __('local_invoice.actions.print_receipt') }}">
-                                        <x-ui.icon name="printer" size="sm" />
-                                    </a>
-                                @endif
+                            <td class="tw:text-right text-end tw:whitespace-nowrap">
+                                <div class="tw:inline-flex tw:items-center tw:justify-end tw:gap-1.5">
+                                    <x-ui.row-action
+                                        :href="route('ga.claims.show', $c)"
+                                        :context="$c->claim_number"
+                                    />
+                                    @if($c->receipt)
+                                        <x-ui.icon-button :href="route('ga.claims.receipt', $c)" target="_blank" variant="outline" size="sm" icon="printer" :label="__('local_invoice.actions.print_receipt')" />
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                     @empty

@@ -93,7 +93,7 @@
                             @php $matches = $rowMatches($answer); @endphp
                             <tr x-show="filter === 'all' || @js($matches)[filter]" data-answer="{{ $answer->answer ?? 'EMPTY' }}" data-score="{{ $answer->score }}">
                                 <td style="font-variant-numeric: tabular-nums;">{{ $answer->criterion_number_snapshot }}</td>
-                                <td style="text-wrap: pretty;">{{ $answer->criterion_text_snapshot }}</td>
+                                <td class="ui-col-data-name" style="text-wrap: pretty;">{{ $answer->criterion_text_snapshot }}</td>
                                 <td>
                                     @if($answer->answer === \App\Models\SupplierAuditAnswer::ANSWER_YES)
                                         <x-ui.status-chip tone="success" size="sm" icon="check">{{ __('supplier_audit.fields.yes') }}</x-ui.status-chip>

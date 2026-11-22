@@ -58,20 +58,36 @@ BLADE);
         $this->assertStringContainsString('tw:bg-secondary-container', $secondary);
 
         $outline = Blade::render('<x-ui.button variant="outline">Action</x-ui.button>');
-        $this->assertStringContainsString('tw:border-outline', $outline);
-        $this->assertStringContainsString('tw:bg-transparent', $outline);
+        $this->assertStringContainsString('tw:border-outline-strong', $outline);
+        $this->assertStringContainsString('tw:bg-surface', $outline);
+        $this->assertStringContainsString('tw:text-on-surface', $outline);
+
+        $outlinePrimary = Blade::render('<x-ui.button variant="outline-primary">Review</x-ui.button>');
+        $this->assertStringContainsString('tw:border-primary-text', $outlinePrimary);
+        $this->assertStringContainsString('tw:bg-surface', $outlinePrimary);
+        $this->assertStringContainsString('tw:text-primary-text', $outlinePrimary);
+
+        $dangerOutline = Blade::render('<x-ui.button variant="danger-outline">Remove</x-ui.button>');
+        $this->assertStringContainsString('tw:border-error', $dangerOutline);
+        $this->assertStringContainsString('tw:bg-surface', $dangerOutline);
+        $this->assertStringContainsString('tw:text-error', $dangerOutline);
 
         $ghost = Blade::render('<x-ui.button variant="ghost">Cancel</x-ui.button>');
         $this->assertStringContainsString('tw:border-transparent', $ghost);
         $this->assertStringContainsString('tw:bg-transparent', $ghost);
+        $this->assertStringContainsString('tw:text-on-surface-variant', $ghost);
     }
 
     public function test_icon_button_variants_render_expected_contracts(): void
     {
         $outline = Blade::render('<x-ui.icon-button icon="search" label="Search" variant="outline" />');
-        $this->assertStringContainsString('tw:border-outline', $outline);
-        $this->assertStringContainsString('tw:bg-transparent', $outline);
+        $this->assertStringContainsString('tw:border-outline-strong', $outline);
+        $this->assertStringContainsString('tw:bg-surface', $outline);
         $this->assertStringContainsString('aria-label="Search"', $outline);
+
+        $outlinePrimary = Blade::render('<x-ui.icon-button icon="eye" label="Open" variant="outline-primary" />');
+        $this->assertStringContainsString('tw:border-primary-text', $outlinePrimary);
+        $this->assertStringContainsString('tw:bg-surface', $outlinePrimary);
 
         $secondary = Blade::render('<x-ui.icon-button icon="filter" label="Filter" variant="secondary" />');
         $this->assertStringContainsString('tw:border-outline-variant', $secondary);
@@ -80,6 +96,14 @@ BLADE);
         $ghost = Blade::render('<x-ui.icon-button icon="x" label="Close" variant="ghost" />');
         $this->assertStringContainsString('tw:border-transparent', $ghost);
         $this->assertStringContainsString('tw:bg-transparent', $ghost);
+
+        foreach (['secondary-outline', 'warning-outline', 'success-outline', 'danger-outline'] as $variant) {
+            $rendered = Blade::render('<x-ui.icon-button icon="check" label="Check" :variant="$variant" />', ['variant' => $variant]);
+            $this->assertStringContainsString('tw:bg-surface', $rendered);
+            foreach (['bg-white', 'slate-300', 'amber-50', 'emerald-50', 'red-50'] as $legacyClass) {
+                $this->assertStringNotContainsString($legacyClass, $rendered);
+            }
+        }
     }
 
     public function test_page_header_with_actions_and_buttons_renders_cleanly(): void
@@ -419,5 +443,29 @@ BLADE);
         $this->assertStringContainsString('role="status"', $html);
         $this->assertStringContainsString('ui-skeleton', $html);
         $this->assertNoCompilerLeakage($html);
+    }
+
+    public function test_session_expired_modal_renders_accessible_alertdialog_and_reminder_bar_in_both_locales(): void
+    {
+        foreach (['en', 'id'] as $locale) {
+            app()->setLocale($locale);
+            $html = Blade::render('<x-ui.session-expired-modal />');
+
+            $this->assertNoCompilerLeakage($html);
+            $this->assertStringContainsString('role="alertdialog"', $html);
+            $this->assertStringContainsString('aria-modal="true"', $html);
+            $this->assertStringContainsString('aria-labelledby="adasi-session-expired-title"', $html);
+            $this->assertStringContainsString('aria-describedby="adasi-session-expired-desc"', $html);
+            $this->assertStringContainsString('role="status"', $html);
+            $this->assertStringContainsString('role="alert"', $html);
+            $this->assertStringContainsString('data-session-modal-reconnect', $html);
+            $this->assertStringContainsString('data-session-modal-login', $html);
+            $this->assertStringContainsString('data-session-modal-dismiss', $html);
+            $this->assertStringContainsString('<svg', $html);
+            $this->assertStringContainsString(__('security.session_modal.title', [], $locale), $html);
+            $this->assertStringContainsString(__('security.session_modal.action_reconnect', [], $locale), $html);
+            $this->assertStringContainsString(__('security.session_modal.action_sign_in', [], $locale), $html);
+            $this->assertStringNotContainsString('—', $html);
+        }
     }
 }

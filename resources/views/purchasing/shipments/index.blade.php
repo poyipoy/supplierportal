@@ -113,7 +113,7 @@
                     <th scope="col">{{ __('shipments.copy.actual_arrival') }}</th>
                     <th scope="col">{{ __('shipments.copy.missing_documents') }}</th>
                     <th scope="col" class="text-center">{{ __('shipments.copy.status') }}</th>
-                    <th scope="col" class="text-end" style="width: 80px;">{{ __('shipments.copy.action') }}</th>
+                    <th scope="col" class="tw:text-right text-end" style="width: 96px;">{{ __('common.table.action') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -155,8 +155,11 @@
                         <td class="text-center">
                             {!! \App\Support\StatusHelper::badge(\App\Support\StatusHelper::shipmentBadge($shp->status), \App\Support\StatusHelper::shipmentLabel($shp->status)) !!}
                         </td>
-                        <td class="text-end">
-                            <a href="{{ route('purchasing.shipments.show', $shp) }}" class="ui-data-action ui-data-action--primary">{{ __('shipments.copy.details') }}</a>
+                        <td class="tw:text-right text-end">
+                            <x-ui.row-action
+                                :href="route('purchasing.shipments.show', $shp)"
+                                :context="$shp->shipment_number"
+                            />
                         </td>
                     </tr>
                 @empty
@@ -176,10 +179,11 @@
         var table = $('#shipmentTable').DataTable({
             processing: true,
             serverSide: true,
+            dom: 'rtip',
+            search: { search: @json((string) request('search', '')) },
             ajax: {
                 url: '{{ route("purchasing.shipments.index") }}',
                 data: function (d) {
-                    d.search = $('#filter_search').val();
                     d.status = $('#filter_status').val();
                     d.supplier_id = $('#filter_supplier').val();
                     d.date_from = $('#shipmentDateFrom').val();
@@ -212,7 +216,7 @@
                 { key: 'supplier_id', label: @json(__('shipments.copy.supplier')), selector: '#filter_supplier', type: 'select', advanced: true },
                 { key: 'date_range', label: @json(__('shipments.copy.shipment_date')), type: 'date-range', picker: '#shipmentDateRange', start: '#shipmentDateFrom', end: '#shipmentDateTo', advanced: true },
             ],
-            onFilterChange: () => table.draw(),
+            onFilterChange: () => table.search($('#filter_search').val() || '').draw(),
         });
     });
 </script>

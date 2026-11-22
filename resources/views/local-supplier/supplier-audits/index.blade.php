@@ -77,7 +77,7 @@
                     <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('supplier_audit.fields.period') }}</th>
                     <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('supplier_audit.fields.status') }}</th>
                     <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('supplier_audit.fields.submitted_at') }}</th>
-                    <th scope="col" class="tw:text-ui-xs tw:font-semibold text-end"><span class="tw:sr-only">{{ __('supplier_audit.actions.view') }}</span></th>
+                    <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-right text-end">{{ __('common.table.action') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -86,11 +86,11 @@
                         <td class="tw:font-medium tw:text-on-surface">{{ $audit->period_label }}</td>
                         <td><x-ui.status-chip :tone="\App\Support\StatusHelper::supplierAuditTone($audit->status)" size="sm">{{ \App\Support\StatusHelper::supplierAuditLabel($audit->status) }}</x-ui.status-chip></td>
                         <td class="tw:whitespace-nowrap" style="font-variant-numeric: tabular-nums;">{{ $audit->submitted_at ? $regionalFormatter->timestamp($audit->submitted_at) : '—' }}</td>
-                        <td class="text-end">
-                            <x-ui.button :href="route('local-supplier.supplier-audits.show', $audit)" variant="ghost" size="sm">
-                                <span>{{ __('supplier_audit.actions.view') }}</span>
-                                <x-ui.icon name="chevron-right" size="sm" />
-                            </x-ui.button>
+                        <td class="tw:text-right text-end">
+                            <x-ui.row-action
+                                :href="route('local-supplier.supplier-audits.show', $audit)"
+                                :context="$audit->period_label"
+                            />
                         </td>
                     </tr>
                 @endforeach

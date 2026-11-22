@@ -10,7 +10,7 @@
         :eyebrow="__('local_invoice.form.portal')"
     >
         <x-slot:actions>
-            <x-ui.button :href="route('local-supplier.invoices.index')" variant="ghost" size="sm">
+            <x-ui.button :href="route('local-supplier.invoices.index')" variant="outline" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>{{ __('local_invoice.form.back_list') }}</span>
             </x-ui.button>

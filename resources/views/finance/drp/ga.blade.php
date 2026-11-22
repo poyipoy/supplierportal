@@ -10,7 +10,7 @@
         :eyebrow="__('finance.labels.finance_ap')"
     >
         <x-slot:actions>
-            <x-ui.button :href="route('finance.dashboard')" variant="ghost" size="sm">
+            <x-ui.button :href="route('finance.dashboard')" variant="outline" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>{{ __('common.labels_review.dashboard') }}</span>
             </x-ui.button>
@@ -146,7 +146,7 @@
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('ga.labels.active_employees') }}</th>
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold text-end">{{ __('finance.drp.total_amount_rp') }}</th>
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('local_invoice.labels.status') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold text-end">{{ __('local_invoice.labels.actions') }}</th>
+                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-right text-end">{{ __('common.table.action') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -165,11 +165,12 @@
                                     {{ \App\Support\StatusHelper::localFinanceLabel($batch->status) }}
                                 </x-ui.status-chip>
                             </td>
-                            <td class="text-end">
-                                <x-ui.button :href="route('finance.drp.show', $batch)" size="sm" variant="outline">
-                                    <x-ui.icon name="eye" size="sm" />
-                                    <span>{{ __('finance.drp.review_pay') }}</span>
-                                </x-ui.button>
+                            <td class="tw:text-right text-end">
+                                <x-ui.row-action
+                                    :href="route('finance.drp.show', $batch)"
+                                    :label="__('finance.drp.review_pay')"
+                                    :context="$batch->batch_number"
+                                />
                             </td>
                         </tr>
                     @empty

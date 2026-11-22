@@ -68,7 +68,7 @@
                     <th scope="col" class="text-end">{{ __('purchasing.copy.total_kg') }}</th>
                     <th scope="col">{{ __('purchasing.copy.status') }}</th>
                     <th scope="col">{{ __('purchasing.copy.date_created') }}</th>
-                    <th scope="col">{{ __('purchasing.copy.action') }}</th>
+                    <th scope="col">{{ __('common.table.action') }}</th>
                 </tr>
             </thead>
             <tbody></tbody>

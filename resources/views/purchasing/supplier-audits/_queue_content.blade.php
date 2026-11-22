@@ -78,7 +78,7 @@
                 <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('supplier_audit.fields.due_date') }}</th>
                 <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('supplier_audit.fields.status') }}</th>
                 <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('supplier_audit.fields.submitted_at') }}</th>
-                <th scope="col" class="tw:text-ui-xs tw:font-semibold text-end"><span class="tw:sr-only">{{ __('supplier_audit.columns.action') }}</span></th>
+                <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-right text-end">{{ __('common.table.action') }}</th>
             </tr>
         </thead>
         <tbody>
@@ -118,14 +118,18 @@
                     </td>
                     <td><x-ui.status-chip :tone="\App\Support\StatusHelper::supplierAuditTone($audit->status)" size="sm">{{ \App\Support\StatusHelper::supplierAuditLabel($audit->status) }}</x-ui.status-chip></td>
                     <td class="tw:whitespace-nowrap tw:text-ui-xs" style="font-variant-numeric: tabular-nums;">{{ $audit->submitted_at ? $regionalFormatter->timestamp($audit->submitted_at) : '—' }}</td>
-                    <td class="text-end">
+                    <td class="tw:text-right text-end">
                         @if($audit->status === \App\Models\SupplierAudit::STATUS_SUBMITTED)
-                            <x-ui.button :href="route('purchasing.supplier-audits.show', $audit)" variant="primary" size="sm">{{ __('supplier_audit.row_actions.review') }}</x-ui.button>
+                            <x-ui.row-action
+                                :href="route('purchasing.supplier-audits.show', $audit)"
+                                :label="__('supplier_audit.row_actions.review')"
+                                :context="$audit->supplierName()"
+                            />
                         @else
-                            <x-ui.button :href="route('purchasing.supplier-audits.show', $audit)" variant="ghost" size="sm">
-                                <span>{{ __('supplier_audit.actions.view') }}</span>
-                                <x-ui.icon name="chevron-right" size="sm" />
-                            </x-ui.button>
+                            <x-ui.row-action
+                                :href="route('purchasing.supplier-audits.show', $audit)"
+                                :context="$audit->supplierName()"
+                            />
                         @endif
                     </td>
                 </tr>

@@ -699,7 +699,7 @@
             @endif
         </x-slot:meta>
         <x-slot:actions>
-            <x-ui.button :href="route('supplier.quotations.period', $pr->period_id)" variant="ghost" size="sm">
+            <x-ui.button :href="route('supplier.quotations.period', $pr->period_id)" variant="outline" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>{{ __('supplier.copy.back_to_requisitions') }}</span>
             </x-ui.button>
@@ -1140,10 +1140,10 @@
                                                     <div class="quotation-notes-popover__hint">{{ __('supplier.copy.provide_tolerances_specs_or_availability_details') }}</div>
                                                 </div>
                                                 <div class="quotation-notes-popover__footer">
-                                                    <button type="button" class="btn btn-sm btn-outline-secondary quotation-notes-btn-cancel" data-notes-cancel>{{ __('supplier.copy.cancel') }}</button>
-                                                    <button type="button" class="btn btn-sm btn-primary quotation-notes-btn-save" data-notes-save>
+                                                    <x-ui.button type="button" variant="ghost" size="sm" class="quotation-notes-btn-cancel" data-notes-cancel>{{ __('supplier.copy.cancel') }}</x-ui.button>
+                                                    <x-ui.button type="button" variant="primary" size="sm" class="quotation-notes-btn-save" data-notes-save>
                                                         <x-ui.icon name="check" size="sm" class="me-1" /> {{ __('supplier.copy.save') }}
-                                                    </button>
+                                                    </x-ui.button>
                                                 </div>
                                             </div>
                                         </td>

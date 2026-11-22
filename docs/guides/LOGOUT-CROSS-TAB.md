@@ -11,6 +11,9 @@ untuk menunggu sebelum menutup tab. Ini bukan Single Logout antar aplikasi.
 | `PORTAL_CROSS_TAB_LOGOUT_ENABLED` | `cross_tab_logout` | `true` | Pesan logout lintas tab dan dialog sambungkan-kembali saat sesi berakhir (401/419) |
 | `PORTAL_STORAGE_CLEANUP_ENABLED` | `scoped_storage_cleanup` | `true` | Hapus key lokal yang diizinkan saat logout/login |
 | `PORTAL_LOGOUT_ALL_DEVICES_ENABLED` | `logout_all_devices` | `false` | Tampilkan dan proses checkbox keluar dari semua perangkat |
+| `AUTH_IDLE_TIMEOUT` | `auth_security.session.idle_timeout_minutes` | `SESSION_LIFETIME` (60 di `.env.example`) | Batas diam (menit) aktivitas nyata sebelum sesi berakhir, di-clamp `<= min(SESSION_LIFETIME, AUTH_ABSOLUTE_TIMEOUT)` |
+| `AUTH_ABSOLUTE_TIMEOUT` | `auth_security.session.absolute_timeout_minutes` | `480` | Batas durasi maksimum sesi (menit) meski pengguna aktif terus-menerus |
+| `AUTH_SESSION_HEARTBEAT_SECONDS` | `auth_security.session.heartbeat_interval_seconds` | `120` | Jeda minimal throttled heartbeat (`POST session.heartbeat`) saat pengguna aktif |
 
 Setelah mengubah environment pada deployment yang memakai cache konfigurasi,
 bangun ulang `php artisan config:cache`. Tidak ada perubahan route atau migrasi.
@@ -43,48 +46,37 @@ mempertahankan perilaku lama. Polling tetap 30 detik dan dilewati saat tab
 tersembunyi; deteksi revokasi perangkat lain karena itu terjadi pada polling aktif
 berikutnya. Jika kedua transport browser diblokir, polling menjadi fallback.
 
-## Sesi berakhir: dialog sambungkan kembali
+## Sesi berakhir: modal ERP & pelacakan aktivitas nyata
 
-Sesi yang habis atau dicabut tidak lagi memindahkan halaman secara diam-diam dan
-tidak lagi memunculkan error mentah. Respons **401 atau 419** dari polling, `fetch`
-same-origin, atau jQuery ajax (termasuk DataTables) membuka satu dialog "Sesi
-berakhir" dengan pilihan **Sambungkan kembali** dan **Nanti saja**
-(`resources/js/session-sync.js`, teks di kunci `js.session.*`). 419 hanya dihitung
-untuk aksi yang dimulai user; polling hanya 401.
+Sesi yang habis atau dicabut tidak lagi dibiarkan diam-diam hidup selamanya oleh polling badge dan tidak lagi menghancurkan form kotor secara tiba-tiba.
 
-- **Satu dialog**: kegagalan paralel dari satu halaman berbagi dialog yang sama.
-- **Sambungkan kembali** (6 November 2026) lebih dulu bertanya ke
-  `GET session/status` (`session.status`, `SessionStatusController`, di luar `auth`,
-  `no-store`, `throttle:30,1`) tanpa kredensial apa pun; tombol menampilkan loader.
-  - Sesi masih hidup (sudah masuk lagi di tab lain, atau hanya token CSRF yang basi)
-    atau cookie remember-me masih valid: server mengembalikan token CSRF sesi itu,
-    halaman **tidak dimuat ulang**, isian yang belum disimpan tetap ada. Token baru
-    dipasang ke `meta[name=csrf-token]`, semua `input[name=_token]` dan header auth
-    Echo; token lama yang tertanam di script inline diganti saat request same-origin
-    (`fetch` dan prefilter jQuery), tidak pernah untuk origin lain. Polling lanjut dan
-    toast "Sesi tersambung kembali" tampil.
-  - Akun 2FA dengan remember-me: request JSON pertama setelah sesi habis (biasanya
-    polling badge) kini memulai challenge kode yang sama seperti halaman HTML (cookie
-    remember tetap dirotasi), lalu dialog membawa user ke `two-factor-challenge` dan
-    kembali ke halaman ini setelah kode benar, tanpa password. Ini mengubah kontrak
-    A11 lama (JSON hanya mengakhiri sesi); lihat `TargetedAuthenticationCorrectnessTest`.
-  - Sesi yang benar-benar berakhir (dicabut, absolute timeout, akun nonaktif, tanpa
-    remember-me) tetap tidak bisa dipulihkan tanpa kredensial: halaman dibuka ulang,
-    server mengarahkan ke login lalu kembali ke halaman ini. Akun lain yang kini masuk
-    di browser yang sama juga memuat ulang halaman, bukan melanjutkan data akun lama.
-  - Server tidak terjangkau, 429 atau 5xx: pesan tampil di dalam dialog (`role=alert`),
-    halaman tetap, user dapat mencoba lagi atau memilih "Nanti saja".
-  Storage ber-scope hanya dibersihkan dan prompt native perubahan belum tersimpan hanya
-  dilewati ketika halaman benar-benar berpindah.
-- **Nanti saja** menjaga halaman dan isinya apa adanya (user dapat menyalin data
-  lebih dulu). Polling badge berhenti. Dialog muncul lagi hanya bila user memicu aksi
-  yang gagal, dengan jeda 3 detik agar gelombang request yang sama tidak
-  membukanya kembali. Dialog yang digantikan alert lain bukan penolakan.
-- DataTables tidak menampilkan alert "Ajax error" sendiri untuk sesi berakhir;
-  error tabel lain tetap memakai alert bawaan, dan halaman yang menetapkan
-  `errMode` sendiri tidak diubah.
-- Halaman guest tidak menampilkan dialog. Mengikuti flag `cross_tab_logout`: bila
-  mati, tidak ada dialog dan tidak ada pengamat `fetch`/jQuery.
+### Pemisahan aktivitas nyata vs passive polling
+
+- `App\Support\Auth\SessionLifecycle` dan `App\Http\Middleware\StartPortalSession` (dibind pada `Illuminate\Session\Middleware\StartSession` di `AuthSecurityServiceProvider::register()`) memastikan route polling latar (`notifications.unread-count`, `conversations.unread-count`, `conversations.messages.latest`, `exports.status`, status impor/dokumen PO lokal, serta `session.status?passive=1`) **tidak** memperbarui `auth_last_activity_at`, **tidak** menulis ulang `sessions.last_activity`, dan **tidak** menyegarkan masa berlaku cookie sesi.
+- Aktivitas nyata pengguna (klik, ketik, ubah field, submit di top shell maupun di dalam iframe Workspace Shell) disinkronkan lintas tab dan mengirim throttled `POST session/heartbeat` (`session.heartbeat`, middleware `auth`, `no-store`, `throttle:30,1`, CSRF) untuk memperpanjang `auth_last_activity_at` tanpa pernah melampaui `AUTH_ABSOLUTE_TIMEOUT`.
+- `resources/js/session-sync.js` menjadwalkan timer proaktif berdasarkan sisa waktu dari server (`window.AdasiSession.timing`) dan segera memverifikasi ke `GET session/status?passive=1` saat deadline tercapai atau tab kembali aktif (`visibilitychange`, `focus`, `pageshow`, `online`).
+
+### Perilaku modal `<x-ui.session-expired-modal>`
+
+Saat sesi berakhir (idle timeout, absolute timeout, revokasi, deaktivasi, atau 401/419), top shell menampilkan `<x-ui.session-expired-modal>` (`role="alertdialog"`, `aria-modal="true"`, focus trap, token `--ui-dialog-bg` pada dark mode, dengan fallback ke `AdasiAlert`/`window.confirm` bila tidak terpasang):
+
+- **Satu dialog sinkron lintas tab**: kegagalan paralel berbagi satu modal dan penemuan expiry disiarkan ke tab lain (`session-expired`).
+- **Halaman bersih (hard-locked)**: tanpa tombol tutup `X`, tombol `Escape` dan klik backdrop diblokir.
+- **Halaman atau iframe Workspace Shell dengan perubahan belum tersimpan**: modal menampilkan kotak peringatan + daftar judul tab dirty (`window.AdasiWorkspaceShell.getDirtyFrames()`) serta tombol **Tetap di Halaman (Salin Data)** yang menutup modal ke bilah pengingat atas permanen (`role="status"`) dengan tombol 1-klik **Sambungkan Kembali**.
+- **Sambungkan Kembali (1-Klik Server-Side In-Place Reconnect, Tanpa Reload)** memanggil `POST session/reconnect` (`session.reconnect`, `SessionReconnectController` + `SessionReconnectService`, middleware `no-store`, `throttle:30,1`, dilindungi Same-Origin Custom-Header CSRF guard `X-Adasi-Reconnect: 1` + `X-Requested-With: XMLHttpRequest` + pemeriksaan `Sec-Fetch-Site`/`Origin`):
+  - Server memverifikasi sesi aktif atau cookie `HttpOnly` terenkripsi `adasi_reconnect_grant` (`AES-256-CBC` + HMAC, terikat `uid`, `auth_session_version`, `session_id`, `device_hash`, dan `auth_absolute_started_at`).
+  - Selama masih dalam jendela `AUTH_ABSOLUTE_TIMEOUT` (8 jam), akun aktif, `auth_session_version` cocok, dan sesi/perangkat belum di-revoke: server mengautentikasi ulang guard `web` di tempat (termasuk akun 2FA pada perangkat yang sama), merotasi session ID & CSRF token, mempertahankan `auth_absolute_started_at` asli, mereset `auth_last_activity_at`, mencatat audit `session_reconnected`, dan mengembalikan token CSRF baru beserta sisa waktu sesi.
+  - Halaman **tidak dimuat ulang (`tanpa loading`)**, token CSRF baru disinkronkan ke top shell, seluruh iframe Workspace Shell, header auth Echo, dan token inline lama ditukar otomatis saat request same-origin. Polling lanjut, tab lain ikut pulih via broadcast `session-restored`, dan toast "Sesi tersambung kembali" tampil.
+  - Jika sesi sudah tidak dapat di-reconnect (melewati 8 jam `AUTH_ABSOLUTE_TIMEOUT`, dicabut dari perangkat lain/admin, atau akun nonaktif): server mengembalikan `401 { reconnectable: false }` dan mengarahkan top window ke halaman login dengan `url.intended` terjaga.
+- **Masuk Ulang (Tombol Sekunder)** mengarahkan top window ke `?reauth=1` sehingga server mengakhiri sesi penuh, mencabut grant reconnect, menyimpan `url.intended`, dan mengalihkan `302 /login`.
+  - Jika server tidak terjangkau, `429`, atau `5xx`: pesan error tampil inline (`role="alert"`) di dalam modal agar operator dapat mencoba lagi.
+- **Kebijakan ketat Remember Me (standar ERP / OWASP / NIST)**:
+  - Saat `EnforceAuthSessionSecurity::terminateSession()` mengakhiri sesi akibat idle/absolute timeout, revokasi, atau deaktivasi, token per-perangkat di `auth_remember_tokens` untuk sesi tersebut ikut dicabut.
+  - Passive poll, `session.status`, dan request JSON tidak pernah membangkitkan sesi secara diam-diam dari cookie Remember Me; jika recaller hadir saat sesi sudah habis, token recaller dicabut dan server mengembalikan `401 { authenticated: false, reason: 'idle_timeout' }`.
+  - Kunjungan top-level HTML baru (non-JSON, non-passive, mis. membuka `/dashboard` di browser baru selama token belum dicabut) tetap mendukung Remember Me normal (termasuk challenge 2FA untuk akun MFA).
+- **Perlindungan Workspace Shell**: iframe yang dialihkan 302 ke `[data-auth-login-page]` tidak memicu broadcast `signed-out` dan tidak langsung memanggil `breakoutToTop`; shell membuka `<x-ui.session-expired-modal>` sehingga tab lain dengan perubahan belum tersimpan tetap terlindungi.
+- DataTables tidak menampilkan alert "Ajax error" sendiri untuk sesi berakhir; error tabel lain tetap memakai alert bawaan, dan halaman yang menetapkan `errMode` sendiri tidak diubah.
+- Halaman guest tidak menampilkan dialog. Mengikuti flag `cross_tab_logout`: bila mati, tidak ada dialog dan tidak ada pengamat `fetch`/jQuery.
 
 Batas verifikasi: perilaku ini diuji dengan mock (`tests/js/session-sync.test.mjs`),
 belum di browser nyata dengan sesi yang benar-benar habis.

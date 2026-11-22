@@ -3,6 +3,7 @@
 namespace App\Services\Auth;
 
 use App\Models\User;
+use App\Support\Auth\SessionLifecycle;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -60,6 +61,9 @@ class SessionInventoryService
     public function enforceConcurrentLimit(User $user, ?string $currentSessionId = null): int
     {
         $evictedIds = $this->enforceConcurrentLimitWithEvictedIds($user, $currentSessionId);
+        if ($evictedIds !== []) {
+            app(SessionReconnectService::class)->markSessionsRevoked($evictedIds);
+        }
         $this->lastEvictionRevokedPerDeviceCount = $evictedIds === []
             ? 0
             : app(RememberTokenService::class)->revokeForSessions($user, $evictedIds);
@@ -118,6 +122,6 @@ class SessionInventoryService
 
     private function activeCutoff(): int
     {
-        return now()->subMinutes((int) config('session.lifetime', 120))->timestamp;
+        return now()->subSeconds(SessionLifecycle::idleTimeoutSeconds())->timestamp;
     }
 }

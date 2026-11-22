@@ -5,6 +5,7 @@ namespace App\Services\Auth;
 use App\Events\AuthSecurityEvent;
 use App\Models\User;
 use App\Services\NotificationService;
+use App\Support\Auth\SessionLifecycle;
 use App\Support\NotificationDomain;
 use App\Support\PortalContext;
 use App\Support\WorkspaceShell;
@@ -22,6 +23,7 @@ class CompleteLoginService
         private readonly NotificationService $notifications,
         private readonly TwoFactorService $twoFactor,
         private readonly RememberTokenService $rememberTokens,
+        private readonly SessionReconnectService $reconnect,
     ) {}
 
     public function complete(Request $request, User $user, bool $remember): void
@@ -43,15 +45,19 @@ class CompleteLoginService
         $this->twoFactor->forgetPendingLogin($request);
         $request->attributes->set('auth_security.login_completed', true);
 
+        $now = now()->timestamp;
+
         Auth::guard('web')->login($user, $remember);
         $request->session()->regenerate();
         $request->session()->put([
             'auth_session_version' => (int) $user->auth_session_version,
-            'auth_absolute_started_at' => now()->timestamp,
+            SessionLifecycle::ABSOLUTE_STARTED_KEY => $now,
+            SessionLifecycle::LAST_ACTIVITY_KEY => $now,
         ]);
 
         $isNewDevice = $this->knownDevices->registerOrTouch($request, $user);
         $deviceHash = $this->knownDevices->currentDeviceHash($request);
+        $this->reconnect->issueGrantCookie($request, $user, $now, $request->session()->getId());
 
         if ($remember) {
             $this->rememberTokens->issueForSession(

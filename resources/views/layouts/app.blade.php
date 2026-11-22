@@ -10,7 +10,20 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <script>
         window.AdasiLoginUrl = @js(route('login'));
-        window.AdasiSession = @js(auth()->check() && (config('portal_session.cross_tab_logout') || config('portal_session.scoped_storage_cleanup')) ? ['crossTab' => (bool) config('portal_session.cross_tab_logout'), 'cleanup' => (bool) config('portal_session.scoped_storage_cleanup'), 'userId' => (int) auth()->id(), 'statusUrl' => route('session.status'), 'copy' => ['restored' => __('security.session_reconnect.restored'), 'failed' => __('security.session_reconnect.failed'), 'unauthenticated' => __('security.session_reconnect.unauthenticated')]] : null);
+        window.AdasiSession = @js(auth()->check() && (config('portal_session.cross_tab_logout') || config('portal_session.scoped_storage_cleanup')) ? [
+            'crossTab' => (bool) config('portal_session.cross_tab_logout'),
+            'cleanup' => (bool) config('portal_session.scoped_storage_cleanup'),
+            'userId' => (int) auth()->id(),
+            'statusUrl' => route('session.status'),
+            'reconnectUrl' => route('session.reconnect'),
+            'heartbeatUrl' => route('session.heartbeat'),
+            'timing' => \App\Support\Auth\SessionLifecycle::remainingTimings(request()),
+            'copy' => [
+                'restored' => __('security.session_reconnect.restored'),
+                'failed' => __('security.session_reconnect.failed'),
+                'unauthenticated' => __('security.session_reconnect.unauthenticated'),
+            ],
+        ] : null);
     </script>
     <script>
         window.AdasiPortal = Object.assign(window.AdasiPortal || {}, { pathPrefix: @js(\App\Support\PortalPath::prefix()) });
@@ -98,6 +111,7 @@
                 };
                 const applyDensity = () => {
                     root.dataset.density = previewDensity ?? savedDensity;
+                    window.dispatchEvent(new CustomEvent('adasi:density-change', { detail: { density: root.dataset.density } }));
                 };
 
                 root.dataset.sidebarCollapsed = String(window.matchMedia('(min-width: 992px)').matches && sidebarCollapsed);
@@ -348,6 +362,9 @@
         @if(!($isWorkspaceEmbed ?? false))
             {{-- Navbar --}}
             @include('partials.navbar')
+            @auth
+                <x-ui.session-expired-modal />
+            @endauth
         @endif
 
         @if($isWorkspaceShell ?? false)
@@ -550,6 +567,7 @@
                 const headers = {
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
+                    'X-Adasi-Session-Check': 'passive',
                 };
 
                 const notifCtrl = new AbortController();
@@ -650,6 +668,11 @@
                 pollTicksSinceSync = 0;
                 updateBadges();
             }, 30000);
+
+            window.addEventListener('adasi:session-restored', () => {
+                pollTicksSinceSync = 0;
+                updateBadges();
+            });
         @endauth
     </script>
     @endif

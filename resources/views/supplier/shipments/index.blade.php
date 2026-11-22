@@ -106,7 +106,7 @@
                     <th scope="col">{{ __('shipments.copy.est_arrival') }}</th>
                     <th scope="col">{{ __('shipments.copy.missing_documents') }}</th>
                     <th scope="col" class="text-center">{{ __('shipments.copy.status') }}</th>
-                    <th scope="col" class="text-end ui-sticky-col-right" style="width: 140px;">{{ __('shipments.copy.action') }}</th>
+                    <th scope="col" class="tw:text-right text-end ui-sticky-col-right" style="width: 140px;">{{ __('common.table.action') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -174,7 +174,10 @@
                                 </div>
                             @else
                                 <div class="d-inline-flex justify-content-end">
-                                    <a href="{{ route('supplier.shipments.show', $shp) }}" class="ui-data-action ui-data-action--primary ui-focus-ring" aria-label="{{ __('shipments.copy.view_shipment', ['number' => $shp->shipment_number]) }}">{{ __('shipments.copy.details') }}</a>
+                                    <x-ui.row-action
+                                        :href="route('supplier.shipments.show', $shp)"
+                                        :context="$shp->shipment_number"
+                                    />
                                 </div>
                             @endif
                         </td>
@@ -196,10 +199,11 @@
         var table = $('#supplierShipmentTable').DataTable({
             processing: true,
             serverSide: true,
+            dom: 'rtip',
+            search: { search: @json((string) request('search', '')) },
             ajax: {
                 url: '{{ route("supplier.shipments.index") }}',
                 data: function (d) {
-                    d.search = $('#filter_search').val();
                     d.status = $('#filter_status').val();
                     d.date_from = $('#supplierShipmentDateFrom').val();
                     d.date_to = $('#supplierShipmentDateTo').val();
@@ -228,7 +232,7 @@
                 { key: 'status', label: @json(__('shipments.copy.status')), selector: '#filter_status', type: 'select' },
                 { key: 'date_range', label: @json(__('shipments.copy.shipment_date')), type: 'date-range', picker: '#supplierShipmentDateRange', start: '#supplierShipmentDateFrom', end: '#supplierShipmentDateTo' },
             ],
-            onFilterChange: () => table.draw(),
+            onFilterChange: () => table.search($('#filter_search').val() || '').draw(),
         });
 
         // ADASI Alert cancel confirmation

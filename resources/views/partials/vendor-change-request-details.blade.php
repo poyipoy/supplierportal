@@ -76,7 +76,7 @@
                             $isNew = ($oldValRaw === null);
                         @endphp
                         <tr class="{{ $isChanged ? 'tw:bg-primary/[0.03]' : '' }}">
-                            <td class="tw:py-2.5 tw:ps-3 tw:text-on-surface">
+                            <td class="tw:py-2.5 tw:ps-3 tw:text-on-surface ui-col-data-name">
                                 <div class="tw:flex tw:items-center tw:gap-2">
                                     <x-ui.icon :name="$meta['icon']" size="sm" class="tw:text-on-surface-variant/70 tw:shrink-0" />
                                     <span class="tw:font-medium">{{ $meta['label'] }}</span>

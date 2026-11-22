@@ -53,7 +53,7 @@
                     <th scope="col">{{ __('purchasing.copy.operational_checklist_item') }}</th>
                     <th scope="col" class="tw:w-40 text-center">{{ __('purchasing.copy.count_severity') }}</th>
                     <th scope="col">{{ __('purchasing.copy.description_workflow_impact') }}</th>
-                    <th scope="col" class="tw:w-32 text-end">{{ __('purchasing.copy.action') }}</th>
+                    <th scope="col" class="tw:w-32 tw:text-right text-end">{{ __('common.table.action') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -83,11 +83,13 @@
                         <td class="tw:text-on-surface-variant tw:text-ui-xs">
                             {{ $check['description'] }}
                         </td>
-                        <td class="text-end">
-                            <x-ui.button :href="$check['url']" size="sm" variant="{{ $check['count'] > 0 ? 'outline' : 'ghost' }}">
-                                <span>{{ __('purchasing.copy.review') }}</span>
-                                <x-ui.icon name="arrow-right" size="sm" />
-                            </x-ui.button>
+                        <td class="tw:text-right text-end">
+                            <x-ui.row-action
+                                :href="$check['url']"
+                                :tone="$check['count'] > 0 ? 'primary' : 'neutral'"
+                                :label="__('purchasing.copy.review')"
+                                :context="$check['label']"
+                            />
                         </td>
                     </tr>
                 @endforeach
@@ -117,15 +119,13 @@
                     </x-slot:statusSlot>
 
                     <x-slot:actions>
-                        <x-ui.button
+                        <x-ui.row-action
                             :href="$check['url']"
-                            size="sm"
-                            variant="{{ $check['count'] > 0 ? 'primary' : 'ghost' }}"
-                            class="tw:w-full tw:justify-center tw:min-h-11"
-                        >
-                            <span>{{ __('purchasing.copy.review') }}</span>
-                            <x-ui.icon name="arrow-right" size="sm" />
-                        </x-ui.button>
+                            :tone="$check['count'] > 0 ? 'primary' : 'neutral'"
+                            :label="__('purchasing.copy.review')"
+                            :context="$check['label']"
+                            class="tw:w-full tw:min-h-11"
+                        />
                     </x-slot:actions>
                 </x-ui.mobile-card>
             @endforeach
@@ -252,7 +252,7 @@
             {{-- Exchange Rate Quick Reference --}}
             <x-ui.card :title="__('purchasing.copy.exchange_rate_benchmark')">
                 <x-slot:actions>
-                    <x-ui.button type="button" variant="ghost" size="sm" data-bs-toggle="modal" data-bs-target="#kursModal">
+                    <x-ui.button type="button" variant="outline" size="sm" data-bs-toggle="modal" data-bs-target="#kursModal">
                         <x-ui.icon name="square-pen" />
                         {{ __('purchasing.copy.update_rate') }}
                     </x-ui.button>
@@ -291,7 +291,7 @@
                         <th scope="col">{{ __('purchasing.copy.pr_no') }}</th>
                         <th scope="col">{{ __('purchasing.copy.period') }}</th>
                         <th scope="col">{{ __('purchasing.copy.status') }}</th>
-                        <th scope="col" class="text-end">{{ __('purchasing.copy.action') }}</th>
+                        <th scope="col" class="tw:text-right text-end">{{ __('common.table.action') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -300,8 +300,11 @@
                             <td class="fw-bold tw:text-on-surface">{{ $pr->pr_number ?? __('purchasing.copy.draft') }}</td>
                             <td>{{ $pr->period->display_label ?? $pr->period->name }}</td>
                             <td><x-status-badge type="pr" :status="$pr->status" /></td>
-                            <td class="text-end">
-                                <x-ui.icon-button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.show', $pr)" icon="eye" :label="__('purchasing.copy.view_requisition_details')" size="sm" />
+                            <td class="tw:text-right text-end">
+                                <x-ui.row-action
+                                    :href="\App\Support\PurchasingNavigation::toRoute('purchasing.requisitions.show', $pr)"
+                                    :context="$pr->pr_number ?? __('purchasing.copy.draft')"
+                                />
                             </td>
                         </tr>
                     @empty
@@ -327,7 +330,7 @@
                         <th scope="col">{{ __('purchasing.copy.supplier') }}</th>
                         <th scope="col">{{ __('purchasing.copy.estimated_arrival') }}</th>
                         <th scope="col">{{ __('purchasing.copy.status') }}</th>
-                        <th scope="col" class="text-end">{{ __('purchasing.copy.action') }}</th>
+                        <th scope="col" class="tw:text-right text-end">{{ __('common.table.action') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -337,8 +340,11 @@
                             <td>{{ $po->supplier->name }}</td>
                             <td>{{ $regionalFormatter->date($po->estimated_arrival, 'human') }}</td>
                             <td><x-status-badge type="po" :status="$po->status" :is-overdue="$po->is_overdue ?? false" /></td>
-                            <td class="text-end">
-                                <x-ui.icon-button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $po)" icon="eye" :label="__('purchasing.copy.view_po_details')" size="sm" />
+                            <td class="tw:text-right text-end">
+                                <x-ui.row-action
+                                    :href="\App\Support\PurchasingNavigation::toRoute('purchasing.purchase-orders.show', $po)"
+                                    :context="$po->po_number"
+                                />
                             </td>
                         </tr>
                     @empty
@@ -370,7 +376,7 @@
                             <th scope="col">{{ __('purchasing.copy.supplier') }}</th>
                             <th scope="col">{{ __('purchasing.po_ack.title') }}</th>
                             <th scope="col">{{ __('purchasing.po_ack.promised_date') }}</th>
-                            <th scope="col" class="text-end">{{ __('purchasing.copy.action') }}</th>
+                            <th scope="col" class="tw:text-right text-end">{{ __('common.table.action') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -381,11 +387,12 @@
                                 <td>{{ $ackPo->supplier?->name ?? '—' }}</td>
                                 <td><x-ui.status-chip :tone="$ackStatus->tone()">{{ $ackStatus->label() }}</x-ui.status-chip></td>
                                 <td class="ui-tabular-nums">{{ $ackPo->supplier_promised_date ? $regionalFormatter->date($ackPo->supplier_promised_date) : '—' }}</td>
-                                <td class="text-end">
-                                    <x-ui.button :href="route('purchasing.purchase-orders.show', $ackPo)" size="sm" variant="outline">
-                                        <span>{{ __('purchasing.copy.review') }}</span>
-                                        <x-ui.icon name="arrow-right" size="sm" />
-                                    </x-ui.button>
+                                <td class="tw:text-right text-end">
+                                    <x-ui.row-action
+                                        :href="route('purchasing.purchase-orders.show', $ackPo)"
+                                        :label="__('purchasing.copy.review')"
+                                        :context="$ackPo->po_number"
+                                    />
                                 </td>
                             </tr>
                         @endforeach

@@ -9,7 +9,8 @@
                     <th scope="col" class="text-end tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('local_invoice.table.amount_ppn') }}</th>
                     <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('local_invoice.labels.term_days') }}</th>
                     <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('local_invoice.labels.due_date') }}</th>
-                    <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant" style="min-width: 240px;">{{ __('local_invoice.table.status_actions') }}</th>
+                    <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('local_invoice.labels.status') }}</th>
+                    <th scope="col" class="tw:text-right text-end tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant" style="min-width: 110px;">{{ __('common.table.action') }}</th>
                 </tr>
             @else
                 <tr>
@@ -28,7 +29,7 @@
                     @if($payments ?? false)
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant">{{ __('local_invoice.labels.payment_date') }}</th>
                     @endif
-                    <th scope="col" class="text-end tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant" style="min-width: 130px;">{{ __('local_invoice.labels.actions') }}</th>
+                    <th scope="col" class="tw:text-right text-end tw:text-ui-xs tw:font-semibold tw:text-on-surface-variant" style="min-width: 130px;">{{ __('common.table.action') }}</th>
                 </tr>
             @endif
         </thead>
@@ -104,35 +105,30 @@
                             @endif
                         </td>
                         <td>
-                            <div class="tw:flex tw:items-center tw:justify-between tw:gap-3">
-                                <div class="tw:flex tw:flex-col tw:gap-1">
-                                    <x-ui.status-chip :tone="\App\Support\StatusHelper::localInvoiceTone($row->status)">
-                                        {{ \App\Support\StatusHelper::localInvoiceLabel($row->status) }}
-                                    </x-ui.status-chip>
-                                    @if($row->overpaymentRefund)
-                                        @if($row->overpaymentRefund->status === \App\Models\SupplierOverpaymentRefund::STATUS_OPEN)
-                                            <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-semibold tw:bg-amber-100 tw:text-amber-800 tw:dark:bg-amber-950 tw:dark:text-amber-300 tw:w-max">
-                                                <x-ui.icon name="alert-circle" size="xs" />
-                                                {{ __('local_invoice.closure.overpayment_refund', ['amount' => $regionalFormatter->number(number_format((float) $row->overpaymentRefund->overpayment_amount, 0, ',', '.'), 'indonesian')]) }}
-                                            </span>
-                                        @elseif($row->overpaymentRefund->status === \App\Models\SupplierOverpaymentRefund::STATUS_SETTLED)
-                                            <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-semibold tw:bg-emerald-100 tw:text-emerald-800 tw:dark:bg-emerald-950 tw:dark:text-emerald-300 tw:w-max">
-                                                <x-ui.icon name="check-circle" size="xs" />
-                                                {{ __('finance.refund.completed') }}
-                                            </span>
-                                        @endif
+                            <div class="tw:flex tw:flex-col tw:gap-1">
+                                <x-ui.status-chip :tone="\App\Support\StatusHelper::localInvoiceTone($row->status)">
+                                    {{ \App\Support\StatusHelper::localInvoiceLabel($row->status) }}
+                                </x-ui.status-chip>
+                                @if($row->overpaymentRefund)
+                                    @if($row->overpaymentRefund->status === \App\Models\SupplierOverpaymentRefund::STATUS_OPEN)
+                                        <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-semibold tw:bg-amber-100 tw:text-amber-800 tw:dark:bg-amber-950 tw:dark:text-amber-300 tw:w-max">
+                                            <x-ui.icon name="alert-circle" size="xs" />
+                                            {{ __('local_invoice.closure.overpayment_refund', ['amount' => $regionalFormatter->number(number_format((float) $row->overpaymentRefund->overpayment_amount, 0, ',', '.'), 'indonesian')]) }}
+                                        </span>
+                                    @elseif($row->overpaymentRefund->status === \App\Models\SupplierOverpaymentRefund::STATUS_SETTLED)
+                                        <span class="tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-semibold tw:bg-emerald-100 tw:text-emerald-800 tw:dark:bg-emerald-950 tw:dark:text-emerald-300 tw:w-max">
+                                            <x-ui.icon name="check-circle" size="xs" />
+                                            {{ __('finance.refund.completed') }}
+                                        </span>
                                     @endif
-                                </div>
-                                <x-ui.button
-                                    :href="route($portal.'.invoices.show', $row)"
-                                    size="sm"
-                                    variant="outline"
-                                    class="tw:shrink-0 tw-shadow-xs tw:hover:border-primary tw:hover:bg-primary/5"
-                                >
-                                    <x-ui.icon name="eye" size="sm" class="tw:text-primary" />
-                                    <span>{{ __('local_invoice.table.view_detail') }}</span>
-                                </x-ui.button>
+                                @endif
                             </div>
+                        </td>
+                        <td class="tw:text-right text-end tw:whitespace-nowrap">
+                            <x-ui.row-action
+                                :href="route($portal.'.invoices.show', $row)"
+                                :context="$row->invoice_number"
+                            />
                         </td>
                     </tr>
                 @else
@@ -236,22 +232,17 @@
                                 </span>
                             </td>
                         @endif
-                        <td class="text-end tw:whitespace-nowrap">
-                            <x-ui.button
+                        <td class="tw:text-right text-end tw:whitespace-nowrap">
+                            <x-ui.row-action
                                 :href="route($portal.'.invoices.show', $row)"
-                                size="sm"
-                                variant="outline"
-                                class="tw:shadow-xs tw:hover:border-primary tw:hover:bg-primary/5"
-                            >
-                                <x-ui.icon name="eye" size="sm" class="tw:text-primary" />
-                                <span>{{ __('local_invoice.table.view_detail') }}</span>
-                            </x-ui.button>
+                                :context="$row->invoice_number"
+                            />
                         </td>
                     </tr>
                 @endif
             @empty
                 <tr>
-                    <td colspan="{{ ($portal ?? '') === 'finance' ? 7 : ((in_array(($portal ?? ''), ['accounting', 'finance', 'purchasing']) || !auth()->user()?->isSupplier() ? 1 : 0) + (!auth()->user()?->isSupplier() ? 1 : 0) + (($payments ?? false) ? 1 : 0) + 7) }}">
+                    <td colspan="{{ ($portal ?? '') === 'finance' ? 8 : ((in_array(($portal ?? ''), ['accounting', 'finance', 'purchasing']) || !auth()->user()?->isSupplier() ? 1 : 0) + (!auth()->user()?->isSupplier() ? 1 : 0) + (($payments ?? false) ? 1 : 0) + 7) }}">
                         <x-ui.empty-state
                             icon="inbox"
                             :title="__('local_invoice.empty.invoice')"
@@ -302,15 +293,11 @@
             </x-ui.mobile-card-row>
 
             <x-slot:actions>
-                <x-ui.button
+                <x-ui.row-action
                     :href="route($portal.'.invoices.show', $row)"
-                    size="sm"
-                    variant="outline"
-                    class="tw:w-full tw:justify-center tw:min-h-11"
-                >
-                    <x-ui.icon name="eye" size="sm" class="tw:text-primary" />
-                    <span>{{ __('local_invoice.table.view_detail') }}</span>
-                </x-ui.button>
+                    :context="$row->invoice_number"
+                    class="tw:w-full tw:min-h-11"
+                />
             </x-slot:actions>
         </x-ui.mobile-card>
     @empty

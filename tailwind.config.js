@@ -115,6 +115,7 @@ export default {
                 },
                 'on-surface': 'var(--md-on-surface)',
                 'on-surface-variant': 'var(--md-on-surface-variant)',
+                'primary-text': 'var(--ui-primary-text)',
             },
             fontFamily: {
                 // Defined once as --ui-font-sans in resources/css/app.css.

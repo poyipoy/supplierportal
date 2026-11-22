@@ -10,7 +10,7 @@
         :eyebrow="__('local_procurement.review.local')"
     >
         <x-slot:actions>
-            <x-ui.button :href="route('local-supplier.dashboard')" variant="ghost" size="sm">
+            <x-ui.button :href="route('local-supplier.dashboard')" variant="outline" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>{{ __('common.labels_review.dashboard') }}</span>
             </x-ui.button>
@@ -143,7 +143,7 @@
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold text-end">{{ __('local_procurement.review.gr_actual') }}</th>
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold text-center">{{ __('local_invoice.labels.status') }}</th>
                         <th scope="col" class="tw:text-ui-xs tw:font-semibold text-center">{{ __('local_procurement.labels.po_document') }}</th>
-                        <th scope="col" class="tw:text-ui-xs tw:font-semibold text-end">{{ __('local_invoice.labels.actions') }}</th>
+                        <th scope="col" class="tw:text-ui-xs tw:font-semibold tw:text-right text-end">{{ __('common.table.action') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -190,11 +190,11 @@
                                     <span class="tw:text-on-surface-variant tw:text-[11px] tw:italic">{{ __('local_invoice.empty.not_uploaded') }}</span>
                                 @endif
                             </td>
-                            <td class="text-end">
-                                <x-ui.button :href="route('local-supplier.purchase-orders.show', $po)" size="sm" variant="outline">
-                                    <x-ui.icon name="eye" size="sm" />
-                                    <span>{{ __('local_invoice.actions.detail') }}</span>
-                                </x-ui.button>
+                            <td class="tw:text-right text-end">
+                                <x-ui.row-action
+                                    :href="route('local-supplier.purchase-orders.show', $po)"
+                                    :context="$po->po_number"
+                                />
                             </td>
                         </tr>
                     @empty

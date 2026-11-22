@@ -18,6 +18,10 @@
         :eyebrow="__('finance.labels.workflow')"
     >
         <x-slot:actions>
+            <x-ui.button :href="route('finance.invoices.index')" variant="outline" size="sm">
+                <x-ui.icon name="arrow-left" size="sm" />
+                <span>{{ __('ga.detail.back') }}</span>
+            </x-ui.button>
             <x-ui.button
                 type="button"
                 variant="outline"
@@ -29,10 +33,6 @@
             >
                 <x-ui.icon name="git-branch" size="sm" />
                 <span>{{ __('smart_panel.trigger') }}</span>
-            </x-ui.button>
-            <x-ui.button :href="route('finance.invoices.index')" variant="ghost" size="sm">
-                <x-ui.icon name="arrow-left" size="sm" />
-                <span>{{ __('ga.detail.back') }}</span>
             </x-ui.button>
             @if($invoice->receipt)
                 <x-ui.button :href="route('finance.invoices.receipt', $invoice)" variant="outline" size="sm" target="_blank">
@@ -176,7 +176,7 @@
                             <tbody>
                             @forelse($invoice->goodsReceiptHistories->sortBy('id') as $history)
                                 <tr>
-                                    <td class="ui-tabular-nums">{{ $history->gr_number_snapshot }}</td>
+                                    <td class="ui-tabular-nums ui-col-data-name">{{ $history->gr_number_snapshot }}</td>
                                     <td>{{ $history->goodsReceipt?->gr_date ? $regionalFormatter->date($history->goodsReceipt->gr_date, 'human') : '—' }}</td>
                                     <td class="text-end ui-tabular-nums">{{ $history->gr_qty_snapshot !== null ? rtrim(rtrim(number_format((float) $history->gr_qty_snapshot, 4, ',', '.'), '0'), ',') : ($history->goodsReceipt?->qty !== null ? rtrim(rtrim(number_format((float) $history->goodsReceipt->qty, 4, ',', '.'), '0'), ',') : '—') }}</td><td>{{ $history->gr_uom_snapshot ?? '—' }}</td>
                                     <td class="text-end ui-tabular-nums">{{ $history->gr_amount_snapshot !== null ? 'Rp ' . $regionalFormatter->money($history->gr_amount_snapshot) : '—' }}</td>
@@ -570,24 +570,26 @@
                             </x-ui.button>
                         </form>
 
-                        <button
+                        <x-ui.button
                             type="button"
-                            class="btn btn-outline-danger btn-sm w-100"
+                            variant="danger-outline"
+                            size="sm"
+                            class="w-100"
                             data-bs-toggle="modal"
                             data-bs-target="#revisionModal"
                         >
                             <x-ui.icon name="rotate-ccw" size="sm" />
                             <span>{{ __('finance.invoice_ui.request_revision') }}</span>
-                        </button>
+                        </x-ui.button>
                     </div>
                 </x-ui.card>
             @endif
 
             @if(in_array($invoice->status, [\App\Models\LocalInvoice::STATUS_WAITING_PHYSICAL_DOCUMENT, \App\Models\LocalInvoice::STATUS_UNDER_VERIFICATION, \App\Models\LocalInvoice::STATUS_NEED_REVISION], true))
                 <x-ui.card :title="__('finance.actions.reject_invoice')" :description="__('finance.invoice_ui.reject_help')">
-                    <button type="button" class="btn btn-outline-danger btn-sm w-100" data-bs-toggle="modal" data-bs-target="#rejectModal">
+                    <x-ui.button type="button" variant="danger-outline" size="sm" class="w-100" data-bs-toggle="modal" data-bs-target="#rejectModal">
                         <x-ui.icon name="x-circle" size="sm" /> {{ __('finance.actions.reject_invoice') }}
-                    </button>
+                    </x-ui.button>
                 </x-ui.card>
             @endif
 
@@ -634,8 +636,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{{ __('local_invoice.actions.cancel') }}</button>
-                    <button type="submit" class="btn btn-danger btn-sm">{{ __('ga.verification.send_revision') }}</button>
+                    <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('local_invoice.actions.cancel') }}</x-ui.button>
+                    <x-ui.button type="submit" variant="danger" size="sm">{{ __('ga.verification.send_revision') }}</x-ui.button>
                 </div>
             </div>
         </form>
@@ -650,7 +652,7 @@
             <div class="modal-content">
                 <div class="modal-header"><h5 class="modal-title tw:text-ui-sm tw:font-bold" id="rejectModalLabel">{{ __('finance.actions.reject_invoice') }}</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('local_invoice.actions.close') }}"></button></div>
                 <div class="modal-body"><label for="reject-notes" class="form-label tw:text-ui-xs tw:font-semibold">{{ __('finance.labels.rejection_reason') }} <span class="text-danger">*</span></label><textarea name="notes" id="reject-notes" class="form-control form-control-sm" rows="3" maxlength="2000" required></textarea></div>
-                <div class="modal-footer"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{{ __('local_invoice.actions.cancel') }}</button><button type="submit" class="btn btn-danger btn-sm">{{ __('finance.actions.reject_release') }}</button></div>
+                <div class="modal-footer"><x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('local_invoice.actions.cancel') }}</x-ui.button><x-ui.button type="submit" variant="danger" size="sm">{{ __('finance.actions.reject_release') }}</x-ui.button></div>
             </div>
         </form>
     </div>

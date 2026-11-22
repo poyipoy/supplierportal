@@ -10,7 +10,7 @@
         :eyebrow="__('ga.dashboard.operational')"
     >
         <x-slot:actions>
-            <x-ui.button :href="route('ga.claims.show', $claim)" variant="ghost" size="sm">
+            <x-ui.button :href="route('ga.claims.show', $claim)" variant="outline" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>{{ __('local_invoice.form.back_detail') }}</span>
             </x-ui.button>

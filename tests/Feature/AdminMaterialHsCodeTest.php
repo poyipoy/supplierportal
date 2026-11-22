@@ -403,6 +403,23 @@ class AdminMaterialHsCodeTest extends TestCase
         $page->assertSeeText('Min Inclusive (≥)');
     }
 
+    public function test_materials_workspace_uses_segmented_pill_tabs_and_data_table_cards(): void
+    {
+        $page = $this->actingAs($this->admin)
+            ->get(route('admin.material-hs-code.index'))
+            ->assertOk();
+
+        $page->assertSee('role="tablist"', false)
+            ->assertSee('tw:bg-surface-container', false)
+            ->assertSee('id="materials-tab"', false)
+            ->assertSee('id="rules-tab"', false)
+            ->assertSee('id="data-quality-tab"', false)
+            ->assertSee('ui-data-table', false)
+            ->assertSee('ui-filter-bar--embedded', false)
+            ->assertSee('ui-icon', false)
+            ->assertDontSee('class="nav nav-tabs', false);
+    }
+
     private function materialPayload(array $overrides = []): array
     {
         return array_replace([

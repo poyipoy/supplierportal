@@ -22,6 +22,7 @@ use App\Support\NumberFormat;
 use App\Support\Procurement\LogisticsTerms;
 use App\Support\PurchasingNavigation;
 use App\Support\SpreadsheetImportReader;
+use App\Support\Ui\RowAction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -133,10 +134,12 @@ class PurchaseRequisitionController extends Controller
                         $secondaryActions[] = '<li><a href="'.$viewUrl.'" class="dropdown-item">'.e(__('purchasing.copy.view_details')).'</a></li>';
                         $secondaryActions[] = '<li><a href="'.$editUrl.'" class="dropdown-item">'.e(__('purchasing.copy.edit_draft')).'</a></li>';
                     } elseif ($canEdit) {
-                        $primaryAction = '<a href="'.$editUrl.'" class="ui-data-action ui-data-action--primary ui-focus-ring" aria-label="'.e(__('purchasing.action_names.edit', ['name' => $pr->pr_number])).'">'.e(__('purchasing.copy.edit')).'</a>';
+                        $primaryAction = RowAction::link($editUrl, __('purchasing.copy.edit'), 'primary', $pr->pr_number, [
+                            'aria-label' => __('purchasing.copy.edit').' - '.__('purchasing.action_names.edit', ['name' => $pr->pr_number]),
+                        ]);
                         $secondaryActions[] = '<li><a href="'.$viewUrl.'" class="dropdown-item">'.e(__('purchasing.copy.view_details')).'</a></li>';
                     } else {
-                        $primaryAction = '<a href="'.$viewUrl.'" class="ui-data-action ui-data-action--primary ui-focus-ring" aria-label="'.e(__('purchasing.action_names.view', ['name' => $pr->pr_number])).'">'.e(__('purchasing.copy.view')).'</a>';
+                        $primaryAction = RowAction::detail($viewUrl, $pr->pr_number);
                     }
 
                     if ($canEdit) {

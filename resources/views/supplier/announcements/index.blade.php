@@ -36,7 +36,7 @@
                     <div class="tw:text-on-surface-variant tw:text-ui-xs mb-3 leading-relaxed">
                         {{ Str::limit($ann->content, 220) }}
                     </div>
-                        <x-ui.button :href="route('supplier.announcements.show', $ann->id)" variant="ghost" size="sm">
+                    <x-ui.button :href="route('supplier.announcements.show', $ann->id)" variant="outline" size="sm">
                         <span>{{ __('supplier.copy.read_full_announcement') }}</span>
                             <x-ui.icon name="arrow-right" size="sm" />
                     </x-ui.button>

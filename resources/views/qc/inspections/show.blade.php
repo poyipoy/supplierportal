@@ -52,6 +52,15 @@
                 @endif
 
                 <x-ui.button
+                    :href="$backUrl"
+                    variant="outline"
+                    size="sm"
+                >
+                    <x-ui.icon name="arrow-left" size="sm" />
+                    <span>{{ $backLabel }}</span>
+                </x-ui.button>
+
+                <x-ui.button
                     :href="route('shared.pdf.qc-inspection', $inspection)"
                     variant="outline"
                     size="sm"
@@ -61,15 +70,6 @@
                 >
                     <x-ui.icon name="printer" size="sm" />
                     <span>{{ __('qc.copy.print_pdf') }}</span>
-                </x-ui.button>
-
-                <x-ui.button
-                    :href="$backUrl"
-                    variant="ghost"
-                    size="sm"
-                >
-                    <x-ui.icon name="arrow-left" size="sm" />
-                    <span>{{ $backLabel }}</span>
                 </x-ui.button>
             </div>
         </x-slot:actions>
@@ -180,7 +180,7 @@
                                 {{-- Requested Specification Row --}}
                                 <tr class="text-center">
                                     <td class="text-start tw:text-on-surface-variant fw-semibold tw:bg-surface-container">{{ __('qc.copy.requested') }}</td>
-                                    <td class="tw:text-on-surface">{{ $prItem->shape ?? '-' }}</td>
+                                    <td class="tw:text-on-surface ui-col-data-name">{{ $prItem->shape ?? '-' }}</td>
                                     <td class="tw:text-on-surface ui-tabular-nums">{{ $prItem->thickness ?? '-' }}</td>
                                     <td class="tw:text-on-surface ui-tabular-nums">{{ $prItem->d_inner ?? '-' }}</td>
                                     <td class="tw:text-on-surface ui-tabular-nums">{{ $prItem->d_outer ?? '-' }}</td>
@@ -192,7 +192,7 @@
                                 {{-- Actual Inspected Row --}}
                                 <tr class="text-center">
                                     <td class="text-start fw-bold text-primary tw:bg-surface-container">{{ __('qc.copy.actual') }}</td>
-                                    <td class="tw:text-on-surface">{{ $prItem->shape ?? '-' }}</td>
+                                    <td class="tw:text-on-surface ui-col-data-name">{{ $prItem->shape ?? '-' }}</td>
                                     <td class="ui-tabular-nums {{ $thick['class'] }}">{{ $thick['val'] }}</td>
                                     <td class="ui-tabular-nums {{ $dInner['class'] }}">{{ $dInner['val'] }}</td>
                                     <td class="ui-tabular-nums {{ $dOuter['class'] }}">{{ $dOuter['val'] }}</td>

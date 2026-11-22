@@ -17,7 +17,7 @@
                         : route('ga.claims.show', $claim)
                 );
             @endphp
-            <x-ui.button :href="$resolvedDetailUrl" variant="ghost" size="sm" class="d-print-none">
+            <x-ui.button :href="$resolvedDetailUrl" variant="outline" size="sm" class="d-print-none">
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>{{ __('ga.actions.back_detail') }}</span>
             </x-ui.button>

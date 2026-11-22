@@ -10,7 +10,7 @@
         :eyebrow="__('finance.invoice_ui.audit_eyebrow')"
     >
         <x-slot:actions>
-            <x-ui.button :href="route('purchasing.local-vendors.index')" variant="ghost" size="sm">
+            <x-ui.button :href="route('purchasing.local-vendors.index')" variant="outline" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>{{ __('finance.invoice_ui.back_vendor') }}</span>
             </x-ui.button>

@@ -25,6 +25,14 @@ export function sameSet(a, b) {
 
 const SIMPLE_FIELDS = ['theme', 'shell_style', 'accent', 'density', 'sidebar_state', 'quick_flow', 'page_size', 'locale', 'timezone', 'date_format', 'time_format', 'number_format', 'country_code', 'import_timezone'];
 
+const DENSITY_SPECS = {
+    spacious: { row: 44, cell: 12 },
+    comfortable: { row: 40, cell: 10 },
+    balanced: { row: 36, cell: 8 },
+    compact: { row: 32, cell: 6 },
+    dense: { row: 28, cell: 4 },
+};
+
 function normalizeComparableValue(raw, reference) {
     if (typeof reference === 'boolean') {
         return raw === true || raw === 'true' || raw === '1' || raw === 1 ? '1' : '0';
@@ -76,6 +84,12 @@ export function customizationForm(config) {
             this.observeSections();
             this.listen(this.root(), 'input', (event) => {
                 if (event.target.hasAttribute?.('data-density-slider')) this.previewDensityPosition(event.target.value);
+            });
+            this.listen(this.root(), 'click', (event) => {
+                const stopBtn = event.target.closest?.('[data-density-stop]');
+                if (stopBtn && !this.isSubmitting) {
+                    this.previewDensity(stopBtn.dataset.densityStop);
+                }
             });
             this.listen(this.root(), 'change', (event) => this.changed(event.target));
             this.listen(this.root(), 'adasi:dashboard-order-change', () => this.recompute());
@@ -264,7 +278,8 @@ export function customizationForm(config) {
         syncDensityControl() {
             const slider = this.root().querySelector('[data-density-slider]');
             if (!slider) return;
-            const position = this.densityKeys.indexOf(this.val('density')) + 1;
+            const currentDensity = this.val('density');
+            const position = this.densityKeys.indexOf(currentDensity) + 1;
             if (position < 1) return;
             slider.value = String(position);
             slider.hidden = false;
@@ -275,6 +290,22 @@ export function customizationForm(config) {
             if (canonical?.type === 'select-one') canonical.hidden = true;
             const label = this.root().querySelector('[data-density-label]');
             if (label) label.textContent = this.densityLabel;
+            const specEl = this.root().querySelector('[data-density-spec]');
+            const spec = DENSITY_SPECS[currentDensity];
+            if (specEl && spec) {
+                specEl.textContent = (this.copy.densitySpec || ':rowpx row · :cellpx cell')
+                    .replace(':row', String(spec.row))
+                    .replace(':cell', String(spec.cell));
+            }
+            this.root().querySelectorAll?.('[data-density-stop]')?.forEach((stop) => {
+                const stopDensity = stop.dataset?.densityStop;
+                const isActive = stopDensity === currentDensity;
+                const isSaved = stopDensity === this.saved?.density;
+                stop.dataset.active = isActive ? 'true' : 'false';
+                stop.dataset.saved = isSaved ? 'true' : 'false';
+                stop.disabled = this.isSubmitting;
+                stop.setAttribute?.('aria-pressed', isActive ? 'true' : 'false');
+            });
             const unsaved = this.root().querySelector('[data-density-unsaved]');
             if (unsaved) unsaved.hidden = !this.densityDirty;
         },

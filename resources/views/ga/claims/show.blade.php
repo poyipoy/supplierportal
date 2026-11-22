@@ -10,7 +10,7 @@
         :eyebrow="__('ga.review.detail_eyebrow')"
     >
         <x-slot:actions>
-            <x-ui.button :href="route('ga.claims.index')" variant="ghost" size="sm">
+            <x-ui.button :href="route('ga.claims.index')" variant="outline" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>{{ __('ga.detail.back') }}</span>
             </x-ui.button>
@@ -83,9 +83,9 @@
                                     <span class="tw:text-[11px] tw:text-on-surface-variant">{{ $doc->document_type === 'supporting' ? __('ga.claims.document_supporting') : $doc->document_type }} · {{ __('local_invoice.labels.revision') }} {{ $doc->revision_number }}</span>
                                 </div>
                             </div>
-                            <a href="{{ route('ga-claim-documents.show', $doc) }}" target="_blank" class="btn btn-sm btn-outline-primary tw:text-xs">
+                            <x-ui.button :href="route('ga-claim-documents.show', $doc)" target="_blank" variant="outline-primary" size="sm">
                                 {{ __('local_invoice.actions.download') }}
-                            </a>
+                            </x-ui.button>
                         </div>
                     @empty
                         <div class="tw:text-center tw:py-4 tw:text-ui-xs tw:text-on-surface-variant">

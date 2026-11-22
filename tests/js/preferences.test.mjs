@@ -81,6 +81,8 @@ test('five canonical density previews stay temporary and independent of other pr
     for (const density of densityKeys) {
         state.windowRef.AdasiPreferences.previewDensity(density);
         assert.equal(state.root.dataset.density, density);
+        assert.equal(state.events.at(-1)?.type, 'adasi:density-change');
+        assert.equal(state.events.at(-1)?.detail?.density, density);
         assert.equal(state.windowRef.AdasiPreferences.density, 'comfortable');
         assert.equal(state.root.dataset.theme, 'dark');
         assert.equal(state.root.dataset.accent, 'slate');

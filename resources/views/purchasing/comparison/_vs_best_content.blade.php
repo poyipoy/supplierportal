@@ -71,7 +71,7 @@
                 <th scope="col">{{ __('purchasing.comparison_analytics.difference_per_kg', ['currency' => $currency]) }}</th>
                 <th scope="col">{{ __('purchasing.copy.potential_total_difference') }}</th>
                 <th scope="col">{{ __('purchasing.copy.status') }}</th>
-                <th scope="col">{{ __('purchasing.copy.action') }}</th>
+                <th scope="col">{{ __('common.table.action') }}</th>
             </tr>
         </thead>
         <tbody></tbody>

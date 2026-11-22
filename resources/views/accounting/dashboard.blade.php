@@ -10,10 +10,6 @@
         :eyebrow="__('accounting.overview.audience')"
     >
         <x-slot:actions>
-            <x-ui.button :href="route('accounting.invoices.index')" variant="primary">
-                <x-ui.icon name="list" size="sm" />
-                <span>{{ __('local_invoice.list.title') }}</span>
-            </x-ui.button>
             <x-ui.button :href="route('accounting.payment-schedule')" variant="outline">
                 <x-ui.icon name="calendar-clock" size="sm" />
                 <span>{{ __('local_invoice.labels.payment_date') }}</span>
@@ -21,6 +17,10 @@
             <x-ui.button :href="route('accounting.physical-verification')" variant="outline">
                 <x-ui.icon name="file-check" size="sm" />
                 <span>{{ __('accounting.titles.physical') }}</span>
+            </x-ui.button>
+            <x-ui.button :href="route('accounting.invoices.index')" variant="primary">
+                <x-ui.icon name="list" size="sm" />
+                <span>{{ __('local_invoice.list.title') }}</span>
             </x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>

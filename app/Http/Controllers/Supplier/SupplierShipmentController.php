@@ -18,6 +18,7 @@ use App\Services\ShipmentService;
 use App\Support\NumberFormat;
 use App\Support\Procurement\ProcurementFeatures;
 use App\Support\StatusHelper;
+use App\Support\Ui\RowAction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
@@ -76,6 +77,7 @@ class SupplierShipmentController extends Controller
 
         if ($request->ajax()) {
             return DataTables::eloquent($query)
+                ->filter(fn ($query) => null)
                 ->addColumn('shipment_number_display', function ($shp) {
                     $url = route('supplier.shipments.show', $shp);
 
@@ -137,7 +139,7 @@ class SupplierShipmentController extends Controller
                         $secondaryActions[] = '<li><a href="'.$editUrl.'" class="dropdown-item">'.e(__('shipments.copy.edit_draft')).'</a></li>';
                         $secondaryActions[] = '<li><form action="'.route('supplier.shipments.cancel', $shp).'" method="POST" class="cancel-form">'.csrf_field().'<button type="button" class="dropdown-item text-danger btn-cancel-shipment btn-delete">'.e(__('shipments.copy.cancel_shipment')).'</button></form></li>';
                     } else {
-                        $primaryAction = '<a href="'.$viewUrl.'" class="ui-data-action ui-data-action--primary ui-focus-ring" aria-label="'.e(__('purchasing.action_names.view', ['name' => $shp->shipment_number])).'">'.e(__('shipments.copy.details')).'</a>';
+                        $primaryAction = RowAction::detail($viewUrl, $shp->shipment_number);
                     }
 
                     if ($secondaryActions === []) {

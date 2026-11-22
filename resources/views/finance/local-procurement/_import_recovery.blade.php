@@ -9,7 +9,7 @@
             {{ __('local_procurement.large_import.recovery_title') }}
         </h6>
         <span data-recovery-slots class="tw:text-ui-xs tw:text-on-surface-variant tw:tabular-nums"></span>
-        <x-ui.button type="button" variant="ghost" size="sm" class="tw:ms-auto" data-recovery-refresh>
+        <x-ui.button type="button" variant="outline" size="sm" class="tw:ms-auto" data-recovery-refresh>
             <x-ui.icon name="refresh-cw" size="sm" />
             <span>{{ __('local_procurement.large_import.refresh') }}</span>
         </x-ui.button>
@@ -39,4 +39,4 @@
 <template data-recovery-chip="processing"><x-ui.status-chip tone="info" icon="loader-circle"><span data-chip-label></span></x-ui.status-chip></template>
 <template data-recovery-chip="saving"><x-ui.status-chip tone="info" icon="database"><span data-chip-label></span></x-ui.status-chip></template>
 <template data-recovery-action><x-ui.button type="button" variant="outline" size="sm"><span data-button-label></span></x-ui.button></template>
-<template data-recovery-cancel><x-ui.button type="button" variant="ghost" size="sm" class="tw:text-error!"><x-ui.icon name="x" size="sm" /><span data-button-label></span></x-ui.button></template>
+<template data-recovery-cancel><x-ui.button type="button" variant="danger-outline" size="sm"><x-ui.icon name="x" size="sm" /><span data-button-label></span></x-ui.button></template>

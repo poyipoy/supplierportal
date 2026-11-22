@@ -90,7 +90,7 @@
         <p class="tw:sr-only" role="status" aria-live="polite" aria-atomic="true" data-editor-announce></p>
         <x-ui.action-bar class="tw:col-span-1 tw:rounded-ui-sm tw:border tw:border-outline tw:lg:col-span-12" role="region" aria-label="{{ __('customization.dashboard_editor_label') }}" data-editor-actionbar hidden>
             <x-slot:left>
-                <x-ui.button type="button" variant="ghost" size="sm" data-editor-reset>{{ __('customization.dashboard_editor_reset') }}</x-ui.button>
+                <x-ui.button type="button" variant="ghost" size="sm" data-editor-reset><x-ui.icon name="rotate-ccw" size="sm" />{{ __('customization.dashboard_editor_reset') }}</x-ui.button>
                 <span class="tw:text-ui-xs tw:text-on-surface-variant" role="status" aria-live="polite" data-editor-status></span>
             </x-slot:left>
             <x-slot:right>

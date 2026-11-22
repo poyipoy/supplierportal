@@ -19,11 +19,11 @@
         :description="__('supplier.copy.review_requisitions_and_manage_quotations_assigned_to_your_supplier_account')"
     >
         <x-slot:actions>
-<x-export.advanced-modal export-key="supplier.quotations" :action="route('supplier.export.quotations')" :periods="collect([$period])" :initial-filters="['period_id'=>$period->id]" :filter-selectors="['pr_number'=>'#filter_pr_number','status'=>'#filter_status']" table="#prTable" trigger-id="exportSupplierQuotationsBtn" />
-            <x-ui.button :href="route('supplier.quotations.index')" variant="ghost" size="sm">
+            <x-ui.button :href="route('supplier.quotations.index')" variant="outline" size="sm">
                 <x-ui.icon name="arrow-left" />
                 <span>{{ __('supplier.copy.back_to_periods') }}</span>
             </x-ui.button>
+            <x-export.advanced-modal export-key="supplier.quotations" :action="route('supplier.export.quotations')" :periods="collect([$period])" :initial-filters="['period_id'=>$period->id]" :filter-selectors="['pr_number'=>'#filter_pr_number','status'=>'#filter_status']" table="#prTable" trigger-id="exportSupplierQuotationsBtn" />
         </x-slot:actions>
     </x-ui.page-header>
 
@@ -48,6 +48,7 @@
                         id="filter_pr_number"
                         class="form-control form-control-sm ui-filter-bar__search-input"
                         placeholder="{{ __('supplier.copy.e_g_req_05_2026_001') }}"
+                        value="{{ request('pr_number', request('search')) }}"
                     >
                 </x-slot:search>
 
@@ -55,12 +56,12 @@
                     <label for="filter_status" class="tw:sr-only">{{ __('supplier.copy.my_quotation_status') }}</label>
                     <select id="filter_status" class="form-select form-select-sm tw:w-full tw:min-w-0 tw:sm:w-52">
                         <option value="">{{ __('supplier.copy.all_statuses') }}</option>
-                        <option value="unresponded">{{ __('supplier.copy.awaiting_quotation') }}</option>
-                        <option value="draft">{{ __('supplier.copy.draft') }}</option>
-                        <option value="revision_requested">{{ __('supplier.copy.revision_requested') }}</option>
-                        <option value="submitted">{{ __('supplier.copy.submitted') }}</option>
-                        <option value="accepted">{{ __('supplier.copy.accepted') }}</option>
-                        <option value="rejected">{{ __('supplier.copy.rejected') }}</option>
+                        <option value="unresponded" @selected(request('status') === 'unresponded')>{{ __('supplier.copy.awaiting_quotation') }}</option>
+                        <option value="draft" @selected(request('status') === 'draft')>{{ __('supplier.copy.draft') }}</option>
+                        <option value="revision_requested" @selected(request('status') === 'revision_requested')>{{ __('supplier.copy.revision_requested') }}</option>
+                        <option value="submitted" @selected(request('status') === 'submitted')>{{ __('supplier.copy.submitted') }}</option>
+                        <option value="accepted" @selected(request('status') === 'accepted')>{{ __('supplier.copy.accepted') }}</option>
+                        <option value="rejected" @selected(request('status') === 'rejected')>{{ __('supplier.copy.rejected') }}</option>
                     </select>
                 </x-slot:filters>
 
@@ -78,7 +79,7 @@
                     <th scope="col">{{ __('supplier.copy.date_issued') }}</th>
                     <th scope="col" class="text-center">{{ __('supplier.copy.items') }}</th>
                     <th scope="col" class="text-center">{{ __('supplier.copy.my_quotation_status') }}</th>
-                    <th scope="col" class="text-end" style="width: 140px;">{{ __('supplier.copy.action') }}</th>
+                    <th scope="col" class="tw:text-right text-end" style="width: 140px;">{{ __('common.table.action') }}</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -93,6 +94,7 @@
         var table = $('#prTable').DataTable({
             processing: true,
             serverSide: true,
+            dom: 'rtip',
             ajax: {
                 url: '{{ route("supplier.quotations.period", $period->id) }}',
                 data: function(d) {

@@ -22,6 +22,8 @@ use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\ProfileTwoFactorController;
 use App\Http\Controllers\Auth\RevokeKnownDeviceController;
 use App\Http\Controllers\Auth\RevokeSessionController;
+use App\Http\Controllers\Auth\SessionHeartbeatController;
+use App\Http\Controllers\Auth\SessionReconnectController;
 use App\Http\Controllers\Auth\SessionStatusController;
 use App\Http\Controllers\Auth\SsoAuthorizeController;
 use App\Http\Controllers\Auth\SsoCallbackController;
@@ -114,6 +116,7 @@ use App\Models\ShipmentDocument;
 use App\Support\PortalContext;
 use App\Support\PortalPath;
 use App\Support\WorkspaceShell;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -916,6 +919,19 @@ Route::prefix(PortalPath::prefix())->group(function () {
     // `auth` so a guest gets JSON 401 (plus a pending code challenge) instead of a redirect.
     Route::get('session/status', SessionStatusController::class)
         ->middleware(['no-store', 'throttle:30,1'])->name('session.status');
+
+    // Interactive user activity (top shell + Workspace Shell iframes) pings here on a
+    // throttled interval to slide the idle session window without bypassing absolute timeout.
+    Route::post('session/heartbeat', SessionHeartbeatController::class)
+        ->middleware(['auth', 'no-store', 'throttle:30,1'])->name('session.heartbeat');
+
+    // 1-click server-side in-place session reconnection after idle timeout (within the 8h
+    // absolute cap). Uses Same-Origin Custom-Header CSRF validation so it still works when
+    // the page's previous CSRF token expired with the idle session.
+    Route::post('session/reconnect', SessionReconnectController::class)
+        ->middleware(['no-store', 'throttle:30,1'])
+        ->withoutMiddleware([ValidateCsrfToken::class])
+        ->name('session.reconnect');
 });
 
 Route::middleware(['mfa.pending', 'no-store'])->group(function () {

@@ -396,19 +396,19 @@
                             <th scope="col">{{ __('purchasing.copy.remark') }}</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        @php
-                            $globalNo = 1;
-                            $grandTotalAmount = 0;
-                            $grandTotalIdr = 0;
-                            // I-15: ordered qty/KG/amount per line from the single resolver.
-                            $orderedLinesByItem = $po->orderedLines()->keyBy(fn ($line) => $line->quotationItem->id);
-                            $grandIdrUnavailable = false;
-                            $poRemark = trim((string) $po->notes);
-                        @endphp
-                        @foreach($po->commercialQuotations() as $quotation)
-                            @php $rate = $quotationRates[$quotation->id] ?? null; @endphp
-                            @if($po->quotations->count() > 1)
+                    @php
+                        $globalNo = 1;
+                        $grandTotalAmount = 0;
+                        $grandTotalIdr = 0;
+                        // I-15: ordered qty/KG/amount per line from the single resolver.
+                        $orderedLinesByItem = $po->orderedLines()->keyBy(fn ($line) => $line->quotationItem->id);
+                        $grandIdrUnavailable = false;
+                        $poRemark = trim((string) $po->notes);
+                    @endphp
+                    @foreach($po->commercialQuotations() as $quotation)
+                        @php $rate = $quotationRates[$quotation->id] ?? null; @endphp
+                        @if($po->quotations->count() > 1)
+                            <tbody class="ui-po-group-banner">
                                 <tr class="bg-primary-subtle text-primary border-top border-bottom">
                                     <td colspan="11" class="fw-bold py-2 ps-3">
                                         <x-ui.icon name="folder" size="sm" class="me-1" />
@@ -421,7 +421,9 @@
                                         </span>
                                     </td>
                                 </tr>
-                            @endif
+                            </tbody>
+                        @endif
+                        <tbody>
                             @foreach($quotation->items as $item)
                                 @php
                                     $orderedLine = $orderedLinesByItem->get($item->id);
@@ -434,8 +436,8 @@
                                 @endphp
                                 <tr>
                                     <td class="text-center tw:text-on-surface-variant ui-tabular-nums">{{ $globalNo++ }}</td>
-                                    <td class="fw-bold tw:text-on-surface ui-sticky-col">{{ $item->prItem->material_name }}</td>
-                                    <td class="text-center">
+                                    <td class="fw-bold tw:text-on-surface ui-sticky-col ui-col-data-name">{{ $item->prItem->material_name }}</td>
+                                    <td class="text-center ui-col-data-name">
                                         @if(!$item->is_available)
                                             <span class="ui-status-chip ui-status-chip--error">{{ __('purchasing.copy.not_available') }}</span>
                                         @elseif($item->prItem->shape)
@@ -467,7 +469,7 @@
                                             <span class="tw:text-on-surface-variant">-</span>
                                         @endif
                                     </td>
-                                    <td>
+                                    <td class="ui-col-data-name">
                                         @if($poRemark !== '')
                                             <span class="d-inline-block text-truncate tw:max-w-[220px]" title="{{ $poRemark }}">
                                                 {{ \Illuminate\Support\Str::limit($poRemark, 80) }}
@@ -478,8 +480,8 @@
                                     </td>
                                 </tr>
                             @endforeach
-                        @endforeach
-                    </tbody>
+                        </tbody>
+                    @endforeach
                     <tfoot class="table-light fw-bold border-top">
                         <tr>
                             <td colspan="7" class="text-end tw:text-on-surface">{{ __('purchasing.copy.grand_total') }}</td>
@@ -529,7 +531,7 @@
                                 @foreach($itemProjections as $idx => $p)
                                     <tr>
                                         <td class="text-center tw:text-on-surface-variant ui-tabular-nums">{{ $idx + 1 }}</td>
-                                        <td class="text-start">
+                                        <td class="text-start ui-col-data-name">
                                             <div class="fw-bold tw:text-on-surface">{{ $p['material_name'] }}</div>
                                             @if($p['hs_code'])
                                                 <div class="tw:text-on-surface-variant tw:text-ui-xs">{{ __('common.fields.hs_code') }}: {{ $p['hs_code'] }}</div>
@@ -569,13 +571,15 @@
                                             @endif
                                         </td>
                                         <td class="text-end ui-sticky-col-right">
-                                            <button type="button"
-                                                    class="btn btn-outline-secondary btn-sm px-2 py-1 tw:text-ui-xs btn-view-purchasing-history"
+                                            <x-ui.button type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    class="btn-view-purchasing-history"
                                                     data-award-id="{{ $p['award_id'] }}"
                                                     data-material-name="{{ $p['material_name'] }}"
                                                     data-history-url="{{ route('purchasing.purchase-orders.item-progress.history', ['po_id' => $po, 'award_id' => $p['award']]) }}">
                                                 {{ __('purchasing.copy.history') }}
-                                            </button>
+                                            </x-ui.button>
                                         </td>
                                     </tr>
                                 @endforeach
@@ -812,13 +816,15 @@
                                                         {{ $sDoc['shipment_number'] }}
                                                     </a>
                                                 </div>
-                                                <a href="{{ route('attachments.show', $sDoc['attachment']) }}"
-                                                   target="_blank" 
-                                                   class="btn btn-outline-primary btn-sm py-1 px-2 tw:text-ui-xs tw:w-full d-inline-flex align-items-center justify-content-center gap-1.5 rounded"
-                                                   title="{{ __('common.actions.view') }} {{ $sDoc['attachment']->file_name }}">
+                                                <x-ui.button :href="route('attachments.show', $sDoc['attachment'])"
+                                                   target="_blank"
+                                                   variant="outline-primary"
+                                                   size="sm"
+                                                   class="tw:w-full"
+                                                   :title="__('common.actions.view').' '.$sDoc['attachment']->file_name">
                                                     <x-ui.icon name="file-text" size="sm" />
                                                     <span class="tw:truncate">{{ __('purchasing.copy.view_file') }}</span>
-                                                </a>
+                                                </x-ui.button>
                                             </div>
                                         @endforeach
                                     </div>
@@ -842,7 +848,7 @@
                                             <span class="tw:truncate">{{ __('documents.sync.open_shipment_to_update') }}</span>
                                         </x-ui.button>
                                     @else
-                                        <x-ui.button :href="route('purchasing.shipments.index')" variant="ghost" size="sm" class="tw:w-full">
+                                        <x-ui.button :href="route('purchasing.shipments.index')" variant="outline" size="sm" class="tw:w-full">
                                             <x-ui.icon name="truck" size="sm" class="me-1 flex-shrink-0" />
                                             <span class="tw:truncate">{{ __('documents.sync.open_shipment_to_update') }}</span>
                                         </x-ui.button>
@@ -1035,7 +1041,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{{ __('purchasing.copy.close') }}</button>
+                <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('purchasing.copy.close') }}</x-ui.button>
             </div>
         </div>
     </div>

@@ -24,8 +24,8 @@
             <input id="registration_access_key" data-receipt-key readonly class="form-control tw:font-mono" value="{{ $receipt['access_key'] }}">
         </div>
         <div class="tw:flex tw:flex-wrap tw:gap-2">
-            <button type="button" class="btn btn-outline-primary" data-receipt-copy>{{ __('registration.receipt.copy_both') }}</button>
-            <button type="button" class="btn btn-outline-secondary" data-receipt-download>{{ __('registration.receipt.download') }}</button>
+            <x-ui.button type="button" variant="outline-primary" data-receipt-copy>{{ __('registration.receipt.copy_both') }}</x-ui.button>
+            <x-ui.button type="button" variant="outline" data-receipt-download>{{ __('registration.receipt.download') }}</x-ui.button>
         </div>
         <p data-receipt-message role="status" aria-live="polite" class="tw:text-ui-xs tw:m-0"></p>
         <span data-receipt-label-reference hidden>{{ __('registration.reference') }}</span>
@@ -34,12 +34,12 @@
         <span data-receipt-copy-failed hidden>{{ __('registration.receipt.copy_failed') }}</span>
     </section>
     <div class="tw:flex tw:flex-wrap tw:gap-3">
-        <a href="{{ route('supplier.registration.access-form') }}" class="btn btn-primary">
+        <x-ui.button :href="route('supplier.registration.access-form')" variant="primary">
             {{ __('registration.check_status') }}
-        </a>
-        <a href="{{ route('login') }}" class="btn btn-outline-secondary">
+        </x-ui.button>
+        <x-ui.button :href="route('login')" variant="outline">
             {{ __('registration.return_login') }}
-        </a>
+        </x-ui.button>
     </div>
 </div>
 @endsection

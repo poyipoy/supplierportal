@@ -26,7 +26,7 @@
                         <tr>
                             <td class="ui-tabular-nums tw:font-semibold tw:text-on-surface">{{ $gr->gr_number }}</td>
                             <td class="ui-tabular-nums tw:text-on-surface-variant">{{ $regionalFormatter->date($gr->gr_date, 'human') ?? '—' }}</td>
-                            <td class="tw:text-on-surface">{{ $gr->description ?: '—' }}</td>
+                            <td class="tw:text-on-surface ui-col-data-name">{{ $gr->description ?: '—' }}</td>
                             <td class="text-end ui-tabular-nums">{{ \App\Models\LocalGoodsReceipt::formatQuantity($gr->qty) }} {{ $gr->uom ?? '' }}</td>
                             <td class="text-center">@include('finance.local-procurement._gr_status', ['status' => $gr->status])</td>
                             <td>@include('finance.local-procurement._gr_invoice', ['invoice' => $gr->currentInvoice, 'invoiceRoute' => $invoiceRoute])</td>
@@ -50,14 +50,14 @@
                         <th scope="col">{{ __('local_procurement.mmt.fields.invoice_date') }}</th>
                         <th scope="col" class="text-end">{{ __('local_procurement.mmt.fields.invoice_amount') }}</th>
                         <th scope="col" class="text-center">{{ __('local_invoice.labels.status') }}</th>
-                        <th scope="col" class="text-end">{{ __('local_invoice.labels.actions') }}</th>
+                        <th scope="col" class="tw:text-right text-end">{{ __('common.table.action') }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($invoices as $invoice)
                         <tr>
                             <td class="ui-tabular-nums tw:text-on-surface-variant">{{ $invoice->submission_number ?: '—' }}</td>
-                            <td class="ui-tabular-nums tw:font-semibold tw:text-on-surface">{{ $invoice->invoice_number }}</td>
+                            <td class="ui-tabular-nums tw:font-semibold tw:text-on-surface ui-col-data-name">{{ $invoice->invoice_number }}</td>
                             <td class="ui-tabular-nums tw:text-on-surface-variant">{{ $regionalFormatter->date($invoice->invoice_date, 'human') ?? '—' }}</td>
                             <td class="text-end ui-tabular-nums tw:font-semibold tw:text-on-surface">Rp {{ $regionalFormatter->money($invoice->invoice_amount, 2) }}</td>
                             <td class="text-center">
@@ -65,12 +65,12 @@
                                     {{ \App\Support\StatusHelper::localInvoiceLabel($invoice->status) }}
                                 </x-ui.status-chip>
                             </td>
-                            <td class="text-end">
+                            <td class="tw:text-right text-end">
                                 @if(\Illuminate\Support\Facades\Gate::allows('view', $invoice))
-                                    <x-ui.button :href="route($invoiceRoute, $invoice)" size="sm" variant="outline">
-                                        <x-ui.icon name="eye" size="xs" />
-                                        <span>{{ __('local_invoice.actions.detail') }}</span>
-                                    </x-ui.button>
+                                    <x-ui.row-action
+                                        :href="route($invoiceRoute, $invoice)"
+                                        :context="$invoice->invoice_number"
+                                    />
                                 @else
                                     <span class="tw:text-on-surface-variant">—</span>
                                 @endif
@@ -91,21 +91,26 @@
                     <tr>
                         <th scope="col">{{ __('local_procurement.mmt.fields.document_file') }}</th>
                         <th scope="col">{{ __('local_procurement.mmt.fields.uploaded_at') }}</th>
-                        <th scope="col" class="text-end">{{ __('local_invoice.labels.actions') }}</th>
+                        <th scope="col" class="tw:text-right text-end">{{ __('common.table.action') }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($documents as $attachment)
                         <tr>
-                            <td class="tw:font-semibold tw:text-on-surface">{{ $attachment->file_name }}</td>
+                            <td class="tw:font-semibold tw:text-on-surface ui-col-data-name">{{ $attachment->file_name }}</td>
                             <td class="ui-tabular-nums tw:text-on-surface-variant">
                                 {{ $attachment->created_at ? $regionalFormatter->timestamp($attachment->created_at, 'datetime_comma') : '—' }}
                             </td>
-                            <td class="text-end">
-                                <x-ui.button :href="route('attachments.show', $attachment)" target="_blank" rel="noopener" size="sm" variant="outline">
-                                    <x-ui.icon name="file-text" size="xs" />
-                                    <span>{{ __('local_procurement.mmt.fields.open_pdf') }}</span>
-                                </x-ui.button>
+                            <td class="tw:text-right text-end">
+                                <x-ui.row-action
+                                    :href="route('attachments.show', $attachment)"
+                                    target="_blank"
+                                    rel="noopener"
+                                    tone="neutral"
+                                    icon="file-text"
+                                    :label="__('local_procurement.mmt.fields.open_pdf')"
+                                    :context="$attachment->file_name"
+                                />
                             </td>
                         </tr>
                     @endforeach

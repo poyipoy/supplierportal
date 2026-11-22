@@ -48,14 +48,14 @@
                             $bytes = $file->fileInspection?->file_size;
                         @endphp
                         <tr>
-                            <td>
+                            <td class="ui-col-data-name">
                                 <a href="{{ route('attachments.show', $file) }}" target="_blank" rel="noopener" class="text-primary text-decoration-none d-inline-flex align-items-center gap-1 fw-medium">
                                     <x-ui.icon name="file-text" size="sm" />
                                     <span class="text-truncate" style="max-width: 16rem;" title="{{ $file->file_name }}">{{ $file->file_name }}</span>
                                 </a>
                             </td>
                             <td class="text-end ui-tabular-nums">{{ $bytes === null ? '—' : $regionalFormatter->number((string) max(1, (int) round($bytes / 1024)), 'plain').' KB' }}</td>
-                            <td>{{ $file->uploader?->name ?? '—' }}</td>
+                            <td class="ui-col-data-name">{{ $file->uploader?->name ?? '—' }}</td>
                             <td class="ui-tabular-nums">@bizdt($file->created_at)</td>
                             <td>
                                 <x-ui.status-chip :tone="$validated ? 'success' : 'warning'" size="sm">
@@ -67,7 +67,7 @@
                                     <form method="POST" action="{{ route('supplier.shipments.mtc.destroy', [$shipment, $file]) }}" class="tw:m-0">
                                         @csrf
                                         @method('DELETE')
-                                        <x-ui.button type="submit" variant="ghost" size="sm" :aria-label="__('shipments.mtc.remove').' '.$file->file_name">
+                                        <x-ui.button type="submit" variant="danger-outline" size="sm" :aria-label="__('shipments.mtc.remove').' '.$file->file_name">
                                             <x-ui.icon name="trash-2" size="sm" />
                                             <span>{{ __('shipments.mtc.remove') }}</span>
                                         </x-ui.button>

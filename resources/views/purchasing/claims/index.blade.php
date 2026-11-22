@@ -38,7 +38,7 @@
                                 <th scope="col">{{ __('claims.copy.supplier') }}</th>
                                 <th scope="col">{{ __('claims.copy.inspection_date') }}</th>
                                 <th scope="col" class="text-center">{{ __('claims.copy.po_status') }}</th>
-                                <th scope="col" class="text-end" style="width: 130px;">{{ __('claims.copy.action') }}</th>
+                                <th scope="col" class="tw:text-right text-end" style="width: 130px;">{{ __('common.table.action') }}</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -62,7 +62,7 @@
                                 <x-ui.icon name="info" class="ms-1 text-muted" data-bs-toggle="tooltip" data-bs-title="{{ __('claims.copy.deadline_for_supplier_to_formally_respond_to_material_claims') }}" />
                             </th>
                             <th scope="col" class="text-center">{{ __('claims.copy.claim_status') }}</th>
-                            <th scope="col" class="text-end" style="width: 80px;">{{ __('claims.copy.action') }}</th>
+                            <th scope="col" class="tw:text-right text-end" style="width: 96px;">{{ __('common.table.action') }}</th>
                         </tr>
                     </thead>
                     <tbody></tbody>

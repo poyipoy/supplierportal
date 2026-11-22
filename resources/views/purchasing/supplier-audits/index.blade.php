@@ -18,9 +18,11 @@
     </x-ui.page-header>
 
     {{-- U6: antrean kerja. Isi nav dirender server (lihat _queue_nav) dan ikut dikirim di setiap fragmen server tabs. --}}
-    <nav aria-label="{{ __('supplier_audit.queues.label') }}" class="tw:overflow-x-auto" data-server-tabs-nav>
-        @include('purchasing.supplier-audits._queue_nav')
-    </nav>
+    <div class="tw:flex tw:max-w-full">
+        <nav aria-label="{{ __('supplier_audit.queues.label') }}" class="tw:flex tw:w-full tw:flex-wrap tw:items-center tw:gap-1.5 tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface-container tw:p-1.5 tw:sm:inline-flex tw:sm:w-auto" data-server-tabs-nav>
+            @include('purchasing.supplier-audits._queue_nav')
+        </nav>
+    </div>
 
     <div id="supplierAuditQueueContent" data-server-tabs-content>
         @include('purchasing.supplier-audits._queue_content')

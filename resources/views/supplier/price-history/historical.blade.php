@@ -55,9 +55,9 @@
                     @endforeach
                     <div>
                         <label for="history-export-format" class="form-label tw:text-ui-xs">{{ __('exports.advanced.format_title') }}</label>
-                        <select name="options[format]" id="history-export-format" aria-describedby="history-export-format-help" class="form-select form-select-sm tw:min-h-10"><option value="xlsx">XLSX</option><option value="csv">CSV</option></select>
+                        <select name="options[format]" id="history-export-format" aria-describedby="history-export-format-help" class="form-select form-select-sm"><option value="xlsx">XLSX</option><option value="csv">CSV</option></select>
                     </div>
-                    <x-ui.button type="submit" variant="outline" size="sm" class="tw:min-h-10"><x-ui.icon name="file-spreadsheet" size="sm" /><span>{{ __('supplier.copy.export_analysis') }}</span></x-ui.button>
+                    <x-ui.button type="submit" variant="outline" size="sm"><x-ui.icon name="file-spreadsheet" size="sm" /><span>{{ __('supplier.copy.export_analysis') }}</span></x-ui.button>
                     <p id="history-export-format-help" class="tw:w-full tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ __('exports.advanced.csv_hint') }}</p>
                     <p data-format-export-error hidden role="alert" tabindex="-1" class="tw:w-full tw:m-0 tw:text-ui-sm tw:text-error"></p>
                 </form>

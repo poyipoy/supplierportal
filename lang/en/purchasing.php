@@ -369,6 +369,7 @@ return [
         'scope' => 'Scope',
         'search' => 'Search',
         'search_po_number' => 'Search PO number',
+        'search_po_supplier_or_pr' => 'Search PO number, supplier, or PR reference',
         'search_pr_or_material' => 'Search PR or material',
         'search_purchase_order_number' => 'Search purchase order number',
         'search_suppliers' => 'Search suppliers',

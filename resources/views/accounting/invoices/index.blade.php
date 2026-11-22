@@ -10,7 +10,7 @@
         :eyebrow="__('accounting.review.audience')"
     >
         <x-slot:actions>
-            <x-ui.button :href="route('accounting.dashboard')" variant="ghost" size="sm">
+            <x-ui.button :href="route('accounting.dashboard')" variant="outline" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>{{ __('common.labels_review.dashboard') }}</span>
             </x-ui.button>

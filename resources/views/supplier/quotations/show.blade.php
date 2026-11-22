@@ -27,6 +27,10 @@
     >
         <x-slot:actions>
             <x-status-badge type="quotation" :status="$quotation->status" size="lg" />
+            <x-ui.button :href="route('supplier.quotations.period', $requisition->period_id)" variant="outline" size="sm">
+                <x-ui.icon name="arrow-left" />
+                <span>{{ __('supplier.copy.back_to_requisitions') }}</span>
+            </x-ui.button>
             <x-ui.button href="#quotation-items" variant="outline" size="sm" data-jump-to-items>
                 <x-ui.icon name="arrow-down" />
                 <span>{{ __('supplier.copy.view_items', ['count' => $quotation->items->count()]) }}</span>
@@ -34,10 +38,6 @@
             <x-ui.button :href="route('supplier.export.quotations.detail', $quotation)" variant="outline" size="sm" data-async-export data-export-source-singular="{{ __('exports.sources.quotation') }}" data-export-source-plural="{{ __('exports.sources.quotations') }}" data-export-source-count="1" data-export-filtered="false" data-export-row-label="{{ __('supplier.copy.quotation_item_rows') }}" data-export-row-explanation="{{ __('supplier.copy.each_quotation_item_will_be_written_as_a_separate_excel_row') }}">
                 <x-ui.icon name="file-spreadsheet" />
                 <span>{{ __('supplier.copy.export_excel') }}</span>
-            </x-ui.button>
-            <x-ui.button :href="route('supplier.quotations.period', $requisition->period_id)" variant="ghost" size="sm">
-                <x-ui.icon name="arrow-left" />
-                <span>{{ __('supplier.copy.back_to_requisitions') }}</span>
             </x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>

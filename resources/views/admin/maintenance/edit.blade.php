@@ -10,7 +10,7 @@
             <x-ui.status-chip :tone="\App\Support\StatusHelper::maintenanceTone($displayStatus)">{{ \App\Support\StatusHelper::maintenanceLabel($displayStatus) }}</x-ui.status-chip>
         </x-slot:status>
         <x-slot:actions>
-            <x-ui.button :href="route('admin.maintenance.show', $record)" variant="ghost" size="sm"><x-ui.icon name="arrow-left" size="sm" /> {{ __('maintenance.page.back_to_record') }}</x-ui.button>
+            <x-ui.button :href="route('admin.maintenance.show', $record)" variant="outline" size="sm"><x-ui.icon name="arrow-left" size="sm" /> {{ __('maintenance.page.back_to_record') }}</x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>
 

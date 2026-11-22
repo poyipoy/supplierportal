@@ -18,7 +18,7 @@
         :description="__('supplier.page.published', ['date' => $regionalFormatter->timestamp($announcement->published_at, 'datetime_comma')])"
     >
         <x-slot:actions>
-            <x-ui.button :href="route('supplier.announcements.index')" variant="ghost" size="sm">
+            <x-ui.button :href="route('supplier.announcements.index')" variant="outline" size="sm">
                 <x-ui.icon name="arrow-left" />
                 <span>{{ __('supplier.copy.back_to_announcements') }}</span>
             </x-ui.button>

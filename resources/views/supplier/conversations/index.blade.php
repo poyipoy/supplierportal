@@ -82,7 +82,7 @@
                         <td class="text-end">
                             <x-ui.button
                                 :href="route('supplier.conversations.show', $conv)"
-                                variant="outline"
+                                variant="outline-primary"
                                 size="sm"
                                 class="tw:relative"
                                 data-open-chat-conversation="{{ $conv->getRouteKey() }}"

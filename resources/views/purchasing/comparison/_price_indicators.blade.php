@@ -37,7 +37,8 @@
             </div>
             @if($selectedYear || $selectedMonth)
                 <x-ui.button type="button" variant="ghost" size="sm" id="benchmarkPeriodResetBtn">
-                    {{ __('common.actions.reset') }}
+                    <x-ui.icon name="rotate-ccw" size="sm" />
+                    <span>{{ __('common.actions.reset') }}</span>
                 </x-ui.button>
             @endif
         </div>
@@ -59,9 +60,9 @@
             @foreach($matrix as $row)
                 @php($ind = $row['indicators'])
                 <tr data-indicator-row="{{ $row['item']->id }}">
-                    <th scope="row" class="ui-sticky-col tw:font-semibold">{{ $row['item']->material_name }}</th>
+                    <th scope="row" class="ui-sticky-col ui-col-data-name tw:font-semibold">{{ $row['item']->material_name }}</th>
                     <td class="tw:text-on-surface tw:whitespace-nowrap" data-indicator="dimensions">{{ $row['dimension_display'] ?? ($row['item']->dimension_label ?: '—') }}</td>
-                    <td class="tw:text-on-surface" data-indicator="supplier">{{ $ind['best_current']['supplier'] ?? '—' }}</td>
+                    <td class="tw:text-on-surface ui-col-data-name" data-indicator="supplier">{{ $ind['best_current']['supplier'] ?? '—' }}</td>
                     <td class="text-end ui-tabular-nums" data-indicator="best-current">
                         @if($ind['best_current'])
                             <div class="fw-semibold">{{ $money($ind['best_current']['converted']) }}</div>

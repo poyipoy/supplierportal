@@ -135,7 +135,7 @@
                     <th scope="col">{{ __('supplier_requests.columns.updated') }}</th>
                     <th scope="col" class="text-center">{{ __('supplier.copy.items') }}</th>
                     <th scope="col" class="text-center">{{ __('supplier_requests.columns.my_quotation') }}</th>
-                    <th scope="col" class="text-end">{{ __('supplier.copy.action') }}</th>
+                    <th scope="col" class="tw:text-right text-end">{{ __('common.table.action') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -158,8 +158,11 @@
                                 <span class="ui-status-chip ui-status-chip--error">{{ __('supplier_requests.not_responded') }}</span>
                             @endif
                         </td>
-                        <td class="text-end">
-                            <a href="{{ route('supplier.requests.show', $pr) }}" class="ui-data-action ui-data-action--primary ui-focus-ring">{{ __('supplier_requests.actions.detail') }}</a>
+                        <td class="tw:text-right text-end">
+                            <x-ui.row-action
+                                :href="route('supplier.requests.show', $pr)"
+                                :context="$pr->pr_number ?? '-'"
+                            />
                         </td>
                     </tr>
                 @endforeach

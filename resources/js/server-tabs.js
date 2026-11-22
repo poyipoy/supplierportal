@@ -798,7 +798,7 @@ function renderMmtError(target, message, retryUrl) {
     if (retryUrl) {
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = 'btn btn-sm btn-outline-danger';
+        btn.className = 'ui-data-action ui-data-action--danger ui-motion ui-focus-ring';
         btn.setAttribute('data-mmt-retry-url', retryUrl);
         btn.textContent = t('js.server_tabs.retry');
         box.appendChild(btn);

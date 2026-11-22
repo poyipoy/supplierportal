@@ -25,14 +25,9 @@
         </x-slot:status>
 
         <x-slot:actions>
-            <x-ui.button :href="route($routePrefix.'.print', $voucher)" target="_blank" variant="primary" size="md">
-                <x-slot:leading><x-ui.icon name="printer" size="sm" /></x-slot:leading>
-                {{ __('payment_voucher.actions.print_pdf') }}
-            </x-ui.button>
-
-            <x-ui.button :href="route($routePrefix.'.print', ['paymentVoucher' => $voucher, 'download' => 1])" variant="secondary" size="md" data-download-pdf data-no-loader>
-                <x-slot:leading><x-ui.icon name="download" size="sm" /></x-slot:leading>
-                {{ __('payment_voucher.actions.download_pdf') }}
+            <x-ui.button :href="route($routePrefix.'.index')" variant="outline" size="sm">
+                <x-slot:leading><x-ui.icon name="arrow-left" size="sm" /></x-slot:leading>
+                {{ __('payment_voucher.actions.back_list') }}
             </x-ui.button>
 
             <x-ui.button :href="route($routePrefix.'.create', ['duplicate_from' => $voucher->hash])" variant="outline" size="sm">
@@ -40,9 +35,14 @@
                 {{ __('payment_voucher.actions.duplicate') }}
             </x-ui.button>
 
-            <x-ui.button :href="route($routePrefix.'.index')" variant="ghost" size="sm">
-                <x-slot:leading><x-ui.icon name="arrow-left" size="sm" /></x-slot:leading>
-                {{ __('payment_voucher.actions.back_list') }}
+            <x-ui.button :href="route($routePrefix.'.print', ['paymentVoucher' => $voucher, 'download' => 1])" variant="outline" size="sm" data-download-pdf data-no-loader>
+                <x-slot:leading><x-ui.icon name="download" size="sm" /></x-slot:leading>
+                {{ __('payment_voucher.actions.download_pdf') }}
+            </x-ui.button>
+
+            <x-ui.button :href="route($routePrefix.'.print', $voucher)" target="_blank" variant="primary" size="sm">
+                <x-slot:leading><x-ui.icon name="printer" size="sm" /></x-slot:leading>
+                {{ __('payment_voucher.actions.print_pdf') }}
             </x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>

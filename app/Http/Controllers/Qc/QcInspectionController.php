@@ -13,6 +13,7 @@ use App\Services\Qc\QcInspectionSubmissionService;
 use App\Services\RegionalDisplayFormatter;
 use App\Support\BusinessTime;
 use App\Support\StatusHelper;
+use App\Support\Ui\RowAction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
@@ -64,7 +65,7 @@ class QcInspectionController extends Controller
                     ? route('qc.inspections.create', ['po_id' => $po, 'shipment_id' => $waitingShipment])
                     : route('qc.inspections.create', $po);
 
-                return '<a href="'.$url.'" class="ui-data-action ui-data-action--primary ui-focus-ring">'.e(__('qc.copy.start_inspection')).'</a>';
+                return RowAction::link($url, __('qc.copy.start_inspection'), 'primary', $po->po_number);
             })
             ->rawColumns(['action'])
             ->make(true);
@@ -86,7 +87,7 @@ class QcInspectionController extends Controller
                 StatusHelper::qcLabel($i->status)
             ))
             ->addColumn('inspector_name', fn ($i) => $i->inspector->name ?? '-')
-            ->addColumn('action', fn ($i) => '<a href="'.route('qc.inspections.show', $i).'" class="ui-data-action ui-data-action--primary ui-focus-ring">'.e(__('qc.copy.details')).'</a>')
+            ->addColumn('action', fn ($i) => RowAction::detail(route('qc.inspections.show', $i), $i->purchaseOrder->po_number ?? (string) $i->id))
             ->rawColumns(['status_badge', 'action'])
             ->make(true);
     }

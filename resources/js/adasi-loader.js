@@ -152,7 +152,7 @@ export function createDomView(doc = document, translate = t) {
             + '<div class="adasi-loader-medallion"><div class="adasi-loader-logo"></div></div>'
             + '</div>'
             + '<span class="adasi-loader-text"></span>'
-            + '<button type="button" class="btn btn-outline-secondary btn-sm adasi-loader-dismiss ui-focus-ring" hidden></button>'
+            + '<button type="button" class="ui-data-action ui-motion adasi-loader-dismiss ui-focus-ring" hidden></button>'
             + '</div>';
         text = overlay.querySelector('.adasi-loader-text');
         dismiss = overlay.querySelector('.adasi-loader-dismiss');

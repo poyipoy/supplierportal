@@ -24,10 +24,6 @@ class NotificationController extends Controller
 
     public function unreadCount(Request $request)
     {
-        if (session()->isStarted()) {
-            session()->save();
-        }
-
         return response()->json($this->summaryService->countsForUser($request->user()));
     }
 

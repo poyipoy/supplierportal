@@ -19,6 +19,10 @@
     >
         <x-slot:actions>
             <x-status-badge type="po" :status="$po->status" :is-overdue="$po->is_overdue" :has-active-shipments="$po->hasActiveShipments()" />
+            <x-ui.button :href="route('supplier.purchase-orders.index')" variant="outline" size="sm">
+                <x-ui.icon name="arrow-left" />
+                <span>{{ __('supplier.copy.back_to_pos') }}</span>
+            </x-ui.button>
             <x-ui.button
                 type="button"
                 variant="outline"
@@ -38,10 +42,6 @@
             <x-ui.button :href="route('shared.pdf.purchase-order', $po)" variant="danger" size="sm" target="_blank" :title="__('supplier.copy.print_purchase_order')" data-pdf-confirm>
                 <x-ui.icon name="printer" />
                 <span>{{ __('supplier.copy.print_pdf') }}</span>
-            </x-ui.button>
-            <x-ui.button :href="route('supplier.purchase-orders.index')" variant="ghost" size="sm">
-                <x-ui.icon name="arrow-left" />
-                <span>{{ __('supplier.copy.back_to_pos') }}</span>
             </x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>
@@ -228,7 +228,7 @@
                                             </td>
                                         @endif
                                         <td class="text-center tw:text-on-surface-variant ui-tabular-nums">{{ $idx + 1 }}</td>
-                                        <td class="text-start">
+                                        <td class="text-start ui-col-data-name">
                                             <div class="fw-bold tw:text-on-surface">{{ $p['material_name'] }}</div>
                                             @if($p['hs_code'])
                                                 <div class="tw:text-on-surface-variant tw:text-ui-xs">{{ __('common.fields.hs_code') }}: {{ $p['hs_code'] }}</div>
@@ -264,24 +264,27 @@
                                         <td class="text-end ui-sticky-col-right">
                                             <div class="d-inline-flex gap-1 justify-content-end">
                                                 @if($p['can_update'])
-                                                    <button type="button"
-                                                            class="btn btn-outline-primary btn-sm px-2 py-1 tw:text-ui-xs"
+                                                    <x-ui.button type="button"
+                                                            variant="outline-primary"
+                                                            size="sm"
                                                             data-bs-toggle="modal"
                                                             data-bs-target="#updateProgressModal{{ $p['award_id'] }}">
                                                         {{ __('supplier.copy.update') }}
-                                                    </button>
+                                                    </x-ui.button>
                                                 @else
                                                     <span class="badge bg-light text-muted border tw:text-ui-xs" title="{{ __('supplier.copy.all_quantity_is_already_allocated_to_shipment_or_po_is_closed') }}">
                                                         {{ __('supplier.copy.fully_dispatched') }}
                                                     </span>
                                                 @endif
-                                                <button type="button"
-                                                        class="btn btn-outline-secondary btn-sm px-2 py-1 tw:text-ui-xs btn-view-progress-history"
+                                                <x-ui.button type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        class="btn-view-progress-history"
                                                         data-award-id="{{ $p['award_hashid'] }}"
                                                         data-material-name="{{ $p['material_name'] }}"
                                                         data-history-url="{{ route('supplier.purchase-orders.item-progress.history', ['po_id' => $po, 'award_id' => $p['award']]) }}">
                                                     {{ __('supplier.copy.history') }}
-                                                </button>
+                                                </x-ui.button>
                                             </div>
                                         </td>
                                     </tr>
@@ -310,19 +313,19 @@
                             <th scope="col" class="text-end">{{ __('supplier.copy.amount_idr') }}</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        @php
-                            $totalAmount = 0;
-                            $totalIdr = 0;
-                            // I-15: ordered qty/KG/amount per line from the single resolver.
-                            $orderedLinesByItem = $po->orderedLines()->keyBy(fn ($line) => $line->quotationItem->id);
-                            $totalIdrUnavailable = false;
-                            $no = 1;
-                            $poRemark = trim((string) $po->notes);
-                        @endphp
-                        @foreach($po->commercialQuotations() as $quotation)
-                            @php $rate = $quotationRates[$quotation->id] ?? null; @endphp
-                            @if($po->quotations->count() > 1)
+                    @php
+                        $totalAmount = 0;
+                        $totalIdr = 0;
+                        // I-15: ordered qty/KG/amount per line from the single resolver.
+                        $orderedLinesByItem = $po->orderedLines()->keyBy(fn ($line) => $line->quotationItem->id);
+                        $totalIdrUnavailable = false;
+                        $no = 1;
+                        $poRemark = trim((string) $po->notes);
+                    @endphp
+                    @foreach($po->commercialQuotations() as $quotation)
+                        @php $rate = $quotationRates[$quotation->id] ?? null; @endphp
+                        @if($po->quotations->count() > 1)
+                            <tbody class="ui-po-group-banner">
                                 <tr class="table-primary">
                                     <td colspan="10" class="fw-bold ps-3 tw:text-ui-xs">
                                     <x-ui.icon name="folder" size="sm" class="me-1" />
@@ -334,7 +337,9 @@
                                         </span>
                                     </td>
                                 </tr>
-                            @endif
+                            </tbody>
+                        @endif
+                        <tbody>
                             @foreach($quotation->items as $item)
                                 @php
                                     $orderedLine = $orderedLinesByItem->get($item->id);
@@ -347,7 +352,7 @@
                                 @endphp
                                 <tr>
                                     <td class="text-center tw:text-on-surface-variant ui-tabular-nums">{{ $no++ }}</td>
-                                    <td class="text-start tw:text-on-surface">
+                                    <td class="text-start tw:text-on-surface ui-col-data-name">
                                         <div class="fw-bold">{{ $item->prItem->material_name }}</div>
                                         @if($item->is_available)
                                             <div class="tw:text-on-surface-variant tw:text-ui-xs">{{ __('common.final_copy.offer') }} {{ $item->available_dimension_label }}</div>
@@ -365,7 +370,7 @@
                                             -
                                         @endif
                                     </td>
-                                    <td class="text-start">
+                                    <td class="text-start ui-col-data-name">
                                         @if($poRemark !== '')
                                             <span class="d-inline-block text-truncate tw:text-on-surface-variant tw:max-w-[180px]" title="{{ $poRemark }}">
                                                 {{ \Illuminate\Support\Str::limit($poRemark, 40) }}
@@ -394,8 +399,8 @@
                                     <td class="text-end fw-bold tw:text-on-surface ui-tabular-nums">{{ ! $item->is_available ? '—' : ($idr === null ? '— ('.__('purchasing.copy.exchange_rate_unavailable').')' : 'Rp '.$regionalFormatter->groupedDecimal($idr)) }}</td>
                                 </tr>
                             @endforeach
-                        @endforeach
-                    </tbody>
+                        </tbody>
+                    @endforeach
                     <tfoot class="table-light fw-bold border-top">
                         <tr>
                             <td colspan="8" class="text-end tw:text-on-surface">{{ __('common.fields.total') }}</td>
@@ -510,10 +515,10 @@
                                                 <x-ui.icon name="truck" size="sm" class="flex-shrink-0" />
                                                 <span class="text-truncate">{{ $sDoc['shipment_number'] }}</span>
                                             </a>
-                                            <a href="{{ route('attachments.show', $sDoc['attachment']) }}" target="_blank" class="btn btn-xs btn-outline-primary py-0.5 px-2 tw:min-h-[28px] tw:text-ui-xs d-inline-flex align-items-center gap-1 flex-shrink-0 rounded" title="{{ __('common.actions.view') }} {{ $sDoc['attachment']->file_name }}">
+                                            <x-ui.button :href="route('attachments.show', $sDoc['attachment'])" target="_blank" variant="outline-primary" size="sm" class="tw:shrink-0" :title="__('common.actions.view').' '.$sDoc['attachment']->file_name">
                                                 <x-ui.icon name="file-text" size="sm" />
                                                 <span>{{ __('supplier.copy.view') }}</span>
-                                            </a>
+                                            </x-ui.button>
                                         </div>
                                     @endforeach
                                 </div>
@@ -582,8 +587,8 @@
                                 </div>
                             </div>
                             <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{{ __('supplier.copy.cancel') }}</button>
-                                <button type="submit" class="btn btn-primary btn-sm">{{ __('supplier.copy.save_progress_update') }}</button>
+                                <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('supplier.copy.cancel') }}</x-ui.button>
+                                <x-ui.button type="submit" variant="primary" size="sm">{{ __('supplier.copy.save_progress_update') }}</x-ui.button>
                             </div>
                         </form>
                     </div>
@@ -652,8 +657,8 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{{ __('supplier.copy.cancel') }}</button>
-                        <button type="submit" class="btn btn-primary btn-sm" id="bulkProgressSubmitBtn">{{ __('supplier.copy.save_progress_update') }}</button>
+                        <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('supplier.copy.cancel') }}</x-ui.button>
+                        <x-ui.button type="submit" variant="primary" size="sm" id="bulkProgressSubmitBtn">{{ __('supplier.copy.save_progress_update') }}</x-ui.button>
                     </div>
                 </form>
             </div>
@@ -677,7 +682,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{{ __('supplier.copy.close') }}</button>
+                <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('supplier.copy.close') }}</x-ui.button>
             </div>
         </div>
     </div>
