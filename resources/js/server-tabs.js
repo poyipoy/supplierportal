@@ -442,11 +442,23 @@ async function fetchAndSwap(state, url, pushHistory, historyIndex = null) {
     tableTarget.style.pointerEvents = 'none';
     showLoadingOverlay(tableTarget);
 
+    const resolveTimeoutMs = () => {
+        const explicit = Number(options?.timeoutMs);
+        if (Number.isFinite(explicit) && explicit >= 1000) return explicit;
+        let configured = null;
+        try {
+            configured = window?.AdasiWorkspaceShellConfig?.serverTabsTimeoutMs
+                ?? window?.parent?.AdasiWorkspaceShellConfig?.serverTabsTimeoutMs;
+        } catch {}
+        const parsed = Number(configured);
+        return Number.isFinite(parsed) && parsed >= 1000 ? parsed : 30000;
+    };
+
     let isTimeout = false;
     const timeoutId = setTimeout(() => {
         isTimeout = true;
         controller.abort();
-    }, 15000);
+    }, resolveTimeoutMs());
 
     try {
         const response = await fetch(url, {
@@ -455,6 +467,19 @@ async function fetchAndSwap(state, url, pushHistory, historyIndex = null) {
         });
 
         clearTimeout(timeoutId);
+
+        const isSessionExpiredResponse = response.status === 401
+            || response.status === 419
+            || (Boolean(response.redirected) && /\/login(?:[/?#]|$)/i.test(String(response.url || '')));
+
+        if (isSessionExpiredResponse) {
+            if (state.previousTab) {
+                updateTabActiveStates(container, state.previousTab);
+                state.previousTab = null;
+            }
+            window.AdasiSessionSync?.handleActionResponse?.(response);
+            return false;
+        }
 
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
@@ -481,12 +506,25 @@ async function fetchAndSwap(state, url, pushHistory, historyIndex = null) {
             state.previousTab = null;
         }
 
+        if (window.AdasiSessionSync?.isSessionExpired?.()) {
+            return false;
+        }
+
         const message = isTimeout
             ? t('js.server_tabs.timeout')
             : t('js.server_tabs.failed');
 
         if (window.AdasiToast && typeof window.AdasiToast.error === 'function') {
-            window.AdasiToast.error(message);
+            const toastOptions = container.id
+                ? {
+                    actions: [{
+                        label: t('js.server_tabs.retry'),
+                        variant: 'primary',
+                        onClick: () => navigate(`#${container.id}`, url, { pushHistory }),
+                    }],
+                }
+                : undefined;
+            window.AdasiToast.error(message, toastOptions);
         }
         if (container.hasAttribute('data-mmt-satellite') && !options.managedHistory) {
             renderMmtError(tableTarget, message, url);

@@ -183,7 +183,7 @@
                 data-smart-panel-trigger
                 data-entity-type="import-po"
                 :data-entity-hash="$po->hashid"
-                :data-smart-panel-url="route('context-panel.show', ['entityType' => 'import-po', 'hash' => $po->hashid], false)"
+                :data-smart-panel-url="\App\Support\PortalPath::routePath('context-panel.show', ['entityType' => 'import-po', 'hash' => $po->hashid])"
             >
                 <x-ui.icon name="git-branch" size="sm" />
                 <span>{{ __('smart_panel.trigger') }}</span>

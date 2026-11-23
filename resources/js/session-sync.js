@@ -895,6 +895,55 @@ export function bootSessionSync(win, doc) {
         }
     };
 
+    let statusProbePromise = null;
+    const probeSessionStatus = async () => {
+        if (!authenticated || ended || !session?.statusUrl) {
+            return { authenticated: false, reason: 'session_ended', status: 401 };
+        }
+        if (asking || refusedAt !== null) {
+            return { authenticated: false, reason: 'session_ended', status: 401 };
+        }
+        if (statusProbePromise) return statusProbePromise;
+        const checkEpoch = sessionEpoch;
+        statusProbePromise = (async () => {
+            try {
+                const url = new URL(session.statusUrl, win.location.href);
+                url.searchParams.set('passive', '1');
+                const response = await win.fetch(url.toString(), {
+                    headers: {
+                        Accept: 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        [PASSIVE_CHECK_HEADER]: 'passive',
+                    },
+                    credentials: 'same-origin',
+                    cache: 'no-store',
+                });
+                if (checkEpoch !== sessionEpoch) {
+                    return { authenticated: true, status: 200 };
+                }
+                let body = null;
+                try { body = await response.json(); } catch { body = null; }
+                if (response.ok && body?.authenticated === true) {
+                    if (body.user_id !== session.userId) {
+                        return { authenticated: false, reason: 'session_ended', status: 401 };
+                    }
+                    return { authenticated: true, status: response.status };
+                }
+                if (response.status === 401 || response.status === 403 || response.redirected) {
+                    const reason = typeof body?.reason === 'string' && body.reason !== '' ? body.reason : 'session_ended';
+                    const reconnectable = typeof body?.reconnectable === 'boolean' ? body.reconnectable : undefined;
+                    return { authenticated: false, reason, reconnectable, status: response.status || 401 };
+                }
+                return { authenticated: null, status: response.status };
+            } catch {
+                return { authenticated: null, networkError: true, status: 0 };
+            } finally {
+                statusProbePromise = null;
+            }
+        })();
+        return statusProbePromise;
+    };
+
     const api = Object.freeze({
         handlePollResponse(response) {
             if (crossTab && sessionEndedByResponse(response)) {
@@ -909,6 +958,7 @@ export function bootSessionSync(win, doc) {
         requestReconnect(background = false, options = {}) {
             return askToReconnect(background, options);
         },
+        probeSessionStatus,
         recordActivity() {
             recordActivity({ fromRemote: false });
         },

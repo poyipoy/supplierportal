@@ -29,7 +29,7 @@
                 data-smart-panel-trigger
                 data-entity-type="local-invoice"
                 :data-entity-hash="$invoice->hashid"
-                :data-smart-panel-url="route('context-panel.show', ['entityType' => 'local-invoice', 'hash' => $invoice->hashid], false)"
+                :data-smart-panel-url="\App\Support\PortalPath::routePath('context-panel.show', ['entityType' => 'local-invoice', 'hash' => $invoice->hashid])"
             >
                 <x-ui.icon name="git-branch" size="sm" />
                 <span>{{ __('smart_panel.trigger') }}</span>

@@ -322,6 +322,7 @@ class TwoFactorService
         }
 
         $path = $intended;
+        $baseUrl = PortalPath::baseUrl($request);
 
         if (! str_starts_with($intended, '/') || str_starts_with($intended, '//')) {
             $parts = parse_url($intended);
@@ -334,11 +335,18 @@ class TwoFactorService
                 return $defaultUrl;
             }
 
-            $path = $parts['path'] ?? '/';
+            $rawPath = $parts['path'] ?? '/';
+            if ($baseUrl !== '' && $rawPath !== $baseUrl && ! str_starts_with($rawPath, $baseUrl.'/')) {
+                return $defaultUrl;
+            }
+
+            $path = $rawPath;
             if (isset($parts['query'])) {
                 $path .= '?'.$parts['query'];
             }
         }
+
+        $path = PortalPath::stripBaseUrl($path, $request);
 
         $trimmedPath = ltrim(PortalPath::strip((string) parse_url($path, PHP_URL_PATH)), '/');
         $disallowedPatterns = [

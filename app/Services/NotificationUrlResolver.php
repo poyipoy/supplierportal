@@ -108,7 +108,7 @@ class NotificationUrlResolver
             return null;
         }
 
-        $path = $parts['path'] ?? '/';
+        $path = PortalPath::stripBaseUrl($parts['path'] ?? '/');
         if (! Str::startsWith($path, '/')) {
             return null;
         }

@@ -423,6 +423,93 @@ class InforContextUrlSecurityTest extends TestCase
         ]);
     }
 
+    public function test_subdirectory_base_path_projects_resolves_renders_context_urls_and_preserves_security_gates(): void
+    {
+        $purchasing = User::factory()->create(['role' => 'purchasing']);
+        $appUuid = strtolower((string) config('portal_urls.context_urls.app_uuid'));
+        $subBase = '/adasi_portal_supplier/public';
+        $server = [
+            'SCRIPT_NAME' => $subBase.'/index.php',
+            'SCRIPT_FILENAME' => public_path('index.php'),
+            'PHP_SELF' => $subBase.'/index.php',
+            'HTTP_HOST' => 'localhost',
+        ];
+
+        $dashboardUrl = 'http://localhost'.$subBase.'/v2/ADASI_PRD/purchasing/dashboard';
+        $shellResponse = $this->actingAs($purchasing)->call('GET', $dashboardUrl, [], [], [], $server);
+        $shellResponse->assertOk()->assertHeader('X-Frame-Options', 'DENY');
+
+        $config = $this->extractWorkspaceConfig($shellResponse->getContent());
+        $this->assertSame($subBase, $config['basePath']);
+        $this->assertSame($subBase, $config['contextLinks']['basePath']);
+
+        $displayUrl = (string) ($config['initialSession']['displayUrl'] ?? '');
+        $embedUrl = (string) ($config['initialSession']['embedUrl'] ?? '');
+        $this->assertStringStartsWith('http://localhost'.$subBase.'/v2/ADASI_PRD/'.$appUuid.'?favoriteContext=', $displayUrl);
+        $this->assertSame($dashboardUrl.'?_embed=1', $embedUrl);
+
+        // Direct navigation to projected subdirectory Infor context URL renders shell with subdirectory embed URL.
+        $contextResponse = $this->actingAs($purchasing)->call('GET', $displayUrl, [], [], [], $server);
+        $contextResponse->assertOk()
+            ->assertHeader('X-Frame-Options', 'DENY')
+            ->assertSee('data-workspace-shell="true"', false);
+        $contextConfig = $this->extractWorkspaceConfig($contextResponse->getContent());
+        $this->assertSame($dashboardUrl.'?_embed=1', $contextConfig['initialSession']['embedUrl'] ?? null);
+        $this->assertStringStartsWith('http://localhost'.$subBase.'/v2/ADASI_PRD/'.$appUuid.'?favoriteContext=', (string) ($contextConfig['initialSession']['displayUrl'] ?? ''));
+
+        // Security gates on portal.page remain enforced under subdirectory deployment.
+        $this->actingAs($purchasing)->call('GET', $displayUrl.'&_embed=1', [], [], [], $server)->assertForbidden();
+        $this->assertNull(
+            PortalContextCodec::project(
+                'http://localhost/other_app/v2/ADASI_PRD/purchasing/dashboard',
+                $purchasing,
+                options: ['basePath' => $subBase]
+            )
+        );
+
+        // Legacy unprefixed path 301 redirect preserves subdirectory base path without doubling.
+        $legacyResp = $this->actingAs($purchasing)->call('GET', 'http://localhost'.$subBase.'/purchasing/dashboard', [], [], [], $server);
+        $legacyResp->assertStatus(301);
+        $legacyLocation = (string) $legacyResp->headers->get('Location');
+        $this->assertStringEndsWith($subBase.'/v2/ADASI_PRD/purchasing/dashboard', $legacyLocation);
+        $this->assertStringNotContainsString($subBase.$subBase, $legacyLocation);
+
+        // Login under subdirectory: JSON splash returns HTTP root-relative path with base path, form login avoids doubling.
+        $this->call('POST', 'http://localhost'.$subBase.'/logout', [], [], [], $server);
+        $expectedShortcutsPath = $subBase.'/v2/ADASI_PRD/'.$appUuid;
+
+        $splashResp = $this->call(
+            'POST',
+            'http://localhost'.$subBase.'/login',
+            ['email' => $purchasing->email, 'password' => 'password'],
+            [],
+            [],
+            array_merge($server, [
+                'HTTP_ACCEPT' => 'application/json',
+                'HTTP_X_AUTH_SPLASH_CLIENT' => '1',
+            ])
+        );
+        $splashResp->assertOk()->assertJson([
+            'ok' => true,
+            'two_factor' => false,
+            'redirect_url' => $expectedShortcutsPath,
+        ]);
+
+        $this->call('POST', 'http://localhost'.$subBase.'/logout', [], [], [], $server);
+        $formResp = $this->call(
+            'POST',
+            'http://localhost'.$subBase.'/login',
+            ['email' => $purchasing->email, 'password' => 'password'],
+            [],
+            [],
+            $server
+        );
+        $formResp->assertRedirect();
+        $formLocation = (string) $formResp->headers->get('Location');
+        $this->assertSame('http://localhost'.$expectedShortcutsPath, $formLocation);
+        $this->assertStringNotContainsString($subBase.$subBase, $formLocation);
+    }
+
     /**
      * @return array<string, mixed>
      */

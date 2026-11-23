@@ -119,10 +119,29 @@ final class RateLimitResponse
         $referer = $request->headers->get('referer');
 
         if (is_string($referer) && self::isSameOrigin($request, $referer)) {
-            return $referer;
+            if (WorkspaceShell::originatedFromEmbed($request)) {
+                $resolved = WorkspaceShell::resolveEmbeddedRedirectTarget($request, $referer);
+                if ($resolved !== null) {
+                    return $resolved;
+                }
+            } else {
+                return $referer;
+            }
         }
 
-        return $request->user() === null ? route('login') : route('profile.edit');
+        if ($request->user() === null) {
+            return route('login');
+        }
+
+        if (WorkspaceShell::originatedFromEmbed($request)) {
+            $dashboard = PortalContext::dashboard($request->user(), absolute: true);
+            $resolvedDashboard = WorkspaceShell::resolveEmbeddedRedirectTarget($request, $dashboard);
+            if ($resolvedDashboard !== null) {
+                return $resolvedDashboard;
+            }
+        }
+
+        return route('profile.edit');
     }
 
     private static function isSameOrigin(Request $request, string $url): bool

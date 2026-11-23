@@ -7,11 +7,34 @@ use App\Models\UserPreference;
 use App\Services\Dashboard\DashboardWidgetService;
 use App\Support\PortalContext;
 use DateTimeZone;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class UserPreferenceService
 {
+    public const CACHE_TTL_SECONDS = 300;
+
+    public static function cacheKey(int $userId): string
+    {
+        return "user_preferences:{$userId}";
+    }
+
+    public static function forgetForUser(int $userId): void
+    {
+        if ($userId <= 0) {
+            return;
+        }
+
+        if (app()->bound('request')) {
+            request()->attributes->remove(self::class.'.'.$userId);
+        }
+
+        $cacheKey = self::cacheKey($userId);
+        Cache::forget($cacheKey);
+        DB::afterCommit(static fn () => Cache::forget($cacheKey));
+    }
+
     public static function normalizeLocale(mixed $locale): string
     {
         return is_string($locale) && in_array($locale, ['en', 'id'], true) ? $locale : 'en';
@@ -73,15 +96,35 @@ class UserPreferenceService
     public function for(User $user): array
     {
         $request = request();
-        $cacheKey = $this->requestCacheKey($user);
+        $requestKey = $this->requestCacheKey($user);
 
-        if ($request->attributes->has($cacheKey)) {
-            return $request->attributes->get($cacheKey)['preferences'];
+        if ($request->attributes->has($requestKey)) {
+            return $request->attributes->get($requestKey)['preferences'];
         }
 
+        $userId = $user->getKey();
+        $preferences = is_numeric($userId) && (int) $userId > 0
+            ? Cache::remember(
+                self::cacheKey((int) $userId),
+                self::CACHE_TTL_SECONDS,
+                fn (): array => $this->loadPreferences($user),
+            )
+            : $this->loadPreferences($user);
+
+        $request->attributes->set($requestKey, [
+            'preferences' => $preferences,
+        ]);
+
+        return $preferences;
+    }
+
+    /** @return array<string, mixed> */
+    private function loadPreferences(User $user): array
+    {
         $defaults = config('user_preferences.defaults');
         $stored = UserPreference::query()->where('user_id', $user->getKey())->first();
-        $preferences = $stored instanceof UserPreference
+
+        return $stored instanceof UserPreference
             ? [
                 ...$defaults,
                 ...$this->regionalValues($stored),
@@ -103,13 +146,6 @@ class UserPreferenceService
                 'import_timezone' => self::normalizeImportTimezone($stored->import_timezone),
             ]
             : [...$defaults, 'revision' => 0, 'notification_preferences' => []];
-
-        $request->attributes->set($cacheKey, [
-            'id' => $stored?->getKey(),
-            'preferences' => $preferences,
-        ]);
-
-        return $preferences;
     }
 
     public function save(User $user, array $values): array
@@ -174,7 +210,7 @@ class UserPreferenceService
             $preference->sidebar_revision = max(1, (int) ($stored?->sidebar_revision ?? 1))
                 + ($previousSidebar !== $values['sidebar_state'] ? 1 : 0);
             $lockedUser->preference()->save($preference);
-            request()->attributes->remove($this->requestCacheKey($lockedUser));
+            self::forgetForUser((int) $lockedUser->getKey());
             app(NotificationPreferenceService::class)->forget($lockedUser);
 
             return $this->for($lockedUser->refresh());
@@ -193,7 +229,7 @@ class UserPreferenceService
             $preference->sidebar_revision = max(1, (int) ($stored?->sidebar_revision ?? 1)) + 1;
             $preference->revision = ($stored?->revision ?? 0) + 1;
             $lockedUser->preference()->save($preference);
-            request()->attributes->remove($this->requestCacheKey($lockedUser));
+            self::forgetForUser((int) $lockedUser->getKey());
             app(NotificationPreferenceService::class)->forget($lockedUser);
 
             return $this->for($lockedUser->refresh());
@@ -217,7 +253,7 @@ class UserPreferenceService
             $preference->locale = $locale;
             $preference->revision = ($stored?->revision ?? 0) + 1;
             $lockedUser->preference()->save($preference);
-            request()->attributes->remove($this->requestCacheKey($lockedUser));
+            self::forgetForUser((int) $lockedUser->getKey());
             app(NotificationPreferenceService::class)->forget($lockedUser);
 
             return $this->for($lockedUser->refresh());
@@ -244,7 +280,7 @@ class UserPreferenceService
             $preference->dashboard_preferences = $this->dashboardWidgets->mergeLayout($lockedUser, $savedLayouts, $dashboard);
             $preference->revision = ($stored?->revision ?? 0) + 1;
             $lockedUser->preference()->save($preference);
-            request()->attributes->remove($this->requestCacheKey($lockedUser));
+            self::forgetForUser((int) $lockedUser->getKey());
             app(NotificationPreferenceService::class)->forget($lockedUser);
 
             return $this->for($lockedUser->refresh());
@@ -272,6 +308,7 @@ class UserPreferenceService
             $preference->notification_preferences = $overrides === [] ? null : $overrides;
             $preference->revision = ($stored?->revision ?? 0) + 1;
             $lockedUser->preference()->save($preference);
+            self::forgetForUser((int) $lockedUser->getKey());
             $notifications->forget($lockedUser);
 
             return $this->for($lockedUser->refresh());
@@ -291,6 +328,7 @@ class UserPreferenceService
             $preference->notification_preferences = null;
             $preference->revision = ($stored?->revision ?? 0) + 1;
             $lockedUser->preference()->save($preference);
+            self::forgetForUser((int) $lockedUser->getKey());
             app(NotificationPreferenceService::class)->forget($lockedUser);
 
             return $this->for($lockedUser->refresh());

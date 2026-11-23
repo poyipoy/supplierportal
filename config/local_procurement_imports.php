@@ -11,7 +11,7 @@ return [
     'page_size' => 100,
     'active_per_user' => 2,
     'preview_hours' => 24,
-    'retention_days' => 3,
+    'retention_days' => max(1, (int) env('LOCAL_IMPORT_RETENTION_DAYS', 3)),
     'queue' => 'imports',
     'timeout_seconds' => 300,
     'commit_seconds' => 60,

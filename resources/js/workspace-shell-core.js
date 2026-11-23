@@ -8,8 +8,9 @@ export const DEFAULT_STEP_INTERVAL_MS = 220;
 export const DEFAULT_MAX_PINNED_SESSIONS = 8;
 export const DEFAULT_MAX_RECENTLY_CLOSED = 10;
 
-const DOWNLOAD_BINARY_SUFFIX_RE = /(\/exports\/[^/]+\/download|\/shared\/pdf\/|\/attachments\/|\/export-presets(?:\/|$)|\/export\/|\/receipt\/print$|import-template)/i;
-const TOP_LEVEL_SUFFIX_RE = /(\/login|\/logout|\/confirm-password|\/forgot-password|\/two-factor-challenge|\/oauth\/|\/sso\/|\/profile\/security|\/profile\/two-factor|\/supplier-context|\/admin\/users\/create|\/admin\/users\/[^/]+\/edit|\/finance\/vendor-master\/[^/]+\/payment-term|\/verify-receipt\/|\/supplier\/register|\/supplier\/registration|\/locale\/|\/exports\/[^/]+\/download|\/shared\/pdf\/|\/attachments\/|\/export-presets(?:\/|$)|\/export\/|\/receipt\/print$|\/print$)/i;
+const DOWNLOAD_BINARY_SUFFIX_RE = /(\/exports\/[^/]+\/download|\/shared\/pdf\/|\/attachments\/|\/local-invoice-documents\/|\/supplier-master-documents\/|\/ga-claim-documents\/|\/supplier-registrations\/[^/]+\/documents\/|\/payment-vouchers\/[^/]+\/documents\/|\/export-presets(?:\/|$)|\/export(?:\/|$)|\/receipt\/print$|import-template|\/import\/(?:po|gr)\/template$)/i;
+const TOP_LEVEL_SUFFIX_RE = /(\/login|\/logout|\/confirm-password|\/forgot-password|\/two-factor-challenge|\/oauth\/|\/sso\/|\/profile\/security|\/profile\/two-factor|\/supplier-context|\/admin\/users\/create|\/admin\/users\/[^/]+\/edit|\/finance\/vendor-master\/[^/]+\/payment-term|\/verify-receipt\/|\/supplier\/register|\/supplier\/registration|\/locale\/|\/exports\/[^/]+\/download|\/shared\/pdf\/|\/attachments\/|\/local-invoice-documents\/|\/supplier-master-documents\/|\/ga-claim-documents\/|\/supplier-registrations\/[^/]+\/documents\/|\/payment-vouchers\/[^/]+\/documents\/|\/export-presets(?:\/|$)|\/export(?:\/|$)|\/receipt\/print$|\/print$|import-template|\/import\/(?:po|gr)\/template$)/i;
+const UUID_SEGMENT_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const NON_MUTATING_POST_SUFFIX_RE = /(\/material-calculations\/(?:totals|preview)|\/import-preview|\/import\/(?:po|gr)\/preview|\/export-form|\/revalidate)$/i;
 
 export function resolveTransitionSettleMs(durations, delays, { floorMs = 0, bufferMs = 80 } = {}) {
@@ -109,8 +110,22 @@ export function isTopLevelOnlyUrl(rawUrl, origin = 'http://localhost', pathPrefi
 
     const parsed = new URL(rawUrl, origin);
     const normalizedPath = parsed.pathname.replace(/\/+$/, '') || '/';
-    if (normalizedPath === '/' || normalizedPath === pathPrefix.replace(/\/+$/, '')) {
+    const strippedPrefix = String(pathPrefix || '').trim().replace(/^\/+|\/+$/g, '');
+    const normalizedPrefix = strippedPrefix !== '' ? `/${strippedPrefix}` : '';
+    if (normalizedPath === '/' || (normalizedPrefix !== '' && normalizedPath === normalizedPrefix)) {
         return false;
+    }
+
+    const relativePath = normalizedPrefix !== '' && normalizedPath.startsWith(`${normalizedPrefix}/`)
+        ? normalizedPath.slice(normalizedPrefix.length)
+        : normalizedPath;
+    if (relativePath === '/dashboard') {
+        return true;
+    }
+
+    const singleSegment = relativePath.startsWith('/') ? relativePath.slice(1) : relativePath;
+    if (singleSegment !== '' && !singleSegment.includes('/') && UUID_SEGMENT_RE.test(singleSegment)) {
+        return true;
     }
 
     return TOP_LEVEL_SUFFIX_RE.test(normalizedPath) || parsed.searchParams.has('signature');
@@ -887,7 +902,8 @@ export class WorkspaceSessionStore {
         const cleanUrl = canonicalizeUrl(url);
         const signature = normalizedPathnameAndSearch(cleanUrl);
         const existing = targetGroup.frames.find(
-            (frame) => !frame.stagedNew && normalizedPathnameAndSearch(frame.url) === signature,
+            (frame) => (!frame.stagedNew || frame.loading || frame.queued)
+                && normalizedPathnameAndSearch(frame.url) === signature,
         );
 
         if (existing) {
@@ -1564,9 +1580,11 @@ export class WorkspaceNavQueue {
         maxConcurrent = 2,
         slowThresholdMs = 2500,
         stepIntervalMs = DEFAULT_STEP_INTERVAL_MS,
-        slotTimeoutMs = 15000,
+        slotTimeoutMs = 30000,
         dataReadyTimeoutMs = 12000,
-        queueWaitTimeoutMs = 45000,
+        queueWaitTimeoutMs = 60000,
+        visibilityGraceMs = 5000,
+        isDocumentHidden = null,
         timers = defaultQueueTimers(),
         onStartSlot = null,
         onCommitReady = null,
@@ -1583,6 +1601,8 @@ export class WorkspaceNavQueue {
         this.slotTimeoutMs = Math.max(0, Number(slotTimeoutMs) || 0);
         this.dataReadyTimeoutMs = Math.max(0, Number(dataReadyTimeoutMs) || 0);
         this.queueWaitTimeoutMs = Math.max(0, Number(queueWaitTimeoutMs) || 0);
+        this.visibilityGraceMs = Math.max(0, Number(visibilityGraceMs) || 0);
+        this.isDocumentHidden = typeof isDocumentHidden === 'function' ? isDocumentHidden : () => false;
         this.timers = timers;
         this.onStartSlot = onStartSlot;
         this.onCommitReady = onCommitReady;
@@ -1816,6 +1836,46 @@ export class WorkspaceNavQueue {
         return best;
     }
 
+    _armSlotTimer(entry, timeoutMs = this.slotTimeoutMs) {
+        if (!entry) return;
+        if (entry.slotTimerId) {
+            this.timers.clearTimeout(entry.slotTimerId);
+            entry.slotTimerId = 0;
+        }
+        entry.deferredTimeout = false;
+        if (timeoutMs <= 0) return;
+
+        const fid = entry.frameId;
+        entry.slotTimerId = this.timers.setTimeout(() => {
+            const current = this._byFrameId.get(fid);
+            if (!current || current.status !== 'loading') return;
+            current.slotTimerId = 0;
+            // Background tabs throttle iframe subresources; defer timeout until foregrounded.
+            if (this.isDocumentHidden()) {
+                current.deferredTimeout = true;
+                return;
+            }
+            this.fail(fid, 'timeout');
+        }, timeoutMs);
+    }
+
+    resetSlotTimer(frameId) {
+        const entry = this._byFrameId.get(frameId);
+        if (!entry || entry.status !== 'loading') return false;
+        entry.startedAt = this._now();
+        this._armSlotTimer(entry, this.slotTimeoutMs);
+        return true;
+    }
+
+    notifyVisibilityRestored() {
+        for (const entry of this._entries) {
+            if (entry.status === 'loading' && entry.deferredTimeout && !entry.slotTimerId) {
+                const graceMs = this.visibilityGraceMs > 0 ? this.visibilityGraceMs : Math.min(this.slotTimeoutMs, 5000);
+                this._armSlotTimer(entry, graceMs);
+            }
+        }
+    }
+
     _pump() {
         while (this.activeCount() < this.maxConcurrent) {
             const next = this._nextQueuedEntry();
@@ -1826,16 +1886,8 @@ export class WorkspaceNavQueue {
                 next.queueWaitTimerId = 0;
             }
             next.status = 'loading';
-
-            if (this.slotTimeoutMs > 0) {
-                const fid = next.frameId;
-                next.slotTimerId = this.timers.setTimeout(() => {
-                    const current = this._byFrameId.get(fid);
-                    if (!current || current.status !== 'loading') return;
-                    current.slotTimerId = 0;
-                    this.fail(fid, 'timeout');
-                }, this.slotTimeoutMs);
-            }
+            next.startedAt = this._now();
+            this._armSlotTimer(next, this.slotTimeoutMs);
 
             try {
                 this.onStartSlot?.(next);
@@ -1884,6 +1936,8 @@ export class WorkspaceNavQueue {
             slotTimerId: 0,
             dataTimerId: 0,
             queueWaitTimerId: 0,
+            startedAt: null,
+            deferredTimeout: false,
         };
 
         this._entries.push(entry);
@@ -2229,4 +2283,45 @@ export function resizeShortcutsPairByDelta({
         leftPct: (nextLeftPx / pairTotalPx) * 100,
         minPct: (effectiveMin / pairTotalPx) * 100,
     };
+}
+
+const CONTEXT_FILTER_KEYS = ['status', 'search', 'q', 'month', 'period', 'year', 'type', 'category', 'filter', 'scope', 'tab'];
+const HASH_TOKEN_LIKE_RE = /^[A-Za-z0-9]{12,}$/;
+
+export function formatSessionDuplicateBadge(duplicateIndex = 1, duplicateTotal = 1) {
+    const idx = Number(duplicateIndex) || 1;
+    const total = Number(duplicateTotal) || 1;
+
+    return total > 1 && idx > 1 ? `(${idx})` : '';
+}
+
+export function formatSessionContextHint(rawUrl, { childTitle = '', parentTitle = '', maxLength = 42 } = {}) {
+    const parts = [];
+    const cleanChild = typeof childTitle === 'string' ? childTitle.trim() : '';
+    const cleanParent = typeof parentTitle === 'string' ? parentTitle.trim() : '';
+
+    if (cleanChild && cleanChild.toLowerCase() !== cleanParent.toLowerCase()) {
+        parts.push(cleanChild);
+    }
+
+    if (typeof rawUrl === 'string' && rawUrl.trim()) {
+        try {
+            const parsed = new URL(rawUrl, 'http://localhost');
+            for (const key of CONTEXT_FILTER_KEYS) {
+                const rawVal = parsed.searchParams.get(key);
+                const val = typeof rawVal === 'string' ? rawVal.trim() : '';
+                if (!val || val.toLowerCase() === 'all' || HASH_TOKEN_LIKE_RE.test(val)) {
+                    continue;
+                }
+                parts.push(key === 'search' || key === 'q' ? `"${val}"` : `${key}: ${val}`);
+                if (parts.length >= 2) break;
+            }
+        } catch {
+            // Ignore malformed URLs when deriving optional UI hint.
+        }
+    }
+
+    if (parts.length === 0) return '';
+    const joined = parts.join(' · ');
+    return joined.length > maxLength ? `${joined.slice(0, Math.max(8, maxLength - 1)).trimEnd()}…` : joined;
 }

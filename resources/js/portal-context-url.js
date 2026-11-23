@@ -72,6 +72,49 @@ function normalizePath(path) {
     return trimmed === '' ? '/' : trimmed;
 }
 
+function normalizeBasePath(raw) {
+    const trimmed = String(raw || '').trim().replace(/\/+$/, '');
+    if (trimmed === '' || trimmed === '/') {
+        return '';
+    }
+    if (
+        !trimmed.startsWith('/')
+        || trimmed.startsWith('//')
+        || trimmed.includes('\\')
+        || trimmed.includes('?')
+        || trimmed.includes('#')
+        || CONTROL_CHARS_RE.test(trimmed)
+        || /(?:^|\/)\.\.(?:\/|$)/.test(trimmed)
+    ) {
+        return '';
+    }
+    return trimmed;
+}
+
+function stripBasePath(pathname, basePath) {
+    const normalized = normalizePath(pathname);
+    if (!basePath) {
+        return normalized;
+    }
+    if (normalized === basePath) {
+        return '/';
+    }
+    if (normalized.startsWith(`${basePath}/`)) {
+        return normalized.slice(basePath.length);
+    }
+    return null;
+}
+
+function contextAppPath(contextLinks) {
+    const basePath = normalizeBasePath(contextLinks?.basePath);
+    const rawPrefix = String(contextLinks?.pathPrefix || '').replace(/^\/+|\/+$/g, '');
+    const appUuid = String(contextLinks?.appUuid || '').toLowerCase();
+    if (!appUuid) {
+        return '';
+    }
+    return `${basePath}${rawPrefix !== '' ? `/${rawPrefix}` : ''}/${appUuid}`;
+}
+
 function encodeQueryPairs(orderedEntries) {
     if (!orderedEntries.length) {
         return '';
@@ -271,8 +314,14 @@ export function projectShellUrl(internalUrl, origin, contextLinks) {
         return null;
     }
 
+    const basePath = normalizeBasePath(contextLinks.basePath);
+    const appRelativePath = stripBasePath(parsed.pathname, basePath);
+    if (appRelativePath === null) {
+        return null;
+    }
+
     const index = buildSessionIndex(contextLinks.sessionMap);
-    const matched = matchPathAgainstIndex(normalizePath(parsed.pathname), index);
+    const matched = matchPathAgainstIndex(appRelativePath, index);
     if (!matched) {
         return null;
     }
@@ -356,13 +405,11 @@ export function projectShellUrl(internalUrl, origin, contextLinks) {
         return null;
     }
 
-    const rawPrefix = String(contextLinks.pathPrefix || '').replace(/^\/+|\/+$/g, '');
-    const appUuid = String(contextLinks.appUuid || '').toLowerCase();
-    if (!appUuid) {
+    const appPath = contextAppPath(contextLinks);
+    if (!appPath) {
         return null;
     }
 
-    const appPath = `${rawPrefix !== '' ? `/${rawPrefix}` : ''}/${appUuid}`;
     return `${baseOrigin.origin}${appPath}?${buildContextQueryString(favoriteContext, entry.logicalId)}`;
 }
 
@@ -387,10 +434,9 @@ export function resolveContextUrl(contextUrl, origin, contextLinks) {
         return null;
     }
 
-    const rawPrefix = String(contextLinks.pathPrefix || '').replace(/^\/+|\/+$/g, '');
-    const appUuid = String(contextLinks.appUuid || '').toLowerCase();
-    const expectedPath = `${rawPrefix !== '' ? `/${rawPrefix}` : ''}/${appUuid}`;
-    if (!appUuid || normalizePath(parsed.pathname).toLowerCase() !== expectedPath.toLowerCase()) {
+    const basePath = normalizeBasePath(contextLinks.basePath);
+    const expectedPath = contextAppPath(contextLinks);
+    if (!expectedPath || normalizePath(parsed.pathname).toLowerCase() !== expectedPath.toLowerCase()) {
         return null;
     }
 
@@ -501,14 +547,16 @@ export function resolveContextUrl(contextUrl, origin, contextLinks) {
         .map((k) => [k, queryMap.get(k)]);
     const qs = encodeQueryPairs(sortedQueryEntries);
 
+    const httpResolvedPath = `${basePath}${resolvedPath}`;
+
     return {
         action: entry.action,
         route: entry.route,
         logicalId: entry.logicalId,
         params: routeParams,
         query: Object.fromEntries(sortedQueryEntries),
-        internalPath: `${resolvedPath}${qs !== '' ? `?${qs}` : ''}`,
-        internalUrl: `${baseOrigin.origin}${resolvedPath}${qs !== '' ? `?${qs}` : ''}`,
+        internalPath: `${httpResolvedPath}${qs !== '' ? `?${qs}` : ''}`,
+        internalUrl: `${baseOrigin.origin}${httpResolvedPath}${qs !== '' ? `?${qs}` : ''}`,
     };
 }
 
@@ -534,13 +582,12 @@ export function getContextRootUrl(origin, contextLinks, fallbackShortcutsUrl = '
         }
     }
 
-    const rawPrefix = String(contextLinks?.pathPrefix || '').replace(/^\/+|\/+$/g, '');
-    const appUuid = String(contextLinks?.appUuid || '').toLowerCase();
-    if (!appUuid) {
+    const appPath = contextAppPath(contextLinks);
+    if (!appPath) {
         return '';
     }
 
-    return `${baseOrigin.origin}${rawPrefix !== '' ? `/${rawPrefix}` : ''}/${appUuid}`;
+    return `${baseOrigin.origin}${appPath}`;
 }
 
 export function buildHistoryProjection({
@@ -658,10 +705,8 @@ export function resolvePopstateNavigation({
             try {
                 const parsedCandidate = new URL(rawCandidate, origin);
                 const candidatePath = normalizePath(parsedCandidate.pathname).toLowerCase();
-                const rawPrefix = String(contextLinks.pathPrefix || '').replace(/^\/+|\/+$/g, '');
-                const appUuid = String(contextLinks.appUuid || '').toLowerCase();
-                const expectedPath = `${rawPrefix !== '' ? `/${rawPrefix}` : ''}/${appUuid}`.toLowerCase();
-                if (appUuid && candidatePath === expectedPath) {
+                const expectedPath = contextAppPath(contextLinks).toLowerCase();
+                if (expectedPath && candidatePath === expectedPath) {
                     if (parsedCandidate.search === '') {
                         return { kind: 'shortcuts' };
                     }

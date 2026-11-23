@@ -30,8 +30,8 @@ test('table headers, row actions, status chips, sidebar headings, and workspace 
     assert.deepEqual(extractPxSteps('--ui-density-table-action-min'), [36, 34, 30, 28, 24]);
     assert.deepEqual(extractPxSteps('--ui-density-table-chip-min'), [26, 24, 22, 20, 18]);
     assert.deepEqual(extractPxSteps('--ui-density-sidebar-heading-min'), [44, 42, 38, 34, 30]);
-    assert.deepEqual(extractPxSteps('--ui-density-sessionbar-min'), [44, 42, 39, 36, 34]);
-    assert.deepEqual(extractPxSteps('--ui-density-session-min'), [36, 34, 31, 29, 27]);
+    assert.deepEqual(extractPxSteps('--ui-density-sessionbar-min'), [48, 46, 44, 42, 40]);
+    assert.deepEqual(extractPxSteps('--ui-density-session-min'), [43, 41, 39, 37, 35]);
 
     assert.match(css, /\.table thead th\s*\{[^}]*var\(--ui-density-table-head-block,\s*0\.4375rem\)/s);
     assert.match(css, /\.ui-data-table table thead th\s*\{[^}]*var\(--ui-density-table-head-block,\s*0\.4375rem\)/s);
@@ -39,8 +39,8 @@ test('table headers, row actions, status chips, sidebar headings, and workspace 
     assert.match(css, /--ui-density-table-chip-min,\s*1\.5rem/);
     assert.match(css, /\.sidebar-heading\s*\{[^}]*var\(--ui-density-sidebar-heading-min,\s*2\.625rem\)/s);
     assert.match(css, /\.ui-section\s*\{[^}]*var\(--ui-density-stack-sm/s);
-    assert.match(workspaceCss, /\.workspace-sessionbar\s*\{[^}]*min-height:\s*var\(--ui-density-sessionbar-min,\s*2\.625rem\)/s);
-    assert.match(workspaceCss, /\.workspace-session__trigger\s*\{[^}]*min-height:\s*var\(--ui-density-session-min,\s*2\.125rem\)/s);
+    assert.match(workspaceCss, /\.workspace-sessionbar\s*\{[^}]*min-height:\s*var\(--ui-density-sessionbar-min,\s*2\.875rem\)/s);
+    assert.match(workspaceCss, /\.workspace-session__trigger\s*\{[^}]*min-height:\s*var\(--ui-density-session-min,\s*2\.5625rem\)/s);
 });
 
 test('density preview frame has no hidden spacious reserve clone and renders realistic ERP operational components', () => {

@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Services\UserPreferenceService;
 use App\Support\JsTranslations;
 use App\Support\PortalContext;
+use App\Support\PortalPath;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -43,7 +44,7 @@ class LocaleController extends Controller
 
         $returnTo = $this->safeReturnPath($request->input('return_to'));
         if ($returnTo !== null) {
-            return redirect()->to($returnTo);
+            return redirect()->to(PortalPath::stripBaseUrl($returnTo, $request));
         }
 
         return $user instanceof User

@@ -213,7 +213,7 @@ final class PortalContextCodec
      * Project an internal shell-eligible Laravel URL into its canonical Infor context URL.
      *
      * @param  list<array<string, mixed>>|null  $sessionIndex
-     * @param  array{appUuid?: string, prefix?: string}|null  $options
+     * @param  array{appUuid?: string, prefix?: string, basePath?: string}|null  $options
      */
     public static function project(
         string $internalUrl,
@@ -231,12 +231,27 @@ final class PortalContextCodec
         }
 
         $path = self::normalizePath((string) $parsed['path']);
+        $httpBase = array_key_exists('basePath', $options ?? [])
+            ? PortalPath::normalizeBasePath((string) $options['basePath'])
+            : PortalPath::baseUrl();
+
+        $matchPath = $path;
+        if ($httpBase !== '') {
+            if ($path === $httpBase) {
+                $matchPath = '/';
+            } elseif (str_starts_with($path, $httpBase.'/')) {
+                $matchPath = substr($path, strlen($httpBase));
+            } elseif (isset($parsed['host'])) {
+                return null;
+            }
+        }
+
         $prefix = array_key_exists('prefix', $options ?? [])
             ? trim((string) $options['prefix'], '/')
             : trim(PortalPath::prefix(), '/');
 
         $index = $sessionIndex ?? self::sessionIndex($user, null, $prefix);
-        $matched = self::matchPathAgainstIndex($path, $index);
+        $matched = self::matchPathAgainstIndex($matchPath, $index);
         if ($matched === null) {
             return null;
         }
@@ -307,7 +322,7 @@ final class PortalContextCodec
         }
 
         $appUuid = strtolower((string) ($options['appUuid'] ?? config('portal_urls.context_urls.app_uuid', '934f47ee-06a4-4f2d-a619-e7cf35e9d91b')));
-        $basePath = ($prefix !== '' ? '/'.$prefix : '').'/'.$appUuid;
+        $basePath = $httpBase.($prefix !== '' ? '/'.$prefix : '').'/'.$appUuid;
 
         $originPrefix = '';
         if (isset($parsed['scheme'], $parsed['host'])) {
@@ -389,7 +404,7 @@ final class PortalContextCodec
         $routeParams = $parsedArgument['params'];
         $queryParams = $parsedArgument['query'];
 
-        $routePath = route($routeName, $routeParams, absolute: false);
+        $routePath = PortalPath::httpPath(route($routeName, $routeParams, absolute: false), $request);
         $queryString = self::encodeQueryPairs($queryParams);
         $internalPath = $routePath.($queryString !== '' ? '?'.$queryString : '');
         $origin = $request->getSchemeAndHttpHost();
@@ -402,7 +417,7 @@ final class PortalContextCodec
         $canonicalContextToken = self::encodeScv2Payload($description, $action, $canonicalArgument);
 
         $appUuid = strtolower((string) config('portal_urls.context_urls.app_uuid', '934f47ee-06a4-4f2d-a619-e7cf35e9d91b'));
-        $canonicalContextPath = route('portal.page', ['pageUuid' => $appUuid], absolute: false)
+        $canonicalContextPath = PortalPath::httpPath(route('portal.page', ['pageUuid' => $appUuid], absolute: false), $request)
             .'?'.self::buildContextQueryString($canonicalContextToken, $expectedLogicalId);
 
         return [

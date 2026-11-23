@@ -230,7 +230,7 @@
                 <tbody>
                     @forelse($purchaseOrders as $po)
                         <tr
-                            data-mmt-row-url="{{ route($routePrefix.'.satellite', $po, false) }}"
+                            data-mmt-row-url="{{ \App\Support\PortalPath::routePath($routePrefix.'.satellite', $po) }}"
                             data-mmt-row-ref="{{ $po->po_number }}"
                             tabindex="0"
                             aria-selected="false"

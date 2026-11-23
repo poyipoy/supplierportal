@@ -7,6 +7,7 @@ use App\Exports\PaymentBatchDrpExport;
 use App\Exports\PaymentBatchTransferExport;
 use App\Models\ExportJob;
 use App\Services\ExportProgressService;
+use App\Support\PortalPath;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -79,7 +80,7 @@ class ExportDownloadController extends Controller
         abort_unless((int) $exportJob->user_id === (int) $request->user()->getKey(), 403);
 
         $downloadUrl = $exportJob->isDownloadable()
-            ? route('exports.download', $exportJob, absolute: false)
+            ? PortalPath::routePath('exports.download', $exportJob, $request)
             : null;
 
         $message = match ($exportJob->status) {
@@ -104,7 +105,7 @@ class ExportDownloadController extends Controller
             'download_url' => $downloadUrl,
             'expires_at' => $exportJob->expires_at?->toIso8601String(),
             'cancel_url' => $exportJob->isPending()
-                ? route('exports.cancel', $exportJob, absolute: false)
+                ? PortalPath::routePath('exports.cancel', $exportJob, $request)
                 : null,
         ]);
     }
@@ -160,10 +161,10 @@ class ExportDownloadController extends Controller
             'completed_at' => $exportJob->completed_at?->toIso8601String(),
             'expires_at' => $exportJob->expires_at?->toIso8601String(),
             'download_url' => $exportJob->isDownloadable()
-                ? route('exports.download', $exportJob, absolute: false)
+                ? PortalPath::routePath('exports.download', $exportJob)
                 : null,
             'cancel_url' => $exportJob->isPending()
-                ? route('exports.cancel', $exportJob, absolute: false)
+                ? PortalPath::routePath('exports.cancel', $exportJob)
                 : null,
         ];
     }

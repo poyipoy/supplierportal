@@ -9,6 +9,7 @@ use App\Models\PurchaseOrder;
 use App\Models\Shipment;
 use App\Models\ShipmentDocument;
 use App\Services\FileSecurity\FileAccessGuard;
+use App\Support\PortalPath;
 use Illuminate\Support\Facades\DB;
 
 class CustomsDocumentationProgressCalculator
@@ -199,7 +200,7 @@ class CustomsDocumentationProgressCalculator
                     'shipment_hash' => (string) $shipment->hash,
                     'shipment_number' => (string) $shipment->shipment_number,
                     'shipment_status' => (string) $shipment->status,
-                    'shipment_url' => route('purchasing.shipments.show', $shipment, false),
+                    'shipment_url' => PortalPath::routePath('purchasing.shipments.show', $shipment),
                     'shipment_document_id' => $sDoc?->id ? (int) $sDoc->id : null,
                     'doc_type' => $docType,
                     'status' => $rawStatus,
@@ -216,7 +217,7 @@ class CustomsDocumentationProgressCalculator
                     'attachment_id' => $latestAttachment?->id ? (int) $latestAttachment->id : null,
                     'attachment_hash' => $latestAttachment?->hash,
                     'attachment_name' => $latestAttachment?->file_name,
-                    'attachment_url' => $latestAttachment ? route('attachments.show', $latestAttachment, false) : null,
+                    'attachment_url' => $latestAttachment ? PortalPath::routePath('attachments.show', $latestAttachment) : null,
                     'can_verify' => $isActiveShipment && $hasValidEvidence,
                     'has_evidence_gap' => $hasEvidenceGap,
                     'shared_po_numbers' => $sharedPoNumbers,

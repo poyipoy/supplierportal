@@ -155,8 +155,8 @@ test('a superseded request cannot clear the busy state or timeout of the request
         assert.equal(page.content.getAttribute('aria-busy'), 'true', 'B is still loading, so the container stays busy');
         assert.equal(page.overlay().style.display, '', 'B still shows its loading overlay');
 
-        // The 15s watchdog of B must still be able to cancel B.
-        const watchdogs = timers.filter((timer) => timer.ms === 15000 && !timer.cleared);
+        // The 30s default watchdog of B must still be able to cancel B.
+        const watchdogs = timers.filter((timer) => timer.ms === 30000 && !timer.cleared);
         assert.equal(watchdogs.length, 1, 'only the live request keeps a watchdog');
         watchdogs[0].fn();
         assert.equal(calls[1].options.signal.aborted, true, 'the watchdog aborts the request it belongs to');
@@ -649,7 +649,7 @@ test('a failed managed Back restores its original physical position before notif
         await settle();
         assert.equal(calls.length, 2);
         assert.equal(page.content.getAttribute('aria-busy'), 'true');
-        const watchdog = timers.findLast((timer) => timer.ms === 15000 && !timer.cleared);
+        const watchdog = timers.findLast((timer) => timer.ms === 30000 && !timer.cleared);
         assert.ok(watchdog);
         watchdog.fn();
         await settle();
@@ -907,6 +907,49 @@ test('sanitizeServerFragment preserves valid HTML application/json scripts, stri
         assert.equal(html.includes('evilSvg()'), false, 'SVG foreign JSON script is removed');
     } finally {
         if (realDOMParser) globalThis.DOMParser = realDOMParser; else delete globalThis.DOMParser;
+        restoreNetwork();
+    }
+});
+
+test('server-tabs suppresses duplicate error toast on 401/419 session expiry and includes Retry action on genuine 500 failure', async () => {
+    const realConsoleError = console.error;
+    const realToast = globalThis.window.AdasiToast;
+    const realSessionSync = globalThis.window.AdasiSessionSync;
+    const toastCalls = [];
+    const sessionResponses = [];
+    console.error = () => {};
+    globalThis.window.AdasiToast = {
+        error: (message, options) => toastCalls.push({ message, options }),
+    };
+    globalThis.window.AdasiSessionSync = {
+        handleActionResponse: (response) => sessionResponses.push(response.status),
+        isSessionExpired: () => false,
+    };
+
+    try {
+        stubNetwork();
+        const page = setup({ cacheTtlMs: 0, timeoutMs: 8000 });
+        page.container.id = page.selector.slice(1);
+
+        // 1. 401 session expiry delegates to AdasiSessionSync without firing duplicate error toast.
+        globalThis.fetch = async () => ({ ok: false, status: 401, redirected: false, url: 'http://localhost/page?tab=expired' });
+        const expiredOk = await window.AdasiServerTabs.navigate(page.selector, '/page?tab=expired', { pushHistory: false });
+        assert.equal(expiredOk, false);
+        assert.deepEqual(sessionResponses, [401]);
+        assert.equal(toastCalls.length, 0, 'must not show redundant error toast on 401 session expiry');
+
+        // 2. Genuine 500 error displays error toast with actionable Retry button.
+        globalThis.fetch = async () => ({ ok: false, status: 500, redirected: false, url: 'http://localhost/page?tab=err' });
+        const failedOk = await window.AdasiServerTabs.navigate(page.selector, '/page?tab=err', { pushHistory: false });
+        assert.equal(failedOk, false);
+        assert.equal(toastCalls.length, 1);
+        assert.equal(Array.isArray(toastCalls[0].options?.actions), true);
+        assert.equal(typeof toastCalls[0].options.actions[0].onClick, 'function');
+    } finally {
+        console.error = realConsoleError;
+        globalThis.window.AdasiToast = realToast;
+        if (realSessionSync === undefined) delete globalThis.window.AdasiSessionSync;
+        else globalThis.window.AdasiSessionSync = realSessionSync;
         restoreNetwork();
     }
 });

@@ -2,9 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Support\PortalPath;
 use App\Support\WorkspaceShell;
 use Illuminate\Routing\Route;
 use Illuminate\Support\Facades\Route as RouteFacade;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class WorkspaceShellRouteClassificationTest extends TestCase
@@ -216,5 +218,97 @@ class WorkspaceShellRouteClassificationTest extends TestCase
         $this->assertNotNull($route);
         $this->assertSame('shipments', WorkspaceShell::moduleKeyForRoute($route));
         $this->assertSame(__('shipments.preshipment.locations_title'), WorkspaceShell::menuLabelForRoute($route));
+    }
+
+    public function test_frontend_top_level_and_download_classifiers_cover_all_user_navigable_non_shell_get_routes(): void
+    {
+        $coreSource = (string) file_get_contents(resource_path('js/workspace-shell-core.js'));
+        preg_match('/const TOP_LEVEL_SUFFIX_RE = \/(.+?)\/i;/', $coreSource, $topMatch);
+        $this->assertNotEmpty($topMatch[1] ?? null, 'TOP_LEVEL_SUFFIX_RE must be readable from workspace-shell-core.js');
+        $topLevelRegex = '#'.$topMatch[1].'#i';
+
+        // Non-HTML JSON/AJAX/drawer/internal endpoints never rendered as user-clickable page links.
+        $nonNavigableDirectPatterns = [
+            'session.status',
+            'context-panel.*',
+            'conversations.drawer.*',
+            'conversations.unread-count',
+            'conversations.messages.*',
+            'notifications.summary',
+            'notifications.unread-count',
+            'exports.definitions.*',
+            'exports.status',
+            'purchasing.comparison.show',
+            '*.data',
+            '*.data-*',
+            '*.materials',
+            '*.search',
+            '*.po-suggestions',
+            '*.pr-suggestions',
+            '*.status',
+            '*.errors',
+            '*.records',
+            '*.history',
+            '*.satellite',
+            'supplier.goods-locations.options',
+        ];
+
+        $uncovered = [];
+        $prefix = trim(PortalPath::prefix(), '/');
+        $prefixSlash = $prefix !== '' ? '/'.$prefix : '';
+
+        foreach (RouteFacade::getRoutes()->getRoutes() as $route) {
+            if (! in_array('GET', $route->methods(), true)) {
+                continue;
+            }
+
+            $class = WorkspaceShell::classifyRoute($route);
+            if ($class === WorkspaceShell::CLASS_SHELL_PAGE) {
+                continue;
+            }
+
+            $name = (string) ($route->getName() ?? '');
+            $uri = '/'.ltrim($route->uri(), '/');
+
+            if ($name === '' || in_array($uri, ['/', '/up', '/broadcasting/auth'], true) || str_contains($uri, '{fallbackPlaceholder}')) {
+                continue;
+            }
+
+            $skip = false;
+            foreach ($nonNavigableDirectPatterns as $pattern) {
+                if (Str::is($pattern, $name)) {
+                    $skip = true;
+                    break;
+                }
+            }
+            if ($skip) {
+                continue;
+            }
+
+            // Substitute route parameters with realistic tokens (UUID for pageUuid, hashid otherwise).
+            $samplePath = (string) preg_replace_callback('/\{([^}]+)\}/', static function (array $m): string {
+                return str_contains(strtolower($m[1]), 'uuid')
+                    ? '934f47ee-06a4-4f2d-a619-e7cf35e9d91b'
+                    : 'SAMPLEHASH123';
+            }, $uri);
+
+            $relative = ($prefixSlash !== '' && str_starts_with($samplePath, $prefixSlash.'/'))
+                ? substr($samplePath, strlen($prefixSlash))
+                : $samplePath;
+            $singleSeg = ltrim($relative, '/');
+            $isBareDashboard = $relative === '/dashboard';
+            $isUuidSegment = $singleSeg !== '' && ! str_contains($singleSeg, '/')
+                && preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $singleSeg) === 1;
+
+            if (! $isBareDashboard && ! $isUuidSegment && preg_match($topLevelRegex, $samplePath) !== 1) {
+                $uncovered[] = "{$name} ({$uri})";
+            }
+        }
+
+        $this->assertSame(
+            [],
+            $uncovered,
+            'Every user-navigable non-shell GET route must be caught by workspace-shell-core.js top-level/download classifiers.'
+        );
     }
 }

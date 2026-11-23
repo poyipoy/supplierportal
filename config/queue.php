@@ -15,6 +15,9 @@ return [
 
     'default' => env('QUEUE_CONNECTION', 'database'),
 
+    // Enables the 1-minute scheduled queue:work runner in routes/console.php for cPanel shared hosting.
+    'cpanel_cron_worker' => (bool) env('CPANEL_CRON_QUEUE_WORKER', false),
+
     /*
     |--------------------------------------------------------------------------
     | Queue Connections

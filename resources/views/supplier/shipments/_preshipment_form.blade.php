@@ -62,8 +62,8 @@
         'idPrefix' => $idPrefix,
         'manageCountrySelectName' => $manageCountrySelectName,
         'urls' => [
-            'options' => route('supplier.goods-locations.options', absolute: false),
-            'store' => route('supplier.goods-locations.store', absolute: false),
+            'options' => \App\Support\PortalPath::routePath('supplier.goods-locations.options'),
+            'store' => \App\Support\PortalPath::routePath('supplier.goods-locations.store'),
         ],
         'values' => $resolvedValues,
         'locations' => $locations,
@@ -419,7 +419,7 @@
                     <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-1.5">
                         <button
                             type="button"
-                            @click="refreshLocations(@js(route('supplier.goods-locations.options', absolute: false)), $refs.locationSelect, @js(__('shipments.preshipment.location_default_tag')))"
+                            @click="refreshLocations(@js(\App\Support\PortalPath::routePath('supplier.goods-locations.options')), $refs.locationSelect, @js(__('shipments.preshipment.location_default_tag')))"
                             :disabled="loadingLocations || sameAsExporter"
                             class="ui-focus-ring tw:inline-flex tw:items-center tw:gap-1 tw:rounded-ui-sm tw:border-0 tw:bg-transparent tw:min-h-[44px] tw:sm:min-h-[32px] tw:px-2 tw:py-1 tw:text-ui-xs tw:font-semibold tw:text-primary tw:hover:bg-surface-container tw:cursor-pointer tw:disabled:opacity-50 tw:disabled:cursor-not-allowed"
                         >

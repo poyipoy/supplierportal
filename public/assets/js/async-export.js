@@ -26,10 +26,18 @@
     document.documentElement.dataset.asyncExportReady = 'true';
 
     const portalPath = (path) => {
-        const prefix = window.AdasiPortal?.pathPrefix || '';
-        return prefix && path.startsWith(`/${prefix}/`)
-            ? path.slice(prefix.length + 1)
-            : path;
+        const basePath = String(window.AdasiPortal?.basePath || '').replace(/\/+$/, '');
+        let normalized = path;
+        if (basePath && normalized.startsWith(`${basePath}/`)) {
+            normalized = normalized.slice(basePath.length);
+        } else if (basePath && normalized === basePath) {
+            normalized = '/';
+        }
+
+        const prefix = String(window.AdasiPortal?.pathPrefix || '').replace(/^\/+|\/+$/g, '');
+        return prefix && normalized.startsWith(`/${prefix}/`)
+            ? normalized.slice(prefix.length + 1)
+            : normalized;
     };
 
     const isAsyncExportUrl = (url) => {

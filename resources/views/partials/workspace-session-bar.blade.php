@@ -122,7 +122,7 @@
                         tabindex="0"
                         data-workspace-session-select="initial"
                     >
-                        <span class="workspace-session__status-dot" aria-hidden="true"></span>
+                        <span class="workspace-session__status-icon" aria-hidden="true"></span>
                         <span class="workspace-session__label">{{ $initialSession['label'] }}</span>
                     </button>
 

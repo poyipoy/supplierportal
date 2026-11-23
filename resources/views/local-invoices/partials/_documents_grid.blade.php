@@ -9,7 +9,6 @@
             'subtitle' => __('local_invoice.documents.invoice_description'),
             'icon' => 'file-text',
             'types' => ['invoice'],
-            'border_l' => 'tw:border-l-4 tw:border-l-primary',
             'icon_container' => 'tw:bg-primary-container tw:text-primary-container-foreground',
             'badge_class' => 'tw:bg-primary-container tw:text-primary-container-foreground',
         ],
@@ -18,7 +17,6 @@
             'subtitle' => __('local_invoice.documents.tax_description'),
             'icon' => 'receipt',
             'types' => ['tax_invoice'],
-            'border_l' => 'tw:border-l-4 tw:border-l-success',
             'icon_container' => 'tw:bg-success-container tw:text-success-container-foreground',
             'badge_class' => 'tw:bg-success-container tw:text-success-container-foreground',
         ],
@@ -27,7 +25,6 @@
             'subtitle' => __('local_invoice.documents.purchase_order_description'),
             'icon' => 'file-text',
             'types' => ['purchase_order'],
-            'border_l' => 'tw:border-l-4 tw:border-l-primary',
             'icon_container' => 'tw:bg-primary-container tw:text-primary-container-foreground',
             'badge_class' => 'tw:bg-primary-container tw:text-primary-container-foreground',
         ],
@@ -36,7 +33,6 @@
             'subtitle' => __('local_invoice.documents.goods_receipt_description'),
             'icon' => 'truck',
             'types' => ['goods_receipt'],
-            'border_l' => 'tw:border-l-4 tw:border-l-primary',
             'icon_container' => 'tw:bg-primary-container tw:text-primary-container-foreground',
             'badge_class' => 'tw:bg-primary-container tw:text-primary-container-foreground',
         ],
@@ -45,7 +41,6 @@
             'subtitle' => __('local_invoice.documents.delivery_description'),
             'icon' => 'truck',
             'types' => ['delivery_note', 'surat_jalan'],
-            'border_l' => 'tw:border-l-4 tw:border-l-warning',
             'icon_container' => 'tw:bg-warning-container tw:text-warning-container-foreground',
             'badge_class' => 'tw:bg-warning-container tw:text-warning-container-foreground',
         ],
@@ -54,7 +49,6 @@
             'subtitle' => __('local_invoice.documents.supporting_description'),
             'icon' => 'paperclip',
             'types' => ['supporting'],
-            'border_l' => 'tw:border-l-4 tw:border-l-secondary',
             'icon_container' => 'tw:bg-secondary-container tw:text-secondary-container-foreground',
             'badge_class' => 'tw:bg-secondary-container tw:text-secondary-container-foreground',
         ],
@@ -67,7 +61,7 @@
             $catDocs = $documents ? $documents->whereIn('document_type', $cat['types'])->values() : collect();
             $count = $catDocs->count();
         @endphp
-        <div class="tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface tw:overflow-hidden tw:flex tw:flex-col tw:h-full {{ $cat['border_l'] }}">
+        <div class="tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface tw:overflow-hidden tw:flex tw:flex-col tw:h-full">
             {{-- Category Header Bar --}}
             <div class="tw:bg-surface-low tw:border-b tw:border-outline-variant tw:px-3.5 tw:py-2.5 tw:flex tw:items-center tw:justify-between tw:gap-2.5">
                 <div class="tw:flex tw:items-center tw:gap-2.5 tw:min-w-0">

@@ -21,7 +21,7 @@
                 data-smart-panel-trigger
                 data-entity-type="payment-batch"
                 :data-entity-hash="$batch->hashid"
-                :data-smart-panel-url="route('context-panel.show', ['entityType' => 'payment-batch', 'hash' => $batch->hashid], false)"
+                :data-smart-panel-url="\App\Support\PortalPath::routePath('context-panel.show', ['entityType' => 'payment-batch', 'hash' => $batch->hashid])"
             >
                 <x-ui.icon name="git-branch" size="sm" />
                 <span>{{ __('smart_panel.trigger') }}</span>

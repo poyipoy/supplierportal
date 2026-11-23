@@ -8,6 +8,7 @@ use App\Http\Requests\Export\AdvancedExportRequest;
 use App\Http\Requests\Export\Filters\InspectionExportFilters;
 use App\Support\ExportConfirmation;
 use App\Support\ExportDispatcher;
+use App\Support\PortalPath;
 
 class QcExportController extends Controller
 {
@@ -37,9 +38,9 @@ class QcExportController extends Controller
             return response()->json([
                 'message' => $message,
                 'export_job_id' => $exportJob->getRouteKey(),
-                'exports_url' => route('exports.index', absolute: false),
-                'status_url' => route('exports.status', $exportJob, absolute: false),
-                'cancel_url' => route('exports.cancel', $exportJob, absolute: false),
+                'exports_url' => PortalPath::routePath('exports.index', [], $request),
+                'status_url' => PortalPath::routePath('exports.status', $exportJob, $request),
+                'cancel_url' => PortalPath::routePath('exports.cancel', $exportJob, $request),
             ], 202);
         }
 

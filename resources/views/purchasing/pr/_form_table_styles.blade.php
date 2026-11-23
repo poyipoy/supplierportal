@@ -201,10 +201,6 @@
         background-color: var(--md-surface-container-low) !important;
     }
 
-    #itemsTable.pr-items-table tbody tr:hover > .pr-sticky-number {
-        box-shadow: inset 3px 0 0 var(--md-primary) !important;
-    }
-
     .pr-item-remark {
         display: none !important;
     }

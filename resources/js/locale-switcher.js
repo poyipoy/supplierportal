@@ -483,7 +483,7 @@ export function bootLocaleSwitcher(windowRef = globalThis.window, documentRef = 
         const form = documentRef.querySelector?.('form[data-locale-switcher]');
         const endpoint = actionUrl
             || form?.getAttribute?.('action')
-            || `${windowRef.location?.origin || ''}/locale`;
+            || `${windowRef.location?.origin || ''}${windowRef.AdasiPortal?.basePath || ''}/locale`;
         const csrfToken = form?.querySelector?.('input[name="_token"]')?.value
             || documentRef.querySelector?.('meta[name="csrf-token"]')?.content
             || '';

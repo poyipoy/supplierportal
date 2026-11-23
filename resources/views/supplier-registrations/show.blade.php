@@ -326,6 +326,7 @@
                             <div class="tw:mt-2 tw:pt-2 tw:border-t tw:border-outline-variant tw:flex tw:justify-end">
                                 <a
                                     href="{{ route('supplier-registrations.document', ['attempt' => $attempt->hash, 'document' => $doc->hash]) }}"
+                                    download
                                     class="ui-focus-ring tw:inline-flex tw:items-center tw:gap-1 tw:text-ui-xs tw:font-semibold tw:text-primary tw:hover:underline tw:no-underline"
                                 >
                                     <x-ui.icon name="download" size="xs" />
@@ -459,6 +460,7 @@
                     @if ($declarationDoc)
                         <a
                             href="{{ route('supplier-registrations.document', ['attempt' => $attempt->hash, 'document' => $declarationDoc->hash]) }}"
+                            download
                             class="ui-focus-ring tw:mb-3 tw:inline-flex tw:items-center tw:gap-1 tw:text-ui-xs tw:font-semibold tw:text-primary tw:hover:underline tw:no-underline"
                         >
                             <x-ui.icon name="download" size="xs" />

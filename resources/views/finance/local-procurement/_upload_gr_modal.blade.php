@@ -24,7 +24,7 @@
                         :search-placeholder="__('local_procurement.gr_documents.po_search')"
                         :empty-message="__('local_procurement.gr_documents.po_empty')"
                         :options="$grPoOptions ?? []"
-                        :suggestions-url="route($routePrefix.'.po-suggestions', [], false)"
+                        :suggestions-url="\App\Support\PortalPath::routePath($routePrefix.'.po-suggestions')"
                         :remote="true"
                         :required="true"
                         :helper="__('local_procurement.gr_documents.po_help')"

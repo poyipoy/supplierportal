@@ -193,7 +193,7 @@
                                         {{ number_format(((int) $document->file_size) / 1024, 1) }} KB
                                     </div>
                                 </div>
-                                <x-ui.button :href="route($routePrefix.'.documents.show', [$voucher, $document])" size="sm" variant="outline">
+                                <x-ui.button :href="route($routePrefix.'.documents.show', [$voucher, $document])" target="_blank" rel="noopener" size="sm" variant="outline">
                                     <x-slot:leading><x-ui.icon name="download" size="sm" /></x-slot:leading>
                                     {{ __('payment_voucher.actions.download_document') }}
                                 </x-ui.button>

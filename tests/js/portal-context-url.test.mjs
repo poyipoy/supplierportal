@@ -4,10 +4,12 @@ import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import {
+    buildHistoryProjection,
     encodeScv2Payload,
     decodeScv2Payload,
     projectShellUrl,
     resolveContextUrl,
+    resolvePopstateNavigation,
 } from '../../resources/js/portal-context-url.js';
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -141,6 +143,84 @@ test('invalid attack payloads and hard length bounds are rejected identically in
             'https://portal.adasi.test',
             contextLinks
         ),
+        null
+    );
+});
+
+test('subdirectory basePath projects, resolves, handles popstate, and rejects sibling apps on shared host', () => {
+    const origin = 'http://localhost';
+    const basePath = '/adasi_portal_supplier/public';
+    const contextLinks = {
+        enabled: true,
+        appUuid: fixture.appUuid,
+        basePath,
+        pathPrefix: '/v2/ADSI_PROD',
+        sessionMap: [
+            {
+                action: 'purords000m000',
+                route: 'purchasing.purchase-orders.index',
+                logicalId: 'lid://adasi.portal.purchasing',
+                pathTemplate: '/v2/ADSI_PROD/purchasing/purchase-orders',
+                params: [],
+                queryAllowlist: ['status', 'page'],
+                hashedKeys: [],
+                description: 'Purchase Order',
+            },
+        ],
+    };
+
+    const internalUrl = `${origin}${basePath}/v2/ADSI_PROD/purchasing/purchase-orders?status=open`;
+    const projected = projectShellUrl(internalUrl, origin, contextLinks);
+    assert.ok(projected, 'projected subdirectory context URL must not be null');
+    assert.ok(
+        projected.startsWith(`${origin}${basePath}/v2/ADSI_PROD/${fixture.appUuid}?favoriteContext=`),
+        `expected subdirectory prefix in ${projected}`
+    );
+
+    const resolved = resolveContextUrl(projected, origin, contextLinks);
+    assert.ok(resolved, 'resolveContextUrl must resolve subdirectory context URL');
+    assert.equal(resolved.internalUrl, internalUrl);
+    assert.equal(resolved.action, 'purords000m000');
+
+    const historyProjection = buildHistoryProjection({
+        internalUrl,
+        origin,
+        contextLinks,
+        frameId: 'f-subdir',
+        groupId: 'g-subdir',
+        title: 'Purchase Order',
+    });
+    assert.equal(historyProjection.displayUrl, projected);
+
+    const popstate = resolvePopstateNavigation({
+        eventState: null,
+        currentHref: projected,
+        hash: '',
+        origin,
+        contextLinks,
+        menuPathTitles: {
+            [`${basePath}/v2/ADSI_PROD/purchasing/purchase-orders`]: 'Purchase Order',
+        },
+    });
+    assert.equal(popstate.kind, 'open-url');
+    assert.equal(popstate.url, internalUrl);
+    assert.equal(popstate.label, 'Purchase Order');
+
+    // Sibling app on shared localhost origin and bare paths outside basePath must be rejected.
+    assert.equal(
+        projectShellUrl(`${origin}/other_app/v2/ADSI_PROD/purchasing/purchase-orders`, origin, contextLinks),
+        null
+    );
+    assert.equal(
+        projectShellUrl(`${origin}/v2/ADSI_PROD/purchasing/purchase-orders`, origin, contextLinks),
+        null
+    );
+    assert.equal(
+        resolveContextUrl(projected.replace(basePath, '/other_app'), origin, contextLinks),
+        null
+    );
+    assert.equal(
+        resolveContextUrl(projected.replace(basePath, ''), origin, contextLinks),
         null
     );
 });

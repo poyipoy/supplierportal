@@ -5,12 +5,18 @@ namespace Tests\Feature;
 use App\Models\PaymentVoucher;
 use App\Models\SupplierScope;
 use App\Models\User;
+use App\Services\Auth\TwoFactorService;
 use App\Support\HashidCodec;
+use App\Support\PortalContextCodec;
+use App\Support\PortalPath;
 use App\Support\PurchasingNavigation;
+use App\Support\RateLimitResponse;
 use App\Support\ServerTabsResponse;
+use App\Support\WorkspaceShell;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class WorkspaceShellSecurityTest extends TestCase
@@ -510,6 +516,207 @@ class WorkspaceShellSecurityTest extends TestCase
 
         $this->assertContains(route('local-supplier.invoices.index'), $localUrls);
         $this->assertNotContains(route('supplier.purchase-orders.index'), $localUrls);
+    }
+
+    public function test_workspace_config_exports_configurable_timeouts_localized_error_copy_and_frameable_dashboard_uuid(): void
+    {
+        config()->set('ui.workspace_shell.enabled', true);
+        config()->set('ui.workspace_shell.slot_timeout_ms', 35000);
+        config()->set('ui.workspace_shell.data_ready_timeout_ms', 14000);
+        config()->set('ui.workspace_shell.queue_wait_timeout_ms', 70000);
+        config()->set('ui.workspace_shell.server_tabs_timeout_ms', 28000);
+
+        $purchasing = User::factory()->create(['role' => 'purchasing']);
+
+        $response = $this->actingAs($purchasing)->get(route('purchasing.dashboard'));
+        $response->assertOk();
+
+        $config = $this->extractWorkspaceConfig($response->getContent());
+        $this->assertSame(35000, $config['slotTimeoutMs']);
+        $this->assertSame(14000, $config['dataReadyTimeoutMs']);
+        $this->assertSame(70000, $config['queueWaitTimeoutMs']);
+        $this->assertSame(28000, $config['serverTabsTimeoutMs']);
+        $this->assertSame(__('navigation.workspace_shell.loading_module_error'), $config['i18n']['loadingModuleError']);
+        $this->assertSame(__('navigation.workspace_shell.loading_timeout_error'), $config['i18n']['loadingTimeoutError']);
+        $this->assertSame(__('navigation.workspace_shell.loading_network_error'), $config['i18n']['loadingNetworkError']);
+        $this->assertSame(__('navigation.workspace_shell.retry_load'), $config['i18n']['retryLoad']);
+
+        $dashboardUuid = array_search('dashboard', config('page_registry', []), true);
+        $this->assertIsString($dashboardUuid);
+        $prefix = trim(PortalPath::prefix(), '/');
+        $uuidKey = ($prefix !== '' ? '/'.$prefix : '').'/'.strtolower($dashboardUuid);
+        $this->assertSame(route('purchasing.dashboard'), $config['uuidMap'][$uuidKey]['url'] ?? null);
+    }
+
+    public function test_embedded_redirect_from_portal_page_referer_rewrites_to_authorized_embed_and_never_escalates(): void
+    {
+        config()->set('ui.workspace_shell.enabled', true);
+        config()->set('portal_urls.context_urls.enabled', true);
+
+        $purchasing = User::factory()->create(['role' => 'purchasing']);
+        $poContextUrl = PortalContextCodec::project(route('purchasing.purchase-orders.index'), $purchasing);
+        $this->assertNotNull($poContextUrl);
+
+        $embedRequest = Request::create(route('purchasing.shipments.index', ['_embed' => 1]), 'GET');
+        $embedRequest->setUserResolver(static fn () => $purchasing);
+
+        // Authorized context URL Referer resolves cleanly to its internal _embed=1 target.
+        $resolvedPo = WorkspaceShell::resolveEmbeddedRedirectTarget($embedRequest, $poContextUrl);
+        $this->assertNotNull($resolvedPo);
+        $this->assertStringContainsString('/purchasing/purchase-orders', $resolvedPo);
+        $this->assertStringContainsString('_embed=1', $resolvedPo);
+        $this->assertStringNotContainsString('favoriteContext=', $resolvedPo);
+
+        // Bare shortcuts appUuid Referer falls back safely to the actor's frameable role dashboard.
+        $bareShortcuts = WorkspaceShell::shortcutsHomeUrl($purchasing, absolute: true);
+        $this->assertNotNull($bareShortcuts);
+        $resolvedShortcuts = WorkspaceShell::resolveEmbeddedRedirectTarget($embedRequest, $bareShortcuts);
+        $this->assertNotNull($resolvedShortcuts);
+        $this->assertStringContainsString('/purchasing/dashboard', $resolvedShortcuts);
+        $this->assertStringContainsString('_embed=1', $resolvedShortcuts);
+
+        // Unauthorized context URL (admin route for purchasing actor) must NEVER escalate to admin route.
+        $admin = User::factory()->create(['role' => 'admin']);
+        $adminContextUrl = PortalContextCodec::project(route('admin.users.index'), $admin);
+        $this->assertNotNull($adminContextUrl);
+        $resolvedUnauthorized = WorkspaceShell::resolveEmbeddedRedirectTarget($embedRequest, $adminContextUrl);
+        $this->assertNotNull($resolvedUnauthorized);
+        $this->assertStringNotContainsString('/admin/users', $resolvedUnauthorized);
+        $this->assertStringContainsString('/purchasing/dashboard', $resolvedUnauthorized);
+
+        // Top-level security targets must NEVER be rewritten for embedding.
+        foreach ([route('login'), route('profile.security'), route('password.confirm')] as $securityUrl) {
+            $this->assertNull(WorkspaceShell::resolveEmbeddedRedirectTarget($embedRequest, $securityUrl));
+        }
+
+        // RateLimitResponse::warningRedirect for embedded request must never redirect to portal.page.
+        $rateLimitedReq = Request::create(route('purchasing.shipments.index', ['_embed' => 1]), 'GET', server: [
+            'HTTP_REFERER' => $poContextUrl,
+        ]);
+        $rateLimitedReq->setUserResolver(static fn () => $purchasing);
+        $rateResp = RateLimitResponse::warningRedirect($rateLimitedReq, ['Retry-After' => 30]);
+        $this->assertStringContainsString('/purchasing/purchase-orders', $rateResp->getTargetUrl());
+        $this->assertStringContainsString('_embed=1', $rateResp->getTargetUrl());
+        $this->assertStringNotContainsString('favoriteContext=', $rateResp->getTargetUrl());
+    }
+
+    public function test_subdirectory_base_path_preserves_workspace_shell_redirects_notifications_locale_and_rejects_sibling_apps(): void
+    {
+        config()->set('ui.workspace_shell.enabled', true);
+        config()->set('portal_urls.page_registry.enabled', true);
+
+        $purchasing = User::factory()->create(['role' => 'purchasing']);
+        $subBase = '/adasi_portal_supplier/public';
+        $prefix = trim(PortalPath::prefix(), '/');
+        $prefixPath = $prefix !== '' ? '/'.$prefix : '';
+        $server = [
+            'SCRIPT_NAME' => $subBase.'/index.php',
+            'SCRIPT_FILENAME' => public_path('index.php'),
+            'PHP_SELF' => $subBase.'/index.php',
+            'HTTP_HOST' => 'localhost',
+        ];
+
+        $dashboardUrl = 'http://localhost'.$subBase.$prefixPath.'/purchasing/dashboard';
+        $shellResponse = $this->actingAs($purchasing)->call('GET', $dashboardUrl, [], [], [], $server);
+        $shellResponse->assertOk()
+            ->assertHeader('X-Frame-Options', 'DENY')
+            ->assertSee('data-workspace-shell="true"', false);
+
+        $config = $this->extractWorkspaceConfig($shellResponse->getContent());
+        $this->assertSame($subBase, $config['basePath']);
+        $this->assertSame($subBase.$prefixPath, $config['pathPrefix']);
+        $this->assertSame($dashboardUrl, $config['dashboardUrl']);
+        $this->assertSame($subBase, $config['contextLinks']['basePath']);
+
+        $dashboardUuid = array_search('dashboard', config('page_registry', []), true);
+        $this->assertIsString($dashboardUuid);
+        $uuidKey = $subBase.$prefixPath.'/'.strtolower($dashboardUuid);
+        $this->assertSame($dashboardUrl, $config['uuidMap'][$uuidKey]['url'] ?? null);
+        $this->assertContains($subBase.$prefixPath.'/purchasing/purchase-orders', $config['indexPaths']);
+
+        $embedResponse = $this->actingAs($purchasing)->call('GET', $dashboardUrl.'?_embed=1', [], [], [], $server);
+        $embedResponse->assertOk()
+            ->assertHeader('X-Frame-Options', 'SAMEORIGIN')
+            ->assertSee('data-workspace-embed="true"', false)
+            ->assertSee("basePath: '\\/adasi_portal_supplier\\/public'", false);
+
+        // Embedded redirect probing preserves subdirectory base path and rejects sibling apps & top-level security routes.
+        $embedRequest = Request::create($dashboardUrl.'?_embed=1', 'GET', [], [], [], $server);
+        $embedRequest->setUserResolver(static fn () => $purchasing);
+
+        $poUrl = 'http://localhost'.$subBase.$prefixPath.'/purchasing/purchase-orders';
+        $this->assertTrue(WorkspaceShell::isEligibleRedirectTarget($embedRequest, $poUrl));
+        $this->assertSame($poUrl.'?_embed=1', WorkspaceShell::resolveEmbeddedRedirectTarget($embedRequest, $poUrl));
+        $this->assertTrue(WorkspaceShell::isEligibleRedirectTarget($embedRequest, $subBase.$prefixPath.'/purchasing/purchase-orders'));
+
+        $this->assertSame(
+            $dashboardUrl.'?_embed=1',
+            WorkspaceShell::resolveEmbeddedRedirectTarget($embedRequest, 'http://localhost'.$subBase.$prefixPath.'/dashboard')
+        );
+
+        $this->assertFalse(WorkspaceShell::isEligibleRedirectTarget($embedRequest, 'http://localhost/other_app'.$prefixPath.'/purchasing/purchase-orders'));
+        $this->assertNull(WorkspaceShell::resolveEmbeddedRedirectTarget($embedRequest, 'http://localhost/other_app'.$prefixPath.'/purchasing/purchase-orders'));
+        $this->assertFalse(WorkspaceShell::isEligibleRedirectTarget($embedRequest, '/other_app/dashboard'));
+        $this->assertNull(WorkspaceShell::resolveEmbeddedRedirectTarget($embedRequest, 'http://localhost'.$subBase.'/login'));
+
+        // TwoFactorService::safeIntendedUrl strips subdirectory base path without double-prefixing and rejects sibling apps.
+        $defaultSafeIntended = route('dashboard', absolute: false);
+        $this->assertSame(
+            $prefixPath.'/purchasing/purchase-orders?status=open',
+            TwoFactorService::safeIntendedUrl($embedRequest, $poUrl.'?status=open')
+        );
+        $this->assertSame(
+            $defaultSafeIntended,
+            TwoFactorService::safeIntendedUrl($embedRequest, 'http://localhost/other_app'.$prefixPath.'/purchasing/purchase-orders')
+        );
+        $this->assertSame(
+            $defaultSafeIntended,
+            TwoFactorService::safeIntendedUrl($embedRequest, 'http://localhost'.$subBase.$prefixPath.'/notifications/unread-count')
+        );
+
+        // Locale switch return_to must NOT double-prefix /adasi_portal_supplier/public.
+        $localeResp = $this->actingAs($purchasing)->call(
+            'POST',
+            'http://localhost'.$subBase.'/locale',
+            ['locale' => 'id', 'return_to' => $subBase.$prefixPath.'/purchasing/dashboard'],
+            [],
+            [],
+            $server
+        );
+        $localeResp->assertRedirect();
+        $localeLocation = (string) $localeResp->headers->get('Location');
+        $this->assertSame($dashboardUrl, $localeLocation);
+        $this->assertStringNotContainsString($subBase.$subBase, $localeLocation);
+
+        // Notification markRead JSON emits HTTP root-relative path with subdirectory base path (no doubling).
+        $notificationId = (string) Str::uuid();
+        DB::table('notifications')->insert([
+            'id' => $notificationId,
+            'type' => 'App\\Notifications\\PurchaseOrderNotification',
+            'notifiable_type' => User::class,
+            'notifiable_id' => $purchasing->id,
+            'data' => json_encode([
+                'title' => 'PO Ready',
+                'message' => 'PO updated',
+                'url' => $prefixPath.'/purchasing/purchase-orders',
+                'domain' => 'import',
+            ], JSON_THROW_ON_ERROR),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $notifResp = $this->actingAs($purchasing)->call(
+            'POST',
+            'http://localhost'.$subBase.$prefixPath.'/notifications/'.$notificationId.'/read',
+            [],
+            [],
+            [],
+            array_merge($server, ['HTTP_ACCEPT' => 'application/json', 'HTTP_X_REQUESTED_WITH' => 'XMLHttpRequest'])
+        );
+        $notifResp->assertOk();
+        $redirectPath = (string) $notifResp->json('redirect');
+        $this->assertStringStartsWith($subBase.'/', $redirectPath);
+        $this->assertStringNotContainsString($subBase.$subBase, $redirectPath);
     }
 
     /**

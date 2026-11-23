@@ -81,9 +81,9 @@ class WrapWorkspaceShell
         }
 
         if ($response instanceof RedirectResponse && WorkspaceShell::originatedFromEmbed($request)) {
-            $targetUrl = $response->getTargetUrl();
-            if (WorkspaceShell::isEligibleRedirectTarget($request, $targetUrl)) {
-                $response->setTargetUrl(WorkspaceShell::appendEmbedParam($targetUrl));
+            $resolvedTarget = WorkspaceShell::resolveEmbeddedRedirectTarget($request, $response->getTargetUrl());
+            if ($resolvedTarget !== null) {
+                $response->setTargetUrl($resolvedTarget);
             }
 
             return $response;
@@ -92,9 +92,12 @@ class WrapWorkspaceShell
         if ($response instanceof JsonResponse && WorkspaceShell::originatedFromEmbed($request)) {
             $data = $response->getData(true);
             $targetUrl = is_array($data) ? ($data['redirect'] ?? null) : null;
-            if (is_string($targetUrl) && WorkspaceShell::isEligibleRedirectTarget($request, $targetUrl)) {
-                $data['redirect'] = WorkspaceShell::appendEmbedParam($targetUrl);
-                $response->setData($data);
+            if (is_string($targetUrl)) {
+                $resolvedTarget = WorkspaceShell::resolveEmbeddedRedirectTarget($request, $targetUrl);
+                if ($resolvedTarget !== null) {
+                    $data['redirect'] = $resolvedTarget;
+                    $response->setData($data);
+                }
             }
 
             return $response;

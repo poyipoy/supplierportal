@@ -1,3 +1,7 @@
+<FilesMatch "^\.(env|git|htaccess|htpasswd)|^(composer\.(json|lock)|artisan|package(-lock)?\.json)$">
+    Require all denied
+</FilesMatch>
+
 <IfModule mod_setenvif.c>
     # Vite filenames under build/assets are content-hashed and safe to cache
     # for one year. Files under assets use stable names and get a shorter TTL.
@@ -8,6 +12,10 @@
 <IfModule mod_headers.c>
     Header set Cache-Control "public, max-age=86400, must-revalidate" env=adasi_public_asset
     Header set Cache-Control "public, max-age=31536000, immutable" env=adasi_vite_asset
+</IfModule>
+
+<IfModule mod_brotli.c>
+    AddOutputFilterByType BROTLI_COMPRESS text/html text/css application/javascript application/json image/svg+xml
 </IfModule>
 
 <IfModule mod_deflate.c>

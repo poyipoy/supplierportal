@@ -186,7 +186,7 @@ class NotificationPreferenceService
     {
         $id = $user->getKey();
         unset($this->overrides[$id], $this->supplierScopes[$id], $this->poCreators[$id], $this->exportOwners[$id], $this->mutes[$id]);
-        request()->attributes->remove(UserPreferenceService::class.'.'.$id);
+        UserPreferenceService::forgetForUser((int) $id);
     }
 
     public function mute(User $user, string $subjectType, int $subjectId): bool

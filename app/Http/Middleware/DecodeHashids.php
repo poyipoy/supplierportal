@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Support\HashidCodec;
+use App\Support\PortalPath;
 use App\Traits\HasHashids;
 use Closure;
 use Illuminate\Database\Eloquent\Model;
@@ -134,7 +135,7 @@ class DecodeHashids
             }
 
             if ($needsRedirect && in_array($request->method(), ['GET', 'HEAD'], true)) {
-                $path = URL::toRoute($route, $canonical, false);
+                $path = PortalPath::httpPath(URL::toRoute($route, $canonical, false), $request);
                 $query = $request->server->get('QUERY_STRING', '');
 
                 return new RedirectResponse($path.($query !== '' ? '?'.$query : ''), 301);

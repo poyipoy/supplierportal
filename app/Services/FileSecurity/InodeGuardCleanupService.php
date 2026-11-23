@@ -17,11 +17,13 @@ final class InodeGuardCleanupService
 
     public const MAX_SWEEP_DEPTH = 32;
 
+    public const FILE_CACHE_DATA_SUBDIR = 'storage/framework/cache/data';
+
     /** @var list<string> */
     public const ALLOWED_SUBDIRS = [
         'storage/app/private/imports/reader-cache',
         'storage/app/private/native-security/xml',
-        'storage/framework/cache/data',
+        self::FILE_CACHE_DATA_SUBDIR,
         'storage/framework/cache/import-previews',
         'storage/framework/cache/laravel-excel',
         'storage/app/private/po-documents/staging',
@@ -62,7 +64,8 @@ final class InodeGuardCleanupService
         }
 
         $effectiveAgeHours = max(self::MIN_AGE_HOURS, $maxAgeHours);
-        $cutoffTimestamp = ($nowTimestamp ?? time()) - ($effectiveAgeHours * 3600);
+        $now = $nowTimestamp ?? time();
+        $cutoffTimestamp = $now - ($effectiveAgeHours * 3600);
 
         $report = [
             'effective_age_hours' => $effectiveAgeHours,
@@ -78,7 +81,8 @@ final class InodeGuardCleanupService
         foreach (self::ALLOWED_SUBDIRS as $subdir) {
             $baseCanon = $this->resolveSafeSubdir($rootCanon, $subdir, $isLink, $report);
             if ($baseCanon !== null) {
-                $this->sweepDirectory($baseCanon, $baseCanon, 0, $cutoffTimestamp, $dryRun, $isLink, $report);
+                $isFileCacheData = $subdir === self::FILE_CACHE_DATA_SUBDIR;
+                $this->sweepDirectory($baseCanon, $baseCanon, 0, $now, $cutoffTimestamp, $dryRun, $isFileCacheData, $isLink, $report);
             }
         }
 
@@ -139,8 +143,10 @@ final class InodeGuardCleanupService
         string $baseCanon,
         string $currentDir,
         int $depth,
+        int $now,
         int $cutoffTimestamp,
         bool $dryRun,
+        bool $isFileCacheData,
         callable $isLink,
         array &$report,
     ): void {
@@ -185,12 +191,16 @@ final class InodeGuardCleanupService
                     continue;
                 }
 
-                $this->sweepDirectory($baseCanon, $dirCanon, $depth + 1, $cutoffTimestamp, $dryRun, $isLink, $report);
+                $this->sweepDirectory($baseCanon, $dirCanon, $depth + 1, $now, $cutoffTimestamp, $dryRun, $isFileCacheData, $isLink, $report);
+
+                if ($isFileCacheData && ! $dryRun && ! $isLink($dirCanon)) {
+                    $this->removeEmptyDirectory($dirCanon);
+                }
 
                 continue;
             }
 
-            $this->processRegularFile($baseCanon, $entryPath, $cutoffTimestamp, $dryRun, $report);
+            $this->processRegularFile($baseCanon, $entryPath, $now, $cutoffTimestamp, $dryRun, $isFileCacheData, $report);
         }
     }
 
@@ -200,8 +210,10 @@ final class InodeGuardCleanupService
     private function processRegularFile(
         string $baseCanon,
         string $entryPath,
+        int $now,
         int $cutoffTimestamp,
         bool $dryRun,
+        bool $isFileCacheData,
         array &$report,
     ): void {
         if (! is_file($entryPath)) {
@@ -220,7 +232,20 @@ final class InodeGuardCleanupService
 
         $mtime = @filemtime($entryPath);
         $bytes = @filesize($entryPath);
-        if (! is_int($mtime) || ! is_int($bytes) || $mtime > $cutoffTimestamp) {
+        if (! is_int($mtime) || ! is_int($bytes)) {
+            return;
+        }
+
+        if ($isFileCacheData) {
+            $expiration = $this->readFileCacheExpiration($entryPath);
+            if ($expiration !== null) {
+                if ($expiration > $now) {
+                    return;
+                }
+            } elseif ($mtime > $cutoffTimestamp) {
+                return;
+            }
+        } elseif ($mtime > $cutoffTimestamp) {
             return;
         }
 
@@ -241,6 +266,47 @@ final class InodeGuardCleanupService
         }
 
         $report['warnings'][] = "[WARN] Failed to remove {$fileCanon}";
+    }
+
+    /**
+     * Read the 10-byte Unix timestamp header written by Laravel's FileStore.
+     */
+    private function readFileCacheExpiration(string $path): ?int
+    {
+        $handle = @fopen($path, 'rb');
+        if ($handle === false) {
+            return null;
+        }
+
+        try {
+            $chunk = fread($handle, 10);
+        } finally {
+            fclose($handle);
+        }
+
+        if (! is_string($chunk) || strlen($chunk) !== 10) {
+            return null;
+        }
+
+        $header = substr($chunk, 0, 10);
+
+        return ctype_digit($header) ? (int) $header : null;
+    }
+
+    private function removeEmptyDirectory(string $directory): void
+    {
+        $remaining = @scandir($directory, SCANDIR_SORT_NONE);
+        if (! is_array($remaining)) {
+            return;
+        }
+
+        foreach ($remaining as $item) {
+            if ($item !== '.' && $item !== '..') {
+                return;
+            }
+        }
+
+        @rmdir($directory);
     }
 
     private function pathsMatch(string $candidateCanon, string $expectedPath): bool

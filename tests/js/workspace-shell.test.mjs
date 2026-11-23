@@ -24,6 +24,8 @@ import {
     DEFAULT_MAX_PINNED_SESSIONS,
     DEFAULT_MAX_RECENTLY_CLOSED,
     DEFAULT_SHORTCUTS_WEIGHTS,
+    formatSessionContextHint,
+    formatSessionDuplicateBadge,
     isDownloadOrBinaryUrl,
     isNonMutatingPostUrl,
     isSameOriginUrl,
@@ -646,6 +648,22 @@ test('workspace-shell.css enforces connected card-tabs (non-ghost), hover/focus-
     assert.equal(css.includes('.workspace-panel.is-leaving'), true);
     assert.equal(css.includes('.workspace-session[data-queued="true"]'), true);
     assert.equal(css.includes('.workspace-session-menu.is-closing'), true);
+
+    // Semantic CSS-driven status icons replace colored dots (WCAG 1.4.1 / non-slop)
+    const wsShellJs = readFileSync(resolve(repoRoot, 'resources/js/workspace-shell.js'), 'utf8');
+    assert.equal(css.includes('.workspace-session__status-dot'), false, 'Legacy status-dot CSS must be removed');
+    assert.equal(css.includes('workspace-status-pulse'), false, 'Pulsing dot keyframes must be removed');
+    assert.equal(sessionBarBlade.includes('workspace-session__status-dot'), false, 'Blade template must not render status-dot');
+    assert.equal(wsShellJs.includes('workspace-session__status-dot'), false, 'JS must not create status-dot');
+    assert.equal(wsShellJs.includes("badgeParts.push('•')"), false, 'Open sessions menu must not render bullet dot for dirty state');
+    assert.equal(css.includes('@property --icon-status'), true);
+    assert.equal(css.includes('.workspace-session__status-icon'), true);
+    assert.equal(css.includes('forced-color-adjust: none;'), true);
+    assert.equal(css.includes('--workspace-session-status-warning: var(--md-chart-warning);'), true);
+    for (const attr of ['data-dirty="true"', 'data-loading="true"', 'data-stale="true"', 'data-queued="true"', 'data-hibernated="true"']) {
+        assert.equal(css.includes(`.workspace-session[${attr}]`), true, `Missing status icon rule for ${attr}`);
+    }
+    assert.equal(wsShellJs.includes("trigger.setAttribute('aria-description'"), true);
 
     const enNav = readFileSync(resolve(repoRoot, 'lang/en/navigation.php'), 'utf8');
     const idNav = readFileSync(resolve(repoRoot, 'lang/id/navigation.php'), 'utf8');
@@ -1839,4 +1857,249 @@ test('workspace-shell handles embedded login redirects via Session Ended modal a
     );
     assert.match(source, /window\.AdasiSessionSync\?\.requestReconnect/);
     assert.match(source, /getDirtyFrames\(\)\s*\{[\s\S]*frame\.isDirty/);
+});
+
+test('frontend top-level and download classifiers stay aligned with non-shell document, export, template, dashboard, and UUID routes', () => {
+    const downloadPaths = [
+        `${ORIGIN}${PREFIX}/finance/drp/abc123/export`,
+        `${ORIGIN}${PREFIX}/finance/master-invoices/export`,
+        `${ORIGIN}${PREFIX}/supplier/price-history/export`,
+        `${ORIGIN}${PREFIX}/local-invoice-documents/doc123`,
+        `${ORIGIN}${PREFIX}/supplier-master-documents/doc123`,
+        `${ORIGIN}${PREFIX}/ga-claim-documents/doc123`,
+        `${ORIGIN}${PREFIX}/supplier-registrations/att123/documents/doc123`,
+        `${ORIGIN}${PREFIX}/finance/payment-vouchers/pv123/documents/doc123`,
+        `${ORIGIN}${PREFIX}/purchasing/payment-vouchers/pv123/documents/doc123`,
+        `${ORIGIN}${PREFIX}/finance/local-procurement/import/po/template`,
+        `${ORIGIN}${PREFIX}/purchasing/local-procurement/import/gr/template`,
+    ];
+
+    for (const url of downloadPaths) {
+        assert.equal(isDownloadOrBinaryUrl(url, ORIGIN), true, `Expected download/binary match for ${url}`);
+        assert.equal(isTopLevelOnlyUrl(url, ORIGIN, PREFIX), true, `Expected top-level match for ${url}`);
+    }
+
+    // Bare root /dashboard and unresolved portal.page UUIDs must break out to top-level,
+    // while role dashboards remain shell-frameable.
+    assert.equal(isTopLevelOnlyUrl(`${ORIGIN}${PREFIX}/dashboard`, ORIGIN, PREFIX), true);
+    assert.equal(isTopLevelOnlyUrl(`${ORIGIN}/dashboard`, ORIGIN, ''), true);
+    assert.equal(isTopLevelOnlyUrl(`${ORIGIN}${PREFIX}/934f47ee-06a4-4f2d-a619-e7cf35e9d91b`, ORIGIN, PREFIX), true);
+    assert.equal(isTopLevelOnlyUrl(`${ORIGIN}${PREFIX}/4e5e45a9-e738-4870-9deb-5efddec4dec9`, ORIGIN, PREFIX), true);
+    assert.equal(isTopLevelOnlyUrl(`${ORIGIN}${PREFIX}/purchasing/dashboard`, ORIGIN, PREFIX), false);
+    assert.equal(isTopLevelOnlyUrl(`${ORIGIN}${PREFIX}/finance/dashboard`, ORIGIN, PREFIX), false);
+    assert.equal(isTopLevelOnlyUrl(`${ORIGIN}${PREFIX}/supplier/dashboard`, ORIGIN, PREFIX), false);
+});
+
+test('WorkspaceSessionStore openChildFrame deduplicates rapid double-clicks on an in-flight stagedNew child URL', () => {
+    let now = 50_000;
+    const store = new WorkspaceSessionStore({
+        maxSessions: 12,
+        maxLiveFrames: 6,
+        staleAfterMs: 120_000,
+        now: () => now,
+        catalog: SAMPLE_CATALOG,
+        indexPaths: SAMPLE_INDEX_PATHS,
+    });
+
+    const parent = store.seedInitial({
+        moduleKey: 'purchase-orders',
+        label: 'Purchase Order',
+        url: `${ORIGIN}${PREFIX}/purchasing/purchase-orders`,
+    });
+
+    const childUrl = `${ORIGIN}${PREFIX}/purchasing/purchase-orders/POHASH99`;
+    const first = store.openChildFrame({
+        groupId: parent.group.groupId,
+        sourceFrameId: parent.frame.frameId,
+        label: 'PO-099',
+        url: childUrl,
+        stageOnly: true,
+        showSessionWhileStaged: false,
+    });
+    const second = store.openChildFrame({
+        groupId: parent.group.groupId,
+        sourceFrameId: parent.frame.frameId,
+        label: 'PO-099',
+        url: childUrl,
+        stageOnly: true,
+        showSessionWhileStaged: false,
+    });
+
+    assert.equal(first.created, true);
+    assert.equal(second.created, false);
+    assert.equal(second.staged, true);
+    assert.equal(second.frame.frameId, first.frame.frameId);
+    assert.equal(parent.group.frames.length, 2, 'must not spawn duplicate staged child frames');
+});
+
+test('WorkspaceNavQueue supports resetSlotTimer and defers slot timeout while document is hidden', () => {
+    const harness = createFakeTimerHarness();
+    let hidden = false;
+    const timeouts = [];
+
+    const queue = new WorkspaceNavQueue({
+        maxConcurrent: 2,
+        slotTimeoutMs: 10000,
+        visibilityGraceMs: 4000,
+        isDocumentHidden: () => hidden,
+        timers: harness.timers,
+        onSlotTimeout: (entry, reason) => timeouts.push({ frameId: entry.frameId, reason }),
+    });
+
+    queue.enqueue({ frameId: 'f1', groupId: 'g1', label: 'Tab 1', url: `${ORIGIN}${PREFIX}/purchasing/requisitions` });
+    harness.advanceBy(8000);
+    assert.equal(queue.resetSlotTimer('f1'), true);
+    harness.advanceBy(8000);
+    assert.deepEqual(timeouts, [], 'resetSlotTimer extends deadline cleanly');
+
+    // Switch browser tab to background right before expiry: must not destroy healthy loading tab while hidden.
+    hidden = true;
+    harness.advanceBy(5000);
+    assert.deepEqual(timeouts, [], 'must defer timeout while document is hidden');
+
+    // Return to foreground: grace window runs before failing if still stuck.
+    hidden = false;
+    queue.notifyVisibilityRestored();
+    harness.advanceBy(3900);
+    assert.deepEqual(timeouts, [], 'must honor visibility grace window after foregrounding');
+    harness.advanceBy(200);
+    assert.deepEqual(timeouts, [{ frameId: 'f1', reason: 'timeout' }]);
+});
+
+test('createEmbedReadinessController resolves via DOM-to-load fallback when window.onload stalls on a subresource', async () => {
+    const harness = createFakeTimerHarness();
+    let readyDetail = null;
+
+    const ctrl = createEmbedReadinessController({
+        origin: ORIGIN,
+        maxDomLoadWaitMs: 5000,
+        maxDataWaitMs: 12000,
+        timers: harness.timers,
+        onReady: (detail) => { readyDetail = detail; },
+    });
+
+    ctrl.markDomReady();
+    harness.advanceBy(4900);
+    assert.equal(ctrl.isReady, false);
+
+    // Subresource stalls past maxDomLoadWaitMs -> promotes windowLoaded and settles after 1 rAF paint.
+    harness.advanceBy(200);
+    assert.equal(ctrl.isReady, true);
+    const result = await ctrl.whenReady();
+    assert.equal(result.reason, 'settled');
+    assert.equal(readyDetail.reason, 'settled');
+});
+
+test('workspace-shell and embed-bridge wire early boot ack, inaccessible-frame probing, error listener, and Retry toast', async () => {
+    const { readFile } = await import('node:fs/promises');
+    const shellSrc = await readFile(new URL('../../resources/js/workspace-shell.js', import.meta.url), 'utf8');
+    const bridgeSrc = await readFile(new URL('../../resources/js/workspace-embed-bridge.js', import.meta.url), 'utf8');
+
+    assert.match(bridgeSrc, /shell\.notifyEmbedBooted\?\.\(window\)/);
+    assert.match(shellSrc, /notifyEmbedBooted\(frameWin\)/);
+    assert.match(shellSrc, /handleInaccessibleFrameLoad/);
+    assert.match(shellSrc, /probeSessionStatus/);
+    assert.match(shellSrc, /cleanupAbortedFrame/);
+    assert.match(shellSrc, /addEventListener\('error'/);
+    assert.match(shellSrc, /retryFailedNavigation/);
+    assert.match(shellSrc, /announceLiveStatus\(message\)/);
+});
+
+test('workspace-shell-core supports subdirectory basePath prefixes for top-level detection, module matching, and child navigation', () => {
+    const subOrigin = 'http://localhost';
+    const subBase = '/adasi_portal_supplier/public';
+    const subPrefix = `${subBase}/v2/ADSI_PROD`;
+
+    // Top-level-only detection works both with leading slash and bare pathPrefix.
+    for (const prefixVariant of [subPrefix, subPrefix.slice(1)]) {
+        assert.equal(isTopLevelOnlyUrl(`${subOrigin}${subPrefix}/dashboard`, subOrigin, prefixVariant), true);
+        assert.equal(
+            isTopLevelOnlyUrl(`${subOrigin}${subPrefix}/934f47ee-06a4-4f2d-a619-e7cf35e9d91b`, subOrigin, prefixVariant),
+            true
+        );
+        assert.equal(isTopLevelOnlyUrl(`${subOrigin}${subBase}/login`, subOrigin, prefixVariant), true);
+        assert.equal(isTopLevelOnlyUrl(`${subOrigin}${subPrefix}/purchasing/dashboard`, subOrigin, prefixVariant), false);
+        assert.equal(isTopLevelOnlyUrl(`${subOrigin}${subPrefix}/purchasing/purchase-orders`, subOrigin, prefixVariant), false);
+    }
+
+    const subCatalog = [
+        { key: 'dashboard', label: 'Dashboard', href: `${subOrigin}${subPrefix}/purchasing/dashboard` },
+        { key: 'purchase-orders', label: 'Purchase Order', href: `${subOrigin}${subPrefix}/purchasing/purchase-orders` },
+    ];
+    const subIndexPaths = [
+        `${subPrefix}/purchasing/dashboard`,
+        `${subPrefix}/purchasing/purchase-orders`,
+    ];
+
+    assert.equal(
+        resolveModuleKey(`${subOrigin}${subPrefix}/purchasing/purchase-orders/POHASH99`, subCatalog),
+        'purchase-orders'
+    );
+
+    const childNav = classifyInternalNavigation({
+        currentUrl: `${subOrigin}${subPrefix}/purchasing/purchase-orders`,
+        targetUrl: `${subOrigin}${subPrefix}/purchasing/purchase-orders/POHASH99`,
+        origin: subOrigin,
+        pathPrefix: subPrefix,
+        indexPaths: subIndexPaths,
+    });
+    assert.equal(childNav, 'join-child');
+
+    const filterNav = classifyInternalNavigation({
+        currentUrl: `${subOrigin}${subPrefix}/purchasing/purchase-orders`,
+        targetUrl: `${subOrigin}${subPrefix}/purchasing/purchase-orders?status=open`,
+        origin: subOrigin,
+        pathPrefix: subPrefix,
+        indexPaths: subIndexPaths,
+    });
+    assert.equal(filterNav, 'in-place');
+
+    const topLevelNav = classifyInternalNavigation({
+        currentUrl: `${subOrigin}${subPrefix}/purchasing/purchase-orders`,
+        targetUrl: `${subOrigin}${subBase}/login`,
+        origin: subOrigin,
+        pathPrefix: subPrefix,
+        indexPaths: subIndexPaths,
+    });
+    assert.equal(topLevelNav, 'top-level');
+});
+
+test('ERP duplicate session badges omit # on first tab, use parenthetical index on duplicates, extract context hints, and keep WCAG target sizes in compact desktop bar', async () => {
+    assert.equal(formatSessionDuplicateBadge(1, 1), '');
+    assert.equal(formatSessionDuplicateBadge(1, 3), '');
+    assert.equal(formatSessionDuplicateBadge(2, 3), '(2)');
+    assert.equal(formatSessionDuplicateBadge(3, 3), '(3)');
+
+    assert.equal(
+        formatSessionContextHint(`${ORIGIN}${PREFIX}/purchasing/purchase-orders?_embed=1&status=submitted&search=ADSI`),
+        'status: submitted · "ADSI"',
+    );
+    assert.equal(
+        formatSessionContextHint(`${ORIGIN}${PREFIX}/purchasing/purchase-orders?supplier=ABCDEF1234567890`, {
+            childTitle: 'PO-2026-0091',
+            parentTitle: 'Purchase Orders',
+        }),
+        'PO-2026-0091',
+    );
+    assert.equal(formatSessionContextHint(`${ORIGIN}${PREFIX}/purchasing/purchase-orders?_embed=1&status=all`), '');
+
+    const { readFile } = await import('node:fs/promises');
+    const shellSrc = await readFile(new URL('../../resources/js/workspace-shell.js', import.meta.url), 'utf8');
+    const wsCss = await readFile(new URL('../../resources/css/workspace-shell.css', import.meta.url), 'utf8');
+    const appCss = await readFile(new URL('../../resources/css/app.css', import.meta.url), 'utf8');
+
+    assert.doesNotMatch(shellSrc, /`#\$\{group\.duplicateIndex\}`/);
+    assert.match(shellSrc, /formatSessionDuplicateBadge\(group\.duplicateIndex,\s*group\.duplicateTotal\)/);
+    assert.match(shellSrc, /formatSessionContextHint\(/);
+
+    // Infor LN proportional desktop bar aligns with sidebar-control and slims desktop topbar without locking hybrid touchscreens via any-pointer.
+    assert.doesNotMatch(wsCss, /@media\s*\(\s*any-pointer:\s*coarse\s*\)/);
+    assert.match(wsCss, /@media\s*\(min-width:\s*992px\)\s*and\s*\(pointer:\s*fine\)\s*\{[^}]*html\[data-workspace-shell="true"\]\s*\{\s*--topbar-height:\s*40px;/s);
+    assert.match(appCss, /html\[data-workspace-shell="true"\] \.sidebar-control\s*\{[^}]*height:\s*var\(--ui-density-sessionbar-min,\s*2\.875rem\)/s);
+    assert.match(wsCss, /\.workspace-session__close,\s*\.workspace-session__menu-btn\s*\{[^}]*width:\s*1\.5rem;\s*height:\s*1\.5rem;/s);
+    assert.match(wsCss, /@media\s*\(pointer:\s*coarse\),\s*\(max-width:\s*991\.98px\)[\s\S]*min-height:\s*2\.75rem;/);
+
+    const dupRule = wsCss.match(/\.workspace-session__dup-index\s*\{[^}]*\}/)?.[0] || '';
+    assert.ok(dupRule && !dupRule.includes('border:'), 'Duplicate badge must be clean inline text without heavy box border');
+    assert.ok(dupRule.includes('tabular-nums'), 'Duplicate badge must preserve tabular-nums');
 });

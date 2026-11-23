@@ -97,7 +97,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const body = document.getElementById('exportJobsTableBody');
     const state = document.getElementById('exportPollingState');
-    const statusUrl = @json(route('exports.index', request()->query(), absolute: false));
+    const statusUrl = @json(\App\Support\PortalPath::routePath('exports.index', request()->query()));
     let hasPending = @json($hasPending);
     const copy = @js([
         'queued' => __('common.export_history.queued'),

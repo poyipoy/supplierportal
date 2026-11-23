@@ -101,7 +101,7 @@
                 data-smart-panel-trigger
                 data-entity-type="import-pr"
                 :data-entity-hash="$pr->hashid"
-                :data-smart-panel-url="route('context-panel.show', ['entityType' => 'import-pr', 'hash' => $pr->hashid], false)"
+                :data-smart-panel-url="\App\Support\PortalPath::routePath('context-panel.show', ['entityType' => 'import-pr', 'hash' => $pr->hashid])"
             >
                 <x-ui.icon name="git-branch" size="sm" />
                 <span>{{ __('smart_panel.trigger') }}</span>

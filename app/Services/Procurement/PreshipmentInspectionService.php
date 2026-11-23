@@ -12,6 +12,7 @@ use App\Services\NotificationService;
 use App\Support\BusinessTime;
 use App\Support\CountryCatalog;
 use App\Support\NotificationCategory;
+use App\Support\PortalPath;
 use App\Support\Procurement\PreshipmentValidation;
 use App\Support\Procurement\ProcurementFeatures;
 use Illuminate\Support\Collection;
@@ -369,9 +370,9 @@ class PreshipmentInspectionService
             'fax' => $loc->fax ?? '',
             'email' => $loc->email ?? '',
             'is_default' => (bool) $loc->is_default,
-            'update_url' => route('supplier.goods-locations.update', $loc, false),
-            'default_url' => route('supplier.goods-locations.default', $loc, false),
-            'destroy_url' => route('supplier.goods-locations.destroy', $loc, false),
+            'update_url' => PortalPath::routePath('supplier.goods-locations.update', $loc),
+            'default_url' => PortalPath::routePath('supplier.goods-locations.default', $loc),
+            'destroy_url' => PortalPath::routePath('supplier.goods-locations.destroy', $loc),
         ];
     }
 

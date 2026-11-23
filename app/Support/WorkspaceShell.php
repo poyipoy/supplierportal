@@ -120,6 +120,26 @@ class WorkspaceShell
         return max(15, (int) config('ui.workspace_shell.stale_after_seconds', 120));
     }
 
+    public static function slotTimeoutMs(): int
+    {
+        return max(5000, min(120000, (int) config('ui.workspace_shell.slot_timeout_ms', 30000)));
+    }
+
+    public static function dataReadyTimeoutMs(): int
+    {
+        return max(3000, min(60000, (int) config('ui.workspace_shell.data_ready_timeout_ms', 12000)));
+    }
+
+    public static function queueWaitTimeoutMs(): int
+    {
+        return max(10000, min(180000, (int) config('ui.workspace_shell.queue_wait_timeout_ms', 60000)));
+    }
+
+    public static function serverTabsTimeoutMs(): int
+    {
+        return max(5000, min(120000, (int) config('ui.workspace_shell.server_tabs_timeout_ms', 30000)));
+    }
+
     public static function classifyRoute(?Route $route): string
     {
         if (! $route) {
@@ -213,25 +233,134 @@ class WorkspaceShell
         return ($params[self::EMBED_QUERY_PARAM] ?? null) === '1';
     }
 
-    public static function isEligibleRedirectTarget(Request $request, string $targetUrl): bool
+    private static function probeRequestForTarget(Request $request, string $targetUrl): ?Request
     {
-        if ($targetUrl === '' || str_contains($targetUrl, 'signature=')) {
-            return false;
+        if ($targetUrl === '' || str_starts_with($targetUrl, '//') || str_contains($targetUrl, 'signature=')) {
+            return null;
         }
 
         $targetHost = parse_url($targetUrl, PHP_URL_HOST);
         if (is_string($targetHost) && $targetHost !== '' && strcasecmp($targetHost, $request->getHost()) !== 0) {
+            return null;
+        }
+
+        $absoluteTarget = str_starts_with($targetUrl, '/')
+            ? $request->getSchemeAndHttpHost().$targetUrl
+            : $targetUrl;
+
+        $baseUrl = PortalPath::baseUrl($request);
+        $server = [];
+
+        if ($baseUrl !== '') {
+            foreach (['SCRIPT_NAME', 'SCRIPT_FILENAME', 'PHP_SELF', 'HTTP_HOST', 'SERVER_NAME', 'SERVER_PORT', 'REQUEST_SCHEME', 'HTTPS'] as $key) {
+                if ($request->server->has($key)) {
+                    $server[$key] = $request->server->get($key);
+                }
+            }
+            if (! isset($server['SCRIPT_NAME'])) {
+                $server['SCRIPT_NAME'] = $baseUrl.'/index.php';
+                $server['PHP_SELF'] = $baseUrl.'/index.php';
+            }
+        }
+
+        $probe = Request::create($absoluteTarget, 'GET', [], [], [], $server);
+
+        if ($baseUrl !== '' && PortalPath::baseUrl($probe) !== $baseUrl) {
+            return null;
+        }
+
+        return $probe;
+    }
+
+    public static function isEligibleRedirectTarget(Request $request, string $targetUrl): bool
+    {
+        $probe = self::probeRequestForTarget($request, $targetUrl);
+        if (! $probe instanceof Request) {
             return false;
         }
 
         try {
-            $probe = Request::create($targetUrl, 'GET');
             $matched = app('router')->getRoutes()->match($probe);
         } catch (\Throwable) {
             return false;
         }
 
         return self::isShellEligibleRoute($matched);
+    }
+
+    /**
+     * Resolve a redirect target emitted during an embedded iframe request into a frame-safe
+     * `_embed=1` URL. Never rewrites top-level security targets (/login, /confirm-password, etc.).
+     */
+    public static function resolveEmbeddedRedirectTarget(Request $request, string $targetUrl): ?string
+    {
+        $probe = self::probeRequestForTarget($request, $targetUrl);
+        if (! $probe instanceof Request) {
+            return null;
+        }
+
+        try {
+            $matched = app('router')->getRoutes()->match($probe);
+        } catch (\Throwable) {
+            return null;
+        }
+
+        $classification = self::classifyRoute($matched);
+        if ($classification === self::CLASS_SHELL_PAGE) {
+            return self::appendEmbedParam($targetUrl);
+        }
+
+        if ($classification === self::CLASS_TOP_LEVEL_SECURITY) {
+            return null;
+        }
+
+        $user = $request->user();
+        if (! $user instanceof User) {
+            return null;
+        }
+
+        $routeName = (string) ($matched->getName() ?? '');
+
+        if ($routeName === 'portal.page') {
+            if ($probe->query->has('favoriteContext')) {
+                try {
+                    $resolved = PortalContextCodec::resolve($probe, $user);
+
+                    return (string) $resolved['internalEmbedUrl'];
+                } catch (\Throwable) {
+                    // Fall through to safe authenticated dashboard fallback when context is invalid.
+                }
+            }
+
+            $pageUuid = strtolower((string) $matched->parameter('pageUuid', ''));
+            $mappedRoute = $pageUuid !== '' ? config('page_registry.'.$pageUuid) : null;
+            if (is_string($mappedRoute) && $mappedRoute !== 'dashboard' && PortalSessionAuthorizer::canAccess($user, $mappedRoute)) {
+                $mappedObj = RouteFacade::getRoutes()->getByName($mappedRoute);
+                if ($mappedObj instanceof Route && self::isShellEligibleRoute($mappedObj)) {
+                    try {
+                        return self::appendEmbedParam(PortalPath::httpUrl(route($mappedRoute, absolute: false), $request));
+                    } catch (\Throwable) {
+                        // Fall through to safe dashboard fallback.
+                    }
+                }
+            }
+
+            $fallback = PortalPath::httpUrl(PortalContext::dashboard($user), $request);
+
+            return self::isEligibleRedirectTarget($request, $fallback)
+                ? self::appendEmbedParam($fallback)
+                : null;
+        }
+
+        if ($routeName === 'dashboard') {
+            $fallback = PortalPath::httpUrl(PortalContext::dashboard($user), $request);
+
+            return self::isEligibleRedirectTarget($request, $fallback)
+                ? self::appendEmbedParam($fallback)
+                : null;
+        }
+
+        return null;
     }
 
     public static function appendEmbedParam(string $url): string
@@ -497,7 +626,7 @@ class WorkspaceShell
      *
      * @return array{uuidMap: array<string, array{key: string, url: string}>, pathMap: array<string, array{key: string, url: string}>, menuPathTitles: array<string, string>}
      */
-    public static function moduleLookupMaps(?User $user = null, ?string $activeScopeOverride = null): array
+    public static function moduleLookupMaps(?User $user = null, ?string $activeScopeOverride = null, ?Request $request = null): array
     {
         $user ??= auth()->user();
         if (! $user instanceof User) {
@@ -514,11 +643,13 @@ class WorkspaceShell
         $scopeGrants = $user->isSupplier() ? implode(',', $user->supplierScopeValues()) : '';
         $locale = app()->getLocale();
         $rawPrefix = trim(PortalPath::prefix(), '/');
+        $httpBase = PortalPath::baseUrl($request);
         $hostKey = app()->runningInConsole() && ! app()->runningUnitTests()
             ? 'cli'
-            : (string) request()->getSchemeAndHttpHost();
+            : (string) ($request?->getSchemeAndHttpHost() ?? request()->getSchemeAndHttpHost());
         $memoKey = implode('|', [
             $locale,
+            $httpBase,
             $rawPrefix,
             $hostKey,
             (string) ($user->role ?? ''),
@@ -532,7 +663,7 @@ class WorkspaceShell
         }
 
         $registry = config('page_registry', []);
-        $prefix = $rawPrefix !== '' ? '/'.$rawPrefix : '';
+        $prefix = PortalPath::httpPrefix($request);
         $uuidMap = [];
         $pathMap = [];
         $menuPathTitles = [];
@@ -544,6 +675,23 @@ class WorkspaceShell
                     continue;
                 }
                 if (! PortalSessionAuthorizer::canAccess($user, $routeName, $activeScope)) {
+                    continue;
+                }
+
+                $routeObj = RouteFacade::getRoutes()->getByName($routeName);
+                if ($routeName === 'dashboard') {
+                    // Resolve generic dashboard UUID to the user's frameable role dashboard; skip top-level context picker.
+                    $resolvedDash = PortalContext::dashboard($user, absolute: true);
+                    $dashPath = rtrim((string) parse_url($resolvedDash, PHP_URL_PATH), '/') ?: '/';
+                    if (str_contains($dashPath, '/supplier-context')) {
+                        continue;
+                    }
+                    $uuidMap[$prefix.'/'.strtolower($uuid)] = ['key' => 'dashboard', 'url' => $resolvedDash];
+
+                    continue;
+                }
+
+                if (! $routeObj instanceof Route || ! self::isShellEligibleRoute($routeObj)) {
                     continue;
                 }
 
@@ -635,11 +783,12 @@ class WorkspaceShell
      * @param  array<string, mixed>  $pathMap
      * @return list<string>
      */
-    private static function staticIndexPaths(array $pathMap): array
+    private static function staticIndexPaths(array $pathMap, ?Request $request = null): array
     {
+        $httpBase = PortalPath::baseUrl($request);
         $rawPrefix = trim(PortalPath::prefix(), '/');
         $routeCount = count(RouteFacade::getRoutes()->getRoutes());
-        $memoKey = $rawPrefix.'|'.$routeCount.'|'.count($pathMap);
+        $memoKey = $httpBase.'|'.$rawPrefix.'|'.$routeCount.'|'.count($pathMap);
 
         if (isset(self::$staticIndexPathsCache[$memoKey])) {
             return self::$staticIndexPathsCache[$memoKey];
@@ -653,9 +802,9 @@ class WorkspaceShell
         }
 
         $scannedRoutes = Cache::remember(
-            'workspace_shell.static_index_routes.'.sha1($rawPrefix.'|'.$routeCount),
+            'workspace_shell.static_index_routes.'.sha1($httpBase.'|'.$rawPrefix.'|'.$routeCount),
             now()->addMinutes(10),
-            static function (): array {
+            static function () use ($request): array {
                 $routePaths = [];
                 foreach (RouteFacade::getRoutes()->getRoutes() as $route) {
                     if (! in_array('GET', $route->methods(), true) || $route->parameterNames() !== []) {
@@ -668,7 +817,7 @@ class WorkspaceShell
                     }
 
                     try {
-                        $relative = route($name, [], false);
+                        $relative = PortalPath::routePath($name, [], $request);
                     } catch (\Throwable) {
                         continue;
                     }
@@ -702,7 +851,7 @@ class WorkspaceShell
         $moduleKey = self::moduleKeyForRoute($route, $request->path());
         $menuTitle = self::menuLabelForRoute($route);
         $title = $menuTitle ?? self::extractPageTitle($innerHtml);
-        $outerCleanUrl = self::projectOuterDisplayUrl($internalCleanUrl, $request->user()) ?? $internalCleanUrl;
+        $outerCleanUrl = self::projectOuterDisplayUrl($internalCleanUrl, $request->user(), $request) ?? $internalCleanUrl;
 
         return self::buildShellViewData(
             $request,
@@ -789,9 +938,9 @@ class WorkspaceShell
     /**
      * Role- and scope-filtered context URL configuration exported to the shell JS controller (SEC-01).
      *
-     * @return array{enabled: bool, appUuid: string, pathPrefix: string, logicalIdPrefix: string, shortcutsUrl: null|string, sessionMap: list<array<string, mixed>>}
+     * @return array{enabled: bool, appUuid: string, basePath: string, pathPrefix: string, logicalIdPrefix: string, shortcutsUrl: null|string, sessionMap: list<array<string, mixed>>}
      */
-    public static function contextLinksConfig(?User $user = null, ?string $activeScope = null): array
+    public static function contextLinksConfig(?User $user = null, ?string $activeScope = null, ?Request $request = null): array
     {
         $enabled = (bool) config('portal_urls.context_urls.enabled', false);
         $rawPrefix = trim(PortalPath::prefix(), '/');
@@ -800,6 +949,7 @@ class WorkspaceShell
         return [
             'enabled' => $enabled,
             'appUuid' => $appUuid,
+            'basePath' => PortalPath::baseUrl($request),
             'pathPrefix' => $rawPrefix !== '' ? '/'.$rawPrefix : '',
             'logicalIdPrefix' => (string) config('portal_urls.context_urls.logical_id_prefix', 'lid://adasi.portal.'),
             'shortcutsUrl' => $enabled && $appUuid !== '' && RouteFacade::has('portal.page')
@@ -811,13 +961,15 @@ class WorkspaceShell
         ];
     }
 
-    private static function projectOuterDisplayUrl(string $internalUrl, ?User $user): ?string
+    private static function projectOuterDisplayUrl(string $internalUrl, ?User $user, ?Request $request = null): ?string
     {
         if (! config('portal_urls.context_urls.enabled', false) || ! $user instanceof User) {
             return null;
         }
 
-        return PortalContextCodec::project($internalUrl, $user);
+        return PortalContextCodec::project($internalUrl, $user, options: [
+            'basePath' => PortalPath::baseUrl($request),
+        ]);
     }
 
     /**
@@ -834,13 +986,13 @@ class WorkspaceShell
         string $initialMode = 'frame'
     ): array {
         $user = $request->user();
-        $rawPrefix = trim(PortalPath::prefix(), '/');
-        $pathPrefix = $rawPrefix !== '' ? '/'.$rawPrefix : '';
+        $basePath = PortalPath::baseUrl($request);
+        $pathPrefix = PortalPath::httpPrefix($request);
         $activeScope = $user instanceof User && $user->isSupplier()
             ? ($activeScopeOverride ?? PortalContext::current($user) ?? '__none__')
             : null;
-        $maps = self::moduleLookupMaps($user, $activeScope);
-        $indexPaths = self::staticIndexPaths($maps['pathMap']);
+        $maps = self::moduleLookupMaps($user, $activeScope, $request);
+        $indexPaths = self::staticIndexPaths($maps['pathMap'], $request);
 
         $quickAccessPaths = [];
         if ($user instanceof User) {
@@ -855,7 +1007,7 @@ class WorkspaceShell
                 );
                 foreach ($selected as $item) {
                     $resolvedItemUrl = ! empty($item['route']) && RouteFacade::has($item['route'])
-                        ? route($item['route'], [], false)
+                        ? PortalPath::routePath($item['route'], [], $request)
                         : (string) ($item['url'] ?? '');
                     $itemPath = rtrim((string) parse_url($resolvedItemUrl, PHP_URL_PATH), '/');
                     if ($itemPath !== '') {
@@ -871,7 +1023,7 @@ class WorkspaceShell
             ? match ($user->role) {
                 'admin' => route('admin.dashboard'),
                 'purchasing' => route('purchasing.dashboard'),
-                'supplier', 'accounting', 'finance' => PortalContext::dashboard($user, false),
+                'supplier', 'accounting', 'finance' => PortalContext::dashboard($user, absolute: true),
                 'qc' => route('qc.dashboard'),
                 'ga' => route('ga.dashboard'),
                 default => route('dashboard'),
@@ -889,7 +1041,7 @@ class WorkspaceShell
             'closable' => true,
         ];
 
-        $contextLinks = self::contextLinksConfig($user, $activeScope);
+        $contextLinks = self::contextLinksConfig($user, $activeScope, $request);
 
         return [
             'isWorkspaceShell' => true,
@@ -909,9 +1061,14 @@ class WorkspaceShell
                 'maxLiveFrames' => self::maxLiveFrames(),
                 'maxPinnedSessions' => self::maxPinnedSessions(),
                 'staleAfterMs' => self::staleAfterSeconds() * 1000,
+                'slotTimeoutMs' => self::slotTimeoutMs(),
+                'dataReadyTimeoutMs' => self::dataReadyTimeoutMs(),
+                'queueWaitTimeoutMs' => self::queueWaitTimeoutMs(),
+                'serverTabsTimeoutMs' => self::serverTabsTimeoutMs(),
                 'slowLoaderThresholdMs' => max(0, (int) config('ui.navigation.slow_loader_threshold_ms', 2500)),
                 'pageFadeMs' => max(0, (int) config('ui.navigation.page_fade_ms', 500)),
                 'embedParam' => self::EMBED_QUERY_PARAM,
+                'basePath' => $basePath,
                 'pathPrefix' => $pathPrefix,
                 'userId' => $user?->getKey(),
                 'portalScope' => $activeScopeOverride ?? PortalContext::current($user) ?? 'import',
@@ -979,6 +1136,10 @@ class WorkspaceShell
                     'closeDirtyConfirm' => __('navigation.workspace_shell.close_dirty_confirm'),
                     'evictionBlocked' => __('navigation.workspace_shell.eviction_blocked'),
                     'loadingModule' => __('navigation.workspace_shell.loading_module'),
+                    'loadingModuleError' => __('navigation.workspace_shell.loading_module_error'),
+                    'loadingTimeoutError' => __('navigation.workspace_shell.loading_timeout_error'),
+                    'loadingNetworkError' => __('navigation.workspace_shell.loading_network_error'),
+                    'retryLoad' => __('navigation.workspace_shell.retry_load'),
                     'scrollSessionsLeft' => __('navigation.workspace_shell.scroll_sessions_left'),
                     'scrollTabsLeft' => __('navigation.workspace_shell.scroll_sessions_left'),
                     'scrollSessionsRight' => __('navigation.workspace_shell.scroll_sessions_right'),

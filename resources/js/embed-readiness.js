@@ -59,6 +59,7 @@ export function isTrackableBootGetRequest({ url, method = 'GET', origin = 'http:
 export function createEmbedReadinessController({
     origin = 'http://localhost',
     maxDataWaitMs = 60000,
+    maxDomLoadWaitMs = 15000,
     timers = defaultTimers(),
     scanActiveTables = null,
     onReady = null,
@@ -70,6 +71,7 @@ export function createEmbedReadinessController({
     let finalPaintScheduled = false;
     let ready = false;
     let fallbackTimerId = 0;
+    let domLoadFallbackTimerId = 0;
 
     let pendingPromises = 0;
     const pendingTables = new Set();
@@ -89,6 +91,10 @@ export function createEmbedReadinessController({
         if (fallbackTimerId) {
             timers.clearTimeout(fallbackTimerId);
             fallbackTimerId = 0;
+        }
+        if (domLoadFallbackTimerId) {
+            timers.clearTimeout(domLoadFallbackTimerId);
+            domLoadFallbackTimerId = 0;
         }
         const detail = { reason };
         resolveReadyPromise(detail);
@@ -156,10 +162,30 @@ export function createEmbedReadinessController({
         markDomReady() {
             if (domReady) return;
             domReady = true;
+            if (!windowLoaded && maxDomLoadWaitMs > 0 && !domLoadFallbackTimerId) {
+                // Prevent a stalled external CDN asset or image from blocking readiness after DOM parsed.
+                domLoadFallbackTimerId = timers.setTimeout(() => {
+                    domLoadFallbackTimerId = 0;
+                    if (ready || windowLoaded) return;
+                    windowLoaded = true;
+                    if (maxDataWaitMs > 0 && !fallbackTimerId) {
+                        fallbackTimerId = timers.setTimeout(() => {
+                            fallbackTimerId = 0;
+                            finalizeReady('timeout-fallback');
+                        }, maxDataWaitMs);
+                    }
+                    tryCloseSettleWindow();
+                    evaluate();
+                }, maxDomLoadWaitMs);
+            }
             tryCloseSettleWindow();
         },
         markWindowLoaded() {
             domReady = true;
+            if (domLoadFallbackTimerId) {
+                timers.clearTimeout(domLoadFallbackTimerId);
+                domLoadFallbackTimerId = 0;
+            }
             if (!windowLoaded) {
                 windowLoaded = true;
                 if (maxDataWaitMs > 0 && !fallbackTimerId) {

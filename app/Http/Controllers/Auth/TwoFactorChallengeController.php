@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\Auth\CompleteLoginService;
 use App\Services\Auth\TwoFactorService;
+use App\Support\PortalPath;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -75,12 +76,13 @@ class TwoFactorChallengeController extends Controller
         }
 
         if ($request->hasHeader('X-Auth-Splash-Client')) {
-            $request->attributes->set('ui.auth_splash_client_target', $intended);
+            $clientRedirectUrl = PortalPath::httpPath($intended, $request);
+            $request->attributes->set('ui.auth_splash_client_target', $clientRedirectUrl);
 
             return response()->json([
                 'ok' => true,
                 'two_factor' => false,
-                'redirect_url' => $intended,
+                'redirect_url' => $clientRedirectUrl,
                 'splash' => (bool) config('ui.auth_splash.enabled', true),
             ]);
         }

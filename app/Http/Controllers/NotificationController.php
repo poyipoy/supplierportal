@@ -7,6 +7,7 @@ use App\Services\NotificationUrlResolver;
 use App\Support\NotificationCategory;
 use App\Support\NotificationDomain;
 use App\Support\PortalContext;
+use App\Support\PortalPath;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -56,11 +57,11 @@ class NotificationController extends Controller
         if ($request->expectsJson()) {
             return response()->json(array_merge([
                 'success' => true,
-                'redirect' => $targetUrl,
+                'redirect' => PortalPath::httpPath($targetUrl, $request),
             ], $this->summaryService->countsForUser($request->user())));
         }
 
-        return redirect()->to($targetUrl);
+        return redirect()->to(PortalPath::httpUrl($targetUrl, $request));
     }
 
     public function markAllRead(Request $request)

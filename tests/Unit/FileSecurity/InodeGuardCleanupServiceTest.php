@@ -199,6 +199,51 @@ class InodeGuardCleanupServiceTest extends TestCase
         $this->assertCount(1, $events);
     }
 
+    public function test_file_cache_data_prunes_only_expired_filestore_entries_and_removes_empty_directories(): void
+    {
+        $service = app(InodeGuardCleanupService::class);
+        $cacheRoot = $this->tempRoot.DIRECTORY_SEPARATOR.'storage'.DIRECTORY_SEPARATOR.'framework'.DIRECTORY_SEPARATOR.'cache'.DIRECTORY_SEPARATOR.'data';
+        $mixedDir = $cacheRoot.DIRECTORY_SEPARATOR.'ab'.DIRECTORY_SEPARATOR.'cd';
+        $emptyAfterDir = $cacheRoot.DIRECTORY_SEPARATOR.'ee'.DIRECTORY_SEPARATOR.'ff';
+        File::ensureDirectoryExists($mixedDir);
+        File::ensureDirectoryExists($emptyAfterDir);
+
+        $now = 1_800_000_000;
+        $expiredRecent = $mixedDir.DIRECTORY_SEPARATOR.'expired-short-ttl';
+        $activeOldMtime = $mixedDir.DIRECTORY_SEPARATOR.'active-long-ttl';
+        $foreverOldMtime = $mixedDir.DIRECTORY_SEPARATOR.'forever-entry';
+        $expiredAlone = $emptyAfterDir.DIRECTORY_SEPARATOR.'expired-alone';
+
+        file_put_contents($expiredRecent, ($now - 60).serialize(['v' => 'expired']));
+        file_put_contents($activeOldMtime, ($now + 3600).serialize(['v' => 'active']));
+        file_put_contents($foreverOldMtime, '9999999999'.serialize(['v' => 'forever']));
+        file_put_contents($expiredAlone, ($now - 10).serialize(['v' => 'gone']));
+
+        touch($expiredRecent, $now - 5);
+        touch($activeOldMtime, $now - 10800);
+        touch($foreverOldMtime, $now - 86400);
+        touch($expiredAlone, $now - 5);
+
+        $dryReport = $service->sweep($this->tempRoot, 2, true, $now);
+        $this->assertSame(2, $dryReport['deleted_files']);
+        $this->assertFileExists($expiredRecent);
+        $this->assertFileExists($expiredAlone);
+        $this->assertFileExists($activeOldMtime);
+        $this->assertFileExists($foreverOldMtime);
+        $this->assertDirectoryExists($emptyAfterDir);
+
+        $realReport = $service->sweep($this->tempRoot, 2, false, $now);
+        $this->assertSame(2, $realReport['deleted_files']);
+        $this->assertFileDoesNotExist($expiredRecent);
+        $this->assertFileDoesNotExist($expiredAlone);
+        $this->assertFileExists($activeOldMtime);
+        $this->assertFileExists($foreverOldMtime);
+        $this->assertDirectoryDoesNotExist($emptyAfterDir);
+        $this->assertDirectoryDoesNotExist($cacheRoot.DIRECTORY_SEPARATOR.'ee');
+        $this->assertDirectoryExists($mixedDir);
+        $this->assertDirectoryExists($cacheRoot);
+    }
+
     public function test_blocks_in_root_redirections_allows_missing_subdirs_and_handles_symlinked_root(): void
     {
         $service = app(InodeGuardCleanupService::class);

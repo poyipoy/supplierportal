@@ -34,7 +34,7 @@ class PortalLegacyPathController extends Controller
             }
             $query = $request->server->get('QUERY_STRING', '');
 
-            return new RedirectResponse($target.($query !== '' ? '?'.$query : ''), 301);
+            return new RedirectResponse(PortalPath::httpPath($target, $request).($query !== '' ? '?'.$query : ''), 301);
         }
 
         $allowed = self::allowedMethods($request);

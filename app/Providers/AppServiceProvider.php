@@ -3,11 +3,15 @@
 namespace App\Providers;
 
 use App\Listeners\ApplyNotificationPreferences;
+use App\Models\MaintenanceRecord;
+use App\Models\MaintenanceRecordModule;
 use App\Models\MaterialReferencePrice;
 use App\Models\Passport\Client;
 use App\Models\ReferencePriceRule;
 use App\Models\SupplierAudit;
+use App\Models\SupplierScope;
 use App\Models\User;
+use App\Models\UserPreference;
 use App\Notifications\SystemNotification;
 use App\Services\FileSecurity\FileInspectionService;
 use App\Services\LocalInvoice\Contracts\LocalPoProviderInterface;
@@ -209,6 +213,15 @@ class AppServiceProvider extends ServiceProvider
         });
         MaterialReferencePrice::saved(fn () => app()->forgetInstance(ReferencePriceResolver::class));
         MaterialReferencePrice::deleted(fn () => app()->forgetInstance(ReferencePriceResolver::class));
+        UserPreference::saved(static fn (UserPreference $preference) => UserPreferenceService::forgetForUser((int) $preference->user_id));
+        UserPreference::deleted(static fn (UserPreference $preference) => UserPreferenceService::forgetForUser((int) $preference->user_id));
+        SupplierScope::saved(static fn (SupplierScope $scope) => UserPreferenceService::forgetForUser((int) $scope->supplier_id));
+        SupplierScope::deleted(static fn (SupplierScope $scope) => UserPreferenceService::forgetForUser((int) $scope->supplier_id));
+        MaintenanceRecord::saved(static fn () => MaintenanceResolver::forgetCache());
+        MaintenanceRecord::deleted(static fn () => MaintenanceResolver::forgetCache());
+        MaintenanceRecord::restored(static fn () => MaintenanceResolver::forgetCache());
+        MaintenanceRecordModule::saved(static fn () => MaintenanceResolver::forgetCache());
+        MaintenanceRecordModule::deleted(static fn () => MaintenanceResolver::forgetCache());
         $resetRuleBenchmarks = static function (): void {
             if (app()->resolved(ReferencePriceRuleResolver::class)) {
                 app(ReferencePriceRuleResolver::class)->reset();

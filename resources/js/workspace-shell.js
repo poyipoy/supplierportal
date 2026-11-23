@@ -8,6 +8,8 @@ import {
     DEFAULT_MAX_PINNED_SESSIONS,
     DEFAULT_MAX_RECENTLY_CLOSED,
     DEFAULT_SHORTCUTS_WEIGHTS,
+    formatSessionContextHint,
+    formatSessionDuplicateBadge,
     isSameOriginUrl,
     isTopLevelOnlyUrl,
     MIN_SHORTCUTS_PANE_WIDTH_PX,
@@ -1619,6 +1621,7 @@ export function bootWorkspaceShell() {
         if (!frameId) return;
         const iframe = frames.get(frameId);
         if (iframe) {
+            delete iframe.dataset.workspaceNavigated;
             try { iframe.src = 'about:blank'; } catch {}
             frames.delete(frameId);
         }
@@ -1629,18 +1632,97 @@ export function bootWorkspaceShell() {
         }
     };
 
+    const probingFrames = new Set();
+    const recentWorkspaceLaunches = new Map();
+
+    const cleanupAbortedFrame = (frameId) => {
+        if (!frameId) return;
+        probingFrames.delete(frameId);
+        const discarded = store.discardStagedFrame(frameId);
+        if (!discarded.discarded) {
+            const ctx = store.getFrameContext(frameId);
+            if (ctx && ctx.frame.loading) {
+                store.closeFrame(frameId);
+            }
+        }
+        unmountFramePanel(frameId);
+        syncTriggerPendingAttributes();
+        syncTabDom();
+    };
+
+    const retryFailedNavigation = (entry) => {
+        if (!entry) return;
+        if (entry.kind === 'activate' && entry.frameId && store.getFrame(entry.frameId)) {
+            activateFrame(entry.frameId, { historyMode: entry.historyMode || 'push' });
+            return;
+        }
+        if (entry.kind === 'child' && entry.groupId && store.getGroup(entry.groupId) && entry.url) {
+            const group = store.getGroup(entry.groupId);
+            const sourceId = group.activeFrameId || group.frames[0]?.frameId || null;
+            openChildInGroup(entry.groupId, sourceId, entry.url, entry.label || '');
+            return;
+        }
+        if (entry.url) {
+            openNewWorkspace({
+                label: entry.label || '',
+                url: entry.url,
+                historyMode: entry.historyMode || 'push',
+            });
+        }
+    };
+
+    const reportNavigationFailure = (entry, reason = 'timeout') => {
+        const message = reason === 'network'
+            ? (i18n.loadingNetworkError || i18n.loadingModuleError || 'Unable to reach the server. Check your connection and try again.')
+            : (reason === 'timeout' || reason === 'queue-timeout')
+                ? (i18n.loadingTimeoutError || i18n.loadingModuleError || 'The page took too long to respond. Please try again.')
+                : (i18n.loadingModuleError || i18n.loadingFailed || 'Unable to load the selected page. Please try again.');
+        const nowMs = typeof performance !== 'undefined' && typeof performance.now === 'function' ? performance.now() : Date.now();
+        const elapsedMs = Number.isFinite(entry?.startedAt) ? Math.round(nowMs - entry.startedAt) : null;
+        try {
+            console.warn('[AdasiWorkspaceShell] navigation failed', {
+                reason,
+                path: entry?.url ? normalizedPath(entry.url, origin) : '',
+                elapsedMs,
+            });
+        } catch {}
+        announceLiveStatus(message);
+        const retryLabel = i18n.retryLoad || 'Try again';
+        const canRetry = Boolean(entry && (entry.url || (entry.kind === 'activate' && entry.frameId)));
+        window.AdasiToast?.error?.(
+            message,
+            canRetry
+                ? { actions: [{ label: retryLabel, variant: 'primary', onClick: () => retryFailedNavigation(entry) }] }
+                : undefined,
+        );
+    };
+
+    const configuredSlotTimeoutMs = Number.isFinite(Number(config.slotTimeoutMs)) && Number(config.slotTimeoutMs) >= 5000
+        ? Number(config.slotTimeoutMs)
+        : 30000;
+    const configuredDataReadyTimeoutMs = Number.isFinite(Number(config.dataReadyTimeoutMs)) && Number(config.dataReadyTimeoutMs) >= 3000
+        ? Number(config.dataReadyTimeoutMs)
+        : 12000;
+    const configuredQueueWaitTimeoutMs = Number.isFinite(Number(config.queueWaitTimeoutMs)) && Number(config.queueWaitTimeoutMs) >= 10000
+        ? Number(config.queueWaitTimeoutMs)
+        : 60000;
+
     const navQueue = new WorkspaceNavQueue({
         maxConcurrent: 2,
         slowThresholdMs: slowLoaderThresholdMs,
         stepIntervalMs: 220,
-        slotTimeoutMs: 15000,
-        dataReadyTimeoutMs: 12000,
-        queueWaitTimeoutMs: 45000,
+        slotTimeoutMs: configuredSlotTimeoutMs,
+        dataReadyTimeoutMs: configuredDataReadyTimeoutMs,
+        queueWaitTimeoutMs: configuredQueueWaitTimeoutMs,
+        isDocumentHidden: () => document.hidden === true,
         onStartSlot: (entry) => {
             const frame = store.getFrame(entry.frameId);
             if (!frame) return;
             frame.queued = false;
             frame.loading = true;
+            if (frames.has(frame.frameId)) {
+                unmountFramePanel(frame.frameId);
+            }
             ensureFrameMounted(frame);
             syncTriggerPendingAttributes();
             syncTabDom();
@@ -1672,17 +1754,9 @@ export function bootWorkspaceShell() {
                 syncStageControls();
             }
         },
-        onSlotTimeout: (entry) => {
-            const discarded = store.discardStagedFrame(entry.frameId);
-            if (!discarded.discarded) {
-                store.closeFrame(entry.frameId);
-            }
-            if (!discarded.revertedHibernate) {
-                unmountFramePanel(entry.frameId);
-            }
-            syncTriggerPendingAttributes();
-            syncTabDom();
-            window.AdasiToast?.error?.(i18n.loadingModuleError || i18n.loadingFailed || 'Unable to load the selected page. Please try again.');
+        onSlotTimeout: (entry, reason) => {
+            cleanupAbortedFrame(entry.frameId);
+            reportNavigationFailure(entry, reason || 'timeout');
         },
         onDataTimeout: (entry) => {
             const iframe = frames.get(entry.frameId);
@@ -1696,6 +1770,12 @@ export function bootWorkspaceShell() {
             syncTriggerPendingAttributes();
             syncStageControls();
         },
+    });
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden !== true) {
+            navQueue.notifyVisibilityRestored();
+        }
     });
 
     const initialReadyPromise = new Promise((resolve) => {
@@ -2067,16 +2147,40 @@ export function bootWorkspaceShell() {
         trigger.setAttribute('aria-busy', (isLoading || isQueued) ? 'true' : 'false');
         trigger.tabIndex = isActive ? 0 : -1;
 
-        const hasStatusDot = Boolean(isDirty || isStale || isHibernated || isQueued || isLoading);
-        wrapper.dataset.hasStatusDot = hasStatusDot ? 'true' : 'false';
+        const hasStatusIcon = Boolean(isDirty || isStale || isHibernated || isQueued || isLoading);
+        wrapper.dataset.hasStatusIcon = hasStatusIcon ? 'true' : 'false';
         const statusNotes = [];
+        const accessibleStatusNotes = [];
         if (isPinnedParent) statusNotes.push(i18n.pinnedBadge || 'Pinned');
-        if (isDirty) statusNotes.push(i18n.statusUnsaved || i18n.unsavedBadge || 'Unsaved changes');
-        else if (isStale) statusNotes.push(i18n.statusStale || i18n.staleBadge || 'Refresh needed');
-        else if (isLoading) statusNotes.push(i18n.loadingModule || 'Loading module...');
-        else if (isQueued) statusNotes.push(i18n.statusQueued || 'Queued to load');
-        else if (isHibernated) statusNotes.push(i18n.statusHibernated || i18n.hibernatedBadge || 'Hibernated');
-        else if (isActive) statusNotes.push(i18n.statusActive || 'Active session');
+        if (isDirty) {
+            const msg = i18n.statusUnsaved || i18n.unsavedBadge || 'Unsaved changes';
+            statusNotes.push(msg);
+            accessibleStatusNotes.push(msg);
+        } else if (isLoading) {
+            const msg = i18n.loadingModule || 'Loading module...';
+            statusNotes.push(msg);
+            accessibleStatusNotes.push(msg);
+        } else if (isStale) {
+            const msg = i18n.statusStale || i18n.staleBadge || 'Refresh needed';
+            statusNotes.push(msg);
+            accessibleStatusNotes.push(msg);
+        } else if (isQueued) {
+            const msg = i18n.statusQueued || 'Queued to load';
+            statusNotes.push(msg);
+            accessibleStatusNotes.push(msg);
+        } else if (isHibernated) {
+            const msg = i18n.statusHibernated || i18n.hibernatedBadge || 'Hibernated';
+            statusNotes.push(msg);
+            accessibleStatusNotes.push(msg);
+        } else if (isActive) {
+            statusNotes.push(i18n.statusActive || 'Active session');
+        }
+
+        if (accessibleStatusNotes.length > 0) {
+            trigger.setAttribute('aria-description', accessibleStatusNotes.join(' · '));
+        } else {
+            trigger.removeAttribute('aria-description');
+        }
 
         const labelEl = trigger.querySelector('.workspace-session__label');
         if (labelEl && labelEl.textContent !== displayText) {
@@ -2096,20 +2200,31 @@ export function bootWorkspaceShell() {
         }
 
         const pinnedSuffix = isPinnedParent ? `, ${i18n.pinnedBadge || 'Pinned'}` : '';
+        const dupBadge = (isStacked || group.frames.length === 1 || frame.role === 'parent')
+            ? formatSessionDuplicateBadge(group.duplicateIndex, group.duplicateTotal)
+            : '';
+        const dupSuffix = dupBadge ? ` ${dupBadge}` : '';
+        const activeChild = isStacked ? group.frames[group.frames.length - 1] : null;
+        const contextHint = formatSessionContextHint(
+            isStacked ? (activeChild?.url || frame.url) : frame.url,
+            { childTitle: activeChild?.title || '', parentTitle: displayText },
+        );
+
         if (isStacked) {
             trigger.dataset.workspaceGroupSelect = group.groupId;
             const stackedText = formatCountText(i18n.stackedPagesCount || ':count pages in session', group.frames.length);
-            trigger.setAttribute('aria-label', `${displayText} (${stackedText})${pinnedSuffix}`);
-            trigger.title = statusNotes.length ? `${displayText} — ${stackedText} (${statusNotes.join(' · ')})` : `${displayText} — ${stackedText}`;
+            const titleBase = `${displayText}${dupSuffix} — ${stackedText}${contextHint ? ` (${contextHint})` : ''}`;
+            trigger.setAttribute('aria-label', `${displayText}${dupSuffix} (${stackedText})${pinnedSuffix}`);
+            trigger.title = statusNotes.length ? `${titleBase} (${statusNotes.join(' · ')})` : titleBase;
         } else {
             trigger.dataset.workspaceSessionSelect = frame.frameId;
-            const dupSuffix = group.duplicateTotal > 1 && frame.role === 'parent' ? ` #${group.duplicateIndex}` : '';
             if (dupSuffix || pinnedSuffix) {
-                trigger.setAttribute('aria-label', `${displayText}${dupSuffix ? ` (${group.duplicateIndex})` : ''}${pinnedSuffix}`);
+                trigger.setAttribute('aria-label', `${displayText}${dupSuffix}${pinnedSuffix}`);
             } else {
                 trigger.removeAttribute('aria-label');
             }
-            trigger.title = statusNotes.length ? `${displayText}${dupSuffix} (${statusNotes.join(' · ')})` : `${displayText}${dupSuffix}`;
+            const titleBase = contextHint ? `${displayText}${dupSuffix} · ${contextHint}` : `${displayText}${dupSuffix}`;
+            trigger.title = statusNotes.length ? `${titleBase} (${statusNotes.join(' · ')})` : titleBase;
         }
     };
 
@@ -2143,20 +2258,24 @@ export function bootWorkspaceShell() {
             trigger.appendChild(pinEl);
         }
 
-        const dot = document.createElement('span');
-        dot.className = 'workspace-session__status-dot';
-        dot.setAttribute('aria-hidden', 'true');
-        trigger.appendChild(dot);
+        const statusIcon = document.createElement('span');
+        statusIcon.className = 'workspace-session__status-icon';
+        statusIcon.setAttribute('aria-hidden', 'true');
+        trigger.appendChild(statusIcon);
 
         const labelEl = document.createElement('span');
         labelEl.className = 'workspace-session__label';
         labelEl.textContent = displayText;
         trigger.appendChild(labelEl);
 
-        if ((isStacked || group.frames.length === 1 || frame.role === 'parent') && group.duplicateTotal > 1) {
+        const dupBadge = (isStacked || group.frames.length === 1 || frame.role === 'parent')
+            ? formatSessionDuplicateBadge(group.duplicateIndex, group.duplicateTotal)
+            : '';
+        if (dupBadge) {
             const dupEl = document.createElement('span');
             dupEl.className = 'workspace-session__dup-index';
-            dupEl.textContent = `#${group.duplicateIndex}`;
+            dupEl.setAttribute('aria-hidden', 'true');
+            dupEl.textContent = dupBadge;
             trigger.appendChild(dupEl);
         }
 
@@ -2341,13 +2460,14 @@ export function bootWorkspaceShell() {
             groupEl.classList.toggle('is-last-pinned', group.groupId === lastPinnedGroupId);
 
             const pinSig = group.pinned ? 'p1' : 'p0';
+            const dupSig = group.duplicateTotal > 1 && group.duplicateIndex > 1 ? group.duplicateIndex : 0;
             const expectedLayoutSig = group.isCollapsedStack
-                ? `stack:${group.groupId}:${group.frames.length}:${group.duplicateTotal > 1 ? group.duplicateIndex : 0}:${pinSig}`
-                : `open:${group.frames.map((f) => `${f.frameId}:${f.role}`).join('|')}:${group.duplicateTotal > 1 ? group.duplicateIndex : 0}:${pinSig}`;
+                ? `stack:${group.groupId}:${group.frames.length}:${dupSig}:${pinSig}`
+                : `open:${group.frames.map((f) => `${f.frameId}:${f.role}`).join('|')}:${dupSig}:${pinSig}`;
 
             const expectedRenderSig = group.isCollapsedStack
-                ? `${expectedLayoutSig}:${group.displayLabel}:${group.dirty}:${group.stale}:${group.hibernated}:${Boolean(group.queued)}:${group.frames.some((f) => Boolean(f.loading) && !f.queued)}`
-                : `${expectedLayoutSig}:${group.frames.map((f) => `${f.title}:${f.isDirty}:${f.stale}:${f.hibernated}:${Boolean(f.queued)}:${Boolean(f.loading)}:${f.frameId === activeFrameId}`).join('|')}`;
+                ? `${expectedLayoutSig}:${group.displayLabel}:${group.frames[group.frames.length - 1]?.url || ''}:${group.dirty}:${group.stale}:${group.hibernated}:${Boolean(group.queued)}:${group.frames.some((f) => Boolean(f.loading) && !f.queued)}`
+                : `${expectedLayoutSig}:${group.frames.map((f) => `${f.title}:${f.url}:${f.isDirty}:${f.stale}:${f.hibernated}:${Boolean(f.queued)}:${Boolean(f.loading)}:${f.frameId === activeFrameId}`).join('|')}`;
 
             const prevLayoutSig = groupEl.dataset.layoutSig || '';
             const layoutChanged = isNewGroupEl || prevLayoutSig !== expectedLayoutSig;
@@ -2744,23 +2864,140 @@ export function bootWorkspaceShell() {
         return true;
     };
 
+    const handleInaccessibleFrameLoad = async (frameId, iframe, triggerReason = 'blocked') => {
+        if (frames.get(frameId) !== iframe || probingFrames.has(frameId)) return;
+
+        const ctx = store.getFrameContext(frameId);
+        const queueEntry = navQueue.get(frameId);
+        if (!ctx) {
+            navQueue.cancel(frameId, triggerReason);
+            unmountFramePanel(frameId);
+            return;
+        }
+
+        const entrySnapshot = {
+            frameId,
+            groupId: ctx.group.groupId,
+            kind: queueEntry?.kind || 'workspace',
+            url: ctx.frame.url || queueEntry?.url || '',
+            label: ctx.frame.title || queueEntry?.label || '',
+            historyMode: queueEntry?.historyMode || 'push',
+            startedAt: queueEntry?.startedAt ?? null,
+        };
+
+        probingFrames.add(frameId);
+        try {
+            if (window.AdasiSessionSync?.isSessionExpired?.()) {
+                navQueue.cancel(frameId, 'session-expired');
+                cleanupAbortedFrame(frameId);
+                window.AdasiSessionSync.requestReconnect?.(false, { reason: 'session_ended' });
+                return;
+            }
+
+            if (typeof window.AdasiSessionSync?.probeSessionStatus === 'function') {
+                const status = await window.AdasiSessionSync.probeSessionStatus();
+                if (frames.get(frameId) !== iframe && !navQueue.has(frameId)) return;
+
+                if (status?.authenticated === false) {
+                    navQueue.cancel(frameId, 'session-expired');
+                    cleanupAbortedFrame(frameId);
+                    window.AdasiSessionSync.requestReconnect?.(false, {
+                        reason: status.reason || 'session_ended',
+                        reconnectable: status.reconnectable,
+                    });
+                    return;
+                }
+
+                if (status?.networkError === true) {
+                    navQueue.cancel(frameId, 'network');
+                    cleanupAbortedFrame(frameId);
+                    reportNavigationFailure(entrySnapshot, 'network');
+                    return;
+                }
+            }
+
+            const probeUrl = ctx.frame.embedUrl || appendEmbedParam(ctx.frame.url, origin);
+            if (!probeUrl || !isSameOriginUrl(probeUrl, origin) || typeof window.fetch !== 'function') {
+                navQueue.cancel(frameId, triggerReason);
+                cleanupAbortedFrame(frameId);
+                reportNavigationFailure(entrySnapshot, triggerReason === 'iframe-error' ? 'network' : 'load-error');
+                return;
+            }
+
+            const response = await window.fetch(probeUrl, {
+                method: 'HEAD',
+                credentials: 'same-origin',
+                redirect: 'manual',
+                cache: 'no-store',
+            });
+            if (frames.get(frameId) !== iframe && !navQueue.has(frameId)) return;
+
+            if (response.type === 'opaqueredirect') {
+                navQueue.cancel(frameId, 'breakout');
+                cleanupAbortedFrame(frameId);
+                breakoutToTop(ctx.frame.url);
+                return;
+            }
+
+            const xfo = String(response.headers?.get?.('x-frame-options') || '').toUpperCase();
+            const contentType = String(response.headers?.get?.('content-type') || '').toLowerCase();
+            const disposition = String(response.headers?.get?.('content-disposition') || '').toLowerCase();
+
+            if (response.ok && (disposition.includes('attachment') || (contentType !== '' && !contentType.includes('text/html')))) {
+                navQueue.cancel(frameId, 'download');
+                cleanupAbortedFrame(frameId);
+                const safeDownload = safeWebUrl(ctx.frame.url, origin);
+                if (safeDownload && isSameOriginUrl(safeDownload, origin)) {
+                    window.location.assign(safeDownload);
+                }
+                return;
+            }
+
+            if ((response.ok && xfo === 'DENY') || (response.status === 403 && isTopLevelOnlyUrl(ctx.frame.url, origin, pathPrefix))) {
+                navQueue.cancel(frameId, 'breakout');
+                cleanupAbortedFrame(frameId);
+                breakoutToTop(ctx.frame.url);
+                return;
+            }
+
+            navQueue.cancel(frameId, 'load-error');
+            cleanupAbortedFrame(frameId);
+            reportNavigationFailure(entrySnapshot, 'load-error');
+        } catch {
+            if (frames.get(frameId) !== iframe && !navQueue.has(frameId)) return;
+            navQueue.cancel(frameId, 'network');
+            cleanupAbortedFrame(frameId);
+            reportNavigationFailure(entrySnapshot, 'network');
+        } finally {
+            probingFrames.delete(frameId);
+        }
+    };
+
     const onFrameLoad = (frameId, iframe) => {
+        if (frames.get(frameId) !== iframe) return;
+
         let frameWin;
         let frameDoc;
         try {
             frameWin = iframe.contentWindow;
             frameDoc = iframe.contentDocument;
         } catch {
-            if (iframe.src) breakoutToTop(iframe.src);
+            void handleInaccessibleFrameLoad(frameId, iframe, 'blocked');
             return;
         }
 
-        if (!frameWin || !frameDoc) return;
+        if (!frameWin || !frameDoc) {
+            if (iframe.dataset.workspaceNavigated === 'true') {
+                void handleInaccessibleFrameLoad(frameId, iframe, 'blocked');
+            }
+            return;
+        }
 
         let frameHref = '';
         try {
             frameHref = frameWin.location.href;
         } catch {
+            void handleInaccessibleFrameLoad(frameId, iframe, 'blocked');
             return;
         }
 
@@ -2769,6 +3006,7 @@ export function bootWorkspaceShell() {
         }
 
         if (!isSameOriginUrl(frameHref, origin)) {
+            void handleInaccessibleFrameLoad(frameId, iframe, 'cross-origin');
             return;
         }
 
@@ -2777,6 +3015,7 @@ export function bootWorkspaceShell() {
         // destroying unsaved tabs with breakoutToTop.
         if (frameDoc.querySelector('[data-auth-login-page]')) {
             navQueue.cancel(frameId, 'breakout');
+            cleanupAbortedFrame(frameId);
             if (typeof window.AdasiSessionSync?.requestReconnect === 'function') {
                 window.AdasiSessionSync.requestReconnect(false, { reason: 'session_ended' });
             } else {
@@ -2787,6 +3026,7 @@ export function bootWorkspaceShell() {
 
         if (isTopLevelOnlyUrl(frameHref, origin, pathPrefix)) {
             navQueue.cancel(frameId, 'breakout');
+            cleanupAbortedFrame(frameId);
             breakoutToTop(frameHref);
             return;
         }
@@ -2794,8 +3034,10 @@ export function bootWorkspaceShell() {
         if (frameDoc.querySelector('[data-workspace-shell]')) {
             if (frameHref.includes(`${config.embedParam || '_embed'}=`)) {
                 navQueue.cancel(frameId, 'breakout');
+                cleanupAbortedFrame(frameId);
                 breakoutToTop(frameHref);
             } else {
+                navQueue.resetSlotTimer(frameId);
                 frameWin.location.replace(appendEmbedParam(frameHref, origin));
             }
             return;
@@ -2852,8 +3094,12 @@ export function bootWorkspaceShell() {
         iframe.loading = 'eager';
         iframe.setAttribute('referrerpolicy', 'same-origin');
         iframe.dataset.workspaceFrame = frame.frameId;
+        iframe.dataset.workspaceNavigated = 'true';
         iframe.src = frame.embedUrl;
         iframe.addEventListener('load', () => onFrameLoad(frame.frameId, iframe));
+        iframe.addEventListener('error', () => {
+            void handleInaccessibleFrameLoad(frame.frameId, iframe, 'iframe-error');
+        });
 
         panel.appendChild(iframe);
         framesEl.appendChild(panel);
@@ -2939,6 +3185,19 @@ export function bootWorkspaceShell() {
         }
 
         const canonicalKey = `workspace:${canonicalizeUrl(resolvedUrl, origin)}`;
+        const nowMs = Date.now();
+        const prevLaunch = recentWorkspaceLaunches.get(canonicalKey);
+        if (
+            triggerEl
+            && prevLaunch
+            && prevLaunch.triggerEl === triggerEl
+            && (nowMs - prevLaunch.at) < 400
+            && navQueue.has(prevLaunch.frameId)
+        ) {
+            navQueue.prioritize(prevLaunch.frameId);
+            return true;
+        }
+
         const resolvedKey = moduleKey || target.key || resolveModuleForUrl(resolvedUrl);
         const pathTitle = menuPathTitles.get(normalizedPath(resolvedUrl, origin));
         const catalogEntry = catalog.find((item) => item.key === resolvedKey);
@@ -2957,9 +3216,16 @@ export function bootWorkspaceShell() {
             return false;
         }
 
+        if (result.closedFrameIds?.length) {
+            cancelQueuedFrames(result.closedFrameIds);
+        }
+
         recordModuleUse(resolvedUrl);
         if (result.staged && result.frame) {
-            if (triggerEl) trackedTriggerEls.add(triggerEl);
+            if (triggerEl) {
+                trackedTriggerEls.add(triggerEl);
+                recentWorkspaceLaunches.set(canonicalKey, { triggerEl, frameId: result.frame.frameId, at: nowMs });
+            }
             const entry = navQueue.enqueue({
                 frameId: result.frame.frameId,
                 groupId: result.group.groupId,
@@ -3012,6 +3278,10 @@ export function bootWorkspaceShell() {
         if (result.blocked) {
             window.AdasiToast?.warning?.(i18n.evictionBlocked || 'All open sessions have unsaved changes.');
             return;
+        }
+
+        if (result.closedFrameIds?.length) {
+            cancelQueuedFrames(result.closedFrameIds);
         }
 
         if (result.staged && result.frame) {
@@ -3445,14 +3715,21 @@ export function bootWorkspaceShell() {
             tabMenuEl.appendChild(heading);
 
             for (const group of displayList) {
-                const label = group.duplicateTotal > 1 ? `${group.displayLabel} #${group.duplicateIndex}` : group.displayLabel;
+                const dupBadge = formatSessionDuplicateBadge(group.duplicateIndex, group.duplicateTotal);
+                const label = dupBadge ? `${group.displayLabel} ${dupBadge}` : group.displayLabel;
+                const activeGroupFrame = group.frames.find((f) => f.frameId === group.activeFrameId) || group.frames[group.frames.length - 1];
+                const contextHint = formatSessionContextHint(activeGroupFrame?.url, {
+                    childTitle: group.frames.length > 1 ? activeGroupFrame?.title : '',
+                    parentTitle: group.displayLabel,
+                });
                 const badgeParts = [];
                 if (group.frames.length > 1) badgeParts.push(String(group.frames.length));
-                if (group.dirty) badgeParts.push('•');
+                if (group.dirty) badgeParts.push(i18n.unsavedBadge || 'Unsaved changes');
                 else if (group.hibernated) badgeParts.push(i18n.hibernatedBadge || 'Hibernated');
 
                 tabMenuEl.appendChild(createMenuButtonItem({
                     label,
+                    subtext: contextHint,
                     badgeText: badgeParts.join(' '),
                     iconName: group.pinned ? 'pin' : (group.frames.length > 1 ? 'layers' : 'chevron-right'),
                     current: group.isActive,
@@ -3506,13 +3783,16 @@ export function bootWorkspaceShell() {
         positionAndShowTabMenu(anchorEl);
     };
 
-    const createMenuButtonItem = ({ label, badgeText = '', iconName = null, danger = false, current = false, onSelect }) => {
+    const createMenuButtonItem = ({ label, subtext = '', badgeText = '', iconName = null, danger = false, current = false, onSelect }) => {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'workspace-session-menu__item ui-focus-ring';
         if (danger) btn.classList.add('is-danger');
         if (current) btn.classList.add('is-current');
         btn.setAttribute('role', 'menuitem');
+        if (subtext) {
+            btn.title = `${label} — ${subtext}`;
+        }
 
         const main = document.createElement('span');
         main.className = 'workspace-session-menu__item-main';
@@ -3520,10 +3800,19 @@ export function bootWorkspaceShell() {
             const icon = cloneTemplateIcon(iconName);
             if (icon) main.appendChild(icon);
         }
+        const textWrap = document.createElement('span');
+        textWrap.className = 'workspace-session-menu__item-text';
         const textSpan = document.createElement('span');
         textSpan.className = 'workspace-session-menu__item-label';
         textSpan.textContent = label;
-        main.appendChild(textSpan);
+        textWrap.appendChild(textSpan);
+        if (subtext) {
+            const subSpan = document.createElement('span');
+            subSpan.className = 'workspace-session-menu__item-sub';
+            subSpan.textContent = subtext;
+            textWrap.appendChild(subSpan);
+        }
+        main.appendChild(textWrap);
         btn.appendChild(main);
 
         if (badgeText) {
@@ -3799,8 +4088,12 @@ export function bootWorkspaceShell() {
             if (ssrFrameEl) {
                 ssrFrameEl.name = `workspace-frame-${seeded.frame.frameId}`;
                 ssrFrameEl.dataset.workspaceFrame = seeded.frame.frameId;
+                ssrFrameEl.dataset.workspaceNavigated = 'true';
                 frames.set(seeded.frame.frameId, ssrFrameEl);
                 ssrFrameEl.addEventListener('load', () => onFrameLoad(seeded.frame.frameId, ssrFrameEl));
+                ssrFrameEl.addEventListener('error', () => {
+                    void handleInaccessibleFrameLoad(seeded.frame.frameId, ssrFrameEl, 'iframe-error');
+                });
                 try {
                     const frameHref = ssrFrameEl.contentWindow?.location?.href;
                     if (ssrFrameEl.contentDocument?.readyState === 'complete' && frameHref && frameHref !== 'about:blank' && frameHref !== 'about:srcdoc') {
@@ -4813,6 +5106,21 @@ export function bootWorkspaceShell() {
                 url: cleanTarget,
             });
             return 'handled';
+        },
+        notifyEmbedBooted(frameWin) {
+            const frameId = frameIdForWindow(frameWin);
+            if (!frameId) return;
+            const ctx = store.getFrameContext(frameId);
+            if (!ctx) return;
+            ctx.frame.queued = false;
+            if (navQueue.has(frameId)) {
+                navQueue.markDocumentLoaded(frameId, { awaitingData: true });
+            }
+            const readiness = frameWin?.AdasiEmbedReadiness;
+            if (readiness && !readiness.isReady) {
+                attachReadinessListener(frameId, frameWin, readiness);
+            }
+            syncTabDom();
         },
         notifyEmbedReady(frameWin) {
             const frameId = frameIdForWindow(frameWin);

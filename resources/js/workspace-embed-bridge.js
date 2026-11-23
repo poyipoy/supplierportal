@@ -23,7 +23,8 @@ export function bootWorkspaceEmbedBridge() {
     if (!shell) return null;
 
     const origin = window.location.origin;
-    const prefix = window.AdasiPortal?.pathPrefix || '';
+    const rawPortalPrefix = String(window.AdasiPortal?.pathPrefix || '').replace(/^\/+|\/+$/g, '');
+    const prefix = window.AdasiPortal?.httpPrefix || (rawPortalPrefix !== '' ? `/${rawPortalPrefix}` : '');
 
     const toAbsoluteUrl = (raw) => {
         try {
@@ -326,6 +327,9 @@ export function bootWorkspaceEmbedBridge() {
         window.AdasiDismissDropdowns?.();
         window.AdasiCalendar?.closeActive?.();
     });
+
+    // Disarm the parent's destructive load timeout as soon as the embed bridge initializes.
+    shell.notifyEmbedBooted?.(window);
 
     // Inform outer shell only once DOM, DataTables initial draws, and boot fetches have settled.
     if (window.AdasiEmbedReadiness?.whenReady) {

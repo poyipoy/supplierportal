@@ -1091,3 +1091,58 @@ test('in-flight 401 fetch responses started before reconnect finishes are ignore
     assert.equal(f.prompts.length, 1, 'stale pre-reconnect 401 must not reopen modal');
     assert.equal(f.api.isSessionExpired(), false);
 });
+
+test('probeSessionStatus deduplicates concurrent probes and classifies authenticated, expired, and offline outcomes', async () => {
+    let calls = 0;
+    let mode = 'auth';
+    let releaseFirst = null;
+
+    const fetchImpl = () => {
+        calls += 1;
+        if (mode === 'auth') {
+            return new Promise((resolve) => {
+                releaseFirst = () => resolve({
+                    ok: true,
+                    status: 200,
+                    redirected: false,
+                    json: async () => ({ authenticated: true, user_id: 41 }),
+                });
+            });
+        }
+        if (mode === 'expired') {
+            return Promise.resolve({
+                ok: false,
+                status: 401,
+                redirected: false,
+                json: async () => ({ authenticated: false, reason: 'concurrent_login', reconnectable: false }),
+            });
+        }
+        return Promise.reject(new TypeError('Failed to fetch'));
+    };
+
+    const f = fixture({ session: RESUMABLE, fetchImpl });
+
+    // Concurrent calls share a single in-flight fetch.
+    const p1 = f.api.probeSessionStatus();
+    const p2 = f.api.probeSessionStatus();
+    assert.equal(calls, 1);
+    releaseFirst();
+    const [r1, r2] = await Promise.all([p1, p2]);
+    assert.deepEqual(r1, { authenticated: true, status: 200 });
+    assert.deepEqual(r2, { authenticated: true, status: 200 });
+
+    // 401 response propagates server expiry reason and reconnectable flag.
+    mode = 'expired';
+    const rExpired = await f.api.probeSessionStatus();
+    assert.deepEqual(rExpired, {
+        authenticated: false,
+        reason: 'concurrent_login',
+        reconnectable: false,
+        status: 401,
+    });
+
+    // Offline network rejection reports networkError without misclassifying as expired session.
+    mode = 'offline';
+    const rOffline = await f.api.probeSessionStatus();
+    assert.deepEqual(rOffline, { authenticated: null, networkError: true, status: 0 });
+});

@@ -117,7 +117,7 @@ test('polling renders escaped Regional timestamps without mutating the response 
     const scriptStart = exportView.lastIndexOf('<script>');
     const scriptEnd = exportView.indexOf('</script>', scriptStart);
     const script = resolveViewCopy(exportView.slice(scriptStart + '<script>'.length, scriptEnd))
-        .replace('@json(route(\'exports.index\', request()->query(), absolute: false))', '"/exports"')
+        .replace('@json(\\App\\Support\\PortalPath::routePath(\'exports.index\', request()->query()))', '"/exports"')
         .replace('@json($hasPending)', 'true');
     const context = {
         window, document, Date, Intl, String, Number, Object, Array, Promise,
@@ -158,7 +158,7 @@ test('polling System mode keeps the browser Intl renderer instead of the server 
     const scriptStart = exportView.lastIndexOf('<script>');
     const scriptEnd = exportView.indexOf('</script>', scriptStart);
     const script = resolveViewCopy(exportView.slice(scriptStart + '<script>'.length, scriptEnd))
-        .replace('@json(route(\'exports.index\', request()->query(), absolute: false))', '"/exports"')
+        .replace('@json(\\App\\Support\\PortalPath::routePath(\'exports.index\', request()->query()))', '"/exports"')
         .replace('@json($hasPending)', 'true');
     vm.runInNewContext(script, {
         window, document, Date, Intl, String, Number, Object, Array, Promise,
@@ -207,7 +207,7 @@ test('system-mode export history timestamps follow the account language', async 
     const scriptStart = exportView.lastIndexOf('<script>');
     const scriptEnd = exportView.indexOf('</script>', scriptStart);
     const script = resolveViewCopy(exportView.slice(scriptStart + '<script>'.length, scriptEnd))
-        .replace('@json(route(\'exports.index\', request()->query(), absolute: false))', '"/exports"')
+        .replace('@json(\\App\\Support\\PortalPath::routePath(\'exports.index\', request()->query()))', '"/exports"')
         .replace('@json($hasPending)', 'true');
     vm.runInNewContext(script, {
         window, document, Date, Intl, String, Number, Object, Array, Promise,

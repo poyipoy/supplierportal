@@ -19,6 +19,10 @@ return [
         'max_tabs' => (int) env('WORKSPACE_SHELL_MAX_SESSIONS', env('WORKSPACE_SHELL_MAX_TABS', 36)),
         'max_live_frames' => (int) env('WORKSPACE_SHELL_MAX_LIVE_FRAMES', 18),
         'stale_after_seconds' => (int) env('WORKSPACE_SHELL_STALE_AFTER_SECONDS', 180),
+        'slot_timeout_ms' => (int) env('WORKSPACE_SHELL_SLOT_TIMEOUT_MS', 30000),
+        'data_ready_timeout_ms' => (int) env('WORKSPACE_SHELL_DATA_READY_TIMEOUT_MS', 12000),
+        'queue_wait_timeout_ms' => (int) env('WORKSPACE_SHELL_QUEUE_WAIT_TIMEOUT_MS', 60000),
+        'server_tabs_timeout_ms' => (int) env('UI_SERVER_TABS_TIMEOUT_MS', 30000),
     ],
 
     'environment_tag' => [

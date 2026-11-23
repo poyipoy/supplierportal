@@ -24,6 +24,7 @@ use App\Models\SupplierAudit;
 use App\Models\User;
 use App\Support\ExportConfirmation;
 use App\Support\ExportDispatcher;
+use App\Support\PortalPath;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
@@ -215,9 +216,9 @@ class ExportController extends Controller
             return response()->json([
                 'message' => $message,
                 'export_job_id' => $exportJob->getRouteKey(),
-                'exports_url' => route('exports.index', absolute: false),
-                'status_url' => route('exports.status', $exportJob, absolute: false),
-                'cancel_url' => route('exports.cancel', $exportJob, absolute: false),
+                'exports_url' => PortalPath::routePath('exports.index', [], $request),
+                'status_url' => PortalPath::routePath('exports.status', $exportJob, $request),
+                'cancel_url' => PortalPath::routePath('exports.cancel', $exportJob, $request),
             ], 202);
         }
 

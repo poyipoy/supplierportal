@@ -51,7 +51,12 @@
     @endauth
 
     <div class="sidebar-brand">
-        <a href="{{ \App\Support\PageRegistry::url('dashboard', $dashboardUrl) }}" class="sidebar-brand-link" aria-label="{{ __('navigation.portal_dashboard') }}">
+        @php
+            $brandDashboardHref = str_contains((string) $dashboardUrl, '/supplier-context')
+                ? $dashboardUrl
+                : \App\Support\PageRegistry::url('dashboard', $dashboardUrl);
+        @endphp
+        <a href="{{ $brandDashboardHref }}" class="sidebar-brand-link" aria-label="{{ __('navigation.portal_dashboard') }}">
             <img src="{{ asset('assets/images/logo-adasi.png') }}" alt="" class="sidebar-brand-logo" draggable="false">
             <span class="brand-text sidebar-type-text" style="--sidebar-type-steps: 15;">
                 <strong>ADASI</strong>

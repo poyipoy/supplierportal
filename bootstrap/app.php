@@ -19,6 +19,7 @@ use App\Http\Middleware\RememberPurchasingListUrl;
 use App\Http\Middleware\RoleMiddleware;
 use App\Http\Middleware\ShareAuthSplashState;
 use App\Http\Middleware\SupplierScopeMiddleware;
+use App\Http\Middleware\TrustProxies as AppTrustProxies;
 use App\Http\Middleware\WrapWorkspaceShell;
 use App\Support\PortalContext;
 use App\Support\RateLimitResponse;
@@ -28,6 +29,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
+use Illuminate\Http\Middleware\TrustProxies as FrameworkTrustProxies;
 use Illuminate\Http\Request;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
@@ -64,28 +66,7 @@ return Application::configure(basePath: dirname(__DIR__))
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $trustedProxies = array_values(array_filter(
-            array_map('trim', explode(',', (string) env('TRUSTED_PROXIES', ''))),
-            function (string $proxy): bool {
-                [$address, $prefix] = array_pad(explode('/', $proxy, 2), 2, null);
-
-                if (filter_var($address, FILTER_VALIDATE_IP) === false) {
-                    return false;
-                }
-
-                if ($prefix === null) {
-                    return true;
-                }
-
-                $maximum = str_contains($address, ':') ? 128 : 32;
-
-                return ctype_digit($prefix) && (int) $prefix <= $maximum;
-            }
-        ));
-
-        if ($trustedProxies !== []) {
-            $middleware->trustProxies(at: $trustedProxies);
-        }
+        $middleware->replace(FrameworkTrustProxies::class, AppTrustProxies::class);
 
         $middleware->authenticateSessions();
 

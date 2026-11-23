@@ -462,8 +462,8 @@ try {
     assert.equal(initialState.duplicateSidebarInFrame, false);
     assert.equal(initialState.topOverflowX, false);
     assert.ok(initialState.refreshBtnSize[0] >= 24 && initialState.refreshBtnSize[1] >= 24);
-    assert.equal(initialState.desktopBrandHeight, 44, 'Desktop sidebar brand height must be slimmed to 44px');
-    assert.equal(initialState.desktopTopbarHeight, 44, 'Desktop topbar height must be slimmed to 44px');
+    assert.equal(initialState.desktopBrandHeight, 40, 'Desktop workspace sidebar brand height must be calibrated to Infor LN 40px');
+    assert.equal(initialState.desktopTopbarHeight, 40, 'Desktop workspace topbar height must be calibrated to Infor LN 40px');
     assert.ok(Math.abs(initialState.desktopControlBottom - initialState.desktopTabbarBottom) <= 1, 'Sidebar control divider must align cleanly with workspace tabbar divider');
     assert.equal(initialState.userChipHasInlineEmail, false, 'Topbar user chip must stay single-line without stacked inline email');
     assert.equal(initialState.userDropdownHasEmail, true, 'User dropdown must retain account email');
@@ -482,7 +482,7 @@ try {
     const prGroupIds = await evaluate(`Array.from(document.querySelectorAll('[data-workspace-group][data-workspace-module="requisitions"]')).map(el => el.dataset.workspaceGroup)`);
     assert.equal(prGroupIds.length, 3, 'Clicking Requisitions 3x must open 3 independent workspace groups');
     const dupBadges = await evaluate(`Array.from(document.querySelectorAll('[data-workspace-group][data-workspace-module="requisitions"] .workspace-session__dup-index')).map(el => el.textContent.trim())`);
-    assert.deepEqual(dupBadges, ['#1', '#2', '#3']);
+    assert.deepEqual(dupBadges, ['(2)', '(3)']);
     const prTabLabels = await evaluate(`Array.from(document.querySelectorAll('[data-workspace-group][data-workspace-module="requisitions"] .workspace-session__label')).map(el => el.textContent.trim())`);
     assert.deepEqual(prTabLabels, ['Purchase Requisition', 'Purchase Requisition', 'Purchase Requisition'], 'Requisitions tabs must retain exact sidebar menu name');
 

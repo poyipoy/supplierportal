@@ -204,10 +204,16 @@ final class MaintenanceService
     {
         $now = BusinessTime::toStorage(BusinessTime::now());
 
-        return MaintenanceRecord::query()
+        $count = MaintenanceRecord::query()
             ->where('status', MaintenanceRecord::STATUS_SCHEDULED)
             ->where('starts_at', '<=', $now)
             ->update(['status' => MaintenanceRecord::STATUS_ACTIVE, 'updated_at' => $now]);
+
+        if ($count > 0) {
+            MaintenanceResolver::forgetCache();
+        }
+
+        return $count;
     }
 
     private function lock(MaintenanceRecord $record, CarbonImmutable $now): MaintenanceRecord

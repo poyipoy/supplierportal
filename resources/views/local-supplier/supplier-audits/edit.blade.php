@@ -183,7 +183,7 @@
                         </h2>
 
                         @foreach($step['sections'] as $section)
-                            <div class="tw:overflow-hidden tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface">
+                            <div class="ui-audit-list-card tw:overflow-hidden tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface">
                                 @if($section['parent_code'] !== null)
                                     <h3 class="tw:m-0 tw:border-b tw:border-outline-variant tw:bg-surface-container tw:px-4 tw:py-2 tw:text-ui-sm tw:font-semibold tw:text-on-surface">
                                         {{ $section['code'] }}. {{ $section['title'] }}
@@ -198,7 +198,7 @@
                                         {{-- Garis kiri hanya menandai baris yang sedang fokus (state nyata). --}}
                                         <li tabindex="0" data-criterion-row="{{ $cid }}" x-on:keydown="onRowKeydown($event, '{{ $cid }}')"
                                             aria-labelledby="crit-{{ $cid }}-text"
-                                            class="tw:grid tw:scroll-mt-28 tw:gap-3 tw:border-s-2 tw:border-transparent tw:px-4 tw:py-3 tw:outline-hidden tw:focus-within:border-primary tw:focus-within:bg-surface-container tw:lg:grid-cols-[minmax(0,1fr)_auto] tw:lg:items-start"
+                                            class="ui-audit-row tw:scroll-mt-28 tw:border-s-2 tw:border-transparent tw:px-4 tw:py-3 tw:outline-hidden tw:focus-within:border-primary tw:focus-within:bg-surface-container"
                                             style="transition-property: background-color, border-color; transition-duration: 150ms;"
                                             :class="rowFlagged('{{ $cid }}') ? 'tw:bg-error-container' : ''">
                                             <p id="crit-{{ $cid }}-text" class="tw:m-0 tw:flex tw:gap-2 tw:text-ui-sm tw:text-on-surface" style="text-wrap: pretty;">
@@ -206,39 +206,51 @@
                                                 <span>{{ $answer->criterion_text_snapshot }}</span>
                                             </p>
 
-                                            <div class="tw:grid tw:gap-2 tw:sm:flex tw:sm:flex-wrap tw:sm:items-center tw:lg:justify-end">
-                                                {{-- Nilai kosong dikirim lebih dulu; radio terpilih menimpanya. --}}
-                                                <input type="hidden" name="answers[{{ $cid }}][answer]" value="">
-                                                <div class="btn-group tw:w-full tw:sm:w-auto" role="radiogroup" aria-labelledby="crit-{{ $cid }}-text">
-                                                    <input type="radio" class="btn-check" name="answers[{{ $cid }}][answer]" id="a{{ $cid }}-yes" value="YES" autocomplete="off"
+                                            {{-- Nilai kosong dikirim lebih dulu; radio terpilih menimpanya. --}}
+                                            <input type="hidden" name="answers[{{ $cid }}][answer]" value="">
+                                            <input type="hidden" name="answers[{{ $cid }}][score]" value="">
+
+                                            <div class="ui-audit-controls">
+                                                <div class="ui-audit-yn" role="radiogroup" aria-labelledby="crit-{{ $cid }}-text" aria-invalid="false"
+                                                    :aria-invalid="rowFlagged('{{ $cid }}') && !answers['{{ $cid }}'].answer ? 'true' : 'false'"
+                                                    :aria-describedby="rowFlagged('{{ $cid }}') && !answers['{{ $cid }}'].answer ? 'crit-{{ $cid }}-error' : null"
+                                                    :class="rowFlagged('{{ $cid }}') && !answers['{{ $cid }}'].answer ? 'ui-audit-yn--invalid' : ''">
+                                                    <input type="radio" class="ui-audit-yn__input" name="answers[{{ $cid }}][answer]" id="a{{ $cid }}-yes" value="YES" autocomplete="off"
                                                         @checked($answer->answer === 'YES') :checked="answers['{{ $cid }}'].answer === 'YES'" x-on:change="setAnswer('{{ $cid }}', 'YES')">
-                                                    <label class="btn btn-outline-success tw:min-h-11 tw:flex-1 tw:px-4 tw:sm:min-h-9 tw:sm:flex-none" for="a{{ $cid }}-yes">{{ __('supplier_audit.fields.yes') }}</label>
-                                                    <input type="radio" class="btn-check" name="answers[{{ $cid }}][answer]" id="a{{ $cid }}-no" value="NO" autocomplete="off"
+                                                    <label class="ui-audit-yn__option ui-audit-yn__option--yes" for="a{{ $cid }}-yes">
+                                                        <span class="ui-audit-yn__icon" aria-hidden="true"><x-ui.icon name="check" size="xs" /></span>
+                                                        <span class="ui-audit-yn__label">{{ __('supplier_audit.fields.yes') }}</span>
+                                                    </label>
+                                                    <input type="radio" class="ui-audit-yn__input" name="answers[{{ $cid }}][answer]" id="a{{ $cid }}-no" value="NO" autocomplete="off"
                                                         @checked($answer->answer === 'NO') :checked="answers['{{ $cid }}'].answer === 'NO'" x-on:change="setAnswer('{{ $cid }}', 'NO')">
-                                                    <label class="btn btn-outline-secondary tw:min-h-11 tw:flex-1 tw:px-4 tw:sm:min-h-9 tw:sm:flex-none" for="a{{ $cid }}-no">{{ __('supplier_audit.fields.no') }}</label>
+                                                    <label class="ui-audit-yn__option ui-audit-yn__option--no" for="a{{ $cid }}-no">
+                                                        <span class="ui-audit-yn__icon" aria-hidden="true"><x-ui.icon name="x" size="xs" /></span>
+                                                        <span class="ui-audit-yn__label">{{ __('supplier_audit.fields.no') }}</span>
+                                                    </label>
                                                 </div>
 
-                                                <input type="hidden" name="answers[{{ $cid }}][score]" value="">
-                                                {{-- U3: Score hanya muncul setelah Ya. --}}
-                                                <div class="btn-group tw:w-full tw:sm:w-auto" role="radiogroup" aria-label="{{ __('supplier_audit.fields.score') }} — {{ $ref }}"
-                                                    x-show="answers['{{ $cid }}'].answer === 'YES'"
-                                                    x-transition:enter="tw:transition tw:duration-150 tw:ease-out" x-transition:enter-start="tw:opacity-0" x-transition:enter-end="tw:opacity-100"
-                                                    @if($answer->answer !== 'YES') style="display: none;" @endif>
-                                                    @foreach($scoreScale as $score => $meaning)
-                                                        <input type="radio" class="btn-check" name="answers[{{ $cid }}][score]" id="s{{ $cid }}-{{ $score }}" value="{{ $score }}" autocomplete="off"
-                                                            @checked($answer->score === $score) @disabled($answer->answer !== 'YES')
-                                                            :checked="Number(answers['{{ $cid }}'].score) === {{ $score }}"
-                                                            :disabled="answers['{{ $cid }}'].answer !== 'YES'"
-                                                            x-on:change="setScore('{{ $cid }}', {{ $score }})">
-                                                        <label class="btn btn-outline-primary tw:min-h-11 tw:flex-1 tw:sm:min-h-9 tw:sm:min-w-9 tw:sm:flex-none" for="s{{ $cid }}-{{ $score }}" title="{{ $score }} — {{ $meaning }}" style="font-variant-numeric: tabular-nums;">
-                                                            <span aria-hidden="true">{{ $score }}</span>
-                                                            <span class="tw:sr-only">{{ __('supplier_audit.labels.score_option', ['score' => $score]) }}: {{ $meaning }}</span>
-                                                        </label>
-                                                    @endforeach
+                                                {{-- U3: Score hanya muncul setelah Ya; slot kanan tetap dicadangkan di desktop. --}}
+                                                <div class="ui-audit-controls__score">
+                                                    <div class="btn-group tw:w-full tw:sm:w-auto" role="radiogroup" aria-label="{{ __('supplier_audit.fields.score') }} — {{ $ref }}"
+                                                        x-show="answers['{{ $cid }}'].answer === 'YES'"
+                                                        x-transition:enter="tw:transition tw:duration-150 tw:ease-out" x-transition:enter-start="tw:opacity-0" x-transition:enter-end="tw:opacity-100"
+                                                        @if($answer->answer !== 'YES') style="display: none;" @endif>
+                                                        @foreach($scoreScale as $score => $meaning)
+                                                            <input type="radio" class="btn-check" name="answers[{{ $cid }}][score]" id="s{{ $cid }}-{{ $score }}" value="{{ $score }}" autocomplete="off"
+                                                                @checked($answer->score === $score) @disabled($answer->answer !== 'YES')
+                                                                :checked="Number(answers['{{ $cid }}'].score) === {{ $score }}"
+                                                                :disabled="answers['{{ $cid }}'].answer !== 'YES'"
+                                                                x-on:change="setScore('{{ $cid }}', {{ $score }})">
+                                                            <label class="btn btn-outline-primary tw:min-h-11 tw:flex-1 tw:sm:min-h-9 tw:sm:min-w-9 tw:sm:flex-none" for="s{{ $cid }}-{{ $score }}" title="{{ $score }} — {{ $meaning }}" style="font-variant-numeric: tabular-nums;">
+                                                                <span aria-hidden="true">{{ $score }}</span>
+                                                                <span class="tw:sr-only">{{ __('supplier_audit.labels.score_option', ['score' => $score]) }}: {{ $meaning }}</span>
+                                                            </label>
+                                                        @endforeach
+                                                    </div>
                                                 </div>
                                             </div>
 
-                                            <p id="crit-{{ $cid }}-error" class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error tw:lg:col-span-2" role="alert"
+                                            <p id="crit-{{ $cid }}-error" class="ui-audit-row__error tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error" role="alert"
                                                 x-show="rowFlagged('{{ $cid }}')" x-cloak
                                                 x-text="rowError('{{ $cid }}') || (answers['{{ $cid }}'].answer === 'YES' ? @js(__('supplier_audit.errors.score_required', ['criterion' => $ref])) : @js(__('supplier_audit.errors.answer_required', ['criterion' => $ref])))"></p>
                                         </li>

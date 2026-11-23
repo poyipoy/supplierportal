@@ -12,6 +12,7 @@ use App\Services\Auth\SessionReconnectService;
 use App\Services\Auth\SessionRevocationService;
 use App\Services\Auth\TurnstileVerifier;
 use App\Services\Auth\TwoFactorService;
+use App\Support\PortalPath;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -62,7 +63,7 @@ class AuthenticatedSessionController extends Controller
                 return response()->json([
                     'ok' => true,
                     'two_factor' => true,
-                    'redirect_url' => route('two-factor.challenge', absolute: false),
+                    'redirect_url' => PortalPath::routePath('two-factor.challenge', [], $request),
                     'splash' => false,
                 ]);
             }
@@ -76,12 +77,13 @@ class AuthenticatedSessionController extends Controller
         $redirectUrl = $completeLogin->resolvePostLoginDestination($request, $user, is_string($intended) ? $intended : null);
 
         if ($request->hasHeader('X-Auth-Splash-Client')) {
-            $request->attributes->set('ui.auth_splash_client_target', $redirectUrl);
+            $clientRedirectUrl = PortalPath::httpPath($redirectUrl, $request);
+            $request->attributes->set('ui.auth_splash_client_target', $clientRedirectUrl);
 
             return response()->json([
                 'ok' => true,
                 'two_factor' => false,
-                'redirect_url' => $redirectUrl,
+                'redirect_url' => $clientRedirectUrl,
                 'splash' => (bool) config('ui.auth_splash.enabled', true),
             ]);
         }

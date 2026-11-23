@@ -103,7 +103,7 @@
                                     :options="$prOptions ?? []"
                                     :value="old('pr_number', $purchaseOrder->pr_number)"
                                     :allow-custom="true"
-                                    :suggestions-url="route($routePrefix.'.pr-suggestions', [], false)"
+                                    :suggestions-url="\App\Support\PortalPath::routePath($routePrefix.'.pr-suggestions')"
                                     :helper="__('local_procurement.pr.manual_hint')"
                                 />
                             @endif

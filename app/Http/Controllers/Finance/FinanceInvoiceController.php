@@ -15,6 +15,7 @@ use App\Services\LocalInvoice\InvoiceQuery;
 use App\Services\LocalInvoice\InvoiceVerificationService;
 use App\Support\ExportConfirmation;
 use App\Support\ExportDispatcher;
+use App\Support\PortalPath;
 use App\Support\ServerTabsResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -238,7 +239,13 @@ class FinanceInvoiceController extends Controller
         );
 
         if ($request->wantsJson()) {
-            return response()->json(['message' => __('local_invoice.feedback.export_queued'), 'export_job_id' => $job->getRouteKey(), 'exports_url' => route('exports.index', absolute: false), 'status_url' => route('exports.status', $job, absolute: false), 'cancel_url' => route('exports.cancel', $job, absolute: false)], 202);
+            return response()->json([
+                'message' => __('local_invoice.feedback.export_queued'),
+                'export_job_id' => $job->getRouteKey(),
+                'exports_url' => PortalPath::routePath('exports.index', [], $request),
+                'status_url' => PortalPath::routePath('exports.status', $job, $request),
+                'cancel_url' => PortalPath::routePath('exports.cancel', $job, $request),
+            ], 202);
         }
 
         return redirect()->route('exports.index')->with('success', __('local_invoice.feedback.export_queued'));

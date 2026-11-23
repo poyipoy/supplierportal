@@ -37,8 +37,10 @@ class CleanupLocalProcurementImports extends Command
                     dispatch($job->onQueue(config('local_procurement_imports.queue')));
                 });
             });
+        $retentionDays = max(1, (int) config('local_procurement_imports.retention_days', 3));
+
         LocalProcurementImport::whereNotIn('status', LocalProcurementImport::ACTIVE)->whereNull('cleaned_at')
-            ->where('finished_at', '<', now()->subDays((int) config('local_procurement_imports.retention_days')))
+            ->where('finished_at', '<', now()->subDays($retentionDays))
             ->eachById(function ($candidate) {
                 DB::transaction(function () use ($candidate) {
                     $import = LocalProcurementImport::whereKey($candidate->id)->lockForUpdate()->firstOrFail();
@@ -62,7 +64,7 @@ class CleanupLocalProcurementImports extends Command
                 foreach (File::directories($root) as $directory) {
                     $resolved = realpath($directory);
                     if ($resolved && ! is_link($directory) && str_starts_with($resolved.DIRECTORY_SEPARATOR, $resolvedRoot)
-                        && File::lastModified($directory) < now()->subDays(3)->getTimestamp()) {
+                        && File::lastModified($directory) < now()->subDays($retentionDays)->getTimestamp()) {
                         File::deleteDirectory($directory);
                     }
                 }

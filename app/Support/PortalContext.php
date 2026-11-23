@@ -15,27 +15,27 @@ class PortalContext
 
     public const LABEL_LOCAL = 'Local Supplier';
 
-    public static function dashboard(User $user): string
+    public static function dashboard(User $user, bool $absolute = false): string
     {
         if ($user->isFinance()) {
-            return route('finance.dashboard', absolute: false);
+            return route('finance.dashboard', absolute: $absolute);
         }
         if ($user->isGa()) {
-            return route('ga.dashboard', absolute: false);
+            return route('ga.dashboard', absolute: $absolute);
         }
         if ($user->isLocalOperator()) {
-            return route('accounting.dashboard', absolute: false);
+            return route('accounting.dashboard', absolute: $absolute);
         }
         if (! $user->isSupplier()) {
-            return route($user->role.'.dashboard', absolute: false);
+            return route($user->role.'.dashboard', absolute: $absolute);
         }
 
         $context = self::resolve($user);
 
         return match ($context) {
-            self::SCOPE_LOCAL => route('local-supplier.dashboard', absolute: false),
-            self::SCOPE_IMPORT => route('supplier.dashboard', absolute: false),
-            default => route('supplier-context.index', absolute: false),
+            self::SCOPE_LOCAL => route('local-supplier.dashboard', absolute: $absolute),
+            self::SCOPE_IMPORT => route('supplier.dashboard', absolute: $absolute),
+            default => route('supplier-context.index', absolute: $absolute),
         };
     }
 

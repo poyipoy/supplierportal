@@ -64,3 +64,8 @@ Schedule::command('storage:inode-guard --hours=2')
     ->hourly()
     ->timezone(config('app.business_timezone', 'Asia/Jakarta'))
     ->withoutOverlapping();
+
+Schedule::command('queue:work --queue=exports,imports,default --stop-when-empty --max-time=50 --tries=3')
+    ->everyMinute()
+    ->when(fn () => (bool) config('queue.cpanel_cron_worker', false))
+    ->withoutOverlapping(2);

@@ -26,7 +26,11 @@
         ] : null);
     </script>
     <script>
-        window.AdasiPortal = Object.assign(window.AdasiPortal || {}, { pathPrefix: @js(\App\Support\PortalPath::prefix()) });
+        window.AdasiPortal = Object.assign(window.AdasiPortal || {}, {
+            basePath: @js(\App\Support\PortalPath::baseUrl()),
+            pathPrefix: @js(\App\Support\PortalPath::prefix()),
+            httpPrefix: @js(\App\Support\PortalPath::httpPrefix()),
+        });
     </script>
     @if($workspaceShellEnabled ?? config('ui.workspace_shell.enabled', false))
         <script>
@@ -340,7 +344,7 @@
             $roleDashboardRoute = auth()->user()->role
                 ? auth()->user()->role . '.dashboard'
                 : 'dashboard';
-            $dashboardUrl = \App\Support\PortalContext::dashboard(auth()->user());
+            $dashboardUrl = \App\Support\PortalContext::dashboard(auth()->user(), absolute: true);
         }
     @endphp
     @if(!($isWorkspaceEmbed ?? false))
@@ -557,13 +561,20 @@
     <script>
         @auth
             let badgeFetchActive = false;
+            let lastBadgeFetchAt = 0;
+            const BADGE_VISIBILITY_THROTTLE_MS = 5000;
+
+            function isPusherConnected() {
+                return window.Echo?.connector?.pusher?.connection?.state === 'connected';
+            }
 
             function updateBadges() {
-                if (badgeFetchActive || (document.visibilityState && document.visibilityState === 'hidden') || window.AdasiSessionSync?.isSessionExpired?.()) {
+                if (badgeFetchActive || document.hidden === true || (document.visibilityState && document.visibilityState === 'hidden') || window.AdasiSessionSync?.isSessionExpired?.()) {
                     return;
                 }
 
                 badgeFetchActive = true;
+                lastBadgeFetchAt = Date.now();
                 const headers = {
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
@@ -658,19 +669,37 @@
                 });
             }
 
-            // Adaptive polling: skip 30s tick while Pusher WebSocket is connected (reconcile every 300s as fallback)
+            // Adaptive polling: skip hidden tabs and 30s ticks while Pusher WebSocket is connected (reconcile every 300s as fallback)
             let pollTicksSinceSync = 0;
             setInterval(() => {
+                if (document.hidden === true) {
+                    return;
+                }
                 pollTicksSinceSync += 1;
-                if (window.Echo?.connector?.pusher?.connection?.state === 'connected' && pollTicksSinceSync < 10) {
+                if (isPusherConnected() && pollTicksSinceSync < 10) {
                     return;
                 }
                 pollTicksSinceSync = 0;
                 updateBadges();
             }, 30000);
 
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState !== 'visible' || document.hidden === true) {
+                    return;
+                }
+                if (isPusherConnected()) {
+                    return;
+                }
+                if (Date.now() - lastBadgeFetchAt < BADGE_VISIBILITY_THROTTLE_MS) {
+                    return;
+                }
+                pollTicksSinceSync = 0;
+                updateBadges();
+            });
+
             window.addEventListener('adasi:session-restored', () => {
                 pollTicksSinceSync = 0;
+                lastBadgeFetchAt = 0;
                 updateBadges();
             });
         @endauth
@@ -712,8 +741,8 @@
 
                     if (
                         targetUrl.origin !== window.location.origin
-                        || !targetUrl.pathname.startsWith(@js(\App\Support\PortalPath::path('purchasing/')))
-                        || targetUrl.pathname.startsWith(@js(\App\Support\PortalPath::path('purchasing/export/')))
+                        || !targetUrl.pathname.startsWith(@js(\App\Support\PortalPath::httpPath(\App\Support\PortalPath::path('purchasing/'))))
+                        || targetUrl.pathname.startsWith(@js(\App\Support\PortalPath::httpPath(\App\Support\PortalPath::path('purchasing/export/'))))
                         || listPaths.has(targetUrl.pathname)
                         || targetUrl.searchParams.has('return_url')
                     ) {
@@ -1356,8 +1385,7 @@
                             'wss'
                         ],
 
-                        authEndpoint:
-                            '/broadcasting/auth',
+                        authEndpoint: @js(url('/broadcasting/auth')),
 
                         auth: {
                             headers: {

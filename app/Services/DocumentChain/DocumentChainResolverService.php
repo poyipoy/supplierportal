@@ -10,6 +10,7 @@ use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequisition;
 use App\Models\User;
 use App\Support\HashidCodec;
+use App\Support\PortalPath;
 use App\Support\StatusHelper;
 use Illuminate\Support\Facades\Gate;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -97,8 +98,8 @@ class DocumentChainResolverService
                 'tone' => StatusHelper::prTone((string) $pr->status),
                 'date' => $pr->created_at?->format('Y-m-d'),
                 'url' => $actor->isSupplier()
-                    ? route('supplier.requests.show', $pr, false)
-                    : route('purchasing.requisitions.show', $pr, false),
+                    ? PortalPath::routePath('supplier.requests.show', $pr)
+                    : PortalPath::routePath('purchasing.requisitions.show', $pr),
                 'current' => true,
             ],
         ];
@@ -118,8 +119,8 @@ class DocumentChainResolverService
                 'tone' => StatusHelper::quotationTone((string) $quotation->status),
                 'date' => $quotation->submitted_at?->format('Y-m-d') ?? $quotation->created_at?->format('Y-m-d'),
                 'url' => $actor->isSupplier()
-                    ? route('supplier.quotations.show', $quotation, false)
-                    : route('purchasing.quotations.show', $quotation, false),
+                    ? PortalPath::routePath('supplier.quotations.show', $quotation)
+                    : PortalPath::routePath('purchasing.quotations.show', $quotation),
                 'current' => false,
             ];
         }
@@ -149,8 +150,8 @@ class DocumentChainResolverService
                 'tone' => StatusHelper::poTone((string) $po->status),
                 'date' => $po->created_at?->format('Y-m-d'),
                 'url' => $actor->isSupplier()
-                    ? route('supplier.purchase-orders.show', $po, false)
-                    : route('purchasing.purchase-orders.show', $po, false),
+                    ? PortalPath::routePath('supplier.purchase-orders.show', $po)
+                    : PortalPath::routePath('purchasing.purchase-orders.show', $po),
                 'current' => false,
             ];
         }
@@ -231,8 +232,8 @@ class DocumentChainResolverService
                     'tone' => StatusHelper::prTone((string) $pr->status),
                     'date' => $pr->created_at?->format('Y-m-d'),
                     'url' => $actor->isSupplier()
-                        ? route('supplier.requests.show', $pr, false)
-                        : ($actor->role === 'qc' ? null : route('purchasing.requisitions.show', $pr, false)),
+                        ? PortalPath::routePath('supplier.requests.show', $pr)
+                        : ($actor->role === 'qc' ? null : PortalPath::routePath('purchasing.requisitions.show', $pr)),
                     'current' => false,
                 ];
             }
@@ -245,8 +246,8 @@ class DocumentChainResolverService
                 'tone' => StatusHelper::quotationTone((string) $quotation->status),
                 'date' => $quotation->submitted_at?->format('Y-m-d') ?? $quotation->created_at?->format('Y-m-d'),
                 'url' => $actor->isSupplier()
-                    ? route('supplier.quotations.show', $quotation, false)
-                    : ($actor->role === 'qc' ? null : route('purchasing.quotations.show', $quotation, false)),
+                    ? PortalPath::routePath('supplier.quotations.show', $quotation)
+                    : ($actor->role === 'qc' ? null : PortalPath::routePath('purchasing.quotations.show', $quotation)),
                 'current' => false,
             ];
         }
@@ -259,8 +260,8 @@ class DocumentChainResolverService
             'tone' => StatusHelper::poTone((string) $po->status),
             'date' => $po->created_at?->format('Y-m-d'),
             'url' => $actor->isSupplier()
-                ? route('supplier.purchase-orders.show', $po, false)
-                : ($actor->role === 'qc' ? null : route('purchasing.purchase-orders.show', $po, false)),
+                ? PortalPath::routePath('supplier.purchase-orders.show', $po)
+                : ($actor->role === 'qc' ? null : PortalPath::routePath('purchasing.purchase-orders.show', $po)),
             'current' => true,
         ];
 
@@ -277,8 +278,8 @@ class DocumentChainResolverService
                 'tone' => StatusHelper::shipmentTone((string) $shipment->status),
                 'date' => $shipment->shipped_at?->format('Y-m-d') ?? $shipment->created_at?->format('Y-m-d'),
                 'url' => $actor->isSupplier()
-                    ? route('supplier.shipments.show', $shipment, false)
-                    : ($actor->role === 'qc' ? null : route('purchasing.shipments.show', $shipment, false)),
+                    ? PortalPath::routePath('supplier.shipments.show', $shipment)
+                    : ($actor->role === 'qc' ? null : PortalPath::routePath('purchasing.shipments.show', $shipment)),
                 'current' => false,
             ];
         }
@@ -291,7 +292,7 @@ class DocumentChainResolverService
                 'status' => strtoupper((string) $inspection->status),
                 'tone' => $inspection->status === 'ok' ? 'success' : 'danger',
                 'date' => $inspection->inspected_at?->format('Y-m-d'),
-                'url' => $actor->role === 'qc' ? route('qc.inspections.show', $inspection, false) : null,
+                'url' => $actor->role === 'qc' ? PortalPath::routePath('qc.inspections.show', $inspection) : null,
                 'current' => false,
             ];
         }
@@ -309,8 +310,8 @@ class DocumentChainResolverService
                 'tone' => StatusHelper::claimTone((string) $claim->status),
                 'date' => $claim->created_at?->format('Y-m-d'),
                 'url' => $actor->isSupplier()
-                    ? route('supplier.claims.show', $claim, false)
-                    : ($actor->role === 'qc' ? null : route('purchasing.claims.show', $claim, false)),
+                    ? PortalPath::routePath('supplier.claims.show', $claim)
+                    : ($actor->role === 'qc' ? null : PortalPath::routePath('purchasing.claims.show', $claim)),
                 'current' => false,
             ];
         }
@@ -319,8 +320,8 @@ class DocumentChainResolverService
             [
                 'label' => __('smart_panel.documents.po_pdf'),
                 'filename' => $po->po_number.'.pdf',
-                'url' => route('shared.pdf.purchase-order', ['id' => $po, 'inline' => 1], false),
-                'download_url' => route('shared.pdf.purchase-order', $po, false),
+                'url' => PortalPath::routePath('shared.pdf.purchase-order', ['id' => $po, 'inline' => 1]),
+                'download_url' => PortalPath::routePath('shared.pdf.purchase-order', $po),
             ],
         ];
 
@@ -328,8 +329,8 @@ class DocumentChainResolverService
             $documents[] = [
                 'label' => __('smart_panel.documents.po_attachment'),
                 'filename' => $attachment->file_name,
-                'url' => route('attachments.show', $attachment, false),
-                'download_url' => route('attachments.show', ['attachment' => $attachment, 'download' => 1], false),
+                'url' => PortalPath::routePath('attachments.show', $attachment),
+                'download_url' => PortalPath::routePath('attachments.show', ['attachment' => $attachment, 'download' => 1]),
             ];
         }
 
@@ -399,10 +400,10 @@ class DocumentChainResolverService
                 'tone' => StatusHelper::localFinanceTone((string) $localPo->status),
                 'date' => $localPo->po_date?->format('Y-m-d'),
                 'url' => $actor->isSupplier()
-                    ? route('local-supplier.purchase-orders.show', $localPo, false)
+                    ? PortalPath::routePath('local-supplier.purchase-orders.show', $localPo)
                     : ($actor->role === 'purchasing'
-                        ? route('purchasing.local-procurement.show', $localPo, false)
-                        : (in_array($actor->role, ['finance', 'admin'], true) ? route('finance.local-procurement.show', $localPo, false) : null)),
+                        ? PortalPath::routePath('purchasing.local-procurement.show', $localPo)
+                        : (in_array($actor->role, ['finance', 'admin'], true) ? PortalPath::routePath('finance.local-procurement.show', $localPo) : null)),
                 'current' => true,
             ],
         ];
@@ -433,10 +434,10 @@ class DocumentChainResolverService
                 'tone' => StatusHelper::localInvoiceTone((string) $invoice->status),
                 'date' => $invoice->invoice_date?->format('Y-m-d'),
                 'url' => $actor->isSupplier()
-                    ? route('local-supplier.invoices.show', $invoice, false)
+                    ? PortalPath::routePath('local-supplier.invoices.show', $invoice)
                     : ($actor->role === 'purchasing'
-                        ? route('purchasing.local-invoices.show', $invoice, false)
-                        : route('finance.invoices.show', $invoice, false)),
+                        ? PortalPath::routePath('purchasing.local-invoices.show', $invoice)
+                        : PortalPath::routePath('finance.invoices.show', $invoice)),
                 'current' => false,
             ];
         }
@@ -446,8 +447,8 @@ class DocumentChainResolverService
             $documents[] = [
                 'label' => __('smart_panel.documents.local_po_pdf'),
                 'filename' => $localPo->latestPoAttachment->file_name,
-                'url' => route('attachments.show', $localPo->latestPoAttachment, false),
-                'download_url' => route('attachments.show', ['attachment' => $localPo->latestPoAttachment, 'download' => 1], false),
+                'url' => PortalPath::routePath('attachments.show', $localPo->latestPoAttachment),
+                'download_url' => PortalPath::routePath('attachments.show', ['attachment' => $localPo->latestPoAttachment, 'download' => 1]),
             ];
         }
 
@@ -517,10 +518,10 @@ class DocumentChainResolverService
                 'tone' => StatusHelper::localFinanceTone((string) $po->status),
                 'date' => $po->po_date?->format('Y-m-d'),
                 'url' => $actor->isSupplier()
-                    ? route('local-supplier.purchase-orders.show', $po, false)
+                    ? PortalPath::routePath('local-supplier.purchase-orders.show', $po)
                     : ($actor->role === 'purchasing'
-                        ? route('purchasing.local-procurement.show', $po, false)
-                        : (in_array($actor->role, ['finance', 'admin'], true) ? route('finance.local-procurement.show', $po, false) : null)),
+                        ? PortalPath::routePath('purchasing.local-procurement.show', $po)
+                        : (in_array($actor->role, ['finance', 'admin'], true) ? PortalPath::routePath('finance.local-procurement.show', $po) : null)),
                 'current' => false,
             ];
         }
@@ -546,10 +547,10 @@ class DocumentChainResolverService
             'tone' => StatusHelper::localInvoiceTone((string) $invoice->status),
             'date' => $invoice->invoice_date?->format('Y-m-d'),
             'url' => $actor->isSupplier()
-                ? route('local-supplier.invoices.show', $invoice, false)
+                ? PortalPath::routePath('local-supplier.invoices.show', $invoice)
                 : ($actor->role === 'purchasing'
-                    ? route('purchasing.local-invoices.show', $invoice, false)
-                    : route('finance.invoices.show', $invoice, false)),
+                    ? PortalPath::routePath('purchasing.local-invoices.show', $invoice)
+                    : PortalPath::routePath('finance.invoices.show', $invoice)),
             'current' => true,
         ];
 
@@ -563,7 +564,7 @@ class DocumentChainResolverService
                 'tone' => StatusHelper::localFinanceTone((string) $batch->status),
                 'date' => ($batch->finalized_at ?? $batch->created_at)?->format('Y-m-d'),
                 'url' => in_array($actor->role, ['finance', 'admin'], true)
-                    ? route('finance.drp.show', $batch, false)
+                    ? PortalPath::routePath('finance.drp.show', $batch)
                     : null,
                 'current' => false,
             ];
@@ -590,8 +591,8 @@ class DocumentChainResolverService
                 $documents[] = [
                     'label' => strtoupper((string) $doc->document_type),
                     'filename' => $doc->original_filename,
-                    'url' => route('local-invoice-documents.show', ['document' => $doc, 'inline' => 1], false),
-                    'download_url' => route('local-invoice-documents.show', $doc, false),
+                    'url' => PortalPath::routePath('local-invoice-documents.show', ['document' => $doc, 'inline' => 1]),
+                    'download_url' => PortalPath::routePath('local-invoice-documents.show', $doc),
                 ];
             }
         }
@@ -648,7 +649,7 @@ class DocumentChainResolverService
                 'tone' => StatusHelper::localFinanceTone((string) $batch->status),
                 'date' => ($batch->finalized_at ?? $batch->created_at)?->format('Y-m-d'),
                 'url' => in_array($actor->role, ['finance', 'admin'], true)
-                    ? route('finance.drp.show', $batch, false)
+                    ? PortalPath::routePath('finance.drp.show', $batch)
                     : null,
                 'current' => true,
             ],
@@ -667,7 +668,7 @@ class DocumentChainResolverService
                         'tone' => StatusHelper::localFinanceTone((string) $voucher->status),
                         'date' => $voucher->voucher_date?->format('Y-m-d'),
                         'url' => in_array($actor->role, ['finance', 'admin'], true)
-                            ? route('finance.vouchers.show', $voucher, false)
+                            ? PortalPath::routePath('finance.vouchers.show', $voucher)
                             : null,
                         'current' => false,
                     ];
@@ -683,8 +684,8 @@ class DocumentChainResolverService
                         'tone' => StatusHelper::localInvoiceTone((string) $payable->status),
                         'date' => $payable->invoice_date?->format('Y-m-d'),
                         'url' => match (true) {
-                            in_array($actor->role, ['finance', 'admin'], true) => route('finance.invoices.show', $payable, false),
-                            $actor->role === 'purchasing' => route('purchasing.local-invoices.show', $payable, false),
+                            in_array($actor->role, ['finance', 'admin'], true) => PortalPath::routePath('finance.invoices.show', $payable),
+                            $actor->role === 'purchasing' => PortalPath::routePath('purchasing.local-invoices.show', $payable),
                             default => null,
                         },
                         'current' => false,

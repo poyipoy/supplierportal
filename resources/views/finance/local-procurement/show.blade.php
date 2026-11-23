@@ -30,7 +30,7 @@
                 variant="outline"
                 size="sm"
                 data-smart-panel-trigger
-                :data-smart-panel-url="route('context-panel.show', ['entityType' => 'local-po', 'hash' => $purchaseOrder->hashid], false)"
+                :data-smart-panel-url="\App\Support\PortalPath::routePath('context-panel.show', ['entityType' => 'local-po', 'hash' => $purchaseOrder->hashid])"
             >
                 <x-ui.icon name="git-branch" size="sm" />
                 <span>{{ __('smart_panel.trigger') }}</span>

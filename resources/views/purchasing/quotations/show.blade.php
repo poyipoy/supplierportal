@@ -253,7 +253,7 @@
                         <x-slot:leading><x-ui.icon name="receipt" /></x-slot:leading>
                         {{ __('purchasing.copy.generate_purchase_order') }}
                     </x-ui.button>
-                    <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.comparison.show', $quotation->purchaseRequisition)" variant="outline" size="sm" class="tw:w-full tw:mb-2.5">
+                    <x-ui.button :href="\App\Support\PurchasingNavigation::toRoute('purchasing.comparison.inter-supplier', ['pr_id' => $quotation->purchaseRequisition])" variant="outline" size="sm" class="tw:w-full tw:mb-2.5">
                         <x-ui.icon name="chart-column" size="sm" />
                         <span>{{ __('purchasing.copy.open_inter_supplier_comparison') }}</span>
                     </x-ui.button>

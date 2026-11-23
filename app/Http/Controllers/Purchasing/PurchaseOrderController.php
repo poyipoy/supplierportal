@@ -21,6 +21,7 @@ use App\Services\RegionalDisplayFormatter;
 use App\Support\BusinessTime;
 use App\Support\HashidCodec;
 use App\Support\NotificationCategory;
+use App\Support\PortalPath;
 use App\Support\PurchasingNavigation;
 use App\Support\ServerTabsResponse;
 use App\Support\StatusHelper;
@@ -101,7 +102,7 @@ class PurchaseOrderController extends Controller
                 ->filter(fn ($query) => null)
                 ->setRowId(fn (PurchaseOrder $po): string => $po->getRouteKey())
                 ->setRowAttr([
-                    'data-mmt-row-url' => fn (PurchaseOrder $po): string => route('purchasing.purchase-orders.satellite', $po, false),
+                    'data-mmt-row-url' => fn (PurchaseOrder $po): string => PortalPath::routePath('purchasing.purchase-orders.satellite', $po, $request),
                     'data-mmt-row-ref' => fn (PurchaseOrder $po): string => (string) $po->po_number,
                     'tabindex' => '0',
                     'role' => 'row',

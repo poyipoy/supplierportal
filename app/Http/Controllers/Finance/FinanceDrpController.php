@@ -19,6 +19,7 @@ use App\Support\BusinessTime;
 use App\Support\ExportConfirmation;
 use App\Support\ExportDispatcher;
 use App\Support\HashidCodec;
+use App\Support\PortalPath;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -215,9 +216,9 @@ class FinanceDrpController extends Controller
             return response()->json([
                 'message' => $message,
                 'export_job_id' => $exportJob->getRouteKey(),
-                'exports_url' => route('exports.index', absolute: false),
-                'status_url' => route('exports.status', $exportJob, absolute: false),
-                'cancel_url' => route('exports.cancel', $exportJob, absolute: false),
+                'exports_url' => PortalPath::routePath('exports.index', [], $request),
+                'status_url' => PortalPath::routePath('exports.status', $exportJob, $request),
+                'cancel_url' => PortalPath::routePath('exports.cancel', $exportJob, $request),
             ], 202);
         }
 
@@ -351,9 +352,9 @@ class FinanceDrpController extends Controller
             return response()->json([
                 'message' => $message,
                 'export_job_id' => $exportJob->getRouteKey(),
-                'exports_url' => route('exports.index', absolute: false),
-                'status_url' => route('exports.status', $exportJob, absolute: false),
-                'cancel_url' => route('exports.cancel', $exportJob, absolute: false),
+                'exports_url' => PortalPath::routePath('exports.index', [], $request),
+                'status_url' => PortalPath::routePath('exports.status', $exportJob, $request),
+                'cancel_url' => PortalPath::routePath('exports.cancel', $exportJob, $request),
             ], 202);
         }
 

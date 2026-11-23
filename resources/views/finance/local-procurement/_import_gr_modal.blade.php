@@ -32,7 +32,7 @@
                     <div class="tw:rounded-ui-md tw:border tw:border-outline-variant tw:bg-surface-container tw:p-3.5 tw:space-y-3">
                         <div class="tw:flex tw:items-center tw:justify-between">
                             <span class="tw:text-ui-xs tw:font-bold tw:text-on-surface">{{ __('local_procurement.import.gr_template') }}</span>
-                            <x-ui.button :href="route($routePrefix.'.import.gr.template')" variant="outline" size="sm">
+                            <x-ui.button :href="route($routePrefix.'.import.gr.template')" download variant="outline" size="sm">
                                 <x-ui.icon name="download" size="sm" />
                                 <span>{{ __('local_procurement.import.template') }}</span>
                             </x-ui.button>

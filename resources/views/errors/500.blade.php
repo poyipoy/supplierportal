@@ -34,6 +34,7 @@
         </button>
 
         <a href="{{ auth()->check() ? route('dashboard') : route('login') }}"
+            target="_top"
             class="ui-focus-ring ui-motion tw:flex tw:h-11 tw:w-full tw:items-center tw:justify-center tw:gap-2 tw:rounded-ui-sm tw:border-0 tw:bg-primary tw:px-4 tw:text-ui-sm tw:font-semibold tw:text-primary-foreground tw:no-underline tw:hover:brightness-95">
             <x-ui.icon name="{{ auth()->check() ? 'layout-dashboard' : 'log-in' }}" size="sm" />
             <span>{{ auth()->check() ? __('navigation.dashboard') : __('common.review.sign_in_page') }}</span>

@@ -142,4 +142,7 @@ return [
         'csp_report_uri' => env('CSP_REPORT_URI'),
         'csp_enforce' => (bool) env('CSP_ENFORCE', true),
     ],
+
+    // Explicit comma-separated reverse-proxy IPs or CIDRs; read via config so config:cache preserves it.
+    'trusted_proxies' => env('TRUSTED_PROXIES', ''),
 ];

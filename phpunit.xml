@@ -41,6 +41,7 @@
             <exclude>tests/Feature/LocalizationPerformanceTest.php</exclude>
             <exclude>tests/Feature/LocalizationRenderingTest.php</exclude>
             <exclude>tests/Feature/NotificationLocaleTest.php</exclude>
+            <exclude>tests/Feature/OptimizeCpanelIndexesMigrationTest.php</exclude>
             <exclude>tests/Feature/Procurement/MasterDataDeletionDurabilityTest.php</exclude>
             <exclude>tests/Feature/Procurement/OrderedQuantityShipmentConcurrencyTest.php</exclude>
             <exclude>tests/Feature/Procurement/PreshipmentGoodsLocationConcurrencyTest.php</exclude>
@@ -80,6 +81,7 @@
             <file>tests/Feature/LocalizationPerformanceTest.php</file>
             <file>tests/Feature/LocalizationRenderingTest.php</file>
             <file>tests/Feature/NotificationLocaleTest.php</file>
+            <file>tests/Feature/OptimizeCpanelIndexesMigrationTest.php</file>
             <file>tests/Feature/Procurement/MasterDataDeletionDurabilityTest.php</file>
             <file>tests/Feature/Procurement/OrderedQuantityShipmentConcurrencyTest.php</file>
             <file>tests/Feature/Procurement/PreshipmentGoodsLocationConcurrencyTest.php</file>
