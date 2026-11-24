@@ -64,8 +64,8 @@ class AdvancedExportQueuedCsvBaselineTest extends TestCase
                 $rows[] = $row;
             }
             $headings = $locale === 'en'
-                ? ['PR Number', 'Period', 'Material Name', 'Specification', 'Qty', 'Weight/Unit', 'Total Weight', 'PR Total KG', 'Remark', 'Status', 'Date Created (WIB)']
-                : ['Nomor PR', 'Periode', 'Nama Material', 'Spesifikasi', 'Jumlah', 'Berat/Unit', 'Total Berat', 'Total KG PR', 'Catatan', 'Status', 'Tanggal Dibuat (WIB)'];
+                ? ['Purchase Requisition', 'Period', 'Material Name', 'Specification', 'Qty', 'Weight/Unit', 'Total Weight', 'PR Total KG', 'Remark', 'Status', 'Date Created (WIB)']
+                : ['Purchase Requisition', 'Periode', 'Nama Material', 'Spesifikasi', 'Jumlah', 'Berat/Unit', 'Total Berat', 'Total KG PR', 'Catatan', 'Status', 'Tanggal Dibuat (WIB)'];
             $this->assertCount(1002, $rows);
             $this->assertSame($headings, array_shift($rows));
             $this->assertNotContains($headings, $rows);

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Supplier;
 
 use App\Enums\MaterialClaimStatus;
+use App\Exceptions\BusinessRuleException;
+use App\Exceptions\BusinessRuleViolation;
 use App\Http\Controllers\Controller;
 use App\Models\MaterialClaim;
 use App\Models\PurchaseOrder;
@@ -28,7 +30,7 @@ class ClaimController extends Controller
 
     public function index(Request $request, RegionalDisplayFormatter $regionalFormatter)
     {
-        $query = MaterialClaim::with(['purchaseOrder.supplier'])
+        $query = MaterialClaim::with(['purchaseOrder:id,po_number,supplier_id'])
             ->where('supplier_id', auth()->id())
             ->orderBy('created_at', 'desc');
 
@@ -62,6 +64,7 @@ class ClaimController extends Controller
                     return RowAction::detail($url, $c->claim_number);
                 })
                 ->rawColumns(['deadline_display', 'status_badge', 'action'])
+                ->only(['id', 'claim_id', 'po_number', 'created_date', 'deadline_display', 'status_badge', 'action'])
                 ->make(true);
         }
 
@@ -114,7 +117,7 @@ class ClaimController extends Controller
                 }
 
                 if (! in_array($claim->status, ['pending', 'escalated'], true)) {
-                    throw new \RuntimeException(__('claims.copy.this_claim_can_no_longer_accept_a_supplier_response'));
+                    throw new BusinessRuleException(__('claims.copy.this_claim_can_no_longer_accept_a_supplier_response'));
                 }
 
                 $claim = app(MaterialClaimStateEngine::class)->transition(
@@ -140,7 +143,12 @@ class ClaimController extends Controller
 
                 return $claim->fresh('purchaseOrder');
             });
-        } catch (\RuntimeException $exception) {
+        } catch (ValidationException $exception) {
+            foreach ($staged as $stored) {
+                Storage::disk('private')->delete($stored['file_path']);
+            }
+            throw $exception;
+        } catch (\DomainException|\InvalidArgumentException|BusinessRuleViolation $exception) {
             foreach ($staged as $stored) {
                 Storage::disk('private')->delete($stored['file_path']);
             }
@@ -153,7 +161,14 @@ class ClaimController extends Controller
             foreach ($staged as $stored) {
                 Storage::disk('private')->delete($stored['file_path']);
             }
-            throw $exception;
+            report($exception);
+            $errorMessage = __('shipments.copy.an_unexpected_error_occurred_while_uploading_the_document_please_try_again');
+
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $errorMessage], 500);
+            }
+
+            return back()->withInput()->with('error', $errorMessage);
         }
 
         // Notify purchasing

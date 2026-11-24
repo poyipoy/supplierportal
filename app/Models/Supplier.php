@@ -36,6 +36,11 @@ class Supplier extends Model
         'payment_term_days',
     ];
 
+    protected $hidden = [
+        'nib_fingerprint',
+        'tax_identity_fingerprint',
+    ];
+
     protected function casts(): array
     {
         return [

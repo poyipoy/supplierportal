@@ -134,13 +134,13 @@
                 </div>
                 <div>
                     <label class="form-label tw:mb-1 tw:text-ui-xs tw:text-on-surface-variant" for="historicalKeyMin">{{ __('purchasing.comparison_analytics.key_from') }}</label>
-                    <input type="number" step="0.0001" min="0" name="key_min" id="historicalKeyMin" class="form-control form-control-sm tw:min-h-[var(--ui-control-height-sm)] historical-filter-input" value="{{ $keyDimension['min'] }}">
+                    <input type="number" step="0.0001" min="0" name="key_min" id="historicalKeyMin" aria-describedby="historicalKeyHint" class="form-control form-control-sm tw:min-h-[var(--ui-control-height-sm)] historical-filter-input" value="{{ $keyDimension['min'] }}">
                 </div>
                 <div>
                     <label class="form-label tw:mb-1 tw:text-ui-xs tw:text-on-surface-variant" for="historicalKeyMax">{{ __('purchasing.comparison_analytics.key_to') }}</label>
-                    <input type="number" step="0.0001" min="0" name="key_max" id="historicalKeyMax" class="form-control form-control-sm tw:min-h-[var(--ui-control-height-sm)] historical-filter-input" value="{{ $keyDimension['max'] }}">
+                    <input type="number" step="0.0001" min="0" name="key_max" id="historicalKeyMax" aria-describedby="historicalKeyHint" class="form-control form-control-sm tw:min-h-[var(--ui-control-height-sm)] historical-filter-input" value="{{ $keyDimension['max'] }}">
                 </div>
-                <p class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ __('purchasing.comparison_analytics.key_hint') }}</p>
+                <p id="historicalKeyHint" class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ __('purchasing.comparison_analytics.key_hint') }}</p>
             </div>
         </fieldset>
 
@@ -154,7 +154,8 @@
     </form>
 </x-ui.toolbar>
 
-<div id="historicalResults" class="tw:grid tw:gap-4" aria-live="polite" aria-busy="false">
+<p id="historicalResultsStatus" class="tw:sr-only" aria-live="polite"></p>
+<div id="historicalResults" class="tw:grid tw:gap-4" aria-busy="false">
 @if($chartData)
     <section class="tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface" aria-labelledby="historicalChartTitle">
         <header class="tw:border-b tw:border-outline-variant tw:bg-surface-container tw:px-4 tw:py-3">
@@ -229,7 +230,7 @@
                         <tr>
                             <td class="text-center fw-medium ui-sticky-col">
                                 @if(!empty($row['pr_id']) && !empty($row['pr_url']))
-                                    <a href="{{ $row['pr_url'] }}" class="text-primary text-decoration-none tw:hover:underline">
+                                    <a href="{{ $row['pr_url'] }}" class="ui-focus-ring tw:rounded-ui-xs text-primary text-decoration-none tw:hover:underline">
                                         {{ $row['pr_number'] }}
                                         <x-ui.icon name="arrow-right" class="ms-1 tw:text-ui-sm" />
                                     </a>
@@ -262,8 +263,9 @@
                 @endforeach
             </tbody>
         </table>
-        <div
+        <nav
             id="historicalPagination"
+            aria-label="{{ __('pagination.navigation') }}"
             class="tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-3 tw:border-t tw:border-outline-variant tw:px-4 tw:py-3 {{ $tablePagination ? '' : 'd-none' }}"
         >
             <span id="historicalPaginationSummary" class="tw:text-ui-xs tw:text-on-surface-variant">
@@ -298,7 +300,7 @@
                     {{ __('purchasing.copy.next') }}
                 </x-ui.button>
             </div>
-        </div>
+        </nav>
     </x-ui.data-table>
 @elseif($selectedMaterialName)
     <x-ui.alert tone="warning" :title="__('purchasing.copy.no_matching_price_history')">{{ __('purchasing.copy.no_quotation_data_was_found_for_this_supplier_and_material_combination') }}</x-ui.alert>

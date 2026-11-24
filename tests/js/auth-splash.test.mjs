@@ -255,10 +255,12 @@ for (const mode of ['native-login', 'core']) test('minimum holds interaction aft
     e.advance(1);
     assert.equal(e.window.AdasiAuthSplash.state, 'RELEASED');
     assert.equal(e.workspace.inert, false);
+    assert.equal(e.document.activeElement, e.panel, 'release() must not call target.focus() synchronously');
+    e.advance(16);
     assert.equal(e.document.activeElement, e.email);
     assert.equal(e.events.filter(event => event.type === 'adasi:page-ready').length, 1);
     assert.equal(e.events.filter(event => event.type === 'adasi:auth-splash-released').length, 1);
-    e.advance(750);
+    e.advance(734);
     assert.equal(e.window.AdasiAuthSplash.state, 'REMOVED');
     assert.equal(e.queue.size, 0);
 });
@@ -394,7 +396,12 @@ for (const action of ['Escape', 'skip', 'pagehide', 'pageswap', 'bfcache', 'css-
     else e.window.dispatchEvent({ type: action });
     assert.equal(e.window.AdasiAuthSplash.state, 'REMOVED');
     assert.equal(e.workspace.inert, false);
-    assert.equal(e.queue.size, 0);
+    if (action === 'pagehide' || action === 'pageswap') {
+        assert.equal(e.queue.size, 0);
+    } else {
+        e.advance(16);
+        assert.equal(e.queue.size, 0);
+    }
     e.coreReady(); e.boot(); e.advance(10000);
     assert.equal(e.window.AdasiAuthSplash.state, 'REMOVED');
 });
@@ -403,6 +410,7 @@ test('initial and live reduced motion bypass media wait and minimum without a fa
     const initial = environment({ mode: 'native-login', parsed: true, minVisible: '2000', reduced: true, mediaComplete: false });
     initial.advance(32);
     assert.equal(initial.window.AdasiAuthSplash.state, 'REMOVED');
+    initial.advance(16);
     assert.equal(initial.queue.size, 0);
 
     const live = environment({ mode: 'native-login', parsed: true, minVisible: '2000', mediaComplete: false });
@@ -410,6 +418,7 @@ test('initial and live reduced motion bypass media wait and minimum without a fa
     assert.equal(live.window.AdasiAuthSplash.state, 'WAITING');
     live.motion.matches = true; live.motion.dispatchEvent({ type: 'change' });
     assert.equal(live.window.AdasiAuthSplash.state, 'REMOVED');
+    live.advance(16);
     assert.equal(live.queue.size, 0);
 });
 
@@ -436,6 +445,7 @@ test('the hard deadline wins over a late activation minimum and pending media', 
     assert.equal(e.window.AdasiAuthSplash.state, 'REMOVED');
     assert.equal(e.events.find(event => event.type === 'adasi:auth-splash-hidden').detail.exit, 'hard-timeout');
     assert.equal(e.workspace.inert, false);
+    e.advance(16);
     assert.equal(e.queue.size, 0);
 });
 
@@ -504,6 +514,9 @@ test('skip and Escape fail open immediately, never wait for the cosmetic fade', 
         else e.document.dispatchEvent({ type: 'keydown', key: 'Escape' });
         assert.equal(e.window.AdasiAuthSplash.state, 'REMOVED');
         assert.equal(e.workspace.inert, false);
+        assert.notEqual(e.document.activeElement, e.workspace, 'immediate release must not focus target synchronously');
+        e.advance(16);
+        assert.equal(e.document.activeElement, e.workspace, 'immediate release restores focus on next animation frame');
         assert.equal(e.queue.size, 0);
     }
 });
@@ -574,6 +587,8 @@ test('native DOM present at bootstrap still waits for visual readiness', () => {
     e.advance(16);
     assert.equal(e.window.AdasiAuthSplash.renderReady, true);
     assert.equal(e.window.AdasiAuthSplash.state, 'RELEASED');
+    assert.equal(e.document.activeElement, e.panel, 'release() must defer target.focus() to next animation frame');
+    e.advance(16);
     assert.equal(e.document.activeElement, e.email);
 });
 
@@ -603,6 +618,8 @@ test('hard deadline remains independent during the cosmetic fade', () => {
 
 test('setup exception after acquiring inert releases every root and timer', () => {
     const e = environment({ failFocus: true });
+    assert.equal(e.window.AdasiAuthSplash.state, 'WAITING');
+    e.advance(16);
     assert.equal(e.window.AdasiAuthSplash.state, 'REMOVED');
     assert.equal(e.workspace.inert, false);
     assert.equal(e.workspace.hasAttribute('aria-busy'), false);
@@ -612,6 +629,8 @@ test('setup exception after acquiring inert releases every root and timer', () =
 
 test('initial autofocus is restored and Tab stays in splash only until release', () => {
     const e = environment({ autofocus: true });
+    assert.equal(e.document.activeElement, e.email, 'scan() must not call panel.focus() synchronously after DOM writes');
+    e.advance(16);
     assert.equal(e.document.activeElement, e.panel);
     e.document.dispatchEvent({ type: 'keydown', key: 'Tab' });
     assert.equal(e.document.activeElement, e.panel);
@@ -619,8 +638,56 @@ test('initial autofocus is restored and Tab stays in splash only until release',
     e.document.dispatchEvent({ type: 'keydown', key: 'Tab' });
     assert.equal(e.document.activeElement, e.skip);
     e.parsed(); e.domReady(); e.coreReady(); e.advance(32);
-    assert.equal(e.document.activeElement, e.email);
+    assert.equal(e.document.activeElement, e.skip, 'release() must not call target.focus() synchronously after DOM writes');
     assert.equal(e.window.AdasiAuthSplash.state, 'RELEASED', 'internal restore must not cut normal fade');
+    e.advance(16);
+    assert.equal(e.document.activeElement, e.email);
+    assert.equal(e.window.AdasiAuthSplash.state, 'RELEASED', 'deferred restore must not cut normal fade');
+});
+
+test('deferred focus restore survives immediate release and respects manual user focus changes', () => {
+    const immediate = environment({ mode: 'native-login', autofocus: true });
+    immediate.advance(16);
+    assert.equal(immediate.document.activeElement, immediate.panel);
+    immediate.document.dispatchEvent({ type: 'keydown', key: 'Escape' });
+    assert.equal(immediate.window.AdasiAuthSplash.state, 'REMOVED');
+    assert.equal(immediate.document.activeElement, immediate.panel, 'immediate release must not force synchronous focus');
+    immediate.advance(16);
+    assert.equal(immediate.document.activeElement, immediate.email, 'removeVisual() during immediate release must not cancel focus restore');
+
+    const manual = environment({ mode: 'native-login', autofocus: true });
+    manual.advance(16);
+    manual.parsed(); manual.domReady(); manual.coreReady(); manual.advance(32);
+    assert.equal(manual.window.AdasiAuthSplash.state, 'RELEASED');
+    assert.equal(manual.document.activeElement, manual.panel);
+    // User explicitly focuses password before the restore animation frame runs.
+    manual.password.focus();
+    manual.advance(16);
+    assert.equal(manual.document.activeElement, manual.password, 'deferred focus restore must not steal focus from a user-focused element');
+});
+
+test('inline splash style sheet check avoids synchronous getComputedStyle reflow when styles are present', () => {
+    const e = environment({ css: false, parsed: false });
+    // Re-boot cleanly with an inline style[data-auth-splash-styles] CSSOM sheet and a getComputedStyle spy.
+    let computedCalls = 0;
+    const origGetComputedStyle = e.window.getComputedStyle;
+    e.window.getComputedStyle = (...args) => {
+        computedCalls += 1;
+        return origGetComputedStyle(...args);
+    };
+    const inlineStyle = e.node('style', { 'data-auth-splash-styles': '' });
+    inlineStyle.sheet = { cssRules: [{ cssText: '.auth-splash{--auth-splash-css-ready:1}' }] };
+    e.root.appendChild(inlineStyle);
+    delete e.window.AdasiAuthSplash;
+    e.overlay.hidden = true;
+    e.root.appendChild(e.overlay);
+    e.boot();
+
+    assert.equal(e.window.AdasiAuthSplash.state, 'WAITING');
+    assert.equal(computedCalls, 0, 'scan() must inspect inline style[data-auth-splash-styles].sheet instead of calling getComputedStyle');
+    // Cancel pending focus frame cleanly if released before frame 1.
+    e.document.dispatchEvent({ type: 'keydown', key: 'Escape' });
+    assert.equal(e.window.AdasiAuthSplash.state, 'REMOVED');
 });
 
 test('pagehide and pageswap remove immediately and only skip an active splash transition', () => {

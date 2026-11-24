@@ -98,6 +98,15 @@ export function transitionColumns(state, command) {
         const order = [...selected, ...state.catalog.map((column) => column.key).filter((candidate) => !selected.includes(candidate))];
         return commit(state, order, [...selected], selected[0]);
     }
+    if (type === 'select-all') {
+        return commit(state, state.order, [...state.order], state.activeKey);
+    }
+    if (type === 'minimal') {
+        const required = state.catalog.filter((column) => column.required).map((column) => column.key);
+        const selected = required.length > 0 ? required : [state.defaults[0]];
+        const order = [...selected, ...state.order.filter((candidate) => !selected.includes(candidate))];
+        return commit(state, order, [...selected], selected.includes(state.activeKey) ? state.activeKey : selected[0]);
+    }
     const worksheet = state.order.filter((candidate) => state.visible.includes(candidate));
     const index = worksheet.indexOf(key);
     if (type === 'unhide') {
@@ -137,7 +146,7 @@ const designers = new WeakMap();
 
 // This view has no transport or persistence. All column commands go through
 // transitionColumns(); drag candidates, layers, and focus are transient only.
-export function createColumnDesigner(root, { text }) {
+export function createColumnDesigner(root, { text, onStateChange } = {}) {
     if (designers.has(root)) return designers.get(root);
     const document = root.ownerDocument || globalThis.document;
     const window = document.defaultView || globalThis.window;
@@ -150,6 +159,9 @@ export function createColumnDesigner(root, { text }) {
     const unhide = root.querySelector('[data-column-unhide]');
     const hiddenSelect = root.querySelector('[data-column-hidden-select]');
     const feedback = root.querySelector('[data-column-feedback]');
+    const searchInput = root.querySelector('[data-column-search]');
+    const searchStatus = root.querySelector('[data-column-search-status]');
+    const searchHiddenHost = root.querySelector('[data-column-search-hidden]');
     const modal = root.querySelector('.modal');
     if (!host || !scroll || !emptyRows || !template?.content?.firstElementChild || !fieldset || !menu || !unhide || !hiddenSelect || !modal) {
         throw new Error('Column designer markup is incomplete.');
@@ -163,6 +175,7 @@ export function createColumnDesigner(root, { text }) {
     let frame = 0;
     let typeBuffer = '';
     let typeTimer;
+    let searchQuery = '';
     const listeners = [];
     const listen = (target, name, handler, options) => {
         target.addEventListener(name, handler, options);
@@ -200,10 +213,10 @@ export function createColumnDesigner(root, { text }) {
         layer = null; invoker = null;
         root.querySelectorAll('[data-column-command="menu"], [data-column-command="unhide"]').forEach((button) => button.setAttribute('aria-expanded', 'false'));
         document.removeEventListener('pointerdown', outsideLayer, true);
-        document.removeEventListener('scroll', layerMoved, true);
+        document.removeEventListener('scroll', layerMoved, { capture: true, passive: true });
         window.removeEventListener('resize', layerMoved);
         window.visualViewport?.removeEventListener('resize', layerMoved);
-        window.visualViewport?.removeEventListener('scroll', layerMoved);
+        window.visualViewport?.removeEventListener('scroll', layerMoved, { passive: true });
         if (restore) restoreFocus(origin);
     }
     const clearIndicators = () => host.querySelectorAll('.is-drag-source, .is-drop-before, .is-drop-after').forEach((node) => node.classList.remove('is-drag-source', 'is-drop-before', 'is-drop-after'));
@@ -224,17 +237,71 @@ export function createColumnDesigner(root, { text }) {
     const cancelTransient = () => { closeLayer(); cancelDrag(); clearType(); generation += 1; };
     const guard = () => state?.catalog.find((column) => column.key === state.activeKey)?.required
         ? text('hide_required') : state?.visible.length === 1 ? text('hide_last') : '';
+    const matchesQuery = (key, q) => {
+        const label = labelFor(key).toLocaleLowerCase();
+        return label.includes(q) || key.toLocaleLowerCase().includes(q);
+    };
+    function applySearchVisuals({ announceMatches = false } = {}) {
+        const q = searchQuery.trim().toLocaleLowerCase();
+        const nodes = headers();
+        if (!q || !state) {
+            nodes.forEach((node) => node.classList.remove('is-search-match', 'is-search-dimmed'));
+            if (searchStatus) searchStatus.textContent = '';
+            if (searchHiddenHost) { searchHiddenHost.replaceChildren(); searchHiddenHost.hidden = true; }
+            return { visibleMatches: [], hiddenMatches: [] };
+        }
+        const visibleMatches = [];
+        nodes.forEach((node) => {
+            const matched = matchesQuery(node.dataset.key, q);
+            node.classList.toggle('is-search-match', matched);
+            node.classList.toggle('is-search-dimmed', !matched);
+            if (matched) visibleMatches.push(node.dataset.key);
+        });
+        const hiddenMatches = hiddenKeys().filter((key) => matchesQuery(key, q));
+        if (searchHiddenHost) {
+            searchHiddenHost.replaceChildren();
+            if (hiddenMatches.length > 0) {
+                const prefix = document.createElement('span');
+                prefix.className = 'tw:text-on-surface-variant';
+                prefix.textContent = text('search_hidden_matches');
+                searchHiddenHost.append(prefix);
+                hiddenMatches.forEach((key) => {
+                    const chip = document.createElement('button');
+                    chip.type = 'button';
+                    chip.className = 'ui-focus-ring tw:inline-flex tw:cursor-pointer tw:items-center tw:gap-1 tw:rounded-ui-sm tw:border tw:border-outline tw:bg-surface tw:px-2 tw:py-0.5 tw:text-ui-xs tw:text-on-surface tw:hover:bg-surface-container-high';
+                    chip.dataset.columnQuickUnhide = key;
+                    chip.textContent = `+ ${labelFor(key)}`;
+                    searchHiddenHost.append(chip);
+                });
+                searchHiddenHost.hidden = false;
+            } else {
+                searchHiddenHost.hidden = true;
+            }
+        }
+        const total = visibleMatches.length + hiddenMatches.length;
+        const statusText = total > 0 ? text('search_matches', { count: total }) : text('search_no_matches');
+        if (searchStatus) searchStatus.textContent = statusText;
+        if (announceMatches) announce(statusText);
+        if (visibleMatches.length > 0) {
+            headerFor(visibleMatches[0])?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+        }
+        return { visibleMatches, hiddenMatches };
+    }
     function updateControls() {
         fieldset.disabled = !enabled;
         host.setAttribute('aria-disabled', String(!enabled));
+        if (searchInput) searchInput.disabled = !enabled || !state;
         const visible = state ? worksheet() : [];
         const index = visible.indexOf(state?.activeKey);
         const hidden = state ? hiddenKeys() : [];
+        const minimalCount = state ? Math.max(1, state.catalog.filter((column) => column.required).length) : 1;
         root.querySelectorAll('[data-column-command]').forEach((button) => {
             const command = button.dataset.columnCommand;
             button.disabled = !enabled || !state || (command === 'hide' && Boolean(guard()))
                 || (command === 'move-left' && index <= 0) || (command === 'move-right' && index >= visible.length - 1)
-                || (command === 'unhide' && hidden.length === 0) || (command === 'restore' && !hidden.includes(hiddenSelect.value));
+                || (command === 'unhide' && hidden.length === 0) || (command === 'restore' && !hidden.includes(hiddenSelect.value))
+                || (command === 'select-all' && hidden.length === 0)
+                || (command === 'minimal' && visible.length <= minimalCount && state.catalog.every((column) => column.required || !state.visible.includes(column.key)));
             if (command === 'hide') button.title = state ? guard() : '';
             if (state && ['move-left', 'move-right'].includes(command)) {
                 button.setAttribute('aria-label', text(command.replace('-', '_'), { column: labelFor(state.activeKey) }));
@@ -302,6 +369,7 @@ export function createColumnDesigner(root, { text }) {
             if (option.textContent !== labelFor(key)) option.textContent = labelFor(key);
         });
         restorePosition();
+        applySearchVisuals();
     }
     function apply(command, focus = false) {
         const next = transitionColumns(state, command);
@@ -320,8 +388,11 @@ export function createColumnDesigner(root, { text }) {
         if (command.type === 'hide') announce(text('column_hidden', { column: labelFor(command.key) }));
         else if (command.type === 'unhide') announce(text('hidden_restored', { column }));
         else if (command.type === 'reset') announce(text('columns_reset'));
+        else if (command.type === 'select-all') announce(text('all_columns_shown'));
+        else if (command.type === 'minimal') announce(text('minimal_columns_shown'));
         else if (command.type === 'select') announce(guard());
         else announce(text('column_position', { column, position: worksheet().indexOf(state.activeKey) + 1, total: state.visible.length }));
+        if (changed) onStateChange?.(state);
         if (focus) focusHeader();
     }
     function openLayer(next, origin, point) {
@@ -340,10 +411,10 @@ export function createColumnDesigner(root, { text }) {
         layer.style.left = `${Math.max(left + 8, Math.min(point?.x ?? anchor.left, left + width - rect.width - 8))}px`;
         layer.style.top = `${Math.max(top + 8, Math.min(point?.y ?? anchor.bottom, top + height - rect.height - 8))}px`;
         document.addEventListener('pointerdown', outsideLayer, true);
-        document.addEventListener('scroll', layerMoved, true);
+        document.addEventListener('scroll', layerMoved, { capture: true, passive: true });
         window.addEventListener('resize', layerMoved);
         viewport?.addEventListener('resize', layerMoved);
-        viewport?.addEventListener('scroll', layerMoved);
+        viewport?.addEventListener('scroll', layerMoved, { passive: true });
         if (next === menu) menu.querySelector('[role="menuitem"]:not(:disabled)')?.focus();
         else hiddenSelect.focus();
     }
@@ -385,7 +456,10 @@ export function createColumnDesigner(root, { text }) {
         if (event.key === 'ArrowRight') key = visible[Math.min(visible.length - 1, index + 1)];
         if (event.key === 'Home') key = visible[0];
         if (event.key === 'End') key = visible.at(-1);
-        if (event.key === ' ' || event.key === 'Enter') key = header.dataset.key;
+        if (event.key === ' ' || event.key === 'Enter') {
+            if (event.isComposing || event.keyCode === 229) return;
+            key = header.dataset.key;
+        }
         if (!key && event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
             const character = event.key.toLocaleLowerCase();
             typeBuffer = typeBuffer && [...typeBuffer].every((letter) => letter === character) ? character : typeBuffer + character;
@@ -398,6 +472,11 @@ export function createColumnDesigner(root, { text }) {
     }
     function onClick(event) {
         if (!enabled || !state) return;
+        const quickUnhide = event.target.closest?.('[data-column-quick-unhide]');
+        if (quickUnhide && root.contains(quickUnhide)) {
+            apply({ type: 'unhide', key: quickUnhide.dataset.columnQuickUnhide }, true);
+            return;
+        }
         const button = event.target.closest?.('[data-column-command]');
         if (button && root.contains(button)) {
             if (button.disabled) return;
@@ -492,14 +571,45 @@ export function createColumnDesigner(root, { text }) {
     listen(root, 'dragover', onDragOver);
     listen(root, 'drop', onDrop);
     listen(hiddenSelect, 'change', restorePosition);
+    if (searchInput) {
+        listen(searchInput, 'input', () => {
+            searchQuery = searchInput.value;
+            applySearchVisuals({ announceMatches: true });
+        });
+        listen(searchInput, 'keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                if (event.isComposing || event.keyCode === 229) return;
+                const { visibleMatches, hiddenMatches } = applySearchVisuals();
+                if (visibleMatches.length > 0) {
+                    apply({ type: 'select', key: visibleMatches[0] }, true);
+                } else if (hiddenMatches.length > 0) {
+                    apply({ type: 'unhide', key: hiddenMatches[0] }, true);
+                }
+                return;
+            }
+            if (event.key === 'Escape' && searchInput.value !== '') {
+                event.preventDefault();
+                event.stopPropagation();
+                searchInput.value = '';
+                searchQuery = '';
+                applySearchVisuals();
+            }
+        });
+    }
     const api = {
         configure(catalog, selected) {
             const next = createColumnState(catalog, selected);
-            cancelTransient(); state = next; render(); announce(guard());
+            cancelTransient();
+            searchQuery = '';
+            if (searchInput) searchInput.value = '';
+            state = next; render(); announce(guard());
+            onStateChange?.(state);
         },
         setColumns(columns) {
             const next = transitionColumns(state, { type: 'preset', columns });
             cancelTransient(); state = next; render(); announce(guard());
+            onStateChange?.(state);
         },
         reset() { apply({ type: 'reset' }); },
         serialize() { return serializeColumns(state); },
@@ -514,6 +624,10 @@ export function createColumnDesigner(root, { text }) {
         destroy() {
             enabled = false; cancelTransient(); listeners.splice(0).forEach((remove) => remove());
             host.replaceChildren(); emptyRows.replaceChildren(); hiddenSelect.replaceChildren();
+            if (searchHiddenHost) { searchHiddenHost.replaceChildren(); searchHiddenHost.hidden = true; }
+            if (searchStatus) searchStatus.textContent = '';
+            if (searchInput) searchInput.value = '';
+            searchQuery = '';
             scroll.style.removeProperty('--column-count'); state = undefined; designers.delete(root);
         },
     };

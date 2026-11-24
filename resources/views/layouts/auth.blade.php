@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="text-scale" content="scale">
+    <meta name="color-scheme" content="light dark">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <script>
         window.AdasiLoginUrl = @js(route('login'));
@@ -10,370 +12,13 @@
     </script>
     @include('partials.auth-splash-bootstrap', ['authSplashLayout' => 'auth', 'authSplashReadiness' => request()->routeIs('login', 'passport.authorizations.authorize') ? 'native-login' : 'core'])
     @include('partials.i18n-bootstrap')
-    @if(config('ui.auth_splash.enabled', true) && ! request()->attributes->get('ui.auth_splash_bootstrap_available'))
-        <link rel="preload" as="image" href="{{ asset('assets/images/logo-adasi.gif') }}" fetchpriority="high" media="(prefers-reduced-motion: no-preference)">
-    @endif
     <meta name="robots" content="noindex, nofollow">
     @yield('meta')
     <title>{{ request()->routeIs('login') ? 'ADASI Supplier Portal - Sign In' : 'ADASI Supplier Portal' }}</title>
 
     <link rel="icon" href="{{ asset('assets/images/logo-adasi.png') }}" type="image/png">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css" integrity="sha384-e9JoBUb50niLuTodlxX3NLZZfrt9fQkX5bihGXOGWD/7QFJoXEH37S2df8UA2ehO" crossorigin="anonymous">
-    <link rel="stylesheet" href="{{ asset('assets/css/adasi-alert.css') }}">
     @include('partials.loader-logo')
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-
-    <style>
-        .auth-shell {
-            display: grid;
-            min-height: 100vh;
-            min-height: 100dvh;
-            width: 100%;
-        }
-        @media (min-width: 1024px) {
-            .auth-shell { grid-template-columns: 1fr 1fr; }
-            .auth-shell.auth-shell--plain { grid-template-columns: 1fr; }
-        }
-
-        /* ── Industrial Image Panel ── */
-        .auth-brand-panel {
-            display: none;
-            position: relative;
-            overflow: hidden;
-            background: var(--md-ref-secondary-950);
-        }
-        @media (min-width: 1024px) {
-            .auth-brand-panel { display: flex; flex-direction: column; justify-content: space-between; }
-        }
-
-        .auth-brand-panel__image {
-            position: absolute;
-            inset: 0;
-            z-index: 0;
-        }
-        .auth-brand-panel__image img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            object-position: center;
-            pointer-events: none;
-            user-select: none;
-            -webkit-user-drag: none;
-        }
-        .auth-brand-panel__overlay {
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(
-                180deg,
-                rgba(var(--md-scrim-rgb), 0.72) 0%,
-                rgba(var(--md-scrim-rgb), 0.60) 40%,
-                rgba(var(--md-scrim-rgb), 0.82) 100%
-            );
-        }
-
-        .auth-brand-panel__content {
-            position: relative;
-            z-index: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            height: 100%;
-            padding: 2rem 2.5rem;
-        }
-        @media (min-width: 1280px) {
-            .auth-brand-panel__content { padding: 2.5rem 3rem; }
-        }
-
-        .auth-brand-logo {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-        .auth-brand-logo img {
-            height: 2rem;
-            width: auto;
-            flex-shrink: 0;
-            pointer-events: none;
-            user-select: none;
-            -webkit-user-drag: none;
-        }
-        .auth-brand-logo__text {
-            font-size: var(--ui-font-size-sm);
-            font-weight: 700;
-            letter-spacing: 0.04em;
-            color: rgba(var(--md-on-primary-rgb), 0.92);
-            line-height: 1.3;
-        }
-        .auth-brand-logo__sub {
-            display: block;
-            font-size: var(--ui-font-size-xs);
-            font-weight: 500;
-            letter-spacing: 0.06em;
-            color: rgba(var(--md-on-primary-rgb), 0.55);
-            margin-top: 0.125rem;
-        }
-
-        .auth-brand-headline {
-            max-width: 26rem;
-            margin: auto 0;
-            padding: 2rem 0;
-        }
-        .auth-brand-headline h1, .auth-brand-headline .auth-brand-title {
-            margin: 0;
-            font-size: var(--ui-font-size-2xl);
-            font-weight: 700;
-            line-height: 1.28;
-            letter-spacing: -0.01em;
-            color: var(--md-on-primary);
-        }
-        .auth-brand-headline p {
-            margin: 0.875rem 0 0;
-            font-size: var(--ui-font-size-sm);
-            line-height: 1.6;
-            color: rgba(var(--md-on-primary-rgb), 0.65);
-            max-width: 22rem;
-        }
-
-        .auth-brand-footer {
-            font-size: var(--ui-font-size-xs);
-            font-weight: 600;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            color: rgba(var(--md-on-primary-rgb), 0.38);
-        }
-
-        .auth-shell[data-login-screen] .auth-brand-panel__image img {
-            object-position: 60% center;
-        }
-        .auth-shell[data-login-screen] .auth-brand-panel__overlay {
-            background: rgba(var(--md-scrim-rgb), 0.58);
-        }
-        .auth-shell[data-login-screen] .auth-brand-headline > p {
-            color: rgba(var(--md-on-primary-rgb), 0.90);
-        }
-        .auth-shell[data-login-screen] .auth-brand-logo__sub {
-            color: rgba(var(--md-on-primary-rgb), 0.85);
-        }
-        .auth-registration-actions {
-            margin-top: 1.25rem;
-            border: 1px solid var(--md-outline);
-            border-radius: var(--md-shape-md);
-            background: var(--md-surface-container-low);
-            overflow: hidden;
-        }
-        .auth-next-step {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.75rem 1rem;
-            text-decoration: none;
-            color: inherit;
-            transition: background-color 160ms ease;
-        }
-        .auth-next-step + .auth-next-step {
-            border-top: 1px solid var(--md-outline);
-        }
-        .auth-next-step:hover,
-        .auth-next-step:focus-visible {
-            background: var(--md-surface-container);
-        }
-        .auth-next-step__icon {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 2rem;
-            height: 2rem;
-            flex-shrink: 0;
-            border-radius: var(--md-shape-xs);
-            background: var(--md-surface-container-high);
-            color: var(--md-primary);
-        }
-        .auth-next-step__text {
-            display: flex;
-            flex-direction: column;
-            gap: 0.0625rem;
-            min-width: 0;
-            flex: 1;
-        }
-        .auth-next-step__label {
-            font-size: var(--ui-font-size-sm);
-            font-weight: 600;
-            color: var(--md-on-surface);
-        }
-        .auth-next-step__hint {
-            font-size: var(--ui-font-size-xs);
-            color: var(--md-on-surface-variant);
-        }
-        .auth-next-step__chevron {
-            flex-shrink: 0;
-            color: var(--md-on-surface-variant);
-        }
-
-        /* ── Auth Form Panel ── */
-        .auth-form-panel {
-            display: flex;
-            flex-direction: column;
-            min-width: 0;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            min-height: 100dvh;
-            padding: 2rem 1.5rem;
-            background: var(--ui-workspace-bg);
-        }
-        @media (min-width: 640px) {
-            .auth-form-panel { padding: 2.5rem; }
-        }
-        @media (min-width: 1024px) {
-            .auth-form-panel { min-height: unset; padding: 3rem 3.5rem; }
-        }
-
-        .auth-form-surface {
-            width: 100%;
-            max-width: 26rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1.25rem;
-        }
-
-        /* Mobile brand fallback */
-        .auth-mobile-brand {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.625rem;
-            text-decoration: none;
-            color: var(--md-on-surface);
-            margin-bottom: 0.25rem;
-        }
-        .auth-mobile-brand img {
-            height: 2.25rem;
-            width: auto;
-            pointer-events: none;
-            user-select: none;
-            -webkit-user-drag: none;
-        }
-        .auth-mobile-brand__name {
-            font-weight: 700;
-            font-size: var(--ui-font-size-base);
-            color: var(--md-primary);
-        }
-        .auth-mobile-brand__sub {
-            display: block;
-            font-size: var(--ui-font-size-xs);
-            color: var(--md-on-surface-variant);
-        }
-        @media (min-width: 1024px) {
-            .auth-mobile-brand { display: none; }
-        }
-
-        /* Auth card — clean, elevated, no glass */
-        .auth-card {
-            background: var(--md-surface);
-            border: 1px solid var(--md-outline);
-            border-radius: var(--md-shape-lg);
-            box-shadow: var(--ui-shadow-1);
-            padding: 1.75rem;
-        }
-        @media (min-width: 640px) {
-            .auth-card { padding: 2rem 2.25rem; }
-        }
-
-        .auth-footer-copy {
-            text-align: center;
-            font-size: var(--ui-font-size-xs);
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-            color: var(--md-on-surface-variant);
-            margin-top: 0.25rem;
-        }
-        @media (min-width: 768px) {
-            .reg-tax-grid {
-                display: grid !important;
-                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-                grid-template-rows: auto auto auto !important;
-                column-gap: 1rem !important;
-                row-gap: 0.375rem !important;
-                align-items: start !important;
-            }
-            .reg-tax-col {
-                display: grid !important;
-                grid-row: span 3 !important;
-                grid-template-rows: subgrid !important;
-                row-gap: 0.375rem !important;
-            }
-            .reg-tax-header-sync {
-                min-height: 48px !important;
-                display: flex !important;
-                align-items: flex-start !important;
-            }
-        }
-
-        /* Language selector segmented control */
-        .lang-toggle-track {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.125rem;
-            padding: 0.125rem;
-            border-radius: var(--ui-radius-control, var(--md-shape-sm));
-            background: var(--md-surface-container);
-            border: 1px solid var(--md-outline);
-            box-shadow: none;
-        }
-        .lang-pill-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0.2rem 0.55rem;
-            min-height: 1.625rem;
-            min-width: 2rem;
-            border-radius: var(--md-shape-xs);
-            font-size: var(--ui-font-size-xs);
-            font-weight: 600;
-            letter-spacing: 0.05em;
-            line-height: 1;
-            border: 1px solid transparent;
-            color: var(--md-on-surface-variant);
-            background: transparent;
-            cursor: pointer;
-            outline: none;
-            user-select: none;
-            transition: background-color var(--ui-motion-fast) var(--ui-easing-standard),
-                        color var(--ui-motion-fast) var(--ui-easing-standard),
-                        border-color var(--ui-motion-fast) var(--ui-easing-standard);
-        }
-        .lang-pill-btn.is-active {
-            background: var(--md-surface) !important;
-            color: var(--md-primary) !important;
-            font-weight: 700;
-            border-color: var(--md-outline) !important;
-            box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.05) !important;
-            cursor: default;
-        }
-        .lang-pill-btn:not(.is-active):hover {
-            color: var(--md-on-surface);
-            background: rgba(var(--md-on-surface-rgb), 0.05);
-            border-color: transparent;
-        }
-        .lang-pill-btn:active {
-            background: rgba(var(--md-on-surface-rgb), 0.08);
-        }
-        .lang-pill-btn:focus-visible {
-            outline: 2px solid var(--md-primary);
-            outline-offset: 1px;
-            z-index: 1;
-        }
-        @media (prefers-reduced-motion: reduce) {
-            .lang-pill-btn {
-                transition: none !important;
-                transform: none !important;
-            }
-            .lang-pill-btn:active {
-                transform: none !important;
-            }
-        }
-    </style>
+    @vite(['resources/css/auth.css', 'resources/js/auth.js'])
     @if(\App\Support\WorkspaceShell::enabled())
         <style>
             @view-transition {
@@ -385,9 +30,10 @@
 @php
     $isPlainLayout = \Illuminate\Support\Facades\View::hasSection('plain-layout') || isset($exception);
 @endphp
-<body class="tw:m-0 tw:min-h-screen tw:bg-surface tw:font-sans tw:text-on-surface tw:antialiased" @if(config('ui.auth_splash.enabled', true)) data-splash-gif="{{ asset('assets/images/logo-adasi.gif') }}" data-splash-wordmark="{{ asset('assets/images/logo-adasi-wordmark.png') }}" @endif>
+<body class="tw:m-0 tw:min-h-screen tw:bg-surface tw:font-sans tw:text-on-surface tw:antialiased">
+    <a href="#main-content" class="ui-skip-link">{{ __('navigation.skip') }}</a>
     <x-ui.auth-splash :error="isset($exception)" />
-    <main class="auth-shell {{ $isPlainLayout ? 'auth-shell--plain' : '' }}" @yield('shell-attributes')>
+    <main id="main-content" tabindex="-1" class="auth-shell {{ $isPlainLayout ? 'auth-shell--plain' : '' }}" @yield('shell-attributes')>
         @if(! $isPlainLayout)
             @hasSection('brand-panel')
                 @yield('brand-panel')
@@ -395,13 +41,21 @@
                 {{-- Left Column: Industrial Image Panel --}}
                 <aside class="auth-brand-panel" aria-label="{{ __('navigation.brand_info') }}">
                     <div class="auth-brand-panel__image">
-                        <img src="{{ asset('assets/images/adasi-login-bg.jpg') }}" alt="" loading="eager" draggable="false">
+                        <picture class="auth-brand-panel__picture">
+                            <source media="(min-width: 1024px)" srcset="{{ asset('assets/images/adasi-login-bg.avif') }}" type="image/avif">
+                            <source media="(min-width: 1024px)" srcset="{{ asset('assets/images/adasi-login-bg.webp') }}" type="image/webp">
+                            <source media="(min-width: 1024px)" srcset="{{ asset('assets/images/adasi-login-bg.jpg') }}" type="image/jpeg">
+                            <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="" width="1600" height="828" loading="eager" decoding="async" fetchpriority="high" draggable="false">
+                        </picture>
                         <div class="auth-brand-panel__overlay"></div>
                     </div>
 
                     <div class="auth-brand-panel__content">
                         <div class="auth-brand-logo">
-                            <img src="{{ asset('assets/images/logo-adasi.png') }}" alt="{{ __('common.review.logo') }}" draggable="false">
+                            <picture>
+                                <source srcset="{{ asset('assets/images/logo-adasi-sm.webp') }}" type="image/webp">
+                                <img src="{{ asset('assets/images/logo-adasi-sm.png') }}" alt="{{ __('common.review.logo') }}" width="34" height="32" loading="eager" decoding="async" draggable="false">
+                            </picture>
                             <div>
                                 <span class="auth-brand-logo__text">ASTRA DAIDO STEEL INDONESIA</span>
                                 <span class="auth-brand-logo__sub">{{ __('common.review.supplier_portal') }}</span>
@@ -430,7 +84,10 @@
             <div class="auth-form-surface">
                 @if(! $isPlainLayout)
                     <a href="{{ route('login') }}" class="auth-mobile-brand">
-                        <img src="{{ asset('assets/images/logo-adasi.png') }}" alt="" draggable="false">
+                        <picture>
+                            <source srcset="{{ asset('assets/images/logo-adasi-sm.webp') }}" type="image/webp">
+                            <img src="{{ asset('assets/images/logo-adasi-sm.png') }}" alt="" width="39" height="36" loading="eager" decoding="async" draggable="false">
+                        </picture>
                         <span>
                             <span class="auth-mobile-brand__name">ADASI</span>
                             <span class="auth-mobile-brand__sub">{{ __('common.review.supplier_portal') }}</span>
@@ -440,7 +97,11 @@
                     <x-ui.environment-tag placement="auth" class="tw:self-center" />
                 @endif
 
-                <div class="auth-card ui-page-fade">
+                @php
+                    $shouldFadeAuthCard = (bool) request()->attributes->get('ui.auth_splash_rendered')
+                        || ! request()->routeIs('login', 'passport.authorizations.authorize');
+                @endphp
+                <div class="auth-card{{ $shouldFadeAuthCard ? ' ui-page-fade' : '' }}">
                     @include('partials.alerts')
                     @yield('content')
                 </div>
@@ -460,9 +121,14 @@
         <template data-auth-splash-layout-ready="auth" data-readiness="native-login"></template>
     @endif
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js" integrity="sha384-VNUenFzuMm/yuCawx3aXQgp6+Z5QL6nRMkX1fNFfqPzI1fdaooshPNCHt/Llz/bJ" crossorigin="anonymous"></script>
-    <script src="{{ asset('assets/js/adasi-alert.js') }}"></script>
+    <script id="adasi-auth-alert-assets" type="application/json">{!! json_encode([
+        'swalCss' => 'https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css',
+        'swalCssIntegrity' => 'sha384-e9JoBUb50niLuTodlxX3NLZZfrt9fQkX5bihGXOGWD/7QFJoXEH37S2df8UA2ehO',
+        'alertCss' => asset('assets/css/adasi-alert.css').'?v='.filemtime(public_path('assets/css/adasi-alert.css')),
+        'swalJs' => 'https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js',
+        'swalJsIntegrity' => 'sha384-VNUenFzuMm/yuCawx3aXQgp6+Z5QL6nRMkX1fNFfqPzI1fdaooshPNCHt/Llz/bJ',
+        'alertJs' => asset('assets/js/adasi-alert.js').'?v='.filemtime(public_path('assets/js/adasi-alert.js')),
+    ], JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR) !!}</script>
     @yield('scripts')
     @stack('scripts')
     @if (! isset($exception) && request()->attributes->get('ui.auth_splash_rendered') && ! request()->routeIs('login', 'passport.authorizations.authorize'))

@@ -18,12 +18,73 @@ trait UsesColumnCatalog
 
     private string $columnFormat = 'xlsx';
 
+    private string $columnCsvDelimiter = ',';
+
     public function applyOptions(ExportOptions $options): void
     {
         $definition = ExportDefinitions::forClass(static::class, $options->audience);
         $this->columnKeys = ExportDefinitions::sanitizeKeys($definition, $options->columns);
         $this->columnAudience = $options->audience;
         $this->columnFormat = $options->format;
+        $this->columnCsvDelimiter = $options->csvDelimiter;
+    }
+
+    public function exportCsvDelimiter(): string
+    {
+        return $this->columnCsvDelimiter;
+    }
+
+    public function exportFormat(): string
+    {
+        return $this->columnFormat;
+    }
+
+    public function exportHasOptions(): bool
+    {
+        return $this->hasExportOptions();
+    }
+
+    /** @return array<string, string> */
+    protected function catalogNumberFormats(): array
+    {
+        if (! $this->hasExportOptions() || ! $this->catalogStylesEnabled()) {
+            return [];
+        }
+
+        $formats = [];
+        foreach ($this->selectedColumns() as $index => $column) {
+            $format = match ($column->type) {
+                ColumnType::Money => '#,##0.00',
+                ColumnType::Number => '#,##0.##',
+                default => null,
+            };
+            if ($format !== null) {
+                $formats[Coordinate::stringFromColumnIndex($index + 1)] = $format;
+            }
+        }
+
+        return $formats;
+    }
+
+    /** @return array<string, string> */
+    public function exportNumberFormats(): array
+    {
+        return $this->catalogNumberFormats();
+    }
+
+    /** @return list<string> */
+    public function exportWrappedColumns(): array
+    {
+        return method_exists($this, 'workbookWrappedColumns')
+            ? $this->workbookWrappedColumns()
+            : ($this->hasExportOptions() ? $this->catalogWrappedColumns() : []);
+    }
+
+    public function exportPresentationEnabled(): bool
+    {
+        return method_exists($this, 'workbookPresentationEnabled')
+            ? $this->workbookPresentationEnabled()
+            : ($this->hasExportOptions() && $this->catalogStylesEnabled());
     }
 
     protected function hasExportOptions(): bool
@@ -100,6 +161,8 @@ trait UsesColumnCatalog
 
     public function getCsvSettings(): array
     {
-        return $this->columnFormat === 'csv' ? config('exports.csv') : [];
+        return $this->columnFormat === 'csv'
+            ? [...config('exports.csv'), 'delimiter' => $this->columnCsvDelimiter]
+            : [];
     }
 }

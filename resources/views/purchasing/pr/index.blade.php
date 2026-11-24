@@ -46,6 +46,7 @@
                 <option value="rejected">{{ __('purchasing.copy.rejected') }}</option>
                 <option value="bidding">{{ __('purchasing.copy.bidding') }}</option>
                 <option value="completed">{{ __('purchasing.copy.completed') }}</option>
+                <option value="cancelled">{{ __('status.pr.cancelled') }}</option>
             </select>
         </x-slot:filters>
 

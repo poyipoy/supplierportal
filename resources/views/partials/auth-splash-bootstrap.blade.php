@@ -24,8 +24,13 @@
     }
 @endphp
 @if ($authSplashSources !== null)
-    <link rel="preload" as="image" href="{{ asset('assets/images/logo-adasi.gif') }}" fetchpriority="high" media="(prefers-reduced-motion: no-preference)">
-    <link rel="preload" as="image" href="{{ asset('assets/images/logo-adasi-wordmark.png') }}" fetchpriority="high" media="(prefers-reduced-motion: reduce)">
+    @php
+        $authSplashWebpPath = public_path('assets/images/logo-adasi.webp');
+        $authSplashWebpVersion = is_file($authSplashWebpPath) ? @filemtime($authSplashWebpPath) : null;
+        $authSplashWebpUrl = asset('assets/images/logo-adasi.webp').($authSplashWebpVersion ? '?v='.$authSplashWebpVersion : '');
+    @endphp
+    <link rel="preload" as="image" href="{{ $authSplashWebpUrl }}" type="image/webp" media="(prefers-reduced-motion: no-preference)">
+    <link rel="preload" as="image" href="{{ asset('assets/images/logo-adasi-wordmark.png') }}" media="(prefers-reduced-motion: reduce)">
     <style data-auth-splash-styles>{!! $authSplashSources['style'] !!}</style>
     <script data-auth-splash-bootstrap
         data-reason="{{ $authSplash['reason'] }}"

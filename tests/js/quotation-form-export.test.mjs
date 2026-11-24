@@ -170,3 +170,32 @@ test('the quotation form wires the single Download Template item through a lazy 
     assert.match(app, /hasMarker\('\[data-quotation-form-export\]'\)\) import\('\.\/quotation-form-export'\)/);
     assert.doesNotMatch(app, /^import .*quotation-form-export/m);
 });
+
+test('a 409 conflict skips blank template fallback and dispatches adasi:form-conflict', async () => {
+    const conflicts = [];
+    const fallbacks = [];
+    const form = {
+        ...fakeForm(),
+        dispatchEvent(event) {
+            conflicts.push(event);
+            event.preventDefault();
+            return false;
+        },
+    };
+    const result = await runExport({
+        form,
+        url: '/supplier/quotations/x/export-form',
+        fallbackUrl: '/supplier/quotations/x/import-template',
+        formDataFactory: () => formData([['items[0][price_per_kg]', '10']]),
+        fetchImpl: async () => new Response(JSON.stringify({ code: 'invitation_cancelled', message: 'Cancelled' }), { status: 409, headers: { 'Content-Type': 'application/json' } }),
+        notify: () => assert.fail('handled 409 conflict must not show fallback toast'),
+        download: () => assert.fail('no file download on 409'),
+        fallbackDownload: (url) => fallbacks.push(url),
+    });
+    assert.equal(result.ok, false);
+    assert.equal(result.fallback, false);
+    assert.equal(result.conflict, true);
+    assert.deepEqual(fallbacks, []);
+    assert.equal(conflicts.length, 1);
+    assert.equal(conflicts[0].type, 'adasi:form-conflict');
+});

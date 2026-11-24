@@ -8,6 +8,7 @@ return [
         'bidding' => 'Penawaran Berlangsung',
         'completed' => 'Selesai',
         'rejected' => 'Ditolak',
+        'cancelled' => 'Dibatalkan',
     ],
     'quotation' => [
         'draft' => 'Draf',
@@ -16,6 +17,7 @@ return [
         'rejected' => 'Ditolak',
         'revision_requested' => 'Revisi Diminta',
         'all_unavailable' => 'Semua Tidak Tersedia',
+        'cancelled' => 'Dibatalkan',
     ],
     'po' => [
         'active' => 'Aktif',

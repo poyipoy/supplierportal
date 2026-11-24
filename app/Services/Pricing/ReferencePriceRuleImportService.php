@@ -21,7 +21,7 @@ class ReferencePriceRuleImportService
     public function parseWorkbook(string $filePath, string $sheetName = 'Kategori'): array
     {
         if (! file_exists($filePath)) {
-            throw new InvalidArgumentException("Excel file not found: {$filePath}");
+            throw new InvalidArgumentException('Uploaded Excel workbook could not be found.');
         }
 
         $reader = IOFactory::createReaderForFile($filePath);

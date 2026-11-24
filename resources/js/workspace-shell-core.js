@@ -1,3 +1,5 @@
+import { isSameOriginHttpUrl } from './origin-validator.js';
+
 export const EMBED_QUERY_PARAM = '_embed';
 export const SHORTCUTS_KEY = 'shortcuts';
 export const DEFAULT_MAX_SESSIONS = 12;
@@ -65,12 +67,7 @@ export function isSameOriginUrl(rawUrl, origin = (typeof window !== 'undefined' 
         return false;
     }
 
-    try {
-        const parsed = new URL(trimmed, origin);
-        return (parsed.protocol === 'http:' || parsed.protocol === 'https:') && parsed.origin === origin;
-    } catch {
-        return false;
-    }
+    return isSameOriginHttpUrl(trimmed, origin);
 }
 
 export function appendEmbedParam(rawUrl, origin = 'http://localhost') {
@@ -1524,7 +1521,7 @@ export function computeWaterFillTabCap({
     let solved = defaultMinCap;
 
     while (active.length > 0) {
-        const sorted = [...active].sort((a, b) => a.naturalW - b.naturalW);
+        const sorted = active.toSorted((a, b) => a.naturalW - b.naturalW);
         let prefixSum = 0;
         let candidateCap = maxCap;
 
@@ -2098,8 +2095,244 @@ export const DEFAULT_SHORTCUTS_WEIGHTS = Object.freeze({
     frequent: 36,
 });
 
-export const MIN_SHORTCUTS_PANE_WIDTH_PX = 1;
+export const MIN_SHORTCUTS_PANE_WIDTH_PX = 0;
 export const SHORTCUTS_SPLITTER_WIDTH_PX = 16;
+
+const LEGACY_PORTAL_PREFIX_RE = /^\/v\d+\/[A-Za-z0-9_-]+(\/.*)$/i;
+
+export function canonicalizeShortcutModulePath(rawPathOrUrl, {
+    origin = 'http://localhost',
+    pathPrefix = '',
+} = {}) {
+    if (typeof rawPathOrUrl !== 'string' || !rawPathOrUrl.trim()) return '';
+    let path = normalizePathname(rawPathOrUrl, origin);
+    if (!path || path === '/') return '';
+
+    const cleanPrefix = String(pathPrefix || '').trim().replace(/^\/+|\/+$/g, '');
+    if (cleanPrefix !== '') {
+        const prefixWithSlash = `/${cleanPrefix}`;
+        if (path === prefixWithSlash) return '';
+        if (path.startsWith(`${prefixWithSlash}/`)) {
+            path = path.slice(prefixWithSlash.length) || '/';
+        } else {
+            const legacyMatch = path.match(LEGACY_PORTAL_PREFIX_RE);
+            if (legacyMatch) path = legacyMatch[1];
+        }
+    } else {
+        const legacyMatch = path.match(LEGACY_PORTAL_PREFIX_RE);
+        if (legacyMatch) path = legacyMatch[1];
+    }
+
+    return cleanPrefix !== '' ? `/${cleanPrefix}${path}` : path;
+}
+
+export function stripPortalPrefixFromPath(rawPathOrUrl, {
+    origin = 'http://localhost',
+    pathPrefix = '',
+} = {}) {
+    if (typeof rawPathOrUrl !== 'string' || !rawPathOrUrl.trim()) return '';
+    let path = normalizePathname(rawPathOrUrl, origin);
+    const cleanPrefix = String(pathPrefix || '').trim().replace(/^\/+|\/+$/g, '');
+    if (cleanPrefix !== '') {
+        const prefixWithSlash = `/${cleanPrefix}`;
+        if (path === prefixWithSlash) return '/';
+        if (path.startsWith(`${prefixWithSlash}/`)) {
+            path = path.slice(prefixWithSlash.length) || '/';
+        }
+    }
+    return path;
+}
+
+function sanitizeUsageMapEntries(rawUsage, { origin = 'http://localhost', pathPrefix = '', limit = 50 } = {}) {
+    if (!rawUsage || typeof rawUsage !== 'object' || Array.isArray(rawUsage)) return {};
+    const clean = {};
+    for (const [rawPath, entry] of Object.entries(rawUsage)) {
+        if (!entry || typeof entry !== 'object') continue;
+        const canonicalPath = canonicalizeShortcutModulePath(rawPath, { origin, pathPrefix });
+        if (!canonicalPath || isTopLevelOnlyUrl(`${origin}${canonicalPath}`, origin, pathPrefix) || isDownloadOrBinaryUrl(`${origin}${canonicalPath}`, origin)) {
+            continue;
+        }
+        const count = Math.trunc(Number(entry.count) || 0);
+        const lastUsedAt = Math.max(0, Math.trunc(Number(entry.lastUsedAt) || 0));
+        if (count < 1) continue;
+        const existing = clean[canonicalPath];
+        if (existing) {
+            clean[canonicalPath] = {
+                count: Math.min(100_000, Math.max(existing.count, count)),
+                lastUsedAt: Math.max(existing.lastUsedAt, lastUsedAt),
+            };
+        } else {
+            if (Object.keys(clean).length >= limit) continue;
+            clean[canonicalPath] = {
+                count: Math.min(100_000, count),
+                lastUsedAt,
+            };
+        }
+    }
+    return clean;
+}
+
+function sanitizeFavoritesPathList(rawFavorites, { origin = 'http://localhost', pathPrefix = '', limit = 50 } = {}) {
+    if (!Array.isArray(rawFavorites)) return [];
+    const seen = new Set();
+    const clean = [];
+    for (const rawPath of rawFavorites) {
+        const canonicalPath = canonicalizeShortcutModulePath(String(rawPath || ''), { origin, pathPrefix });
+        if (!canonicalPath || seen.has(canonicalPath)) continue;
+        if (isTopLevelOnlyUrl(`${origin}${canonicalPath}`, origin, pathPrefix) || isDownloadOrBinaryUrl(`${origin}${canonicalPath}`, origin)) {
+            continue;
+        }
+        seen.add(canonicalPath);
+        clean.push(canonicalPath);
+        if (clean.length >= limit) break;
+    }
+    return clean;
+}
+
+function sanitizeBookmarksEntries(rawBookmarks, { origin = 'http://localhost', pathPrefix = '', limit = 50 } = {}) {
+    if (!Array.isArray(rawBookmarks)) return [];
+    const seen = new Set();
+    const clean = [];
+    for (const item of rawBookmarks) {
+        if (!item || typeof item !== 'object' || typeof item.url !== 'string') continue;
+        const stripped = canonicalizeUrl(stripEmbedParam(item.url, origin), origin);
+        if (!isStorableSessionUrl(stripped, origin, pathPrefix)) continue;
+        const parsed = new URL(stripped, origin);
+        const canonicalPath = canonicalizeShortcutModulePath(parsed.pathname, { origin, pathPrefix });
+        if (!canonicalPath) continue;
+        parsed.pathname = canonicalPath;
+        const canonicalFullUrl = parsed.toString();
+        if (seen.has(canonicalFullUrl)) continue;
+        seen.add(canonicalFullUrl);
+        clean.push({
+            url: canonicalFullUrl,
+            normalizedPath: canonicalPath,
+            label: String(item.label || canonicalFullUrl).trim() || canonicalFullUrl,
+            moduleKey: String(item.moduleKey || '').trim() || null,
+            createdAt: Math.max(0, Math.trunc(Number(item.createdAt) || 0)),
+        });
+        if (clean.length >= limit) break;
+    }
+    return clean;
+}
+
+/**
+ * Deterministic hybrid merge between browser localStorage Shortcuts state and server-persisted
+ * `user_preferences` Shortcuts state.
+ */
+export function mergeWorkspaceShortcutsState({
+    localState = {},
+    serverState = {},
+    origin = 'http://localhost',
+    pathPrefix = '',
+} = {}) {
+    const opts = { origin, pathPrefix, limit: 50 };
+    const localUpdatedAt = Math.max(0, Math.trunc(Number(localState?.updatedAt) || 0));
+    const serverUpdatedAt = Math.max(0, Math.trunc(Number(serverState?.updatedAt) || 0));
+
+    const hasLocalUsage = Boolean(localState?.hasUsageKey);
+    const hasLocalFavorites = Boolean(localState?.hasFavoritesKey);
+    const hasLocalBookmarks = Boolean(localState?.hasBookmarksKey);
+    const hasLocalLayout = Boolean(localState?.hasLayoutKey);
+    const hasAnyLocalKey = hasLocalUsage || hasLocalFavorites || hasLocalBookmarks || hasLocalLayout;
+
+    const localUsage = sanitizeUsageMapEntries(localState?.usage, opts);
+    const serverUsage = sanitizeUsageMapEntries(serverState?.usage, opts);
+    const localFavorites = sanitizeFavoritesPathList(localState?.favorites, opts);
+    const serverFavorites = sanitizeFavoritesPathList(serverState?.favorites, opts);
+    const serverFavoritesInit = Boolean(serverState?.favoritesInitialized) || serverFavorites.length > 0;
+    const localBookmarks = sanitizeBookmarksEntries(localState?.bookmarks, opts);
+    const serverBookmarks = sanitizeBookmarksEntries(serverState?.bookmarks, opts);
+    const localLayout = hasLocalLayout && localState?.layout ? normalizeShortcutsLayout(localState.layout) : null;
+    const serverLayout = serverState?.layout ? normalizeShortcutsLayout(serverState.layout) : null;
+
+    const hasServerData = Object.keys(serverUsage).length > 0
+        || serverFavoritesInit
+        || serverBookmarks.length > 0
+        || Boolean(serverLayout)
+        || serverUpdatedAt > 0;
+
+    // 1. Cold browser storage (new device/browser or cleared site data): hydrate directly from server
+    if (!hasAnyLocalKey && hasServerData) {
+        return {
+            updatedAt: serverUpdatedAt || Date.now(),
+            usage: serverUsage,
+            favorites: serverFavorites,
+            favoritesInitialized: serverFavoritesInit,
+            bookmarks: serverBookmarks,
+            layout: serverLayout || normalizeShortcutsLayout(null),
+            hasLayout: Boolean(serverLayout),
+            needsServerSync: false,
+        };
+    }
+
+    // 2. Existing local data with empty server state: keep local and schedule initial background push to server
+    if (hasAnyLocalKey && !hasServerData) {
+        const hasLocalContent = Object.keys(localUsage).length > 0
+            || hasLocalFavorites
+            || localBookmarks.length > 0
+            || Boolean(localLayout);
+        return {
+            updatedAt: localUpdatedAt || (hasLocalContent ? Date.now() : 0),
+            usage: localUsage,
+            favorites: localFavorites,
+            favoritesInitialized: hasLocalFavorites,
+            bookmarks: localBookmarks,
+            layout: localLayout || normalizeShortcutsLayout(null),
+            hasLayout: Boolean(localLayout),
+            needsServerSync: hasLocalContent,
+        };
+    }
+
+    // 3. Both local and server have state: resolve by timestamp and merge usage counters safely
+    const serverIsNewer = serverUpdatedAt > localUpdatedAt;
+    const primaryUsage = serverIsNewer ? serverUsage : localUsage;
+    const secondaryUsage = serverIsNewer ? localUsage : serverUsage;
+
+    const mergedUsage = {};
+    // When timestamps are equal or uninitialized (legacy local), union both maps; when one side has a newer timestamp,
+    // use the newer map's keys (so explicit removals via `removeUsageEntry` are respected) while taking max counts.
+    const keysToInclude = (localUpdatedAt === 0 || serverUpdatedAt === 0 || localUpdatedAt === serverUpdatedAt)
+        ? Array.from(new Set([...Object.keys(primaryUsage), ...Object.keys(secondaryUsage)]))
+        : Object.keys(primaryUsage);
+
+    for (const key of keysToInclude.slice(0, 50)) {
+        const a = primaryUsage[key];
+        const b = secondaryUsage[key];
+        if (a && b) {
+            mergedUsage[key] = {
+                count: Math.min(100_000, Math.max(a.count, b.count)),
+                lastUsedAt: Math.max(a.lastUsedAt, b.lastUsedAt),
+            };
+        } else if (a) {
+            mergedUsage[key] = { ...a };
+        } else if (b) {
+            mergedUsage[key] = { ...b };
+        }
+    }
+
+    const resolvedFavorites = (!hasLocalFavorites || serverIsNewer) ? serverFavorites : localFavorites;
+    const resolvedFavoritesInit = hasLocalFavorites || serverFavoritesInit;
+    const resolvedBookmarks = (!hasLocalBookmarks || serverIsNewer) ? serverBookmarks : localBookmarks;
+    const resolvedLayout = (!hasLocalLayout || serverIsNewer)
+        ? (serverLayout || localLayout || normalizeShortcutsLayout(null))
+        : (localLayout || serverLayout || normalizeShortcutsLayout(null));
+
+    const needsServerSync = localUpdatedAt > serverUpdatedAt
+        || Object.keys(mergedUsage).length !== Object.keys(serverUsage).length
+        || Object.entries(mergedUsage).some(([k, v]) => !serverUsage[k] || serverUsage[k].count !== v.count);
+
+    return {
+        updatedAt: Math.max(localUpdatedAt, serverUpdatedAt),
+        usage: mergedUsage,
+        favorites: resolvedFavorites,
+        favoritesInitialized: resolvedFavoritesInit,
+        bookmarks: resolvedBookmarks,
+        layout: resolvedLayout,
+        hasLayout: Boolean(localLayout || serverLayout),
+        needsServerSync,
+    };
+}
 
 export function normalizeShortcutsLayout(rawLayout) {
     const rawMin = rawLayout && typeof rawLayout.minimized === 'object' && rawLayout.minimized
@@ -2128,7 +2361,8 @@ export function normalizeShortcutsLayout(rawLayout) {
         ? rawLayout.weights
         : null;
     const validWeights = rawWeights
-        && SHORTCUTS_PANE_KEYS.every((k) => Number.isFinite(Number(rawWeights[k])) && Number(rawWeights[k]) > 0);
+        && SHORTCUTS_PANE_KEYS.every((k) => Number.isFinite(Number(rawWeights[k])) && Number(rawWeights[k]) >= 0)
+        && SHORTCUTS_PANE_KEYS.some((k) => Number(rawWeights[k]) > 0);
 
     const source = validWeights
         ? {
@@ -2324,4 +2558,80 @@ export function formatSessionContextHint(rawUrl, { childTitle = '', parentTitle 
     if (parts.length === 0) return '';
     const joined = parts.join(' · ');
     return joined.length > maxLength ? `${joined.slice(0, Math.max(8, maxLength - 1)).trimEnd()}…` : joined;
+}
+
+export function resolveGroupSessionMenuItems(group) {
+    if (!group || !Array.isArray(group.frames)) return [];
+    const visibleFrames = group.frames.filter((frame) => frame && !frame.stagedNew);
+    if (visibleFrames.length === 0) return [];
+
+    const activeFrameId = visibleFrames.some((frame) => frame.frameId === group.activeFrameId)
+        ? group.activeFrameId
+        : visibleFrames[visibleFrames.length - 1].frameId;
+
+    return visibleFrames.map((frame) => {
+        const isPinnedProtected = Boolean(group.pinned && frame.role === 'parent');
+        return {
+            frameId: frame.frameId,
+            title: frame.title || group.baseLabel || group.moduleKey || 'ADASI Portal',
+            role: frame.role,
+            isCurrentInGroup: frame.frameId === activeFrameId,
+            isDirty: Boolean(frame.isDirty),
+            isHibernated: Boolean(frame.hibernated),
+            isPinnedProtected,
+            canClose: !isPinnedProtected,
+            closesWholeGroup: frame.role === 'parent',
+        };
+    });
+}
+
+/**
+ * Resolve the target zone index when dragging a workspace group horizontally
+ * across multiple sibling slots within the same zone (pinned or unpinned).
+ *
+ * Uses untransformed sibling layout slot boxes (`{ left, width }`) and a small
+ * midpoint hysteresis margin to avoid ping-pong oscillation across wide/narrow
+ * group transitions.
+ */
+export function resolveDragTargetZoneIndex({
+    currentIndex,
+    virtualLeft,
+    virtualWidth,
+    slotBoxes = [],
+    hysteresisPx = 2,
+} = {}) {
+    if (!Array.isArray(slotBoxes) || slotBoxes.length <= 1) return 0;
+    const idx = Math.max(0, Math.min(slotBoxes.length - 1, Number(currentIndex) || 0));
+    const width = Math.max(1, Number(virtualWidth) || Number(slotBoxes[idx]?.width) || 1);
+    const vLeft = Number(virtualLeft) || 0;
+    const vRight = vLeft + width;
+    const h = Math.max(0, Number(hysteresisPx) || 0);
+
+    let targetIndex = idx;
+
+    while (targetIndex < slotBoxes.length - 1) {
+        const nextBox = slotBoxes[targetIndex + 1];
+        if (!nextBox) break;
+        const nextMid = Number(nextBox.left) + (Number(nextBox.width) || 0) * 0.5 + h;
+        if (vRight > nextMid) {
+            targetIndex += 1;
+        } else {
+            break;
+        }
+    }
+
+    if (targetIndex === idx) {
+        while (targetIndex > 0) {
+            const prevBox = slotBoxes[targetIndex - 1];
+            if (!prevBox) break;
+            const prevMid = Number(prevBox.left) + (Number(prevBox.width) || 0) * 0.5 - h;
+            if (vLeft < prevMid) {
+                targetIndex -= 1;
+            } else {
+                break;
+            }
+        }
+    }
+
+    return targetIndex;
 }

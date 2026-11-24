@@ -50,7 +50,7 @@ class ChartAccessibilityTest extends TestCase
         $this->assertStringContainsString('75%', $html, 'pass rate is written as text');
         $this->assertStringContainsString('3 of 4 inspections passed QC.', $html);
         $this->assertChartFrame($html, 'trendChart');
-        $this->assertMatchesRegularExpression('/<details[^>]*>\s*<summary[^>]*>Show data as a table<\/summary>.*Oct 2026.*<\/details>/s', $html);
+        $this->assertMatchesRegularExpression('/<details[^>]*>\s*<summary[^>]*>(?:(?!<\/summary>).)*Show data as a table(?:(?!<\/summary>).)*<\/summary>(?:(?!<\/details>).)*Oct 2026(?:(?!<\/details>).)*<\/details>/s', $html);
         $this->assertSame(1, substr_count($html, 'data-adasi-chart-i18n'), 'chart copy is delivered once per page');
     }
 

@@ -51,6 +51,7 @@ class WorkspaceShell
         'portal.page',
         'purchasing.comparison.show',
         'session.status',
+        'profile.workspace-shortcuts.update',
         'context-panel.*',
         'conversations.drawer.*',
         'conversations.unread-count',
@@ -995,10 +996,13 @@ class WorkspaceShell
         $indexPaths = self::staticIndexPaths($maps['pathMap'], $request);
 
         $quickAccessPaths = [];
+        $resolvedPortalScope = $activeScopeOverride ?? PortalContext::current($user) ?? 'import';
+        $shortcutsState = [];
         if ($user instanceof User) {
             try {
                 $preferenceService = app(UserPreferenceService::class);
                 $preferences = $preferenceService->for($user);
+                $shortcutsState = $preferenceService->workspaceShortcutsForScope($user, $preferences, $resolvedPortalScope);
                 $quickAccess = app(QuickAccessService::class);
                 $selected = $quickAccess->selectedFor(
                     $user,
@@ -1016,6 +1020,7 @@ class WorkspaceShell
                 }
             } catch (\Throwable) {
                 $quickAccessPaths = [];
+                $shortcutsState = [];
             }
         }
 
@@ -1071,7 +1076,11 @@ class WorkspaceShell
                 'basePath' => $basePath,
                 'pathPrefix' => $pathPrefix,
                 'userId' => $user?->getKey(),
-                'portalScope' => $activeScopeOverride ?? PortalContext::current($user) ?? 'import',
+                'portalScope' => $resolvedPortalScope,
+                'shortcutsState' => $shortcutsState,
+                'shortcutsSyncUrl' => $user instanceof User && RouteFacade::has('profile.workspace-shortcuts.update')
+                    ? route('profile.workspace-shortcuts.update')
+                    : null,
                 'dashboardUrl' => $dashboardUrl,
                 'uuidMap' => $maps['uuidMap'],
                 'pathMap' => $maps['pathMap'],
@@ -1167,6 +1176,7 @@ class WorkspaceShell
                     'recentlyClosed' => __('navigation.workspace_shell.recently_closed'),
                     'clearRecentlyClosed' => __('navigation.workspace_shell.clear_recently_closed'),
                     'reopenedAnnouncement' => __('navigation.workspace_shell.reopened_announcement'),
+                    'closedAnnouncement' => __('navigation.workspace_shell.closed_announcement'),
                 ],
             ],
         ];

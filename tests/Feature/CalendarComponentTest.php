@@ -135,8 +135,11 @@ BLADE);
         $report = file_get_contents(resource_path('views/purchasing/reports/index.blade.php'));
         $supplierQuotation = file_get_contents(resource_path('views/supplier/quotations/create.blade.php'));
 
+        $filterBarRuntime = file_get_contents(resource_path('js/filter-bar.js'));
+
         $this->assertStringContainsString('x-ui.date-range-picker', $audit);
-        $this->assertStringContainsString("'adasi:date-range-commit'", $audit);
+        $this->assertStringContainsString("picker: '#auditDateRange'", $audit);
+        $this->assertStringContainsString("'adasi:date-range-commit'", $filterBarRuntime);
         $this->assertStringContainsString('quotationDateFrom', $quotations);
         $this->assertStringContainsString('quotationDateTo', $quotations);
         $this->assertStringContainsString('quotationDateRangeControl', $quotations);

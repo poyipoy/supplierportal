@@ -79,7 +79,7 @@
             <div class="modal-footer tw:bg-surface-low border-top">
                 <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('purchasing.copy.cancel') }}</x-ui.button>
                 <x-ui.button type="button" variant="outline" size="sm" id="btnParsePrImport">
-                    <span class="spinner-border spinner-border-sm me-1 d-none" id="prImportSpinner"></span>
+                    <span class="ui-spinner me-1 d-none" id="prImportSpinner" aria-hidden="true"></span>
                     {{ __('purchasing.copy.parse_validate') }}
                 </x-ui.button>
                 <x-ui.button type="button" size="sm" id="btnApplyPrImport" disabled>

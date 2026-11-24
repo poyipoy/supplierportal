@@ -40,6 +40,11 @@ class LocalInvoiceDocument extends Model
         'updated_at',
     ];
 
+    protected $hidden = [
+        'file_path',
+        'file_inspection_id',
+    ];
+
     public static function maxFilesFor(string $type): int
     {
         return self::MAX_FILES_PER_TYPE[$type] ?? self::DEFAULT_MAX_FILES;

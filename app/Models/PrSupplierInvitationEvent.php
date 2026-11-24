@@ -19,7 +19,7 @@ class PrSupplierInvitationEvent extends Model
 
     public const REMOVED = 'removed';
 
-    protected $fillable = ['pr_id', 'supplier_id', 'event', 'actor_id'];
+    protected $fillable = ['pr_id', 'supplier_id', 'event', 'reason', 'actor_id'];
 
     protected function casts(): array
     {

@@ -34,10 +34,7 @@
                     </p>
                     @include('supplier-audits._status-flow', ['audit' => $activeAudit])
                     <div class="tw:flex tw:max-w-md tw:items-center tw:gap-3">
-                        <div class="tw:h-2 tw:flex-1 tw:overflow-hidden tw:rounded-ui-full tw:bg-surface-container" role="progressbar"
-                            aria-valuemin="0" aria-valuemax="{{ $progress['total'] }}" aria-valuenow="{{ $progress['filled'] }}" aria-label="{{ __('supplier_audit.fields.progress') }}">
-                            <div class="tw:h-full tw:bg-primary" style="width: {{ $percent }}%"></div>
-                        </div>
+                        <progress class="ui-progress tw:h-2 tw:flex-1" value="{{ $progress['filled'] }}" max="{{ max(1, (int) $progress['total']) }}" aria-label="{{ __('supplier_audit.fields.progress') }}"></progress>
                         <span class="tw:text-ui-xs tw:text-on-surface-variant" style="font-variant-numeric: tabular-nums;">{{ __('supplier_audit.labels.progress', $progress) }}</span>
                     </div>
                     @if($activeAudit->status === \App\Models\SupplierAudit::STATUS_REVISION_REQUESTED && $activeAudit->revision_note)

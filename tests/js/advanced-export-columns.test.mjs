@@ -14,14 +14,15 @@ const deferred = () => { let resolve; let reject; const promise = new Promise((a
 const response = (data, status = 200) => ({ status, ok: status >= 200 && status < 300, json: async () => data });
 
 class Element {
-    constructor(doc) { this.ownerDocument = doc; this.listeners = new Map(); this.dataset = {}; this.attributes = new Map(); this.value = ''; this.checked = false; this.disabled = false; this.hidden = false; this.children = []; this.style = { removeProperty() {} }; this.nodes = new Map(); this.classList = { values: new Set(), contains: (x) => this.classList.values.has(x), add: (x) => this.classList.values.add(x), remove: (x) => this.classList.values.delete(x) }; }
+    constructor(doc) { this.ownerDocument = doc; this.listeners = new Map(); this.dataset = {}; this.attributes = new Map(); this.value = ''; this.checked = false; this.disabled = false; this.hidden = false; this.children = []; this.style = { removeProperty() {} }; this.nodes = new Map(); this.lists = new Map(); this.classList = { values: new Set(), contains: (x) => this.classList.values.has(x), add: (x) => this.classList.values.add(x), remove: (x) => this.classList.values.delete(x) }; }
     addEventListener(name, fn) { if (!this.listeners.has(name)) this.listeners.set(name, new Set()); this.listeners.get(name).add(fn); }
     removeEventListener(name, fn) { this.listeners.get(name)?.delete(fn); }
     async emit(name, extra = {}) { const event = { target: this, preventDefault() {}, ...extra }; await Promise.all([...(this.listeners.get(name) || [])].map((fn) => fn(event))); }
+    dispatchEvent() {}
     setAttribute(k, v) { this.attributes.set(k, v); }
     removeAttribute(k) { this.attributes.delete(k); }
     querySelector(k) { if (k === 'span') return null; if (k === '[data-export-busy-icon]') return this.children.find((x) => Object.hasOwn(x.dataset, 'exportBusyIcon')); return this.nodes.get(k) || null; }
-    querySelectorAll() { return []; }
+    querySelectorAll(k) { return this.lists.get(k) || []; }
     append(x) { this.children.push(x); }
     replaceChildren(...items) { this.children = items; }
     remove() {}
@@ -146,4 +147,271 @@ test('malformed catalog is rejected with localized load feedback and never enabl
     h.pending[0].resolve(response(invalid)); h.pending[1].resolve(response({ data: [] })); await opening;
     assert.equal(h.el('[data-export-error]').textContent, 'Failed');
     assert.equal(h.el('[data-export-submit]').disabled, true); assert.equal(h.configureCalls, 0);
+});
+
+test('CSV delimiter selector toggles on CSV format, sends csv_delimiter, and debounced preview disables submit on exceeds_limit', async () => {
+    const timers = [];
+    const requests = [];
+    const exports = [];
+    const doc = { activeElement: null, documentElement: { lang: 'id' }, querySelector: () => null, createElement: () => new Element(doc) };
+    let previewPayload = { total_rows: 150000, max_rows: 100000, exceeds_limit: true, is_empty: false };
+    const win = {
+        location: { href: 'https://portal.test/purchasing/purchase-orders' },
+        AbortController,
+        setTimeout: (fn, delay) => { const id = timers.length + 1; timers.push({ id, fn, delay, cleared: false }); return id; },
+        clearTimeout: (id) => { const t = timers.find((item) => item.id === id); if (t) t.cleared = true; },
+        fetch: async (url, init) => {
+            requests.push({ url, init });
+            if (url.includes('/definitions/')) return response(definition());
+            if (url.includes('/preview-count')) return response(previewPayload);
+            return response({ data: [], personal: [], team: [], can_manage_team: true });
+        },
+    };
+    doc.defaultView = win;
+    const root = new Element(doc);
+    root.dataset = {
+        exportKey: 'purchasing.po',
+        definitionUrl: '/definitions/purchasing.po',
+        presetsUrl: '/presets',
+        presetStoreUrl: '/presets',
+        previewUrl: '/exports/preview-count',
+        defaultCsvDelimiter: ';',
+        filterSelectors: '{}',
+        initialFilters: '{}',
+        exportCopy: JSON.stringify({
+            failed: 'Failed', invalid_columns: 'Invalid', save_failed: 'Save failed', saved: 'Saved',
+            loading: 'Loading', default_columns: 'Default', preview_loading: 'Counting...',
+            preview_summary: ':rows rows · :columns cols · :format',
+            preview_empty: '0 rows', preview_exceeds: 'Limit :limit exceeded by :rows', preview_failed: 'Unavailable',
+        }),
+    };
+    const keys = [
+        '.modal', '[data-advanced-export-form]', '[data-export-submit]', '[data-export-quick]',
+        '[data-export-status]', '[data-export-error]', '[data-export-preset]', '[data-export-format]',
+        '[data-export-csv-delimiter-group]', '[data-export-csv-delimiter]', '[data-export-preview]',
+        '[data-export-preset-name]', '[data-export-default]', '[data-export-relative]', '[data-export-days]',
+        '[data-export-save]', '[data-export-update]', '[data-export-delete]', '[data-export-open]', '[data-export-retry]', '.modal-title',
+    ];
+    for (const key of keys) root.nodes.set(key, new Element(doc));
+    const form = root.querySelector('[data-advanced-export-form]');
+    form.action = 'https://portal.test/purchasing/export/purchase-orders';
+    const token = new Element(doc); token.value = 'csrf-tok'; form.nodes.set('[name="_token"]', token);
+    root.querySelector('[data-export-format]').value = 'xlsx';
+    root.querySelector('[data-export-csv-delimiter]').value = ';';
+    root.querySelector('[data-export-error]').hidden = true;
+    const modal = root.querySelector('.modal');
+    const bs = { async show() { modal.classList.add('show'); await modal.emit('show.bs.modal'); await modal.emit('shown.bs.modal'); }, async hide() { await modal.emit('hide.bs.modal'); modal.classList.remove('show'); await modal.emit('hidden.bs.modal'); } };
+    win.bootstrap = { Modal: { getOrCreateInstance: () => bs } };
+    win.AdasiAsyncExport = { startExport: async (_target, options) => { exports.push(options.body); return true; } };
+    let state;
+    const designer = {
+        configure(c, s) { state = createColumnState(c, s); },
+        setColumns(c) { state = transitionColumns(state, { type: 'preset', columns: c }); },
+        reset() { state = transitionColumns(state, { type: 'reset' }); },
+        serialize() { return serializeColumns(state); },
+        setEnabled() {}, suspend() {}, destroy() {}, focus() {}, getState: () => state,
+    };
+    createAdvancedExport(root, { designer });
+    modal.classList.add('show');
+    await modal.emit('show.bs.modal');
+    await modal.emit('shown.bs.modal');
+
+    // CSV delimiter hidden initially for XLSX
+    assert.equal(root.querySelector('[data-export-csv-delimiter-group]').hidden, true);
+    // Preview timer scheduled at 400ms
+    const activeTimer = timers.filter((t) => !t.cleared).at(-1);
+    assert.equal(activeTimer.delay, 400);
+    await activeTimer.fn();
+    const previewReq = requests.find((r) => r.url === '/exports/preview-count');
+    assert.equal(previewReq.init.priority, 'low');
+    assert.equal(root.querySelector('[data-export-submit]').disabled, true);
+    assert.match(root.querySelector('[data-export-preview]').textContent, /100\.000|100,000/);
+
+    // Switch preview back under limit and choose CSV format with semicolon delimiter
+    previewPayload = { total_rows: 12, max_rows: 100000, exceeds_limit: false, is_empty: false };
+    root.querySelector('[data-export-format]').value = 'csv';
+    await root.querySelector('[data-export-format]').emit('change');
+    assert.equal(root.querySelector('[data-export-csv-delimiter-group]').hidden, false);
+    assert.equal(root.querySelector('[data-export-csv-delimiter]').value, ';');
+    await form.emit('change', { target: { dataset: { filterName: 'status' } } });
+    await timers.filter((t) => !t.cleared).at(-1).fn();
+    assert.equal(root.querySelector('[data-export-submit]').disabled, false);
+
+    await form.emit('submit');
+    assert.deepEqual(exports[0].options, { columns: ['po_number', 'status', 'remark'], format: 'csv', csv_delimiter: ';' });
+});
+
+test('relative date range panel stays hidden until checked and quick day presets update days, aria-pressed, and preview', async () => {
+    const timers = [];
+    const requests = [];
+    const exports = [];
+    const doc = { documentElement: { lang: 'en' }, querySelector: () => null, createElement: () => new Element(doc), addEventListener() {}, removeEventListener() {} };
+    const win = {
+        location: { href: 'https://portal.test/purchasing/purchase-orders?po_number=PO%2FLEGACY%2F9' },
+        AbortController,
+        setTimeout: (fn, delay) => { const id = timers.length + 1; timers.push({ id, fn, delay, cleared: false }); return id; },
+        clearTimeout: (id) => { const t = timers.find((item) => item.id === id); if (t) t.cleared = true; },
+        fetch: async (url, init) => {
+            requests.push({ url, init });
+            if (url.includes('/definitions/')) return response({ ...definition(), filters: [{ name: 'start_date', type: 'date' }, { name: 'end_date', type: 'date' }, { name: 'search', type: 'text' }] });
+            if (url.includes('/preview-count')) return response({ total_rows: 15, max_rows: 100000, exceeds_limit: false, is_empty: false });
+            return response({ data: [], personal: [], team: [], can_manage_team: false });
+        },
+    };
+    doc.defaultView = win;
+    const root = new Element(doc);
+    root.dataset = {
+        exportKey: 'purchasing.po',
+        definitionUrl: '/definitions/purchasing.po',
+        presetsUrl: '/presets',
+        presetStoreUrl: '/presets',
+        previewUrl: '/exports/preview-count',
+        defaultCsvDelimiter: ',',
+        filterSelectors: '{}',
+        initialFilters: '{}',
+        exportCopy: JSON.stringify({
+            failed: 'Failed', invalid_columns: 'Invalid', save_failed: 'Save failed', saved: 'Saved',
+            loading: 'Loading', default_columns: 'Default', preview_loading: 'Counting...',
+            preview_summary: ':rows rows · :columns cols · :format', preview_empty: '0 rows', preview_exceeds: 'Too many', preview_failed: 'Unavailable',
+        }),
+    };
+    const keys = [
+        '.modal', '[data-advanced-export-form]', '[data-export-submit]', '[data-export-quick]',
+        '[data-export-status]', '[data-export-error]', '[data-export-preset]', '[data-export-format]',
+        '[data-export-preset-name]', '[data-export-default]', '[data-export-relative]', '[data-export-relative-panel]',
+        '[data-export-days]', '[data-export-preview]', '[data-export-save]', '[data-export-update]', '[data-export-delete]',
+        '[data-export-open]', '[data-export-retry]', '.modal-title',
+    ];
+    for (const key of keys) root.nodes.set(key, new Element(doc));
+    const presetButtons = [7, 30, 90].map((days) => {
+        const btn = new Element(doc);
+        btn.dataset = { exportDaysPreset: String(days) };
+        btn.disabled = true;
+        return btn;
+    });
+    root.lists.set('[data-export-days-preset]', presetButtons);
+
+    const form = root.querySelector('[data-advanced-export-form]');
+    form.action = 'https://portal.test/purchasing/export/purchase-orders';
+    const token = new Element(doc); token.value = 'csrf-tok'; form.nodes.set('[name="_token"]', token);
+    const startInput = new Element(doc); startInput.dataset = { filterName: 'start_date' };
+    const endInput = new Element(doc); endInput.dataset = { filterName: 'end_date' };
+    const searchInput = new Element(doc); searchInput.dataset = { filterName: 'search' };
+    form.lists.set('[data-filter-name]', [startInput, endInput, searchInput]);
+    form.lists.set('[data-filter-name="start_date"], [data-filter-name="end_date"]', [startInput, endInput]);
+    root.querySelector('[data-export-format]').value = 'xlsx';
+    root.querySelector('[data-export-error]').hidden = true;
+    const modal = root.querySelector('.modal');
+    const bs = { async show() { modal.classList.add('show'); await modal.emit('show.bs.modal'); await modal.emit('shown.bs.modal'); }, async hide() { await modal.emit('hide.bs.modal'); modal.classList.remove('show'); await modal.emit('hidden.bs.modal'); } };
+    win.bootstrap = { Modal: { getOrCreateInstance: () => bs } };
+    win.AdasiAsyncExport = { startExport: async (_target, options) => { exports.push(options.body); return true; } };
+    let state;
+    const designer = {
+        configure(c, s) { state = createColumnState(c, s); },
+        setColumns(c) { state = transitionColumns(state, { type: 'preset', columns: c }); },
+        reset() { state = transitionColumns(state, { type: 'reset' }); },
+        serialize() { return serializeColumns(state); },
+        setEnabled() {}, suspend() {}, destroy() {}, focus() {}, getState: () => state,
+    };
+    createAdvancedExport(root, { designer });
+    modal.classList.add('show');
+    await modal.emit('show.bs.modal');
+    await modal.emit('shown.bs.modal');
+
+    // Legacy URL ?po_number=... hydrates unified search input.
+    assert.equal(searchInput.value, 'PO/LEGACY/9');
+    // Relative panel stays hidden until checked.
+    assert.equal(root.querySelector('[data-export-relative-panel]').hidden, true);
+    assert.equal(root.querySelector('[data-export-relative]').attributes.get('aria-expanded'), 'false');
+    assert.equal(startInput.disabled, false);
+    assert.equal(presetButtons[0].disabled, true);
+
+    // Check relative date range -> panel visible, start/end disabled, 30-day chip pressed.
+    root.querySelector('[data-export-relative]').checked = true;
+    await root.querySelector('[data-export-relative]').emit('change');
+    assert.equal(root.querySelector('[data-export-relative-panel]').hidden, false);
+    assert.equal(root.querySelector('[data-export-relative]').attributes.get('aria-expanded'), 'true');
+    assert.equal(startInput.disabled, true);
+    assert.equal(endInput.disabled, true);
+    assert.equal(presetButtons[1].attributes.get('aria-pressed'), 'true');
+    assert.equal(presetButtons[2].attributes.get('aria-pressed'), 'false');
+
+    // Click 90-day chip -> updates days, aria-pressed, preview payload, and submit payload.
+    await presetButtons[2].emit('click');
+    assert.equal(root.querySelector('[data-export-days]').value, '90');
+    assert.equal(presetButtons[1].attributes.get('aria-pressed'), 'false');
+    assert.equal(presetButtons[2].attributes.get('aria-pressed'), 'true');
+    await timers.filter((t) => !t.cleared).at(-1).fn();
+    const previewBody = JSON.parse(requests.filter((r) => r.url === '/exports/preview-count').at(-1).init.body);
+    assert.deepEqual(previewBody.date_range, { mode: 'relative', days: 90 });
+
+    await form.emit('submit');
+    assert.deepEqual(exports[0].date_range, { mode: 'relative', days: 90 });
+    assert.equal(exports[0].search, 'PO/LEGACY/9');
+});
+
+test('export submit marks form managed, renders a single spinner preserving button label, and leaves zero spinners when reopened', async () => {
+    const h = harness();
+    const form = h.el('[data-advanced-export-form]');
+    const submit = h.el('[data-export-submit]');
+
+    // Realistic child DOM tracking for submit button & label span
+    const labelSpan = new Element(h.doc);
+    labelSpan.textContent = 'Export';
+    submit.children = [labelSpan];
+    const attach = (child, prepend = false) => {
+        child.parentElement = submit;
+        child.remove = () => {
+            submit.children = submit.children.filter((item) => item !== child);
+        };
+        if (prepend) submit.children.unshift(child);
+        else submit.children.push(child);
+    };
+    submit.append = (child) => attach(child, false);
+    submit.prepend = (child) => attach(child, true);
+    submit.querySelector = (sel) => {
+        if (sel === 'span:not([data-export-busy-icon])' || sel === 'span') {
+            return submit.children.find((node) => !Object.hasOwn(node.dataset, 'exportBusyIcon')) || null;
+        }
+        if (sel === '[data-export-busy-icon]') {
+            return submit.children.find((node) => Object.hasOwn(node.dataset, 'exportBusyIcon')) || null;
+        }
+        return null;
+    };
+    submit.querySelectorAll = (sel) => sel === '.ui-spinner'
+        ? submit.children.filter((node) => String(node.className || '').split(/\s+/).includes('ui-spinner'))
+        : [];
+
+    assert.equal(form.attributes.has('data-managed-submit'), true);
+    assert.equal(form.attributes.has('data-no-loader'), true);
+
+    await h.open();
+    const inflight = deferred();
+    h.sdk(() => inflight.promise);
+
+    const exportPromise = form.emit('submit');
+    await Promise.resolve();
+
+    // During dispatch: exactly 1 spinner (on the left), accessible label stays visible, aria-busy is true
+    const activeSpinners = submit.querySelectorAll('.ui-spinner');
+    assert.equal(activeSpinners.length, 1);
+    assert.equal(submit.children[0], activeSpinners[0]);
+    assert.equal(submit.attributes.get('aria-busy'), 'true');
+    assert.equal(labelSpan.style.display, undefined);
+
+    // Resolve export -> modal closes -> spinner removed cleanly
+    inflight.resolve(true);
+    await exportPromise;
+    assert.equal(h.modal.classList.contains('show'), false);
+    assert.equal(submit.querySelectorAll('.ui-spinner').length, 0);
+    assert.equal(submit.attributes.has('aria-busy'), false);
+
+    // Reopen Advanced Export even if a stray spinner were injected externally -> cleaned to 0 spinners
+    const straySpinner = new Element(h.doc);
+    straySpinner.className = 'ui-spinner';
+    submit.append(straySpinner);
+    await h.open();
+    assert.equal(submit.querySelectorAll('.ui-spinner').length, 0);
+    assert.equal(submit.attributes.has('aria-busy'), false);
+    assert.equal(submit.disabled, false);
 });

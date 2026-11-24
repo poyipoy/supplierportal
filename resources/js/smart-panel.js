@@ -1,3 +1,5 @@
+import { isSameOriginUrl } from './workspace-shell-core.js';
+
 const PANEL_ID = 'adasi-smart-panel';
 
 export function buildPreviewFrameSrc(doc) {
@@ -140,14 +142,21 @@ function initSmartPanel() {
         }
     }
 
-    function closePanel() {
+    function closePanel({ restoreFocus = true } = {}) {
+        if (panel.classList.contains('tw:hidden')) return;
         panel.classList.add('tw:hidden');
-        document.body.classList.remove('ui-dialog-open');
+        if (typeof window !== 'undefined' && window.AdasiOverlayModality) {
+            window.AdasiOverlayModality.release(panel, { restoreFocus: false });
+        } else {
+            document.body.classList.remove('ui-dialog-open');
+        }
         loadedIframeUrl = null;
         isExpanded = false;
         if (iframeEl) iframeEl.removeAttribute('src');
-        if (lastTrigger && typeof lastTrigger.focus === 'function') {
-            lastTrigger.focus();
+        const targetTrigger = lastTrigger;
+        lastTrigger = null;
+        if (restoreFocus && targetTrigger && targetTrigger.isConnected !== false && typeof targetTrigger.focus === 'function') {
+            targetTrigger.focus();
         }
     }
 
@@ -166,14 +175,43 @@ function initSmartPanel() {
 
             const left = document.createElement('div');
             const badge = document.createElement('span');
-            badge.className = 'tw:block tw:text-[11px] tw:font-semibold tw:uppercase tw:text-on-surface-variant';
+            badge.className = 'tw:block tw:text-ui-xs tw:font-semibold tw:uppercase tw:text-on-surface-variant';
             badge.textContent = node.label || node.type || '';
 
+            const currentOrigin = typeof window !== 'undefined' ? (window.location?.origin || '') : '';
+            const safeChainUrl = typeof node.url === 'string' && node.url.trim() !== ''
+                && (currentOrigin
+                    ? isSameOriginUrl(node.url, currentOrigin)
+                    : (node.url.trim().startsWith('/') && !node.url.trim().startsWith('//')));
+
             let refEl;
-            if (node.url) {
+            if (safeChainUrl) {
                 refEl = document.createElement('a');
                 refEl.href = node.url;
                 refEl.className = 'ui-focus-ring tw:text-ui-sm tw:font-bold tw:text-primary tw:hover:underline ui-tabular-nums';
+                refEl.addEventListener('click', (event) => {
+                    if (
+                        event.defaultPrevented
+                        || event.button !== 0
+                        || event.metaKey
+                        || event.ctrlKey
+                        || event.shiftKey
+                        || event.altKey
+                        || refEl.getAttribute('target') === '_blank'
+                    ) {
+                        return;
+                    }
+                    if (typeof window === 'undefined' || !window.AdasiWorkspaceShell || typeof window.AdasiNavigateUrl !== 'function') {
+                        return;
+                    }
+                    const origin = window.location?.origin || '';
+                    if (!isSameOriginUrl(node.url, origin)) {
+                        return;
+                    }
+                    event.preventDefault();
+                    closePanel({ restoreFocus: false });
+                    window.AdasiNavigateUrl(node.url);
+                });
             } else {
                 refEl = document.createElement('strong');
                 refEl.className = 'tw:text-ui-sm tw:font-bold tw:text-on-surface ui-tabular-nums';
@@ -185,13 +223,13 @@ function initSmartPanel() {
             const right = document.createElement('div');
             right.className = 'tw:text-end';
             const statusSpan = document.createElement('span');
-            statusSpan.className = 'tw:inline-flex tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-semibold tw:bg-surface-high tw:text-on-surface';
+            statusSpan.className = 'tw:inline-flex tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:font-semibold tw:bg-surface-high tw:text-on-surface';
             statusSpan.textContent = node.status || '—';
             right.append(statusSpan);
 
             if (node.date) {
                 const dateSpan = document.createElement('span');
-                dateSpan.className = 'tw:block tw:mt-1 tw:text-[11px] tw:text-on-surface-variant ui-tabular-nums';
+                dateSpan.className = 'tw:block tw:mt-1 tw:text-ui-xs tw:text-on-surface-variant ui-tabular-nums';
                 dateSpan.textContent = node.date;
                 right.append(dateSpan);
             }
@@ -263,7 +301,11 @@ function initSmartPanel() {
         if (iframeEl) iframeEl.removeAttribute('src');
         if (openExternalEl) openExternalEl.classList.add('tw:hidden');
         panel.classList.remove('tw:hidden');
-        document.body.classList.add('ui-dialog-open');
+        if (typeof window !== 'undefined' && window.AdasiOverlayModality) {
+            window.AdasiOverlayModality.acquire(panel, { triggerEl: lastTrigger });
+        } else {
+            document.body.classList.add('ui-dialog-open');
+        }
         if (dialogEl) dialogEl.setAttribute('aria-busy', 'true');
         syncDialogWidth();
         if (closeBtn && typeof closeBtn.focus === 'function') {
@@ -352,8 +394,16 @@ function initSmartPanel() {
     }
 
     panel.querySelectorAll('[data-smart-panel-close]').forEach((el) => {
-        el.addEventListener('click', closePanel);
+        el.addEventListener('click', () => closePanel());
     });
+
+    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+        window.addEventListener('pageshow', (event) => {
+            if (event?.persisted) {
+                closePanel({ restoreFocus: false });
+            }
+        });
+    }
 
     document.addEventListener('keydown', (e) => {
         if (panel.classList.contains('tw:hidden')) return;

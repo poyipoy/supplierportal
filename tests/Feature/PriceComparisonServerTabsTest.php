@@ -198,4 +198,32 @@ class PriceComparisonServerTabsTest extends TestCase
         $warmResponse->assertOk();
         $this->assertSame($cachedSummary, $warmResponse->viewData('summary'));
     }
+
+    public function test_historical_view_exposes_accessible_live_status_region_and_prevents_synthetic_submit(): void
+    {
+        $response = $this->actingAs($this->purchasing)
+            ->get(route('purchasing.comparison.historical'));
+
+        $response->assertOk();
+        $response->assertSee('id="historicalResultsStatus" class="tw:sr-only" aria-live="polite"', false);
+        $response->assertSee('id="historicalResults" class="tw:grid tw:gap-4" aria-busy="false"', false);
+        $response->assertDontSee('id="historicalResults" class="tw:grid tw:gap-4" aria-live="polite"', false);
+
+        $fragment = $this->actingAs($this->purchasing)
+            ->withHeaders(['X-Requested-With' => 'XMLHttpRequest'])
+            ->get(route('purchasing.comparison.historical'));
+
+        $fragment->assertOk();
+        $this->assertStringContainsString('id="historicalResultsStatus" class="tw:sr-only" aria-live="polite"', $fragment->json('html'));
+        $this->assertStringContainsString('aria-describedby="historicalKeyHint"', $fragment->json('html'));
+        $this->assertStringContainsString('id="historicalKeyHint"', $fragment->json('html'));
+
+        $scripts = file_get_contents(resource_path('views/purchasing/comparison/_scripts.blade.php'));
+        $this->assertIsString($scripts);
+        $this->assertStringNotContainsString(
+            "filterForm.dispatchEvent(new Event('submit'",
+            $scripts,
+            'Historical filters without a selected material must sync URL state instead of dispatching an unhandled synthetic submit that triggers AdasiLoader'
+        );
+    }
 }

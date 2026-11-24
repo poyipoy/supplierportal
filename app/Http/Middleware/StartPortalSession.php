@@ -4,13 +4,16 @@ namespace App\Http\Middleware;
 
 use App\Support\Auth\SessionLifecycle;
 use Closure;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Session\Middleware\StartSession;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Extends Laravel's StartSession so read-only background polls and passive
  * session status checks never slide the database session `last_activity`
- * timestamp or refresh the session cookie expiration.
+ * timestamp or refresh the session cookie expiration, and non-HTML JSON/204
+ * responses preserve unconsumed redirect flash data for the next page render.
  */
 class StartPortalSession extends StartSession
 {
@@ -37,8 +40,40 @@ class StartPortalSession extends StartSession
 
         $this->addCookieToResponse($response, $session);
 
+        if ($this->shouldPreservePendingFlash($response, $session, $initialId)) {
+            $remainingOldFlash = array_values(array_filter(
+                (array) $session->get('_flash.old', []),
+                static fn (mixed $key): bool => is_string($key) && $session->exists($key),
+            ));
+
+            if ($remainingOldFlash !== []) {
+                $session->keep($remainingOldFlash);
+            }
+        }
+
         $this->saveSession($request);
 
         return $response;
+    }
+
+    private function shouldPreservePendingFlash(mixed $response, mixed $session, string $initialId): bool
+    {
+        if (! $response instanceof Response) {
+            return false;
+        }
+
+        if (! ($response instanceof JsonResponse || $response->getStatusCode() === 204)) {
+            return false;
+        }
+
+        if ($session->getId() !== $initialId) {
+            return false;
+        }
+
+        if ((array) $session->get('_flash.new', []) !== []) {
+            return false;
+        }
+
+        return (array) $session->get('_flash.old', []) !== [];
     }
 }

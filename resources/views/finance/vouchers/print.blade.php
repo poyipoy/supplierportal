@@ -71,8 +71,8 @@
     <table class="form-table">
         <thead>
             <tr>
-                <th style="width: 72%; text-align: left">{{ $label('finance.voucher.description') }}</th>
-                <th style="width: 28%">{{ $label('finance.voucher.amount_idr') }}</th>
+                <th scope="col" style="width: 72%; text-align: left">{{ $label('finance.voucher.description') }}</th>
+                <th scope="col" style="width: 28%">{{ $label('finance.voucher.amount_idr') }}</th>
             </tr>
         </thead>
         <tbody>
@@ -133,10 +133,10 @@
     <table class="signatures">
         <thead>
             <tr>
-                <th style="width: 25%">{{ $label('local_invoice.labels.received') }}</th>
-                <th style="width: 25%">{{ $label('local_invoice.labels.approved') }}</th>
-                <th style="width: 25%">{{ $label('local_invoice.labels.reviewed') }}</th>
-                <th style="width: 25%">{{ $label('local_invoice.labels.created') }}</th>
+                <th scope="col" style="width: 25%">{{ $label('local_invoice.labels.received') }}</th>
+                <th scope="col" style="width: 25%">{{ $label('local_invoice.labels.approved') }}</th>
+                <th scope="col" style="width: 25%">{{ $label('local_invoice.labels.reviewed') }}</th>
+                <th scope="col" style="width: 25%">{{ $label('local_invoice.labels.created') }}</th>
             </tr>
         </thead>
         <tbody>

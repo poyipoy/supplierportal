@@ -71,7 +71,7 @@ class AdvancedPurchaseOrderExportTest extends TestCase
         $export = new PurchaseOrdersExport($this->supplier->id);
         $export->setExportLocale($locale);
         $export->applyOptions(new ExportOptions(['remark', 'po_number', 'status'], 'csv', 'supplier'));
-        $this->assertSame($locale === 'en' ? ['Remark', 'PO Number', 'Status'] : ['Catatan', 'Nomor PO', 'Status'], $export->headings());
+        $this->assertSame($locale === 'en' ? ['Remark', 'Purchase Order', 'Status'] : ['Catatan', 'Purchase Order', 'Status'], $export->headings());
         $this->assertSame([], $export->query()->getEagerLoads());
         $row = $export->query()->firstOrFail();
         $expected = ["'=Pilot é, \"note\"", 'PO/08/2026/911', $locale === 'en' ? 'Active' : 'Aktif'];
@@ -188,7 +188,7 @@ class AdvancedPurchaseOrderExportTest extends TestCase
         unset($pending);
         $contents = Storage::disk('private')->get('exports/po-pilot.csv');
         $this->assertSame(1, substr_count($contents, "\xEF\xBB\xBF"));
-        $this->assertSame(1, substr_count($contents, 'PO Number'));
+        $this->assertSame(1, substr_count($contents, 'Purchase Order'));
         $this->assertCount(502, array_filter(explode("\n", trim($contents))));
         $this->assertStringContainsString("'=Pilot é", $contents);
     }
@@ -222,7 +222,7 @@ class AdvancedPurchaseOrderExportTest extends TestCase
         $book = IOFactory::load(Storage::disk('private')->path($record->file_path));
         try {
             $sheet = $book->getActiveSheet();
-            $this->assertSame(['Remark', 'PO Number', 'Currency'], $sheet->toArray()[0]);
+            $this->assertSame(['Remark', 'Purchase Order', 'Currency'], $sheet->toArray()[0]);
             $this->assertSame('PO/08/2026/911', $sheet->getCell('B2')->getValue());
             $this->assertEquals(24, $sheet->getRowDimension(1)->getRowHeight('px'));
             $this->assertEquals(-1, $sheet->getRowDimension(2)->getRowHeight());
@@ -249,7 +249,7 @@ class AdvancedPurchaseOrderExportTest extends TestCase
         $this->supplier->preference()->create([...config('user_preferences.defaults'), 'locale' => $locale]);
         // The same ordered subset is recorded by the rendered-browser proof.
         $columns = ['remark', 'po_number', 'currency'];
-        $headings = $locale === 'en' ? ['Remark', 'PO Number', 'Currency'] : ['Catatan', 'Nomor PO', 'Mata Uang'];
+        $headings = $locale === 'en' ? ['Remark', 'Purchase Order', 'Currency'] : ['Catatan', 'Purchase Order', 'Mata Uang'];
         $values = ["'=Pilot é, \"note\"", 'PO/08/2026/911', 'USD'];
         foreach (['xlsx', 'csv'] as $format) {
             $this->actingAs($this->supplier)->postJson(route('supplier.export.purchase-orders'), [

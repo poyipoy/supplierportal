@@ -15,7 +15,12 @@
     'allowCustom' => false,
     'suggestionsUrl' => null,
     'remote' => false,
+    'preloadOnOpen' => false,
+    'exportFilterContext' => false,
     'maxlength' => 100,
+    'size' => 'md',
+    'dataFilterName' => null,
+    'helperId' => null,
     'labelClass' => 'tw:text-ui-sm tw:font-medium tw:text-on-surface',
 ])
 
@@ -25,9 +30,9 @@
     $validationKey = trim(preg_replace('/\[([^\]]*)\]/', '.$1', $name), '.');
     $message = $error ?: (isset($errors) && $errors->has($validationKey) ? $errors->first($validationKey) : null);
     $resolvedValue = old($validationKey, $value);
-    $helperId = $helper ? $resolvedId . '-help' : null;
+    $resolvedHelperId = $helper ? ($helperId ?: $resolvedId . '-help') : null;
     $errorId = $message ? $resolvedId . '-error' : null;
-    $describedBy = collect([$helperId, $errorId])->filter()->implode(' ');
+    $describedBy = collect([$resolvedHelperId, $errorId])->filter()->implode(' ');
 
     $normalizedOptions = collect($options)->map(function ($item, $key) {
         if (is_array($item)) {
@@ -65,6 +70,8 @@
         allowCustom: @js(filter_var($allowCustom, FILTER_VALIDATE_BOOLEAN)),
         suggestionsUrl: @js($suggestionsUrl),
         remoteSearch: @js(filter_var($remote, FILTER_VALIDATE_BOOLEAN)),
+        preloadOnOpen: @js(filter_var($preloadOnOpen, FILTER_VALIDATE_BOOLEAN)),
+        exportFilterContext: @js(filter_var($exportFilterContext, FILTER_VALIDATE_BOOLEAN)),
         disabled: @js((bool) $disabled)
     })"
     @click.outside="close(false)"
@@ -72,7 +79,7 @@
     x-on:adasi:dismiss-overlays.window="if (open) close(false)"
     @keydown.escape.stop="close(true)"
     @focusout="if ($event.relatedTarget && !$el.contains($event.relatedTarget)) close(false)"
-    x-on:set-select-value.window="if ($event.detail?.name === '{{ $name }}' || $event.detail?.id === '{{ $resolvedId }}') { const nextVal = String($event.detail.value ?? ''); selectedValue = nextVal; syncNativeSelect(nextVal, !$event.detail?.silent); }"
+    x-on:set-select-value.window="if ($event.detail?.name === '{{ $name }}' || $event.detail?.id === '{{ $resolvedId }}') { setExternalValue($event.detail.value, Boolean($event.detail?.silent)); }"
     x-on:set-select-disabled.window="if ($event.detail?.name === '{{ $name }}' || $event.detail?.id === '{{ $resolvedId }}') { isDisabled = Boolean($event.detail.disabled); if (isDisabled) close(false); }"
 >
     @if($label)
@@ -88,6 +95,7 @@
         id="{{ $resolvedId }}"
         name="{{ $name }}"
         x-ref="nativeSelect"
+        @if($dataFilterName) data-filter-name="{{ $dataFilterName }}" @endif
         @required($required)
         :disabled="isDisabled"
         @if($describedBy) aria-describedby="{{ $describedBy }}" @endif
@@ -123,7 +131,7 @@
             aria-haspopup="listbox"
             :aria-expanded="open"
             :aria-controls="'{{ $resolvedId }}-listbox'"
-            class="ui-motion tw:flex tw:min-h-[var(--ui-control-height-md)] tw:w-full tw:min-w-0 tw:items-center tw:justify-between tw:gap-2 tw:rounded-ui-sm tw:border tw:bg-surface tw:px-3 tw:py-2 tw:text-start tw:text-ui-sm tw:text-on-surface tw:shadow-none ui-focus-ring tw:disabled:cursor-not-allowed tw:disabled:bg-surface-container tw:disabled:opacity-75"
+            class="ui-motion tw:flex {{ $size === 'sm' ? 'tw:min-h-[var(--ui-control-height-sm)] tw:px-2.5 tw:py-1' : 'tw:min-h-[var(--ui-control-height-md)] tw:px-3 tw:py-2' }} tw:w-full tw:min-w-0 tw:items-center tw:justify-between tw:gap-2 tw:rounded-ui-sm tw:border tw:bg-surface tw:text-start tw:text-ui-sm tw:text-on-surface tw:shadow-none ui-focus-ring tw:disabled:cursor-not-allowed tw:disabled:bg-surface-container tw:disabled:opacity-75"
             :class="{
                 'tw:border-error': {{ $message ? 'true' : 'false' }} || hasAsyncError,
                 'tw:border-outline-strong': !({{ $message ? 'true' : 'false' }} || hasAsyncError) && !open,
@@ -182,7 +190,7 @@
         x-transition:leave-start="tw:opacity-100 tw:translate-y-0"
         x-transition:leave-end="tw:opacity-0 tw:translate-y-1"
         :class="openUpwards ? 'tw:bottom-full tw:mb-1.5' : 'tw:top-full tw:mt-1.5'"
-        class="tw:absolute tw:left-0 tw:right-0 tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:shadow-ui-2 tw:overflow-hidden"
+        class="tw:absolute tw:left-0 tw:right-0 tw:z-dropdown tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface tw:shadow-ui-2 tw:overflow-hidden"
         style="background-color: var(--ui-menu-bg); z-index: calc(var(--ui-z-modal) + 10);"
     >
         {{-- Search Input in Popover --}}
@@ -202,7 +210,8 @@
                     :aria-activedescendant="highlightedIndex >= 0 ? (showCustomOption && highlightedIndex === filteredOptions.length ? '{{ $resolvedId }}-opt-custom' : '{{ $resolvedId }}-opt-' + highlightedIndex) : null"
                     @keydown.arrow-down.prevent="navigate(1)"
                     @keydown.arrow-up.prevent="navigate(-1)"
-                    @keydown.enter.prevent="selectHighlighted()"
+                    @keydown.enter="if ($event.isComposing || $event.keyCode === 229) return; $event.preventDefault(); selectHighlighted($event)"
+                    maxlength="{{ $maxlength }}"
                     placeholder="{{ $searchPlaceholder }}"
                     autocomplete="off"
                     class="form-control form-control-sm ui-motion"
@@ -292,9 +301,18 @@
                 </div>
             </template>
 
+            {{-- Loading State --}}
+            <div
+                x-show="loadingSuggestions && filteredOptions.length === 0"
+                x-cloak
+                class="tw:py-4 tw:px-3 tw:text-center tw:text-on-surface-variant"
+            >
+                <p class="tw:text-ui-xs tw:m-0">{{ __('common.select.loading') }}</p>
+            </div>
+
             {{-- Empty State --}}
             <div
-                x-show="filteredOptions.length === 0 && !showCustomOption"
+                x-show="!loadingSuggestions && filteredOptions.length === 0 && !showCustomOption"
                 x-cloak
                 class="tw:py-6 tw:px-3 tw:text-center tw:text-on-surface-variant"
             >
@@ -305,7 +323,7 @@
     </div>
     </div>
 
-    @if($helper)<p id="{{ $helperId }}" class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ $helper }}</p>@endif
+    @if($helper)<p id="{{ $resolvedHelperId }}" class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ $helper }}</p>@endif
     @if($message)
         <p id="{{ $errorId }}" class="tw:m-0 tw:flex tw:items-start tw:gap-1.5 tw:text-ui-xs tw:font-medium tw:text-error" role="alert">
             <x-ui.icon name="circle-alert" size="sm" class="tw:mt-0.5" /><span>{{ $message }}</span>

@@ -39,6 +39,12 @@ class LocalProcurementImport extends Model
         'updated_at',
     ];
 
+    protected $hidden = [
+        'token_hash',
+        'owner_job_key',
+        'failure',
+    ];
+
     protected function casts(): array
     {
         return ['summary' => 'array', 'warnings' => 'array', 'lease_expires_at' => 'datetime',

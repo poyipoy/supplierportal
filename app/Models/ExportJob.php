@@ -57,6 +57,15 @@ class ExportJob extends Model
         'expires_at',
     ];
 
+    protected $hidden = [
+        'file_path',
+        'disk',
+        'export_class',
+        'export_args',
+        'export_options',
+        'error_message',
+    ];
+
     protected function casts(): array
     {
         return [

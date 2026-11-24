@@ -55,12 +55,18 @@
         border-color: var(--md-warning);
         box-shadow: inset 0 0 0 2px var(--md-surface);
     }
+
+    .pr-timeline-item.is-cancelled .pr-timeline-marker {
+        background: var(--md-error);
+        border-color: var(--md-error);
+        box-shadow: inset 0 0 0 2px var(--md-surface);
+    }
 </style>
 @endpush
 
 @section('content')
 @php
-    $hasReachedSubmitted = in_array($pr->status, ['submitted', 'rejected', 'bidding', 'completed'], true);
+    $hasReachedSubmitted = in_array($pr->status, ['submitted', 'rejected', 'bidding', 'completed', 'cancelled'], true);
     $hasReachedBidding = in_array($pr->status, ['bidding', 'completed'], true);
 @endphp
 
@@ -343,7 +349,19 @@
             {{-- Action Card --}}
             <x-ui.card :title="__('purchasing.copy.workflow_actions')">
                 <div class="tw:grid tw:gap-3">
-                    @if($pr->created_by !== auth()->id())
+                    @if($pr->isCancelled())
+                        <x-ui.alert tone="error" :title="__('purchasing.copy.pr_cancelled_banner_title')">
+                            <p class="tw:m-0">
+                                {{ __('purchasing.copy.pr_cancelled_by_at', [
+                                    'actor' => $pr->cancelledBy?->name ?? '-',
+                                    'date' => $pr->cancelled_at ? $regionalFormatter->timestamp($pr->cancelled_at, 'datetime_comma') : '-',
+                                ]) }}
+                            </p>
+                            @if($pr->cancellation_reason)
+                                <p class="tw:m-0 tw:mt-2 tw:whitespace-pre-line tw:font-medium">{{ $pr->cancellation_reason }}</p>
+                            @endif
+                        </x-ui.alert>
+                    @elseif($pr->created_by !== auth()->id())
                         <x-ui.alert tone="info" :title="__('purchasing.copy.read_only_access')">{{ __('common.final_review.created_by', ['name' => $pr->creator->name ?? __('purchasing.copy.another_purchasing_user')]) }}</x-ui.alert>
                     @elseif($pr->status === 'draft')
                         <x-ui.alert tone="warning" :title="__('purchasing.copy.draft_requisition')">{{ __('purchasing.copy.complete_the_material_list_before_submitting_this_requisition') }}</x-ui.alert>
@@ -370,6 +388,21 @@
                         </x-ui.button>
                     @else
                         <x-ui.alert tone="success" :title="__('purchasing.copy.requisition_active')">{{ __('purchasing.copy.this_requisition_has_been_submitted_and_is_active_in_procurement') }}</x-ui.alert>
+                    @endif
+
+                    @if($canCancelPr)
+                        <x-ui.button
+                            type="button"
+                            id="btn-cancel-pr"
+                            variant="outline"
+                            size="sm"
+                            class="tw:w-full tw:border-error tw:text-error"
+                            x-data
+                            x-on:click="$dispatch('open-ui-dialog', 'cancel-pr-dialog')"
+                        >
+                            <x-ui.icon name="x-circle" size="sm" />
+                            <span>{{ __('purchasing.copy.cancel_pr') }}</span>
+                        </x-ui.button>
                     @endif
                 </div>
             </x-ui.card>
@@ -407,10 +440,20 @@
                             <time class="ui-tabular-nums tw:text-on-surface-variant tw:text-ui-xs" datetime="{{ $pr->updated_at->toIso8601String() }}">{{ $regionalFormatter->timestamp($pr->updated_at, 'datetime_comma') }}</time>
                         @endif
                     </li>
-                    <li class="pr-timeline-item {{ $hasReachedBidding ? 'is-current' : '' }}">
-                        <span class="pr-timeline-marker" aria-hidden="true"></span>
-                        <div class="tw:text-ui-sm fw-bold {{ $hasReachedBidding ? 'text-warning' : 'tw:text-on-surface-variant' }}">{{ __('purchasing.copy.supplier_bidding') }}</div>
-                    </li>
+                    @if($pr->isCancelled())
+                        <li class="pr-timeline-item is-cancelled">
+                            <span class="pr-timeline-marker" aria-hidden="true"></span>
+                            <div class="tw:text-ui-sm fw-bold tw:text-error">{{ __('status.pr.cancelled') }}</div>
+                            @if($pr->cancelled_at)
+                                <time class="ui-tabular-nums tw:text-on-surface-variant tw:text-ui-xs" datetime="{{ $pr->cancelled_at->toIso8601String() }}">{{ $regionalFormatter->timestamp($pr->cancelled_at, 'datetime_comma') }}</time>
+                            @endif
+                        </li>
+                    @else
+                        <li class="pr-timeline-item {{ $hasReachedBidding ? 'is-current' : '' }}">
+                            <span class="pr-timeline-marker" aria-hidden="true"></span>
+                            <div class="tw:text-ui-sm fw-bold {{ $hasReachedBidding ? 'text-warning' : 'tw:text-on-surface-variant' }}">{{ __('purchasing.copy.supplier_bidding') }}</div>
+                        </li>
+                    @endif
                 </ol>
                 @if($invitationEvents->isNotEmpty())
                     <section class="tw:mt-4 tw:border-t tw:border-outline-variant tw:pt-3" aria-labelledby="pr-invitation-history-title">
@@ -419,6 +462,9 @@
                             @foreach($invitationEvents as $event)
                                 <li class="tw:text-ui-xs tw:text-on-surface">
                                     <span class="fw-semibold">{{ __($event->event === \App\Models\PrSupplierInvitationEvent::ADDED ? 'purchasing.copy.invitation_event_added' : 'purchasing.copy.invitation_event_removed', ['supplier' => $event->supplier?->supplier?->company_name ?? $event->supplier?->name ?? '-', 'actor' => $event->actor?->name ?? '-']) }}</span>
+                                    @if($event->reason)
+                                        <span class="tw:mt-0.5 tw:block tw:text-on-surface-variant">{{ __('purchasing.copy.invitation_event_reason', ['reason' => $event->reason]) }}</span>
+                                    @endif
                                     <time class="ui-tabular-nums tw:block tw:text-on-surface-variant" datetime="{{ $event->created_at->toIso8601String() }}">{{ $regionalFormatter->timestamp($event->created_at, 'datetime_comma') }}</time>
                                 </li>
                             @endforeach
@@ -432,81 +478,240 @@
 
 @if($canManageSuppliers)
     <x-ui.dialog name="manage-pr-suppliers" maxWidth="2xl"
-                 :show="$errors->has('supplier_ids') || $errors->has('supplier')"
+                 :show="$errors->has('supplier_ids') || $errors->has('supplier') || $errors->has('reason')"
                  :title="__('purchasing.copy.manage_invited_suppliers')"
                  :description="__('purchasing.copy.manage_invited_suppliers_description')">
-        @if($errors->has('supplier_ids') || $errors->has('supplier'))
-            <x-ui.alert tone="error" :title="__('purchasing.copy.invitation_change_failed')" class="tw:mb-4">
-                {{ $errors->first('supplier_ids') ?: $errors->first('supplier') }}
-            </x-ui.alert>
-        @endif
+        <div
+            x-data="{
+                pendingRemove: null,
+                removeReason: '',
+                confirmTemplate: @js(__('purchasing.copy.invitation_remove_confirm_text')),
+                startRemove(actionUrl, supplierName) {
+                    this.pendingRemove = { actionUrl, supplierName };
+                    this.removeReason = '';
+                    this.$nextTick(() => this.$refs.keepRemoveBtn?.focus({ preventScroll: true }));
+                },
+                cancelRemove() {
+                    this.pendingRemove = null;
+                    this.removeReason = '';
+                },
+            }"
+            x-on:close-ui-dialog.window="if ($event.detail === 'manage-pr-suppliers' || $event.detail?.name === 'manage-pr-suppliers') cancelRemove()"
+        >
+            @if($errors->has('supplier_ids') || $errors->has('supplier') || $errors->has('reason'))
+                <x-ui.alert tone="error" :title="__('purchasing.copy.invitation_change_failed')" class="tw:mb-4">
+                    {{ $errors->first('supplier_ids') ?: ($errors->first('supplier') ?: $errors->first('reason')) }}
+                </x-ui.alert>
+            @endif
 
-        <section aria-labelledby="pr-invited-list-title" class="tw:mb-5">
-            <h3 id="pr-invited-list-title" class="tw:m-0 tw:mb-2 tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('purchasing.copy.invited_suppliers') }}</h3>
-            <ul class="tw:m-0 tw:grid tw:list-none tw:gap-2 tw:p-0">
-                @foreach($pr->invitedSuppliers as $invited)
-                    @php
-                        $invitedName = $invited->supplier->company_name ?? $invited->name;
-                        $hasQuotation = in_array((int) $invited->id, $suppliersWithQuotation, true);
-                        $isLastInvited = $pr->invitedSuppliers->count() <= 1;
-                        $removeBlockedReason = $hasQuotation
-                            ? __('purchasing.copy.invitation_cannot_remove_with_quotation')
-                            : ($isLastInvited ? __('purchasing.copy.invitation_cannot_remove_last') : null);
-                    @endphp
-                    <li class="tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-2 tw:rounded-lg tw:border tw:border-outline-variant tw:p-2.5">
-                        <div class="tw:min-w-0">
-                            <span class="tw:block tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ $invitedName }}</span>
+            <section aria-labelledby="pr-invited-list-title" class="tw:mb-5">
+                <h3 id="pr-invited-list-title" class="tw:m-0 tw:mb-2 tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('purchasing.copy.invited_suppliers') }}</h3>
+                <ul class="tw:m-0 tw:grid tw:list-none tw:gap-2 tw:p-0">
+                    @foreach($pr->invitedSuppliers as $invited)
+                        @php
+                            $invitedName = $invited->supplier->company_name ?? $invited->name;
+                            $hasQuotation = in_array((int) $invited->id, $suppliersWithQuotation, true);
+                            $isLastInvited = $pr->invitedSuppliers->count() <= 1;
+                            $removeBlockedReason = $hasQuotation
+                                ? __('purchasing.copy.invitation_cannot_remove_with_quotation')
+                                : ($isLastInvited ? __('purchasing.copy.invitation_cannot_remove_last') : null);
+                            $removeAccessibleLabel = __('purchasing.copy.invitation_remove_action_label', ['supplier' => $invitedName]);
+                        @endphp
+                        <li class="tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-2 tw:rounded-lg tw:border tw:border-outline-variant tw:p-2.5">
+                            <div class="tw:min-w-0">
+                                <span class="tw:block tw:text-ui-sm tw:font-medium tw:text-on-surface">{{ $invitedName }}</span>
+                                @if($removeBlockedReason)
+                                    <span id="invited-lock-{{ $invited->id }}" class="tw:block tw:text-ui-xs tw:text-on-surface-variant">{{ $removeBlockedReason }}</span>
+                                @endif
+                            </div>
                             @if($removeBlockedReason)
-                                <span id="invited-lock-{{ $invited->id }}" class="tw:block tw:text-ui-xs tw:text-on-surface-variant">{{ $removeBlockedReason }}</span>
-                            @endif
-                        </div>
-                        @if($removeBlockedReason)
-                            <x-ui.button type="button" variant="outline" size="sm" disabled aria-describedby="invited-lock-{{ $invited->id }}">
-                                <x-ui.icon name="user-minus" size="sm" />
-                                <span>{{ __('purchasing.copy.invitation_remove_supplier') }}</span>
-                                <span class="tw:sr-only">{{ $invitedName }}</span>
-                            </x-ui.button>
-                        @else
-                            <form action="{{ route('purchasing.requisitions.suppliers.destroy', [$pr, $invited]) }}" method="POST" class="js-remove-invited-form" data-supplier-name="{{ $invitedName }}">
-                                @csrf
-                                @method('DELETE')
-                                <input type="hidden" name="return_url" value="{{ \App\Support\PurchasingNavigation::currentUrlForReturn() }}">
-                                <x-ui.button type="button" variant="outline" size="sm" class="js-remove-invited">
+                                <x-ui.button type="button" variant="outline" size="sm" disabled aria-label="{{ $removeAccessibleLabel }}" aria-describedby="invited-lock-{{ $invited->id }}">
                                     <x-ui.icon name="user-minus" size="sm" />
                                     <span>{{ __('purchasing.copy.invitation_remove_supplier') }}</span>
-                                    <span class="tw:sr-only">{{ $invitedName }}</span>
                                 </x-ui.button>
-                            </form>
-                        @endif
-                    </li>
-                @endforeach
-            </ul>
-        </section>
+                            @else
+                                <x-ui.button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    class="js-remove-invited"
+                                    aria-label="{{ $removeAccessibleLabel }}"
+                                    x-on:click="startRemove(@js(route('purchasing.requisitions.suppliers.destroy', [$pr, $invited])), @js($invitedName))"
+                                >
+                                    <x-ui.icon name="user-minus" size="sm" />
+                                    <span>{{ __('purchasing.copy.invitation_remove_supplier') }}</span>
+                                </x-ui.button>
+                            @endif
+                        </li>
+                    @endforeach
+                </ul>
 
-        <form id="add-pr-suppliers-form" action="{{ route('purchasing.requisitions.suppliers.store', $pr) }}" method="POST">
-            @csrf
-            <input type="hidden" name="return_url" value="{{ \App\Support\PurchasingNavigation::currentUrlForReturn() }}">
-            <fieldset class="tw:m-0 tw:min-w-0 tw:border-0 tw:p-0">
-                <legend class="tw:mb-2 tw:p-0 tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('purchasing.copy.invitation_add_suppliers') }}</legend>
-                @forelse($invitableSuppliers as $candidate)
-                    <div class="form-check tw:mb-1.5">
-                        <input class="form-check-input" type="checkbox" name="supplier_ids[]" value="{{ $candidate->id }}" id="invite-supplier-{{ $candidate->id }}" @checked(collect(old('supplier_ids', []))->contains($candidate->id))>
-                        <label class="form-check-label" for="invite-supplier-{{ $candidate->id }}">{{ $candidate->supplier->company_name ?? $candidate->name }}</label>
-                    </div>
-                @empty
-                    <p class="tw:m-0 tw:text-ui-sm tw:text-on-surface-variant">{{ __('purchasing.copy.invitation_no_suppliers_to_add') }}</p>
-                @endforelse
-            </fieldset>
-        </form>
+                <div
+                    x-show="pendingRemove !== null"
+                    x-cloak
+                    class="tw:mt-3 tw:rounded-ui-md tw:border tw:border-error tw:bg-error-container tw:p-3.5 tw:text-on-error-container"
+                    role="region"
+                    aria-labelledby="confirm-remove-supplier-title"
+                >
+                    <h4 id="confirm-remove-supplier-title" class="tw:m-0 tw:text-ui-sm tw:font-semibold">{{ __('purchasing.copy.invitation_remove_confirm_title') }}</h4>
+                    <p class="tw:m-0 tw:mt-1 tw:text-ui-xs" x-text="pendingRemove ? confirmTemplate.replace(':supplier', pendingRemove.supplierName) : ''"></p>
+                    <form x-bind:action="pendingRemove?.actionUrl || '#'" method="POST" class="tw:mt-3 tw:grid tw:gap-2.5">
+                        @csrf
+                        @method('DELETE')
+                        <input type="hidden" name="return_url" value="{{ \App\Support\PurchasingNavigation::currentUrlForReturn() }}">
+                        <div>
+                            <label for="remove-supplier-reason" class="tw:block tw:text-ui-xs tw:font-semibold">{{ __('purchasing.copy.invitation_remove_reason_label') }}</label>
+                            <textarea
+                                id="remove-supplier-reason"
+                                name="reason"
+                                rows="2"
+                                maxlength="500"
+                                x-model="removeReason"
+                                aria-describedby="remove-supplier-reason-hint"
+                                placeholder="{{ __('purchasing.copy.invitation_remove_reason_placeholder') }}"
+                                class="form-control form-control-sm tw:mt-1"
+                            ></textarea>
+                            <p id="remove-supplier-reason-hint" class="tw:m-0 tw:mt-1 tw:text-ui-xs">{{ __('purchasing.copy.invitation_remove_reason_hint') }}</p>
+                        </div>
+                        <div class="tw:flex tw:flex-wrap tw:justify-end tw:gap-2">
+                            <x-ui.button type="button" variant="outline" size="sm" x-ref="keepRemoveBtn" x-on:click="cancelRemove()">
+                                {{ __('purchasing.copy.invitation_keep_supplier') }}
+                            </x-ui.button>
+                            <x-ui.button type="submit" variant="danger" size="sm">
+                                <x-ui.icon name="user-minus" size="sm" />
+                                <span>{{ __('purchasing.copy.invitation_remove_supplier') }}</span>
+                            </x-ui.button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <form id="add-pr-suppliers-form" action="{{ route('purchasing.requisitions.suppliers.store', $pr) }}" method="POST">
+                @csrf
+                <input type="hidden" name="return_url" value="{{ \App\Support\PurchasingNavigation::currentUrlForReturn() }}">
+                <fieldset class="tw:m-0 tw:min-w-0 tw:border-0 tw:p-0">
+                    <legend class="tw:mb-2 tw:p-0 tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('purchasing.copy.invitation_add_suppliers') }}</legend>
+                    @forelse($invitableSuppliers as $candidate)
+                        @php($wasPreviouslyRemoved = in_array((int) $candidate->id, $cancelledSupplierIds, true))
+                        <div class="form-check tw:mb-1.5">
+                            <input class="form-check-input" type="checkbox" name="supplier_ids[]" value="{{ $candidate->id }}" id="invite-supplier-{{ $candidate->id }}" @checked(collect(old('supplier_ids', []))->contains($candidate->id))>
+                            <label class="form-check-label tw:inline-flex tw:flex-wrap tw:items-center tw:gap-1.5" for="invite-supplier-{{ $candidate->id }}">
+                                <span>{{ $candidate->supplier->company_name ?? $candidate->name }}</span>
+                                @if($wasPreviouslyRemoved)
+                                    <span class="ui-status-chip ui-status-chip--neutral">{{ __('purchasing.copy.invitation_previously_removed') }}</span>
+                                @endif
+                            </label>
+                        </div>
+                    @empty
+                        <p class="tw:m-0 tw:text-ui-sm tw:text-on-surface-variant">{{ __('purchasing.copy.invitation_no_suppliers_to_add') }}</p>
+                    @endforelse
+                </fieldset>
+            </form>
+        </div>
 
         <x-slot:actions>
-            <x-ui.button type="button" variant="outline" x-data x-on:click="$dispatch('close-ui-dialog', 'manage-pr-suppliers')">{{ __('purchasing.copy.cancel') }}</x-ui.button>
+            <x-ui.button type="button" variant="outline" data-dialog-initial-focus x-data x-on:click="$dispatch('close-ui-dialog', 'manage-pr-suppliers')">{{ __('purchasing.copy.cancel') }}</x-ui.button>
             @if($invitableSuppliers->isNotEmpty())
                 <x-ui.button type="submit" form="add-pr-suppliers-form">
                     <x-ui.icon name="user-plus" size="sm" />
                     <span>{{ __('purchasing.copy.invitation_add_selected') }}</span>
                 </x-ui.button>
             @endif
+        </x-slot:actions>
+    </x-ui.dialog>
+@endif
+
+@if($canCancelPr)
+    <x-ui.dialog
+        name="cancel-pr-dialog"
+        maxWidth="lg"
+        :show="$errors->has('cancellation_reason')"
+        :title="__('purchasing.copy.cancel_pr_title')"
+        :description="__('purchasing.copy.cancel_pr_description', ['pr_number' => $pr->pr_number ?? '-'])"
+    >
+        <div
+            x-data="{
+                reason: @js(old('cancellation_reason', '')),
+                touched: @js($errors->has('cancellation_reason')),
+                serverError: @js($errors->first('cancellation_reason', '')),
+                get hasClientError() {
+                    return this.touched && this.reason.trim().length < 5;
+                },
+                get hasError() {
+                    return Boolean(this.serverError) || this.hasClientError;
+                },
+                get errorText() {
+                    if (this.serverError) return this.serverError;
+                    if (this.hasClientError) return @js(__('purchasing.copy.cancellation_reason_required'));
+                    return '';
+                },
+                validateBeforeSubmit(event) {
+                    this.touched = true;
+                    if (this.reason.trim().length < 5) {
+                        event.preventDefault();
+                        this.$nextTick(() => this.$refs.reasonInput?.focus());
+                    }
+                },
+            }"
+        >
+            <x-ui.alert tone="warning" class="tw:mb-4">
+                {{ __('purchasing.copy.cancel_pr_warning') }}
+            </x-ui.alert>
+
+            <form
+                id="cancel-pr-form"
+                action="{{ route('purchasing.requisitions.cancel', $pr) }}"
+                method="POST"
+                data-async-submit
+                x-on:submit="validateBeforeSubmit($event)"
+            >
+                @csrf
+                <input type="hidden" name="return_url" value="{{ \App\Support\PurchasingNavigation::currentUrlForReturn() }}">
+                <div class="tw:grid tw:gap-1.5">
+                    <label for="pr-cancellation-reason" class="tw:text-ui-sm tw:font-semibold tw:text-on-surface">
+                        {{ __('purchasing.copy.cancellation_reason') }} <span class="tw:text-error" aria-hidden="true">*</span>
+                    </label>
+                    <textarea
+                        id="pr-cancellation-reason"
+                        x-ref="reasonInput"
+                        name="cancellation_reason"
+                        rows="3"
+                        required
+                        minlength="5"
+                        maxlength="1000"
+                        x-model="reason"
+                        x-on:blur="touched = true"
+                        x-on:input="serverError = ''"
+                        x-bind:aria-invalid="hasError ? 'true' : 'false'"
+                        x-bind:aria-describedby="hasError ? 'pr-cancellation-reason-hint pr-cancellation-reason-error' : 'pr-cancellation-reason-hint'"
+                        placeholder="{{ __('purchasing.copy.cancellation_reason_placeholder') }}"
+                        class="form-control"
+                        x-bind:class="hasError ? 'is-invalid' : ''"
+                    ></textarea>
+                    <div class="tw:flex tw:items-center tw:justify-between tw:gap-2 tw:text-ui-xs tw:text-on-surface-variant">
+                        <span id="pr-cancellation-reason-hint">{{ __('purchasing.copy.cancellation_reason_hint') }}</span>
+                        <span class="ui-tabular-nums" x-text="`${reason.length}/1000`">0/1000</span>
+                    </div>
+                    <p
+                        id="pr-cancellation-reason-error"
+                        class="tw:m-0 tw:min-h-[1.25rem] tw:text-ui-xs tw:font-medium tw:text-error"
+                        x-show="hasError"
+                        x-cloak
+                        x-text="errorText"
+                        aria-live="polite"
+                    ></p>
+                </div>
+            </form>
+        </div>
+
+        <x-slot:actions>
+            <x-ui.button type="button" variant="outline" data-dialog-initial-focus x-data x-on:click="$dispatch('close-ui-dialog', 'cancel-pr-dialog')">
+                {{ __('purchasing.copy.keep_pr') }}
+            </x-ui.button>
+            <x-ui.button type="submit" form="cancel-pr-form" variant="danger">
+                <x-ui.icon name="x-circle" size="sm" />
+                <span>{{ __('purchasing.copy.cancel_pr_confirm') }}</span>
+            </x-ui.button>
         </x-slot:actions>
     </x-ui.dialog>
 @endif
@@ -526,19 +731,6 @@
             if (result.isConfirmed) {
                 window.AdasiButton?.startLoading($btn[0]);
                 form.submit();
-            }
-        });
-    });
-    $('.js-remove-invited').on('click', function() {
-        const form = $(this).closest('form');
-        AdasiAlert.confirm({
-            title: @json(__('purchasing.copy.invitation_remove_confirm_title')),
-            text: @json(__('purchasing.copy.invitation_remove_confirm_text')).replace(':supplier', form.data('supplier-name')),
-            confirmText: @json(__('purchasing.copy.invitation_remove_supplier')),
-            cancelText: @json(__('purchasing.copy.cancel'))
-        }).then((result) => {
-            if (result.isConfirmed) {
-                form.trigger('submit');
             }
         });
     });

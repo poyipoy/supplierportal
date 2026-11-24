@@ -65,6 +65,7 @@ class WorkspaceShellSecurityTest extends TestCase
             ->assertSee('data-shortcuts-splitter="bookmarks-frequent"', false)
             ->assertSee('data-shortcuts-dock', false)
             ->assertSee('data-shortcuts-pane-restore="favorites"', false)
+            ->assertSee('data-workspace-icon="check"', false)
             ->assertSee('data-workspace-session-close="initial"', false)
             ->assertSee('_embed=1', false);
 
@@ -79,6 +80,7 @@ class WorkspaceShellSecurityTest extends TestCase
         $this->assertArrayHasKey('moveSessionRight', $shellConfig['i18n']);
         $this->assertArrayHasKey('reopenClosedSession', $shellConfig['i18n']);
         $this->assertArrayHasKey('recentlyClosed', $shellConfig['i18n']);
+        $this->assertArrayHasKey('closedAnnouncement', $shellConfig['i18n']);
         $this->assertStringContainsString("frame-ancestors 'none'", (string) $shellResponse->headers->get('Content-Security-Policy'));
 
         $embedResponse = $this->actingAs($user)->get(route('purchasing.shipments.index', ['search' => 'SHP', '_embed' => 1]));

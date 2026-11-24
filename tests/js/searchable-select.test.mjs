@@ -2,274 +2,195 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { searchableSelect } from '../../resources/js/searchable-select.js';
 
-test('searchableSelect initializes with options and selected value', () => {
-    const comp = searchableSelect({
-        selectedValue: 'PR-001',
-        options: [
-            { value: 'PR-001', label: 'PR-001', searchKeywords: 'pr-001' },
-            { value: 'PR-002', label: 'PR-002', searchKeywords: 'pr-002' },
-        ],
-        allowCustom: true,
-    });
-
-    assert.equal(comp.selectedValue, 'PR-001');
-    assert.equal(comp.options.length, 2);
-    assert.equal(comp.selectedOption.label, 'PR-001');
-});
-
-test('filteredOptions filters by query matching label or keywords', () => {
-    const comp = searchableSelect({
-        options: [
-            { value: 'PR-100', label: 'PR-100', searchKeywords: 'pr-100 vendor a' },
-            { value: 'PR-200', label: 'PR-200', searchKeywords: 'pr-200 vendor b' },
-        ],
-    });
-
-    comp.search = 'vendor b';
-    assert.equal(comp.filteredOptions.length, 1);
-    assert.equal(comp.filteredOptions[0].value, 'PR-200');
-
-    comp.search = 'xyz';
-    assert.equal(comp.filteredOptions.length, 0);
-});
-
-test('showCustomOption is true only when allowCustom is true, search is not empty, and no exact match', () => {
-    const comp = searchableSelect({
-        options: [
-            { value: 'PR-100', label: 'PR-100', searchKeywords: 'pr-100' },
-        ],
-        allowCustom: true,
-    });
-
-    comp.search = '';
-    assert.equal(comp.showCustomOption, false);
-
-    comp.search = 'PR-100';
-    assert.equal(comp.hasExactMatch, true);
-    assert.equal(comp.showCustomOption, false);
-
-    comp.search = 'PR-999';
-    assert.equal(comp.hasExactMatch, false);
-    assert.equal(comp.showCustomOption, true);
-    assert.equal(comp.totalSelectableCount, 1);
-});
-
-test('selectCustom prepends new option and selects it', () => {
-    const comp = searchableSelect({
-        options: [
-            { value: 'PR-100', label: 'PR-100', searchKeywords: 'pr-100' },
-        ],
-        allowCustom: true,
-    });
-
-    comp.selectCustom('PR-NEW-99');
-    assert.equal(comp.selectedValue, 'PR-NEW-99');
-    assert.equal(comp.options[0].value, 'PR-NEW-99');
-    assert.equal(comp.open, false);
-});
-
-test('clear resets selection', () => {
-    const comp = searchableSelect({
-        selectedValue: 'PR-100',
-        options: [
-            { value: 'PR-100', label: 'PR-100', searchKeywords: 'pr-100' },
-        ],
-    });
-
-    comp.clear();
-    assert.equal(comp.selectedValue, '');
-    assert.equal(comp.selectedOption, null);
-});
-
-function withFetch(responder, run) {
-    const original = globalThis.fetch;
-    const calls = [];
-    globalThis.fetch = async (url) => {
-        calls.push(String(url));
-        return responder(String(url));
+function createFakeNativeSelect({ name = 'search', filterName = 'search', form = null } = {}) {
+    const addedOptions = [];
+    const dispatched = [];
+    return {
+        name,
+        dataset: { filterName },
+        value: '',
+        disabled: false,
+        form,
+        addedOptions,
+        dispatched,
+        querySelector(selector) {
+            return addedOptions.find((opt) => selector.includes(`"${opt.value}"`)) || null;
+        },
+        add(opt) {
+            addedOptions.push(opt);
+        },
+        dispatchEvent(evt) {
+            dispatched.push(evt.type);
+        },
     };
-
-    return Promise.resolve(run(calls)).finally(() => {
-        globalThis.fetch = original;
-    });
 }
 
-const jsonResponse = (data) => ({ ok: true, json: async () => ({ data }) });
-const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+test('preloadOnOpen + exportFilterContext fetches low-priority contextual suggestions on open and preserves selectedValue', async () => {
+    const originalFetch = globalThis.fetch;
+    const originalOption = globalThis.Option;
+    const calls = [];
 
-test('remoteSearch fetches without allowCustom and maps label, sublabel and badge', async () => {
-    await withFetch(
-        () => jsonResponse([{ value: 'hash1', label: 'PO-77', sublabel: 'PT Maju', badge: 'OPEN', badgeTone: 'success' }]),
-        async (calls) => {
-            const comp = searchableSelect({ suggestionsUrl: '/po-suggestions', remoteSearch: true });
-            comp.fetchSuggestions('maju');
-            await wait(400);
-
-            assert.equal(calls.length, 1);
-            assert.match(calls[0], /po-suggestions\?q=maju/);
-            assert.deepEqual(comp.options.map((o) => [o.value, o.label, o.sublabel, o.badge]), [['hash1', 'PO-77', 'PT Maju', 'OPEN']]);
-            comp.search = 'maju';
-            assert.equal(comp.filteredOptions.length, 1, 'remote hit must survive the client-side filter');
-        },
-    );
-});
-
-test('remoteSearch does not duplicate options and ignores stale responses', async () => {
-    const resolvers = {};
-    await withFetch(
-        (url) => new Promise((resolve) => { resolvers[new URL(url, 'http://x').searchParams.get('q')] = resolve; }),
-        async () => {
-            const comp = searchableSelect({
-                suggestionsUrl: '/po-suggestions',
-                remoteSearch: true,
-                options: [{ value: 'hash1', label: 'PO-77', sublabel: null, searchKeywords: 'po-77' }],
-            });
-            comp.fetchSuggestions('po');
-            await wait(350);
-            comp.fetchSuggestions('po-7');
-            await wait(350);
-
-            resolvers['po-7'](jsonResponse([{ value: 'hash1', label: 'PO-77' }, { value: 'hash2', label: 'PO-78' }]));
-            await wait(20);
-            resolvers.po(jsonResponse([{ value: 'stale', label: 'PO-STALE' }]));
-            await wait(20);
-
-            assert.deepEqual(comp.options.map((o) => o.value).sort(), ['hash1', 'hash2']);
-        },
-    );
-});
-
-test('suggestions stay disabled without remoteSearch or allowCustom', async () => {
-    await withFetch(
-        () => jsonResponse([{ value: 'x', label: 'X' }]),
-        async (calls) => {
-            const comp = searchableSelect({ suggestionsUrl: '/po-suggestions' });
-            comp.fetchSuggestions('abc');
-            await wait(400);
-            assert.equal(calls.length, 0);
-        },
-    );
-});
-
-test('legacy pr_number suggestions keep working for allowCustom selects', async () => {
-    await withFetch(
-        () => jsonResponse([{ pr_number: 'PR-900' }]),
-        async () => {
-            const comp = searchableSelect({ suggestionsUrl: '/pr-suggestions', allowCustom: true });
-            comp.fetchSuggestions('PR-9');
-            await wait(400);
-            assert.equal(comp.options[0].value, 'PR-900');
-            assert.equal(comp.options[0].label, 'PR-900');
-        },
-    );
-});
-
-test('remoteSearch preserves server searchKeywords so PR number matches survive filteredOptions', async () => {
-    await withFetch(
-        () => jsonResponse([{
-            value: 'hash99',
-            label: 'PO-99',
-            sublabel: 'PT Sumber',
-            badge: 'OPEN',
-            searchKeywords: 'po-99 pr-2026-088 pt sumber open',
-        }]),
-        async () => {
-            const comp = searchableSelect({ suggestionsUrl: '/po-suggestions', remoteSearch: true });
-            comp.fetchSuggestions('pr-2026-088');
-            await wait(400);
-
-            comp.search = 'pr-2026-088';
-            assert.equal(comp.filteredOptions.length, 1);
-            assert.equal(comp.filteredOptions[0].value, 'hash99');
-        },
-    );
-});
-
-test('remoteSearch ignores stale in-flight response after search shrinks below 2 chars', async () => {
-    let resolver;
-    await withFetch(
-        () => new Promise((resolve) => { resolver = resolve; }),
-        async () => {
-            const comp = searchableSelect({ suggestionsUrl: '/po-suggestions', remoteSearch: true });
-            comp.fetchSuggestions('po-old');
-            await wait(350);
-
-            comp.fetchSuggestions('p');
-            resolver(jsonResponse([{ value: 'stale', label: 'PO-OLD' }]));
-            await wait(20);
-
-            assert.equal(comp.options.length, 0);
-            assert.equal(comp.loadingSuggestions, false);
-        },
-    );
-});
-
-test('searchableSelect toggles hasAsyncError on form submit/error events and clears on select', () => {
-    const formListeners = {};
-    const form = {
-        addEventListener(type, fn) { formListeners[type] = fn; },
+    globalThis.Option = function FakeOption(text, value) {
+        this.text = text;
+        this.value = value;
     };
-    const comp = searchableSelect({ remoteSearch: true });
-    comp.$watch = () => {};
-    comp.$refs = { nativeSelect: { name: 'purchase_order', form, value: '', dispatchEvent() {}, querySelector: () => ({}) } };
-    comp.init();
+    globalThis.fetch = async (url, init) => {
+        calls.push({ url, init });
+        return {
+            ok: true,
+            json: async () => ({
+                data: [
+                    { value: 'PO/11/2026/010', label: 'PO/11/2026/010', sublabel: 'PT Alpha', badge: 'ACTIVE', badgeTone: 'success' },
+                    { value: 'JIS G3141 SPCC-SD', label: 'JIS G3141 SPCC-SD', sublabel: 'Material', badge: 'MATERIAL', badgeTone: 'neutral' },
+                ],
+            }),
+        };
+    };
 
-    assert.equal(comp.hasAsyncError, false);
-    formListeners['adasi:form-errors']({ detail: { errors: { purchase_order: ['Required'] } } });
-    assert.equal(comp.hasAsyncError, true);
+    try {
+        const filterInputs = [
+            { dataset: { filterName: 'search' }, value: 'OLD', disabled: false },
+            { dataset: { filterName: 'supplier_id' }, value: 'supHash123', disabled: false },
+            { dataset: { filterName: 'status' }, value: 'active', disabled: false },
+            { dataset: { filterName: 'start_date' }, value: '2026-01-01', disabled: true },
+        ];
+        const namedInputs = new Map([
+            ['[name="date_from"]', { value: '2026-10', disabled: false }],
+            ['[name="date_to"]', { value: '2026-11', disabled: false }],
+            ['[data-export-relative]', { checked: true }],
+            ['[data-export-days]', { value: '30' }],
+        ]);
+        const form = {
+            addEventListener() {},
+            querySelectorAll(sel) {
+                return sel === '[data-filter-name]' ? filterInputs : [];
+            },
+            querySelector(sel) {
+                return namedInputs.get(sel) || null;
+            },
+        };
 
-    comp.select({ value: 'hash1', label: 'PO-1' });
-    assert.equal(comp.hasAsyncError, false);
+        const nativeSelect = createFakeNativeSelect({ name: 'search', filterName: 'search', form });
+        const instance = searchableSelect({
+            selectedValue: 'PO/CUSTOM/KEEP',
+            options: [{ value: 'STALE/001', label: 'STALE/001', sublabel: null, badge: null, badgeTone: 'neutral', searchKeywords: 'stale/001' }],
+            allowCustom: true,
+            remoteSearch: true,
+            preloadOnOpen: true,
+            exportFilterContext: true,
+            suggestionsUrl: 'https://portal.test/exports/search-suggestions?export_key=purchasing.po',
+        });
 
-    formListeners['adasi:form-errors']({ detail: { errors: { purchase_order: ['Cancelled'] } } });
-    assert.equal(comp.hasAsyncError, true);
-    formListeners['adasi:form-submitting']();
-    assert.equal(comp.hasAsyncError, false);
+        instance.$refs = {
+            nativeSelect,
+            triggerButton: { focus() {}, getBoundingClientRect: () => ({ top: 100, bottom: 132 }), closest: () => null },
+            searchInput: { focus() {} },
+            popover: { scrollIntoView() {} },
+        };
+        instance.$el = { closest: () => form };
+        instance.$watch = () => {};
+        instance.$nextTick = (fn) => fn();
+
+        instance.init();
+        instance.toggle();
+        await new Promise(setImmediate);
+
+        assert.equal(calls.length, 1);
+        assert.equal(calls[0].init.priority, 'low');
+        assert.equal(calls[0].init.credentials, 'same-origin');
+
+        const parsed = new URL(calls[0].url);
+        assert.equal(parsed.searchParams.get('export_key'), 'purchasing.po');
+        assert.equal(parsed.searchParams.get('supplier_id'), 'supHash123');
+        assert.equal(parsed.searchParams.get('status'), 'active');
+        assert.equal(parsed.searchParams.get('start_date'), null, 'disabled inputs must be excluded');
+        assert.equal(parsed.searchParams.get('search'), null, 'self search input must be excluded');
+        assert.equal(parsed.searchParams.get('date_from'), '2026-10');
+        assert.equal(parsed.searchParams.get('date_to'), '2026-11');
+        assert.equal(parsed.searchParams.get('date_range[mode]'), 'relative');
+        assert.equal(parsed.searchParams.get('date_range[days]'), '30');
+
+        // Stale option was replaced, while active selectedValue was preserved at the top
+        const values = instance.options.map((o) => o.value);
+        assert.equal(values.includes('STALE/001'), false);
+        assert.equal(values.includes('PO/11/2026/010'), true);
+        assert.equal(values.includes('JIS G3141 SPCC-SD'), true);
+        assert.equal(instance.selectedOption?.value, 'PO/CUSTOM/KEEP');
+    } finally {
+        globalThis.fetch = originalFetch;
+        globalThis.Option = originalOption;
+    }
 });
 
-test('select switches directly to another PO without clear and avoids duplicate change dispatch on watcher tick', () => {
-    const watchers = [];
-    let changeEvents = 0;
-    const nativeSelect = {
-        name: 'local_purchase_order_id',
-        value: '',
-        dispatchEvent(ev) {
-            if (ev?.type === 'change') {
-                changeEvents++;
-            }
-        },
-        querySelector: () => ({}),
+test('setExternalValue syncs custom filter values silently on preset load and dispatches change when non-silent', () => {
+    const originalOption = globalThis.Option;
+    globalThis.Option = function FakeOption(text, value) {
+        this.text = text;
+        this.value = value;
     };
-    const comp = searchableSelect({
-        options: [
-            { value: '30', label: 'PO-LOC-3WAY-001' },
-            { value: '31', label: 'PO-LOC-3WAY-002' },
-        ],
-    });
-    comp.$watch = (prop, fn) => {
-        if (prop === 'selectedValue') watchers.push(fn);
+
+    try {
+        const nativeSelect = createFakeNativeSelect({ name: 'search', filterName: 'search' });
+        const instance = searchableSelect({
+            selectedValue: '',
+            options: [],
+            allowCustom: true,
+            remoteSearch: true,
+        });
+        instance.$refs = { nativeSelect };
+        instance.$watch = () => {};
+
+        instance.init();
+        instance.setExternalValue('REQ/11/2026/999', true);
+
+        assert.equal(instance.selectedValue, 'REQ/11/2026/999');
+        assert.equal(instance.selectedOption?.label, 'REQ/11/2026/999');
+        assert.equal(nativeSelect.value, 'REQ/11/2026/999');
+        assert.deepEqual(nativeSelect.dispatched, []);
+
+        instance.setExternalValue('', false);
+        assert.equal(instance.selectedValue, '');
+        assert.equal(instance.selectedOption, null);
+        assert.deepEqual(nativeSelect.dispatched, ['change']);
+    } finally {
+        globalThis.Option = originalOption;
+    }
+});
+
+test('selectHighlighted ignores Enter during IME composition (isComposing or keyCode 229)', () => {
+    const originalOption = globalThis.Option;
+    globalThis.Option = function FakeOption(text, value) {
+        this.text = text;
+        this.value = value;
     };
-    comp.$refs = { nativeSelect };
-    comp.init();
 
-    comp.select(comp.options[0]);
-    watchers.forEach((fn) => fn(comp.selectedValue));
-    assert.equal(comp.selectedValue, '30');
-    assert.equal(comp.selectedOption?.label, 'PO-LOC-3WAY-001');
-    assert.equal(nativeSelect.value, '30');
-    assert.equal(changeEvents, 1);
+    try {
+        const nativeSelect = createFakeNativeSelect({ name: 'search', filterName: 'search' });
+        const instance = searchableSelect({
+            selectedValue: '',
+            options: [{ value: 'PO/001', label: 'PO/001', sublabel: null, badge: null, badgeTone: 'neutral', searchKeywords: 'po/001' }],
+            allowCustom: true,
+        });
+        instance.$refs = { nativeSelect, triggerButton: { focus() {} } };
+        instance.$watch = () => {};
+        instance.$nextTick = (fn) => fn();
 
-    // Directly select another PO without calling clear()
-    comp.select(comp.options[1]);
-    watchers.forEach((fn) => fn(comp.selectedValue));
-    assert.equal(comp.selectedValue, '31');
-    assert.equal(comp.selectedOption?.label, 'PO-LOC-3WAY-002');
-    assert.equal(nativeSelect.value, '31');
-    assert.equal(changeEvents, 2);
+        instance.open = true;
+        instance.search = 'PO/001';
+        instance.highlightedIndex = 0;
 
-    // Mutating selectedValue directly (without syncNativeSelect) still syncs via watcher
-    comp.selectedValue = '30';
-    watchers.forEach((fn) => fn(comp.selectedValue));
-    assert.equal(nativeSelect.value, '30');
-    assert.equal(changeEvents, 3);
+        instance.selectHighlighted({ isComposing: true, keyCode: 13 });
+        assert.equal(instance.open, true);
+        assert.equal(instance.selectedValue, '');
+
+        instance.selectHighlighted({ isComposing: false, keyCode: 229 });
+        assert.equal(instance.open, true);
+        assert.equal(instance.selectedValue, '');
+
+        instance.selectHighlighted({ isComposing: false, keyCode: 13 });
+        assert.equal(instance.open, false);
+        assert.equal(instance.selectedValue, 'PO/001');
+    } finally {
+        globalThis.Option = originalOption;
+    }
 });

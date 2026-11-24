@@ -122,16 +122,43 @@ class PurchaseRequisitionSupplierInvitationTest extends TestCase
     public function test_supplier_without_quotation_can_be_removed_with_audit(): void
     {
         $pr = $this->invitedRequisition('submitted', [$this->supplier, $this->second]);
+        cache()->put('supplier_dashboard_widgets_'.$this->second->id, ['belumDirespons' => 3], 300);
 
         $this->actingAs($this->purchasing)
-            ->delete(route('purchasing.requisitions.suppliers.destroy', [$pr, $this->second]))
+            ->delete(route('purchasing.requisitions.suppliers.destroy', [$pr, $this->second]), [
+                'reason' => 'Internal sourcing reallocation',
+            ])
             ->assertRedirect(route('purchasing.requisitions.show', $pr))
             ->assertSessionHas('success');
 
         $this->assertSame([$this->supplier->id], $pr->invitedSuppliers()->pluck('users.id')->all());
-        $this->assertDatabaseHas('pr_supplier_invitation_events', [
-            'pr_id' => $pr->id, 'supplier_id' => $this->second->id, 'event' => 'removed', 'actor_id' => $this->purchasing->id,
+        $this->assertDatabaseHas('purchase_requisition_suppliers', [
+            'pr_id' => $pr->id,
+            'supplier_id' => $this->second->id,
+            'cancelled_by' => $this->purchasing->id,
+            'cancellation_reason' => 'Internal sourcing reallocation',
         ]);
+        $this->assertNotNull(
+            DB::table('purchase_requisition_suppliers')
+                ->where('pr_id', $pr->id)
+                ->where('supplier_id', $this->second->id)
+                ->value('cancelled_at')
+        );
+        $this->assertDatabaseHas('pr_supplier_invitation_events', [
+            'pr_id' => $pr->id,
+            'supplier_id' => $this->second->id,
+            'event' => 'removed',
+            'reason' => 'Internal sourcing reallocation',
+            'actor_id' => $this->purchasing->id,
+        ]);
+        $this->assertFalse(cache()->has('supplier_dashboard_widgets_'.$this->second->id));
+
+        $notification = $this->second->notifications()->latest()->first();
+        $this->assertNotNull($notification);
+        $this->assertSame('pr.supplier_removed', $notification->data['event'] ?? null);
+        $this->assertSame($pr->hash, $notification->data['pr_hash'] ?? null);
+        $this->assertStringNotContainsString('Internal sourcing reallocation', json_encode($notification->data));
+        $this->assertStringNotContainsString($this->purchasing->name, json_encode($notification->data));
     }
 
     public function test_supplier_with_quotation_including_soft_deleted_cannot_be_removed(): void
@@ -163,16 +190,96 @@ class PurchaseRequisitionSupplierInvitationTest extends TestCase
         $this->assertSame(1, $pr->invitedSuppliers()->count());
     }
 
-    public function test_added_supplier_can_now_see_the_requisition_and_removed_supplier_cannot(): void
+    public function test_added_supplier_can_now_see_the_requisition_and_removed_supplier_sees_cancelled_summary_without_specs(): void
     {
         $pr = $this->invitedRequisition('submitted', [$this->supplier, $this->third]);
+        $pr->update(['notes' => 'CONFIDENTIAL-SPEC-NOTE']);
+        $neverInvited = User::factory()->create(['role' => 'supplier', 'is_active' => true]);
+
         $this->assertFalse($pr->fresh()->isVisibleToSupplier($this->second->id));
+        $this->assertFalse($pr->fresh()->isAccessibleBySupplier($this->second->id));
 
         $this->store($pr, [$this->second->id]);
         $this->assertTrue($pr->fresh()->isVisibleToSupplier($this->second->id));
 
-        $this->actingAs($this->purchasing)->delete(route('purchasing.requisitions.suppliers.destroy', [$pr, $this->second]));
-        $this->assertFalse($pr->fresh()->isVisibleToSupplier($this->second->id));
+        $this->actingAs($this->purchasing)->delete(route('purchasing.requisitions.suppliers.destroy', [$pr, $this->second]), [
+            'reason' => 'SECRET-INTERNAL-REASON',
+        ]);
+
+        $freshPr = $pr->fresh();
+        $this->assertFalse($freshPr->isVisibleToSupplier($this->second->id));
+        $this->assertTrue($freshPr->isAccessibleBySupplier($this->second->id));
+        $this->assertTrue($freshPr->isCancelledForSupplier($this->second->id));
+        $this->assertFalse($freshPr->isCancelledForSupplier($this->supplier->id));
+
+        // Removed supplier sees minimal cancelled detail (200 OK) with zero item specs/notes/internal reason.
+        $detailHtml = $this->actingAs($this->second)
+            ->get(route('supplier.requests.show', $pr))
+            ->assertOk()
+            ->assertSee($pr->pr_number)
+            ->assertSee(__('status.pr.cancelled'))
+            ->getContent();
+
+        $this->assertStringNotContainsString('Mission 01 Material 1', $detailHtml);
+        $this->assertStringNotContainsString('7209.16.00', $detailHtml);
+        $this->assertStringNotContainsString('CONFIDENTIAL-SPEC-NOTE', $detailHtml);
+        $this->assertStringNotContainsString('SECRET-INTERNAL-REASON', $detailHtml);
+        $this->assertStringNotContainsString($this->purchasing->name, $detailHtml);
+
+        // Create route redirects cleanly to requests.show; store / importPreview / exportForm return 409 Conflict JSON.
+        $this->actingAs($this->second)
+            ->get(route('supplier.quotations.create', $pr))
+            ->assertRedirect(route('supplier.requests.show', $pr))
+            ->assertSessionHas('warning');
+
+        $this->actingAs($this->second)
+            ->postJson(route('supplier.quotations.store', $pr), ['action' => 'draft', 'currency' => 'USD', 'items' => []])
+            ->assertStatus(409)
+            ->assertJsonPath('code', 'invitation_cancelled');
+
+        $this->actingAs($this->second)
+            ->postJson(route('supplier.quotations.import-preview', $pr), [])
+            ->assertStatus(409)
+            ->assertJsonPath('code', 'invitation_cancelled');
+
+        $this->actingAs($this->second)
+            ->postJson(route('supplier.quotations.export-form', $pr), [])
+            ->assertStatus(409)
+            ->assertJsonPath('code', 'invitation_cancelled');
+
+        // Never-invited supplier still gets 403/404 (IDOR isolation preserved).
+        $this->actingAs($neverInvited)->get(route('supplier.requests.show', $pr))->assertNotFound();
+        $this->actingAs($neverInvited)->get(route('supplier.quotations.create', $pr))->assertForbidden();
+        $this->actingAs($neverInvited)->getJson(route('supplier.quotations.availability', $pr))->assertForbidden();
+    }
+
+    public function test_removed_supplier_can_be_reinvited_and_removed_again_with_fresh_notifications(): void
+    {
+        $pr = $this->invitedRequisition('submitted', [$this->supplier, $this->second]);
+
+        // First removal
+        $this->actingAs($this->purchasing)
+            ->delete(route('purchasing.requisitions.suppliers.destroy', [$pr, $this->second]))
+            ->assertSessionHas('success');
+        $this->assertTrue($pr->fresh()->isCancelledForSupplier($this->second->id));
+        $this->assertSame(1, $this->second->notifications()->where('data->event', 'pr.supplier_removed')->count());
+
+        // Re-invite reactivates existing pivot row without unique constraint error
+        $this->store($pr, [$this->second->id])
+            ->assertRedirect(route('purchasing.requisitions.show', $pr))
+            ->assertSessionHas('success');
+
+        $this->assertFalse($pr->fresh()->isCancelledForSupplier($this->second->id));
+        $this->assertTrue($pr->fresh()->isVisibleToSupplier($this->second->id));
+        $this->assertSame(1, DB::table('purchase_requisition_suppliers')->where('pr_id', $pr->id)->where('supplier_id', $this->second->id)->count());
+        $this->assertNull(DB::table('purchase_requisition_suppliers')->where('pr_id', $pr->id)->where('supplier_id', $this->second->id)->value('cancelled_at'));
+        $this->assertSame(1, $this->second->notifications()->where('data->event', 'pr.supplier_invited')->count());
+
+        // Second removal sends a fresh notification (distinct event-scoped eventKey)
+        $this->actingAs($this->purchasing)
+            ->delete(route('purchasing.requisitions.suppliers.destroy', [$pr, $this->second]))
+            ->assertSessionHas('success');
+        $this->assertSame(2, $this->second->notifications()->where('data->event', 'pr.supplier_removed')->count());
     }
 
     public function test_audit_events_are_append_only(): void

@@ -143,13 +143,13 @@
             <table class="table align-middle tw:text-ui-sm">
                 <thead>
                     <tr>
-                        <th>{{ __('local_invoice.labels.invoice') }}</th>
-                        <th>{{ __('local_invoice.labels.supplier') }}</th>
-                        <th>{{ __('finance.refund_ui.reference') }}</th>
-                        <th class="text-end">{{ __('finance.payment.expected_actual') }}</th>
-                        <th class="text-end">{{ __('finance.refund_ui.overpayment') }}</th>
-                        <th>{{ __('finance.refund_ui.status_date') }}</th>
-                        <th class="text-end" style="min-width: 150px;">{{ __('local_invoice.labels.actions') }}</th>
+                        <th scope="col">{{ __('local_invoice.labels.invoice') }}</th>
+                        <th scope="col">{{ __('local_invoice.labels.supplier') }}</th>
+                        <th scope="col">{{ __('finance.refund_ui.reference') }}</th>
+                        <th scope="col" class="text-end">{{ __('finance.payment.expected_actual') }}</th>
+                        <th scope="col" class="text-end">{{ __('finance.refund_ui.overpayment') }}</th>
+                        <th scope="col">{{ __('finance.refund_ui.status_date') }}</th>
+                        <th scope="col" class="text-end" style="min-width: 150px;">{{ __('local_invoice.labels.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>

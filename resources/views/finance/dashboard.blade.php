@@ -485,7 +485,7 @@ window.paymentForecastModule = function() {
             } catch (err) {
                 // The previous render stays on screen; the status line says it is not the new month.
                 this.loadError = true;
-                console.error('Failed to load forecast for month', month, err);
+                window.AdasiDebug?.error('Failed to load forecast for month', month, err);
             } finally {
                 this.isLoading = false;
             }

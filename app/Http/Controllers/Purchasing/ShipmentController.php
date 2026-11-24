@@ -37,7 +37,7 @@ class ShipmentController extends Controller
         Gate::authorize('viewAny', Shipment::class);
         $filters = ShipmentExportFilters::validated($request);
         $query = Shipment::query()
-            ->with(['supplier', 'items.purchaseOrder', 'documents.latestAttachment'])
+            ->with(['supplier:id,name', 'items.purchaseOrder', 'documents.latestAttachment'])
             ->withCount('mtcAttachments')
             ->latest('shipment_date');
         ShipmentExportFilters::apply($query, $filters);
@@ -99,6 +99,7 @@ class ShipmentController extends Controller
                     return RowAction::detail(route('purchasing.shipments.show', $shp), $shp->shipment_number);
                 })
                 ->rawColumns(['shipment_number_display', 'consolidated_pos', 'items_count', 'total_qty', 'actual_weight', 'total_weight', 'shipment_date', 'shipment_date_display', 'estimated_arrival', 'actual_arrival', 'missing_documents', 'status_badge', 'action'])
+                ->only(['DT_RowId', 'shipment_number_display', 'supplier_name', 'consolidated_pos', 'items_count', 'total_qty', 'actual_weight', 'total_weight', 'shipment_date', 'shipment_date_display', 'estimated_arrival', 'actual_arrival', 'missing_documents', 'status_badge', 'action'])
                 ->toArray();
 
             PurchasingNavigation::rememberRecordWindowFromDataTable('purchasing.shipments.index', $payload, $request);

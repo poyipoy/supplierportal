@@ -693,14 +693,13 @@
                 @endif
 
                 {{-- Progress Bar --}}
-                <div class="progress mb-3" style="height: 6px;">
-                    <div class="progress-bar tw:bg-success" role="progressbar" id="docProgressBar"
-                         aria-label="{{ __('purchasing.copy.import_document_completion') }}"
-                         aria-valuemin="0"
-                         aria-valuemax="100"
-                         aria-valuenow="{{ $totalDocs > 0 ? round($completedDocs / $totalDocs * 100) : 0 }}"
-                         style="width: {{ $totalDocs > 0 ? ($completedDocs/$totalDocs*100) : 0 }}%"></div>
-                </div>
+                <progress
+                    class="ui-progress ui-progress--success tw:mb-3 tw:h-1.5 tw:w-full"
+                    id="docProgressBar"
+                    value="{{ $totalDocs > 0 ? round($completedDocs / $totalDocs * 100) : 0 }}"
+                    max="100"
+                    aria-label="{{ __('purchasing.copy.import_document_completion') }}"
+                ></progress>
 
                 @if($allDocsComplete)
                     <x-ui.alert id="allDocsAlert" tone="success" :title="__('purchasing.copy.import_documents_complete')" class="tw:mb-3">
@@ -1017,7 +1016,7 @@
             <div class="modal-footer tw:bg-surface-low border-top">
                 <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('purchasing.copy.cancel') }}</x-ui.button>
                 <x-ui.button type="button" size="sm" id="btnSaveDocStatus">
-                    <span class="spinner-border spinner-border-sm d-none me-1" id="docSpinner"></span>
+                    <span class="ui-spinner d-none me-1" id="docSpinner" aria-hidden="true"></span>
                     {{ __('purchasing.copy.save_changes') }}
                 </x-ui.button>
             </div>
@@ -1036,9 +1035,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('purchasing.copy.close') }}"></button>
             </div>
             <div class="modal-body" id="progressHistoryModalBody">
-                <div class="text-center py-4 text-muted">
-                    <div class="spinner-border spinner-border-sm text-primary me-1" role="status"></div> {{ __('purchasing.copy.loading_history') }}
-                </div>
+                <x-ui.inline-loader :label="__('purchasing.copy.loading_history')" class="tw:py-6" />
             </div>
             <div class="modal-footer">
                 <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('purchasing.copy.close') }}</x-ui.button>
@@ -1099,7 +1096,7 @@
             {{ __('purchasing.copy.cancel') }}
         </x-ui.button>
         <x-ui.button type="button" size="sm" id="btnSubmitShipmentDocStatus" disabled>
-            <span class="spinner-border spinner-border-sm d-none me-1" id="shipmentDocSpinner" role="status" aria-hidden="true"></span>
+            <span class="ui-spinner d-none me-1" id="shipmentDocSpinner" aria-hidden="true"></span>
             <span>{{ __('documents.sync.submit_button') }}</span>
         </x-ui.button>
     </x-slot:actions>
@@ -1237,7 +1234,7 @@
             {{ __('purchasing.copy.cancel') }}
         </x-ui.button>
         <x-ui.button type="button" size="sm" id="btnSubmitBatchPoDocStatus" disabled>
-            <span class="spinner-border spinner-border-sm d-none me-1" id="batchPoDocSpinner" role="status" aria-hidden="true"></span>
+            <span class="ui-spinner d-none me-1" id="batchPoDocSpinner" aria-hidden="true"></span>
             <span>{{ __('purchasing.copy.save_all_po_doc_statuses') }}</span>
         </x-ui.button>
     </x-slot:actions>
@@ -1410,7 +1407,7 @@
             select.append(`<option value="${key}" ${key === currentStatus ? 'selected' : ''}>${label}</option>`);
         }
 
-        const modal = new bootstrap.Modal(document.getElementById('updateDocModal'));
+        const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('updateDocModal'));
         modal.show();
     });
 
@@ -1455,9 +1452,10 @@
                     }).length;
 
                     const pct = total > 0 ? (completed / total * 100) : 0;
+                    const roundedPct = Math.round(pct);
                     $('#docProgressBar')
-                        .css('width', pct + '%')
-                        .attr('aria-valuenow', Math.round(pct));
+                        .prop('value', roundedPct)
+                        .attr('value', roundedPct);
                     const docsComplete = completed >= total;
                     $('#docProgressBadge')
                         .text(completed + '/' + total + ' complete')
@@ -1470,7 +1468,9 @@
                     if (docsComplete) {
                         if ($('#allDocsAlert').length === 0) {
                             const alertTemplate = document.getElementById('allDocsAlertTemplate');
-                            $('.progress').after(alertTemplate ? alertTemplate.innerHTML : '');
+                            if (alertTemplate?.content) {
+                                $('#docProgressBar').after(alertTemplate.content.cloneNode(true));
+                            }
                         }
                     } else {
                         $('#allDocsAlert').remove();
@@ -1958,7 +1958,14 @@
         const bodyEl = document.getElementById('progressHistoryModalBody');
 
         titleEl.textContent = window.AdasiI18n.t('purchasing.js.progress_history', { material: materialName });
-        bodyEl.innerHTML = '<div class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm text-primary me-1" role="status"></div> ' + window.AdasiI18n.t('purchasing.js.loading_history') + '</div>';
+        const loadingLabel = window.AdasiI18n.t('purchasing.js.loading_history');
+        const inlineLoader = window.AdasiLoader?.createInlineLoader?.(loadingLabel);
+        if (inlineLoader) {
+            bodyEl.replaceChildren(inlineLoader);
+        } else {
+            bodyEl.innerHTML = '<div class="ui-inline-loading" role="status" aria-live="polite"><div class="ui-inline-loading__pill"><span class="ui-spinner" aria-hidden="true"></span><span class="ui-inline-loading__text"></span></div></div>';
+            bodyEl.querySelector('.ui-inline-loading__text').textContent = loadingLabel;
+        }
 
         const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
         modal.show();

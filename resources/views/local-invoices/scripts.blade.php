@@ -1,14 +1,26 @@
 @once
 @push('scripts')
 <script>
+const applySubmitButtonBusy = (button) => {
+    if (!button) return;
+    if (window.AdasiButton && typeof window.AdasiButton.startLoading === 'function') {
+        window.AdasiButton.startLoading(button);
+        return;
+    }
+    button.disabled = true;
+    button.setAttribute('aria-busy', 'true');
+    const spinner = document.createElement('span');
+    spinner.className = 'ui-spinner tw:mr-1.5';
+    spinner.setAttribute('aria-hidden', 'true');
+    button.prepend(spinner);
+};
 document.querySelectorAll('.local-invoice-form').forEach(form => form.addEventListener('submit', () => {
-    const button = form.querySelector('[type="submit"]');
-    if (button) { button.disabled = true; button.setAttribute('aria-busy', 'true'); button.insertAdjacentHTML('afterbegin', '<span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>'); }
+    applySubmitButtonBusy(form.querySelector('[type="submit"]'));
 }));
 document.querySelectorAll('.local-workflow-form').forEach(form => form.addEventListener('submit', async event => {
     event.preventDefault();
     const result = await window.AdasiAlert.confirm({title: form.dataset.confirm, text: @js(__('local_invoice.interaction.recorded_history')), confirmText: @js(__('local_invoice.interaction.confirm'))});
-    if (result.isConfirmed) { const button = form.querySelector('[type="submit"]'); button.disabled = true; button.setAttribute('aria-busy', 'true'); button.insertAdjacentHTML('afterbegin', '<span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>'); form.submit(); }
+    if (result.isConfirmed) { applySubmitButtonBusy(form.querySelector('[type="submit"]')); form.submit(); }
 }));
 document.querySelectorAll('[data-print-receipt]').forEach(button => button.addEventListener('click', () => window.print()));
 document.querySelectorAll('[data-copy-text], [data-copy-target]').forEach(button => button.addEventListener('click', async () => {
@@ -38,7 +50,7 @@ document.querySelectorAll('[data-copy-text], [data-copy-target]').forEach(button
             window.Toast.fire({ icon: 'success', title: successMsg });
         }
     } catch (err) {
-        console.error('Failed to copy text: ', err);
+        window.AdasiDebug?.error('Failed to copy text: ', err);
         if (window.AdasiToast) {
             window.AdasiToast.error(@js(__('local_invoice.interaction.copy_failed')));
         }

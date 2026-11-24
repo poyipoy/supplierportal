@@ -1,3 +1,9 @@
+@php
+    $safeOldInput = \Illuminate\Support\Arr::only((array) old(), [
+        'record_id', 'hs_category', 'density_profile', 'manufacturer_scope',
+        'is_active', 'material_category', 'shape', 'priority', 'status', 'conditions_json',
+    ]);
+@endphp
 <script>
 $(function () {
     const materialModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('materialModal'));
@@ -12,7 +18,7 @@ $(function () {
     const ruleDestroyUrl = @json(route($masterRoutePrefix.'.hs-code-rules.destroy', 0));
     const csrfToken = @json(csrf_token());
     const oldContext = @json(old('form_context'));
-    const oldInput = @json(old());
+    const oldInput = @json($safeOldInput);
     const shapeDimensions = {
         Flat: ['thickness', 'width', 'length'],
         Round: ['d_outer', 'length'],
@@ -289,11 +295,11 @@ $(function () {
         }
         $('#ruleConditionError').addClass('d-none');
         $('#ruleConditionsJson').val(JSON.stringify(conditions));
-        $(this).find('button[type="submit"]').prop('disabled', true).find('.spinner-border').removeClass('d-none');
+        $(this).find('button[type="submit"]').prop('disabled', true).find('.ui-spinner').removeClass('d-none');
     });
 
     $('#materialForm').on('submit', function () {
-        $(this).find('button[type="submit"]').prop('disabled', true).find('.spinner-border').removeClass('d-none');
+        $(this).find('button[type="submit"]').prop('disabled', true).find('.ui-spinner').removeClass('d-none');
     });
 
     $(document).on('click', '.btn-toggle-rule', function () {

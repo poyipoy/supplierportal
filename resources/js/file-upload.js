@@ -117,7 +117,9 @@ export function adasiFileUploadComponent(paramA = '', paramB = false, paramC = {
                 this._syncing = true;
                 input.files = dt.files;
             } catch (err) {
-                console.warn('DataTransfer sync notice:', err);
+                if (typeof window !== 'undefined') {
+                    window.AdasiDebug?.warn('DataTransfer sync notice:', err);
+                }
             } finally {
                 this._syncing = false;
             }

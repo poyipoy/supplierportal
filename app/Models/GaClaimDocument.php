@@ -24,6 +24,11 @@ class GaClaimDocument extends Model
         'updated_at',
     ];
 
+    protected $hidden = [
+        'file_path',
+        'file_inspection_id',
+    ];
+
     public function claim(): BelongsTo
     {
         return $this->belongsTo(GaClaim::class, 'ga_claim_id');

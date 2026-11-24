@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Purchasing;
 
+use App\Exceptions\BusinessRuleViolation;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Purchasing\StoreImportSupplierRequest;
 use App\Http\Requests\SupplierContact\UpdateImportSupplierContactRequest;
@@ -14,7 +15,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use InvalidArgumentException;
-use RuntimeException;
 
 class ImportSupplierController extends Controller
 {
@@ -130,7 +130,7 @@ class ImportSupplierController extends Controller
 
         try {
             $service->approve($changeRequest, $request->user());
-        } catch (InvalidArgumentException|RuntimeException $exception) {
+        } catch (InvalidArgumentException|\DomainException|BusinessRuleViolation $exception) {
             return back()->with('error', $exception->getMessage());
         }
 
@@ -148,7 +148,7 @@ class ImportSupplierController extends Controller
 
         try {
             $service->reject($changeRequest, $request->user(), $validated['notes']);
-        } catch (InvalidArgumentException|RuntimeException $exception) {
+        } catch (InvalidArgumentException|\DomainException|BusinessRuleViolation $exception) {
             return back()->with('error', $exception->getMessage());
         }
 

@@ -17,6 +17,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Facades\Excel;
 use RuntimeException;
 use Throwable;
@@ -92,6 +93,27 @@ class ProcessExportJob implements ShouldQueue
                     $totalRows,
                     function () use ($record): void {
                         $pending = GenerateWorkbookJob::dispatch((int) $record->getKey(), $this->locale)
+                            ->onQueue('exports');
+
+                        // Force dispatch before the surrounding database transaction commits.
+                        unset($pending);
+                    },
+                );
+
+                return;
+            }
+
+            if (
+                config('exports.list_writer', 'openspout') === 'openspout'
+                && ExportDispatcher::isListExport($record->export_class)
+                && $export instanceof FromQuery
+            ) {
+                $progress->handoffToExportQueue(
+                    $record,
+                    $path,
+                    $totalRows,
+                    function () use ($record): void {
+                        $pending = StreamListExportJob::dispatch((int) $record->getKey(), $this->locale)
                             ->onQueue('exports');
 
                         // Force dispatch before the surrounding database transaction commits.

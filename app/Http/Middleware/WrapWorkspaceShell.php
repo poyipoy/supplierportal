@@ -40,12 +40,13 @@ class WrapWorkspaceShell
                     ? str_replace('nonce="'.$oldNonce.'"', 'nonce="'.$newNonce.'"', $cached['content'])
                     : $cached['content'];
 
+                $cachedCacheControl = (string) ($cached['cache_control'] ?? '');
                 $headers = [
                     'Content-Type' => (string) ($cached['content_type'] ?? 'text/html; charset=UTF-8'),
+                    'Cache-Control' => str_contains($cachedCacheControl, 'public')
+                        ? $cachedCacheControl
+                        : 'no-store, private',
                 ];
-                if (! empty($cached['cache_control'])) {
-                    $headers['Cache-Control'] = (string) $cached['cache_control'];
-                }
 
                 return response($html, 200, $headers);
             }
@@ -141,11 +142,14 @@ class WrapWorkspaceShell
         if ($isWrapCandidate) {
             $prerenderKey = WorkspaceShell::prerenderCacheKey($request);
             if ($prerenderKey !== null) {
+                $responseCacheControl = (string) ($response->headers->get('Cache-Control') ?? '');
                 Cache::put($prerenderKey, [
                     'content' => $content,
                     'nonce' => app(CspNonce::class)->get(),
                     'content_type' => (string) $response->headers->get('Content-Type', 'text/html; charset=UTF-8'),
-                    'cache_control' => (string) ($response->headers->get('Cache-Control') ?? ''),
+                    'cache_control' => str_contains($responseCacheControl, 'public')
+                        ? $responseCacheControl
+                        : 'no-store, private',
                 ], now()->addSeconds(15));
             }
         }

@@ -178,15 +178,25 @@ class NotificationUrlResolver
         }
 
         if (Str::startsWith($name, 'supplier.quotations.')) {
+            if ($name === 'supplier.quotations.availability') {
+                return false;
+            }
+
             if (isset($parameters['pr_id'])) {
                 $pr = $this->resolveModel(PurchaseRequisition::class, $parameters['pr_id']);
 
-                return $pr?->isVisibleToSupplier($user->id) ?? false;
+                return $pr?->isAccessibleBySupplier($user->id) ?? false;
             }
 
             $quotation = $this->resolveModel(Quotation::class, $parameters['quotation'] ?? $parameters['id'] ?? null);
 
             return $quotation !== null && (int) $quotation->supplier_id === (int) $user->id;
+        }
+
+        if ($name === 'supplier.requests.show') {
+            $pr = $this->resolveModel(PurchaseRequisition::class, $parameters['pr_id'] ?? null);
+
+            return $pr?->isAccessibleBySupplier($user->id) ?? false;
         }
 
         if (Str::startsWith($name, 'supplier.purchase-orders.')) {
@@ -250,7 +260,17 @@ class NotificationUrlResolver
                 return null;
             }
 
-            $canonicalPath = $this->route($name, $model);
+            $targetRoute = $name;
+            if (
+                $user->role === 'supplier'
+                && in_array($name, ['supplier.quotations.create', 'supplier.quotations.import-template'], true)
+                && $model instanceof PurchaseRequisition
+                && $model->isCancelledForSupplier($user->id)
+            ) {
+                $targetRoute = 'supplier.requests.show';
+            }
+
+            $canonicalPath = $this->route($targetRoute, $model);
             if ($canonicalPath === null) {
                 return null;
             }
@@ -278,7 +298,8 @@ class NotificationUrlResolver
             'supplier.export.quotations.detail' => ['quotation', Quotation::class],
 
             'supplier.quotations.create',
-            'supplier.quotations.import-template' => ['pr_id', PurchaseRequisition::class],
+            'supplier.quotations.import-template',
+            'supplier.requests.show' => ['pr_id', PurchaseRequisition::class],
             'purchasing.comparison.show' => ['pr_id', PurchaseRequisition::class],
 
             'purchasing.purchase-orders.show',
@@ -351,7 +372,7 @@ class NotificationUrlResolver
             }
 
             if ($user->role === 'supplier') {
-                if ($model instanceof PurchaseRequisition && ! $model->isVisibleToSupplier($user->id)) {
+                if ($model instanceof PurchaseRequisition && ! $model->isAccessibleBySupplier($user->id)) {
                     return null;
                 }
 
@@ -445,9 +466,13 @@ class NotificationUrlResolver
         return match ($user->role) {
             'admin' => $this->route('admin.requisitions.show', $pr),
             'purchasing' => $this->route('purchasing.requisitions.show', $pr),
-            'supplier' => $pr->isVisibleToSupplier($user->id)
-                ? $this->route('supplier.quotations.create', $pr)
-                : null,
+            'supplier' => $pr->isCancelledForSupplier($user->id) && $pr->isAccessibleBySupplier($user->id)
+                ? $this->route('supplier.requests.show', $pr)
+                : (in_array($pr->status, [PurchaseRequisition::STATUS_SUBMITTED, PurchaseRequisition::STATUS_BIDDING], true) && $pr->isVisibleToSupplier($user->id)
+                    ? $this->route('supplier.quotations.create', $pr)
+                    : ($pr->isAccessibleBySupplier($user->id)
+                        ? $this->route('supplier.requests.show', $pr)
+                        : null)),
             default => null,
         };
     }

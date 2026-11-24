@@ -105,6 +105,25 @@ export async function runExport({
     } catch {
         payload = {};
     }
+
+    if (response.status === 409) {
+        let handled = false;
+        if (form && typeof form.dispatchEvent === 'function' && typeof CustomEvent === 'function') {
+            const conflictEvent = new CustomEvent('adasi:form-conflict', {
+                bubbles: true,
+                cancelable: true,
+                detail: { status: 409, data: payload, form },
+            });
+            form.dispatchEvent(conflictEvent);
+            handled = conflictEvent.defaultPrevented;
+        }
+        if (!handled && payload.message) {
+            notify('warning', payload.message);
+        }
+
+        return { ok: false, fallback: false, conflict: true, errors: [] };
+    }
+
     const fallback = triggerFallback();
     const errors = response.status === 422 ? errorMessages(payload.errors) : [];
     const invalidWarning = messages.invalid || 'Some quotation entries are invalid. A blank template was downloaded without your entered data.';

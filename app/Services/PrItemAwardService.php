@@ -37,7 +37,11 @@ class PrItemAwardService
         }
 
         return DB::transaction(function () use ($prId, $prItemId, $quotationItemId, $user) {
-            PurchaseRequisition::whereKey($prId)->lockForUpdate()->firstOrFail();
+            $lockedPr = PurchaseRequisition::whereKey($prId)->lockForUpdate()->firstOrFail();
+
+            if ($lockedPr->status === PurchaseRequisition::STATUS_CANCELLED) {
+                throw new InvalidArgumentException(__('purchasing.copy.pr_cancelled_action_blocked'));
+            }
 
             // Parent PR always precedes PR items and quotation locks.
             /** @var PrItem|null $lockedPrItem */
@@ -156,6 +160,10 @@ class PrItemAwardService
 
         return DB::transaction(function () use ($pr, $selections, $user, $orderSelections) {
             $pr = PurchaseRequisition::whereKey($pr->id)->lockForUpdate()->firstOrFail();
+
+            if ($pr->status === PurchaseRequisition::STATUS_CANCELLED) {
+                throw new InvalidArgumentException(__('purchasing.copy.pr_cancelled_action_blocked'));
+            }
             $prItemIds = array_keys($selections);
             sort($prItemIds);
 

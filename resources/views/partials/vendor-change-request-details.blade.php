@@ -57,9 +57,9 @@
             <table class="table table-sm table-hover tw:m-0 tw:text-ui-xs align-middle">
                 <thead class="tw:bg-surface-container-lowest tw:border-b tw:border-outline-variant/60">
                     <tr>
-                        <th class="tw:py-2 tw:ps-3 tw:text-on-surface-variant tw:font-semibold" style="width: 25%;">{{ __('local_procurement.change_details.field') }}</th>
-                        <th class="tw:py-2 tw:text-on-surface-variant tw:font-semibold" style="width: 35%;">{{ __('local_procurement.change_details.current') }}</th>
-                        <th class="tw:py-2 tw:text-on-surface-variant tw:font-semibold" style="width: 40%;">{{ __('local_procurement.change_details.proposed') }}</th>
+                        <th scope="col" class="tw:py-2 tw:ps-3 tw:text-on-surface-variant tw:font-semibold" style="width: 25%;">{{ __('local_procurement.change_details.field') }}</th>
+                        <th scope="col" class="tw:py-2 tw:text-on-surface-variant tw:font-semibold" style="width: 35%;">{{ __('local_procurement.change_details.current') }}</th>
+                        <th scope="col" class="tw:py-2 tw:text-on-surface-variant tw:font-semibold" style="width: 40%;">{{ __('local_procurement.change_details.proposed') }}</th>
                     </tr>
                 </thead>
                 <tbody class="tw:divide-y tw:divide-outline-variant/30">

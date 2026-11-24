@@ -11,7 +11,7 @@
             :description="__('purchasing.copy.review_submitted_supplier_offers_validity_currency_and_workflow_status_across_requisitions')"
         >
             <x-slot:actions>
-<x-export.advanced-modal export-key="purchasing.quotations" :action="route('purchasing.export.quotations')" :suppliers="$suppliers" :periods="\App\Models\Period::orderByDesc('year')->get()" :filter-selectors="['pr_number'=>'#quotationFilterForm [name=pr_number]', 'supplier_id'=>'#quotationFilterForm [name=supplier_id]', 'status'=>'#quotationFilterForm [name=status]', 'currency'=>'#quotationFilterForm [name=currency]', 'date_from'=>'#quotationDateFrom', 'date_to'=>'#quotationDateTo']" trigger-id="exportQuotationsBtn" />
+<x-export.advanced-modal export-key="purchasing.quotations" :action="route('purchasing.export.quotations')" :suppliers="$suppliers" :periods="\App\Models\Period::orderByDesc('year')->get()" :filter-selectors="['search'=>'#quotationFilterForm [name=pr_number]', 'supplier_id'=>'#quotationFilterForm [name=supplier_id]', 'status'=>'#quotationFilterForm [name=status]', 'currency'=>'#quotationFilterForm [name=currency]', 'date_from'=>'#quotationDateFrom', 'date_to'=>'#quotationDateTo']" trigger-id="exportQuotationsBtn" />
                 <span class="ui-status-chip ui-status-chip--neutral ui-tabular-nums" id="quotationCountBadge">
                     {{ trans_choice('purchasing.summary.quotations', $quotations->total(), ['count' => $quotations->total()]) }}
                 </span>
@@ -352,6 +352,8 @@
                 const currentRequest = new AbortController();
                 filterRequest = currentRequest;
                 filterForm.setAttribute('aria-busy', 'true');
+                const initialTableContainer = document.getElementById('quotationTableContainer');
+                window.AdasiLoader?.setTableBusy?.(initialTableContainer, true);
 
                 try {
                     const response = await fetch(url, {
@@ -374,6 +376,8 @@
                     }
                 } finally {
                     if (filterRequest === currentRequest) {
+                        const activeTableContainer = document.getElementById('quotationTableContainer');
+                        window.AdasiLoader?.setTableBusy?.(activeTableContainer || initialTableContainer, false);
                         filterForm.removeAttribute('aria-busy');
                     }
                 }

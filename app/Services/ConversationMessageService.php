@@ -172,6 +172,12 @@ class ConversationMessageService
 
     private function requestPriceRevision(Conversation $conversation, Quotation $quotation, string $note): Message
     {
+        if ($quotation->purchaseRequisition->status === PurchaseRequisition::STATUS_CANCELLED) {
+            throw ValidationException::withMessages([
+                'action' => __('purchasing.copy.pr_cancelled_action_blocked'),
+            ]);
+        }
+
         if ($quotation->purchaseRequisition->status === 'completed') {
             throw ValidationException::withMessages([
                 'action' => __('notifications.conversation.completed_pr'),
@@ -215,6 +221,12 @@ class ConversationMessageService
 
     private function acceptQuotation(Conversation $conversation, Quotation $quotation): Message
     {
+        if ($quotation->purchaseRequisition->status === PurchaseRequisition::STATUS_CANCELLED) {
+            throw ValidationException::withMessages([
+                'action' => __('purchasing.copy.pr_cancelled_action_blocked'),
+            ]);
+        }
+
         if (! $quotation->canApproveBy(auth()->user())) {
             throw ValidationException::withMessages([
                 'action' => __('notifications.conversation.cannot_accept'),
@@ -257,6 +269,12 @@ class ConversationMessageService
 
     private function rejectQuotation(Conversation $conversation, Quotation $quotation, string $note): Message
     {
+        if ($quotation->purchaseRequisition->status === PurchaseRequisition::STATUS_CANCELLED) {
+            throw ValidationException::withMessages([
+                'action' => __('purchasing.copy.pr_cancelled_action_blocked'),
+            ]);
+        }
+
         if (! $quotation->canApproveBy(auth()->user())) {
             throw ValidationException::withMessages([
                 'action' => __('notifications.conversation.cannot_reject'),

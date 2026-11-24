@@ -1,4 +1,6 @@
 import { t } from './i18n.js';
+import { isSameOriginHttpUrl } from './origin-validator.js';
+import { announceFormError, clearFormAnnouncement } from './form-a11y.js';
 
 /**
  * ADASI Portal Supplier - File-preserving async form submit.
@@ -36,12 +38,7 @@ export function errorKeyToFieldNames(key) {
 }
 
 export function isSameOriginUrl(url, origin) {
-    try {
-        const target = new URL(String(url), origin);
-        return target.origin === new URL(origin).origin && ['http:', 'https:'].includes(target.protocol);
-    } catch (error) {
-        return false;
-    }
+    return isSameOriginHttpUrl(url, origin);
 }
 
 /** Flatten Laravel `{ field: [messages] }` into ordered `[{ key, message }]`. */
@@ -124,7 +121,10 @@ export function clearValidationErrors(form) {
         summary.hidden = true;
         summary.replaceChildren();
     }
+    clearFormAnnouncement(form.ownerDocument || globalThis.document);
 }
+
+let generatedErrorSeq = 0;
 
 function isFileUploadComponentField(form, key) {
     const field = findFieldForErrorKey(form, key);
@@ -145,12 +145,13 @@ function renderInlineError(field, message) {
         || (field.parentElement?.classList?.contains?.('tw:relative') ? field.parentElement : field);
 
     const note = document.createElement('p');
-    if (field.id) {
-        note.id = `${field.id}-async-error`;
-        const descriptions = (field.getAttribute('aria-describedby') || '').split(/\s+/).filter(Boolean);
-        field.setAttribute('aria-describedby', [...new Set([...descriptions, note.id])].join(' '));
-        field.setAttribute('data-async-error-id', note.id);
-    }
+    const errorId = field.id
+        ? `${field.id}-async-error`
+        : `adasi-field-async-error-${++generatedErrorSeq}`;
+    note.id = errorId;
+    const descriptions = (field.getAttribute('aria-describedby') || '').split(/\s+/).filter(Boolean);
+    field.setAttribute('aria-describedby', [...new Set([...descriptions, note.id])].join(' '));
+    field.setAttribute('data-async-error-id', note.id);
     note.className = 'tw:m-0 tw:mt-1 tw:text-ui-xs tw:font-medium tw:text-error';
     note.setAttribute('data-async-error', '');
     note.textContent = message;
@@ -244,6 +245,13 @@ export function handleValidationErrors(form, errors, message = '') {
             existingSummary.hidden = true;
             existingSummary.replaceChildren();
         }
+    }
+
+    const announcementText = items.length > 0
+        ? `${t('js.async_form.errors_title')} ${items[0].message}`
+        : message;
+    if (announcementText) {
+        announceFormError(announcementText, { delayMs: 250, doc: form.ownerDocument || globalThis.document });
     }
 
     const first = items[0];
@@ -340,6 +348,24 @@ export async function submitAsync(form, submitter = null) {
         const key = String(field?.name || 'file').replace(/\[\]$/, '');
         settle(form);
         handleValidationErrors(form, { [key]: [message] }, message);
+        return;
+    }
+
+    if (response.status === 409) {
+        const data = await readJson(response);
+        settle(form);
+        const conflictEvent = new CustomEvent('adasi:form-conflict', {
+            bubbles: true,
+            cancelable: true,
+            detail: { status: 409, data, form },
+        });
+        form.dispatchEvent(conflictEvent);
+        if (!conflictEvent.defaultPrevented) {
+            notify('warning', data.message || t('js.async_form.failed'));
+            if (data.redirect && isSameOriginUrl(data.redirect, window.location.origin)) {
+                window.location.assign(data.redirect);
+            }
+        }
         return;
     }
 

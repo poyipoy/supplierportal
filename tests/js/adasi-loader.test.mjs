@@ -9,6 +9,7 @@ import {
     SHOW_DELAY,
     SLOW_AFTER,
     createDomView,
+    createInlineLoader,
     createLoaderController,
     isDataTableRequest,
     isFullPageNavigation,
@@ -429,6 +430,14 @@ test('isFullPageNavigation excludes downloads, PDF print routes, and non-navigat
 
     // Target _blank should be false
     assert.equal(isFullPageNavigation(mockLink({ href: 'http://localhost/supplier/local/invoices', target: '_blank' }), win), false);
+
+    // Extensionless binary/export/attachment download routes should be false so #adasiLoader never locks the page for 60s
+    assert.equal(isFullPageNavigation(mockLink({ href: 'http://localhost/exports/abc123/download' }), win), false);
+    assert.equal(isFullPageNavigation(mockLink({ href: 'http://localhost/purchasing/export/requisitions/abc123' }), win), false);
+    assert.equal(isFullPageNavigation(mockLink({ href: 'http://localhost/attachments/doc999' }), win), false);
+    assert.equal(isFullPageNavigation(mockLink({ href: 'http://localhost/shared/pdf/purchase-order/po123' }), win), false);
+    assert.equal(isFullPageNavigation(mockLink({ href: 'http://localhost/local-invoice-documents/inv123' }), win), false);
+    assert.equal(isFullPageNavigation(mockLink({ href: 'http://localhost/purchasing/pr/import-template' }), win), false);
 });
 
 test('downloadFileWithLoader activates loader and hides it immediately after download completes', async () => {
@@ -716,14 +725,123 @@ test('setTableBusy mounts clipped progress bar and status pill once and toggles 
     assert.equal(labelNode.textContent, '');
 });
 
+test('setTableBusy supports separate ariaTarget, region mode, and positions pill strictly below thead within horizontal viewport', () => {
+    const doc = fakeDocument();
+    const labelNode = { textContent: '' };
+    const origCreate = doc.createElement;
+    doc.createElement = (tag) => {
+        const el = origCreate(tag);
+        el.querySelector = (sel) => (sel === '.ui-dt-loading-pill__text' ? labelNode : null);
+        return el;
+    };
+    doc.defaultView = { innerHeight: 800 };
+
+    const props = new Map();
+    const thead = { getBoundingClientRect: () => ({ top: 200, bottom: 238, height: 38 }) };
+    const tbody = { getBoundingClientRect: () => ({ top: 238, bottom: 286, height: 48 }) };
+    const scrollHost = {
+        clientWidth: 800,
+        getBoundingClientRect: () => ({ left: 100, right: 900, width: 800, top: 200, bottom: 320, height: 120 }),
+    };
+    const ariaHost = {
+        attributes: {},
+        setAttribute(k, v) { this.attributes[k] = String(v); },
+        removeAttribute(k) { delete this.attributes[k]; },
+    };
+
+    const makeHost = () => ({
+        ownerDocument: doc,
+        children: [],
+        attributes: {},
+        scrollLeft: 0,
+        scrollTop: 0,
+        style: {
+            setProperty(k, v) { props.set(k, v); },
+            removeProperty(k) { props.delete(k); },
+        },
+        classList: {
+            names: new Set(),
+            toggle(name, force) {
+                if (force) this.names.add(name);
+                else this.names.delete(name);
+            },
+            contains(name) { return this.names.has(name); },
+        },
+        setAttribute(k, v) { this.attributes[k] = String(v); },
+        removeAttribute(k) { delete this.attributes[k]; },
+        appendChild(child) { this.children.push(child); return child; },
+        closest(sel) { return sel.includes('.ui-data-table__scroll') ? scrollHost : null; },
+        getBoundingClientRect() { return { left: -100, right: 1300, width: 1400, top: 200, bottom: 286, height: 86 }; },
+        querySelector(sel) {
+            if (sel === 'table thead') return thead;
+            if (sel === 'table tbody') return tbody;
+            if (sel.includes('.ui-dt-loading-bar')) return this.children.find((c) => c.className === 'ui-dt-loading-bar') ?? null;
+            if (sel.includes('.ui-dt-loading-pill')) return this.children.find((c) => c.className === 'ui-dt-loading-pill') ?? null;
+            return null;
+        },
+    });
+
+    const host = makeHost();
+    setTableBusy(host, true, {
+        translate: (k) => (k === 'js.tables.loading' ? 'Loading data...' : k),
+        ariaTarget: ariaHost,
+    });
+
+    assert.equal(host.classList.contains('ui-data-loading-host'), true);
+    assert.equal(host.attributes['aria-busy'], undefined, 'aria-busy stays on explicit ariaTarget when provided');
+    assert.equal(ariaHost.attributes['aria-busy'], 'true');
+    assert.equal(labelNode.textContent, 'Loading data...');
+    // thead ends at 238, tbody midpoint is 238 + 24 = 262 -> relative to wrapTop 200 = 62px (strictly below 38px thead!)
+    assert.equal(props.get('--ui-loading-pill-top'), '62px');
+    // Visible scroll viewport left is 100 relative to wrap left -100 -> barLeft = 200px, width = 800px, pillLeft = 600px.
+    assert.equal(props.get('--ui-loading-bar-left'), '200px');
+    assert.equal(props.get('--ui-loading-bar-width'), '800px');
+    assert.equal(props.get('--ui-loading-pill-left'), '600px');
+
+    setTableBusy(host, false, { ariaTarget: ariaHost });
+    assert.equal(ariaHost.attributes['aria-busy'], undefined);
+    assert.equal(props.size, 0, 'geometry custom properties are cleaned on idle');
+
+    // Verify region mode & createInlineLoader output
+    setTableBusy(host, true, { mode: 'region', label: 'Updating...' });
+    assert.equal(host.attributes['data-loading-mode'], 'region');
+    setTableBusy(host, false, { mode: 'region' });
+    assert.equal(host.attributes['data-loading-mode'], undefined);
+
+    const inlineNode = createInlineLoader('Fetching history...', {}, doc);
+    assert.equal(inlineNode.attributes.role, 'status');
+    assert.equal(inlineNode.attributes['aria-live'], 'polite');
+    assert.equal(inlineNode.innerHTML.includes('ui-dt-loading-pill__arc'), true);
+    assert.equal(inlineNode.innerHTML.includes('Fetching history...'), true);
+});
+
 /** Just enough DOM for createDomView: nodes are plain objects, unknown queries return an inert stub. */
 function fakeDocument() {
+    const serializeNode = (el) => {
+        const attrs = [];
+        if (el.id) attrs.push(`id="${el.id}"`);
+        const cls = el.className || el.attributes.class || '';
+        if (cls) attrs.push(`class="${cls}"`);
+        for (const [k, v] of Object.entries(el.attributes)) {
+            if (k === 'class' || k === 'id') continue;
+            attrs.push(`${k}="${v}"`);
+        }
+        const attrStr = attrs.length ? ` ${attrs.join(' ')}` : '';
+        const inner = el._rawInnerHTML || el.children.map(serializeNode).join('');
+        return `<${el.tag}${attrStr}>${inner}${el.textContent || ''}</${el.tag}>`;
+    };
     const node = (tag) => ({
         tag,
         id: '',
         className: '',
         textContent: '',
-        innerHTML: '',
+        _rawInnerHTML: '',
+        get innerHTML() {
+            return this._rawInnerHTML || this.children.map(serializeNode).join('');
+        },
+        set innerHTML(val) {
+            this._rawInnerHTML = String(val ?? '');
+        },
         hidden: false,
         children: [],
         attributes: {},
@@ -743,5 +861,5 @@ function fakeDocument() {
     });
     const body = node('body');
 
-    return { body, activeElement: null, createElement: node, querySelectorAll: () => [] };
+    return { body, activeElement: null, createElement: node, createElementNS: (_ns, tag) => node(tag), querySelectorAll: () => [] };
 }

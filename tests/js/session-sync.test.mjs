@@ -190,15 +190,33 @@ test('ended sessions suppress native dirty prompts while allowing draft-saving h
 
 const removable = [
     PENDING_EXPORT_STORAGE_KEY,
+    'adasi_supplier_reg_draft',
+    'adasi_supplier_reg_draft_v2',
+    'finance_invoice_verify_scroll',
+    'adasi:local-import-toast',
+    'adasi:export-download-claim:jobHash1',
+    'adasi.po-documents./purchasing/local-pos/abc/documents',
     'quotation_draft_123',
     'quotation_draft_0',
     'quotation_draft_41_123',
     'quotation_draft_42_123',
     'quotation_draft_41_hash',
     'adasi_chat_draft_41_1',
-    'adasi:workspace:usage:41:import',
+    'adasi:workspace:recently-closed:41:import',
+    'adasi:workspace:usage:guest:import',
 ];
-const retained = ['quotation_draft_hash', 'quotation_draft_123_456_extra', 'adasi_supplier_reg_draft', 'adasi.sidebar.41', 'supplierAuditScoreGuide'];
+const retained = [
+    'quotation_draft_hash',
+    'quotation_draft_123_456_extra',
+    'adasi.sidebar.41',
+    'supplierAuditScoreGuide',
+    'adasi:workspace:usage:41:import',
+    'adasi:workspace:favorites:41:import',
+    'adasi:workspace:bookmarks:41:import',
+    'adasi:workspace:shortcuts-layout:41:import',
+    'adasi:workspace:shortcuts-meta:41:import',
+    'adasi:workspace:pinned:41:import',
+];
 
 test('cleanup removes export key, legacy and account-scoped quotation drafts, and chat drafts in localStorage and sessionStorage', async () => {
     assert.deepEqual(storageKeysToClear([...removable, ...retained]), removable);

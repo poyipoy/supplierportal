@@ -79,9 +79,16 @@ final class PurchaseOrderExportFilters
 
     public static function schema(bool $supplier): array
     {
+        $searchKey = $supplier ? 'po_search_supplier' : 'po_search_purchasing';
         $fields = [
-            ['name' => 'start_date', 'type' => 'date'], ['name' => 'end_date', 'type' => 'date'],
-            ['name' => 'po_number', 'type' => 'text'], ['name' => 'search', 'type' => 'text'],
+            ['name' => 'start_date', 'type' => 'date'],
+            ['name' => 'end_date', 'type' => 'date'],
+            [
+                'name' => 'search',
+                'type' => 'text',
+                'placeholder' => 'exports.advanced.filters.placeholders.'.$searchKey,
+                'hint' => 'exports.advanced.filters.hints.'.$searchKey,
+            ],
             ['name' => 'status', 'type' => 'select', 'options' => $supplier ? ['draft', 'active', 'waiting_qc', 'claim_needed', 'overdue', 'completed', 'cancelled'] : ['active', 'waiting_qc', 'claim_needed', 'overdue', 'completed', 'cancelled']],
         ];
         if (! $supplier) {

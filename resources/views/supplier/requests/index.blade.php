@@ -63,9 +63,11 @@
                     ];
                 }
                 if (! empty($filters['status'])) {
-                    $supplierReqStatusVal = $filters['status'] === 'unresponded'
-                        ? __('supplier.copy.awaiting_quotation')
-                        : \App\Support\StatusHelper::quotationLabel((string) $filters['status']);
+                    $supplierReqStatusVal = match ($filters['status']) {
+                        'unresponded' => __('supplier.copy.awaiting_quotation'),
+                        'cancelled' => __('status.pr.cancelled'),
+                        default => \App\Support\StatusHelper::quotationLabel((string) $filters['status']),
+                    };
                     $supplierReqChips[] = [
                         'key' => 'status',
                         'label' => __('supplier.copy.my_quotation_status'),
@@ -114,6 +116,7 @@
                         @foreach(['draft', 'revision_requested', 'submitted', 'accepted', 'rejected', 'all_unavailable'] as $status)
                             <option value="{{ $status }}" @selected(($filters['status'] ?? '') === $status)>{{ \App\Support\StatusHelper::quotationLabel($status) }}</option>
                         @endforeach
+                        <option value="cancelled" @selected(($filters['status'] ?? '') === 'cancelled')>{{ __('status.pr.cancelled') }}</option>
                     </select>
                 </x-slot:filters>
 
@@ -141,6 +144,7 @@
             <tbody>
                 @foreach($requisitions as $pr)
                     @php
+                        $isCancelledForSupplier = $pr->isCancelledForSupplier((int) auth()->id());
                         $quotation = $pr->quotations->first();
                         $status = $quotation?->status;
                     @endphp
@@ -150,9 +154,11 @@
                         </td>
                         <td>{{ $pr->period?->display_label ?? '-' }}</td>
                         <td class="ui-tabular-nums tw:text-on-surface-variant">@bizdt($pr->updated_at)</td>
-                        <td class="text-center ui-tabular-nums">{{ trans_choice('supplier_requests.item_count', $pr->items_count, ['count' => $pr->items_count]) }}</td>
+                        <td class="text-center ui-tabular-nums">{{ $isCancelledForSupplier ? '-' : trans_choice('supplier_requests.item_count', $pr->items_count, ['count' => $pr->items_count]) }}</td>
                         <td class="text-center">
-                            @if($status)
+                            @if($isCancelledForSupplier)
+                                <x-ui.status-chip tone="error" icon="x-circle">{{ __('status.pr.cancelled') }}</x-ui.status-chip>
+                            @elseif($status)
                                 <span class="ui-status-chip ui-status-chip--{{ $statusChipTones[$status] ?? 'neutral' }}">{{ \App\Support\StatusHelper::quotationLabel($status) }}</span>
                             @else
                                 <span class="ui-status-chip ui-status-chip--error">{{ __('supplier_requests.not_responded') }}</span>

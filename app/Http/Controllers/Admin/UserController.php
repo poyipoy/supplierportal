@@ -28,7 +28,7 @@ class UserController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            $query = User::with('supplier')->orderBy('created_at', 'desc');
+            $query = User::with('supplier:id,user_id,company_name')->orderBy('created_at', 'desc');
 
             return DataTables::eloquent($query)
                 ->addIndexColumn()
@@ -75,6 +75,7 @@ class UserController extends Controller
                     return $html.'</div>';
                 })
                 ->rawColumns(['name_display', 'role_badge', 'status_badge', 'mfa_badge', 'action'])
+                ->only(['DT_RowIndex', 'name_display', 'email', 'role_badge', 'status_badge', 'mfa_badge', 'created_date', 'action'])
                 ->make(true);
         }
 

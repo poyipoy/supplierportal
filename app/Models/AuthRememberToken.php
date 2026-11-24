@@ -24,6 +24,12 @@ class AuthRememberToken extends Model
         'expires_at',
     ];
 
+    protected $hidden = [
+        'token_hash',
+        'session_id',
+        'device_hash',
+    ];
+
     protected function casts(): array
     {
         return [

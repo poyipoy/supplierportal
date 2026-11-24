@@ -35,6 +35,8 @@ use App\Http\Controllers\ConversationMessageController;
 use App\Http\Controllers\ExportDefinitionController;
 use App\Http\Controllers\ExportDownloadController;
 use App\Http\Controllers\ExportPresetController;
+use App\Http\Controllers\ExportPreviewController;
+use App\Http\Controllers\ExportSearchSuggestionController;
 use App\Http\Controllers\Finance\FinanceDashboardController;
 use App\Http\Controllers\Finance\FinanceDrpController;
 use App\Http\Controllers\Finance\FinanceDrpPaidController;
@@ -363,7 +365,7 @@ Route::match(['get', 'post'], '/locale/{locale?}', [LocaleController::class, 'sw
     ->name('locale.switch');
 
 // Supplier Public Registration & Status Tracking
-Route::prefix(PortalPath::prefix())->group(function () {
+Route::prefix(PortalPath::prefix())->middleware('no-store')->group(function () {
     Route::get('/supplier/register', [SupplierRegistrationController::class, 'create'])->name('supplier.register');
     Route::post('/supplier/register', [SupplierRegistrationController::class, 'store'])
         ->middleware('throttle:10,1')
@@ -436,6 +438,9 @@ Route::prefix(PortalPath::prefix())->group(function () {
         Route::patch('/profile/customization', [UserPreferenceController::class, 'update'])->name('profile.customization.update');
         Route::delete('/profile/customization', [UserPreferenceController::class, 'reset'])->name('profile.customization.reset');
         Route::patch('/profile/dashboard-layout', [UserPreferenceController::class, 'updateDashboardLayout'])->name('profile.dashboard-layout.update');
+        Route::patch('/profile/workspace-shortcuts', [UserPreferenceController::class, 'updateWorkspaceShortcuts'])
+            ->middleware('throttle:60,1')
+            ->name('profile.workspace-shortcuts.update');
         Route::middleware('role:admin,purchasing,supplier,qc,accounting,finance,ga')->group(function () {
             Route::get('/profile/notifications', [UserNotificationPreferenceController::class, 'index'])->name('profile.notifications');
             Route::patch('/profile/notifications', [UserNotificationPreferenceController::class, 'update'])->name('profile.notifications.update');
@@ -445,6 +450,12 @@ Route::prefix(PortalPath::prefix())->group(function () {
 
         Route::middleware('role:admin,purchasing,supplier,qc,accounting,finance,ga')->group(function () {
             Route::get('/exports', [ExportDownloadController::class, 'index'])->name('exports.index');
+            Route::post('/exports/preview-count', [ExportPreviewController::class, 'count'])
+                ->middleware(['throttle:30,1,exports.preview-count', 'no-store'])
+                ->name('exports.preview-count');
+            Route::get('/exports/search-suggestions', [ExportSearchSuggestionController::class, 'index'])
+                ->middleware(['throttle:60,1,exports.search-suggestions', 'no-store'])
+                ->name('exports.search-suggestions');
             Route::get('/exports/definitions/{exportKey}', [ExportDefinitionController::class, 'show'])->middleware('no-store')->name('exports.definitions.show');
             Route::middleware('no-store')->group(function () {
                 Route::get('/export-presets', [ExportPresetController::class, 'index'])->name('export-presets.index');
@@ -452,9 +463,11 @@ Route::prefix(PortalPath::prefix())->group(function () {
                 Route::put('/export-presets/{preset}', [ExportPresetController::class, 'update'])->name('export-presets.update');
                 Route::delete('/export-presets/{preset}', [ExportPresetController::class, 'destroy'])->name('export-presets.destroy');
                 Route::post('/export-presets/{preset}/default', [ExportPresetController::class, 'makeDefault'])->name('export-presets.default');
+                Route::post('/export-presets/{preset}/duplicate', [ExportPresetController::class, 'duplicate'])->name('export-presets.duplicate');
             });
             Route::get('/exports/{exportJob}/status', [ExportDownloadController::class, 'status'])->name('exports.status');
             Route::post('/exports/{exportJob}/cancel', [ExportDownloadController::class, 'cancel'])->name('exports.cancel');
+            Route::post('/exports/{exportJob}/rerun', [ExportDownloadController::class, 'rerun'])->name('exports.rerun');
             Route::get('/exports/{exportJob}/download', [ExportDownloadController::class, 'download'])->name('exports.download');
         });
 
@@ -611,6 +624,9 @@ Route::prefix(PortalPath::prefix())->group(function () {
             ->middleware('throttle:15,1,purchasing.requisitions.import-preview')
             ->name('requisitions.import-preview');
         Route::put('/requisitions/{id}/submit', [App\Http\Controllers\Purchasing\PurchaseRequisitionController::class, 'submitDraft'])->name('requisitions.submit');
+        Route::post('/requisitions/{id}/cancel', [App\Http\Controllers\Purchasing\PurchaseRequisitionController::class, 'cancel'])
+            ->middleware('throttle:30,1,purchasing.requisitions.cancel')
+            ->name('requisitions.cancel');
         Route::post('/requisitions/{requisition}/suppliers', [PurchaseRequisitionSupplierController::class, 'store'])
             ->middleware('throttle:30,1,purchasing.requisitions.suppliers')
             ->name('requisitions.suppliers.store');
@@ -802,6 +818,9 @@ Route::prefix(PortalPath::prefix())->group(function () {
         Route::post('/quotations/{pr_id}/export-form', [QuotationController::class, 'exportForm'])
             ->middleware('throttle:15,1,supplier.quotations.export-form')
             ->name('quotations.export-form');
+        Route::get('/quotations/{pr_id}/availability', [QuotationController::class, 'availability'])
+            ->middleware('throttle:60,1,supplier.quotations.availability')
+            ->name('quotations.availability');
         Route::get('/quotations/{pr_id}/create', [QuotationController::class, 'create'])->name('quotations.create');
         Route::post('/quotations/{pr_id}', [QuotationController::class, 'store'])->name('quotations.store');
         Route::resource('quotations', QuotationController::class)->only(['index', 'show']);
@@ -951,7 +970,7 @@ Route::middleware('auth')->group(function () {
         ->name('password.confirm.store');
 
     Route::put('password', [PasswordController::class, 'update'])
-        ->middleware('throttle:auth.credentials')->name('password.update');
+        ->middleware(['throttle:auth.credentials', 'no-store'])->name('password.update');
 
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
         ->name('logout');
@@ -974,7 +993,7 @@ Route::middleware('auth')->group(function () {
             ->name('profile.known-devices.revoke');
 
         Route::post('profile/two-factor/setup', [ProfileTwoFactorController::class, 'start'])
-            ->middleware(['auth.session', 'password.confirm', 'throttle:auth.security-action'])->name('profile.two-factor.start');
+            ->middleware(['auth.session', 'password.confirm', 'throttle:auth.security-action', 'no-store'])->name('profile.two-factor.start');
         Route::get('profile/two-factor/setup', [ProfileTwoFactorController::class, 'show'])
             ->middleware('no-store')->name('profile.two-factor.setup');
         Route::post('profile/two-factor/confirm', [ProfileTwoFactorController::class, 'confirm'])

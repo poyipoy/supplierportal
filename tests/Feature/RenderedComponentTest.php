@@ -468,4 +468,37 @@ BLADE);
             $this->assertStringNotContainsString('—', $html);
         }
     }
+
+    public function test_splitter_component_renders_accessible_separator_and_grip_markup(): void
+    {
+        $html = Blade::render('<x-ui.splitter controls="sidebar" :min="200" :max="420" :value="256" label="Resize sidebar" data-sidebar-splitter />');
+
+        $this->assertNoCompilerLeakage($html);
+        $this->assertStringContainsString('class="ui-splitter ui-focus-ring"', $html);
+        $this->assertStringContainsString('role="separator"', $html);
+        $this->assertStringContainsString('aria-orientation="vertical"', $html);
+        $this->assertStringContainsString('aria-controls="sidebar"', $html);
+        $this->assertStringContainsString('aria-valuemin="200"', $html);
+        $this->assertStringContainsString('aria-valuemax="420"', $html);
+        $this->assertStringContainsString('aria-valuenow="256"', $html);
+        $this->assertStringContainsString('aria-label="Resize sidebar"', $html);
+        $this->assertStringContainsString('data-sidebar-splitter', $html);
+        $this->assertStringContainsString('ui-splitter__line', $html);
+        $this->assertStringContainsString('ui-splitter__grip', $html);
+    }
+
+    public function test_inline_loader_component_renders_accessible_adasi_spinner_and_label(): void
+    {
+        $html = Blade::render('<x-ui.inline-loader id="test-loader" label="Loading custom data..." />');
+
+        $this->assertNoCompilerLeakage($html);
+        $this->assertStringContainsString('id="test-loader"', $html);
+        $this->assertStringContainsString('ui-inline-loading', $html);
+        $this->assertStringContainsString('role="status"', $html);
+        $this->assertStringContainsString('aria-live="polite"', $html);
+        $this->assertStringContainsString('ui-dt-loading-pill__spinner', $html);
+        $this->assertStringContainsString('ui-dt-loading-pill__arc', $html);
+        $this->assertStringContainsString('Loading custom data...', $html);
+        $this->assertStringNotContainsString('spinner-border', $html);
+    }
 }

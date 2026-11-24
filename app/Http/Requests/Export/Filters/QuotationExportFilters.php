@@ -20,7 +20,7 @@ final class QuotationExportFilters
         }
         $statuses = ['submitted', 'revision_requested', 'accepted', 'rejected', 'all_unavailable'];
         if ($supplier) {
-            $statuses = ['draft', 'unresponded', ...$statuses];
+            $statuses = ['draft', 'unresponded', 'cancelled', ...$statuses];
         }
         $filters = validator($data, ['supplier_id' => $supplier ? ['exclude'] : ['nullable', 'string', 'max:255'], 'period_id' => ['nullable', 'integer', 'exists:periods,id'], 'pr_number' => ['nullable', 'string', 'max:100'], 'status' => ['nullable', Rule::in($statuses)], 'currency' => ['nullable', Rule::in(ExchangeRate::CURRENCIES)], 'search' => ['nullable', 'string', 'max:255'], 'date_from' => ['nullable', 'date_format:Y-m'], 'date_to' => ['nullable', 'date_format:Y-m']])->validate();
         if (! empty($filters['date_from']) && ! empty($filters['date_to']) && $filters['date_to'] < $filters['date_from']) {
@@ -47,7 +47,7 @@ final class QuotationExportFilters
         } elseif (! empty($filters['supplier_id'])) {
             $query->where('supplier_id', $filters['supplier_id']);
         }
-        if (($filters['status'] ?? null) === 'unresponded') {
+        if (in_array($filters['status'] ?? null, ['unresponded', 'cancelled'], true)) {
             $query->whereRaw('1 = 0');
         } elseif (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
@@ -68,13 +68,35 @@ final class QuotationExportFilters
             $query->where('submitted_at', '<', BusinessTime::toStorage(BusinessTime::parseDate($filters['date_to'].'-01')->addMonth()));
         }
         if ($search = trim((string) ($filters['search'] ?? ''))) {
-            $query->whereHas('purchaseRequisition', fn ($q) => $q->where(fn ($q) => $q->where('pr_number', 'like', '%'.$search.'%')->orWhere('updated_at', 'like', '%'.$search.'%')));
+            $query->where(function (Builder $q) use ($search, $owner): void {
+                $q->whereHas('purchaseRequisition', fn (Builder $pr) => $pr->where(function (Builder $sub) use ($search): void {
+                    $sub->where('pr_number', 'like', '%'.$search.'%')
+                        ->orWhere('updated_at', 'like', '%'.$search.'%')
+                        ->orWhereHas('period', fn (Builder $period) => $period->where('name', 'like', '%'.$search.'%'));
+                }))
+                    ->orWhereHas('items.prItem', fn (Builder $item) => $item->where('material_name', 'like', '%'.$search.'%'));
+
+                if ($owner === null) {
+                    $q->orWhereHas('supplier', fn (Builder $supplier) => $supplier->where('name', 'like', '%'.$search.'%')
+                        ->orWhereHas('supplier', fn (Builder $profile) => $profile->where('company_name', 'like', '%'.$search.'%')));
+                }
+            });
         }
     }
 
     public static function schema(bool $supplier): array
     {
-        $fields = [['name' => 'pr_number', 'type' => 'text'], ['name' => 'period_id', 'type' => 'period'], ['name' => 'status', 'type' => 'select', 'domain' => 'quotation', 'options' => $supplier ? ['unresponded', 'draft', 'submitted', 'revision_requested', 'accepted', 'rejected', 'all_unavailable'] : ['submitted', 'revision_requested', 'accepted', 'rejected', 'all_unavailable']], ['name' => 'search', 'type' => 'text']];
+        $searchKey = $supplier ? 'quotation_search_supplier' : 'quotation_search_purchasing';
+        $fields = [
+            ['name' => 'period_id', 'type' => 'period'],
+            ['name' => 'status', 'type' => 'select', 'domain' => 'quotation', 'options' => $supplier ? ['unresponded', 'draft', 'submitted', 'revision_requested', 'accepted', 'rejected', 'all_unavailable', 'cancelled'] : ['submitted', 'revision_requested', 'accepted', 'rejected', 'all_unavailable']],
+            [
+                'name' => 'search',
+                'type' => 'text',
+                'placeholder' => 'exports.advanced.filters.placeholders.'.$searchKey,
+                'hint' => 'exports.advanced.filters.hints.'.$searchKey,
+            ],
+        ];
         if (! $supplier) {
             $fields = [...$fields, ['name' => 'supplier_id', 'type' => 'supplier'], ['name' => 'currency', 'type' => 'select', 'domain' => 'currency', 'options' => ExchangeRate::CURRENCIES], ['name' => 'date_from', 'type' => 'month'], ['name' => 'date_to', 'type' => 'month']];
         }

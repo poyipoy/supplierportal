@@ -163,4 +163,149 @@ class ReferencePriceRulesManagementTest extends TestCase
 
         $this->assertEquals(ReferencePriceRule::STATUS_INACTIVE, $firstRule->fresh()->status);
     }
+
+    public function test_edit_category_by_rule_id_updates_rule_and_preserves_untouched_rows_metadata(): void
+    {
+        $target = ReferencePriceRule::where('category_key', '601-700')->firstOrFail();
+        $untouched = ReferencePriceRule::where('category_key', '1-15')->firstOrFail();
+        $untouched->update([
+            'created_by' => $this->admin->id,
+            'updated_by' => $this->admin->id,
+        ]);
+
+        $response = $this->actingAs($this->purchasing)
+            ->post(route('purchasing.master-data.reference-prices.rules.category.save'), [
+                'form_mode' => 'edit',
+                'rule_id' => $target->id,
+                'category_key' => '601-720',
+                'category_name' => 'Heavy Plate 601-720',
+                'dimension_min' => 601,
+                'dimension_max' => 720,
+            ]);
+
+        $response->assertRedirect(route('purchasing.master-data.reference-prices.index', ['tab' => 'rules']))
+            ->assertSessionHas('success');
+
+        $target->refresh();
+        $untouched->refresh();
+
+        $this->assertSame('601-720', $target->category_key);
+        $this->assertSame('Heavy Plate 601-720', $target->category_name);
+        $this->assertSame(601, $target->dimension_min);
+        $this->assertSame(720, $target->dimension_max);
+        $this->assertSame($this->purchasing->id, $target->updated_by);
+        $this->assertSame($this->admin->id, $untouched->created_by);
+        $this->assertSame($this->admin->id, $untouched->updated_by);
+    }
+
+    public function test_add_category_mode_rejects_duplicate_category_key_without_overwriting(): void
+    {
+        $existing = ReferencePriceRule::where('category_key', '601-700')->firstOrFail();
+
+        $response = $this->actingAs($this->purchasing)
+            ->from(route('purchasing.master-data.reference-prices.index', ['tab' => 'rules']))
+            ->post(route('purchasing.master-data.reference-prices.rules.category.save'), [
+                'form_mode' => 'create',
+                'category_key' => '601-700',
+                'category_name' => 'Duplicate Override Attempt',
+                'dimension_min' => 701,
+                'dimension_max' => 800,
+            ]);
+
+        $response->assertRedirect(route('purchasing.master-data.reference-prices.index', ['tab' => 'rules']))
+            ->assertSessionHas('error');
+
+        $existing->refresh();
+        $this->assertSame('601-700', $existing->category_name);
+        $this->assertSame(601, $existing->dimension_min);
+        $this->assertSame(700, $existing->dimension_max);
+        $this->assertSame('create', session()->getOldInput('form_mode'));
+        $this->assertSame('601-700', session()->getOldInput('category_key'));
+    }
+
+    public function test_edit_and_add_overlapping_ranges_redirect_to_rules_tab_with_error_and_input(): void
+    {
+        $first = ReferencePriceRule::where('category_key', '1-15')->firstOrFail();
+
+        $editResponse = $this->actingAs($this->purchasing)
+            ->post(route('purchasing.master-data.reference-prices.rules.category.save'), [
+                'form_mode' => 'edit',
+                'rule_id' => $first->id,
+                'category_key' => '1-15',
+                'category_name' => '1-20 Overlap',
+                'dimension_min' => 1,
+                'dimension_max' => 20,
+            ]);
+
+        $editResponse->assertRedirect(route('purchasing.master-data.reference-prices.index', ['tab' => 'rules']))
+            ->assertSessionHas('error');
+
+        $this->assertSame(15, $first->fresh()->dimension_max);
+        $this->assertSame('edit', session()->getOldInput('form_mode'));
+        $this->assertSame('20', (string) session()->getOldInput('dimension_max'));
+
+        $addResponse = $this->actingAs($this->purchasing)
+            ->post(route('purchasing.master-data.reference-prices.rules.category.save'), [
+                'form_mode' => 'create',
+                'category_key' => '650-750',
+                'category_name' => '650-750',
+                'dimension_min' => 650,
+                'dimension_max' => 750,
+            ]);
+
+        $addResponse->assertRedirect(route('purchasing.master-data.reference-prices.index', ['tab' => 'rules']))
+            ->assertSessionHas('error');
+
+        $this->assertDatabaseMissing('reference_price_rules', ['category_key' => '650-750']);
+        $this->assertSame('create', session()->getOldInput('form_mode'));
+        $this->assertSame('650-750', session()->getOldInput('category_key'));
+    }
+
+    public function test_toggle_inactive_to_active_rejects_overlap_and_allows_non_overlapping_reactivation(): void
+    {
+        $first = ReferencePriceRule::where('category_key', '1-15')->firstOrFail();
+        $second = ReferencePriceRule::where('category_key', '16-50')->firstOrFail();
+
+        $this->actingAs($this->purchasing)
+            ->patch(route('purchasing.master-data.reference-prices.rules.category.toggle', $second))
+            ->assertRedirect(route('purchasing.master-data.reference-prices.index', ['tab' => 'rules']))
+            ->assertSessionHas('success');
+        $this->assertSame(ReferencePriceRule::STATUS_INACTIVE, $second->fresh()->status);
+
+        $this->actingAs($this->purchasing)
+            ->post(route('purchasing.master-data.reference-prices.rules.category.save'), [
+                'form_mode' => 'edit',
+                'rule_id' => $first->id,
+                'category_key' => '1-15',
+                'category_name' => '1-20',
+                'dimension_min' => 1,
+                'dimension_max' => 20,
+            ])
+            ->assertRedirect(route('purchasing.master-data.reference-prices.index', ['tab' => 'rules']))
+            ->assertSessionHas('success');
+
+        $this->actingAs($this->purchasing)
+            ->patch(route('purchasing.master-data.reference-prices.rules.category.toggle', $second))
+            ->assertRedirect(route('purchasing.master-data.reference-prices.index', ['tab' => 'rules']))
+            ->assertSessionHas('error');
+        $this->assertSame(ReferencePriceRule::STATUS_INACTIVE, $second->fresh()->status);
+
+        $this->actingAs($this->purchasing)
+            ->post(route('purchasing.master-data.reference-prices.rules.category.save'), [
+                'form_mode' => 'edit',
+                'rule_id' => $second->id,
+                'category_key' => '21-50',
+                'category_name' => '21-50',
+                'dimension_min' => 21,
+                'dimension_max' => 50,
+            ])
+            ->assertRedirect(route('purchasing.master-data.reference-prices.index', ['tab' => 'rules']))
+            ->assertSessionHas('success');
+
+        $this->actingAs($this->purchasing)
+            ->patch(route('purchasing.master-data.reference-prices.rules.category.toggle', $second))
+            ->assertRedirect(route('purchasing.master-data.reference-prices.index', ['tab' => 'rules']))
+            ->assertSessionHas('success');
+        $this->assertSame(ReferencePriceRule::STATUS_ACTIVE, $second->fresh()->status);
+    }
 }

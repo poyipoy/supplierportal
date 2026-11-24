@@ -1,4 +1,5 @@
 import { createColumnDesigner } from './export-column-designer.js';
+import { yieldToMain } from './task-yield.js';
 
 const controllers = new WeakMap();
 const formatForms = new WeakSet();
@@ -20,14 +21,30 @@ export function createAdvancedExport(root, { designer: suppliedDesigner } = {}) 
     const copy = JSON.parse(root.dataset.exportCopy);
     const selectors = JSON.parse(root.dataset.filterSelectors);
     const text = (key, params = {}) => Object.entries(params).reduce((s, [k, v]) => s.replaceAll(`:${k}`, String(v)), copy[key] || key);
-    const designer = suppliedDesigner || createColumnDesigner(root, { text });
     const saveButton = root.querySelector('[data-export-save]');
     const updateButton = root.querySelector('[data-export-update]');
+    const duplicateButton = root.querySelector('[data-export-duplicate]');
     const deleteButton = root.querySelector('[data-export-delete]');
-    const buttons = [submit, quick, saveButton, updateButton, deleteButton];
+    const formatSelect = root.querySelector('[data-export-format]');
+    const delimiterGroup = root.querySelector('[data-export-csv-delimiter-group]');
+    const delimiterSelect = root.querySelector('[data-export-csv-delimiter]');
+    const scopeGroup = root.querySelector('[data-export-preset-scope-group]');
+    const scopeSelect = root.querySelector('[data-export-preset-scope]');
+    const defaultCheckbox = root.querySelector('[data-export-default]');
+    const teamReadonlyHint = root.querySelector('[data-export-team-readonly]');
+    const previewEl = root.querySelector('[data-export-preview]');
+    const relativeCheckbox = root.querySelector('[data-export-relative]');
+    const relativePanel = root.querySelector('[data-export-relative-panel]');
+    const daysInput = root.querySelector('[data-export-days]');
+    const dayPresetButtons = [...root.querySelectorAll('[data-export-days-preset]')];
+    const defaultCsvDelimiter = root.dataset.defaultCsvDelimiter === ';' || document.documentElement?.lang === 'id' ? ';' : ',';
+    const buttons = [submit, quick, saveButton, updateButton, duplicateButton, deleteButton].filter(Boolean);
     const listeners = [];
     let definition;
     let presets = [];
+    let personalPresets = [];
+    let teamPresets = [];
+    let canManageTeam = false;
     let epoch = 0;
     let pending = null;
     let exportFlight = null;
@@ -37,36 +54,116 @@ export function createAdvancedExport(root, { designer: suppliedDesigner } = {}) 
     let closing = false;
     let disposed = false;
     let preserveOnShow = false;
+    let previewTimer = null;
+    let previewAbort = null;
+    let previewEpoch = 0;
+    let previewState = null;
+    form?.setAttribute?.('data-managed-submit', '');
+    form?.setAttribute?.('data-no-loader', '');
     let opener = root.querySelector('[data-export-open]');
+    const renderPreview = () => {
+        if (!previewEl) return;
+        const baseClass = 'ui-export-preview tw:mr-auto tw:text-ui-xs ui-tabular-nums';
+        if (!ready || !previewState) {
+            previewEl.textContent = '';
+            previewEl.className = `${baseClass} tw:text-on-surface-variant`;
+            return;
+        }
+        const fmt = String(formatSelect?.value || 'xlsx').toUpperCase();
+        let columnCount = 0;
+        try { columnCount = designer.serialize().length; } catch { columnCount = 0; }
+        const numberLocale = document.documentElement?.lang === 'id' ? 'id-ID' : 'en-US';
+        const fmtNumber = (value) => new Intl.NumberFormat(numberLocale).format(Math.max(0, Number(value) || 0));
+        if (previewState.loading) {
+            previewEl.className = `${baseClass} tw:text-on-surface-variant`;
+            previewEl.textContent = text('preview_loading');
+            return;
+        }
+        if (previewState.failed) {
+            previewEl.className = `${baseClass} tw:text-on-surface-variant`;
+            previewEl.textContent = text('preview_failed');
+            return;
+        }
+        if (previewState.exceedsLimit) {
+            previewEl.className = `${baseClass} tw:text-error tw:font-medium`;
+            previewEl.textContent = text('preview_exceeds', { rows: fmtNumber(previewState.totalRows), limit: fmtNumber(previewState.maxRows) });
+            return;
+        }
+        if (previewState.isEmpty) {
+            previewEl.className = `${baseClass} tw:text-warning tw:font-medium`;
+            previewEl.textContent = text('preview_empty', { columns: fmtNumber(columnCount), format: fmt });
+            return;
+        }
+        previewEl.className = `${baseClass} tw:text-on-surface-variant`;
+        previewEl.textContent = text('preview_summary', { rows: fmtNumber(previewState.totalRows), columns: fmtNumber(columnCount), format: fmt });
+    };
+    const designer = suppliedDesigner || createColumnDesigner(root, { text, onStateChange: () => renderPreview() });
     const listen = (target, name, handler) => {
         if (!target) return;
         target.addEventListener(name, handler);
         listeners.push(() => target.removeEventListener(name, handler));
     };
     const chosenPreset = () => presets.find((preset) => preset.id === select.value);
+    const canEditPreset = (preset) => preset ? (preset.can_edit !== undefined ? Boolean(preset.can_edit) : preset.scope !== 'team') : false;
+    const canDeletePreset = (preset) => preset ? (preset.can_delete !== undefined ? Boolean(preset.can_delete) : preset.scope !== 'team') : false;
+    const syncCsvDelimiter = () => {
+        const isCsv = formatSelect?.value === 'csv';
+        if (delimiterGroup) delimiterGroup.hidden = !isCsv;
+        if (delimiterSelect) delimiterSelect.disabled = !(ready && shown && !pending && !exportFlight && !disposed) || !isCsv;
+    };
     const updateControls = () => {
         const available = ready && shown && !pending && !exportFlight && !disposed;
-        submit.disabled = !available;
+        const selected = chosenPreset();
+        const editable = canEditPreset(selected);
+        const deletable = canDeletePreset(selected);
+        submit.disabled = !available || Boolean(previewState?.exceedsLimit);
         saveButton.disabled = !available;
-        updateButton.disabled = !available || !chosenPreset();
-        deleteButton.disabled = !available || !chosenPreset();
+        updateButton.disabled = !available || !selected || !editable;
+        deleteButton.disabled = !available || !selected || !deletable;
+        if (duplicateButton) {
+            duplicateButton.hidden = !selected;
+            duplicateButton.disabled = !available || !selected;
+        }
+        if (scopeGroup) scopeGroup.hidden = !canManageTeam;
+        if (scopeSelect) scopeSelect.disabled = !available || !canManageTeam;
+        if (defaultCheckbox) {
+            const isTeamSelection = Boolean(scopeSelect && canManageTeam && scopeSelect.value === 'team');
+            defaultCheckbox.disabled = !available || isTeamSelection;
+            if (isTeamSelection) defaultCheckbox.checked = false;
+        }
+        if (teamReadonlyHint) {
+            teamReadonlyHint.hidden = !(selected && selected.scope === 'team' && !editable);
+        }
         select.disabled = !available;
         quick.disabled = Boolean(pending || exportFlight || disposed);
         if (retry) retry.disabled = Boolean(pending || exportFlight || disposed);
+        syncCsvDelimiter();
         designer.setEnabled(available);
     };
+    const clearButtonSpinners = (button) => {
+        if (!button) return;
+        button.querySelector?.('[data-export-busy-icon]')?.remove();
+        button.querySelectorAll?.('.ui-spinner').forEach((node) => node.remove());
+        button.classList?.remove?.('is-loading');
+        if (button.dataset) delete button.dataset.loadingActive;
+        button.querySelector?.('span:not([data-export-busy-icon])')?.style?.removeProperty('display');
+    };
     const busy = (button, active) => {
-        const label = button.querySelector('span');
-        button.querySelector('[data-export-busy-icon]')?.remove();
+        if (!button) return;
+        if (button.dataset?.loadingActive === 'true') {
+            window?.AdasiButton?.stopLoading?.(button);
+        }
+        clearButtonSpinners(button);
         if (active) {
             button.setAttribute('aria-busy', 'true');
-            if (label) label.style.display = 'none';
             const icon = document.createElement('span');
-            icon.className = 'ui-spinner'; icon.dataset.exportBusyIcon = ''; icon.setAttribute('aria-hidden', 'true');
-            button.append(icon);
+            icon.className = 'ui-spinner';
+            icon.dataset.exportBusyIcon = '';
+            icon.setAttribute('aria-hidden', 'true');
+            if (typeof button.prepend === 'function') button.prepend(icon);
+            else button.append(icon);
         } else {
             button.removeAttribute('aria-busy');
-            if (label) label.style.removeProperty('display');
         }
     };
     const clearError = () => { error.hidden = true; error.textContent = ''; if (retry) retry.hidden = true; };
@@ -76,10 +173,21 @@ export function createAdvancedExport(root, { designer: suppliedDesigner } = {}) 
         if (retry) retry.hidden = !reload;
         if (modal.classList.contains('show')) error.focus();
     };
+    const cancelPreview = () => {
+        if (previewTimer !== null) {
+            window.clearTimeout(previewTimer);
+            previewTimer = null;
+        }
+        previewAbort?.abort();
+        previewAbort = null;
+        previewEpoch += 1;
+    };
     const invalidate = () => {
         epoch += 1;
         pending?.abort.abort();
         pending = null;
+        cancelPreview();
+        if (form?.dataset?.submitting) delete form.dataset.submitting;
         buttons.forEach((button) => busy(button, false));
     };
     const begin = (kind, button) => {
@@ -94,6 +202,7 @@ export function createAdvancedExport(root, { designer: suppliedDesigner } = {}) 
     const current = (operation) => !disposed && operation.epoch === epoch && pending === operation;
     const finish = (operation) => {
         if (!current(operation)) return;
+        if (form?.dataset?.submitting) delete form.dataset.submitting;
         if (operation.button) busy(operation.button, false);
         pending = null;
         updateControls();
@@ -116,6 +225,10 @@ export function createAdvancedExport(root, { designer: suppliedDesigner } = {}) 
     const currentFilters = () => {
         const values = { ...Object.fromEntries(new URL(window.location.href).searchParams), ...JSON.parse(root.dataset.initialFilters || '{}') };
         Object.entries(selectors).forEach(([name, selector]) => { const input = document.querySelector(selector); if (input) values[name] = input.type === 'checkbox' ? (input.checked ? '1' : '0') : input.value; });
+        if (!values.search) {
+            const legacySearch = values.po_number || values.pr_number || values.shipment_number;
+            if (legacySearch) values.search = legacySearch;
+        }
         if (root.dataset.exportTable && window.jQuery?.fn?.DataTable?.isDataTable(root.dataset.exportTable)) {
             if (!selectors.search && !root.dataset.exportKey.startsWith('qc.')) values.search = window.jQuery(root.dataset.exportTable).DataTable().search().trim();
         }
@@ -123,24 +236,112 @@ export function createAdvancedExport(root, { designer: suppliedDesigner } = {}) 
     };
     const initial = new URL(window.location.href).searchParams;
     Object.entries(selectors).forEach(([name, selector]) => { const input = document.querySelector(selector); if (input && initial.has(name)) { if (input.type === 'checkbox') input.checked = initial.get(name) === '1'; else input.value = initial.get(name); } });
+    const syncRelativePresets = () => {
+        const relative = Boolean(relativeCheckbox?.checked);
+        const currentDays = String(daysInput?.value ?? '').trim();
+        dayPresetButtons.forEach((button) => {
+            button.disabled = !relative;
+            button.setAttribute('aria-pressed', currentDays !== '' && currentDays === String(button.dataset.exportDaysPreset) ? 'true' : 'false');
+        });
+    };
     const updateRelative = () => {
-        const relative = root.querySelector('[data-export-relative]').checked;
-        root.querySelector('[data-export-days]').disabled = !relative;
+        const relative = Boolean(relativeCheckbox?.checked);
+        relativeCheckbox?.setAttribute?.('aria-expanded', relative ? 'true' : 'false');
+        if (relativePanel) relativePanel.hidden = !relative;
+        if (daysInput) daysInput.disabled = !relative;
+        syncRelativePresets();
         form.querySelectorAll('[data-filter-name="start_date"], [data-filter-name="end_date"]').forEach((input) => { input.disabled = relative; input.dispatchEvent(new Event('change', { bubbles: true })); });
     };
     const setFilters = (values) => {
-        form.querySelectorAll('[data-filter-name]').forEach((input) => { const field = definition.filters.find((f) => f.name === input.dataset.filterName); input.value = values[input.dataset.filterName] ?? field?.default ?? ''; input.dispatchEvent(new Event('change', { bubbles: true })); });
+        form.querySelectorAll('[data-filter-name]').forEach((input) => {
+            const field = definition.filters.find((f) => f.name === input.dataset.filterName);
+            const nextVal = String(values[input.dataset.filterName] ?? field?.default ?? '');
+            input.value = nextVal;
+            if (input.id && typeof window.dispatchEvent === 'function' && typeof CustomEvent === 'function') {
+                window.dispatchEvent(new CustomEvent('set-select-value', { detail: { id: input.id, value: nextVal, silent: true } }));
+            }
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+        });
         ['date_from', 'date_to'].forEach((name) => { const input = form.querySelector(`[name="${name}"]`); if (input) { input.value = values[name] || ''; input.dispatchEvent(new Event('change', { bubbles: true })); } });
-        root.querySelector('[data-export-relative]').checked = values.date_range?.mode === 'relative';
-        root.querySelector('[data-export-days]').value = values.date_range?.days || 30;
+        if (relativeCheckbox) relativeCheckbox.checked = values.date_range?.mode === 'relative';
+        if (daysInput) daysInput.value = values.date_range?.days || 30;
         updateRelative();
     };
     const filters = () => {
         const data = {};
         form.querySelectorAll('[data-filter-name]').forEach((input) => { if (!input.disabled && input.value !== '') data[input.dataset.filterName] = input.value; });
         ['date_from', 'date_to'].forEach((name) => { const input = form.querySelector(`[name="${name}"]`); if (input?.value) data[name] = input.value; });
-        if (root.querySelector('[data-export-relative]').checked) data.date_range = { mode: 'relative', days: Number(root.querySelector('[data-export-days]').value) };
+        if (relativeCheckbox?.checked) data.date_range = { mode: 'relative', days: Number(daysInput?.value) };
         return data;
+    };
+    const schedulePreview = (delayMs = 400) => {
+        if (!root.dataset.previewUrl || !ready || disposed) return;
+        cancelPreview();
+        const myEpoch = previewEpoch;
+        previewState = { loading: true, totalRows: 0, maxRows: 0, exceedsLimit: false, isEmpty: false, failed: false };
+        renderPreview();
+        updateControls();
+        const run = async () => {
+            previewTimer = null;
+            if (!ready || disposed || myEpoch !== previewEpoch) return;
+            const controller = new (window.AbortController || AbortController)();
+            previewAbort = controller;
+            try {
+                const response = await window.fetch(root.dataset.previewUrl, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    cache: 'no-store',
+                    priority: 'low',
+                    signal: controller.signal,
+                    headers: {
+                        Accept: 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': form.querySelector('[name="_token"]').value,
+                    },
+                    body: JSON.stringify({ export_key: root.dataset.exportKey, ...filters() }),
+                });
+                if (!response.ok) throw new Error('Preview failed');
+                const data = await response.json();
+                if (myEpoch !== previewEpoch || disposed || !ready) return;
+                previewState = {
+                    loading: false,
+                    totalRows: Number(data.total_rows) || 0,
+                    maxRows: Number(data.max_rows) || 0,
+                    exceedsLimit: Boolean(data.exceeds_limit),
+                    isEmpty: Boolean(data.is_empty),
+                    failed: false,
+                };
+            } catch (err) {
+                if (err?.name === 'AbortError' || myEpoch !== previewEpoch || disposed || !ready) return;
+                previewState = { loading: false, totalRows: 0, maxRows: 0, exceedsLimit: false, isEmpty: false, failed: true };
+            } finally {
+                if (previewAbort === controller) previewAbort = null;
+            }
+            renderPreview();
+            updateControls();
+        };
+        previewTimer = window.setTimeout(run, delayMs);
+    };
+    const renderPresetSelect = () => {
+        const option = (label, value) => { const node = document.createElement('option'); node.textContent = label; node.value = value; return node; };
+        const defaultOpt = option(text('default_columns'), '');
+        if (teamPresets.length > 0) {
+            const nodes = [defaultOpt];
+            if (personalPresets.length > 0) {
+                const personalGroup = document.createElement('optgroup');
+                personalGroup.label = text('personal_presets');
+                personalPresets.forEach((preset) => personalGroup.append(option(preset.name, preset.id)));
+                nodes.push(personalGroup);
+            }
+            const teamGroup = document.createElement('optgroup');
+            teamGroup.label = text('team_presets');
+            teamPresets.forEach((preset) => teamGroup.append(option(preset.name, preset.id)));
+            nodes.push(teamGroup);
+            select.replaceChildren(...nodes);
+            return;
+        }
+        select.replaceChildren(defaultOpt, ...presets.map((preset) => option(preset.name, preset.id)));
     };
     const applyPreset = (preset) => {
         // A presented preset is already normalized by the server. Reject a
@@ -156,26 +357,39 @@ export function createAdvancedExport(root, { designer: suppliedDesigner } = {}) 
         }
         setFilters(preset?.filters || currentFilters());
         select.value = preset?.id || '';
-        root.querySelector('[data-export-format]').value = preset?.format || 'xlsx';
+        formatSelect.value = preset?.format || 'xlsx';
+        if (delimiterSelect) {
+            delimiterSelect.value = [',', ';'].includes(preset?.csv_delimiter) ? preset.csv_delimiter : defaultCsvDelimiter;
+        }
+        if (scopeSelect) {
+            scopeSelect.value = preset?.scope === 'team' && canManageTeam ? 'team' : 'personal';
+        }
+        syncCsvDelimiter();
         root.querySelector('[data-export-preset-name]').value = preset?.name || '';
-        root.querySelector('[data-export-default]').checked = preset?.is_default || false;
+        if (defaultCheckbox) defaultCheckbox.checked = preset?.scope !== 'team' && Boolean(preset?.is_default);
         if (preset?.warnings?.length) showError(preset.warnings.join('\n'));
     };
     const load = async (operation) => {
-        ready = false; status.textContent = text('loading'); updateControls();
+        ready = false; previewState = null; renderPreview(); status.textContent = text('loading'); updateControls();
         const [catalog, cohort] = await Promise.all([
             json(root.dataset.definitionUrl, 'GET', undefined, operation),
             json(`${root.dataset.presetsUrl}?export_key=${encodeURIComponent(root.dataset.exportKey)}`, 'GET', undefined, operation),
         ]);
         if (!current(operation)) return false;
         if (catalog.export_key !== root.dataset.exportKey || catalog.supports_columns !== true || !Array.isArray(catalog.filters) || !Array.isArray(catalog.formats) || !catalog.formats.includes('xlsx') || !Array.isArray(cohort.data)) throw new Error(text('failed'));
+        await yieldToMain();
+        if (!current(operation)) return false;
         try { designer.configure(catalog.columns); }
         catch { throw new Error(text('failed')); }
-        definition = catalog; presets = cohort.data;
-        const option = (label, value) => { const node = document.createElement('option'); node.textContent = label; node.value = value; return node; };
-        select.replaceChildren(option(text('default_columns'), ''), ...presets.map((preset) => option(preset.name, preset.id)));
+        definition = catalog;
+        presets = cohort.data;
+        personalPresets = Array.isArray(cohort.personal) ? cohort.personal : presets.filter((preset) => preset.scope !== 'team');
+        teamPresets = Array.isArray(cohort.team) ? cohort.team : presets.filter((preset) => preset.scope === 'team');
+        canManageTeam = Boolean(cohort.can_manage_team);
+        renderPresetSelect();
         select.value = '';
         applyPreset(null); ready = true; status.textContent = '';
+        if (shown && operation.kind !== 'quick') schedulePreview(400);
         return true;
     };
     const revealFailure = () => {
@@ -187,11 +401,16 @@ export function createAdvancedExport(root, { designer: suppliedDesigner } = {}) 
         if (!current(operation) || !ready || exportFlight) return;
         if (!window.AdasiAsyncExport?.startExport) throw new Error(text('failed'));
         const columns = designer.serialize();
+        const format = formatSelect.value;
+        const exportOptions = { columns, format };
+        if (format === 'csv' && delimiterSelect && [',', ';'].includes(delimiterSelect.value)) {
+            exportOptions.csv_delimiter = delimiterSelect.value;
+        }
         exportFlight = operation; updateControls();
         try {
             const accepted = await window.AdasiAsyncExport.startExport(form, {
                 url: form.action,
-                body: { ...filters(), options: { columns, format: root.querySelector('[data-export-format]').value } },
+                body: { ...filters(), options: exportOptions },
                 onError: (message) => { if (current(operation)) showError(message); },
             });
             if (!current(operation)) return;
@@ -215,8 +434,13 @@ export function createAdvancedExport(root, { designer: suppliedDesigner } = {}) 
         opener = event.relatedTarget || root.querySelector('[data-export-open]');
         return runLoad(begin('load'));
     });
-    listen(modal, 'shown.bs.modal', () => { opening = false; shown = true; updateControls(); if (!error.hidden) error.focus(); else root.querySelector('.modal-title')?.focus(); });
-    listen(modal, 'hide.bs.modal', () => { opening = false; shown = false; closing = true; invalidate(); ready = false; designer.suspend(); updateControls(); });
+    listen(modal, 'shown.bs.modal', () => {
+        opening = false; shown = true; updateControls();
+        if (ready && !previewState) schedulePreview(400);
+        if (!error.hidden) error.focus();
+        else root.querySelector('.modal-title')?.focus();
+    });
+    listen(modal, 'hide.bs.modal', () => { opening = false; shown = false; closing = true; invalidate(); ready = false; previewState = null; renderPreview(); designer.suspend(); updateControls(); });
     listen(modal, 'hidden.bs.modal', () => { closing = false; if (!disposed) opener?.focus(); });
     listen(quick, 'click', async () => {
         if (quick.disabled) return;
@@ -224,14 +448,14 @@ export function createAdvancedExport(root, { designer: suppliedDesigner } = {}) 
         const operation = begin('quick', quick);
         try {
             if (!await load(operation) || !current(operation)) return;
-            applyPreset(presets.find((preset) => preset.is_default));
+            applyPreset(presets.find((preset) => preset.is_default && preset.scope !== 'team'));
             await dispatch(operation);
         } catch (e) { if (current(operation)) { showError(e.message || text('failed'), !ready); revealFailure(); } }
         finally { finish(operation); }
     });
     listen(form, 'submit', async (event) => {
         event.preventDefault();
-        if (!ready || pending || exportFlight || !form.reportValidity()) return;
+        if (!ready || pending || exportFlight || previewState?.exceedsLimit || !form.reportValidity()) return;
         const operation = begin('export', submit);
         try { await dispatch(operation); }
         catch (e) { if (current(operation)) showError(e.message || text('failed')); }
@@ -243,13 +467,47 @@ export function createAdvancedExport(root, { designer: suppliedDesigner } = {}) 
         try { applyPreset(chosenPreset()); }
         catch { ready = false; showError(text('invalid_columns'), true); }
         updateControls();
+        if (ready) schedulePreview(400);
     });
-    listen(root.querySelector('[data-export-relative]'), 'change', updateRelative);
+    listen(relativeCheckbox, 'change', () => { updateRelative(); schedulePreview(400); });
+    listen(daysInput, 'input', () => { syncRelativePresets(); schedulePreview(400); });
+    dayPresetButtons.forEach((button) => {
+        listen(button, 'click', () => {
+            if (!daysInput || button.disabled) return;
+            daysInput.value = button.dataset.exportDaysPreset;
+            syncRelativePresets();
+            schedulePreview(400);
+        });
+    });
+    listen(formatSelect, 'change', () => { syncCsvDelimiter(); renderPreview(); });
+    listen(scopeSelect, 'change', () => updateControls());
+    const handleFilterChange = (event) => {
+        if (!ready || pending || exportFlight) return;
+        const target = event.target;
+        if (!target) return;
+        if (target.dataset?.filterName || target.name === 'date_from' || target.name === 'date_to') {
+            schedulePreview(400);
+        }
+    };
+    listen(form, 'change', handleFilterChange);
+    listen(form, 'input', handleFilterChange);
     listen(retry, 'click', () => runLoad(begin('load')));
     const save = async (update = false) => {
         const selected = chosenPreset();
-        if (!ready || pending || exportFlight || (update && !selected)) return;
-        const input = { export_key: root.dataset.exportKey, name: root.querySelector('[data-export-preset-name]').value, columns: designer.serialize(), filters: filters(), format: root.querySelector('[data-export-format]').value, is_default: root.querySelector('[data-export-default]').checked };
+        if (!ready || pending || exportFlight || (update && (!selected || !canEditPreset(selected)))) return;
+        const chosenScope = update
+            ? (selected.scope || 'personal')
+            : (scopeSelect && canManageTeam ? scopeSelect.value : 'personal');
+        const input = {
+            export_key: root.dataset.exportKey,
+            name: root.querySelector('[data-export-preset-name]').value,
+            columns: designer.serialize(),
+            filters: filters(),
+            format: formatSelect.value,
+            ...(delimiterSelect && [',', ';'].includes(delimiterSelect.value) ? { csv_delimiter: delimiterSelect.value } : {}),
+            ...(scopeSelect && canManageTeam ? { scope: chosenScope } : {}),
+            is_default: chosenScope === 'team' ? false : Boolean(defaultCheckbox?.checked),
+        };
         const operation = begin('save', update ? updateButton : saveButton);
         try {
             const result = await json(update ? `${root.dataset.presetsUrl}/${encodeURIComponent(selected.id)}` : root.dataset.presetStoreUrl, update ? 'PUT' : 'POST', input);
@@ -260,9 +518,20 @@ export function createAdvancedExport(root, { designer: suppliedDesigner } = {}) 
     };
     listen(saveButton, 'click', () => save());
     listen(updateButton, 'click', () => save(true));
-    listen(deleteButton, 'click', async () => {
+    listen(duplicateButton, 'click', async () => {
         const selected = chosenPreset();
         if (!ready || pending || exportFlight || !selected) return;
+        const operation = begin('duplicate', duplicateButton);
+        try {
+            const result = await json(`${root.dataset.presetsUrl}/${encodeURIComponent(selected.id)}/duplicate`, 'POST', {});
+            if (!current(operation) || !await load(operation) || !current(operation)) return;
+            applyPreset(result); select.value = result.id; status.textContent = text('duplicated');
+        } catch (e) { if (current(operation)) showError(e.message || text('save_failed'), !ready); }
+        finally { finish(operation); }
+    });
+    listen(deleteButton, 'click', async () => {
+        const selected = chosenPreset();
+        if (!ready || pending || exportFlight || !selected || !canDeletePreset(selected)) return;
         const operation = begin('delete', deleteButton);
         try { await json(`${root.dataset.presetsUrl}/${encodeURIComponent(selected.id)}`, 'DELETE'); if (current(operation)) await load(operation); }
         catch (e) { if (current(operation)) showError(e.message || text('save_failed'), !ready); }
@@ -298,15 +567,28 @@ export const bootFormats = (scope = globalThis.document) => {
     scope.querySelectorAll('[data-format-export-form]').forEach((form) => {
         if (formatForms.has(form)) return;
         formatForms.add(form);
+        form?.setAttribute?.('data-managed-submit', '');
+        form?.setAttribute?.('data-no-loader', '');
         form.addEventListener('submit', async (event) => {
             event.preventDefault();
             const button = form.querySelector('[type="submit"]');
             const error = form.querySelector('[data-format-export-error]');
-            if (button.disabled || !form.reportValidity()) return;
+            if (!button || button.disabled || !form.reportValidity()) return;
             const showError = (message) => { error.textContent = message; error.hidden = false; error.focus(); };
             error.hidden = true;
             button.disabled = true;
             button.setAttribute('aria-busy', 'true');
+            button.querySelector?.('[data-export-busy-icon]')?.remove();
+            button.querySelectorAll?.('.ui-spinner')?.forEach((node) => node.remove());
+            let busyIcon = null;
+            if (typeof scope.createElement === 'function' && (typeof button.prepend === 'function' || typeof button.append === 'function')) {
+                busyIcon = scope.createElement('span');
+                busyIcon.className = 'ui-spinner';
+                busyIcon.dataset.exportBusyIcon = '';
+                busyIcon.setAttribute('aria-hidden', 'true');
+                if (typeof button.prepend === 'function') button.prepend(busyIcon);
+                else button.append(busyIcon);
+            }
             try {
                 const data = Object.fromEntries(new FormDataClass(form));
                 const format = data['options[format]'];
@@ -314,7 +596,13 @@ export const bootFormats = (scope = globalThis.document) => {
                 if (!window.AdasiAsyncExport?.startExport) throw new Error(form.dataset.exportFailed);
                 await window.AdasiAsyncExport.startExport(form, { url: form.action, body: { ...data, options: { format } }, onError: showError });
             } catch { showError(form.dataset.exportFailed); }
-            finally { button.disabled = false; button.removeAttribute('aria-busy'); }
+            finally {
+                busyIcon?.remove?.();
+                button.querySelector?.('[data-export-busy-icon]')?.remove();
+                button.querySelectorAll?.('.ui-spinner')?.forEach((node) => node.remove());
+                button.disabled = false;
+                button.removeAttribute('aria-busy');
+            }
         });
     });
 };

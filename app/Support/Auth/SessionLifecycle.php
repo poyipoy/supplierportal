@@ -30,6 +30,7 @@ final class SessionLifecycle
         'purchasing.local-procurement.imports.status',
         'finance.local-procurement.po-documents.status',
         'purchasing.local-procurement.po-documents.status',
+        'supplier.quotations.availability',
     ];
 
     public static function idleTimeoutMinutes(): int

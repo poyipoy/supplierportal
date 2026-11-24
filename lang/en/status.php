@@ -8,6 +8,7 @@ return [
         'bidding' => 'Bidding',
         'completed' => 'Completed',
         'rejected' => 'Rejected',
+        'cancelled' => 'Cancelled',
     ],
     'quotation' => [
         'draft' => 'Draft',
@@ -16,6 +17,7 @@ return [
         'rejected' => 'Rejected',
         'revision_requested' => 'Revision Requested',
         'all_unavailable' => 'All Unavailable',
+        'cancelled' => 'Cancelled',
     ],
     'po' => [
         'active' => 'Active',

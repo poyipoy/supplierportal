@@ -6,6 +6,7 @@ use App\Data\VendorMaster\SupplierScorecardData;
 use App\Enums\PoAcknowledgementStatus;
 use App\Models\LocalInvoice;
 use App\Models\PurchaseOrder;
+use App\Models\PurchaseRequisition;
 use App\Models\QcInspection;
 use App\Models\Quotation;
 use App\Models\SupplierAudit;
@@ -69,8 +70,13 @@ class SupplierScorecardService
         $qcNumerator = $inspections->where('status', 'ok')->count();
 
         // 3. Responsiveness % (PR invitation quotation responses + PO acknowledgements)
+        // Exclude soft-cancelled invitations and cancelled/deleted PRs so removals never penalize suppliers.
         $invitedPrCount = (int) DB::table('purchase_requisition_suppliers')
-            ->where('supplier_id', $supplierId)
+            ->join('purchase_requisitions', 'purchase_requisitions.id', '=', 'purchase_requisition_suppliers.pr_id')
+            ->where('purchase_requisition_suppliers.supplier_id', $supplierId)
+            ->whereNull('purchase_requisition_suppliers.cancelled_at')
+            ->whereNull('purchase_requisitions.deleted_at')
+            ->where('purchase_requisitions.status', '!=', PurchaseRequisition::STATUS_CANCELLED)
             ->count();
 
         $respondedQuotationCount = (int) Quotation::query()

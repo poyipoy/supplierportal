@@ -36,6 +36,11 @@ class SupplierRegistrationAttempt extends Model
         'rejected_at',
     ];
 
+    protected $hidden = [
+        'submission_snapshot',
+        'submission_checksum',
+    ];
+
     protected function casts(): array
     {
         return [

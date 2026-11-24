@@ -1,7 +1,7 @@
 /**
  * ADASI Searchable Select Component for Alpine.js
  * Supports single-select with search popover, initial options, creatable custom options,
- * and asynchronous suggestions.
+ * and asynchronous contextual suggestions.
  */
 export function searchableSelect(config = {}) {
     return {
@@ -14,10 +14,13 @@ export function searchableSelect(config = {}) {
         allowCustom: Boolean(config.allowCustom),
         suggestionsUrl: config.suggestionsUrl || null,
         remoteSearch: Boolean(config.remoteSearch),
+        preloadOnOpen: Boolean(config.preloadOnOpen),
+        exportFilterContext: Boolean(config.exportFilterContext),
         isDisabled: Boolean(config.disabled),
         hasAsyncError: false,
         loadingSuggestions: false,
         debounceTimer: null,
+        abortController: null,
         latestRequestId: 0,
 
         init() {
@@ -41,58 +44,144 @@ export function searchableSelect(config = {}) {
                 });
             }
             if (this.selectedValue) {
-                if ((this.allowCustom || this.remoteSearch) && !this.options.some((opt) => String(opt.value) === String(this.selectedValue))) {
-                    this.options.unshift({
-                        value: String(this.selectedValue),
-                        label: String(this.selectedValue),
-                        sublabel: null,
-                        badge: null,
-                        badgeTone: 'neutral',
-                        searchKeywords: String(this.selectedValue).toLowerCase(),
-                    });
-                }
-                this.syncNativeSelect(this.selectedValue);
+                this.ensureCustomOptionPresent(this.selectedValue);
+                this.syncNativeSelect(this.selectedValue, false);
             }
             if ((this.allowCustom || this.remoteSearch) && this.suggestionsUrl) {
                 this.$watch('search', (val) => {
-                    this.fetchSuggestions(val);
+                    if (this.preloadOnOpen && !this.open) return;
+                    this.fetchSuggestions(val, { replaceOptions: this.preloadOnOpen });
                 });
             }
         },
 
-        fetchSuggestions(query) {
+        ensureCustomOptionPresent(val) {
+            const normalized = String(val ?? '').trim();
+            if (!normalized || !(this.allowCustom || this.remoteSearch)) return;
+            if (!this.options.some((opt) => String(opt.value) === normalized)) {
+                this.options.unshift({
+                    value: normalized,
+                    label: normalized,
+                    sublabel: null,
+                    badge: null,
+                    badgeTone: 'neutral',
+                    searchKeywords: normalized.toLowerCase(),
+                });
+            }
+        },
+
+        setExternalValue(val, silent = false) {
+            const nextVal = String(val ?? '');
+            if (nextVal) {
+                this.ensureCustomOptionPresent(nextVal);
+            }
+            this.selectedValue = nextVal;
+            this.syncNativeSelect(nextVal, !silent);
+        },
+
+        buildSuggestionsUrl(query) {
+            const origin = globalThis.location?.origin || 'http://localhost';
+            const url = new URL(this.suggestionsUrl, origin);
+            if (query !== '') {
+                url.searchParams.set('q', query);
+            }
+            if (this.exportFilterContext) {
+                const form = this.$el?.closest?.('[data-advanced-export-form]') || this.$refs?.nativeSelect?.form;
+                if (form && typeof form.querySelectorAll === 'function') {
+                    const selfName = this.$refs?.nativeSelect?.dataset?.filterName || this.$refs?.nativeSelect?.name || '';
+                    form.querySelectorAll('[data-filter-name]').forEach((input) => {
+                        const filterName = input.dataset?.filterName;
+                        if (!filterName || filterName === selfName || filterName === 'search' || filterName === 'q') return;
+                        if (!input.disabled && input.value !== undefined && String(input.value) !== '') {
+                            url.searchParams.set(filterName, String(input.value));
+                        }
+                    });
+                    ['date_from', 'date_to'].forEach((name) => {
+                        const input = form.querySelector?.(`[name="${name}"]`);
+                        if (input && !input.disabled && input.value) {
+                            url.searchParams.set(name, String(input.value));
+                        }
+                    });
+                    const relativeBox = form.querySelector?.('[data-export-relative]');
+                    const daysBox = form.querySelector?.('[data-export-days]');
+                    if (relativeBox?.checked && daysBox?.value) {
+                        url.searchParams.set('date_range[mode]', 'relative');
+                        url.searchParams.set('date_range[days]', String(daysBox.value));
+                    }
+                }
+            }
+            return url.toString();
+        },
+
+        fetchSuggestions(query, { immediate = false, replaceOptions = false } = {}) {
             if (!this.suggestionsUrl || !(this.allowCustom || this.remoteSearch)) return;
             const q = query ? query.trim() : '';
             if (this.debounceTimer) {
                 clearTimeout(this.debounceTimer);
+                this.debounceTimer = null;
             }
-            if (q.length < 2) {
+            this.abortController?.abort();
+            this.abortController = null;
+
+            if (!this.preloadOnOpen && q.length < 2) {
                 this.latestRequestId++;
                 this.loadingSuggestions = false;
                 return;
             }
 
-            this.debounceTimer = setTimeout(async () => {
+            const execute = async () => {
+                this.debounceTimer = null;
                 const requestId = ++this.latestRequestId;
                 this.loadingSuggestions = true;
+                const AbortCtrl = globalThis.AbortController;
+                const controller = AbortCtrl ? new AbortCtrl() : null;
+                this.abortController = controller;
+
                 try {
-                    const origin = globalThis.location?.origin || 'http://localhost';
-                    const url = new URL(this.suggestionsUrl, origin);
-                    url.searchParams.set('q', q);
-                    const res = await fetch(url.toString(), {
+                    const targetUrl = this.buildSuggestionsUrl(q);
+                    const res = await fetch(targetUrl, {
+                        credentials: 'same-origin',
+                        priority: 'low',
+                        ...(controller ? { signal: controller.signal } : {}),
                         headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
                     });
                     if (res.ok) {
                         const json = await res.json();
                         if (requestId !== this.latestRequestId) return;
-                        (json.data || []).forEach((item) => this.addSuggestion(item));
+                        const incoming = Array.isArray(json.data) ? json.data : [];
+                        if (replaceOptions) {
+                            const preservedSelected = this.selectedValue
+                                ? this.options.find((opt) => String(opt.value) === String(this.selectedValue))
+                                : null;
+                            this.options = [];
+                            incoming.forEach((item) => this.addSuggestion(item));
+                            if (this.selectedValue && !this.options.some((opt) => String(opt.value) === String(this.selectedValue))) {
+                                if (preservedSelected) {
+                                    this.options.unshift(preservedSelected);
+                                } else {
+                                    this.ensureCustomOptionPresent(this.selectedValue);
+                                }
+                            }
+                            this.syncNativeSelect(this.selectedValue, false);
+                        } else {
+                            incoming.forEach((item) => this.addSuggestion(item));
+                        }
                     }
-                } catch (e) {
-                    // Graceful degradation on network/offline
+                } catch {
+                    // Graceful degradation on abort/network/offline
                 } finally {
-                    if (requestId === this.latestRequestId) this.loadingSuggestions = false;
+                    if (requestId === this.latestRequestId) {
+                        this.loadingSuggestions = false;
+                        this.abortController = null;
+                    }
                 }
-            }, 300);
+            };
+
+            if (immediate) {
+                execute();
+            } else {
+                this.debounceTimer = setTimeout(execute, 250);
+            }
         },
 
         addSuggestion(item) {
@@ -184,8 +273,11 @@ export function searchableSelect(config = {}) {
             if (this.open) {
                 this.search = '';
                 this.highlightedIndex = -1;
+                if (this.preloadOnOpen && this.suggestionsUrl) {
+                    this.fetchSuggestions('', { immediate: true, replaceOptions: true });
+                }
                 const triggerRect = this.$refs?.triggerButton?.getBoundingClientRect?.();
-                const dialogBody = this.$refs?.triggerButton?.closest?.('[role="dialog"] .tw\\:overflow-y-auto, [role="dialog"]');
+                const dialogBody = this.$refs?.triggerButton?.closest?.('[role="dialog"] .modal-body, [role="dialog"] .tw\\:overflow-y-auto, [role="dialog"]');
                 const boundsBottom = dialogBody?.getBoundingClientRect?.().bottom ?? globalThis.innerHeight ?? 800;
                 const boundsTop = dialogBody?.getBoundingClientRect?.().top ?? 0;
                 if (triggerRect) {
@@ -199,12 +291,17 @@ export function searchableSelect(config = {}) {
                     this.$refs?.popover?.scrollIntoView?.({ block: 'nearest' });
                     this.$refs?.searchInput?.focus();
                 });
+            } else {
+                this.abortController?.abort();
+                this.abortController = null;
             }
         },
 
         close(focusTrigger = false) {
             this.open = false;
             this.highlightedIndex = -1;
+            this.abortController?.abort();
+            this.abortController = null;
             if (focusTrigger) {
                 this.$nextTick?.(() => {
                     this.$refs?.triggerButton?.focus();
@@ -244,7 +341,8 @@ export function searchableSelect(config = {}) {
             });
         },
 
-        selectHighlighted() {
+        selectHighlighted(event) {
+            if (event && (event.isComposing || event.keyCode === 229)) return;
             if (this.showCustomOption && this.highlightedIndex === this.filteredOptions.length) {
                 this.selectCustom(this.search.trim());
                 return;

@@ -303,6 +303,32 @@ test('Excel letters derive from zero-based visible positions through the 64-key 
     assert.deepEqual(serializeColumns(state).map((key, index) => [key, columnLetter(index)]), [['a', 'A'], ['c', 'B'], ['d', 'C']]);
 });
 
+test('select-all and minimal quick transitions preserve invariants and required columns', () => {
+    const input = [
+        { key: 'po_number', label: 'PO Number', default: true, required: true },
+        { key: 'status', label: 'Status', default: true, required: false },
+        { key: 'incoterm', label: 'Incoterms', default: false, required: false },
+        { key: 'port', label: 'Port', default: false, required: false },
+    ];
+    let state = createColumnState(input);
+    assert.deepEqual(serializeColumns(state), ['po_number', 'status']);
+
+    state = apply(state, { type: 'select-all' });
+    assert.deepEqual(serializeColumns(state), ['po_number', 'status', 'incoterm', 'port']);
+
+    state = apply(state, { type: 'minimal' });
+    assert.deepEqual(serializeColumns(state), ['po_number']);
+    assert.equal(state.activeKey, 'po_number');
+
+    state = apply(state, { type: 'reset' });
+    assert.deepEqual(serializeColumns(state), ['po_number', 'status']);
+
+    // Minimal with zero required columns falls back to first default column
+    let optionalOnly = createColumnState(catalog(['x', 'y', 'z'], []));
+    optionalOnly = apply(optionalOnly, { type: 'minimal' });
+    assert.deepEqual(serializeColumns(optionalOnly), ['x']);
+});
+
 test('all command prefixes through depth 3 remain valid on a small catalog', (t) => {
     const initial = createColumnState(catalog(['a', 'b', 'c']));
     const commands = initial.order.flatMap((key) => ['select', 'hide', 'unhide', 'move-left', 'move-right'].map((type) => ({ type, key })));

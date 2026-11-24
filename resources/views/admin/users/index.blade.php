@@ -8,8 +8,8 @@
     <x-ui.page-header
         :title="__('admin.copy.users')"
         :description="__('admin.copy.manage_identity_role_access_account_status_mfa_and_supplier_organization_records')"
-        :eyebrow="__('admin.copy.admin')"
-    >
+        :eyebrow="__('admin.copy.admin')">
+        
         <x-slot:actions>
             <x-ui.button :href="route('admin.users.create')" size="sm">
                 <x-ui.icon name="plus" size="sm" />
@@ -71,23 +71,21 @@
         :title="__('admin.copy.user_directory')"
         :description="__('admin.copy.edit_is_the_primary_row_action_destructive_actions_remain_in_the_overflow_menu')"
     >
-        <div class="ui-data-table__scroll tw:overflow-x-auto">
-            <table class="table table-hover align-middle w-100 tw:m-0 tw:text-ui-sm" id="usersTable">
-                <thead class="table-light">
-                    <tr>
-                        <th scope="col" style="width: 50px;">{{ __('admin.copy.no') }}</th>
-                        <th scope="col">{{ __('admin.copy.identity') }}</th>
-                        <th scope="col">{{ __('admin.copy.email') }}</th>
-                        <th scope="col">{{ __('admin.copy.role') }}</th>
-                        <th scope="col">{{ __('admin.copy.status') }}</th>
-                        <th scope="col">MFA</th>
-                        <th scope="col">{{ __('admin.copy.registered') }}</th>
-                        <th scope="col" class="tw:text-right text-end" style="width: 140px;">{{ __('common.table.action') }}</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
+        <table class="table table-hover align-middle w-100 tw:m-0 tw:text-ui-sm" id="usersTable">
+            <thead class="table-light">
+                <tr>
+                    <th scope="col" style="width: 50px;">{{ __('admin.copy.no') }}</th>
+                    <th scope="col">{{ __('admin.copy.identity') }}</th>
+                    <th scope="col">{{ __('admin.copy.email') }}</th>
+                    <th scope="col">{{ __('admin.copy.role') }}</th>
+                    <th scope="col">{{ __('admin.copy.status') }}</th>
+                    <th scope="col">MFA</th>
+                    <th scope="col">{{ __('admin.copy.registered') }}</th>
+                    <th scope="col" class="tw:text-right text-end" style="width: 140px;">{{ __('common.table.action') }}</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
     </x-ui.data-table>
 </div>
 @endsection

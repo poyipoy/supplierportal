@@ -706,8 +706,51 @@
         </x-slot:actions>
     </x-ui.page-header>
 
+    {{-- Mid-form Cancellation Alert (assertive live region in active non-inert DOM) --}}
+    <div
+        data-quotation-cancelled-banner
+        role="alert"
+        tabindex="-1"
+        hidden
+        class="tw:rounded-ui-md tw:border tw:border-error tw:bg-error-container tw:p-4 tw:text-on-error-container"
+    >
+        <div class="tw:flex tw:flex-wrap tw:items-start tw:justify-between tw:gap-3">
+            <div class="tw:flex tw:min-w-0 tw:items-start tw:gap-3">
+                <x-ui.icon name="x-circle" size="md" class="tw:mt-0.5 tw:shrink-0" aria-hidden="true" />
+                <div class="tw:min-w-0">
+                    <p class="tw:m-0 tw:text-ui-sm tw:font-semibold">{{ __('supplier_requests.availability.banner_title') }}</p>
+                    <p data-quotation-cancelled-message class="tw:m-0 tw:mt-1 tw:text-ui-xs">{{ __('supplier_requests.availability.pr_cancelled_banner') }}</p>
+                </div>
+            </div>
+            <x-ui.button
+                :href="route('supplier.requests.show', $pr)"
+                variant="outline"
+                size="sm"
+                data-quotation-cancelled-link
+            >
+                <x-ui.icon name="arrow-left" size="sm" />
+                <span>{{ __('supplier_requests.availability.view_summary_action') }}</span>
+            </x-ui.button>
+        </div>
+    </div>
+
     {{-- Main Sectioned Form --}}
-    <form id="quotationForm" class="quotation-form" action="{{ route('supplier.quotations.store', $pr) }}" method="POST" enctype="multipart/form-data" data-async-submit>
+    <form
+        id="quotationForm"
+        class="quotation-form"
+        action="{{ route('supplier.quotations.store', $pr) }}"
+        method="POST"
+        enctype="multipart/form-data"
+        data-async-submit
+        data-quotation-availability-guard
+        data-pr-hash="{{ $pr->hash }}"
+        data-availability-url="{{ route('supplier.quotations.availability', $pr) }}"
+        data-detail-url="{{ route('supplier.requests.show', $pr) }}"
+        data-draft-key="quotation_draft_{{ (int) auth()->id() }}_{{ $pr->hash }}"
+        data-pr-cancelled-message="{{ __('supplier_requests.availability.pr_cancelled_banner') }}"
+        data-invitation-cancelled-message="{{ __('supplier_requests.availability.invitation_cancelled_banner') }}"
+        data-fallback-cancelled-message="{{ __('supplier_requests.availability.pr_cancelled_banner') }}"
+    >
         @csrf
         <input type="hidden" name="action" id="formAction" value="draft">
 
@@ -1381,7 +1424,7 @@
             <div class="modal-footer tw:bg-surface-low border-top">
                 <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('supplier.copy.cancel') }}</x-ui.button>
                 <x-ui.button type="button" variant="outline" size="sm" id="btnParseQuotationImport">
-                    <span class="spinner-border spinner-border-sm me-1 d-none" id="quotationImportSpinner"></span>
+                    <span class="ui-spinner me-1 d-none" id="quotationImportSpinner" aria-hidden="true"></span>
                     {{ __('supplier.copy.parse_validate') }}
                 </x-ui.button>
                 <x-ui.button type="button" size="sm" id="btnApplyQuotationImport" disabled>
@@ -1532,6 +1575,15 @@
         }).done((payload) => {
             renderQuotationImportResult(payload);
         }).fail((xhr) => {
+            if (xhr.status === 409) {
+                const formEl = document.getElementById('quotationForm');
+                formEl?.dispatchEvent(new CustomEvent('adasi:form-conflict', {
+                    bubbles: true,
+                    cancelable: true,
+                    detail: { status: 409, data: xhr.responseJSON || {}, form: formEl },
+                }));
+                return;
+            }
             renderQuotationImportResult(xhr.responseJSON || {
                 success: false,
                 rows: [],
@@ -2342,7 +2394,7 @@
                             $(tInput).trigger('change');
                             appliedCount++;
                         } catch (err) {
-                            console.error('DataTransfer copy failed:', err);
+                            window.AdasiDebug?.error('DataTransfer copy failed:', err);
                         }
                     } else if (sourceAttachmentId) {
                         if (tInput) tInput.value = '';
@@ -2781,7 +2833,6 @@
             cancelText: @json(__('supplier.copy.cancel'))
         }).then((result) => {
             if (result.isConfirmed) {
-                try { localStorage.removeItem(draftKey); } catch (error) { /* Storage may be blocked. */ }
                 const submitBtn = document.getElementById('btnSubmitQuotation');
                 if (form && submitBtn) {
                     form._lastClickedButton = submitBtn;
@@ -2796,13 +2847,22 @@
         });
     }
 
-    // Auto-save logic
+    // Auto-save logic (session-scoped to prevent persistent localStorage residue on shared devices)
     const prId = '{{ $pr->hash }}';
     const draftUserId = @json((int) auth()->id());
     const draftKey = 'quotation_draft_' + draftUserId + '_' + prId;
+    let quotationAvailabilityLocked = false;
+
+    function clearQuotationDraftStorage() {
+        try { sessionStorage.removeItem(draftKey); } catch (error) { /* Storage may be blocked. */ }
+        try { localStorage.removeItem(draftKey); } catch (error) { /* Storage may be blocked. */ }
+    }
 
     function saveDraft() {
-        $('#autoSaveBadge').removeClass('d-none ui-status-chip--success').addClass('ui-status-chip--neutral').html('<span class="spinner-border spinner-border-sm me-1"></span>' + @json(__('supplier.audit_ui.saving')));
+        if (quotationAvailabilityLocked) {
+            return;
+        }
+        $('#autoSaveBadge').removeClass('d-none ui-status-chip--success').addClass('ui-status-chip--neutral').html('<span class="ui-spinner me-1" aria-hidden="true"></span>' + @json(__('supplier.audit_ui.saving')));
         
         try {
             const formData = $('#quotationForm').serializeArray();
@@ -2812,7 +2872,8 @@
                     data[obj.name] = obj.value;
                 }
             });
-            localStorage.setItem(draftKey, JSON.stringify(data));
+            sessionStorage.setItem(draftKey, JSON.stringify(data));
+            try { localStorage.removeItem(draftKey); } catch (error) { /* Storage may be blocked. */ }
 
             setTimeout(() => {
                 $('#autoSaveBadge').removeClass('ui-status-chip--neutral').addClass('ui-status-chip--success').text(@json(__('supplier.copy.draft_saved')));
@@ -2827,7 +2888,8 @@
 
     function loadDraft() {
         let saved;
-        try { saved = localStorage.getItem(draftKey); } catch (error) { return; }
+        try { localStorage.removeItem(draftKey); } catch (error) { /* Purge legacy persistent draft. */ }
+        try { saved = sessionStorage.getItem(draftKey); } catch (error) { return; }
         if(saved) {
             let data;
             try { data = JSON.parse(saved); } catch (error) { return; }
@@ -2854,7 +2916,22 @@
 
         let isDirty = false;
         let autoSaveTimer;
+        const quotationFormEl = document.getElementById('quotationForm');
+        quotationFormEl?.addEventListener('adasi:quotation-cancelled', () => {
+            quotationAvailabilityLocked = true;
+            clearTimeout(autoSaveTimer);
+            isDirty = false;
+            clearQuotationDraftStorage();
+        });
+        quotationFormEl?.addEventListener('adasi:form-success', () => {
+            clearTimeout(autoSaveTimer);
+            isDirty = false;
+            clearQuotationDraftStorage();
+        });
         $('#quotationForm input, #quotationForm select, #quotationForm textarea').on('input change', function() {
+            if (quotationAvailabilityLocked) {
+                return;
+            }
             isDirty = true;
             window.AdasiUnsaved?.markDirty?.();
             clearTimeout(autoSaveTimer);
@@ -2862,8 +2939,12 @@
         });
 
         $('#quotationForm').on('submit', function() {
+            clearTimeout(autoSaveTimer);
             isDirty = false;
             window.AdasiUnsaved?.markClean?.();
+            if (!window.AdasiAsyncForm) {
+                clearQuotationDraftStorage();
+            }
         });
     });
 </script>

@@ -133,5 +133,38 @@ class SidebarShellTest extends TestCase
         $this->assertStringContainsString('.sidebar-nav-tooltip', $styles);
         $this->assertStringContainsString('@media (prefers-reduced-motion: reduce)', $styles);
         $this->assertStringContainsString('html[data-sidebar-collapsed="true"]', $styles);
+        $this->assertStringContainsString('.ui-splitter', $styles);
+        $this->assertStringContainsString('.sidebar-splitter', $styles);
+        $this->assertStringContainsString('.sidebar-splitter[data-sidebar-edge="right"]', $styles);
+        $this->assertStringContainsString('cursor: ew-resize;', $styles);
+        $this->assertStringContainsString('--sidebar-scrollbar-offset: 0.5rem;', $styles);
+        $this->assertStringContainsString('margin-inline-end: var(--sidebar-scrollbar-offset);', $styles);
+        $this->assertStringContainsString('scrollbar-width: none;', $styles);
+        $this->assertStringContainsString('@supports not (scrollbar-color: auto)', $styles);
+        $this->assertStringContainsString('z-index: 30;', $styles);
+        $this->assertStringContainsString('html[data-sidebar-resizing="true"] .sidebar > :not(.sidebar-splitter)', $styles);
+        $this->assertStringContainsString('html[data-sidebar-resizing="true"]', $styles);
+        $this->assertStringContainsString('overflow-x: clip;', $styles);
+        $this->assertStringNotContainsString('data-sidebar-hover-peek', $styles);
+    }
+
+    public function test_sidebar_includes_reusable_splitter_and_width_persistence(): void
+    {
+        $sidebar = file_get_contents(resource_path('views/partials/sidebar.blade.php'));
+        $layout = file_get_contents(resource_path('views/layouts/app.blade.php'));
+        $runtime = file_get_contents(resource_path('js/app.js'));
+
+        $this->assertStringContainsString('<x-ui.splitter', $sidebar);
+        $this->assertStringContainsString('data-sidebar-splitter', $sidebar);
+        $this->assertStringContainsString('data-sidebar-resize-live', $sidebar);
+        $this->assertStringContainsString('data-collapsed-text', $sidebar);
+        $this->assertStringNotContainsString('onSidebarPointerEnter', $sidebar);
+        $this->assertStringNotContainsString('onSidebarPointerLeave', $sidebar);
+        $this->assertStringContainsString('readWidth', $layout);
+        $this->assertStringContainsString('writeWidth', $layout);
+        $this->assertStringContainsString('bindSidebarSplitter', $runtime);
+        $this->assertStringContainsString('initSidebarSplitter()', $runtime);
+        $this->assertStringNotContainsString('onSidebarPointerEnter', $runtime);
+        $this->assertStringNotContainsString('sidebarHoverPeek', $runtime);
     }
 }

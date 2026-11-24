@@ -18,6 +18,7 @@
     const MANAGED_SUBMIT_ATTR = 'data-managed-submit';
     const NO_AUTO_SPINNER_ATTR = 'data-no-auto-spinner';
     const TIMEOUT_MS = 60000;
+    const originalButtonNodes = new WeakMap();
 
     /**
      * Create the accessible .ui-spinner element
@@ -27,6 +28,26 @@
         spinner.className = 'ui-spinner';
         spinner.setAttribute('aria-hidden', 'true');
         return spinner;
+    }
+
+    /**
+     * Resolve the icon node (or dedicated icon-only span wrapper) without hiding adjacent button labels.
+     * @param {HTMLElement} btn
+     * @returns {HTMLElement|null}
+     */
+    function resolveButtonIconTarget(btn) {
+        const icon = btn.querySelector('.ui-icon');
+        if (!icon) return null;
+
+        const closestSpan = icon.closest('span');
+        const isIconOnlyWrapper = Boolean(
+            closestSpan
+            && closestSpan !== btn
+            && closestSpan.textContent.trim() === ''
+            && !closestSpan.querySelector(':scope > span')
+        );
+
+        return isIconOnlyWrapper ? closestSpan : icon;
     }
 
     /**
@@ -41,9 +62,12 @@
         // Skip if already in loading state
         if (btn.dataset.loadingActive === 'true') return;
 
-        // Store original content if not already stored
-        if (!btn.dataset.originalHtml) {
-            btn.dataset.originalHtml = btn.innerHTML;
+        // Store cloned child nodes instead of serializing innerHTML
+        if (!originalButtonNodes.has(btn)) {
+            originalButtonNodes.set(
+                btn,
+                Array.from(btn.childNodes, (node) => node.cloneNode(true))
+            );
         }
 
         btn.dataset.loadingActive = 'true';
@@ -53,14 +77,13 @@
 
         const loadingText = options.text || btn.getAttribute('data-loading-text');
 
-        // Check for leading icon or .ui-icon inside the button
-        const iconWrapper = btn.querySelector('.ui-icon')?.closest('span') || btn.querySelector('.ui-icon');
+        // Replace only the leading icon (never a wrapper span that also holds button label text).
+        const iconTarget = resolveButtonIconTarget(btn);
         const spinner = createSpinnerElement();
 
-        if (iconWrapper && iconWrapper.parentNode) {
-            // Replace leading icon with spinner
-            iconWrapper.style.display = 'none';
-            iconWrapper.parentNode.insertBefore(spinner, iconWrapper);
+        if (iconTarget && iconTarget.parentNode) {
+            iconTarget.style.display = 'none';
+            iconTarget.parentNode.insertBefore(spinner, iconTarget);
         } else {
             // Prepend spinner before the first child or text
             spinner.classList.add('tw:mr-1.5');
@@ -84,9 +107,10 @@
         const btn = typeof button === 'string' ? document.querySelector(button) : button;
         if (!btn || !(btn instanceof HTMLElement)) return;
 
-        if (btn.dataset.originalHtml) {
-            btn.innerHTML = btn.dataset.originalHtml;
-            delete btn.dataset.originalHtml;
+        if (originalButtonNodes.has(btn)) {
+            const snapshot = originalButtonNodes.get(btn);
+            originalButtonNodes.delete(btn);
+            btn.replaceChildren(...snapshot.map((node) => node.cloneNode(true)));
         } else {
             const spinner = btn.querySelector('.ui-spinner');
             if (spinner) spinner.remove();
@@ -94,7 +118,9 @@
             if (hiddenIcon) {
                 hiddenIcon.style.display = '';
                 const wrapper = hiddenIcon.closest('span');
-                if (wrapper) wrapper.style.display = '';
+                if (wrapper && wrapper !== btn && wrapper.textContent.trim() === '') {
+                    wrapper.style.display = '';
+                }
             }
         }
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Supplier;
 
+use App\Exceptions\BusinessRuleViolation;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Supplier\BatchUploadShipmentDocumentsRequest;
 use App\Http\Requests\Supplier\StoreSupplierShipmentRequest;
@@ -151,6 +152,7 @@ class SupplierShipmentController extends Controller
                         .'<ul class="dropdown-menu dropdown-menu-end">'.implode('', $secondaryActions).'</ul></div></div>';
                 })
                 ->rawColumns(['shipment_number_display', 'po_references', 'supplier_reference_display', 'items_count', 'total_qty', 'actual_weight', 'total_weight', 'shipment_date', 'shipment_date_display', 'estimated_arrival', 'missing_documents', 'status_badge', 'action'])
+                ->only(['shipment_number_display', 'po_references', 'supplier_reference_display', 'items_count', 'total_qty', 'actual_weight', 'total_weight', 'shipment_date', 'shipment_date_display', 'estimated_arrival', 'missing_documents', 'status_badge', 'action'])
                 ->toJson();
         }
 
@@ -682,17 +684,20 @@ class SupplierShipmentController extends Controller
             return back()->with('success', __('shipments.copy.document_uploaded_successfully'));
         } catch (ValidationException $e) {
             throw $e;
-        } catch (\InvalidArgumentException|\DomainException|\RuntimeException $e) {
+        } catch (\InvalidArgumentException|\DomainException|BusinessRuleViolation $e) {
             if ($request->expectsJson()) {
                 throw ValidationException::withMessages(['file' => $e->getMessage()]);
             }
 
             return back()->with('error', __('shipments.errors.upload_with_reason', ['message' => $e->getMessage()]));
         } catch (\Throwable $e) {
-            if ($request->expectsJson()) {
-                throw $e;
-            }
             report($e);
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => __('shipments.copy.an_unexpected_error_occurred_while_uploading_the_document_please_try_again'),
+                ], 500);
+            }
 
             return back()->with('error', __('shipments.copy.an_unexpected_error_occurred_while_uploading_the_document_please_try_again'));
         }
@@ -727,17 +732,20 @@ class SupplierShipmentController extends Controller
             return back()->with('success', __('shipments.copy.batch_upload_success'));
         } catch (ValidationException $e) {
             throw $e;
-        } catch (\InvalidArgumentException|\DomainException|\RuntimeException $e) {
+        } catch (\InvalidArgumentException|\DomainException|BusinessRuleViolation $e) {
             if ($request->expectsJson()) {
                 throw ValidationException::withMessages(['documents' => $e->getMessage()]);
             }
 
             return back()->with('error', __('shipments.errors.upload_with_reason', ['message' => $e->getMessage()]));
         } catch (\Throwable $e) {
-            if ($request->expectsJson()) {
-                throw $e;
-            }
             report($e);
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => __('shipments.copy.an_unexpected_error_occurred_while_uploading_the_document_please_try_again'),
+                ], 500);
+            }
 
             return back()->with('error', __('shipments.copy.an_unexpected_error_occurred_while_uploading_the_document_please_try_again'));
         }

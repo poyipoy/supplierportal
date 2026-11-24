@@ -15,6 +15,7 @@ return [
     'validation.digit_progress' => ':count/:max digits',
 
     'tables.loading' => 'Loading data...',
+    'tables.scroll_region' => 'Scrollable data table',
     'loader.loading' => 'Loading',
     'loader.slow' => 'Processing is taking longer. You can wait or dismiss this message.',
     'loader.dismiss' => 'Close',
@@ -24,6 +25,7 @@ return [
     'toast.attention' => 'Attention required',
     'toast.update' => 'Update',
     'toast.message' => 'New message',
+    'toast.actions_available' => 'Actions available',
     'processing' => 'Processing',
     'progress' => 'Progress',
     'sidebar.collapse' => 'Collapse sidebar',

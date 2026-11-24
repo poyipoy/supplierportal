@@ -15,7 +15,7 @@ class PeriodController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            $query = Period::with('creator')
+            $query = Period::with('creator:id,name')
                 ->orderByDesc('year')
                 ->orderByRaw('month IS NULL DESC')
                 ->orderByDesc('month');
@@ -37,6 +37,7 @@ class PeriodController extends Controller
                         data-status="'.$p->status.'" aria-label="'.e(__('purchasing.action_names.edit_period', ['name' => $p->name])).'">'.e(__('purchasing.copy.edit')).'</button>';
                 })
                 ->rawColumns(['status_badge', 'action'])
+                ->only(['name_display', 'month_display', 'year_display', 'status_badge', 'creator_name', 'action'])
                 ->make(true);
         }
 

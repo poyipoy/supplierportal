@@ -6,7 +6,7 @@ const read = (path) => readFileSync(new URL(`../../${path}`, import.meta.url), '
 const app = read('resources/js/app.js');
 
 test('page-specific modules are not part of the entry bundle', () => {
-    for (const module of ['calendar', 'filter-bar', 'advanced-export', 'dashboard-editor', 'customization-form', 'notification-preferences', 'supplier-audit-form', 'psi-form', 'regional-sample', 'exchange-rates', 'time-picker']) {
+    for (const module of ['calendar', 'filter-bar', 'advanced-export', 'dashboard-editor', 'customization-form', 'notification-preferences', 'supplier-audit-form', 'psi-form', 'regional-sample', 'exchange-rates', 'time-picker', 'quotation-availability-guard']) {
         assert.doesNotMatch(app, new RegExp(`^import[^\\n]*'\\./${module}(\\.js)?'`, 'm'), `${module} must stay a dynamic import`);
         assert.match(app, new RegExp(`import\\('\\./${module}'\\)`), `${module} must still be loaded where its markup is present`);
     }

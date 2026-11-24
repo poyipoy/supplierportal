@@ -4,6 +4,7 @@
     class="adasi-image-lightbox"
     role="dialog"
     aria-modal="true"
+    aria-labelledby="adasiImageLightboxTitle"
     aria-hidden="true"
     tabindex="-1"
     style="display: none;"
@@ -26,6 +27,7 @@
                     download
                     class="adasi-image-lightbox__btn"
                     title="{{ __('common.image.download') }}"
+                    aria-label="{{ __('common.image.download') }}"
                 >
                     <x-ui.icon name="download" size="sm" />
                 </a>
@@ -152,6 +154,7 @@
     opacity: 0;
     transition: opacity 0.2s ease-out;
     touch-action: none;
+    overscroll-behavior: contain;
 }
 
 .adasi-image-lightbox.is-open {
@@ -164,6 +167,8 @@
     background-color: rgba(8, 12, 22, 0.90);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
+    overflow: hidden;
+    overscroll-behavior: contain;
 }
 
 .adasi-image-lightbox__container {
@@ -369,6 +374,23 @@
     background: rgba(255, 255, 255, 0.2);
     margin: 0 2px;
 }
+
+.adasi-image-lightbox__btn:focus-visible,
+.adasi-image-lightbox__nav-btn:focus-visible,
+.adasi-image-lightbox__toolbar-btn:focus-visible,
+.adasi-image-lightbox:focus-visible {
+    outline: 2px solid var(--md-on-primary);
+    outline-offset: 2px;
+}
+
+@media (forced-colors: active) {
+    .adasi-image-lightbox__btn:focus-visible,
+    .adasi-image-lightbox__nav-btn:focus-visible,
+    .adasi-image-lightbox__toolbar-btn:focus-visible,
+    .adasi-image-lightbox:focus-visible {
+        outline: 2px solid Highlight;
+    }
+}
 </style>
 
 <script>
@@ -385,6 +407,8 @@
     // Gallery state
     let galleryItems = [];
     let currentGalleryIndex = 0;
+    let isOpen = false;
+    let closeTimerId = null;
 
     // Pointer events tracking for multi-touch pinch on mobile
     const activePointers = new Map();
@@ -533,6 +557,13 @@
         const modal = $lightbox();
         if (!modal) return;
 
+        if (closeTimerId !== null) {
+            clearTimeout(closeTimerId);
+            closeTimerId = null;
+        }
+        isOpen = true;
+
+        const invoker = document.activeElement;
         if (Array.isArray(gallery) && gallery.length > 0) {
             galleryItems = gallery;
             currentGalleryIndex = Math.max(0, Math.min(startIndex, gallery.length - 1));
@@ -545,22 +576,32 @@
 
         modal.style.display = 'flex';
         modal.setAttribute('aria-hidden', 'false');
+        window.AdasiOverlayModality?.acquire(modal, { triggerEl: invoker });
         requestAnimationFrame(() => {
+            if (!isOpen) return;
             modal.classList.add('is-open');
+            const closeBtn = modal.querySelector('.adasi-image-lightbox__btn--close');
+            (closeBtn || modal).focus?.({ preventScroll: true });
         });
-        document.body.style.overflow = 'hidden';
     }
 
-    function closeLightbox() {
+    function closeLightbox({ restoreFocus = true } = {}) {
         const modal = $lightbox();
-        if (!modal) return;
+        if (!modal || !isOpen) return;
+        isOpen = false;
+        if (closeTimerId !== null) {
+            clearTimeout(closeTimerId);
+            closeTimerId = null;
+        }
         modal.classList.remove('is-open');
         modal.setAttribute('aria-hidden', 'true');
-        setTimeout(() => {
+        window.AdasiOverlayModality?.release(modal, { restoreFocus });
+        closeTimerId = setTimeout(() => {
+            closeTimerId = null;
+            if (isOpen) return;
             modal.style.display = 'none';
             const img = $img();
             if (img) img.src = '';
-            document.body.style.overflow = '';
             galleryItems = [];
         }, 200);
     }
@@ -687,9 +728,31 @@
         stage?.addEventListener('pointerup', handlePointerEnd);
         stage?.addEventListener('pointercancel', handlePointerEnd);
 
-        // Keyboard Shortcuts
+        window.addEventListener('pageshow', (e) => {
+            if (e.persisted && isOpen) {
+                closeLightbox({ restoreFocus: false });
+            }
+        });
+
+        // Keyboard Shortcuts + Tab Trap
         window.addEventListener('keydown', (e) => {
-            if (!modal || modal.style.display === 'none') return;
+            if (!modal || !isOpen) return;
+            if (e.key === 'Tab') {
+                const focusables = Array.from(modal.querySelectorAll('a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'))
+                    .filter((el) => el.offsetParent !== null);
+                if (focusables.length) {
+                    const first = focusables[0];
+                    const last = focusables[focusables.length - 1];
+                    if (e.shiftKey && document.activeElement === first) {
+                        e.preventDefault();
+                        last.focus();
+                    } else if (!e.shiftKey && document.activeElement === last) {
+                        e.preventDefault();
+                        first.focus();
+                    }
+                }
+                return;
+            }
             if (e.key === 'Escape') {
                 closeLightbox();
             } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {

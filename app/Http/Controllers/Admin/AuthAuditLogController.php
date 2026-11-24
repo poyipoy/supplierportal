@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\AuthAuditLog;
 use App\Models\User;
+use App\Support\BusinessTime;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -50,7 +51,8 @@ class AuthAuditLogController extends Controller
             ->editColumn('email_attempted', fn (AuthAuditLog $log): string => $log->email_attempted ?? '—')
             ->editColumn('ip_address', fn (AuthAuditLog $log): string => $log->ip_address ?? '—')
             ->editColumn('metadata', fn (AuthAuditLog $log): string => $log->metadata ? json_encode($log->metadata, JSON_UNESCAPED_SLASHES) : '—')
-            ->editColumn('created_at', fn (AuthAuditLog $log): string => $log->created_at ? \App\Support\BusinessTime::format($log->created_at, 'd M Y H:i:s') : '—')
+            ->editColumn('created_at', fn (AuthAuditLog $log): string => $log->created_at ? BusinessTime::format($log->created_at, 'd M Y H:i:s') : '—')
+            ->only(['created_at', 'event', 'event_display', 'user_display', 'email_attempted', 'ip_address', 'user_agent', 'metadata'])
             ->toJson();
     }
 

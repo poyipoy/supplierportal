@@ -34,5 +34,18 @@ return [
         'my_quotation' => 'My quotation',
         'my_quotation_description' => 'Only your own quotation is shown.',
         'back' => 'Back to Purchasing Requests',
+        'cancelled_at' => 'Cancelled at',
+        'cancelled_summary_title' => 'This Purchase Requisition has been cancelled',
+        'cancelled_summary_body' => 'Quotation submission is closed for this Purchase Requisition and item specifications are no longer displayed.',
+    ],
+    'availability' => [
+        'banner_title' => 'This Purchase Requisition has been cancelled',
+        'pr_cancelled_banner' => 'This Purchase Requisition was cancelled by Purchasing while your form was open. Submission and draft saving have been disabled.',
+        'invitation_cancelled_banner' => 'This Purchase Requisition is now cancelled for your account and is no longer accepting quotations. Submission and draft saving have been disabled.',
+        'pr_cancelled_toast' => 'This Purchase Requisition has been cancelled and can no longer accept quotations.',
+        'invitation_cancelled_toast' => 'This Purchase Requisition is cancelled for your account and can no longer accept quotations.',
+        'pr_cancelled_redirect' => 'This Purchase Requisition has been cancelled and is no longer open for quotation submission.',
+        'invitation_cancelled_redirect' => 'This Purchase Requisition is cancelled for your account and is no longer open for quotation submission.',
+        'view_summary_action' => 'View Cancelled Summary',
     ],
 ];

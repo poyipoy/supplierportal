@@ -21,6 +21,11 @@ class PaymentVoucherDocument extends Model
         'uploaded_by',
     ];
 
+    protected $hidden = [
+        'file_path',
+        'file_inspection_id',
+    ];
+
     protected function casts(): array
     {
         return [

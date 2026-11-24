@@ -76,12 +76,39 @@ class DocumentChainResolverService
             }
 
             $pr = PurchaseRequisition::query()
-                ->visibleToSupplier($actor->id)
+                ->accessibleBySupplier($actor->id)
+                ->with(['cancelledInvitedSuppliers' => fn ($q) => $q->where('users.id', $actor->id)])
                 ->whereKey($id)
                 ->first();
 
             if (! $pr) {
                 throw new AccessDeniedHttpException;
+            }
+
+            if ($pr->isCancelledForSupplier($actor->id)) {
+                $cancelledAt = $pr->supplierCancelledAt($actor->id);
+
+                return [
+                    'entity_type' => 'import-pr',
+                    'title' => $pr->pr_number,
+                    'subtitle' => __('smart_panel.node_types.pr'),
+                    'status' => 'CANCELLED',
+                    'status_tone' => 'error',
+                    'nodes' => [
+                        [
+                            'type' => 'PR',
+                            'label' => __('smart_panel.node_types.pr'),
+                            'reference' => $pr->pr_number,
+                            'status' => 'CANCELLED',
+                            'tone' => 'error',
+                            'date' => $cancelledAt?->format('Y-m-d') ?? $pr->created_at?->format('Y-m-d'),
+                            'url' => PortalPath::routePath('supplier.requests.show', $pr),
+                            'current' => true,
+                        ],
+                    ],
+                    'documents' => [],
+                    'sla_summary' => [],
+                ];
             }
         } elseif (in_array($actor->role, ['admin', 'purchasing'], true)) {
             $pr = PurchaseRequisition::query()->findOrFail($id);

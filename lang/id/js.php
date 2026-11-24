@@ -15,6 +15,7 @@ return [
     'validation.digit_progress' => ':count/:max digit',
 
     'tables.loading' => 'Memuat data...',
+    'tables.scroll_region' => 'Tabel data yang dapat digulir',
     'loader.loading' => 'Memuat',
     'loader.slow' => 'Proses lebih lama. Bisa menunggu atau menutup pesan ini.',
     'loader.dismiss' => 'Tutup',
@@ -24,6 +25,7 @@ return [
     'toast.attention' => 'Perlu perhatian',
     'toast.update' => 'Pembaruan',
     'toast.message' => 'Pesan baru',
+    'toast.actions_available' => 'Tindakan tersedia',
     'processing' => 'Memproses',
     'progress' => 'Progres',
     'sidebar.collapse' => 'Ciutkan sidebar',

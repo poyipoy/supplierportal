@@ -34,7 +34,14 @@ class PortalLegacyPathController extends Controller
             }
             $query = $request->server->get('QUERY_STRING', '');
 
-            return new RedirectResponse(PortalPath::httpPath($target, $request).($query !== '' ? '?'.$query : ''), 301);
+            return new RedirectResponse(
+                PortalPath::httpPath($target, $request).($query !== '' ? '?'.$query : ''),
+                301,
+                [
+                    'Cache-Control' => 'no-store, private',
+                    'X-Content-Type-Options' => 'nosniff',
+                ],
+            );
         }
 
         $allowed = self::allowedMethods($request);
@@ -49,7 +56,11 @@ class PortalLegacyPathController extends Controller
         $allowed = self::allowedMethods($request);
         abort_if($allowed === [], 404);
 
-        return response('', 200, ['Allow' => implode(',', $allowed)]);
+        return response('', 200, [
+            'Allow' => implode(',', $allowed),
+            'Cache-Control' => 'no-store, private',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     /** Match only real endpoints, so compatibility fallbacks cannot invent supported verbs. */

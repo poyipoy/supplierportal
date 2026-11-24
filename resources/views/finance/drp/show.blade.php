@@ -521,7 +521,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 } else {
                     btnFinalize.disabled = true;
                     btnFinalize.classList.add('disabled', 'tw:opacity-75');
-                    btnFinalize.innerHTML = '<span class="spinner-border spinner-border-sm me-1.5" role="status" aria-hidden="true"></span><span></span>';
+                    btnFinalize.innerHTML = '<span class="ui-spinner tw:mr-1.5" aria-hidden="true"></span><span></span>';
                     btnFinalize.lastElementChild.textContent = @js(__('finance.drp_ui.finalizing'));
                 }
                 formFinalize.submit();

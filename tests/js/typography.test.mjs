@@ -16,7 +16,8 @@ const TOKEN = '"Source Sans Pro", ui-sans-serif, system-ui, sans-serif';
 const bundles = await build({ root, logLevel: 'silent', build: { write: false, minify: false, cssMinify: false } });
 const output = (Array.isArray(bundles) ? bundles : [bundles]).flatMap((bundle) => bundle.output);
 const assetNames = new Set(output.map((asset) => asset.fileName));
-const css = output.filter((asset) => asset.type === 'asset' && asset.fileName.endsWith('.css')).map((asset) => String(asset.source)).join('\n');
+const cssAssets = output.filter((asset) => asset.type === 'asset' && asset.fileName.endsWith('.css'));
+const css = cssAssets.map((asset) => String(asset.source)).join('\n');
 const ast = postcss.parse(css);
 
 test('Source Sans Pro is pinned and self-hosted through the Vite build', () => {
@@ -51,10 +52,14 @@ test('Bootstrap, Tailwind and the root share one font token', () => {
     assert.equal(declarations['--bs-body-font-family'], 'var(--ui-font-sans)');
     assert.equal(declarations['--bs-font-sans-serif'], 'var(--ui-font-sans)');
 
-    const fontSans = [];
-    ast.walkRules((rule) => { if (rule.selector === '.tw\\:font-sans') fontSans.push(rule.toString()); });
-    assert.equal(fontSans.length, 1);
-    assert.match(fontSans[0], /font-family:\s*var\(--ui-font-sans\)/);
+    for (const cssAsset of cssAssets) {
+        const fontSans = [];
+        postcss.parse(String(cssAsset.source)).walkRules((rule) => {
+            if (rule.selector === '.tw\\:font-sans') fontSans.push(rule.toString());
+        });
+        assert.equal(fontSans.length, 1, `${cssAsset.fileName} must emit exactly one .tw:font-sans rule`);
+        assert.match(fontSans[0], /font-family:\s*var\(--ui-font-sans\)/);
+    }
 
     const families = [];
     ast.walkDecls('font-family', (decl) => families.push(decl.value));

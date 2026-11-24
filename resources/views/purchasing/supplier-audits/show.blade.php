@@ -121,9 +121,7 @@
                 <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-x-6 tw:gap-y-2">
                     <p class="tw:m-0 tw:text-ui-sm tw:text-on-surface">{{ __('supplier_audit.next_step.waiting') }}</p>
                     <div class="tw:flex tw:items-center tw:gap-2">
-                        <div class="tw:h-1.5 tw:w-32 tw:overflow-hidden tw:rounded-ui-full tw:bg-surface-container" role="progressbar" aria-valuemin="0" aria-valuemax="{{ $progress['total'] }}" aria-valuenow="{{ $progress['filled'] }}" aria-label="{{ __('supplier_audit.fields.progress') }}">
-                            <div class="tw:h-full tw:bg-primary" style="width: {{ $progress['total'] ? round($progress['filled'] / $progress['total'] * 100) : 0 }}%"></div>
-                        </div>
+                        <progress class="ui-progress tw:h-1.5 tw:w-32" value="{{ $progress['filled'] }}" max="{{ max(1, (int) $progress['total']) }}" aria-label="{{ __('supplier_audit.fields.progress') }}"></progress>
                         <span class="tw:text-ui-xs tw:text-on-surface-variant" style="font-variant-numeric: tabular-nums;">{{ __('supplier_audit.next_step.waiting_progress', $progress) }}</span>
                     </div>
                 </div>

@@ -96,7 +96,7 @@
             <div class="modal-footer tw:border-t tw:border-outline-variant tw:bg-surface-low tw:px-5 tw:py-3">
                 <x-ui.button type="button" variant="ghost" data-bs-dismiss="modal">{{ __('admin.copy.cancel') }}</x-ui.button>
                 <x-ui.button type="submit" id="btnSaveMaterial">
-                    <span class="spinner-border spinner-border-sm d-none me-1" id="spinnerSaveMaterial"></span>
+                    <span class="ui-spinner d-none me-1" id="spinnerSaveMaterial" aria-hidden="true"></span>
                     <x-ui.icon name="check" size="sm" />
                     {{ __('admin.copy.save_material') }}
                 </x-ui.button>

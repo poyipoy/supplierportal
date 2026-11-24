@@ -29,16 +29,21 @@ class SupplierPriceHistoryExport implements AcceptsExportOptions, FromCollection
 
     private string $format = 'xlsx';
 
+    private string $csvDelimiter = ',';
+
     public function applyOptions(ExportOptions $options): void
     {
         $definition = ExportDefinitions::forClass(static::class, $options->audience);
         ExportDefinitions::sanitizeKeys($definition, $options->columns);
         $this->format = $options->format;
+        $this->csvDelimiter = $options->csvDelimiter;
     }
 
     public function getCsvSettings(): array
     {
-        return $this->format === 'csv' ? config('exports.csv') : [];
+        return $this->format === 'csv'
+            ? [...config('exports.csv'), 'delimiter' => $this->csvDelimiter]
+            : [];
     }
 
     public function __construct(

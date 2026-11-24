@@ -2,6 +2,7 @@
 
 namespace App\Services\Qc;
 
+use App\Exceptions\BusinessRuleException;
 use App\Http\Requests\Qc\StoreQcInspectionRequest;
 use App\Models\PrItem;
 use App\Models\PurchaseOrder;
@@ -52,7 +53,7 @@ class QcInspectionSubmissionService
                     ->first();
 
                 if (! $shipment) {
-                    throw new \RuntimeException(__('qc.copy.the_specified_shipment_could_not_be_found'));
+                    throw new BusinessRuleException(__('qc.copy.the_specified_shipment_could_not_be_found'));
                 }
             }
 
@@ -62,7 +63,7 @@ class QcInspectionSubmissionService
             $po->load(['supplier', 'quotations.items.prItem']);
 
             if (! in_array($po->status, ['waiting_qc', 'claim_needed'], true)) {
-                throw new \RuntimeException(__('qc.copy.this_po_is_not_valid_for_inspection'));
+                throw new BusinessRuleException(__('qc.copy.this_po_is_not_valid_for_inspection'));
             }
 
             // The PO lock serializes participation. Lock only the inspected
@@ -71,18 +72,18 @@ class QcInspectionSubmissionService
                 ->where('purchase_order_id', $po->id)->exists();
 
             if ($hasShipmentItems && ! $request->filled('shipment_id')) {
-                throw new \RuntimeException(__('qc.copy.a_shipment_is_required_for_inspection_because_this_purchase_order_has_shipment_items'));
+                throw new BusinessRuleException(__('qc.copy.a_shipment_is_required_for_inspection_because_this_purchase_order_has_shipment_items'));
             }
 
             if ($request->filled('shipment_id') && ! $shipmentId) {
-                throw new \RuntimeException(__('qc.copy.the_specified_shipment_could_not_be_found'));
+                throw new BusinessRuleException(__('qc.copy.the_specified_shipment_could_not_be_found'));
             }
 
             $expectedShipmentItems = collect();
             $expectedByPrItem = collect();
             if ($shipmentId) {
                 if ($shipment->status !== Shipment::STATUS_ARRIVED) {
-                    throw new \RuntimeException(__('qc.copy.qc_inspection_is_only_allowed_for_an_arrived_shipment'));
+                    throw new BusinessRuleException(__('qc.copy.qc_inspection_is_only_allowed_for_an_arrived_shipment'));
                 }
 
                 $expectedShipmentItems = ShipmentItem::query()
@@ -94,11 +95,11 @@ class QcInspectionSubmissionService
                     ->get();
 
                 if ($expectedShipmentItems->isEmpty()) {
-                    throw new \RuntimeException(__('qc.copy.the_specified_shipment_does_not_contain_items_for_this_purchase_order'));
+                    throw new BusinessRuleException(__('qc.copy.the_specified_shipment_does_not_contain_items_for_this_purchase_order'));
                 }
 
                 if (QcInspection::where('po_id', $po->id)->where('shipment_id', $shipment->id)->exists()) {
-                    throw new \RuntimeException(__('qc.feedback.already_inspected', ['po' => $po->po_number]));
+                    throw new BusinessRuleException(__('qc.feedback.already_inspected', ['po' => $po->po_number]));
                 }
 
                 $expectedByPrItem = $expectedShipmentItems->mapWithKeys(function (ShipmentItem $shipmentItem) {
@@ -109,21 +110,21 @@ class QcInspectionSubmissionService
                     ->map(fn ($id) => (int) $id);
 
                 if ($submittedPrItemIds->duplicates()->isNotEmpty()) {
-                    throw new \RuntimeException(__('qc.copy.each_shipment_item_must_be_inspected_exactly_once_duplicate_lines_were_submitted'));
+                    throw new BusinessRuleException(__('qc.copy.each_shipment_item_must_be_inspected_exactly_once_duplicate_lines_were_submitted'));
                 }
 
                 $submittedKeys = $submittedPrItemIds->sort()->values()->all();
                 $expectedKeys = $expectedByPrItem->keys()->sort()->values()->all();
                 if ($submittedKeys !== $expectedKeys) {
-                    throw new \RuntimeException(__('qc.copy.the_inspection_must_contain_every_item_from_the_selected_shipment_for_this_purchase_order_exactly_on'));
+                    throw new BusinessRuleException(__('qc.copy.the_inspection_must_contain_every_item_from_the_selected_shipment_for_this_purchase_order_exactly_on'));
                 }
             } else {
                 if ($hasShipmentItems) {
-                    throw new \RuntimeException(__('qc.copy.shipment_aware_qc_items_must_reference_a_shipment_item'));
+                    throw new BusinessRuleException(__('qc.copy.shipment_aware_qc_items_must_reference_a_shipment_item'));
                 }
 
                 if (QcInspection::where('po_id', $po->id)->whereNull('shipment_id')->exists()) {
-                    throw new \RuntimeException(__('qc.copy.this_po_has_already_been_inspected'));
+                    throw new BusinessRuleException(__('qc.copy.this_po_has_already_been_inspected'));
                 }
             }
 
@@ -156,7 +157,7 @@ class QcInspectionSubmissionService
                     : null;
 
                 if ($shipment && ! $shipmentItemId) {
-                    throw new \RuntimeException(__('qc.copy.shipment_aware_qc_items_must_reference_a_shipment_item'));
+                    throw new BusinessRuleException(__('qc.copy.shipment_aware_qc_items_must_reference_a_shipment_item'));
                 }
 
                 QcItem::create($measurements + [
@@ -179,7 +180,7 @@ class QcInspectionSubmissionService
             }
 
             if ($overallStatus === 'ng' && ! $inspection->attachments()->exists()) {
-                throw new \RuntimeException(__('qc.copy.ng_evidence_photos_were_not_uploaded_please_upload_the_evidence_photos_again_before_saving_the_inspe'));
+                throw new BusinessRuleException(__('qc.copy.ng_evidence_photos_were_not_uploaded_please_upload_the_evidence_photos_again_before_saving_the_inspe'));
             }
 
             // One authoritative precedence rule owns the resulting PO state.

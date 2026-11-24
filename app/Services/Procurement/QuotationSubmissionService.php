@@ -4,6 +4,7 @@ namespace App\Services\Procurement;
 
 use App\Enums\PurchaseRequisitionStatus;
 use App\Enums\QuotationStatus;
+use App\Exceptions\ProcurementAvailabilityException;
 use App\Models\Attachment;
 use App\Models\ExchangeRate;
 use App\Models\PrItem;
@@ -18,6 +19,7 @@ use App\Services\NotificationService;
 use App\Support\Materials\DimensionRange;
 use App\Support\NotificationCategory;
 use App\Support\Procurement\ProcurementFeatures;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -55,6 +57,12 @@ class QuotationSubmissionService
         $wasRevisionRequested = $quotation?->status === Quotation::STATUS_REVISION_REQUESTED;
 
         if ($quotation && ! $quotation->canBeRevisedBySupplier()) {
+            if ($request->expectsJson()) {
+                throw ValidationException::withMessages([
+                    'items' => __('supplier.copy.this_quotation_has_already_been_submitted_and_cannot_be_changed'),
+                ]);
+            }
+
             return redirect()->route('supplier.quotations.show', $quotation)
                 ->with('error', __('supplier.copy.this_quotation_has_already_been_submitted_and_cannot_be_changed'));
         }
@@ -65,8 +73,35 @@ class QuotationSubmissionService
             DB::beginTransaction();
 
             $pr = PurchaseRequisition::whereKey($pr->id)->lockForUpdate()->firstOrFail();
+            $supplierId = (int) auth()->id();
+
+            if ($pr->status === PurchaseRequisition::STATUS_CANCELLED) {
+                throw new ProcurementAvailabilityException(
+                    ProcurementAvailabilityException::CODE_PR_CANCELLED,
+                    __('supplier_requests.availability.pr_cancelled_toast'),
+                );
+            }
+
             if (! in_array($pr->status, ['submitted', 'bidding'], true)) {
-                throw new \RuntimeException(__('supplier.copy.this_requisition_is_no_longer_available_for_quotation'));
+                throw new ProcurementAvailabilityException(
+                    ProcurementAvailabilityException::CODE_PR_UNAVAILABLE,
+                    __('supplier.copy.this_requisition_is_no_longer_available_for_quotation'),
+                );
+            }
+
+            if ($pr->allInvitedSuppliers()->exists()) {
+                if ($pr->cancelledInvitedSuppliers()->where('users.id', $supplierId)->exists()) {
+                    throw new ProcurementAvailabilityException(
+                        ProcurementAvailabilityException::CODE_INVITATION_CANCELLED,
+                        __('supplier_requests.availability.invitation_cancelled_toast'),
+                    );
+                }
+
+                $isActivelyInvited = $pr->invitedSuppliers()->where('users.id', $supplierId)->exists();
+                $hasOwnQuotation = Quotation::where('pr_id', $pr->id)->where('supplier_id', $supplierId)->exists();
+                if (! $isActivelyInvited && ! $hasOwnQuotation) {
+                    throw new AuthorizationException(__('supplier.copy.you_are_not_invited_to_submit_a_quotation_for_this_requisition'));
+                }
             }
             $lockedPrItems = PrItem::where('pr_id', $pr->id)
                 ->orderBy('id')->lockForUpdate()->get();
@@ -366,6 +401,14 @@ class QuotationSubmissionService
             }
 
             return redirect()->route('supplier.quotations.period', $pr->period_id)->with('success', $msg);
+        } catch (ProcurementAvailabilityException|AuthorizationException $e) {
+            DB::rollBack();
+            foreach ($newlyCreatedFiles as $newFile) {
+                if ($newFile && Storage::disk('private')->exists($newFile)) {
+                    Storage::disk('private')->delete($newFile);
+                }
+            }
+            throw $e;
         } catch (ValidationException $e) {
             DB::rollBack();
             foreach ($newlyCreatedFiles as $newFile) {

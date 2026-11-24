@@ -29,7 +29,8 @@ class FrontendAssetLoadingTest extends TestCase
         }
 
         $auth = file_get_contents(resource_path('views/layouts/auth.blade.php'));
-        $this->assertLessThan(strpos($auth, '<script src='), strpos($auth, 'data-readiness="native-login"'));
+        $this->assertFalse(strpos($auth, '<script src='), 'Auth layout must not block rendering with classic external script tags.');
+        $this->assertLessThan(strpos($auth, "@yield('scripts')"), strpos($auth, 'data-readiness="native-login"'));
         $app = file_get_contents(resource_path('views/layouts/app.blade.php'));
         $this->assertGreaterThan(strrpos($app, "@stack('scripts')"), strpos($app, 'data-auth-splash-layout-ready'));
     }
@@ -74,8 +75,12 @@ class FrontendAssetLoadingTest extends TestCase
         $this->assertStringContainsString('<picture class="auth-splash__picture">', $html);
         $this->assertStringContainsString('media="(prefers-reduced-motion: reduce)"', $html);
         $this->assertStringContainsString('data-auth-splash-media', $html);
+        $this->assertStringContainsString('logo-adasi.webp', $html);
         $this->assertStringContainsString('logo-adasi.gif', $html);
         $this->assertStringContainsString('logo-adasi-wordmark.png', $html);
+        $this->assertStringContainsString('decoding="async"', $html);
+        $this->assertStringContainsString('fetchpriority="low"', $html);
+        $this->assertStringNotContainsString('fetchpriority="high"', $html);
         $this->assertStringContainsString('width="384"', $html);
         $this->assertStringContainsString('height="153"', $html);
         $this->assertStringContainsString('alt=""', $html);
@@ -92,8 +97,13 @@ class FrontendAssetLoadingTest extends TestCase
 
     public function test_auth_splash_gif_and_static_wordmark_assets_exist_under_public_images(): void
     {
+        $this->assertFileExists(public_path('assets/images/logo-adasi.webp'));
         $this->assertFileExists(public_path('assets/images/logo-adasi.gif'));
         $this->assertFileExists(public_path('assets/images/logo-adasi-wordmark.png'));
+        $this->assertFileExists(public_path('assets/images/adasi-login-bg.avif'));
+        $this->assertFileExists(public_path('assets/images/adasi-login-bg.webp'));
+        $this->assertFileExists(public_path('assets/images/logo-adasi-sm.webp'));
+        $this->assertFileExists(public_path('assets/images/logo-adasi-sm.png'));
         $this->assertFileDoesNotExist(base_path('logo-adasi.gif'));
 
         config(['ui.auth_splash.enabled' => true]);
@@ -101,7 +111,8 @@ class FrontendAssetLoadingTest extends TestCase
 
         $bootstrap = Blade::render("@include('partials.auth-splash-bootstrap', ['authSplashLayout' => 'auth', 'authSplashReadiness' => 'native-login'])");
         $this->assertStringContainsString('rel="preload" as="image"', $bootstrap);
-        $this->assertStringContainsString('logo-adasi.gif', $bootstrap);
+        $this->assertStringContainsString('logo-adasi.webp', $bootstrap);
+        $this->assertStringNotContainsString('fetchpriority="high"', $bootstrap);
         $this->assertStringContainsString('logo-adasi-wordmark.png', $bootstrap);
         $this->assertStringContainsString('data-media-fallback-ms="500"', $bootstrap);
     }
@@ -209,7 +220,7 @@ class FrontendAssetLoadingTest extends TestCase
             }
 
             $contents = file_get_contents($file->getPathname());
-            if (! preg_match('/@vite\([^)]*resources\/js\/app\.js/', $contents)) {
+            if (! preg_match('/@vite\([^)]*resources\/js\/(?:app|auth)\.js/', $contents)) {
                 continue;
             }
 
@@ -296,5 +307,62 @@ class FrontendAssetLoadingTest extends TestCase
         $this->assertStringNotContainsString('node_modules/axios', file_get_contents(base_path('package-lock.json')));
         $this->assertStringNotContainsString("import './bootstrap'", file_get_contents(resource_path('js/app.js')));
         $this->assertStringNotContainsString('window.axios', file_get_contents(resource_path('js/bootstrap.js')));
+    }
+
+    public function test_auth_login_page_eliminates_render_blocking_assets_and_optimizes_lcp_and_logos(): void
+    {
+        config(['ui.auth_splash.enabled' => true, 'ui.auth_splash.login_page_enabled' => false]);
+
+        $response = $this->get(route('login'))->assertOk();
+        $html = $response->getContent();
+
+        $this->assertStringNotContainsString('bootstrap.min.css', $html);
+        $this->assertStringNotContainsString('bootstrap.bundle.min.js', $html);
+        $this->assertDoesNotMatchRegularExpression('/<link\b[^>]*rel=["\']stylesheet["\'][^>]*sweetalert2/i', $html);
+        $this->assertDoesNotMatchRegularExpression('/<link\b[^>]*rel=["\']stylesheet["\'][^>]*adasi-alert\.css/i', $html);
+        $this->assertDoesNotMatchRegularExpression('/<script\b[^>]*\bsrc=["\'][^"\']*(?:adasi-i18n|adasi-alert|sweetalert2)\.js/i', $html);
+        $this->assertStringContainsString('data-adasi-i18n-runtime', $html);
+        $this->assertMatchesRegularExpression('/<script\b[^>]*nonce="[^"]+"[^>]*data-adasi-i18n-runtime/i', $html);
+        $this->assertStringContainsString('id="adasi-auth-alert-assets"', $html);
+        $this->assertStringNotContainsString('data-auth-splash', $html);
+        $this->assertStringNotContainsString('data-splash-webp', $html);
+        $this->assertStringNotContainsString('data-splash-gif', $html);
+        $this->assertStringNotContainsString('data-splash-wordmark', $html);
+        $this->assertStringContainsString('class="auth-card"', $html);
+        $this->assertStringNotContainsString('auth-card ui-page-fade', $html);
+
+        $this->assertStringNotContainsString('media="(max-width: 1023.98px)"', $html);
+        $this->assertMatchesRegularExpression('/<source\b[^>]*media="\(min-width: 1024px\)"[^>]*adasi-login-bg\.avif[^>]*type="image\/avif"/i', $html);
+        $this->assertMatchesRegularExpression('/<source\b[^>]*media="\(min-width: 1024px\)"[^>]*adasi-login-bg\.webp[^>]*type="image\/webp"/i', $html);
+        $this->assertMatchesRegularExpression('/<source\b[^>]*media="\(min-width: 1024px\)"[^>]*adasi-login-bg\.jpg[^>]*type="image\/jpeg"/i', $html);
+        $this->assertMatchesRegularExpression('/<img\b[^>]*src="data:image\/gif;base64,[^"]+"[^>]*fetchpriority="high"/i', $html);
+        $this->assertStringContainsString('logo-adasi-sm.webp', $html);
+        $this->assertStringContainsString('width="34" height="32"', $html);
+        $this->assertStringContainsString('width="39" height="36"', $html);
+
+        config(['ui.auth_splash.login_page_enabled' => true]);
+        $this->get(route('login'))
+            ->assertOk()
+            ->assertSee('class="auth-card ui-page-fade"', false);
+    }
+
+    public function test_i18n_bootstrap_falls_back_synchronously_without_throwing_when_script_is_unreadable(): void
+    {
+        $path = public_path('assets/js/adasi-i18n.js');
+
+        File::partialMock()->shouldReceive('isReadable')
+            ->with($path)
+            ->once()
+            ->andReturn(false);
+
+        $html = view('partials.i18n-bootstrap')->render();
+
+        $this->assertStringContainsString('id="adasi-i18n"', $html);
+        $this->assertStringNotContainsString('data-adasi-i18n-runtime', $html);
+        $this->assertMatchesRegularExpression('/<script\s+src="[^"]*assets\/js\/adasi-i18n\.js(?:\?v=\d+)?"><\/script>/i', $html);
+        $this->assertDoesNotMatchRegularExpression('/<script\b[^>]*adasi-i18n\.js[^>]*\bdefer\b/i', $html);
+
+        $source = file_get_contents(resource_path('views/partials/i18n-bootstrap.blade.php'));
+        $this->assertStringContainsString('is_file($adasiI18nPath) ? @filemtime($adasiI18nPath) : null', $source);
     }
 }

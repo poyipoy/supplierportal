@@ -77,7 +77,7 @@ class AdvancedExportPhaseSixTest extends TestCase
             $export = new SupplierPriceHistoryExport($this->supplier->id, $view, 'History Steel', null, [], 'USD');
             $export->setExportLocale($locale);
             $headings = $view === 'monthly'
-                ? ($locale === 'en' ? ['PR Number', 'PO Date', 'Status', 'Price/Kg', 'Currency', '% Change'] : ['Nomor PR', 'Tanggal PO', 'Status', 'Harga/Kg', 'Mata Uang', '% Perubahan'])
+                ? ($locale === 'en' ? ['Purchase Requisition', 'PO Date', 'Status', 'Price/Kg', 'Currency', '% Change'] : ['Purchase Requisition', 'Tanggal PO', 'Status', 'Harga/Kg', 'Mata Uang', '% Perubahan'])
                 : ($locale === 'en' ? ['Year', 'Average Price/Kg', 'Lowest Price/Kg', 'Highest Price/Kg', 'Currency', '% Change'] : ['Tahun', 'Harga Rata-rata/Kg', 'Harga Terendah/Kg', 'Harga Tertinggi/Kg', 'Mata Uang', '% Perubahan']);
             $row = $view === 'monthly' ? ['REQ-HISTORY', $locale === 'en' ? '16 Aug 2026' : '16 Agt 2026', $locale === 'en' ? 'Submitted' : 'Diajukan', 2.5, 'USD', '-'] : ['2026', 2.5, 2.5, 2.5, 'USD', '-'];
             $this->assertSame($headings, $export->headings());
@@ -183,7 +183,7 @@ class AdvancedExportPhaseSixTest extends TestCase
         $this->assertSame(1001, $job->total_rows);
         $csv = Storage::disk('private')->get($job->file_path);
         $this->assertSame(1, substr_count($csv, "\xEF\xBB\xBF"));
-        $this->assertSame(1, substr_count($csv, 'PR Number'));
+        $this->assertSame(1, substr_count($csv, 'Purchase Requisition'));
         $this->assertCount(1002, preg_split('/\r?\n/', trim($csv)));
     }
 

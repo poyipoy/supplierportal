@@ -491,12 +491,38 @@ class SsoAuthorizationFlowTest extends TestCase
 
     public function test_clean_authorization_login_uses_native_login_splash_readiness(): void
     {
-        config(['ui.auth_splash.enabled' => true]);
+        config(['ui.auth_splash.enabled' => true, 'ui.auth_splash.login_page_enabled' => false]);
         $transaction = $this->start();
 
+        $cleanResponse = $this->get($transaction['authorize'])->assertOk()->assertViewIs('auth.login')
+            ->assertDontSee('data-auth-splash', false)
+            ->assertSessionMissing('ui.auth_splash');
+
+        $html = $cleanResponse->getContent();
+        $this->assertStringNotContainsString('bootstrap.min.css', $html);
+        $this->assertStringNotContainsString('bootstrap.bundle.min.js', $html);
+        $this->assertDoesNotMatchRegularExpression('/<link\b[^>]*rel=["\']stylesheet["\'][^>]*sweetalert2/i', $html);
+        $this->assertDoesNotMatchRegularExpression('/<link\b[^>]*rel=["\']stylesheet["\'][^>]*adasi-alert\.css/i', $html);
+        $this->assertDoesNotMatchRegularExpression('/<script\b[^>]*\bsrc=["\'][^"\']*(?:adasi-i18n|adasi-alert|sweetalert2)\.js/i', $html);
+        $this->assertMatchesRegularExpression('/<script\b[^>]*nonce="[^"]+"[^>]*data-adasi-i18n-runtime/i', $html);
+        $this->assertStringNotContainsString('data-splash-webp', $html);
+        $this->assertStringNotContainsString('data-splash-gif', $html);
+        $this->assertStringNotContainsString('data-splash-wordmark', $html);
+        $this->assertStringContainsString('class="auth-card"', $html);
+        $this->assertStringNotContainsString('auth-card ui-page-fade', $html);
+        $this->assertStringNotContainsString('media="(max-width: 1023.98px)"', $html);
+        $this->assertMatchesRegularExpression('/<source\b[^>]*media="\(min-width: 1024px\)"[^>]*adasi-login-bg\.avif[^>]*type="image\/avif"/i', $html);
+        $this->assertMatchesRegularExpression('/<source\b[^>]*media="\(min-width: 1024px\)"[^>]*adasi-login-bg\.webp[^>]*type="image\/webp"/i', $html);
+        $this->assertMatchesRegularExpression('/<source\b[^>]*media="\(min-width: 1024px\)"[^>]*adasi-login-bg\.jpg[^>]*type="image\/jpeg"/i', $html);
+        $this->assertMatchesRegularExpression('/<img\b[^>]*src="data:image\/gif;base64,[^"]+"[^>]*fetchpriority="high"/i', $html);
+        $this->assertStringContainsString('width="34" height="32"', $html);
+        $this->assertStringContainsString('width="39" height="36"', $html);
+
+        config(['ui.auth_splash.login_page_enabled' => true]);
         $this->get($transaction['authorize'])->assertOk()->assertViewIs('auth.login')
             ->assertSee('data-splash-reason="login-page"', false)
             ->assertSee('data-readiness="native-login"', false)
+            ->assertSee('class="auth-card ui-page-fade"', false)
             ->assertSee('<template data-auth-splash-layout-ready="auth" data-readiness="native-login">', false)
             ->assertSessionMissing('ui.auth_splash');
     }

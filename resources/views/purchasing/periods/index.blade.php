@@ -37,7 +37,7 @@
         </x-ui.data-table>
     </div>
 
-    <!-- Create Modal -->
+    {{-- Create Modal --}}
     <div class="modal fade" id="createModal" tabindex="-1" aria-labelledby="createPeriodModalTitle" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -65,7 +65,7 @@
         </div>
     </div>
 
-    <!-- Edit Modal (Dynamic) -->
+    {{-- Edit Modal (Dynamic) --}}
     <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editPeriodModalTitle" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -133,7 +133,7 @@
             $('#editMonth').val($(this).data('month'));
             $('#editYear').val($(this).data('year'));
             $('#editStatus').val($(this).data('status'));
-            new bootstrap.Modal(document.getElementById('editModal')).show();
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('editModal')).show();
         });
     });
 </script>

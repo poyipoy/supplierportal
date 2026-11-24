@@ -97,23 +97,15 @@
 
                     @if($pane['splitterAfter'])
                         @php($resizePairLabel = __('navigation.workspace_shell.resize_pane_pair', ['left' => $pane['title'], 'right' => $pane['nextTitle']]))
-                        <div
-                            class="workspace-shortcuts-splitter ui-focus-ring"
+                        <x-ui.splitter
                             role="separator"
-                            aria-orientation="vertical"
-                            tabindex="0"
-                            aria-controls="workspace-shortcuts-pane-{{ $pane['key'] }} workspace-shortcuts-pane-{{ $pane['nextKey'] }}"
-                            aria-valuemin="1"
-                            aria-valuemax="99"
-                            aria-valuenow="50"
-                            aria-label="{{ $resizePairLabel }}"
-                            title="{{ $resizePairLabel }}"
-                            data-shortcuts-splitter="{{ $pane['splitterAfter'] }}"
-                        >
-                            <span class="workspace-shortcuts-splitter__line" aria-hidden="true">
-                                <span class="workspace-shortcuts-splitter__grip"></span>
-                            </span>
-                        </div>
+                            class="workspace-shortcuts-splitter"
+                            line-class="workspace-shortcuts-splitter__line"
+                            grip-class="workspace-shortcuts-splitter__grip"
+                            :controls="'workspace-shortcuts-pane-'.$pane['key'].' workspace-shortcuts-pane-'.$pane['nextKey']"
+                            :label="$resizePairLabel"
+                            :data-shortcuts-splitter="$pane['splitterAfter']"
+                        />
                     @endif
                 @endforeach
             </div>

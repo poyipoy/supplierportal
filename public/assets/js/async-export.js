@@ -723,7 +723,7 @@
             }
 
             if (element instanceof HTMLButtonElement) {
-                element.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>';
+                element.innerHTML = '<span class="ui-spinner tw:mr-1.5" aria-hidden="true"></span>';
                 element.appendChild(document.createTextNode(t('js.export.preparing')));
             } else if (element instanceof HTMLInputElement) {
                 element.value = t('js.export.preparing');

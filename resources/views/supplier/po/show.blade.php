@@ -677,9 +677,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('supplier.copy.close') }}"></button>
             </div>
             <div class="modal-body" id="progressHistoryModalBody">
-                <div class="text-center py-4 text-muted">
-                    <div class="spinner-border spinner-border-sm text-primary me-1" role="status"></div> {{ __('supplier.copy.loading_history') }}
-                </div>
+                <x-ui.inline-loader :label="__('supplier.copy.loading_history')" class="tw:py-6" />
             </div>
             <div class="modal-footer">
                 <x-ui.button type="button" variant="ghost" size="sm" data-bs-dismiss="modal">{{ __('supplier.copy.close') }}</x-ui.button>
@@ -886,7 +884,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const bodyEl = document.getElementById('progressHistoryModalBody');
 
             titleEl.textContent = window.AdasiI18n.t('purchasing.js.progress_history', { material: materialName });
-            bodyEl.innerHTML = '<div class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm text-primary me-1" role="status"></div> ' + window.AdasiI18n.t('purchasing.js.loading_history') + '</div>';
+            const loadingLabel = window.AdasiI18n.t('purchasing.js.loading_history');
+            const inlineLoader = window.AdasiLoader?.createInlineLoader?.(loadingLabel);
+            if (inlineLoader) {
+                bodyEl.replaceChildren(inlineLoader);
+            } else {
+                bodyEl.innerHTML = '<div class="ui-inline-loading" role="status" aria-live="polite"><div class="ui-inline-loading__pill"><span class="ui-spinner" aria-hidden="true"></span><span class="ui-inline-loading__text"></span></div></div>';
+                bodyEl.querySelector('.ui-inline-loading__text').textContent = loadingLabel;
+            }
 
             const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
             modal.show();

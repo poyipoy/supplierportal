@@ -6,6 +6,9 @@
         && request()->attributes->get('ui.auth_splash_bootstrap_available') === true
         && is_array($authSplash)
         && in_array($authSplash['reason'] ?? null, ['login-page', 'post-login', 'post-logout'], true);
+    $authSplashWebpPath = public_path('assets/images/logo-adasi.webp');
+    $authSplashWebpVersion = is_file($authSplashWebpPath) ? @filemtime($authSplashWebpPath) : null;
+    $authSplashWebpUrl = asset('assets/images/logo-adasi.webp').($authSplashWebpVersion ? '?v='.$authSplashWebpVersion : '');
 @endphp
 @if ($authSplashCanRender)
     @php request()->attributes->set('ui.auth_splash_rendered', true); @endphp
@@ -17,6 +20,10 @@
                         media="(prefers-reduced-motion: reduce)"
                         srcset="{{ asset('assets/images/logo-adasi-wordmark.png') }}"
                     >
+                    <source
+                        type="image/webp"
+                        srcset="{{ $authSplashWebpUrl }}"
+                    >
                     <img
                         class="auth-splash__media"
                         data-auth-splash-media
@@ -25,8 +32,8 @@
                         alt=""
                         width="384"
                         height="153"
-                        decoding="sync"
-                        fetchpriority="high"
+                        decoding="async"
+                        fetchpriority="low"
                         loading="eager"
                         draggable="false"
                     >

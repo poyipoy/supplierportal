@@ -11,10 +11,16 @@ import postcss from 'postcss';
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const bundles = await build({ root, logLevel: 'silent', build: { write: false, minify: false, cssMinify: false } });
 const output = (Array.isArray(bundles) ? bundles : [bundles]).flatMap(bundle => bundle.output);
-const css = output.filter(asset => asset.type === 'asset' && asset.fileName.endsWith('.css')).map(asset => String(asset.source)).join('\n');
+const cssAssets = output.filter(asset => asset.type === 'asset' && asset.fileName.endsWith('.css'));
+const appCssAsset = cssAssets.find(asset => /(?:^|\/)app-[^/]+\.css$/.test(asset.fileName));
+assert.ok(appCssAsset, 'Compiled app CSS asset must exist');
+const css = String(appCssAsset.source);
+const allCss = cssAssets.map(asset => String(asset.source)).join('\n');
 const ast = postcss.parse(css);
 const rules = [];
 ast.walkRules(rule => rules.push(rule));
+const allRules = [];
+postcss.parse(allCss).walkRules(rule => allRules.push(rule));
 const escapeClass = name => '.' + name.replace(/([^\w-])/g, '\\$1');
 
 test('every compilable application utility is present in the real build, including PHP and public JS sources', async () => {
@@ -65,13 +71,15 @@ test('sibling spacing, dividers and static hidden priority preserve the v3 behav
 });
 
 test('Preflight and global forms resets stay absent from the compiled application', () => {
-    const source = readFileSync(new URL('../../resources/css/app.css', import.meta.url), 'utf8');
-    assert.doesNotMatch(source, /@import\s+['"]tailwindcss(?:\/preflight\.css)?['"]/);
-    assert.match(source, /tailwindcss\/theme\.css/);
-    assert.match(source, /tailwindcss\/utilities\.css/);
-    assert.equal(rules.some(rule => rule.selector.includes('*') && rule.nodes.some(node => node.prop === 'padding' && node.value === '0')), false);
-    assert.equal(rules.some(rule => /^(input|textarea|select)(?:,|$)/.test(rule.selector) && rule.nodes.some(node => node.prop === 'appearance' && node.value === 'none')), false);
-    assert.equal(rules.some(rule => rule.nodes.some(node => node.prop?.startsWith('border') && node.prop.endsWith('-style') && node.value === 'var(--tw-border-style)')), false, 'Width-only utilities must preserve the existing Bootstrap/UA border style');
+    for (const file of ['../../resources/css/app.css', '../../resources/css/auth.css']) {
+        const source = readFileSync(new URL(file, import.meta.url), 'utf8');
+        assert.doesNotMatch(source, /@import\s+['"]tailwindcss(?:\/preflight\.css)?['"]/);
+        assert.match(source, /tailwindcss\/theme\.css/);
+        assert.match(source, /tailwindcss\/utilities\.css/);
+    }
+    assert.equal(allRules.some(rule => rule.selector.includes('*') && rule.nodes.some(node => node.prop === 'padding' && node.value === '0')), false);
+    assert.equal(allRules.some(rule => /^(input|textarea|select)(?:,|$)/.test(rule.selector) && rule.nodes.some(node => node.prop === 'appearance' && node.value === 'none')), false);
+    assert.equal(allRules.some(rule => rule.nodes.some(node => node.prop?.startsWith('border') && node.prop.endsWith('-style') && node.value === 'var(--tw-border-style)')), false, 'Width-only utilities must preserve the existing Bootstrap/UA border style');
 });
 
 test('DOM selectors target prefixed classes without treating the colon as a pseudo-class', () => {
@@ -79,4 +87,17 @@ test('DOM selectors target prefixed classes without treating the colon as a pseu
         const source = readFileSync(new URL(file, import.meta.url), 'utf8');
         assert.doesNotMatch(source, /(?:querySelector|closest|find)\([^\n]*\.tw:/, file);
     }
+});
+
+test('auth bundle enforces [hidden] display:none !important so author display classes like .ui-spinner stay hidden', () => {
+    const authCssAsset = cssAssets.find(asset => /(?:^|\/)auth-[^/]+\.css$/.test(asset.fileName));
+    assert.ok(authCssAsset, 'Compiled auth CSS asset must exist');
+    const authAst = postcss.parse(String(authCssAsset.source));
+    let hasHiddenOverride = false;
+    authAst.walkRules(rule => {
+        if (rule.selector.includes('[hidden]') && rule.nodes.some(node => node.prop === 'display' && node.value === 'none' && node.important)) {
+            hasHiddenOverride = true;
+        }
+    });
+    assert.equal(hasHiddenOverride, true, 'Compiled auth CSS must enforce [hidden] { display: none !important } without Bootstrap Reboot');
 });

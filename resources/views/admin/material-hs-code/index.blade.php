@@ -181,9 +181,7 @@
 
         <div class="tab-pane fade" id="data-quality" role="tabpanel" aria-labelledby="data-quality-tab" tabindex="0">
             <div class="tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:p-3 tw:shell:p-4">
-                <div id="qualityLoading" class="tw:flex tw:flex-col tw:items-center tw:justify-center tw:py-12" role="status">
-                    <span class="ui-spinner" aria-hidden="true"></span><span class="tw:mt-2 tw:text-ui-sm tw:text-on-surface-variant">{{ __('admin.copy.analyzing_master_data') }}</span>
-                </div>
+                <x-ui.inline-loader id="qualityLoading" :label="__('admin.copy.analyzing_master_data')" class="tw:py-12" />
                 <div id="qualityContent" class="d-none">
                     <section class="tw:overflow-hidden tw:rounded-ui-sm tw:border tw:border-outline-variant tw:bg-surface-container" aria-labelledby="quality-summary-title">
                         <h3 id="quality-summary-title" class="tw:sr-only">{{ __('admin.copy.data_quality_summary') }}</h3>

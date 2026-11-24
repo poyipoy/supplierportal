@@ -3,10 +3,19 @@
     $uid = 'advanced-export-'.str_replace('.', '-', $exportKey);
     $definition = \App\Support\Export\ExportDefinitions::get($exportKey);
     $fields = $definition->filterSchema();
-    $copy = collect(['loading', 'failed', 'default_columns', 'saved', 'required', 'save_failed', 'invalid_columns', 'visible_summary', 'active_column', 'column_position', 'move_left', 'move_right', 'hide_required', 'hide_last', 'hidden_none', 'restore_before', 'restore_end', 'hidden_restored', 'column_hidden', 'columns_reset', 'drag_position', 'drag_cancelled', 'keyboard_hint', 'unhide'])->mapWithKeys(fn ($key) => [$key => __('exports.advanced.'.$key)])->all();
+    $copy = collect([
+        'loading', 'failed', 'default_columns', 'saved', 'duplicated', 'required', 'save_failed', 'invalid_columns',
+        'visible_summary', 'active_column', 'column_position', 'move_left', 'move_right', 'hide_required', 'hide_last',
+        'hidden_none', 'restore_before', 'restore_end', 'hidden_restored', 'column_hidden', 'columns_reset',
+        'drag_position', 'drag_cancelled', 'keyboard_hint', 'unhide', 'personal_presets', 'team_presets',
+        'search_matches', 'search_no_matches', 'search_hidden_matches', 'all_columns_shown', 'minimal_columns_shown',
+        'preview_loading', 'preview_summary', 'preview_empty', 'preview_exceeds', 'preview_failed',
+    ])->mapWithKeys(fn ($key) => [$key => __('exports.advanced.'.$key)])->all();
 @endphp
 <div data-advanced-export data-export-key="{{ $exportKey }}" data-definition-url="{{ route('exports.definitions.show', $exportKey) }}"
      data-presets-url="{{ route('export-presets.index') }}" data-preset-store-url="{{ route('export-presets.store') }}"
+     data-preview-url="{{ route('exports.preview-count') }}"
+     data-default-csv-delimiter="{{ app()->getLocale() === 'id' ? ';' : ',' }}"
      data-filter-selectors='@json($filterSelectors)' data-initial-filters='@json($initialFilters)' data-export-copy='@json($copy)' data-export-table="{{ $table }}">
     <div class="tw:flex tw:items-center tw:gap-2">
         <x-ui.button type="button" :id="$triggerId" variant="outline" size="sm" data-bs-toggle="modal" data-bs-target="#{{ $uid }}" data-export-open>
@@ -21,7 +30,7 @@
                     <h2 class="modal-title tw:text-ui-lg" id="{{ $uid }}-title" tabindex="-1">{{ __('exports.advanced.title') }}</h2>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('common.actions.close') }}"></button>
                 </div>
-                <form action="{{ $action }}" method="POST" data-advanced-export-form class="tw:flex tw:flex-col tw:min-h-0 tw:overflow-hidden">
+                <form action="{{ $action }}" method="POST" data-advanced-export-form data-managed-submit data-no-loader class="tw:flex tw:flex-col tw:min-h-0 tw:overflow-hidden">
                     @csrf
                     <div class="modal-body ui-export-designer__body tw:grid tw:gap-4">
                         <p id="{{ $uid }}-help" class="tw:m-0 tw:text-ui-sm tw:text-on-surface-variant">{{ __('exports.advanced.help') }}</p>
@@ -40,18 +49,55 @@
                                     <div>
                                         @if($field['type'] === 'date')
                                             <x-ui.date-picker :name="$field['name']" :id="$fieldId" :label="__('exports.advanced.filters.'.$field['name'])" :data-filter-name="$field['name']" />
+                                        @elseif($field['type'] === 'supplier')
+                                            <x-ui.searchable-select
+                                                size="sm"
+                                                :id="$fieldId"
+                                                :name="$field['name']"
+                                                :label="__('exports.advanced.filters.'.$field['name'])"
+                                                :placeholder="__('exports.advanced.all')"
+                                                :data-filter-name="$field['name']"
+                                                :show-sublabel-on-trigger="false"
+                                                :options="collect($suppliers)->map(fn ($supplier) => ['value' => (string) $supplier->getRouteKey(), 'label' => (string) $supplier->name])->values()->all()"
+                                            />
+                                        @elseif($field['type'] === 'period')
+                                            <x-ui.searchable-select
+                                                size="sm"
+                                                :id="$fieldId"
+                                                :name="$field['name']"
+                                                :label="__('exports.advanced.filters.'.$field['name'])"
+                                                :placeholder="__('exports.advanced.all')"
+                                                :data-filter-name="$field['name']"
+                                                :show-sublabel-on-trigger="false"
+                                                :options="collect($periods)->map(fn ($period) => ['value' => (string) $period->id, 'label' => (string) $period->display_label])->values()->all()"
+                                            />
+                                        @elseif(in_array($field['name'], ['search', 'q'], true))
+                                            @php($placeholder = isset($field['placeholder']) ? __($field['placeholder']) : __('exports.advanced.all'))
+                                            @php($hint = isset($field['hint']) ? __($field['hint']) : null)
+                                            <x-ui.searchable-select
+                                                size="sm"
+                                                :id="$fieldId"
+                                                :name="$field['name']"
+                                                :label="__('exports.advanced.filters.'.$field['name'])"
+                                                :placeholder="$placeholder"
+                                                :search-placeholder="$placeholder"
+                                                :helper="$hint"
+                                                :helper-id="$hint ? $fieldId.'-hint' : null"
+                                                :data-filter-name="$field['name']"
+                                                :allow-custom="true"
+                                                :remote="true"
+                                                :preload-on-open="true"
+                                                :export-filter-context="true"
+                                                :show-sublabel-on-trigger="false"
+                                                :maxlength="255"
+                                                :suggestions-url="route('exports.search-suggestions', ['export_key' => $exportKey])"
+                                            />
                                         @else
                                             <label for="{{ $fieldId }}" class="tw:text-ui-sm tw:font-medium">{{ __('exports.advanced.filters.'.$field['name']) }}</label>
-                                            @if(in_array($field['type'], ['select','supplier','period'], true))
+                                            @if($field['type'] === 'select')
                                                 <select id="{{ $fieldId }}" name="{{ $field['name'] }}" data-filter-name="{{ $field['name'] }}" class="form-select form-select-sm">
                                                     @if(!($field['required'] ?? false))<option value="">{{ __('exports.advanced.all') }}</option>@endif
-                                                    @if($field['type'] === 'supplier')
-                                                        @foreach($suppliers as $supplier)<option value="{{ $supplier->getRouteKey() }}">{{ $supplier->name }}</option>@endforeach
-                                                    @elseif($field['type'] === 'period')
-                                                        @foreach($periods as $period)<option value="{{ $period->id }}">{{ $period->display_label }}</option>@endforeach
-                                                    @else
-                                                        @foreach($field['options'] as $value)<option value="{{ $value }}">{{ isset($field['labels'][$value]) ? __($field['labels'][$value]) : (($field['domain'] ?? 'po') === 'local_invoice' ? \App\Support\StatusHelper::localInvoiceLabel($value) : (($field['domain'] ?? 'po') === 'currency' ? $value : ($value === 'unresponded' ? __('exports.advanced.unresponded') : __('status.'.($field['domain'] ?? 'po').'.'.$value)))) }}</option>@endforeach
-                                                    @endif
+                                                    @foreach($field['options'] as $value)<option value="{{ $value }}">{{ isset($field['labels'][$value]) ? __($field['labels'][$value]) : (($field['domain'] ?? 'po') === 'local_invoice' ? \App\Support\StatusHelper::localInvoiceLabel($value) : (($field['domain'] ?? 'po') === 'currency' ? $value : ($value === 'unresponded' ? __('exports.advanced.unresponded') : __('status.'.($field['domain'] ?? 'po').'.'.$value)))) }}</option>@endforeach
                                                 </select>
                                             @else
                                                 @if($field['type'] === 'boolean')
@@ -79,9 +125,21 @@
                                 @endforeach
                             </div>
                             <div class="tw:mt-3" @if(!collect($fields)->contains('name','start_date')) hidden @endif>
-                                <label class="tw:text-ui-sm tw:inline-flex tw:items-center tw:gap-2"><input type="checkbox" data-export-relative>{{ __('exports.advanced.relative') }}</label>
-                                <label for="{{ $uid }}-days" class="tw:text-ui-xs">{{ __('exports.advanced.days') }}</label>
-                                <input id="{{ $uid }}-days" type="number" min="1" max="3650" value="30" data-export-days class="form-control form-control-sm" disabled>
+                                <label class="tw:text-ui-sm tw:inline-flex tw:items-center tw:gap-2 tw:cursor-pointer">
+                                    <input type="checkbox" data-export-relative aria-controls="{{ $uid }}-relative-panel" aria-expanded="false">{{ __('exports.advanced.relative') }}
+                                </label>
+                                <div id="{{ $uid }}-relative-panel" data-export-relative-panel hidden class="ui-export-relative-panel">
+                                    <div class="ui-export-relative-panel__controls">
+                                        <label for="{{ $uid }}-days" class="tw:text-ui-sm tw:font-medium tw:mb-0">{{ __('exports.advanced.days') }}</label>
+                                        <input id="{{ $uid }}-days" type="number" min="1" max="3650" value="30" data-export-days aria-describedby="{{ $uid }}-relative-hint" class="form-control form-control-sm ui-tabular-nums tw:w-24" disabled>
+                                        <div class="ui-export-relative-panel__presets" role="group" aria-label="{{ __('exports.advanced.days') }}">
+                                            @foreach([7, 30, 90] as $presetDays)
+                                                <button type="button" class="ui-export-days-chip ui-focus-ring" data-export-days-preset="{{ $presetDays }}" aria-pressed="{{ $presetDays === 30 ? 'true' : 'false' }}" disabled>{{ __('exports.advanced.relative_preset_days', ['days' => $presetDays]) }}</button>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                    <p id="{{ $uid }}-relative-hint" class="tw:m-0 tw:text-ui-xs tw:text-on-surface-variant">{{ __('exports.advanced.relative_hint') }}</p>
+                                </div>
                             </div>
                         </fieldset>
                         <fieldset data-column-designer class="ui-column-designer tw:border tw:border-outline tw:rounded-ui-sm tw:p-3" disabled>
@@ -92,8 +150,16 @@
                                 <x-ui.button type="button" size="sm" variant="outline" data-column-command="move-left"><x-ui.icon name="arrow-left" />{{ __('exports.advanced.left') }}</x-ui.button>
                                 <x-ui.button type="button" size="sm" variant="outline" data-column-command="move-right"><x-ui.icon name="arrow-right" />{{ __('exports.advanced.right') }}</x-ui.button>
                                 <x-ui.button type="button" size="sm" variant="outline" data-column-command="menu" aria-haspopup="menu" aria-controls="{{ $uid }}-menu"><x-ui.icon name="ellipsis" />{{ __('exports.advanced.column_menu') }}</x-ui.button>
-                                <x-ui.button type="button" size="sm" variant="ghost" data-column-command="reset" data-export-reset><x-ui.icon name="rotate-ccw" />{{ __('exports.advanced.reset') }}</x-ui.button>
+                                <x-ui.button type="button" size="sm" variant="ghost" data-column-command="reset" data-export-reset><x-ui.icon name="rotate-ccw" />{{ __('exports.advanced.quick_default') }}</x-ui.button>
+                                <x-ui.button type="button" size="sm" variant="ghost" data-column-command="select-all">{{ __('exports.advanced.quick_all') }}</x-ui.button>
+                                <x-ui.button type="button" size="sm" variant="ghost" data-column-command="minimal">{{ __('exports.advanced.quick_minimal') }}</x-ui.button>
                             </div>
+                            <div class="ui-column-search-bar">
+                                <label for="{{ $uid }}-column-search" class="tw:sr-only">{{ __('exports.advanced.search_columns_label') }}</label>
+                                <input id="{{ $uid }}-column-search" type="search" data-column-search class="form-control form-control-sm" placeholder="{{ __('exports.advanced.search_columns_placeholder') }}" autocomplete="off">
+                                <span data-column-search-status class="tw:text-ui-xs tw:text-on-surface-variant" aria-live="polite"></span>
+                            </div>
+                            <div data-column-search-hidden class="ui-column-search-hidden" hidden></div>
                             <p id="{{ $uid }}-keyboard" class="ui-column-help">{{ __('exports.advanced.keyboard_hint') }}</p>
                             <div class="ui-column-summary"><span data-column-summary></span><span data-column-selected-label></span></div>
                             <div data-column-scroll class="ui-column-scroll">
@@ -108,6 +174,13 @@
                             <legend class="tw:float-none tw:w-auto tw:px-1 tw:text-ui-sm tw:font-semibold">{{ __('exports.advanced.format_title') }}</legend>
                             <label for="{{ $uid }}-format" class="tw:text-ui-sm">{{ __('exports.advanced.format_title') }}</label>
                             <select id="{{ $uid }}-format" data-export-format class="form-select form-select-sm"><option value="xlsx">XLSX</option><option value="csv">CSV</option></select>
+                            <div data-export-csv-delimiter-group class="tw:mt-2" hidden>
+                                <label for="{{ $uid }}-csv-delimiter" class="tw:text-ui-sm">{{ __('exports.advanced.csv_delimiter_title') }}</label>
+                                <select id="{{ $uid }}-csv-delimiter" data-export-csv-delimiter class="form-select form-select-sm">
+                                    <option value="," @selected(app()->getLocale() !== 'id')>{{ __('exports.advanced.csv_delimiter_comma') }}</option>
+                                    <option value=";" @selected(app()->getLocale() === 'id')>{{ __('exports.advanced.csv_delimiter_semicolon') }}</option>
+                                </select>
+                            </div>
                             <p class="tw:m-0 tw:mt-2 tw:text-ui-xs tw:text-on-surface-variant">{{ __('exports.advanced.csv_hint') }}</p>
                         </fieldset>
                         <fieldset data-export-presets-section class="tw:border tw:border-outline tw:rounded-ui-sm tw:p-3">
@@ -115,17 +188,27 @@
                             <label for="{{ $uid }}-preset" class="tw:text-ui-sm">{{ __('exports.advanced.presets_title') }}</label>
                             <select id="{{ $uid }}-preset" data-export-preset class="form-select form-select-sm"></select>
                             <p class="ui-column-help">{{ __('exports.advanced.preset_columns_help') }}</p>
+                            <p data-export-team-readonly hidden class="tw:m-0 tw:mb-2 tw:text-ui-xs tw:text-on-surface-variant">{{ __('exports.advanced.team_readonly_hint') }}</p>
                             <label for="{{ $uid }}-name" class="tw:mt-2 tw:text-ui-sm">{{ __('exports.advanced.preset_name') }}</label>
                             <input id="{{ $uid }}-name" data-export-preset-name type="text" maxlength="80" class="form-control form-control-sm">
+                            <div data-export-preset-scope-group class="tw:mt-2" hidden>
+                                <label for="{{ $uid }}-scope" class="tw:text-ui-sm">{{ __('exports.advanced.preset_scope') }}</label>
+                                <select id="{{ $uid }}-scope" data-export-preset-scope class="form-select form-select-sm">
+                                    <option value="personal">{{ __('exports.advanced.scope_personal') }}</option>
+                                    <option value="team">{{ __('exports.advanced.scope_team') }}</option>
+                                </select>
+                            </div>
                             <label class="tw:text-ui-sm tw:mt-2 tw:inline-flex tw:items-center tw:gap-2"><input type="checkbox" data-export-default>{{ __('exports.advanced.make_default') }}</label>
                             <div class="tw:flex tw:flex-wrap tw:gap-2 tw:mt-2">
                                 <x-ui.button type="button" variant="outline" size="sm" data-export-save>{{ __('exports.advanced.save') }}</x-ui.button>
                                 <x-ui.button type="button" variant="outline" size="sm" data-export-update>{{ __('exports.advanced.update') }}</x-ui.button>
+                                <x-ui.button type="button" variant="outline" size="sm" data-export-duplicate hidden>{{ __('exports.advanced.duplicate_to_personal') }}</x-ui.button>
                                 <x-ui.button type="button" variant="danger" size="sm" data-export-delete>{{ __('exports.advanced.delete') }}</x-ui.button>
                             </div>
                         </fieldset>
                     </div>
-                    <div class="modal-footer">
+                    <div class="modal-footer tw:flex tw:flex-wrap tw:items-center tw:gap-2">
+                        <div data-export-preview class="ui-export-preview tw:mr-auto tw:text-ui-xs tw:text-on-surface-variant ui-tabular-nums" role="status" aria-live="polite"></div>
                         <x-ui.button type="button" variant="ghost" data-bs-dismiss="modal">{{ __('common.actions.cancel') }}</x-ui.button>
                         <x-ui.button type="submit" data-export-submit disabled>{{ __('exports.advanced.export') }}</x-ui.button>
                     </div>

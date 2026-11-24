@@ -132,7 +132,7 @@
                                 <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('finance.drp.payee_account') }}</th>
                                 <th scope="col" class="tw:text-ui-xs tw:font-semibold">{{ __('finance.drp_surface.invoice_po') }}</th>
                                 @foreach(['due_date' => __('local_invoice.labels.due_date'), 'verification_date' => __('finance.candidates.verification_date')] as $sortKey => $sortLabel)
-                                    <th scope="col" class="tw:text-ui-xs tw:font-semibold" aria-sort="{{ $candidateSort === $sortKey ? ($candidateDirection === 'asc' ? 'ascending' : 'descending') : 'none' }}">
+                                    <th scope="col" class="tw:text-ui-xs tw:font-semibold" @if($candidateSort === $sortKey) aria-sort="{{ $candidateDirection === 'asc' ? 'ascending' : 'descending' }}" @endif>
                                         <a class="tw:inline-flex tw:items-center tw:gap-1 tw:min-h-6" href="{{ route('finance.drp.supplier', array_merge(request()->except('candidate_page'), ['sort' => $sortKey, 'direction' => $candidateSort === $sortKey && $candidateDirection === 'asc' ? 'desc' : 'asc'])) }}">
                                             {{ $sortLabel }}
                                             @if($candidateSort === $sortKey)<x-ui.icon :name="$candidateDirection === 'asc' ? 'arrow-up' : 'arrow-down'" size="sm" />@endif

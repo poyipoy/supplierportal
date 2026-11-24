@@ -22,6 +22,7 @@ use App\Support\Export\ExportOptionsResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
@@ -45,32 +46,92 @@ class ExportPresetService
         return DB::transaction(function () use ($actor, $input, $preset): ExportPreset {
             $actor = User::query()->whereKey($actor->id)->lockForUpdate()->firstOrFail();
             if ($preset !== null) {
-                $preset = ExportPreset::query()->where('user_id', $actor->id)->lockForUpdate()->findOrFail($preset->id);
+                $preset = ExportPreset::query()->lockForUpdate()->findOrFail($preset->id);
                 Gate::forUser($actor)->authorize('update', $preset);
             }
+
             $key = $preset?->export_key ?? $input['export_key'];
             if (isset($input['export_key']) && $input['export_key'] !== $key) {
                 throw ValidationException::withMessages(['export_key' => __('exports.advanced.invalid_columns')]);
             }
+
             $definition = $this->definition($key, $actor, presets: true);
+
+            $requestedScope = $input['scope'] ?? $preset?->scope ?? ExportPreset::SCOPE_PERSONAL;
+            if (! in_array($requestedScope, [ExportPreset::SCOPE_PERSONAL, ExportPreset::SCOPE_TEAM], true)) {
+                throw ValidationException::withMessages(['scope' => __('exports.advanced.invalid_scope')]);
+            }
+
+            if ($requestedScope === ExportPreset::SCOPE_TEAM) {
+                // Suppliers and supplier.* keys are strictly forbidden from team presets.
+                abort_if($actor->isSupplier() || str_starts_with($key, 'supplier.'), 403);
+                Gate::forUser($actor)->authorize('createTeam', [ExportPreset::class, $key]);
+            }
+
+            if ($preset !== null && ($preset->scope ?: ExportPreset::SCOPE_PERSONAL) !== $requestedScope) {
+                throw ValidationException::withMessages(['scope' => __('exports.advanced.invalid_scope')]);
+            }
+
             $options = ExportOptionsResolver::resolve($key, $actor, $input);
-            $cohort = ExportPreset::query()->where('user_id', $actor->id)->where('export_key', $key);
+            $name = trim($input['name']);
+            $ownerId = $preset !== null ? (int) $preset->user_id : (int) $actor->id;
+
+            if ($requestedScope === ExportPreset::SCOPE_TEAM) {
+                $cohort = ExportPreset::query()
+                    ->where('export_key', $key)
+                    ->where('scope', ExportPreset::SCOPE_TEAM);
+            } else {
+                $cohort = ExportPreset::query()
+                    ->where('user_id', $actor->id)
+                    ->where('export_key', $key)
+                    ->where('scope', ExportPreset::SCOPE_PERSONAL);
+            }
+
             if ($preset === null && (clone $cohort)->count() >= (int) config('exports.max_presets_per_key')) {
                 throw ValidationException::withMessages(['name' => __('exports.advanced.preset_limit', ['limit' => config('exports.max_presets_per_key')])]);
             }
-            $duplicate = (clone $cohort)->where('name', trim($input['name']));
+
+            $duplicate = (clone $cohort)->where('name', $name);
             if ($preset !== null) {
                 $duplicate->whereKeyNot($preset->id);
             }
             if ($duplicate->exists()) {
                 throw ValidationException::withMessages(['name' => __('exports.advanced.preset_duplicate')]);
             }
+
+            // Guard the table's (user_id, export_key, name) unique constraint across scopes for the same owner.
+            $ownerCollision = ExportPreset::query()
+                ->where('user_id', $ownerId)
+                ->where('export_key', $key)
+                ->where('name', $name);
+            if ($preset !== null) {
+                $ownerCollision->whereKeyNot($preset->id);
+            }
+            if ($ownerCollision->exists()) {
+                throw ValidationException::withMessages(['name' => __('exports.advanced.preset_duplicate')]);
+            }
+
             $filters = $this->filters($definition, $input['filters'] ?? []);
-            $default = $input['is_default'] ?? $preset?->is_default ?? false;
+            $default = $requestedScope === ExportPreset::SCOPE_TEAM
+                ? false
+                : (bool) ($input['is_default'] ?? $preset?->is_default ?? false);
+
             if ($default) {
                 (clone $cohort)->where('is_default', true)->update(['is_default' => false]);
             }
-            $attributes = ['user_id' => $actor->id, 'export_key' => $key, 'name' => trim($input['name']), 'columns' => $options->columns, 'format' => $options->format, 'filters' => $filters, 'is_default' => $default];
+
+            $attributes = [
+                'user_id' => $ownerId,
+                'export_key' => $key,
+                'scope' => $requestedScope,
+                'name' => $name,
+                'columns' => $options->columns,
+                'format' => $options->format,
+                'csv_delimiter' => $options->csvDelimiter,
+                'filters' => $filters,
+                'is_default' => $default,
+            ];
+
             if ($preset === null) {
                 return ExportPreset::create($attributes);
             }
@@ -80,14 +141,78 @@ class ExportPresetService
         }, 3);
     }
 
+    public function duplicateToPersonal(User $actor, ExportPreset $source, ?string $preferredName = null): ExportPreset
+    {
+        return DB::transaction(function () use ($actor, $source, $preferredName): ExportPreset {
+            $actor = User::query()->whereKey($actor->id)->lockForUpdate()->firstOrFail();
+            $source = ExportPreset::query()->lockForUpdate()->findOrFail($source->id);
+            Gate::forUser($actor)->authorize('view', $source);
+
+            $key = $source->export_key;
+            $this->definition($key, $actor, presets: true);
+
+            $personalCohort = ExportPreset::query()
+                ->where('user_id', $actor->id)
+                ->where('export_key', $key)
+                ->where('scope', ExportPreset::SCOPE_PERSONAL);
+
+            if ((clone $personalCohort)->count() >= (int) config('exports.max_presets_per_key')) {
+                throw ValidationException::withMessages(['name' => __('exports.advanced.preset_limit', ['limit' => config('exports.max_presets_per_key')])]);
+            }
+
+            $name = $this->resolveDuplicateName($actor, $key, $preferredName !== null ? trim($preferredName) : $source->name);
+            $csvDelimiter = in_array($source->csv_delimiter, [',', ';'], true) ? $source->csv_delimiter : ',';
+            $format = in_array($source->format, ['xlsx', 'csv'], true) ? $source->format : 'xlsx';
+
+            return ExportPreset::create([
+                'user_id' => $actor->id,
+                'export_key' => $key,
+                'scope' => ExportPreset::SCOPE_PERSONAL,
+                'name' => $name,
+                'columns' => $source->columns,
+                'filters' => $source->filters,
+                'format' => $format,
+                'csv_delimiter' => $csvDelimiter,
+                'is_default' => false,
+            ]);
+        }, 3);
+    }
+
+    private function resolveDuplicateName(User $actor, string $exportKey, string $baseName): string
+    {
+        $existing = ExportPreset::query()
+            ->where('user_id', $actor->id)
+            ->where('export_key', $exportKey)
+            ->pluck('name')
+            ->all();
+
+        $suffix = ' ('.__('exports.advanced.copy_suffix').')';
+        $base = trim($baseName) !== '' ? trim($baseName) : 'Preset';
+        $candidate = Str::limit($base, 80 - mb_strlen($suffix), '').$suffix;
+
+        if (! in_array($candidate, $existing, true)) {
+            return $candidate;
+        }
+
+        for ($counter = 2; $counter <= 99; $counter++) {
+            $numberedSuffix = ' ('.__('exports.advanced.copy_suffix').' '.$counter.')';
+            $next = Str::limit($base, 80 - mb_strlen($numberedSuffix), '').$numberedSuffix;
+            if (! in_array($next, $existing, true)) {
+                return $next;
+            }
+        }
+
+        throw ValidationException::withMessages(['name' => __('exports.advanced.preset_duplicate')]);
+    }
+
     private function filters(ExportDefinition $definition, array $filters): array
     {
         $allowed = array_column($definition->filterSchema(), 'name');
         if (in_array('start_date', $allowed, true)) {
             $allowed[] = 'date_range';
         }
-        if ($definition->exportClass() === ShipmentsExport::class) {
-            $allowed[] = 'shipment_number';
+        if (($legacyKey = $this->legacySearchFilterKey($definition->exportClass())) !== null) {
+            $allowed[] = $legacyKey;
         }
         if (array_diff(array_keys($filters), $allowed) !== []) {
             throw ValidationException::withMessages(['filters' => __('exports.advanced.invalid_filters')]);
@@ -118,9 +243,14 @@ class ExportPresetService
     {
         return DB::transaction(function () use ($actor, $preset): ExportPreset {
             $actor = User::query()->whereKey($actor->id)->lockForUpdate()->firstOrFail();
-            $preset = ExportPreset::query()->where('user_id', $actor->id)->lockForUpdate()->findOrFail($preset->id);
-            Gate::forUser($actor)->authorize('update', $preset);
-            ExportPreset::query()->where('user_id', $actor->id)->where('export_key', $preset->export_key)->where('is_default', true)->update(['is_default' => false]);
+            $preset = ExportPreset::query()->lockForUpdate()->findOrFail($preset->id);
+            Gate::forUser($actor)->authorize('makeDefault', $preset);
+            ExportPreset::query()
+                ->where('user_id', $actor->id)
+                ->where('export_key', $preset->export_key)
+                ->where('scope', ExportPreset::SCOPE_PERSONAL)
+                ->where('is_default', true)
+                ->update(['is_default' => false]);
             $preset->forceFill(['is_default' => true])->save();
 
             return $preset;
@@ -131,7 +261,7 @@ class ExportPresetService
     {
         DB::transaction(function () use ($actor, $preset): void {
             $actor = User::query()->whereKey($actor->id)->lockForUpdate()->firstOrFail();
-            $preset = ExportPreset::query()->where('user_id', $actor->id)->lockForUpdate()->findOrFail($preset->id);
+            $preset = ExportPreset::query()->lockForUpdate()->findOrFail($preset->id);
             Gate::forUser($actor)->authorize('delete', $preset);
             $preset->delete();
         }, 3);
@@ -152,18 +282,42 @@ class ExportPresetService
             }
         }
         $format = in_array($preset->format, ['xlsx', 'csv'], true) ? $preset->format : 'xlsx';
+        $csvDelimiter = in_array($preset->csv_delimiter, [',', ';'], true) ? $preset->csv_delimiter : ',';
+        $scope = in_array($preset->scope, [ExportPreset::SCOPE_PERSONAL, ExportPreset::SCOPE_TEAM], true)
+            ? $preset->scope
+            : ExportPreset::SCOPE_PERSONAL;
         $filters = $preset->filters ?? [];
-        if ($definition->exportClass() === ShipmentsExport::class && ! empty($filters['shipment_number'])) {
+        $legacyKey = $this->legacySearchFilterKey($definition->exportClass());
+        if ($legacyKey !== null && ! empty($filters[$legacyKey])) {
             if (empty($filters['search'])) {
-                $filters['search'] = $filters['shipment_number'];
+                $filters['search'] = $filters[$legacyKey];
             }
-            unset($filters['shipment_number']);
+            unset($filters[$legacyKey]);
         }
 
         return [
-            'id' => $preset->getRouteKey(), 'export_key' => $preset->export_key, 'name' => $preset->name,
-            'columns' => $keys, 'filters' => $filters, 'format' => $format, 'is_default' => $preset->is_default,
+            'id' => $preset->getRouteKey(),
+            'export_key' => $preset->export_key,
+            'scope' => $scope,
+            'name' => $preset->name,
+            'columns' => $keys,
+            'filters' => $filters,
+            'format' => $format,
+            'csv_delimiter' => $csvDelimiter,
+            'is_default' => $scope === ExportPreset::SCOPE_PERSONAL && (bool) $preset->is_default,
+            'can_edit' => Gate::forUser($actor)->allows('update', $preset),
+            'can_delete' => Gate::forUser($actor)->allows('delete', $preset),
             'warnings' => $keys !== $preset->columns || $format !== $preset->format ? [__('exports.advanced.stale_preset')] : [],
         ];
+    }
+
+    private function legacySearchFilterKey(string $exportClass): ?string
+    {
+        return match ($exportClass) {
+            ShipmentsExport::class => 'shipment_number',
+            PurchaseOrdersExport::class => 'po_number',
+            QuotationsExport::class => 'pr_number',
+            default => null,
+        };
     }
 }

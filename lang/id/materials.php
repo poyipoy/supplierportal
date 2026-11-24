@@ -213,6 +213,7 @@ return [
             'status_inactive' => 'Tidak Aktif',
             'import_success' => 'Aturan harga referensi berhasil diimpor.',
             'saved_success' => 'Kategori aturan berhasil disimpan.',
+            'duplicate_key' => 'Kunci kategori :key sudah digunakan.',
             'toggle_success' => 'Status kategori berhasil diperbarui.',
             'dialog_title' => 'Impor Aturan Harga Referensi',
             'dialog_description' => 'Unggah berkas Excel (.xlsx) untuk memperbarui rentang dimensi kategori.',

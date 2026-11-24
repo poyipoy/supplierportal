@@ -5,8 +5,6 @@
     x-bind:data-state="viewportIsDesktop ? (desktopCollapsed ? 'collapsed' : 'expanded') : (mobileOpen ? 'open' : 'closed')"
     x-bind:aria-hidden="viewportIsDesktop ? 'false' : (!mobileOpen).toString()"
     x-bind:inert="!viewportIsDesktop && !mobileOpen"
-    x-on:pointerenter="onSidebarPointerEnter()"
-    x-on:pointerleave="onSidebarPointerLeave()"
     x-on:click="if (!viewportIsDesktop && $event.target.closest('a[href]')) closeMobileSidebar(false)"
     aria-label="{{ __('navigation.primary') }}"
 >
@@ -57,7 +55,7 @@
                 : \App\Support\PageRegistry::url('dashboard', $dashboardUrl);
         @endphp
         <a href="{{ $brandDashboardHref }}" class="sidebar-brand-link" aria-label="{{ __('navigation.portal_dashboard') }}">
-            <img src="{{ asset('assets/images/logo-adasi.png') }}" alt="" class="sidebar-brand-logo" draggable="false">
+            <img src="{{ asset('assets/images/logo-adasi.png') }}" alt="" width="320" height="297" loading="eager" class="sidebar-brand-logo" draggable="false">
             <span class="brand-text sidebar-type-text" style="--sidebar-type-steps: 15;">
                 <strong>ADASI</strong>
                 <small>{{ __('common.review.supplier_portal') }}</small>
@@ -89,7 +87,7 @@
                 x-model="menuSearchQuery"
                 x-on:input="filterSidebarMenu()"
                 x-on:keydown.escape="clearMenuSearch($event)"
-                x-bind:tabindex="(viewportIsDesktop && desktopCollapsed && !hoverPeek) ? '-1' : '0'"
+                x-bind:tabindex="(viewportIsDesktop && desktopCollapsed) ? '-1' : '0'"
                 data-sidebar-search-input
             />
             <button
@@ -385,5 +383,30 @@
             data-results-template="{{ __('navigation.menu_search_results') }}"
             data-empty-text="{{ __('navigation.no_menu_match') }}"
         ></span>
+        <span
+            class="tw:sr-only"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            data-sidebar-resize-live
+            data-value-template="{{ __('navigation.sidebar_width_value') }}"
+            data-announcement-template="{{ __('navigation.sidebar_width_announced') }}"
+            data-reset-text="{{ __('navigation.sidebar_width_reset') }}"
+            data-collapsed-text="{{ __('navigation.sidebar_width_collapsed') }}"
+        ></span>
     </nav>
+
+    <x-ui.splitter
+        class="sidebar-splitter"
+        controls="sidebar"
+        :min="64"
+        :max="3840"
+        :value="256"
+        :valuetext="__('navigation.sidebar_width_value', ['width' => 256])"
+        :label="__('navigation.resize_sidebar')"
+        data-sidebar-splitter
+        x-bind:hidden="!viewportIsDesktop"
+        x-bind:aria-disabled="!viewportIsDesktop ? 'true' : 'false'"
+        x-bind:tabindex="viewportIsDesktop ? '0' : '-1'"
+    />
 </aside>

@@ -113,6 +113,10 @@ class PurchaseOrderGenerationService
                 ->get()
                 ->keyBy('id');
 
+            if ($lockedRequisitions->contains(fn (PurchaseRequisition $pr) => $pr->status === PurchaseRequisition::STATUS_CANCELLED)) {
+                throw new InvalidArgumentException(__('purchasing.copy.pr_cancelled_action_blocked'));
+            }
+
             $prItemIds = $awardReferences->pluck('pr_item_id')->unique()->sort()->values()->all();
             PrItem::query()
                 ->whereIn('id', $prItemIds)

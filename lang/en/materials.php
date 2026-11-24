@@ -213,6 +213,7 @@ return [
             'status_inactive' => 'Inactive',
             'import_success' => 'Reference price rules imported successfully.',
             'saved_success' => 'Category rule saved successfully.',
+            'duplicate_key' => 'Category key :key already exists.',
             'toggle_success' => 'Category status updated successfully.',
             'dialog_title' => 'Import Reference Price Rules',
             'dialog_description' => 'Upload an Excel (.xlsx) file to update category dimension ranges.',

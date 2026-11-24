@@ -70,18 +70,22 @@
 {{-- MODAL: Add Category --}}
 <div class="modal fade" id="referencePriceAddCategoryModal" tabindex="-1" aria-labelledby="addCatModalLabel" aria-hidden="true">
     <div class="modal-dialog">
-        <form method="POST" action="{{ route($prefix.'.rules.category.save') }}" class="modal-content">
+        <form method="POST" action="{{ route($prefix.'.rules.category.save') }}" class="modal-content" id="referencePriceAddCategoryForm">
             @csrf
+            <input type="hidden" name="form_mode" value="create">
             <div class="modal-header">
                 <h5 class="modal-title" id="addCatModalLabel">{{ __($rp.'.rules.add_category') }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body tw:grid tw:gap-3">
-                <x-ui.input name="category_key" :label="__($rp.'.rules.category_key')" placeholder="e.g. 701-800" required />
-                <x-ui.input name="category_name" :label="__($rp.'.rules.category_name')" placeholder="e.g. 701-800" required />
+                @if(session('error') && old('form_mode') === 'create')
+                    <x-ui.alert tone="error" class="tw:mb-0">{{ session('error') }}</x-ui.alert>
+                @endif
+                <x-ui.input name="category_key" id="addCatKey" :label="__($rp.'.rules.category_key')" :value="old('form_mode') === 'create' ? old('category_key') : ''" placeholder="e.g. 701-800" required />
+                <x-ui.input name="category_name" id="addCatName" :label="__($rp.'.rules.category_name')" :value="old('form_mode') === 'create' ? old('category_name') : ''" placeholder="e.g. 701-800" required />
                 <div class="tw:grid tw:grid-cols-2 tw:gap-2">
-                    <x-ui.input type="number" name="dimension_min" :label="__($rp.'.rules.dimension_min')" min="1" required />
-                    <x-ui.input type="number" name="dimension_max" :label="__($rp.'.rules.dimension_max')" min="1" required />
+                    <x-ui.input type="number" name="dimension_min" id="addCatMin" :label="__($rp.'.rules.dimension_min')" :value="old('form_mode') === 'create' ? old('dimension_min') : ''" min="1" required />
+                    <x-ui.input type="number" name="dimension_max" id="addCatMax" :label="__($rp.'.rules.dimension_max')" :value="old('form_mode') === 'create' ? old('dimension_max') : ''" min="1" required />
                 </div>
             </div>
             <div class="modal-footer">
@@ -97,16 +101,21 @@
     <div class="modal-dialog">
         <form method="POST" action="{{ route($prefix.'.rules.category.save') }}" class="modal-content" id="referencePriceEditCategoryForm">
             @csrf
+            <input type="hidden" name="form_mode" value="edit">
+            <input type="hidden" name="rule_id" id="editRuleId" value="{{ old('form_mode') === 'edit' ? old('rule_id') : '' }}">
             <div class="modal-header">
                 <h5 class="modal-title" id="editCatModalLabel">{{ __($rp.'.rules.edit_category') }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body tw:grid tw:gap-3">
-                <input type="hidden" name="category_key" id="editCatKey">
-                <x-ui.input name="category_name" id="editCatName" :label="__($rp.'.rules.category_name')" required />
+                @if(session('error') && old('form_mode') === 'edit')
+                    <x-ui.alert tone="error" class="tw:mb-0">{{ session('error') }}</x-ui.alert>
+                @endif
+                <x-ui.input name="category_key" id="editCatKey" :label="__($rp.'.rules.category_key')" :value="old('form_mode') === 'edit' ? old('category_key') : ''" required />
+                <x-ui.input name="category_name" id="editCatName" :label="__($rp.'.rules.category_name')" :value="old('form_mode') === 'edit' ? old('category_name') : ''" required />
                 <div class="tw:grid tw:grid-cols-2 tw:gap-2">
-                    <x-ui.input type="number" name="dimension_min" id="editCatMin" :label="__($rp.'.rules.dimension_min')" min="1" required />
-                    <x-ui.input type="number" name="dimension_max" id="editCatMax" :label="__($rp.'.rules.dimension_max')" min="1" required />
+                    <x-ui.input type="number" name="dimension_min" id="editCatMin" :label="__($rp.'.rules.dimension_min')" :value="old('form_mode') === 'edit' ? old('dimension_min') : ''" min="1" required />
+                    <x-ui.input type="number" name="dimension_max" id="editCatMax" :label="__($rp.'.rules.dimension_max')" :value="old('form_mode') === 'edit' ? old('dimension_max') : ''" min="1" required />
                 </div>
             </div>
             <div class="modal-footer">
@@ -220,106 +229,143 @@
 
 @push('scripts')
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    // Event delegation for Edit Category modal trigger
-    document.addEventListener('click', function (event) {
-        const btn = event.target.closest('[data-bs-target="#referencePriceEditCategoryModal"]');
-        if (!btn) return;
-        const keyInput = document.getElementById('editCatKey');
-        const nameInput = document.getElementById('editCatName');
-        const minInput = document.getElementById('editCatMin');
-        const maxInput = document.getElementById('editCatMax');
-        if (keyInput) keyInput.value = btn.getAttribute('data-category-key') || '';
-        if (nameInput) nameInput.value = btn.getAttribute('data-category-name') || '';
-        if (minInput) minInput.value = btn.getAttribute('data-dimension-min') || '';
-        if (maxInput) maxInput.value = btn.getAttribute('data-dimension-max') || '';
-    });
-
-    // Event delegation for Toggle Category status trigger
-    document.addEventListener('click', function (event) {
-        const trigger = event.target.closest('[data-toggle-category-trigger]');
-        if (!trigger) return;
-        event.preventDefault();
-
-        const form = trigger.closest('form');
-        if (!form) return;
-
-        const actionType = form.dataset.toggleConfirm;
-        const key = form.dataset.categoryKey || '';
-        const isDeactivate = actionType === 'deactivate';
-
-        const title = isDeactivate
-            ? @js(__('materials.reference_prices.rules.action_deactivate', ['key' => '__KEY__'])).replace('__KEY__', key)
-            : @js(__('materials.reference_prices.rules.action_activate', ['key' => '__KEY__'])).replace('__KEY__', key);
-
-        const text = isDeactivate
-            ? @js(__('materials.reference_prices.rules.toggle_confirm_deactivate', ['key' => '__KEY__'])).replace('__KEY__', key)
-            : @js(__('materials.reference_prices.rules.toggle_confirm_activate', ['key' => '__KEY__'])).replace('__KEY__', key);
-
-        const confirmText = isDeactivate
-            ? @js(__('materials.reference_prices.rules.status_inactive'))
-            : @js(__('materials.reference_prices.rules.status_active'));
-
-        const cancelText = @js(__('common.actions.cancel'));
-
-        if (window.AdasiAlert && typeof window.AdasiAlert.confirm === 'function') {
-            const ask = isDeactivate ? window.AdasiAlert.confirmDanger : window.AdasiAlert.confirm;
-            ask({
-                title: title,
-                text: text,
-                confirmText: confirmText,
-                cancelText: cancelText,
-            }).then(function (result) {
-                if (result && result.isConfirmed) {
-                    if (window.AdasiButton && typeof window.AdasiButton.startLoading === 'function') {
-                        window.AdasiButton.startLoading(trigger);
-                    }
-                    form.submit();
-                }
+(function () {
+    const boot = function () {
+        // Prevent old() values from bleeding across Add Category, Edit Category, and Legacy modals
+        const oldFormMode = @js(old('form_mode'));
+        const hasLegacyMaterialOld = @js(old('material_code') !== null);
+        if (oldFormMode !== 'create') {
+            ['addCatKey', 'addCatName', 'addCatMin', 'addCatMax'].forEach(function (id) {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
             });
-        } else {
-            if (window.confirm(title + '\n\n' + text)) {
+        }
+        if (!hasLegacyMaterialOld) {
+            ['referencePriceDimMin', 'referencePriceDimMax'].forEach(function (id) {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+        }
+
+        // Populate Edit Category modal cleanly on show.bs.modal (supports click, keyboard, and programmatic opens)
+        const editCategoryModal = document.getElementById('referencePriceEditCategoryModal');
+        if (editCategoryModal) {
+            editCategoryModal.addEventListener('show.bs.modal', function (event) {
+                const btn = event.relatedTarget;
+                if (!btn) return;
+                const ruleIdInput = document.getElementById('editRuleId');
+                const keyInput = document.getElementById('editCatKey');
+                const nameInput = document.getElementById('editCatName');
+                const minInput = document.getElementById('editCatMin');
+                const maxInput = document.getElementById('editCatMax');
+                if (ruleIdInput) ruleIdInput.value = btn.getAttribute('data-rule-id') || '';
+                if (keyInput) keyInput.value = btn.getAttribute('data-category-key') || '';
+                if (nameInput) nameInput.value = btn.getAttribute('data-category-name') || '';
+                if (minInput) minInput.value = btn.getAttribute('data-dimension-min') || '';
+                if (maxInput) maxInput.value = btn.getAttribute('data-dimension-max') || '';
+            });
+        }
+
+        // Event delegation for Toggle Category status trigger
+        document.addEventListener('click', function (event) {
+            const trigger = event.target.closest('[data-toggle-category-trigger]');
+            if (!trigger) return;
+            event.preventDefault();
+
+            const form = trigger.closest('form');
+            if (!form) return;
+
+            const actionType = form.dataset.toggleConfirm;
+            const key = form.dataset.categoryKey || '';
+            const isDeactivate = actionType === 'deactivate';
+
+            const title = isDeactivate
+                ? @js(__('materials.reference_prices.rules.action_deactivate', ['key' => '__KEY__'])).replace('__KEY__', key)
+                : @js(__('materials.reference_prices.rules.action_activate', ['key' => '__KEY__'])).replace('__KEY__', key);
+
+            const text = isDeactivate
+                ? @js(__('materials.reference_prices.rules.toggle_confirm_deactivate', ['key' => '__KEY__'])).replace('__KEY__', key)
+                : @js(__('materials.reference_prices.rules.toggle_confirm_activate', ['key' => '__KEY__'])).replace('__KEY__', key);
+
+            const confirmText = isDeactivate
+                ? @js(__('materials.reference_prices.rules.status_inactive'))
+                : @js(__('materials.reference_prices.rules.status_active'));
+
+            const cancelText = @js(__('common.actions.cancel'));
+
+            const submitToggleForm = function () {
                 if (window.AdasiButton && typeof window.AdasiButton.startLoading === 'function') {
                     window.AdasiButton.startLoading(trigger);
                 }
-                form.submit();
+                try {
+                    if (window.parent !== window && window.parent?.location?.origin === window.location.origin) {
+                        window.parent.AdasiWorkspaceShell?.notifyMutation?.(window);
+                    }
+                } catch {}
+                HTMLFormElement.prototype.submit.call(form);
+            };
+
+            if (window.AdasiAlert && typeof window.AdasiAlert.confirm === 'function') {
+                const ask = isDeactivate ? window.AdasiAlert.confirmDanger : window.AdasiAlert.confirm;
+                ask({
+                    title: title,
+                    text: text,
+                    confirmText: confirmText,
+                    cancelText: cancelText,
+                }).then(function (result) {
+                    if (result && result.isConfirmed) {
+                        submitToggleForm();
+                    }
+                });
+            } else if (window.confirm(title + '\n\n' + text)) {
+                submitToggleForm();
             }
-        }
-    });
+        });
 
-    // Event delegation for Legacy modals (supersede, void, notes)
-    document.addEventListener('show.bs.modal', function (event) {
-        const trigger = event.relatedTarget;
-        const modal = event.target;
-        const form = modal ? modal.querySelector('[data-reference-price-form]') : null;
-        if (!trigger || !form) return;
+        // Event delegation for Legacy modals (supersede, void, notes)
+        document.addEventListener('show.bs.modal', function (event) {
+            const trigger = event.relatedTarget;
+            const modal = event.target;
+            const form = modal ? modal.querySelector('[data-reference-price-form]') : null;
+            if (!trigger || !form) return;
 
-        if (trigger.dataset.action) {
-            form.action = trigger.dataset.action;
-        }
-        const title = modal.querySelector('[data-title-template]');
-        if (title && trigger.dataset.material) {
-            title.textContent = title.dataset.titleTemplate.replace('__MATERIAL__', trigger.dataset.material);
-        }
-        const notes = form.querySelector('#notesValue');
-        if (notes && trigger.dataset.notes !== undefined) {
-            notes.value = trigger.dataset.notes || '';
-        }
-    });
+            if (trigger.dataset.action) {
+                form.action = trigger.dataset.action;
+            }
+            const title = modal.querySelector('[data-title-template]');
+            if (title && trigger.dataset.material) {
+                title.textContent = title.dataset.titleTemplate.replace('__MATERIAL__', trigger.dataset.material);
+            }
+            const notes = form.querySelector('#notesValue');
+            if (notes && trigger.dataset.notes !== undefined) {
+                notes.value = trigger.dataset.notes || '';
+            }
+        });
 
-    // React to server-tabs update to toggle action buttons in header
-    document.addEventListener('adasi:server-tabs:updated', function (event) {
-        const tab = event.detail?.tab;
-        const rulesAction = document.querySelector('[data-reference-prices-rules-action]');
-        const legacyAction = document.querySelector('[data-reference-prices-legacy-action]');
-        if (rulesAction) rulesAction.hidden = (tab !== 'rules');
-        if (legacyAction) legacyAction.hidden = (tab !== 'legacy');
-    });
+        // React to server-tabs update to toggle action buttons in header
+        document.addEventListener('adasi:server-tabs:updated', function (event) {
+            const tab = event.detail?.tab;
+            const rulesAction = document.querySelector('[data-reference-prices-rules-action]');
+            const legacyAction = document.querySelector('[data-reference-prices-legacy-action]');
+            if (rulesAction) rulesAction.hidden = (tab !== 'rules');
+            if (legacyAction) legacyAction.hidden = (tab !== 'legacy');
+        });
 
-    @if($errors->any() && old('material_code') !== null)
-    window.bootstrap?.Modal.getOrCreateInstance(document.getElementById('referencePriceCreateModal'))?.show();
-    @endif
-});
+        @if(($errors->any() || session('error')) && old('form_mode') === 'create')
+        window.bootstrap?.Modal.getOrCreateInstance(document.getElementById('referencePriceAddCategoryModal'))?.show();
+        @elseif(($errors->any() || session('error')) && old('form_mode') === 'edit')
+        window.bootstrap?.Modal.getOrCreateInstance(document.getElementById('referencePriceEditCategoryModal'))?.show();
+        @elseif($errors->any() && old('material_code') !== null)
+        window.bootstrap?.Modal.getOrCreateInstance(document.getElementById('referencePriceCreateModal'))?.show();
+        @endif
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', boot, { once: true });
+    } else {
+        boot();
+    }
+})();
 </script>
 @endpush
 @endsection

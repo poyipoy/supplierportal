@@ -72,11 +72,21 @@ globalThis.window = {
     dispatchEvent(event) { for (const handler of windowListeners[event.type] ?? []) handler(event); return true; },
     AdasiToast: { error: (message) => toasts.push(message) },
 };
-globalThis.document = {
+    globalThis.document = {
     readyState: 'complete',
     querySelector: (selector) => containers.get(selector) ?? null,
     querySelectorAll: () => [],
-    createElement: () => makeElement({ querySelector: () => ({}) }),
+    createElement: (tag) => makeElement({
+        tag,
+        children: [],
+        appendChild(child) { this.children.push(child); return child; },
+        querySelector(sel) {
+            if (sel === '.ui-dt-loading-pill__text') {
+                return this.children.find((child) => child.className === 'ui-dt-loading-pill__text') ?? {};
+            }
+            return null;
+        },
+    }),
     addEventListener(type, handler) { (documentListeners[type] ??= []).push(handler); },
     dispatchEvent(event) { for (const handler of documentListeners[event.type] ?? []) handler(event); return true; },
 };
@@ -89,7 +99,11 @@ function setup(options = {}, pillTabs = []) {
     const overlays = [];
     const content = makeElement();
     content.appendChild = (child) => { overlays.push(child); return child; };
-    content.querySelector = (query) => (query === '.server-tabs-loading-overlay' ? overlays[0] ?? null : null);
+    content.querySelector = (query) => {
+        if (query.includes('.ui-dt-loading-bar')) return overlays.find((c) => c.className === 'ui-dt-loading-bar') ?? null;
+        if (query.includes('.ui-dt-loading-pill')) return overlays.find((c) => c.className === 'ui-dt-loading-pill') ?? null;
+        return null;
+    };
     const elements = { '[data-server-tabs-content]': content };
     const container = makeElement({
         addEventListener: (type, handler) => { (listeners[type] ??= []).push(handler); },
@@ -105,8 +119,10 @@ function setup(options = {}, pillTabs = []) {
         content,
         elements,
         container,
-        overlay: () => overlays[0],
+        overlays,
+        overlay: () => overlays.find((c) => c.className === 'ui-dt-loading-pill') ?? overlays[0],
         click: (link) => listeners.click.forEach((handler) => handler({ target: link, preventDefault() {} })),
+        submit: (form) => listeners.submit?.forEach((handler) => handler({ target: form, preventDefault() {} })),
         hover: (link) => listeners.pointerenter.forEach((handler) => handler({ target: link })),
     };
 }
@@ -153,7 +169,8 @@ test('a superseded request cannot clear the busy state or timeout of the request
         assert.equal(calls.length, 2);
         assert.equal(calls[0].options.signal.aborted, true, 'the first request is cancelled by the second click');
         assert.equal(page.content.getAttribute('aria-busy'), 'true', 'B is still loading, so the container stays busy');
-        assert.equal(page.overlay().style.display, '', 'B still shows its loading overlay');
+        assert.equal(page.content.classList.contains('is-loading'), true, 'B keeps the custom ADASI loading state active');
+        assert.equal(Boolean(page.overlays.find((c) => c.className === 'ui-dt-loading-pill')), true, 'custom ADASI pill is mounted');
 
         // The 30s default watchdog of B must still be able to cancel B.
         const watchdogs = timers.filter((timer) => timer.ms === 30000 && !timer.cleared);
@@ -185,7 +202,7 @@ test('a cache hit that replaces an in-flight request clears the busy state it le
 
         assert.equal(calls.length, 2, 'the second visit to a cached tab does not hit the network');
         assert.equal(page.content.getAttribute('aria-busy'), null);
-        assert.equal(page.overlay().style.display, 'none');
+        assert.equal(page.content.classList.contains('is-loading'), false);
     } finally {
         restoreNetwork();
     }
@@ -691,7 +708,11 @@ test('MMT row click, Enter/Space delegation, error retry, and clearMmtSelection 
         const contentEl = makeElement({ innerHTML: '<p>empty prompt</p>' });
         const overlays = [];
         contentEl.appendChild = (child) => { overlays.push(child); return child; };
-        contentEl.querySelector = (sel) => (sel === '.server-tabs-loading-overlay' ? overlays.find((c) => c.className?.includes('loading-overlay')) ?? null : null);
+        contentEl.querySelector = (sel) => {
+            if (sel.includes('.ui-dt-loading-bar')) return overlays.find((c) => c.className === 'ui-dt-loading-bar') ?? null;
+            if (sel.includes('.ui-dt-loading-pill')) return overlays.find((c) => c.className === 'ui-dt-loading-pill') ?? null;
+            return null;
+        };
 
         const satListeners = {};
         const satEl = makeElement({
@@ -948,6 +969,182 @@ test('server-tabs suppresses duplicate error toast on 401/419 session expiry and
     } finally {
         console.error = realConsoleError;
         globalThis.window.AdasiToast = realToast;
+        if (realSessionSync === undefined) delete globalThis.window.AdasiSessionSync;
+        else globalThis.window.AdasiSessionSync = realSessionSync;
+        restoreNetwork();
+    }
+});
+
+test('server-tabs mounts busy state inside .ui-data-table__scroll when present and resets AdasiButton form state on completion and cache hit', async () => {
+    const calls = stubNetwork();
+    const realAdasiButton = globalThis.window.AdasiButton;
+    const resetCalls = [];
+    globalThis.window.AdasiButton = { resetForm: (form) => resetCalls.push(form) };
+
+    const selector = `#harness${++nextId}`;
+    const listeners = {};
+    const scrollOverlays = [];
+    const scrollHost = makeElement({
+        appendChild: (child) => { scrollOverlays.push(child); return child; },
+        querySelector: (sel) => {
+            if (sel.includes('.ui-dt-loading-bar')) return scrollOverlays.find((c) => c.className === 'ui-dt-loading-bar') ?? null;
+            if (sel.includes('.ui-dt-loading-pill')) return scrollOverlays.find((c) => c.className === 'ui-dt-loading-pill') ?? null;
+            return null;
+        },
+    });
+    const uiTable = makeElement({
+        querySelector: (sel) => (sel === '.ui-data-table__scroll' ? scrollHost : null),
+    });
+    const content = makeElement({
+        querySelectorAll: (sel) => (sel === '.ui-data-table' ? [uiTable] : []),
+    });
+    const elements = { '[data-server-tabs-content]': content };
+    const container = makeElement({
+        addEventListener: (type, handler) => { (listeners[type] ??= []).push(handler); },
+        dispatchEvent: () => true,
+        querySelector: (query) => elements[query] ?? null,
+        querySelectorAll: () => [],
+    });
+    containers.set(selector, container);
+    window.AdasiServerTabs.init(selector, { cacheTtlMs: 60000 });
+
+    const hiddenTabInput = { value: 'review' };
+    const form = makeElement({
+        closest: (sel) => (sel === '[data-server-tabs-form]' ? form : null),
+        hasAttribute: () => false,
+        getAttribute: (name) => (name === 'action' ? '/page' : null),
+        querySelector: (sel) => (sel === 'input[name="tab"]' ? hiddenTabInput : null),
+    });
+    const RealFormData = globalThis.FormData;
+    globalThis.FormData = class { [Symbol.iterator]() { return [['q', 'audit']][Symbol.iterator](); } };
+
+    try {
+        // Warm cache for another tab ('other') first.
+        const otherTabLink = makeTabLink('/page?tab=other', 'other');
+        listeners.click.forEach((handler) => handler({ target: otherTabLink, preventDefault() {} }));
+        await settle();
+        calls[0].respond({ html: '<p>other tab</p>', tab: 'other', url: '/page?tab=other' });
+        await settle();
+
+        listeners.submit.forEach((handler) => handler({ target: form, preventDefault() {} }));
+        await settle();
+
+        assert.equal(calls.length, 2);
+        assert.equal(scrollHost.classList.contains('is-loading'), true, 'table scroll host receives visual busy class');
+        assert.equal(content.classList.contains('is-loading'), false, 'outer content/filter wrapper is not dimmed when scroll host exists');
+        assert.equal(content.getAttribute('aria-busy'), 'true', 'outer semantic content still announces aria-busy');
+
+        calls[1].respond({ html: '<p>filtered</p>', tab: 'review', url: '/page?q=audit' });
+        await settle();
+
+        assert.equal(scrollHost.classList.contains('is-loading'), false);
+        assert.equal(content.getAttribute('aria-busy'), null);
+        assert.equal(resetCalls.includes(form), true, 'AdasiButton.resetForm clears submit spinner after fetch');
+
+        // Rapid switch to a still-cached tab while a second form submit is in flight must clear busy state AND reset activeForm.
+        resetCalls.length = 0;
+        listeners.submit.forEach((handler) => handler({ target: form, preventDefault() {} }));
+        await settle();
+        assert.equal(calls.length, 3, 'submitting filters invalidates current tab and starts fresh request');
+        assert.equal(scrollHost.classList.contains('is-loading'), true);
+
+        listeners.click.forEach((handler) => handler({ target: otherTabLink, preventDefault() {} }));
+        await settle();
+        assert.equal(calls.length, 3, 'cached tab switch replaces in-flight submit without new fetch');
+        assert.equal(scrollHost.classList.contains('is-loading'), false);
+        assert.equal(content.getAttribute('aria-busy'), null);
+        assert.equal(resetCalls.includes(form), true, 'AdasiButton.resetForm clears previous submit spinner on cached tab switch');
+
+        // Empty-state <x-ui.data-table :empty="true"> omits .ui-data-table__scroll: mount region mode on uiTable itself.
+        const tableOverlays = [];
+        uiTable.appendChild = (child) => { tableOverlays.push(child); return child; };
+        uiTable.querySelector = (sel) => {
+            if (sel.includes('.ui-dt-loading-bar')) return tableOverlays.find((c) => c.className === 'ui-dt-loading-bar') ?? null;
+            if (sel.includes('.ui-dt-loading-pill')) return tableOverlays.find((c) => c.className === 'ui-dt-loading-pill') ?? null;
+            return null;
+        };
+        listeners.submit.forEach((handler) => handler({ target: form, preventDefault() {} }));
+        await settle();
+        assert.equal(uiTable.classList.contains('is-loading'), true);
+        assert.equal(uiTable.getAttribute('data-loading-mode'), 'region');
+        assert.equal(content.getAttribute('aria-busy'), 'true');
+        calls[3].respond({ html: '<p>recovered</p>', tab: 'review', url: '/page?q=audit' });
+        await settle();
+        assert.equal(uiTable.classList.contains('is-loading'), false);
+        assert.equal(uiTable.getAttribute('data-loading-mode'), null);
+    } finally {
+        if (RealFormData) globalThis.FormData = RealFormData;
+        if (realAdasiButton === undefined) delete globalThis.window.AdasiButton;
+        else globalThis.window.AdasiButton = realAdasiButton;
+        restoreNetwork();
+    }
+});
+
+test('server-tabs closes open dialogs/drawers and releases overlay modality before swapping DOM content', async () => {
+    const calls = stubNetwork();
+    const realOverlayModality = globalThis.window.AdasiOverlayModality;
+    const realDispatch = globalThis.window.dispatchEvent;
+    const dispatchedEvents = [];
+    const releasedContainers = [];
+    globalThis.window.AdasiOverlayModality = {
+        releaseWithin: (target) => releasedContainers.push(target),
+    };
+    globalThis.window.dispatchEvent = (event) => {
+        dispatchedEvents.push(event);
+        return realDispatch.call(globalThis.window, event);
+    };
+
+    try {
+        const dialogNode = makeElement({ dataset: { uiDialog: 'historical-quotation-dialog' } });
+        const drawerNode = makeElement({ dataset: { uiDrawer: 'sample-drawer' } });
+        const page = setup({ cacheTtlMs: 0 });
+        page.content.querySelectorAll = (sel) => {
+            if (sel === '[data-ui-dialog]') return [dialogNode];
+            if (sel === '[data-ui-drawer]') return [drawerNode];
+            return [];
+        };
+
+        const nav = window.AdasiServerTabs.navigate(page.selector, '/page?tab=inter-supplier', { pushHistory: false });
+        await settle();
+        calls[0].respond({ html: '<p>new tab</p>', tab: 'inter-supplier', url: '/page?tab=inter-supplier' });
+        await nav;
+
+        assert.equal(
+            dispatchedEvents.some((e) => e.type === 'close-ui-dialog' && e.detail?.name === 'historical-quotation-dialog' && e.detail?.restoreFocus === false),
+            true,
+            'must close nested dialogs before DOM swap with restoreFocus: false',
+        );
+        assert.equal(
+            dispatchedEvents.some((e) => e.type === 'close-ui-drawer' && e.detail?.name === 'sample-drawer' && e.detail?.restoreFocus === false),
+            true,
+            'must close nested drawers before DOM swap with restoreFocus: false',
+        );
+        assert.deepEqual(releasedContainers, [page.content], 'must call AdasiOverlayModality.releaseWithin on swapped content');
+    } finally {
+        globalThis.window.dispatchEvent = realDispatch;
+        if (realOverlayModality === undefined) delete globalThis.window.AdasiOverlayModality;
+        else globalThis.window.AdasiOverlayModality = realOverlayModality;
+        restoreNetwork();
+    }
+});
+
+test('server-tabs invokes onError when a 401 session-expired response aborts tab swap so callers release inert locks', async () => {
+    const realSessionSync = globalThis.window.AdasiSessionSync;
+    const errorCalls = [];
+    globalThis.window.AdasiSessionSync = { handleActionResponse: () => {} };
+
+    try {
+        stubNetwork();
+        const page = setup({
+            cacheTtlMs: 0,
+            onError: (err) => errorCalls.push(err),
+        });
+        globalThis.fetch = async () => ({ ok: false, status: 401, redirected: false, url: 'http://localhost/page?tab=annual' });
+
+        const ok = await window.AdasiServerTabs.navigate(page.selector, '/page?tab=annual', { pushHistory: false });
+        assert.equal(ok, false);
+        assert.equal(errorCalls.length, 1, '401 session expiry must call onError so callers like exchange-rates clear inert');
+    } finally {
         if (realSessionSync === undefined) delete globalThis.window.AdasiSessionSync;
         else globalThis.window.AdasiSessionSync = realSessionSync;
         restoreNetwork();

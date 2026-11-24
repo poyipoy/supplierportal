@@ -123,8 +123,9 @@
             {{-- User Dropdown --}}
             <div class="dropdown">
                 <button class="topbar-user-trigger dropdown-toggle" type="button"
-                    data-bs-toggle="dropdown" @if(config('portal_session.logout_all_devices')) data-bs-auto-close="outside" @endif aria-expanded="false" aria-label="{{ __('navigation.open_user') }}" title="{{ auth()->user()->name }} ({{ auth()->user()->email }})">
+                    data-bs-toggle="dropdown" @if(config('portal_session.logout_all_devices')) data-bs-auto-close="outside" @endif aria-expanded="false" title="{{ auth()->user()->name }} ({{ auth()->user()->email }})">
                     <x-ui.user-chip :name="auth()->user()->name" class="topbar-user-chip" />
+                    <span class="tw:sr-only">{{ __('navigation.open_user') }}</span>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end shadow-sm border">
                     <li>
@@ -262,7 +263,7 @@
 
                     container.dataset.notificationSummaryState = 'loaded';
                 } catch (error) {
-                    console.error(error);
+                    window.AdasiDebug?.error(error);
                     container.dataset.notificationSummaryState = 'error';
                     container.textContent = @js(__('js.notification.failed'));
                 }
@@ -495,7 +496,7 @@
                     updateNotificationUnreadBadge(Number(data.unread_count || 0));
                     updateNotificationCategoryBadges(data.category_counts);
                 } catch (error) {
-                    console.error(error);
+                    window.AdasiDebug?.error(error);
                 } finally {
                     if (button) {
                         if (window.AdasiButton && typeof window.AdasiButton.stopLoading === 'function') {
@@ -569,7 +570,7 @@
                         window.location.reload();
                     }
                 } catch (error) {
-                    console.error('Failed to mark notification:', error);
+                    window.AdasiDebug?.error('Failed to mark notification:', error);
                 } finally {
                     if (shouldResetItem) {
                         item.dataset.processing = 'false';

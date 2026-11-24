@@ -366,4 +366,17 @@ class SupplierPriceHistoryBuilderTest extends TestCase
 
         return [$quotation, $item];
     }
+
+    public function test_supplier_historical_view_exposes_period_fieldset_and_preserves_embed_form_submission(): void
+    {
+        $this->createQuotedItem($this->supplier, 10, '2025-08-15 09:00:00', 2.5, 1000);
+
+        $response = $this->actingAs($this->supplier)
+            ->get(route('supplier.price-history.historical'));
+
+        $response->assertOk();
+        $response->assertSee('<fieldset class="col-md-12 col-lg-3 tw:m-0 tw:min-w-0 tw:border-0 tw:p-0">', false);
+        $response->assertSee('role="group" aria-label="'.__('supplier.copy.aggregation_interval').'"', false);
+        $response->assertSee('filterForm.requestSubmit()', false);
+    }
 }

@@ -9,7 +9,7 @@ class PurchaseRequisitionController extends Controller
 {
     public function show(string $requisition)
     {
-        $pr = PurchaseRequisition::with(['period', 'creator', 'items'])->findOrFail($requisition);
+        $pr = PurchaseRequisition::with(['period', 'creator', 'cancelledBy', 'items'])->findOrFail($requisition);
 
         return view('admin.requisitions.show', compact('pr'));
     }

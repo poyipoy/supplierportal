@@ -7,9 +7,14 @@ use App\Exports\PaymentBatchDrpExport;
 use App\Exports\PaymentBatchTransferExport;
 use App\Models\ExportJob;
 use App\Services\ExportProgressService;
+use App\Support\Export\ExportOptions;
+use App\Support\Export\ExportOptionsResolver;
+use App\Support\ExportDispatcher;
 use App\Support\PortalPath;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
+use InvalidArgumentException;
 
 class ExportDownloadController extends Controller
 {
@@ -19,22 +24,47 @@ class ExportDownloadController extends Controller
         PaymentBatchTransferExport::class,
     ];
 
+    private const FILTERABLE_STATUSES = [
+        ExportJob::STATUS_QUEUED,
+        ExportJob::STATUS_PROCESSING,
+        ExportJob::STATUS_COMPLETED,
+        ExportJob::STATUS_FAILED,
+        ExportJob::STATUS_CANCELLED,
+    ];
+
+    private const FILTERABLE_FORMATS = ['xlsx', 'csv'];
+
     public function index(Request $request)
     {
-        $query = ExportJob::query()
+        $statusFilter = $request->query('status');
+        $statusFilter = is_string($statusFilter) && in_array($statusFilter, self::FILTERABLE_STATUSES, true)
+            ? $statusFilter
+            : null;
+
+        $formatFilter = $request->query('format');
+        $formatFilter = is_string($formatFilter) && in_array($formatFilter, self::FILTERABLE_FORMATS, true)
+            ? $formatFilter
+            : null;
+
+        $baseQuery = ExportJob::query()
             ->where('user_id', $request->user()->getKey())
             ->when($request->user()->isLocalOperator(), fn ($query) => $query->whereIn('export_class', self::LOCAL_EXPORT_CLASSES))
-            ->when(! $request->user()->isLocalOperator() && ! $request->user()->isAdmin(), fn ($query) => $query->whereNotIn('export_class', self::LOCAL_EXPORT_CLASSES))
+            ->when(! $request->user()->isLocalOperator() && ! $request->user()->isAdmin(), fn ($query) => $query->whereNotIn('export_class', self::LOCAL_EXPORT_CLASSES));
+
+        $query = (clone $baseQuery)
+            ->when($statusFilter !== null, fn ($query) => $query->where('status', $statusFilter))
+            ->when($formatFilter !== null, fn ($query) => $query->where('format', $formatFilter))
             ->latest()
             ->orderByDesc('id');
+
         $jobs = $query->paginate(20)->withQueryString();
         $items = $jobs->getCollection()
-            ->map(fn (ExportJob $exportJob) => $this->serialize($exportJob))
+            ->map(fn (ExportJob $exportJob) => $this->serialize($exportJob, $request))
             ->values();
-        $hasPending = ExportJob::query()
-            ->where('user_id', $request->user()->getKey())
-            ->when($request->user()->isLocalOperator(), fn ($query) => $query->whereIn('export_class', self::LOCAL_EXPORT_CLASSES))
-            ->when(! $request->user()->isLocalOperator() && ! $request->user()->isAdmin(), fn ($query) => $query->whereNotIn('export_class', self::LOCAL_EXPORT_CLASSES))
+
+        $hasPending = (clone $baseQuery)
+            ->when($statusFilter !== null, fn ($query) => $query->where('status', $statusFilter))
+            ->when($formatFilter !== null, fn ($query) => $query->where('format', $formatFilter))
             ->whereIn('status', [ExportJob::STATUS_QUEUED, ExportJob::STATUS_PROCESSING])
             ->exists();
 
@@ -45,7 +75,7 @@ class ExportDownloadController extends Controller
             ]);
         }
 
-        return view('exports.index', compact('jobs', 'items', 'hasPending'));
+        return view('exports.index', compact('jobs', 'items', 'hasPending', 'statusFilter', 'formatFilter'));
     }
 
     public function download(Request $request, ExportJob $exportJob)
@@ -88,7 +118,7 @@ class ExportDownloadController extends Controller
             ExportJob::STATUS_COMPLETED => $downloadUrl
                 ? __('exports.progress.completed')
                 : __('exports.feedback.unavailable'),
-            ExportJob::STATUS_FAILED => __('exports.progress.failed'),
+            ExportJob::STATUS_FAILED => $this->safeFailureMessage($exportJob),
             ExportJob::STATUS_CANCELLED => __('exports.progress.cancelled'),
             default => __('exports.feedback.unknown_status'),
         };
@@ -107,6 +137,9 @@ class ExportDownloadController extends Controller
             'cancel_url' => $exportJob->isPending()
                 ? PortalPath::routePath('exports.cancel', $exportJob, $request)
                 : null,
+            'rerun_url' => $this->canRerun($exportJob)
+                ? PortalPath::routePath('exports.rerun', $exportJob, $request)
+                : null,
         ]);
     }
 
@@ -124,6 +157,10 @@ class ExportDownloadController extends Controller
             ], 409);
         }
 
+        if (! $request->wantsJson()) {
+            return redirect()->route('exports.index')->with('success', $cancelled->progressMessage());
+        }
+
         return response()->json([
             'id' => $cancelled->getRouteKey(),
             'status' => $cancelled->status,
@@ -135,7 +172,66 @@ class ExportDownloadController extends Controller
             'file_name' => null,
             'download_url' => null,
             'cancel_url' => null,
+            'rerun_url' => $this->canRerun($cancelled)
+                ? PortalPath::routePath('exports.rerun', $cancelled, $request)
+                : null,
         ]);
+    }
+
+    public function rerun(Request $request, ExportJob $exportJob)
+    {
+        $this->authorizeDomain($request, $exportJob);
+        abort_unless((int) $exportJob->user_id === (int) $request->user()->getKey(), 403);
+
+        if (! $exportJob->isTerminal()) {
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'status' => $exportJob->status,
+                    'message' => __('exports.feedback.cannot_rerun_pending'),
+                ], 409);
+            }
+
+            return redirect()->route('exports.index')->with('error', __('exports.feedback.cannot_rerun_pending'));
+        }
+
+        if (! ExportDispatcher::isSupported($exportJob->export_class)) {
+            throw ValidationException::withMessages([
+                'export' => __('exports.feedback.invalid_configuration'),
+            ]);
+        }
+
+        $options = null;
+        if ($exportJob->export_options !== null) {
+            try {
+                $options = ExportOptions::fromArray($exportJob->export_options);
+                ExportOptionsResolver::authorizeStored($exportJob->export_class, $request->user(), $options);
+            } catch (InvalidArgumentException) {
+                throw ValidationException::withMessages([
+                    'options' => __('exports.feedback.invalid_configuration'),
+                ]);
+            }
+        }
+
+        $newJob = ExportDispatcher::dispatch(
+            $exportJob->label,
+            $exportJob->export_class,
+            is_array($exportJob->export_args) ? $exportJob->export_args : [],
+            $exportJob->file_name,
+            $options,
+        );
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => __('exports.feedback.rerun_queued'),
+                'export_job_id' => $newJob->getRouteKey(),
+                'status_url' => PortalPath::routePath('exports.status', $newJob, $request),
+                'cancel_url' => PortalPath::routePath('exports.cancel', $newJob, $request),
+                'exports_url' => PortalPath::routePath('exports.index', [], $request),
+                'item' => $this->serialize($newJob, $request),
+            ], 202);
+        }
+
+        return redirect()->route('exports.index')->with('success', __('exports.feedback.rerun_queued'));
     }
 
     private function authorizeDomain(Request $request, ExportJob $exportJob): void
@@ -145,7 +241,31 @@ class ExportDownloadController extends Controller
         abort_if($local && ! $request->user()->isLocalOperator() && ! $request->user()->isAdmin(), 403);
     }
 
-    private function serialize(ExportJob $exportJob): array
+    private function canRerun(ExportJob $exportJob): bool
+    {
+        return $exportJob->isTerminal() && ExportDispatcher::isSupported($exportJob->export_class);
+    }
+
+    private function safeFailureMessage(ExportJob $exportJob): string
+    {
+        $raw = (string) ($exportJob->error_message ?? '');
+
+        if (str_contains($raw, 'Export row limit exceeded')) {
+            return __('exports.advanced.row_limit', ['limit' => number_format((int) config('exports.max_rows'))]);
+        }
+
+        if (str_contains($raw, 'could not be stored')) {
+            return __('exports.feedback.storage_failed');
+        }
+
+        if (str_contains($raw, 'Unsupported') || str_contains($raw, 'does not accept')) {
+            return __('exports.feedback.invalid_configuration');
+        }
+
+        return __('exports.progress.failed');
+    }
+
+    private function serialize(ExportJob $exportJob, ?Request $request = null): array
     {
         return [
             'id' => $exportJob->getRouteKey(),
@@ -157,14 +277,20 @@ class ExportDownloadController extends Controller
             'total_rows' => $exportJob->total_rows,
             'file_name' => $exportJob->file_name,
             'format' => $exportJob->format ?? 'xlsx',
+            'failure_message' => $exportJob->status === ExportJob::STATUS_FAILED
+                ? $this->safeFailureMessage($exportJob)
+                : null,
             'created_at' => $exportJob->created_at?->toIso8601String(),
             'completed_at' => $exportJob->completed_at?->toIso8601String(),
             'expires_at' => $exportJob->expires_at?->toIso8601String(),
             'download_url' => $exportJob->isDownloadable()
-                ? PortalPath::routePath('exports.download', $exportJob)
+                ? PortalPath::routePath('exports.download', $exportJob, $request)
                 : null,
             'cancel_url' => $exportJob->isPending()
-                ? PortalPath::routePath('exports.cancel', $exportJob)
+                ? PortalPath::routePath('exports.cancel', $exportJob, $request)
+                : null,
+            'rerun_url' => $this->canRerun($exportJob)
+                ? PortalPath::routePath('exports.rerun', $exportJob, $request)
                 : null,
         ];
     }

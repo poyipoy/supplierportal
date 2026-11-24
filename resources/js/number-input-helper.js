@@ -125,10 +125,18 @@
         const compact = formatCompactEn(num);
         const unit = detectUnit(input);
 
-        badge.innerHTML = `
-            <span class="ui-number-badge__formatted">${formatted}${unit}</span>
-            ${compact ? `<span class="ui-number-badge__compact">(${compact})</span>` : ''}
-        `;
+        const formattedEl = document.createElement('span');
+        formattedEl.className = 'ui-number-badge__formatted';
+        formattedEl.textContent = `${formatted}${unit}`;
+
+        const nodes = [formattedEl];
+        if (compact) {
+            const compactEl = document.createElement('span');
+            compactEl.className = 'ui-number-badge__compact';
+            compactEl.textContent = `(${compact})`;
+            nodes.push(compactEl);
+        }
+        badge.replaceChildren(...nodes);
 
         badge.classList.add('is-visible');
         activeInput = input;
@@ -191,17 +199,33 @@
             }
         }, { capture: true, passive: true });
 
-        window.addEventListener('scroll', () => {
+        let repositionRaf = null;
+        let scrollEndFallbackTimer = null;
+        const syncBadgePosition = () => {
             if (activeInput && activeBadge && activeBadge.classList.contains('is-visible')) {
                 positionBadge(activeInput, activeBadge);
             }
-        }, { passive: true });
+        };
+        const scheduleBadgePosition = () => {
+            if (repositionRaf !== null) return;
+            repositionRaf = window.requestAnimationFrame(() => {
+                repositionRaf = null;
+                syncBadgePosition();
+            });
+        };
 
-        window.addEventListener('resize', () => {
-            if (activeInput && activeBadge && activeBadge.classList.contains('is-visible')) {
-                positionBadge(activeInput, activeBadge);
-            }
-        }, { passive: true });
+        if ('onscrollend' in window) {
+            window.addEventListener('scroll', scheduleBadgePosition, { passive: true });
+            window.addEventListener('scrollend', syncBadgePosition, { passive: true });
+        } else {
+            window.addEventListener('scroll', () => {
+                scheduleBadgePosition();
+                clearTimeout(scrollEndFallbackTimer);
+                scrollEndFallbackTimer = setTimeout(syncBadgePosition, 100);
+            }, { passive: true });
+        }
+
+        window.addEventListener('resize', scheduleBadgePosition, { passive: true });
     }
 
     if (document.readyState === 'loading') {

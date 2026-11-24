@@ -21,10 +21,10 @@
     <table class="table">
         <thead>
             <tr>
-                <th>{{ __('customization.density_sample_code') }}</th>
-                <th>{{ __('customization.density_sample_items') }}</th>
-                <th>{{ __('customization.density_sample_status') }}</th>
-                <th class="tw:text-right">{{ __('customization.density_sample_action') }}</th>
+                <th scope="col">{{ __('customization.density_sample_code') }}</th>
+                <th scope="col">{{ __('customization.density_sample_items') }}</th>
+                <th scope="col">{{ __('customization.density_sample_status') }}</th>
+                <th scope="col" class="tw:text-right">{{ __('customization.density_sample_action') }}</th>
             </tr>
         </thead>
         <tbody>

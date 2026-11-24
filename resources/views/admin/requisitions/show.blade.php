@@ -18,6 +18,20 @@
         </x-slot:actions>
     </x-ui.page-header>
 
+    @if($pr->isCancelled())
+        <x-ui.alert tone="error" :title="__('purchasing.copy.pr_cancelled_banner_title')">
+            <p class="tw:m-0">
+                {{ __('purchasing.copy.pr_cancelled_by_at', [
+                    'actor' => $pr->cancelledBy?->name ?? '-',
+                    'date' => $pr->cancelled_at ? $regionalFormatter->timestamp($pr->cancelled_at, 'datetime_comma') : '-',
+                ]) }}
+            </p>
+            @if($pr->cancellation_reason)
+                <p class="tw:m-0 tw:mt-2 tw:whitespace-pre-line tw:font-medium">{{ $pr->cancellation_reason }}</p>
+            @endif
+        </x-ui.alert>
+    @endif
+
     <section class="tw:border-y tw:border-outline tw:bg-surface-container" aria-labelledby="pr-summary-title">
         <h2 id="pr-summary-title" class="tw:sr-only">{{ __('admin.copy.requisition_summary') }}</h2>
         <dl class="tw:m-0 tw:grid tw:grid-cols-2 tw:xl:grid-cols-4">

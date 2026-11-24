@@ -17,10 +17,11 @@ class AdvancedExportRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'options' => ['nullable', 'array:columns,format'],
+            'options' => ['nullable', 'array:columns,format,csv_delimiter'],
             'options.columns' => ['sometimes', 'array', 'min:1', 'max:64'],
             'options.columns.*' => ['string', 'distinct', 'regex:/^[a-z][a-z0-9_]{0,63}$/D'],
             'options.format' => ['sometimes', Rule::in(['xlsx', 'csv'])],
+            'options.csv_delimiter' => ['sometimes', Rule::in([',', ';'])],
         ];
     }
 

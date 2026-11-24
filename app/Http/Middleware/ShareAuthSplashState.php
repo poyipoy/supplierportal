@@ -20,11 +20,13 @@ class ShareAuthSplashState
             && $request->isMethod('GET') && $this->isDocumentNavigation($request)
             && ! $request->attributes->has(self::SESSION_KEY) && $this->cleanLogin($request)) {
             $pending = $request->session()->get(self::SESSION_KEY);
-            $reason = $this->validMarker($pending)
+            if ($this->validMarker($pending)
                 && $this->targetPath($request, $pending['target']) === $this->targetPath($request, $request->getRequestUri())
-                && $this->eligibleReason($request, $pending['reason'])
-                ? $pending['reason'] : 'login-page';
-            $request->attributes->set(self::SESSION_KEY, ['reason' => $reason]);
+                && $this->eligibleReason($request, $pending['reason'])) {
+                $request->attributes->set(self::SESSION_KEY, ['reason' => $pending['reason']]);
+            } elseif (config('ui.auth_splash.login_page_enabled', false)) {
+                $request->attributes->set(self::SESSION_KEY, ['reason' => 'login-page']);
+            }
         }
     }
 
@@ -54,7 +56,9 @@ class ShareAuthSplashState
             }
         }
 
-        if ($document && ! $request->attributes->has(self::SESSION_KEY) && $this->cleanLogin($request)) {
+        if ($document && ! $request->attributes->has(self::SESSION_KEY)
+            && config('ui.auth_splash.login_page_enabled', false)
+            && $this->cleanLogin($request)) {
             $request->attributes->set(self::SESSION_KEY, ['reason' => 'login-page']);
         }
 

@@ -23,7 +23,7 @@
                 <x-ui.icon name="arrow-left" />
                 <span>{{ __('supplier.copy.back_to_periods') }}</span>
             </x-ui.button>
-            <x-export.advanced-modal export-key="supplier.quotations" :action="route('supplier.export.quotations')" :periods="collect([$period])" :initial-filters="['period_id'=>$period->id]" :filter-selectors="['pr_number'=>'#filter_pr_number','status'=>'#filter_status']" table="#prTable" trigger-id="exportSupplierQuotationsBtn" />
+            <x-export.advanced-modal export-key="supplier.quotations" :action="route('supplier.export.quotations')" :periods="collect([$period])" :initial-filters="['period_id'=>$period->id]" :filter-selectors="['search'=>'#filter_pr_number','status'=>'#filter_status']" table="#prTable" trigger-id="exportSupplierQuotationsBtn" />
         </x-slot:actions>
     </x-ui.page-header>
 
@@ -62,6 +62,7 @@
                         <option value="submitted" @selected(request('status') === 'submitted')>{{ __('supplier.copy.submitted') }}</option>
                         <option value="accepted" @selected(request('status') === 'accepted')>{{ __('supplier.copy.accepted') }}</option>
                         <option value="rejected" @selected(request('status') === 'rejected')>{{ __('supplier.copy.rejected') }}</option>
+                        <option value="cancelled" @selected(request('status') === 'cancelled')>{{ __('status.pr.cancelled') }}</option>
                     </select>
                 </x-slot:filters>
 

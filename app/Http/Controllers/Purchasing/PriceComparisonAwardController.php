@@ -103,7 +103,7 @@ class PriceComparisonAwardController extends Controller
                     foreach ($lockedQuotations as $quotation) {
                         if (! in_array($quotation->status, Quotation::AWARD_ELIGIBLE_STATUSES, true)) {
                             throw new \InvalidArgumentException(
-                                __('purchasing.comparison.ineligible_status', ['quotation' => $quotation->id, 'status' => $quotation->status])
+                                __('purchasing.comparison.ineligible_status', ['quotation' => $quotation->getRouteKey(), 'status' => $quotation->status])
                             );
                         }
                     }

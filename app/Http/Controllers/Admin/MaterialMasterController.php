@@ -67,6 +67,7 @@ class MaterialMasterController extends Controller
                     .'</div>';
             })
             ->rawColumns(['status_badge', 'action'])
+            ->only(['DT_RowIndex', 'material_code', 'raw_category', 'hs_category', 'hs_category_label', 'density_profile', 'density_profile_label', 'manufacturer_scope', 'manufacturer_scope_label', 'status_badge', 'source_display', 'updated_date', 'action'])
             ->toJson();
     }
 

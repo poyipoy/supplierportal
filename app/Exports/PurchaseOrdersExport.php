@@ -197,4 +197,9 @@ class PurchaseOrdersExport implements AcceptsExportOptions, FromQuery, HasLocale
     {
         return $this->hasExportOptions() ? $this->catalogWrappedColumns() : ['B', 'C', 'D', 'I', 'J'];
     }
+
+    protected function workbookNumberFormats(): array
+    {
+        return $this->catalogNumberFormats();
+    }
 }

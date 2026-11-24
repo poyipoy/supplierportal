@@ -13,9 +13,11 @@ use App\Models\PrItem;
 use App\Models\ReferencePriceImport;
 use App\Models\ReferencePriceRule;
 use App\Services\FileSecurity\FileInspectionService;
+use App\Services\Pricing\HistoricalReferencePriceService;
 use App\Services\Pricing\MaterialReferencePriceService;
 use App\Services\Pricing\PurchaseHistoryPriceService;
 use App\Services\Pricing\ReferencePriceRuleImportService;
+use App\Services\Pricing\ReferencePriceRuleResolver;
 use App\Support\Pricing\EvaluationContext;
 use App\Support\ServerTabsResponse;
 use Illuminate\Http\JsonResponse;
@@ -185,7 +187,7 @@ class MaterialReferencePriceController extends Controller
 
         try {
             $parsed = $this->ruleImportService->parseWorkbook($fullPath, $sheetName);
-        } catch (\Throwable $e) {
+        } catch (\InvalidArgumentException $e) {
             Storage::delete($path);
 
             if ($request->wantsJson()) {
@@ -193,6 +195,16 @@ class MaterialReferencePriceController extends Controller
             }
 
             return back()->with('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            Storage::delete($path);
+            report($e);
+            $msg = __('purchasing.copy.the_spreadsheet_could_not_be_read_verify_the_file_and_try_again');
+
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $msg], 422);
+            }
+
+            return back()->with('error', $msg);
         }
 
         $preview = $this->ruleImportService->buildPreview($parsed, $mode);
@@ -276,17 +288,55 @@ class MaterialReferencePriceController extends Controller
             'category_name' => ['required', 'string', 'max:100'],
             'dimension_min' => ['required', 'integer', 'min:1'],
             'dimension_max' => ['required', 'integer', 'min:1', 'gte:dimension_min'],
+            'form_mode' => ['nullable', Rule::in(['create', 'edit'])],
+            'rule_id' => ['nullable', 'integer', 'exists:reference_price_rules,id'],
         ]);
 
-        $existing = ReferencePriceRule::where('category_key', $validated['category_key'])->first();
-        if ($existing) {
-            Gate::authorize('update', $existing);
-        }
+        $formMode = $validated['form_mode'] ?? null;
+        $ruleId = isset($validated['rule_id']) ? (int) $validated['rule_id'] : null;
+        $categoryKey = trim((string) $validated['category_key']);
+        $categoryName = trim((string) $validated['category_name']);
+        $dimMin = (int) $validated['dimension_min'];
+        $dimMax = (int) $validated['dimension_max'];
 
-        $allRules = ReferencePriceRule::query()
-            ->orderBy('dimension_min')
-            ->get()
-            ->map(fn ($r) => [
+        $errorMessage = DB::transaction(function () use ($request, $formMode, $ruleId, $categoryKey, $categoryName, $dimMin, $dimMax): ?string {
+            $lockedRules = ReferencePriceRule::query()
+                ->orderBy('dimension_min')
+                ->lockForUpdate()
+                ->get();
+
+            $targetRule = null;
+            if ($ruleId !== null) {
+                $targetRule = $lockedRules->firstWhere('id', $ruleId);
+                if (! $targetRule instanceof ReferencePriceRule) {
+                    abort(404);
+                }
+                Gate::authorize('update', $targetRule);
+
+                $duplicate = $lockedRules->first(
+                    fn (ReferencePriceRule $r): bool => $r->id !== $targetRule->id
+                        && mb_strtolower($r->category_key) === mb_strtolower($categoryKey)
+                );
+                if ($duplicate instanceof ReferencePriceRule) {
+                    return __('materials.reference_prices.rules.duplicate_key', ['key' => $categoryKey]);
+                }
+            } elseif ($formMode === 'create') {
+                $duplicate = $lockedRules->first(
+                    fn (ReferencePriceRule $r): bool => mb_strtolower($r->category_key) === mb_strtolower($categoryKey)
+                );
+                if ($duplicate instanceof ReferencePriceRule) {
+                    return __('materials.reference_prices.rules.duplicate_key', ['key' => $categoryKey]);
+                }
+            } else {
+                $targetRule = $lockedRules->first(
+                    fn (ReferencePriceRule $r): bool => mb_strtolower($r->category_key) === mb_strtolower($categoryKey)
+                );
+                if ($targetRule instanceof ReferencePriceRule) {
+                    Gate::authorize('update', $targetRule);
+                }
+            }
+
+            $allRules = $lockedRules->map(fn (ReferencePriceRule $r): array => [
                 'id' => $r->id,
                 'category_key' => $r->category_key,
                 'category_name' => $r->category_name,
@@ -296,52 +346,90 @@ class MaterialReferencePriceController extends Controller
                 'status' => $r->status,
             ])->all();
 
-        $found = false;
-        foreach ($allRules as &$r) {
-            if ($r['category_key'] === $validated['category_key']) {
-                $r['category_name'] = $validated['category_name'];
-                $r['dimension_min'] = (int) $validated['dimension_min'];
-                $r['dimension_max'] = (int) $validated['dimension_max'];
-                $found = true;
-                break;
+            if ($targetRule instanceof ReferencePriceRule) {
+                foreach ($allRules as &$r) {
+                    if ($r['id'] === $targetRule->id) {
+                        $r['category_key'] = $categoryKey;
+                        $r['category_name'] = $categoryName;
+                        $r['dimension_min'] = $dimMin;
+                        $r['dimension_max'] = $dimMax;
+                        break;
+                    }
+                }
+                unset($r);
+            } else {
+                $allRules[] = [
+                    'id' => null,
+                    'category_key' => $categoryKey,
+                    'category_name' => $categoryName,
+                    'dimension_min' => $dimMin,
+                    'dimension_max' => $dimMax,
+                    'sort_order' => count($allRules) + 1,
+                    'status' => ReferencePriceRule::STATUS_ACTIVE,
+                ];
             }
-        }
-        unset($r);
 
-        if (! $found) {
-            $allRules[] = [
-                'category_key' => $validated['category_key'],
-                'category_name' => $validated['category_name'],
-                'dimension_min' => (int) $validated['dimension_min'],
-                'dimension_max' => (int) $validated['dimension_max'],
-                'sort_order' => count($allRules) + 1,
-                'status' => ReferencePriceRule::STATUS_ACTIVE,
-            ];
-        }
+            $errors = $this->ruleImportService->validateRuleIntervals($allRules);
+            if (! empty($errors)) {
+                return implode('; ', $errors);
+            }
 
-        $errors = $this->ruleImportService->validateRuleIntervals($allRules);
-        if (! empty($errors)) {
-            return back()->with('error', implode('; ', $errors));
-        }
+            usort($allRules, fn (array $a, array $b): int => $a['dimension_min'] <=> $b['dimension_min']);
 
-        usort($allRules, fn ($a, $b) => $a['dimension_min'] <=> $b['dimension_min']);
+            $userId = $request->user()->id;
+            $orderMap = [];
 
-        DB::transaction(function () use ($allRules, $request) {
             foreach ($allRules as $idx => $r) {
-                ReferencePriceRule::updateOrCreate(
-                    ['category_key' => $r['category_key']],
-                    [
+                $sortOrder = $idx + 1;
+                if ($r['id'] === null) {
+                    ReferencePriceRule::create([
+                        'category_key' => $r['category_key'],
                         'category_name' => $r['category_name'],
                         'dimension_min' => $r['dimension_min'],
                         'dimension_max' => $r['dimension_max'],
-                        'sort_order' => $idx + 1,
-                        'status' => $r['status'] ?? ReferencePriceRule::STATUS_ACTIVE,
-                        'updated_by' => $request->user()->id,
-                        'created_by' => DB::raw('COALESCE(created_by, '.(int) $request->user()->id.')'),
-                    ]
-                );
+                        'sort_order' => $sortOrder,
+                        'status' => $r['status'],
+                        'created_by' => $userId,
+                        'updated_by' => $userId,
+                    ]);
+                } else {
+                    $orderMap[$r['id']] = $sortOrder;
+                    if ($targetRule instanceof ReferencePriceRule && $r['id'] === $targetRule->id) {
+                        $targetRule->update([
+                            'category_key' => $categoryKey,
+                            'category_name' => $categoryName,
+                            'dimension_min' => $dimMin,
+                            'dimension_max' => $dimMax,
+                            'sort_order' => $sortOrder,
+                            'created_by' => $targetRule->created_by ?? $userId,
+                            'updated_by' => $userId,
+                        ]);
+                    }
+                }
             }
+
+            foreach ($lockedRules as $existingRule) {
+                if ($targetRule instanceof ReferencePriceRule && $existingRule->id === $targetRule->id) {
+                    continue;
+                }
+                $expectedOrder = $orderMap[$existingRule->id] ?? null;
+                if ($expectedOrder !== null && (int) $existingRule->sort_order !== $expectedOrder) {
+                    $existingRule->timestamps = false;
+                    $existingRule->forceFill(['sort_order' => $expectedOrder])->saveQuietly();
+                    $existingRule->timestamps = true;
+                }
+            }
+
+            return null;
         });
+
+        if ($errorMessage !== null) {
+            return redirect()->route($this->resolveIndexRouteName($request), ['tab' => 'rules'])
+                ->withInput()
+                ->with('error', $errorMessage);
+        }
+
+        $this->resetRuleCaches();
 
         return redirect()->route($this->resolveIndexRouteName($request), ['tab' => 'rules'])
             ->with('success', __('materials.reference_prices.rules.saved_success'));
@@ -351,42 +439,73 @@ class MaterialReferencePriceController extends Controller
     {
         Gate::authorize('update', $rule);
 
-        $targetStatus = $rule->status === ReferencePriceRule::STATUS_ACTIVE
-            ? ReferencePriceRule::STATUS_INACTIVE
-            : ReferencePriceRule::STATUS_ACTIVE;
+        $errorMessage = DB::transaction(function () use ($request, $rule): ?string {
+            $lockedRules = ReferencePriceRule::query()
+                ->orderBy('dimension_min')
+                ->lockForUpdate()
+                ->get();
 
-        if ($targetStatus === ReferencePriceRule::STATUS_ACTIVE) {
-            $activeRules = ReferencePriceRule::where('id', '!=', $rule->id)
-                ->where('status', ReferencePriceRule::STATUS_ACTIVE)
-                ->get()
-                ->map(fn ($r) => [
-                    'category_key' => $r->category_key,
-                    'dimension_min' => $r->dimension_min,
-                    'dimension_max' => $r->dimension_max,
-                    'status' => $r->status,
-                ])
-                ->all();
-
-            $activeRules[] = [
-                'category_key' => $rule->category_key,
-                'dimension_min' => $rule->dimension_min,
-                'dimension_max' => $rule->dimension_max,
-                'status' => ReferencePriceRule::STATUS_ACTIVE,
-            ];
-
-            $errors = $this->ruleImportService->validateRuleIntervals($activeRules);
-            if (! empty($errors)) {
-                return back()->with('error', implode('; ', $errors));
+            $lockedRule = $lockedRules->firstWhere('id', $rule->id);
+            if (! $lockedRule instanceof ReferencePriceRule) {
+                abort(404);
             }
+
+            $targetStatus = $lockedRule->status === ReferencePriceRule::STATUS_ACTIVE
+                ? ReferencePriceRule::STATUS_INACTIVE
+                : ReferencePriceRule::STATUS_ACTIVE;
+
+            if ($targetStatus === ReferencePriceRule::STATUS_ACTIVE) {
+                $activeRules = $lockedRules
+                    ->filter(fn (ReferencePriceRule $r): bool => $r->id !== $lockedRule->id && $r->status === ReferencePriceRule::STATUS_ACTIVE)
+                    ->map(fn (ReferencePriceRule $r): array => [
+                        'category_key' => $r->category_key,
+                        'dimension_min' => $r->dimension_min,
+                        'dimension_max' => $r->dimension_max,
+                        'status' => $r->status,
+                    ])
+                    ->values()
+                    ->all();
+
+                $activeRules[] = [
+                    'category_key' => $lockedRule->category_key,
+                    'dimension_min' => $lockedRule->dimension_min,
+                    'dimension_max' => $lockedRule->dimension_max,
+                    'status' => ReferencePriceRule::STATUS_ACTIVE,
+                ];
+
+                $errors = $this->ruleImportService->validateRuleIntervals($activeRules);
+                if (! empty($errors)) {
+                    return implode('; ', $errors);
+                }
+            }
+
+            $lockedRule->update([
+                'status' => $targetStatus,
+                'updated_by' => $request->user()->id,
+            ]);
+
+            return null;
+        });
+
+        if ($errorMessage !== null) {
+            return redirect()->route($this->resolveIndexRouteName($request), ['tab' => 'rules'])
+                ->with('error', $errorMessage);
         }
 
-        $rule->update([
-            'status' => $targetStatus,
-            'updated_by' => $request->user()->id,
-        ]);
+        $this->resetRuleCaches();
 
         return redirect()->route($this->resolveIndexRouteName($request), ['tab' => 'rules'])
             ->with('success', __('materials.reference_prices.rules.toggle_success'));
+    }
+
+    private function resetRuleCaches(): void
+    {
+        if (app()->resolved(ReferencePriceRuleResolver::class)) {
+            app(ReferencePriceRuleResolver::class)->reset();
+        }
+        if (app()->resolved(HistoricalReferencePriceService::class)) {
+            app(HistoricalReferencePriceService::class)->clearMemo();
+        }
     }
 
     public function store(SaveMaterialReferencePriceRequest $request): RedirectResponse

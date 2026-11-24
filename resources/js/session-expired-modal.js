@@ -32,6 +32,25 @@ export function adasiSessionModal(initialCopy = {}) {
     let onReconnectHandler = null;
     let onLoginRedirectHandler = null;
     let onStayHandler = null;
+    let acquiredModalEl = null;
+
+    const resolveModalElement = (component) => (
+        component.$refs?.panel?.closest?.('[data-session-expired-modal]')
+        || document.querySelector?.('[data-session-expired-modal]')
+        || null
+    );
+
+    const releaseModalModality = () => {
+        const modality = typeof window !== 'undefined' ? window.AdasiOverlayModality : null;
+        if (modality && acquiredModalEl) {
+            const modalEl = acquiredModalEl;
+            acquiredModalEl = null;
+            modality.release(modalEl, { restoreFocus: false });
+            return;
+        }
+        acquiredModalEl = null;
+        document.body?.classList?.toggle?.('ui-dialog-open', false);
+    };
 
     return {
         open: false,
@@ -83,7 +102,20 @@ export function adasiSessionModal(initialCopy = {}) {
 
         init() {
             this.$watch('open', (value) => {
-                document.body.classList.toggle('ui-dialog-open', Boolean(value));
+                const isOpen = Boolean(value);
+                const modality = typeof window !== 'undefined' ? window.AdasiOverlayModality : null;
+                if (isOpen) {
+                    window.AdasiLightbox?.close?.({ restoreFocus: false });
+                    const modalEl = resolveModalElement(this);
+                    if (modality && modalEl) {
+                        acquiredModalEl = modalEl;
+                        modality.acquire(modalEl, { triggerEl: this.returnFocus });
+                    } else {
+                        document.body?.classList?.toggle?.('ui-dialog-open', true);
+                    }
+                    return;
+                }
+                releaseModalModality();
             });
 
             window.AdasiSessionModal = Object.freeze({
@@ -116,6 +148,10 @@ export function adasiSessionModal(initialCopy = {}) {
             });
         },
 
+        destroy() {
+            releaseModalModality();
+        },
+
         focusables() {
             const panel = this.$refs.panel;
             if (!panel) return [];
@@ -129,7 +165,15 @@ export function adasiSessionModal(initialCopy = {}) {
                 pending({ isConfirmed: false, isDismissed: true });
             }
 
-            this.returnFocus = typeof document.activeElement?.focus === 'function' ? document.activeElement : null;
+            if (!this.open) {
+                if (typeof window !== 'undefined') {
+                    window.AdasiLightbox?.close?.({ restoreFocus: true });
+                }
+                const activeEl = document.activeElement;
+                this.returnFocus = typeof activeEl?.focus === 'function' && !activeEl?.closest?.('#adasiImageLightbox')
+                    ? activeEl
+                    : null;
+            }
             this.reason = typeof options.reason === 'string' && options.reason !== '' ? options.reason : 'session_ended';
             this.reconnectable = typeof options.reconnectable === 'boolean'
                 ? options.reconnectable
@@ -153,9 +197,9 @@ export function adasiSessionModal(initialCopy = {}) {
                 }
             });
 
-            return new Promise((resolve) => {
-                resolver = resolve;
-            });
+            const { promise, resolve } = Promise.withResolvers();
+            resolver = resolve;
+            return promise;
         },
 
         closeAll() {

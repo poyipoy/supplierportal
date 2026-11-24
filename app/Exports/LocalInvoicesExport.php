@@ -6,6 +6,7 @@ use App\Contracts\AcceptsExportOptions;
 use App\Contracts\TracksExportProgress;
 use App\Exports\Advanced\Concerns\UsesColumnCatalog;
 use App\Exports\Concerns\InteractsWithExportProgress;
+use App\Exports\Concerns\StylesOperationalWorkbook;
 use App\Models\User;
 use App\Services\LocalInvoice\InvoiceQuery;
 use App\Support\BusinessTime;
@@ -13,15 +14,18 @@ use App\Support\SpreadsheetCellSanitizer;
 use App\Support\StatusHelper;
 use Illuminate\Contracts\Translation\HasLocalePreference;
 use Maatwebsite\Excel\Concerns\FromQuery;
+use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithCustomChunkSize;
 use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
 use Maatwebsite\Excel\Concerns\WithCustomQuerySize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
+use Maatwebsite\Excel\Concerns\WithStyles;
 
-class LocalInvoicesExport implements AcceptsExportOptions, FromQuery, HasLocalePreference, TracksExportProgress, WithCustomChunkSize, WithCustomCsvSettings, WithCustomQuerySize, WithHeadings, WithMapping
+class LocalInvoicesExport implements AcceptsExportOptions, FromQuery, HasLocalePreference, TracksExportProgress, WithColumnWidths, WithCustomChunkSize, WithCustomCsvSettings, WithCustomQuerySize, WithHeadings, WithMapping, WithStyles
 {
     use InteractsWithExportProgress;
+    use StylesOperationalWorkbook;
     use UsesColumnCatalog;
 
     public function __construct(private int $actorId, private array $filters = [], private bool $payments = false) {}
@@ -71,5 +75,25 @@ class LocalInvoicesExport implements AcceptsExportOptions, FromQuery, HasLocaleP
     public function progressTotalRows(): int
     {
         return $this->querySize();
+    }
+
+    public function columnWidths(): array
+    {
+        return $this->hasExportOptions() ? $this->catalogWidths() : [];
+    }
+
+    protected function workbookPresentationEnabled(): bool
+    {
+        return $this->hasExportOptions() && $this->catalogStylesEnabled();
+    }
+
+    protected function workbookWrappedColumns(): array
+    {
+        return $this->hasExportOptions() ? $this->catalogWrappedColumns() : [];
+    }
+
+    protected function workbookNumberFormats(): array
+    {
+        return $this->catalogNumberFormats();
     }
 }

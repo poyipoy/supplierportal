@@ -1,3 +1,4 @@
+import { isTrustedSameOrigin } from './origin-validator.js';
 import {
     appendEmbedParam,
     isDownloadOrBinaryUrl,
@@ -11,7 +12,7 @@ import {
 function getParentShell() {
     if (typeof window === 'undefined' || window.parent === window) return null;
     try {
-        if (window.parent.location.origin !== window.location.origin) return null;
+        if (!isTrustedSameOrigin(window.parent.location.origin, window)) return null;
         return window.parent.AdasiWorkspaceShell || null;
     } catch {
         return null;
@@ -61,7 +62,7 @@ export function bootWorkspaceEmbedBridge() {
     };
 
     // Delegate App Toasts to top Workspace Shell so they never clip inside iframe stage.
-    if (window.AdasiToast) {
+    if (typeof shell.showToast === 'function') {
         const parentToast = window.parent.AdasiToast;
         window.AdasiToast = Object.freeze({
             show: (options) => shell.showToast(normalizeToastOptions(options)),
@@ -186,10 +187,38 @@ export function bootWorkspaceEmbedBridge() {
             || anchor.textContent?.trim()
             || '';
 
+        const closeEnclosingOverlay = (element) => {
+            const dialogEl = element?.closest?.('[data-ui-dialog]');
+            const dialogName = dialogEl?.dataset?.uiDialog;
+            if (dialogName) {
+                window.dispatchEvent(new CustomEvent('close-ui-dialog', {
+                    detail: { name: dialogName, restoreFocus: false },
+                }));
+            }
+
+            const drawerEl = element?.closest?.('[data-ui-drawer]');
+            const drawerName = drawerEl?.dataset?.uiDrawer;
+            if (drawerName) {
+                window.dispatchEvent(new CustomEvent('close-ui-drawer', {
+                    detail: { name: drawerName, restoreFocus: false },
+                }));
+            }
+
+            const bsModal = element?.closest?.('.modal.show');
+            if (bsModal) {
+                try {
+                    window.bootstrap?.Modal?.getInstance?.(bsModal)?.hide();
+                } catch {
+                    // Best-effort cleanup when handing off to another WorkspaceShell tab.
+                }
+            }
+        };
+
         if (typeof shell.handleEmbedLinkClick === 'function') {
             const clickOptions = anchor.dataset.workspaceDetailSwitch === 'true' ? { detailSwitch: true } : {};
             const outcome = shell.handleEmbedLinkClick(window, absUrl, linkLabel, clickOptions);
             if (outcome === 'handled') {
+                closeEnclosingOverlay(anchor);
                 event.preventDefault();
                 return;
             }

@@ -12,11 +12,12 @@ use App\Support\NotificationCategory;
 use App\Support\PurchasingNavigation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Adds or removes invited suppliers on a requisition that is already
+ * Adds or soft-cancels invited suppliers on a requisition that is already
  * submitted or in bidding. The requisition row is locked first (the same order
  * the quotation, award and PO paths use) so concurrent changes and quotation
  * submissions cannot slip past the guards below.
@@ -46,17 +47,49 @@ class PurchaseRequisitionSupplierController extends Controller
                 ]);
             }
 
-            $alreadyInvited = $locked->invitedSuppliers()->pluck('users.id');
-            $newIds = $requestedIds->diff($alreadyInvited)->values();
+            $existingRows = DB::table('purchase_requisition_suppliers')
+                ->where('pr_id', $locked->id)
+                ->get(['supplier_id', 'cancelled_at'])
+                ->keyBy('supplier_id');
+
+            $alreadyActiveIds = $existingRows
+                ->filter(fn ($row) => $row->cancelled_at === null)
+                ->keys()
+                ->map(fn ($id) => (int) $id);
+
+            $newIds = $requestedIds->diff($alreadyActiveIds)->values();
             if ($newIds->isEmpty()) {
                 throw ValidationException::withMessages([
                     'supplier_ids' => __('purchasing.copy.invitation_suppliers_already_invited'),
                 ]);
             }
 
-            $locked->invitedSuppliers()->attach(
-                $newIds->mapWithKeys(fn ($id) => [$id => ['invited_at' => now()]])->all()
-            );
+            $now = now();
+            $toAttach = [];
+            foreach ($newIds as $supplierId) {
+                if ($existingRows->has($supplierId)) {
+                    $locked->allInvitedSuppliers()->updateExistingPivot($supplierId, [
+                        'invited_at' => $now,
+                        'cancelled_at' => null,
+                        'cancelled_by' => null,
+                        'cancellation_reason' => null,
+                        'updated_at' => $now,
+                    ]);
+                } else {
+                    $toAttach[$supplierId] = ['invited_at' => $now];
+                }
+            }
+
+            if ($toAttach !== []) {
+                $locked->allInvitedSuppliers()->attach($toAttach);
+            }
+
+            $addedIds = $newIds->all();
+            DB::afterCommit(function () use ($addedIds): void {
+                foreach ($addedIds as $supplierId) {
+                    Cache::forget('supplier_dashboard_widgets_'.$supplierId);
+                }
+            });
 
             return $newIds->mapWithKeys(fn ($supplierId) => [
                 $supplierId => PrSupplierInvitationEvent::create([
@@ -76,8 +109,13 @@ class PurchaseRequisitionSupplierController extends Controller
 
     public function destroy(Request $request, PurchaseRequisition $requisition, User $supplier): RedirectResponse
     {
-        DB::transaction(function () use ($requisition, $supplier): void {
-            $locked = $this->lockMutableRequisition($requisition);
+        $validated = $request->validate([
+            'reason' => ['nullable', 'string', 'max:500'],
+        ]);
+        $reason = trim((string) ($validated['reason'] ?? ''));
+
+        $removedEventId = DB::transaction(function () use ($requisition, $supplier, $reason): int {
+            $locked = $this->lockMutableRequisition($requisition, 'supplier');
             $invitedIds = $locked->invitedSuppliers()->pluck('users.id');
 
             if (! $invitedIds->contains($supplier->id)) {
@@ -98,15 +136,29 @@ class PurchaseRequisitionSupplierController extends Controller
                 ]);
             }
 
-            $locked->invitedSuppliers()->detach($supplier->id);
+            $now = now();
+            $locked->allInvitedSuppliers()->updateExistingPivot($supplier->id, [
+                'cancelled_at' => $now,
+                'cancelled_by' => auth()->id(),
+                'cancellation_reason' => $reason !== '' ? $reason : null,
+                'updated_at' => $now,
+            ]);
 
-            PrSupplierInvitationEvent::create([
+            $supplierId = (int) $supplier->id;
+            DB::afterCommit(static function () use ($supplierId): void {
+                Cache::forget('supplier_dashboard_widgets_'.$supplierId);
+            });
+
+            return PrSupplierInvitationEvent::create([
                 'pr_id' => $locked->id,
                 'supplier_id' => $supplier->id,
                 'event' => PrSupplierInvitationEvent::REMOVED,
+                'reason' => $reason !== '' ? $reason : null,
                 'actor_id' => auth()->id(),
-            ]);
+            ])->id;
         });
+
+        $this->notifyRemovedSupplier($requisition, $supplier, $removedEventId);
 
         return $this->backToShow($request, $requisition)
             ->with('success', __('purchasing.copy.invitation_supplier_removed'));
@@ -118,19 +170,19 @@ class PurchaseRequisitionSupplierController extends Controller
      * list. A requisition without invitations is visible to every eligible
      * supplier, so adding one would silently exclude the others.
      */
-    private function lockMutableRequisition(PurchaseRequisition $requisition): PurchaseRequisition
+    private function lockMutableRequisition(PurchaseRequisition $requisition, string $errorKey = 'supplier_ids'): PurchaseRequisition
     {
         $locked = PurchaseRequisition::query()->whereKey($requisition->id)->lockForUpdate()->firstOrFail();
 
         if (! in_array($locked->status, self::MUTABLE_STATUSES, true)) {
             throw ValidationException::withMessages([
-                'supplier_ids' => __('purchasing.copy.invitation_requisition_not_open'),
+                $errorKey => __('purchasing.copy.invitation_requisition_not_open'),
             ]);
         }
 
         if (! $locked->invitedSuppliers()->exists()) {
             throw ValidationException::withMessages([
-                'supplier_ids' => __('purchasing.copy.invitation_requisition_is_open'),
+                $errorKey => __('purchasing.copy.invitation_requisition_is_open'),
             ]);
         }
 
@@ -154,11 +206,32 @@ class PurchaseRequisitionSupplierController extends Controller
                 [
                     'category' => NotificationCategory::QUOTATION,
                     'pr_id' => $requisition->id,
+                    'pr_hash' => $requisition->hash,
                     'pr_number' => $requisition->pr_number,
                 ],
                 ['pr_number' => $requisition->pr_number ?? '-'],
             );
         }
+    }
+
+    private function notifyRemovedSupplier(PurchaseRequisition $requisition, User $supplier, int $eventId): void
+    {
+        $this->notifications->send(
+            $supplier,
+            'pr.supplier_removed',
+            'pr.supplier_removed:'.$requisition->id.':'.$eventId,
+            'purchasing.notify.pr_supplier_removed_title',
+            'purchasing.notify.pr_supplier_removed_body',
+            route('supplier.requests.show', $requisition, absolute: false),
+            'x-circle text-danger',
+            [
+                'category' => NotificationCategory::QUOTATION,
+                'pr_id' => $requisition->id,
+                'pr_hash' => $requisition->hash,
+                'pr_number' => $requisition->pr_number,
+            ],
+            ['pr_number' => $requisition->pr_number ?? '-'],
+        );
     }
 
     private function backToShow(Request $request, PurchaseRequisition $requisition): RedirectResponse

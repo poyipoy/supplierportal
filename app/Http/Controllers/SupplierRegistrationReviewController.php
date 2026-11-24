@@ -37,7 +37,12 @@ class SupplierRegistrationReviewController extends Controller
         // Legacy DataTables feed. Server-tabs fragment requests also carry X-Requested-With, so they must skip it.
         if ($request->ajax() && ! ServerTabsResponse::wants($request)) {
             $query = SupplierRegistrationAttempt::query()
-                ->with(['user.supplier', 'reviewer'])
+                ->with([
+                    'user:id,name',
+                    'user.supplier:id,user_id,company_name,nib,npwp,pic_name,pic_email,pic_phone',
+                    'user.registrationAccesses:id,user_id,registration_reference',
+                    'reviewer:id,name',
+                ])
                 ->orderByDesc('submitted_at');
 
             if ($statusFilter !== 'ALL' && in_array($statusFilter, [
@@ -82,6 +87,7 @@ class SupplierRegistrationReviewController extends Controller
                     );
                 })
                 ->rawColumns(['pic', 'status_badge', 'action'])
+                ->only(['DT_RowIndex', 'company_name', 'reference', 'nib', 'npwp', 'pic', 'status_badge', 'submitted_date', 'reviewer_name', 'action'])
                 ->make(true);
         }
 

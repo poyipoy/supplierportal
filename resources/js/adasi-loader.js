@@ -1,4 +1,5 @@
 import { t } from './i18n.js';
+import { isDownloadOrBinaryUrl } from './workspace-shell-core.js';
 
 export const SHOW_DELAY = 2500;
 export const MIN_VISIBLE = 300;
@@ -135,6 +136,16 @@ export function createDomView(doc = document, translate = t) {
             : null
     );
 
+    const createSvgEl = (tag, attrs = {}) => {
+        const el = typeof doc.createElementNS === 'function'
+            ? doc.createElementNS('http://www.w3.org/2000/svg', tag)
+            : doc.createElement(tag);
+        for (const [key, value] of Object.entries(attrs)) {
+            el.setAttribute(key, String(value));
+        }
+        return el;
+    };
+
     const build = (onDismiss) => {
         const stage = resolveStageContainer();
         overlay = doc.createElement('div');
@@ -142,20 +153,52 @@ export function createDomView(doc = document, translate = t) {
         overlay.id = 'adasiLoader';
         overlay.setAttribute('role', 'status');
         overlay.setAttribute('aria-live', 'polite');
-        overlay.innerHTML = '<div class="adasi-loader-card" tabindex="-1">'
-            + '<div class="adasi-loader-ring" aria-hidden="true">'
-            + '<svg class="adasi-loader-svg" viewBox="0 0 64 64" width="64" height="64" focusable="false" aria-hidden="true">'
-            + '<circle class="adasi-loader-track" cx="32" cy="32" r="29"></circle>'
-            + '<circle class="adasi-loader-arc adasi-loader-arc--secondary" cx="32" cy="32" r="23.5"></circle>'
-            + '<circle class="adasi-loader-arc adasi-loader-arc--primary" cx="32" cy="32" r="29"></circle>'
-            + '</svg>'
-            + '<div class="adasi-loader-medallion"><div class="adasi-loader-logo"></div></div>'
-            + '</div>'
-            + '<span class="adasi-loader-text"></span>'
-            + '<button type="button" class="ui-data-action ui-motion adasi-loader-dismiss ui-focus-ring" hidden></button>'
-            + '</div>';
-        text = overlay.querySelector('.adasi-loader-text');
-        dismiss = overlay.querySelector('.adasi-loader-dismiss');
+
+        const card = doc.createElement('div');
+        card.className = 'adasi-loader-card';
+        card.setAttribute('tabindex', '-1');
+
+        const ring = doc.createElement('div');
+        ring.className = 'adasi-loader-ring';
+        ring.setAttribute('aria-hidden', 'true');
+
+        const svg = createSvgEl('svg', {
+            class: 'adasi-loader-svg',
+            viewBox: '0 0 64 64',
+            width: '64',
+            height: '64',
+            focusable: 'false',
+            'aria-hidden': 'true',
+        });
+        svg.appendChild(createSvgEl('circle', { class: 'adasi-loader-track', cx: '32', cy: '32', r: '29' }));
+        svg.appendChild(createSvgEl('circle', { class: 'adasi-loader-arc adasi-loader-arc--secondary', cx: '32', cy: '32', r: '23.5' }));
+        svg.appendChild(createSvgEl('circle', { class: 'adasi-loader-arc adasi-loader-arc--primary', cx: '32', cy: '32', r: '29' }));
+
+        const medallion = doc.createElement('div');
+        medallion.className = 'adasi-loader-medallion';
+        const logo = doc.createElement('div');
+        logo.className = 'adasi-loader-logo';
+        medallion.appendChild(logo);
+
+        ring.appendChild(svg);
+        ring.appendChild(medallion);
+
+        const textEl = doc.createElement('span');
+        textEl.className = 'adasi-loader-text';
+
+        const dismissBtn = doc.createElement('button');
+        dismissBtn.type = 'button';
+        dismissBtn.className = 'ui-data-action ui-motion adasi-loader-dismiss ui-focus-ring';
+        dismissBtn.hidden = true;
+
+        card.appendChild(ring);
+        card.appendChild(textEl);
+        card.appendChild(dismissBtn);
+        overlay.appendChild(card);
+
+        // Prefer querySelector when mocked in unit tests; fall back to constructed nodes.
+        text = overlay.querySelector?.('.adasi-loader-text') ?? textEl;
+        dismiss = overlay.querySelector?.('.adasi-loader-dismiss') ?? dismissBtn;
         dismiss.addEventListener('click', onDismiss);
         (stage || doc.body).appendChild(overlay);
     };
@@ -266,8 +309,148 @@ export function createDomView(doc = document, translate = t) {
     return view;
 }
 
-export function setTableBusy(wrapper, busy, translate = t) {
+const resolveBusyLabel = (options, translate) => {
+    if (typeof options.label === 'string' && options.label !== '') {
+        return options.label;
+    }
+
+    const tableText = translate('js.tables.loading');
+    if (tableText && tableText !== 'js.tables.loading') {
+        return tableText;
+    }
+
+    return translate('js.loader.loading');
+};
+
+const clearBusyGeometry = (wrapper) => {
+    if (!wrapper?.style?.removeProperty) return;
+    wrapper.style.removeProperty('--ui-loading-pill-top');
+    wrapper.style.removeProperty('--ui-loading-pill-left');
+    wrapper.style.removeProperty('--ui-loading-bar-top');
+    wrapper.style.removeProperty('--ui-loading-bar-left');
+    wrapper.style.removeProperty('--ui-loading-bar-width');
+};
+
+const syncBusyGeometry = (wrapper, doc, isRegionMode) => {
+    if (typeof wrapper?.getBoundingClientRect !== 'function' || !wrapper?.style?.setProperty) return;
+
+    const wrapRect = wrapper.getBoundingClientRect();
+    if (!wrapRect || wrapRect.width <= 0 || wrapRect.height <= 0) {
+        clearBusyGeometry(wrapper);
+        return;
+    }
+
+    const scrollEl = wrapper.closest?.('.ui-data-table__scroll, .table-responsive') || wrapper;
+    const sRect = (scrollEl !== wrapper && typeof scrollEl?.getBoundingClientRect === 'function')
+        ? scrollEl.getBoundingClientRect()
+        : wrapRect;
+
+    const scrollLeft = Number(wrapper.scrollLeft) || 0;
+    const scrollTop = Number(wrapper.scrollTop) || 0;
+    const vpHeight = Number(doc?.defaultView?.innerHeight) || 800;
+
+    const barLeftPx = Math.round((sRect.left - wrapRect.left) + scrollLeft);
+    const barWidthPx = Math.round(scrollEl === wrapper ? (wrapper.clientWidth || sRect.width) : sRect.width);
+    const pillLeftPx = Math.round(barLeftPx + (barWidthPx / 2));
+
+    wrapper.style.setProperty('--ui-loading-bar-left', `${barLeftPx}px`);
+    wrapper.style.setProperty('--ui-loading-bar-width', `${barWidthPx}px`);
+    wrapper.style.setProperty('--ui-loading-pill-left', `${pillLeftPx}px`);
+
+    const sectionHeader = wrapper.querySelector?.(':scope > .ui-data-table__header') ?? null;
+    const headerRect = (sectionHeader && typeof sectionHeader.getBoundingClientRect === 'function')
+        ? sectionHeader.getBoundingClientRect()
+        : null;
+    if (headerRect && headerRect.height > 0) {
+        const barTopPx = Math.round(Math.max(0, (headerRect.bottom - wrapRect.top) + scrollTop));
+        wrapper.style.setProperty('--ui-loading-bar-top', `${barTopPx}px`);
+    } else {
+        wrapper.style.removeProperty('--ui-loading-bar-top');
+    }
+
+    const thead = !isRegionMode ? wrapper.querySelector?.('table thead') : null;
+    const tbody = !isRegionMode ? wrapper.querySelector?.('table tbody') : null;
+    if (thead && typeof thead.getBoundingClientRect === 'function') {
+        const theadRect = thead.getBoundingClientRect();
+        const tbodyRect = (tbody && typeof tbody.getBoundingClientRect === 'function') ? tbody.getBoundingClientRect() : null;
+        const dataVpTop = Math.max(theadRect.bottom, 12);
+        const rawDataBottom = tbodyRect && tbodyRect.height > 8 ? tbodyRect.bottom : Math.max(wrapRect.bottom, theadRect.bottom + 56);
+        const dataVpBottom = Math.min(rawDataBottom, vpHeight - 12);
+        const pillVpY = dataVpBottom > dataVpTop + 28
+            ? dataVpTop + ((dataVpBottom - dataVpTop) / 2)
+            : theadRect.bottom + 24;
+        const pillTopPx = Math.round(pillVpY - wrapRect.top + scrollTop);
+        wrapper.style.setProperty('--ui-loading-pill-top', `${pillTopPx}px`);
+        return;
+    }
+
+    const regionFloor = headerRect && headerRect.height > 0 ? headerRect.bottom : wrapRect.top;
+    const visibleTop = Math.max(regionFloor, 12);
+    const visibleBottom = Math.min(wrapRect.bottom, vpHeight - 12);
+    if (visibleBottom > visibleTop + 28) {
+        const pillVpY = visibleTop + ((visibleBottom - visibleTop) / 2);
+        const pillTopPx = Math.round(pillVpY - wrapRect.top + scrollTop);
+        wrapper.style.setProperty('--ui-loading-pill-top', `${pillTopPx}px`);
+    } else if (headerRect && headerRect.height > 0) {
+        const pillTopPx = Math.round((headerRect.bottom + 24) - wrapRect.top + scrollTop);
+        wrapper.style.setProperty('--ui-loading-pill-top', `${pillTopPx}px`);
+    } else {
+        wrapper.style.removeProperty('--ui-loading-pill-top');
+    }
+};
+
+const createSpinnerSvg = (doc, size = 16) => {
+    const makeSvg = (tag, attrs = {}) => {
+        const el = typeof doc.createElementNS === 'function'
+            ? doc.createElementNS('http://www.w3.org/2000/svg', tag)
+            : doc.createElement(tag);
+        for (const [key, value] of Object.entries(attrs)) {
+            el.setAttribute(key, String(value));
+        }
+        return el;
+    };
+    const spinner = makeSvg('svg', {
+        class: 'ui-dt-loading-pill__spinner',
+        viewBox: '0 0 20 20',
+        width: String(size),
+        height: String(size),
+        focusable: 'false',
+        'aria-hidden': 'true',
+    });
+    spinner.appendChild(makeSvg('circle', { class: 'ui-dt-loading-pill__track', cx: '10', cy: '10', r: '8' }));
+    spinner.appendChild(makeSvg('circle', { class: 'ui-dt-loading-pill__arc', cx: '10', cy: '10', r: '8' }));
+    return spinner;
+};
+
+export function createInlineLoader(label, options = {}, doc = (typeof document !== 'undefined' ? document : null)) {
+    if (!doc) return null;
+    const container = doc.createElement('div');
+    const inline = Boolean(options.inline);
+    container.className = inline ? 'ui-inline-loading ui-inline-loading--compact' : 'ui-inline-loading';
+    container.setAttribute('role', 'status');
+    container.setAttribute('aria-live', 'polite');
+
+    const pill = doc.createElement('div');
+    pill.className = 'ui-inline-loading__pill';
+    pill.appendChild(createSpinnerSvg(doc, Number(options.size) || 16));
+
+    const textEl = doc.createElement('span');
+    textEl.className = 'ui-inline-loading__text';
+    textEl.textContent = String(label || resolveBusyLabel({}, t));
+    pill.appendChild(textEl);
+
+    container.appendChild(pill);
+    return container;
+}
+
+export function setTableBusy(wrapper, busy, optionsOrTranslate = t) {
     if (!wrapper) return;
+    const options = typeof optionsOrTranslate === 'function'
+        ? { translate: optionsOrTranslate }
+        : (optionsOrTranslate && typeof optionsOrTranslate === 'object' ? optionsOrTranslate : {});
+    const translate = typeof options.translate === 'function' ? options.translate : t;
+    const ariaTarget = options.ariaTarget || wrapper;
+    const isRegionMode = options.mode === 'region';
     const doc = wrapper.ownerDocument || (typeof document !== 'undefined' ? document : null);
 
     let bar = wrapper.querySelector?.(':scope > .ui-dt-loading-bar') ?? wrapper.querySelector?.('.ui-dt-loading-bar') ?? null;
@@ -278,7 +461,9 @@ export function setTableBusy(wrapper, busy, translate = t) {
             bar = doc.createElement('div');
             bar.className = 'ui-dt-loading-bar';
             bar.setAttribute('aria-hidden', 'true');
-            bar.innerHTML = '<span class="ui-dt-loading-bar__fill"></span>';
+            const fill = doc.createElement('span');
+            fill.className = 'ui-dt-loading-bar__fill';
+            bar.appendChild(fill);
             wrapper.appendChild(bar);
         }
         if (!pill) {
@@ -286,25 +471,40 @@ export function setTableBusy(wrapper, busy, translate = t) {
             pill.className = 'ui-dt-loading-pill';
             pill.setAttribute('role', 'status');
             pill.setAttribute('aria-live', 'polite');
-            pill.innerHTML = '<svg class="ui-dt-loading-pill__spinner" viewBox="0 0 20 20" width="16" height="16" focusable="false" aria-hidden="true">'
-                + '<circle class="ui-dt-loading-pill__track" cx="10" cy="10" r="8"></circle>'
-                + '<circle class="ui-dt-loading-pill__arc" cx="10" cy="10" r="8"></circle>'
-                + '</svg>'
-                + '<span class="ui-dt-loading-pill__text"></span>';
+            const spinner = createSpinnerSvg(doc, 16);
+            const pillText = doc.createElement('span');
+            pillText.className = 'ui-dt-loading-pill__text';
+            pill.appendChild(spinner);
+            pill.appendChild(pillText);
             wrapper.appendChild(pill);
         }
     }
 
     const labelEl = pill?.querySelector?.('.ui-dt-loading-pill__text') ?? null;
     if (labelEl) {
-        labelEl.textContent = busy ? translate('js.loader.loading') : '';
+        labelEl.textContent = busy ? resolveBusyLabel(options, translate) : '';
     }
 
-    wrapper.classList.toggle('is-loading', busy);
+    if (busy && isRegionMode) {
+        wrapper.setAttribute?.('data-loading-mode', 'region');
+    } else if (!busy && isRegionMode) {
+        wrapper.removeAttribute?.('data-loading-mode');
+    }
+
     if (busy) {
-        wrapper.setAttribute('aria-busy', 'true');
+        syncBusyGeometry(wrapper, doc, isRegionMode);
     } else {
-        wrapper.removeAttribute('aria-busy');
+        clearBusyGeometry(wrapper);
+    }
+
+    wrapper.classList.toggle('ui-data-loading-host', Boolean(busy));
+    wrapper.classList.toggle('is-loading', Boolean(busy));
+    if (ariaTarget) {
+        if (busy) {
+            ariaTarget.setAttribute?.('aria-busy', 'true');
+        } else {
+            ariaTarget.removeAttribute?.('aria-busy');
+        }
     }
 }
 
@@ -350,6 +550,7 @@ export function isFullPageNavigation(link, win) {
     if (/\.(pdf|xlsx|xls|csv|zip|docx|doc)$/i.test(url.pathname)) return false;
     if (url.searchParams.has('download')) return false;
     if (/\/receipt\/print(\/|$)/i.test(url.pathname)) return false;
+    if (isDownloadOrBinaryUrl(url.href, url.origin)) return false;
 
     return url.pathname !== win.location.pathname || url.search !== win.location.search;
 }
@@ -410,7 +611,9 @@ export async function downloadFileWithLoader(link, loader, win = globalThis.wind
         a.remove();
         win.setTimeout(() => URLObj.revokeObjectURL(blobUrl), 1000);
     } catch (error) {
-        console.error('Download error:', error);
+        if (Boolean(import.meta.env?.DEV)) {
+            win.AdasiDebug?.error ? win.AdasiDebug.error('Download error:', error) : globalThis.AdasiDebug?.error?.('Download error:', error);
+        }
         if (win.AdasiToast) {
             win.AdasiToast.error(win.AdasiI18n?.t?.('js.toast.failed') || 'Download failed');
         }
@@ -445,6 +648,8 @@ export function bootAdasiLoader(win = globalThis.window) {
     view.mount();
     win.AdasiLoader = loader;
     loader.download = (link) => downloadFileWithLoader(link, loader, win);
+    loader.setTableBusy = (wrapper, busy, optionsOrTranslate) => setTableBusy(wrapper, busy, optionsOrTranslate);
+    loader.createInlineLoader = (label, options = {}) => createInlineLoader(label, options, win.document);
 
     const $ = win.jQuery;
     if ($) {

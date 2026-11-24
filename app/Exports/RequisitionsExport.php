@@ -159,4 +159,9 @@ class RequisitionsExport implements AcceptsExportOptions, FromQuery, HasLocalePr
     {
         return $this->hasExportOptions() ? $this->catalogWrappedColumns() : ['C', 'D', 'I', 'J'];
     }
+
+    protected function workbookNumberFormats(): array
+    {
+        return $this->catalogNumberFormats();
+    }
 }

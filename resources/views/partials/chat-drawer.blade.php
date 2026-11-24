@@ -47,10 +47,7 @@
                         </div>
                     </div>
                     <div class="chat-thread-list" id="chatDrawerList">
-                        <div class="tw:flex tw:flex-col tw:items-center tw:justify-center tw:py-8 tw:text-on-surface-variant">
-                            <span class="ui-spinner" aria-hidden="true"></span>
-                            <span class="tw:mt-2 tw:text-ui-xs">{{ __('common.chat.loading') }}</span>
-                        </div>
+                        <x-ui.inline-loader :label="__('common.chat.loading')" class="tw:py-8" />
                     </div>
                 </div>
 
@@ -179,7 +176,7 @@
 
                         if (loading) {
                             sendButton.setAttribute('aria-busy', 'true');
-                            sendButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span><span class="tw:sr-only">{{ __('common.chat.sending') }}</span>';
+                            sendButton.innerHTML = '<span class="ui-spinner" aria-hidden="true"></span><span class="tw:sr-only">{{ __('common.chat.sending') }}</span>';
                             return;
                         }
 
@@ -224,12 +221,9 @@
 
                         return {
                             id: Number(message.id),
-                            senderId: Number(message.sender_id),
                             senderName,
                             body: message.body || '',
-                            isMe: typeof message.is_me === 'boolean'
-                                ? message.is_me
-                                : Number(message.sender_id) === config.myId,
+                            isMe: Boolean(message.is_me),
                             time: message.time || createdAt.toLocaleTimeString(window.AdasiI18n.locale === 'id' ? 'id-ID' : 'en-GB', { hour: '2-digit', minute: '2-digit' })
                         };
                     };
@@ -290,7 +284,7 @@
                         contextEl.classList.add('d-none');
                         actionsEl.classList.add('d-none');
                         templatesEl.classList.add('d-none');
-                        templateMenuEl.innerHTML = '';
+                        templateMenuEl.replaceChildren();
                     };
 
                     const setConversationMode = (conversation) => {
@@ -351,13 +345,18 @@
                         `).join('');
                     };
 
+                    const renderInlineLoading = (target, label) => {
+                        const inlineLoader = window.AdasiLoader?.createInlineLoader?.(label);
+                        if (inlineLoader) {
+                            target.replaceChildren(inlineLoader);
+                            return;
+                        }
+                        target.innerHTML = '<div class="ui-inline-loading tw:py-8" role="status" aria-live="polite"><div class="ui-inline-loading__pill"><span class="ui-spinner" aria-hidden="true"></span><span class="ui-inline-loading__text"></span></div></div>';
+                        target.querySelector('.ui-inline-loading__text').textContent = label;
+                    };
+
                     const loadConversations = (query = searchEl.value.trim()) => {
-                        listEl.innerHTML = `
-                            <div class="text-center text-muted py-5">
-                                <div class="spinner-border spinner-border-sm me-1"></div>
-                                <span>{{ __('common.chat.loading') }}</span>
-                            </div>
-                        `;
+                        renderInlineLoading(listEl, @js(__('common.chat.loading')));
 
                         const url = new URL(config.indexUrl, window.location.origin);
                         if (query) url.searchParams.set('q', query);
@@ -383,7 +382,7 @@
                     const renderContext = (context) => {
                         if (!context) {
                             contextEl.classList.add('d-none');
-                            contextEl.innerHTML = '';
+                            contextEl.replaceChildren();
                             return;
                         }
 
@@ -418,7 +417,7 @@
                     const renderActions = (actions) => {
                         if (!actions || actions.length === 0) {
                             actionsEl.classList.add('d-none');
-                            actionsEl.innerHTML = '';
+                            actionsEl.replaceChildren();
                             return;
                         }
 
@@ -439,7 +438,7 @@
                     const renderTemplates = (templates) => {
                         if (!templates || templates.length === 0) {
                             templatesEl.classList.add('d-none');
-                            templateMenuEl.innerHTML = '';
+                            templateMenuEl.replaceChildren();
                             return;
                         }
 
@@ -455,7 +454,7 @@
                         const files = Array.from(attachmentInput.files || []);
                         if (files.length === 0) {
                             attachmentListEl.classList.add('d-none');
-                            attachmentListEl.innerHTML = '';
+                            attachmentListEl.replaceChildren();
                             return;
                         }
 
@@ -564,7 +563,7 @@
                             .then((data) => {
                                 if (activeConversationId !== conversationId) return;
                                 const previousHeight = messagesEl.scrollHeight;
-                                data.messages.slice().reverse().forEach((message) => {
+                                data.messages.toReversed().forEach((message) => {
                                     if (!messagesEl.querySelector(`[data-message-id="${message.id}"]`)) {
                                         renderMessage(message, (html) => control.insertAdjacentHTML('afterend', html));
                                     }
@@ -600,12 +599,7 @@
                             inputEl.value = getDraft(activeConversationId);
                             clearAttachments();
                         }
-                        messagesEl.innerHTML = `
-                            <div class="text-center text-muted py-5">
-                                <div class="spinner-border spinner-border-sm me-1"></div>
-                                {{ __('common.chat.messages_loading') }}
-                            </div>
-                        `;
+                        renderInlineLoading(messagesEl, @js(__('common.chat.messages_loading')));
 
                         return fetch(buildUrl(config.showUrlTemplate, conversationId), {
                             headers: { 'Accept': 'application/json' }
@@ -622,7 +616,7 @@
                                 renderContext(data.context);
                                 renderActions(data.quick_actions);
                                 renderTemplates(data.templates);
-                                messagesEl.innerHTML = '';
+                                messagesEl.replaceChildren();
                                 lastMessageId = 0;
 
                                 if (!data.messages || data.messages.length === 0) {
@@ -714,7 +708,7 @@
                         const execute = (note = '') => {
                             button.disabled = true;
                             const originalHtml = button.innerHTML;
-                            button.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>${escapeHtml(@js(__('datatables.processing')))}`;
+                            button.innerHTML = `<span class="ui-spinner tw:mr-1.5" aria-hidden="true"></span>${escapeHtml(@js(__('datatables.processing')))}`;
 
                             return fetch(buildUrl(config.quickActionUrlTemplate, activeConversationId), {
                                 method: 'POST',
@@ -971,6 +965,9 @@
                     inputEl.addEventListener('keydown', (event) => {
                         if (event.key === 'Enter' && !event.shiftKey) {
                             event.preventDefault();
+                            if (event.isComposing || event.keyCode === 229) {
+                                return;
+                            }
                             formEl.requestSubmit();
                         }
                     });
@@ -1003,7 +1000,7 @@
                                     if (conv) conv.muted = isMutedResult;
                                 }
                             } catch (e) {
-                                console.error('Failed to toggle mute state', e);
+                                window.AdasiDebug?.error('Failed to toggle mute state', e);
                             } finally {
                                 muteToggle.disabled = false;
                             }

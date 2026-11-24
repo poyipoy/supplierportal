@@ -30,7 +30,7 @@ class PrItemController extends Controller
 
         $item = $pr->items()->create($result->data);
 
-        return response()->json(['success' => true, 'item' => $item->fresh()]);
+        return response()->json(['success' => true, 'item' => $this->presentItem($item->fresh())]);
     }
 
     public function update(SavePrItemRequest $request, string $id): JsonResponse
@@ -49,7 +49,27 @@ class PrItemController extends Controller
 
         $item->update($result->data);
 
-        return response()->json(['success' => true, 'item' => $item->fresh()]);
+        return response()->json(['success' => true, 'item' => $this->presentItem($item->fresh())]);
+    }
+
+    private function presentItem(PrItem $item): array
+    {
+        return $item->only([
+            'material_name',
+            'quantity',
+            'shape',
+            'thickness',
+            'd_inner',
+            'd_outer',
+            'width',
+            'length',
+            'weight_needed',
+            'weight_calculation_status',
+            'hs_code',
+            'hs_code_source',
+            'hs_code_resolution_status',
+            'remark',
+        ]);
     }
 
     public function destroy(string $id): JsonResponse

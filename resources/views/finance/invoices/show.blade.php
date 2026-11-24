@@ -681,11 +681,19 @@ document.addEventListener('DOMContentLoaded', function () {
     // Helper to toggle button loading state
     function setBtnLoading(btn, isLoading, loadingText) {
         if (!btn) return;
+        if (window.AdasiButton && typeof window.AdasiButton.startLoading === 'function') {
+            if (isLoading) {
+                window.AdasiButton.startLoading(btn, { text: loadingText });
+            } else {
+                window.AdasiButton.stopLoading(btn);
+            }
+            return;
+        }
         if (isLoading) {
             btn.dataset.originalHtml = btn.innerHTML;
             btn.disabled = true;
             btn.classList.add('disabled', 'tw:opacity-75');
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1.5" role="status" aria-hidden="true"></span><span></span>';
+            btn.innerHTML = '<span class="ui-spinner tw:mr-1.5" aria-hidden="true"></span><span></span>';
             btn.lastElementChild.textContent = loadingText;
         } else {
             if (btn.dataset.originalHtml) {
@@ -759,7 +767,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 }
             } catch (err) {
-                console.error('Section A save error:', err);
+                window.AdasiDebug?.error('Section A save error:', err);
                 sessionStorage.setItem('finance_invoice_verify_scroll', window.scrollY.toString());
                 formSectionA.submit();
                 return;
@@ -809,7 +817,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 }
             } catch (err) {
-                console.error('Section B save error:', err);
+                window.AdasiDebug?.error('Section B save error:', err);
                 sessionStorage.setItem('finance_invoice_verify_scroll', window.scrollY.toString());
                 formSectionB.submit();
                 return;

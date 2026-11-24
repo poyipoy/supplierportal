@@ -7,6 +7,7 @@ use App\Exports\PrImportTemplateExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Export\Filters\RequisitionExportFilters;
 use App\Http\Requests\ExportPrFormRequest;
+use App\Http\Requests\Purchasing\CancelPurchaseRequisitionRequest;
 use App\Http\Requests\SavePurchaseRequisitionRequest;
 use App\Imports\PrItemsImport;
 use App\Models\Period;
@@ -16,6 +17,7 @@ use App\Models\Quotation;
 use App\Models\User;
 use App\Services\Materials\PurchaseRequisitionItemSynchronizer;
 use App\Services\NotificationService;
+use App\Services\Procurement\PurchaseRequisitionCancellationService;
 use App\Services\Procurement\PurchaseRequisitionSubmissionService;
 use App\Support\BusinessTime;
 use App\Support\NumberFormat;
@@ -23,6 +25,7 @@ use App\Support\Procurement\LogisticsTerms;
 use App\Support\PurchasingNavigation;
 use App\Support\SpreadsheetImportReader;
 use App\Support\Ui\RowAction;
+use DomainException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -95,7 +98,7 @@ class PurchaseRequisitionController extends Controller
                     $tone = match ($pr->status) {
                         'draft' => 'neutral',
                         'submitted' => 'info',
-                        'rejected' => 'error',
+                        'rejected', 'cancelled' => 'error',
                         'bidding' => 'warning',
                         'completed' => 'success',
                         default => 'neutral'
@@ -106,6 +109,7 @@ class PurchaseRequisitionController extends Controller
                         'rejected' => __('purchasing.copy.rejected'),
                         'bidding' => __('purchasing.copy.bidding'),
                         'completed' => __('purchasing.copy.completed'),
+                        'cancelled' => __('status.pr.cancelled'),
                         default => __('purchasing.copy.unknown_status'),
                     };
 
@@ -334,10 +338,12 @@ class PurchaseRequisitionController extends Controller
             'items.hsCodeRule:id,material_category',
             'items.materialMaster:id,material_code,hs_category',
             'invitedSuppliers.supplier',
+            'cancelledInvitedSuppliers.supplier',
             'quotations.supplier',
             'quotations.items.prItem',
             'quotations.exchange_rate',
             'creator',
+            'cancelledBy',
         ])->findOrFail($id);
 
         // Quotation exposes total_amount/total_idr accessors backed by the
@@ -359,12 +365,21 @@ class PurchaseRequisitionController extends Controller
         // Footer totals are server-authoritative (decision 06).
         $totalQty = (int) $pr->items->sum(fn ($item) => $item->quantity_value);
 
+        $hasAnyQuotation = Quotation::withTrashed()
+            ->where('pr_id', $pr->id)
+            ->exists();
+        $canCancelPr = $pr->canBeCancelled();
+
         // Supplier invitation management: only for a requisition that is open
         // for quotations and already restricted to an invitation list.
         $canManageSuppliers = in_array($pr->status, PurchaseRequisitionSupplierController::MUTABLE_STATUSES, true)
             && $pr->invitedSuppliers->isNotEmpty();
         $invitableSuppliers = collect();
         $suppliersWithQuotation = [];
+        $cancelledSupplierIds = $pr->cancelledInvitedSuppliers
+            ->pluck('id')
+            ->map(fn ($sid) => (int) $sid)
+            ->all();
         if ($canManageSuppliers) {
             $invitableSuppliers = User::importEligible()
                 ->whereNotIn('id', $pr->invitedSuppliers->pluck('id'))
@@ -397,12 +412,63 @@ class PurchaseRequisitionController extends Controller
             'submittedQuotationCount',
             'totalKg',
             'totalQty',
+            'hasAnyQuotation',
+            'canCancelPr',
             'canManageSuppliers',
             'invitableSuppliers',
             'suppliersWithQuotation',
+            'cancelledSupplierIds',
             'invitationEvents',
             'recordNav',
         ));
+    }
+
+    /**
+     * Terminally cancel a submitted Purchase Requisition that has zero quotations.
+     */
+    public function cancel(
+        CancelPurchaseRequisitionRequest $request,
+        string $id,
+        PurchaseRequisitionCancellationService $cancellationService,
+    ) {
+        $pr = PurchaseRequisition::findOrFail($id);
+
+        try {
+            $cancellationService->cancel(
+                $pr,
+                $request->user(),
+                (string) $request->validated('cancellation_reason'),
+            );
+        } catch (DomainException $exception) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => $exception->getMessage(),
+                    'errors' => [
+                        'cancellation_reason' => [$exception->getMessage()],
+                    ],
+                ], 422);
+            }
+
+            return back()->withInput()->with('error', $exception->getMessage());
+        }
+
+        $parameters = [$pr];
+        if (PurchasingNavigation::isSafeUrl($request->input('return_url'))) {
+            $parameters['return_url'] = $request->input('return_url');
+        }
+        $redirectUrl = route('purchasing.requisitions.show', $parameters);
+
+        if ($request->expectsJson()) {
+            $request->session()->flash('success', __('purchasing.copy.pr_cancelled_success'));
+
+            return response()->json([
+                'success' => true,
+                'redirect' => $redirectUrl,
+            ]);
+        }
+
+        return redirect($redirectUrl)
+            ->with('success', __('purchasing.copy.pr_cancelled_success'));
     }
 
     /**

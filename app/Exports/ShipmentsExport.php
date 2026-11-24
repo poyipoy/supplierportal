@@ -177,4 +177,9 @@ class ShipmentsExport implements AcceptsExportOptions, FromQuery, HasLocalePrefe
     {
         return $this->hasExportOptions() ? $this->catalogWrappedColumns() : ['B', 'C', 'J', 'K'];
     }
+
+    protected function workbookNumberFormats(): array
+    {
+        return $this->catalogNumberFormats();
+    }
 }

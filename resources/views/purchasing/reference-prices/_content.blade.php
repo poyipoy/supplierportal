@@ -161,6 +161,7 @@
                                         :label="__($rp.'.rules.action_edit', ['key' => $rule->category_key])"
                                         data-bs-toggle="modal"
                                         data-bs-target="#referencePriceEditCategoryModal"
+                                        data-rule-id="{{ $rule->id }}"
                                         data-category-key="{{ $rule->category_key }}"
                                         data-category-name="{{ $rule->category_name }}"
                                         data-dimension-min="{{ $rule->dimension_min }}"

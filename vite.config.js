@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
 import tailwindcss from '@tailwindcss/vite';
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
     css: {
         postcss: {
             plugins: [{
@@ -58,11 +58,54 @@ export default defineConfig({
             }],
         },
     },
+    esbuild: {
+        drop: mode === 'production' ? ['debugger'] : [],
+        pure: mode === 'production' ? ['console.log', 'console.debug', 'console.info'] : [],
+        legalComments: 'none',
+    },
+    build: {
+        sourcemap: false,
+        rollupOptions: {
+            output: {
+                manualChunks(id) {
+                    const normalized = id.replace(/\\/g, '/');
+                    if (
+                        normalized.includes('/node_modules/alpinejs/')
+                        || normalized.endsWith('/resources/js/debug-logger.js')
+                        || normalized.endsWith('/resources/js/i18n.js')
+                        || normalized.endsWith('/resources/js/origin-validator.js')
+                        || normalized.endsWith('/resources/js/form-a11y.js')
+                        || normalized.endsWith('/resources/js/asset-protection.js')
+                        || normalized.endsWith('/resources/js/submit-guard.js')
+                        || normalized.endsWith('/resources/js/toast-center.js')
+                    ) {
+                        return 'portal-core';
+                    }
+                    if (
+                        normalized.endsWith('/resources/js/password-assistance.js')
+                        || normalized.endsWith('/resources/js/locale-switcher.js')
+                        || normalized.endsWith('/resources/js/overlay-modality.js')
+                        || normalized.endsWith('/resources/js/async-form-submit.js')
+                        || normalized.endsWith('/resources/js/file-upload.js')
+                        || normalized.endsWith('/resources/js/searchable-select.js')
+                    ) {
+                        return 'portal-forms';
+                    }
+                },
+            },
+        },
+    },
     plugins: [
         tailwindcss(),
         laravel({
-            input: ['resources/css/app.css', 'resources/js/app.js', 'resources/js/registration-receipt.js'],
+            input: [
+                'resources/css/app.css',
+                'resources/js/app.js',
+                'resources/css/auth.css',
+                'resources/js/auth.js',
+                'resources/js/registration-receipt.js',
+            ],
             refresh: true,
         }),
     ],
-});
+}));

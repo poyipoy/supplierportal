@@ -18,7 +18,7 @@ use Illuminate\Validation\Rule;
  */
 class PurchasingRequestController extends Controller
 {
-    private const STATUS_FILTERS = ['unresponded', 'draft', 'revision_requested', 'submitted', 'accepted', 'rejected', 'all_unavailable'];
+    private const STATUS_FILTERS = ['unresponded', 'draft', 'revision_requested', 'submitted', 'accepted', 'rejected', 'all_unavailable', 'cancelled'];
 
     public function index(Request $request)
     {
@@ -40,8 +40,11 @@ class PurchasingRequestController extends Controller
         if (! empty($filters['period_id'])) {
             $query->where('period_id', $filters['period_id']);
         }
-        if (($filters['status'] ?? null) === 'unresponded') {
+        if (($filters['status'] ?? null) === 'cancelled') {
+            $query->cancelledForSupplier($supplierId);
+        } elseif (($filters['status'] ?? null) === 'unresponded') {
             $query->whereIn('status', ['submitted', 'bidding'])
+                ->whereDoesntHave('cancelledInvitedSuppliers', fn ($s) => $s->where('users.id', $supplierId))
                 ->whereDoesntHave('quotations', fn ($q) => $q->where('supplier_id', $supplierId));
         } elseif (! empty($filters['status'])) {
             $query->whereHas('quotations', fn ($q) => $q->where('supplier_id', $supplierId)->where('status', $filters['status']));
@@ -62,22 +65,38 @@ class PurchasingRequestController extends Controller
         $supplierId = (int) auth()->id();
 
         $pr = $this->accessibleQuery($supplierId)
-            ->with(['period', 'items' => fn ($q) => $q->orderBy('id')])
+            ->with([
+                'period',
+                'cancelledInvitedSuppliers' => fn ($q) => $q->where('users.id', $supplierId),
+            ])
             ->findOrFail($pr_id);
-        $action = $pr->supplierQuotationAction(auth()->user());
 
-        return view('supplier.requests.show', compact('pr', 'action'));
+        $isCancelledForSupplier = $pr->isCancelledForSupplier($supplierId);
+        if ($isCancelledForSupplier) {
+            $cancelledAt = $pr->supplierCancelledAt($supplierId);
+            $action = ['type' => null, 'url' => null, 'quotation' => null];
+
+            return view('supplier.requests.show', compact('pr', 'action', 'isCancelledForSupplier', 'cancelledAt'));
+        }
+
+        $pr->load(['items' => fn ($q) => $q->orderBy('id')]);
+        $action = $pr->supplierQuotationAction(auth()->user());
+        $cancelledAt = null;
+
+        return view('supplier.requests.show', compact('pr', 'action', 'isCancelledForSupplier', 'cancelledAt'));
     }
 
-    /** Only the supplier's own quotation and invitation flags; never the invitation list. */
+    /** Only the supplier's own quotation and invitation flags; never the full invitation list. */
     private function accessibleQuery(int $supplierId): Builder
     {
         return PurchaseRequisition::query()
             ->accessibleBySupplier($supplierId)
             ->with(['quotations' => fn ($q) => $q->where('supplier_id', $supplierId)])
             ->withExists([
+                'allInvitedSuppliers as has_any_invitations',
                 'invitedSuppliers as has_invitations',
                 'invitedSuppliers as is_invited' => fn ($q) => $q->where('users.id', $supplierId),
+                'cancelledInvitedSuppliers as is_cancelled_invitation' => fn ($q) => $q->where('users.id', $supplierId),
             ]);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Supplier;
 
+use App\Exceptions\ProcurementAvailabilityException;
 use App\Exports\QuotationFormExport;
 use App\Exports\QuotationImportTemplateExport;
 use App\Http\Controllers\Controller;
@@ -21,7 +22,10 @@ use App\Support\BusinessTime;
 use App\Support\Procurement\ProcurementFeatures;
 use App\Support\SpreadsheetImportReader;
 use App\Support\Ui\RowAction;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\File;
@@ -45,12 +49,12 @@ class QuotationController extends Controller
     public function index(Request $request)
     {
         Gate::authorize('viewAny', Quotation::class);
-        $supplierId = auth()->id();
+        $supplierId = (int) auth()->id();
 
         $periods = Period::where('status', 'open')
             ->where(function ($periodQuery) use ($supplierId) {
                 $periodQuery->whereHas('purchaseRequisitions', function ($query) use ($supplierId) {
-                    $query->visibleToSupplier($supplierId);
+                    $query->accessibleBySupplier($supplierId);
                 })
                     ->orWhereHas('purchaseRequisitions.quotations', function ($query) use ($supplierId) {
                         $query->where('supplier_id', $supplierId);
@@ -67,13 +71,20 @@ class QuotationController extends Controller
 
         $periodIds = $periods->pluck('id');
 
-        // Prefetch visible active PRs for all periods in 1 query
+        // Prefetch visible active PRs for all periods in 1 query (excludes cancelled PRs/invitations)
         $activePrs = PurchaseRequisition::whereIn('period_id', $periodIds)
             ->whereIn('status', ['submitted', 'bidding'])
             ->visibleToSupplier($supplierId)
             ->get(['id', 'period_id']);
 
         $activePrsByPeriod = $activePrs->groupBy('period_id');
+
+        // Prefetch all accessible PRs (including cancelled) for accurate total PR counts per period
+        $accessiblePrs = PurchaseRequisition::whereIn('period_id', $periodIds)
+            ->accessibleBySupplier($supplierId)
+            ->get(['id', 'period_id']);
+
+        $accessiblePrsByPeriod = $accessiblePrs->groupBy('period_id');
 
         // Prefetch quotations of this supplier for all periods in 1 query
         $quotations = Quotation::where('supplier_id', $supplierId)
@@ -85,15 +96,16 @@ class QuotationController extends Controller
 
         $quotationsByPeriod = $quotations->groupBy(fn ($q) => $q->purchaseRequisition?->period_id);
 
-        // Derive metrics in-memory per period — zero extra database queries
+        // Derive metrics in-memory per period with zero extra database queries
         foreach ($periods as $period) {
             $periodActivePrs = $activePrsByPeriod->get($period->id, collect());
+            $periodAccessiblePrs = $accessiblePrsByPeriod->get($period->id, collect());
             $periodQuotations = $quotationsByPeriod->get($period->id, collect());
 
-            $activePrIds = $periodActivePrs->pluck('id');
+            $accessiblePrIds = $periodAccessiblePrs->pluck('id');
             $quotedPrIds = $periodQuotations->pluck('pr_id');
 
-            $period->total_prs = $activePrIds
+            $period->total_prs = $accessiblePrIds
                 ->merge($quotedPrIds)
                 ->unique()
                 ->count();
@@ -116,21 +128,38 @@ class QuotationController extends Controller
         Gate::authorize('viewAny', Quotation::class);
         $filters = QuotationExportFilters::validated($request, supplier: true);
         $period = Period::findOrFail($period_id);
-        $supplierId = auth()->id();
+        $supplierId = (int) auth()->id();
 
-        $query = PurchaseRequisition::with(['items', 'quotations' => function ($query) use ($supplierId) {
-            $query->where('supplier_id', $supplierId);
-        }])
+        $query = PurchaseRequisition::query()
+            ->select([
+                'purchase_requisitions.id',
+                'purchase_requisitions.period_id',
+                'purchase_requisitions.pr_number',
+                'purchase_requisitions.status',
+                'purchase_requisitions.updated_at',
+            ])
+            ->with([
+                'quotations' => fn ($query) => $query
+                    ->select(['id', 'pr_id', 'supplier_id', 'status', 'submitted_at'])
+                    ->where('supplier_id', $supplierId),
+            ])
+            ->withCount('items')
+            ->withExists([
+                'cancelledInvitedSuppliers as is_cancelled_invitation' => fn ($query) => $query->where('users.id', $supplierId),
+            ])
             ->where('period_id', $period_id)
             ->accessibleBySupplier($supplierId);
 
         if ($request->filled('pr_number')) {
-            $query->where('pr_number', 'like', '%'.$request->pr_number.'%');
+            $query->where('purchase_requisitions.pr_number', 'like', '%'.$request->pr_number.'%');
         }
 
         if ($request->filled('status')) {
-            if ($request->status === 'unresponded') {
+            if ($request->status === 'cancelled') {
+                $query->cancelledForSupplier($supplierId);
+            } elseif ($request->status === 'unresponded') {
                 $query->whereIn('status', ['submitted', 'bidding'])
+                    ->whereDoesntHave('cancelledInvitedSuppliers', fn ($s) => $s->where('users.id', $supplierId))
                     ->whereDoesntHave('quotations', function ($q) use ($supplierId) {
                         $q->where('supplier_id', $supplierId);
                     });
@@ -144,16 +173,27 @@ class QuotationController extends Controller
 
         if ($request->ajax()) {
             if ($search = trim((string) ($filters['search'] ?? ''))) {
-                $query->where(fn ($q) => $q->where('pr_number', 'like', '%'.$search.'%')->orWhere('updated_at', 'like', '%'.$search.'%'));
+                $query->where(fn ($q) => $q
+                    ->where('purchase_requisitions.pr_number', 'like', '%'.$search.'%')
+                    ->orWhere('purchase_requisitions.updated_at', 'like', '%'.$search.'%'));
             }
 
-            return DataTables::eloquent($query->orderByDesc('updated_at'))
+            $cancelledBadgeHtml = Blade::render(
+                '<x-ui.status-chip tone="error" icon="x-circle">{{ $label }}</x-ui.status-chip>',
+                ['label' => __('status.pr.cancelled')]
+            );
+
+            return DataTables::eloquent($query->orderByDesc('purchase_requisitions.updated_at'))
                 ->filter(fn ($query) => null)
                 ->addIndexColumn()
                 ->addColumn('pr_number_display', fn ($pr) => $pr->pr_number ?? '-')
                 ->addColumn('updated_date', fn ($pr) => BusinessTime::format($pr->updated_at, 'd M Y, H:i'))
-                ->addColumn('item_count', fn ($pr) => $pr->items->count().' Item')
-                ->addColumn('status_badge', function ($pr) {
+                ->addColumn('item_count', fn ($pr) => $pr->isCancelledForSupplier($supplierId) ? '-' : ((int) $pr->items_count).' Item')
+                ->addColumn('status_badge', function ($pr) use ($supplierId, $cancelledBadgeHtml) {
+                    if ($pr->isCancelledForSupplier($supplierId)) {
+                        return $cancelledBadgeHtml;
+                    }
+
                     $quotation = $pr->quotations->first();
                     $status = $quotation ? $quotation->status : 'unresponded';
 
@@ -168,7 +208,13 @@ class QuotationController extends Controller
                         default => '<span class="ui-status-chip ui-status-chip--neutral">'.e(ucwords($status)).'</span>',
                     };
                 })
-                ->addColumn('action', function ($pr) {
+                ->addColumn('action', function ($pr) use ($supplierId) {
+                    if ($pr->isCancelledForSupplier($supplierId)) {
+                        $action = RowAction::detail(route('supplier.requests.show', $pr), $pr->pr_number);
+
+                        return '<div class="d-inline-flex gap-1 justify-content-end flex-wrap">'.$action.'</div>';
+                    }
+
                     $quotation = $pr->quotations->first();
                     $status = $quotation ? $quotation->status : 'unresponded';
 
@@ -182,10 +228,64 @@ class QuotationController extends Controller
                     return '<div class="d-inline-flex gap-1 justify-content-end flex-wrap">'.$action.'</div>';
                 })
                 ->rawColumns(['status_badge', 'action'])
+                ->ignoreSelectsInCountQuery()
+                ->only([
+                    'DT_RowIndex',
+                    'pr_number_display',
+                    'updated_date',
+                    'item_count',
+                    'status_badge',
+                    'action',
+                ])
                 ->make(true);
         }
 
         return view('supplier.quotations.period', compact('period'));
+    }
+
+    /**
+     * Passive availability check polled by the quotation form to detect mid-form cancellation.
+     */
+    public function availability(Request $request, $pr_id): JsonResponse
+    {
+        Gate::authorize('viewAny', Quotation::class);
+        $supplierId = (int) auth()->id();
+
+        $pr = PurchaseRequisition::query()
+            ->select(['id', 'pr_number', 'status', 'cancelled_at'])
+            ->withExists([
+                'cancelledInvitedSuppliers as is_cancelled_invitation' => fn ($query) => $query->where('users.id', $supplierId),
+            ])
+            ->findOrFail($pr_id);
+
+        if (! $pr->isAccessibleBySupplier($supplierId)) {
+            abort(403, __('supplier.copy.you_are_not_invited_to_submit_a_quotation_for_this_requisition'));
+        }
+
+        $isCancelledForSupplier = $pr->isCancelledForSupplier($supplierId);
+        $available = ! $isCancelledForSupplier && in_array($pr->status, ['submitted', 'bidding'], true);
+
+        $code = match (true) {
+            $pr->isCancelled() => ProcurementAvailabilityException::CODE_PR_CANCELLED,
+            $isCancelledForSupplier => ProcurementAvailabilityException::CODE_INVITATION_CANCELLED,
+            ! $available => ProcurementAvailabilityException::CODE_PR_UNAVAILABLE,
+            default => null,
+        };
+
+        $message = match ($code) {
+            ProcurementAvailabilityException::CODE_PR_CANCELLED => __('supplier_requests.availability.pr_cancelled_banner'),
+            ProcurementAvailabilityException::CODE_INVITATION_CANCELLED => __('supplier_requests.availability.invitation_cancelled_banner'),
+            ProcurementAvailabilityException::CODE_PR_UNAVAILABLE => __('supplier.copy.this_requisition_is_no_longer_available_for_quotation'),
+            default => null,
+        };
+
+        return response()->json([
+            'available' => $available,
+            'status' => $isCancelledForSupplier ? 'cancelled' : ($available ? 'open' : 'closed'),
+            'code' => $code,
+            'message' => $message,
+            'redirect_url' => route('supplier.requests.show', $pr),
+        ])->header('Cache-Control', 'private, no-store, max-age=0');
     }
 
     /**
@@ -194,20 +294,34 @@ class QuotationController extends Controller
     public function create($pr_id)
     {
         Gate::authorize('create', Quotation::class);
-        $pr = PurchaseRequisition::with(['items', 'invitedSuppliers'])->findOrFail($pr_id);
+        $supplierId = (int) auth()->id();
+        $pr = PurchaseRequisition::with([
+            'allInvitedSuppliers',
+            'quotations' => fn ($q) => $q->where('supplier_id', $supplierId),
+        ])->findOrFail($pr_id);
 
-        if (! in_array($pr->status, ['submitted', 'bidding'])) {
+        if (! $pr->isAccessibleBySupplier($supplierId)) {
+            abort(403, __('supplier.copy.you_are_not_invited_to_submit_a_quotation_for_this_requisition'));
+        }
+
+        if ($pr->isCancelledForSupplier($supplierId)) {
+            $warning = $pr->isCancelled()
+                ? __('supplier_requests.availability.pr_cancelled_redirect')
+                : __('supplier_requests.availability.invitation_cancelled_redirect');
+
+            return redirect()->route('supplier.requests.show', $pr)->with('warning', $warning);
+        }
+
+        if (! in_array($pr->status, ['submitted', 'bidding'], true)) {
             return redirect()->route('supplier.quotations.index')->with('error', __('supplier.copy.this_requisition_is_not_available_for_quotation'));
         }
 
-        if (! $pr->isVisibleToSupplier(auth()->id())) {
-            abort(403, __('supplier.copy.you_are_not_invited_to_submit_a_quotation_for_this_requisition'));
-        }
+        $pr->load('items');
 
         // Find an existing quotation.
         $quotation = Quotation::with('items.attachments')
             ->where('pr_id', $pr_id)
-            ->where('supplier_id', auth()->id())
+            ->where('supplier_id', $supplierId)
             ->first();
 
         // Final quotations are read-only; drafts and revision_requested quotations can be edited.
@@ -246,9 +360,16 @@ class QuotationController extends Controller
         return view('supplier.quotations.create', compact('pr', 'quotation', 'supplierCurrency', 'supplierRate', 'currencyOptions', 'currencyRates', 'surplusOffersAllowed', 'shipmentMtcEnabled'));
     }
 
-    public function importTemplate($pr_id)
+    public function importTemplate(Request $request, $pr_id)
     {
-        $pr = $this->importableRequisition($pr_id);
+        try {
+            $pr = $this->importableRequisition($pr_id);
+        } catch (ProcurementAvailabilityException $exception) {
+            $pr = PurchaseRequisition::findOrFail($pr_id);
+
+            return $this->cancelledAvailabilityResponse($request, $pr, $exception->errorCode, $exception->getMessage());
+        }
+
         $safeNumber = trim((string) preg_replace('/[^A-Za-z0-9_-]+/', '_', $pr->pr_number ?? ''), '_');
         $safeNumber = $safeNumber !== '' ? $safeNumber : 'PR_'.$pr->id;
 
@@ -265,7 +386,14 @@ class QuotationController extends Controller
      */
     public function exportForm(Request $request, $pr_id)
     {
-        $pr = $this->importableRequisition($pr_id);
+        try {
+            $pr = $this->importableRequisition($pr_id);
+        } catch (ProcurementAvailabilityException $exception) {
+            $pr = PurchaseRequisition::findOrFail($pr_id);
+
+            return $this->cancelledAvailabilityResponse($request, $pr, $exception->errorCode, $exception->getMessage());
+        }
+
         $validated = ExportQuotationFormRequest::validateFor($request, $pr);
         $safeNumber = trim((string) preg_replace('/[^A-Za-z0-9_-]+/', '_', $pr->pr_number ?? ''), '_');
         $safeNumber = $safeNumber !== '' ? $safeNumber : 'PR_'.$pr->id;
@@ -283,7 +411,14 @@ class QuotationController extends Controller
 
     public function importPreview(Request $request, $pr_id)
     {
-        $pr = $this->importableRequisition($pr_id);
+        try {
+            $pr = $this->importableRequisition($pr_id);
+        } catch (ProcurementAvailabilityException $exception) {
+            $pr = PurchaseRequisition::findOrFail($pr_id);
+
+            return $this->cancelledAvailabilityResponse($request, $pr, $exception->errorCode, $exception->getMessage(), forceJson: true);
+        }
+
         $validator = Validator::make($request->all(), [
             'import_file' => [
                 'required',
@@ -324,25 +459,50 @@ class QuotationController extends Controller
     public function store(Request $request, $pr_id)
     {
         Gate::authorize('create', Quotation::class);
-        $pr = PurchaseRequisition::with('invitedSuppliers', 'items.materialMaster')->findOrFail($pr_id);
+        $supplierId = (int) auth()->id();
+        $pr = PurchaseRequisition::with([
+            'allInvitedSuppliers',
+            'items.materialMaster',
+        ])->findOrFail($pr_id);
 
-        if (! in_array($pr->status, ['submitted', 'bidding'])) {
-            return redirect()->route('supplier.quotations.index')->with('error', __('supplier.copy.this_requisition_is_not_available_for_quotation'));
+        if (! $pr->isAccessibleBySupplier($supplierId)) {
+            abort(403, __('supplier.copy.you_are_not_invited_to_submit_a_quotation_for_this_requisition'));
         }
 
-        if (! $pr->isVisibleToSupplier(auth()->id())) {
-            abort(403, __('supplier.copy.you_are_not_invited_to_submit_a_quotation_for_this_requisition'));
+        if ($pr->isCancelledForSupplier($supplierId)) {
+            $code = $pr->isCancelled()
+                ? ProcurementAvailabilityException::CODE_PR_CANCELLED
+                : ProcurementAvailabilityException::CODE_INVITATION_CANCELLED;
+
+            return $this->cancelledAvailabilityResponse($request, $pr, $code);
+        }
+
+        if (! in_array($pr->status, ['submitted', 'bidding'], true)) {
+            if ($request->expectsJson()) {
+                return $this->cancelledAvailabilityResponse(
+                    $request,
+                    $pr,
+                    ProcurementAvailabilityException::CODE_PR_UNAVAILABLE,
+                    __('supplier.copy.this_requisition_is_not_available_for_quotation'),
+                );
+            }
+
+            return redirect()->route('supplier.quotations.index')->with('error', __('supplier.copy.this_requisition_is_not_available_for_quotation'));
         }
 
         $payload = StoreQuotationRequest::validateFor($request, $pr, $this->submissionService);
 
-        return $this->submissionService->save(
-            $request,
-            $pr,
-            $pr_id,
-            $payload['validated'],
-            $payload['allUnavailable'],
-        );
+        try {
+            return $this->submissionService->save(
+                $request,
+                $pr,
+                $pr_id,
+                $payload['validated'],
+                $payload['allUnavailable'],
+            );
+        } catch (ProcurementAvailabilityException $exception) {
+            return $this->cancelledAvailabilityResponse($request, $pr, $exception->errorCode, $exception->getMessage());
+        }
     }
 
     /**
@@ -375,21 +535,27 @@ class QuotationController extends Controller
         $supplierId = (int) $supplier->id;
         $pr = PurchaseRequisition::with([
             'items',
-            'invitedSuppliers',
+            'allInvitedSuppliers',
             'quotations' => fn ($query) => $query->where('supplier_id', $supplierId),
         ])->findOrFail($prId);
 
-        if (! in_array($pr->status, ['submitted', 'bidding'], true)) {
-            abort(403, __('supplier.copy.this_requisition_is_not_available_for_quotation_import'));
+        if (! $pr->isAccessibleBySupplier($supplierId)) {
+            abort(403, __('supplier.copy.you_are_not_invited_to_submit_a_quotation_for_this_requisition'));
         }
 
-        $isVisible = PurchaseRequisition::query()
-            ->whereKey($pr->id)
-            ->visibleToSupplier($supplierId)
-            ->exists();
+        if ($pr->isCancelledForSupplier($supplierId)) {
+            throw new ProcurementAvailabilityException(
+                $pr->isCancelled()
+                    ? ProcurementAvailabilityException::CODE_PR_CANCELLED
+                    : ProcurementAvailabilityException::CODE_INVITATION_CANCELLED,
+                $pr->isCancelled()
+                    ? __('supplier_requests.availability.pr_cancelled_toast')
+                    : __('supplier_requests.availability.invitation_cancelled_toast'),
+            );
+        }
 
-        if (! $isVisible) {
-            abort(403, __('supplier.copy.you_are_not_invited_to_submit_a_quotation_for_this_requisition'));
+        if (! in_array($pr->status, ['submitted', 'bidding'], true)) {
+            abort(403, __('supplier.copy.this_requisition_is_not_available_for_quotation_import'));
         }
 
         $quotation = $pr->quotations->first();
@@ -402,6 +568,41 @@ class QuotationController extends Controller
         }
 
         return $pr;
+    }
+
+    private function cancelledAvailabilityResponse(
+        Request $request,
+        PurchaseRequisition $pr,
+        string $code,
+        ?string $message = null,
+        bool $forceJson = false,
+    ): JsonResponse|RedirectResponse {
+        $resolvedMessage = $message ?? match ($code) {
+            ProcurementAvailabilityException::CODE_PR_CANCELLED => __('supplier_requests.availability.pr_cancelled_toast'),
+            ProcurementAvailabilityException::CODE_INVITATION_CANCELLED => __('supplier_requests.availability.invitation_cancelled_toast'),
+            default => __('supplier.copy.this_requisition_is_no_longer_available_for_quotation'),
+        };
+
+        $isCancelledCode = in_array($code, [
+            ProcurementAvailabilityException::CODE_PR_CANCELLED,
+            ProcurementAvailabilityException::CODE_INVITATION_CANCELLED,
+        ], true);
+
+        $redirectUrl = $isCancelledCode
+            ? route('supplier.requests.show', $pr)
+            : route('supplier.quotations.index');
+
+        if ($forceJson || $request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => false,
+                'code' => $code,
+                'status' => $isCancelledCode ? 'cancelled' : 'closed',
+                'message' => $resolvedMessage,
+                'redirect' => $redirectUrl,
+            ], 409);
+        }
+
+        return redirect($redirectUrl)->with($isCancelledCode ? 'warning' : 'error', $resolvedMessage);
     }
 
     private function importFailurePayload(array $messages): array

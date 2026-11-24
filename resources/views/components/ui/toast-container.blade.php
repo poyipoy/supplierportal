@@ -4,10 +4,15 @@
 
 <section
     x-data="adasiToastCenter"
+    x-ref="region"
     class="adasi-toast-region {{ $context === 'app' ? 'adasi-toast-region--app' : '' }}"
     aria-label="{{ __('common.notification.title') }}"
     aria-relevant="additions text"
+    @focusin="captureReturnFocus($event)"
 >
+    <p class="tw:sr-only">{{ __('common.notification.title') }}</p>
+    <div id="adasi-toast-announcer" x-ref="announcerPolite" class="tw:sr-only" aria-live="polite" aria-atomic="true"></div>
+    <div id="adasi-toast-announcer-assertive" x-ref="announcerAssertive" class="tw:sr-only" aria-live="assertive" aria-atomic="true"></div>
     <template x-for="toast in state.visible" :key="toast.id">
         <article
             x-show="toast.visible"
@@ -19,8 +24,9 @@
             x-transition:leave-end="adasi-toast-leave-end"
             class="adasi-toast"
             :class="[`adasi-toast--${toast.type}`, { 'adasi-toast--restored': toast.restored }]"
+            :data-toast-id="toast.id"
             :role="toast.type === 'error' ? 'alert' : 'status'"
-            :aria-live="toast.type === 'error' ? 'assertive' : 'polite'"
+            :aria-live="hasDedicatedAnnouncer ? 'off' : (toast.type === 'error' ? 'assertive' : 'polite')"
             aria-atomic="true"
             @mouseenter="pause(toast.id)"
             @mouseleave="resume(toast.id)"
@@ -96,6 +102,7 @@
             </div>
 
             <div x-show="toast.actions.length" class="adasi-toast__actions">
+                <span class="tw:sr-only">{{ __('js.toast.actions_available') }}</span>
                 <template x-for="(action, index) in toast.actions" :key="`${toast.id}-action-${index}`">
                     <button
                         type="button"

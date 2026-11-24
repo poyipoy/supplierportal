@@ -212,3 +212,55 @@ test('findFieldForErrorKey skips hidden fallback inputs when a visible field sha
 
     assert.equal(findFieldForErrorKey(form, 'preshipment.same_as_exporter'), checkbox);
 });
+
+test('409 conflict dispatches cancelable adasi:form-conflict and skips default redirect when handled', async () => {
+    const prior = Object.fromEntries(['window', 'document', 'fetch', 'FormData', 'CustomEvent'].map((key) => [key, globalThis[key]]));
+    let assignedUrl = null;
+    let capturedConflict = null;
+    const form = {
+        action: 'http://portal.test/supplier/quotations/abc123',
+        dataset: {},
+        getAttribute: (name) => (name === 'action' ? 'http://portal.test/supplier/quotations/abc123' : 'POST'),
+        setAttribute() {}, removeAttribute() {},
+        querySelectorAll: () => [],
+        querySelector: () => null,
+        dispatchEvent: (event) => {
+            if (event.type === 'adasi:form-conflict') {
+                capturedConflict = event;
+                event.defaultPrevented = true;
+            }
+        },
+    };
+    try {
+        globalThis.window = {
+            location: { origin: 'http://portal.test', assign: (url) => { assignedUrl = url; } },
+            requestAnimationFrame: (callback) => callback(),
+            AdasiI18n: { t: (key) => key },
+            AdasiLoader: { show: () => 1, hide() {} },
+            AdasiButton: { resetForm() {} },
+        };
+        globalThis.document = { createElement: () => ({ setAttribute() {}, append() {}, replaceChildren() {} }), querySelector: () => null };
+        globalThis.FormData = class { append() {} };
+        globalThis.CustomEvent = class {
+            constructor(type, options) {
+                this.type = type;
+                this.bubbles = Boolean(options?.bubbles);
+                this.cancelable = Boolean(options?.cancelable);
+                this.detail = options?.detail;
+                this.defaultPrevented = false;
+            }
+        };
+        globalThis.fetch = async () => ({
+            ok: false,
+            status: 409,
+            json: async () => ({ code: 'pr_cancelled', message: 'PR cancelled', redirect: '/supplier/requests/abc123' }),
+        });
+        await submitAsync(form);
+        assert.equal(capturedConflict?.type, 'adasi:form-conflict');
+        assert.equal(capturedConflict?.detail?.status, 409);
+        assert.equal(capturedConflict?.detail?.data?.code, 'pr_cancelled');
+        assert.equal(assignedUrl, null);
+    } finally {
+        Object.assign(globalThis, prior);
+    }
+});

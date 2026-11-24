@@ -43,6 +43,7 @@
     @csrf
 
     <div
+        id="adasi-login-error-alert"
         data-login-error-alert
         role="alert"
         hidden
@@ -64,18 +65,21 @@
                 :class="{ 'tw:border-error': emailError || {{ $errors->has('email') ? 'true' : 'false' }}, 'tw:border-outline': !(emailError || {{ $errors->has('email') ? 'true' : 'false' }}) }"
                 placeholder="{{ __('common.fields.email') }}"
                 value="{{ old('email') }}"
-                autocomplete="email"
+                autocomplete="username"
+                spellcheck="false"
+                enterkeyhint="next"
                 required
                 autofocus
                 @input="if ($el.value.trim().length > 0) emailError = false"
+                data-error="email-error"
                 :aria-invalid="(emailError || {{ $errors->has('email') ? 'true' : 'false' }}) ? 'true' : 'false'"
-                aria-describedby="email-error"
+                :aria-describedby="(emailError || {{ $errors->has('email') ? 'true' : 'false' }}) ? 'email-error' : null"
             >
         </div>
         <p
             id="email-error"
             class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error"
-            role="alert"
+            :role="(emailError || {{ $errors->has('email') ? 'true' : 'false' }}) ? 'alert' : null"
             x-show="emailError || {{ $errors->has('email') ? 'true' : 'false' }}"
             {{ $errors->has('email') ? '' : 'x-cloak style="display: none;"' }}
         >
@@ -104,13 +108,15 @@
                 :class="{ 'tw:border-error': passwordError || {{ $errors->has('password') ? 'true' : 'false' }}, 'tw:border-outline': !(passwordError || {{ $errors->has('password') ? 'true' : 'false' }}) }"
                 placeholder="{{ __('auth.login.password') }}"
                 autocomplete="current-password"
+                enterkeyhint="done"
                 maxlength="255"
                 required
                 @input="if ($el.value.length > 0) passwordError = false"
+                data-error="password-error"
                 :aria-invalid="(passwordError || {{ $errors->has('password') ? 'true' : 'false' }}) ? 'true' : 'false'"
-                aria-describedby="password-error"
+                :aria-describedby="(passwordError || {{ $errors->has('password') ? 'true' : 'false' }}) ? 'password-error' : null"
             >
-            <button type="button" disabled :disabled="false" aria-label="{{ __('auth.login.show_password') }}" class="ui-focus-ring tw:absolute tw:inset-y-0 tw:end-0.5 tw:my-auto tw:inline-flex tw:h-9 tw:w-9 tw:items-center tw:justify-center tw:rounded-ui-full tw:border-0 tw:bg-transparent tw:text-on-surface-variant tw:hover:bg-surface-container" @click="visible = !visible" :aria-label="visible ? @js(__('auth.login.hide_password')) : @js(__('auth.login.show_password'))">
+            <button type="button" disabled :disabled="false" aria-pressed="false" :aria-pressed="visible ? 'true' : 'false'" aria-label="{{ __('auth.login.show_password') }}" class="ui-focus-ring tw:absolute tw:inset-y-0 tw:end-0.5 tw:my-auto tw:inline-flex tw:h-9 tw:w-9 tw:items-center tw:justify-center tw:rounded-ui-full tw:border-0 tw:bg-transparent tw:text-on-surface-variant tw:hover:bg-surface-container" @click="visible = !visible" :aria-label="visible ? @js(__('auth.login.hide_password')) : @js(__('auth.login.show_password'))">
                 <x-ui.icon name="eye-off" x-show="visible" />
                 <x-ui.icon name="eye" x-show="!visible" />
             </button>
@@ -118,7 +124,7 @@
         <p
             id="password-error"
             class="tw:m-0 tw:text-ui-xs tw:font-medium tw:text-error"
-            role="alert"
+            :role="(passwordError || {{ $errors->has('password') ? 'true' : 'false' }}) ? 'alert' : null"
             x-show="passwordError || {{ $errors->has('password') ? 'true' : 'false' }}"
             {{ $errors->has('password') ? '' : 'x-cloak style="display: none;"' }}
         >

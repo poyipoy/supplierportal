@@ -169,9 +169,9 @@ class UiManagedSubmitAndChatDrawerButtonTest extends TestCase
 
         // Must not contain raw hardcoded spinner-border string mutation on submitButton
         $this->assertStringNotContainsString(
-            'submitButton.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>Opening...`;',
+            'spinner-border',
             $content,
-            'chat-drawer must not mutate submitButton.innerHTML with hardcoded spinner-border'
+            'chat-drawer must use ADASI .ui-spinner / inline-loader instead of Bootstrap spinner-border'
         );
 
         // Must track active opener button and stopLoading in hidden.bs.offcanvas

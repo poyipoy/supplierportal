@@ -1,4 +1,8 @@
 export function bootRegistrationReceipt(root = document) {
+    try {
+        localStorage.removeItem('adasi_supplier_reg_draft');
+        sessionStorage.removeItem('adasi_supplier_reg_draft_v2');
+    } catch { /* Storage may be blocked in restricted browsing modes. */ }
     const receipt = root.querySelector('[data-registration-receipt]');
     if (!receipt || receipt.dataset.initialized) return;
     receipt.dataset.initialized = 'true';

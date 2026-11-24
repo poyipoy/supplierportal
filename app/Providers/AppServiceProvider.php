@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Http\Middleware\ValidateCsrfToken;
 use App\Listeners\ApplyNotificationPreferences;
 use App\Models\MaintenanceRecord;
 use App\Models\MaintenanceRecordModule;
@@ -68,6 +69,10 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->scoped(NotificationPreferenceService::class);
         $this->app->scoped(FileInspectionService::class);
+        $this->app->singleton(
+            \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
+            ValidateCsrfToken::class,
+        );
 
         $this->app->scoped(RegionalDisplayFormatter::class, function (): RegionalDisplayFormatter {
             $user = auth()->user();

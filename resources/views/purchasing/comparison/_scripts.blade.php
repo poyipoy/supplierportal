@@ -237,9 +237,11 @@
             tab.setAttribute('href', href.pathname + href.search);
         });
         // Gate 1 C6 (N7): detail links return to the state the user is looking at now.
+        const returnTarget = new URL(target.toString());
+        returnTarget.searchParams.delete('_embed');
         document.querySelectorAll('#purchasingComparisonContainer [data-return-url]').forEach((link) => {
             const href = new URL(link.getAttribute('href'), window.location.origin);
-            href.searchParams.set('return_url', target.pathname + target.search);
+            href.searchParams.set('return_url', returnTarget.pathname + returnTarget.search);
             link.setAttribute('href', href.pathname + href.search);
         });
         document.querySelectorAll('#purchasingComparisonContainer [data-evaluation-header] form').forEach((form) => {
@@ -286,7 +288,7 @@
             try {
                 window._activeComparisonChart.destroy();
             } catch (e) {
-                console.warn('Error destroying chart:', e);
+                window.AdasiDebug?.warn('Error destroying chart:', e);
             }
             window._activeComparisonChart = null;
         }
@@ -297,7 +299,7 @@
                     $('#vsBestTable').DataTable().destroy();
                 }
             } catch (e) {
-                console.warn('Error destroying DataTable:', e);
+                window.AdasiDebug?.warn('Error destroying DataTable:', e);
             }
             window._activeVsBestTable = null;
         }
@@ -306,7 +308,7 @@
             try {
                 window.AdasiCalendar.closeActive();
             } catch (e) {
-                console.warn('Error closing active calendar:', e);
+                window.AdasiDebug?.warn('Error closing active calendar:', e);
             }
         }
     };
@@ -320,7 +322,7 @@
         try {
             config = JSON.parse(configEl.textContent);
         } catch (e) {
-            console.error('Invalid interSupplierConfig JSON', e);
+            window.AdasiDebug?.error('Invalid interSupplierConfig JSON', e);
             return;
         }
 
@@ -379,7 +381,7 @@
                 : eligiblePrOptions.filter((option) => option.search && option.search.includes(keyword))
             ).slice(0, 8);
 
-            comparisonPrSuggestions.innerHTML = '';
+            comparisonPrSuggestions.replaceChildren();
 
             if (matches.length === 0) {
                 const empty = document.createElement('div');
@@ -548,7 +550,7 @@
                 // B3: Render supplier legend items with Total Price/kg (IDR) below each supplier icon
                 const legendContainer = document.getElementById('comparisonChartLegend');
                 if (legendContainer) {
-                    legendContainer.innerHTML = '';
+                    legendContainer.replaceChildren();
                     const rawDatasets = comparisonChartData.datasets || [];
                     rawDatasets.forEach((rawDs, dsIdx) => {
                         const listItem = document.createElement('div');
@@ -975,7 +977,7 @@
         try {
             config = JSON.parse(configEl.textContent);
         } catch (e) {
-            console.error('Invalid historicalConfig JSON', e);
+            window.AdasiDebug?.error('Invalid historicalConfig JSON', e);
             return;
         }
 
@@ -984,6 +986,7 @@
         const materialSelect = document.getElementById('historicalMaterialSelect');
         const rangeSelect = document.getElementById('historicalRangeSelect');
         const resultsContainer = document.getElementById('historicalResults');
+        const resultsStatus = document.getElementById('historicalResultsStatus');
         const periodViewInputs = document.querySelectorAll('input[name="period_view"]');
         const materialsUrl = config.materialsUrl;
         const historicalDataUrl = config.historicalDataUrl;
@@ -999,6 +1002,20 @@
 
         if (!filterForm || !supplierSelect || !materialSelect || !rangeSelect || periodViewInputs.length === 0) {
             return;
+        }
+
+        function announceHistoricalStatus(message) {
+            if (!resultsStatus) return;
+            resultsStatus.textContent = '';
+            if (!message) return;
+            const announce = () => {
+                resultsStatus.textContent = message;
+            };
+            if (typeof window.requestAnimationFrame === 'function') {
+                window.requestAnimationFrame(announce);
+            } else {
+                announce();
+            }
         }
 
         function escapeOptionText(value) {
@@ -1207,6 +1224,7 @@
                     </div>
                 </div>
             `;
+            announceHistoricalStatus(message);
         }
 
         async function loadMaterialsForSupplier() {
@@ -1257,9 +1275,7 @@
                 applyShape();
 
                 if (kept && typeof window.loadHistorycalPayloadFromFilters === 'function') {
-                    window.loadHistorycalPayloadFromFilters();
-                } else if (kept) {
-                    filterForm.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+                    await window.loadHistorycalPayloadFromFilters();
                 } else {
                     // Nothing to load: the URL still has to describe what is on screen.
                     syncUrlFromForm();
@@ -1337,7 +1353,7 @@
             }
 
             const canvas = document.getElementById('historicalChart');
-            if (!canvas || !window.AdasiChart) return;
+            if (!canvas || !window.AdasiChart || typeof Chart === 'undefined') return;
 
             window._activeComparisonChart = new Chart(canvas, historicalChartConfig(payload));
         }
@@ -1395,9 +1411,9 @@
                 body.innerHTML = rows.map((row) => `
                     <tr>
                         <td class="text-center fw-medium ui-sticky-col">${escapeOptionText(row.period)}</td>
-                        <td class="text-end text-primary fw-bold">${formatRupiah(row.price_idr)}</td>
-                        <td class="text-end">${formatRupiah(row.min_idr)}</td>
-                        <td class="text-end">${formatRupiah(row.max_idr)}</td>
+                        <td class="text-end text-primary fw-bold ui-tabular-nums">${formatRupiah(row.price_idr)}</td>
+                        <td class="text-end ui-tabular-nums">${formatRupiah(row.min_idr)}</td>
+                        <td class="text-end ui-tabular-nums">${formatRupiah(row.max_idr)}</td>
                         <td class="text-center">${changeHtml(row.change_pct)}</td>
                     </tr>
                 `).join('');
@@ -1421,7 +1437,7 @@
                 <tr>
                     <td class="text-center fw-medium ui-sticky-col">
                         ${row.pr_url
-                            ? `<a href="${escapeOptionText(row.pr_url)}" class="text-primary text-decoration-none tw:hover:underline">${escapeOptionText(row.pr_number || '-')} →</a>`
+                            ? `<a href="${escapeOptionText(row.pr_url)}" class="ui-focus-ring tw:rounded-ui-xs text-primary text-decoration-none tw:hover:underline">${escapeOptionText(row.pr_number || '-')} →</a>`
                             : escapeOptionText(row.pr_number || '-')}
                     </td>
                     <td class="text-center fw-semibold ui-col-data-name">${escapeOptionText(row.material_name || payload.materialName || '-')}</td>
@@ -1471,7 +1487,7 @@
                     </header>
                     <div class="tw:p-4">
                         <figure class="ui-chart tw:m-0 tw:min-w-0" data-adasi-chart>
-                            <div class="tw:relative tw:w-full tw:h-64">
+                            <div class="tw:relative tw:w-full tw:h-64" data-adasi-chart-plot>
                                 <canvas id="historicalChart" role="img" tabindex="0" aria-label="${escapeOptionText(@js(__('common.accessibility.history_trend')))}" aria-describedby="historicalChart-summary historicalChart-hint" data-adasi-chart-focusable>${escapeOptionText(@js(__('common.accessibility.history_chart')))}</canvas>
                                 <span class="tw:sr-only" aria-live="polite" data-adasi-chart-live></span>
                             </div>
@@ -1492,12 +1508,18 @@
                         <div class="tw:text-ui-xs tw:font-semibold tw:uppercase tw:tracking-wider tw:text-on-surface-variant">${escapeOptionText(@js(__('common.accessibility.initial_latest')))}</div>
                         <div class="ui-tabular-nums tw:mt-1 tw:text-ui-2xl tw:font-semibold tw:text-on-surface-variant" id="totalChangeValue">-</div>
                     </div>
+                    <div class="tw:border-t tw:border-outline-variant tw:p-4 tw:sm:col-span-2" id="historicalWeightedSummary">
+                        <div class="tw:text-ui-xs tw:font-semibold tw:uppercase tw:tracking-wider tw:text-on-surface-variant">${escapeOptionText(@js(__('purchasing.comparison_analytics.historical_average')))}</div>
+                        <div class="ui-tabular-nums tw:mt-1 tw:text-ui-xl tw:font-semibold tw:text-on-surface" id="historicalWeightedAverage">—</div>
+                        <div class="tw:text-ui-xs tw:text-on-surface-variant" id="historicalWeightedBasis"></div>
+                        <div class="d-none tw:text-ui-xs tw:text-warning" id="historicalExcludedNote"></div>
+                    </div>
                 </section>
 
                 <section class="ui-data-table tw:overflow-hidden tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface tw:shadow-none">
                     <header class="tw:border-b tw:border-outline-variant tw:bg-surface-container tw:px-4 tw:py-3">
-                        <h2 class="tw:m-0 tw:text-sm tw:font-bold tw:text-on-surface">Supporting Data</h2>
-                        <p class="tw:m-0 tw:mt-0.5 tw:text-ui-xs tw:text-on-surface-variant">Quotation values and period changes for the selected supplier and exact material specification.</p>
+                        <h2 class="tw:m-0 tw:text-sm tw:font-bold tw:text-on-surface">${escapeOptionText(@js(__('purchasing.copy.supporting_data')))}</h2>
+                        <p class="tw:m-0 tw:mt-0.5 tw:text-ui-xs tw:text-on-surface-variant">${escapeOptionText(@js(__('purchasing.comparison_analytics.supporting_data_description')))}</p>
                     </header>
                     <div class="ui-data-table__scroll ui-table-sticky tw:w-full tw:min-w-0 tw:max-w-full" role="region" tabindex="0" aria-label="${escapeOptionText(@js(__('purchasing.copy.supporting_data')))}">
                         <table class="table table-hover align-middle mb-0 tw:text-ui-sm">
@@ -1505,14 +1527,14 @@
                             <tbody id="historicalTableBody"></tbody>
                         </table>
                     </div>
-                    <div id="historicalPagination" class="d-none tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-3 tw:border-t tw:border-outline-variant tw:bg-surface-low tw:px-4 tw:py-3">
+                    <nav id="historicalPagination" aria-label="${escapeOptionText(@js(__('pagination.navigation')))}" class="d-none tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-3 tw:border-t tw:border-outline-variant tw:bg-surface-low tw:px-4 tw:py-3">
                         <span id="historicalPaginationSummary" class="tw:text-ui-xs tw:text-on-surface-variant"></span>
                         <div class="tw:flex tw:items-center tw:gap-2">
                             <button type="button" id="historicalPreviousPage" data-history-page="1" class="ui-button ui-motion ui-focus-ring tw:inline-flex tw:min-h-[var(--ui-control-height-sm)] tw:items-center tw:justify-center tw:rounded-ui-sm tw:border tw:border-outline tw:bg-transparent tw:px-2.5 tw:py-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:disabled:cursor-not-allowed tw:disabled:opacity-50">${escapeOptionText(@js(__('pagination.previous')))}</button>
                             <span id="historicalPaginationPage" class="tw:min-w-20 tw:text-center tw:text-ui-xs tw:font-semibold tw:text-on-surface"></span>
                             <button type="button" id="historicalNextPage" data-history-page="1" class="ui-button ui-motion ui-focus-ring tw:inline-flex tw:min-h-[var(--ui-control-height-sm)] tw:items-center tw:justify-center tw:rounded-ui-sm tw:border tw:border-outline tw:bg-transparent tw:px-2.5 tw:py-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface tw:disabled:cursor-not-allowed tw:disabled:opacity-50">${escapeOptionText(@js(__('pagination.next')))}</button>
                         </div>
-                    </div>
+                    </nav>
                 </section>
             `;
         }
@@ -1535,20 +1557,22 @@
                     window._activeComparisonChart = null;
                 }
 
+                const emptyMessage = payload.materialName
+                    ? @json(__('purchasing.copy.comparison_no_quotation_data'))
+                    : @json(__('purchasing.copy.comparison_select_supplier_and_material'));
                 if (resultsContainer) {
                     resultsContainer.innerHTML = `
                         <div class="tw:rounded-ui-md tw:border tw:border-outline tw:bg-surface">
                             <div class="tw:flex tw:flex-col tw:items-center tw:justify-center tw:px-4 tw:py-8 tw:text-center">
                                 <span class="tw:text-on-surface-variant">${comparisonIcons.chartEmpty}</span>
                                 <p class="tw:m-0 tw:mt-3 tw:text-ui-sm tw:text-on-surface-variant">
-                                    ${escapeOptionText(payload.materialName
-                                        ? @json(__('purchasing.copy.comparison_no_quotation_data'))
-                                        : @json(__('purchasing.copy.comparison_select_supplier_and_material')))}
+                                    ${escapeOptionText(emptyMessage)}
                                 </p>
                             </div>
                         </div>
                     `;
                 }
+                announceHistoricalStatus(emptyMessage);
                 return;
             }
 
@@ -1567,6 +1591,17 @@
                     .replace(':supplier', escapeOptionText(payload.supplierName || @json(__('purchasing.comparison_analytics.all_suppliers'))));
                 titleEl.innerHTML = `<span class="tw:text-primary me-1">${comparisonIcons.chart}</span><span>${title}</span>`;
             }
+            const statusSummary = [
+                titleEl?.textContent?.trim() || payload.materialName || '',
+                payload.pagination?.total
+                    ? window.AdasiI18n.t('purchasing.js.pagination_summary', {
+                        from: payload.pagination.from || 0,
+                        to: payload.pagination.to || 0,
+                        total: payload.pagination.total,
+                    })
+                    : '',
+            ].filter(Boolean).join('. ');
+            announceHistoricalStatus(statusSummary);
         }
 
         window.loadHistorycalPayloadFromFilters = async function(historyPage = 1) {
@@ -1586,6 +1621,7 @@
                 url.searchParams.set('history_page', String(historyPage));
             }
             const request = payloadGuard.start();
+            window.AdasiLoader?.setTableBusy?.(resultsContainer, true, { mode: 'region' });
             resultsContainer?.setAttribute('aria-busy', 'true');
 
             const submitBtn = filterForm?.querySelector('button[type="submit"]');
@@ -1633,6 +1669,7 @@
                     if (submitBtn && window.AdasiButton && typeof window.AdasiButton.stopLoading === 'function') {
                         window.AdasiButton.stopLoading(submitBtn);
                     }
+                    window.AdasiLoader?.setTableBusy?.(resultsContainer, false, { mode: 'region' });
                     resultsContainer?.setAttribute('aria-busy', 'false');
                 }
             }
@@ -1644,7 +1681,7 @@
                 if (materialSelect.value) {
                     window.loadHistorycalPayloadFromFilters();
                 } else {
-                    filterForm.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+                    syncUrlFromForm();
                 }
             });
         });
@@ -1725,15 +1762,23 @@
             if (materialSelect.value) {
                 window.loadHistorycalPayloadFromFilters();
             } else {
-                filterForm.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+                syncUrlFromForm();
             }
         });
 
         filterForm.addEventListener('submit', (e) => {
+            e.preventDefault();
             if (materialSelect.value) {
-                e.preventDefault();
                 window.loadHistorycalPayloadFromFilters();
+                return;
             }
+            syncUrlFromForm();
+            if (!materialSelect.disabled) {
+                materialSelect.focus();
+            } else {
+                supplierSelect.focus();
+            }
+            announceHistoricalStatus(@json(__('purchasing.comparison_analytics.select_material')));
         });
 
         // Shape Dimension Visibility
@@ -1793,7 +1838,7 @@
         try {
             config = JSON.parse(configEl.textContent);
         } catch (e) {
-            console.error('Invalid vsBestConfig JSON', e);
+            window.AdasiDebug?.error('Invalid vsBestConfig JSON', e);
             return;
         }
 
@@ -1850,11 +1895,10 @@
                         return json.data || [];
                     },
                     error: function(xhr, error, thrown) {
-                        console.error('[vsBestTable] AJAX error:', error, thrown);
+                        window.AdasiDebug?.error('[vsBestTable] AJAX error:', error, thrown);
                         if (window.AdasiToast && typeof window.AdasiToast.error === 'function') {
                             window.AdasiToast.error('Gagal memuat data tabel perbandingan harga.');
                         }
-                        $('#vsBestTable_processing').hide();
                     }
                 },
                 columns: [
@@ -1954,7 +1998,20 @@
 
         event.preventDefault();
         if (typeof window.loadHistorycalPayloadFromFilters === 'function') {
-            window.loadHistorycalPayloadFromFilters(Number(button.dataset.historyPage || 1));
+            const buttonId = button.id;
+            const wasFocused = document.activeElement === button;
+            Promise.resolve(window.loadHistorycalPayloadFromFilters(Number(button.dataset.historyPage || 1))).then(() => {
+                const updatedButton = buttonId ? document.getElementById(buttonId) : null;
+                if (!updatedButton?.disabled) return;
+                if (!wasFocused && document.activeElement !== document.body) return;
+                const fallbackId = buttonId === 'historicalNextPage'
+                    ? 'historicalPreviousPage'
+                    : (buttonId === 'historicalPreviousPage' ? 'historicalNextPage' : null);
+                const fallback = fallbackId ? document.getElementById(fallbackId) : null;
+                if (fallback && !fallback.disabled) {
+                    fallback.focus({ preventScroll: true });
+                }
+            });
         }
     });
 

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Purchasing;
 
 use App\Enums\MaterialClaimStatus;
+use App\Exceptions\BusinessRuleException;
+use App\Exceptions\BusinessRuleViolation;
 use App\Http\Controllers\Controller;
 use App\Models\MaterialClaim;
 use App\Models\PurchaseOrder;
@@ -42,7 +44,7 @@ class MaterialClaimController extends Controller
     public function dataActionNeeded(Request $request)
     {
         $query = PurchaseOrder::with([
-            'supplier',
+            'supplier:id,name',
             // PUR-08: has_any_claim counts soft-deleted claims, matching claims.store.
             'qcInspections' => fn ($query) => $query
                 ->withExists(['materialClaims as has_any_claim' => fn ($claims) => $claims->withTrashed()])
@@ -77,12 +79,13 @@ class MaterialClaimController extends Controller
                 return '-';
             })
             ->rawColumns(['status_badge', 'action'])
+            ->only(['id', 'po_number_display', 'supplier_name', 'inspection_date', 'status_badge', 'action'])
             ->make(true);
     }
 
     public function dataHistory(Request $request, RegionalDisplayFormatter $regionalFormatter)
     {
-        $query = MaterialClaim::with(['purchaseOrder.supplier', 'inspection'])
+        $query = MaterialClaim::with(['purchaseOrder:id,po_number,supplier_id', 'purchaseOrder.supplier:id,name', 'inspection'])
             ->orderBy('created_at', 'desc');
 
         $payload = DataTables::eloquent($query)
@@ -108,6 +111,7 @@ class MaterialClaimController extends Controller
             })
             ->addColumn('action', fn ($c) => RowAction::detail(PurchasingNavigation::toRoute('purchasing.claims.show', $c), $c->claim_number))
             ->rawColumns(['deadline_display', 'status_badge', 'action'])
+            ->only(['DT_RowId', 'id', 'claim_id', 'po_number', 'supplier_name', 'created_date', 'deadline_display', 'status_badge', 'action'])
             ->toArray();
 
         PurchasingNavigation::rememberRecordWindowFromDataTable('purchasing.claims.index', $payload, $request);
@@ -245,7 +249,7 @@ class MaterialClaimController extends Controller
                 $claim = MaterialClaim::whereKey($claimReference->id)->lockForUpdate()->firstOrFail();
 
                 if ($claim->status !== 'responded') {
-                    throw new \RuntimeException(__('claims.copy.only_responded_claims_can_be_resolved'));
+                    throw new BusinessRuleException(__('claims.copy.only_responded_claims_can_be_resolved'));
                 }
 
                 $claim = app(MaterialClaimStateEngine::class)->transition(
@@ -257,7 +261,7 @@ class MaterialClaimController extends Controller
 
                 return $claim->fresh('purchaseOrder');
             });
-        } catch (\RuntimeException $exception) {
+        } catch (\DomainException|BusinessRuleViolation $exception) {
             return back()->with('error', $exception->getMessage());
         }
 

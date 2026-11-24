@@ -215,7 +215,6 @@
 @push('scripts')
 <script>
     const conversationId = @json($conversation->getRouteKey());
-    const myId = {{ auth()->id() }};
     const chatContainer = document.getElementById('chat-messages');
     const emptyState = document.getElementById('empty-state');
     const attachmentInput = document.getElementById('message-attachments');
@@ -233,7 +232,7 @@
 
         if (loading) {
             sendButton.setAttribute('aria-busy', 'true');
-            sendButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span><span class="tw:sr-only">' + @json(__('common.chat.sending')) + '</span>';
+            sendButton.innerHTML = '<span class="ui-spinner" aria-hidden="true"></span><span class="tw:sr-only">' + @json(__('common.chat.sending')) + '</span>';
             return;
         }
 
@@ -255,7 +254,7 @@
         if (!attachmentPreview || files.length === 0) {
             if (attachmentPreview) {
                 attachmentPreview.classList.add('d-none');
-                attachmentPreview.innerHTML = '';
+                attachmentPreview.replaceChildren();
             }
             return;
         }
@@ -269,7 +268,7 @@
     }
 
     function readReceiptHtml(msg) {
-        if (Number(msg.sender_id) !== myId) return '';
+        if (!msg.is_me) return '';
 
         const read = Boolean(msg.is_read || msg.read_at);
         const title = read
@@ -345,7 +344,7 @@
                 scrollToBottom();
             }
         })
-        .catch(err => console.error(err))
+        .catch(err => window.AdasiDebug?.error(err))
         .finally(() => {
             isSending = false;
             setSendButtonLoading(false);
@@ -357,6 +356,9 @@
     document.getElementById('message-body').addEventListener('keydown', function(e) {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
+            if (e.isComposing || e.keyCode === 229) {
+                return;
+            }
             sendMessage(e);
         }
     });
@@ -405,9 +407,9 @@
         })
         .then(data => {
             const previousHeight = chatContainer.scrollHeight;
-            data.messages.slice().reverse().forEach(msg => {
+            data.messages.toReversed().forEach(msg => {
                 if (!chatContainer.querySelector(`[data-message-id="${msg.id}"]`)) {
-                    appendMessage(msg, msg.sender_id === myId, (html) => control.insertAdjacentHTML('afterend', html));
+                    appendMessage(msg, Boolean(msg.is_me), (html) => control.insertAdjacentHTML('afterend', html));
                 }
             });
             if (data.messages.length > 0) oldestMessageId = data.messages[0].id;
@@ -447,7 +449,7 @@
             const execute = (note = '') => {
                 const originalHtml = button.innerHTML;
                 button.disabled = true;
-                button.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>${window.AdasiI18n.t('js.processing')}`;
+                button.innerHTML = `<span class="ui-spinner tw:mr-1.5" aria-hidden="true"></span>${window.AdasiI18n.t('js.processing')}`;
 
                 fetch(quickActionUrl, {
                     method: 'POST',
@@ -539,9 +541,9 @@
 
                 let hasNewPartnerMessage = false;
                 data.messages.forEach(msg => {
-                    appendMessage(msg, msg.sender_id === myId);
+                    appendMessage(msg, Boolean(msg.is_me));
                     lastMessageId = Math.max(lastMessageId, msg.id);
-                    if (msg.sender_id !== myId) hasNewPartnerMessage = true;
+                    if (!msg.is_me) hasNewPartnerMessage = true;
                 });
 
                 if (hasNewPartnerMessage) {

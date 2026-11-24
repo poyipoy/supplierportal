@@ -208,6 +208,37 @@ class SupplierPurchasingRequestOverviewTest extends TestCase
         $this->assertSame($small, count(DB::getQueryLog()));
     }
 
+    public function test_cancelled_filter_lists_cancelled_and_removed_prs_and_excludes_them_from_unresponded(): void
+    {
+        $open = $this->pr('submitted', invite: [$this->supplier, $this->competitor]);
+
+        $removed = $this->pr('submitted', invite: [$this->supplier, $this->competitor]);
+        $removed->allInvitedSuppliers()->updateExistingPivot($this->supplier->id, [
+            'cancelled_at' => now(),
+            'cancelled_by' => $this->purchasing->id,
+            'cancellation_reason' => 'PRIVATE-REMOVAL-NOTE',
+        ]);
+
+        $cancelled = $this->pr('cancelled', invite: [$this->supplier]);
+        $cancelled->cancelled_at = now();
+        $cancelled->cancelled_by = $this->purchasing->id;
+        $cancelled->cancellation_reason = 'PRIVATE-CANCEL-NOTE';
+        $cancelled->save();
+
+        $ids = fn (array $query) => $this->actingAs($this->supplier)
+            ->get(route('supplier.requests.index', $query))->assertOk()
+            ->viewData('requisitions')->getCollection()->pluck('id')->sort()->values()->all();
+
+        $this->assertSame([$open->id], $ids(['status' => 'unresponded']));
+        $this->assertSame(collect([$removed->id, $cancelled->id])->sort()->values()->all(), $ids(['status' => 'cancelled']));
+
+        $html = $this->actingAs($this->supplier)->get(route('supplier.requests.show', $removed))->assertOk()->getContent();
+        $this->assertStringContainsString($removed->pr_number, $html);
+        $this->assertStringContainsString(__('status.pr.cancelled'), $html);
+        $this->assertStringNotContainsString('Overview Material', $html);
+        $this->assertStringNotContainsString('PRIVATE-REMOVAL-NOTE', $html);
+    }
+
     /** @param  array<int, User>  $invite */
     private function pr(string $status, array $invite = [], ?Period $period = null): PurchaseRequisition
     {

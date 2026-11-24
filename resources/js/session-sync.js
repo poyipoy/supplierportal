@@ -1,3 +1,5 @@
+import { isSameOriginHttpUrl, isTrustedSameOrigin } from './origin-validator.js';
+
 export const SESSION_CHANNEL = 'adasi-session';
 export const SESSION_EVENT_KEY = 'adasi:session-event';
 // Shared with the classic public/assets/js/async-export.js; parity is tested.
@@ -21,9 +23,17 @@ export function storageKeysToClear(keys) {
     return keys.filter(
         (key) =>
             key === PENDING_EXPORT_STORAGE_KEY ||
+            key === 'adasi_supplier_reg_draft' ||
+            key === 'adasi_supplier_reg_draft_v2' ||
+            key === 'finance_invoice_verify_scroll' ||
+            key === 'adasi:local-import-toast' ||
+            key === 'adasi:local-procurement-import-toast' ||
+            /^adasi:export-download-claim:/.test(key) ||
+            /^adasi\.po-documents\./.test(key) ||
             /^quotation_draft_\d+(?:_[A-Za-z0-9]+)?$/.test(key) ||
             /^adasi_chat_draft_/.test(key) ||
-            /^adasi:workspace:/.test(key),
+            /^adasi:workspace:recently-closed:/.test(key) ||
+            /^adasi:workspace:[^:]+:guest(?::|$)/.test(key),
     );
 }
 
@@ -181,11 +191,7 @@ function reauthPageUrl(win) {
 }
 
 function isSameOrigin(win, url) {
-    try {
-        return new URL(url, win.location.href).origin === win.location.origin;
-    } catch {
-        return false;
-    }
+    return isSameOriginHttpUrl(url, win?.location?.href || win?.location?.origin);
 }
 
 function normalizePathname(win, url) {
@@ -541,6 +547,7 @@ export function bootSessionSync(win, doc) {
                 headers,
                 credentials: 'same-origin',
                 cache: 'no-store',
+                priority: 'low',
             });
             if (heartbeatEpoch !== sessionEpoch) return;
             let body = null;
@@ -576,6 +583,7 @@ export function bootSessionSync(win, doc) {
                 },
                 credentials: 'same-origin',
                 cache: 'no-store',
+                priority: 'low',
             });
             if (checkEpoch !== sessionEpoch) return;
             let body = null;
@@ -833,7 +841,12 @@ export function bootSessionSync(win, doc) {
     try {
         if (crossTab && typeof win.BroadcastChannel === 'function') {
             channel = new win.BroadcastChannel(SESSION_CHANNEL);
-            channel.addEventListener('message', (event) => receive(event.data));
+            channel.addEventListener('message', (event) => {
+                if (typeof event?.origin === 'string' && event.origin !== '' && !isTrustedSameOrigin(event, win)) {
+                    return;
+                }
+                receive(event.data);
+            });
         }
     } catch { channel = null; }
 
@@ -841,6 +854,7 @@ export function bootSessionSync(win, doc) {
     win.addEventListener('storage', (event) => {
         if (!crossTab) return;
         if (event.key !== SESSION_EVENT_KEY || !event.newValue) return;
+        if (typeof event.url === 'string' && event.url !== '' && !isSameOrigin(win, event.url)) return;
         try {
             if (event.storageArea && event.storageArea !== win.localStorage) return;
             receive(JSON.parse(event.newValue));
@@ -917,6 +931,7 @@ export function bootSessionSync(win, doc) {
                     },
                     credentials: 'same-origin',
                     cache: 'no-store',
+                    priority: 'low',
                 });
                 if (checkEpoch !== sessionEpoch) {
                     return { authenticated: true, status: 200 };

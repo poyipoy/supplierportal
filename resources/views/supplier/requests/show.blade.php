@@ -4,6 +4,7 @@
 @section('page-title', __('supplier_requests.detail.title', ['number' => $pr->pr_number ?? '-']))
 
 @php
+    $isCancelledForSupplier = (bool) ($isCancelledForSupplier ?? false);
     $quotation = $action['quotation'];
     $statusChipTones = [
         'draft' => 'neutral',
@@ -28,12 +29,17 @@
         :title="__('supplier_requests.detail.title', ['number' => $pr->pr_number ?? '-'])"
         :eyebrow="__('supplier_requests.eyebrow')"
     >
+        @if($isCancelledForSupplier)
+            <x-slot:meta>
+                <x-ui.status-chip tone="error" icon="x-circle" size="md">{{ __('status.pr.cancelled') }}</x-ui.status-chip>
+            </x-slot:meta>
+        @endif
         <x-slot:actions>
             <x-ui.button :href="route('supplier.requests.index')" variant="outline" size="sm">
                 <x-ui.icon name="arrow-left" size="sm" />
                 <span>{{ __('supplier_requests.detail.back') }}</span>
             </x-ui.button>
-            @if($action['url'])
+            @if(! $isCancelledForSupplier && $action['url'])
                 <x-ui.button :href="$action['url']" size="sm" data-supplier-request-action="{{ $action['type'] }}">
                     <span>{{ __('supplier_requests.actions.'.$action['type']) }}</span>
                 </x-ui.button>
@@ -41,6 +47,26 @@
         </x-slot:actions>
     </x-ui.page-header>
 
+    @if($isCancelledForSupplier)
+        <x-ui.alert tone="error" :title="__('supplier_requests.detail.cancelled_summary_title')">
+            {{ __('supplier_requests.detail.cancelled_summary_body') }}
+        </x-ui.alert>
+
+        <x-ui.form-section :title="__('supplier.copy.procurement_context')">
+            <dl class="tw:m-0 tw:grid tw:gap-3 tw:sm:grid-cols-2">
+                <div class="tw:rounded tw:border tw:border-outline-variant tw:bg-surface-low tw:p-3">
+                    <dt class="tw:text-ui-xs tw:font-semibold tw:uppercase tw:text-on-surface-variant">{{ __('supplier.copy.procurement_period') }}</dt>
+                    <dd class="tw:m-0 tw:mt-1 tw:text-ui-sm tw:font-bold tw:text-on-surface">{{ $pr->period?->display_label ?? '-' }}</dd>
+                </div>
+                <div class="tw:rounded tw:border tw:border-outline-variant tw:bg-surface-low tw:p-3">
+                    <dt class="tw:text-ui-xs tw:font-semibold tw:uppercase tw:text-on-surface-variant">{{ __('supplier_requests.detail.cancelled_at') }}</dt>
+                    <dd class="tw:m-0 tw:mt-1 tw:text-ui-sm tw:font-bold tw:text-on-surface ui-tabular-nums">
+                        {{ $cancelledAt ? $regionalFormatter->timestamp($cancelledAt, 'datetime_comma') : '-' }}
+                    </dd>
+                </div>
+            </dl>
+        </x-ui.form-section>
+    @else
     <x-ui.form-section :title="__('supplier.copy.procurement_context')">
         <div class="tw:grid tw:gap-3 tw:sm:grid-cols-2 tw:lg:grid-cols-3">
             <div class="tw:p-2.5 tw:bg-surface-low border rounded">
@@ -121,5 +147,6 @@
             </tbody>
         </table>
     </x-ui.data-table>
+    @endif
 </div>
 @endsection

@@ -95,9 +95,9 @@
                         <h2 id="audit-nav-title" class="tw:m-0 tw:text-ui-sm tw:font-semibold tw:text-on-surface">{{ __('supplier_audit.form.sections') }}</h2>
                         <span class="tw:text-ui-xs tw:text-on-surface-variant" style="font-variant-numeric: tabular-nums;" x-text="`${filled}/${total}`">{{ $progress['filled'] }}/{{ $progress['total'] }}</span>
                     </div>
-                    <div class="tw:h-1.5 tw:overflow-hidden tw:rounded-ui-full tw:bg-surface-container" role="progressbar" aria-valuemin="0" aria-valuemax="{{ $progress['total'] }}" aria-valuenow="{{ $progress['filled'] }}" :aria-valuenow="filled" aria-label="{{ __('supplier_audit.fields.progress') }}">
-                        <div class="tw:h-full tw:bg-primary" style="width: {{ $progress['total'] ? round($progress['filled'] / $progress['total'] * 100) : 0 }}%; transition: width 200ms ease-out;" :style="`width: ${percent}%; transition: width 200ms ease-out;`"></div>
-                    </div>
+                    <progress class="ui-progress tw:h-1.5 tw:w-full"
+                        value="{{ $progress['filled'] }}" :value="filled" max="{{ max(1, (int) $progress['total']) }}" :max="Math.max(1, total)"
+                        aria-label="{{ __('supplier_audit.fields.progress') }}"></progress>
                 </div>
 
                 <ol class="ui-scrollable-list tw:m-0 tw:flex tw:min-h-0 tw:flex-1 tw:list-none tw:flex-col tw:gap-px tw:overflow-y-auto tw:overscroll-contain tw:p-1.5" data-section-nav-list>

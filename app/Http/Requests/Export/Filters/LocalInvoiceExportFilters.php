@@ -28,7 +28,13 @@ final class LocalInvoiceExportFilters
     public static function schema(bool $accounting): array
     {
         $fields = [
-            ['name' => 'q', 'type' => 'text'], ['name' => 'supplier', 'type' => 'supplier'],
+            [
+                'name' => 'q',
+                'type' => 'text',
+                'placeholder' => 'exports.advanced.filters.placeholders.local_invoice_search',
+                'hint' => 'exports.advanced.filters.hints.local_invoice_search',
+            ],
+            ['name' => 'supplier', 'type' => 'supplier'],
             ['name' => 'status', 'type' => 'select', 'domain' => 'local_invoice', 'options' => LocalInvoice::STATUSES],
             ['name' => 'payment_status', 'type' => 'select', 'labels' => ['ALL' => 'local_invoice.filters.all_invoices', 'UNPAID' => 'finance.drp.unpaid_label', 'PAID' => 'finance.drp.paid_label'], 'options' => ['ALL', 'UNPAID', 'PAID']],
             ['name' => 'overpayment_status', 'type' => 'select', 'labels' => ['all' => 'finance.refund.all_statuses', 'open' => 'local_invoice.filters.refund_open', 'settled' => 'finance.refund.completed_status'], 'options' => ['all', 'open', 'settled']],

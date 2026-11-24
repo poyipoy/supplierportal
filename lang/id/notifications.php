@@ -97,6 +97,14 @@ return [
             'label' => 'Ditambahkan ke requisition',
             'description' => 'Purchasing menambahkan Anda ke requisition yang sudah terbuka untuk penawaran.',
         ],
+        'pr_supplier_removed' => [
+            'label' => 'Undangan requisition dibatalkan',
+            'description' => 'Undangan Anda untuk mengirim penawaran pada purchase requisition telah dibatalkan.',
+        ],
+        'pr_cancelled' => [
+            'label' => 'Purchase requisition dibatalkan',
+            'description' => 'Purchase requisition yang terbuka bagi Anda telah dibatalkan oleh Purchasing.',
+        ],
         'quotation_submitted' => [
             'label' => 'Penawaran diajukan',
             'description' => 'Supplier mengajukan penawaran.',

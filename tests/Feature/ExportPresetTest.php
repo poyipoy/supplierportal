@@ -49,7 +49,7 @@ class ExportPresetTest extends TestCase
         $supplier = User::factory()->create(['role' => 'supplier']);
         $supplier->preference()->create([...config('user_preferences.defaults'), 'locale' => 'id']);
         $this->actingAs($supplier)->getJson(route('exports.definitions.show', 'purchasing.po'))->assertNotFound();
-        $response = $this->getJson(route('exports.definitions.show', 'supplier.po'))->assertOk()->assertJsonPath('columns.0.label', 'Nomor PO');
+        $response = $this->getJson(route('exports.definitions.show', 'supplier.po'))->assertOk()->assertJsonPath('columns.0.label', __('exports.headings.po_number', [], 'id'))->assertJsonPath('columns.5.label', 'Total Nilai');
         $this->assertStringContainsString('no-store', $response->headers->get('Cache-Control'));
     }
 

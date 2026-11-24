@@ -224,8 +224,82 @@ test('smart panel widens preview layout, toggles full width, syncs ARIA, and sup
         assert.equal(h.panel.classList.contains('tw:hidden'), true);
         assert.equal(h.iframe.getAttribute('src'), null);
         assert.equal(h.doc.body.classList.contains('ui-dialog-open'), false);
+
+        // Duplicate close on an already-hidden panel is a no-op (does not steal focus back to trigger)
+        h.trigger.focused = false;
+        h.closeBtn.click();
+        assert.equal(h.trigger.focused, false, 'duplicate close must not refocus trigger when panel is already closed');
     } finally {
         delete globalThis.document;
         delete globalThis.fetch;
+    }
+});
+
+test('smart panel auto-closes and delegates document chain links to WorkspaceShell navigation', async () => {
+    const h = createPanelHarness();
+    const navigated = [];
+    const released = [];
+    const prevDoc = globalThis.document;
+    const prevWin = globalThis.window;
+    const prevFetch = globalThis.fetch;
+
+    globalThis.document = h.doc;
+    globalThis.window = {
+        location: { origin: 'http://portal.test', href: 'http://portal.test/purchasing/requisitions/abc' },
+        AdasiWorkspaceShell: { openUrl() {} },
+        AdasiNavigateUrl: (url) => { navigated.push(url); },
+        AdasiOverlayModality: {
+            acquire() {},
+            release: (el, opts) => released.push({ el, opts }),
+        },
+        addEventListener() {},
+    };
+    globalThis.fetch = async () => ({
+        ok: true,
+        json: async () => ({
+            title: 'PR/2026/001',
+            subtitle: 'Purchase Requisition',
+            status: 'ACTIVE',
+            nodes: [
+                { label: 'PO', reference: 'PO/2026/001', url: '/purchasing/purchase-orders/po-hash', status: 'ACTIVE', current: false },
+                { label: 'Evil', reference: 'XSS', url: 'javascript:alert(1)', status: 'ACTIVE', current: false },
+                { label: 'Ext', reference: 'EXT', url: 'https://evil.test/phish', status: 'ACTIVE', current: false },
+            ],
+            documents: [],
+            sla_summary: [],
+        }),
+    });
+
+    try {
+        initSmartPanel();
+        const openEvt = new Event('click');
+        Object.defineProperty(openEvt, 'target', { value: h.trigger });
+        h.doc.dispatchEvent(openEvt);
+        await new Promise((r) => setTimeout(r, 10));
+
+        assert.equal(h.panel.classList.contains('tw:hidden'), false);
+        const card = h.chainPane.children[0];
+        const top = card.children[0];
+        const left = top.children[0];
+        const link = left.children[1];
+        assert.equal(link.tagName, 'A');
+
+        // Unsafe javascript: and cross-origin URLs must render as inert <strong>, never <a>.
+        assert.equal(h.chainPane.children[1].children[0].children[0].children[1].tagName, 'STRONG');
+        assert.equal(h.chainPane.children[2].children[0].children[0].children[1].tagName, 'STRONG');
+
+        const linkEvt = Object.assign(new Event('click', { bubbles: true, cancelable: true }), {
+            button: 0,
+        });
+        link.dispatchEvent(linkEvt);
+
+        assert.equal(linkEvt.defaultPrevented, true, 'chain link inside WorkspaceShell must prevent top-window reload');
+        assert.equal(h.panel.classList.contains('tw:hidden'), true, 'smart panel must auto-close on WorkspaceShell link navigation');
+        assert.deepEqual(navigated, ['/purchasing/purchase-orders/po-hash']);
+        assert.equal(released.at(-1)?.opts?.restoreFocus, false, 'auto-close on tab navigation must not pull focus back');
+    } finally {
+        globalThis.document = prevDoc;
+        globalThis.window = prevWin;
+        globalThis.fetch = prevFetch;
     }
 });

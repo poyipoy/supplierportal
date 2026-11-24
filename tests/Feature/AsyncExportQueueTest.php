@@ -17,6 +17,7 @@ use App\Jobs\FinalizeExportJob;
 use App\Jobs\Middleware\StopCancelledExport;
 use App\Jobs\Middleware\TrackExportChunkProgress;
 use App\Jobs\ProcessExportJob;
+use App\Jobs\StreamListExportJob;
 use App\Models\ExchangeRate;
 use App\Models\ExportJob;
 use App\Models\Period;
@@ -408,12 +409,9 @@ class AsyncExportQueueTest extends TestCase
         $this->assertGreaterThan(0, $completed->total_rows);
         $this->assertSame(0, $completed->processed_rows);
         $this->assertSame(0, $completed->progress);
-        Queue::assertPushed(QueueExport::class, function (QueueExport $job): bool {
-            $chain = collect($job->chained)->map(fn (string $serialized) => unserialize($serialized));
-
-            return $job->queue === 'exports'
-                && $chain->contains(fn (object $chainedJob) => $chainedJob instanceof FinalizeExportJob);
-        });
+        Queue::assertPushed(StreamListExportJob::class, fn (StreamListExportJob $job): bool => $job->exportJobId === $completed->id
+            && $job->queue === 'exports'
+        );
 
         $progress->recordChunk($completed->id, 'query:0:1', 500);
         $completed->refresh();
@@ -597,6 +595,14 @@ class AsyncExportQueueTest extends TestCase
         (new ProcessExportJob($record->id))->handle($progress);
 
         $this->assertSame(ExportJob::STATUS_PROCESSING, $record->fresh()->status);
+        Queue::assertPushed(StreamListExportJob::class, 1);
+
+        config(['exports.list_writer' => 'maatwebsite']);
+        $legacyRecord = $this->createExportJob($this->purchasing);
+        (new ProcessExportJob($legacyRecord->id))->handle($progress);
+        (new ProcessExportJob($legacyRecord->id))->handle($progress);
+
+        $this->assertSame(ExportJob::STATUS_PROCESSING, $legacyRecord->fresh()->status);
         Queue::assertPushed(QueueExport::class, 1);
     }
 

@@ -69,15 +69,15 @@
                 <div class="ui-data-table__cards-container tw:p-3 tw:grid tw:gap-2.5 d-md-none" x-show="viewMode === 'cards'">
                     {{ $cards }}
                 </div>
-                <div class="ui-data-table__scroll tw:overflow-x-auto tw:w-full tw:min-w-0 tw:max-w-full" :class="{ 'd-none d-md-block': viewMode === 'cards' }">
+                <div class="ui-data-table__scroll tw:overflow-x-auto tw:w-full tw:min-w-0 tw:max-w-full" role="region" tabindex="0" aria-label="{{ $scrollLabel ?? $title ?? __('js.tables.scroll_region') }}" :class="{ 'd-none d-md-block': viewMode === 'cards' }">
                     {{ $slot }}
                 </div>
             </div>
         @else
             @if($sticky)
-                <div class="ui-data-table__scroll ui-table-sticky tw:w-full tw:min-w-0 tw:max-w-full" role="region" tabindex="0" aria-label="{{ $scrollLabel ?? $title }}">{{ $slot }}</div>
+                <div class="ui-data-table__scroll ui-table-sticky tw:w-full tw:min-w-0 tw:max-w-full" role="region" tabindex="0" aria-label="{{ $scrollLabel ?? $title ?? __('js.tables.scroll_region') }}">{{ $slot }}</div>
             @else
-                <div class="ui-data-table__scroll tw:overflow-x-auto tw:w-full tw:min-w-0 tw:max-w-full">{{ $slot }}</div>
+                <div class="ui-data-table__scroll tw:overflow-x-auto tw:w-full tw:min-w-0 tw:max-w-full" role="region" tabindex="0" aria-label="{{ $scrollLabel ?? $title ?? __('js.tables.scroll_region') }}">{{ $slot }}</div>
             @endif
         @endisset
     @endif

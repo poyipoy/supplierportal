@@ -20,6 +20,10 @@ class SupplierRegistrationAccess extends Model
         'revoked_at',
     ];
 
+    protected $hidden = [
+        'token_hash',
+    ];
+
     protected function casts(): array
     {
         return [

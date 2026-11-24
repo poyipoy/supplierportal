@@ -49,7 +49,11 @@ export function bootPoDocumentUploads(root = document) {
             if (!statusUrl || !safeUrl(statusUrl) || inFlight) return;
             inFlight = true;
             try {
-                const response = await fetch(statusUrl, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+                const response = await fetch(statusUrl, {
+                    credentials: 'same-origin',
+                    headers: { Accept: 'application/json' },
+                    priority: 'low',
+                });
                 if ([403, 404, 419].includes(response.status)) {
                     remember(null);
                     statusUrl = null;

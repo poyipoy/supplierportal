@@ -13,7 +13,7 @@ class SurfaceHierarchyTest extends TestCase
     public function test_internal_workspace_uses_layered_surface_tokens_without_changing_auth_background(): void
     {
         $styles = file_get_contents(resource_path('css/app.css'));
-        $authLayout = file_get_contents(resource_path('views/layouts/auth.blade.php'));
+        $authStyles = file_get_contents(resource_path('css/auth.css'));
 
         $this->assertStringContainsString('--md-background: #F8FAFC;', $styles);
         $this->assertStringContainsString('--ui-workspace-bg: #E9EEF4;', $styles);
@@ -24,7 +24,7 @@ class SurfaceHierarchyTest extends TestCase
         $this->assertStringContainsString('--ui-surface-divider: var(--md-outline-variant);', $styles);
         $this->assertStringContainsString('--ui-control-border: var(--md-outline-strong);', $styles);
         $this->assertStringContainsString('background-color: var(--ui-workspace-bg);', $styles);
-        $this->assertStringContainsString('background: var(--md-background);', $authLayout);
+        $this->assertStringContainsString('background: var(--md-background);', $authStyles);
     }
 
     public function test_shared_static_components_use_strong_outer_boundaries_and_no_default_elevation(): void

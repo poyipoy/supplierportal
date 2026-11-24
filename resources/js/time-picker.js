@@ -67,7 +67,7 @@ function createPicker(wrapper) {
         const anchor = value ?? (list === hourList ? nowInZone(zone, step).hour : null);
         let current = items.find((item) => Number(item.dataset.value) === anchor);
         if (!current && anchor !== null) {
-            current = [...items].reverse().find((item) => Number(item.dataset.value) <= anchor);
+            current = items.findLast((item) => Number(item.dataset.value) <= anchor);
         }
         const stop = current ?? items[0];
         items.forEach((item) => {
@@ -115,7 +115,7 @@ function createPicker(wrapper) {
             requestAnimationFrame(() => panel.classList.add('is-open'));
             document.addEventListener('pointerdown', onOutside, true);
             window.addEventListener('resize', onViewport);
-            window.addEventListener('scroll', onViewport, true);
+            window.addEventListener('scroll', onViewport, { capture: true, passive: true });
         }
         const { hourItem } = sync();
         if (focusList) hourItem.focus();
@@ -129,7 +129,7 @@ function createPicker(wrapper) {
         input.setAttribute('aria-expanded', 'false');
         document.removeEventListener('pointerdown', onOutside, true);
         window.removeEventListener('resize', onViewport);
-        window.removeEventListener('scroll', onViewport, true);
+        window.removeEventListener('scroll', onViewport, { capture: true, passive: true });
         if (activePicker === api) activePicker = null;
         if (returnFocus) input.focus();
     }
@@ -218,6 +218,7 @@ function createPicker(wrapper) {
                 break;
             case 'Enter':
             case ' ':
+                if (event.isComposing || event.keyCode === 229) return;
                 event.preventDefault();
                 choose(item);
                 break;

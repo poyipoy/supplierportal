@@ -15,6 +15,10 @@ const queryWithin = (container, selector) => {
 
 const clearChildren = (node) => {
     if (!node) return;
+    if (typeof node.replaceChildren === 'function') {
+        node.replaceChildren();
+        return;
+    }
     while (node.firstChild) {
         node.removeChild(node.firstChild);
     }
@@ -301,6 +305,7 @@ export function bindLive(containerOrSelector, options = {}) {
 
             el.addEventListener('keydown', (event) => {
                 if (event.key !== 'Enter') return;
+                if (event.isComposing || event.keyCode === 229) return;
                 event.preventDefault();
                 const existing = timers.get(field.key);
                 if (existing) {

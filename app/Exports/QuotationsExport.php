@@ -90,7 +90,7 @@ class QuotationsExport implements AcceptsExportOptions, FromQuery, HasLocalePref
             return $query->orderByDesc('quotation_id')->orderBy('id');
         }
 
-        if (($this->filters['status'] ?? null) === 'unresponded') {
+        if (in_array($this->filters['status'] ?? null, ['unresponded', 'cancelled'], true)) {
             return $query->whereRaw('1 = 0');
         }
 
@@ -290,5 +290,15 @@ class QuotationsExport implements AcceptsExportOptions, FromQuery, HasLocalePref
     protected function workbookWrappedColumns(): array
     {
         return $this->hasExportOptions() ? $this->catalogWrappedColumns() : ['C', 'E', 'H', 'J', 'O', 'P'];
+    }
+
+    protected function workbookNumberFormats(): array
+    {
+        return array_merge($this->catalogNumberFormats(), $this->columnFormats());
+    }
+
+    public function exportNumberFormats(): array
+    {
+        return $this->workbookNumberFormats();
     }
 }

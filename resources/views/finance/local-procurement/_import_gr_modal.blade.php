@@ -130,7 +130,7 @@
                     {{ __('local_invoice.actions.close') }}
                 </x-ui.button>
                 <x-ui.button type="button" variant="outline" size="sm" id="btnParseLocalGrImport">
-                    <span class="spinner-border spinner-border-sm me-1 d-none" id="localGrImportSpinner"></span>
+                    <span class="ui-spinner me-1 d-none" id="localGrImportSpinner" aria-hidden="true"></span>
                     <span>{{ __('local_procurement.large_import.check_file') }}</span>
                 </x-ui.button>
                 <form id="localGrImportConfirmForm" method="POST" action="{{ route($routePrefix.'.import.gr.confirm') }}" class="d-inline" data-managed-submit>

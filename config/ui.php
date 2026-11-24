@@ -3,6 +3,7 @@
 return [
     'auth_splash' => [
         'enabled' => (bool) env('AUTH_SPLASH_ENABLED', true),
+        'login_page_enabled' => (bool) env('AUTH_SPLASH_LOGIN_PAGE_ENABLED', false),
         'pending_ttl_seconds' => 30,
         'min_visible_ms' => (int) env('AUTH_SPLASH_MIN_VISIBLE_MS', 600),
         'max_visible_ms' => (int) env('AUTH_SPLASH_MAX_VISIBLE_MS', 60000),

@@ -36,6 +36,11 @@ class SupplierMasterDocument extends Model
         'uploaded_by',
     ];
 
+    protected $hidden = [
+        'file_path',
+        'file_inspection_id',
+    ];
+
     // ─── Relationships ───
 
     public function supplier(): BelongsTo

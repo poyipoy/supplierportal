@@ -57,7 +57,10 @@
     {{-- Brand & Header Section --}}
     <div>
         <div class="tw:flex tw:items-center tw:gap-3">
-            <img src="{{ asset('assets/images/logo-adasi.png') }}" alt="{{ __('common.review.logo') }}" class="tw:h-9 tw:w-auto tw:shrink-0" draggable="false">
+            <picture class="tw:contents">
+                <source srcset="{{ asset('assets/images/logo-adasi-sm.webp') }}" type="image/webp">
+                <img src="{{ asset('assets/images/logo-adasi-sm.png') }}" alt="{{ __('common.review.logo') }}" width="39" height="36" decoding="async" class="tw:h-9 tw:w-auto tw:shrink-0" draggable="false">
+            </picture>
             <div>
                 <div class="tw:text-ui-xs tw:font-bold tw:tracking-wider tw:text-on-surface tw:uppercase">PT Astra Daido Steel Indonesia</div>
                 <div class="tw:text-[11px] tw:font-medium tw:text-on-surface-variant">{{ __('registration.portal') }}</div>
@@ -559,7 +562,8 @@
                             id="email"
                             type="email"
                             name="email"
-                            autocomplete="email"
+                            autocomplete="username"
+                            spellcheck="false"
                             x-model="formData.email"
                             @blur="validateField('email')"
                             class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:pl-10 tw:pr-3 tw:text-ui-sm tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary/20"
@@ -584,6 +588,7 @@
                         </div>
                         <input
                             id="password"
+                            type="password"
                             :type="showPass ? 'text' : 'password'"
                             name="password"
                             autocomplete="new-password"
@@ -598,7 +603,8 @@
                             type="button"
                             class="ui-focus-ring tw:absolute tw:inset-y-0 tw:end-1 tw:my-auto tw:inline-flex tw:h-9 tw:w-9 tw:items-center tw:justify-center tw:rounded-ui-full tw:border-0 tw:bg-transparent tw:text-on-surface-variant tw:hover:bg-surface-container"
                             @click="showPass = !showPass"
-                            tabindex="-1"
+                            aria-pressed="false"
+                            :aria-pressed="showPass ? 'true' : 'false'"
                             :aria-label="showPass ? @js(__('auth.login.hide_password')) : @js(__('auth.login.show_password'))"
                         >
                             <x-ui.icon name="eye" size="sm" x-show="!showPass" />
@@ -621,6 +627,7 @@
                         </div>
                         <input
                             id="password_confirmation"
+                            type="password"
                             :type="showConfirmPass ? 'text' : 'password'"
                             name="password_confirmation"
                             autocomplete="new-password"
@@ -635,7 +642,8 @@
                             type="button"
                             class="ui-focus-ring tw:absolute tw:inset-y-0 tw:end-1 tw:my-auto tw:inline-flex tw:h-9 tw:w-9 tw:items-center tw:justify-center tw:rounded-ui-full tw:border-0 tw:bg-transparent tw:text-on-surface-variant tw:hover:bg-surface-container"
                             @click="showConfirmPass = !showConfirmPass"
-                            tabindex="-1"
+                            aria-pressed="false"
+                            :aria-pressed="showConfirmPass ? 'true' : 'false'"
                             :aria-label="showConfirmPass ? @js(__('auth.login.hide_password')) : @js(__('auth.login.show_password'))"
                         >
                             <x-ui.icon name="eye" size="sm" x-show="!showConfirmPass" />
@@ -921,6 +929,7 @@
                             class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:pl-10 tw:pr-3 tw:text-ui-sm ui-tabular-nums tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary/20"
                             :class="errors.nib ? 'tw:border-error' : 'tw:border-outline-variant'"
                             placeholder="{{ __('registration.nib_number') }}"
+                            inputmode="numeric"
                             maxlength="13"
                             required
                         >
@@ -957,6 +966,7 @@
                             class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:pl-10 tw:pr-3 tw:text-ui-sm ui-tabular-nums tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary/20"
                             :class="errors.npwp ? 'tw:border-error' : 'tw:border-outline-variant'"
                             placeholder="{{ __('registration.npwp_number') }}"
+                            inputmode="numeric"
                             maxlength="16"
                             required
                         >
@@ -1108,6 +1118,7 @@
                             class="ui-motion tw:h-11 tw:w-full tw:rounded-ui-sm tw:border tw:bg-surface tw:pl-10 tw:pr-3 tw:text-ui-sm ui-tabular-nums tw:text-on-surface tw:focus:border-primary tw:focus:ring-2 tw:focus:ring-primary/20"
                             :class="errors.account_number ? 'tw:border-error' : 'tw:border-outline-variant'"
                             placeholder="{{ __('registration.account_number_help') }}"
+                            inputmode="numeric"
                             required
                         >
                     </div>
@@ -1539,7 +1550,7 @@
             >
                 <template x-if="isSubmitting">
                     <div class="tw:flex tw:items-center tw:gap-2">
-                        <div class="spinner-border spinner-border-sm" role="status"></div>
+                        <span class="ui-spinner" role="status" aria-hidden="true"></span>
                         <span>{{ __('registration.submitting') }}</span>
                     </div>
                 </template>
@@ -1693,6 +1704,7 @@ document.addEventListener('alpine:init', () => {
 
         showPass: false,
         showConfirmPass: false,
+        draftCleared: false,
 
         get finalBankName() {
             return this.formData.bank_select === 'OTHER'
@@ -1795,6 +1807,11 @@ document.addEventListener('alpine:init', () => {
         },
 
         clearStoredDraft() {
+            clearTimeout(this._draftTimer);
+            this.draftCleared = true;
+            try {
+                sessionStorage.removeItem('adasi_supplier_reg_draft_v2');
+            } catch (e) {}
             try {
                 localStorage.removeItem('adasi_supplier_reg_draft');
             } catch (e) {}
@@ -1874,6 +1891,10 @@ document.addEventListener('alpine:init', () => {
         },
 
         init() {
+            try {
+                localStorage.removeItem('adasi_supplier_reg_draft');
+            } catch (e) {}
+
             let autoRestored = false;
             try {
                 if (sessionStorage.getItem('adasi_supplier_reg_autorestore') === '1') {
@@ -1920,13 +1941,13 @@ document.addEventListener('alpine:init', () => {
 
             // Watch formData deeply for debounced draft persistence
             this.$watch('formData', () => {
-                if (!this.isInitialized) return;
+                if (!this.isInitialized || this.isSubmitting || this.draftCleared) return;
                 this.scheduleDraftPersist();
             }, { deep: true });
 
-            // Ensure pending draft is saved if user abruptly navigates away
+            // Ensure pending draft is saved if user abruptly navigates away (never after submit)
             window.addEventListener('beforeunload', () => {
-                if (this.isInitialized) {
+                if (this.isInitialized && !this.isSubmitting && !this.draftCleared) {
                     this.persistDraft();
                 }
             });
@@ -1958,19 +1979,29 @@ document.addEventListener('alpine:init', () => {
 
         checkStoredDraft() {
             try {
+                try {
+                    localStorage.removeItem('adasi_supplier_reg_draft');
+                } catch (e) {}
+
                 // If form is already filled from old() validation input, don't show draft prompt
                 if (Boolean((this.formData.email && this.formData.email.trim()) || (this.formData.company_name && this.formData.company_name.trim()))) {
                     this.hasDraft = false;
                     return;
                 }
 
-                const stored = localStorage.getItem('adasi_supplier_reg_draft');
+                const stored = sessionStorage.getItem('adasi_supplier_reg_draft_v2');
                 if (stored) {
                     const parsed = JSON.parse(stored);
                     if (parsed && typeof parsed === 'object') {
+                        const savedAt = Number(parsed.saved_at || 0);
+                        if (!savedAt || (Date.now() - savedAt) > 30 * 60 * 1000) {
+                            sessionStorage.removeItem('adasi_supplier_reg_draft_v2');
+                            this.hasDraft = false;
+                            return;
+                        }
                         // Check if there is actual non-empty, meaningful user data
                         const hasMeaningfulData = Object.entries(parsed).some(([key, val]) => {
-                            if (['saved_step'].includes(key)) return false;
+                            if (['saved_step', 'saved_at'].includes(key)) return false;
                             if (key === 'questionnaire') return Object.keys(this.sanitizeAnswers(val)).length > 0;
                             if (key === 'company_title' && (val === 'PT' || !val)) return false;
                             if (key === 'is_pkp' && !val) return false;
@@ -1988,11 +2019,23 @@ document.addEventListener('alpine:init', () => {
 
         restoreDraft(showToast = true) {
             try {
-                const stored = localStorage.getItem('adasi_supplier_reg_draft');
+                const stored = sessionStorage.getItem('adasi_supplier_reg_draft_v2');
                 if (stored) {
                     const parsed = JSON.parse(stored);
+                    const blockedKeys = [
+                        'password',
+                        'password_confirmation',
+                        'access_key',
+                        'nib',
+                        'npwp',
+                        'account_number',
+                        'account_holder_name',
+                        'saved_step',
+                        'saved_at',
+                        'questionnaire',
+                    ];
                     Object.keys(parsed).forEach(key => {
-                        if (key in this.formData && !['password', 'password_confirmation', 'saved_step', 'questionnaire'].includes(key)) {
+                        if (key in this.formData && !blockedKeys.includes(key)) {
                             if (parsed[key] !== undefined && parsed[key] !== null) {
                                 this.formData[key] = parsed[key];
                             }
@@ -2019,13 +2062,16 @@ document.addEventListener('alpine:init', () => {
                     }
                 }
             } catch (e) {
-                console.warn('Failed to restore draft:', e);
+                window.AdasiDebug?.warn('Failed to restore draft:', e);
             }
         },
 
         discardDraft() {
             try {
-                localStorage.removeItem('adasi_supplier_reg_draft');
+                sessionStorage.removeItem('adasi_supplier_reg_draft_v2');
+                try {
+                    localStorage.removeItem('adasi_supplier_reg_draft');
+                } catch (e) {}
                 this.hasDraft = false;
                 if (window.AdasiToast) {
                     window.AdasiToast.info(@js(__('registration.js.draft_deleted')));
@@ -2036,10 +2082,22 @@ document.addEventListener('alpine:init', () => {
         },
 
         persistDraft() {
+            if (!this.isInitialized || this.isSubmitting || this.draftCleared) {
+                return;
+            }
+
             try {
+                const excludedDraftFields = [
+                    'password',
+                    'password_confirmation',
+                    'nib',
+                    'npwp',
+                    'account_number',
+                    'account_holder_name',
+                ];
                 // Check if any non-default meaningful text has been typed
                 const hasData = Object.entries(this.formData).some(([key, val]) => {
-                    if (['password', 'password_confirmation'].includes(key)) return false;
+                    if (excludedDraftFields.includes(key)) return false;
                     if (key === 'questionnaire') return this.answeredQuestionCount > 0;
                     if (key === 'company_title' && (val === 'PT' || !val)) return false;
                     if (key === 'is_pkp' && !val) return false;
@@ -2050,7 +2108,7 @@ document.addEventListener('alpine:init', () => {
                     return;
                 }
 
-                // Never store passwords in localStorage
+                // Store only general profile & questionnaire progress in tab-scoped sessionStorage (no credentials, tax IDs, or bank numbers)
                 const safePayload = {
                     email: this.formData.email,
                     company_title: this.formData.company_title,
@@ -2060,19 +2118,16 @@ document.addEventListener('alpine:init', () => {
                     phone: this.formData.phone,
                     category: this.formData.category,
                     is_pkp: this.formData.is_pkp,
-                    nib: this.formData.nib,
-                    npwp: this.formData.npwp,
                     pic_name: this.formData.pic_name,
                     pic_email: this.formData.pic_email,
                     pic_phone: this.formData.pic_phone,
                     bank_select: this.formData.bank_select,
                     other_bank_name: this.formData.other_bank_name,
-                    account_number: this.formData.account_number,
-                    account_holder_name: this.formData.account_holder_name,
                     questionnaire: this.sanitizeAnswers(this.formData.questionnaire),
                     saved_step: this.step,
+                    saved_at: Date.now(),
                 };
-                localStorage.setItem('adasi_supplier_reg_draft', JSON.stringify(safePayload));
+                sessionStorage.setItem('adasi_supplier_reg_draft_v2', JSON.stringify(safePayload));
             } catch (e) {
                 // Storage quota or private mode restrictions
             }

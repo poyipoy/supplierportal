@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\UpdateDashboardLayoutRequest;
 use App\Http\Requests\UpdateUserPreferenceRequest;
+use App\Http\Requests\UpdateWorkspaceShortcutsRequest;
 use App\Models\User;
 use App\Services\Dashboard\DashboardWidgetService;
 use App\Services\QuickAccessService;
@@ -108,6 +109,22 @@ class UserPreferenceController extends Controller
         }
 
         return redirect()->back(fallback: $dashboard)->with('success', $message);
+    }
+
+    public function updateWorkspaceShortcuts(
+        UpdateWorkspaceShortcutsRequest $request,
+        UserPreferenceService $preferences,
+    ): JsonResponse {
+        /** @var User $user */
+        $user = $request->user();
+        $validated = $request->validated();
+        $scope = is_string($validated['scope'] ?? null) ? $validated['scope'] : null;
+        $saved = $preferences->saveWorkspaceShortcuts($user, $validated, $scope);
+
+        return response()->json([
+            'ok' => true,
+            'shortcuts' => $saved,
+        ]);
     }
 
     public function reset(

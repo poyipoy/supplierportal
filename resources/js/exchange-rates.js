@@ -111,7 +111,7 @@ export function bootExchangeRates(root = document) {
     };
 
     const onRateKeyDown = (event) => {
-        if (event.defaultPrevented) return;
+        if (event.defaultPrevented || event.isComposing || event.keyCode === 229) return;
         const input = event.target;
         if (!input.matches?.('[data-annual-rate-input]')) return;
 
@@ -331,12 +331,11 @@ export function bootExchangeRates(root = document) {
             .map((field) => ({ field, disabled: field.disabled }));
         controls.forEach(({ field }) => { field.disabled = true; });
         form.setAttribute('aria-busy', 'true');
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 20000);
         let committed = false;
         try {
+            const timeoutSignal = typeof AbortSignal?.timeout === 'function' ? AbortSignal.timeout(20000) : undefined;
             const response = await fetch(form.getAttribute('action'), {
-                method: 'POST', body, credentials: 'same-origin', signal: controller.signal,
+                method: 'POST', body, credentials: 'same-origin', ...(timeoutSignal ? { signal: timeoutSignal } : {}),
                 headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest', ...(token ? { 'X-CSRF-TOKEN': token } : {}) },
             });
             const data = await response.json();
@@ -373,7 +372,6 @@ export function bootExchangeRates(root = document) {
                 requestError(form, config.saveUnknown || t('js.async_form.failed'));
             }
         } finally {
-            clearTimeout(timeout);
             controls.forEach(({ field, disabled }) => { field.disabled = disabled; });
             form.removeAttribute('aria-busy');
             window.AdasiButton?.resetForm(form);

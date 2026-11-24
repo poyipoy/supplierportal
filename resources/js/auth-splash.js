@@ -49,6 +49,8 @@
     let mediaFallbackApplied = false;
     let minimumBypassed = false;
     let readyFrame = null;
+    let focusFrame = null;
+    let restoreFocusFrame = null;
     let returnFocus = null;
     let restoringFocus = false;
     let visible = false;
@@ -89,6 +91,12 @@
         minimumTimer = null;
         if (readyFrame !== null) win.cancelAnimationFrame?.(readyFrame);
         readyFrame = null;
+        if (focusFrame !== null) win.cancelAnimationFrame?.(focusFrame);
+        focusFrame = null;
+        if (exit === 'error' || exit === 'pagehide' || exit === 'pageswap') {
+            if (restoreFocusFrame !== null) win.cancelAnimationFrame?.(restoreFocusFrame);
+            restoreFocusFrame = null;
+        }
         removers.splice(0).forEach(remove => { try { remove(); } catch { /* Continue cleanup. */ } });
         doc.documentElement?.removeAttribute?.('data-auth-splash-wait');
         try {
@@ -102,7 +110,13 @@
         }
     };
     const release = (exit, immediate = false) => {
-        if (state === 'REMOVED') return;
+        if (state === 'REMOVED') {
+            if (exit === 'error' && restoreFocusFrame !== null) {
+                win.cancelAnimationFrame?.(restoreFocusFrame);
+                restoreFocusFrame = null;
+            }
+            return;
+        }
         if (state === 'RELEASED') {
             if (immediate) removeVisual(exit);
             return;
@@ -117,6 +131,10 @@
         minimumTimer = null;
         if (readyFrame !== null) win.cancelAnimationFrame?.(readyFrame);
         readyFrame = null;
+        if (focusFrame !== null) win.cancelAnimationFrame?.(focusFrame);
+        focusFrame = null;
+        if (restoreFocusFrame !== null) win.cancelAnimationFrame?.(restoreFocusFrame);
+        restoreFocusFrame = null;
         try {
             restoreRoots();
             if (overlay) {
@@ -126,12 +144,17 @@
                 if (skip) { skip.hidden = true; skip.disabled = true; }
                 if (!immediate && !motion?.matches && visible) overlay.classList.add('is-leaving');
             }
-            if (ownedFocus) {
+            if (ownedFocus && exit !== 'error' && exit !== 'pagehide' && exit !== 'pageswap') {
                 const fallback = mode === 'native-login' ? doc.querySelector('#email') : doc.querySelector('#main-content');
                 const target = returnFocus?.isConnected && returnFocus !== doc.body ? returnFocus : fallback;
-                if (target?.isConnected && !target.inert) {
-                    restoringFocus = true;
-                    try { target.focus({ preventScroll: true }); } finally { restoringFocus = false; }
+                if (target?.isConnected && !target.inert && typeof win.requestAnimationFrame === 'function') {
+                    restoreFocusFrame = win.requestAnimationFrame(safe(() => {
+                        restoreFocusFrame = null;
+                        if (!target.isConnected || target.inert) return;
+                        if (doc.activeElement && doc.activeElement !== doc.body && !overlay?.contains(doc.activeElement)) return;
+                        restoringFocus = true;
+                        try { target.focus({ preventScroll: true }); } finally { restoringFocus = false; }
+                    }));
                 }
             }
         } finally {
@@ -231,6 +254,7 @@
         const canSwap = !mediaFallbackApplied && fallbackSrc !== '' && currentSrc !== fallbackSrc;
         if (canSwap) {
             mediaFallbackApplied = true;
+            media.parentElement?.querySelectorAll?.('source[type="image/webp"]')?.forEach(source => source.remove());
             media.src = fallbackSrc;
             if (reason === 'media-error' && !mediaSettled && state === 'WAITING' && !motion?.matches && minimumVisible > 0) {
                 const remainingBudget = Math.max(0, Math.min(mediaFallbackMs, deadline - clock(), visibleAt + mediaFallbackMs - clock()));
@@ -272,6 +296,13 @@
             readyFrame = win.requestAnimationFrame(complete);
         }));
     };
+    const isCssReady = overlayEl => {
+        try {
+            const styleEl = doc.querySelector?.('style[data-auth-splash-styles]');
+            if (styleEl?.sheet?.cssRules?.length > 0) return true;
+        } catch { /* Fall back to computed style check if CSSOM inspection is unavailable. */ }
+        return win.getComputedStyle(overlayEl).getPropertyValue('--auth-splash-css-ready').trim() === '1';
+    };
     const scan = safe(() => {
         if (state === 'REMOVED' || state === 'RELEASED') return;
         if (clock() >= deadline) return release('hard-timeout', true);
@@ -292,7 +323,7 @@
         panel = overlay.querySelector('.auth-splash__panel');
         skip = overlay.querySelector('[data-auth-splash-skip]');
         if (!media || !panel || !skip || !overlay.querySelector('[data-auth-splash-status]')) return;
-        if (!('inert' in overlay) || win.getComputedStyle(overlay).getPropertyValue('--auth-splash-css-ready').trim() !== '1') {
+        if (!('inert' in overlay) || !isCssReady(overlay)) {
             return release('unsupported', true);
         }
         motion = win.matchMedia('(prefers-reduced-motion: reduce)');
@@ -309,7 +340,12 @@
         visibleAt = clock();
         minimumBypassed = motion.matches;
         mark('visible-start');
-        panel.focus({ preventScroll: true });
+        focusFrame = win.requestAnimationFrame(safe(() => {
+            focusFrame = null;
+            if (state === 'WAITING' && panel && !overlay.contains(doc.activeElement)) {
+                panel.focus({ preventScroll: true });
+            }
+        }));
         listen(media, 'load', safe(() => {
             if (state !== 'WAITING' || mediaSettled) return;
             if (media.naturalWidth > 0) settleMedia('media-ready');

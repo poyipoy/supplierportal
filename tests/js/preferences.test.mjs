@@ -181,6 +181,61 @@ test('unavailable localStorage falls back to the server sidebar preference', () 
     assert.equal(state.windowRef.AdasiSidebarPreferences.read(), false);
 });
 
+test('sidebar width cache persists in adasi.sidebar per account, clamps bounds, and survives revision bumps', () => {
+    const appliedProps = new Map();
+    const layoutScript = headBootstrap().replace('@js($preferenceFrontendPayload)', JSON.stringify({
+        theme: 'light',
+        density: 'comfortable',
+        densityKeys: ['spacious', 'comfortable', 'balanced', 'compact', 'dense'],
+        sidebarState: 'expanded',
+        pageSize: 25,
+        sidebarRevision: '8:3',
+        accountId: '41',
+    }));
+    const values = new Map([
+        ['adasi.sidebar.41', JSON.stringify({ revision: '8:2', collapsed: true, width: 312 })],
+    ]);
+    const root = {
+        dataset: {},
+        style: {
+            setProperty: (key, val) => appliedProps.set(key, val),
+            removeProperty: (key) => appliedProps.delete(key),
+        },
+    };
+    const windowRef = {
+        innerWidth: 1280,
+        matchMedia: () => ({ matches: false, addEventListener: () => {} }),
+        dispatchEvent: () => {},
+        localStorage: {
+            getItem: (key) => values.get(key) ?? null,
+            setItem: (key, val) => values.set(key, val),
+        },
+    };
+    vm.runInNewContext(layoutScript, {
+        window: windowRef,
+        document: { documentElement: root },
+        CustomEvent: class { constructor(type, init) { this.type = type; this.detail = init.detail; } },
+    });
+
+    assert.equal(windowRef.__adasiSidebarInitialCollapsed, false);
+    assert.equal(windowRef.AdasiSidebarPreferences.readWidth(), 312);
+    assert.equal(appliedProps.get('--sidebar-width'), '312px');
+
+    windowRef.AdasiSidebarPreferences.writeWidth(1600);
+    assert.equal(windowRef.AdasiSidebarPreferences.readWidth(), 1280);
+    assert.equal(appliedProps.get('--sidebar-width'), '1280px');
+    assert.equal(JSON.parse(values.get('adasi.sidebar.41')).width, 1280);
+
+    windowRef.AdasiSidebarPreferences.writeWidth(120);
+    assert.equal(root.dataset.sidebarNarrow, 'true');
+
+    windowRef.AdasiSidebarPreferences.writeWidth(null);
+    assert.equal(windowRef.AdasiSidebarPreferences.readWidth(), null);
+    assert.equal(root.dataset.sidebarNarrow, undefined);
+    assert.equal(appliedProps.has('--sidebar-width'), false);
+    assert.equal('width' in JSON.parse(values.get('adasi.sidebar.41')), false);
+});
+
 test('chart theme refresh updates chrome while retaining callbacks and datasets', async () => {
     const oldWindow = globalThis.window;
     const oldGetComputedStyle = globalThis.getComputedStyle;

@@ -7,6 +7,8 @@
     @endphp
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="text-scale" content="scale">
+    <meta name="color-scheme" content="light dark">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <script>
         window.AdasiLoginUrl = @js(route('login'));
@@ -76,21 +78,63 @@
                 const root = document.documentElement;
                 const media = window.matchMedia('(prefers-color-scheme: dark)');
                 const storageKey = 'adasi.sidebar.' + preferences.accountId;
+                const DEFAULT_SIDEBAR_WIDTH = 256;
+                const MIN_EXPANDED_SIDEBAR_WIDTH = 81;
+                const MAX_STORED_SIDEBAR_WIDTH = 4096;
+                const clampSidebarWidth = (value) => {
+                    if (typeof value !== 'number' || !Number.isFinite(value)) return null;
+                    const viewportCap = typeof window.innerWidth === 'number' && window.innerWidth > 0
+                        ? Math.floor(window.innerWidth)
+                        : MAX_STORED_SIDEBAR_WIDTH;
+                    const maxAllowed = Math.max(MIN_EXPANDED_SIDEBAR_WIDTH, Math.min(MAX_STORED_SIDEBAR_WIDTH, viewportCap));
+                    return Math.min(maxAllowed, Math.max(MIN_EXPANDED_SIDEBAR_WIDTH, Math.round(value)));
+                };
+                const applySidebarWidth = (width) => {
+                    if (root.dataset.workspaceEmbed === 'true') {
+                        root.style?.removeProperty?.('--sidebar-width');
+                        delete root.dataset.sidebarNarrow;
+                        return;
+                    }
+                    if (typeof width === 'number' && Number.isFinite(width) && width !== DEFAULT_SIDEBAR_WIDTH) {
+                        root.style?.setProperty?.('--sidebar-width', `${width}px`);
+                    } else {
+                        root.style?.removeProperty?.('--sidebar-width');
+                    }
+                    if (typeof width === 'number' && width < 180) {
+                        root.dataset.sidebarNarrow = 'true';
+                    } else {
+                        delete root.dataset.sidebarNarrow;
+                    }
+                };
                 let sidebarCollapsed = preferences.sidebarState === 'collapsed';
+                let sidebarWidth = null;
                 let previewTheme = null;
                 let previewDensity = densityKeys.includes(initialDensity) ? initialDensity : null;
                 let previewAccent = null;
                 let previewShellStyle = null;
 
+                const writeSidebarCache = () => {
+                    const nextPayload = { revision: preferences.sidebarRevision, collapsed: sidebarCollapsed };
+                    if (sidebarWidth !== null) {
+                        nextPayload.width = sidebarWidth;
+                    }
+                    window.localStorage.setItem(storageKey, JSON.stringify(nextPayload));
+                };
+
                 try {
                     const cached = JSON.parse(window.localStorage.getItem(storageKey) || 'null');
-                    if (cached && cached.revision === preferences.sidebarRevision && typeof cached.collapsed === 'boolean') {
-                        sidebarCollapsed = cached.collapsed;
+                    if (cached && typeof cached === 'object') {
+                        if (cached.revision === preferences.sidebarRevision && typeof cached.collapsed === 'boolean') {
+                            sidebarCollapsed = cached.collapsed;
+                        }
+                        sidebarWidth = clampSidebarWidth(cached.width);
                     }
-                    window.localStorage.setItem(storageKey, JSON.stringify({ revision: preferences.sidebarRevision, collapsed: sidebarCollapsed }));
+                    writeSidebarCache();
                 } catch (error) {
                     // Restricted storage falls back to the account preference for this page load.
                 }
+
+                applySidebarWidth(sidebarWidth);
 
                 const savedTheme = preferences.theme;
                 const savedDensity = densityKeys.includes(preferences.density) ? preferences.density : 'comfortable';
@@ -127,8 +171,19 @@
                     read: () => sidebarCollapsed,
                     write: (collapsed) => {
                         sidebarCollapsed = Boolean(collapsed);
-                        try { window.localStorage.setItem(storageKey, JSON.stringify({ revision: preferences.sidebarRevision, collapsed: sidebarCollapsed })); } catch (error) { /* Keep the in-memory state. */ }
+                        try { writeSidebarCache(); } catch (error) { /* Keep the in-memory state. */ }
                     },
+                    readWidth: () => sidebarWidth,
+                    writeWidth: (width) => {
+                        sidebarWidth = (width === null || width === undefined) ? null : clampSidebarWidth(Number(width));
+                        applySidebarWidth(sidebarWidth);
+                        try { writeSidebarCache(); } catch (error) { /* Keep the in-memory state. */ }
+                    },
+                    bounds: Object.freeze({
+                        defaultWidth: DEFAULT_SIDEBAR_WIDTH,
+                        minWidth: MIN_EXPANDED_SIDEBAR_WIDTH,
+                        maxWidth: MAX_STORED_SIDEBAR_WIDTH,
+                    }),
                 });
                 // Regional display is explicit and in-memory; raw values remain business inputs.
                 const regional = Object.freeze({ ...(preferences.regional || {}) });
@@ -293,25 +348,25 @@
     @endauth
     <title>@if($isWorkspaceEmbed ?? false)@yield('title', 'ADASI Supplier Portal')@else{{ 'ADASI Supplier Portal' }}@endif</title>
 
-    <!-- Favicon -->
+    {{-- Favicon --}}
     <link rel="icon" href="{{ asset('assets/images/logo-adasi.png') }}" type="image/png">
 
-    <!-- Bootstrap 5 CSS -->
+    {{-- Bootstrap 5 CSS --}}
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous" rel="stylesheet">
 
     @hasSection('uses-datatables')
-        <!-- DataTables CSS (only on pages that initialize a DataTable) -->
+        {{-- DataTables CSS (only on pages that initialize a DataTable) --}}
         <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" integrity="sha384-5oFfLntNy8kuC2TaebWZbaHTqdh3Q+7PwYbB490gupK0YtTAB7mBJGv4bQl9g9rK" crossorigin="anonymous">
     @endif
 
-    <!-- SweetAlert2 CSS -->
+    {{-- SweetAlert2 CSS --}}
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css" integrity="sha384-e9JoBUb50niLuTodlxX3NLZZfrt9fQkX5bihGXOGWD/7QFJoXEH37S2df8UA2ehO" crossorigin="anonymous">
 
-    <!-- ADASI Alert Theme -->
-    <link rel="stylesheet" href="{{ asset('assets/css/adasi-alert.css') }}">
+    {{-- ADASI Alert Theme --}}
+    <link rel="stylesheet" href="{{ asset('assets/css/adasi-alert.css') }}?v={{ filemtime(public_path('assets/css/adasi-alert.css')) }}">
 
 
-    <!-- Tailwind design foundation + Alpine entry (hybrid compatibility phase) -->
+    {{-- Tailwind design foundation + Alpine entry (hybrid compatibility phase) --}}
     @include('partials.loader-logo')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('styles')
@@ -396,7 +451,7 @@
         <x-ui.image-lightbox />
     @endif
 
-    <!-- Bootstrap 5 JS Bundle -->
+    {{-- Bootstrap 5 JS Bundle --}}
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
     <script>
@@ -433,17 +488,17 @@
         });
     </script>
 
-    <!-- jQuery -->
+    {{-- jQuery --}}
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha384-1H217gwSVyLSIfaLxHbE7dRb3v4mYCKbpQvzx0cegeju1MVsGrX5xXxAvs/HgeFs" crossorigin="anonymous"></script>
 
     @hasSection('uses-datatables')
-        <!-- DataTables JS (only on pages that initialize a DataTable) -->
+        {{-- DataTables JS (only on pages that initialize a DataTable) --}}
         <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js" integrity="sha384-k5vbMeKHbxEZ0AEBTSdR7UjAgWCcUfrS8c0c5b2AfIh7olfhNkyCZYwOfzOQhauK" crossorigin="anonymous"></script>
         <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js" integrity="sha384-PgPBH0hy6DTJwu7pTf6bkRqPlf/+pjUBExpr/eIfzszlGYFlF9Wi9VTAJODPhgCO" crossorigin="anonymous"></script>
     @endif
     <script>
         window.AdasiDataTable = Object.freeze({
-            defaults: () => ({ pageLength: window.AdasiPreferences?.pageSize || 25, lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]], language: @js(__('datatables')) }),
+            defaults: () => ({ processing: true, pageLength: window.AdasiPreferences?.pageSize || 25, lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]], language: @js(__('datatables')) }),
         });
         if (window.jQuery?.fn?.dataTable) {
             window.jQuery.extend(true, window.jQuery.fn.dataTable.defaults, window.AdasiDataTable.defaults());
@@ -477,9 +532,13 @@
             // A single page of results keeps the summary but drops the pager (see .ui-dt-single-page in app.css).
             // The pager also becomes a labelled navigation landmark, like the Laravel pagination view.
             const paginationLabel = @js(__('pagination.navigation'));
-            window.jQuery(document).on('draw.dt', (event, settings) => {
+            window.jQuery(document).on('draw.dt order.dt', (event, settings) => {
                 const wrapper = settings?.nTableWrapper;
                 if (!wrapper) return;
+
+                wrapper.querySelectorAll('th[aria-sort="none"]').forEach((th) => {
+                    th.removeAttribute('aria-sort');
+                });
 
                 const pages = new window.jQuery.fn.dataTable.Api(settings).page.info().pages;
                 wrapper.classList.toggle('ui-dt-single-page', pages <= 1);
@@ -493,11 +552,12 @@
             });
         }
     </script>
-    <!-- SweetAlert2 JS -->
+    {{-- SweetAlert2 JS --}}
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js" integrity="sha384-VNUenFzuMm/yuCawx3aXQgp6+Z5QL6nRMkX1fNFfqPzI1fdaooshPNCHt/Llz/bJ" crossorigin="anonymous"></script>
-    <script src="{{ asset('assets/js/adasi-alert.js') }}"></script>
+    <script src="{{ asset('assets/js/adasi-alert.js') }}?v={{ filemtime(public_path('assets/js/adasi-alert.js')) }}"></script>
 
-    <!-- Ngrok browser warning bypass for internal async requests -->
+    @unless(app()->isProduction() || config('app.env') === 'production')
+    {{-- Ngrok browser warning bypass for internal async requests --}}
     <script>
         (() => {
             const headerName = 'ngrok-skip-browser-warning';
@@ -555,8 +615,9 @@
             }
         })();
     </script>
+    @endunless
 
-    <!-- Custom JS -->
+    {{-- Custom JS --}}
     @if(!($isWorkspaceEmbed ?? false))
     <script>
         @auth
@@ -581,13 +642,12 @@
                     'X-Adasi-Session-Check': 'passive',
                 };
 
-                const notifCtrl = new AbortController();
-                const notifTimeout = setTimeout(() => notifCtrl.abort(), 8000);
-
                 // Notification badge
+                const notifSignal = typeof AbortSignal?.timeout === 'function' ? AbortSignal.timeout(8000) : undefined;
                 const notifPromise = fetch("{{ route('notifications.unread-count') }}", {
                     headers,
-                    signal: notifCtrl.signal
+                    priority: 'low',
+                    ...(notifSignal ? { signal: notifSignal } : {}),
                 })
                     .then(r => {
                         window.AdasiSessionSync?.handlePollResponse(r);
@@ -612,17 +672,15 @@
                             updateNotificationCategoryBadges(data.category_counts);
                         }
                     })
-                    .catch(() => {})
-                    .finally(() => clearTimeout(notifTimeout));
+                    .catch(() => {});
 
                 // Chat badge
                 @if(auth()->user()->isPurchasing() || \App\Support\PortalContext::isImport(auth()->user()))
-                    const chatCtrl = new AbortController();
-                    const chatTimeout = setTimeout(() => chatCtrl.abort(), 8000);
-
+                    const chatSignal = typeof AbortSignal?.timeout === 'function' ? AbortSignal.timeout(8000) : undefined;
                     const chatPromise = fetch("{{ route('conversations.unread-count') }}", {
                         headers,
-                        signal: chatCtrl.signal
+                        priority: 'low',
+                        ...(chatSignal ? { signal: chatSignal } : {}),
                     })
                         .then(r => {
                             window.AdasiSessionSync?.handlePollResponse(r);
@@ -647,8 +705,7 @@
                                 }
                             });
                         })
-                        .catch(() => {})
-                        .finally(() => clearTimeout(chatTimeout));
+                        .catch(() => {});
 
                     Promise.allSettled([notifPromise, chatPromise]).finally(() => {
                         badgeFetchActive = false;
@@ -802,12 +859,16 @@
                     } else if (activeSubmitter.tagName === 'BUTTON') {
                         activeSubmitter.dataset.originalHtml = activeSubmitter.innerHTML;
                         const icon = activeSubmitter.querySelector('.ui-icon');
+                        const closestSpan = icon ? icon.closest('span') : null;
+                        const iconTarget = (closestSpan && closestSpan !== activeSubmitter && closestSpan.textContent.trim() === '' && !closestSpan.querySelector(':scope > span'))
+                            ? closestSpan
+                            : icon;
                         const spinner = document.createElement('span');
                         spinner.className = 'ui-spinner';
                         spinner.setAttribute('aria-hidden', 'true');
-                        if (icon && icon.parentNode) {
-                            icon.style.display = 'none';
-                            icon.parentNode.insertBefore(spinner, icon);
+                        if (iconTarget && iconTarget.parentNode) {
+                            iconTarget.style.display = 'none';
+                            iconTarget.parentNode.insertBefore(spinner, iconTarget);
                         } else {
                             spinner.classList.add('tw:mr-1.5');
                             activeSubmitter.prepend(spinner);
@@ -1005,22 +1066,30 @@
                     html: `
                         <div class="text-start">
                             <table class="table table-borderless table-sm mb-0">
-                                <tr>
-                                    <td width="40%"><kbd>Alt + D</kbd></td>
-                                    <td>{{ __('navigation.back_dashboard') }}</td>
-                                </tr>
-                                <tr>
-                                    <td><kbd>Alt + [</kbd></td>
-                                    <td>{{ __('navigation.shortcut_prev_record') }}</td>
-                                </tr>
-                                <tr>
-                                    <td><kbd>Alt + ]</kbd></td>
-                                    <td>{{ __('navigation.shortcut_next_record') }}</td>
-                                </tr>
-                                <tr>
-                                    <td><kbd>?</kbd></td>
-                                    <td>{{ __('navigation.open_help') }}</td>
-                                </tr>
+                                <thead>
+                                    <tr>
+                                        <th scope="col" class="tw:w-2/5">{{ __('navigation.keyboard_shortcuts') }}</th>
+                                        <th scope="col">{{ __('common.table.action') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><kbd>Alt + D</kbd></td>
+                                        <td>{{ __('navigation.back_dashboard') }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><kbd>Alt + [</kbd></td>
+                                        <td>{{ __('navigation.shortcut_prev_record') }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><kbd>Alt + ]</kbd></td>
+                                        <td>{{ __('navigation.shortcut_next_record') }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><kbd>?</kbd></td>
+                                        <td>{{ __('navigation.open_help') }}</td>
+                                    </tr>
+                                </tbody>
                             </table>
                         </div>
                     `,
@@ -1041,7 +1110,7 @@
 
 @auth
     @if($pusherClientReady && !($isWorkspaceEmbed ?? false))
-        <!-- Laravel Echo + Pusher Channels -->
+        {{-- Laravel Echo + Pusher Channels --}}
         <script src="https://cdn.jsdelivr.net/npm/pusher-js@8.4.0/dist/web/pusher.min.js" integrity="sha384-F0kpynobTwTZnUdhUu3W6P6QcdLW2hKKDTh6ECx+p/osH1JYIKlYqUjNc4ObdiTj" crossorigin="anonymous"></script>
         <script src="https://cdn.jsdelivr.net/npm/laravel-echo@1.19.0/dist/echo.iife.js" integrity="sha384-ScNZkQp2Eq+lxW1uQEWSn+2+fQYxKc1pCX6Vl1lxSRzJBvJ5DRR98jdTDqdde2iX" crossorigin="anonymous"></script>
 
@@ -1418,6 +1487,12 @@
                                     notification,
                                     readUrl
                                 );
+                                window.dispatchEvent(
+                                    new CustomEvent('adasi:realtime-notification', {
+                                        detail: notification,
+                                    })
+                                );
+                                window.AdasiWorkspaceShell?.broadcastNotification?.(notification);
                             }
                         );
 
@@ -1428,7 +1503,7 @@
                     );
 
                 } catch (error) {
-                    console.error(
+                    window.AdasiDebug?.error(
                         'Pusher/Echo initialization failed:',
                         error
                     );

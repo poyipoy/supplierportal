@@ -34,5 +34,18 @@ return [
         'my_quotation' => 'Penawaran saya',
         'my_quotation_description' => 'Hanya penawaran milik Anda yang ditampilkan.',
         'back' => 'Kembali ke Permintaan Pembelian',
+        'cancelled_at' => 'Dibatalkan pada',
+        'cancelled_summary_title' => 'Purchase Requisition ini telah dibatalkan',
+        'cancelled_summary_body' => 'Pengiriman penawaran untuk Purchase Requisition ini telah ditutup dan detail spesifikasi item tidak lagi ditampilkan.',
+    ],
+    'availability' => [
+        'banner_title' => 'Purchase Requisition ini telah dibatalkan',
+        'pr_cancelled_banner' => 'Purchase Requisition ini telah dibatalkan saat formulir Anda terbuka. Penyimpanan draf dan pengiriman penawaran telah dinonaktifkan.',
+        'invitation_cancelled_banner' => 'Purchase Requisition ini kini berstatus Dibatalkan untuk akun Anda dan tidak lagi menerima penawaran. Penyimpanan draf dan pengiriman penawaran telah dinonaktifkan.',
+        'pr_cancelled_toast' => 'Purchase Requisition ini telah dibatalkan dan tidak lagi menerima penawaran.',
+        'invitation_cancelled_toast' => 'Purchase Requisition ini berstatus Dibatalkan untuk akun Anda dan tidak lagi menerima penawaran.',
+        'pr_cancelled_redirect' => 'Purchase Requisition ini telah dibatalkan dan tidak lagi terbuka untuk pengiriman penawaran.',
+        'invitation_cancelled_redirect' => 'Purchase Requisition ini berstatus Dibatalkan untuk akun Anda dan tidak lagi terbuka untuk pengiriman penawaran.',
+        'view_summary_action' => 'Lihat Ringkasan Pembatalan',
     ],
 ];

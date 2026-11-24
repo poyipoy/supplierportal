@@ -9,7 +9,11 @@ class ExportPreset extends Model
 {
     use HasHashids;
 
-    protected $fillable = ['user_id', 'export_key', 'name', 'columns', 'filters', 'format', 'is_default'];
+    public const SCOPE_PERSONAL = 'personal';
+
+    public const SCOPE_TEAM = 'team';
+
+    protected $fillable = ['user_id', 'export_key', 'scope', 'name', 'columns', 'filters', 'format', 'csv_delimiter', 'is_default'];
 
     protected function casts(): array
     {

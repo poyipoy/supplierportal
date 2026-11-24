@@ -4,6 +4,7 @@ namespace App\Services\VendorMaster;
 
 use App\Enums\SupplierChangeRequestStatus;
 use App\Events\AuthSecurityEvent;
+use App\Exceptions\BusinessRuleException;
 use App\Models\Supplier;
 use App\Models\SupplierChangeRequest;
 use App\Models\SupplierMasterDocument;
@@ -17,7 +18,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
-use RuntimeException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class VendorChangeRequestService
@@ -204,7 +204,7 @@ class VendorChangeRequestService
                 ->firstOrFail();
 
             if ($req->status !== SupplierChangeRequest::STATUS_PENDING) {
-                throw new RuntimeException(__('local_procurement.vendor_validation.pending'));
+                throw new BusinessRuleException(__('local_procurement.vendor_validation.pending'));
             }
 
             $proposed = $req->proposed_data;
@@ -325,7 +325,7 @@ class VendorChangeRequestService
                 ->firstOrFail();
 
             if ($req->status !== SupplierChangeRequest::STATUS_PENDING) {
-                throw new RuntimeException(__('local_procurement.vendor_validation.pending'));
+                throw new BusinessRuleException(__('local_procurement.vendor_validation.pending'));
             }
 
             $supplierUser = $req->supplier;
@@ -391,7 +391,7 @@ class VendorChangeRequestService
 
         foreach (array_unique([...SupplierChangeRequest::CONTACT_FIELDS, ...array_keys($snapshot)]) as $field) {
             if ((string) ($current[$field] ?? '') !== (string) ($snapshot[$field] ?? '')) {
-                throw new RuntimeException(__('supplier_contact.validation.stale'));
+                throw new BusinessRuleException(__('supplier_contact.validation.stale'));
             }
         }
 

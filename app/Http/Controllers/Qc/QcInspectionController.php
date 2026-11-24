@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Qc;
 
+use App\Exceptions\BusinessRuleViolation;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Export\Filters\InspectionExportFilters;
 use App\Http\Requests\Qc\StoreQcInspectionRequest;
@@ -37,7 +38,7 @@ class QcInspectionController extends Controller
     public function dataWaiting(Request $request, RegionalDisplayFormatter $regionalFormatter)
     {
         $query = $this->waitingPurchaseOrdersQuery()->with([
-            'supplier',
+            'supplier:id,name',
             'quotations' => fn ($query) => $query->withCount('items'),
             'shipmentItems.shipment',
             'qcInspections:id,po_id,shipment_id',
@@ -68,12 +69,13 @@ class QcInspectionController extends Controller
                 return RowAction::link($url, __('qc.copy.start_inspection'), 'primary', $po->po_number);
             })
             ->rawColumns(['action'])
+            ->only(['po_number_display', 'supplier_name', 'arrival_date', 'item_count', 'action'])
             ->make(true);
     }
 
     public function dataHistory(Request $request)
     {
-        $query = QcInspection::with(['purchaseOrder.supplier', 'shipment', 'inspector'])
+        $query = QcInspection::with(['purchaseOrder:id,po_number,supplier_id', 'purchaseOrder.supplier:id,name', 'shipment', 'inspector:id,name'])
             ->orderBy('inspected_at', 'desc');
 
         InspectionExportFilters::apply($query, InspectionExportFilters::validated($request));
@@ -89,6 +91,7 @@ class QcInspectionController extends Controller
             ->addColumn('inspector_name', fn ($i) => $i->inspector->name ?? '-')
             ->addColumn('action', fn ($i) => RowAction::detail(route('qc.inspections.show', $i), $i->purchaseOrder->po_number ?? (string) $i->id))
             ->rawColumns(['status_badge', 'action'])
+            ->only(['po_number', 'supplier_name', 'inspected_date', 'status_badge', 'inspector_name', 'action'])
             ->make(true);
     }
 
@@ -166,13 +169,13 @@ class QcInspectionController extends Controller
             return redirect()->route('qc.inspections.show', $inspection)->with('success', __('qc.copy.inspection_result_successfully_saved'));
         } catch (ValidationException $e) {
             throw $e;
-        } catch (\RuntimeException $e) {
+        } catch (\DomainException|BusinessRuleViolation $e) {
             if ($request->expectsJson()) {
                 throw ValidationException::withMessages(['attachments' => $e->getMessage()]);
             }
 
             return back()->withInput()->with('error', $e->getMessage());
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('QC Inspection store failed', [
                 'po_id' => $po_id,
                 'user_id' => auth()->id(),
@@ -181,7 +184,9 @@ class QcInspectionController extends Controller
             ]);
 
             if ($request->expectsJson()) {
-                throw $e;
+                return response()->json([
+                    'message' => __('qc.copy.an_error_occurred_while_saving_the_inspection_please_try_again'),
+                ], 500);
             }
 
             return back()->withInput()->with('error', __('qc.copy.an_error_occurred_while_saving_the_inspection_please_try_again'));
@@ -236,14 +241,19 @@ class QcInspectionController extends Controller
 
         try {
             $submissionService->storeAdditionalAttachments($request, $inspection);
+        } catch (ValidationException $e) {
+            throw $e;
         } catch (\Throwable $e) {
-            if ($e instanceof ValidationException || $request->expectsJson()) {
-                throw $e;
-            }
             Log::error('QC Inspection storeAttachments failed', [
                 'inspection_id' => $id,
                 'exception' => $e->getMessage(),
             ]);
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => __('qc.copy.failed_to_save_evidence_photos_please_try_again'),
+                ], 500);
+            }
 
             return back()->with('error', __('qc.copy.failed_to_save_evidence_photos_please_try_again'));
         }

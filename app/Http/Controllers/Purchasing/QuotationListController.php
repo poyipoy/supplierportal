@@ -138,7 +138,7 @@ class QuotationListController extends Controller
         // Review controls follow the same rule the review actions enforce.
         $reviewLocked = $quotation->isReferencedByAwardOrPurchaseOrder();
         $canRequestRevision = ($quotation->canRequestRevision() || $quotation->canRequestValidityUpdateForExpiredAward())
-            && $quotation->purchaseRequisition->status !== 'completed';
+            && ! in_array($quotation->purchaseRequisition->status, ['completed', PurchaseRequisition::STATUS_CANCELLED], true);
         $chatAvailable = in_array($quotation->status, ['submitted', 'revision_requested', 'accepted', 'all_unavailable'], true);
         $supplierDisplayName = $quotation->supplier->supplier->company_name
             ?? $quotation->supplier->name
@@ -222,6 +222,10 @@ class QuotationListController extends Controller
 
                 if ((int) $lockedQuotation->pr_id !== (int) $lockedPr->id) {
                     throw new InvalidArgumentException(__('purchasing.copy.the_quotation_no_longer_belongs_to_this_purchase_requisition'));
+                }
+
+                if ($lockedPr->status === PurchaseRequisition::STATUS_CANCELLED) {
+                    throw new InvalidArgumentException(__('purchasing.copy.pr_cancelled_action_blocked'));
                 }
 
                 if ($lockedPr->status === 'completed') {
@@ -314,6 +318,9 @@ class QuotationListController extends Controller
             $quotation = DB::transaction(function () use ($id, $request) {
                 $quotation = $this->lockQuotationForReview($id);
                 $quotation->load(['supplier', 'purchaseRequisition', 'purchaseOrders', 'items']);
+                if ($quotation->purchaseRequisition->status === PurchaseRequisition::STATUS_CANCELLED) {
+                    throw new InvalidArgumentException(__('purchasing.copy.pr_cancelled_action_blocked'));
+                }
                 $this->assertNotReferencedByAwardOrPurchaseOrder($quotation);
 
                 if (! $quotation->canApproveBy(auth()->user())) {
@@ -362,6 +369,9 @@ class QuotationListController extends Controller
             $quotation = DB::transaction(function () use ($id, $request) {
                 $quotation = $this->lockQuotationForReview($id);
                 $quotation->load(['supplier', 'purchaseRequisition', 'purchaseOrders', 'items']);
+                if ($quotation->purchaseRequisition->status === PurchaseRequisition::STATUS_CANCELLED) {
+                    throw new InvalidArgumentException(__('purchasing.copy.pr_cancelled_action_blocked'));
+                }
                 $this->assertNotReferencedByAwardOrPurchaseOrder($quotation);
 
                 if (! $quotation->canApproveBy(auth()->user())) {
@@ -411,6 +421,9 @@ class QuotationListController extends Controller
             $quotation = DB::transaction(function () use ($id, $revisionNote) {
                 $quotation = $this->lockQuotationForReview($id);
                 $quotation->load(['supplier.supplier', 'purchaseRequisition', 'purchaseOrders', 'items']);
+                if ($quotation->purchaseRequisition->status === PurchaseRequisition::STATUS_CANCELLED) {
+                    throw new InvalidArgumentException(__('purchasing.copy.pr_cancelled_action_blocked'));
+                }
                 if ($quotation->purchaseRequisition->status === 'completed') {
                     throw new InvalidArgumentException(__('purchasing.copy.the_pr_is_completed_a_quotation_revision_cannot_be_requested'));
                 }

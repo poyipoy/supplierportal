@@ -2,7 +2,7 @@
     'use strict';
     const t = (key, replacements = {}) => window.AdasiI18n.t(key, replacements);
 
-    const SweetAlert = window.Swal;
+    const getSweetAlert = () => window.Swal;
     const fallbackResult = (overrides) => Object.assign({
         isConfirmed: false,
         isDenied: false,
@@ -61,15 +61,16 @@
 
         return {
             showLoaderOnConfirm: true,
-            allowEscapeKey: () => !SweetAlert.isLoading(),
+            allowEscapeKey: () => !(getSweetAlert()?.isLoading?.()),
             preConfirm: async () => {
-                const popup = SweetAlert.getPopup();
+                const SweetAlert = getSweetAlert();
+                const popup = SweetAlert?.getPopup?.();
                 popup?.setAttribute('aria-busy', 'true');
                 try {
                     return await options.preConfirm();
                 } catch (error) {
-                    SweetAlert.getValidationMessage()?.setAttribute('role', 'alert');
-                    SweetAlert.showValidationMessage(asText(error?.message, t('js.toast.failed')));
+                    SweetAlert?.getValidationMessage?.()?.setAttribute('role', 'alert');
+                    SweetAlert?.showValidationMessage?.(asText(error?.message, t('js.toast.failed')));
                     return false;
                 } finally {
                     popup?.removeAttribute('aria-busy');
@@ -80,6 +81,7 @@
 
     const confirm = (rawOptions, danger) => {
         const options = asOptions(rawOptions);
+        const SweetAlert = getSweetAlert();
         if (!SweetAlert) return nativeConfirm(options, danger);
 
         return SweetAlert.fire({
@@ -97,6 +99,7 @@
 
     const prompt = (rawOptions) => {
         const options = asOptions(rawOptions);
+        const SweetAlert = getSweetAlert();
         if (!SweetAlert) {
             const value = window.prompt(asText(options.title, t('js.actions.input')), asText(options.initialValue, ''));
             return Promise.resolve(fallbackResult({
@@ -145,6 +148,7 @@
 
     const alert = (type, rawOptions) => {
         const options = asOptions(rawOptions);
+        const SweetAlert = getSweetAlert();
         if (!SweetAlert) {
             window.alert(`${asText(options.title, t(({ success: 'js.toast.completed', error: 'js.toast.failed', warning: 'js.toast.attention', info: 'js.toast.update' })[type] || 'js.toast.update'))}\n\n${asText(options.text, '')}`);
             return Promise.resolve(fallbackResult({ isConfirmed: true, isDismissed: false }));
@@ -215,6 +219,8 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('[data-adasi-flash]').forEach((element) => {
+            if (element.dataset.adasiFlashConsumed === '1') return;
+            element.dataset.adasiFlashConsumed = '1';
             const type = element.dataset.type || 'info';
             const options = {
                 title: element.dataset.title || '',

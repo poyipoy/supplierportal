@@ -1,5 +1,6 @@
 import {
     appendEmbedParam,
+    canonicalizeShortcutModulePath,
     canonicalizeUrl,
     clampOpenPaneWeights,
     classifyInternalNavigation,
@@ -12,9 +13,12 @@ import {
     formatSessionDuplicateBadge,
     isSameOriginUrl,
     isTopLevelOnlyUrl,
+    mergeWorkspaceShortcutsState,
     MIN_SHORTCUTS_PANE_WIDTH_PX,
     normalizeShortcutsLayout,
     resizeShortcutsPairByDelta,
+    resolveDragTargetZoneIndex,
+    resolveGroupSessionMenuItems,
     resolveModuleKey,
     resolveShortcutsSplitterPair,
     resolveTransitionSettleMs,
@@ -34,6 +38,7 @@ import {
     resolveContextUrl,
     resolvePopstateNavigation,
 } from './portal-context-url.js';
+import { syncSplitterGripY } from './splitter.js';
 
 function cleanPageTitle(rawTitle, fallback = 'ADASI Portal') {
     if (!rawTitle || typeof rawTitle !== 'string') return fallback;
@@ -59,6 +64,7 @@ export function bootWorkspaceShell() {
     const stageEl = document.querySelector('[data-workspace-stage]');
     const framesEl = document.querySelector('[data-workspace-frames]');
     const tablistEl = document.querySelector('[data-workspace-sessionlist]');
+    const tablistOwnerEl = document.querySelector('[data-workspace-tablist-owner]');
     if (!config?.enabled || !stageEl || !framesEl || !tablistEl) return null;
 
     const origin = window.location.origin;
@@ -1129,9 +1135,25 @@ export function bootWorkspaceShell() {
     const favoritesStorageKey = `adasi:workspace:favorites:${scopedStorageSuffix}`;
     const bookmarksStorageKey = `adasi:workspace:bookmarks:${scopedStorageSuffix}`;
     const shortcutsLayoutStorageKey = `adasi:workspace:shortcuts-layout:${scopedStorageSuffix}`;
+    const shortcutsMetaStorageKey = `adasi:workspace:shortcuts-meta:${scopedStorageSuffix}`;
     const pinnedStorageKey = `adasi:workspace:pinned:${scopedStorageSuffix}`;
     const recentlyClosedStorageKey = `adasi:workspace:recently-closed:${scopedStorageSuffix}`;
     const SHORTCUTS_KEYBOARD_STEP_PX = 24;
+    const SHORTCUTS_SYNC_DEBOUNCE_MS = 1200;
+    const shortcutsSyncUrl = typeof config.shortcutsSyncUrl === 'string' && config.shortcutsSyncUrl.trim() !== ''
+        ? config.shortcutsSyncUrl.trim()
+        : null;
+    let shortcutsSyncTimer = 0;
+    let shortcutsSyncDirty = false;
+    let shortcutsLayout = normalizeShortcutsLayout(null);
+
+    const hasStorageKey = (key) => {
+        try {
+            return window.localStorage?.getItem(key) !== null;
+        } catch {
+            return false;
+        }
+    };
 
     const readJsonStorage = (key, fallbackValue) => {
         try {
@@ -1152,14 +1174,96 @@ export function bootWorkspaceShell() {
         }
     };
 
+    const canonicalShortcutPath = (rawPathOrUrl) => canonicalizeShortcutModulePath(rawPathOrUrl, { origin, pathPrefix });
+
+    const readShortcutsUpdatedAt = () => {
+        const meta = readJsonStorage(shortcutsMetaStorageKey, null);
+        return Math.max(0, Math.trunc(Number(meta?.updatedAt) || 0));
+    };
+
+    const touchShortcutsUpdatedAt = (explicitTs = Date.now()) => {
+        const ts = Math.max(0, Math.trunc(Number(explicitTs) || Date.now()));
+        writeJsonStorage(shortcutsMetaStorageKey, { updatedAt: ts });
+        return ts;
+    };
+
     const readUsageMap = () => {
         const parsed = readJsonStorage(usageStorageKey, {});
-        return (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) ? parsed : {};
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+        const normalized = {};
+        for (const [rawPath, entry] of Object.entries(parsed)) {
+            if (!entry || typeof entry !== 'object') continue;
+            const cleanPath = canonicalShortcutPath(rawPath) || normalizedPath(rawPath, origin);
+            if (!cleanPath) continue;
+            const count = Math.trunc(Number(entry.count) || 0);
+            const lastUsedAt = Math.max(0, Math.trunc(Number(entry.lastUsedAt) || 0));
+            if (count < 1) continue;
+            const prev = normalized[cleanPath];
+            normalized[cleanPath] = prev
+                ? { count: Math.max(prev.count, count), lastUsedAt: Math.max(prev.lastUsedAt, lastUsedAt) }
+                : { count, lastUsedAt };
+        }
+        return normalized;
+    };
+
+    const buildShortcutsSyncPayload = () => ({
+        scope: config.portalScope || 'import',
+        updated_at: readShortcutsUpdatedAt() || Date.now(),
+        usage: readUsageMap(),
+        favorites: readFavoritesList(),
+        favorites_initialized: hasStorageKey(favoritesStorageKey),
+        bookmarks: readBookmarksList(),
+        layout: shortcutsLayout,
+    });
+
+    const flushShortcutsSync = ({ keepalive = false } = {}) => {
+        if (shortcutsSyncTimer) {
+            window.clearTimeout(shortcutsSyncTimer);
+            shortcutsSyncTimer = 0;
+        }
+        if (!shortcutsSyncDirty || !shortcutsSyncUrl || typeof window.fetch !== 'function') {
+            return;
+        }
+        shortcutsSyncDirty = false;
+        try {
+            const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            const headers = {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            };
+            if (csrf) headers['X-CSRF-TOKEN'] = csrf;
+
+            void window.fetch(shortcutsSyncUrl, {
+                method: 'PATCH',
+                headers,
+                credentials: 'same-origin',
+                cache: 'no-store',
+                priority: 'low',
+                keepalive: Boolean(keepalive),
+                body: JSON.stringify(buildShortcutsSyncPayload()),
+            }).catch(() => {});
+        } catch {
+            // Network/CSP/unload restrictions are non-fatal; localStorage still retains state.
+        }
+    };
+
+    const scheduleShortcutsSync = () => {
+        touchShortcutsUpdatedAt();
+        if (!shortcutsSyncUrl || typeof window.fetch !== 'function') return;
+        shortcutsSyncDirty = true;
+        if (shortcutsSyncTimer) {
+            window.clearTimeout(shortcutsSyncTimer);
+        }
+        shortcutsSyncTimer = window.setTimeout(() => {
+            shortcutsSyncTimer = 0;
+            flushShortcutsSync({ keepalive: false });
+        }, SHORTCUTS_SYNC_DEBOUNCE_MS);
     };
 
     const recordModuleUse = (rawUrl) => {
-        const path = normalizedPath(rawUrl, origin);
-        if (!path) return;
+        const path = canonicalShortcutPath(rawUrl) || normalizedPath(rawUrl, origin);
+        if (!path || path === '/') return;
         const current = readUsageMap();
         const prev = current[path] && typeof current[path] === 'object' ? current[path] : { count: 0, lastUsedAt: 0 };
         current[path] = {
@@ -1167,25 +1271,22 @@ export function bootWorkspaceShell() {
             lastUsedAt: Date.now(),
         };
         writeJsonStorage(usageStorageKey, current);
+        scheduleShortcutsSync();
     };
 
     const removeUsageEntry = (rawUrl) => {
-        const path = normalizedPath(rawUrl, origin);
+        const path = canonicalShortcutPath(rawUrl) || normalizedPath(rawUrl, origin);
         if (!path) return;
         const current = readUsageMap();
         if (Object.prototype.hasOwnProperty.call(current, path)) {
             delete current[path];
             writeJsonStorage(usageStorageKey, current);
+            scheduleShortcutsSync();
         }
     };
 
     const readFavoritesList = () => {
-        let hasKey = false;
-        try {
-            hasKey = window.localStorage?.getItem(favoritesStorageKey) !== null;
-        } catch {
-            hasKey = true;
-        }
+        const hasKey = hasStorageKey(favoritesStorageKey);
         if (!hasKey) {
             const seeded = catalog
                 .filter((item) => item.isQuickAccessDefault && item.normalizedPath)
@@ -1196,16 +1297,22 @@ export function bootWorkspaceShell() {
         }
         const parsed = readJsonStorage(favoritesStorageKey, []);
         if (!Array.isArray(parsed)) return [];
-        return Array.from(new Set(parsed.map((p) => String(p || '').trim()).filter(Boolean))).slice(0, 50);
+        return Array.from(
+            new Set(
+                parsed
+                    .map((p) => canonicalShortcutPath(String(p || '')) || String(p || '').trim())
+                    .filter(Boolean),
+            ),
+        ).slice(0, 50);
     };
 
     const isFavoritePath = (path) => {
-        const cleanPath = String(path || '').trim();
+        const cleanPath = canonicalShortcutPath(String(path || '')) || String(path || '').trim();
         return cleanPath !== '' && readFavoritesList().includes(cleanPath);
     };
 
     const toggleFavoritePath = (path) => {
-        const cleanPath = String(path || '').trim();
+        const cleanPath = canonicalShortcutPath(String(path || '')) || String(path || '').trim();
         if (!cleanPath) return false;
         const current = readFavoritesList();
         const exists = current.includes(cleanPath);
@@ -1213,6 +1320,7 @@ export function bootWorkspaceShell() {
             ? current.filter((p) => p !== cleanPath)
             : [cleanPath, ...current].slice(0, 50);
         writeJsonStorage(favoritesStorageKey, next);
+        scheduleShortcutsSync();
         renderShortcuts();
         return !exists;
     };
@@ -1222,7 +1330,14 @@ export function bootWorkspaceShell() {
         if (!clean || !isSameOriginUrl(clean, origin) || isTopLevelOnlyUrl(clean, origin, pathPrefix)) {
             return '';
         }
-        return clean;
+        try {
+            const parsed = new URL(clean, origin);
+            const canonicalPath = canonicalShortcutPath(parsed.pathname);
+            if (canonicalPath) parsed.pathname = canonicalPath;
+            return parsed.toString();
+        } catch {
+            return clean;
+        }
     };
 
     const readBookmarksList = () => {
@@ -1237,7 +1352,7 @@ export function bootWorkspaceShell() {
             seen.add(clean);
             valid.push({
                 url: clean,
-                normalizedPath: normalizedPath(clean, origin),
+                normalizedPath: canonicalShortcutPath(clean) || normalizedPath(clean, origin),
                 label: String(item.label || clean).trim() || clean,
                 moduleKey: String(item.moduleKey || '').trim() || null,
                 createdAt: Number(item.createdAt || 0),
@@ -1262,7 +1377,7 @@ export function bootWorkspaceShell() {
             : [
                 {
                     url: clean,
-                    normalizedPath: normalizedPath(clean, origin),
+                    normalizedPath: canonicalShortcutPath(clean) || normalizedPath(clean, origin),
                     label: String(label || '').trim() || clean,
                     moduleKey: moduleKey || resolveModuleForUrl(clean) || null,
                     createdAt: Date.now(),
@@ -1270,6 +1385,7 @@ export function bootWorkspaceShell() {
                 ...current,
             ].slice(0, 50);
         writeJsonStorage(bookmarksStorageKey, next);
+        scheduleShortcutsSync();
         renderShortcuts();
         return !exists;
     };
@@ -1279,12 +1395,67 @@ export function bootWorkspaceShell() {
         if (!clean) return;
         const next = readBookmarksList().filter((item) => item.url !== clean);
         writeJsonStorage(bookmarksStorageKey, next);
+        scheduleShortcutsSync();
         renderShortcuts();
     };
 
     const readShortcutsLayout = () => normalizeShortcutsLayout(readJsonStorage(shortcutsLayoutStorageKey, null));
 
-    let shortcutsLayout = readShortcutsLayout();
+    // Hydrate and merge localStorage with server-persisted user_preferences shortcutsState on boot
+    try {
+        const hasUsageKey = hasStorageKey(usageStorageKey);
+        const hasFavoritesKey = hasStorageKey(favoritesStorageKey);
+        const hasBookmarksKey = hasStorageKey(bookmarksStorageKey);
+        const hasLayoutKey = hasStorageKey(shortcutsLayoutStorageKey);
+
+        const mergedShortcuts = mergeWorkspaceShortcutsState({
+            localState: {
+                updatedAt: readShortcutsUpdatedAt(),
+                hasUsageKey,
+                hasFavoritesKey,
+                hasBookmarksKey,
+                hasLayoutKey,
+                usage: hasUsageKey ? readJsonStorage(usageStorageKey, {}) : {},
+                favorites: hasFavoritesKey ? readJsonStorage(favoritesStorageKey, []) : [],
+                bookmarks: hasBookmarksKey ? readJsonStorage(bookmarksStorageKey, []) : [],
+                layout: hasLayoutKey ? readJsonStorage(shortcutsLayoutStorageKey, null) : null,
+            },
+            serverState: config.shortcutsState && typeof config.shortcutsState === 'object' ? config.shortcutsState : {},
+            origin,
+            pathPrefix,
+        });
+
+        if (Object.keys(mergedShortcuts.usage).length > 0 || hasUsageKey) {
+            writeJsonStorage(usageStorageKey, mergedShortcuts.usage);
+        }
+        if (mergedShortcuts.favoritesInitialized) {
+            writeJsonStorage(favoritesStorageKey, mergedShortcuts.favorites);
+        }
+        if (mergedShortcuts.bookmarks.length > 0 || hasBookmarksKey) {
+            writeJsonStorage(bookmarksStorageKey, mergedShortcuts.bookmarks);
+        }
+        if (mergedShortcuts.hasLayout) {
+            writeJsonStorage(shortcutsLayoutStorageKey, mergedShortcuts.layout);
+        }
+        if (mergedShortcuts.updatedAt > 0) {
+            touchShortcutsUpdatedAt(mergedShortcuts.updatedAt);
+        }
+        if (mergedShortcuts.needsServerSync) {
+            scheduleShortcutsSync();
+        }
+    } catch {}
+
+    shortcutsLayout = readShortcutsLayout();
+
+    document.addEventListener('submit', (event) => {
+        if (!event.defaultPrevented && event.target?.matches?.('[data-logout-form]')) {
+            flushShortcutsSync({ keepalive: true });
+        }
+    }, true);
+
+    window.addEventListener('pagehide', () => {
+        flushShortcutsSync({ keepalive: true });
+    });
 
     const getBoardWidthPx = () => {
         const width = shortcutsBoardEl?.getBoundingClientRect?.().width || 0;
@@ -1306,6 +1477,7 @@ export function bootWorkspaceShell() {
             shortcutsLayout.weights = clamped;
             if (shifted && persistIfClamped) {
                 writeJsonStorage(shortcutsLayoutStorageKey, shortcutsLayout);
+                scheduleShortcutsSync();
             }
         }
 
@@ -1332,7 +1504,8 @@ export function bootWorkspaceShell() {
         for (const paneKey of SHORTCUTS_PANE_KEYS) {
             const isMin = Boolean(shortcutsLayout.minimized[paneKey]);
             const widthPx = snapshot.widthsPx[paneKey] || 0;
-            const isSliver = !isMin && widthPx > 0 && widthPx < 24;
+            const isSliverCollapsed = !isMin && widthPx <= 0.6;
+            const isSliver = !isMin && !isSliverCollapsed && widthPx < 24;
             const paneEl = shortcutsPaneEls[paneKey];
             const toggleBtn = shortcutsPaneToggleEls[paneKey];
             const restoreBtn = shortcutsRestoreEls[paneKey];
@@ -1342,6 +1515,7 @@ export function bootWorkspaceShell() {
 
             if (paneEl) {
                 paneEl.classList.toggle('is-minimized', isMin);
+                paneEl.classList.toggle('is-sliver-collapsed', isSliverCollapsed);
                 paneEl.classList.toggle('is-sliver', isSliver);
                 paneEl.style.setProperty('--shortcuts-pane-weight', String(shortcutsLayout.weights[paneKey]));
             }
@@ -1386,7 +1560,7 @@ export function bootWorkspaceShell() {
                 const rightW = snapshot.widthsPx[rightKey] || 0;
                 const pairTotal = leftW + rightW;
                 const minPx = Math.min(MIN_SHORTCUTS_PANE_WIDTH_PX, pairTotal / 2);
-                const minPct = pairTotal > 0 ? Math.max(1, Math.round((minPx / pairTotal) * 100)) : 1;
+                const minPct = pairTotal > 0 ? Math.max(0, Math.round((minPx / pairTotal) * 100)) : 0;
                 const maxPct = Math.max(minPct, 100 - minPct);
                 const nowPct = pairTotal > 0 ? Math.round((leftW / pairTotal) * 100) : 50;
 
@@ -1680,7 +1854,7 @@ export function bootWorkspaceShell() {
         const nowMs = typeof performance !== 'undefined' && typeof performance.now === 'function' ? performance.now() : Date.now();
         const elapsedMs = Number.isFinite(entry?.startedAt) ? Math.round(nowMs - entry.startedAt) : null;
         try {
-            console.warn('[AdasiWorkspaceShell] navigation failed', {
+            window.AdasiDebug?.warn('[AdasiWorkspaceShell] navigation failed', {
                 reason,
                 path: entry?.url ? normalizedPath(entry.url, origin) : '',
                 elapsedMs,
@@ -2049,8 +2223,7 @@ export function bootWorkspaceShell() {
         const usage = readUsageMap();
         const frequentItems = catalog
             .filter((item) => Number(usage[item.normalizedPath]?.count || 0) > 0)
-            .slice()
-            .sort((a, b) => {
+            .toSorted((a, b) => {
                 const countA = Number(usage[a.normalizedPath]?.count || 0);
                 const countB = Number(usage[b.normalizedPath]?.count || 0);
                 if (countA !== countB) return countB - countA;
@@ -2661,9 +2834,13 @@ export function bootWorkspaceShell() {
                 const panel = framesEl.querySelector(`[data-workspace-panel="${CSS.escape(frame.frameId)}"]`);
                 if (panel) {
                     const isPanelActive = frame.frameId === activeFrameId;
-                    panel.classList.toggle('is-active', isPanelActive);
-                    panel.classList.toggle('is-staging', !isPanelActive);
-                    panel.hidden = false;
+                    if (isPanelActive) {
+                        activatePanelSurface(panel);
+                    } else {
+                        panel.classList.remove('is-active');
+                        panel.classList.add('is-staging');
+                        panel.hidden = false;
+                    }
                     panel.setAttribute('aria-busy', frame.loading ? 'true' : 'false');
                 }
             }
@@ -2698,6 +2875,18 @@ export function bootWorkspaceShell() {
             if (switcherCountEl) switcherCountEl.textContent = String(displayList.length);
         }
 
+        if (activeMenuContext?.kind === 'group-pages' && tabMenuEl && !tabMenuEl.hidden) {
+            const liveMenuAnchor = tablistEl.querySelector(
+                `[data-workspace-group-menu="${CSS.escape(activeMenuContext.groupId)}"]`,
+            );
+            if (liveMenuAnchor?.isConnected) {
+                lastMenuOpener = liveMenuAnchor;
+                liveMenuAnchor.setAttribute('aria-expanded', 'true');
+            } else if (!activeMenuContext.closingInFlight) {
+                closeTabMenu({ restoreFocus: false, immediate: true });
+            }
+        }
+
         if (previouslyFocusedId) {
             const restoredFocus = document.getElementById(previouslyFocusedId);
             if (restoredFocus && document.activeElement !== restoredFocus) {
@@ -2712,6 +2901,19 @@ export function bootWorkspaceShell() {
         const activeGroupEl = scrollTarget?.closest?.('.workspace-session-group');
         if (!activeGroupEl?.classList?.contains('is-entering') && !activeGroupEl?.classList?.contains('is-morphing')) {
             scrollTarget?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+        }
+
+        if (tablistOwnerEl) {
+            const ownedTabIds = [];
+            if (shortcutsSelectBtn?.id) ownedTabIds.push(shortcutsSelectBtn.id);
+            tablistEl.querySelectorAll(':scope > [data-workspace-group]:not(.workspace-session-group--ghost) [role="tab"][id]').forEach((tabBtn) => {
+                if (tabBtn.id) ownedTabIds.push(tabBtn.id);
+            });
+            if (ownedTabIds.length > 0) {
+                tablistOwnerEl.setAttribute('aria-owns', ownedTabIds.join(' '));
+            } else {
+                tablistOwnerEl.removeAttribute('aria-owns');
+            }
         }
 
         syncStageControls();
@@ -2929,6 +3131,7 @@ export function bootWorkspaceShell() {
                 credentials: 'same-origin',
                 redirect: 'manual',
                 cache: 'no-store',
+                priority: 'low',
             });
             if (frames.get(frameId) !== iframe && !navQueue.has(frameId)) return;
 
@@ -3480,17 +3683,27 @@ export function bootWorkspaceShell() {
         notifyActiveSurface('push');
     };
 
-    const requestCloseFrame = async (frameId) => {
+    const requestCloseFrame = async (frameId, { onBeforeConfirmDirty = null } = {}) => {
         const ctx = store.getFrameContext(frameId);
-        if (!ctx) return;
+        if (!ctx) return { closed: false, blockedByPin: false, closedFrameIds: [] };
 
         const dirtyFrames = ctx.frame.role === 'parent'
             ? store.dirtyFramesForClose('group', ctx.group.groupId)
             : store.dirtyFramesForClose('frame', frameId);
 
-        if (dirtyFrames.length > 0 && !(await confirmDirtyClose(dirtyFrames))) return;
+        if (dirtyFrames.length > 0) {
+            onBeforeConfirmDirty?.();
+            if (!(await confirmDirtyClose(dirtyFrames))) {
+                return { closed: false, blockedByPin: false, closedFrameIds: [] };
+            }
+        }
         const res = store.closeFrame(frameId);
         if (res.closed || res.blockedByPin) handlePostCloseResult(res);
+        return {
+            closed: Boolean(res.closed),
+            blockedByPin: Boolean(res.blockedByPin),
+            closedFrameIds: res.closedFrameIds || [],
+        };
     };
 
     const requestCloseGroup = async (groupId) => {
@@ -3569,6 +3782,8 @@ export function bootWorkspaceShell() {
 
     let hoverMenuCloseTimer = 0;
     let tabMenuOpenedByHover = false;
+    let activeMenuContext = null;
+    const MENU_ITEM_SELECTOR = '[role="menuitem"], [role="menuitemradio"], [role="menuitemcheckbox"]';
 
     const clearHoverMenuCloseTimer = () => {
         if (hoverMenuCloseTimer) {
@@ -3594,7 +3809,8 @@ export function bootWorkspaceShell() {
             window.clearTimeout(tabMenuCloseTimer);
             tabMenuCloseTimer = 0;
         }
-        tabMenuEl.classList.remove('is-closing');
+        activeMenuContext = null;
+        tabMenuEl.classList.remove('is-closing', 'workspace-session-menu--group-pages');
         tabMenuEl.hidden = true;
         tabMenuEl.replaceChildren();
     };
@@ -3602,6 +3818,7 @@ export function bootWorkspaceShell() {
     const closeTabMenu = ({ restoreFocus = false, immediate = false } = {}) => {
         clearHoverMenuCloseTimer();
         tabMenuOpenedByHover = false;
+        activeMenuContext = null;
         if (!tabMenuEl || tabMenuEl.hidden) return;
         if (tabMenuCloseTimer) {
             window.clearTimeout(tabMenuCloseTimer);
@@ -3644,14 +3861,8 @@ export function bootWorkspaceShell() {
         dismissEmbedOverlays(excludeEmbedWindow);
     };
 
-    const positionAndShowTabMenu = (anchorEl, clientX = null, clientY = null, { focusFirst = true } = {}) => {
-        if (!tabMenuEl) return;
-        if (tabMenuCloseTimer) {
-            window.clearTimeout(tabMenuCloseTimer);
-            tabMenuCloseTimer = 0;
-        }
-        tabMenuEl.classList.remove('is-closing');
-        tabMenuEl.hidden = false;
+    const clampOpenTabMenuPosition = (anchorEl, clientX = null, clientY = null) => {
+        if (!tabMenuEl || tabMenuEl.hidden) return;
         const rect = anchorEl?.getBoundingClientRect?.();
         const rawX = clientX ?? (rect ? rect.left : 16);
         const rawY = clientY ?? (rect ? rect.bottom + 4 : 88);
@@ -3662,39 +3873,212 @@ export function bootWorkspaceShell() {
         const clampedY = Math.max(8, Math.min(rawY, window.innerHeight - menuRect.height - 8));
         tabMenuEl.style.left = `${clampedX}px`;
         tabMenuEl.style.top = `${clampedY}px`;
-        if (focusFirst) {
-            tabMenuEl.querySelector('[role="menuitem"]')?.focus();
+    };
+
+    const positionAndShowTabMenu = (anchorEl, clientX = null, clientY = null, { focusFirst = true } = {}) => {
+        if (!tabMenuEl) return;
+        if (tabMenuCloseTimer) {
+            window.clearTimeout(tabMenuCloseTimer);
+            tabMenuCloseTimer = 0;
         }
+        tabMenuEl.classList.remove('is-closing');
+        tabMenuEl.hidden = false;
+        clampOpenTabMenuPosition(anchorEl, clientX, clientY);
+        if (focusFirst) {
+            tabMenuEl.querySelector(MENU_ITEM_SELECTOR)?.focus();
+        }
+    };
+
+    const focusSurvivingWorkspaceTab = (preferredGroupId = null) => {
+        if (preferredGroupId) {
+            const preferredGroupEl = tablistEl.querySelector(`[data-workspace-group="${CSS.escape(preferredGroupId)}"]`);
+            const preferredTrigger = preferredGroupEl?.querySelector('[role="tab"][aria-selected="true"]')
+                || preferredGroupEl?.querySelector('[role="tab"]');
+            if (preferredTrigger) {
+                preferredTrigger.focus();
+                preferredTrigger.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+                return;
+            }
+        }
+        const activeTrigger = tabStripEventsEl.querySelector('[role="tab"][aria-selected="true"]')
+            || shortcutsSelectBtn;
+        activeTrigger?.focus?.();
+    };
+
+    const handleGroupPageClose = async (groupId, item, { rowIndex = 0, fromKeyboard = false } = {}) => {
+        clearHoverMenuCloseTimer();
+        tabMenuOpenedByHover = false;
+        const menuCtx = activeMenuContext?.kind === 'group-pages' && activeMenuContext.groupId === groupId
+            ? activeMenuContext
+            : null;
+        if (menuCtx) menuCtx.closingInFlight = true;
+
+        const res = await requestCloseFrame(item.frameId, {
+            onBeforeConfirmDirty: () => closeTabMenu({ restoreFocus: false, immediate: true }),
+        });
+
+        if (menuCtx) menuCtx.closingInFlight = false;
+        if (!res?.closed) return;
+
+        announceLiveStatus(fillI18n(i18n.closedAnnouncement || 'Closed :label', { label: item.title }));
+
+        const updatedGroup = store.getGroup(groupId);
+        const remainingItems = updatedGroup ? resolveGroupSessionMenuItems(updatedGroup) : [];
+        const liveAnchor = tablistEl.querySelector(`[data-workspace-group-menu="${CSS.escape(groupId)}"]`);
+
+        if (!updatedGroup || remainingItems.length < 2 || !liveAnchor?.isConnected) {
+            closeTabMenu({ restoreFocus: false, immediate: true });
+            if (fromKeyboard) {
+                focusSurvivingWorkspaceTab(updatedGroup ? groupId : null);
+            }
+            return;
+        }
+
+        if (
+            tabMenuEl
+            && !tabMenuEl.hidden
+            && activeMenuContext?.kind === 'group-pages'
+            && activeMenuContext.groupId === groupId
+        ) {
+            lastMenuOpener = liveAnchor;
+            liveAnchor.setAttribute('aria-expanded', 'true');
+            renderGroupPagesMenuContent(updatedGroup, {
+                focusRowIndex: fromKeyboard ? Math.min(rowIndex, remainingItems.length - 1) : null,
+            });
+            clampOpenTabMenuPosition(liveAnchor);
+        }
+    };
+
+    const createGroupPageRow = (groupId, item, rowIndex) => {
+        const row = document.createElement('div');
+        row.className = 'workspace-session-menu__row';
+        if (item.isCurrentInGroup) row.classList.add('is-current');
+        row.setAttribute('role', 'none');
+        row.dataset.workspaceGroupPageRow = item.frameId;
+
+        const selectBtn = document.createElement('button');
+        selectBtn.type = 'button';
+        selectBtn.className = 'workspace-session-menu__item workspace-session-menu__item--group-page ui-focus-ring';
+        if (item.isCurrentInGroup) selectBtn.classList.add('is-current');
+        selectBtn.setAttribute('role', 'menuitemradio');
+        selectBtn.setAttribute('aria-checked', item.isCurrentInGroup ? 'true' : 'false');
+        selectBtn.dataset.workspaceGroupPageSelect = item.frameId;
+
+        const statusNotes = [];
+        if (item.isDirty) statusNotes.push(i18n.unsavedBadge || 'Unsaved changes');
+        else if (item.isHibernated) statusNotes.push(i18n.hibernatedBadge || 'Hibernated');
+        const statusSummary = statusNotes.join(' · ');
+        selectBtn.title = statusSummary ? `${item.title} (${statusSummary})` : item.title;
+        if (item.isPinnedProtected) {
+            selectBtn.setAttribute('aria-description', i18n.pinnedBadge || 'Pinned');
+        }
+
+        const checkSlot = document.createElement('span');
+        checkSlot.className = 'workspace-session-menu__check-slot';
+        checkSlot.setAttribute('aria-hidden', 'true');
+        if (item.isCurrentInGroup) {
+            const checkIcon = cloneTemplateIcon('check');
+            if (checkIcon) checkSlot.appendChild(checkIcon);
+            else checkSlot.textContent = '✓';
+        }
+
+        const textWrap = document.createElement('span');
+        textWrap.className = 'workspace-session-menu__item-text';
+        const labelSpan = document.createElement('span');
+        labelSpan.className = 'workspace-session-menu__item-label';
+        labelSpan.textContent = item.title;
+        textWrap.appendChild(labelSpan);
+
+        if (statusSummary) {
+            const subSpan = document.createElement('span');
+            subSpan.className = 'workspace-session-menu__item-sub';
+            subSpan.textContent = statusSummary;
+            textWrap.appendChild(subSpan);
+        }
+
+        selectBtn.append(checkSlot, textWrap);
+        selectBtn.addEventListener('click', () => {
+            closeTabMenu();
+            activateFrame(item.frameId, { focusTrigger: true });
+        });
+        row.appendChild(selectBtn);
+
+        if (item.canClose) {
+            const closeBtn = document.createElement('button');
+            closeBtn.type = 'button';
+            closeBtn.className = 'workspace-session-menu__close ui-focus-ring';
+            closeBtn.setAttribute('role', 'menuitem');
+            const closeLabel = item.closesWholeGroup
+                ? (i18n.closeGroup || 'Close session group')
+                : (i18n.closeSession || i18n.closeTab || 'Close session');
+            closeBtn.setAttribute('aria-label', `${closeLabel}: ${item.title}`);
+            closeBtn.title = closeLabel;
+            closeBtn.dataset.workspaceGroupPageClose = item.frameId;
+            const closeIcon = cloneTemplateIcon('x');
+            if (closeIcon) closeBtn.appendChild(closeIcon);
+            else closeBtn.textContent = '×';
+            closeBtn.addEventListener('click', (event) => {
+                event.stopPropagation();
+                void handleGroupPageClose(groupId, item, {
+                    rowIndex,
+                    fromKeyboard: event.detail === 0,
+                });
+            });
+            row.appendChild(closeBtn);
+        } else if (item.isPinnedProtected) {
+            const pinLock = document.createElement('span');
+            pinLock.className = 'workspace-session-menu__pin-lock';
+            pinLock.setAttribute('aria-hidden', 'true');
+            pinLock.title = i18n.pinnedBadge || 'Pinned';
+            const pinIcon = cloneTemplateIcon('pin');
+            if (pinIcon) pinLock.appendChild(pinIcon);
+            row.appendChild(pinLock);
+        }
+
+        return row;
+    };
+
+    const renderGroupPagesMenuContent = (group, { focusRowIndex = null } = {}) => {
+        if (!tabMenuEl || !group) return false;
+        const items = resolveGroupSessionMenuItems(group);
+        if (items.length === 0) return false;
+
+        tabMenuEl.replaceChildren();
+        const groupContainer = document.createElement('div');
+        groupContainer.className = 'workspace-session-menu__group';
+        groupContainer.setAttribute('role', 'group');
+        groupContainer.setAttribute('aria-label', group.baseLabel || i18n.sessionActions || 'Session actions');
+
+        items.forEach((item, index) => {
+            groupContainer.appendChild(createGroupPageRow(group.groupId, item, index));
+        });
+
+        tabMenuEl.appendChild(groupContainer);
+
+        if (focusRowIndex !== null && focusRowIndex >= 0) {
+            const rows = groupContainer.querySelectorAll('[data-workspace-group-page-row]');
+            const targetRow = rows[Math.min(focusRowIndex, rows.length - 1)];
+            targetRow?.querySelector('[data-workspace-group-page-select]')?.focus();
+        }
+        return true;
     };
 
     const openGroupPagesMenu = ({ groupId = null, anchorEl = null, focusMenu = false, openedByHover = false }) => {
         if (!tabMenuEl) return;
         const group = store.getGroup(groupId);
-        if (!group || group.frames.length === 0) return;
+        const items = group ? resolveGroupSessionMenuItems(group) : [];
+        if (!group || items.length === 0) return;
 
         dismissFloatingOverlays({ restoreFocus: false, immediate: true });
         tabMenuOpenedByHover = openedByHover;
+        activeMenuContext = { kind: 'group-pages', groupId: group.groupId, closingInFlight: false };
         lastMenuOpener = anchorEl || document.activeElement;
         if (anchorEl?.dataset?.workspaceGroupMenu) {
             anchorEl.setAttribute('aria-expanded', 'true');
         }
 
-        const heading = document.createElement('div');
-        heading.className = 'workspace-session-menu__heading';
-        heading.textContent = group.baseLabel;
-        tabMenuEl.appendChild(heading);
-
-        for (const subFrame of group.frames) {
-            const isCurr = store.activeFrame()?.frameId === subFrame.frameId;
-            tabMenuEl.appendChild(createMenuButtonItem({
-                label: subFrame.title,
-                badgeText: subFrame.hibernated ? (i18n.hibernatedBadge || 'Hibernated') : (isCurr ? '●' : ''),
-                iconName: subFrame.role === 'parent' ? 'layers' : 'chevron-right',
-                current: isCurr,
-                onSelect: () => activateFrame(subFrame.frameId, { focusTrigger: true }),
-            }));
-        }
-
+        tabMenuEl.classList.add('workspace-session-menu--group-pages');
+        renderGroupPagesMenuContent(group);
         positionAndShowTabMenu(anchorEl, null, null, { focusFirst: focusMenu });
     };
 
@@ -4111,6 +4495,7 @@ export function bootWorkspaceShell() {
 
     // Pointer Events drag-and-drop reorder (strictly partitioned by pinned vs unpinned zone)
     let tabDragState = null;
+    const flipAnimationTimers = new WeakMap();
 
     const stopTabDragAutoScroll = () => {
         if (tabDragState?.autoScrollRaf) {
@@ -4121,6 +4506,11 @@ export function bootWorkspaceShell() {
 
     const animateFlipShift = (el, deltaX) => {
         if (!el || !deltaX || prefersReducedMotion()) return;
+        const prev = flipAnimationTimers.get(el);
+        if (prev) {
+            window.clearTimeout?.(prev.timerId);
+            el.removeEventListener('transitionend', prev.clear);
+        }
         el.classList.remove('is-reorder-shifting');
         el.style.transform = `translate3d(${roundPx(deltaX)}px, 0, 0)`;
         void el.offsetWidth;
@@ -4129,85 +4519,162 @@ export function bootWorkspaceShell() {
         const clear = () => {
             el.classList.remove('is-reorder-shifting');
             el.removeEventListener('transitionend', clear);
+            if (flipAnimationTimers.get(el)?.clear === clear) {
+                flipAnimationTimers.delete(el);
+            }
         };
         el.addEventListener('transitionend', clear);
-        window.setTimeout?.(clear, 220);
+        const timerId = window.setTimeout?.(clear, 220) || 0;
+        flipAnimationTimers.set(el, { timerId, clear });
+    };
+
+    const readActiveTransformX = (el) => {
+        if (!el) return 0;
+        if (tabDragState?.active && el === tabDragState.groupEl) {
+            return tabDragState.currentTranslateX || 0;
+        }
+        const raw = window.getComputedStyle?.(el)?.transform;
+        if (!raw || raw === 'none') return 0;
+        if (typeof DOMMatrix === 'function') {
+            try {
+                const tx = new DOMMatrix(raw).m41;
+                return Number.isFinite(tx) ? tx : 0;
+            } catch {}
+        }
+        const match = raw.match(/matrix\([^,]+,[^,]+,[^,]+,[^,]+,\s*([^,]+),/);
+        if (match) {
+            const tx = Number(match[1]);
+            return Number.isFinite(tx) ? tx : 0;
+        }
+        const match3d = raw.match(/matrix3d\((?:[^,]+,){12}\s*([^,]+),/);
+        if (match3d) {
+            const tx = Number(match3d[1]);
+            return Number.isFinite(tx) ? tx : 0;
+        }
+        return 0;
     };
 
     const queryZoneGroupEls = (pinned) => Array.from(
         tablistEl.querySelectorAll(`:scope > [data-workspace-group][data-pinned="${pinned ? 'true' : 'false'}"]:not(.workspace-session-group--ghost)`),
     );
 
+    const readUntransformedZoneBoxes = (zoneEls) => zoneEls.map((el) => {
+        const rect = el.getBoundingClientRect();
+        const activeTx = readActiveTransformX(el);
+        return {
+            el,
+            visualLeft: rect.left,
+            left: rect.left - activeTx,
+            width: rect.width,
+        };
+    });
+
+    const applyDraggedTransform = (precomputedBoxes = null) => {
+        if (!tabDragState?.active) return;
+        const { groupEl, pinned } = tabDragState;
+        let translateX = tabDragState.lastClientX - tabDragState.anchorClientX;
+        const boxes = precomputedBoxes || readUntransformedZoneBoxes(queryZoneGroupEls(pinned));
+        const draggedIdx = boxes.findIndex((box) => box.el === groupEl);
+        if (draggedIdx !== -1 && boxes.length > 0) {
+            const firstBox = boxes[0];
+            const lastBox = boxes[boxes.length - 1];
+            const draggedBox = boxes[draggedIdx];
+            const minTx = firstBox.left - draggedBox.left;
+            const maxTx = (lastBox.left + lastBox.width) - (draggedBox.left + draggedBox.width);
+            translateX = Math.max(minTx, Math.min(maxTx, translateX));
+        }
+        tabDragState.currentTranslateX = translateX;
+        groupEl.style.transform = `translate3d(${roundPx(translateX)}px, 0, 0)`;
+    };
+
     const evaluateTabDragSwaps = () => {
         if (!tabDragState?.active) return;
         const { groupEl, groupId, pinned } = tabDragState;
         const zoneEls = queryZoneGroupEls(pinned);
         const currentIdx = zoneEls.indexOf(groupEl);
-        if (currentIdx === -1) return;
+        if (currentIdx === -1 || zoneEls.length <= 1) return;
 
-        const draggedRect = groupEl.getBoundingClientRect();
-        const draggedCenterX = draggedRect.left + draggedRect.width / 2;
+        const beforeBoxes = readUntransformedZoneBoxes(zoneEls);
+        const draggedBox = beforeBoxes[currentIdx];
+        const virtualLeft = tabDragState.lastClientX - tabDragState.grabOffsetX;
 
-        if (currentIdx > 0) {
-            const leftEl = zoneEls[currentIdx - 1];
-            const leftRect = leftEl.getBoundingClientRect();
-            if (draggedCenterX < leftRect.left + leftRect.width / 2) {
-                const res = store.moveGroupByOffset(groupId, -1);
-                if (res.moved) {
-                    const draggedBefore = draggedRect.left;
-                    leftEl.before(groupEl);
-                    const leftAfter = leftEl.getBoundingClientRect();
-                    const draggedAfter = groupEl.getBoundingClientRect();
-                    tabDragState.anchorClientX += draggedAfter.left - draggedBefore;
-                    tabDragState.moved = true;
-                    animateFlipShift(leftEl, leftRect.left - leftAfter.left);
-                    groupEl.style.transform = `translate3d(${roundPx(tabDragState.lastClientX - tabDragState.anchorClientX)}px, 0, 0)`;
-                }
-                return;
-            }
+        const targetIdx = resolveDragTargetZoneIndex({
+            currentIndex: currentIdx,
+            virtualLeft,
+            virtualWidth: draggedBox.width,
+            slotBoxes: beforeBoxes,
+            hysteresisPx: 2,
+        });
+
+        if (targetIdx === currentIdx) return;
+
+        const res = store.moveGroupByOffset(groupId, targetIdx - currentIdx);
+        if (!res.moved) return;
+
+        const beforeBoxMap = new Map(beforeBoxes.map((box) => [box.el, box]));
+        const hadLastPinnedDivider = pinned && zoneEls.some((el) => el.classList.contains('is-last-pinned'));
+        const activeEl = document.activeElement;
+        const focusedInsideDragged = activeEl && groupEl.contains(activeEl) ? activeEl : null;
+
+        const targetEl = zoneEls[targetIdx];
+        if (targetIdx > currentIdx) {
+            targetEl.after(groupEl);
+        } else {
+            targetEl.before(groupEl);
         }
 
-        if (currentIdx < zoneEls.length - 1) {
-            const rightEl = zoneEls[currentIdx + 1];
-            const rightRect = rightEl.getBoundingClientRect();
-            if (draggedCenterX > rightRect.left + rightRect.width / 2) {
-                const res = store.moveGroupByOffset(groupId, 1);
-                if (res.moved) {
-                    const draggedBefore = draggedRect.left;
-                    rightEl.after(groupEl);
-                    const rightAfter = rightEl.getBoundingClientRect();
-                    const draggedAfter = groupEl.getBoundingClientRect();
-                    tabDragState.anchorClientX += draggedAfter.left - draggedBefore;
-                    tabDragState.moved = true;
-                    animateFlipShift(rightEl, rightRect.left - rightAfter.left);
-                    groupEl.style.transform = `translate3d(${roundPx(tabDragState.lastClientX - tabDragState.anchorClientX)}px, 0, 0)`;
-                }
-            }
+        if (focusedInsideDragged && document.activeElement !== focusedInsideDragged) {
+            focusedInsideDragged.focus?.({ preventScroll: true });
         }
+
+        const afterZoneEls = queryZoneGroupEls(pinned);
+        if (hadLastPinnedDivider) {
+            afterZoneEls.forEach((el, idx) => {
+                el.classList.toggle('is-last-pinned', idx === afterZoneEls.length - 1);
+            });
+        }
+
+        const afterBoxes = readUntransformedZoneBoxes(afterZoneEls);
+        const afterDraggedBox = afterBoxes.find((box) => box.el === groupEl);
+        if (afterDraggedBox) {
+            tabDragState.anchorClientX += afterDraggedBox.left - draggedBox.left;
+        }
+        tabDragState.moved = true;
+
+        afterBoxes.forEach((afterBox) => {
+            if (afterBox.el === groupEl) return;
+            const prevBox = beforeBoxMap.get(afterBox.el);
+            if (!prevBox) return;
+            if (Math.abs(afterBox.left - prevBox.left) >= 0.5) {
+                animateFlipShift(afterBox.el, prevBox.visualLeft - afterBox.left);
+            }
+        });
+
+        applyDraggedTransform(afterBoxes);
     };
 
     const runTabDragAutoScroll = () => {
-        if (!tabDragState?.active || !viewportEl) return;
-        const maxScroll = viewportEl.scrollWidth - viewportEl.clientWidth;
+        if (!tabDragState?.active || !tablistEl) return;
+        const maxScroll = tablistEl.scrollWidth - tablistEl.clientWidth;
         if (maxScroll <= 0) {
             tabDragState.autoScrollRaf = 0;
             return;
         }
-        const vpRect = viewportEl.getBoundingClientRect();
+        const listRect = tablistEl.getBoundingClientRect();
         const edgeZone = 36;
         let step = 0;
-        if (tabDragState.lastClientX < vpRect.left + edgeZone) {
-            step = -Math.ceil(((vpRect.left + edgeZone - tabDragState.lastClientX) / edgeZone) * 10);
-        } else if (tabDragState.lastClientX > vpRect.right - edgeZone) {
-            step = Math.ceil(((tabDragState.lastClientX - (vpRect.right - edgeZone)) / edgeZone) * 10);
+        if (tabDragState.lastClientX < listRect.left + edgeZone) {
+            step = -Math.min(18, Math.ceil(((listRect.left + edgeZone - tabDragState.lastClientX) / edgeZone) * 10));
+        } else if (tabDragState.lastClientX > listRect.right - edgeZone) {
+            step = Math.min(18, Math.ceil(((tabDragState.lastClientX - (listRect.right - edgeZone)) / edgeZone) * 10));
         }
         if (step !== 0) {
-            const prevScroll = viewportEl.scrollLeft;
-            viewportEl.scrollLeft = Math.max(0, Math.min(maxScroll, prevScroll + step));
-            const appliedDelta = viewportEl.scrollLeft - prevScroll;
+            const prevScroll = tablistEl.scrollLeft;
+            tablistEl.scrollLeft = Math.max(0, Math.min(maxScroll, prevScroll + step));
+            const appliedDelta = tablistEl.scrollLeft - prevScroll;
             if (appliedDelta !== 0) {
                 tabDragState.anchorClientX -= appliedDelta;
-                tabDragState.groupEl.style.transform = `translate3d(${roundPx(tabDragState.lastClientX - tabDragState.anchorClientX)}px, 0, 0)`;
+                applyDraggedTransform();
                 evaluateTabDragSwaps();
                 tabDragState.autoScrollRaf = window.requestAnimationFrame?.(runTabDragAutoScroll) || 0;
                 return;
@@ -4218,13 +4685,17 @@ export function bootWorkspaceShell() {
 
     const activateTabDrag = () => {
         if (!tabDragState || tabDragState.active) return;
+        const groupRect = tabDragState.groupEl.getBoundingClientRect();
         tabDragState.active = true;
         tabDragState.anchorClientX = tabDragState.lastClientX;
+        tabDragState.grabOffsetX = tabDragState.lastClientX - groupRect.left;
+        tabDragState.currentTranslateX = 0;
         closeTabMenu({ immediate: true });
         tabDragState.groupEl.classList.add('is-dragging');
+        document.body?.classList?.add('is-dragging-workspace-session');
         tablistEl.dataset.draggingZone = tabDragState.pinned ? 'pinned' : 'unpinned';
         try {
-            tabDragState.groupEl.setPointerCapture?.(tabDragState.pointerId);
+            tablistEl.setPointerCapture?.(tabDragState.pointerId);
         } catch {}
     };
 
@@ -4239,9 +4710,15 @@ export function bootWorkspaceShell() {
             suppressTabClickUntil = (typeof performance !== 'undefined' ? performance.now() : Date.now()) + 180;
             state.groupEl.classList.remove('is-dragging');
             state.groupEl.style.transform = '';
+            document.body?.classList?.remove('is-dragging-workspace-session');
             delete tablistEl.dataset.draggingZone;
-            if (event?.pointerId !== undefined) {
-                try { state.groupEl.releasePointerCapture?.(event.pointerId); } catch {}
+            const captureId = event?.pointerId ?? state.pointerId;
+            if (captureId !== undefined) {
+                try {
+                    if (tablistEl.hasPointerCapture?.(captureId) ?? true) {
+                        tablistEl.releasePointerCapture?.(captureId);
+                    }
+                } catch {}
             }
             if (state.moved) {
                 if (state.pinned) persistPinnedGroups();
@@ -4271,6 +4748,8 @@ export function bootWorkspaceShell() {
             startClientY: event.clientY,
             anchorClientX: event.clientX,
             lastClientX: event.clientX,
+            grabOffsetX: 0,
+            currentTranslateX: 0,
             active: false,
             moved: false,
             touchTimer: 0,
@@ -4306,12 +4785,12 @@ export function bootWorkspaceShell() {
         }
 
         event.preventDefault();
-        tabDragState.groupEl.style.transform = `translate3d(${roundPx(event.clientX - tabDragState.anchorClientX)}px, 0, 0)`;
+        applyDraggedTransform();
         evaluateTabDragSwaps();
 
-        if (!tabDragState.autoScrollRaf && viewportEl && viewportEl.scrollWidth > viewportEl.clientWidth) {
-            const vpRect = viewportEl.getBoundingClientRect();
-            if (event.clientX < vpRect.left + 36 || event.clientX > vpRect.right - 36) {
+        if (!tabDragState.autoScrollRaf && tablistEl && tablistEl.scrollWidth > tablistEl.clientWidth) {
+            const listRect = tablistEl.getBoundingClientRect();
+            if (event.clientX < listRect.left + 36 || event.clientX > listRect.right - 36) {
                 tabDragState.autoScrollRaf = window.requestAnimationFrame?.(runTabDragAutoScroll) || 0;
             }
         }
@@ -4333,8 +4812,10 @@ export function bootWorkspaceShell() {
         }
     });
 
-    tablistEl.addEventListener('lostpointercapture', () => {
-        if (tabDragState?.active) finishTabDrag();
+    tablistEl.addEventListener('lostpointercapture', (event) => {
+        if (tabDragState?.active && (!event?.target || event.target === tablistEl)) {
+            finishTabDrag();
+        }
     });
 
     tabStripEventsEl.addEventListener('click', (event) => {
@@ -4351,7 +4832,12 @@ export function bootWorkspaceShell() {
             if (tabMenuEl && !tabMenuEl.hidden && lastMenuOpener === menuBtn && !tabMenuOpenedByHover) {
                 closeTabMenu({ restoreFocus: true });
             } else {
-                openGroupPagesMenu({ groupId: gid, anchorEl: menuBtn, focusMenu: true, openedByHover: false });
+                openGroupPagesMenu({
+                    groupId: gid,
+                    anchorEl: menuBtn,
+                    focusMenu: event.detail === 0,
+                    openedByHover: false,
+                });
             }
             return;
         }
@@ -4460,6 +4946,22 @@ export function bootWorkspaceShell() {
             return;
         }
 
+        if (triggerBtn.matches('[data-workspace-group-menu]')) {
+            if (event.key === 'ArrowDown') {
+                event.preventDefault();
+                const gid = triggerBtn.dataset.workspaceGroupMenu;
+                if (gid) {
+                    openGroupPagesMenu({ groupId: gid, anchorEl: triggerBtn, focusMenu: true, openedByHover: false });
+                }
+                return;
+            }
+            if (event.key === 'Escape' && tabMenuEl && !tabMenuEl.hidden) {
+                event.preventDefault();
+                closeTabMenu({ restoreFocus: true });
+                return;
+            }
+        }
+
         if (!triggerBtn.matches('[role="tab"]')) return;
 
         if (event.altKey && event.shiftKey && !event.ctrlKey && !event.metaKey) {
@@ -4474,6 +4976,22 @@ export function bootWorkspaceShell() {
                 if (event.key === 'ArrowRight') {
                     event.preventDefault();
                     requestMoveGroupByOffset(gid, 1, { refocus: true });
+                    return;
+                }
+                if (event.key === 'Home') {
+                    event.preventDefault();
+                    const bounds = store.canMoveGroup(gid);
+                    if (bounds.zoneTotal > 1) {
+                        requestMoveGroupByOffset(gid, -bounds.zoneTotal, { refocus: true });
+                    }
+                    return;
+                }
+                if (event.key === 'End') {
+                    event.preventDefault();
+                    const bounds = store.canMoveGroup(gid);
+                    if (bounds.zoneTotal > 1) {
+                        requestMoveGroupByOffset(gid, bounds.zoneTotal, { refocus: true });
+                    }
                     return;
                 }
                 if (event.code === 'KeyP' || event.key.toLowerCase() === 'p') {
@@ -4520,7 +5038,77 @@ export function bootWorkspaceShell() {
     });
 
     tabMenuEl?.addEventListener('keydown', (event) => {
-        const items = Array.from(tabMenuEl.querySelectorAll('[role="menuitem"]'));
+        if (activeMenuContext?.kind === 'group-pages') {
+            const rows = Array.from(tabMenuEl.querySelectorAll('[data-workspace-group-page-row]'));
+            if (!rows.length) return;
+            const currentRow = document.activeElement?.closest?.('[data-workspace-group-page-row]') || null;
+            const rowIdx = currentRow ? rows.indexOf(currentRow) : -1;
+            const isOnClose = Boolean(document.activeElement?.hasAttribute?.('data-workspace-group-page-close'));
+
+            const focusRow = (targetIdx, preferClose = false) => {
+                const targetRow = rows[targetIdx];
+                if (!targetRow) return;
+                const targetClose = preferClose ? targetRow.querySelector('[data-workspace-group-page-close]') : null;
+                const targetSelect = targetRow.querySelector('[data-workspace-group-page-select]');
+                (targetClose || targetSelect)?.focus();
+            };
+
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                closeTabMenu({ restoreFocus: true });
+                return;
+            }
+            if (event.key === 'ArrowDown') {
+                event.preventDefault();
+                focusRow((rowIdx + 1) % rows.length, isOnClose);
+                return;
+            }
+            if (event.key === 'ArrowUp') {
+                event.preventDefault();
+                focusRow((rowIdx - 1 + rows.length) % rows.length, isOnClose);
+                return;
+            }
+            if (event.key === 'ArrowRight' && currentRow && !isOnClose) {
+                const closeBtn = currentRow.querySelector('[data-workspace-group-page-close]');
+                if (closeBtn) {
+                    event.preventDefault();
+                    closeBtn.focus();
+                }
+                return;
+            }
+            if (event.key === 'ArrowLeft' && currentRow && isOnClose) {
+                const selectBtn = currentRow.querySelector('[data-workspace-group-page-select]');
+                if (selectBtn) {
+                    event.preventDefault();
+                    selectBtn.focus();
+                }
+                return;
+            }
+            if (event.key === 'Home') {
+                event.preventDefault();
+                focusRow(0, false);
+                return;
+            }
+            if (event.key === 'End') {
+                event.preventDefault();
+                focusRow(rows.length - 1, false);
+                return;
+            }
+            if ((event.key === 'Delete' || event.key === 'Backspace') && currentRow) {
+                const closeBtn = currentRow.querySelector('[data-workspace-group-page-close]');
+                if (closeBtn) {
+                    event.preventDefault();
+                    closeBtn.click();
+                }
+                return;
+            }
+            if (event.key === 'Tab') {
+                closeTabMenu();
+            }
+            return;
+        }
+
+        const items = Array.from(tabMenuEl.querySelectorAll(MENU_ITEM_SELECTOR));
         if (!items.length) return;
         const idx = items.indexOf(document.activeElement);
 
@@ -4557,6 +5145,20 @@ export function bootWorkspaceShell() {
         dismissEmbedOverlays();
     }, true);
 
+    document.addEventListener('keydown', (event) => {
+        if (
+            event.defaultPrevented
+            || event.key !== 'Escape'
+            || !tabMenuEl
+            || tabMenuEl.hidden
+            || tabMenuEl.classList.contains('is-closing')
+        ) {
+            return;
+        }
+        event.preventDefault();
+        closeTabMenu({ restoreFocus: !tabMenuOpenedByHover });
+    });
+
     document.addEventListener('show.bs.dropdown', (event) => {
         const openingToggle = event.target instanceof Element ? event.target : null;
         closeTabMenu();
@@ -4589,17 +5191,6 @@ export function bootWorkspaceShell() {
     applyShortcutsLayout(shortcutsLayout);
     renderShortcuts();
 
-    const syncSplitterGripY = (splitterEl, clientY) => {
-        if (!splitterEl || !Number.isFinite(clientY)) return;
-        const rect = splitterEl.getBoundingClientRect();
-        if (!rect.height) return;
-        const gripHalf = 22;
-        const clampedY = rect.height > gripHalf * 2
-            ? Math.min(rect.height - gripHalf, Math.max(gripHalf, clientY - rect.top))
-            : rect.height / 2;
-        splitterEl.style.setProperty('--splitter-grip-y', `${Math.round(clampedY)}px`);
-    };
-
     const setPaneMinimized = (paneKey, shouldMinimize, { focusTarget = 'auto' } = {}) => {
         shortcutsLayout.minimized[paneKey] = shouldMinimize;
         const nextOrder = (shortcutsLayout.minimizedOrder || []).filter((key) => key !== paneKey);
@@ -4609,6 +5200,7 @@ export function bootWorkspaceShell() {
         shortcutsLayout.minimizedOrder = nextOrder;
         applyShortcutsLayout(shortcutsLayout);
         writeJsonStorage(shortcutsLayoutStorageKey, shortcutsLayout);
+        scheduleShortcutsSync();
 
         if (focusTarget === 'dock' || (focusTarget === 'auto' && shouldMinimize)) {
             const restoreBtn = shortcutsRestoreEls[paneKey];
@@ -4651,6 +5243,7 @@ export function bootWorkspaceShell() {
                 try { splitterEl.releasePointerCapture?.(event.pointerId); } catch {}
             }
             writeJsonStorage(shortcutsLayoutStorageKey, shortcutsLayout);
+            scheduleShortcutsSync();
         };
 
         splitterEl.addEventListener('pointerenter', (event) => {
@@ -4709,6 +5302,7 @@ export function bootWorkspaceShell() {
             shortcutsLayout.weights[rightKey] = pairWeightSum - nextLeft;
             applyShortcutsLayout(shortcutsLayout);
             writeJsonStorage(shortcutsLayoutStorageKey, shortcutsLayout);
+            scheduleShortcutsSync();
         });
 
         splitterEl.addEventListener('keydown', (event) => {
@@ -4733,6 +5327,7 @@ export function bootWorkspaceShell() {
                 shortcutsLayout.weights = res.weights;
                 applyShortcutsLayout(shortcutsLayout);
                 writeJsonStorage(shortcutsLayoutStorageKey, shortcutsLayout);
+                scheduleShortcutsSync();
             }
         });
     }
@@ -4758,7 +5353,17 @@ export function bootWorkspaceShell() {
         }
     });
 
-    tablistEl.addEventListener('scroll', () => updateTabOverflowState(), { passive: true });
+    let tablistScrollEndTimer = 0;
+    tablistEl.addEventListener('scroll', () => {
+        updateTabOverflowState();
+        if (!('onscrollend' in window)) {
+            window.clearTimeout(tablistScrollEndTimer);
+            tablistScrollEndTimer = window.setTimeout(() => updateTabOverflowState({ fromSettle: true }), 120);
+        }
+    }, { passive: true });
+    if ('onscrollend' in window) {
+        tablistEl.addEventListener('scrollend', () => updateTabOverflowState({ fromSettle: true }), { passive: true });
+    }
     tablistEl.addEventListener('transitionend', (event) => {
         if (event.target?.classList?.contains?.('workspace-session__close') && event.propertyName === 'width') {
             const tab = event.target.closest('.workspace-session');
@@ -5227,6 +5832,16 @@ export function bootWorkspaceShell() {
         },
         dismissFloatingOverlays(options) {
             dismissFloatingOverlays(options);
+        },
+        broadcastNotification(notification) {
+            if (!notification || typeof notification !== 'object') return;
+            frames.forEach((iframe) => {
+                try {
+                    const childWin = iframe.contentWindow;
+                    if (!childWin) return;
+                    childWin.dispatchEvent(new childWin.CustomEvent('adasi:realtime-notification', { detail: notification }));
+                } catch {}
+            });
         },
         breakoutToTop(url) {
             breakoutToTop(url);

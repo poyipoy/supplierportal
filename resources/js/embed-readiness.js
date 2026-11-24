@@ -79,10 +79,7 @@ export function createEmbedReadinessController({
     const seenPreXhrTables = new Set();
     const pendingRequests = new Set();
 
-    let resolveReadyPromise;
-    const readyPromise = new Promise((resolve) => {
-        resolveReadyPromise = resolve;
-    });
+    const { promise: readyPromise, resolve: resolveReadyPromise } = Promise.withResolvers();
 
     const finalizeReady = (reason = 'settled') => {
         if (ready) return;

@@ -37,7 +37,7 @@
             <div class="tw:flex tw:items-center tw:gap-3">
                 <div class="tw:text-end">
                     <span class="tw:sr-only">{{ __('scorecard.composite_score') }}: {{ $scorecard->compositeScore }}%</span>
-                    <span class="tw:block tw:text-[11px] tw:text-on-surface-variant" aria-hidden="true">{{ __('scorecard.composite_score') }}</span>
+                    <span class="tw:block tw:text-ui-xs tw:text-on-surface-variant" aria-hidden="true">{{ __('scorecard.composite_score') }}</span>
                     <strong class="ui-tabular-nums tw:text-ui-lg tw:font-bold tw:text-on-surface" aria-hidden="true">{{ $scorecard->compositeScore }}%</strong>
                 </div>
             </div>
@@ -52,21 +52,14 @@
                             {{ $metric['has_data'] ? $metric['percentage'] . '%' : '—' }}
                         </strong>
                     </div>
-                    <div
-                        class="tw:mt-2 tw:h-1.5 tw:w-full tw:overflow-hidden tw:rounded-full tw:bg-outline-variant"
-                        role="progressbar"
-                        aria-valuenow="{{ $metric['has_data'] ? min(100, max(0, (float) $metric['percentage'])) : 0 }}"
-                        aria-valuemin="0"
-                        aria-valuemax="100"
+                    <progress
+                        class="ui-progress tw:mt-2 tw:h-1.5 tw:w-full"
+                        value="{{ $metric['has_data'] ? min(100, max(0, (float) $metric['percentage'])) : 0 }}"
+                        max="100"
                         aria-valuetext="{{ $metric['has_data'] ? $metric['percentage'] . '%' : __('scorecard.no_samples') }}"
                         aria-label="{{ __($metric['label_key']) }}"
-                    >
-                        <div
-                            class="tw:h-full tw:rounded-full tw:bg-primary"
-                            style="width: {{ $metric['has_data'] ? min(100, max(0, (float) $metric['percentage'])) : 0 }}%"
-                        ></div>
-                    </div>
-                    <div class="tw:mt-1.5 tw:flex tw:items-center tw:justify-between tw:text-[11px] tw:text-on-surface-variant">
+                    ></progress>
+                    <div class="tw:mt-1.5 tw:flex tw:items-center tw:justify-between tw:text-ui-xs tw:text-on-surface-variant">
                         <span>{{ $metric['has_data'] ? __('scorecard.sample_ratio', ['num' => $metric['numerator'], 'den' => $metric['denominator']]) : __('scorecard.no_samples') }}</span>
                     </div>
                 </div>

@@ -37,6 +37,11 @@ class ReferencePriceImport extends Model
         'confirmed_at',
     ];
 
+    protected $hidden = [
+        'private_storage_path',
+        'source_file_hash',
+    ];
+
     protected function casts(): array
     {
         return [

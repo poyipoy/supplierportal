@@ -48,7 +48,7 @@
         <x-ui.card :title="__('supplier.copy.analytics_and_material_selection')">
         <x-slot:actions>
             @if($selectedMaterialName && $selectedCurrency)
-                <form action="{{ route('supplier.price-history.export') }}" method="POST" data-format-export-form data-advanced-export-form data-export-failed="{{ __('exports.advanced.failed') }}" class="tw:flex tw:flex-wrap tw:items-end tw:gap-2">
+                <form action="{{ route('supplier.price-history.export') }}" method="POST" data-format-export-form data-advanced-export-form data-managed-submit data-no-loader data-export-failed="{{ __('exports.advanced.failed') }}" class="tw:flex tw:flex-wrap tw:items-end tw:gap-2">
                     @csrf
                     @foreach(array_merge(request()->only(['thickness', 'd_inner', 'd_outer', 'width', 'length']), ['material_name' => $selectedMaterialName, 'period_view' => $periodView, 'range' => $range, 'currency' => $selectedCurrency]) as $name => $value)
                         <input type="hidden" name="{{ $name }}" value="{{ $value }}">
@@ -94,16 +94,16 @@
                     @endif
                 </select>
             </div>
-            <div class="col-md-12 col-lg-3">
-                <label class="form-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface">{{ __('supplier.copy.aggregation_interval') }}</label>
-                <div class="btn-group btn-group-sm w-100" role="group">
+            <fieldset class="col-md-12 col-lg-3 tw:m-0 tw:min-w-0 tw:border-0 tw:p-0">
+                <legend class="form-label tw:mb-1 tw:text-ui-xs tw:font-semibold tw:text-on-surface">{{ __('supplier.copy.aggregation_interval') }}</legend>
+                <div class="btn-group btn-group-sm w-100" role="group" aria-label="{{ __('supplier.copy.aggregation_interval') }}">
                     <input type="radio" class="btn-check" name="period_view" id="periodViewMonthly" value="monthly" {{ $periodView === 'monthly' ? 'checked' : '' }}>
                     <label class="btn btn-outline-primary" for="periodViewMonthly">{{ __('supplier.copy.monthly') }}</label>
 
                     <input type="radio" class="btn-check" name="period_view" id="periodViewYearly" value="yearly" {{ $periodView === 'yearly' ? 'checked' : '' }}>
                     <label class="btn btn-outline-primary" for="periodViewYearly">{{ __('supplier.copy.yearly') }}</label>
                 </div>
-            </div>
+            </fieldset>
 
             <div class="col-12 mt-2 mb-0">
                 <a href="#dimensionFilters" data-bs-toggle="collapse" class="ui-focus-ring tw:rounded-ui-xs text-decoration-none small fw-semibold d-inline-flex align-items-center gap-1 tw:text-on-surface-variant tw:hover:text-primary">
@@ -233,7 +233,7 @@
                                 <tr>
                                     <td class="text-center fw-semibold">
                                         @if(!empty($row['pr_url']))
-                                            <a href="{{ $row['pr_url'] }}" class="text-primary text-decoration-none tw:hover:underline" target="_blank">{{ $row['pr_number'] ?? '-' }}</a>
+                                            <a href="{{ $row['pr_url'] }}" class="ui-focus-ring tw:rounded-ui-xs text-primary text-decoration-none tw:hover:underline" target="_blank" rel="noopener noreferrer">{{ $row['pr_number'] ?? '-' }}</a>
                                         @else
                                             {{ $row['pr_number'] ?? '-' }}
                                         @endif
@@ -331,13 +331,21 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
 
+    function submitHistoricalFilterForm() {
+        if (typeof filterForm.requestSubmit === 'function') {
+            filterForm.requestSubmit();
+        } else {
+            filterForm.submit();
+        }
+    }
+
     periodViewInputs.forEach((input) => {
         input.addEventListener('change', () => {
             renderRangeOptions(input.value, rangeSelect.value);
             if (materialSelect.value && typeof window.loadHistorycalPayloadFromFilters === 'function') {
                 window.loadHistorycalPayloadFromFilters();
             } else if (materialSelect.value) {
-                filterForm.submit();
+                submitHistoricalFilterForm();
             }
         });
     });
@@ -347,7 +355,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (typeof window.loadHistorycalPayloadFromFilters === 'function') {
                 window.loadHistorycalPayloadFromFilters();
             } else {
-                filterForm.submit();
+                submitHistoricalFilterForm();
             }
         } else {
             clearHistorycalResults(@js(__('supplier.copy.choose_a_material_above_to_review_its_price_trajectory')));
@@ -358,7 +366,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (materialSelect.value && typeof window.loadHistorycalPayloadFromFilters === 'function') {
             window.loadHistorycalPayloadFromFilters();
         } else if (materialSelect.value) {
-            filterForm.submit();
+            submitHistoricalFilterForm();
         }
     });
 
@@ -366,7 +374,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (materialSelect.value && currencySelect.value && typeof window.loadHistorycalPayloadFromFilters === 'function') {
             window.loadHistorycalPayloadFromFilters();
         } else if (materialSelect.value && currencySelect.value) {
-            filterForm.submit();
+            submitHistoricalFilterForm();
         }
     });
 
@@ -490,7 +498,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         } catch (error) {
-            console.error('Supplier price history chart initialization failed:', error);
+            window.AdasiDebug?.error('Supplier price history chart initialization failed:', error);
             showHistoricalChartFallback();
         }
     }

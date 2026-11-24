@@ -231,6 +231,15 @@ class VsBestPriceComparisonController extends Controller
                 'status_badge',
                 'action',
             ])
+            ->only([
+                'material_display',
+                'current_price_display',
+                'best_price_display',
+                'diff_display',
+                'potential_difference_display',
+                'status_badge',
+                'action',
+            ])
             ->with('summary', $summary)
             ->with('currency', $currency)
             ->make(true);

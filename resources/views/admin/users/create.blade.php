@@ -267,15 +267,17 @@
 
         function syncHiddenScopes(preset) {
             if (!hiddenScopesContainer) return;
-            hiddenScopesContainer.innerHTML = '';
-            if (preset === 'both') {
-                hiddenScopesContainer.innerHTML = '<input type="hidden" name="supplier_scopes[]" value="import">' +
-                    '<input type="hidden" name="supplier_scopes[]" value="local">';
-            } else if (preset === 'local') {
-                hiddenScopesContainer.innerHTML = '<input type="hidden" name="supplier_scopes[]" value="local">';
-            } else {
-                hiddenScopesContainer.innerHTML = '<input type="hidden" name="supplier_scopes[]" value="import">';
-            }
+            const scopes = preset === 'both'
+                ? ['import', 'local']
+                : [preset === 'local' ? 'local' : 'import'];
+            const inputs = scopes.map((scope) => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'supplier_scopes[]';
+                input.value = scope;
+                return input;
+            });
+            hiddenScopesContainer.replaceChildren(...inputs);
         }
 
         function togglePaymentTerm() {

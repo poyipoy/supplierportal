@@ -1,4 +1,24 @@
 import { t } from './i18n.js';
+import { replaceWithSanitizedServerFragment } from './dom-sanitize.js';
+import { setTableBusy } from './adasi-loader.js';
+
+function applyServerFragment(target, rawHtml) {
+    if (!target) return;
+    if (typeof DOMParser === 'function' && typeof target.replaceChildren === 'function') {
+        replaceWithSanitizedServerFragment(target, rawHtml);
+        return;
+    }
+    target.innerHTML = sanitizeServerFragment(rawHtml);
+}
+
+function clearContainer(target) {
+    if (!target) return;
+    if (typeof target.replaceChildren === 'function') {
+        target.replaceChildren();
+    } else {
+        target.innerHTML = '';
+    }
+}
 /**
  * AdasiServerTabs — Reusable server-side AJAX tab/filter/pagination controller.
  *
@@ -83,7 +103,7 @@ const FRAGMENT_REQUEST_HEADERS = Object.freeze({
 function init(containerSelector, options = {}) {
     const container = document.querySelector(containerSelector);
     if (!container) {
-        console.warn(`[AdasiServerTabs] Container not found: ${containerSelector}`);
+        window.AdasiDebug?.warn(`[AdasiServerTabs] Container not found: ${containerSelector}`);
         return;
     }
 
@@ -100,6 +120,9 @@ function init(containerSelector, options = {}) {
     const state = {
         container,
         abortController: null,
+        activeForm: null,
+        activeBusyHost: null,
+        activeBusyMode: 'region',
         options,
         previousTab: null, // For optimistic rollback
         navigationSequence: 0,
@@ -173,7 +196,7 @@ function init(containerSelector, options = {}) {
                 cacheInvalidateAll();
             }
 
-            fetchAndSwap(state, url, true);
+            fetchAndSwap(state, url, true, null, form);
         }
     });
 
@@ -300,7 +323,7 @@ function sanitizeServerFragment(rawHtml) {
     const wrappedHtml = isTableChild ? `<table>${rawHtml}</table>` : rawHtml;
     const doc = new DOMParser().parseFromString(wrappedHtml, 'text/html');
 
-    doc.querySelectorAll('script, object, embed, base, meta[http-equiv]').forEach((node) => {
+    doc.querySelectorAll('script, iframe, object, embed, applet, base, meta[http-equiv], foreignobject, animate, animatemotion, animatetransform, set, handler').forEach((node) => {
         if (
             node.tagName.toLowerCase() === 'script'
             && String(node.getAttribute('type') || '').toLowerCase() === 'application/json'
@@ -315,7 +338,7 @@ function sanitizeServerFragment(rawHtml) {
                     .replace(/&/g, '\\u0026');
                 for (const attr of Array.from(node.attributes)) {
                     const attrName = attr.name.toLowerCase();
-                    if (attrName !== 'id' && attrName !== 'type' && attrName !== 'data-json-config') {
+                    if (attrName !== 'id' && attrName !== 'type' && !/^data-[a-z0-9-]+$/i.test(attrName)) {
                         node.removeAttribute(attr.name);
                     }
                 }
@@ -367,6 +390,7 @@ async function speculativePrefetch(url, ttlMs = CACHE_TTL_MS) {
     prefetchInFlight.add(url);
     try {
         const response = await fetch(url, {
+            priority: 'low',
             headers: {
                 ...FRAGMENT_REQUEST_HEADERS,
                 'X-Adasi-Prefetch': '1',
@@ -392,22 +416,119 @@ async function speculativePrefetch(url, ttlMs = CACHE_TTL_MS) {
  * @param {string} url
  * @param {boolean} pushHistory — true for user-initiated nav, false for popstate
  */
-async function fetchAndSwap(state, url, pushHistory, historyIndex = null) {
+function releaseSubmittedForm(state, explicitForm = null) {
+    const forms = new Set([explicitForm, state?.activeForm].filter(Boolean));
+    if (state) {
+        state.activeForm = null;
+    }
+    if (forms.size === 0 || typeof window === 'undefined') return;
+
+    const reset = () => {
+        for (const form of forms) {
+            window.AdasiButton?.resetForm?.(form);
+        }
+    };
+    reset();
+    Promise.resolve().then(reset);
+}
+
+function resolveServerTabsBusyTarget(tableTarget) {
+    if (!tableTarget) return { host: null, mode: 'region' };
+
+    const uiTables = tableTarget.querySelectorAll?.('.ui-data-table') ?? [];
+    if (uiTables.length === 1) {
+        const scrollHost = uiTables[0].querySelector?.('.ui-data-table__scroll');
+        if (scrollHost) {
+            return { host: scrollHost, mode: 'table' };
+        }
+        return { host: uiTables[0], mode: 'region' };
+    }
+
+    if (tableTarget.classList?.contains?.('ui-data-table')) {
+        const scrollHost = tableTarget.querySelector?.('.ui-data-table__scroll');
+        if (scrollHost) {
+            return { host: scrollHost, mode: 'table' };
+        }
+        return { host: tableTarget, mode: 'region' };
+    }
+
+    const tables = tableTarget.querySelectorAll?.('table') ?? [];
+    if (tables.length === 1 && !tableTarget.querySelector?.('[data-adasi-filter-bar]')) {
+        return { host: tableTarget, mode: 'table' };
+    }
+
+    return { host: tableTarget, mode: 'region' };
+}
+
+function startBusyState(state, tableTarget) {
+    const resolved = resolveServerTabsBusyTarget(tableTarget);
+    const host = resolved.host || tableTarget;
+    if (state) {
+        state.activeBusyHost = host;
+        state.activeBusyMode = resolved.mode;
+    }
+    setTableBusy(host, true, {
+        translate: t,
+        ariaTarget: tableTarget,
+        mode: resolved.mode,
+    });
+}
+
+function clearBusyState(target, state = null) {
+    const busyHost = state?.activeBusyHost;
+    const mode = state?.activeBusyMode || 'region';
+    if (busyHost && busyHost !== target) {
+        setTableBusy(busyHost, false, {
+            translate: t,
+            ariaTarget: target,
+            mode,
+        });
+    }
+    if (target) {
+        setTableBusy(target, false, {
+            translate: t,
+            ariaTarget: target,
+            mode: target.getAttribute?.('data-loading-mode') === 'region' ? 'region' : mode,
+        });
+        target.removeAttribute?.('aria-busy');
+        target.classList?.remove?.('tw:opacity-50');
+        if (target.style) {
+            target.style.pointerEvents = '';
+        }
+    }
+    if (state) {
+        state.activeBusyHost = null;
+        state.activeBusyMode = 'region';
+    }
+}
+
+async function fetchAndSwap(state, url, pushHistory, historyIndex = null, sourceForm = null) {
     const { container, options } = state;
+    if (sourceForm) {
+        if (state.activeForm && state.activeForm !== sourceForm) {
+            releaseSubmittedForm(state, state.activeForm);
+        }
+        state.activeForm = sourceForm;
+    }
     const sequence = ++state.navigationSequence;
     if (typeof options.beforeNavigate === 'function') {
         const answer = options.beforeNavigate(url, { pushHistory });
         const allowed = answer && typeof answer.then === 'function' ? await answer : answer;
-        if (sequence !== state.navigationSequence) return false;
+        if (sequence !== state.navigationSequence) {
+            releaseSubmittedForm(state, sourceForm);
+            return false;
+        }
         if (allowed === false) {
             if (state.previousTab) updateTabActiveStates(container, state.previousTab);
             state.previousTab = null;
+            releaseSubmittedForm(state, sourceForm);
             return false;
         }
     }
     const tableTarget = container.querySelector('[data-server-tabs-content]');
     if (!tableTarget) {
-        console.warn('[AdasiServerTabs] Missing [data-server-tabs-content] inside container.');
+        window.AdasiDebug?.warn('[AdasiServerTabs] Missing [data-server-tabs-content] inside container.');
+        releaseSubmittedForm(state, sourceForm);
         return false;
     }
     options.onLoading?.();
@@ -430,17 +551,15 @@ async function fetchAndSwap(state, url, pushHistory, historyIndex = null) {
     const cached = cacheGet(url, cacheTtlFor(state));
     if (cached) {
         // The request this click replaced no longer cleans up after itself, so clear its busy state here.
-        clearBusyState(tableTarget);
+        clearBusyState(tableTarget, state);
         applyData(state, container, tableTarget, cached.data, url, pushHistory, options, historyIndex);
+        releaseSubmittedForm(state, sourceForm);
         state.abortController = null;
         return true;
     }
 
     // ── Cache Miss: show loading state and fetch ──
-    tableTarget.setAttribute('aria-busy', 'true');
-    tableTarget.classList.add('tw:opacity-50');
-    tableTarget.style.pointerEvents = 'none';
-    showLoadingOverlay(tableTarget);
+    startBusyState(state, tableTarget);
 
     const resolveTimeoutMs = () => {
         const explicit = Number(options?.timeoutMs);
@@ -478,6 +597,12 @@ async function fetchAndSwap(state, url, pushHistory, historyIndex = null) {
                 state.previousTab = null;
             }
             window.AdasiSessionSync?.handleActionResponse?.(response);
+            const expiredError = new Error('Session expired');
+            if (options.managedHistory && Number.isInteger(historyIndex)) {
+                state.pendingHistoryError = expiredError;
+            } else {
+                options.onError?.(expiredError);
+            }
             return false;
         }
 
@@ -498,7 +623,7 @@ async function fetchAndSwap(state, url, pushHistory, historyIndex = null) {
     } catch (err) {
         clearTimeout(timeoutId);
         if (err.name === 'AbortError' && !isTimeout) return false; // Intentional cancellation
-        console.error('[AdasiServerTabs] Fetch failed:', err);
+        window.AdasiDebug?.error('[AdasiServerTabs] Fetch failed:', err);
 
         // Rollback optimistic tab state on error
         if (state.previousTab) {
@@ -539,18 +664,14 @@ async function fetchAndSwap(state, url, pushHistory, historyIndex = null) {
     } finally {
         clearTimeout(timeoutId);
         if (state.abortController === controller) {
-            clearBusyState(tableTarget);
+            clearBusyState(tableTarget, state);
+            releaseSubmittedForm(state, sourceForm);
             state.abortController = null;
+        } else if (sourceForm) {
+            Promise.resolve().then(() => window.AdasiButton?.resetForm?.(sourceForm));
         }
     }
 
-}
-
-function clearBusyState(target) {
-    target.removeAttribute('aria-busy');
-    target.classList.remove('tw:opacity-50');
-    target.style.pointerEvents = '';
-    hideLoadingOverlay(target);
 }
 
 /**
@@ -569,8 +690,25 @@ function applyData(state, container, tableTarget, data, url, pushHistory, option
 
     // 1. Swap table HTML with subtle 500ms opacity fade-in
     if (data.html) {
+        tableTarget.querySelectorAll?.('[data-ui-dialog]')?.forEach?.((dialogEl) => {
+            const name = dialogEl?.dataset?.uiDialog;
+            if (name) {
+                window.dispatchEvent(new CustomEvent('close-ui-dialog', {
+                    detail: { name, restoreFocus: false },
+                }));
+            }
+        });
+        tableTarget.querySelectorAll?.('[data-ui-drawer]')?.forEach?.((drawerEl) => {
+            const name = drawerEl?.dataset?.uiDrawer;
+            if (name) {
+                window.dispatchEvent(new CustomEvent('close-ui-drawer', {
+                    detail: { name, restoreFocus: false },
+                }));
+            }
+        });
+        window.AdasiOverlayModality?.releaseWithin?.(tableTarget);
         tableTarget.classList.remove('ui-page-fade');
-        tableTarget.innerHTML = sanitizeServerFragment(data.html);
+        applyServerFragment(tableTarget, data.html);
         void tableTarget.offsetWidth;
         tableTarget.classList.add('ui-page-fade');
     }
@@ -621,9 +759,12 @@ function applyData(state, container, tableTarget, data, url, pushHistory, option
     // 7. Re-init Bootstrap tooltips inside swapped content
     reinitTooltips(tableTarget);
 
-    // 7b. Re-init Adasi Calendars inside swapped content
+    // 7b. Re-init Adasi Calendars & Form A11y baseline inside swapped content
     if (window.AdasiCalendar?.initialize) {
         window.AdasiCalendar.initialize(tableTarget);
+    }
+    if (window.AdasiFormA11y?.syncContainer) {
+        window.AdasiFormA11y.syncContainer(tableTarget);
     }
 
     // 8. Dispatch custom event for page-specific re-binding
@@ -724,7 +865,7 @@ function swapTabNav(container, navHtml) {
     const focusedTab = document.activeElement?.closest?.('[data-server-tab]');
     const focusedTabName = focusedTab?.closest('[data-server-tabs-nav]') ? focusedTab.dataset.tabName : null;
 
-    nav.innerHTML = sanitizeServerFragment(navHtml);
+    applyServerFragment(nav, navHtml);
 
     if (focusedTabName) {
         [...nav.querySelectorAll('[data-server-tab]')]
@@ -788,29 +929,6 @@ function updateOverpaymentBadge(container, count) {
     }
 }
 
-function showLoadingOverlay(target) {
-    let overlay = target.querySelector('.server-tabs-loading-overlay');
-    if (!overlay) {
-        overlay = document.createElement('div');
-        overlay.className = 'server-tabs-loading-overlay tw:absolute tw:inset-0 tw:flex tw:items-center tw:justify-center tw:z-10';
-        overlay.innerHTML = `
-            <div class="tw:flex tw:items-center tw:gap-2 tw:px-4 tw:py-2 tw:rounded-lg tw:bg-surface tw:shadow-md tw:border tw:border-outline-variant">
-                <div class="tw:animate-spin tw:w-4 tw:h-4 tw:border-2 tw:border-primary tw:border-t-transparent tw:rounded-full"></div>
-                <span class="tw:text-ui-xs tw:text-on-surface-variant tw:font-medium" data-server-tabs-loading-text></span>
-            </div>
-        `;
-        overlay.querySelector('[data-server-tabs-loading-text]').textContent = t('js.tables.loading');
-        target.style.position = 'relative';
-        target.appendChild(overlay);
-    }
-    overlay.style.display = '';
-}
-
-function hideLoadingOverlay(target) {
-    const overlay = target.querySelector('.server-tabs-loading-overlay');
-    if (overlay) overlay.style.display = 'none';
-}
-
 function reinitTooltips(container) {
     const Tooltip = window.bootstrap?.Tooltip;
     if (!Tooltip) return;
@@ -821,7 +939,7 @@ function reinitTooltips(container) {
 }
 
 function renderMmtError(target, message, retryUrl) {
-    target.innerHTML = '';
+    clearContainer(target);
     if (typeof document.createElement !== 'function') {
         return;
     }
@@ -880,7 +998,7 @@ function clearMmtSelection(workspaceSelector) {
     const hadNav = Boolean(nav && nav.innerHTML.trim() !== '');
     const hadAlert = Boolean(content?.querySelector?.('[role="alert"]'));
     if (nav) {
-        nav.innerHTML = '';
+        clearContainer(nav);
     }
 
     if (selectedRows.length === 0 && !hadRef && !hadNav && !hadAlert) {
@@ -889,7 +1007,7 @@ function clearMmtSelection(workspaceSelector) {
 
     const state = satellitePane.id ? instances.get(`#${satellitePane.id}`) : null;
     if (content && state && typeof state.initialContentHtml === 'string') {
-        content.innerHTML = state.initialContentHtml;
+        applyServerFragment(content, state.initialContentHtml);
     }
 }
 
@@ -979,7 +1097,7 @@ function bindMmtWorkspaceDelegation() {
     });
 
     document.addEventListener('keydown', (e) => {
-        if (e.defaultPrevented || (e.key !== 'Enter' && e.key !== ' ')) {
+        if (e.defaultPrevented || e.isComposing || e.keyCode === 229 || (e.key !== 'Enter' && e.key !== ' ')) {
             return;
         }
         const row = e.target?.closest?.('tr[data-mmt-row-url]');

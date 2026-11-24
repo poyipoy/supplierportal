@@ -83,12 +83,17 @@
         <x-ui.icon name="chevron-left" size="xs" />
     </button>
 
+    <div
+        class="visually-hidden"
+        role="tablist"
+        aria-label="{{ __('navigation.workspace_shell.sessions_label') }}"
+        aria-owns="workspace-session-shortcuts{{ ! $isShortcutsInitial ? ' workspace-session-initial' : '' }}"
+        data-workspace-tablist-owner
+    ></div>
+
     <div class="workspace-sessionbar__viewport" data-workspace-session-viewport>
         <div
             class="workspace-sessionbar__list"
-            role="tablist"
-            aria-label="{{ __('navigation.workspace_shell.sessions_label') }}"
-            aria-owns="workspace-session-group-shortcuts"
             data-workspace-sessionlist
             data-locale-ignore
         >
@@ -201,6 +206,9 @@
 
     <template data-workspace-icon="x">
         <x-ui.icon name="x" size="xs" />
+    </template>
+    <template data-workspace-icon="check">
+        <x-ui.icon name="check" size="xs" />
     </template>
     <template data-workspace-icon="layers">
         <x-ui.icon name="layers" size="xs" />

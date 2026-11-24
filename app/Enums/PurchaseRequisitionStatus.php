@@ -11,6 +11,7 @@ enum PurchaseRequisitionStatus: string
     case BIDDING = 'bidding';
     case COMPLETED = 'completed';
     case REJECTED = 'rejected';
+    case CANCELLED = 'cancelled';
 
     /**
      * Resolve canonical and historical legacy synonym status values deterministically.
@@ -61,13 +62,15 @@ enum PurchaseRequisitionStatus: string
                 self::BIDDING,
                 self::COMPLETED,
                 self::REJECTED,
+                self::CANCELLED,
             ],
             self::BIDDING => [
                 self::COMPLETED,
                 self::REJECTED,
             ],
             self::COMPLETED,
-            self::REJECTED => [],
+            self::REJECTED,
+            self::CANCELLED => [],
         };
     }
 
@@ -97,7 +100,7 @@ enum PurchaseRequisitionStatus: string
             self::SUBMITTED => 'info',
             self::BIDDING => 'warning',
             self::COMPLETED => 'success',
-            self::REJECTED => 'error',
+            self::REJECTED, self::CANCELLED => 'error',
         };
     }
 
@@ -108,7 +111,7 @@ enum PurchaseRequisitionStatus: string
             self::SUBMITTED => 'send',
             self::BIDDING => 'gavel',
             self::COMPLETED => 'check-circle-2',
-            self::REJECTED => 'x-circle',
+            self::REJECTED, self::CANCELLED => 'x-circle',
         };
     }
 }

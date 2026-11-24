@@ -1,7 +1,7 @@
 @auth
 <div
     id="adasi-smart-panel"
-    class="tw:fixed tw:inset-0 tw:z-drawer tw:hidden"
+    class="tw:fixed tw:inset-0 tw:z-drawer tw:hidden tw:overscroll-contain"
     role="dialog"
     aria-modal="true"
     aria-labelledby="smart-panel-title"
@@ -24,14 +24,14 @@
             {{-- Header --}}
             <header class="tw:shrink-0 tw:flex tw:items-start tw:justify-between tw:gap-3 tw:px-4 tw:sm:px-5 tw:py-4 tw:border-b tw:border-outline-variant tw:bg-surface-container">
                 <div>
-                    <span id="smart-panel-subtitle" class="tw:block tw:text-[11px] tw:font-semibold tw:uppercase tw:tracking-wider tw:text-on-surface-variant">
+                    <span id="smart-panel-subtitle" class="tw:block tw:text-ui-xs tw:font-semibold tw:uppercase tw:tracking-wider tw:text-on-surface-variant">
                         {{ __('smart_panel.eyebrow') }}
                     </span>
                     <div class="tw:flex tw:items-center tw:gap-2 tw:mt-0.5">
                         <h2 id="smart-panel-title" class="tw:m-0 tw:text-ui-base tw:font-bold tw:text-on-surface ui-tabular-nums">
                             {{ __('smart_panel.title') }}
                         </h2>
-                        <span id="smart-panel-status" class="tw:inline-flex tw:items-center tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-[11px] tw:font-semibold tw:bg-surface-high tw:text-on-surface-variant"></span>
+                        <span id="smart-panel-status" class="tw:inline-flex tw:items-center tw:px-2 tw:py-0.5 tw:rounded-sm tw:text-ui-xs tw:font-semibold tw:bg-surface-high tw:text-on-surface-variant"></span>
                     </div>
                 </div>
                 <button
@@ -85,11 +85,9 @@
             </nav>
 
             {{-- Body --}}
-            <div class="tw:min-h-0 tw:flex-1 tw:flex tw:flex-col tw:overflow-y-auto tw:p-3 tw:sm:p-5">
+            <div class="tw:min-h-0 tw:flex-1 tw:flex tw:flex-col tw:overflow-y-auto tw:overscroll-contain tw:p-3 tw:sm:p-5">
                 {{-- Loading / Error state --}}
-                <div id="smart-panel-loading" role="status" aria-live="polite" class="tw:py-8 tw:text-center tw:text-ui-xs tw:text-on-surface-variant">
-                    {{ __('smart_panel.loading') }}
-                </div>
+                <x-ui.inline-loader id="smart-panel-loading" :label="__('smart_panel.loading')" class="tw:py-8" />
                 <div id="smart-panel-error" role="alert" class="tw:hidden tw:p-4 tw:rounded-ui-sm tw:bg-error/10 tw:text-error tw:text-ui-xs">
                     {{ __('smart_panel.error') }}
                 </div>

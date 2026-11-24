@@ -97,6 +97,14 @@ return [
             'label' => 'Added to a requisition',
             'description' => 'Purchasing adds you to a requisition that is already open for quotations.',
         ],
+        'pr_supplier_removed' => [
+            'label' => 'Requisition invitation cancelled',
+            'description' => 'Your invitation to submit a quotation for a purchase requisition is cancelled.',
+        ],
+        'pr_cancelled' => [
+            'label' => 'Purchase requisition cancelled',
+            'description' => 'A purchase requisition open to you is cancelled by Purchasing.',
+        ],
         'quotation_submitted' => [
             'label' => 'Quotation submitted',
             'description' => 'A supplier submits a quotation.',

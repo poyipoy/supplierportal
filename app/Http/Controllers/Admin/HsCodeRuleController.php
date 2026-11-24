@@ -70,6 +70,7 @@ class HsCodeRuleController extends Controller
                     .'</div>';
             })
             ->rawColumns(['status_badge', 'action'])
+            ->only(['DT_RowIndex', 'hs_code', 'material_category', 'material_category_label', 'shape', 'shape_label', 'conditions_display', 'priority', 'status_badge', 'source_display', 'updated_date', 'action'])
             ->toJson();
     }
 

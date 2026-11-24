@@ -410,8 +410,15 @@
         const drawerSubtitle = document.getElementById('historicalDrawerSubtitle');
         const drawerGuard = window.createComparisonRequestGuard();
 
-        function drawerMessage(text, retry) {
+        function drawerMessage(text, retry, { loading = false } = {}) {
             drawerBody.replaceChildren();
+            if (loading && window.AdasiLoader?.createInlineLoader) {
+                const loaderNode = window.AdasiLoader.createInlineLoader(text);
+                if (loaderNode) {
+                    drawerBody.append(loaderNode);
+                    return;
+                }
+            }
             const message = document.createElement('p');
             message.className = 'tw:m-0 tw:text-ui-sm tw:text-on-surface-variant';
             message.textContent = text;
@@ -560,7 +567,7 @@
             const request = drawerGuard.start();
             drawerSubtitle.textContent = button.dataset.title || '';
             drawerBody.setAttribute('aria-busy', 'true');
-            drawerMessage(i18n.drawerLoading);
+            drawerMessage(i18n.drawerLoading, null, { loading: true });
             const url = new URL(config.dataUrl, window.location.origin);
             url.searchParams.set('pr_id', config.prId);
             url.searchParams.set('pr_item', button.dataset.prItem);

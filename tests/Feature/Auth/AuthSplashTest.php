@@ -31,6 +31,12 @@ class AuthSplashTest extends TestCase
     public function test_clean_login_and_refresh_render_request_only_splash(): void
     {
         foreach (range(1, 2) as $visit) {
+            $this->get('/login')->assertOk()->assertDontSee('data-auth-splash', false)
+                ->assertSessionMissing('ui.auth_splash');
+        }
+
+        config(['ui.auth_splash.login_page_enabled' => true]);
+        foreach (range(1, 2) as $visit) {
             $this->get('/login')->assertOk()->assertSee('data-splash-reason="login-page"', false)
                 ->assertSessionMissing('ui.auth_splash');
         }
@@ -40,6 +46,7 @@ class AuthSplashTest extends TestCase
     {
         $defaults = require base_path('config/ui.php');
         $this->assertFalse($defaults['auth_splash']['enabled']);
+        $this->assertFalse($defaults['auth_splash']['login_page_enabled']);
         $this->assertStringContainsString("env('AUTH_SPLASH_ENABLED', true)", (string) file_get_contents(config_path('ui.php')));
         $this->assertSame(600, $defaults['auth_splash']['min_visible_ms']);
         $this->assertSame(500, $defaults['auth_splash']['media_fallback_ms']);
@@ -47,12 +54,13 @@ class AuthSplashTest extends TestCase
         $this->withSession(['ui.auth_splash' => $this->marker('/login', 'post-logout')])
             ->get('/login')->assertOk()->assertDontSee('data-auth-splash', false)
             ->assertSessionMissing('ui.auth_splash');
-        config(['ui.auth_splash.enabled' => true]);
+        config(['ui.auth_splash.enabled' => true, 'ui.auth_splash.login_page_enabled' => true]);
         $this->get('/login')->assertSee('data-splash-reason="login-page"', false);
     }
 
     public function test_minimum_visibility_is_shared_with_the_independent_bootstrap(): void
     {
+        config(['ui.auth_splash.login_page_enabled' => true]);
         $this->get('/login')->assertOk()
             ->assertSee('data-min-visible-ms="600"', false)
             ->assertSee('data-media-fallback-ms="500"', false);
@@ -201,7 +209,7 @@ class AuthSplashTest extends TestCase
         $this->assertGuest();
         $this->assertNotSame($oldId, session()->getId());
         $this->get('/login')->assertSee('data-splash-reason="post-logout"', false)->assertSessionMissing('ui.auth_splash');
-        $this->get('/login')->assertSee('data-splash-reason="login-page"', false);
+        $this->get('/login')->assertDontSee('data-auth-splash', false);
     }
 
     public function test_json_logout_does_not_leave_marker_for_later_navigation(): void
@@ -421,7 +429,7 @@ class AuthSplashTest extends TestCase
 
         $queries = [];
         foreach ([false, true, false, true] as $enabled) {
-            config(['ui.auth_splash.enabled' => $enabled]);
+            config(['ui.auth_splash.enabled' => $enabled, 'ui.auth_splash.login_page_enabled' => $enabled]);
             if ($destination !== '/login') {
                 $this->withSession(['ui.auth_splash' => $this->marker($destination)]);
             }

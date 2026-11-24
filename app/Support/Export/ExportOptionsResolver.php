@@ -14,7 +14,12 @@ final class ExportOptionsResolver
             $definition = ExportDefinitions::get($key);
             abort_unless($definition->authorize($actor), 403);
             $keys = $input['columns'] ?? ExportDefinitions::defaultKeys($definition);
-            $options = new ExportOptions($keys, $input['format'] ?? 'xlsx', explode('.', $key, 2)[0]);
+            $options = new ExportOptions(
+                $keys,
+                $input['format'] ?? 'xlsx',
+                explode('.', $key, 2)[0],
+                $input['csv_delimiter'] ?? ',',
+            );
             ExportDefinitions::sanitizeKeys($definition, $options->columns);
 
             return $options;

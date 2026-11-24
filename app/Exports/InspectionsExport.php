@@ -159,4 +159,9 @@ class InspectionsExport implements AcceptsExportOptions, FromQuery, HasLocalePre
     {
         return $this->hasExportOptions() ? $this->catalogWrappedColumns() : ['B', 'C', 'D', 'E', 'F', 'G'];
     }
+
+    protected function workbookNumberFormats(): array
+    {
+        return $this->catalogNumberFormats();
+    }
 }

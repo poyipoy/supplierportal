@@ -274,6 +274,8 @@ class StatusHelper
         'submitted' => 'bg-primary',
         'bidding' => 'bg-warning text-dark',
         'completed' => 'bg-success',
+        'rejected' => 'bg-danger',
+        'cancelled' => 'bg-danger',
     ];
 
     public static function prBadge(string|PurchaseRequisitionStatus $status): string

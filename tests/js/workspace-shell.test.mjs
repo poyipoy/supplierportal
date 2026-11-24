@@ -16,6 +16,7 @@ import {
 } from '../../resources/js/portal-context-url.js';
 import {
     appendEmbedParam,
+    canonicalizeShortcutModulePath,
     canonicalizeUrl,
     clampOpenPaneWeights,
     classifyInternalNavigation,
@@ -30,9 +31,12 @@ import {
     isNonMutatingPostUrl,
     isSameOriginUrl,
     isTopLevelOnlyUrl,
+    mergeWorkspaceShortcutsState,
     MIN_SHORTCUTS_PANE_WIDTH_PX,
     normalizeShortcutsLayout,
     resizeShortcutsPairByDelta,
+    resolveDragTargetZoneIndex,
+    resolveGroupSessionMenuItems,
     resolveModuleKey,
     resolveShortcutsSplitterPair,
     resolveTransitionSettleMs,
@@ -643,7 +647,8 @@ test('workspace-shell.css enforces connected card-tabs (non-ghost), hover/focus-
         sessionBarBlade.indexOf('id="workspace-session-group-shortcuts"') < sessionBarBlade.indexOf('data-workspace-sessionlist'),
         'Shortcuts must sit fixed before the scrollable sessionlist',
     );
-    assert.equal(sessionBarBlade.includes('aria-owns="workspace-session-group-shortcuts"'), true);
+    assert.equal(sessionBarBlade.includes('data-workspace-tablist-owner'), true, 'Dedicated ARIA tablist owner must own only [role="tab"] controls');
+    assert.equal(sessionBarBlade.includes('aria-owns="workspace-session-shortcuts'), true, 'ARIA tablist owner must own the fixed Shortcuts tab');
     assert.equal(sessionBarBlade.includes('data-workspace-live-region'), true);
     assert.equal(css.includes('.workspace-panel.is-leaving'), true);
     assert.equal(css.includes('.workspace-session[data-queued="true"]'), true);
@@ -1251,8 +1256,8 @@ test('resolveVisibleShortcutsSplitters and resolveShortcutsSplitterPair expose o
     assert.equal(resolveShortcutsSplitterPair('bookmarks-frequent', { bookmarks: true, frequent: true }), null);
 });
 
-test('resizeShortcutsPairByDelta isolates width changes to the adjacent pair, enforces 1-3px sliver minimum, and removes minimized panes from flex width', () => {
-    assert.ok(MIN_SHORTCUTS_PANE_WIDTH_PX >= 1 && MIN_SHORTCUTS_PANE_WIDTH_PX <= 3);
+test('resizeShortcutsPairByDelta isolates width changes to the adjacent pair, allows 0px collapse, and removes minimized panes from flex width', () => {
+    assert.ok(MIN_SHORTCUTS_PANE_WIDTH_PX >= 0 && MIN_SHORTCUTS_PANE_WIDTH_PX <= 3);
     const boardWidthPx = 1000;
     const minimized = { favorites: false, bookmarks: false, frequent: false };
     const startSnap = computeOpenPaneWidthPx(DEFAULT_SHORTCUTS_WEIGHTS, minimized, boardWidthPx);
@@ -1270,7 +1275,7 @@ test('resizeShortcutsPairByDelta isolates width changes to the adjacent pair, en
     assert.ok(Math.abs(snap1.widthsPx.frequent - startSnap.widthsPx.frequent) < 0.001, 'Frequently Used width must stay untouched');
     assert.ok(Math.abs((snap1.widthsPx.favorites - startSnap.widthsPx.favorites) - 90) < 0.01);
 
-    // 2. Extreme drag on Bookmarks <-> Frequently Used clamps at 2px sliver floor and leaves Favorites untouched
+    // 2. Extreme drag on Bookmarks <-> Frequently Used collapses Bookmarks cleanly to 0px while keeping normalized weight > 0
     const resizeExtreme = resizeShortcutsPairByDelta({
         weights: resize1.weights,
         minimized,
@@ -1278,11 +1283,13 @@ test('resizeShortcutsPairByDelta isolates width changes to the adjacent pair, en
         deltaPx: -800,
         boardWidthPx,
     });
-    const snap2 = computeOpenPaneWidthPx(resizeExtreme.weights, minimized, boardWidthPx);
-    assert.ok(Math.abs(snap2.widthsPx.favorites - snap1.widthsPx.favorites) < 0.001, 'Favorites width must stay untouched when dragging bookmarks-frequent');
-    assert.ok(snap2.widthsPx.bookmarks >= MIN_SHORTCUTS_PANE_WIDTH_PX - 0.01, 'Bookmarks must respect 2px minimum floor');
-    assert.ok(snap2.widthsPx.bookmarks <= 3, 'Extreme drag must allow squeezing pane down to 1-3 px sliver');
-    assert.ok(snap2.widthsPx.frequent >= MIN_SHORTCUTS_PANE_WIDTH_PX - 0.01, 'Frequently Used must respect 2px minimum floor');
+    const normalizedExtreme = normalizeShortcutsLayout({ weights: resizeExtreme.weights, minimized });
+    assert.ok(normalizedExtreme.weights.bookmarks > 0 && normalizedExtreme.weights.bookmarks <= 0.02);
+    const snap2 = computeOpenPaneWidthPx(normalizedExtreme.weights, minimized, boardWidthPx);
+    assert.ok(Math.abs(snap2.widthsPx.favorites - snap1.widthsPx.favorites) < 0.25, 'Favorites width must stay virtually untouched when dragging bookmarks-frequent');
+    assert.ok(snap2.widthsPx.bookmarks >= MIN_SHORTCUTS_PANE_WIDTH_PX, 'Bookmarks must stay non-negative');
+    assert.ok(snap2.widthsPx.bookmarks <= 0.5, 'Extreme drag must collapse pane interior below 0.5px so no white strip remains');
+    assert.ok(snap2.widthsPx.frequent >= MIN_SHORTCUTS_PANE_WIDTH_PX, 'Frequently Used must respect minimum floor');
     const totalUsed = snap2.widthsPx.favorites + snap2.widthsPx.bookmarks + snap2.widthsPx.frequent + (2 * SHORTCUTS_SPLITTER_WIDTH_PX);
     assert.ok(Math.abs(totalUsed - boardWidthPx) < 0.01, 'Total pane + splitter widths must equal boardWidthPx with zero overlap');
 
@@ -1336,11 +1343,20 @@ test('workspace-shell.js clears stage loading indicator when initialReadyResolve
 test('workspace-shell.js wires bottom-dock minimize/restore, narrow sliver class, and cursor-tracking splitter grip', () => {
     const testDir = dirname(fileURLToPath(import.meta.url));
     const shellJs = readFileSync(resolve(testDir, '../../resources/js/workspace-shell.js'), 'utf8');
+    const shellCss = readFileSync(resolve(testDir, '../../resources/css/workspace-shell.css'), 'utf8');
+    const splitterJs = readFileSync(resolve(testDir, '../../resources/js/splitter.js'), 'utf8');
 
     assert.equal(shellJs.includes('[data-shortcuts-dock]'), true);
     assert.equal(shellJs.includes('data-shortcuts-pane-restore='), true);
     assert.equal(shellJs.includes("paneEl.classList.toggle('is-sliver', isSliver)"), true);
-    assert.equal(shellJs.includes("'--splitter-grip-y'"), true);
+    assert.equal(shellJs.includes("paneEl.classList.toggle('is-sliver-collapsed', isSliverCollapsed)"), true);
+    assert.equal(shellCss.includes('.workspace-shortcuts-pane.is-sliver > *'), false);
+    assert.equal(shellCss.includes('.workspace-shortcuts-pane.is-sliver .workspace-shortcuts-pane__header > *'), true);
+    assert.equal(shellCss.includes('.workspace-shortcuts-pane.is-sliver .workspace-shortcuts-pane__body'), true);
+    assert.equal(shellCss.includes('.workspace-shortcuts-pane.is-sliver-collapsed'), true);
+    assert.equal(shellJs.includes("from './splitter.js'"), true);
+    assert.equal(shellJs.includes('syncSplitterGripY(splitterEl, event.clientY)'), true);
+    assert.equal(splitterJs.includes("'--splitter-grip-y'"), true);
     assert.equal(shellJs.includes("splitterEl.addEventListener('pointerenter'"), true);
     assert.equal(shellJs.includes('resolveVisibleShortcutsSplitters(shortcutsLayout.minimized)'), true);
 });
@@ -2102,4 +2118,465 @@ test('ERP duplicate session badges omit # on first tab, use parenthetical index 
     const dupRule = wsCss.match(/\.workspace-session__dup-index\s*\{[^}]*\}/)?.[0] || '';
     assert.ok(dupRule && !dupRule.includes('border:'), 'Duplicate badge must be clean inline text without heavy box border');
     assert.ok(dupRule.includes('tabular-nums'), 'Duplicate badge must preserve tabular-nums');
+});
+
+test('resolveGroupSessionMenuItems marks group activeFrameId with checkmark, protects pinned parent, and updates cleanly after closing a child', () => {
+    let now = 60_000;
+    const store = new WorkspaceSessionStore({
+        maxSessions: 12,
+        maxLiveFrames: 6,
+        now: () => (now += 50),
+        catalog: SAMPLE_CATALOG,
+        indexPaths: SAMPLE_INDEX_PATHS,
+    });
+
+    const qt = store.openWorkspace({
+        moduleKey: 'quotations',
+        label: 'Quotation',
+        url: `${ORIGIN}${PREFIX}/purchasing/quotations`,
+    });
+    const childA = store.openChildFrame({
+        sourceFrameId: qt.frame.frameId,
+        label: 'Quotation: REQ/11/2026/001',
+        url: `${ORIGIN}${PREFIX}/purchasing/quotations/Q001`,
+    });
+    const childB = store.openChildFrame({
+        sourceFrameId: qt.frame.frameId,
+        label: 'Quotation: REQ/11/2026/003',
+        url: `${ORIGIN}${PREFIX}/purchasing/quotations/Q003`,
+    });
+    const stagedChild = store.openChildFrame({
+        sourceFrameId: qt.frame.frameId,
+        label: 'Quotation: Loading',
+        url: `${ORIGIN}${PREFIX}/purchasing/quotations/Q004`,
+        stageOnly: true,
+        showSessionWhileStaged: false,
+    });
+    assert.equal(stagedChild.staged, true);
+
+    // Switch away to Shortcuts so Quotation collapses into a stacked group;
+    // childB remains the group's remembered active session (group.activeFrameId).
+    store.activateShortcuts();
+    assert.equal(store.activeFrame(), null);
+
+    let items = resolveGroupSessionMenuItems(store.getGroup(qt.group.groupId));
+    assert.equal(items.length, 3, 'stagedNew frames must be omitted from the group dropdown');
+    assert.deepEqual(
+        items.map((item) => ({
+            frameId: item.frameId,
+            isCurrentInGroup: item.isCurrentInGroup,
+            canClose: item.canClose,
+            closesWholeGroup: item.closesWholeGroup,
+        })),
+        [
+            { frameId: qt.frame.frameId, isCurrentInGroup: false, canClose: true, closesWholeGroup: true },
+            { frameId: childA.frame.frameId, isCurrentInGroup: false, canClose: true, closesWholeGroup: false },
+            { frameId: childB.frame.frameId, isCurrentInGroup: true, canClose: true, closesWholeGroup: false },
+        ],
+    );
+
+    // Closing the group's remembered active child shifts checkmark to previous sibling without stealing Shortcuts focus.
+    const closeRes = store.closeFrame(childB.frame.frameId);
+    assert.equal(closeRes.closed, true);
+    assert.equal(store.isShortcutsActive(), true);
+    items = resolveGroupSessionMenuItems(store.getGroup(qt.group.groupId));
+    assert.equal(items.length, 2);
+    assert.equal(items[0].isCurrentInGroup, false);
+    assert.equal(items[1].frameId, childA.frame.frameId);
+    assert.equal(items[1].isCurrentInGroup, true);
+
+    // Pinning the group protects parent close while keeping child close enabled.
+    store.pinGroup(qt.group.groupId);
+    items = resolveGroupSessionMenuItems(store.getGroup(qt.group.groupId));
+    assert.equal(items[0].isPinnedProtected, true);
+    assert.equal(items[0].canClose, false);
+    assert.equal(items[1].isPinnedProtected, false);
+    assert.equal(items[1].canClose, true);
+
+    // Unpinning restores parent close and closing parent removes the whole group.
+    store.unpinGroup(qt.group.groupId);
+    const parentClose = store.closeFrame(qt.frame.frameId);
+    assert.equal(parentClose.closed, true);
+    assert.equal(store.getGroup(qt.group.groupId), null);
+});
+
+test('Session actions group dropdown implements Infor LN checklist, per-session close button, WCAG keyboard navigation, and accessible contrast', () => {
+    const testDir = dirname(fileURLToPath(import.meta.url));
+    const repoRoot = resolve(testDir, '../..');
+    const sessionBarBlade = readFileSync(resolve(repoRoot, 'resources/views/partials/workspace-session-bar.blade.php'), 'utf8');
+    const shellJs = readFileSync(resolve(repoRoot, 'resources/js/workspace-shell.js'), 'utf8');
+    const wsCss = readFileSync(resolve(repoRoot, 'resources/css/workspace-shell.css'), 'utf8');
+    const enNav = readFileSync(resolve(repoRoot, 'lang/en/navigation.php'), 'utf8');
+    const idNav = readFileSync(resolve(repoRoot, 'lang/id/navigation.php'), 'utf8');
+
+    assert.equal(sessionBarBlade.includes('data-workspace-icon="check"'), true);
+    assert.equal(enNav.includes("'closed_announcement'"), true);
+    assert.equal(idNav.includes("'closed_announcement'"), true);
+
+    assert.equal(shellJs.includes('resolveGroupSessionMenuItems'), true);
+    assert.equal(shellJs.includes("role', 'menuitemradio'"), true);
+    assert.equal(shellJs.includes("aria-checked'"), true);
+    assert.equal(shellJs.includes('data-workspace-group-page-close'), true);
+    assert.equal(shellJs.includes('handleGroupPageClose'), true);
+    assert.equal(shellJs.includes('onBeforeConfirmDirty'), true);
+    assert.match(shellJs, /handleGroupPageClose\s*=\s*async[\s\S]{0,180}clearHoverMenuCloseTimer\(\);\s*tabMenuOpenedByHover\s*=\s*false;/);
+    assert.match(shellJs, /document\.addEventListener\('keydown'[\s\S]{0,260}event\.key\s*!==\s*'Escape'[\s\S]{0,260}closeTabMenu\(\{\s*restoreFocus:\s*!tabMenuOpenedByHover\s*\}\)/);
+    assert.equal(shellJs.includes("event.key === 'ArrowRight'"), true);
+    assert.equal(shellJs.includes("event.key === 'ArrowLeft'"), true);
+    assert.equal(shellJs.includes("event.key === 'Delete'"), true);
+    assert.equal(shellJs.includes("badgeText: subFrame.hibernated ? (i18n.hibernatedBadge || 'Hibernated') : (isCurr ? '●' : '')"), false);
+
+    assert.equal(wsCss.includes('.workspace-session-menu--group-pages'), true);
+    assert.equal(wsCss.includes('.workspace-session-menu__row'), true);
+    assert.equal(wsCss.includes('.workspace-session-menu__check-slot'), true);
+    assert.equal(wsCss.includes('.workspace-session-menu__close'), true);
+    assert.equal(wsCss.includes('.workspace-session-menu__pin-lock'), true);
+    assert.equal(wsCss.includes('color: var(--ui-primary-text);'), true, 'Checkmark must use --ui-primary-text for AA contrast in dark mode');
+    assert.equal(wsCss.includes('--workspace-menu-row-hover-bg: var(--md-surface-container-high);'), true, 'Dark mode hover must step up a tonal tier above --ui-menu-bg');
+    assert.equal(wsCss.includes('scale(0.9'), false, 'Must never reintroduce scale press bounce');
+    assert.equal(wsCss.includes('transition: all'), false, 'Must never use transition: all');
+});
+
+test('canonicalizeShortcutModulePath and mergeWorkspaceShortcutsState preserve Frequently Used, Favorites, Bookmarks, and Layout across logout and prefix switches', () => {
+    // 1. Path canonicalization across prefix on/off
+    assert.equal(
+        canonicalizeShortcutModulePath('/purchasing/requisitions', { origin: ORIGIN, pathPrefix: PREFIX }),
+        `${PREFIX}/purchasing/requisitions`,
+    );
+    assert.equal(
+        canonicalizeShortcutModulePath(`${PREFIX}/purchasing/requisitions`, { origin: ORIGIN, pathPrefix: PREFIX }),
+        `${PREFIX}/purchasing/requisitions`,
+    );
+    assert.equal(
+        canonicalizeShortcutModulePath(`${PREFIX}/purchasing/requisitions`, { origin: ORIGIN, pathPrefix: '' }),
+        '/purchasing/requisitions',
+    );
+
+    // 2. Cold localStorage (e.g. new browser/device or cleared cache) hydrates full state from server
+    const hydrated = mergeWorkspaceShortcutsState({
+        localState: {
+            hasUsageKey: false,
+            hasFavoritesKey: false,
+            hasBookmarksKey: false,
+            hasLayoutKey: false,
+        },
+        serverState: {
+            updatedAt: 5000,
+            usage: {
+                '/purchasing/requisitions': { count: 7, lastUsedAt: 4800 },
+                '/purchasing/purchase-orders': { count: 3, lastUsedAt: 4500 },
+                '/login': { count: 99, lastUsedAt: 4999 }, // forbidden top-level security path
+            },
+            favorites: ['/purchasing/requisitions', '/profile/security'],
+            favoritesInitialized: true,
+            bookmarks: [
+                {
+                    url: `${ORIGIN}/purchasing/purchase-orders?status=active`,
+                    label: 'Active POs',
+                    moduleKey: 'purchase-orders',
+                    createdAt: 4200,
+                },
+                {
+                    url: 'javascript:alert(1)',
+                    label: 'Bad',
+                },
+            ],
+            layout: {
+                weights: { favorites: 25, bookmarks: 25, frequent: 50 },
+                minimized: { favorites: false, bookmarks: true, frequent: false },
+                minimizedOrder: ['bookmarks'],
+            },
+        },
+        origin: ORIGIN,
+        pathPrefix: PREFIX,
+    });
+
+    assert.equal(hydrated.needsServerSync, false);
+    assert.equal(hydrated.updatedAt, 5000);
+    assert.deepEqual(hydrated.usage, {
+        [`${PREFIX}/purchasing/requisitions`]: { count: 7, lastUsedAt: 4800 },
+        [`${PREFIX}/purchasing/purchase-orders`]: { count: 3, lastUsedAt: 4500 },
+    });
+    assert.deepEqual(hydrated.favorites, [`${PREFIX}/purchasing/requisitions`]);
+    assert.equal(hydrated.favoritesInitialized, true);
+    assert.equal(hydrated.bookmarks.length, 1);
+    assert.equal(hydrated.bookmarks[0].url, `${ORIGIN}${PREFIX}/purchasing/purchase-orders?status=active`);
+    assert.equal(hydrated.layout.minimized.bookmarks, true);
+    assert.equal(Math.round(hydrated.layout.weights.frequent), 50);
+
+    // 3. Existing localStorage with newer edits merges max counts and flags needsServerSync
+    const mergedNewerLocal = mergeWorkspaceShortcutsState({
+        localState: {
+            updatedAt: 8000,
+            hasUsageKey: true,
+            hasFavoritesKey: true,
+            hasBookmarksKey: false,
+            hasLayoutKey: false,
+            usage: {
+                [`${PREFIX}/purchasing/requisitions`]: { count: 10, lastUsedAt: 7900 },
+                [`${PREFIX}/purchasing/shipments`]: { count: 2, lastUsedAt: 7800 },
+            },
+            favorites: [`${PREFIX}/purchasing/shipments`],
+        },
+        serverState: {
+            updatedAt: 5000,
+            usage: {
+                [`${PREFIX}/purchasing/requisitions`]: { count: 7, lastUsedAt: 4800 },
+                [`${PREFIX}/purchasing/purchase-orders`]: { count: 3, lastUsedAt: 4500 }, // removed locally at t=8000
+            },
+            favorites: [`${PREFIX}/purchasing/requisitions`],
+            favoritesInitialized: true,
+        },
+        origin: ORIGIN,
+        pathPrefix: PREFIX,
+    });
+
+    assert.equal(mergedNewerLocal.needsServerSync, true);
+    assert.deepEqual(mergedNewerLocal.usage, {
+        [`${PREFIX}/purchasing/requisitions`]: { count: 10, lastUsedAt: 7900 },
+        [`${PREFIX}/purchasing/shipments`]: { count: 2, lastUsedAt: 7800 },
+    });
+    assert.deepEqual(mergedNewerLocal.favorites, [`${PREFIX}/purchasing/shipments`]);
+});
+
+test('resolveDragTargetZoneIndex supports multi-slot sweeps in both directions without ping-pong oscillation across mixed tab widths', () => {
+    const uniformSlots = [
+        { left: 0, width: 100 },
+        { left: 104, width: 100 },
+        { left: 208, width: 100 },
+        { left: 312, width: 100 },
+        { left: 416, width: 100 },
+    ];
+
+    // Single fast drag right jumps from index 0 straight to index 2 or end (index 4)
+    assert.equal(resolveDragTargetZoneIndex({
+        currentIndex: 0,
+        virtualLeft: 165, // vRight = 265 > slot[2].mid (258 + 2)
+        virtualWidth: 100,
+        slotBoxes: uniformSlots,
+        hysteresisPx: 2,
+    }), 2);
+    assert.equal(resolveDragTargetZoneIndex({
+        currentIndex: 0,
+        virtualLeft: 390, // vRight = 490 > slot[4].mid (466 + 2)
+        virtualWidth: 100,
+        slotBoxes: uniformSlots,
+        hysteresisPx: 2,
+    }), 4);
+
+    // Single fast drag left jumps from index 4 straight to index 1 or index 0
+    assert.equal(resolveDragTargetZoneIndex({
+        currentIndex: 4,
+        virtualLeft: 145, // vLeft < slot[1].mid (154 - 2)
+        virtualWidth: 100,
+        slotBoxes: uniformSlots,
+        hysteresisPx: 2,
+    }), 1);
+    assert.equal(resolveDragTargetZoneIndex({
+        currentIndex: 4,
+        virtualLeft: 40, // vLeft < slot[0].mid (50 - 2)
+        virtualWidth: 100,
+        slotBoxes: uniformSlots,
+        hysteresisPx: 2,
+    }), 0);
+
+    // Mixed width: narrow tab (100px) crossing wide expanded group (260px) does not ping-pong at swap boundary
+    const beforeNarrowPastWide = [
+        { left: 0, width: 100 },
+        { left: 104, width: 260 },
+        { left: 368, width: 100 },
+    ];
+    const swapTarget = resolveDragTargetZoneIndex({
+        currentIndex: 0,
+        virtualLeft: 137, // vRight = 237 > slot[1].mid (234 + 2)
+        virtualWidth: 100,
+        slotBoxes: beforeNarrowPastWide,
+        hysteresisPx: 2,
+    });
+    assert.equal(swapTarget, 1);
+
+    const afterNarrowPastWide = [
+        { left: 0, width: 260 },
+        { left: 264, width: 100 },
+        { left: 368, width: 100 },
+    ];
+    assert.equal(resolveDragTargetZoneIndex({
+        currentIndex: 1,
+        virtualLeft: 137,
+        virtualWidth: 100,
+        slotBoxes: afterNarrowPastWide,
+        hysteresisPx: 2,
+    }), 1);
+
+    // Mixed width: wide expanded group (260px) crossing two narrow tabs (100px each)
+    const beforeWidePastNarrow = [
+        { left: 0, width: 260 },
+        { left: 264, width: 100 },
+        { left: 368, width: 100 },
+    ];
+    assert.equal(resolveDragTargetZoneIndex({
+        currentIndex: 0,
+        virtualLeft: 165, // vRight = 425 > slot[2].mid (418 + 2)
+        virtualWidth: 260,
+        slotBoxes: beforeWidePastNarrow,
+        hysteresisPx: 2,
+    }), 2);
+
+    const afterWidePastNarrow = [
+        { left: 0, width: 100 },
+        { left: 104, width: 100 },
+        { left: 208, width: 260 },
+    ];
+    assert.equal(resolveDragTargetZoneIndex({
+        currentIndex: 2,
+        virtualLeft: 165,
+        virtualWidth: 260,
+        slotBoxes: afterWidePastNarrow,
+        hysteresisPx: 2,
+    }), 2);
+});
+
+test('WorkspaceSessionStore.moveGroupByOffset supports jumping to zone extremes and arbitrary multi-slot targets within zone', () => {
+    const store = new WorkspaceSessionStore({
+        maxSessions: 10,
+        maxPinnedSessions: 4,
+        catalog: SAMPLE_CATALOG,
+        indexPaths: SAMPLE_INDEX_PATHS,
+    });
+
+    const p1 = store.openWorkspace({ moduleKey: 'dashboard', label: 'Dashboard', url: `${ORIGIN}${PREFIX}/purchasing/dashboard` }).group;
+    const p2 = store.openWorkspace({ moduleKey: 'dashboard', label: 'Dashboard 2', url: `${ORIGIN}${PREFIX}/purchasing/dashboard?tab=2`, forceNew: true }).group;
+    const u1 = store.openWorkspace({ moduleKey: 'quotations', label: 'Quotation', url: `${ORIGIN}${PREFIX}/purchasing/quotations` }).group;
+    const u2 = store.openWorkspace({ moduleKey: 'shipments', label: 'Shipments', url: `${ORIGIN}${PREFIX}/purchasing/shipments` }).group;
+    const u3 = store.openWorkspace({ moduleKey: 'reports', label: 'Reports', url: `${ORIGIN}${PREFIX}/purchasing/reports` }).group;
+    const u4 = store.openWorkspace({ moduleKey: 'quotations', label: 'Quotation 2', url: `${ORIGIN}${PREFIX}/purchasing/quotations?tab=2`, forceNew: true }).group;
+
+    store.pinGroup(p1.groupId);
+    store.pinGroup(p2.groupId);
+
+    const u1Bounds = store.canMoveGroup(u1.groupId);
+    assert.equal(u1Bounds.zoneTotal, 4);
+
+    // Jump unpinned u1 to end of unpinned zone (+zoneTotal clamps cleanly to last unpinned slot)
+    const toEnd = store.moveGroupByOffset(u1.groupId, u1Bounds.zoneTotal);
+    assert.equal(toEnd.moved, true);
+    assert.deepEqual(
+        store.groups().map((g) => g.groupId),
+        [p1.groupId, p2.groupId, u2.groupId, u3.groupId, u4.groupId, u1.groupId],
+    );
+
+    // Jump u1 back to start of unpinned zone (-zoneTotal stops at first unpinned slot without crossing into pinned)
+    const toStart = store.moveGroupByOffset(u1.groupId, -u1Bounds.zoneTotal);
+    assert.equal(toStart.moved, true);
+    assert.deepEqual(
+        store.groups().map((g) => g.groupId),
+        [p1.groupId, p2.groupId, u1.groupId, u2.groupId, u3.groupId, u4.groupId],
+    );
+
+    // Multi-slot intermediate move (u4 jumps 2 slots left past u3 and u2)
+    assert.equal(store.moveGroupByOffset(u4.groupId, -2).moved, true);
+    assert.deepEqual(
+        store.groups().map((g) => g.groupId),
+        [p1.groupId, p2.groupId, u1.groupId, u4.groupId, u2.groupId, u3.groupId],
+    );
+});
+
+test('workspace-shell.js and workspace-shell.css bind pointer capture to tablistEl, auto-scroll tablistEl, guard iframes, and support Alt+Shift+Home/End', () => {
+    const testDir = dirname(fileURLToPath(import.meta.url));
+    const shellJs = readFileSync(resolve(testDir, '../../resources/js/workspace-shell.js'), 'utf8');
+    const shellCss = readFileSync(resolve(testDir, '../../resources/css/workspace-shell.css'), 'utf8');
+
+    assert.equal(shellJs.includes('tablistEl.setPointerCapture?.(tabDragState.pointerId)'), true);
+    assert.equal(shellJs.includes('tablistEl.releasePointerCapture?.(captureId)'), true);
+    assert.equal(shellJs.includes('groupEl.setPointerCapture'), false);
+    assert.equal(shellJs.includes('resolveDragTargetZoneIndex'), true);
+    assert.equal(shellJs.includes('readUntransformedZoneBoxes'), true);
+    assert.equal(shellJs.includes('tablistEl.scrollLeft'), true);
+    assert.equal(shellJs.includes('viewportEl.scrollLeft'), false);
+    assert.equal(shellJs.includes('is-dragging-workspace-session'), true);
+    assert.equal(shellJs.includes("event.key === 'Home'"), true);
+    assert.equal(shellJs.includes("event.key === 'End'"), true);
+    assert.equal(shellCss.includes('body.is-dragging-workspace-session .workspace-frame'), true);
+});
+
+test('embedded workspace iframes defer local toast center and bind parent AdasiToast before flushing queued flashes', async () => {
+    const testDir = dirname(fileURLToPath(import.meta.url));
+    const appJs = readFileSync(resolve(testDir, '../../resources/js/app.js'), 'utf8');
+
+    assert.match(appJs, /isWorkspaceEmbedFrame/);
+    const embedGuardPos = appJs.indexOf('if (!isWorkspaceEmbedFrame)');
+    const registerCallPos = appJs.indexOf('registerToastCenter(Alpine');
+    const bridgeImportPos = appJs.indexOf("import('./workspace-embed-bridge')");
+    assert.ok(embedGuardPos !== -1 && registerCallPos > embedGuardPos && bridgeImportPos > embedGuardPos, 'app.js must guard registerToastCenter so embedded iframes do not swallow flashes before workspace-embed-bridge loads');
+    assert.match(appJs, /__adasiToastQueue[\s\S]*window\.AdasiToast\.show/);
+
+    const { bootWorkspaceEmbedBridge } = await import('../../resources/js/workspace-embed-bridge.js');
+    const prevWindow = globalThis.window;
+    const prevDocument = globalThis.document;
+    const prevWindowCtor = globalThis.Window;
+
+    const shownToasts = [];
+    const MockWindow = function MockWindow() {};
+    const parentWindow = new MockWindow();
+    parentWindow.location = {
+        origin: 'http://adasi_portal_supplier.test',
+        href: 'http://adasi_portal_supplier.test/v1/ADSI_DEV/934f47ee-06a4-4f2d-a619-e7cf35e9d91b',
+    };
+    parentWindow.AdasiWorkspaceShell = {
+        showToast: (options) => {
+            shownToasts.push(options);
+            return `toast-${shownToasts.length}`;
+        },
+        syncPreferencesFromEmbed: () => {},
+        notifyEmbedBooted: () => {},
+        notifyEmbedReady: () => {},
+    };
+
+    const childWindow = new MockWindow();
+    Object.assign(childWindow, {
+        self: null,
+        top: parentWindow,
+        parent: parentWindow,
+        location: {
+            origin: 'http://adasi_portal_supplier.test',
+            href: 'http://adasi_portal_supplier.test/v1/ADSI_DEV/purchasing/master-data/reference-prices?_embed=1',
+        },
+        history: {
+            pushState: () => {},
+            replaceState: () => {},
+        },
+        addEventListener: () => {},
+        __adasiToastQueue: [
+            { type: 'error', title: 'Action could not be completed', message: 'Overlap error' },
+        ],
+    });
+    childWindow.self = childWindow;
+
+    globalThis.Window = MockWindow;
+    globalThis.window = childWindow;
+    globalThis.document = {
+        addEventListener: () => {},
+    };
+
+    try {
+        assert.equal(childWindow.AdasiToast, undefined);
+        const shell = bootWorkspaceEmbedBridge();
+        assert.ok(shell, 'bootWorkspaceEmbedBridge must connect to parent shell');
+        assert.ok(childWindow.AdasiToast, 'bootWorkspaceEmbedBridge must bind window.AdasiToast even when initially undefined');
+
+        for (const queued of childWindow.__adasiToastQueue.splice(0)) {
+            childWindow.AdasiToast.show(queued);
+        }
+
+        assert.equal(shownToasts.length, 1);
+        assert.equal(shownToasts[0].type, 'error');
+        assert.equal(shownToasts[0].message, 'Overlap error');
+    } finally {
+        if (prevWindow === undefined) delete globalThis.window;
+        else globalThis.window = prevWindow;
+        if (prevDocument === undefined) delete globalThis.document;
+        else globalThis.document = prevDocument;
+        if (prevWindowCtor === undefined) delete globalThis.Window;
+        else globalThis.Window = prevWindowCtor;
+    }
 });

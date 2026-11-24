@@ -305,10 +305,8 @@ class ConversationMessageController extends Controller
     {
         return [
             'id' => $message->id,
-            'sender_id' => $message->sender_id,
             'sender_name' => $message->sender?->name ?? __('notifications.conversation.user'),
             'sender' => [
-                'id' => $message->sender_id,
                 'name' => $message->sender?->name ?? __('notifications.conversation.user'),
             ],
             'body' => $message->body,
@@ -319,7 +317,7 @@ class ConversationMessageController extends Controller
             'read_at' => $message->read_at?->toIso8601String(),
             'read_at_display' => $message->read_at ? BusinessTime::format($message->read_at, 'H:i', false) : null,
             'attachments' => $message->attachments->map(fn ($attachment) => [
-                'id' => $attachment->id,
+                'id' => $attachment->getRouteKey(),
                 'name' => $attachment->file_name,
                 'type' => $attachment->file_type,
                 'url' => route('attachments.show', $attachment),
