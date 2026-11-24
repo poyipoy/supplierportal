@@ -2,37 +2,161 @@ const materialDimensionFields = @json(\App\Models\PrItem::RELEVANT_DIMENSIONS);
 const fixedDimensionOrder = @json(\App\Models\PrItem::FIXED_DIMENSION_ORDER);
 const materialMasterSearchUrl = @json(route('purchasing.material-masters.search'));
 const materialCalculationPreviewUrl = @json(route('purchasing.material-calculations.preview'));
+const prCsrfToken = @json(csrf_token());
 const materialPreviewTimers = new WeakMap();
 const materialPreviewRequests = new WeakMap();
 const materialSearchTimers = new WeakMap();
 const materialSearchRequests = new WeakMap();
+const materialOptionMap = new WeakMap();
 
-// Programmatic .val() writes fire no input event; the totals footer listens for this (PUR-02).
+const prPurchasingCopy = {
+    needsMoreData: @json(__('purchasing.copy.needs_more_data')),
+    manualSelection: @json(__('purchasing.copy.manual_selection')),
+    invalidData: @json(__('purchasing.copy.invalid_data')),
+    material: @json(__('purchasing.copy.material')),
+    noActiveMasterMaterialFound: @json(__('purchasing.copy.no_active_master_material_found')),
+    addRemark: @json(__('purchasing.copy.add_remark')),
+    clickToAddRemark: @json(__('purchasing.copy.click_to_add_remark')),
+    remarkEntered: @json(__('purchasing.copy.remark_entered')),
+    addMaterial: @json(__('purchasing.copy.add_material')),
+    deleteThisRow: @json(__('purchasing.copy.delete_this_row')),
+    confirmDelete: @json(__('purchasing.audit_ui.confirm_delete')),
+    cancel: @json(__('purchasing.copy.cancel')),
+};
+
+function resolvePrElement(input) {
+    if (input instanceof Element) {
+        return input;
+    }
+    if (input && !(input instanceof Element) && input[0] instanceof Element) {
+        return input[0];
+    }
+    return null;
+}
+
+function setPrBadgeState(badgeEl, variantClass, text) {
+    if (!badgeEl) return;
+    badgeEl.classList.remove(
+        'ui-status-chip--success',
+        'ui-status-chip--warning',
+        'ui-status-chip--error',
+        'ui-status-chip--neutral',
+    );
+    badgeEl.classList.add(variantClass);
+    badgeEl.textContent = text;
+}
+
+function setPrInputValueAndDispatch(input, value, eventNames = ['input', 'change']) {
+    if (!input) return;
+    input.value = value;
+    eventNames.forEach((eventName) => {
+        input.dispatchEvent(new Event(eventName, { bubbles: true }));
+    });
+}
+
+function getHsBadgeResolution(hs) {
+    const labelMap = {
+        matched: @json(__('purchasing.copy.auto_matched')),
+        ambiguous: @json(__('purchasing.copy.ambiguous')),
+        no_rule: @json(__('purchasing.copy.no_rule')),
+        unmapped_material: @json(__('purchasing.copy.unmapped_material')),
+        insufficient_data: @json(__('purchasing.copy.needs_more_data')),
+    };
+    const isManual = hs.source === 'manual';
+    const variantClass = isManual
+        ? 'ui-status-chip--warning'
+        : (hs.status === 'matched' ? 'ui-status-chip--success' : 'ui-status-chip--neutral');
+    const text = isManual
+        ? prPurchasingCopy.manualSelection
+        : (labelMap[hs.status] || hs.status || prPurchasingCopy.needsMoreData);
+
+    return { isManual, variantClass, text };
+}
+
+function syncPrRemarkTriggerUi(cell, value) {
+    if (!cell) return;
+    const trigger = cell.querySelector('[data-remark-trigger]');
+    const triggerText = trigger?.querySelector('.pr-remark-trigger__text');
+    if (!trigger) return;
+
+    if (value) {
+        if (triggerText) triggerText.textContent = value;
+        trigger.classList.add('has-remark');
+        trigger.setAttribute('title', value);
+        if (!trigger.querySelector('.pr-remark-trigger__badge')) {
+            const badge = document.createElement('span');
+            badge.className = 'pr-remark-trigger__badge';
+            badge.title = prPurchasingCopy.remarkEntered;
+            badge.setAttribute('aria-hidden', 'true');
+            trigger.appendChild(badge);
+        }
+    } else {
+        if (triggerText) triggerText.textContent = prPurchasingCopy.addRemark;
+        trigger.classList.remove('has-remark');
+        trigger.setAttribute('title', prPurchasingCopy.clickToAddRemark);
+        trigger.querySelector('.pr-remark-trigger__badge')?.remove();
+    }
+}
+
+function createPrSearchRequestState(timeoutMs) {
+    const state = {
+        controller: new AbortController(),
+        timedOut: false,
+        timerId: null,
+    };
+    state.timerId = setTimeout(() => {
+        state.timedOut = true;
+        state.controller.abort();
+    }, timeoutMs);
+    return state;
+}
+
+function clearPrRequestStateTimer(state) {
+    if (state?.timerId) {
+        clearTimeout(state.timerId);
+        state.timerId = null;
+    }
+}
+
+function buildPrPreviewFormBody(payload) {
+    const params = new URLSearchParams();
+    Object.entries(payload).forEach(([key, value]) => {
+        params.append(key, value === null || value === undefined ? '' : String(value));
+    });
+    return params;
+}
+
+// Programmatic .value writes fire no input event; the totals footer listens for this (PUR-02).
 function notifyPrItemsChanged() {
     document.dispatchEvent(new CustomEvent('adasi:pr-items-changed'));
 }
 
 function renumberPrRows() {
-    $('#itemsBody tr.item-row').each(function(index) {
-        $(this).find('[data-pr-row-number]').text(index + 1);
+    document.querySelectorAll('#itemsBody tr.item-row').forEach((rowEl, index) => {
+        const numberEl = rowEl.querySelector('[data-pr-row-number]');
+        if (numberEl) {
+            numberEl.textContent = String(index + 1);
+        }
     });
     notifyPrItemsChanged();
 }
 
-function positionMaterialSearchResults($row) {
-    const $input = $row.find('.material-master-search');
-    const $panel = $row.find('.material-search-results');
+function positionMaterialSearchResults(row) {
+    const rowEl = resolvePrElement(row);
+    if (!rowEl) return;
 
-    if (!$input.length || !$panel.length || $panel.hasClass('d-none')) {
+    const input = rowEl.querySelector('.material-master-search');
+    const panel = rowEl.querySelector('.material-search-results');
+
+    if (!input || !panel || panel.classList.contains('d-none')) {
         return;
     }
 
-    const input = $input[0];
     const rect = input.getBoundingClientRect();
     const viewportPadding = 8;
     const gap = 2;
     const width = Math.min(rect.width, Math.max(0, window.innerWidth - (viewportPadding * 2)));
-    const panelHeight = Math.min($panel[0].scrollHeight || 220, 220);
+    const panelHeight = Math.min(panel.scrollHeight || 220, 220);
     const fitsBelow = rect.bottom + gap + panelHeight <= window.innerHeight - viewportPadding;
     const fitsAbove = rect.top - gap - panelHeight >= viewportPadding;
     const opensAbove = !fitsBelow && fitsAbove;
@@ -41,7 +165,7 @@ function positionMaterialSearchResults($row) {
         Math.max(viewportPadding, window.innerWidth - width - viewportPadding),
     );
 
-    $panel.css({
+    Object.assign(panel.style, {
         bottom: opensAbove
             ? `${Math.max(viewportPadding, window.innerHeight - rect.top + gap)}px`
             : 'auto',
@@ -50,298 +174,389 @@ function positionMaterialSearchResults($row) {
             ? 'auto'
             : `${Math.max(viewportPadding, rect.bottom + gap)}px`,
         position: 'fixed',
-        zIndex: 1080,
+        zIndex: '1080',
         width: `${width}px`,
     });
 }
 
 function repositionVisibleMaterialSearchResults() {
-    $('#itemsBody tr.item-row').each(function() {
-        const $panel = $(this).find('.material-search-results');
-        if (!$panel.hasClass('d-none')) {
-            positionMaterialSearchResults($(this));
+    document.querySelectorAll('#itemsBody tr.item-row').forEach((rowEl) => {
+        const panel = rowEl.querySelector('.material-search-results');
+        if (panel && !panel.classList.contains('d-none')) {
+            positionMaterialSearchResults(rowEl);
         }
     });
 }
 
-function setMaterialSearchOpen($row, open) {
-    $row.find('.pr-sticky-material').toggleClass('material-search-open', open);
+function setMaterialSearchOpen(row, open) {
+    const rowEl = resolvePrElement(row);
+    rowEl?.querySelector('.pr-sticky-material')?.classList.toggle('material-search-open', open);
 }
 
 function applyMaterialShapeRules(row, clearIrrelevant = true) {
-    const $row = $(row);
-    const shape = $row.find('.material-shape-select').val();
+    const rowEl = resolvePrElement(row);
+    if (!rowEl) return;
+
+    const shape = rowEl.querySelector('.material-shape-select')?.value || '';
     const relevantFields = materialDimensionFields[shape] || [];
 
     fixedDimensionOrder.forEach((field) => {
         const isRelevant = relevantFields.includes(field);
-        const $cell = $row.find(`[data-dimension-field-cell="${field}"]`);
-        const $input = $cell.find(`.dimension-input[data-dimension-field="${field}"]`);
-        const $na = $cell.find(`[data-dimension-na="${field}"]`);
+        const cell = rowEl.querySelector(`[data-dimension-field-cell="${field}"]`);
+        const input = cell?.querySelector(`.dimension-input[data-dimension-field="${field}"]`);
+        const na = cell?.querySelector(`[data-dimension-na="${field}"]`);
 
-        if (!isRelevant && clearIrrelevant) {
-            $input.val('');
+        if (input) {
+            if (!isRelevant && clearIrrelevant) {
+                input.value = '';
+            }
+            input.disabled = !isRelevant;
+            input.hidden = !isRelevant;
+            input.setAttribute('aria-disabled', isRelevant ? 'false' : 'true');
         }
 
-        $input
-            .prop('disabled', !isRelevant)
-            .prop('hidden', !isRelevant)
-            .attr('aria-disabled', isRelevant ? 'false' : 'true');
+        if (na) {
+            na.classList.toggle('d-none', isRelevant);
+            na.setAttribute('aria-hidden', isRelevant ? 'true' : 'false');
+        }
 
-        $na
-            .toggleClass('d-none', isRelevant)
-            .attr('aria-hidden', isRelevant ? 'true' : 'false');
-
-        $cell.toggleClass('is-disabled', !isRelevant);
+        cell?.classList.toggle('is-disabled', !isRelevant);
     });
 }
 
-function resetMaterialPreview($row) {
-    $row.find('.hs-code-display').val('');
-    $row.find('.hs-code-manual-override').val('0');
-    $row.find('.hs-status-badge').removeClass('ui-status-chip--success ui-status-chip--warning ui-status-chip--error').addClass('ui-status-chip--neutral').text(@json(__('purchasing.copy.needs_more_data')));
-    $row.find('.material-grade-display').val('').attr('title', '');
-    $row.find('.weight-unit-display').val('0.0000');
-    $row.find('.weight-manual-override').val('0');
+function resetMaterialPreview(row) {
+    const rowEl = resolvePrElement(row);
+    if (!rowEl) return;
+
+    const hsCodeInput = rowEl.querySelector('.hs-code-display');
+    const hsOverrideInput = rowEl.querySelector('.hs-code-manual-override');
+    const gradeInput = rowEl.querySelector('.material-grade-display');
+    const weightInput = rowEl.querySelector('.weight-unit-display');
+    const weightOverrideInput = rowEl.querySelector('.weight-manual-override');
+
+    if (hsCodeInput) hsCodeInput.value = '';
+    if (hsOverrideInput) hsOverrideInput.value = '0';
+    setPrBadgeState(
+        rowEl.querySelector('.hs-status-badge'),
+        'ui-status-chip--neutral',
+        prPurchasingCopy.needsMoreData,
+    );
+    if (gradeInput) {
+        gradeInput.value = '';
+        gradeInput.setAttribute('title', '');
+    }
+    if (weightInput) weightInput.value = '0.0000';
+    if (weightOverrideInput) weightOverrideInput.value = '0';
     notifyPrItemsChanged();
 }
 
-function selectMaterialInRow($row, material) {
-    $row.find('.material-master-id').val(material.id);
-    $row.find('.material-master-search').val(material.material_code || material.text || '');
-    $row.find('.material-search-results').empty().addClass('d-none');
-    setMaterialSearchOpen($row, false);
-    $row.find('.hs-code-manual-override').val('0');
-    $row.find('.weight-manual-override').val('0');
+function selectMaterialInRow(row, material) {
+    const rowEl = resolvePrElement(row);
+    if (!rowEl || !material) return;
+
+    const masterIdInput = rowEl.querySelector('.material-master-id');
+    const searchInput = rowEl.querySelector('.material-master-search');
+    const resultsPanel = rowEl.querySelector('.material-search-results');
+    const hsOverrideInput = rowEl.querySelector('.hs-code-manual-override');
+    const weightOverrideInput = rowEl.querySelector('.weight-manual-override');
+    const gradeInput = rowEl.querySelector('.material-grade-display');
+    const remarkMaterialName = rowEl.querySelector('.pr-remark-material-name');
+
+    if (masterIdInput) masterIdInput.value = material.id ?? '';
+    if (searchInput) searchInput.value = material.material_code || material.text || '';
+    if (resultsPanel) {
+        resultsPanel.replaceChildren();
+        resultsPanel.classList.add('d-none');
+    }
+    setMaterialSearchOpen(rowEl, false);
+    if (hsOverrideInput) hsOverrideInput.value = '0';
+    if (weightOverrideInput) weightOverrideInput.value = '0';
+
     const initialGrade = material.category_label || material.category || '';
-    $row.find('.material-grade-display').val(initialGrade).attr('title', initialGrade);
-    $row.find('.pr-remark-material-name').text(material.material_code || material.text || @json(__('purchasing.copy.material')));
-    scheduleMaterialPreview($row, 0);
+    if (gradeInput) {
+        gradeInput.value = initialGrade;
+        gradeInput.setAttribute('title', initialGrade);
+    }
+    if (remarkMaterialName) {
+        remarkMaterialName.textContent = material.material_code || material.text || prPurchasingCopy.material;
+    }
+    scheduleMaterialPreview(rowEl, 0);
 }
 
-function renderMaterialSearchResults($row, results) {
-    const $panel = $row.find('.material-search-results').empty();
+function renderMaterialSearchResults(row, results) {
+    const rowEl = resolvePrElement(row);
+    if (!rowEl) return;
+
+    const panel = rowEl.querySelector('.material-search-results');
+    if (!panel) return;
+
+    panel.replaceChildren();
     if (!Array.isArray(results) || results.length === 0) {
-        $('<div class="list-group-item small text-muted">{{ __('purchasing.copy.no_active_master_material_found') }}</div>').appendTo($panel);
+        const emptyEl = document.createElement('div');
+        emptyEl.className = 'list-group-item small text-muted';
+        emptyEl.textContent = prPurchasingCopy.noActiveMasterMaterialFound;
+        panel.appendChild(emptyEl);
     } else {
         results.forEach((material) => {
             const category = material.category_label || material.category || 'unmapped';
-            $('<button type="button" class="list-group-item list-group-item-action py-2">')
-                .append($('<div class="fw-semibold">').text(material.material_code))
-                .append($('<div class="small text-muted">').text(`${category} | ${material.density_profile}`))
-                .data('material', material)
-                .appendTo($panel);
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'list-group-item list-group-item-action py-2';
+
+            const codeEl = document.createElement('div');
+            codeEl.className = 'fw-semibold';
+            codeEl.textContent = material.material_code || '';
+
+            const metaEl = document.createElement('div');
+            metaEl.className = 'small text-muted';
+            metaEl.textContent = `${category} | ${material.density_profile}`;
+
+            btn.append(codeEl, metaEl);
+            materialOptionMap.set(btn, material);
+            panel.appendChild(btn);
         });
     }
-    setMaterialSearchOpen($row, true);
-    $panel.removeClass('d-none');
-    positionMaterialSearchResults($row);
+    setMaterialSearchOpen(rowEl, true);
+    panel.classList.remove('d-none');
+    positionMaterialSearchResults(rowEl);
 }
 
-function searchMaterial($input) {
-    const row = $input.closest('tr')[0];
-    const $row = $(row);
-    const term = String($input.val() || '').trim();
+function searchMaterial(input) {
+    const inputEl = resolvePrElement(input);
+    const row = inputEl?.closest('tr');
+    if (!inputEl || !row) return;
+
+    const term = String(inputEl.value || '').trim();
 
     clearTimeout(materialSearchTimers.get(row));
-    materialSearchTimers.set(row, setTimeout(() => {
+    materialSearchTimers.set(row, setTimeout(async () => {
         const previous = materialSearchRequests.get(row);
         if (previous) {
-            previous.abort();
+            previous.controller.abort();
+            clearPrRequestStateTimer(previous);
         }
 
-        const request = $.ajax({
-            url: materialMasterSearchUrl,
-            method: 'GET',
-            dataType: 'json',
-            data: { q: term },
-            global: false,
-            timeout: 8000,
-        });
-        materialSearchRequests.set(row, request);
-        request
-            .done((payload) => renderMaterialSearchResults($row, payload.results || []))
-            .fail((xhr, status) => {
-                if (status !== 'abort') {
-                    renderMaterialSearchResults($row, []);
-                }
-            })
-            .always(() => {
-                if (materialSearchRequests.get(row) === request) {
-                    materialSearchRequests.delete(row);
-                }
+        const requestState = createPrSearchRequestState(8000);
+        materialSearchRequests.set(row, requestState);
+
+        try {
+            const url = new URL(materialMasterSearchUrl, window.location.origin);
+            url.searchParams.set('q', term);
+
+            const response = await fetch(url.toString(), {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                signal: requestState.controller.signal,
             });
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            const payload = await response.json();
+            renderMaterialSearchResults(row, payload.results || []);
+        } catch (err) {
+            if (err?.name !== 'AbortError' || requestState.timedOut) {
+                renderMaterialSearchResults(row, []);
+            }
+        } finally {
+            clearPrRequestStateTimer(requestState);
+            if (materialSearchRequests.get(row) === requestState) {
+                materialSearchRequests.delete(row);
+            }
+        }
     }, 250));
 }
 
-function materialPreviewPayload($row) {
-    const hsDisplay = String($row.find('.hs-code-display').val() || '').trim();
+function materialPreviewPayload(row) {
+    const rowEl = resolvePrElement(row);
+    const hsDisplay = String(rowEl?.querySelector('.hs-code-display')?.value || '').trim();
     const isExact8 = /^\d{8}$/.test(hsDisplay.replace(/\./g, ''));
-    const hsOverrideVal = $row.find('.hs-code-manual-override').val();
+    const hsOverrideVal = rowEl?.querySelector('.hs-code-manual-override')?.value;
     const hsManualOverride = (hsOverrideVal === '1' && isExact8) ? '1' : '0';
 
     const payload = {
-        _token: @json(csrf_token()),
-        material_master_id: $row.find('.material-master-id').val() || '',
-        material_name: $row.find('.material-master-search').val() || '',
-        shape: $row.find('.material-shape-select').val(),
-        quantity: $row.find('.material-quantity').val() || 1,
+        _token: prCsrfToken,
+        material_master_id: rowEl?.querySelector('.material-master-id')?.value || '',
+        material_name: rowEl?.querySelector('.material-master-search')?.value || '',
+        shape: rowEl?.querySelector('.material-shape-select')?.value || '',
+        quantity: rowEl?.querySelector('.material-quantity')?.value || 1,
         hs_code: isExact8 ? hsDisplay : '',
         hs_code_manual_override: hsManualOverride,
-        weight_needed: $row.find('.weight-unit-display').val(),
-        weight_manual_override: $row.find('.weight-manual-override').val() || 0,
+        weight_needed: rowEl?.querySelector('.weight-unit-display')?.value || '',
+        weight_manual_override: rowEl?.querySelector('.weight-manual-override')?.value || 0,
     };
     fixedDimensionOrder.forEach((field) => {
-        payload[field] = $row
-            .find(`.dimension-input[data-dimension-field="${field}"]`)
-            .val() || '';
+        payload[field] = rowEl?.querySelector(`.dimension-input[data-dimension-field="${field}"]`)?.value || '';
     });
 
     return payload;
 }
 
-function renderMaterialPreview($row, payload) {
+function renderMaterialPreview(row, payload) {
+    const rowEl = resolvePrElement(row);
+    if (!rowEl) return;
+
     const hs = payload.hs_code || {};
     const weight = payload.weight || {};
     const selectedCode = hs.selected_code || hs.code || '';
-    const isManual = hs.source === 'manual';
-    const labelMap = {
-        matched: @json(__('purchasing.copy.auto_matched')),
-        ambiguous: @json(__('purchasing.copy.ambiguous')),
-        no_rule: @json(__('purchasing.copy.no_rule')),
-        unmapped_material: @json(__('purchasing.copy.unmapped_material')),
-        insufficient_data: @json(__('purchasing.copy.needs_more_data'))
-    };
+    const { isManual, variantClass, text } = getHsBadgeResolution(hs);
 
-    $row.find('.hs-code-display').val(selectedCode);
-    $row.find('.hs-status-badge')
-        .removeClass('ui-status-chip--success ui-status-chip--warning ui-status-chip--error ui-status-chip--neutral')
-        .addClass(isManual ? 'ui-status-chip--warning' : (hs.status === 'matched' ? 'ui-status-chip--success' : 'ui-status-chip--neutral'))
-        .text(isManual ? @json(__('purchasing.copy.manual_selection')) : (labelMap[hs.status] || hs.status || @json(__('purchasing.copy.needs_more_data'))));
+    const hsCodeInput = rowEl.querySelector('.hs-code-display');
+    const hsOverrideInput = rowEl.querySelector('.hs-code-manual-override');
+    const gradeInput = rowEl.querySelector('.material-grade-display');
+    const weightInput = rowEl.querySelector('.weight-unit-display');
+    const weightOverrideInput = rowEl.querySelector('.weight-manual-override');
 
-    $row.find('.hs-code-manual-override').val(isManual ? '1' : '0');
+    if (hsCodeInput) hsCodeInput.value = selectedCode;
+    setPrBadgeState(rowEl.querySelector('.hs-status-badge'), variantClass, text);
+
+    if (hsOverrideInput) hsOverrideInput.value = isManual ? '1' : '0';
     const gradeLabel = hs.grade_label || (payload.material && payload.material.category_label) || '';
-    $row.find('.material-grade-display').val(gradeLabel).attr('title', gradeLabel);
+    if (gradeInput) {
+        gradeInput.value = gradeLabel;
+        gradeInput.setAttribute('title', gradeLabel);
+    }
 
     const unitKg = Number(weight.unit_kg || 0);
-    $row.find('.weight-unit-display').val(unitKg.toFixed(4));
-    $row.find('.weight-manual-override').val(weight.status === 'manual' ? '1' : '0');
+    if (weightInput) weightInput.value = unitKg.toFixed(4);
+    if (weightOverrideInput) weightOverrideInput.value = weight.status === 'manual' ? '1' : '0';
     notifyPrItemsChanged();
 }
 
-function requestMaterialPreview($row) {
-    const row = $row[0];
-    const matId = $row.find('.material-master-id').val();
-    const matName = String($row.find('.material-master-search').val() || '').trim();
+async function requestMaterialPreview(row) {
+    const rowEl = resolvePrElement(row);
+    if (!rowEl) return;
+
+    const matId = rowEl.querySelector('.material-master-id')?.value || '';
+    const matName = String(rowEl.querySelector('.material-master-search')?.value || '').trim();
     if (!matId && !matName) {
-        resetMaterialPreview($row);
+        resetMaterialPreview(rowEl);
         return;
     }
 
-    const previous = materialPreviewRequests.get(row);
+    const previous = materialPreviewRequests.get(rowEl);
     if (previous) {
-        previous.abort();
+        previous.controller.abort();
+        clearPrRequestStateTimer(previous);
     }
 
-    const request = $.ajax({
-        url: materialCalculationPreviewUrl,
-        method: 'POST',
-        data: materialPreviewPayload($row),
-        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-        global: false,
-        timeout: 10000,
-    });
-    materialPreviewRequests.set(row, request);
+    const requestState = createPrSearchRequestState(10000);
+    materialPreviewRequests.set(rowEl, requestState);
 
-    request.done((payload) => {
-        if (payload.material && payload.material.id) {
-            $row.find('.material-master-id').val(payload.material.id);
-        }
-        renderMaterialPreview($row, payload);
-    })
-        .fail((xhr, status) => {
-            if (status === 'abort') return;
-            const response = xhr.responseJSON || {};
-            const hasErrors = Object.keys(response.errors || {}).length > 0;
-            if (response.hs_code && response.weight && !hasErrors) {
-                renderMaterialPreview($row, xhr.responseJSON);
-            } else if (!hasErrors) {
-                $row.find('.hs-code-display').val('');
-                $row.find('.weight-unit-display').val('0.0000');
-                notifyPrItemsChanged();
-            }
-            $row.find('.hs-status-badge')
-                .removeClass('ui-status-chip--success ui-status-chip--warning ui-status-chip--neutral')
-                .addClass('ui-status-chip--error')
-                .text(@json(__('purchasing.copy.invalid_data')));
-        })
-        .always(() => {
-            if (materialPreviewRequests.get(row) === request) {
-                materialPreviewRequests.delete(row);
-            }
+    try {
+        const response = await fetch(materialCalculationPreviewUrl, {
+            method: 'POST',
+            body: buildPrPreviewFormBody(materialPreviewPayload(rowEl)),
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': prCsrfToken,
+            },
+            signal: requestState.controller.signal,
         });
+
+        const body = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw Object.assign(new Error(`HTTP ${response.status}`), { responseJSON: body });
+        }
+
+        if (body.material && body.material.id) {
+            const masterIdInput = rowEl.querySelector('.material-master-id');
+            if (masterIdInput) masterIdInput.value = body.material.id;
+        }
+        renderMaterialPreview(rowEl, body);
+    } catch (err) {
+        if (err?.name === 'AbortError' && !requestState.timedOut) {
+            return;
+        }
+        const responseBody = err?.responseJSON || {};
+        const hasErrors = Object.keys(responseBody.errors || {}).length > 0;
+        if (responseBody.hs_code && responseBody.weight && !hasErrors) {
+            renderMaterialPreview(rowEl, responseBody);
+        } else if (!hasErrors) {
+            const hsCodeInput = rowEl.querySelector('.hs-code-display');
+            const weightInput = rowEl.querySelector('.weight-unit-display');
+            if (hsCodeInput) hsCodeInput.value = '';
+            if (weightInput) weightInput.value = '0.0000';
+            notifyPrItemsChanged();
+        }
+        setPrBadgeState(
+            rowEl.querySelector('.hs-status-badge'),
+            'ui-status-chip--error',
+            prPurchasingCopy.invalidData,
+        );
+    } finally {
+        clearPrRequestStateTimer(requestState);
+        if (materialPreviewRequests.get(rowEl) === requestState) {
+            materialPreviewRequests.delete(rowEl);
+        }
+    }
 }
 
-function scheduleMaterialPreview($row, delay = 300) {
-    const row = $row[0];
-    clearTimeout(materialPreviewTimers.get(row));
-    materialPreviewTimers.set(row, setTimeout(() => requestMaterialPreview($row), delay));
+function scheduleMaterialPreview(row, delay = 300) {
+    const rowEl = resolvePrElement(row);
+    if (!rowEl) return;
+
+    clearTimeout(materialPreviewTimers.get(rowEl));
+    materialPreviewTimers.set(rowEl, setTimeout(() => requestMaterialPreview(rowEl), delay));
 }
 
 function initializeMaterialShapeRows() {
-    $('#itemsBody tr.item-row').each(function() {
-        const $row = $(this);
-        $row.data('selected-material-name', $row.find('.material-master-search').val());
-        applyMaterialShapeRules(this, true);
-        const hasMatId = !!$row.find('.material-master-id').val();
-        const hasMatName = !!String($row.find('.material-master-search').val() || '').trim();
-        const hasExistingHs = !!$row.find('.hs-code-display').val();
-        const hasExistingWeight = Number($row.find('.weight-unit-display').val() || 0) > 0;
+    document.querySelectorAll('#itemsBody tr.item-row').forEach((rowEl) => {
+        rowEl.dataset.selectedMaterialName = rowEl.querySelector('.material-master-search')?.value || '';
+        applyMaterialShapeRules(rowEl, true);
+        const hasMatId = Boolean(rowEl.querySelector('.material-master-id')?.value);
+        const hasMatName = Boolean(String(rowEl.querySelector('.material-master-search')?.value || '').trim());
+        const hasExistingHs = Boolean(rowEl.querySelector('.hs-code-display')?.value);
+        const hasExistingWeight = Number(rowEl.querySelector('.weight-unit-display')?.value || 0) > 0;
 
         if (hasMatId || hasMatName) {
-            scheduleMaterialPreview($row, 0);
+            scheduleMaterialPreview(rowEl, 0);
         } else if (!hasExistingHs && !hasExistingWeight) {
-            resetMaterialPreview($row);
+            resetMaterialPreview(rowEl);
         }
     });
     renumberPrRows();
 }
 
 // Remark popover event handlers & positioning
-function positionRemarkPopover($popover, trigger) {
-    if (!$popover || !$popover.length || $popover.prop('hidden')) return;
+function positionRemarkPopover(popover, trigger) {
+    const popoverEl = resolvePrElement(popover);
+    if (!popoverEl || popoverEl.hidden) return;
 
-    const triggerEl = trigger || $popover.closest('td').find('[data-remark-trigger]')[0];
+    const triggerEl = resolvePrElement(trigger) || popoverEl.closest('td')?.querySelector('[data-remark-trigger]');
     if (!triggerEl) return;
 
     const rect = triggerEl.getBoundingClientRect();
     if (rect.width === 0 && rect.height === 0) {
-        $popover.prop('hidden', true);
+        popoverEl.hidden = true;
         return;
     }
 
     // Hide if trigger is scrolled outside the table scroll container horizontally
-    const $scrollContainer = $popover.closest('.pr-form-table-scroll');
-    if ($scrollContainer.length) {
-        const containerRect = $scrollContainer[0].getBoundingClientRect();
+    const scrollContainer = popoverEl.closest('.pr-form-table-scroll');
+    if (scrollContainer) {
+        const containerRect = scrollContainer.getBoundingClientRect();
         if (rect.right < containerRect.left + 10 || rect.left > containerRect.right - 10) {
-            $popover.prop('hidden', true);
-            $(triggerEl).attr('aria-expanded', 'false');
+            popoverEl.hidden = true;
+            triggerEl.setAttribute('aria-expanded', 'false');
             return;
         }
     }
 
     // Hide if trigger is scrolled outside window viewport vertically
     if (rect.bottom < 0 || rect.top > window.innerHeight) {
-        $popover.prop('hidden', true);
-        $(triggerEl).attr('aria-expanded', 'false');
+        popoverEl.hidden = true;
+        triggerEl.setAttribute('aria-expanded', 'false');
         return;
     }
 
     const viewportPadding = 8;
     const gap = 4;
     const popoverWidth = Math.min(320, Math.max(280, window.innerWidth - (viewportPadding * 2)));
-    const popoverHeight = Math.min($popover.outerHeight() || $popover[0].scrollHeight || 230, 280);
+    const popoverHeight = Math.min(popoverEl.offsetHeight || popoverEl.scrollHeight || 230, 280);
 
     const fitsBelow = rect.bottom + gap + popoverHeight <= window.innerHeight - viewportPadding;
     const fitsAbove = rect.top - gap - popoverHeight >= viewportPadding;
@@ -362,184 +577,44 @@ function positionRemarkPopover($popover, trigger) {
         left = Math.max(viewportPadding, window.innerWidth - popoverWidth - viewportPadding);
     }
 
-    $popover.css({
+    Object.assign(popoverEl.style, {
         position: 'fixed',
         top: `${Math.round(top)}px`,
         left: `${Math.round(left)}px`,
         bottom: 'auto',
         right: 'auto',
         width: `${popoverWidth}px`,
-        zIndex: 1080,
+        zIndex: '1080',
     });
 }
 
 function repositionVisibleRemarkPopovers() {
-    $('[data-remark-popover]:not([hidden])').each(function() {
-        const $popover = $(this);
-        const $trigger = $popover.closest('td').find('[data-remark-trigger]');
-        if ($trigger.length) {
-            positionRemarkPopover($popover, $trigger[0]);
+    document.querySelectorAll('[data-remark-popover]:not([hidden])').forEach((popoverEl) => {
+        const triggerEl = popoverEl.closest('td')?.querySelector('[data-remark-trigger]');
+        if (triggerEl) {
+            positionRemarkPopover(popoverEl, triggerEl);
         }
     });
 }
 
-$(document).on('click', '[data-remark-trigger]', function(e) {
-    e.stopPropagation();
-    const $cell = $(this).closest('td');
-    const $popover = $cell.find('[data-remark-popover]');
-    const isVisible = !$popover.prop('hidden');
-
-    $('[data-remark-popover]').prop('hidden', true);
-    $('[data-remark-trigger]').attr('aria-expanded', 'false');
-
-    if (!isVisible) {
-        const currentVal = $cell.find('.pr-item-remark').val() || '';
-        $cell.find('.pr-remark-draft').val(currentVal);
-
-        const matName = $cell.closest('tr').find('.material-master-search').val() || @json(__('purchasing.copy.material'));
-        $cell.find('.pr-remark-material-name').text(matName);
-
-        $popover.prop('hidden', false);
-        $(this).attr('aria-expanded', 'true');
-        positionRemarkPopover($popover, this);
-        $cell.find('.pr-remark-draft').focus();
-    }
-});
-
-$(document).on('click', '[data-remark-save]', function(e) {
-    e.stopPropagation();
-    const $cell = $(this).closest('td');
-    const $popover = $cell.find('[data-remark-popover]');
-    const draftVal = $cell.find('.pr-remark-draft').val().trim();
-    const $realInput = $cell.find('.pr-item-remark');
-    const $trigger = $cell.find('[data-remark-trigger]');
-    const $triggerText = $trigger.find('.pr-remark-trigger__text');
-
-    $realInput.val(draftVal).trigger('input').trigger('change');
-
-    if (draftVal) {
-        $triggerText.text(draftVal);
-        $trigger.addClass('has-remark').attr('title', draftVal);
-        if (!$trigger.find('.pr-remark-trigger__badge').length) {
-            $trigger.append('<span class="pr-remark-trigger__badge" title="{{ __('purchasing.copy.remark_entered') }}" aria-hidden="true"></span>');
-        }
-    } else {
-        $triggerText.text(@json(__('purchasing.copy.add_remark')));
-        $trigger.removeClass('has-remark').attr('title', @json(__('purchasing.copy.click_to_add_remark')));
-        $trigger.find('.pr-remark-trigger__badge').remove();
-    }
-
-    $popover.prop('hidden', true);
-    $trigger.attr('aria-expanded', 'false');
-});
-
-$(document).on('click', '[data-remark-cancel]', function(e) {
-    e.stopPropagation();
-    const $cell = $(this).closest('td');
-    $cell.find('[data-remark-popover]').prop('hidden', true);
-    $cell.find('[data-remark-trigger]').attr('aria-expanded', 'false').focus();
-});
-
-$(document).on('change input', '.pr-item-remark', function() {
-    const val = $(this).val().trim();
-    const $cell = $(this).closest('td');
-    const $trigger = $cell.find('[data-remark-trigger]');
-    const $triggerText = $trigger.find('.pr-remark-trigger__text');
-    if (val) {
-        $triggerText.text(val);
-        $trigger.addClass('has-remark').attr('title', val);
-        if (!$trigger.find('.pr-remark-trigger__badge').length) {
-            $trigger.append('<span class="pr-remark-trigger__badge" title="{{ __('purchasing.copy.remark_entered') }}" aria-hidden="true"></span>');
-        }
-    } else {
-        $triggerText.text(@json(__('purchasing.copy.add_remark')));
-        $trigger.removeClass('has-remark').attr('title', @json(__('purchasing.copy.click_to_add_remark')));
-        $trigger.find('.pr-remark-trigger__badge').remove();
-    }
-});
-
-$(document).on('click', function(e) {
-    if (!$(e.target).closest('[data-remark-popover], [data-remark-trigger]').length) {
-        $('[data-remark-popover]').prop('hidden', true);
-        $('[data-remark-trigger]').attr('aria-expanded', 'false');
-    }
-});
-
-$(document).on('keydown', function(e) {
-    if (e.key === 'Escape') {
-        $('[data-remark-popover]').prop('hidden', true);
-        $('[data-remark-trigger]').attr('aria-expanded', 'false');
-    }
-});
-
-$(document).on('focus input', '.material-master-search', function() {
-    const $input = $(this);
-    const $row = $input.closest('tr');
-    const selectedName = String($row.data('selected-material-name') || '').trim();
-    if ($row.find('.material-master-id').val() && selectedName && selectedName !== String($input.val()).trim()) {
-        $row.find('.material-master-id').val('');
-        resetMaterialPreview($row);
-    }
-    searchMaterial($input);
-});
-
-$(document).on('click', '.material-search-results button', function() {
-    const $row = $(this).closest('tr');
-    const material = $(this).data('material');
-    $row.data('selected-material-name', material.material_code);
-    selectMaterialInRow($row, material);
-});
-
-$(document).on('change', '.material-shape-select', function() {
-    const $row = $(this).closest('tr');
-    applyMaterialShapeRules($row, true);
-    resetManualWeightOverride($row);
-    scheduleMaterialPreview($row);
-});
-
-function resetManualWeightOverride($row) {
-    $row.find('.weight-manual-override').val('0');
-    $row.find('.weight-unit-display').val('');
-    notifyPrItemsChanged();
+function closeAllRemarkPopovers() {
+    document.querySelectorAll('[data-remark-popover]').forEach((el) => {
+        el.hidden = true;
+    });
+    document.querySelectorAll('[data-remark-trigger]').forEach((el) => {
+        el.setAttribute('aria-expanded', 'false');
+    });
 }
 
-$(document).on('input change', '.hs-code-display', function() {
-    const $row = $(this).closest('tr');
-    $row.find('.hs-code-manual-override').val('1');
-    scheduleMaterialPreview($row);
-});
-
-$(document).on('input change', '.weight-unit-display', function() {
-    $(this).closest('tr').find('.weight-manual-override').val('1');
-});
-
-$(document).on('input change', '.dimension-input', function() {
-    const $row = $(this).closest('tr');
-    resetManualWeightOverride($row);
-    scheduleMaterialPreview($row);
-});
-
-$(document).on('input change', '.material-quantity', function() {
-    scheduleMaterialPreview($(this).closest('tr'));
-});
-
-$(document).on('click', function(event) {
-    if (!$(event.target).closest('.material-master-search, .material-search-results').length) {
-        $('.material-search-results').each(function() {
-            const $panel = $(this);
-            $panel.addClass('d-none');
-            setMaterialSearchOpen($panel.closest('tr'), false);
-        });
-    }
-});
-
-$(document).on('keydown', '.material-master-search', function(event) {
-    if (event.key === 'Escape') {
-        const $row = $(this).closest('tr');
-        $row.find('.material-search-results').addClass('d-none');
-        setMaterialSearchOpen($row, false);
-    }
-});
+function resetManualWeightOverride(row) {
+    const rowEl = resolvePrElement(row);
+    if (!rowEl) return;
+    const weightOverrideInput = rowEl.querySelector('.weight-manual-override');
+    const weightInput = rowEl.querySelector('.weight-unit-display');
+    if (weightOverrideInput) weightOverrideInput.value = '0';
+    if (weightInput) weightInput.value = '';
+    notifyPrItemsChanged();
+}
 
 function handleWindowResize() {
     repositionVisibleMaterialSearchResults();
@@ -551,7 +626,7 @@ function handleDocumentScroll() {
     repositionVisibleRemarkPopovers();
 }
 
-$(window).on('resize', handleWindowResize);
+window.addEventListener('resize', handleWindowResize);
 document.addEventListener('scroll', handleDocumentScroll, true);
 
 // ==========================================
@@ -568,8 +643,9 @@ function escapePrHtml(str) {
         .replace(/'/g, '&#039;');
 }
 
-function formatMobileDimensions(shape, $row) {
-    if (!shape) return '—';
+function formatMobileDimensions(shape, row) {
+    const rowEl = resolvePrElement(row);
+    if (!shape || !rowEl) return '—';
     const fields = materialDimensionFields[shape] || [];
     const parts = [];
     const abbrevMap = {
@@ -580,7 +656,7 @@ function formatMobileDimensions(shape, $row) {
         d_inner: 'ID',
     };
     fields.forEach((f) => {
-        const val = $row.find(`.dimension-input[data-dimension-field="${f}"]`).val();
+        const val = rowEl.querySelector(`.dimension-input[data-dimension-field="${f}"]`)?.value;
         if (val && Number(val) > 0) {
             parts.push(`${abbrevMap[f] || f}: ${val}`);
         }
@@ -589,35 +665,36 @@ function formatMobileDimensions(shape, $row) {
 }
 
 function renderMobileMaterialCards() {
-    const $container = $('#prMobileCardsList');
-    if (!$container.length) return;
+    const container = document.getElementById('prMobileCardsList');
+    if (!container) return;
 
-    $container.empty();
-    const $rows = $('#itemsBody tr.item-row');
-    const totalCount = $rows.length;
+    container.replaceChildren();
+    const rows = document.querySelectorAll('#itemsBody tr.item-row');
+    const totalCount = rows.length;
 
-    $('#prMobileItemCount').text(totalCount);
+    const itemCountEl = document.getElementById('prMobileItemCount');
+    if (itemCountEl) itemCountEl.textContent = String(totalCount);
 
+    const emptyStateEl = document.getElementById('prMobileEmptyState');
     if (totalCount === 0) {
-        $('#prMobileEmptyState').removeClass('d-none');
+        emptyStateEl?.classList.remove('d-none');
         return;
     }
 
-    $('#prMobileEmptyState').addClass('d-none');
+    emptyStateEl?.classList.add('d-none');
 
-    $rows.each(function(index) {
-        const $row = $(this);
-        const matName = String($row.find('.material-master-search').val() || '').trim();
-        const grade = String($row.find('.material-grade-display').val() || '').trim();
-        const shape = String($row.find('.material-shape-select').val() || '').trim();
-        const qty = parseInt($row.find('.material-quantity').val(), 10) || 1;
-        const unitKg = Number($row.find('.weight-unit-display').val() || 0);
-        const rowTotalKg = String($row.find('[data-pr-row-total-kg]').text() || '').trim() || '—';
-        const hsCode = String($row.find('.hs-code-display').val() || '').trim();
-        const remark = String($row.find('.pr-item-remark').val() || '').trim();
-        const dimSummary = formatMobileDimensions(shape, $row);
+    rows.forEach((rowEl, index) => {
+        const matName = String(rowEl.querySelector('.material-master-search')?.value || '').trim();
+        const grade = String(rowEl.querySelector('.material-grade-display')?.value || '').trim();
+        const shape = String(rowEl.querySelector('.material-shape-select')?.value || '').trim();
+        const qty = parseInt(rowEl.querySelector('.material-quantity')?.value, 10) || 1;
+        const unitKg = Number(rowEl.querySelector('.weight-unit-display')?.value || 0);
+        const rowTotalKg = String(rowEl.querySelector('[data-pr-row-total-kg]')?.textContent || '').trim() || '—';
+        const hsCode = String(rowEl.querySelector('.hs-code-display')?.value || '').trim();
+        const remark = String(rowEl.querySelector('.pr-item-remark')?.value || '').trim();
+        const dimSummary = formatMobileDimensions(shape, rowEl);
 
-        const isUnconfigured = !matName && !$row.find('.material-master-id').val();
+        const isUnconfigured = !matName && !rowEl.querySelector('.material-master-id')?.value;
         const displayName = isUnconfigured ? '— (Belum diisi)' : matName;
 
         const card = `
@@ -648,11 +725,11 @@ function renderMobileMaterialCards() {
                 <div class="tw:grid tw:grid-cols-2 tw:gap-2 tw:py-2 tw:my-2 tw:border-y tw:border-outline-variant tw:text-ui-xs">
                     <div>
                         <div class="tw:text-on-surface-variant tw:text-[11px]">Dimensi</div>
-                        <div class="tw:font-medium tw:text-on-surface tw:truncate">${dimSummary}</div>
+                        <div class="tw:font-medium tw:text-on-surface tw:truncate">${escapePrHtml(dimSummary)}</div>
                     </div>
                     <div>
                         <div class="tw:text-on-surface-variant tw:text-[11px]">Total Bobot</div>
-                        <div class="tw:font-bold tw:text-on-surface ui-tabular-nums">${rowTotalKg}</div>
+                        <div class="tw:font-bold tw:text-on-surface ui-tabular-nums">${escapePrHtml(rowTotalKg)}</div>
                     </div>
                     <div>
                         <div class="tw:text-on-surface-variant tw:text-[11px]">HS Code</div>
@@ -683,22 +760,21 @@ function renderMobileMaterialCards() {
                 </div>
             </div>
         `;
-        $container.append(card);
+        container.insertAdjacentHTML('beforeend', card);
     });
 }
 
 function applyMobileModalShapeRules() {
-    const shape = $('#mmShape').val();
+    const shape = document.getElementById('mmShape')?.value || '';
     const relevant = materialDimensionFields[shape] || [];
 
-    $('.mm-dim-container').each(function() {
-        const field = $(this).data('dim-field');
+    document.querySelectorAll('.mm-dim-container').forEach((containerEl) => {
+        const field = containerEl.dataset.dimField;
         const isRel = relevant.includes(field);
-        if (isRel) {
-            $(this).show();
-        } else {
-            $(this).hide();
-            $(this).find('.mm-dim-input').val('');
+        containerEl.style.display = isRel ? '' : 'none';
+        if (!isRel) {
+            const dimInput = containerEl.querySelector('.mm-dim-input');
+            if (dimInput) dimInput.value = '';
         }
     });
 }
@@ -706,79 +782,97 @@ function applyMobileModalShapeRules() {
 let mmPreviewTimer = null;
 let mmPreviewRequest = null;
 
-function requestMobileModalPreview() {
-    const matId = $('#mmMaterialMasterId').val();
-    const matName = $('#mmMaterialSearch').val().trim();
+async function requestMobileModalPreview() {
+    const matIdInput = document.getElementById('mmMaterialMasterId');
+    const matSearchInput = document.getElementById('mmMaterialSearch');
+    const weightNeededInput = document.getElementById('mmWeightNeeded');
+    const totalWeightDisplay = document.getElementById('mmTotalWeightDisplay');
+    const hsCodeInput = document.getElementById('mmHsCode');
+    const hsManualInput = document.getElementById('mmHsCodeManualOverride');
+    const shapeInput = document.getElementById('mmShape');
+    const quantityInput = document.getElementById('mmQuantity');
+    const weightManualInput = document.getElementById('mmWeightManualOverride');
+
+    const matId = matIdInput?.value || '';
+    const matName = String(matSearchInput?.value || '').trim();
     if (!matId && !matName) {
-        $('#mmWeightNeeded').val('0.0000');
-        $('#mmTotalWeightDisplay').text('0.0000 kg');
+        if (weightNeededInput) weightNeededInput.value = '0.0000';
+        if (totalWeightDisplay) totalWeightDisplay.textContent = '0.0000 kg';
         return;
     }
 
     if (mmPreviewRequest) {
-        mmPreviewRequest.abort();
+        mmPreviewRequest.controller.abort();
+        clearPrRequestStateTimer(mmPreviewRequest);
     }
 
-    const hsDisplay = $('#mmHsCode').val().trim();
+    const hsDisplay = String(hsCodeInput?.value || '').trim();
     const isExact8 = /^\d{8}$/.test(hsDisplay.replace(/\./g, ''));
-    const hsManual = $('#mmHsCodeManualOverride').val() === '1' && isExact8 ? '1' : '0';
+    const hsManual = hsManualInput?.value === '1' && isExact8 ? '1' : '0';
 
     const payload = {
-        _token: @json(csrf_token()),
+        _token: prCsrfToken,
         material_master_id: matId,
         material_name: matName,
-        shape: $('#mmShape').val(),
-        quantity: $('#mmQuantity').val() || 1,
+        shape: shapeInput?.value || '',
+        quantity: quantityInput?.value || 1,
         hs_code: isExact8 ? hsDisplay : '',
         hs_code_manual_override: hsManual,
-        weight_needed: $('#mmWeightNeeded').val(),
-        weight_manual_override: $('#mmWeightManualOverride').val() || 0,
+        weight_needed: weightNeededInput?.value || '',
+        weight_manual_override: weightManualInput?.value || 0,
     };
 
     fixedDimensionOrder.forEach((field) => {
-        payload[field] = $(`#mm_dim_${field}`).val() || '';
+        payload[field] = document.getElementById(`mm_dim_${field}`)?.value || '';
     });
 
-    mmPreviewRequest = $.ajax({
-        url: materialCalculationPreviewUrl,
-        method: 'POST',
-        data: payload,
-        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-        global: false,
-        timeout: 10000,
-    });
+    const requestState = createPrSearchRequestState(10000);
+    mmPreviewRequest = requestState;
 
-    mmPreviewRequest.done((res) => {
-        if (res.material && res.material.id) {
-            $('#mmMaterialMasterId').val(res.material.id);
+    try {
+        const response = await fetch(materialCalculationPreviewUrl, {
+            method: 'POST',
+            body: buildPrPreviewFormBody(payload),
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': prCsrfToken,
+            },
+            signal: requestState.controller.signal,
+        });
+        if (!response.ok) {
+            return;
+        }
+        const res = await response.json();
+        if (res.material && res.material.id && matIdInput) {
+            matIdInput.value = res.material.id;
         }
         const hs = res.hs_code || {};
         const weight = res.weight || {};
-        const isManual = hs.source === 'manual';
 
-        if (hs.selected_code || hs.code) {
-            $('#mmHsCode').val(hs.selected_code || hs.code);
+        if ((hs.selected_code || hs.code) && hsCodeInput) {
+            hsCodeInput.value = hs.selected_code || hs.code;
         }
 
-        const labelMap = {
-            matched: @json(__('purchasing.copy.auto_matched')),
-            ambiguous: @json(__('purchasing.copy.ambiguous')),
-            no_rule: @json(__('purchasing.copy.no_rule')),
-            unmapped_material: @json(__('purchasing.copy.unmapped_material')),
-            insufficient_data: @json(__('purchasing.copy.needs_more_data'))
-        };
-
-        $('#mmHsBadge')
-            .removeClass('ui-status-chip--success ui-status-chip--warning ui-status-chip--error ui-status-chip--neutral')
-            .addClass(isManual ? 'ui-status-chip--warning' : (hs.status === 'matched' ? 'ui-status-chip--success' : 'ui-status-chip--neutral'))
-            .text(isManual ? @json(__('purchasing.copy.manual_selection')) : (labelMap[hs.status] || hs.status || @json(__('purchasing.copy.needs_more_data'))));
+        const { variantClass, text } = getHsBadgeResolution(hs);
+        setPrBadgeState(document.getElementById('mmHsBadge'), variantClass, text);
 
         const unitKg = Number(weight.unit_kg || 0);
-        $('#mmWeightNeeded').val(unitKg.toFixed(4));
-        const qty = Number($('#mmQuantity').val() || 1);
-        const totalKg = (unitKg * qty).toFixed(4);
-        $('#mmTotalWeightDisplay').text(`${totalKg} kg`);
-    });
+        if (weightNeededInput) weightNeededInput.value = unitKg.toFixed(4);
+        const qty = Number(quantityInput?.value || 1);
+        if (totalWeightDisplay) {
+            totalWeightDisplay.textContent = `${(unitKg * qty).toFixed(4)} kg`;
+        }
+    } catch (err) {
+        if (err?.name !== 'AbortError') {
+            return;
+        }
+    } finally {
+        clearPrRequestStateTimer(requestState);
+        if (mmPreviewRequest === requestState) {
+            mmPreviewRequest = null;
+        }
+    }
 }
 
 function scheduleMobileModalPreview(delay = 300) {
@@ -791,330 +885,630 @@ let mmSearchRequest = null;
 
 function searchMobileMaterial(term) {
     clearTimeout(mmSearchTimer);
-    mmSearchTimer = setTimeout(() => {
-        if (mmSearchRequest) mmSearchRequest.abort();
+    mmSearchTimer = setTimeout(async () => {
+        if (mmSearchRequest) {
+            mmSearchRequest.controller.abort();
+            clearPrRequestStateTimer(mmSearchRequest);
+        }
 
-        const $results = $('#mmMaterialResults').empty();
+        const resultsEl = document.getElementById('mmMaterialResults');
+        if (!resultsEl) return;
+        resultsEl.replaceChildren();
+
         if (!term || term.length < 1) {
-            $results.addClass('d-none');
+            resultsEl.classList.add('d-none');
             return;
         }
 
-        mmSearchRequest = $.ajax({
-            url: materialMasterSearchUrl,
-            method: 'GET',
-            dataType: 'json',
-            data: { q: term },
-            global: false,
-            timeout: 8000,
-        });
+        const requestState = createPrSearchRequestState(8000);
+        mmSearchRequest = requestState;
 
-        mmSearchRequest.done((payload) => {
+        try {
+            const url = new URL(materialMasterSearchUrl, window.location.origin);
+            url.searchParams.set('q', term);
+
+            const response = await fetch(url.toString(), {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                signal: requestState.controller.signal,
+            });
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const payload = await response.json();
             const results = payload.results || [];
-            $results.empty();
+            resultsEl.replaceChildren();
             if (!results.length) {
-                $('<div class="list-group-item small text-muted p-3">')
-                    .text(@json(__('purchasing.copy.no_active_master_material_found')))
-                    .appendTo($results);
+                const emptyEl = document.createElement('div');
+                emptyEl.className = 'list-group-item small text-muted p-3';
+                emptyEl.textContent = prPurchasingCopy.noActiveMasterMaterialFound;
+                resultsEl.appendChild(emptyEl);
             } else {
                 results.forEach((mat) => {
                     const category = mat.category_label || mat.category || 'unmapped';
-                    $('<button type="button" class="list-group-item list-group-item-action py-2.5 px-3">')
-                        .append($('<div class="fw-bold tw:text-ui-xs tw:text-on-surface">').text(mat.material_code))
-                        .append($('<div class="small text-muted">').text(`${category} | ${mat.density_profile || ''}`))
-                        .data('material', mat)
-                        .appendTo($results);
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'list-group-item list-group-item-action py-2.5 px-3';
+
+                    const codeEl = document.createElement('div');
+                    codeEl.className = 'fw-bold tw:text-ui-xs tw:text-on-surface';
+                    codeEl.textContent = mat.material_code || '';
+
+                    const metaEl = document.createElement('div');
+                    metaEl.className = 'small text-muted';
+                    metaEl.textContent = `${category} | ${mat.density_profile || ''}`;
+
+                    btn.append(codeEl, metaEl);
+                    materialOptionMap.set(btn, mat);
+                    resultsEl.appendChild(btn);
                 });
             }
-            $results.removeClass('d-none');
-        }).fail((xhr, status) => {
-            if (status !== 'abort') {
-                $results.addClass('d-none');
+            resultsEl.classList.remove('d-none');
+        } catch (err) {
+            if (err?.name !== 'AbortError' || requestState.timedOut) {
+                resultsEl.classList.add('d-none');
             }
-        });
+        } finally {
+            clearPrRequestStateTimer(requestState);
+            if (mmSearchRequest === requestState) {
+                mmSearchRequest = null;
+            }
+        }
     }, 250);
 }
 
-// Autocomplete input in modal
-$(document).on('focus input', '#mmMaterialSearch', function() {
-    searchMobileMaterial($(this).val().trim());
+function handlePrMaterialSearchFocusOrInput(target) {
+    const input = target.closest('.material-master-search');
+    if (input) {
+        const row = input.closest('tr');
+        if (!row) return;
+        const selectedName = String(row.dataset.selectedMaterialName || '').trim();
+        const masterIdInput = row.querySelector('.material-master-id');
+        if (masterIdInput?.value && selectedName && selectedName !== String(input.value).trim()) {
+            masterIdInput.value = '';
+            resetMaterialPreview(row);
+        }
+        searchMaterial(input);
+        return;
+    }
+
+    const mmSearch = target.closest('#mmMaterialSearch');
+    if (mmSearch) {
+        searchMobileMaterial(String(mmSearch.value || '').trim());
+    }
+}
+
+document.addEventListener('focusin', (e) => {
+    handlePrMaterialSearchFocusOrInput(e.target);
 });
 
-// Autocomplete selection
-$(document).on('click', '#mmMaterialResults button', function() {
-    const mat = $(this).data('material');
-    if (!mat) return;
+function handlePrFieldInputOrChange(target) {
+    const remarkInput = target.closest('.pr-item-remark');
+    if (remarkInput) {
+        syncPrRemarkTriggerUi(remarkInput.closest('td'), String(remarkInput.value || '').trim());
+        return;
+    }
 
-    $('#mmMaterialMasterId').val(mat.id);
-    $('#mmMaterialSearch').val(mat.material_code || mat.text || '');
-    $('#mmBtnClearMaterial').removeClass('d-none');
-    $('#mmMaterialResults').addClass('d-none').empty();
+    const hsDisplay = target.closest('.hs-code-display');
+    if (hsDisplay) {
+        const row = hsDisplay.closest('tr');
+        const overrideInput = row?.querySelector('.hs-code-manual-override');
+        if (overrideInput) overrideInput.value = '1';
+        scheduleMaterialPreview(row);
+        return;
+    }
 
-    $('#mmSelectedName').text(mat.material_code || mat.text || '');
-    $('#mmSelectedGrade').text(mat.category_label || mat.category || '');
-    $('#mmSelectedFeedback').removeClass('d-none');
+    const weightUnit = target.closest('.weight-unit-display');
+    if (weightUnit) {
+        const overrideInput = weightUnit.closest('tr')?.querySelector('.weight-manual-override');
+        if (overrideInput) overrideInput.value = '1';
+        return;
+    }
 
-    if (mat.default_shape && !$('#mmShape').val()) {
-        $('#mmShape').val(mat.default_shape);
+    const dimInput = target.closest('.dimension-input');
+    if (dimInput) {
+        const row = dimInput.closest('tr');
+        resetManualWeightOverride(row);
+        scheduleMaterialPreview(row);
+        return;
+    }
+
+    const qtyInput = target.closest('.material-quantity');
+    if (qtyInput) {
+        scheduleMaterialPreview(qtyInput.closest('tr'));
+        return;
+    }
+
+    if (target.closest('.mm-dim-input')) {
+        const weightOverride = document.getElementById('mmWeightManualOverride');
+        if (weightOverride) weightOverride.value = '0';
+        scheduleMobileModalPreview();
+        return;
+    }
+
+    if (target.closest('#mmQuantity')) {
+        scheduleMobileModalPreview();
+        return;
+    }
+
+    const mmWeight = target.closest('#mmWeightNeeded');
+    if (mmWeight) {
+        const weightOverride = document.getElementById('mmWeightManualOverride');
+        if (weightOverride) weightOverride.value = '1';
+        const unitKg = Number(mmWeight.value || 0);
+        const qty = Number(document.getElementById('mmQuantity')?.value || 1);
+        const totalEl = document.getElementById('mmTotalWeightDisplay');
+        if (totalEl) totalEl.textContent = `${(unitKg * qty).toFixed(4)} kg`;
+        return;
+    }
+
+    if (target.closest('#mmHsCode')) {
+        const hsOverride = document.getElementById('mmHsCodeManualOverride');
+        if (hsOverride) hsOverride.value = '1';
+        scheduleMobileModalPreview();
+    }
+}
+
+document.addEventListener('input', (e) => {
+    const target = e.target;
+    if (target.closest('.material-master-search, #mmMaterialSearch')) {
+        handlePrMaterialSearchFocusOrInput(target);
+        return;
+    }
+    handlePrFieldInputOrChange(target);
+});
+
+document.addEventListener('change', (e) => {
+    const target = e.target;
+
+    const shapeSelect = target.closest('.material-shape-select');
+    if (shapeSelect) {
+        const row = shapeSelect.closest('tr');
+        applyMaterialShapeRules(row, true);
+        resetManualWeightOverride(row);
+        scheduleMaterialPreview(row);
+        return;
+    }
+
+    if (target.closest('#mmShape')) {
         applyMobileModalShapeRules();
+        const weightOverride = document.getElementById('mmWeightManualOverride');
+        if (weightOverride) weightOverride.value = '0';
+        scheduleMobileModalPreview();
+        return;
     }
 
-    scheduleMobileModalPreview(0);
+    handlePrFieldInputOrChange(target);
 });
 
-// Clear material
-$(document).on('click', '#mmBtnClearMaterial', function() {
-    $('#mmMaterialMasterId').val('');
-    $('#mmMaterialSearch').val('');
-    $('#mmSelectedFeedback').addClass('d-none');
-    $('#mmBtnClearMaterial').addClass('d-none');
-    $('#mmHsCode').val('');
-    $('#mmWeightNeeded').val('0.0000');
-    $('#mmTotalWeightDisplay').text('0.0000 kg');
-    $('#mmMaterialResults').addClass('d-none').empty();
-});
+document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') {
+        return;
+    }
+    closeAllRemarkPopovers();
 
-// Hide results when clicking outside
-$(document).on('click', function(e) {
-    if (!$(e.target).closest('#mmMaterialSearch, #mmMaterialResults').length) {
-        $('#mmMaterialResults').addClass('d-none');
+    const searchInput = e.target.closest('.material-master-search');
+    if (searchInput) {
+        const row = searchInput.closest('tr');
+        row?.querySelector('.material-search-results')?.classList.add('d-none');
+        setMaterialSearchOpen(row, false);
     }
 });
 
-// Shape change in modal
-$(document).on('change', '#mmShape', function() {
-    applyMobileModalShapeRules();
-    $('#mmWeightManualOverride').val('0');
-    scheduleMobileModalPreview();
-});
+document.addEventListener('click', (e) => {
+    const target = e.target;
 
-// Dimensions & Qty change in modal
-$(document).on('input change', '.mm-dim-input', function() {
-    $('#mmWeightManualOverride').val('0');
-    scheduleMobileModalPreview();
-});
+    const remarkTrigger = target.closest('[data-remark-trigger]');
+    if (remarkTrigger) {
+        const cell = remarkTrigger.closest('td');
+        const popover = cell?.querySelector('[data-remark-popover]');
+        if (!cell || !popover) return;
 
-$(document).on('input change', '#mmQuantity', function() {
-    scheduleMobileModalPreview();
-});
+        const isVisible = !popover.hidden;
+        closeAllRemarkPopovers();
 
-// Weight manual edit in modal
-$(document).on('input change', '#mmWeightNeeded', function() {
-    $('#mmWeightManualOverride').val('1');
-    const unitKg = Number($(this).val() || 0);
-    const qty = Number($('#mmQuantity').val() || 1);
-    $('#mmTotalWeightDisplay').text(`${(unitKg * qty).toFixed(4)} kg`);
-});
+        if (!isVisible) {
+            const currentVal = cell.querySelector('.pr-item-remark')?.value || '';
+            const draftInput = cell.querySelector('.pr-remark-draft');
+            if (draftInput) draftInput.value = currentVal;
 
-// HS Code manual edit in modal
-$(document).on('input change', '#mmHsCode', function() {
-    $('#mmHsCodeManualOverride').val('1');
-    scheduleMobileModalPreview();
-});
+            const matName = cell.closest('tr')?.querySelector('.material-master-search')?.value || prPurchasingCopy.material;
+            const remarkTitle = cell.querySelector('.pr-remark-material-name');
+            if (remarkTitle) remarkTitle.textContent = matName;
 
-// Open modal in Add mode
-$(document).on('click', '#btnOpenMobileMaterialModal', function() {
-    $('#mobileMaterialModalTitle').text(@json(__('purchasing.copy.add_material')));
-    $('#mmEditingIndex').val('-1');
-    $('#mmMaterialMasterId').val('');
-    $('#mmMaterialSearch').val('');
-    $('#mmBtnClearMaterial').addClass('d-none');
-    $('#mmSelectedFeedback').addClass('d-none');
-    $('#mmMaterialResults').addClass('d-none').empty();
-    $('#mmShape').val('');
-    applyMobileModalShapeRules();
-    $('.mm-dim-input').val('');
-    $('#mmQuantity').val('1');
-    $('#mmWeightNeeded').val('0.0000');
-    $('#mmTotalWeightDisplay').text('0.0000 kg');
-    $('#mmHsCode').val('');
-    $('#mmHsBadge').removeClass('ui-status-chip--success ui-status-chip--warning ui-status-chip--error').addClass('ui-status-chip--neutral').text('Otomatis');
-    $('#mmHsCodeManualOverride').val('0');
-    $('#mmWeightManualOverride').val('0');
-    $('#mmRemark').val('');
-
-    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('mobileMaterialModal'));
-    modal.show();
-});
-
-// Open modal in Edit mode from card
-$(document).on('click', '.pr-mobile-edit-btn', function() {
-    const idx = parseInt($(this).data('row-index'), 10);
-    const $row = $('#itemsBody tr.item-row').eq(idx);
-    if (!$row.length) return;
-
-    $('#mobileMaterialModalTitle').text(`Edit Material #${idx + 1}`);
-    $('#mmEditingIndex').val(idx);
-
-    const matId = $row.find('.material-master-id').val() || '';
-    const matName = $row.find('.material-master-search').val() || '';
-    const grade = $row.find('.material-grade-display').val() || '';
-
-    $('#mmMaterialMasterId').val(matId);
-    $('#mmMaterialSearch').val(matName);
-
-    if (matName) {
-        $('#mmBtnClearMaterial').removeClass('d-none');
-        $('#mmSelectedName').text(matName);
-        $('#mmSelectedGrade').text(grade || '—');
-        $('#mmSelectedFeedback').removeClass('d-none');
-    } else {
-        $('#mmBtnClearMaterial').addClass('d-none');
-        $('#mmSelectedFeedback').addClass('d-none');
-    }
-
-    $('#mmMaterialResults').addClass('d-none').empty();
-
-    const shape = $row.find('.material-shape-select').val() || '';
-    $('#mmShape').val(shape);
-    applyMobileModalShapeRules();
-
-    fixedDimensionOrder.forEach((f) => {
-        const val = $row.find(`.dimension-input[data-dimension-field="${f}"]`).val() || '';
-        $(`#mm_dim_${f}`).val(val);
-    });
-
-    const qty = $row.find('.material-quantity').val() || '1';
-    $('#mmQuantity').val(qty);
-
-    const unitKg = Number($row.find('.weight-unit-display').val() || 0);
-    $('#mmWeightNeeded').val(unitKg.toFixed(4));
-    const totalKg = (unitKg * Number(qty)).toFixed(4);
-    $('#mmTotalWeightDisplay').text(`${totalKg} kg`);
-
-    const hsCode = $row.find('.hs-code-display').val() || '';
-    $('#mmHsCode').val(hsCode);
-
-    const hsBadgeClass = $row.find('.hs-status-badge').attr('class') || 'ui-status-chip ui-status-chip--neutral';
-    const hsBadgeText = $row.find('.hs-status-badge').text().trim() || 'Otomatis';
-    $('#mmHsBadge').attr('class', hsBadgeClass).text(hsBadgeText);
-
-    $('#mmHsCodeManualOverride').val($row.find('.hs-code-manual-override').val() || '0');
-    $('#mmWeightManualOverride').val($row.find('.weight-manual-override').val() || '0');
-    $('#mmRemark').val($row.find('.pr-item-remark').val() || '');
-
-    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('mobileMaterialModal'));
-    modal.show();
-});
-
-// Delete row from card
-$(document).on('click', '.pr-mobile-delete-btn', function() {
-    const idx = parseInt($(this).data('row-index'), 10);
-    const $row = $('#itemsBody tr.item-row').eq(idx);
-    if (!$row.length) return;
-
-    AdasiAlert.confirmDanger({
-        title: @json(__('purchasing.copy.delete_this_row')),
-        confirmText: @json(__('purchasing.audit_ui.confirm_delete')),
-        cancelText: @json(__('purchasing.copy.cancel'))
-    }).then((result) => {
-        if (result.isConfirmed) {
-            $row.remove();
-            renumberPrRows();
-            checkRowCount();
-            renderMobileMaterialCards();
+            popover.hidden = false;
+            remarkTrigger.setAttribute('aria-expanded', 'true');
+            positionRemarkPopover(popover, remarkTrigger);
+            draftInput?.focus();
         }
-    });
-});
-
-// Save from Modal
-$(document).on('click', '#btnSaveMobileMaterialItem', function() {
-    const matName = $('#mmMaterialSearch').val().trim();
-    if (!matName) {
-        AdasiAlert.error({
-            title: 'Material Diperlukan',
-            text: 'Silakan pilih atau masukkan nama material sebelum menyimpan.'
-        });
-        $('#mmMaterialSearch').focus();
         return;
     }
 
-    const shape = $('#mmShape').val();
-    if (!shape) {
-        AdasiAlert.error({
-            title: 'Bentuk Material Diperlukan',
-            text: 'Silakan pilih bentuk material (Shape).'
-        });
-        $('#mmShape').focus();
+    const remarkSave = target.closest('[data-remark-save]');
+    if (remarkSave) {
+        const cell = remarkSave.closest('td');
+        const popover = cell?.querySelector('[data-remark-popover]');
+        const draftInput = cell?.querySelector('.pr-remark-draft');
+        const realInput = cell?.querySelector('.pr-item-remark');
+        const trigger = cell?.querySelector('[data-remark-trigger]');
+        const draftVal = String(draftInput?.value || '').trim();
+
+        setPrInputValueAndDispatch(realInput, draftVal, ['input', 'change']);
+        syncPrRemarkTriggerUi(cell, draftVal);
+
+        if (popover) popover.hidden = true;
+        trigger?.setAttribute('aria-expanded', 'false');
         return;
     }
 
-    const qty = parseInt($('#mmQuantity').val(), 10) || 1;
-    if (qty < 1) {
-        AdasiAlert.error({
-            title: 'Jumlah Tidak Valid',
-            text: 'Quantity minimal 1.'
-        });
-        $('#mmQuantity').focus();
+    const remarkCancel = target.closest('[data-remark-cancel]');
+    if (remarkCancel) {
+        const cell = remarkCancel.closest('td');
+        const popover = cell?.querySelector('[data-remark-popover]');
+        const trigger = cell?.querySelector('[data-remark-trigger]');
+        if (popover) popover.hidden = true;
+        if (trigger) {
+            trigger.setAttribute('aria-expanded', 'false');
+            trigger.focus();
+        }
         return;
     }
 
-    const editIdx = parseInt($('#mmEditingIndex').val(), 10);
-    let $targetRow;
+    if (!target.closest('[data-remark-popover], [data-remark-trigger]')) {
+        closeAllRemarkPopovers();
+    }
 
-    if (editIdx >= 0) {
-        $targetRow = $('#itemsBody tr.item-row').eq(editIdx);
-    } else {
-        // Reuse first row if it's completely blank
-        const $firstRow = $('#itemsBody tr.item-row').first();
-        if ($('#itemsBody tr.item-row').length === 1 &&
-            !$firstRow.find('.material-master-search').val().trim() &&
-            !$firstRow.find('.material-master-id').val().trim()) {
-            $targetRow = $firstRow;
+    const searchResultBtn = target.closest('.material-search-results button');
+    if (searchResultBtn) {
+        const row = searchResultBtn.closest('tr');
+        const material = materialOptionMap.get(searchResultBtn);
+        if (row && material) {
+            row.dataset.selectedMaterialName = material.material_code || '';
+            selectMaterialInRow(row, material);
+        }
+        return;
+    }
+
+    if (!target.closest('.material-master-search, .material-search-results')) {
+        document.querySelectorAll('.material-search-results').forEach((panel) => {
+            panel.classList.add('d-none');
+            setMaterialSearchOpen(panel.closest('tr'), false);
+        });
+    }
+
+    const mmResultBtn = target.closest('#mmMaterialResults button');
+    if (mmResultBtn) {
+        const mat = materialOptionMap.get(mmResultBtn);
+        if (!mat) return;
+
+        const matIdEl = document.getElementById('mmMaterialMasterId');
+        const matSearchEl = document.getElementById('mmMaterialSearch');
+        const clearBtn = document.getElementById('mmBtnClearMaterial');
+        const resultsEl = document.getElementById('mmMaterialResults');
+        const selectedNameEl = document.getElementById('mmSelectedName');
+        const selectedGradeEl = document.getElementById('mmSelectedGrade');
+        const selectedFeedbackEl = document.getElementById('mmSelectedFeedback');
+        const shapeEl = document.getElementById('mmShape');
+
+        if (matIdEl) matIdEl.value = mat.id ?? '';
+        if (matSearchEl) matSearchEl.value = mat.material_code || mat.text || '';
+        clearBtn?.classList.remove('d-none');
+        if (resultsEl) {
+            resultsEl.classList.add('d-none');
+            resultsEl.replaceChildren();
+        }
+        if (selectedNameEl) selectedNameEl.textContent = mat.material_code || mat.text || '';
+        if (selectedGradeEl) selectedGradeEl.textContent = mat.category_label || mat.category || '';
+        selectedFeedbackEl?.classList.remove('d-none');
+
+        if (mat.default_shape && shapeEl && !shapeEl.value) {
+            shapeEl.value = mat.default_shape;
+            applyMobileModalShapeRules();
+        }
+        scheduleMobileModalPreview(0);
+        return;
+    }
+
+    if (target.closest('#mmBtnClearMaterial')) {
+        const matIdEl = document.getElementById('mmMaterialMasterId');
+        const matSearchEl = document.getElementById('mmMaterialSearch');
+        const hsCodeEl = document.getElementById('mmHsCode');
+        const weightNeededEl = document.getElementById('mmWeightNeeded');
+        const totalWeightEl = document.getElementById('mmTotalWeightDisplay');
+        const resultsEl = document.getElementById('mmMaterialResults');
+
+        if (matIdEl) matIdEl.value = '';
+        if (matSearchEl) matSearchEl.value = '';
+        document.getElementById('mmSelectedFeedback')?.classList.add('d-none');
+        document.getElementById('mmBtnClearMaterial')?.classList.add('d-none');
+        if (hsCodeEl) hsCodeEl.value = '';
+        if (weightNeededEl) weightNeededEl.value = '0.0000';
+        if (totalWeightEl) totalWeightEl.textContent = '0.0000 kg';
+        if (resultsEl) {
+            resultsEl.classList.add('d-none');
+            resultsEl.replaceChildren();
+        }
+        return;
+    }
+
+    if (!target.closest('#mmMaterialSearch, #mmMaterialResults')) {
+        document.getElementById('mmMaterialResults')?.classList.add('d-none');
+    }
+
+    if (target.closest('#btnOpenMobileMaterialModal')) {
+        const titleEl = document.getElementById('mobileMaterialModalTitle');
+        const editingIdxEl = document.getElementById('mmEditingIndex');
+        const matIdEl = document.getElementById('mmMaterialMasterId');
+        const matSearchEl = document.getElementById('mmMaterialSearch');
+        const resultsEl = document.getElementById('mmMaterialResults');
+        const shapeEl = document.getElementById('mmShape');
+        const qtyEl = document.getElementById('mmQuantity');
+        const weightEl = document.getElementById('mmWeightNeeded');
+        const totalWeightEl = document.getElementById('mmTotalWeightDisplay');
+        const hsEl = document.getElementById('mmHsCode');
+        const hsOverrideEl = document.getElementById('mmHsCodeManualOverride');
+        const weightOverrideEl = document.getElementById('mmWeightManualOverride');
+        const remarkEl = document.getElementById('mmRemark');
+
+        if (titleEl) titleEl.textContent = prPurchasingCopy.addMaterial;
+        if (editingIdxEl) editingIdxEl.value = '-1';
+        if (matIdEl) matIdEl.value = '';
+        if (matSearchEl) matSearchEl.value = '';
+        document.getElementById('mmBtnClearMaterial')?.classList.add('d-none');
+        document.getElementById('mmSelectedFeedback')?.classList.add('d-none');
+        if (resultsEl) {
+            resultsEl.classList.add('d-none');
+            resultsEl.replaceChildren();
+        }
+        if (shapeEl) shapeEl.value = '';
+        applyMobileModalShapeRules();
+        document.querySelectorAll('.mm-dim-input').forEach((el) => {
+            el.value = '';
+        });
+        if (qtyEl) qtyEl.value = '1';
+        if (weightEl) weightEl.value = '0.0000';
+        if (totalWeightEl) totalWeightEl.textContent = '0.0000 kg';
+        if (hsEl) hsEl.value = '';
+        setPrBadgeState(document.getElementById('mmHsBadge'), 'ui-status-chip--neutral', 'Otomatis');
+        if (hsOverrideEl) hsOverrideEl.value = '0';
+        if (weightOverrideEl) weightOverrideEl.value = '0';
+        if (remarkEl) remarkEl.value = '';
+
+        const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('mobileMaterialModal'));
+        modal.show();
+        return;
+    }
+
+    const editBtn = target.closest('.pr-mobile-edit-btn');
+    if (editBtn) {
+        const idx = parseInt(editBtn.dataset.rowIndex, 10);
+        const rowEl = document.querySelectorAll('#itemsBody tr.item-row')[idx];
+        if (!rowEl) return;
+
+        const titleEl = document.getElementById('mobileMaterialModalTitle');
+        const editingIdxEl = document.getElementById('mmEditingIndex');
+        const matIdEl = document.getElementById('mmMaterialMasterId');
+        const matSearchEl = document.getElementById('mmMaterialSearch');
+        const clearBtn = document.getElementById('mmBtnClearMaterial');
+        const selectedNameEl = document.getElementById('mmSelectedName');
+        const selectedGradeEl = document.getElementById('mmSelectedGrade');
+        const selectedFeedbackEl = document.getElementById('mmSelectedFeedback');
+        const resultsEl = document.getElementById('mmMaterialResults');
+        const shapeEl = document.getElementById('mmShape');
+        const qtyEl = document.getElementById('mmQuantity');
+        const weightEl = document.getElementById('mmWeightNeeded');
+        const totalWeightEl = document.getElementById('mmTotalWeightDisplay');
+        const hsEl = document.getElementById('mmHsCode');
+        const mmHsBadge = document.getElementById('mmHsBadge');
+        const hsOverrideEl = document.getElementById('mmHsCodeManualOverride');
+        const weightOverrideEl = document.getElementById('mmWeightManualOverride');
+        const remarkEl = document.getElementById('mmRemark');
+
+        if (titleEl) titleEl.textContent = `Edit Material #${idx + 1}`;
+        if (editingIdxEl) editingIdxEl.value = String(idx);
+
+        const matId = rowEl.querySelector('.material-master-id')?.value || '';
+        const matName = rowEl.querySelector('.material-master-search')?.value || '';
+        const grade = rowEl.querySelector('.material-grade-display')?.value || '';
+
+        if (matIdEl) matIdEl.value = matId;
+        if (matSearchEl) matSearchEl.value = matName;
+
+        if (matName) {
+            clearBtn?.classList.remove('d-none');
+            if (selectedNameEl) selectedNameEl.textContent = matName;
+            if (selectedGradeEl) selectedGradeEl.textContent = grade || '—';
+            selectedFeedbackEl?.classList.remove('d-none');
         } else {
-            addRow();
-            $targetRow = $('#itemsBody tr.item-row').last();
+            clearBtn?.classList.add('d-none');
+            selectedFeedbackEl?.classList.add('d-none');
         }
+
+        if (resultsEl) {
+            resultsEl.classList.add('d-none');
+            resultsEl.replaceChildren();
+        }
+
+        const shape = rowEl.querySelector('.material-shape-select')?.value || '';
+        if (shapeEl) shapeEl.value = shape;
+        applyMobileModalShapeRules();
+
+        fixedDimensionOrder.forEach((f) => {
+            const val = rowEl.querySelector(`.dimension-input[data-dimension-field="${f}"]`)?.value || '';
+            const mmDimEl = document.getElementById(`mm_dim_${f}`);
+            if (mmDimEl) mmDimEl.value = val;
+        });
+
+        const qty = rowEl.querySelector('.material-quantity')?.value || '1';
+        if (qtyEl) qtyEl.value = qty;
+
+        const unitKg = Number(rowEl.querySelector('.weight-unit-display')?.value || 0);
+        if (weightEl) weightEl.value = unitKg.toFixed(4);
+        const totalKg = (unitKg * Number(qty)).toFixed(4);
+        if (totalWeightEl) totalWeightEl.textContent = `${totalKg} kg`;
+
+        const hsCode = rowEl.querySelector('.hs-code-display')?.value || '';
+        if (hsEl) hsEl.value = hsCode;
+
+        const rowBadge = rowEl.querySelector('.hs-status-badge');
+        const hsBadgeClass = rowBadge?.getAttribute('class') || 'ui-status-chip ui-status-chip--neutral';
+        const hsBadgeText = String(rowBadge?.textContent || '').trim() || 'Otomatis';
+        if (mmHsBadge) {
+            mmHsBadge.className = hsBadgeClass;
+            mmHsBadge.textContent = hsBadgeText;
+        }
+
+        if (hsOverrideEl) hsOverrideEl.value = rowEl.querySelector('.hs-code-manual-override')?.value || '0';
+        if (weightOverrideEl) weightOverrideEl.value = rowEl.querySelector('.weight-manual-override')?.value || '0';
+        if (remarkEl) remarkEl.value = rowEl.querySelector('.pr-item-remark')?.value || '';
+
+        const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('mobileMaterialModal'));
+        modal.show();
+        return;
     }
 
-    // Write values to row
-    $targetRow.find('.material-master-id').val($('#mmMaterialMasterId').val());
-    $targetRow.find('.material-master-search').val(matName);
-    $targetRow.data('selected-material-name', matName);
-    $targetRow.find('.material-shape-select').val(shape);
-    applyMaterialShapeRules($targetRow, false);
+    const deleteBtn = target.closest('.pr-mobile-delete-btn');
+    if (deleteBtn) {
+        const idx = parseInt(deleteBtn.dataset.rowIndex, 10);
+        const rowEl = document.querySelectorAll('#itemsBody tr.item-row')[idx];
+        if (!rowEl) return;
 
-    fixedDimensionOrder.forEach((f) => {
-        const val = $(`#mm_dim_${f}`).val();
-        $targetRow.find(`.dimension-input[data-dimension-field="${f}"]`).val(val || '');
-    });
+        AdasiAlert.confirmDanger({
+            title: prPurchasingCopy.deleteThisRow,
+            confirmText: prPurchasingCopy.confirmDelete,
+            cancelText: prPurchasingCopy.cancel,
+        }).then((result) => {
+            if (result.isConfirmed) {
+                rowEl.remove();
+                renumberPrRows();
+                checkRowCount();
+                renderMobileMaterialCards();
+            }
+        });
+        return;
+    }
 
-    $targetRow.find('.material-quantity').val(qty);
-    $targetRow.find('.weight-unit-display').val($('#mmWeightNeeded').val() || '0.0000');
-    $targetRow.find('.weight-manual-override').val($('#mmWeightManualOverride').val() || '0');
-    $targetRow.find('.hs-code-display').val($('#mmHsCode').val() || '');
-    $targetRow.find('.hs-code-manual-override').val($('#mmHsCodeManualOverride').val() || '0');
+    if (target.closest('#btnSaveMobileMaterialItem')) {
+        const matSearchEl = document.getElementById('mmMaterialSearch');
+        const shapeEl = document.getElementById('mmShape');
+        const qtyEl = document.getElementById('mmQuantity');
 
-    const hsBadgeClass = $('#mmHsBadge').attr('class');
-    const hsBadgeText = $('#mmHsBadge').text();
-    $targetRow.find('.hs-status-badge').attr('class', hsBadgeClass).text(hsBadgeText);
+        const matName = String(matSearchEl?.value || '').trim();
+        if (!matName) {
+            AdasiAlert.error({
+                title: 'Material Diperlukan',
+                text: 'Silakan pilih atau masukkan nama material sebelum menyimpan.',
+            });
+            matSearchEl?.focus();
+            return;
+        }
 
-    const remark = $('#mmRemark').val().trim();
-    $targetRow.find('.pr-item-remark').val(remark).trigger('input').trigger('change');
+        const shape = shapeEl?.value || '';
+        if (!shape) {
+            AdasiAlert.error({
+                title: 'Bentuk Material Diperlukan',
+                text: 'Silakan pilih bentuk material (Shape).',
+            });
+            shapeEl?.focus();
+            return;
+        }
 
-    scheduleMaterialPreview($targetRow, 0);
-    renumberPrRows();
-    checkRowCount();
+        const qty = parseInt(qtyEl?.value, 10) || 1;
+        if (qty < 1) {
+            AdasiAlert.error({
+                title: 'Jumlah Tidak Valid',
+                text: 'Quantity minimal 1.',
+            });
+            qtyEl?.focus();
+            return;
+        }
 
-    const modalEl = document.getElementById('mobileMaterialModal');
-    const modal = bootstrap.Modal.getInstance(modalEl);
-    if (modal) modal.hide();
+        const editIdx = parseInt(document.getElementById('mmEditingIndex')?.value, 10);
+        const rows = document.querySelectorAll('#itemsBody tr.item-row');
+        let targetRow = null;
 
-    renderMobileMaterialCards();
-});
+        if (editIdx >= 0) {
+            targetRow = rows[editIdx] || null;
+        } else {
+            const firstRow = rows[0] || null;
+            if (rows.length === 1 &&
+                firstRow &&
+                !String(firstRow.querySelector('.material-master-search')?.value || '').trim() &&
+                !String(firstRow.querySelector('.material-master-id')?.value || '').trim()) {
+                targetRow = firstRow;
+            } else {
+                addRow();
+                const updatedRows = document.querySelectorAll('#itemsBody tr.item-row');
+                targetRow = updatedRows[updatedRows.length - 1] || null;
+            }
+        }
 
-// Toggle full table view on mobile
-$(document).on('click', '#btnTogglePrTableView', function() {
-    const $container = $('#prTableContainer');
-    const isHidden = $container.hasClass('d-none');
-    if (isHidden) {
-        $container.removeClass('d-none');
-        $(this).attr('aria-expanded', 'true');
-        $('#btnTogglePrTableLabel').text('Tutup Tabel');
-    } else {
-        $container.addClass('d-none');
-        $(this).attr('aria-expanded', 'false');
-        $('#btnTogglePrTableLabel').text('Lihat Tabel Penuh');
+        if (!targetRow) return;
+
+        const setTargetField = (selector, val) => {
+            const el = targetRow.querySelector(selector);
+            if (el) el.value = val;
+        };
+
+        setTargetField('.material-master-id', document.getElementById('mmMaterialMasterId')?.value || '');
+        setTargetField('.material-master-search', matName);
+        targetRow.dataset.selectedMaterialName = matName;
+        setTargetField('.material-shape-select', shape);
+        applyMaterialShapeRules(targetRow, false);
+
+        fixedDimensionOrder.forEach((f) => {
+            const val = document.getElementById(`mm_dim_${f}`)?.value || '';
+            setTargetField(`.dimension-input[data-dimension-field="${f}"]`, val);
+        });
+
+        setTargetField('.material-quantity', String(qty));
+        setTargetField('.weight-unit-display', document.getElementById('mmWeightNeeded')?.value || '0.0000');
+        setTargetField('.weight-manual-override', document.getElementById('mmWeightManualOverride')?.value || '0');
+        setTargetField('.hs-code-display', document.getElementById('mmHsCode')?.value || '');
+        setTargetField('.hs-code-manual-override', document.getElementById('mmHsCodeManualOverride')?.value || '0');
+
+        const mmHsBadge = document.getElementById('mmHsBadge');
+        const targetBadge = targetRow.querySelector('.hs-status-badge');
+        if (targetBadge && mmHsBadge) {
+            targetBadge.className = mmHsBadge.className;
+            targetBadge.textContent = mmHsBadge.textContent;
+        }
+
+        const remark = String(document.getElementById('mmRemark')?.value || '').trim();
+        setPrInputValueAndDispatch(targetRow.querySelector('.pr-item-remark'), remark, ['input', 'change']);
+
+        scheduleMaterialPreview(targetRow, 0);
+        renumberPrRows();
+        checkRowCount();
+
+        const modalEl = document.getElementById('mobileMaterialModal');
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        if (modal) modal.hide();
+
+        renderMobileMaterialCards();
+        return;
+    }
+
+    const toggleTableBtn = target.closest('#btnTogglePrTableView');
+    if (toggleTableBtn) {
+        const container = document.getElementById('prTableContainer');
+        const label = document.getElementById('btnTogglePrTableLabel');
+        if (!container) return;
+
+        const isHidden = container.classList.contains('d-none');
+        if (isHidden) {
+            container.classList.remove('d-none');
+            toggleTableBtn.setAttribute('aria-expanded', 'true');
+            if (label) label.textContent = 'Tutup Tabel';
+        } else {
+            container.classList.add('d-none');
+            toggleTableBtn.setAttribute('aria-expanded', 'false');
+            if (label) label.textContent = 'Lihat Tabel Penuh';
+        }
     }
 });
 
@@ -1122,5 +1516,3 @@ $(document).on('click', '#btnTogglePrTableView', function() {
 document.addEventListener('adasi:pr-items-changed', function() {
     renderMobileMaterialCards();
 });
-
-

@@ -105,24 +105,44 @@
     let prImportRows = [];
     let prImportRequestInFlight = false;
     const prImportPreviewUrl = @json(route('purchasing.requisitions.import-preview'));
+    const prImportCsrfToken = @json(csrf_token());
+
+    const prImportCopy = {
+        needsMoreData: @json(__('purchasing.copy.needs_more_data')),
+        manualSelection: @json(__('purchasing.copy.manual_selection')),
+        selectFileBeforeContinuing: @json(__('purchasing.copy.select_an_xlsx_xls_or_csv_file_before_continuing')),
+        spreadsheetProcessingFailed: @json(__('purchasing.copy.the_spreadsheet_could_not_be_processed')),
+        importApplied: @json(__('purchasing.copy.import_applied')),
+        replaceCurrentRowsTitle: @json(__('purchasing.copy.replace_current_material_rows')),
+        replaceCurrentRowsText: @json(__('purchasing.copy.material_values_currently_entered_in_the_form_will_be_replaced_by_the_validated_import')),
+        yesReplaceRows: @json(__('purchasing.copy.yes_replace_rows')),
+        cancel: @json(__('purchasing.copy.cancel')),
+    };
 
     function prRowHasMeaningfulData(row) {
+        const rowEl = row instanceof Element ? row : (row?.[0] instanceof Element ? row[0] : null);
+        if (!rowEl) return false;
+
         const fields = [
             'material_master_id', 'material_name', 'shape', 'thickness', 'd_inner',
             'd_outer', 'width', 'length', 'manual_hs_code', 'remark'
         ];
 
         return fields.some((field) => {
-            const value = $(row).find(`[name$="[${field}]"]`).val();
+            const value = rowEl.querySelector(`[name$="[${field}]"]`)?.value;
             return value !== undefined && String(value).trim() !== '';
         });
     }
 
     function appendImportedPrRow(data) {
         const rowIndex = itemIndex;
-        const template = document.getElementById('rowTemplate').innerHTML;
-        const $row = $(template.replace(/{INDEX}/g, rowIndex));
-        $('#itemsBody').append($row);
+        const templateHtml = document.getElementById('rowTemplate').innerHTML.replace(/{INDEX}/g, String(rowIndex));
+        const tpl = document.createElement('template');
+        tpl.innerHTML = templateHtml.trim();
+        const rowEl = tpl.content.firstElementChild;
+        if (!rowEl) return null;
+
+        document.getElementById('itemsBody')?.appendChild(rowEl);
 
         const values = {
             material_master_id: data.material_master_id ?? '',
@@ -141,11 +161,12 @@
         };
 
         Object.entries(values).forEach(([field, value]) => {
-            $row.find(`[name="items[${rowIndex}][${field}]"]`).val(value);
+            const input = rowEl.querySelector(`[name="items[${rowIndex}][${field}]"]`);
+            if (input) input.value = value;
         });
 
-        applyMaterialShapeRules($row, true);
-        $row.data('selected-material-name', data.material_name ?? '');
+        applyMaterialShapeRules(rowEl, true);
+        rowEl.dataset.selectedMaterialName = data.material_name ?? '';
 
         // Render badge and format values directly without firing scheduleMaterialPreview()
         const isManual = String(data.manual_hs_code) === '1';
@@ -158,36 +179,64 @@
             insufficient_data: @json(__('purchasing.copy.needs_more_data'))
         };
 
-        $row.find('.hs-code-display').val(data.hs_code ?? '');
-        $row.find('.hs-status-badge')
-            .removeClass('ui-status-chip--success ui-status-chip--warning ui-status-chip--error ui-status-chip--neutral')
-            .addClass(isManual ? 'ui-status-chip--warning' : (hsStatus === 'matched' ? 'ui-status-chip--success' : 'ui-status-chip--neutral'))
-            .text(isManual ? @json(__('purchasing.copy.manual_selection')) : (labelMap[hsStatus] || hsStatus || @json(__('purchasing.copy.needs_more_data'))));
+        const hsCodeInput = rowEl.querySelector('.hs-code-display');
+        if (hsCodeInput) hsCodeInput.value = data.hs_code ?? '';
+
+        const hsBadge = rowEl.querySelector('.hs-status-badge');
+        if (hsBadge) {
+            hsBadge.classList.remove(
+                'ui-status-chip--success',
+                'ui-status-chip--warning',
+                'ui-status-chip--error',
+                'ui-status-chip--neutral'
+            );
+            hsBadge.classList.add(
+                isManual
+                    ? 'ui-status-chip--warning'
+                    : (hsStatus === 'matched' ? 'ui-status-chip--success' : 'ui-status-chip--neutral')
+            );
+            hsBadge.textContent = isManual
+                ? prImportCopy.manualSelection
+                : (labelMap[hsStatus] || hsStatus || prImportCopy.needsMoreData);
+        }
+
         const gradeLabel = data.grade_label ?? '';
-        $row.find('.material-grade-display').val(gradeLabel).attr('title', gradeLabel);
+        const gradeInput = rowEl.querySelector('.material-grade-display');
+        if (gradeInput) {
+            gradeInput.value = gradeLabel;
+            gradeInput.setAttribute('title', gradeLabel);
+        }
 
         const weight = Number(data.weight_needed || 0);
-        $row.find('.weight-unit-display').val(weight.toFixed(4));
+        const weightInput = rowEl.querySelector('.weight-unit-display');
+        if (weightInput) weightInput.value = weight.toFixed(4);
 
         if (data.remark) {
-            $row.find('.pr-remark-trigger__text').text(data.remark);
-            $row.find('.pr-remark-trigger').addClass('has-remark').attr('title', data.remark);
-            if (!$row.find('.pr-remark-trigger__badge').length) {
-                const remarkBadge = document.createElement('span');
-                remarkBadge.className = 'pr-remark-trigger__badge';
-                remarkBadge.title = @json(__('purchasing.copy.remark_entered'));
-                remarkBadge.setAttribute('aria-hidden', 'true');
-                $row.find('.pr-remark-trigger').append(remarkBadge);
+            const triggerText = rowEl.querySelector('.pr-remark-trigger__text');
+            const trigger = rowEl.querySelector('.pr-remark-trigger');
+            const draftInput = rowEl.querySelector('.pr-remark-draft');
+            if (triggerText) triggerText.textContent = data.remark;
+            if (trigger) {
+                trigger.classList.add('has-remark');
+                trigger.setAttribute('title', data.remark);
+                if (!trigger.querySelector('.pr-remark-trigger__badge')) {
+                    const remarkBadge = document.createElement('span');
+                    remarkBadge.className = 'pr-remark-trigger__badge';
+                    remarkBadge.title = @json(__('purchasing.copy.remark_entered'));
+                    remarkBadge.setAttribute('aria-hidden', 'true');
+                    trigger.appendChild(remarkBadge);
+                }
             }
-            $row.find('.pr-remark-draft').val(data.remark);
+            if (draftInput) draftInput.value = data.remark;
         }
         if (data.material_name) {
-            $row.find('.pr-remark-material-name').text(data.material_name);
+            const remarkMatName = rowEl.querySelector('.pr-remark-material-name');
+            if (remarkMatName) remarkMatName.textContent = data.material_name;
         }
 
         itemIndex++;
 
-        return $row;
+        return rowEl;
     }
 
     function formatPrImportMessage(entry) {
@@ -206,123 +255,156 @@
         const errors = Array.isArray(payload.errors) ? payload.errors : [];
         const rows = Array.isArray(payload.rows) ? payload.rows : [];
 
-        $('#prImportResult').removeClass('d-none');
-        $('#prImportSummary').text(
-            window.AdasiI18n.t('js.import.summary', {
+        document.getElementById('prImportResult')?.classList.remove('d-none');
+        const summaryEl = document.getElementById('prImportSummary');
+        if (summaryEl) {
+            summaryEl.textContent = window.AdasiI18n.t('js.import.summary', {
                 total: summary.total || 0,
                 valid: summary.valid || 0,
                 invalid: summary.invalid || 0,
-            })
-        );
+            });
+        }
 
-        const $warnings = $('#prImportWarnings').empty();
-        warnings.forEach((warning) => $('<li>').text(formatPrImportMessage(warning)).appendTo($warnings));
-        $('#prImportWarningsPanel').toggleClass('d-none', warnings.length === 0);
+        const warningsEl = document.getElementById('prImportWarnings');
+        if (warningsEl) {
+            warningsEl.replaceChildren();
+            warnings.forEach((warning) => {
+                const li = document.createElement('li');
+                li.textContent = formatPrImportMessage(warning);
+                warningsEl.appendChild(li);
+            });
+        }
+        document.getElementById('prImportWarningsPanel')?.classList.toggle('d-none', warnings.length === 0);
 
-        const $errors = $('#prImportErrors').empty();
-        errors.forEach((error) => $('<li>').text(formatPrImportMessage(error)).appendTo($errors));
-        $('#prImportErrorsPanel').toggleClass('d-none', errors.length === 0);
+        const errorsEl = document.getElementById('prImportErrors');
+        if (errorsEl) {
+            errorsEl.replaceChildren();
+            errors.forEach((error) => {
+                const li = document.createElement('li');
+                li.textContent = formatPrImportMessage(error);
+                errorsEl.appendChild(li);
+            });
+        }
+        document.getElementById('prImportErrorsPanel')?.classList.toggle('d-none', errors.length === 0);
 
-        const $preview = $('#prImportPreviewBody').empty();
+        const previewEl = document.getElementById('prImportPreviewBody');
         const kgFormat = new Intl.NumberFormat(document.documentElement.lang || undefined, { maximumFractionDigits: 4 });
         const kg = (value) => value === null || value === undefined || value === '' ? '-' : kgFormat.format(Number(value));
         // PUR-01: every PR dimension in its own column; a dimension the shape does not use is null → '-'.
         const dimensionOrder = @json(\App\Models\PrItem::FIXED_DIMENSION_ORDER);
-        rows.forEach((row, index) => {
-            const $tableRow = $('<tr>');
-            [
-                index + 1,
-                row.material_name ?? '-',
-                `${row.hs_code ?? '-'} (${row.hs_code_resolution_status ?? 'unresolved'})`,
-                row.shape ?? '-',
-                ...dimensionOrder.map((field) => row[field] ?? '-'),
-                row.quantity ?? '-',
-                kg(row.weight_needed),
-                kg(row.total_weight),
-                row.remark ?? '-'
-            ].forEach((value, column) => {
-                const $td = $('<td>').text(value);
-                if (column === 0 || column === 3 || column === 9) {
-                    $td.addClass('text-center');
-                }
-                if (column === 9) {
-                    $td.addClass('ui-tabular-nums');
-                }
-                if ((column >= 4 && column <= 8) || column === 10 || column === 11) {
-                    $td.addClass('text-end ui-tabular-nums');
-                }
-                $td.appendTo($tableRow);
+        if (previewEl) {
+            previewEl.replaceChildren();
+            rows.forEach((row, index) => {
+                const tableRow = document.createElement('tr');
+                [
+                    index + 1,
+                    row.material_name ?? '-',
+                    `${row.hs_code ?? '-'} (${row.hs_code_resolution_status ?? 'unresolved'})`,
+                    row.shape ?? '-',
+                    ...dimensionOrder.map((field) => row[field] ?? '-'),
+                    row.quantity ?? '-',
+                    kg(row.weight_needed),
+                    kg(row.total_weight),
+                    row.remark ?? '-'
+                ].forEach((value, column) => {
+                    const td = document.createElement('td');
+                    td.textContent = value;
+                    if (column === 0 || column === 3 || column === 9) {
+                        td.classList.add('text-center');
+                    }
+                    if (column === 9) {
+                        td.classList.add('ui-tabular-nums');
+                    }
+                    if ((column >= 4 && column <= 8) || column === 10 || column === 11) {
+                        td.classList.add('text-end', 'ui-tabular-nums');
+                    }
+                    tableRow.appendChild(td);
+                });
+                previewEl.appendChild(tableRow);
             });
-            $tableRow.appendTo($preview);
-        });
-        $('#prImportTotalQty').text(summary.total_quantity ?? 0);
-        $('#prImportTotalKg').text(kg(summary.total_weight_kg ?? 0));
-        $('#prImportPreviewPanel').toggleClass('d-none', rows.length === 0);
+        }
+
+        const totalQtyEl = document.getElementById('prImportTotalQty');
+        if (totalQtyEl) totalQtyEl.textContent = String(summary.total_quantity ?? 0);
+
+        const totalKgEl = document.getElementById('prImportTotalKg');
+        if (totalKgEl) totalKgEl.textContent = kg(summary.total_weight_kg ?? 0);
+
+        document.getElementById('prImportPreviewPanel')?.classList.toggle('d-none', rows.length === 0);
 
         prImportRows = payload.success === true ? rows : [];
-        $('#btnApplyPrImport').prop('disabled', payload.success !== true || rows.length === 0);
+        const applyBtn = document.getElementById('btnApplyPrImport');
+        if (applyBtn) applyBtn.disabled = payload.success !== true || rows.length === 0;
     }
 
     function setPrImportBusy(isBusy) {
         prImportRequestInFlight = isBusy;
-        $('#btnParsePrImport').prop('disabled', isBusy);
-        $('#prImportFile, #prImportMode').prop('disabled', isBusy);
-        $('#prImportSpinner').toggleClass('d-none', !isBusy);
+        const parseBtn = document.getElementById('btnParsePrImport');
+        const fileEl = document.getElementById('prImportFile');
+        const modeEl = document.getElementById('prImportMode');
+        if (parseBtn) parseBtn.disabled = isBusy;
+        if (fileEl) fileEl.disabled = isBusy;
+        if (modeEl) modeEl.disabled = isBusy;
+        document.getElementById('prImportSpinner')?.classList.toggle('d-none', !isBusy);
     }
 
-    function parsePrImport() {
+    async function parsePrImport() {
         if (prImportRequestInFlight) {
             return;
         }
 
         const fileInput = document.getElementById('prImportFile');
-        const file = fileInput.files[0];
+        const file = fileInput?.files[0];
         if (!file) {
-            fileInput.setCustomValidity(@json(__('purchasing.copy.select_an_xlsx_xls_or_csv_file_before_continuing')));
-            fileInput.reportValidity();
+            fileInput?.setCustomValidity(prImportCopy.selectFileBeforeContinuing);
+            fileInput?.reportValidity();
             return;
         }
         fileInput.setCustomValidity('');
 
         const formData = new FormData();
-        formData.append('_token', @json(csrf_token()));
+        formData.append('_token', prImportCsrfToken);
         formData.append('import_file', file);
         prImportRows = [];
-        $('#btnApplyPrImport').prop('disabled', true);
+        const applyBtn = document.getElementById('btnApplyPrImport');
+        if (applyBtn) applyBtn.disabled = true;
         setPrImportBusy(true);
 
-        $.ajax({
-            url: prImportPreviewUrl,
-            method: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            headers: {
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        }).done((payload) => {
-            renderPrImportResult(payload);
-        }).fail((xhr) => {
-            renderPrImportResult(xhr.responseJSON || {
-                success: false,
-                rows: [],
-                warnings: [],
-                summary: { total: 0, valid: 0, invalid: 0 },
-                errors: [{ row: null, column: 'import_file', message: @json(__('purchasing.copy.the_spreadsheet_could_not_be_processed')) }]
+        const fallbackErrorPayload = {
+            success: false,
+            rows: [],
+            warnings: [],
+            summary: { total: 0, valid: 0, invalid: 0 },
+            errors: [{ row: null, column: 'import_file', message: prImportCopy.spreadsheetProcessingFailed }]
+        };
+
+        try {
+            const response = await fetch(prImportPreviewUrl, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': prImportCsrfToken,
+                },
             });
-        }).always(() => {
+            const payload = await response.json().catch(() => null);
+            renderPrImportResult((response.ok && payload) ? payload : (payload || fallbackErrorPayload));
+        } catch (error) {
+            renderPrImportResult(fallbackErrorPayload);
+        } finally {
             setPrImportBusy(false);
-        });
+        }
     }
 
     function performPrImportApply(mode) {
+        const itemsBody = document.getElementById('itemsBody');
         if (mode === 'replace') {
-            $('#itemsBody').empty();
+            itemsBody?.replaceChildren();
         } else {
-            $('#itemsBody tr.item-row').each(function() {
-                if (!prRowHasMeaningfulData(this)) {
-                    $(this).remove();
+            document.querySelectorAll('#itemsBody tr.item-row').forEach((row) => {
+                if (!prRowHasMeaningfulData(row)) {
+                    row.remove();
                 }
             });
         }
@@ -333,7 +415,7 @@
         bootstrap.Modal.getOrCreateInstance(document.getElementById('prImportModal')).hide();
         AdasiToast.show({
             type: 'success',
-            title: @json(__('purchasing.copy.import_applied')),
+            title: prImportCopy.importApplied,
             message: window.AdasiI18n.choice('purchasing.js.import_added', prImportRows.length),
             autoClose: 2200
         });
@@ -344,15 +426,15 @@
             return;
         }
 
-        const mode = $('#prImportMode').val();
-        const hasCurrentData = $('#itemsBody tr.item-row').toArray().some(prRowHasMeaningfulData);
+        const mode = document.getElementById('prImportMode')?.value || 'replace';
+        const hasCurrentData = Array.from(document.querySelectorAll('#itemsBody tr.item-row')).some(prRowHasMeaningfulData);
 
         if (mode === 'replace' && hasCurrentData) {
             AdasiAlert.confirmDanger({
-                title: @json(__('purchasing.copy.replace_current_material_rows')),
-                text: @json(__('purchasing.copy.material_values_currently_entered_in_the_form_will_be_replaced_by_the_validated_import')),
-                confirmText: @json(__('purchasing.copy.yes_replace_rows')),
-                cancelText: @json(__('purchasing.copy.cancel'))
+                title: prImportCopy.replaceCurrentRowsTitle,
+                text: prImportCopy.replaceCurrentRowsText,
+                confirmText: prImportCopy.yesReplaceRows,
+                cancelText: prImportCopy.cancel
             }).then((result) => {
                 if (result.isConfirmed) {
                     performPrImportApply(mode);
@@ -364,32 +446,47 @@
         performPrImportApply(mode);
     }
 
-    $(document).ready(function() {
+    function initPrImportControls() {
         const importModeDescriptions = {
             replace: @json(__('purchasing.copy.removes_the_material_rows_currently_shown_in_this_form_and_replaces_them_with_the_validated_rows_fro')),
             append: @json(__('purchasing.copy.keeps_the_material_rows_currently_shown_and_adds_validated_spreadsheet_rows_below_them')),
         };
+        const modeSelect = document.getElementById('prImportMode');
+        const modeHelp = document.getElementById('prImportModeHelp');
         const updateImportModeHelp = () => {
-            $('#prImportModeHelp').text(importModeDescriptions[$('#prImportMode').val()] || '');
+            if (modeHelp && modeSelect) {
+                modeHelp.textContent = importModeDescriptions[modeSelect.value] || '';
+            }
         };
 
-        $('#btnParsePrImport').on('click', parsePrImport);
-        $('#btnApplyPrImport').on('click', applyPrImport);
-        $('#prImportMode').on('change', updateImportModeHelp);
+        document.getElementById('btnParsePrImport')?.addEventListener('click', parsePrImport);
+        document.getElementById('btnApplyPrImport')?.addEventListener('click', applyPrImport);
+        modeSelect?.addEventListener('change', updateImportModeHelp);
         updateImportModeHelp();
-        $('#prImportModal').on('hidden.bs.modal', function() {
+
+        document.getElementById('prImportModal')?.addEventListener('hidden.bs.modal', () => {
             if (prImportRequestInFlight) {
                 return;
             }
 
-            document.getElementById('prImportFile').value = '';
-            $('#prImportMode').val('replace');
+            const fileInput = document.getElementById('prImportFile');
+            if (fileInput) fileInput.value = '';
+            if (modeSelect) modeSelect.value = 'replace';
             updateImportModeHelp();
-            $('#prImportResult').addClass('d-none');
-            $('#prImportWarnings, #prImportErrors, #prImportPreviewBody').empty();
-            $('#btnApplyPrImport').prop('disabled', true);
+            document.getElementById('prImportResult')?.classList.add('d-none');
+            document.getElementById('prImportWarnings')?.replaceChildren();
+            document.getElementById('prImportErrors')?.replaceChildren();
+            document.getElementById('prImportPreviewBody')?.replaceChildren();
+            const applyBtn = document.getElementById('btnApplyPrImport');
+            if (applyBtn) applyBtn.disabled = true;
             prImportRows = [];
         });
-    });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initPrImportControls);
+    } else {
+        initPrImportControls();
+    }
 </script>
 @endpush
