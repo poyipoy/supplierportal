@@ -428,6 +428,37 @@ test('jQuery ajax completions (DataTables, legacy pages) that report an ended se
     assert.equal(f.prompts.length, 1);
 });
 
+test('DataTables 3 native XHR events (xhr.dt, dt-error.dt, preXhr.dt) detect expired sessions once and swap retired CSRF tokens', async () => {
+    const server = statusServer({ status: 200, body: { authenticated: true, user_id: 41, csrf_token: 'new-token' } });
+    const { stub, handlers } = jqueryStub();
+    const f = fixture({ session: RESUMABLE, answers: [CONFIRMED], dom: tokenDom(), fetchImpl: server.impl, jquery: stub });
+    f.win.DataTable = { ajax: { defaults: { headers: { 'X-CSRF-TOKEN': 'old-token' } } }, ext: { errMode: 'alert' } };
+
+    // Cross-origin DataTables response is ignored.
+    handlers['xhr.dt']({}, { ajax: { url: 'https://elsewhere.example.test/table' } }, null, { status: 401 });
+    assert.equal(f.prompts.length, 0);
+
+    // Same-origin 401 on xhr.dt opens reconnect once; duplicate ajaxComplete/dt-error.dt for same XHR is deduplicated.
+    const dtXhr = { status: 401 };
+    handlers['xhr.dt']({}, { ajax: { url: '/purchasing/purchase-orders' }, jqXHR: dtXhr }, null, dtXhr);
+    handlers.ajaxComplete({}, dtXhr, { crossDomain: false });
+    handlers['dt-error.dt']({}, { ajax: { url: '/purchasing/purchase-orders' }, jqXHR: dtXhr }, 7, 'Ajax error');
+    assert.equal(f.prompts.length, 1);
+    await flush();
+
+    // After restore, DataTable.ajax.defaults.headers and preXhr.dt same-origin headers/data swap retired token.
+    assert.equal(f.win.DataTable.ajax.defaults.headers['X-CSRF-TOKEN'], 'new-token');
+    const sameOriginOpts = { url: '/purchasing/purchase-orders', headers: { 'X-CSRF-TOKEN': 'old-token' }, data: { _token: 'old-token', draw: 2 } };
+    handlers['preXhr.dt']({}, {}, sameOriginOpts.data, sameOriginOpts);
+    assert.equal(sameOriginOpts.headers['X-CSRF-TOKEN'], 'new-token');
+    assert.equal(sameOriginOpts.data._token, 'new-token');
+
+    const crossOriginOpts = { url: 'https://elsewhere.example.test/table', headers: { 'X-CSRF-TOKEN': 'old-token' }, data: { _token: 'old-token' } };
+    handlers['preXhr.dt']({}, {}, crossOriginOpts.data, crossOriginOpts);
+    assert.equal(crossOriginOpts.headers['X-CSRF-TOKEN'], 'old-token');
+    assert.equal(crossOriginOpts.data._token, 'old-token');
+});
+
 test('DataTables raises no alert of its own for an ended session but still reports other errors', () => {
     const { stub, dataTableExt } = jqueryStub();
     const f = fixture({ jquery: stub });
@@ -1163,4 +1194,54 @@ test('probeSessionStatus deduplicates concurrent probes and classifies authentic
     mode = 'offline';
     const rOffline = await f.api.probeSessionStatus();
     assert.deepEqual(rOffline, { authenticated: null, networkError: true, status: 0 });
+});
+
+test('DataTables 3 custom ajax.error still triggers session-expired modal on 401/419 even before any CSRF rotation', () => {
+    const { stub, handlers } = jqueryStub();
+    const f = fixture({ jquery: stub });
+    const customCalls = [];
+    const customErrorFn = (xhr, textStatus, errThrown) => {
+        customCalls.push({ status: xhr?.status, textStatus, errThrown });
+    };
+
+    // Initial load: tokens.retired.size === 0, table configures ajax: { url, error: customErrorFn }.
+    const ajaxOpts401 = {
+        url: `${ORIGIN}/finance/local-procurement/1/goods-receipts/data`,
+        error: customErrorFn,
+    };
+    const settings = { ajax: { url: ajaxOpts401.url, error: customErrorFn } };
+    handlers['preXhr.dt']({}, settings, {}, ajaxOpts401);
+
+    const xhr401 = { status: 401, getResponseHeader: () => null };
+    settings.jqXHR = xhr401;
+    // DT 3 skips xhr.dt/dt-error.dt when ajax.error is overridden; invoke error + complete directly.
+    ajaxOpts401.error(xhr401, 'error', 'Unauthorized');
+    ajaxOpts401.complete?.(xhr401, 'error');
+
+    assert.equal(f.prompts.length, 1, '401 via custom ajax.error must still open session reconnect prompt');
+    assert.equal(customCalls.length, 0, 'custom generic error toast must be suppressed on 401 session expiry');
+
+    // Non-session HTTP 500 on same-origin custom ajax.error must still run customErrorFn without prompting.
+    const ajaxOpts500 = { url: ajaxOpts401.url, error: customErrorFn };
+    handlers['preXhr.dt']({}, settings, {}, ajaxOpts500);
+    const xhr500 = { status: 500, getResponseHeader: () => null };
+    settings.jqXHR = xhr500;
+    ajaxOpts500.error(xhr500, 'error', 'Internal Server Error');
+    ajaxOpts500.complete?.(xhr500, 'error');
+
+    assert.equal(f.prompts.length, 1);
+    assert.deepEqual(customCalls, [{ status: 500, textStatus: 'error', errThrown: 'Internal Server Error' }]);
+
+    // Cross-origin 401 must be ignored by session-sync and invoke customErrorFn normally.
+    const ajaxOptsCross = { url: 'https://elsewhere.example.test/data', error: customErrorFn };
+    const crossSettings = { ajax: { url: ajaxOptsCross.url, error: customErrorFn } };
+    handlers['preXhr.dt']({}, crossSettings, {}, ajaxOptsCross);
+    const xhrCross401 = { status: 401, getResponseHeader: () => null };
+    crossSettings.jqXHR = xhrCross401;
+    ajaxOptsCross.error(xhrCross401, 'error', 'Unauthorized');
+    ajaxOptsCross.complete?.(xhrCross401, 'error');
+
+    assert.equal(f.prompts.length, 1);
+    assert.equal(customCalls.length, 2);
+    assert.equal(customCalls[1].status, 401);
 });

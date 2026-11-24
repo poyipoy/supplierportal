@@ -275,14 +275,99 @@ function observeFetch(win, { onActionResponse, onPollResponse, onServerTouch, ge
     win.fetch = observed;
 }
 
+function chainAjaxComplete(ajaxOpts, callback, flagName) {
+    if (!ajaxOpts || typeof ajaxOpts !== 'object' || ajaxOpts.complete?.[flagName]) return;
+    const prev = ajaxOpts.complete;
+    const wrapped = function chainedComplete(...args) {
+        if (Array.isArray(prev)) {
+            prev.forEach((fn) => { if (typeof fn === 'function') fn.apply(this, args); });
+        } else if (typeof prev === 'function') {
+            prev.apply(this, args);
+        }
+        callback.apply(this, args);
+    };
+    wrapped[flagName] = true;
+    ajaxOpts.complete = wrapped;
+}
+
+function observeDataTableAjaxLifecycle(win, settings, ajaxOpts, isSameOriginDataTable, handleXhrResponse) {
+    if (!ajaxOpts || typeof ajaxOpts !== 'object') return;
+    const targetUrl = ajaxOpts.url || (typeof settings?.ajax === 'string' ? settings.ajax : settings?.ajax?.url) || win.location?.href;
+    if ((targetUrl && !isSameOrigin(win, targetUrl)) || !isSameOriginDataTable(settings)) return;
+
+    if (typeof ajaxOpts.error === 'function' && !ajaxOpts.error.adasiSessionWrapped) {
+        const originalError = ajaxOpts.error;
+        const hasCustomAjaxError = Boolean(
+            settings?.ajax
+            && typeof settings.ajax === 'object'
+            && typeof settings.ajax.error === 'function',
+        );
+        const wrappedError = function adasiSessionDtError(xhr, ...rest) {
+            const resolvedXhr = xhr || settings?.jqXHR;
+            handleXhrResponse(resolvedXhr, false);
+            if (hasCustomAjaxError && sessionExpiredByResponse(resolvedXhr)) {
+                return undefined;
+            }
+            return originalError.call(this, xhr, ...rest);
+        };
+        wrappedError.adasiSessionWrapped = true;
+        ajaxOpts.error = wrappedError;
+    }
+
+    chainAjaxComplete(ajaxOpts, (xhr) => {
+        handleXhrResponse(xhr || settings?.jqXHR, false);
+    }, 'adasiSessionWrapped');
+}
+
 function observeJQuery(win, doc, { onActionResponse, onServerTouch }, tokens) {
     if (typeof win.jQuery !== 'function') return;
-    win.jQuery(doc).on('ajaxComplete', (event, xhr, settings) => {
-        if (settings?.crossDomain === true) return;
+    const handledXhrs = new WeakSet();
+    const handleXhrResponse = (xhr, isCrossDomain) => {
+        if (isCrossDomain === true || !xhr || typeof xhr !== 'object') return;
+        if (handledXhrs.has(xhr)) return;
+        handledXhrs.add(xhr);
         if (sessionExpiredByResponse(xhr)) {
             onActionResponse(xhr);
-        } else if (typeof xhr?.status === 'number' && xhr.status > 0 && xhr.status < 400) {
+        } else if (typeof xhr.status === 'number' && xhr.status > 0 && xhr.status < 400) {
             onServerTouch();
+        }
+    };
+    const isSameOriginDataTable = (settings) => {
+        const ajaxUrl = typeof settings?.ajax === 'string' ? settings.ajax : settings?.ajax?.url;
+        return !ajaxUrl || isSameOrigin(win, ajaxUrl);
+    };
+
+    win.jQuery(doc).on('ajaxComplete', (event, xhr, settings) => {
+        handleXhrResponse(xhr, settings?.crossDomain === true);
+    });
+    // DataTables 3 uses native XMLHttpRequest directly (bypassing jQuery.ajax), so observe .dt events too.
+    win.jQuery(doc).on('xhr.dt', (_event, settings, _json, xhr) => {
+        handleXhrResponse(xhr || settings?.jqXHR, !isSameOriginDataTable(settings));
+    });
+    win.jQuery(doc).on('dt-error.dt', (_event, settings) => {
+        if (!settings?.jqXHR) return;
+        handleXhrResponse(settings.jqXHR, !isSameOriginDataTable(settings));
+    });
+    win.jQuery(doc).on('preXhr.dt', (_event, settings, data, ajaxOpts) => {
+        observeDataTableAjaxLifecycle(win, settings, ajaxOpts, isSameOriginDataTable, handleXhrResponse);
+        if (tokens.retired.size === 0 || !ajaxOpts || typeof ajaxOpts !== 'object') return;
+        const targetUrl = ajaxOpts.url || win.location?.href;
+        if (targetUrl && !isSameOrigin(win, targetUrl)) return;
+        replaceRetiredHeader(ajaxOpts.headers, tokens.retired, tokens.current);
+        if (typeof ajaxOpts.data === 'string') {
+            ajaxOpts.data = ajaxOpts.data.replace(/(^|&)_token=([^&]*)/g, (match, lead, value) => {
+                let decoded;
+                try { decoded = decodeURIComponent(value.replace(/\+/g, ' ')); } catch { return match; }
+                return tokens.retired.has(decoded) ? `${lead}_token=${encodeURIComponent(tokens.current)}` : match;
+            });
+        } else {
+            replaceRetiredField(ajaxOpts.data, tokens.retired, tokens.current);
+            if (ajaxOpts.data && typeof ajaxOpts.data === 'object' && tokens.retired.has(ajaxOpts.data._token)) {
+                ajaxOpts.data._token = tokens.current;
+            }
+            if (data && typeof data === 'object' && tokens.retired.has(data._token)) {
+                data._token = tokens.current;
+            }
         }
     });
     // Prefilters run after jQuery serialised `data` and decided `crossDomain`, before headers are sent.
@@ -304,7 +389,7 @@ function observeJQuery(win, doc, { onActionResponse, onServerTouch }, tokens) {
 // DataTables alerts "Ajax error" on any failed request, which would stack a raw browser alert
 // on top of the reconnect dialog. Pages that set their own errMode keep it.
 function guardDataTables(win) {
-    const ext = win.jQuery?.fn?.dataTable?.ext;
+    const ext = win.DataTable?.ext || win.jQuery?.fn?.dataTable?.ext;
     if (!ext || ext.errMode !== 'alert') return;
     ext.errMode = (settings, techNote, message) => {
         if (sessionExpiredByResponse(settings?.jqXHR)) return;
@@ -712,6 +797,8 @@ export function bootSessionSync(win, doc) {
         tokens.current = token;
         const echoHeaders = win.Echo?.connector?.options?.auth?.headers;
         if (echoHeaders && typeof echoHeaders === 'object') replaceRetiredHeader(echoHeaders, tokens.retired, token);
+        const dtAjaxHeaders = win.DataTable?.ajax?.defaults?.headers;
+        if (dtAjaxHeaders && typeof dtAjaxHeaders === 'object') replaceRetiredHeader(dtAjaxHeaders, tokens.retired, token);
         syncTokenToEmbeddedFrames(token);
         refusedAt = null;
         lastServerTouchAt = now;
@@ -983,6 +1070,8 @@ export function bootSessionSync(win, doc) {
             tokens.current = token;
             const echoHeaders = win.Echo?.connector?.options?.auth?.headers;
             if (echoHeaders && typeof echoHeaders === 'object') replaceRetiredHeader(echoHeaders, tokens.retired, token);
+            const dtAjaxHeaders = win.DataTable?.ajax?.defaults?.headers;
+            if (dtAjaxHeaders && typeof dtAjaxHeaders === 'object') replaceRetiredHeader(dtAjaxHeaders, tokens.retired, token);
             refusedAt = null;
         },
         // True while the dialog is open or after the user chose to stay; background polling stops then.

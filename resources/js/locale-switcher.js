@@ -98,6 +98,69 @@ export function applySegmentedButtonState(root, activeLocale, busy = false) {
  * from `serverRoot` into `liveRoot` while preserving user-typed form values,
  * `<input type="file">` FileList objects, Alpine state, and event listeners.
  */
+function findDescendantByClass(node, className) {
+    if (!node || typeof node !== 'object') return null;
+    if (typeof node.querySelector === 'function') {
+        const found = node.querySelector(`.${className}`);
+        if (found) return found;
+    }
+    for (const child of Array.from(node.childNodes || [])) {
+        if (child?.nodeType !== 1) continue;
+        if (child.classList?.contains?.(className)) return child;
+        const nested = findDescendantByClass(child, className);
+        if (nested) return nested;
+    }
+    return null;
+}
+
+function morphChildNodes(liveParent, serverParent) {
+    const liveChildren = Array.from(liveParent.childNodes || []);
+    const serverChildren = Array.from(serverParent.childNodes || []);
+
+    let li = 0;
+    let si = 0;
+    while (li < liveChildren.length && si < serverChildren.length) {
+        const liveChild = liveChildren[li];
+        const serverChild = serverChildren[si];
+
+        if (
+            liveChild.nodeType === serverChild.nodeType
+            && (liveChild.nodeType !== 1 || liveChild.tagName === serverChild.tagName)
+        ) {
+            morphDomTree(liveChild, serverChild);
+            li++;
+            si++;
+            continue;
+        }
+
+        // DataTables wraps SSR <table> inside <div class="dt-container">; keep visible column headers translated.
+        if (
+            liveChild.nodeType === 1
+            && serverChild.nodeType === 1
+            && serverChild.tagName?.toUpperCase?.() === 'TABLE'
+            && liveChild.classList?.contains?.('dt-container')
+        ) {
+            syncDataTableWrapperHeaders(liveChild, serverChild);
+            li++;
+            si++;
+            continue;
+        }
+
+        // Skip unmatched comment or whitespace text nodes on either side
+        if (liveChild.nodeType !== 1 && serverChild.nodeType === 1) {
+            li++;
+            continue;
+        }
+        if (serverChild.nodeType !== 1 && liveChild.nodeType === 1) {
+            si++;
+            continue;
+        }
+
+        li++;
+        si++;
+    }
+}
+
 function syncDataTableWrapperHeaders(liveWrapper, serverTable) {
     const serverThead = serverTable.querySelector?.('thead');
     if (!serverThead || typeof liveWrapper.querySelectorAll !== 'function') return;
@@ -107,7 +170,7 @@ function syncDataTableWrapperHeaders(liveWrapper, serverTable) {
     const matchedTables = tableId
         ? allTables.filter((table) => table.getAttribute?.('id') === tableId)
         : allTables;
-    const scrollHeadTables = Array.from(liveWrapper.querySelectorAll('.dataTables_scrollHeadInner table') || []);
+    const scrollHeadTables = Array.from(liveWrapper.querySelectorAll('.dt-scroll-headInner table') || []);
     const targetTables = new Set([
         ...(matchedTables.length ? matchedTables : allTables),
         ...scrollHeadTables,
@@ -191,88 +254,155 @@ export function morphDomTree(liveRoot, serverRoot) {
         return;
     }
 
+    if (tag === 'TH' || tag === 'TD') {
+        const liveTitle = findDescendantByClass(liveRoot, 'dt-column-title');
+        const serverTitle = findDescendantByClass(serverRoot, 'dt-column-title');
+        if (liveTitle && !serverTitle) {
+            if ((liveTitle.childNodes || []).length === 0 && serverRoot.textContent !== undefined) {
+                liveTitle.textContent = serverRoot.textContent;
+            } else {
+                morphChildNodes(liveTitle, serverRoot);
+            }
+            return;
+        }
+    }
+
     // 3. Walk child nodes with resilient alignment
-    const liveChildren = Array.from(liveRoot.childNodes || []);
-    const serverChildren = Array.from(serverRoot.childNodes || []);
+    morphChildNodes(liveRoot, serverRoot);
+}
 
-    let li = 0;
-    let si = 0;
-    while (li < liveChildren.length && si < serverChildren.length) {
-        const liveChild = liveChildren[li];
-        const serverChild = serverChildren[si];
+function formatDataTableInfoText(settings, tableApi, lang) {
+    const info = tableApi?.page?.info?.();
+    if (!info || !lang || typeof lang !== 'object') return null;
 
-        if (
-            liveChild.nodeType === serverChild.nodeType
-            && (liveChild.nodeType !== 1 || liveChild.tagName === serverChild.tagName)
-        ) {
-            morphDomTree(liveChild, serverChild);
-            li++;
-            si++;
-            continue;
+    const total = Number(info.recordsTotal ?? 0);
+    const display = Number(info.recordsDisplay ?? 0);
+    const start = display > 0 ? Number(info.start ?? 0) + 1 : 0;
+    const end = Number(info.end ?? 0);
+    const fmt = (n) => (typeof settings?.formatNumber === 'function' ? settings.formatNumber(n, settings) : String(n));
+
+    let template = display > 0 ? (lang.info || '') : (lang.infoEmpty || '');
+    if (!template) return null;
+    if (display !== total && lang.infoFiltered) {
+        template = `${template} ${lang.infoFiltered}`.trim();
+    }
+
+    return template
+        .replace(/_START_/g, fmt(start))
+        .replace(/_END_/g, fmt(end))
+        .replace(/_TOTAL_/g, fmt(display))
+        .replace(/_MAX_/g, fmt(total));
+}
+
+function syncDataTableChromeLabels(wrapper, dtLang, documentRef = wrapper?.ownerDocument) {
+    if (!wrapper || !dtLang || typeof dtLang !== 'object') return;
+
+    const searchInput = wrapper.querySelector('.dt-search input[type="search"]');
+    if (searchInput && dtLang.searchPlaceholder) {
+        searchInput.setAttribute('placeholder', dtLang.searchPlaceholder);
+    }
+    if (searchInput && dtLang.search) {
+        searchInput.setAttribute('aria-label', String(dtLang.search).replace(/:$/, '').trim());
+    }
+
+    const searchLabel = wrapper.querySelector('.dt-search label');
+    if (searchLabel && dtLang.search) {
+        const cleanSearch = String(dtLang.search).replace(/_INPUT_/g, '');
+        const textNode = Array.from(searchLabel.childNodes || []).find((node) => node.nodeType === 3);
+        if (textNode) {
+            textNode.nodeValue = cleanSearch;
+        } else if (!searchLabel.querySelector?.('input')) {
+            searchLabel.textContent = cleanSearch;
         }
+    }
 
-        // DataTables wraps SSR <table> inside <div class="dataTables_wrapper">; keep visible column headers translated.
-        if (
-            liveChild.nodeType === 1
-            && serverChild.nodeType === 1
-            && serverChild.tagName?.toUpperCase?.() === 'TABLE'
-            && liveChild.classList?.contains?.('dataTables_wrapper')
-        ) {
-            syncDataTableWrapperHeaders(liveChild, serverChild);
-            li++;
-            si++;
-            continue;
+    const lengthLabel = wrapper.querySelector('.dt-length label');
+    if (lengthLabel && dtLang.lengthMenu && String(dtLang.lengthMenu).includes('_MENU_')) {
+        const [prefix, suffix] = String(dtLang.lengthMenu).split('_MENU_');
+        const selectEl = lengthLabel.querySelector?.('select');
+        const textNodes = Array.from(lengthLabel.childNodes || []).filter((node) => node.nodeType === 3);
+        if (selectEl && textNodes.length >= 2) {
+            textNodes[0].nodeValue = prefix;
+            textNodes[textNodes.length - 1].nodeValue = suffix;
+        } else if (!selectEl && textNodes.length > 0) {
+            textNodes[0].nodeValue = `${prefix}${suffix}`.trim();
         }
+    }
 
-        // Skip unmatched comment or whitespace text nodes on either side
-        if (liveChild.nodeType !== 1 && serverChild.nodeType === 1) {
-            li++;
-            continue;
+    const paginationBase = documentRef?.documentElement?.dataset?.paginationLabel;
+    const pager = wrapper.querySelector('.dt-paging');
+    if (pager && paginationBase) {
+        const navTarget = pager.matches?.('nav') ? pager : pager.querySelector?.('nav');
+        const title = wrapper.closest?.('.ui-data-table')?.querySelector?.('.ui-data-table__header h2')?.textContent?.trim();
+        const label = title ? `${paginationBase}: ${title}` : paginationBase;
+        if (navTarget) {
+            navTarget.setAttribute('aria-label', label);
+        } else if (pager.getAttribute?.('role') === 'navigation') {
+            pager.setAttribute('aria-label', label);
         }
-        if (serverChild.nodeType !== 1 && liveChild.nodeType === 1) {
-            si++;
-            continue;
-        }
-
-        li++;
-        si++;
     }
 }
 
 function refreshDataTablesLanguage(windowRef, documentRef, dtLang) {
     const jq = windowRef.jQuery;
-    if (!jq?.fn?.dataTable || !dtLang || typeof dtLang !== 'object') return;
+    const dtCtor = windowRef.DataTable || jq?.fn?.dataTable;
+    if (!dtCtor || !dtLang || typeof dtLang !== 'object') return;
 
-    jq.extend(true, jq.fn.dataTable.defaults, { language: dtLang });
+    if (jq?.extend) {
+        jq.extend(true, dtCtor.defaults, { language: dtLang });
+    } else if (dtCtor.defaults) {
+        dtCtor.defaults.language = { ...(dtCtor.defaults.language || {}), ...dtLang };
+    }
 
     try {
-        const tables = jq.fn.dataTable.tables({ api: true });
+        const tables = typeof dtCtor.tables === 'function' ? dtCtor.tables({ api: true }) : null;
         if (!tables || typeof tables.settings !== 'function') return;
 
+        const ApiCtor = dtCtor.Api || jq?.fn?.dataTable?.Api;
         const settingsList = tables.settings();
         for (let i = 0; i < settingsList.length; i++) {
             const settings = settingsList[i];
             if (!settings) continue;
 
-            if (settings.oLanguage) {
-                jq.extend(true, settings.oLanguage, dtLang);
+            const targetLang = settings.language;
+            if (targetLang) {
+                if (jq?.extend) {
+                    jq.extend(true, targetLang, dtLang);
+                } else {
+                    Object.assign(targetLang, dtLang);
+                }
             }
 
-            const wrapper = settings.nTableWrapper;
+            const tableApi = ApiCtor ? new ApiCtor(settings) : null;
+            const wrapper = tableApi?.table?.()?.container?.() || settings.tableWrapper;
+            const syncInfoElement = () => {
+                if (!wrapper) return;
+                const infoEl = wrapper.querySelector('.dt-info');
+                const formatted = formatDataTableInfoText(settings, tableApi, settings.language || dtLang);
+                if (infoEl && formatted !== null) {
+                    infoEl.textContent = formatted;
+                }
+            };
+            const syncLocaleDom = () => {
+                if (!wrapper) return;
+                syncDataTableChromeLabels(wrapper, settings.language || dtLang, documentRef);
+                syncInfoElement();
+            };
+
             if (wrapper) {
-                const searchInput = wrapper.querySelector('.dataTables_filter input[type="search"]');
-                if (searchInput && dtLang.searchPlaceholder) {
-                    searchInput.setAttribute('placeholder', dtLang.searchPlaceholder);
-                }
-                if (searchInput && dtLang.search) {
-                    searchInput.setAttribute('aria-label', String(dtLang.search).replace(/:$/, '').trim());
-                }
+                syncLocaleDom();
             }
 
-            const tableApi = new jq.fn.dataTable.Api(settings);
-            if (settings.ajax && typeof tableApi.ajax?.reload === 'function') {
+            // DataTables 3's info and pageLength features cache init-time language strings in closures;
+            // re-sync chrome labels and .dt-info after subsequent draws so live locale changes stick across reloads/paging.
+            const tableNode = settings.table;
+            if (jq && tableNode) {
+                jq(tableNode).off('draw.dt.adasiLocaleInfo').on('draw.dt.adasiLocaleInfo', syncLocaleDom);
+            }
+
+            if (settings.ajax && typeof tableApi?.ajax?.reload === 'function') {
                 tableApi.ajax.reload(null, false);
-            } else if (typeof tableApi.draw === 'function') {
+            } else if (typeof tableApi?.draw === 'function') {
                 tableApi.draw('page');
             }
         }
@@ -343,6 +473,11 @@ export function bootLocaleSwitcher(windowRef = globalThis.window, documentRef = 
 
                 if (parsedDoc?.title) {
                     documentRef.title = parsedDoc.title;
+                }
+                const nextPaginationLabel = parsedDoc?.documentElement?.dataset?.paginationLabel;
+                if (nextPaginationLabel && documentRef.documentElement) {
+                    documentRef.documentElement.dataset = documentRef.documentElement.dataset || {};
+                    documentRef.documentElement.dataset.paginationLabel = nextPaginationLabel;
                 }
 
                 const regions = [

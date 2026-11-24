@@ -265,7 +265,7 @@ async function until(expression, timeout = 20000) {
         if (await evaluate(expression)) return;
         await sleep(60);
     }
-    const diag = await evaluate('({path:location.pathname,readyState:document.readyState,title:document.title,h1:document.querySelector("h1")?.textContent?.trim(),main:Boolean(document.querySelector("#main-content")),alpine:typeof window.Alpine,jq:Boolean(window.jQuery),dt:Boolean(window.jQuery?.fn?.dataTable),wrappers:document.querySelectorAll(".dataTables_wrapper").length,tables:document.querySelectorAll("table").length,shell:document.documentElement.dataset.workspaceShell})');
+    const diag = await evaluate('({path:location.pathname,readyState:document.readyState,title:document.title,h1:document.querySelector("h1")?.textContent?.trim(),main:Boolean(document.querySelector("#main-content")),alpine:typeof window.Alpine,jq:Boolean(window.jQuery),dt:Boolean(window.jQuery?.fn?.dataTable),wrappers:document.querySelectorAll(".dt-container").length,tables:document.querySelectorAll("table").length,shell:document.documentElement.dataset.workspaceShell})');
     throw new Error(`Browser condition timed out: ${expression}; ${JSON.stringify(diag)}`);
 }
 
@@ -815,7 +815,7 @@ echo json_encode([
     await until('location.pathname !== ' + JSON.stringify(routes.login) + ' && Boolean(document.querySelector("#main-content"))', 25000);
 
     await navigate(routes.adminUsers + '?_mwg_shell=off');
-    await until('Boolean(document.querySelector("#main-content")) && Boolean(window.jQuery?.fn?.dataTable) && document.querySelectorAll(".dataTables_wrapper").length > 0', 25000);
+    await until('Boolean(document.querySelector("#main-content")) && Boolean(window.jQuery?.fn?.dataTable) && document.querySelectorAll(".dt-container").length > 0', 25000);
     await sleep(500);
     const dtAxe = await runAxeAudit('admin-users-datatables');
     const dtCheck = await evaluate(`(() => {
@@ -826,7 +826,7 @@ echo json_encode([
             tabindex: el.getAttribute('tabindex'),
             label: el.getAttribute('aria-label'),
         }));
-        const hasDtWrapper = document.querySelectorAll('.dataTables_wrapper').length > 0;
+        const hasDtWrapper = document.querySelectorAll('.dt-container').length > 0;
         document.documentElement.style.fontSize = '200%';
         const overflow = document.documentElement.scrollWidth - window.innerWidth;
         document.documentElement.style.fontSize = '';

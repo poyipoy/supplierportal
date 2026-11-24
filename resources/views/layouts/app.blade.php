@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ app()->getLocale() }}" class="js" @auth data-quick-flow="{{ ! empty($preferenceFrontendPayload['quickFlow'] ?? false) ? 'true' : 'false' }}" @endauth @if($isWorkspaceShell ?? false) data-workspace-shell="true" @endif @if(($isWorkspaceEmbed ?? false) && ! isset($exception)) data-workspace-embed="true" @endif>
+<html lang="{{ app()->getLocale() }}" class="js" data-pagination-label="{{ __('pagination.navigation') }}" @auth data-quick-flow="{{ ! empty($preferenceFrontendPayload['quickFlow'] ?? false) ? 'true' : 'false' }}" @endauth @if($isWorkspaceShell ?? false) data-workspace-shell="true" @endif @if(($isWorkspaceEmbed ?? false) && ! isset($exception)) data-workspace-embed="true" @endif>
 
 <head>
     @php
@@ -356,7 +356,7 @@
 
     @hasSection('uses-datatables')
         {{-- DataTables CSS (only on pages that initialize a DataTable) --}}
-        <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" integrity="sha384-5oFfLntNy8kuC2TaebWZbaHTqdh3Q+7PwYbB490gupK0YtTAB7mBJGv4bQl9g9rK" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://cdn.datatables.net/3.1.5/css/dataTables.bootstrap5.min.css" integrity="sha384-OZKa6QSlaaq/LGR1sBFkYhC0c/nacIFh1chsblhDUxggC9Zb0XLEEMs95i1Kydnt" crossorigin="anonymous">
     @endif
 
     {{-- SweetAlert2 CSS --}}
@@ -489,12 +489,12 @@
     </script>
 
     {{-- jQuery --}}
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha384-1H217gwSVyLSIfaLxHbE7dRb3v4mYCKbpQvzx0cegeju1MVsGrX5xXxAvs/HgeFs" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-4.1.0.min.js" integrity="sha384-UGSi5euAzE1p4sK41+yKs3vtdPcidmaW6fY2NUITZkjIPyMVUUYB/BV4A5Oa8uu2" crossorigin="anonymous"></script>
 
     @hasSection('uses-datatables')
         {{-- DataTables JS (only on pages that initialize a DataTable) --}}
-        <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js" integrity="sha384-k5vbMeKHbxEZ0AEBTSdR7UjAgWCcUfrS8c0c5b2AfIh7olfhNkyCZYwOfzOQhauK" crossorigin="anonymous"></script>
-        <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js" integrity="sha384-PgPBH0hy6DTJwu7pTf6bkRqPlf/+pjUBExpr/eIfzszlGYFlF9Wi9VTAJODPhgCO" crossorigin="anonymous"></script>
+        <script src="https://cdn.datatables.net/3.1.5/js/dataTables.min.js" integrity="sha384-RhzIACKRVYIyijzmm7bA1mSofISYiTQ/KsnClfUSGSHu6ZeRsTQVWL4LqPHTrJcT" crossorigin="anonymous"></script>
+        <script src="https://cdn.datatables.net/3.1.5/js/dataTables.bootstrap5.min.js" integrity="sha384-2JCJ65zPWIsFF9Flk2ZSwukEbtRkZygX6+sTerFFqbL7dwPDVsMf2FR3r3XDAub0" crossorigin="anonymous"></script>
     @endif
     <script>
         window.AdasiDataTable = Object.freeze({
@@ -502,20 +502,28 @@
         });
         if (window.jQuery?.fn?.dataTable) {
             window.jQuery.extend(true, window.jQuery.fn.dataTable.defaults, window.AdasiDataTable.defaults());
+            if (window.DataTable?.ajax?.defaults) {
+                window.DataTable.ajax.defaults.headers = {
+                    ...(window.DataTable.ajax.defaults.headers || {}),
+                    'X-Requested-With': 'XMLHttpRequest',
+                };
+            }
             let generatedSearchId = 0;
             const labelDataTableSearch = (node) => {
                 if (!(node instanceof Element)) return;
 
                 const wrappers = [
-                    ...(node.matches('.dataTables_filter') ? [node] : []),
-                    ...node.querySelectorAll('.dataTables_filter'),
+                    ...(node.matches('.dt-search') ? [node] : []),
+                    ...node.querySelectorAll('.dt-search'),
                 ];
 
                 wrappers.forEach((wrapper) => {
                     const searchInput = wrapper.querySelector('input[type="search"]');
                     if (!searchInput) return;
 
-                    const tableId = wrapper.id?.replace(/_filter$/, '') || `adasi-data-table-${++generatedSearchId}`;
+                    const tableId = wrapper.id?.replace(/_filter$/, '')
+                        || searchInput.getAttribute('aria-controls')
+                        || `adasi-data-table-${++generatedSearchId}`;
                     if (!searchInput.id) searchInput.id = `${tableId}-search`;
                     if (!searchInput.name) searchInput.name = `${tableId}_search`;
                     if (!searchInput.hasAttribute('aria-label')) {
@@ -524,30 +532,47 @@
                 });
             };
 
-            document.querySelectorAll('.dataTables_filter').forEach(labelDataTableSearch);
+            document.querySelectorAll('.dt-search').forEach(labelDataTableSearch);
             new MutationObserver((records) => {
                 records.forEach((record) => record.addedNodes.forEach(labelDataTableSearch));
             }).observe(document.documentElement, { childList: true, subtree: true });
 
             // A single page of results keeps the summary but drops the pager (see .ui-dt-single-page in app.css).
             // The pager also becomes a labelled navigation landmark, like the Laravel pagination view.
-            const paginationLabel = @js(__('pagination.navigation'));
-            window.jQuery(document).on('draw.dt order.dt', (event, settings) => {
-                const wrapper = settings?.nTableWrapper;
+            const defaultPaginationLabel = @js(__('pagination.navigation'));
+            const syncDataTableDrawState = (_event, settings) => {
+                const ApiCtor = window.DataTable?.Api || window.jQuery?.fn?.dataTable?.Api;
+                if (!ApiCtor || !settings) return;
+                const api = new ApiCtor(settings);
+                const wrapper = api.table().container();
                 if (!wrapper) return;
 
                 wrapper.querySelectorAll('th[aria-sort="none"]').forEach((th) => {
                     th.removeAttribute('aria-sort');
                 });
 
-                const pages = new window.jQuery.fn.dataTable.Api(settings).page.info().pages;
+                const pages = api.page.info().pages;
                 wrapper.classList.toggle('ui-dt-single-page', pages <= 1);
 
-                const pager = wrapper.querySelector('.dataTables_paginate');
-                if (pager && !pager.hasAttribute('role')) {
+                const pager = wrapper.querySelector('.dt-paging');
+                if (pager) {
+                    const navTarget = pager.matches('nav') ? pager : pager.querySelector('nav');
                     const title = wrapper.closest('.ui-data-table')?.querySelector('.ui-data-table__header h2')?.textContent.trim();
-                    pager.setAttribute('role', 'navigation');
-                    pager.setAttribute('aria-label', title ? `${paginationLabel}: ${title}` : paginationLabel);
+                    const paginationLabel = document.documentElement?.dataset?.paginationLabel || defaultPaginationLabel;
+                    const label = title ? `${paginationLabel}: ${title}` : paginationLabel;
+                    if (navTarget) {
+                        navTarget.setAttribute('aria-label', label);
+                    } else if (!pager.hasAttribute('role')) {
+                        pager.setAttribute('role', 'navigation');
+                        pager.setAttribute('aria-label', label);
+                    }
+                }
+            };
+            window.jQuery(document).on('draw.dt', syncDataTableDrawState);
+            window.jQuery(document).on('preInit.dt', (_event, settings) => {
+                const tableNode = settings?.table;
+                if (tableNode) {
+                    window.jQuery(tableNode).off('order.dt.adasiUi').on('order.dt.adasiUi', syncDataTableDrawState);
                 }
             });
         }
@@ -610,6 +635,17 @@
                 $.ajaxPrefilter((options, originalOptions, jqXHR) => {
                     if (isInternalUrl(options.url || window.location.href)) {
                         jqXHR.setRequestHeader(headerName, headerValue);
+                    }
+                });
+
+                $(document).on('preXhr.dt', (_event, _settings, _data, ajaxOpts) => {
+                    if (!ajaxOpts || typeof ajaxOpts !== 'object') return;
+                    if (isInternalUrl(ajaxOpts.url || window.location.href)) {
+                        ajaxOpts.headers = {
+                            ...(window.DataTable?.ajax?.defaults?.headers || {}),
+                            ...(ajaxOpts.headers || {}),
+                            [headerName]: headerValue,
+                        };
                     }
                 });
             }

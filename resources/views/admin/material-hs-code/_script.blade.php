@@ -29,7 +29,7 @@ $(function () {
     const materialsTable = $('#materialsTable').DataTable({
         processing: true,
         serverSide: true,
-        dom: 'rtip',
+        layout: { topStart: null, topEnd: null, bottomStart: 'info', bottomEnd: 'paging' },
         ajax: {
             url: @json(route($masterRoutePrefix.'.material-masters.data')),
             data: (data) => Object.assign(data, {
@@ -58,7 +58,7 @@ $(function () {
     const rulesTable = $('#rulesTable').DataTable({
         processing: true,
         serverSide: true,
-        dom: 'rtip',
+        layout: { topStart: null, topEnd: null, bottomStart: 'info', bottomEnd: 'paging' },
         ajax: {
             url: @json(route($masterRoutePrefix.'.hs-code-rules.data')),
             data: (data) => Object.assign(data, {

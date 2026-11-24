@@ -146,8 +146,8 @@ class PaginationViewTest extends TestCase
 
         foreach ([
             '.pagination .page-item .page-link',
-            'div.dataTables_wrapper div.dataTables_paginate ul.pagination',
-            '.dataTables_wrapper.ui-dt-single-page .dataTables_paginate',
+            'div.dt-container div.dt-paging ul.pagination',
+            '.dt-container.ui-dt-single-page .dt-paging',
             '.pagination:has(> .active) > .page-item:not(.previous, .next, .active, :has(+ .active), .active + .page-item)',
         ] as $selector) {
             $this->assertStringContainsString($selector, $css);

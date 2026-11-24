@@ -23,8 +23,8 @@ class InforTableNameStripingContractTest extends TestCase
             $this->assertStringContainsString($token.':', $css);
         }
 
-        $this->assertStringContainsString(':where(.ui-data-table table, .table):where(:not(.ui-quotation-readonly):not(.table-striped):not(:has(.ui-col-data-name))) > tbody > tr:where(:not(:has(> td[colspan]:only-child)):not(:has(> td.dataTables_empty)):not(.bg-primary-subtle):not(.table-primary):not(.table-light)):nth-of-type(even) > :is(td, th)', $css);
-        $this->assertStringContainsString(':where(.ui-data-table table, .table) > tbody > tr:where(:not(:has(> td[colspan]:only-child)):not(:has(> td.dataTables_empty)):not(.bg-primary-subtle):not(.table-primary):not(.table-light)) > :is(td, th).ui-col-data-name', $css);
+        $this->assertStringContainsString(':where(.ui-data-table table, .table):where(:not(.ui-quotation-readonly):not(.table-striped):not(:has(.ui-col-data-name))) > tbody > tr:where(:not(:has(> td[colspan]:only-child)):not(:has(> td.dt-empty)):not(.bg-primary-subtle):not(.table-primary):not(.table-light)):nth-of-type(even) > :is(td, th)', $css);
+        $this->assertStringContainsString(':where(.ui-data-table table, .table) > tbody > tr:where(:not(:has(> td[colspan]:only-child)):not(:has(> td.dt-empty)):not(.bg-primary-subtle):not(.table-primary):not(.table-light)) > :is(td, th).ui-col-data-name', $css);
         $this->assertStringContainsString('background-color: var(--ui-table-cell-bg, var(--md-surface));', $css);
         $this->assertMatchesRegularExpression('/@media print\s*\{[^}]*--ui-table-row-stripe-bg:\s*var\(--md-surface\);[^}]*--ui-table-col-name-bg:\s*var\(--md-surface\);/s', $css);
     }

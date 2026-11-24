@@ -24,8 +24,8 @@ class DataTablesSingleSearchContractTest extends TestCase
         $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($viewsRoot));
 
         $auditedPages = [];
-        $missingDomErrors = [];
-        $forbiddenDomF = [];
+        $missingLayoutErrors = [];
+        $forbiddenLayoutSearch = [];
         $searchClobberViolations = [];
 
         foreach ($iterator as $file) {
@@ -62,14 +62,19 @@ class DataTablesSingleSearchContractTest extends TestCase
                 $optionsBlock = $this->extractBalancedBraceBlock($combinedScriptSource, $braceStart);
                 $offset = $braceStart + strlen($optionsBlock);
 
-                if (! preg_match('/\bdom\s*:\s*[\'"]([^\'"]+)[\'"]/', $optionsBlock, $domMatch)) {
-                    $missingDomErrors[] = $relativePath.' (#'.$initCount.')';
+                if (! preg_match('/\blayout\s*:\s*\{/s', $optionsBlock, $layoutMatch, PREG_OFFSET_CAPTURE)) {
+                    $missingLayoutErrors[] = $relativePath.' (#'.$initCount.')';
 
                     continue;
                 }
 
-                if (str_contains($domMatch[1], 'f')) {
-                    $forbiddenDomF[] = $relativePath.' (dom: '.$domMatch[1].')';
+                $layoutBlock = $this->extractBalancedBraceBlock($optionsBlock, $layoutMatch[0][1] + strlen($layoutMatch[0][0]) - 1);
+                if (! preg_match('/\btopStart\s*:\s*null\b/', $layoutBlock) || ! preg_match('/\btopEnd\s*:\s*null\b/', $layoutBlock)) {
+                    $missingLayoutErrors[] = $relativePath.' (#'.$initCount.' missing topStart/topEnd null)';
+                }
+
+                if (preg_match('/[\'"]search[\'"]/', $layoutBlock)) {
+                    $forbiddenLayoutSearch[] = $relativePath.' (layout contains search)';
                 }
             }
 
@@ -88,13 +93,13 @@ class DataTablesSingleSearchContractTest extends TestCase
             $this->assertContains($expectedPage, $auditedPages);
         }
 
-        $this->assertSame([], $missingDomErrors, 'DataTables pages using Filter Bar search must define explicit dom without built-in search');
-        $this->assertSame([], $forbiddenDomF, "DataTables dom must omit 'f' when x-ui.filter-bar renders the search box");
+        $this->assertSame([], $missingLayoutErrors, 'DataTables pages using Filter Bar search must define explicit layout with topStart: null and topEnd: null');
+        $this->assertSame([], $forbiddenLayoutSearch, "DataTables layout must omit 'search' when x-ui.filter-bar renders the search box");
         $this->assertSame([], $searchClobberViolations, 'DataTables ajax.data must not overwrite d.search object with a plain string');
 
         $css = file_get_contents(resource_path('css/app.css')) ?: '';
         $this->assertMatchesRegularExpression(
-            '/\.ui-data-table\s+\.dataTables_wrapper\s+table\.dataTable[^{]*\{[^}]*margin-top:\s*0\s*!important;[^}]*margin-bottom:\s*0\s*!important;/s',
+            '/\.ui-data-table\s+\.dt-container\s+table\.dataTable[^{]*\{[^}]*margin-top:\s*0\s*!important;[^}]*margin-bottom:\s*0\s*!important;/s',
             $css,
             'DataTables table.dataTable must override both margin-top and margin-bottom to 0 !important to prevent excess top gap above column headers'
         );
@@ -178,7 +183,7 @@ class DataTablesSingleSearchContractTest extends TestCase
             ->assertOk();
 
         $ssrHtml = $ssrResponse->getContent();
-        $this->assertStringContainsString("dom: 'rtip'", $ssrHtml);
+        $this->assertMatchesRegularExpression('/layout:\s*\{\s*topStart:\s*null,\s*topEnd:\s*null/s', $ssrHtml);
         $this->assertStringContainsString('value="Alpha Steel"', $ssrHtml);
         $this->assertStringContainsString(__('purchasing.copy.search_po_supplier_or_pr'), $ssrHtml);
         $this->assertStringContainsString('"search":"#filter_po_number"', $ssrHtml);
@@ -236,7 +241,7 @@ class DataTablesSingleSearchContractTest extends TestCase
                 ->assertOk()
                 ->getContent();
 
-            $this->assertStringContainsString("dom: 'rtip'", $ssrHtml);
+            $this->assertMatchesRegularExpression('/layout:\s*\{\s*topStart:\s*null,\s*topEnd:\s*null/s', $ssrHtml);
             $this->assertStringNotContainsString("d.search = $('#filter_search').val()", $ssrHtml);
 
             $columns = $this->makeDataTableColumns([
@@ -291,7 +296,7 @@ class DataTablesSingleSearchContractTest extends TestCase
             ->assertOk()
             ->getContent();
 
-        $this->assertStringContainsString("dom: 'rtip'", $ssrHtml);
+        $this->assertMatchesRegularExpression('/layout:\s*\{\s*topStart:\s*null,\s*topEnd:\s*null/s', $ssrHtml);
         $this->assertStringContainsString('value="REQ/11/2026/801"', $ssrHtml);
 
         $response = $this->actingAs($supplier)

@@ -51,7 +51,7 @@ class DataTablesLocalizationTest extends TestCase
         $this->assertLessThan(strrpos($source, "@stack('scripts')"), strpos($source, 'window.AdasiDataTable = Object.freeze'));
         $this->assertStringContainsString("language: @js(__('datatables'))", $source);
         $this->assertStringContainsString('new MutationObserver((records)', $source);
-        $this->assertStringContainsString("node.querySelectorAll('.dataTables_filter')", $source);
+        $this->assertStringContainsString("node.querySelectorAll('.dt-search')", $source);
         $this->assertStringContainsString('searchInput.id = `${tableId}-search`', $source);
         $this->assertStringContainsString('searchInput.name = `${tableId}_search`', $source);
         $this->assertStringContainsString("searchInput.setAttribute('aria-label', window.AdasiI18n.t('datatables.search'))", $source);

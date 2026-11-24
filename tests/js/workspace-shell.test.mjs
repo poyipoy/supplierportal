@@ -4,6 +4,7 @@ import { dirname, resolve } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import {
+    bootEmbedReadiness,
     createEmbedReadinessController,
     isTrackableBootGetRequest,
 } from '../../resources/js/embed-readiness.js';
@@ -2579,4 +2580,167 @@ test('embedded workspace iframes defer local toast center and bind parent AdasiT
         if (prevWindowCtor === undefined) delete globalThis.Window;
         else globalThis.Window = prevWindowCtor;
     }
+});
+
+test('bootEmbedReadiness tracks DataTables 3 native XMLHttpRequest, api.table().container(), and non-bubbling processing.dt', async () => {
+    const docHandlers = new Map();
+    const tableHandlers = new Map();
+    const tableNode = { id: 'poTable' };
+    const containerClasses = new Set(['dt-container', 'is-loading']);
+    const container = {
+        classList: { contains: (cls) => containerClasses.has(cls) },
+    };
+    const xhrListeners = new Map();
+    const nativeXhr = {
+        readyState: 2,
+        addEventListener(name, fn) {
+            xhrListeners.set(name, fn);
+        },
+    };
+    const dtSettings = {
+        table: tableNode,
+        ajax: { url: '/purchasing/purchase-orders' },
+        features: { serverSide: true },
+        initialised: false,
+        jqXHR: nativeXhr,
+    };
+    const registerHandler = (store, target, eventNames, fn) => {
+        for (const name of eventNames.split(/\s+/)) {
+            if (!name) continue;
+            const list = store.get(name) || [];
+            list.push(fn);
+            store.set(name, list);
+        }
+    };
+    const jq = Object.assign((target) => {
+        const store = target === tableNode ? tableHandlers : docHandlers;
+        return {
+            off: () => ({ on: (names, fn) => registerHandler(store, target, names, fn) }),
+            on: (names, fn) => registerHandler(store, target, names, fn),
+        };
+    }, {
+        ajaxPrefilter: () => {},
+        fn: {},
+    });
+
+    const readyEvents = [];
+    const doc = {
+        readyState: 'complete',
+        documentElement: { dataset: { workspaceEmbed: 'true' } },
+        addEventListener: () => {},
+    };
+    const win = {
+        document: doc,
+        top: {},
+        location: { origin: ORIGIN, href: `${ORIGIN}/purchasing/purchase-orders?_embed=1` },
+        jQuery: jq,
+        DataTable: {
+            Api: class FakeApi {
+                constructor(s) { this._s = s; }
+                table() { return { container: () => container }; }
+            },
+            tables: (opts) => (opts?.api ? { settings: () => [dtSettings] } : [tableNode]),
+        },
+        CustomEvent: class FakeCustomEvent { constructor(type) { this.type = type; } },
+        dispatchEvent: (ev) => readyEvents.push(ev.type),
+        addEventListener: () => {},
+        setTimeout,
+        clearTimeout,
+        requestAnimationFrame: (fn) => setTimeout(fn, 0),
+    };
+    win.self = win;
+    jq.fn.dataTable = win.DataTable;
+
+    const readiness = bootEmbedReadiness(win);
+    assert.ok(readiness, 'bootEmbedReadiness must boot inside an embedded iframe');
+    assert.equal(readiness.isReady, false, 'must stay pending while DT 3 native XHR & .dt-container.is-loading are active');
+    assert.ok(tableHandlers.has('processing.dt.adasiEmbed'), 'must bind non-bubbling processing.dt directly on existing table nodes');
+
+    // Simulate DT 3 native XHR completing and container clearing .is-loading, followed by draw.dt.
+    nativeXhr.readyState = 4;
+    containerClasses.delete('is-loading');
+    xhrListeners.get('loadend')?.();
+    for (const fn of docHandlers.get('draw.dt') || []) fn({}, dtSettings);
+
+    await new Promise((resolve) => setTimeout(resolve, 140));
+    assert.equal(readiness.isReady, true, 'must settle cleanly once DT 3 XHR loadend and draw.dt finish');
+    assert.deepEqual(readyEvents, ['adasi:embed-ready']);
+});
+
+test('bootEmbedReadiness settles when a DT 3 table with custom ajax.error fails without dt-error.dt or processing.dt false', async () => {
+    const docHandlers = new Map();
+    const tableHandlers = new Map();
+    const tableNode = { id: 'vsBestTable' };
+    const container = {
+        classList: { contains: () => false },
+    };
+    const dtSettings = {
+        table: tableNode,
+        ajax: { url: '/purchasing/comparison/vs-best/data', error: () => {} },
+        features: { serverSide: true },
+        initialised: false,
+    };
+    const registerHandler = (store, eventNames, fn) => {
+        for (const name of eventNames.split(/\s+/)) {
+            if (!name) continue;
+            const list = store.get(name) || [];
+            list.push(fn);
+            store.set(name, list);
+        }
+    };
+    const jq = Object.assign((target) => {
+        const store = target === tableNode ? tableHandlers : docHandlers;
+        return {
+            off: () => ({ on: (names, fn) => registerHandler(store, names, fn) }),
+            on: (names, fn) => registerHandler(store, names, fn),
+        };
+    }, {
+        ajaxPrefilter: () => {},
+        fn: {},
+    });
+
+    const readyEvents = [];
+    const doc = {
+        readyState: 'complete',
+        documentElement: { dataset: { workspaceEmbed: 'true' } },
+        addEventListener: () => {},
+    };
+    const win = {
+        document: doc,
+        top: {},
+        location: { origin: ORIGIN, href: `${ORIGIN}/purchasing/comparison/vs-best?_embed=1` },
+        jQuery: jq,
+        DataTable: {
+            Api: class FakeApi {
+                constructor(s) { this._s = s; }
+                table() { return { container: () => container }; }
+            },
+            tables: (opts) => (opts?.api ? { settings: () => [] } : []),
+        },
+        CustomEvent: class FakeCustomEvent { constructor(type) { this.type = type; } },
+        dispatchEvent: (ev) => readyEvents.push(ev.type),
+        addEventListener: () => {},
+        setTimeout,
+        clearTimeout,
+        requestAnimationFrame: (fn) => setTimeout(fn, 0),
+    };
+    win.self = win;
+    jq.fn.dataTable = win.DataTable;
+
+    const readiness = bootEmbedReadiness(win);
+    assert.ok(readiness);
+
+    for (const fn of docHandlers.get('preInit.dt') || []) fn({}, dtSettings);
+    for (const fn of tableHandlers.get('processing.dt.adasiEmbed') || []) fn({}, dtSettings, true);
+    const ajaxOpts = { url: dtSettings.ajax.url, error: dtSettings.ajax.error };
+    for (const fn of docHandlers.get('preXhr.dt') || []) fn({}, dtSettings, {}, ajaxOpts);
+    assert.equal(readiness.isReady, false);
+
+    // Simulate HTTP 500 with custom ajax.error suppressing dt-error.dt & processing.dt(false).
+    ajaxOpts.error({ status: 500, readyState: 4 }, 'error', 'Internal Server Error');
+    ajaxOpts.complete?.({ status: 500, readyState: 4 }, 'error');
+
+    await new Promise((resolve) => setTimeout(resolve, 140));
+    assert.equal(readiness.isReady, true, 'must settle cleanly on ajaxOpts.complete failure even when dt-error.dt is skipped');
+    assert.deepEqual(readyEvents, ['adasi:embed-ready']);
 });

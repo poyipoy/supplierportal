@@ -9,7 +9,7 @@ class DataTablesPreferenceTest extends TestCase
     public function test_datatables_inherit_a_shared_preference_before_page_initializers(): void
     {
         $layout = file_get_contents(resource_path('views/layouts/app.blade.php'));
-        $datatableLibrary = strpos($layout, 'jquery.dataTables.min.js');
+        $datatableLibrary = strpos($layout, 'dataTables.min.js');
         $sharedDefaults = strpos($layout, 'window.AdasiDataTable = Object.freeze');
         $pageInitializers = strrpos($layout, "@stack('scripts')");
 

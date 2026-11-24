@@ -162,15 +162,15 @@ class FrontendAssetLoadingTest extends TestCase
         $this->actingAs($purchasing)
             ->get(route('purchasing.dashboard'))
             ->assertOk()
-            ->assertDontSee('cdn.datatables.net/1.13.6', false)
-            ->assertSee('code.jquery.com/jquery-3.7.1.min.js', false);
+            ->assertDontSee('cdn.datatables.net/3.1.5', false)
+            ->assertSee('code.jquery.com/jquery-4.1.0.min.js', false);
 
         $this->actingAs($purchasing)
             ->get(route('purchasing.requisitions.index'))
             ->assertOk()
-            ->assertSee('cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css', false)
-            ->assertSee('cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js', false)
-            ->assertSee('cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js', false);
+            ->assertSee('cdn.datatables.net/3.1.5/css/dataTables.bootstrap5.min.css', false)
+            ->assertSee('cdn.datatables.net/3.1.5/js/dataTables.min.js', false)
+            ->assertSee('cdn.datatables.net/3.1.5/js/dataTables.bootstrap5.min.js', false);
     }
 
     public function test_every_blade_datatable_initializer_declares_the_asset_contract(): void

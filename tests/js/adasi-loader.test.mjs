@@ -8,6 +8,7 @@ import {
     NAV_RELEASE,
     SHOW_DELAY,
     SLOW_AFTER,
+    bootAdasiLoader,
     createDomView,
     createInlineLoader,
     createLoaderController,
@@ -813,6 +814,103 @@ test('setTableBusy supports separate ariaTarget, region mode, and positions pill
     assert.equal(inlineNode.attributes['aria-live'], 'polite');
     assert.equal(inlineNode.innerHTML.includes('ui-dt-loading-pill__arc'), true);
     assert.equal(inlineNode.innerHTML.includes('Fetching history...'), true);
+});
+
+test('bootAdasiLoader clears .is-loading and aria-busy on failed DT 3 requests even when custom ajax.error suppresses processing.dt false', () => {
+    const doc = fakeDocument();
+    const labelNode = { textContent: '' };
+    const origCreate = doc.createElement;
+    doc.createElement = (tag) => {
+        const el = origCreate(tag);
+        el.querySelector = (sel) => (sel === '.ui-dt-loading-pill__text' ? labelNode : null);
+        return el;
+    };
+
+    const container = {
+        ownerDocument: doc,
+        children: [],
+        attributes: {},
+        classList: {
+            names: new Set(['dt-container']),
+            toggle(name, force) {
+                if (force) this.names.add(name);
+                else this.names.delete(name);
+            },
+            contains(name) { return this.names.has(name); },
+        },
+        setAttribute(k, v) { this.attributes[k] = String(v); },
+        removeAttribute(k) { delete this.attributes[k]; },
+        appendChild(child) { this.children.push(child); return child; },
+        querySelector(sel) {
+            if (sel.includes('.ui-dt-loading-bar')) return this.children.find((c) => c.className === 'ui-dt-loading-bar') ?? null;
+            if (sel.includes('.ui-dt-loading-pill')) return this.children.find((c) => c.className === 'ui-dt-loading-pill') ?? null;
+            return null;
+        },
+    };
+    const tableNode = { id: 'poGoodsReceiptsTable' };
+    const dtSettings = { table: tableNode };
+    const docHandlers = new Map();
+    const tableHandlers = new Map();
+    const registerHandler = (store, eventNames, fn) => {
+        for (const name of eventNames.split(/\s+/)) {
+            if (!name) continue;
+            const list = store.get(name) || [];
+            list.push(fn);
+            store.set(name, list);
+        }
+    };
+    const jq = Object.assign((target) => {
+        const store = target === tableNode ? tableHandlers : docHandlers;
+        return {
+            off: () => ({ on: (names, fn) => registerHandler(store, names, fn) }),
+            on: (names, fn) => registerHandler(store, names, fn),
+        };
+    }, {
+        ajaxPrefilter: () => {},
+        fn: {},
+    });
+
+    class FakeApi {
+        constructor(s) { this._s = s; }
+        table() { return { container: () => container }; }
+    }
+    const DataTable = { Api: FakeApi, tables: () => [tableNode] };
+    jq.fn.dataTable = DataTable;
+
+    doc.addEventListener = () => {};
+    doc.querySelector = () => null;
+    const win = {
+        document: doc,
+        Element: class FakeElement {},
+        DataTable,
+        jQuery: jq,
+        setTimeout,
+        clearTimeout,
+        performance: { now: () => 0 },
+        addEventListener: () => {},
+    };
+    doc.defaultView = win;
+
+    bootAdasiLoader(win);
+
+    // Emit processing.dt(true) and preXhr.dt with custom ajax.error.
+    for (const fn of tableHandlers.get('processing.dt.adasiLoader') || []) {
+        fn({}, dtSettings, true);
+    }
+    assert.equal(container.classList.contains('is-loading'), true);
+    assert.equal(container.attributes['aria-busy'], 'true');
+
+    const ajaxOpts = { url: '/goods-receipts/data', error: () => {} };
+    for (const fn of docHandlers.get('preXhr.dt') || []) {
+        fn({}, dtSettings, {}, ajaxOpts);
+    }
+
+    // Failure completes without processing.dt(false).
+    ajaxOpts.error({ status: 500 }, 'error', 'Server Error');
+    ajaxOpts.complete?.({ status: 500 }, 'error');
+
+    assert.equal(container.classList.contains('is-loading'), false, '.is-loading must be cleared when failed DT 3 XHR completes');
+    assert.equal(container.attributes['aria-busy'], undefined, 'aria-busy must be removed when failed DT 3 XHR completes');
 });
 
 /** Just enough DOM for createDomView: nodes are plain objects, unknown queries return an inert stub. */

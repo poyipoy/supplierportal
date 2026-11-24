@@ -95,7 +95,7 @@ $(function () {
     const table = $('#authAuditTable').DataTable({
         processing: true,
         serverSide: true,
-        dom: 'rtip',
+        layout: { topStart: null, topEnd: null, bottomStart: 'info', bottomEnd: 'paging' },
         order: [],
 
         ajax: {

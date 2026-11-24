@@ -105,7 +105,7 @@
         var table = $('#poTable').DataTable({
             processing: true,
             serverSide: true,
-            dom: 'rtip',
+            layout: { topStart: null, topEnd: null, bottomStart: 'info', bottomEnd: 'paging' },
             search: { search: @json((string) request('search', request('po_number', ''))) },
             ajax: {
                 url: '{{ route("purchasing.purchase-orders.index") }}',

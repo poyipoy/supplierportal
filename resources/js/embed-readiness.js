@@ -260,12 +260,27 @@ export function createEmbedReadinessController({
 
 function tableKeyFor(settings) {
     if (!settings || typeof settings !== 'object') return null;
-    return settings.nTable || settings;
+    return settings.table || settings;
 }
 
 function isAjaxDataTable(settings) {
     if (!settings || typeof settings !== 'object') return false;
-    return Boolean(settings.ajax || settings.sAjaxSource || settings.oFeatures?.bServerSide);
+    return Boolean(settings.ajax || settings.features?.serverSide);
+}
+
+function chainAjaxComplete(ajaxOpts, callback) {
+    if (!ajaxOpts || typeof ajaxOpts !== 'object' || ajaxOpts.complete?.adasiEmbedWrapped) return;
+    const prev = ajaxOpts.complete;
+    const wrapped = function adasiEmbedComplete(...args) {
+        if (Array.isArray(prev)) {
+            prev.forEach((fn) => { if (typeof fn === 'function') fn.apply(this, args); });
+        } else if (typeof prev === 'function') {
+            prev.apply(this, args);
+        }
+        callback.apply(this, args);
+    };
+    wrapped.adasiEmbedWrapped = true;
+    ajaxOpts.complete = wrapped;
 }
 
 export function bootEmbedReadiness(win = globalThis.window) {
@@ -279,25 +294,49 @@ export function bootEmbedReadiness(win = globalThis.window) {
     let reqSeq = 0;
 
     let controller = null;
+    const tableWrapperFor = (settings) => {
+        const ApiCtor = win.DataTable?.Api || win.jQuery?.fn?.dataTable?.Api;
+        if (settings && ApiCtor) {
+            try {
+                return new ApiCtor(settings).table().container();
+            } catch {
+                // Fall back to direct property lookup for minimal test stubs.
+            }
+        }
+        return settings?.tableWrapper || null;
+    };
+
     const scanActiveTables = () => {
-        const dtSettings = win.jQuery?.fn?.dataTable?.settings;
+        const apiTables = win.DataTable?.tables?.({ api: true }) || win.jQuery?.fn?.dataTable?.tables?.({ api: true });
+        const dtSettings = apiTables?.settings?.()
+            || win.DataTable?.settings
+            || win.jQuery?.fn?.dataTable?.settings;
         if (!Array.isArray(dtSettings) && !(dtSettings && typeof dtSettings.length === 'number')) return;
         for (let i = 0; i < dtSettings.length; i += 1) {
             const settings = dtSettings[i];
             if (!isAjaxDataTable(settings)) continue;
             const key = tableKeyFor(settings);
-            const jqXhrPending = Boolean(settings.jqXHR && settings.jqXHR.readyState !== 4);
-            const domLoading = Boolean(settings.nTableWrapper?.classList?.contains?.('is-loading'));
-            if (!settings.bInitialised || jqXhrPending || domLoading) {
+            const wrapper = tableWrapperFor(settings);
+            const xhr = settings.jqXHR;
+            const jqXhrPending = Boolean(xhr && xhr.readyState !== 4);
+            const domLoading = Boolean(wrapper?.classList?.contains?.('is-loading'));
+            const isInitialised = Boolean(settings.initialised);
+            if (!isInitialised || jqXhrPending || domLoading) {
                 controller.onTableInitStart(key);
-                if (jqXhrPending && typeof settings.jqXHR.always === 'function') {
-                    settings.jqXHR.always(() => {
-                        win.setTimeout(() => {
-                            if (!settings.nTableWrapper?.classList?.contains?.('is-loading')) {
-                                controller.onTableSettled(key);
-                            }
-                        }, 32);
-                    });
+                const onXhrDone = () => {
+                    win.setTimeout(() => {
+                        const latestWrapper = tableWrapperFor(settings);
+                        if (!latestWrapper?.classList?.contains?.('is-loading')) {
+                            controller.onTableSettled(key);
+                        }
+                    }, 32);
+                };
+                if (jqXhrPending) {
+                    if (typeof xhr.always === 'function') {
+                        xhr.always(onXhrDone);
+                    } else if (typeof xhr.addEventListener === 'function') {
+                        xhr.addEventListener('loadend', onXhrDone, { once: true });
+                    }
                 }
             }
         }
@@ -340,15 +379,35 @@ export function bootEmbedReadiness(win = globalThis.window) {
         if (!$) return;
         jqBound = true;
 
+        const onTableProcessing = (_event, settings, busy) => {
+            if (isAjaxDataTable(settings)) {
+                controller.onTableProcessing(tableKeyFor(settings), Boolean(busy));
+            }
+        };
+        const bindTableProcessing = (tableNode) => {
+            if (!tableNode) return;
+            $(tableNode).off('processing.dt.adasiEmbed').on('processing.dt.adasiEmbed', onTableProcessing);
+        };
+
         $(doc).on('preInit.dt', (_event, settings) => {
+            bindTableProcessing(settings?.table);
             if (isAjaxDataTable(settings)) {
                 controller.onTableInitStart(tableKeyFor(settings));
             }
         });
-        $(doc).on('preXhr.dt', (_event, settings) => {
-            controller.onTablePreXhr(tableKeyFor(settings));
+        $(doc).on('preXhr.dt', (_event, settings, _data, ajaxOpts) => {
+            const key = tableKeyFor(settings);
+            controller.onTablePreXhr(key);
+            chainAjaxComplete(ajaxOpts, (xhr, textStatus) => {
+                const failed = (textStatus && textStatus !== 'success' && textStatus !== 'nocontent' && textStatus !== 'notmodified')
+                    || Number(xhr?.status) >= 400;
+                if (failed) {
+                    controller.onTableProcessing(key, false);
+                    controller.onTableSettled(key);
+                }
+            });
         });
-        $(doc).on('draw.dt error.dt', (_event, settings) => {
+        $(doc).on('draw.dt error.dt dt-error.dt', (_event, settings) => {
             controller.onTableSettled(tableKeyFor(settings));
         });
         $(doc).on('init.dt', (_event, settings) => {
@@ -363,11 +422,11 @@ export function bootEmbedReadiness(win = globalThis.window) {
                 controller.onTableSettled(tableKeyFor(settings));
             }
         });
-        $(doc).on('processing.dt', (_event, settings, busy) => {
-            if (isAjaxDataTable(settings)) {
-                controller.onTableProcessing(tableKeyFor(settings), Boolean(busy));
-            }
-        });
+        $(doc).on('processing.dt', onTableProcessing);
+        const existingTables = win.DataTable?.tables?.() || $.fn?.dataTable?.tables?.();
+        if (Array.isArray(existingTables)) {
+            existingTables.forEach(bindTableProcessing);
+        }
 
         $.ajaxPrefilter((options, _original, jqXHR) => {
             const method = String(options?.type || options?.method || 'GET').toUpperCase();

@@ -371,7 +371,7 @@ try {
                         && d?.readyState === 'complete'
                         && d.querySelector('#main-content')
                         && !d.querySelector('#adasiLoader.active')
-                        && !d.querySelector('.dataTables_wrapper.is-loading')
+                        && !d.querySelector('.dt-container.is-loading')
                         && (!w?.jQuery || w.jQuery.active === 0)
                         && (!w?.AdasiEmbedReadiness || w.AdasiEmbedReadiness.isReady)
                     );
@@ -491,7 +491,7 @@ try {
     await waitGroupActive(`document.querySelector('[data-workspace-group="${prGroupIds[0]}"]')`);
     const seededMarker = await evaluate(`(() => {
         const frame = document.querySelector('.workspace-panel.is-active iframe');
-        const input = frame?.contentDocument?.querySelector('.dataTables_filter input[type="search"], #main-content input:not([type="hidden"])');
+        const input = frame?.contentDocument?.querySelector('.dt-search input[type="search"], #main-content input:not([type="hidden"])');
         if (!input) return null;
         input.value = 'INFOR-MULTI-PR-1';
         input.dataset.wsMarker = 'pr-1';
@@ -979,12 +979,12 @@ try {
     await waitFrameSettled('.workspace-panel.is-active iframe');
     const enSeedCheck = await evaluate(`(() => {
         const f = document.querySelector('[data-workspace-frame="${seededMarker}"]');
-        const input = f?.contentDocument?.querySelector('.dataTables_filter input[type="search"], #main-content input:not([type="hidden"])');
+        const input = f?.contentDocument?.querySelector('.dt-search input[type="search"], #main-content input:not([type="hidden"])');
         if (input && input.value !== 'INFOR-MULTI-PR-1') {
             input.value = 'INFOR-MULTI-PR-1';
             input.dataset.wsMarker = 'pr-1';
         }
-        const headers = Array.from(f?.contentDocument?.querySelectorAll('.dataTables_wrapper thead th, #main-content table thead th') || []).map(th => th.textContent.trim());
+        const headers = Array.from(f?.contentDocument?.querySelectorAll('.dt-container thead th, #main-content table thead th') || []).map(th => th.textContent.trim());
         return { lang: f?.contentDocument?.documentElement?.lang, headers, inputVal: input?.value || null };
     })()`);
     assert.equal(enSeedCheck.inputVal, 'INFOR-MULTI-PR-1');
@@ -1015,7 +1015,7 @@ try {
         const prChildLabel = document.querySelectorAll('[data-workspace-group="${prGroupIds[0]}"] .workspace-session__label')[1]?.textContent?.trim() || null;
         const supLabel = document.querySelector('[data-workspace-group="${supGroupId}"] .workspace-session__label')?.textContent?.trim();
         const topbarTitle = document.querySelector('.top-navbar .topbar-page-title')?.textContent?.trim();
-        const frameHeaders = Array.from(f?.contentDocument?.querySelectorAll('.dataTables_wrapper thead th, #main-content table thead th') || []).map(th => th.textContent.trim());
+        const frameHeaders = Array.from(f?.contentDocument?.querySelectorAll('.dt-container thead th, #main-content table thead th') || []).map(th => th.textContent.trim());
         const preservedInput = f?.contentDocument?.querySelector('[data-ws-marker="pr-1"]')?.value || null;
         return {
             sameOriginTime: performance.timeOrigin === ${JSON.stringify(beforeLocaleOrigin)},
@@ -1368,7 +1368,7 @@ try {
         const doc = iframe?.contentDocument;
         const win = iframe?.contentWindow;
         const poTable = doc?.querySelector('#poTable');
-        const wrapper = poTable?.closest('.dataTables_wrapper');
+        const wrapper = poTable?.closest('.dt-container');
         return {
             href: win?.location?.href || '',
             hasWrapperLoading: Boolean(wrapper?.classList.contains('is-loading')),

@@ -661,9 +661,57 @@ export function bootAdasiLoader(win = globalThis.window) {
             jqXHR.always(() => loader.hide(token));
         });
 
-        $(win.document).on('processing.dt', (event, settings, busy) => {
-            setTableBusy(settings?.nTableWrapper, Boolean(busy));
+        const chainAjaxComplete = (ajaxOpts, callback) => {
+            if (!ajaxOpts || typeof ajaxOpts !== 'object' || ajaxOpts.complete?.adasiLoaderWrapped) return;
+            const prev = ajaxOpts.complete;
+            const wrapped = function adasiLoaderComplete(...args) {
+                if (Array.isArray(prev)) {
+                    prev.forEach((fn) => { if (typeof fn === 'function') fn.apply(this, args); });
+                } else if (typeof prev === 'function') {
+                    prev.apply(this, args);
+                }
+                callback.apply(this, args);
+            };
+            wrapped.adasiLoaderWrapped = true;
+            ajaxOpts.complete = wrapped;
+        };
+
+        const resolveTableWrapper = (settings) => {
+            const ApiCtor = win.DataTable?.Api || $.fn?.dataTable?.Api;
+            if (settings && ApiCtor) {
+                try {
+                    return new ApiCtor(settings).table().container();
+                } catch {
+                    // Fall back to direct property lookup for minimal test stubs.
+                }
+            }
+            return settings?.tableWrapper || null;
+        };
+        const onDataTableProcessing = (_event, settings, busy) => {
+            setTableBusy(resolveTableWrapper(settings), Boolean(busy));
+        };
+        const bindTableProcessing = (tableNode) => {
+            if (!tableNode) return;
+            $(tableNode).off('processing.dt.adasiLoader').on('processing.dt.adasiLoader', onDataTableProcessing);
+        };
+
+        $(win.document).on('processing.dt', onDataTableProcessing);
+        $(win.document).on('preInit.dt', (_event, settings) => {
+            bindTableProcessing(settings?.table);
         });
+        $(win.document).on('preXhr.dt', (_event, settings, _data, ajaxOpts) => {
+            chainAjaxComplete(ajaxOpts, (xhr, textStatus) => {
+                const failed = (textStatus && textStatus !== 'success' && textStatus !== 'nocontent' && textStatus !== 'notmodified')
+                    || Number(xhr?.status) >= 400;
+                if (failed) {
+                    setTableBusy(resolveTableWrapper(settings), false);
+                }
+            });
+        });
+        const existingTables = win.DataTable?.tables?.() || $.fn?.dataTable?.tables?.();
+        if (Array.isArray(existingTables)) {
+            existingTables.forEach(bindTableProcessing);
+        }
     }
 
     win.document.addEventListener('click', (event) => {

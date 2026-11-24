@@ -324,7 +324,7 @@
     }
 
     $(document).ready(function() {
-        $('#btnAddRow').click(addRow);
+        $('#btnAddRow').on('click', addRow);
         initializeMaterialShapeRows();
         renderMobileMaterialCards();
 

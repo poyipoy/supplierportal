@@ -66,7 +66,16 @@ const server = createServer(async (request, response) => {
         }
         if (url.pathname.startsWith('/fixtures/')) {
             response.setHeader('Content-Type', 'text/html; charset=utf-8');
-            response.end(await readFile(path.join(fixtures, path.basename(url.pathname)))); return;
+            const manifest = JSON.parse(await readFile(path.join(project, 'public/build/manifest.json'), 'utf8'));
+            const portalFormsEntry = Object.values(manifest).find((entry) => entry.name === 'portal-forms')?.file || 'assets/portal-forms.js';
+            const html = await readFile(path.join(fixtures, path.basename(url.pathname)), 'utf8');
+            response.end(
+                html
+                    .replace(/\/build\/assets\/app-[\w-]+\.js/g, '/build/' + manifest['resources/js/app.js'].file)
+                    .replace(/\/build\/assets\/app-[\w-]+\.css/g, '/build/' + manifest['resources/css/app.css'].file)
+                    .replace(/\/build\/assets\/portal-forms-[\w-]+\.js/g, '/build/' + portalFormsEntry),
+            );
+            return;
         }
         json(response, { count: 0, unread_count: 0, messages: [], notifications: [], data: [], success: true });
     } catch (error) { response.writeHead(500).end(String(error)); }
@@ -83,14 +92,35 @@ const browserErrors = [];
 let commandId = 0;
 const pending = new Map();
 const findings = [];
-const corePath = path.join(project, 'storage/framework/testing/jquery.dataTables-1.13.6.min.js');
+const corePath = path.join(project, 'storage/framework/testing/dataTables-3.1.5.min.js');
 if (!existsSync(corePath)) {
-    const response = await fetch('https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js', { signal: AbortSignal.timeout(15000) });
+    const response = await fetch('https://cdn.datatables.net/3.1.5/js/dataTables.min.js', { signal: AbortSignal.timeout(15000) });
     assert.equal(response.ok, true);
     await writeFile(corePath, Buffer.from(await response.arrayBuffer()));
 }
 const dataTablesCore = await readFile(corePath);
-assert.equal('sha384-' + createHash('sha384').update(dataTablesCore).digest('base64'), 'sha384-k5vbMeKHbxEZ0AEBTSdR7UjAgWCcUfrS8c0c5b2AfIh7olfhNkyCZYwOfzOQhauK');
+assert.equal('sha384-' + createHash('sha384').update(dataTablesCore).digest('base64'), 'sha384-RhzIACKRVYIyijzmm7bA1mSofISYiTQ/KsnClfUSGSHu6ZeRsTQVWL4LqPHTrJcT');
+const vendor = new Map([
+    ['https://cdn.datatables.net/3.1.5/js/dataTables.min.js', { body: dataTablesCore, type: 'application/javascript' }],
+]);
+const vendorCache = path.join(fixtures, 'vendor');
+await mkdir(vendorCache, { recursive: true });
+for (const fixtureFile of ['en-imports.html', 'en-finance-detail.html']) {
+    const html = await readFile(path.join(fixtures, fixtureFile), 'utf8');
+    for (const match of html.matchAll(/<(?:script|link)\b[^>]*(?:src|href)="(https:\/\/[^" ]+)"[^>]*integrity="(sha384-[^"]+)"[^>]*>/g)) {
+        const [, assetUrl, integrity] = match;
+        if (vendor.has(assetUrl)) continue;
+        const cachedFile = path.join(vendorCache, createHash('sha256').update(assetUrl).digest('hex'));
+        if (!existsSync(cachedFile)) {
+            const response = await fetch(assetUrl, { signal: AbortSignal.timeout(20000) });
+            assert.ok(response.ok, assetUrl);
+            await writeFile(cachedFile, Buffer.from(await response.arrayBuffer()));
+        }
+        const body = await readFile(cachedFile);
+        assert.equal('sha384-' + createHash('sha384').update(body).digest('base64'), integrity, assetUrl);
+        vendor.set(assetUrl, { body, type: assetUrl.includes('.css') ? 'text/css' : 'application/javascript' });
+    }
+}
 function command(method, params = {}) {
     return new Promise((resolve, reject) => {
         const id = ++commandId;
@@ -129,7 +159,12 @@ try {
     socket.addEventListener('message', event => {
         const data = JSON.parse(event.data);
         if (data.method === 'Fetch.requestPaused') {
-            command('Fetch.fulfillRequest', { requestId: data.params.requestId, responseCode: 200, responseHeaders: [{ name: 'Content-Type', value: 'application/javascript' }, { name: 'Access-Control-Allow-Origin', value: '*' }], body: dataTablesCore.toString('base64') }).catch(error => browserErrors.push(String(error)));
+            const asset = vendor.get(data.params.request.url);
+            if (!asset) {
+                command('Fetch.continueRequest', { requestId: data.params.requestId }).catch(error => browserErrors.push(String(error)));
+                return;
+            }
+            command('Fetch.fulfillRequest', { requestId: data.params.requestId, responseCode: 200, responseHeaders: [{ name: 'Content-Type', value: asset.type }, { name: 'Access-Control-Allow-Origin', value: '*' }], body: asset.body.toString('base64') }).catch(error => browserErrors.push(String(error)));
             return;
         }
         if (data.method === 'Runtime.exceptionThrown') browserErrors.push(data.params.exceptionDetails.exception?.description ?? data.params.exceptionDetails.text);
@@ -137,7 +172,7 @@ try {
         const task = pending.get(data.id); pending.delete(data.id);
         data.error ? task.reject(new Error(data.error.message)) : task.resolve(data.result);
     });
-    await command('Fetch.enable', { patterns: [{ urlPattern: 'https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js' }] });
+    await command('Fetch.enable', { patterns: [...vendor.keys()].map((urlPattern) => ({ urlPattern })) });
     await command('Page.enable'); await command('Runtime.enable'); await command('Accessibility.enable');
     for (locale of ['en', 'id']) {
         audience = 'finance';
@@ -217,8 +252,8 @@ try {
         for (audience of ['finance', 'purchasing', 'supplier']) {
             await command('Emulation.setDeviceMetricsOverride', { width: 1440, height: 950, deviceScaleFactor: 1, mobile: false });
             await command('Page.navigate', { url: `${origin}/fixtures/${locale}-${audience}-detail.html` });
-            await until("document.querySelector('[data-gr-table]')?.dataset.initialized === 'true' && Boolean(window.jQuery('#poGoodsReceiptsTable').DataTable().ajax.json()) && window.jQuery('#poGoodsReceiptsTable').DataTable().settings()[0]._bInitComplete && document.querySelector('#poGoodsReceiptsTable tbody tr td')?.textContent.trim() === '1'");
-            await evaluate("window.jQuery('#poGoodsReceiptsTable').DataTable().page(1).draw('page')");
+            await until("document.querySelector('[data-gr-table]')?.dataset.initialized === 'true' && Boolean(window.jQuery('#poGoodsReceiptsTable').DataTable().ajax.json()) && window.jQuery('#poGoodsReceiptsTable').DataTable().ready() && document.querySelector('#poGoodsReceiptsTable tbody tr td')?.textContent.trim() === '1'");
+            await evaluate("void window.jQuery('#poGoodsReceiptsTable').DataTable().page(1).draw('page')");
             await until("document.querySelector('#poGoodsReceiptsTable tbody tr td')?.textContent.trim() === '26'");
             if (audience !== 'supplier') {
                 await evaluate("document.querySelector('[data-gr-edit]').click()");

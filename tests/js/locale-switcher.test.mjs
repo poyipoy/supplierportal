@@ -418,8 +418,20 @@ test('bootLocaleSwitcher completes full server-side switch, morphs DOM regions, 
     assert.equal(events[0].detail.locale, 'id');
 });
 
-test('morphDomTree updates live DataTables wrapper thead headers from SSR table markup', () => {
-    const liveTh = makeElement('th', { children: [makeTextNode('PO Number')] });
+test('morphDomTree updates live DataTables 3 wrapper thead headers from SSR table markup without clobbering sort controls', () => {
+    const liveTitle = makeElement('div', {
+        classes: ['dt-column-title'],
+        children: [makeTextNode('PO Number')],
+    });
+    const liveOrder = makeElement('div', {
+        classes: ['dt-column-order'],
+        attrs: { role: 'button', tabindex: '0' },
+    });
+    const liveHeader = makeElement('div', {
+        classes: ['dt-column-header'],
+        children: [liveTitle, liveOrder],
+    });
+    const liveTh = makeElement('th', { children: [liveHeader] });
     const liveThead = makeElement('thead', {
         children: [makeElement('tr', { children: [liveTh] })],
     });
@@ -430,7 +442,7 @@ test('morphDomTree updates live DataTables wrapper thead headers from SSR table 
     liveInnerTable.querySelector = (selector) => (selector === 'thead' ? liveThead : null);
     const liveWrapper = makeElement('div', {
         attrs: { id: 'poTable_wrapper' },
-        classes: ['dataTables_wrapper'],
+        classes: ['dt-container'],
         children: [liveInnerTable],
     });
     liveWrapper.querySelectorAll = (selector) => {
@@ -457,7 +469,9 @@ test('morphDomTree updates live DataTables wrapper thead headers from SSR table 
     });
 
     morphDomTree(liveResponsive, serverResponsive);
+    assert.equal(liveTitle.textContent, 'Nomor PO');
     assert.equal(liveTh.textContent, 'Nomor PO');
+    assert.equal(liveHeader.childNodes[1], liveOrder, 'DataTables 3 .dt-column-order node must remain untouched');
 });
 
 test('syncLocaleInPlace morphs .workspace-sessionbar chrome while leaving data-locale-ignore sessionlist intact', async () => {
@@ -539,5 +553,213 @@ test('syncLocaleInPlace morphs .workspace-sessionbar chrome while leaving data-l
     assert.equal(shortcutsText.textContent, 'Pintasan');
     assert.equal(liveDynamicTabText.textContent, 'DYNAMIC-KEEP');
     assert.equal(capturedDetail?.locale, 'id');
+});
+
+test('syncLocaleInPlace refreshes DataTables 3 .dt-info, .dt-search label, .dt-length label, and keeps .dt-info translated on subsequent draws', async () => {
+    const infoEl = makeElement('div', { classes: ['dt-info'], children: [makeTextNode('Showing 0 to 0 of 0 results')] });
+    const searchInput = makeElement('input', { attrs: { type: 'search' } });
+    const searchLabel = makeElement('label', { children: [makeTextNode('Search:')] });
+    const lengthPrefix = makeTextNode('Show ');
+    const lengthSelect = makeElement('select');
+    const lengthSuffix = makeTextNode(' entries');
+    const lengthLabel = makeElement('label', { children: [lengthPrefix, lengthSelect, lengthSuffix] });
+    lengthLabel.querySelector = (sel) => (sel === 'select' ? lengthSelect : null);
+
+    const wrapper = {
+        querySelector: (sel) => {
+            if (sel === '.dt-info') return infoEl;
+            if (sel === '.dt-search input[type="search"]') return searchInput;
+            if (sel === '.dt-search label') return searchLabel;
+            if (sel === '.dt-length label') return lengthLabel;
+            return null;
+        },
+    };
+    const tableNode = { id: 'prTable' };
+    const tableHandlers = new Map();
+    const dtSettings = {
+        table: tableNode,
+        ajax: { url: '/purchasing/requisitions' },
+        language: { info: 'Showing _START_ to _END_ of _TOTAL_ results', infoEmpty: 'Showing 0 to 0 of 0 results', search: 'Search:' },
+    };
+    let reloadCount = 0;
+
+    class FakeApi {
+        constructor(s) { this._s = s; }
+        table() { return { container: () => wrapper }; }
+        page = { info: () => ({ start: 0, end: 0, recordsDisplay: 0, recordsTotal: 0 }) };
+        ajax = {
+            reload: () => {
+                reloadCount += 1;
+                // Simulate DT 3's closure-cached info feature resetting text back to English before draw.dt fires.
+                infoEl.textContent = 'Showing 0 to 0 of 0 results';
+                tableHandlers.get('draw.dt.adasiLocaleInfo')?.();
+            },
+        };
+    }
+
+    const jq = Object.assign((target) => ({
+        off: () => ({
+            on: (name, fn) => {
+                if (target === tableNode) tableHandlers.set(name, fn);
+            },
+        }),
+    }), {
+        extend: (_deep, target, source) => Object.assign(target, source),
+        fn: {},
+    });
+
+    const DataTable = {
+        defaults: { language: {} },
+        Api: FakeApi,
+        tables: () => ({ settings: () => [dtSettings] }),
+    };
+    jq.fn.dataTable = DataTable;
+
+    const doc = {
+        documentElement: { lang: 'en' },
+        title: 'PR List',
+        querySelector: () => null,
+        querySelectorAll: () => [],
+        addEventListener: () => {},
+    };
+    const win = Object.assign(new EventTarget(), {
+        jQuery: jq,
+        DataTable,
+        CustomEvent: class { constructor(type, init) { this.type = type; this.detail = init?.detail; } },
+        location: { href: 'https://portal.example.test/purchasing/requisitions', origin: 'https://portal.example.test' },
+    });
+
+    const switcher = bootLocaleSwitcher(win, doc);
+    await switcher.syncLocaleInPlace({
+        locale: 'id',
+        datatables: {
+            search: 'Cari:',
+            searchPlaceholder: 'Cari data...',
+            lengthMenu: 'Tampilkan _MENU_ baris',
+            info: 'Menampilkan _START_ sampai _END_ dari _TOTAL_ hasil',
+            infoEmpty: 'Menampilkan 0 sampai 0 dari 0 hasil',
+            infoFiltered: '(disaring dari total _MAX_ hasil)',
+        },
+    });
+
+    assert.equal(reloadCount, 1);
+    assert.equal(infoEl.textContent, 'Menampilkan 0 sampai 0 dari 0 hasil');
+    assert.equal(searchLabel.textContent, 'Cari:');
+    assert.equal(searchInput.getAttribute('placeholder'), 'Cari data...');
+    assert.equal(searchInput.getAttribute('aria-label'), 'Cari');
+    assert.equal(lengthPrefix.nodeValue, 'Tampilkan ');
+    assert.equal(lengthSuffix.nodeValue, ' baris');
+});
+
+test('syncLocaleInPlace propagates data-pagination-label and re-syncs .dt-length and .dt-paging nav aria-label across draw.dt', async () => {
+    const infoEl = makeElement('div', { classes: ['dt-info'], children: [makeTextNode('Showing 0 to 0 of 0 results')] });
+    const searchInput = makeElement('input', { attrs: { type: 'search' } });
+    const searchLabel = makeElement('label', { children: [makeTextNode('Search:')] });
+    const lengthPrefix = makeTextNode('Show ');
+    const lengthSelect = makeElement('select');
+    const lengthSuffix = makeTextNode(' entries');
+    const lengthLabel = makeElement('label', { children: [lengthPrefix, lengthSelect, lengthSuffix] });
+    lengthLabel.querySelector = (sel) => (sel === 'select' ? lengthSelect : null);
+    const navEl = makeElement('nav', { attrs: { 'aria-label': 'Pagination Navigation: PR List' } });
+    const pager = makeElement('div', { classes: ['dt-paging'], children: [navEl] });
+    pager.matches = (sel) => sel === '.dt-paging';
+    pager.querySelector = (sel) => (sel === 'nav' ? navEl : null);
+    const titleH2 = makeElement('h2', { children: [makeTextNode('Daftar PR')] });
+    const dtCard = makeElement('div', { classes: ['ui-data-table'], children: [titleH2] });
+    dtCard.querySelector = (sel) => (sel === '.ui-data-table__header h2' ? titleH2 : null);
+
+    const wrapper = {
+        closest: (sel) => (sel === '.ui-data-table' ? dtCard : null),
+        querySelector: (sel) => {
+            if (sel === '.dt-info') return infoEl;
+            if (sel === '.dt-search input[type="search"]') return searchInput;
+            if (sel === '.dt-search label') return searchLabel;
+            if (sel === '.dt-length label') return lengthLabel;
+            if (sel === '.dt-paging') return pager;
+            return null;
+        },
+    };
+    const tableNode = { id: 'prTable' };
+    const tableHandlers = new Map();
+    const dtSettings = {
+        table: tableNode,
+        ajax: { url: '/purchasing/requisitions' },
+        language: { info: 'Showing _START_ to _END_ of _TOTAL_ results', infoEmpty: 'Showing 0 to 0 of 0 results', search: 'Search:' },
+    };
+
+    class FakeApi {
+        constructor(s) { this._s = s; }
+        table() { return { container: () => wrapper }; }
+        page = { info: () => ({ start: 0, end: 0, recordsDisplay: 0, recordsTotal: 0 }) };
+        ajax = {
+            reload: () => {
+                // Simulate DT 3 closure-cached labels resetting length/info back to English before draw.dt fires.
+                infoEl.textContent = 'Showing 0 to 0 of 0 results';
+                lengthPrefix.nodeValue = 'Show ';
+                lengthSuffix.nodeValue = ' entries';
+                tableHandlers.get('draw.dt.adasiLocaleInfo')?.();
+            },
+        };
+    }
+
+    const jq = Object.assign((target) => ({
+        off: () => ({
+            on: (name, fn) => {
+                if (target === tableNode) tableHandlers.set(name, fn);
+            },
+        }),
+    }), {
+        extend: (_deep, target, source) => Object.assign(target, source),
+        fn: {},
+    });
+    const DataTable = { defaults: { language: {} }, Api: FakeApi, tables: () => ({ settings: () => [dtSettings] }) };
+    jq.fn.dataTable = DataTable;
+
+    const doc = Object.assign(new EventTarget(), {
+        documentElement: { lang: 'en', dataset: { paginationLabel: 'Pagination Navigation' } },
+        title: 'PR List',
+        querySelector: () => null,
+        querySelectorAll: () => [],
+    });
+    const win = Object.assign(new EventTarget(), {
+        jQuery: jq,
+        DataTable,
+        CustomEvent: class { constructor(type, init) { this.type = type; this.detail = init?.detail; } },
+        DOMParser: class {
+            parseFromString() {
+                return {
+                    title: 'Daftar PR',
+                    documentElement: { dataset: { paginationLabel: 'Navigasi Halaman' } },
+                    querySelector: () => null,
+                };
+            }
+        },
+        location: { href: 'https://portal.example.test/purchasing/requisitions', origin: 'https://portal.example.test' },
+        fetch: async () => ({
+            ok: true,
+            status: 200,
+            url: 'https://portal.example.test/purchasing/requisitions',
+            text: async () => '<html></html>',
+        }),
+    });
+
+    const switcher = bootLocaleSwitcher(win, doc);
+    await switcher.syncLocaleInPlace({
+        locale: 'id',
+        datatables: {
+            search: 'Cari:',
+            searchPlaceholder: 'Cari data...',
+            lengthMenu: 'Tampilkan _MENU_ baris',
+            info: 'Menampilkan _START_ sampai _END_ dari _TOTAL_ hasil',
+            infoEmpty: 'Menampilkan 0 sampai 0 dari 0 hasil',
+            infoFiltered: '(disaring dari total _MAX_ hasil)',
+        },
+    });
+
+    assert.equal(doc.documentElement.dataset.paginationLabel, 'Navigasi Halaman');
+    assert.equal(navEl.getAttribute('aria-label'), 'Navigasi Halaman: Daftar PR');
+    assert.equal(lengthPrefix.nodeValue, 'Tampilkan ', 'length prefix must stay translated after draw.dt');
+    assert.equal(lengthSuffix.nodeValue, ' baris', 'length suffix must stay translated after draw.dt');
+    assert.equal(infoEl.textContent, 'Menampilkan 0 sampai 0 dari 0 hasil');
 });
 

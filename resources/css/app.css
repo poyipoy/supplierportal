@@ -3632,17 +3632,17 @@ canvas[data-adasi-chart-focusable]:focus-visible {
    1. Index / List tables (without .ui-col-data-name): pure full-row alternating zebra striping on even rows.
    2. Detail / Satellite / Comparison tables (with .ui-col-data-name): consistent vertical column shading on .ui-col-data-name cells.
    :where() keeps specificity low so row hover, selection, and utility overrides still win cleanly. */
-:where(.ui-data-table table, .table):where(:not(.ui-quotation-readonly):not(.table-striped):not(:has(.ui-col-data-name))) > tbody > tr:where(:not(:has(> td[colspan]:only-child)):not(:has(> td.dataTables_empty)):not(.bg-primary-subtle):not(.table-primary):not(.table-light)):nth-of-type(even) > :is(td, th) {
+:where(.ui-data-table table, .table):where(:not(.ui-quotation-readonly):not(.table-striped):not(:has(.ui-col-data-name))) > tbody > tr:where(:not(:has(> td[colspan]:only-child)):not(:has(> td.dt-empty)):not(.bg-primary-subtle):not(.table-primary):not(.table-light)):nth-of-type(even) > :is(td, th) {
         --ui-table-cell-bg: var(--ui-table-row-stripe-bg);
         --bs-table-bg: var(--ui-table-cell-bg);
         background-color: var(--ui-table-cell-bg);
     }
-:where(.ui-data-table table, .table) > tbody > tr:where(:not(:has(> td[colspan]:only-child)):not(:has(> td.dataTables_empty)):not(.bg-primary-subtle):not(.table-primary):not(.table-light)) > :is(td, th).ui-col-data-name {
+:where(.ui-data-table table, .table) > tbody > tr:where(:not(:has(> td[colspan]:only-child)):not(:has(> td.dt-empty)):not(.bg-primary-subtle):not(.table-primary):not(.table-light)) > :is(td, th).ui-col-data-name {
         --ui-table-cell-bg: var(--ui-table-col-name-bg);
         --bs-table-bg: var(--ui-table-cell-bg);
         background-color: var(--ui-table-cell-bg);
     }
-:is(.ui-data-table table, .table.table-hover):where(:not(.ui-quotation-readonly):not(.quotation-items-table)) > tbody > tr:where(:not(:has(> td[colspan]:only-child)):not(:has(> td.dataTables_empty)):not(.bg-primary-subtle):not(.table-primary)):hover > :is(td, th) {
+:is(.ui-data-table table, .table.table-hover):where(:not(.ui-quotation-readonly):not(.quotation-items-table)) > tbody > tr:where(:not(:has(> td[colspan]:only-child)):not(:has(> td.dt-empty)):not(.bg-primary-subtle):not(.table-primary)):hover > :is(td, th) {
         --ui-table-cell-bg: var(--ui-table-row-hover-bg);
         --bs-table-bg: var(--ui-table-cell-bg);
         background-color: var(--ui-table-cell-bg);
@@ -3721,13 +3721,13 @@ canvas[data-adasi-chart-focusable]:focus-visible {
 .ui-data-table table > :not(caption) > * > * {
         height: var(--ui-density-row-min, 2.5rem);
     }
-.ui-data-table .dataTables_wrapper {
+.ui-data-table .dt-container {
         padding: 0;
     }
-.ui-data-table .dataTables_filter,
-    .ui-data-table .dataTables_length,
-    .ui-data-table .dataTables_info,
-    .ui-data-table .dataTables_paginate {
+.ui-data-table .dt-search,
+    .ui-data-table .dt-length,
+    .ui-data-table .dt-info,
+    .ui-data-table .dt-paging {
         color: var(--md-on-surface-variant);
         font-size: var(--ui-font-size-sm);
         padding: var(--ui-table-cell-block, .625rem) var(--ui-table-cell-inline, .875rem);
@@ -3783,7 +3783,7 @@ canvas[data-adasi-chart-focusable]:focus-visible {
 .pagination .page-item.active .page-link {
         font-weight: 700;
     }
-.pagination .page-item:is([aria-hidden="true"], [id$="_ellipsis"]) .page-link {
+.pagination .page-item:is([aria-hidden="true"], [id$="_ellipsis"], :has(> .ellipsis)) .page-link {
         background: transparent;
         border-color: transparent;
         min-width: 1.5rem;
@@ -3803,46 +3803,51 @@ canvas[data-adasi-chart-focusable]:focus-visible {
         margin: 0;
     }
 /* DataTables: same selectors as dataTables.bootstrap5.css (loaded earlier), so source order wins. */
-div.dataTables_wrapper div.dataTables_paginate ul.pagination {
+div.dt-container div.dt-paging ul.pagination {
         justify-content: flex-end;
         margin: 0;
     }
 /* Bootstrap's -12px row margins (offset by +12px column padding) made every row wider than the scroll container. */
-.dataTables_wrapper > .row {
+.dt-container > :is(.row, .dt-layout-row) {
         --bs-gutter-x: 0;
     }
-/* Default Bootstrap dom: the last .row holds info + pager and becomes the table footer. */
-.dataTables_wrapper > .row:has(.dataTables_info, .dataTables_paginate) {
+/* DataTables 3 BS5 adds Bootstrap .mt-2 on every .dt-layout-row; zero it inside .ui-data-table and table rows. */
+.ui-data-table .dt-container > :is(.row, .dt-layout-row),
+.dt-container > :is(.row, .dt-layout-row).dt-layout-table {
+        margin-top: 0 !important;
+    }
+/* Default Bootstrap layout: the bottom row holds info + pager and becomes the table footer. */
+.dt-container > :is(.row, .dt-layout-row):has(.dt-info, .dt-paging) {
         align-items: center;
         background: var(--md-surface-container-low);
         border-top: 1px solid var(--md-outline-variant);
         flex-wrap: wrap;
         gap: .5rem 1rem;
         justify-content: space-between;
-        margin: 0;
+        margin: 0 !important;
         padding: var(--ui-density-panel-block, .875rem) var(--ui-density-panel-inline, 1rem);
     }
-.dataTables_wrapper > .row:has(.dataTables_info, .dataTables_paginate) > * {
+.dt-container > :is(.row, .dt-layout-row):has(.dt-info, .dt-paging) > * {
         flex: 0 1 auto;
         padding-inline: 0;
         width: auto;
     }
-.dataTables_wrapper > .row:has(.dataTables_info, .dataTables_paginate) :is(.dataTables_info, .dataTables_paginate) {
+.dt-container > :is(.row, .dt-layout-row):has(.dt-info, .dt-paging) :is(.dt-info, .dt-paging) {
         padding: 0;
     }
-.dataTables_wrapper .dataTables_info {
+.dt-container .dt-info {
         font-size: var(--ui-font-size-xs);
         font-variant-numeric: tabular-nums;
     }
-/* dataTables.bootstrap5.css gives table.dataTable a 6px !important margin; it would push the header down and float the footer bar off the table. */
-.ui-data-table .dataTables_wrapper table.dataTable,
-.dataTables_wrapper table.dataTable {
+/* Keep table.dataTable flush without vertical margins pushing headers down or floating footers off the table. */
+.ui-data-table .dt-container table.dataTable,
+.dt-container table.dataTable {
         margin-top: 0 !important;
         margin-bottom: 0 !important;
     }
-/* DataTables renders Previous/Next as plain text; draw the same chevrons the Laravel view uses. */
-.dataTables_paginate .page-item:is(.previous, .next) .page-link::before,
-    .dataTables_paginate .page-item:is(.previous, .next) .page-link::after {
+/* DataTables 3 BS5 puts .previous/.next on button.page-link; draw the same chevrons the Laravel view uses. */
+.dt-paging .page-item :is(.page-link.previous, .page-link.next)::before,
+    .dt-paging .page-item :is(.page-link.previous, .page-link.next)::after {
         border: solid currentColor;
         border-width: 0 1.5px 1.5px 0;
         content: none;
@@ -3850,39 +3855,18 @@ div.dataTables_wrapper div.dataTables_paginate ul.pagination {
         height: .4375rem;
         width: .4375rem;
     }
-.dataTables_paginate .page-item.previous .page-link::before {
+.dt-paging .page-item .page-link.previous::before {
         content: '';
         transform: translateX(.0625rem) rotate(135deg);
     }
-.dataTables_paginate .page-item.next .page-link::after {
+.dt-paging .page-item .page-link.next::after {
         content: '';
         transform: translateX(-.0625rem) rotate(-45deg);
     }
-/* dom: 'rtip' has no rows: info and pager are siblings of the table, so the wrapper becomes a grid. */
-.dataTables_wrapper:not(:has(> .row)) {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
-    }
-.dataTables_wrapper:not(:has(> .row)) > table {
-        grid-column: 1 / -1;
-    }
-.dataTables_wrapper:not(:has(> .row)) > :is(.dataTables_info, .dataTables_paginate) {
-        align-items: center;
-        background: var(--md-surface-container-low);
-        border-top: 1px solid var(--md-outline-variant);
-        display: flex;
-        margin: 0;
-        padding: var(--ui-density-panel-block, .875rem) var(--ui-density-panel-inline, 1rem);
-    }
-.dataTables_wrapper:not(:has(> .row)) > .dataTables_paginate {
-        justify-content: flex-end;
-    }
 /* One page: the summary stays, the pager goes (class toggled on draw by layouts/app.blade.php). */
-.dataTables_wrapper.ui-dt-single-page .dataTables_paginate {
+.dt-container.ui-dt-single-page .dt-paging,
+.dt-container.ui-dt-single-page .dt-layout-end:has(> .dt-paging:only-child) {
         display: none;
-    }
-.dataTables_wrapper.ui-dt-single-page:not(:has(> .row)) > .dataTables_info {
-        grid-column: 1 / -1;
     }
 @media (max-width: 575.98px) {
     .ui-pagination {
@@ -3891,22 +3875,19 @@ div.dataTables_wrapper div.dataTables_paginate ul.pagination {
         text-align: center;
     }
     .pagination,
-    div.dataTables_wrapper div.dataTables_paginate ul.pagination {
+    div.dt-container div.dt-paging ul.pagination {
         justify-content: center;
     }
     /* Phones: Previous, the current page with its direct neighbours, Next. Keeps the pager on one row. */
     .pagination:has(> .active) > .page-item:not(.previous, .next, .active, :has(+ .active), .active + .page-item) {
         display: none;
     }
-    .dataTables_wrapper > .row:has(.dataTables_info, .dataTables_paginate) {
+    div.dt-container div.dt-paging ul.pagination:has(> .active) > .page-item:has(> :is(.previous, .next)) {
+        display: list-item;
+    }
+    .dt-container > :is(.row, .dt-layout-row):has(.dt-info, .dt-paging) {
         justify-content: center;
         text-align: center;
-    }
-    .dataTables_wrapper:not(:has(> .row)) {
-        grid-template-columns: minmax(0, 1fr);
-    }
-    .dataTables_wrapper:not(:has(> .row)) > :is(.dataTables_info, .dataTables_paginate) {
-        justify-content: center;
     }
 }
 @media (pointer: coarse) {
@@ -5243,15 +5224,13 @@ tr[data-mmt-row-url]:focus-visible {
 }
 /* DataTables adds these classes after the page CSS is built; keep this override outside
    Tailwind's scanned component layer so its dynamic sort state is always emitted. */
-table.dataTable thead > tr > :is(th, td):is(.sorting, .sorting_asc, .sorting_desc, .sorting_asc_disabled, .sorting_desc_disabled, .sorting_disabled) {
+table.dataTable thead > tr > :is(th, td):is(.dt-orderable-asc, .dt-orderable-desc, .dt-ordering-asc, .dt-ordering-desc, .dt-orderable-none) {
     min-width: max-content;
-    padding-right: 2.25rem !important;
-    padding-inline-end: 2.25rem !important;
     position: relative;
 }
-table.dataTable thead > tr > :is(th, td):is(.sorting, .sorting_asc, .sorting_desc, .sorting_asc_disabled, .sorting_desc_disabled, .sorting_disabled)::before,
-table.dataTable thead > tr > :is(th, td):is(.sorting, .sorting_asc, .sorting_desc, .sorting_asc_disabled, .sorting_desc_disabled, .sorting_disabled)::after {
-    right: .75rem;
+table.dataTable thead > tr > :is(th, td):is(.dt-orderable-asc, .dt-orderable-desc, .dt-ordering-asc, .dt-ordering-desc) {
+    padding-right: 2.25rem !important;
+    padding-inline-end: 2.25rem !important;
 }
 @keyframes ui-spin {
     to { transform: rotate(360deg); }
@@ -5513,7 +5492,7 @@ table.dataTable thead > tr > :is(th, td):is(.sorting, .sorting_asc, .sorting_des
 :is(.ui-data-table table, .table.table-hover) > tbody > tr > :is(td, th) {
     transition: background-color 150ms ease;
 }
-:is(.ui-data-table table, .table.table-hover):not(.ui-quotation-readonly):not(.quotation-items-table) > tbody > tr:not(:has(> td[colspan]:only-child)):not(:has(> td.dataTables_empty)):not(.bg-primary-subtle):not(.table-primary):hover > :is(td:first-child.ui-sticky-col, th:first-child.ui-sticky-col, td:first-child.ui-table-sticky-col) {
+:is(.ui-data-table table, .table.table-hover):not(.ui-quotation-readonly):not(.quotation-items-table) > tbody > tr:not(:has(> td[colspan]:only-child)):not(:has(> td.dt-empty)):not(.bg-primary-subtle):not(.table-primary):hover > :is(td:first-child.ui-sticky-col, th:first-child.ui-sticky-col, td:first-child.ui-table-sticky-col) {
     box-shadow: inset -1px 0 0 var(--md-outline-variant);
 }
 @media (prefers-reduced-motion: reduce) {
@@ -5724,7 +5703,7 @@ html[data-workspace-shell="true"] [data-workspace-stage] > .adasi-loader-overlay
     to { transform: translateX(280%); }
 }
 /* Inline ADASI data loading: shared by DataTables, ServerTabs, fetch tables, and async regions. */
-.dataTables_wrapper,
+.dt-container,
 .ui-data-loading-host {
     position: relative;
 }
@@ -5740,7 +5719,7 @@ html[data-workspace-shell="true"] [data-workspace-stage] > .adasi-loader-overlay
     z-index: 6;
     transition: opacity 120ms ease-out;
 }
-:is(.dataTables_wrapper, .ui-data-loading-host).is-loading > .ui-dt-loading-bar {
+:is(.dt-container, .ui-data-loading-host).is-loading > .ui-dt-loading-bar {
     opacity: 1;
 }
 .ui-dt-loading-bar__fill {
@@ -5752,7 +5731,7 @@ html[data-workspace-shell="true"] [data-workspace-stage] > .adasi-loader-overlay
     animation: adasiTableBar 1.15s cubic-bezier(0.4, 0, 0.2, 1) infinite;
     animation-play-state: paused;
 }
-:is(.dataTables_wrapper, .ui-data-loading-host).is-loading > .ui-dt-loading-bar .ui-dt-loading-bar__fill {
+:is(.dt-container, .ui-data-loading-host).is-loading > .ui-dt-loading-bar .ui-dt-loading-bar__fill {
     animation-play-state: running;
 }
 .ui-dt-loading-pill {
@@ -5786,7 +5765,7 @@ html[data-workspace-shell="true"] [data-workspace-stage] > .adasi-loader-overlay
     background: var(--ui-dialog-bg);
     border-color: var(--md-outline);
 }
-:is(.dataTables_wrapper, .ui-data-loading-host).is-loading > .ui-dt-loading-pill {
+:is(.dt-container, .ui-data-loading-host).is-loading > .ui-dt-loading-pill {
     visibility: visible;
     opacity: 1;
     transform: translate(-50%, -50%);
@@ -5817,7 +5796,7 @@ html[data-workspace-shell="true"] [data-workspace-stage] > .adasi-loader-overlay
     animation: adasiLoaderOrbit 0.9s linear infinite;
     animation-play-state: paused;
 }
-:is(.dataTables_wrapper, .ui-data-loading-host).is-loading > .ui-dt-loading-pill .ui-dt-loading-pill__arc,
+:is(.dt-container, .ui-data-loading-host).is-loading > .ui-dt-loading-pill .ui-dt-loading-pill__arc,
 .ui-inline-loading .ui-dt-loading-pill__arc {
     animation-play-state: running;
 }
@@ -5854,16 +5833,16 @@ html[data-workspace-shell="true"] [data-workspace-stage] > .adasi-loader-overlay
 .ui-inline-loading__text {
     color: inherit;
 }
-:is(.dataTables_wrapper, .ui-data-loading-host) table tbody {
+:is(.dt-container, .ui-data-loading-host) table tbody {
     transition: opacity 150ms ease-out;
 }
-:is(.dataTables_wrapper, .ui-data-loading-host).is-loading table tbody,
+:is(.dt-container, .ui-data-loading-host).is-loading table tbody,
 .ui-data-loading-host.is-loading[data-loading-mode="region"] > :not(.ui-dt-loading-bar):not(.ui-dt-loading-pill):not(.ui-data-table__header):not([data-server-tabs-nav]) {
     opacity: 0.55;
     pointer-events: none;
 }
-:is(.dataTables_wrapper, .ui-data-loading-host).is-loading:has(table tbody:empty),
-:is(.dataTables_wrapper, .ui-data-loading-host).is-loading:has(table td.dataTables_empty) {
+:is(.dt-container, .ui-data-loading-host).is-loading:has(table tbody:empty),
+:is(.dt-container, .ui-data-loading-host).is-loading:has(table td.dt-empty) {
     min-height: 7.5rem;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -5873,14 +5852,14 @@ html[data-workspace-shell="true"] [data-workspace-stage] > .adasi-loader-overlay
     .adasi-loader-overlay.active .adasi-loader-card,
     .ui-dt-loading-bar,
     .ui-dt-loading-pill,
-    :is(.dataTables_wrapper, .ui-data-loading-host).is-loading > .ui-dt-loading-pill,
-    :is(.dataTables_wrapper, .ui-data-loading-host) table tbody {
+    :is(.dt-container, .ui-data-loading-host).is-loading > .ui-dt-loading-pill,
+    :is(.dt-container, .ui-data-loading-host) table tbody {
         transition: none;
         transform: none;
     }
 
     .ui-dt-loading-pill,
-    :is(.dataTables_wrapper, .ui-data-loading-host).is-loading > .ui-dt-loading-pill {
+    :is(.dt-container, .ui-data-loading-host).is-loading > .ui-dt-loading-pill {
         transform: translate(-50%, -50%);
     }
 
@@ -5914,7 +5893,7 @@ html[data-workspace-shell="true"] [data-workspace-stage] > .adasi-loader-overlay
     }
 }
 /* Hide DataTables default processing indicator */
-div.dataTables_wrapper div.dataTables_processing {
+div.dt-container div.dt-processing {
     display: none !important;
 }
 /* Chat Drawer */
@@ -6840,7 +6819,7 @@ div.dataTables_wrapper div.dataTables_processing {
         padding: var(--ui-density-toolbar-block, .875rem) var(--ui-density-toolbar-inline, .875rem);
     }
     .ui-filter-bar--embedded .ui-filter-bar__primary { padding: 0; }
-    .ui-data-table :is(.dataTables_filter, .dataTables_length, .dataTables_info, .dataTables_paginate) {
+    .ui-data-table :is(.dt-search, .dt-length, .dt-info, .dt-paging) {
         padding: var(--ui-density-table-cell-block, .625rem) var(--ui-density-table-cell-inline, .875rem);
     }
     .ui-data-table__header, .ui-data-table__footer, .ui-card__header, .ui-card__footer {

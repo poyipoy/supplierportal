@@ -188,8 +188,8 @@ test('Infor LN data-name column tokens pass WCAG AA across 5 accents x 2 modes a
         assert.ok(hex(darkBlock, tokenName), `Expected 6-digit hex for ${tokenName} in :root[data-theme="dark"]`);
     }
 
-    assert.match(css, /:where\(\.ui-data-table table,\s*\.table\):where\(:not\(\.ui-quotation-readonly\):not\(\.table-striped\):not\(:has\(\.ui-col-data-name\)\)\)\s*>\s*tbody\s*>\s*tr:where\(:not\(:has\(>\s*td\[colspan\]:only-child\)\):not\(:has\(>\s*td\.dataTables_empty\)\):not\(\.bg-primary-subtle\):not\(\.table-primary\):not\(\.table-light\)\):nth-of-type\(even\)\s*>\s*:is\(td,\s*th\)/);
-    assert.match(css, /:where\(\.ui-data-table table,\s*\.table\)\s*>\s*tbody\s*>\s*tr:where\(:not\(:has\(>\s*td\[colspan\]:only-child\)\):not\(:has\(>\s*td\.dataTables_empty\)\):not\(\.bg-primary-subtle\):not\(\.table-primary\):not\(\.table-light\)\)\s*>\s*:is\(td,\s*th\)\.ui-col-data-name/);
+    assert.match(css, /:where\(\.ui-data-table table,\s*\.table\):where\(:not\(\.ui-quotation-readonly\):not\(\.table-striped\):not\(:has\(\.ui-col-data-name\)\)\)\s*>\s*tbody\s*>\s*tr:where\(:not\(:has\(>\s*td\[colspan\]:only-child\)\):not\(:has\(>\s*td\.dt-empty\)\):not\(\.bg-primary-subtle\):not\(\.table-primary\):not\(\.table-light\)\):nth-of-type\(even\)\s*>\s*:is\(td,\s*th\)/);
+    assert.match(css, /:where\(\.ui-data-table table,\s*\.table\)\s*>\s*tbody\s*>\s*tr:where\(:not\(:has\(>\s*td\[colspan\]:only-child\)\):not\(:has\(>\s*td\.dt-empty\)\):not\(\.bg-primary-subtle\):not\(\.table-primary\):not\(\.table-light\)\)\s*>\s*:is\(td,\s*th\)\.ui-col-data-name/);
     assert.match(css, /\.ui-table-sticky \.ui-sticky-col\s*\{[^}]*background-color:\s*var\(--ui-table-cell-bg,\s*var\(--md-surface\)\);/s);
     assert.match(css, /\.ui-table-sticky-col\s*\{[^}]*background-color:\s*var\(--ui-table-cell-bg,\s*var\(--md-surface\)\);/s);
     assert.match(css, /\.ui-sticky-col-right\s*\{[^}]*background-color:\s*var\(--ui-table-cell-bg,\s*var\(--md-surface\)\);/s);

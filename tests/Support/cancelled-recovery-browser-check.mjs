@@ -49,9 +49,9 @@ const errors = [];
 let sequence = 0;
 const pending = new Map();
 const findings = [];
-const core = await readFile(path.join(project, 'storage/framework/testing/jquery.dataTables-1.13.6.min.js'));
-assert.equal('sha384-' + createHash('sha384').update(core).digest('base64'), 'sha384-k5vbMeKHbxEZ0AEBTSdR7UjAgWCcUfrS8c0c5b2AfIh7olfhNkyCZYwOfzOQhauK');
-const vendor = new Map([['https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js', {body:core,type:'application/javascript'}]]);
+const core = await readFile(path.join(project, 'storage/framework/testing/dataTables-3.1.5.min.js'));
+assert.equal('sha384-' + createHash('sha384').update(core).digest('base64'), 'sha384-RhzIACKRVYIyijzmm7bA1mSofISYiTQ/KsnClfUSGSHu6ZeRsTQVWL4LqPHTrJcT');
+const vendor = new Map([['https://cdn.datatables.net/3.1.5/js/dataTables.min.js', {body:core,type:'application/javascript'}]]);
 function command(method, params = {}) {
     return new Promise((resolve, reject) => {
         const id = ++sequence; pending.set(id, { resolve, reject }); socket.send(JSON.stringify({ id, method, params }));

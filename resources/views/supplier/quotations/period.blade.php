@@ -95,7 +95,7 @@
         var table = $('#prTable').DataTable({
             processing: true,
             serverSide: true,
-            dom: 'rtip',
+            layout: { topStart: null, topEnd: null, bottomStart: 'info', bottomEnd: 'paging' },
             ajax: {
                 url: '{{ route("supplier.quotations.period", $period->id) }}',
                 data: function(d) {

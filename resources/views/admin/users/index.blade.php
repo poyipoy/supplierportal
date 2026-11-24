@@ -97,7 +97,7 @@
             processing: true,
             serverSide: true,
             ajax: '{{ route("admin.users.index") }}',
-            dom: 'rtip',
+            layout: { topStart: null, topEnd: null, bottomStart: 'info', bottomEnd: 'paging' },
             columns: [
                 { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-center' },
                 { data: 'name_display', name: 'name' },

@@ -179,7 +179,7 @@
         var table = $('#shipmentTable').DataTable({
             processing: true,
             serverSide: true,
-            dom: 'rtip',
+            layout: { topStart: null, topEnd: null, bottomStart: 'info', bottomEnd: 'paging' },
             search: { search: @json((string) request('search', '')) },
             ajax: {
                 url: '{{ route("purchasing.shipments.index") }}',

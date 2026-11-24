@@ -1875,11 +1875,17 @@
                 serverSide: true,
                 // PUR-04: only the table scrolls (sticky header and Material column); the length
                 // menu, search, info and paging stay outside the scroll region.
-                dom: "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>"
-                    + "<'row dt-row'<'col-sm-12'<'ui-data-table__scroll ui-table-sticky'tr>>>"
-                    + "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+                layout: {
+                    topStart: 'pageLength',
+                    topEnd: 'search',
+                    bottomStart: 'info',
+                    bottomEnd: 'paging',
+                },
                 initComplete: function() {
-                    const region = this.api().table().container().querySelector('.ui-table-sticky');
+                    const container = this.api().table().container();
+                    const region = container?.querySelector('.dt-layout-table > .dt-layout-full')
+                        || this.api().table().node()?.parentElement;
+                    region?.classList.add('ui-data-table__scroll', 'ui-table-sticky');
                     region?.setAttribute('role', 'region');
                     region?.setAttribute('tabindex', '0');
                     region?.setAttribute('aria-label', @js(__('purchasing.copy.price_benchmark_details')));

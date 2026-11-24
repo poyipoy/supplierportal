@@ -302,7 +302,7 @@
     }
 
     $(document).ready(function() {
-        $('#btnAddRow').click(addRow);
+        $('#btnAddRow').on('click', addRow);
 
         // Add one empty row initially if old input doesn't exist and on desktop
         if ($('#itemsBody tr').length === 0) {

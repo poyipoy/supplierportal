@@ -72,9 +72,9 @@ try{
             vendor.set(url,{body,type:url.includes('.css')?'text/css':'application/javascript'});
         }
     }
-    const core=await readFile(path.join(root,'storage/framework/testing/jquery.dataTables-1.13.6.min.js'));
-    assert.equal('sha384-'+createHash('sha384').update(core).digest('base64'),'sha384-k5vbMeKHbxEZ0AEBTSdR7UjAgWCcUfrS8c0c5b2AfIh7olfhNkyCZYwOfzOQhauK');
-    vendor.set('https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js',{body:core,type:'application/javascript'});
+    const core=await readFile(path.join(root,'storage/framework/testing/dataTables-3.1.5.min.js'));
+    assert.equal('sha384-'+createHash('sha384').update(core).digest('base64'),'sha384-RhzIACKRVYIyijzmm7bA1mSofISYiTQ/KsnClfUSGSHu6ZeRsTQVWL4LqPHTrJcT');
+    vendor.set('https://cdn.datatables.net/3.1.5/js/dataTables.min.js',{body:core,type:'application/javascript'});
     let port;
     for(let n=0;n<100;n++){try{port=Number((await readFile(path.join(profile,'DevToolsActivePort'),'utf8')).split('\n')[0]);break;}catch{await delay(100);}}
     assert.ok(port);
