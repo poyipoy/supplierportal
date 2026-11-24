@@ -1245,3 +1245,76 @@ test('DataTables 3 custom ajax.error still triggers session-expired modal on 401
     assert.equal(customCalls.length, 2);
     assert.equal(customCalls[1].status, 401);
 });
+
+test('DataTables 3 events work without window.jQuery: detects 401/419 via xhr.dt, dt-error.dt, and custom ajax.error, swaps CSRF tokens, and guards ext.errMode', async () => {
+    const server = statusServer({ status: 200, body: { authenticated: true, user_id: 41, csrf_token: 'new-token-no-jq' } });
+    const dtState = { ajax: { defaults: { headers: { 'X-CSRF-TOKEN': 'old-token' } } }, ext: { errMode: 'alert' } };
+    const alerts = [];
+    const prompts = [];
+    const doc = Object.assign(new EventTarget(), {
+        documentElement: { dataset: {} },
+        querySelector: (selector) => tokenDom().querySelector(selector),
+        querySelectorAll: () => [],
+    });
+    const win = Object.assign(new EventTarget(), {
+        Event,
+        AdasiSession: RESUMABLE,
+        AdasiLoginUrl: `${ORIGIN}/login`,
+        location: { href: `${PAGE_URL}#details`, origin: ORIGIN, assign: () => {} },
+        AdasiI18n: { t: (key) => key },
+        AdasiAlert: {
+            confirm: async (options) => {
+                prompts.push(options);
+                return { ...CONFIRMED, value: await options.preConfirm() };
+            },
+            toast: () => {},
+        },
+        AdasiUnsaved: { isDirty: () => false, setSubmitting: () => {} },
+        fetch: server.impl,
+        Echo: { disconnect: () => {} },
+        DataTable: dtState,
+        alert: (message) => alerts.push(message),
+    });
+
+    const api = bootSessionSync(win, doc);
+    assert.ok(api);
+    assert.equal(typeof dtState.ext.errMode, 'function');
+
+    dtState.ext.errMode({ jqXHR: { status: 401 } }, 7, 'Ajax error');
+    dtState.ext.errMode({ jqXHR: { status: 500 } }, 7, 'Boom error');
+    assert.deepEqual(alerts, ['Boom error']);
+
+    const dtXhr = { status: 401 };
+    doc.dispatchEvent(Object.assign(new Event('xhr'), {
+        namespace: 'dt',
+        _args: [{ ajax: { url: '/purchasing/purchase-orders' }, jqXHR: dtXhr }, null, dtXhr],
+    }));
+    doc.dispatchEvent(Object.assign(new Event('dt-error'), {
+        namespace: 'dt',
+        _args: [{ ajax: { url: '/purchasing/purchase-orders' }, jqXHR: dtXhr }, 7, 'Ajax error'],
+    }));
+    assert.equal(prompts.length, 1);
+    await flush();
+
+    assert.equal(dtState.ajax.defaults.headers['X-CSRF-TOKEN'], 'new-token-no-jq');
+    const sameOriginOpts = { url: '/purchasing/purchase-orders', headers: { 'X-CSRF-TOKEN': 'old-token' }, data: { _token: 'old-token', draw: 2 } };
+    doc.dispatchEvent(Object.assign(new Event('preXhr'), {
+        namespace: 'dt',
+        _args: [{ ajax: { url: sameOriginOpts.url } }, sameOriginOpts.data, sameOriginOpts],
+    }));
+    assert.equal(sameOriginOpts.headers['X-CSRF-TOKEN'], 'new-token-no-jq');
+    assert.equal(sameOriginOpts.data._token, 'new-token-no-jq');
+
+    const customCalls = [];
+    const customErrorFn = (xhr) => customCalls.push(xhr?.status);
+    const customOpts401 = { url: `${ORIGIN}/finance/local-procurement/1/goods-receipts/data`, error: customErrorFn };
+    const customSettings = { ajax: { url: customOpts401.url, error: customErrorFn }, jqXHR: { status: 401, getResponseHeader: () => null } };
+    doc.dispatchEvent(Object.assign(new Event('preXhr'), {
+        namespace: 'dt',
+        _args: [customSettings, {}, customOpts401],
+    }));
+    customOpts401.error(customSettings.jqXHR, 'error', 'Unauthorized');
+    customOpts401.complete?.(customSettings.jqXHR, 'error');
+    assert.equal(prompts.length, 2);
+    assert.equal(customCalls.length, 0);
+});

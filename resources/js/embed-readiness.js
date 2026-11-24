@@ -6,6 +6,8 @@
  * boot GET fetches are still rendering rows into the DOM.
  */
 
+import { onDataTableEvent, offDataTableEvent } from './datatables-events.js';
+
 const IGNORED_BOOT_PATHS_RE = /(?:\/notifications\/unread-count|\/conversations\/unread-count|\/broadcasting\/auth|\/locale\/|\/_debugbar|\/up)(?:\/|$)/i;
 
 function defaultTimers(win = globalThis.window) {
@@ -295,7 +297,7 @@ export function bootEmbedReadiness(win = globalThis.window) {
 
     let controller = null;
     const tableWrapperFor = (settings) => {
-        const ApiCtor = win.DataTable?.Api || win.jQuery?.fn?.dataTable?.Api;
+        const ApiCtor = win.DataTable?.Api;
         if (settings && ApiCtor) {
             try {
                 return new ApiCtor(settings).table().container();
@@ -307,10 +309,8 @@ export function bootEmbedReadiness(win = globalThis.window) {
     };
 
     const scanActiveTables = () => {
-        const apiTables = win.DataTable?.tables?.({ api: true }) || win.jQuery?.fn?.dataTable?.tables?.({ api: true });
-        const dtSettings = apiTables?.settings?.()
-            || win.DataTable?.settings
-            || win.jQuery?.fn?.dataTable?.settings;
+        const apiTables = win.DataTable?.tables?.({ api: true });
+        const dtSettings = apiTables?.settings?.() || win.DataTable?.settings;
         if (!Array.isArray(dtSettings) && !(dtSettings && typeof dtSettings.length === 'number')) return;
         for (let i = 0; i < dtSettings.length; i += 1) {
             const settings = dtSettings[i];
@@ -372,88 +372,93 @@ export function bootEmbedReadiness(win = globalThis.window) {
         };
     }
 
-    let jqBound = false;
-    const bindJQueryListeners = () => {
-        if (jqBound) return;
-        const $ = win.jQuery;
-        if (!$) return;
-        jqBound = true;
+    let dtBound = false;
+    let jqPrefilterBound = false;
 
-        const onTableProcessing = (_event, settings, busy) => {
-            if (isAjaxDataTable(settings)) {
-                controller.onTableProcessing(tableKeyFor(settings), Boolean(busy));
-            }
-        };
-        const bindTableProcessing = (tableNode) => {
-            if (!tableNode) return;
-            $(tableNode).off('processing.dt.adasiEmbed').on('processing.dt.adasiEmbed', onTableProcessing);
-        };
+    const onTableProcessing = (_event, settings, busy) => {
+        if (isAjaxDataTable(settings)) {
+            controller.onTableProcessing(tableKeyFor(settings), Boolean(busy));
+        }
+    };
+    const bindTableProcessing = (tableNode) => {
+        if (!tableNode) return;
+        offDataTableEvent(tableNode, 'processing.dt.adasiEmbed', undefined, win);
+        onDataTableEvent(tableNode, 'processing.dt.adasiEmbed', onTableProcessing, win);
+    };
 
-        $(doc).on('preInit.dt', (_event, settings) => {
-            bindTableProcessing(settings?.table);
-            if (isAjaxDataTable(settings)) {
-                controller.onTableInitStart(tableKeyFor(settings));
-            }
-        });
-        $(doc).on('preXhr.dt', (_event, settings, _data, ajaxOpts) => {
-            const key = tableKeyFor(settings);
-            controller.onTablePreXhr(key);
-            chainAjaxComplete(ajaxOpts, (xhr, textStatus) => {
-                const failed = (textStatus && textStatus !== 'success' && textStatus !== 'nocontent' && textStatus !== 'notmodified')
-                    || Number(xhr?.status) >= 400;
-                if (failed) {
-                    controller.onTableProcessing(key, false);
+    const bindDataTableListeners = () => {
+        if (!dtBound) {
+            dtBound = true;
+            onDataTableEvent(doc, 'preInit.dt', (_event, settings) => {
+                bindTableProcessing(settings?.table);
+                if (isAjaxDataTable(settings)) {
+                    controller.onTableInitStart(tableKeyFor(settings));
+                }
+            }, win);
+            onDataTableEvent(doc, 'preXhr.dt', (_event, settings, _data, ajaxOpts) => {
+                const key = tableKeyFor(settings);
+                controller.onTablePreXhr(key);
+                chainAjaxComplete(ajaxOpts, (xhr, textStatus) => {
+                    const failed = (textStatus && textStatus !== 'success' && textStatus !== 'nocontent' && textStatus !== 'notmodified')
+                        || Number(xhr?.status) >= 400;
+                    if (failed) {
+                        controller.onTableProcessing(key, false);
+                        controller.onTableSettled(key);
+                    }
+                });
+            }, win);
+            onDataTableEvent(doc, 'draw.dt error.dt dt-error.dt', (_event, settings) => {
+                controller.onTableSettled(tableKeyFor(settings));
+            }, win);
+            onDataTableEvent(doc, 'init.dt', (_event, settings) => {
+                const key = tableKeyFor(settings);
+                const activeXhr = Boolean(settings?.jqXHR && settings.jqXHR.readyState !== 4);
+                if (!controller.hasSeenPreXhr(key) && !activeXhr) {
                     controller.onTableSettled(key);
                 }
-            });
-        });
-        $(doc).on('draw.dt error.dt dt-error.dt', (_event, settings) => {
-            controller.onTableSettled(tableKeyFor(settings));
-        });
-        $(doc).on('init.dt', (_event, settings) => {
-            const key = tableKeyFor(settings);
-            const activeXhr = Boolean(settings?.jqXHR && settings.jqXHR.readyState !== 4);
-            if (!controller.hasSeenPreXhr(key) && !activeXhr) {
-                controller.onTableSettled(key);
-            }
-        });
-        $(doc).on('xhr.dt', (_event, settings, json, xhr) => {
-            if (!json || (xhr && xhr.status >= 400)) {
-                controller.onTableSettled(tableKeyFor(settings));
-            }
-        });
-        $(doc).on('processing.dt', onTableProcessing);
-        const existingTables = win.DataTable?.tables?.() || $.fn?.dataTable?.tables?.();
+            }, win);
+            onDataTableEvent(doc, 'xhr.dt', (_event, settings, json, xhr) => {
+                if (!json || (xhr && xhr.status >= 400)) {
+                    controller.onTableSettled(tableKeyFor(settings));
+                }
+            }, win);
+            onDataTableEvent(doc, 'processing.dt', onTableProcessing, win);
+        }
+
+        const existingTables = win.DataTable?.tables?.();
         if (Array.isArray(existingTables)) {
             existingTables.forEach(bindTableProcessing);
         }
 
-        $.ajaxPrefilter((options, _original, jqXHR) => {
-            const method = String(options?.type || options?.method || 'GET').toUpperCase();
-            const isDt = Boolean(
-                typeof options?.data === 'string' && /(?:^|&)draw=\d+/.test(options.data)
-                || (options?.data && typeof options.data === 'object' && Object.prototype.hasOwnProperty.call(options.data, 'draw')),
-            );
-            if (isDt) return;
+        if (!jqPrefilterBound && typeof win.jQuery?.ajaxPrefilter === 'function') {
+            jqPrefilterBound = true;
+            win.jQuery.ajaxPrefilter((options, _original, jqXHR) => {
+                const method = String(options?.type || options?.method || 'GET').toUpperCase();
+                const isDt = Boolean(
+                    typeof options?.data === 'string' && /(?:^|&)draw=\d+/.test(options.data)
+                    || (options?.data && typeof options.data === 'object' && Object.prototype.hasOwnProperty.call(options.data, 'draw')),
+                );
+                if (isDt) return;
 
-            let absUrl = '';
-            try {
-                absUrl = options?.url ? new URL(options.url, win.location.href).toString() : '';
-            } catch {
-                absUrl = '';
-            }
-            const reqId = `jq-${++reqSeq}`;
-            if (controller.onRequestStart(reqId, { url: absUrl, method })) {
-                jqXHR?.always?.(() => controller.onRequestEnd(reqId));
-            }
-        });
+                let absUrl = '';
+                try {
+                    absUrl = options?.url ? new URL(options.url, win.location.href).toString() : '';
+                } catch {
+                    absUrl = '';
+                }
+                const reqId = `jq-${++reqSeq}`;
+                if (controller.onRequestStart(reqId, { url: absUrl, method })) {
+                    jqXHR?.always?.(() => controller.onRequestEnd(reqId));
+                }
+            });
+        }
     };
 
-    bindJQueryListeners();
+    bindDataTableListeners();
 
     if (doc.readyState === 'loading') {
         doc.addEventListener('DOMContentLoaded', () => {
-            bindJQueryListeners();
+            bindDataTableListeners();
             controller.markDomReady();
         }, { once: true });
     } else {
@@ -461,11 +466,11 @@ export function bootEmbedReadiness(win = globalThis.window) {
     }
 
     if (doc.readyState === 'complete') {
-        bindJQueryListeners();
+        bindDataTableListeners();
         controller.markWindowLoaded();
     } else {
         win.addEventListener('load', () => {
-            bindJQueryListeners();
+            bindDataTableListeners();
             controller.markWindowLoaded();
         }, { once: true });
     }

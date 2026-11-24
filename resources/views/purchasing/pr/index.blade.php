@@ -80,15 +80,19 @@
 
 @push('scripts')
 <script>
-    $(document).ready(function() {
-        var table = $('#prTable').DataTable({
+(() => {
+    const bootPurchasingPrIndex = () => {
+        const tableEl = document.getElementById('prTable');
+        if (!tableEl || typeof window.DataTable !== 'function') return;
+
+        const table = new DataTable(tableEl, {
             processing: true,
             serverSide: true,
             ajax: {
                 url: '{{ route("purchasing.requisitions.index") }}',
                 data: function(d) {
-                    d.period_id = $('#period_id').val();
-                    d.status = $('#status').val();
+                    d.period_id = document.getElementById('period_id')?.value ?? '';
+                    d.status = document.getElementById('status')?.value ?? '';
                 }
             },
             columns: [
@@ -108,7 +112,6 @@
             order: []
         });
 
-
         window.AdasiFilterBar.bindLive('#prFilterBar', {
             fields: [
                 { key: 'period_id', label: @json(__('purchasing.copy.period')), selector: '#period_id', type: 'select' },
@@ -117,31 +120,37 @@
             onFilterChange: () => table.ajax.reload(),
         });
 
-        // ADASI Alert delete confirmation
-        $(document).on('click', '.btn-delete', function() {
-            const $btn = $(this);
-            const form = $btn.closest('form');
-            AdasiAlert.confirmDanger({
-                title: @json(__('purchasing.copy.are_you_sure_you_want_to_delete')),
-                text: @json(__('purchasing.copy.this_material_requisition_will_be_permanently_deleted')),
-                confirmText: @json(__('purchasing.audit_ui.confirm_delete')),
-                cancelText: @json(__('purchasing.copy.cancel'))
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    window.AdasiButton?.startLoading($btn[0]);
-                    form.submit();
-                }
-            });
-        });
-
         let draftSubmitConfirmationOpen = false;
-        $(document).on('click', '.btn-submit-draft', function() {
-            const $button = $(this);
-            if (draftSubmitConfirmationOpen || $button.data('submitting')) {
+        document.addEventListener('click', (event) => {
+            const target = event.target instanceof Element ? event.target : null;
+            if (!target) return;
+
+            const deleteBtn = target.closest('.btn-delete');
+            if (deleteBtn) {
+                const form = deleteBtn.closest('form');
+                if (!form) return;
+                AdasiAlert.confirmDanger({
+                    title: @json(__('purchasing.copy.are_you_sure_you_want_to_delete')),
+                    text: @json(__('purchasing.copy.this_material_requisition_will_be_permanently_deleted')),
+                    confirmText: @json(__('purchasing.audit_ui.confirm_delete')),
+                    cancelText: @json(__('purchasing.copy.cancel'))
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.AdasiButton?.startLoading(deleteBtn);
+                        form.submit();
+                    }
+                });
                 return;
             }
 
-            const form = $button.closest('form');
+            const submitButton = target.closest('.btn-submit-draft');
+            if (!submitButton) return;
+            if (draftSubmitConfirmationOpen || submitButton.dataset.submitting === 'true' || submitButton.dataset.loadingActive === 'true') {
+                return;
+            }
+
+            const form = submitButton.closest('form');
+            if (!form) return;
             draftSubmitConfirmationOpen = true;
 
             AdasiAlert.confirm({
@@ -153,11 +162,19 @@
                 draftSubmitConfirmationOpen = false;
 
                 if (result.isConfirmed) {
-                    window.AdasiButton?.startLoading($button[0]);
+                    submitButton.dataset.submitting = 'true';
+                    window.AdasiButton?.startLoading(submitButton);
                     form.submit();
                 }
             });
         });
-    });
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bootPurchasingPrIndex, { once: true });
+    } else {
+        bootPurchasingPrIndex();
+    }
+})();
 </script>
 @endpush

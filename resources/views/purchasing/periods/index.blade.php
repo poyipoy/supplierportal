@@ -106,8 +106,12 @@
 
 @push('scripts')
 <script>
-    $(document).ready(function() {
-        $('#periodsTable').DataTable({
+(() => {
+    const bootPeriodsIndex = () => {
+        const tableEl = document.getElementById('periodsTable');
+        if (!tableEl || typeof window.DataTable !== 'function') return;
+
+        new DataTable(tableEl, {
             processing: true,
             serverSide: true,
             ajax: '{{ route("purchasing.periods.index") }}',
@@ -125,16 +129,29 @@
         });
 
         // Handle edit button click (delegated)
-        $(document).on('click', '.btn-edit', function() {
-            var id = $(this).data('id');
-            var baseUrl = '{{ route("purchasing.periods.update", ":id") }}';
-            $('#editForm').attr('action', baseUrl.replace(':id', id));
-            $('#editName').val($(this).data('name'));
-            $('#editMonth').val($(this).data('month'));
-            $('#editYear').val($(this).data('year'));
-            $('#editStatus').val($(this).data('status'));
+        document.addEventListener('click', (event) => {
+            const btn = event.target instanceof Element ? event.target.closest('.btn-edit') : null;
+            if (!btn) return;
+            const id = btn.dataset.id ?? '';
+            const baseUrl = '{{ route("purchasing.periods.update", ":id") }}';
+            document.getElementById('editForm')?.setAttribute('action', baseUrl.replace(':id', id));
+            const editName = document.getElementById('editName');
+            const editMonth = document.getElementById('editMonth');
+            const editYear = document.getElementById('editYear');
+            const editStatus = document.getElementById('editStatus');
+            if (editName) editName.value = btn.dataset.name ?? '';
+            if (editMonth) editMonth.value = btn.dataset.month ?? '';
+            if (editYear) editYear.value = btn.dataset.year ?? '';
+            if (editStatus) editStatus.value = btn.dataset.status ?? '';
             bootstrap.Modal.getOrCreateInstance(document.getElementById('editModal')).show();
         });
-    });
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bootPeriodsIndex, { once: true });
+    } else {
+        bootPeriodsIndex();
+    }
+})();
 </script>
 @endpush

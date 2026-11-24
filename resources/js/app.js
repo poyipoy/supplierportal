@@ -1,4 +1,5 @@
 import './debug-logger.js';
+import { onDataTableEvent, offDataTableEvent } from './datatables-events.js';
 import { t } from './i18n.js';
 import Alpine from 'alpinejs';
 import { searchableFreeInput } from './searchable-free-input';
@@ -26,6 +27,7 @@ import { bindSidebarSplitter } from './splitter';
 import { registerToastCenter } from './toast-center';
 
 window.Alpine = Alpine;
+window.AdasiDataTableEvents = Object.freeze({ on: onDataTableEvent, off: offDataTableEvent });
 Alpine.data('searchableSelect', searchableSelect);
 Alpine.data('searchableFreeInput', searchableFreeInput);
 Alpine.data('adasiFileUploadComponent', adasiFileUploadComponent);

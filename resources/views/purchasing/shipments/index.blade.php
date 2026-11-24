@@ -175,8 +175,12 @@
 
 @push('scripts')
 <script>
-    $(document).ready(function () {
-        var table = $('#shipmentTable').DataTable({
+(() => {
+    const bootPurchasingShipmentsIndex = () => {
+        const tableEl = document.getElementById('shipmentTable');
+        if (!tableEl || typeof window.DataTable !== 'function') return;
+
+        const table = new DataTable(tableEl, {
             processing: true,
             serverSide: true,
             layout: { topStart: null, topEnd: null, bottomStart: 'info', bottomEnd: 'paging' },
@@ -184,10 +188,10 @@
             ajax: {
                 url: '{{ route("purchasing.shipments.index") }}',
                 data: function (d) {
-                    d.status = $('#filter_status').val();
-                    d.supplier_id = $('#filter_supplier').val();
-                    d.date_from = $('#shipmentDateFrom').val();
-                    d.date_to = $('#shipmentDateTo').val();
+                    d.status = document.getElementById('filter_status')?.value ?? '';
+                    d.supplier_id = document.getElementById('filter_supplier')?.value ?? '';
+                    d.date_from = document.getElementById('shipmentDateFrom')?.value ?? '';
+                    d.date_to = document.getElementById('shipmentDateTo')?.value ?? '';
                 }
             },
             columns: [
@@ -216,8 +220,15 @@
                 { key: 'supplier_id', label: @json(__('shipments.copy.supplier')), selector: '#filter_supplier', type: 'select', advanced: true },
                 { key: 'date_range', label: @json(__('shipments.copy.shipment_date')), type: 'date-range', picker: '#shipmentDateRange', start: '#shipmentDateFrom', end: '#shipmentDateTo', advanced: true },
             ],
-            onFilterChange: () => table.search($('#filter_search').val() || '').draw(),
+            onFilterChange: () => table.search(document.getElementById('filter_search')?.value || '').draw(),
         });
-    });
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bootPurchasingShipmentsIndex, { once: true });
+    } else {
+        bootPurchasingShipmentsIndex();
+    }
+})();
 </script>
 @endpush

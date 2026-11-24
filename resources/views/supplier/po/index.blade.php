@@ -49,8 +49,12 @@
 
 @push('scripts')
 <script>
-    $(document).ready(function() {
-        var table = $('#poTable').DataTable({
+(() => {
+    const bootSupplierPoIndex = () => {
+        const tableEl = document.getElementById('poTable');
+        if (!tableEl || typeof window.DataTable !== 'function') return;
+
+        new DataTable(tableEl, {
             processing: true,
             serverSide: true,
             search: { search: new URL(window.location.href).searchParams.get('search') || '' },
@@ -73,7 +77,13 @@
 
             order: []
         });
+    };
 
-    });
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bootSupplierPoIndex, { once: true });
+    } else {
+        bootSupplierPoIndex();
+    }
+})();
 </script>
 @endpush

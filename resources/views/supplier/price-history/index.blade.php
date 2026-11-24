@@ -64,8 +64,12 @@
 
 @push('scripts')
 <script>
-    $(document).ready(function() {
-        $('#overviewTable').DataTable({
+(() => {
+    const bootSupplierPriceHistoryIndex = () => {
+        const tableEl = document.getElementById('overviewTable');
+        if (!tableEl || typeof window.DataTable !== 'function') return;
+
+        new DataTable(tableEl, {
             processing: true,
             serverSide: true,
             ajax: '{{ route("supplier.price-history.index") }}',
@@ -74,8 +78,8 @@
                 { data: 'currency', name: 'currency', className: 'text-center fw-semibold ui-tabular-nums' },
                 { data: 'total_quotations', name: 'total_quotations', searchable: false, className: 'text-center fw-semibold ui-tabular-nums' },
                 { data: 'price_info', name: 'price_info', orderable: false, searchable: false },
-                { 
-                    data: 'last_submitted_at', 
+                {
+                    data: 'last_submitted_at',
                     name: 'last_submitted_at',
                     className: 'ui-tabular-nums tw:text-on-surface-variant',
                     render: function(data) {
@@ -87,7 +91,14 @@
                 { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-end' }
             ],
             order: [[0, 'asc'], [1, 'asc']],
-            });
-    });
+        });
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bootSupplierPriceHistoryIndex, { once: true });
+    } else {
+        bootSupplierPriceHistoryIndex();
+    }
+})();
 </script>
 @endpush

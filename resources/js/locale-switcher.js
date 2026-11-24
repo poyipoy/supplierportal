@@ -1,5 +1,6 @@
 import { t } from './i18n.js';
 import { isSameOriginUrl } from './async-form-submit.js';
+import { onDataTableEvent, offDataTableEvent } from './datatables-events.js';
 
 /**
  * ADASI Portal Supplier — Server-Side No-Reload Locale Switcher
@@ -344,12 +345,11 @@ function syncDataTableChromeLabels(wrapper, dtLang, documentRef = wrapper?.owner
 }
 
 function refreshDataTablesLanguage(windowRef, documentRef, dtLang) {
-    const jq = windowRef.jQuery;
-    const dtCtor = windowRef.DataTable || jq?.fn?.dataTable;
+    const dtCtor = windowRef.DataTable;
     if (!dtCtor || !dtLang || typeof dtLang !== 'object') return;
 
-    if (jq?.extend) {
-        jq.extend(true, dtCtor.defaults, { language: dtLang });
+    if (typeof dtCtor.util?.object?.assignDeepObjects === 'function' && dtCtor.defaults) {
+        dtCtor.util.object.assignDeepObjects(dtCtor.defaults, { language: dtLang }, true);
     } else if (dtCtor.defaults) {
         dtCtor.defaults.language = { ...(dtCtor.defaults.language || {}), ...dtLang };
     }
@@ -358,7 +358,7 @@ function refreshDataTablesLanguage(windowRef, documentRef, dtLang) {
         const tables = typeof dtCtor.tables === 'function' ? dtCtor.tables({ api: true }) : null;
         if (!tables || typeof tables.settings !== 'function') return;
 
-        const ApiCtor = dtCtor.Api || jq?.fn?.dataTable?.Api;
+        const ApiCtor = dtCtor.Api;
         const settingsList = tables.settings();
         for (let i = 0; i < settingsList.length; i++) {
             const settings = settingsList[i];
@@ -366,8 +366,8 @@ function refreshDataTablesLanguage(windowRef, documentRef, dtLang) {
 
             const targetLang = settings.language;
             if (targetLang) {
-                if (jq?.extend) {
-                    jq.extend(true, targetLang, dtLang);
+                if (typeof dtCtor.util?.object?.assignDeepObjects === 'function') {
+                    dtCtor.util.object.assignDeepObjects(targetLang, dtLang, true);
                 } else {
                     Object.assign(targetLang, dtLang);
                 }
@@ -396,8 +396,9 @@ function refreshDataTablesLanguage(windowRef, documentRef, dtLang) {
             // DataTables 3's info and pageLength features cache init-time language strings in closures;
             // re-sync chrome labels and .dt-info after subsequent draws so live locale changes stick across reloads/paging.
             const tableNode = settings.table;
-            if (jq && tableNode) {
-                jq(tableNode).off('draw.dt.adasiLocaleInfo').on('draw.dt.adasiLocaleInfo', syncLocaleDom);
+            if (tableNode) {
+                offDataTableEvent(tableNode, 'draw.dt.adasiLocaleInfo', undefined, windowRef);
+                onDataTableEvent(tableNode, 'draw.dt.adasiLocaleInfo', syncLocaleDom, windowRef);
             }
 
             if (settings.ajax && typeof tableApi?.ajax?.reload === 'function') {

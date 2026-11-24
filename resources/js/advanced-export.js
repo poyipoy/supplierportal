@@ -229,8 +229,10 @@ export function createAdvancedExport(root, { designer: suppliedDesigner } = {}) 
             const legacySearch = values.po_number || values.pr_number || values.shipment_number;
             if (legacySearch) values.search = legacySearch;
         }
-        if (root.dataset.exportTable && window.jQuery?.fn?.DataTable?.isDataTable(root.dataset.exportTable)) {
-            if (!selectors.search && !root.dataset.exportKey.startsWith('qc.')) values.search = window.jQuery(root.dataset.exportTable).DataTable().search().trim();
+        if (root.dataset.exportTable && window.DataTable?.isDataTable?.(root.dataset.exportTable)) {
+            if (!selectors.search && !root.dataset.exportKey.startsWith('qc.')) {
+                values.search = new window.DataTable(root.dataset.exportTable, { retrieve: true }).search().trim();
+            }
         }
         return values;
     };

@@ -44,8 +44,12 @@
 
 @push('scripts')
 <script>
-    $(document).ready(function() {
-        $('#claimTable').DataTable({
+(() => {
+    const bootSupplierClaimsIndex = () => {
+        const tableEl = document.getElementById('claimTable');
+        if (!tableEl || typeof window.DataTable !== 'function') return;
+
+        new DataTable(tableEl, {
             processing: true,
             serverSide: true,
             ajax: '{{ route("supplier.claims.index") }}',
@@ -64,6 +68,13 @@
                 window.initAdasiTooltips?.(document.getElementById('claimTable'));
             }
         });
-    });
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bootSupplierClaimsIndex, { once: true });
+    } else {
+        bootSupplierClaimsIndex();
+    }
+})();
 </script>
 @endpush

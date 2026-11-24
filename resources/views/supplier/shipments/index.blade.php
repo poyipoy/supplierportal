@@ -195,8 +195,12 @@
 
 @push('scripts')
 <script>
-    $(document).ready(function () {
-        var table = $('#supplierShipmentTable').DataTable({
+(() => {
+    const bootSupplierShipmentsIndex = () => {
+        const tableEl = document.getElementById('supplierShipmentTable');
+        if (!tableEl || typeof window.DataTable !== 'function') return;
+
+        const table = new DataTable(tableEl, {
             processing: true,
             serverSide: true,
             layout: { topStart: null, topEnd: null, bottomStart: 'info', bottomEnd: 'paging' },
@@ -204,9 +208,9 @@
             ajax: {
                 url: '{{ route("supplier.shipments.index") }}',
                 data: function (d) {
-                    d.status = $('#filter_status').val();
-                    d.date_from = $('#supplierShipmentDateFrom').val();
-                    d.date_to = $('#supplierShipmentDateTo').val();
+                    d.status = document.getElementById('filter_status')?.value ?? '';
+                    d.date_from = document.getElementById('supplierShipmentDateFrom')?.value ?? '';
+                    d.date_to = document.getElementById('supplierShipmentDateTo')?.value ?? '';
                 }
             },
             columns: [
@@ -232,33 +236,38 @@
                 { key: 'status', label: @json(__('shipments.copy.status')), selector: '#filter_status', type: 'select' },
                 { key: 'date_range', label: @json(__('shipments.copy.shipment_date')), type: 'date-range', picker: '#supplierShipmentDateRange', start: '#supplierShipmentDateFrom', end: '#supplierShipmentDateTo' },
             ],
-            onFilterChange: () => table.search($('#filter_search').val() || '').draw(),
+            onFilterChange: () => table.search(document.getElementById('filter_search')?.value || '').draw(),
         });
 
-        // ADASI Alert cancel confirmation
-        $(document).on('click', '.btn-cancel-shipment, .btn-delete', function() {
-            const form = $(this).closest('form');
-            if (window.AdasiAlert) {
-                AdasiAlert.confirmDanger({
-                    title: @json(__('shipments.copy.cancel_this_shipment')),
-                    text: @json(__('shipments.copy.are_you_sure_you_want_to_cancel_this_consignment_any_reserved_quantities_will_be_returned_to_the_pur')),
-                    confirmText: @js(__('shipments.confirmations.cancel.confirm')),
-                    cancelText: @json(__('shipments.copy.cancel'))
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        form.submit();
-                    }
-                });
-            } else if (confirm(@js(__('shipments.confirmations.cancel.title')."\n\n".__('shipments.confirmations.cancel.body')))) {
-                form.submit();
-            }
-        });
-
-        // ADASI Alert submit confirmation
         let draftSubmitConfirmationOpen = false;
-        $(document).on('click', '.btn-submit-draft', function() {
-            const $button = $(this);
-            if ($button.attr('data-invoice-missing') === '1') {
+        document.addEventListener('click', (event) => {
+            const target = event.target instanceof Element ? event.target : null;
+            if (!target) return;
+
+            const cancelButton = target.closest('.btn-cancel-shipment, .btn-delete');
+            if (cancelButton) {
+                const form = cancelButton.closest('form');
+                if (!form) return;
+                if (window.AdasiAlert) {
+                    AdasiAlert.confirmDanger({
+                        title: @json(__('shipments.copy.cancel_this_shipment')),
+                        text: @json(__('shipments.copy.are_you_sure_you_want_to_cancel_this_consignment_any_reserved_quantities_will_be_returned_to_the_pur')),
+                        confirmText: @js(__('shipments.confirmations.cancel.confirm')),
+                        cancelText: @json(__('shipments.copy.cancel'))
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            form.submit();
+                        }
+                    });
+                } else if (confirm(@js(__('shipments.confirmations.cancel.title')."\n\n".__('shipments.confirmations.cancel.body')))) {
+                    form.submit();
+                }
+                return;
+            }
+
+            const submitButton = target.closest('.btn-submit-draft');
+            if (!submitButton) return;
+            if (submitButton.getAttribute('data-invoice-missing') === '1') {
                 const invoiceTitle = @js(__('shipments.copy.commercial_invoice_required_title'));
                 const invoiceText = @js(__('shipments.copy.commercial_invoice_required_before_submit'));
                 if (window.AdasiAlert) {
@@ -268,11 +277,12 @@
                 }
                 return;
             }
-            if (draftSubmitConfirmationOpen || $button.data('submitting')) {
+            if (draftSubmitConfirmationOpen || submitButton.dataset.submitting === 'true' || submitButton.dataset.loadingActive === 'true') {
                 return;
             }
 
-            const form = $button.closest('form');
+            const form = submitButton.closest('form');
+            if (!form) return;
             draftSubmitConfirmationOpen = true;
 
             if (window.AdasiAlert) {
@@ -285,17 +295,26 @@
                     draftSubmitConfirmationOpen = false;
 
                     if (result.isConfirmed) {
-                        window.AdasiButton?.startLoading($button[0]);
+                        submitButton.dataset.submitting = 'true';
+                        window.AdasiButton?.startLoading(submitButton);
                         form.submit();
                     }
                 });
             } else if (confirm(@js(__('shipments.confirmations.submit.title')."\n\n".__('shipments.confirmations.submit.body')))) {
-                window.AdasiButton?.startLoading($button[0]);
+                submitButton.dataset.submitting = 'true';
+                window.AdasiButton?.startLoading(submitButton);
                 form.submit();
             } else {
                 draftSubmitConfirmationOpen = false;
             }
         });
-    });
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bootSupplierShipmentsIndex, { once: true });
+    } else {
+        bootSupplierShipmentsIndex();
+    }
+})();
 </script>
 @endpush

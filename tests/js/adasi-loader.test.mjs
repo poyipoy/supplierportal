@@ -913,6 +913,78 @@ test('bootAdasiLoader clears .is-loading and aria-busy on failed DT 3 requests e
     assert.equal(container.attributes['aria-busy'], undefined, 'aria-busy must be removed when failed DT 3 XHR completes');
 });
 
+test('bootAdasiLoader clears .is-loading and aria-busy on failed DT 3 requests without window.jQuery', () => {
+    const doc = fakeDocument();
+    const docEvents = new EventTarget();
+    doc.addEventListener = (...args) => docEvents.addEventListener(...args);
+    doc.removeEventListener = (...args) => docEvents.removeEventListener(...args);
+    doc.dispatchEvent = (ev) => docEvents.dispatchEvent(ev);
+
+    const labelNode = { textContent: '' };
+    const origCreate = doc.createElement;
+    doc.createElement = (tag) => {
+        const el = origCreate(tag);
+        el.querySelector = (sel) => (sel === '.ui-dt-loading-pill__text' ? labelNode : null);
+        return el;
+    };
+
+    const container = {
+        ownerDocument: doc,
+        children: [],
+        attributes: {},
+        classList: {
+            names: new Set(['dt-container']),
+            toggle(name, force) {
+                if (force) this.names.add(name);
+                else this.names.delete(name);
+            },
+            contains(name) { return this.names.has(name); },
+        },
+        setAttribute(k, v) { this.attributes[k] = String(v); },
+        removeAttribute(k) { delete this.attributes[k]; },
+        appendChild(child) { this.children.push(child); return child; },
+        querySelector(sel) {
+            if (sel.includes('.ui-dt-loading-bar')) return this.children.find((c) => c.className === 'ui-dt-loading-bar') ?? null;
+            if (sel.includes('.ui-dt-loading-pill')) return this.children.find((c) => c.className === 'ui-dt-loading-pill') ?? null;
+            return null;
+        },
+    };
+    const tableNode = Object.assign(new EventTarget(), { id: 'poGoodsReceiptsTable' });
+    const dtSettings = { table: tableNode };
+
+    class FakeApi {
+        constructor(s) { this._s = s; }
+        table() { return { container: () => container }; }
+    }
+    const DataTable = { Api: FakeApi, tables: () => [tableNode] };
+
+    const win = {
+        document: doc,
+        Element: class FakeElement {},
+        DataTable,
+        setTimeout,
+        clearTimeout,
+        performance: { now: () => 0 },
+        addEventListener: () => {},
+    };
+    doc.defaultView = win;
+
+    bootAdasiLoader(win);
+
+    tableNode.dispatchEvent(Object.assign(new Event('processing'), { namespace: 'dt', _args: [dtSettings, true] }));
+    assert.equal(container.classList.contains('is-loading'), true);
+    assert.equal(container.attributes['aria-busy'], 'true');
+
+    const ajaxOpts = { url: '/goods-receipts/data', error: () => {} };
+    doc.dispatchEvent(Object.assign(new Event('preXhr'), { namespace: 'dt', _args: [dtSettings, {}, ajaxOpts] }));
+
+    ajaxOpts.error({ status: 500 }, 'error', 'Server Error');
+    ajaxOpts.complete?.({ status: 500 }, 'error');
+
+    assert.equal(container.classList.contains('is-loading'), false, '.is-loading must clear without window.jQuery');
+    assert.equal(container.attributes['aria-busy'], undefined, 'aria-busy must clear without window.jQuery');
+});
+
 /** Just enough DOM for createDomView: nodes are plain objects, unknown queries return an inert stub. */
 function fakeDocument() {
     const serializeNode = (el) => {

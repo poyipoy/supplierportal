@@ -1,4 +1,5 @@
 import { isSameOriginHttpUrl, isTrustedSameOrigin } from './origin-validator.js';
+import { onDataTableEvent } from './datatables-events.js';
 
 export const SESSION_CHANNEL = 'adasi-session';
 export const SESSION_EVENT_KEY = 'adasi:session-event';
@@ -319,9 +320,7 @@ function observeDataTableAjaxLifecycle(win, settings, ajaxOpts, isSameOriginData
     }, 'adasiSessionWrapped');
 }
 
-function observeJQuery(win, doc, { onActionResponse, onServerTouch }, tokens) {
-    if (typeof win.jQuery !== 'function') return;
-    const handledXhrs = new WeakSet();
+function observeDataTables(win, doc, { onActionResponse, onServerTouch }, tokens, handledXhrs) {
     const handleXhrResponse = (xhr, isCrossDomain) => {
         if (isCrossDomain === true || !xhr || typeof xhr !== 'object') return;
         if (handledXhrs.has(xhr)) return;
@@ -337,18 +336,15 @@ function observeJQuery(win, doc, { onActionResponse, onServerTouch }, tokens) {
         return !ajaxUrl || isSameOrigin(win, ajaxUrl);
     };
 
-    win.jQuery(doc).on('ajaxComplete', (event, xhr, settings) => {
-        handleXhrResponse(xhr, settings?.crossDomain === true);
-    });
-    // DataTables 3 uses native XMLHttpRequest directly (bypassing jQuery.ajax), so observe .dt events too.
-    win.jQuery(doc).on('xhr.dt', (_event, settings, _json, xhr) => {
+    // DataTables 3 uses native XMLHttpRequest directly (bypassing jQuery.ajax), so observe .dt events without jQuery.
+    onDataTableEvent(doc, 'xhr.dt', (_event, settings, _json, xhr) => {
         handleXhrResponse(xhr || settings?.jqXHR, !isSameOriginDataTable(settings));
-    });
-    win.jQuery(doc).on('dt-error.dt', (_event, settings) => {
+    }, win);
+    onDataTableEvent(doc, 'dt-error.dt', (_event, settings) => {
         if (!settings?.jqXHR) return;
         handleXhrResponse(settings.jqXHR, !isSameOriginDataTable(settings));
-    });
-    win.jQuery(doc).on('preXhr.dt', (_event, settings, data, ajaxOpts) => {
+    }, win);
+    onDataTableEvent(doc, 'preXhr.dt', (_event, settings, data, ajaxOpts) => {
         observeDataTableAjaxLifecycle(win, settings, ajaxOpts, isSameOriginDataTable, handleXhrResponse);
         if (tokens.retired.size === 0 || !ajaxOpts || typeof ajaxOpts !== 'object') return;
         const targetUrl = ajaxOpts.url || win.location?.href;
@@ -369,6 +365,24 @@ function observeJQuery(win, doc, { onActionResponse, onServerTouch }, tokens) {
                 data._token = tokens.current;
             }
         }
+    }, win);
+}
+
+function observeJQuery(win, doc, { onActionResponse, onServerTouch }, tokens, handledXhrs) {
+    if (typeof win.jQuery !== 'function') return;
+    const handleXhrResponse = (xhr, isCrossDomain) => {
+        if (isCrossDomain === true || !xhr || typeof xhr !== 'object') return;
+        if (handledXhrs.has(xhr)) return;
+        handledXhrs.add(xhr);
+        if (sessionExpiredByResponse(xhr)) {
+            onActionResponse(xhr);
+        } else if (typeof xhr.status === 'number' && xhr.status > 0 && xhr.status < 400) {
+            onServerTouch();
+        }
+    };
+
+    win.jQuery(doc).on('ajaxComplete', (event, xhr, settings) => {
+        handleXhrResponse(xhr, settings?.crossDomain === true);
     });
     // Prefilters run after jQuery serialised `data` and decided `crossDomain`, before headers are sent.
     win.jQuery.ajaxPrefilter?.((options) => {
@@ -1094,10 +1108,13 @@ export function bootSessionSync(win, doc) {
             heartbeatUrl,
             reconnectUrl,
         }, tokens);
-        observeJQuery(win, doc, {
+        const handledXhrs = new WeakSet();
+        const callbacks = {
             onActionResponse: api.handleActionResponse,
             onServerTouch: recordServerTouch,
-        }, tokens);
+        };
+        observeDataTables(win, doc, callbacks, tokens, handledXhrs);
+        observeJQuery(win, doc, callbacks, tokens, handledXhrs);
         guardDataTables(win);
     }
 

@@ -3325,8 +3325,8 @@ export function bootWorkspaceShell() {
 
         try {
             const win = iframe.contentWindow;
-            if (win?.jQuery?.fn?.dataTable) {
-                const api = win.jQuery.fn.dataTable;
+            if (win?.DataTable) {
+                const api = win.DataTable;
                 const tables = api.tables ? api.tables({ api: true }) : null;
                 if (tables && typeof tables.count === 'function' && tables.count() > 0 && typeof tables.ajax?.url === 'function' && tables.ajax.url()) {
                     frame.loading = true;

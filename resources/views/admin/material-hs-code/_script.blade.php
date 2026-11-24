@@ -5,7 +5,8 @@
     ]);
 @endphp
 <script>
-$(function () {
+(() => {
+const bootMaterialHsMaster = () => {
     const materialModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('materialModal'));
     const ruleModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('ruleModal'));
     const materialStoreUrl = @json(route($masterRoutePrefix.'.material-masters.store'));
@@ -26,17 +27,17 @@ $(function () {
     };
     let qualityLoaded = false;
 
-    const materialsTable = $('#materialsTable').DataTable({
+    const materialsTable = new DataTable('#materialsTable', {
         processing: true,
         serverSide: true,
         layout: { topStart: null, topEnd: null, bottomStart: 'info', bottomEnd: 'paging' },
         ajax: {
             url: @json(route($masterRoutePrefix.'.material-masters.data')),
             data: (data) => Object.assign(data, {
-                status: $('#materialStatusFilter').val(),
-                category: $('#materialCategoryFilter').val(),
-                density: $('#materialDensityFilter').val(),
-                manufacturer: $('#materialManufacturerFilter').val()
+                status: document.getElementById('materialStatusFilter')?.value ?? '',
+                category: document.getElementById('materialCategoryFilter')?.value ?? '',
+                density: document.getElementById('materialDensityFilter')?.value ?? '',
+                manufacturer: document.getElementById('materialManufacturerFilter')?.value ?? ''
             })
         },
         columns: [
@@ -55,16 +56,16 @@ $(function () {
         order: []
     });
 
-    const rulesTable = $('#rulesTable').DataTable({
+    const rulesTable = new DataTable('#rulesTable', {
         processing: true,
         serverSide: true,
         layout: { topStart: null, topEnd: null, bottomStart: 'info', bottomEnd: 'paging' },
         ajax: {
             url: @json(route($masterRoutePrefix.'.hs-code-rules.data')),
             data: (data) => Object.assign(data, {
-                status: $('#ruleStatusFilter').val(),
-                category: $('#ruleCategoryFilter').val(),
-                shape: $('#ruleShapeFilter').val()
+                status: document.getElementById('ruleStatusFilter')?.value ?? '',
+                category: document.getElementById('ruleCategoryFilter')?.value ?? '',
+                shape: document.getElementById('ruleShapeFilter')?.value ?? ''
             })
         },
         columns: [
@@ -92,7 +93,7 @@ $(function () {
             { key: 'density', label: @json(__('admin.copy.density_profile')), selector: '#materialDensityFilter', type: 'select', advanced: true },
             { key: 'manufacturer', label: @json(__('admin.copy.manufacturer_scope')), selector: '#materialManufacturerFilter', type: 'select', advanced: true },
         ],
-        onFilterChange: () => materialsTable.search($('#materialSearch').val() || '').ajax.reload(),
+        onFilterChange: () => materialsTable.search(document.getElementById('materialSearch')?.value || '').ajax.reload(),
     });
 
     window.AdasiFilterBar.bindLive('#rulesFilterBar', {
@@ -103,7 +104,7 @@ $(function () {
             { key: 'category', label: @json(__('admin.copy.category')), selector: '#ruleCategoryFilter', type: 'select', advanced: true },
             { key: 'shape', label: @json(__('admin.copy.shape')), selector: '#ruleShapeFilter', type: 'select', advanced: true },
         ],
-        onFilterChange: () => rulesTable.search($('#ruleSearch').val() || '').ajax.reload(),
+        onFilterChange: () => rulesTable.search(document.getElementById('ruleSearch')?.value || '').ajax.reload(),
     });
 
     function setMethod($input, method) {
@@ -429,5 +430,12 @@ $(function () {
         try { populateConditions(JSON.parse(oldInput.conditions_json || '{}')); } catch (error) {}
         ruleModal.show();
     }
-});
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bootMaterialHsMaster, { once: true });
+} else {
+    bootMaterialHsMaster();
+}
+})();
 </script>

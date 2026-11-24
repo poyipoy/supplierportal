@@ -160,7 +160,7 @@
 
     const dataTableSourceCount = (control) => {
         const tableSelector = control?.dataset?.exportCountTable;
-        if (!tableSelector || typeof window.jQuery === 'undefined' || !window.jQuery.fn.dataTable) {
+        if (!tableSelector || typeof window.DataTable?.isDataTable !== 'function') {
             return null;
         }
 
@@ -171,11 +171,11 @@
             return null;
         }
 
-        if (!table || !window.jQuery.fn.dataTable.isDataTable(table)) {
+        if (!table || !window.DataTable.isDataTable(table)) {
             return null;
         }
 
-        const count = Number(window.jQuery(table).DataTable().page.info().recordsDisplay);
+        const count = Number(new window.DataTable(table, { retrieve: true }).page.info().recordsDisplay);
 
         return Number.isInteger(count) && count >= 0 ? count : null;
     };

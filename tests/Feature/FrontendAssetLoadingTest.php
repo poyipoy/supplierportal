@@ -185,7 +185,7 @@ class FrontendAssetLoadingTest extends TestCase
             }
 
             $contents = file_get_contents($file->getPathname());
-            if (! preg_match('/\.(?:DataTable|dataTable)\s*\(/', $contents)) {
+            if (! preg_match('/new\s+(?:window\.)?DataTable\s*\(/', $contents)) {
                 continue;
             }
 

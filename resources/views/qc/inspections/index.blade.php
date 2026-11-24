@@ -104,11 +104,15 @@
 
 @push('scripts')
 <script>
-    $(document).ready(function() {
-        var dtLang = {};
-        var dtOpts = { order: [] };
+(() => {
+    const bootQcInspectionsIndex = () => {
+        const waitingTableEl = document.getElementById('waitingTable');
+        if (!waitingTableEl || typeof window.DataTable !== 'function') return;
 
-        $('#waitingTable').DataTable(Object.assign({}, dtOpts, {
+        const dtLang = {};
+        const dtOpts = { order: [] };
+
+        new DataTable(waitingTableEl, Object.assign({}, dtOpts, {
             processing: true,
             serverSide: true,
             ajax: '{{ route("qc.inspections.data-waiting") }}',
@@ -122,20 +126,25 @@
             language: dtLang
         }));
 
-        var historyInit = false;
-        var historyTable = null;
-        $('button[data-bs-target="#history"]').on('shown.bs.tab', function() {
-            $('#inspectionExportLink').removeClass('d-none');
+        let historyInit = false;
+        let historyTable = null;
+        const historyTabBtn = document.querySelector('button[data-bs-target="#history"]');
+        const waitingTabBtn = document.querySelector('button[data-bs-target="#waiting"]');
+        const exportLinkEl = document.getElementById('inspectionExportLink');
 
-            if (!historyInit) {
+        historyTabBtn?.addEventListener('shown.bs.tab', () => {
+            exportLinkEl?.classList.remove('d-none');
+
+            const historyTableEl = document.getElementById('historyTable');
+            if (!historyInit && historyTableEl) {
                 historyInit = true;
-                historyTable = $('#historyTable').DataTable(Object.assign({}, dtOpts, {
+                historyTable = new DataTable(historyTableEl, Object.assign({}, dtOpts, {
                     processing: true,
                     serverSide: true,
                     ajax: {
                         url: '{{ route("qc.inspections.data-history") }}',
                         data: function(d) {
-                            d.status = $('#historyStatusFilter').val();
+                            d.status = document.getElementById('historyStatusFilter')?.value ?? '';
                             const params = new URL(window.location.href).searchParams;
                             d.start_date = params.get('start_date') || '';
                             d.end_date = params.get('end_date') || '';
@@ -154,12 +163,12 @@
             }
         });
 
-        $('button[data-bs-target="#waiting"]').on('shown.bs.tab', function() {
-            $('#inspectionExportLink').addClass('d-none');
+        waitingTabBtn?.addEventListener('shown.bs.tab', () => {
+            exportLinkEl?.classList.add('d-none');
         });
 
         const updateInspectionFilterState = function() {
-            const status = $('#historyStatusFilter').val();
+            const status = document.getElementById('historyStatusFilter')?.value ?? '';
             const url = new URL(window.location.href);
             const exportUrl = new URL(@json(route('qc.export.inspections')), window.location.origin);
 
@@ -186,11 +195,17 @@
         });
 
         @if(request('status'))
-            const historyTabTrigger = document.querySelector('button[data-bs-target="#history"]');
-            if (historyTabTrigger) {
-                bootstrap.Tab.getOrCreateInstance(historyTabTrigger).show();
+            if (historyTabBtn) {
+                bootstrap.Tab.getOrCreateInstance(historyTabBtn).show();
             }
         @endif
-    });
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bootQcInspectionsIndex, { once: true });
+    } else {
+        bootQcInspectionsIndex();
+    }
+})();
 </script>
 @endpush

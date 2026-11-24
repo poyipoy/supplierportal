@@ -75,11 +75,15 @@
 
 @push('scripts')
 <script>
-    $(document).ready(function() {
-        var dtLang = {};
-        var dtOpts = { order: [] };
+(() => {
+    const bootPurchasingClaimsIndex = () => {
+        const actionTableEl = document.getElementById('actionTable');
+        if (!actionTableEl || typeof window.DataTable !== 'function') return;
 
-        $('#actionTable').DataTable(Object.assign({}, dtOpts, {
+        const dtLang = {};
+        const dtOpts = { order: [] };
+
+        new DataTable(actionTableEl, Object.assign({}, dtOpts, {
             processing: true,
             serverSide: true,
             ajax: '{{ route("purchasing.claims.data-action") }}',
@@ -93,11 +97,13 @@
             language: dtLang
         }));
 
-        var historyInit = false;
-        $('button[data-bs-target="#history"]').on('shown.bs.tab', function() {
-            if (!historyInit) {
+        let historyInit = false;
+        const historyTabBtn = document.querySelector('button[data-bs-target="#history"]');
+        historyTabBtn?.addEventListener('shown.bs.tab', () => {
+            const historyTableEl = document.getElementById('historyTable');
+            if (!historyInit && historyTableEl) {
                 historyInit = true;
-                $('#historyTable').DataTable(Object.assign({}, dtOpts, {
+                new DataTable(historyTableEl, Object.assign({}, dtOpts, {
                     processing: true,
                     serverSide: true,
                     ajax: '{{ route("purchasing.claims.data-history") }}',
@@ -117,6 +123,13 @@
                 }));
             }
         });
-    });
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bootPurchasingClaimsIndex, { once: true });
+    } else {
+        bootPurchasingClaimsIndex();
+    }
+})();
 </script>
 @endpush

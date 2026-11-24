@@ -2744,3 +2744,57 @@ test('bootEmbedReadiness settles when a DT 3 table with custom ajax.error fails 
     assert.equal(readiness.isReady, true, 'must settle cleanly on ajaxOpts.complete failure even when dt-error.dt is skipped');
     assert.deepEqual(readyEvents, ['adasi:embed-ready']);
 });
+
+test('bootEmbedReadiness tracks DataTables 3 events and settles on custom ajax.error failure without window.jQuery', async () => {
+    const tableNode = Object.assign(new EventTarget(), { id: 'vsBestTable' });
+    const container = {
+        classList: { contains: () => false },
+    };
+    const dtSettings = {
+        table: tableNode,
+        ajax: { url: '/purchasing/comparison/vs-best/data', error: () => {} },
+        features: { serverSide: true },
+        initialised: false,
+    };
+
+    const readyEvents = [];
+    const doc = Object.assign(new EventTarget(), {
+        readyState: 'complete',
+        documentElement: { dataset: { workspaceEmbed: 'true' } },
+    });
+    const win = {
+        document: doc,
+        top: {},
+        location: { origin: ORIGIN, href: `${ORIGIN}/purchasing/comparison/vs-best?_embed=1` },
+        DataTable: {
+            Api: class FakeApi {
+                constructor(s) { this._s = s; }
+                table() { return { container: () => container }; }
+            },
+            tables: (opts) => (opts?.api ? { settings: () => [] } : []),
+        },
+        CustomEvent: class FakeCustomEvent { constructor(type) { this.type = type; } },
+        dispatchEvent: (ev) => readyEvents.push(ev.type),
+        addEventListener: () => {},
+        setTimeout,
+        clearTimeout,
+        requestAnimationFrame: (fn) => setTimeout(fn, 0),
+    };
+    win.self = win;
+
+    const readiness = bootEmbedReadiness(win);
+    assert.ok(readiness);
+
+    doc.dispatchEvent(Object.assign(new Event('preInit'), { namespace: 'dt', _args: [dtSettings] }));
+    tableNode.dispatchEvent(Object.assign(new Event('processing'), { namespace: 'dt', _args: [dtSettings, true] }));
+    const ajaxOpts = { url: dtSettings.ajax.url, error: dtSettings.ajax.error };
+    doc.dispatchEvent(Object.assign(new Event('preXhr'), { namespace: 'dt', _args: [dtSettings, {}, ajaxOpts] }));
+    assert.equal(readiness.isReady, false);
+
+    ajaxOpts.error({ status: 500, readyState: 4 }, 'error', 'Internal Server Error');
+    ajaxOpts.complete?.({ status: 500, readyState: 4 }, 'error');
+
+    await new Promise((resolve) => setTimeout(resolve, 140));
+    assert.equal(readiness.isReady, true, 'must settle cleanly without window.jQuery');
+    assert.deepEqual(readyEvents, ['adasi:embed-ready']);
+});

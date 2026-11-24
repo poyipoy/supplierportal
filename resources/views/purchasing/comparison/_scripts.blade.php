@@ -295,8 +295,8 @@
 
         if (window._activeVsBestTable) {
             try {
-                if (typeof $ !== 'undefined' && $.fn.DataTable && $.fn.DataTable.isDataTable('#vsBestTable')) {
-                    $('#vsBestTable').DataTable().destroy();
+                if (window.DataTable?.isDataTable?.('#vsBestTable')) {
+                    window._activeVsBestTable.destroy();
                 }
             } catch (e) {
                 window.AdasiDebug?.warn('Error destroying DataTable:', e);
@@ -1859,18 +1859,23 @@
 
         function updateSummary(summary) {
             const data = summary || summaryFallback;
-            $('#vsBestTotalRows').text(formatInteger(data.total_rows));
-            $('#vsBestCompetitiveCount').text(formatInteger(data.competitive_count));
-            $('#vsBestAboveCount').text(formatInteger(data.above_count));
-            $('#vsBestPotentialTotal').text(formatRupiah(data.total_potential_difference_idr));
+            const totalRowsEl = document.getElementById('vsBestTotalRows');
+            const competitiveEl = document.getElementById('vsBestCompetitiveCount');
+            const aboveEl = document.getElementById('vsBestAboveCount');
+            const potentialEl = document.getElementById('vsBestPotentialTotal');
+            if (totalRowsEl) totalRowsEl.textContent = formatInteger(data.total_rows);
+            if (competitiveEl) competitiveEl.textContent = formatInteger(data.competitive_count);
+            if (aboveEl) aboveEl.textContent = formatInteger(data.above_count);
+            if (potentialEl) potentialEl.textContent = formatRupiah(data.total_potential_difference_idr);
         }
 
-        if (typeof $ !== 'undefined' && $.fn.DataTable && $('#vsBestTable').length) {
-            if ($.fn.DataTable.isDataTable('#vsBestTable')) {
-                $('#vsBestTable').DataTable().destroy();
+        const vsBestTableEl = document.getElementById('vsBestTable');
+        if (typeof window.DataTable === 'function' && vsBestTableEl) {
+            if (window.DataTable.isDataTable(vsBestTableEl)) {
+                new window.DataTable(vsBestTableEl, { retrieve: true }).destroy();
             }
 
-            window._activeVsBestTable = $('#vsBestTable').DataTable({
+            window._activeVsBestTable = new DataTable(vsBestTableEl, {
                 processing: true,
                 serverSide: true,
                 // PUR-04: only the table scrolls (sticky header and Material column); the length

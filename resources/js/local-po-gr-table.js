@@ -79,7 +79,7 @@ export function bootLocalPoGrTable(root = document) {
         modal.recoveryTrigger = button;
         window.bootstrap.Modal.getOrCreateInstance(modal).show();
     });
-    if (!window.jQuery?.fn?.dataTable) {
+    if (typeof window.DataTable !== 'function') {
         root.querySelector('[data-gr-table-error]').hidden = false;
         root.querySelector('[data-gr-table-retry]').addEventListener('click', () => window.location.reload());
         return;
@@ -87,9 +87,8 @@ export function bootLocalPoGrTable(root = document) {
     element.dataset.initialized = 'true';
     const readOnly = element.dataset.readOnly === '1';
     const error = root.querySelector('[data-gr-table-error]');
-    const $ = window.jQuery;
-    $.fn.dataTable.ext.errMode = 'none';
-    const table = $(element).DataTable({
+    if (window.DataTable.ext) window.DataTable.ext.errMode = 'none';
+    const table = new window.DataTable(element, {
         processing: true, serverSide: true, searchDelay: 400, order: [[2, 'desc']],
         ajax: { url: element.dataset.url, data: data => { data.status = filter.value; },
             error: () => { error.hidden = false; } },
@@ -106,7 +105,7 @@ export function bootLocalPoGrTable(root = document) {
             { data: 'actions', orderable: false, searchable: false, visible: !readOnly },
         ],
     });
-    $(element).on('xhr.dt', (_event, _settings, json) => { if (json) error.hidden = true; });
+    table.on('xhr.dt', (_event, _settings, json) => { if (json) error.hidden = true; });
     root.querySelector('[data-gr-table-retry]')?.addEventListener('click', () => table.ajax.reload(null, false));
     filter.addEventListener('change', () => table.ajax.reload());
     element.addEventListener('click', event => {

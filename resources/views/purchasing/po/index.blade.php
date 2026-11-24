@@ -101,8 +101,12 @@
 
 @push('scripts')
 <script>
-    $(document).ready(function () {
-        var table = $('#poTable').DataTable({
+(() => {
+    const bootPurchasingPoIndex = () => {
+        const tableEl = document.getElementById('poTable');
+        if (!tableEl || typeof window.DataTable !== 'function') return;
+
+        const table = new DataTable(tableEl, {
             processing: true,
             serverSide: true,
             layout: { topStart: null, topEnd: null, bottomStart: 'info', bottomEnd: 'paging' },
@@ -110,8 +114,8 @@
             ajax: {
                 url: '{{ route("purchasing.purchase-orders.index") }}',
                 data: function (d) {
-                    d.status = $('#filter_status').val();
-                    d.supplier_id = $('#filter_supplier').val();
+                    d.status = document.getElementById('filter_status')?.value ?? '';
+                    d.supplier_id = document.getElementById('filter_supplier')?.value ?? '';
                     d.start_date = new URL(window.location.href).searchParams.get('start_date');
                     d.end_date = new URL(window.location.href).searchParams.get('end_date');
                 }
@@ -143,9 +147,15 @@
                 { key: 'status', label: @json(__('purchasing.copy.status')), selector: '#filter_status', type: 'select' },
                 { key: 'supplier_id', label: @json(__('purchasing.copy.supplier')), selector: '#filter_supplier', type: 'select' },
             ],
-            onFilterChange: () => table.search($('#filter_po_number').val() || '').draw(),
+            onFilterChange: () => table.search(document.getElementById('filter_po_number')?.value || '').draw(),
         });
+    };
 
-    });
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bootPurchasingPoIndex, { once: true });
+    } else {
+        bootPurchasingPoIndex();
+    }
+})();
 </script>
 @endpush

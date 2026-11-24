@@ -56,11 +56,16 @@ class DataTablesSingleSearchContractTest extends TestCase
 
             $initCount = 0;
             $offset = 0;
-            while (preg_match('/\.DataTable\s*\(\s*\{/s', $combinedScriptSource, $match, PREG_OFFSET_CAPTURE, $offset)) {
-                $initCount++;
+            while (preg_match('/new\s+(?:window\.)?DataTable\s*\(\s*[^,]+,\s*\{/s', $combinedScriptSource, $match, PREG_OFFSET_CAPTURE, $offset)) {
                 $braceStart = $match[0][1] + strlen($match[0][0]) - 1;
                 $optionsBlock = $this->extractBalancedBraceBlock($combinedScriptSource, $braceStart);
                 $offset = $braceStart + strlen($optionsBlock);
+
+                if (preg_match('/^\{\s*retrieve\s*:\s*true\s*\}$/s', $optionsBlock)) {
+                    continue;
+                }
+
+                $initCount++;
 
                 if (! preg_match('/\blayout\s*:\s*\{/s', $optionsBlock, $layoutMatch, PREG_OFFSET_CAPTURE)) {
                     $missingLayoutErrors[] = $relativePath.' (#'.$initCount.')';
@@ -78,7 +83,7 @@ class DataTablesSingleSearchContractTest extends TestCase
                 }
             }
 
-            $this->assertGreaterThan(0, $initCount, "Expected at least one .DataTable({...}) call in [$relativePath]");
+            $this->assertGreaterThan(0, $initCount, "Expected at least one new DataTable(..., {...}) call in [$relativePath]");
         }
 
         foreach ([

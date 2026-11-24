@@ -91,16 +91,20 @@
 
 @push('scripts')
 <script>
-    $(document).ready(function() {
-        var table = $('#prTable').DataTable({
+(() => {
+    const bootSupplierQuotationsPeriod = () => {
+        const tableEl = document.getElementById('prTable');
+        if (!tableEl || typeof window.DataTable !== 'function') return;
+
+        const table = new DataTable(tableEl, {
             processing: true,
             serverSide: true,
             layout: { topStart: null, topEnd: null, bottomStart: 'info', bottomEnd: 'paging' },
             ajax: {
                 url: '{{ route("supplier.quotations.period", $period->id) }}',
                 data: function(d) {
-                    d.pr_number = $('#filter_pr_number').val();
-                    d.status = $('#filter_status').val();
+                    d.pr_number = document.getElementById('filter_pr_number')?.value ?? '';
+                    d.status = document.getElementById('filter_status')?.value ?? '';
                 }
             },
             columns: [
@@ -116,7 +120,6 @@
             order: []
         });
 
-
         window.AdasiFilterBar.bindLive('#supplierPeriodFilterBar', {
             fields: [
                 { key: 'pr_number', label: @json(__('supplier.copy.pr_number')), selector: '#filter_pr_number', type: 'search' },
@@ -124,6 +127,13 @@
             ],
             onFilterChange: () => table.ajax.reload(),
         });
-    });
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bootSupplierQuotationsPeriod, { once: true });
+    } else {
+        bootSupplierQuotationsPeriod();
+    }
+})();
 </script>
 @endpush

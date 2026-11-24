@@ -92,8 +92,12 @@
 
 @push('scripts')
 <script>
-    $(document).ready(function() {
-        var table = $('#usersTable').DataTable({
+(() => {
+    const bootAdminUsersIndex = () => {
+        const tableEl = document.getElementById('usersTable');
+        if (!tableEl || typeof window.DataTable !== 'function') return;
+
+        const table = new DataTable(tableEl, {
             processing: true,
             serverSide: true,
             ajax: '{{ route("admin.users.index") }}',
@@ -121,18 +125,19 @@
             ],
             onFilterChange: () => {
                 table
-                    .search($('#userSearch').val() || '')
-                    .column(3).search($('#userRoleFilter').val() || '')
-                    .column(4).search($('#userStatusFilter').val() || '')
+                    .search(document.getElementById('userSearch')?.value || '')
+                    .column(3).search(document.getElementById('userRoleFilter')?.value || '')
+                    .column(4).search(document.getElementById('userStatusFilter')?.value || '')
                     .draw();
             },
         });
 
-        // ADASI Alert delete confirmation (delegated for dynamic rows)
-        $(document).on('click', '.btn-delete', function(e) {
-            e.preventDefault();
-            const $btn = $(this);
-            const form = $btn.closest('form');
+        document.addEventListener('click', (event) => {
+            const btn = event.target instanceof Element ? event.target.closest('.btn-delete') : null;
+            if (!btn) return;
+            event.preventDefault();
+            const form = btn.closest('form');
+            if (!form) return;
             AdasiAlert.confirmDanger({
                 title: @json(__('admin.copy.delete_this_user')),
                 text: @json(__('admin.copy.the_account_and_its_directly_managed_supplier_profile_will_be_permanently_removed')),
@@ -140,11 +145,18 @@
                 cancelText: @json(__('admin.copy.cancel'))
             }).then((result) => {
                 if (result.isConfirmed) {
-                    window.AdasiButton?.startLoading($btn[0]);
+                    window.AdasiButton?.startLoading(btn);
                     form.submit();
                 }
             });
         });
-    });
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bootAdminUsersIndex, { once: true });
+    } else {
+        bootAdminUsersIndex();
+    }
+})();
 </script>
 @endpush

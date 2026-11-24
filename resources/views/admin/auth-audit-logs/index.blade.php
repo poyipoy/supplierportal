@@ -91,44 +91,55 @@
 
 @push('scripts')
 <script>
-$(function () {
-    const table = $('#authAuditTable').DataTable({
-        processing: true,
-        serverSide: true,
-        layout: { topStart: null, topEnd: null, bottomStart: 'info', bottomEnd: 'paging' },
-        order: [],
+(() => {
+    const bootAuthAuditLogs = () => {
+        const tableEl = document.getElementById('authAuditTable');
+        if (!tableEl || typeof window.DataTable !== 'function') return;
 
-        ajax: {
-            url: @json(route('admin.auth-audit-logs.data')),
-            data: function (data) {
-                data.user_id = $('#auditUser').val();
-                data.email = $('#auditEmail').val();
-                data.event = $('#auditEvent').val();
-                data.date_from = $('#auditDateFrom').val();
-                data.date_to = $('#auditDateTo').val();
-            }
-        },
-        columns: [
-            {data: 'created_at', name: 'created_at', className: 'text-nowrap'},
-            {data: 'event_display', name: 'event', className: 'text-nowrap fw-medium'},
-            {data: 'user_display', name: 'user.name', orderable: false},
-            {data: 'email_attempted', name: 'email_attempted'},
-            {data: 'ip_address', name: 'ip_address', orderable: false, className: 'ui-tabular-nums text-nowrap'},
-            {data: 'user_agent', name: 'user_agent', orderable: false, className: 'small text-muted'},
-            {data: 'metadata', name: 'metadata', orderable: false, searchable: false, className: 'small font-monospace'}
-        ]
-    });
+        const table = new DataTable(tableEl, {
+            processing: true,
+            serverSide: true,
+            layout: { topStart: null, topEnd: null, bottomStart: 'info', bottomEnd: 'paging' },
+            order: [],
 
-    window.AdasiFilterBar.bindLive('#authAuditFilterBar', {
-        debounceMs: 350,
-        fields: [
-            { key: 'email', label: @json(__('admin.copy.attempted_email')), selector: '#auditEmail', type: 'search' },
-            { key: 'event', label: @json(__('admin.copy.event')), selector: '#auditEvent', type: 'select' },
-            { key: 'user_id', label: @json(__('admin.copy.actor')), selector: '#auditUser', type: 'select', advanced: true },
-            { key: 'date_range', label: @json(__('admin.copy.date_time')), type: 'date-range', picker: '#auditDateRange', start: '#auditDateFrom', end: '#auditDateTo', advanced: true },
-        ],
-        onFilterChange: () => table.ajax.reload(),
-    });
-});
+            ajax: {
+                url: @json(route('admin.auth-audit-logs.data')),
+                data: function (data) {
+                    data.user_id = document.getElementById('auditUser')?.value ?? '';
+                    data.email = document.getElementById('auditEmail')?.value ?? '';
+                    data.event = document.getElementById('auditEvent')?.value ?? '';
+                    data.date_from = document.getElementById('auditDateFrom')?.value ?? '';
+                    data.date_to = document.getElementById('auditDateTo')?.value ?? '';
+                }
+            },
+            columns: [
+                {data: 'created_at', name: 'created_at', className: 'text-nowrap'},
+                {data: 'event_display', name: 'event', className: 'text-nowrap fw-medium'},
+                {data: 'user_display', name: 'user.name', orderable: false},
+                {data: 'email_attempted', name: 'email_attempted'},
+                {data: 'ip_address', name: 'ip_address', orderable: false, className: 'ui-tabular-nums text-nowrap'},
+                {data: 'user_agent', name: 'user_agent', orderable: false, className: 'small text-muted'},
+                {data: 'metadata', name: 'metadata', orderable: false, searchable: false, className: 'small font-monospace'}
+            ]
+        });
+
+        window.AdasiFilterBar.bindLive('#authAuditFilterBar', {
+            debounceMs: 350,
+            fields: [
+                { key: 'email', label: @json(__('admin.copy.attempted_email')), selector: '#auditEmail', type: 'search' },
+                { key: 'event', label: @json(__('admin.copy.event')), selector: '#auditEvent', type: 'select' },
+                { key: 'user_id', label: @json(__('admin.copy.actor')), selector: '#auditUser', type: 'select', advanced: true },
+                { key: 'date_range', label: @json(__('admin.copy.date_time')), type: 'date-range', picker: '#auditDateRange', start: '#auditDateFrom', end: '#auditDateTo', advanced: true },
+            ],
+            onFilterChange: () => table.ajax.reload(),
+        });
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bootAuthAuditLogs, { once: true });
+    } else {
+        bootAuthAuditLogs();
+    }
+})();
 </script>
 @endpush

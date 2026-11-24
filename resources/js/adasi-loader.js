@@ -1,5 +1,6 @@
 import { t } from './i18n.js';
 import { isDownloadOrBinaryUrl } from './workspace-shell-core.js';
+import { onDataTableEvent, offDataTableEvent } from './datatables-events.js';
 
 export const SHOW_DELAY = 2500;
 export const MIN_VISIBLE = 300;
@@ -652,7 +653,7 @@ export function bootAdasiLoader(win = globalThis.window) {
     loader.createInlineLoader = (label, options = {}) => createInlineLoader(label, options, win.document);
 
     const $ = win.jQuery;
-    if ($) {
+    if (typeof $?.ajaxPrefilter === 'function') {
         // jQuery AJAX. Background requests opt out with `global: false` (existing convention);
         // DataTables shows an inline indicator on its own table instead of blocking the screen.
         $.ajaxPrefilter((options, original, jqXHR) => {
@@ -660,58 +661,59 @@ export function bootAdasiLoader(win = globalThis.window) {
             const token = loader.show();
             jqXHR.always(() => loader.hide(token));
         });
+    }
 
-        const chainAjaxComplete = (ajaxOpts, callback) => {
-            if (!ajaxOpts || typeof ajaxOpts !== 'object' || ajaxOpts.complete?.adasiLoaderWrapped) return;
-            const prev = ajaxOpts.complete;
-            const wrapped = function adasiLoaderComplete(...args) {
-                if (Array.isArray(prev)) {
-                    prev.forEach((fn) => { if (typeof fn === 'function') fn.apply(this, args); });
-                } else if (typeof prev === 'function') {
-                    prev.apply(this, args);
-                }
-                callback.apply(this, args);
-            };
-            wrapped.adasiLoaderWrapped = true;
-            ajaxOpts.complete = wrapped;
-        };
-
-        const resolveTableWrapper = (settings) => {
-            const ApiCtor = win.DataTable?.Api || $.fn?.dataTable?.Api;
-            if (settings && ApiCtor) {
-                try {
-                    return new ApiCtor(settings).table().container();
-                } catch {
-                    // Fall back to direct property lookup for minimal test stubs.
-                }
+    const chainAjaxComplete = (ajaxOpts, callback) => {
+        if (!ajaxOpts || typeof ajaxOpts !== 'object' || ajaxOpts.complete?.adasiLoaderWrapped) return;
+        const prev = ajaxOpts.complete;
+        const wrapped = function adasiLoaderComplete(...args) {
+            if (Array.isArray(prev)) {
+                prev.forEach((fn) => { if (typeof fn === 'function') fn.apply(this, args); });
+            } else if (typeof prev === 'function') {
+                prev.apply(this, args);
             }
-            return settings?.tableWrapper || null;
+            callback.apply(this, args);
         };
-        const onDataTableProcessing = (_event, settings, busy) => {
-            setTableBusy(resolveTableWrapper(settings), Boolean(busy));
-        };
-        const bindTableProcessing = (tableNode) => {
-            if (!tableNode) return;
-            $(tableNode).off('processing.dt.adasiLoader').on('processing.dt.adasiLoader', onDataTableProcessing);
-        };
+        wrapped.adasiLoaderWrapped = true;
+        ajaxOpts.complete = wrapped;
+    };
 
-        $(win.document).on('processing.dt', onDataTableProcessing);
-        $(win.document).on('preInit.dt', (_event, settings) => {
-            bindTableProcessing(settings?.table);
-        });
-        $(win.document).on('preXhr.dt', (_event, settings, _data, ajaxOpts) => {
-            chainAjaxComplete(ajaxOpts, (xhr, textStatus) => {
-                const failed = (textStatus && textStatus !== 'success' && textStatus !== 'nocontent' && textStatus !== 'notmodified')
-                    || Number(xhr?.status) >= 400;
-                if (failed) {
-                    setTableBusy(resolveTableWrapper(settings), false);
-                }
-            });
-        });
-        const existingTables = win.DataTable?.tables?.() || $.fn?.dataTable?.tables?.();
-        if (Array.isArray(existingTables)) {
-            existingTables.forEach(bindTableProcessing);
+    const resolveTableWrapper = (settings) => {
+        const ApiCtor = win.DataTable?.Api;
+        if (settings && ApiCtor) {
+            try {
+                return new ApiCtor(settings).table().container();
+            } catch {
+                // Fall back to direct property lookup for minimal test stubs.
+            }
         }
+        return settings?.tableWrapper || null;
+    };
+    const onDataTableProcessing = (_event, settings, busy) => {
+        setTableBusy(resolveTableWrapper(settings), Boolean(busy));
+    };
+    const bindTableProcessing = (tableNode) => {
+        if (!tableNode) return;
+        offDataTableEvent(tableNode, 'processing.dt.adasiLoader', undefined, win);
+        onDataTableEvent(tableNode, 'processing.dt.adasiLoader', onDataTableProcessing, win);
+    };
+
+    onDataTableEvent(win.document, 'processing.dt', onDataTableProcessing, win);
+    onDataTableEvent(win.document, 'preInit.dt', (_event, settings) => {
+        bindTableProcessing(settings?.table);
+    }, win);
+    onDataTableEvent(win.document, 'preXhr.dt', (_event, settings, _data, ajaxOpts) => {
+        chainAjaxComplete(ajaxOpts, (xhr, textStatus) => {
+            const failed = (textStatus && textStatus !== 'success' && textStatus !== 'nocontent' && textStatus !== 'notmodified')
+                || Number(xhr?.status) >= 400;
+            if (failed) {
+                setTableBusy(resolveTableWrapper(settings), false);
+            }
+        });
+    }, win);
+    const existingTables = win.DataTable?.tables?.();
+    if (Array.isArray(existingTables)) {
+        existingTables.forEach(bindTableProcessing);
     }
 
     win.document.addEventListener('click', (event) => {

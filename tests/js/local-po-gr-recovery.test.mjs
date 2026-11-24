@@ -45,12 +45,12 @@ function boot({ dataTable = false, focusables = [] } = {}) {
         addEventListener: (name, handler) => listeners.set(name, handler),
     };
     let showCount = 0;
-    const table = { ajax: { reload() {} } };
-    const jQuery = Object.assign(() => ({ DataTable: () => table, on() {} }), { fn: { dataTable: { ext: {} } } });
+    const table = { ajax: { reload() {} }, on() {} };
+    const DataTable = Object.assign(function FakeDataTable() { return table; }, { ext: {} });
     const window = {
         location: { origin: 'https://portal.example', reload() {} },
         bootstrap: { Modal: { getOrCreateInstance: () => ({ show() { showCount++; } }) } },
-        ...(dataTable ? { jQuery } : {}),
+        ...(dataTable ? { DataTable } : {}),
     };
     vm.runInNewContext(`${source}\nbootLocalPoGrTable(document);`, { document: root, window, URL });
     function click(url = '/finance/goods-receipts/hashed/restore') {

@@ -500,8 +500,12 @@
         window.AdasiDataTable = Object.freeze({
             defaults: () => ({ processing: true, pageLength: window.AdasiPreferences?.pageSize || 25, lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]], language: @js(__('datatables')) }),
         });
-        if (window.jQuery?.fn?.dataTable) {
-            window.jQuery.extend(true, window.jQuery.fn.dataTable.defaults, window.AdasiDataTable.defaults());
+        if (window.DataTable?.Dom?.s) {
+            if (typeof window.DataTable.util?.object?.assignDeepObjects === 'function') {
+                window.DataTable.util.object.assignDeepObjects(window.DataTable.defaults, window.AdasiDataTable.defaults(), true);
+            } else {
+                Object.assign(window.DataTable.defaults, window.AdasiDataTable.defaults());
+            }
             if (window.DataTable?.ajax?.defaults) {
                 window.DataTable.ajax.defaults.headers = {
                     ...(window.DataTable.ajax.defaults.headers || {}),
@@ -541,7 +545,7 @@
             // The pager also becomes a labelled navigation landmark, like the Laravel pagination view.
             const defaultPaginationLabel = @js(__('pagination.navigation'));
             const syncDataTableDrawState = (_event, settings) => {
-                const ApiCtor = window.DataTable?.Api || window.jQuery?.fn?.dataTable?.Api;
+                const ApiCtor = window.DataTable?.Api;
                 if (!ApiCtor || !settings) return;
                 const api = new ApiCtor(settings);
                 const wrapper = api.table().container();
@@ -568,11 +572,11 @@
                     }
                 }
             };
-            window.jQuery(document).on('draw.dt', syncDataTableDrawState);
-            window.jQuery(document).on('preInit.dt', (_event, settings) => {
+            window.DataTable.Dom.s(document).on('draw.dt', syncDataTableDrawState);
+            window.DataTable.Dom.s(document).on('preInit.dt', (_event, settings) => {
                 const tableNode = settings?.table;
                 if (tableNode) {
-                    window.jQuery(tableNode).off('order.dt.adasiUi').on('order.dt.adasiUi', syncDataTableDrawState);
+                    window.DataTable.Dom.s(tableNode).off('order.dt.adasiUi').on('order.dt.adasiUi', syncDataTableDrawState);
                 }
             });
         }
@@ -637,8 +641,10 @@
                         jqXHR.setRequestHeader(headerName, headerValue);
                     }
                 });
+            }
 
-                $(document).on('preXhr.dt', (_event, _settings, _data, ajaxOpts) => {
+            if (window.DataTable?.Dom?.s) {
+                window.DataTable.Dom.s(document).on('preXhr.dt', (_event, _settings, _data, ajaxOpts) => {
                     if (!ajaxOpts || typeof ajaxOpts !== 'object') return;
                     if (isInternalUrl(ajaxOpts.url || window.location.href)) {
                         ajaxOpts.headers = {
